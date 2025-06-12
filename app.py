@@ -14,8 +14,9 @@ from esquema_generator import generar_esquema  # NUEVO
 load_dotenv()
 print("CLAVE:", os.getenv("OPENAI_API_KEY"))
 
-# Inicializar Firebase
-cred = credentials.Certificate("clave-firebase.json")
+# Inicializar Firebase con clave desde secret file
+firebase_key_path = "/etc/secrets/clave-firebase.json"
+cred = credentials.Certificate(firebase_key_path)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -67,4 +68,5 @@ app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), method
 # Ejecutar la app
 if __name__ == "__main__":
     app.run(debug=True)
+
 
