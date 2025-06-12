@@ -66,7 +66,10 @@ app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["PO
 app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), methods=["POST"])
 
 # Ejecutar la app
+import os
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # usa el puerto que Render le indica
+    app.run(host="0.0.0.0", port=port, debug=True)
 
 
