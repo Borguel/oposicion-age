@@ -7,17 +7,21 @@ from firebase_admin import credentials, firestore
 
 from chat_controller import responder_chat
 from test_generator import generar_test_avanzado, generar_simulacro
-from save_controller import guardar_test_route, guardar_esquema_route
 from esquema_generator import generar_esquema
+from save_controller import guardar_test_route, guardar_esquema_route
+from rutas_progreso import (
+    registrar_usuario_route,
+    actualizar_estadisticas_test_route,
+    actualizar_estadisticas_esquema_route,
+    registrar_tiempo_estudio_route
+)
 
 # Cargar variables de entorno
 load_dotenv()
 print("CLAVE:", os.getenv("OPENAI_API_KEY"))
 
-# Obtener ruta del archivo de clave Firebase desde variable de entorno
-firebase_key_path = os.getenv("FIREBASE_CREDENTIALS", "clave-firebase.json")
-
 # Inicializar Firebase
+firebase_key_path = "/etc/secrets/clave-firebase.json" if os.getenv("RENDER") else "clave-firebase.json"
 cred = credentials.Certificate(firebase_key_path)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -26,7 +30,7 @@ db = firestore.client()
 app = Flask(__name__)
 CORS(app)
 
-# Endpoint de chat con el temario
+# Chat con el temario
 @app.route("/chat", methods=["POST"])
 def chat_route():
     data = request.get_json()
@@ -35,7 +39,7 @@ def chat_route():
     respuesta = responder_chat(mensaje=mensaje, temas=temas, db=db)
     return jsonify({"respuesta": respuesta})
 
-# Endpoint para generar test avanzado
+# Generar test avanzado
 @app.route("/generar-test-avanzado", methods=["POST"])
 def generar_test_avanzado_route():
     data = request.get_json()
@@ -44,7 +48,7 @@ def generar_test_avanzado_route():
     resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas)
     return jsonify({"test": resultado})
 
-# Endpoint para generar simulacro
+# Generar simulacro
 @app.route("/simulacro", methods=["POST"])
 def generar_simulacro_route():
     data = request.get_json()
@@ -52,7 +56,7 @@ def generar_simulacro_route():
     resultado = generar_simulacro(db=db, num_preguntas=num_preguntas)
     return jsonify({"simulacro": resultado})
 
-# Endpoint para generar esquema
+# Generar esquema
 @app.route("/generar-esquema", methods=["POST"])
 def generar_esquema_route():
     data = request.get_json()
@@ -62,13 +66,16 @@ def generar_esquema_route():
     resultado = generar_esquema(temas=temas, db=db, instrucciones=instrucciones, nivel=nivel)
     return jsonify({"esquema": resultado})
 
-# Rutas para guardar resultados
+# Guardar resultados
 app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["POST"])
 app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), methods=["POST"])
 
-# Ejecutar la app (importante para Render)
+# NUEVO: rutas de estadísticas
+app.add_url_rule("/registrar-usuario", view_func=registrar_usuario_route(db), methods=["POST"])
+app.add_url_rule("/actualizar-estadisticas-test", view_func=actualizar_estadisticas_test_route(db), methods=["POST"])
+app.add_url_rule("/actualizar-estadisticas-esquema", view_func=actualizar_estadisticas_esquema_route(db), methods=["POST"])
+app.add_url_rule("/registrar-tiempo-estudio", view_func=registrar_tiempo_estudio_route(db), methods=["POST"])
+
+# Ejecutar app
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
-
-
+    app.run(debug=True)
