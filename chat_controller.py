@@ -4,7 +4,7 @@ import os
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def responder_chat(mensaje_usuario, temas, db):
+def responder_chat(mensaje, temas, db):
     contexto = obtener_contexto_por_temas(db, temas)
 
     prompt = f"""Eres un asistente experto en oposiciones. Utiliza el siguiente contenido del temario para responder con claridad y precisión a la pregunta del usuario.
@@ -13,7 +13,7 @@ CONTENIDO DEL TEMARIO:
 {contexto}
 
 PREGUNTA DEL USUARIO:
-{mensaje_usuario}
+{mensaje}
 """
 
     respuesta = openai.ChatCompletion.create(
@@ -27,4 +27,3 @@ PREGUNTA DEL USUARIO:
     )
 
     return respuesta.choices[0].message["content"].strip()
-
