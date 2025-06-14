@@ -1,12 +1,11 @@
-
 import openai
-from utils import obtener_contenido_relevante
+from utils import obtener_contexto_por_temas
 import os
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def responder_chat(mensaje_usuario, temas, db):
-    contexto = obtener_contenido_relevante(temas, db)
+    contexto = obtener_contexto_por_temas(db, temas)
 
     prompt = f"""Eres un asistente experto en oposiciones. Utiliza el siguiente contenido del temario para responder con claridad y precisión a la pregunta del usuario.
 
@@ -28,3 +27,4 @@ PREGUNTA DEL USUARIO:
     )
 
     return respuesta.choices[0].message["content"].strip()
+
