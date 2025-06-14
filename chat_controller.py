@@ -28,3 +28,4 @@ PREGUNTA DEL USUARIO:
 
     return respuesta.choices[0].message.content.strip()
 
+# Versión actualizada y compatible con OpenAI >=1.0.0
