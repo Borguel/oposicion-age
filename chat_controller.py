@@ -1,8 +1,8 @@
-import openai
-from utils import obtener_contexto_por_temas
 import os
+from openai import OpenAI
+from utils import obtener_contexto_por_temas
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def responder_chat(mensaje, temas, db):
     contexto = obtener_contexto_por_temas(db, temas)
@@ -16,7 +16,7 @@ PREGUNTA DEL USUARIO:
 {mensaje}
 """
 
-    respuesta = openai.ChatCompletion.create(
+    respuesta = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "Eres un asistente experto en oposiciones."},
@@ -26,5 +26,5 @@ PREGUNTA DEL USUARIO:
         max_tokens=800
     )
 
-    return respuesta.choices[0].message["content"].strip()
-# Última actualización confirmada
+    return respuesta.choices[0].message.content.strip()
+
