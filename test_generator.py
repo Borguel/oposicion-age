@@ -14,15 +14,16 @@ def parsear_preguntas(texto):
     actual = {}
 
     for bloque in bloques:
-        if bloque.lower().startswith("pregunta") or bloque.startswith("**Pregunta"):
+        bloque = bloque.strip()
+        if re.match(r"^(\*\*)?Pregunta", bloque, re.IGNORECASE):
             if actual:
                 preguntas.append(actual)
                 actual = {}
-            actual["pregunta"] = bloque.split(":", 1)[-1].strip()
+            enunciado = bloque.split(":", 1)[-1].strip()
+            actual["pregunta"] = enunciado if enunciado else "Pregunta sin texto"
+            actual["opciones"] = {}
         elif bloque.startswith("A)"):
-            actual["opciones"] = {
-                "A": bloque[3:].strip()
-            }
+            actual["opciones"]["A"] = bloque[3:].strip()
         elif bloque.startswith("B)"):
             actual["opciones"]["B"] = bloque[3:].strip()
         elif bloque.startswith("C)"):
@@ -40,7 +41,6 @@ def parsear_preguntas(texto):
         preguntas.append(actual)
 
     return preguntas
-
 
 def generar_test_avanzado(temas, db, num_preguntas=5):
     contexto = ""
@@ -82,7 +82,6 @@ Genera el test:
     preguntas_formateadas = parsear_preguntas(texto_generado)
 
     return {"test": preguntas_formateadas}
-
 
 def generar_simulacro(db, num_preguntas=30):
     temas = [doc.id for doc in db.collection("temario").stream()]
