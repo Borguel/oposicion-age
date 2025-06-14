@@ -65,4 +65,4 @@ app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), method
 registrar_rutas_progreso(app, db)  # ✅ NUEVO
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
