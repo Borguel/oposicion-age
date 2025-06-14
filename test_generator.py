@@ -1,3 +1,4 @@
+
 import os
 import random
 import re
@@ -32,7 +33,7 @@ def parsear_preguntas(texto):
             match = re.search(r"Respuesta correcta[:\-]?\s*([A-D])", bloque)
             if match:
                 actual["respuesta_correcta"] = match.group(1)
-        elif "Explicación" in bloque or "explicación" in bloque.lower():
+        elif "Explicación" in bloque or "explicacion" in bloque.lower():
             actual["explicacion"] = bloque.split(":", 1)[-1].strip()
 
     if actual:
