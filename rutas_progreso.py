@@ -1,4 +1,3 @@
-
 from flask import request, jsonify
 from firebase_admin import firestore
 
@@ -85,3 +84,18 @@ def registrar_rutas_progreso(app, db):
             "ultima_actualizacion": firestore.SERVER_TIMESTAMP
         })
         return jsonify({"mensaje": "Progreso de esquema actualizado"})
+
+    @app.route("/resumen-progreso", methods=["GET"])
+    def obtener_resumen_progreso_route():
+        usuario_id = request.args.get("usuario_id")
+        if not usuario_id:
+            return jsonify({"error": "Falta usuario_id"}), 400
+
+        doc_ref = db.collection("usuarios").document(usuario_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        datos = doc.to_dict()
+        return jsonify({"resumen": datos})
+
