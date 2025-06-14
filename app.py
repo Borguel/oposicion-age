@@ -1,4 +1,3 @@
-
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -10,7 +9,7 @@ from chat_controller import responder_chat
 from test_generator import generar_test_avanzado, generar_simulacro
 from esquema_generator import generar_esquema
 from save_controller import guardar_test_route, guardar_esquema_route
-from rutas_progreso import obtener_resumen_progreso_route
+from rutas_progreso import registrar_rutas_progreso  # ✅ CORREGIDO
 
 # Cargar variables de entorno
 load_dotenv()
@@ -62,8 +61,8 @@ def generar_esquema_route():
 app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["POST"])
 app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), methods=["POST"])
 
-# Progreso usuario
-app.add_url_rule("/resumen-progreso", view_func=obtener_resumen_progreso_route(db), methods=["GET"])
+# Registrar rutas de progreso de usuario (incluye /resumen-progreso)
+registrar_rutas_progreso(app, db)  # ✅ NUEVO
 
 if __name__ == "__main__":
     app.run(debug=True)
