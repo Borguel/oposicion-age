@@ -1,1 +1,6 @@
-flaskflask-corsfirebase-adminpython-dotenvopenai 
+flask
+flask-cors
+python-dotenv
+firebase-admin
+google-cloud-firestore
+openai
