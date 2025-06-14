@@ -9,36 +9,37 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def parsear_preguntas(texto):
-    bloques = texto.strip().split("\n\n")
     preguntas = []
-    actual = {}
-
+    bloques = texto.strip().split("**")
     for bloque in bloques:
         bloque = bloque.strip()
-        if re.match(r"^(\*\*)?Pregunta", bloque, re.IGNORECASE):
-            if actual:
-                preguntas.append(actual)
-                actual = {}
-            enunciado = bloque.split(":", 1)[-1].strip()
-            actual["pregunta"] = enunciado if enunciado else "Pregunta sin texto"
-            actual["opciones"] = {}
-        elif bloque.startswith("A)"):
-            actual["opciones"]["A"] = bloque[3:].strip()
-        elif bloque.startswith("B)"):
-            actual["opciones"]["B"] = bloque[3:].strip()
-        elif bloque.startswith("C)"):
-            actual["opciones"]["C"] = bloque[3:].strip()
-        elif bloque.startswith("D)"):
-            actual["opciones"]["D"] = bloque[3:].strip()
-        elif "Respuesta correcta" in bloque:
-            match = re.search(r"Respuesta correcta[:\-]?\s*([A-D])", bloque)
-            if match:
-                actual["respuesta_correcta"] = match.group(1)
-        elif "Explicación" in bloque or "explicacion" in bloque.lower():
-            actual["explicacion"] = bloque.split(":", 1)[-1].strip()
+        if not bloque:
+            continue
 
-    if actual:
-        preguntas.append(actual)
+        pregunta_match = re.search(r"(Pregunta\s*\d*:?\s*)?(.*?)\n", bloque)
+        if not pregunta_match:
+            continue
+
+        pregunta_texto = pregunta_match.group(2).strip()
+        opciones_match = re.findall(r"([A-D])\)\s*(.*?)\s*(?=(?:[A-D]\)|Respuesta correcta|Explicación|$))", bloque, re.DOTALL)
+
+        if len(opciones_match) != 4:
+            continue
+
+        opciones = {letra: texto.strip() for letra, texto in opciones_match}
+
+        respuesta_match = re.search(r"Respuesta correcta[:\-]?\s*([A-D])", bloque)
+        respuesta = respuesta_match.group(1) if respuesta_match else ""
+
+        explicacion_match = re.search(r"Explicaci[oó]n[:\-]?\s*(.*)", bloque, re.DOTALL)
+        explicacion = explicacion_match.group(1).strip() if explicacion_match else ""
+
+        preguntas.append({
+            "pregunta": pregunta_texto,
+            "opciones": opciones,
+            "respuesta_correcta": respuesta,
+            "explicacion": explicacion
+        })
 
     return preguntas
 
@@ -55,17 +56,18 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
         return {"test": []}
 
     prompt = f"""
-Actúa como generador experto de preguntas tipo test para oposiciones administrativas. Usa el contenido siguiente para redactar {num_preguntas} preguntas. Cada pregunta debe incluir:
+Eres un generador experto de preguntas tipo test para opositores. Usa el siguiente contenido para redactar {num_preguntas} preguntas.
 
+Cada pregunta debe tener:
 - Enunciado claro
-- Opciones: A), B), C), D)
-- Indica la opción correcta (Respuesta correcta: X)
-- Explicación breve
+- Opciones separadas como A), B), C), D)
+- Una línea que diga: Respuesta correcta: X
+- Una línea que diga: Explicación: ... (breve)
 
-Contenido de referencia:
+Contenido del temario:
 {contexto}
 
-Genera el test:
+Empieza:
 """
 
     respuesta = client.chat.completions.create(
