@@ -81,7 +81,9 @@ Empieza:
     )
 
     texto_generado = respuesta.choices[0].message.content.strip()
+    print("GPT generó:\\n", texto_generado)
     preguntas_formateadas = parsear_preguntas(texto_generado)
+
 
     return {"test": preguntas_formateadas}
 
