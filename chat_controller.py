@@ -27,3 +27,4 @@ PREGUNTA DEL USUARIO:
     )
 
     return respuesta.choices[0].message["content"].strip()
+# Última actualización confirmada
