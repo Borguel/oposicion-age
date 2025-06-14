@@ -1,3 +1,4 @@
+
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -39,7 +40,7 @@ def generar_test_avanzado_route():
     temas = data.get("temas", [])
     num_preguntas = data.get("num_preguntas", 5)
     resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas)
-    return jsonify({"test": resultado})
+    return jsonify(resultado)  # 🔧 CORREGIDO: evitar anidación doble de "test"
 
 @app.route("/simulacro", methods=["POST"])
 def generar_simulacro_route():
