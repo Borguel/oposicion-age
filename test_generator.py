@@ -56,18 +56,21 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
         return {"test": []}
 
     prompt = f"""
-Eres un generador experto de preguntas tipo test para opositores. Usa el siguiente contenido para redactar {num_preguntas} preguntas.
+Eres un generador experto de preguntas tipo test para opositores. A partir del contenido siguiente, redacta {num_preguntas} preguntas. Para cada pregunta incluye obligatoriamente:
 
-Cada pregunta debe tener:
-- Enunciado claro
-- Opciones separadas como A), B), C), D)
-- Una línea que diga: Respuesta correcta: X
-- Una línea que diga: Explicación: ... (breve)
+- Enunciado
+- Opciones en formato:
+  A) ...
+  B) ...
+  C) ...
+  D) ...
+- Una línea con: Respuesta correcta: X
+- Una línea con: Explicación: ...
 
-Contenido del temario:
+Contenido base:
 {contexto}
 
-Empieza:
+Empieza ahora:
 """
 
     respuesta = client.chat.completions.create(
@@ -81,9 +84,8 @@ Empieza:
     )
 
     texto_generado = respuesta.choices[0].message.content.strip()
-    print("GPT generó:\\n", texto_generado)
+    print("GPT generó:\n", texto_generado)
     preguntas_formateadas = parsear_preguntas(texto_generado)
-
 
     return {"test": preguntas_formateadas}
 
