@@ -25,6 +25,7 @@ db = firestore.client()
 # Inicializar Flask
 app = Flask(__name__)
 CORS(app, origins=["https://lightslategray-caribou-622401.hostingersite.com"])
+print("✅ CORS configurado correctamente para WordPress")
 
 @app.route("/chat", methods=["POST"])
 def chat_route():
