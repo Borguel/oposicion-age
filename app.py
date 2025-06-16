@@ -24,7 +24,7 @@ db = firestore.client()
 
 # Inicializar Flask
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["https://lightslategray-caribou-622401.hostingersite.com"])
 
 @app.route("/chat", methods=["POST"])
 def chat_route():
