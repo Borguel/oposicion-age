@@ -2,6 +2,7 @@
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from utils import obtener_contexto_por_temas
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -83,10 +84,13 @@ def obtener_temas_disponibles():
 
 @app.route("/debug-contexto", methods=["POST"])
 def debug_contexto():
-    data = request.get_json()
-    temas = data.get("temas", [])
-    contexto = obtener_contexto_por_temas(db, temas)
-    return jsonify({"contexto": contexto[:3000]})
+    try:
+        data = request.get_json()
+        temas = data.get("temas", [])
+        contexto = obtener_contexto_por_temas(db, temas)
+        return jsonify({"contexto": contexto[:3000]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
