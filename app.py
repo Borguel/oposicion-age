@@ -80,5 +80,14 @@ def obtener_temas_disponibles():
     return jsonify({"temas": temas})
 
 
+
+@app.route("/debug-contexto", methods=["POST"])
+def debug_contexto():
+    data = request.get_json()
+    temas = data.get("temas", [])
+    contexto = obtener_contexto_por_temas(db, temas)
+    return jsonify({"contexto": contexto[:3000]})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
