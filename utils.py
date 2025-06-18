@@ -63,4 +63,5 @@ Contenido completo generado:"""
                 contexto += f"\n{sub_id}:\n{contenido}\n"
 
     print("Longitud total del contexto generado:", len(contexto))
+    print("⚙ utils.py actualizado")
     return contexto
