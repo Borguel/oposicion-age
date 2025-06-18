@@ -51,31 +51,31 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
         return {"test": []}
 
     prompt = f"""
-Eres un generador experto de preguntas tipo test para oposiciones. A partir del contenido siguiente, redacta {num_preguntas} preguntas. Para cada pregunta, incluye obligatoriamente:
+Eres un generador experto en preguntas tipo test para oposiciones. A partir del contenido siguiente, redacta {num_preguntas} preguntas. Para cada pregunta, incluye obligatoriamente:
 
-- Enunciado
+- El enunciado completo.
 - Opciones en formato:
   A) ...
   B) ...
   C) ...
   D) ...
 - Una línea con: Respuesta correcta: X (donde X es la letra correcta)
-- Una línea con: Explicación clara y breve de por qué esa es la respuesta correcta
+- Una línea con: Explicación detallada y clara de por qué esa es la respuesta correcta
 
 Contenido base:
 {contexto}
 
-Empieza ahora:
+Comienza ahora:
 """
 
     respuesta = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "Eres un generador experto de preguntas de oposición con explicaciones."},
+            {"role": "system", "content": "Eres un experto generador de preguntas de oposición con explicaciones detalladas."},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=1500,
-        temperature=0.6
+        max_tokens=1800,
+        temperature=0.5
     )
 
     texto_generado = respuesta.choices[0].message.content.strip()
