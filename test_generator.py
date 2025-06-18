@@ -1,8 +1,10 @@
+
 import os
 import random
 import re
 from openai import OpenAI
 from dotenv import load_dotenv
+from utils import obtener_contexto_por_temas
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -15,7 +17,7 @@ def parsear_preguntas(texto):
         if not bloque:
             continue
 
-        pregunta_match = re.search(r"(Pregunta\s*\d*:?\\s*)?(.*?)\\n", bloque)
+        pregunta_match = re.search(r"(Pregunta\s*\d*:?\s*)?(.*?)\n", bloque)
         if not pregunta_match:
             continue
 
@@ -43,14 +45,7 @@ def parsear_preguntas(texto):
     return preguntas
 
 def generar_test_avanzado(temas, db, num_preguntas=5):
-    contexto = ""
-
-    for tema_id in temas:
-        doc = db.collection("temario").document(tema_id).get()
-        if doc.exists:
-            datos = doc.to_dict()
-            texto = datos.get("texto_completo", "")
-            contexto += f"\n\n{tema_id}: {texto}"
+    contexto = obtener_contexto_por_temas(db, temas)
 
     if not contexto:
         return {"test": []}
