@@ -66,5 +66,19 @@ app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), method
 # Registrar rutas de progreso de usuario (incluye /resumen-progreso)
 registrar_rutas_progreso(app, db)  # ✅ NUEVO
 
+
+@app.route("/temas-disponibles", methods=["GET"])
+def obtener_temas_disponibles():
+    temas = []
+    docs = db.collection("temario").stream()
+    for doc in docs:
+        data = doc.to_dict()
+        temas.append({
+            "id": doc.id,
+            "titulo": data.get("titulo", doc.id)
+        })
+    return jsonify({"temas": temas})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
