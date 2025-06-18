@@ -89,4 +89,3 @@ def generar_simulacro(db, num_preguntas=30):
     temas_seleccionados = random.sample(temas, min(len(temas), 5))
     return generar_test_avanzado(temas_seleccionados, db, num_preguntas)
 
-
