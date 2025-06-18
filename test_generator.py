@@ -50,7 +50,7 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
         print("⚠️ Contexto vacío. No se puede generar test.")
         return {"test": []}
 
-    prompt = f\"\"\"
+    prompt = f"""
 Eres un generador experto de preguntas tipo test para oposiciones. A partir del contenido siguiente, redacta {num_preguntas} preguntas. Para cada pregunta, incluye obligatoriamente:
 
 - Enunciado
@@ -66,7 +66,7 @@ Contenido base:
 {contexto}
 
 Empieza ahora:
-\"\"\"
+"""
 
     respuesta = client.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -88,4 +88,5 @@ def generar_simulacro(db, num_preguntas=30):
     temas = [doc.id for doc in db.collection("temario").stream()]
     temas_seleccionados = random.sample(temas, min(len(temas), 5))
     return generar_test_avanzado(temas_seleccionados, db, num_preguntas)
+
 
