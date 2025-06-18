@@ -88,3 +88,5 @@ def generar_simulacro(db, num_preguntas=30):
     temas = [doc.id for doc in db.collection("temario").stream()]
     temas_seleccionados = random.sample(temas, min(len(temas), 5))
     return generar_test_avanzado(temas_seleccionados, db, num_preguntas)
+print("⚙ test_generator.py en ejecución")
+
