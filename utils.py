@@ -1,67 +1,81 @@
-
-import os
+import re
+import random
 import tiktoken
 from openai import OpenAI
+from dotenv import load_dotenv
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
+load_dotenv()
+client = OpenAI()
 
-def contar_tokens(texto):
-    return len(enc.encode(texto))
+def contar_tokens(texto, modelo="gpt-3.5-turbo"):
+    try:
+        codificador = tiktoken.encoding_for_model(modelo)
+    except KeyError:
+        codificador = tiktoken.get_encoding("cl100k_base")
+    return len(codificador.encode(texto))
 
-def obtener_contexto_por_temas(db, temas):
+def obtener_contexto_por_temas(db, temas, token_limit=3000):
     contexto = ""
-    for tema_id in temas:
-        tema_ref = db.collection("temario").document(tema_id)
-        bloques = tema_ref.collection("bloques").stream()
+    subbloques_total = []
 
+    for tema_id in temas:
+        bloques = db.collection("temario").document(tema_id).collection("bloques").stream()
         for bloque in bloques:
-            bloque_ref = bloque.reference
-            subbloques = bloque_ref.collection("subbloques").stream()
+            subbloques = db.collection("temario").document(tema_id)\
+                            .collection("bloques").document(bloque.id)\
+                            .collection("subbloques").stream()
 
             for sub in subbloques:
+                data = sub.to_dict()
                 sub_id = sub.id
                 sub_ref = sub.reference
-                datos = sub.to_dict()
-                contenido = datos.get("texto", "")
+                contenido = data.get("texto", "")
 
-                print(f"[{tema_id} → {sub_id}] tokens: {contar_tokens(contenido)}")
-
+                # Corregir texto si es incompleto
                 necesita_corregir = (
-                    len(contenido.strip()) < 200 or 
-                    "..." in contenido or 
+                    len(contenido) < 200 or
+                    "..." in contenido or
                     contar_tokens(contenido) < 100
                 )
 
                 if necesita_corregir:
-                    prompt = f"""Este subbloque parece incompleto. Complétalo de forma coherente para su uso en oposiciones.
+                    prompt = f"""Este subbloque parece incompleto. Complétalo manteniendo fidelidad legal al contenido, en estilo formal jurídico-administrativo:
 
-Título del subbloque: {sub_id}
-Contenido parcial:
-{contenido}
+Texto original:
+\"\"\"{contenido}\"\"\"
 
-Contenido completo generado:"""
+Texto corregido:"""
 
-                    respuesta = client.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {"role": "system", "content": "Eres un redactor experto en legislación y oposiciones."},
-                            {"role": "user", "content": prompt}
-                        ],
-                        max_tokens=1000,
-                        temperature=0.5
-                    )
-
-                    texto_corregido = respuesta.choices[0].message.content.strip()
-
-                    if contar_tokens(texto_corregido) <= 3000:
+                    try:
+                        respuesta = client.chat.completions.create(
+                            model="gpt-3.5-turbo",
+                            messages=[
+                                {"role": "system", "content": "Eres un redactor legal experto en oposiciones."},
+                                {"role": "user", "content": prompt}
+                            ],
+                            max_tokens=700,
+                            temperature=0.5
+                        )
+                        texto_corregido = respuesta.choices[0].message.content.strip()
                         sub_ref.update({"texto": texto_corregido})
                         contenido = texto_corregido
-                    else:
-                        print(f"⚠️ Subbloque {sub_id} supera los 3000 tokens. No se ha guardado.")
+                    except Exception as e:
+                        print(f"❌ Error al completar subbloque {sub_id}: {e}")
+                        continue
 
-                contexto += f"\n{sub_id}:\n{contenido}\n"
+                subbloques_total.append(f"\n{sub_id}:\n{contenido.strip()}\n")
 
-    print("Longitud total del contexto generado:", len(contexto))
-    print("⚙ utils.py actualizado")
+    # Aleatorizar y limitar por tokens
+    random.shuffle(subbloques_total)
+    token_total = 0
+    resultado = []
+
+    for fragmento in subbloques_total:
+        tokens = contar_tokens(fragmento)
+        if token_total + tokens > token_limit:
+            break
+        resultado.append(fragmento)
+        token_total += tokens
+
+    contexto = "\n".join(resultado)
     return contexto
