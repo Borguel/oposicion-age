@@ -4,7 +4,7 @@ import random
 import re
 from openai import OpenAI
 from dotenv import load_dotenv
-from utils import obtener_contexto_por_temas
+from utils import obtener_contexto_por_temas  # ✅ Importar función adaptada
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -45,9 +45,9 @@ def parsear_preguntas(texto):
     return preguntas
 
 def generar_test_avanzado(temas, db, num_preguntas=5):
-    contexto = obtener_contexto_por_temas(db, temas)
-
+    contexto = obtener_contexto_por_temas(db, temas)  # ✅ Se usa correctamente
     if not contexto:
+        print("⚠️ Contexto vacío. No se puede generar test.")
         return {"test": []}
 
     prompt = f"""
@@ -88,4 +88,3 @@ def generar_simulacro(db, num_preguntas=30):
     temas = [doc.id for doc in db.collection("temario").stream()]
     temas_seleccionados = random.sample(temas, min(len(temas), 5))
     return generar_test_avanzado(temas_seleccionados, db, num_preguntas)
-# cambio forzado para despliegue
