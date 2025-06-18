@@ -4,7 +4,6 @@ import tiktoken
 from openai import OpenAI
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
 def contar_tokens(texto):
@@ -25,6 +24,8 @@ def obtener_contexto_por_temas(db, temas):
                 sub_ref = sub.reference
                 datos = sub.to_dict()
                 contenido = datos.get("texto", "")
+
+                print(f"[{tema_id} → {sub_id}] tokens: {contar_tokens(contenido)}")
 
                 necesita_corregir = (
                     len(contenido.strip()) < 200 or 
@@ -60,4 +61,6 @@ Contenido completo generado:"""
                         print(f"⚠️ Subbloque {sub_id} supera los 3000 tokens. No se ha guardado.")
 
                 contexto += f"\n{sub_id}:\n{contenido}\n"
+
+    print("Longitud total del contexto generado:", len(contexto))
     return contexto
