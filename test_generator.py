@@ -74,24 +74,23 @@ def generar_test_avanzado(temas, db, num_preguntas=5, max_repeticiones=2):
         limite_tema = 5
 
     prompt = f"""
-Eres un generador experto en preguntas tipo test para oposiciones del Estado. A partir del contenido siguiente, redacta {num_preguntas} preguntas con estilo profesional, variado y realista, como las que aparecen en exámenes oficiales. Puedes usar diferentes estructuras de redacción:
+Eres un generador experto en preguntas tipo test para oposiciones del Estado. A partir del contenido siguiente, redacta {num_preguntas} preguntas con estilo profesional, variado y realista, como las que aparecen en exámenes oficiales.
 
+Cada pregunta debe comenzar con un enunciado completo, claro y separado del resto. A continuación deben aparecer las 4 opciones (A–D), luego la respuesta correcta y finalmente la explicación.
+
+Puedes usar diferentes estructuras de redacción:
 - Preguntas directas (¿Qué órgano...?),
 - Preguntas con introducción jurídica o normativa (Según el artículo..., ¿quién...?),
 - Enunciados incompletos que deben completarse con la opción correcta.
 
-Para cada pregunta:
-
-- Usa redacción clara, formal y precisa.
-- Opciones tipo test en formato:
-  A) ...
-  B) ...
-  C) ...
-  D) ...
-- Una línea con: Respuesta correcta: X
-- Una línea con: Explicación clara, concisa y con referencia a la norma si procede.
-
-⚠️ Importante: evita incluir más de {limite_tema} preguntas basadas en el mismo párrafo o idea concreta del texto.
+Formato esperado:
+Enunciado claro
+A) ...
+B) ...
+C) ...
+D) ...
+Respuesta correcta: X
+Explicación: ...
 
 Contenido base:
 {contexto}
