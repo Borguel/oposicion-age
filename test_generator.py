@@ -57,7 +57,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 client = openai
 
 def generar_test_avanzado(temas, db, num_preguntas=5, max_repeticiones=2):
-    contexto = obtener_contexto_por_temas(db, temas)
+    contexto = obtener_contexto_por_temas(db, temas, limite=5)
     if not contexto:
         print("⚠️ Contexto vacío. No se puede generar test.")
         return {"test": []}
@@ -171,4 +171,3 @@ Contenido:
     preguntas = parsear_preguntas(texto_generado)
 
     return preguntas
-# Actualización menor para forzar deploy en Render
