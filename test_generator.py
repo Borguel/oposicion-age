@@ -1,3 +1,11 @@
+import openai
+import os
+from utils import obtener_contexto_por_temas
+from validador_preguntas import detectar_repeticiones, filtrar_preguntas_repetidas
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+client = openai
+
 from utils import obtener_contexto_por_temas
 
 from validador_preguntas import detectar_repeticiones, filtrar_preguntas_repetidas
