@@ -168,6 +168,7 @@ Contenido:
     )
 
     texto_generado = respuesta.choices[0].message.content.strip()
+    print("🔎 Texto generado por GPT:\\n", texto_generado)
     preguntas = parsear_preguntas(texto_generado)
 
     return preguntas
