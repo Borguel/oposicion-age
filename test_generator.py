@@ -1,10 +1,6 @@
-import openai
-import os
 from utils import obtener_contexto_por_temas
-from validador_preguntas import detectar_repeticiones, filtrar_preguntas_repetidas
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-client = openai
+from validador_preguntas import detectar_repeticiones, filtrar_preguntas_repetidas
 
 def generar_test_avanzado(temas, db, num_preguntas=5, max_repeticiones=2):
     contexto = obtener_contexto_por_temas(db, temas)
@@ -24,15 +20,10 @@ def generar_test_avanzado(temas, db, num_preguntas=5, max_repeticiones=2):
         limite_tema = 5
 
     prompt = f"""
-Eres un generador experto en preguntas tipo test para oposiciones del Estado. A partir del contenido siguiente, redacta {num_preguntas} preguntas con estilo profesional, variado y realista, como las que aparecen en exámenes oficiales. Puedes usar diferentes estructuras de redacción:
-
-- Preguntas directas (¿Qué órgano...?),
-- Preguntas con introducción jurídica o normativa (Según el artículo..., ¿quién...?),
-- Enunciados incompletos que deben completarse con la opción correcta.
-
-Para cada pregunta:
+Eres un generador experto en preguntas tipo test para oposiciones del Estado. A partir del contenido siguiente, redacta {num_preguntas} preguntas con estilo profesional, como las utilizadas en exámenes oficiales. Para cada pregunta:
 
 - Usa redacción clara, formal y precisa.
+- Si se menciona un artículo, incluye el nombre completo de la norma a la que pertenece (por ejemplo, "de la Constitución Española", "de la Ley Orgánica 6/1985, del Poder Judicial", etc.).
 - Opciones tipo test en formato:
   A) ...
   B) ...
@@ -64,10 +55,12 @@ Comienza ahora:
 
     conceptos_repetidos = detectar_repeticiones(preguntas_formateadas, max_repeticiones)
     if conceptos_repetidos:
+        print(f"🟠 Se detectaron conceptos repetidos: {conceptos_repetidos}")
         preguntas_filtradas = filtrar_preguntas_repetidas(preguntas_formateadas, conceptos_repetidos)
         preguntas_faltantes = num_preguntas - len(preguntas_filtradas)
 
         if preguntas_faltantes > 0:
+            print(f"🔁 Faltan {preguntas_faltantes} preguntas. Regenerando las necesarias...")
             prompt_regenerado = f"Redacta {preguntas_faltantes} preguntas adicionales con los mismos criterios que antes, evitando repetir los siguientes conceptos: {', '.join(conceptos_repetidos.keys())}\n\n{contexto}"
 
             nueva_respuesta = client.chat.completions.create(
@@ -90,49 +83,73 @@ Comienza ahora:
     return {"test": preguntas_finales}
 
 
-def parsear_preguntas(texto):
-    bloques = texto.split("\n\n")
-    preguntas = []
-    contador = 1
+def generar_simulacro(db, num_preguntas=50):
+    import random
+    from utils import obtener_contexto_por_temas
+    from test_generator import parsear_preguntas  # asegúrate de que esta función está disponible
 
-    for bloque in bloques:
-        bloque = bloque.strip()
-        if not bloque or "Respuesta correcta" not in bloque:
-            continue
+    temas_docs = db.collection("temario").stream()
+    todos_los_temas = [doc.id for doc in temas_docs]
+    temas_seleccionados = random.sample(todos_los_temas, min(len(todos_los_temas), 5))
+    contexto = obtener_contexto_por_temas(db, temas_seleccionados)
 
-        lineas = bloque.split("\n")
-        enunciado = ""
-        opciones = {}
-        correcta = ""
-        explicacion = ""
+    prompt = f"""
+Eres un generador experto en simulacros tipo test para oposiciones. Redacta {num_preguntas} preguntas variadas con estilo oficial a partir del siguiente contenido.
 
-        for i, linea in enumerate(lineas):
-            l = linea.strip()
+- Preguntas tipo test con 4 opciones (A–D)
+- Incluir la respuesta correcta y una breve explicación
+- No repetir ideas o artículos más de 3 veces
 
-            # Detectar enunciado como la primera línea antes de A)
-            if not enunciado and not l.startswith(("A)", "B)", "C)", "D)", "Respuesta", "Explicación")):
-                enunciado = l
-                continue
+Contenido:
+{contexto}
+"""
 
-            if l.startswith("A)"):
-                opciones["A"] = l.split("A)", 1)[-1].strip()
-            elif l.startswith("B)"):
-                opciones["B"] = l.split("B)", 1)[-1].strip()
-            elif l.startswith("C)"):
-                opciones["C"] = l.split("C)", 1)[-1].strip()
-            elif l.startswith("D)"):
-                opciones["D"] = l.split("D)", 1)[-1].strip()
-            elif "Respuesta correcta" in l:
-                correcta = l.split(":")[-1].strip()
-            elif "Explicación" in l:
-                explicacion = l.split(":", 1)[-1].strip()
+    respuesta = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "Eres un generador experto de simulacros para oposiciones."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=1800,
+        temperature=0.5
+    )
 
-        preguntas.append({
-            "pregunta": f"{contador}. {enunciado}",
-            "opciones": opciones,
-            "respuesta_correcta": correcta,
-            "explicacion": explicacion
-        })
-        contador += 1
+    texto_generado = respuesta.choices[0].message.content.strip()
+    preguntas = parsear_preguntas(texto_generado)
+
+    return preguntas
+
+def generar_simulacro(db, num_preguntas=50):
+    import random
+    from utils import obtener_contexto_por_temas
+
+    temas_docs = db.collection("temario").stream()
+    todos_los_temas = [doc.id for doc in temas_docs]
+    temas_seleccionados = random.sample(todos_los_temas, min(len(todos_los_temas), 5))
+    contexto = obtener_contexto_por_temas(db, temas_seleccionados)
+
+    prompt = f"""
+Eres un generador experto en simulacros tipo test para oposiciones. Redacta {num_preguntas} preguntas variadas con estilo oficial a partir del siguiente contenido.
+
+- Preguntas tipo test con 4 opciones (A–D)
+- Incluir la respuesta correcta y una breve explicación
+- Variar estilo: preguntas directas, con referencia normativa, o enunciados incompletos
+
+Contenido:
+{contexto}
+"""
+
+    respuesta = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "Eres un generador experto de simulacros para oposiciones."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=1800,
+        temperature=0.5
+    )
+
+    texto_generado = respuesta.choices[0].message.content.strip()
+    preguntas = parsear_preguntas(texto_generado)
 
     return preguntas
