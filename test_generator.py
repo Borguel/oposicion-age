@@ -138,3 +138,36 @@ Comienza ahora:
         preguntas_finales = preguntas_formateadas
 
     return {"test": preguntas_finales}
+
+def generar_simulacro(db, num_preguntas=50):
+    import random
+    temas_docs = db.collection("temario").stream()
+    todos_los_temas = [doc.id for doc in temas_docs]
+    temas_seleccionados = random.sample(todos_los_temas, min(len(todos_los_temas), 5))
+    contexto = obtener_contexto_por_temas(db, temas_seleccionados)
+
+    prompt = f"""
+Eres un generador experto en simulacros tipo test para oposiciones. Redacta {num_preguntas} preguntas variadas con estilo oficial a partir del siguiente contenido.
+
+- Preguntas tipo test con 4 opciones (A–D)
+- Incluir la respuesta correcta y una breve explicación
+- Variar estilo: preguntas directas, con referencia normativa, o enunciados incompletos
+
+Contenido:
+{contexto}
+"""
+
+    respuesta = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "Eres un generador experto de simulacros para oposiciones."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=1800,
+        temperature=0.5
+    )
+
+    texto_generado = respuesta.choices[0].message.content.strip()
+    preguntas = parsear_preguntas(texto_generado)
+
+    return preguntas
