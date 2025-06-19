@@ -118,3 +118,40 @@ Contenido:
     preguntas = parsear_preguntas(texto_generado)
 
     return preguntas
+
+def parsear_preguntas(texto):
+    bloques = texto.split("Pregunta")
+    preguntas = []
+
+    for bloque in bloques:
+        bloque = bloque.strip()
+        if not bloque or "Respuesta correcta" not in bloque:
+            continue
+
+        pregunta_texto = "Pregunta" + bloque if not bloque.startswith("Pregunta") else bloque
+
+        partes = pregunta_texto.split("\n")
+        enunciado = partes[0].split(":", 1)[-1].strip() if ":" in partes[0] else partes[0].strip()
+
+        opciones = {}
+        for linea in partes:
+            if linea.strip().startswith("A)"):
+                opciones["A"] = linea.split("A)", 1)[-1].strip()
+            elif linea.strip().startswith("B)"):
+                opciones["B"] = linea.split("B)", 1)[-1].strip()
+            elif linea.strip().startswith("C)"):
+                opciones["C"] = linea.split("C)", 1)[-1].strip()
+            elif linea.strip().startswith("D)"):
+                opciones["D"] = linea.split("D)", 1)[-1].strip()
+
+        correcta = next((l[-1] for l in partes if "Respuesta correcta" in l), "")
+        explicacion = next((l.split(":", 1)[-1].strip() for l in partes if "Explicación" in l), "")
+
+        preguntas.append({
+            "pregunta": enunciado,
+            "opciones": opciones,
+            "respuesta_correcta": correcta,
+            "explicacion": explicacion
+        })
+
+    return preguntas
