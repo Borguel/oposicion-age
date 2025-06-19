@@ -1,4 +1,3 @@
-
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -67,7 +66,6 @@ app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), method
 # Registrar rutas de progreso de usuario (incluye /resumen-progreso)
 registrar_rutas_progreso(app, db)  # ✅ NUEVO
 
-
 @app.route("/temas-disponibles", methods=["GET"])
 def obtener_temas_disponibles():
     temas = []
@@ -80,8 +78,6 @@ def obtener_temas_disponibles():
         })
     return jsonify({"temas": temas})
 
-
-
 @app.route("/debug-contexto", methods=["POST"])
 def debug_contexto():
     try:
@@ -91,6 +87,26 @@ def debug_contexto():
         return jsonify({"contexto": contexto[:3000]})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/test/oficiales', methods=['GET'])
+def obtener_test_oficial():
+    año = request.args.get('año')
+    turno = request.args.get('turno', 'libre').lower()
+
+    if not año:
+        return jsonify({"error": "Falta el parámetro 'año'"}), 400
+
+    exam_ref = db.collection('examenes_oficiales_AGE')
+    query = exam_ref.where('año', '==', int(año)).where('turno', '==', turno).limit(1)
+    resultados = query.stream()
+
+    for doc in resultados:
+        datos = doc.to_dict()
+        preguntas = datos.get("preguntas", [])
+        return jsonify({"test": preguntas})
+
+    return jsonify({"error": "No se encontró el examen"}), 404
 
 
 if __name__ == "__main__":

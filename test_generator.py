@@ -6,7 +6,6 @@ def generar_test_avanzado(temas, db, num_preguntas=5, max_repeticiones=2):
         print("⚠️ Contexto vacío. No se puede generar test.")
         return {"test": []}
 
-    # Lógica de límite dinámico según tabla preferida
     if num_preguntas <= 5:
         limite_tema = 1
     elif num_preguntas <= 10:
@@ -52,7 +51,6 @@ Comienza ahora:
     texto_generado = respuesta.choices[0].message.content.strip()
     preguntas_formateadas = parsear_preguntas(texto_generado)
 
-    # Validación de repeticiones
     conceptos_repetidos = detectar_repeticiones(preguntas_formateadas, max_repeticiones)
     if conceptos_repetidos:
         print(f"🟠 Se detectaron conceptos repetidos: {conceptos_repetidos}")
@@ -81,3 +79,40 @@ Comienza ahora:
         preguntas_finales = preguntas_formateadas
 
     return {"test": preguntas_finales}
+
+
+def generar_simulacro(db, num_preguntas=50):
+    import random
+    from utils import obtener_contexto_por_temas
+    from test_generator import parsear_preguntas  # asegúrate de que esta función está disponible
+
+    temas_docs = db.collection("temario").stream()
+    todos_los_temas = [doc.id for doc in temas_docs]
+    temas_seleccionados = random.sample(todos_los_temas, min(len(todos_los_temas), 5))
+    contexto = obtener_contexto_por_temas(db, temas_seleccionados)
+
+    prompt = f"""
+Eres un generador experto en simulacros tipo test para oposiciones. Redacta {num_preguntas} preguntas variadas con estilo oficial a partir del siguiente contenido.
+
+- Preguntas tipo test con 4 opciones (A–D)
+- Incluir la respuesta correcta y una breve explicación
+- No repetir ideas o artículos más de 3 veces
+
+Contenido:
+{contexto}
+"""
+
+    respuesta = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "Eres un generador experto de simulacros para oposiciones."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=1800,
+        temperature=0.5
+    )
+
+    texto_generado = respuesta.choices[0].message.content.strip()
+    preguntas = parsear_preguntas(texto_generado)
+
+    return preguntas
