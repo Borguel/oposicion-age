@@ -161,3 +161,50 @@ Contenido:
     preguntas = parsear_preguntas(texto_generado)
 
     return preguntas
+
+def parsear_preguntas(texto):
+    bloques = texto.split("\n\n")
+    preguntas = []
+    contador = 1
+
+    for bloque in bloques:
+        bloque = bloque.strip()
+        if not bloque or "Respuesta correcta" not in bloque:
+            continue
+
+        lineas = bloque.split("\n")
+        enunciado = ""
+        opciones = {}
+        correcta = ""
+        explicacion = ""
+
+        for i, linea in enumerate(lineas):
+            l = linea.strip()
+
+            # Detectar enunciado como la primera línea antes de A)
+            if not enunciado and not l.startswith(("A)", "B)", "C)", "D)", "Respuesta", "Explicación")):
+                enunciado = l
+                continue
+
+            if l.startswith("A)"):
+                opciones["A"] = l.split("A)", 1)[-1].strip()
+            elif l.startswith("B)"):
+                opciones["B"] = l.split("B)", 1)[-1].strip()
+            elif l.startswith("C)"):
+                opciones["C"] = l.split("C)", 1)[-1].strip()
+            elif l.startswith("D)"):
+                opciones["D"] = l.split("D)", 1)[-1].strip()
+            elif "Respuesta correcta" in l:
+                correcta = l.split(":")[-1].strip()
+            elif "Explicación" in l:
+                explicacion = l.split(":", 1)[-1].strip()
+
+        preguntas.append({
+            "pregunta": f"{contador}. {enunciado}",
+            "opciones": opciones,
+            "respuesta_correcta": correcta,
+            "explicacion": explicacion
+        })
+        contador += 1
+
+    return preguntas
