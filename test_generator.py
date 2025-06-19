@@ -1,3 +1,5 @@
+from utils import obtener_contexto_por_temas
+
 from validador_preguntas import detectar_repeticiones, filtrar_preguntas_repetidas
 
 def generar_test_avanzado(temas, db, num_preguntas=5, max_repeticiones=2):
