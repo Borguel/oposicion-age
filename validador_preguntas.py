@@ -1,22 +1,16 @@
-def validar_pregunta(p):
-    if not isinstance(p, dict):
+def validar_pregunta(pregunta):
+    if not isinstance(pregunta, dict):
         return False
 
-    if not p.get("pregunta") or not isinstance(p["pregunta"], str) or len(p["pregunta"].strip()) < 10:
+    claves = ["pregunta", "opciones", "respuesta_correcta", "explicacion"]
+    if not all(clave in pregunta for clave in claves):
         return False
 
-    opciones = p.get("opciones", {})
-    if not isinstance(opciones, dict) or len(opciones) != 4:
+    if not isinstance(pregunta["opciones"], dict):
         return False
 
-    for clave in ["A", "B", "C", "D"]:
-        if clave not in opciones or not opciones[clave].strip():
-            return False
-
-    if p.get("respuesta_correcta") not in opciones:
-        return False
-
-    if not p.get("explicacion") or len(p["explicacion"].strip()) < 5:
+    opciones = pregunta["opciones"]
+    if not all(opcion in opciones for opcion in ["A", "B", "C", "D"]):
         return False
 
     return True
