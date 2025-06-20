@@ -1,37 +1,22 @@
-# ✅ validador_preguntas.py mejorado
+def validar_pregunta(p):
+    if not isinstance(p, dict):
+        return False
 
-import re
-import unicodedata
-from collections import Counter
+    if not p.get("pregunta") or not isinstance(p["pregunta"], str) or len(p["pregunta"].strip()) < 10:
+        return False
 
-def normalizar(texto):
-    return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode().lower()
+    opciones = p.get("opciones", {})
+    if not isinstance(opciones, dict) or len(opciones) != 4:
+        return False
 
-def detectar_repeticiones(preguntas, max_repeticiones=2):
-    referencias = []
+    for clave in ["A", "B", "C", "D"]:
+        if clave not in opciones or not opciones[clave].strip():
+            return False
 
-    patron = re.compile(r"(art[ií]culo\s*\d+|constitucion espanola|ley organica \d+/\d+|ley \d+/\d+|poder judicial|defensor del pueblo|estatuto de autonomia)", re.IGNORECASE)
+    if p.get("respuesta_correcta") not in opciones:
+        return False
 
-    for p in preguntas:
-        texto = p.get("pregunta", "") + " " + p.get("explicacion", "")
-        texto_normalizado = normalizar(texto)
-        matches = patron.findall(texto_normalizado)
-        referencias.extend(matches)
+    if not p.get("explicacion") or len(p["explicacion"].strip()) < 5:
+        return False
 
-    conteo = Counter(referencias)
-    repetidas = {k: v for k, v in conteo.items() if v > max_repeticiones}
-
-    return repetidas
-
-def filtrar_preguntas_repetidas(preguntas, conceptos_repetidos):
-    preguntas_filtradas = []
-    conceptos_norm = [normalizar(c) for c in conceptos_repetidos]
-
-    for p in preguntas:
-        texto = p.get("pregunta", "") + " " + p.get("explicacion", "")
-        texto_norm = normalizar(texto)
-        if any(rep in texto_norm for rep in conceptos_norm):
-            continue
-        preguntas_filtradas.append(p)
-
-    return preguntas_filtradas
+    return True

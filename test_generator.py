@@ -1,136 +1,76 @@
-# ✅ test_generator.py mejorado
-
-import openai
-import os
+import random
 from utils import obtener_contexto_por_temas
-from validador_preguntas import detectar_repeticiones, filtrar_preguntas_repetidas
+from validador_preguntas import validar_pregunta
+from openai import OpenAI
+import os
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-client = openai
+openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def parsear_preguntas(texto):
-    bloques = texto.split("\n\n")
-    preguntas = []
-    contador = 1
-
-    for bloque in bloques:
-        bloque = bloque.strip()
-        if not bloque or "Respuesta correcta" not in bloque:
-            continue
-
-        lineas = bloque.split("\n")
-        enunciado = ""
-        opciones = {}
-        correcta = ""
-        explicacion = ""
-
-        for i, linea in enumerate(lineas):
-            l = linea.strip()
-
-            if not enunciado and not l.startswith(("A)", "B)", "C)", "D)", "Respuesta", "Explicación")):
-                enunciado = l
-                continue
-
-            if l.startswith("A)"):
-                opciones["A"] = l.split("A)", 1)[-1].strip()
-            elif l.startswith("B)"):
-                opciones["B"] = l.split("B)", 1)[-1].strip()
-            elif l.startswith("C)"):
-                opciones["C"] = l.split("C)", 1)[-1].strip()
-            elif l.startswith("D)"):
-                opciones["D"] = l.split("D)", 1)[-1].strip()
-            elif "Respuesta correcta" in l:
-                correcta = l.split(":")[-1].strip()
-            elif "Explicación" in l:
-                explicacion = l.split(":", 1)[-1].strip()
-
-        # Validaciones
-        if not enunciado or len(opciones) < 4:
-            print(f"❌ Pregunta descartada (incompleta o con opciones insuficientes): {bloque[:80]}")
-            continue
-
-        preguntas.append({
-            "pregunta": enunciado.strip(),
-            "opciones": opciones,
-            "respuesta_correcta": correcta,
-            "explicacion": explicacion
-        })
-        contador += 1
-
-    return preguntas
-
-def generar_test_avanzado(temas, db, num_preguntas=5, max_repeticiones=2):
-    contexto = obtener_contexto_por_temas(db, temas, token_limit=3000, limite=5)
+def generar_test_avanzado(temas, db, num_preguntas=5):
+    contexto = obtener_contexto_por_temas(db, temas, token_limit=3000)
     if not contexto:
-        print("⚠️ Contexto vacío. No se puede generar test.")
         return {"test": []}
 
-    if num_preguntas <= 10:
-        limite_tema = 1
-    elif num_preguntas <= 20:
-        limite_tema = 2
-    elif num_preguntas <= 50:
-        limite_tema = 3
-    else:
-        limite_tema = 5
+    preguntas_generadas = []
+    intentos = 0
+    max_intentos = num_preguntas * 2  # para reintentar si alguna pregunta falla
 
-    prompt = f"""
-Eres un generador experto en preguntas tipo test para oposiciones del Estado. A partir del contenido siguiente, redacta {num_preguntas} preguntas con estilo profesional, variado y realista, como las que aparecen en exámenes oficiales. Puedes usar diferentes estructuras de redacción:
+    instrucciones = (
+        "Genera preguntas tipo test a partir del siguiente contenido. "
+        "Cada pregunta debe tener:
+"
+        "- Un enunciado claro
+"
+        "- 4 opciones: A, B, C, D
+"
+        "- La respuesta correcta
+"
+        "- Una explicación breve basada en el contenido
 
-- Preguntas directas (Ej: ¿Qué órgano...?)
-- Preguntas con introducción normativa (Ej: Según el artículo..., ¿quién...?)
-- Enunciados incompletos (Ej: La Ley X establece que...)
-
-Cada pregunta debe incluir:
-- Enunciado claro y formal.
-- Opciones A) B) C) D)
-- Respuesta correcta: X
-- Explicación clara con referencia legal si es posible (Ej: "Según el art. 14 de la CE...")
-
-Evita incluir más de {limite_tema} preguntas basadas en el mismo fragmento.
-
-Contenido base:
-{contexto}
-
-Comienza ahora:
-"""
-
-    respuesta = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "Eres un experto redactor de preguntas de examen tipo test para oposiciones del Estado."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=1800,
-        temperature=0.5
+"
+        "Formato JSON:
+"
+        "{
+"
+        "  "pregunta": "...",
+"
+        "  "opciones": {"A": "...", "B": "...", "C": "...", "D": "..."},
+"
+        "  "respuesta_correcta": "A",
+"
+        "  "explicacion": "..."
+"
+        "}
+"
+        "Genera solo una pregunta por respuesta.
+"
     )
 
-    texto_generado = respuesta.choices[0].message.content.strip()
-    preguntas_formateadas = parsear_preguntas(texto_generado)
+    while len(preguntas_generadas) < num_preguntas and intentos < max_intentos:
+        intentos += 1
+        prompt = f"{instrucciones}
 
-    conceptos_repetidos = detectar_repeticiones(preguntas_formateadas, max_repeticiones)
-    if conceptos_repetidos:
-        preguntas_filtradas = filtrar_preguntas_repetidas(preguntas_formateadas, conceptos_repetidos)
-        preguntas_faltantes = num_preguntas - len(preguntas_filtradas)
+Contenido:
+{contexto[:3000]}"
 
-        if preguntas_faltantes > 0:
-            prompt_regenerado = f"Redacta {preguntas_faltantes} preguntas adicionales con los mismos criterios, evitando repetir: {', '.join(conceptos_repetidos.keys())}\n\n{contexto}"
-
-            nueva_respuesta = client.chat.completions.create(
+        try:
+            respuesta = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Eres un redactor experto de oposiciones."},
-                    {"role": "user", "content": prompt_regenerado}
-                ],
-                max_tokens=1800,
-                temperature=0.5
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7
             )
 
-            nuevas_preguntas = parsear_preguntas(nueva_respuesta.choices[0].message.content.strip())
-            preguntas_finales = preguntas_filtradas + nuevas_preguntas[:preguntas_faltantes]
-        else:
-            preguntas_finales = preguntas_filtradas
-    else:
-        preguntas_finales = preguntas_formateadas
+            contenido = respuesta.choices[0].message.content.strip()
 
-    return {"test": preguntas_finales}
+            pregunta = eval(contenido) if contenido.startswith("{") else None
+
+            if validar_pregunta(pregunta):
+                preguntas_generadas.append(pregunta)
+            else:
+                print(f"❌ Pregunta descartada por formato inválido:
+{contenido}\n")
+
+        except Exception as e:
+            print(f"⚠️ Error al generar pregunta: {e}")
+
+    return {"test": preguntas_generadas}
