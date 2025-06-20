@@ -13,45 +13,28 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
 
     preguntas_generadas = []
     intentos = 0
-    max_intentos = num_preguntas * 2  # para reintentar si alguna pregunta falla
+    max_intentos = num_preguntas * 2  # reintentos si alguna falla
 
     instrucciones = (
         "Genera preguntas tipo test a partir del siguiente contenido. "
-        "Cada pregunta debe tener:
-"
-        "- Un enunciado claro
-"
-        "- 4 opciones: A, B, C, D
-"
-        "- La respuesta correcta
-"
-        "- Una explicación breve basada en el contenido
-
-"
-        "Formato JSON:
-"
-        "{
-"
-        "  "pregunta": "...",
-"
-        "  "opciones": {"A": "...", "B": "...", "C": "...", "D": "..."},
-"
-        "  "respuesta_correcta": "A",
-"
-        "  "explicacion": "..."
-"
-        "}
-"
-        "Genera solo una pregunta por respuesta.
-"
+        "Cada pregunta debe tener:\n"
+        "- Un enunciado claro\n"
+        "- 4 opciones: A, B, C, D\n"
+        "- La respuesta correcta\n"
+        "- Una explicación breve basada en el contenido\n\n"
+        "Formato JSON:\n"
+        "{\n"
+        "  \"pregunta\": \"...\",\n"
+        "  \"opciones\": {\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"},\n"
+        "  \"respuesta_correcta\": \"A\",\n"
+        "  \"explicacion\": \"...\"\n"
+        "}\n"
+        "Genera solo una pregunta por respuesta.\n"
     )
 
     while len(preguntas_generadas) < num_preguntas and intentos < max_intentos:
         intentos += 1
-        prompt = f"{instrucciones}
-
-Contenido:
-{contexto[:3000]}"
+        prompt = f"{instrucciones}\n\nContenido:\n{contexto[:3000]}"
 
         try:
             respuesta = openai.chat.completions.create(
@@ -61,14 +44,12 @@ Contenido:
             )
 
             contenido = respuesta.choices[0].message.content.strip()
-
             pregunta = eval(contenido) if contenido.startswith("{") else None
 
             if validar_pregunta(pregunta):
                 preguntas_generadas.append(pregunta)
             else:
-                print(f"❌ Pregunta descartada por formato inválido:
-{contenido}\n")
+                print(f"❌ Pregunta descartada por formato inválido:\n{contenido}\n")
 
         except Exception as e:
             print(f"⚠️ Error al generar pregunta: {e}")
