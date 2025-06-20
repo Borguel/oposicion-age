@@ -1,3 +1,4 @@
+
 # ✅ utils.py corregido y definitivo
 
 import re
@@ -23,7 +24,9 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000, limite=None):
     for tema_id in temas[:limite] if limite else temas:
         bloques = db.collection("temario").document(tema_id).collection("bloques").stream()
         for bloque in bloques:
-            subbloques = db.collection("temario").document(tema_id)                            .collection("bloques").document(bloque.id)                            .collection("subbloques").stream()
+            subbloques = db.collection("temario").document(tema_id)\
+                            .collection("bloques").document(bloque.id)\
+                            .collection("subbloques").stream()
 
             for sub in subbloques:
                 data = sub.to_dict()
@@ -45,7 +48,7 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000, limite=None):
                     prompt = f"""Este subbloque parece incompleto. Complétalo manteniendo fidelidad legal al contenido y estilo jurídico-administrativo:
 
 Texto original:
-"""{contenido}"""
+\"\"\"{contenido}\"\"\"
 
 Texto corregido:"""
 
