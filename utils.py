@@ -1,4 +1,4 @@
-# ✅ utils.py mejorado
+# ✅ utils.py corregido
 
 import re
 import random
@@ -35,7 +35,6 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000, limite=None):
                     print(f"⚠️ Subbloque vacío: {sub_id}")
                     continue
 
-                # Corregir texto si es incompleto o pobre
                 necesita_corregir = (
                     len(contenido) < 200 or
                     "..." in contenido or
@@ -72,7 +71,6 @@ Texto corregido:"""
 {contenido}
 ")
 
-    # Mezclar aleatoriamente y limitar por tokens
     random.shuffle(subbloques_total)
     token_total = 0
     resultado = []
