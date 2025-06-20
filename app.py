@@ -7,7 +7,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 from chat_controller import responder_chat
-from test_generator import generar_test_avanzado, generar_simulacro
+from test_generator import generar_test_avanzado
 from esquema_generator import generar_esquema
 from save_controller import guardar_test_route, guardar_esquema_route
 from rutas_progreso import registrar_rutas_progreso  # ✅ CORREGIDO
@@ -42,13 +42,6 @@ def generar_test_avanzado_route():
     num_preguntas = data.get("num_preguntas", 5)
     resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas)
     return jsonify(resultado)  # 🔧 CORREGIDO: evitar anidación doble de "test"
-
-@app.route("/simulacro", methods=["POST"])
-def generar_simulacro_route():
-    data = request.get_json()
-    num_preguntas = data.get("num_preguntas", 50)
-    resultado = generar_simulacro(db=db, num_preguntas=num_preguntas)
-    return jsonify({"simulacro": resultado})
 
 @app.route("/generar-esquema", methods=["POST"])
 def generar_esquema_route():
