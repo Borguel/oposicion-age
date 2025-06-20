@@ -1,3 +1,5 @@
+# ✅ utils.py mejorado
+
 import re
 import random
 import tiktoken
@@ -21,17 +23,19 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000, limite=None):
     for tema_id in temas[:limite] if limite else temas:
         bloques = db.collection("temario").document(tema_id).collection("bloques").stream()
         for bloque in bloques:
-            subbloques = db.collection("temario").document(tema_id)\
-                            .collection("bloques").document(bloque.id)\
-                            .collection("subbloques").stream()
+            subbloques = db.collection("temario").document(tema_id)                            .collection("bloques").document(bloque.id)                            .collection("subbloques").stream()
 
             for sub in subbloques:
                 data = sub.to_dict()
                 sub_id = sub.id
                 sub_ref = sub.reference
-                contenido = data.get("texto", "")
+                contenido = data.get("texto", "").strip()
 
-                # Corregir texto si es incompleto
+                if not contenido:
+                    print(f"⚠️ Subbloque vacío: {sub_id}")
+                    continue
+
+                # Corregir texto si es incompleto o pobre
                 necesita_corregir = (
                     len(contenido) < 200 or
                     "..." in contenido or
@@ -39,10 +43,10 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000, limite=None):
                 )
 
                 if necesita_corregir:
-                    prompt = f"""Este subbloque parece incompleto. Complétalo manteniendo fidelidad legal al contenido, en estilo formal jurídico-administrativo:
+                    prompt = f"""Este subbloque parece incompleto. Complétalo manteniendo fidelidad legal al contenido y estilo jurídico-administrativo:
 
 Texto original:
-\"\"\"{contenido}\"\"\"
+"""{contenido}"""
 
 Texto corregido:"""
 
@@ -63,9 +67,12 @@ Texto corregido:"""
                         print(f"❌ Error al completar subbloque {sub_id}: {e}")
                         continue
 
-                subbloques_total.append(f"\n{sub_id}:\n{contenido.strip()}\n")
+                subbloques_total.append(f"
+{sub_id}:
+{contenido}
+")
 
-    # Aleatorizar y limitar por tokens
+    # Mezclar aleatoriamente y limitar por tokens
     random.shuffle(subbloques_total)
     token_total = 0
     resultado = []
@@ -77,5 +84,6 @@ Texto corregido:"""
         resultado.append(fragmento)
         token_total += tokens
 
-    contexto = "\n".join(resultado)
+    contexto = "
+".join(resultado)
     return contexto
