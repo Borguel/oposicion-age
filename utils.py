@@ -14,11 +14,11 @@ def contar_tokens(texto, modelo="gpt-3.5-turbo"):
         codificador = tiktoken.get_encoding("cl100k_base")
     return len(codificador.encode(texto))
 
-def obtener_contexto_por_temas(db, temas, token_limit=3000):
+def obtener_contexto_por_temas(db, temas, token_limit=3000, limite=None):
     contexto = ""
     subbloques_total = []
 
-    for tema_id in temas:
+    for tema_id in temas[:limite] if limite else temas:
         bloques = db.collection("temario").document(tema_id).collection("bloques").stream()
         for bloque in bloques:
             subbloques = db.collection("temario").document(tema_id)\
