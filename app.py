@@ -41,7 +41,7 @@ def generar_test_avanzado_route():
     temas = data.get("temas", [])
     num_preguntas = data.get("num_preguntas", 5)
     resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas)
-    return jsonify(resultado)  # 🔧 CORREGIDO: evitar anidación doble de "test"
+    return jsonify(resultado)
 
 @app.route("/generar-esquema", methods=["POST"])
 def generar_esquema_route():
@@ -57,19 +57,27 @@ app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["PO
 app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), methods=["POST"])
 
 # Registrar rutas de progreso de usuario (incluye /resumen-progreso)
-registrar_rutas_progreso(app, db)  # ✅ NUEVO
+registrar_rutas_progreso(app, db)
 
 @app.route("/temas-disponibles", methods=["GET"])
 def obtener_temas_disponibles():
-    temas = []
-    docs = db.collection("temario").stream()
-    for doc in docs:
-        data = doc.to_dict()
-        temas.append({
-            "id": doc.id,
-            "titulo": data.get("titulo", doc.id)
-        })
-    return jsonify({"temas": temas})
+    temas_disponibles = []
+    bloques = db.collection("Temario AGE").stream()
+
+    for bloque in bloques:
+        bloque_id = bloque.id
+        temas_ref = db.collection("Temario AGE").document(bloque_id).collection("temas").stream()
+
+        for tema in temas_ref:
+            tema_data = tema.to_dict()
+            tema_id = tema.id
+            titulo = tema_data.get("titulo", f"{tema_id}")
+            temas_disponibles.append({
+                "id": f"{bloque_id}-{tema_id}",
+                "titulo": titulo
+            })
+
+    return jsonify({"temas": temas_disponibles})
 
 @app.route("/debug-contexto", methods=["POST"])
 def debug_contexto():
@@ -80,7 +88,6 @@ def debug_contexto():
         return jsonify({"contexto": contexto[:3000]})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/test/oficiales', methods=['GET'])
 def obtener_test_oficial():
@@ -100,7 +107,6 @@ def obtener_test_oficial():
         return jsonify({"test": preguntas})
 
     return jsonify({"error": "No se encontró el examen"}), 404
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
