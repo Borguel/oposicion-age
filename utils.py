@@ -1,4 +1,3 @@
-
 import tiktoken
 import random
 
@@ -20,19 +19,30 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000, limite=None):
             print(f"❌ Formato incorrecto en '{tema}'. Usa bloque_01-tema_02")
             continue
 
-        subbloques = db.collection("Temario AGE").document(bloque_id)                        .collection("temas").document(tema_id)                        .collection("subloques").stream()
+        subbloques = db.collection("Temario AGE").document(bloque_id) \
+            .collection("temas").document(tema_id) \
+            .collection("subbloques").stream()
 
         for sub in subbloques:
             data = sub.to_dict()
             sub_id = sub.id
-            sub_ref = sub.reference
-            contenido = data.get("texto", "").strip()
+            contenido = data.get("texto", "")
+            titulo = data.get("titulo", "")
 
-            if not contenido:
-                print(f"⚠️ Subbloque vacío: {sub_id}")
+            if not contenido or not contenido.strip():
+                print(f"⚠️ Subbloque vacío o solo espacios: {sub_id}")
                 continue
 
-            subbloques_total.append(f"\n{sub_id}:\n{contenido}\n")
+            if len(contenido.strip()) < 100:
+                print(f"⚠️ Subbloque demasiado corto (omitido): {sub_id}")
+                continue
+
+            fragmento = f"{titulo.strip()}\n{contenido.strip()}"
+            subbloques_total.append(fragmento)
+
+    if not subbloques_total:
+        print("❌ No se encontraron subbloques válidos.")
+        return ""
 
     # Mezclar aleatoriamente y recortar por tokens
     random.shuffle(subbloques_total)
@@ -46,5 +56,7 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000, limite=None):
         resultado.append(fragmento)
         token_total += tokens
 
-    contexto = "\n".join(resultado)
+    contexto = "\n\n".join(resultado)
+    print(f"✅ Contexto generado con {token_total} tokens y {len(resultado)} fragmentos.")
     return contexto
+
