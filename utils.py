@@ -1,4 +1,4 @@
-# ✅ utils.py corregido
+# ✅ utils.py corregido y definitivo
 
 import re
 import random
@@ -66,10 +66,7 @@ Texto corregido:"""
                         print(f"❌ Error al completar subbloque {sub_id}: {e}")
                         continue
 
-                subbloques_total.append(f"
-{sub_id}:
-{contenido}
-")
+                subbloques_total.append(f"\n{sub_id}:\n{contenido}\n")
 
     random.shuffle(subbloques_total)
     token_total = 0
@@ -82,6 +79,5 @@ Texto corregido:"""
         resultado.append(fragmento)
         token_total += tokens
 
-    contexto = "
-".join(resultado)
+    contexto = "\n".join(resultado)
     return contexto
