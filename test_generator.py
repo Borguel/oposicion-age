@@ -9,33 +9,33 @@ openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def generar_test_avanzado(temas, db, num_preguntas=5):
     contexto = obtener_contexto_por_temas(db, temas, token_limit=3000)
     if not contexto:
-        print("⚠️ No se encontró contenido relevante en Firestore.")
         return {"test": []}
 
     preguntas_generadas = []
     intentos = 0
-    max_intentos = num_preguntas * 3  # más margen por si falla alguna
+    max_intentos = num_preguntas * 2  # reintentos en caso de preguntas fallidas
 
     instrucciones = (
-        "Genera una pregunta tipo test a partir del siguiente contenido extraído de un temario de oposiciones. "
-        "La pregunta debe tener:\n"
-        "- Un enunciado claro (basado en el contenido)\n"
-        "- 4 opciones (A, B, C, D)\n"
-        "- Indicar la opción correcta\n"
-        "- Una explicación breve con base en el texto\n\n"
-        "Devuélvelo en formato JSON así:\n"
+        "Eres un generador de preguntas tipo test para una oposición del Estado (Grupo C1 - Administración General del Estado). "
+        "A partir del contenido que te doy, redacta preguntas realistas como las que aparecen en exámenes oficiales. "
+        "Si el contenido es limitado, usa tu conocimiento general de derecho administrativo y constitucional para reforzar el contexto.\n\n"
+        "Cada pregunta debe tener:\n"
+        "- Un enunciado claro, sin decir 'según el contenido' ni referencias al texto.\n"
+        "- 4 opciones: A, B, C, D\n"
+        "- La respuesta correcta (una sola letra)\n"
+        "- Una explicación breve, clara y objetiva, pero sin citar el texto literalmente.\n\n"
+        "Devuelve una única pregunta en este formato JSON:\n"
         "{\n"
         "  \"pregunta\": \"...\",\n"
         "  \"opciones\": {\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"},\n"
         "  \"respuesta_correcta\": \"A\",\n"
         "  \"explicacion\": \"...\"\n"
-        "}\n"
-        "Genera solo una pregunta por respuesta."
+        "}"
     )
 
     while len(preguntas_generadas) < num_preguntas and intentos < max_intentos:
         intentos += 1
-        prompt = f"{instrucciones}\n\nContenido:\n{contexto}"
+        prompt = f"{instrucciones}\n\nContenido:\n{contexto[:3000]}"
 
         try:
             respuesta = openai.chat.completions.create(
@@ -51,8 +51,7 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
             if validar_pregunta(pregunta):
                 preguntas_generadas.append(pregunta)
             else:
-                print("❌ Pregunta descartada. Formato inválido o incompleto.")
-                print(contenido)
+                print(f"❌ Pregunta descartada por formato inválido:\n{contenido}\n")
 
         except Exception as e:
             print(f"⚠️ Error al generar pregunta: {e}")
