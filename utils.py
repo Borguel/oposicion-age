@@ -1,3 +1,4 @@
+
 import tiktoken
 import random
 
@@ -18,26 +19,27 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000, limite=None):
             print(f"❌ Formato incorrecto en '{tema}'. Usa bloque_01-tema_02")
             continue
 
-        subbloques = db.collection("Temario AGE").document(bloque_id) \
-                       .collection("temas").document(tema_id) \
-                       .collection("subbloques").stream()
+        subbloques_ref = db.collection("Temario AGE").document(bloque_id) \
+                           .collection("temas").document(tema_id) \
+                           .collection("subbloques").stream()
 
-        for sub in subbloques:
+        for sub in subbloques_ref:
             data = sub.to_dict()
             sub_id = sub.id
-            contenido = data.get("texto", "").strip()
-            if contenido:
-                # Guardamos también el tema para identificar de dónde viene
-                subbloques_por_tema.append((tema, sub_id, contenido))
+            texto = data.get("texto", "").strip()
+            if texto:
+                subbloques_por_tema.append((tema, sub_id, texto))
+            else:
+                print(f"⚠️ Subbloque vacío: {sub.id} en {tema}")
 
-    # Mezclamos todos los subbloques de todos los temas
+    # Mezclar aleatoriamente los subbloques
     random.shuffle(subbloques_por_tema)
 
     resultado = []
     token_total = 0
 
     for tema, sub_id, contenido in subbloques_por_tema:
-        fragmento = f"\n[{tema} - {sub_id}]\n{contenido}\n"
+        fragmento = f"[{tema} - {sub_id}]\n{contenido}"
         tokens = contar_tokens(fragmento)
         if token_total + tokens > token_limit:
             break
