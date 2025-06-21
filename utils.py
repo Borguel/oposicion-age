@@ -1,3 +1,4 @@
+
 import tiktoken
 import random
 
@@ -8,43 +9,55 @@ def contar_tokens(texto, modelo="gpt-3.5-turbo"):
         encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(texto))
 
-def obtener_contexto_por_temas(db, temas, token_limit=3000, limite=None):
-    token_total = 0
-    resultado = []
-    subbloques_global = {}
+def obtener_contexto_equilibrado_por_temas(db, temas, token_limit=3000):
+    tokens_por_tema = {}
+    bloques_tema = {}
 
-    for tema in temas[:limite] if limite else temas:
-        if "-" in tema:
-            bloque_id, tema_id = tema.split("-", 1)
-        else:
-            print(f"❌ Formato incorrecto en '{tema}'. Usa bloque_01-tema_02")
+    for tema in temas:
+        if "-" not in tema:
+            print(f"❌ Formato incorrecto en '{tema}' (usa bloque_01-tema_02)")
             continue
 
-        subbloques = db.collection("Temario AGE").document(bloque_id) \
-                       .collection("temas").document(tema_id) \
-                       .collection("subbloques").stream()
+        bloque_id, tema_id = tema.split("-", 1)
+        subbloques = db.collection("Temario AGE").document(bloque_id).collection("temas").document(tema_id).collection("subbloques").stream()
+
+        sub_contenido = []
+        total_tokens = 0
 
         for sub in subbloques:
             data = sub.to_dict()
-            sub_id = sub.id
-            contenido = data.get("texto", "").strip()
-            if not contenido:
-                print(f"⚠️ Subbloque vacío: {sub_id}")
-                continue
+            texto = data.get("texto", "").strip()
+            if texto:
+                t = contar_tokens(texto)
+                total_tokens += t
+                sub_contenido.append((sub.id, texto, t))
 
-            clave = f"{bloque_id}-{tema_id}-{sub_id}"
-            subbloques_global[clave] = contenido
+        if sub_contenido:
+            tokens_por_tema[tema] = total_tokens
+            bloques_tema[tema] = sub_contenido
 
-    # Mezclar para obtener diversidad
-    claves = list(subbloques_global.keys())
-    random.shuffle(claves)
+    total = sum(tokens_por_tema.values())
+    if total == 0:
+        return ""
 
-    for clave in claves:
-        fragmento = f"\n{clave}:\n{subbloques_global[clave]}\n"
-        tokens = contar_tokens(fragmento)
-        if token_total + tokens > token_limit:
-            break
-        resultado.append(fragmento)
-        token_total += tokens
+    resultado = []
+    tokens_total = 0
 
-    return "\n".join(resultado)
+    for tema, bloques in bloques_tema.items():
+        proporcion = tokens_por_tema[tema] / total
+        tokens_asignados = int(token_limit * proporcion)
+
+        random.shuffle(bloques)
+        tokens_añadidos = 0
+        for sub_id, texto, t in bloques:
+            if tokens_añadidos + t > tokens_asignados:
+                break
+            resultado.append(f"\n{sub_id} ({tema}):\n{texto}\n")
+            tokens_añadidos += t
+            tokens_total += t
+
+            if tokens_total >= token_limit:
+                break
+
+    random.shuffle(resultado)
+    return "\n".join(resultado[:10])
