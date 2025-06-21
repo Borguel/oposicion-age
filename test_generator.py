@@ -1,4 +1,3 @@
-
 import random
 from utils import obtener_contexto_por_temas
 from validador_preguntas import validar_pregunta
@@ -13,7 +12,7 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
     if not contexto_completo:
         return {"test": []}
 
-    # Separar los fragmentos por subbloque usando el prefijo [bloque-tema - subbloque]
+    # Separar fragmentos por subbloque usando el prefijo [bloque-tema - subbloque]
     fragmentos = contexto_completo.strip().split("\n[")
     subbloques = {}
 
@@ -36,55 +35,48 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
     preguntas_por_subbloque = defaultdict(int)
 
     instrucciones = (
-        "Eres un generador de tests de oposiciones para el Cuerpo General Administrativo del Estado (AGE).
-"
-        "A partir del contenido proporcionado, genera preguntas tipo test con estas condiciones:
-"
-        "- Formulación clara y completa, estilo examen oficial.
-"
-        "- Nunca menciones expresiones como 'según el texto' o 'en el contenido anterior'.
-"
-        "- 4 opciones (A, B, C, D), solo una es correcta.
-"
-        "- Una explicación clara basada en el contenido.
-
-"
-        "Formato JSON:
-"
+        "Eres un generador de tests de oposiciones para el Cuerpo General Administrativo del Estado (AGE). "
+        "A partir del contenido proporcionado, genera preguntas tipo test con estas condiciones:\n"
+        "- Formulación clara y completa, estilo examen oficial.\n"
+        "- Nunca menciones expresiones como 'según el texto' o 'en el contenido anterior'.\n"
+        "- 4 opciones (A, B, C, D), solo una es correcta.\n"
+        "- Una explicación clara basada en el contenido.\n\n"
+        "Formato JSON:\n"
         "{\n"
         "  \"pregunta\": \"...\",\n"
         "  \"opciones\": {\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"},\n"
-        "  \"respuesta_correcta\": \"A\",\n"
+        "  \"respuesta_correcta\": \"...\",\n"
         "  \"explicacion\": \"...\"\n"
-        "}
-"
-        "Genera solo una pregunta por respuesta.
-"
+        "}"
     )
 
-    while len(preguntas_generadas) < num_preguntas and intentos < max_intentos:
-        for sub_id, texto in subbloques_items:
-            if preguntas_por_subbloque[sub_id] >= 2:
-                continue
-            prompt = f"{instrucciones}\nContenido:
-{texto}"
-            try:
-                respuesta = openai.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7
-                )
-                contenido = respuesta.choices[0].message.content.strip()
-                pregunta = eval(contenido) if contenido.startswith("{") else None
-                if validar_pregunta(pregunta):
-                    preguntas_generadas.append(pregunta)
-                    preguntas_por_subbloque[sub_id] += 1
-                    if len(preguntas_generadas) >= num_preguntas:
-                        break
-                else:
-                    print(f"❌ Pregunta descartada (inválida):\n{contenido}\n")
-            except Exception as e:
-                print(f"⚠️ Error generando pregunta: {e}")
-            intentos += 1
+    for etiqueta, contenido in subbloques_items:
+        if len(preguntas_generadas) >= num_preguntas or intentos >= max_intentos:
+            break
+        if preguntas_por_subbloque[etiqueta] >= 2:
+            continue  # máximo 2 por subbloque
+
+        prompt = f"{instrucciones}\n\nContenido:\n{contenido}"
+
+        try:
+            respuesta = openai.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.4
+            )
+            resultado = respuesta.choices[0].message.content.strip()
+            pregunta = eval(resultado) if resultado.startswith("{") else None
+
+            if validar_pregunta(pregunta):
+                preguntas_generadas.append(pregunta)
+                preguntas_por_subbloque[etiqueta] += 1
+            else:
+                print(f"❌ Pregunta inválida de [{etiqueta}]: {resultado}")
+        except Exception as e:
+            print(f"⚠️ Error generando pregunta para [{etiqueta}]: {e}")
+        intentos += 1
+
+    return {"test": preguntas_generadas}
+
 
     return {"test": preguntas_generadas}
