@@ -19,8 +19,11 @@ print("🔑 Clave OpenAI:", os.getenv("OPENAI_API_KEY"))
 
 # Inicializar Firebase
 firebase_key_path = os.getenv("FIREBASE_KEY_PATH", "clave-firebase.json")
-cred = credentials.Certificate(firebase_key_path)
-firebase_admin.initialize_app(cred)
+
+if not firebase_admin._apps:
+    cred = credentials.Certificate(firebase_key_path)
+    firebase_admin.initialize_app(cred)
+
 db = firestore.client()
 
 # Inicializar Flask
