@@ -1,4 +1,3 @@
-
 import random
 from utils import obtener_contexto_por_temas
 from validador_preguntas import validar_pregunta
@@ -9,15 +8,11 @@ from collections import defaultdict
 openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def generar_test_avanzado(temas, db, num_preguntas=5):
-    # Límite dinámico de tokens en función del número de preguntas
-    limite_tokens_total = min(3000 + num_preguntas * 450, 25000)
-
-    # Obtener contenido desde Firestore
-    contexto_completo = obtener_contexto_por_temas(db, temas, token_limit=limite_tokens_total)
+    contexto_completo = obtener_contexto_por_temas(db, temas, token_limit=3000)
     if not contexto_completo:
         return {"test": []}
 
-    # Separar por subbloques
+    # Separar fragmentos por subbloque usando el prefijo [bloque-tema - subbloque]
     fragmentos = contexto_completo.strip().split("\n[")
     subbloques = {}
 
@@ -36,7 +31,7 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
 
     preguntas_generadas = []
     intentos = 0
-    max_intentos = num_preguntas * 4
+    max_intentos = num_preguntas * 3
     preguntas_por_subbloque = defaultdict(int)
 
     instrucciones = (
@@ -63,29 +58,27 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
         if len(preguntas_generadas) >= num_preguntas or intentos >= max_intentos:
             break
         if preguntas_por_subbloque[etiqueta] >= 2:
-            continue
+            continue  # máximo 2 por subbloque
 
         prompt = f"{instrucciones}\n\nContenido:\n{contenido}"
 
         try:
             respuesta = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Eres un generador de tests oficial."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.2
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.4
             )
-            texto_generado = respuesta.choices[0].message.content.strip()
-            pregunta = validar_pregunta(texto_generado)
+            resultado = respuesta.choices[0].message.content.strip()
+            pregunta = eval(resultado) if resultado.startswith("{") else None
 
-            if pregunta:
+            if validar_pregunta(pregunta):
                 preguntas_generadas.append(pregunta)
                 preguntas_por_subbloque[etiqueta] += 1
-
+            else:
+                print(f"❌ Pregunta inválida de [{etiqueta}]: {resultado}")
         except Exception as e:
-            print(f"❌ Error al generar pregunta: {e}")
-        finally:
-            intentos += 1
+            print(f"⚠️ Error generando pregunta para [{etiqueta}]: {e}")
+        intentos += 1
 
     return {"test": preguntas_generadas}
+
