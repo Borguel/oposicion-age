@@ -1,6 +1,6 @@
 
 import random
-from utils import obtener_subbloques_individuales
+from utils import obtener_contexto_por_temas
 from validador_preguntas import validar_pregunta
 from openai import OpenAI
 import os
@@ -9,15 +9,34 @@ from collections import defaultdict
 openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def generar_test_avanzado(temas, db, num_preguntas=5):
-    subbloques = obtener_subbloques_individuales(db, temas)
-    if not subbloques:
+    # Límite dinámico de tokens en función del número de preguntas
+    limite_tokens_total = min(3000 + num_preguntas * 450, 25000)
+
+    # Obtener contenido desde Firestore
+    contexto_completo = obtener_contexto_por_temas(db, temas, token_limit=limite_tokens_total)
+    if not contexto_completo:
         return {"test": []}
 
-    random.shuffle(subbloques)
+    # Separar por subbloques
+    fragmentos = contexto_completo.strip().split("\n[")
+    subbloques = {}
+
+    for frag in fragmentos:
+        if not frag.strip():
+            continue
+        if frag.startswith("["):
+            etiqueta, texto = frag.split("\n", 1)
+        else:
+            etiqueta = "[" + frag.split("\n", 1)[0]
+            texto = frag[len(etiqueta) + 1:]
+        subbloques[etiqueta.strip("[]")] = texto.strip()
+
+    subbloques_items = list(subbloques.items())
+    random.shuffle(subbloques_items)
 
     preguntas_generadas = []
     intentos = 0
-    max_intentos = num_preguntas * 3
+    max_intentos = num_preguntas * 4
     preguntas_por_subbloque = defaultdict(int)
 
     instrucciones = (
@@ -36,15 +55,13 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
         "  \"pregunta\": \"...\",\n"
         "  \"opciones\": {\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"},\n"
         "  \"respuesta_correcta\": \"...\",\n"
-        "  \"explicacion\": \"...\""
+        "  \"explicacion\": \"...\"\n"
         "}"
     )
 
-    for sub in subbloques:
+    for etiqueta, contenido in subbloques_items:
         if len(preguntas_generadas) >= num_preguntas or intentos >= max_intentos:
             break
-        etiqueta = sub.get("id", "")
-        contenido = sub.get("texto", "")
         if preguntas_por_subbloque[etiqueta] >= 2:
             continue
 
@@ -53,17 +70,22 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
         try:
             respuesta = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.4
+                messages=[
+                    {"role": "system", "content": "Eres un generador de tests oficial."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.2
             )
-            generado = respuesta.choices[0].message.content.strip()
-            pregunta = validar_pregunta(generado)
+            texto_generado = respuesta.choices[0].message.content.strip()
+            pregunta = validar_pregunta(texto_generado)
+
             if pregunta:
                 preguntas_generadas.append(pregunta)
                 preguntas_por_subbloque[etiqueta] += 1
-        except Exception as e:
-            print(f"❌ Error con subbloque {etiqueta}: {e}")
 
-        intentos += 1
+        except Exception as e:
+            print(f"❌ Error al generar pregunta: {e}")
+        finally:
+            intentos += 1
 
     return {"test": preguntas_generadas}

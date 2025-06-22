@@ -1,49 +1,30 @@
 
-import tiktoken
-import random
-
-def contar_tokens(texto, modelo="gpt-3.5-turbo"):
+def obtener_subbloques_individuales(db, temas, token_limit=3000):
+    from tiktoken import encoding_for_model, get_encoding
+    modelo = "gpt-3.5-turbo"
     try:
-        encoding = tiktoken.encoding_for_model(modelo)
+        encoding = encoding_for_model(modelo)
     except KeyError:
-        encoding = tiktoken.get_encoding("cl100k_base")
-    return len(encoding.encode(texto))
+        encoding = get_encoding("cl100k_base")
 
-def obtener_contexto_por_temas(db, temas, token_limit=3000, limite=None):
-    subbloques_por_tema = []
+    def contar_tokens(texto):
+        return len(encoding.encode(texto))
 
-    for tema in temas[:limite] if limite else temas:
-        if "-" in tema:
-            bloque_id, tema_id = tema.split("-", 1)
+    subbloques = []
+    for tema in temas:
+        partes = tema.split(".")
+        if len(partes) == 2:
+            bloque_id, tema_id = partes
         else:
-            print(f"❌ Formato incorrecto en '{tema}'. Usa bloque_01-tema_02")
             continue
 
-        subbloques_ref = db.collection("Temario AGE").document(bloque_id) \
-                           .collection("temas").document(tema_id) \
-                           .collection("subbloques").stream()
+        ref = db.collection("Temario AGE").document(bloque_id).collection("temas").document(tema_id).collection("subbloques")
+        docs = ref.stream()
 
-        for sub in subbloques_ref:
-            data = sub.to_dict()
-            sub_id = sub.id
-            texto = data.get("texto", "").strip()
-            if texto:
-                subbloques_por_tema.append((tema, sub_id, texto))
-            else:
-                print(f"⚠️ Subbloque vacío: {sub.id} en {tema}")
+        for doc in docs:
+            data = doc.to_dict()
+            texto = data.get("texto", "")
+            if contar_tokens(texto) <= token_limit:
+                subbloques.append({"id": doc.id, "texto": texto})
 
-    # Mezclar aleatoriamente los subbloques
-    random.shuffle(subbloques_por_tema)
-
-    resultado = []
-    token_total = 0
-
-    for tema, sub_id, contenido in subbloques_por_tema:
-        fragmento = f"[{tema} - {sub_id}]\n{contenido}"
-        tokens = contar_tokens(fragmento)
-        if token_total + tokens > token_limit:
-            break
-        resultado.append(fragmento)
-        token_total += tokens
-
-    return "\n".join(resultado)
+    return subbloques
