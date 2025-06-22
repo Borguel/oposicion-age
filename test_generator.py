@@ -35,13 +35,17 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
     preguntas_por_subbloque = defaultdict(int)
 
     instrucciones = (
-        "Eres un generador de tests de oposiciones para el Cuerpo General Administrativo del Estado (AGE). "
-        "A partir del contenido proporcionado, genera preguntas tipo test con estas condiciones:\n"
-        "- Formulación clara y completa, estilo examen oficial.\n"
-        "- Nunca menciones expresiones como 'según el texto' o 'en el contenido anterior'.\n"
-        "- 4 opciones (A, B, C, D), solo una es correcta.\n"
-        "- Una explicación clara basada en el contenido.\n\n"
-        "Formato JSON:\n"
+        "Actúas como un generador profesional de preguntas tipo test, especializado en el Cuerpo General Administrativo del Estado (AGE). "
+        "Tu objetivo es crear preguntas similares a las de exámenes oficiales de oposición, a partir del contenido proporcionado. "
+        "Sigue estrictamente estas normas:\n\n"
+        "1. Las preguntas deben ser claras, completas, bien formuladas y redactadas en un estilo técnico-formal, como en los exámenes oficiales.\n"
+        "2. NO uses expresiones como 'según el texto', 'de acuerdo con lo anterior', 'en el contenido proporcionado', ni ninguna mención al origen del texto.\n"
+        "3. Sustituye todas las siglas (por ejemplo, 'CE') por su forma completa ('Constitución Española'), aunque en el texto aparezcan abreviadas.\n"
+        "4. Si el contenido no es suficiente para formular una pregunta profesional, omítelo. No inventes datos, no rellenes con lógica ni contexto externo.\n"
+        "5. Las opciones incorrectas deben ser verosímiles y creíbles, sin ser obviamente falsas ni incoherentes.\n"
+        "6. Prioriza extraer preguntas desde subbloques distintos para asegurar variedad temática en cada test.\n"
+        "7. Redacta en un español neutro, técnico y preciso, evitando coloquialismos.\n\n"
+        "Formato de salida (JSON):\n"
         "{\n"
         "  \"pregunta\": \"...\",\n"
         "  \"opciones\": {\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"},\n"
@@ -78,5 +82,3 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
 
     return {"test": preguntas_generadas}
 
-
-    return {"test": preguntas_generadas}
