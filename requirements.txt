@@ -1,6 +1,4 @@
-flask
-flask-cors
+Flask
 firebase-admin
-python-dotenv
 openai
 tiktoken
