@@ -1,4 +1,4 @@
-# ⚙️ Versión de depuración completa
+# ✅ DEPLOY VERIFICADO v2
 
 import random
 import os
@@ -12,9 +12,16 @@ openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def generar_test_avanzado(temas, db, num_preguntas=5):
     print("🔍 función generar_test_avanzado() llamada")
+    print(f"🧪 Temas recibidos: {temas}")
 
     try:
-        subbloques = obtener_subbloques_individuales(db, temas)
+        try:
+            print("🧩 Llamando a obtener_subbloques_individuales")
+            subbloques = obtener_subbloques_individuales(db, temas)
+        except Exception as e:
+            print(f"❌ Error en obtener_subbloques_individuales: {e}")
+            return {"test": []}
+
         if not subbloques:
             print("⚠️ No se encontraron subbloques.")
             return {"test": []}
