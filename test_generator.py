@@ -1,85 +1,42 @@
-import random
-from openai import OpenAI
-from utils import obtener_subbloques_individuales, contar_tokens
+
+from utils import obtener_subbloques_individuales
 from validador_preguntas import es_pregunta_valida
+import openai
+import os
 
-openai = OpenAI()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# ✔️ Ruta para generar test avanzado
-def generar_test_avanzado(db, temas: list, num_preguntas: int):
-    print("\n\U0001f4cb Generando test avanzado...")
-    print(f"Temas recibidos: {temas}")
-    print(f"Número de preguntas solicitadas: {num_preguntas}")
-
-    # ✅ Obtener subbloques con límite de tokens
+def generar_test_avanzado(db, temas, num_preguntas=10):
     subbloques = obtener_subbloques_individuales(db, temas)
-    print(f"Subbloques encontrados: {len(subbloques)}")
-
-    if not subbloques:
-        print("\u274c No se encontraron subbloques.")
-        return {"test": []}
-
-    # ✅ Construir el contexto
     contexto = ""
     for sub in subbloques:
-        fragmento = f"[{sub['etiqueta']}]:\n{sub['titulo']}\n{sub['texto']}\n"
-        if contar_tokens(contexto + fragmento) > 3000:
-            break
-        contexto += fragmento
+        contexto += f"[{sub['etiqueta']}]
+{sub['titulo']}
+{sub['texto']}
+\n"
 
-    print(f"\u2705 Tokens totales del contexto: {contar_tokens(contexto)}")
+    if not contexto:
+        return []
 
-    if not contexto.strip():
-        print("\u274c Contexto vacío tras filtrar por tokens.")
-        return {"test": []}
-
-    # ✅ Prompt para generar preguntas
     prompt = f"""
-Eres un experto en oposiciones de la Administración General del Estado. Genera {num_preguntas} preguntas tipo test basadas en el siguiente texto. Cada pregunta debe tener 4 opciones (A, B, C, D), una correcta y una explicación clara. El formato debe ser:
-
-{{
-  "pregunta": "...",
-  "opciones": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
-  "respuesta_correcta": "A",
-  "explicacion": "..."
-}}
-
-Texto:
+Eres un experto en oposiciones. Genera {num_preguntas} preguntas tipo test con 4 opciones (A, B, C, D) y una correcta.
+Incluye también una breve explicación. Usa este contexto legal:
 {contexto}
 """
 
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.4,
-            max_tokens=2000
-        )
-        contenido = response.choices[0].message.content
-        print("\u2705 Respuesta generada por GPT-3.5-Turbo")
+    respuesta = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3
+    )
 
-    except Exception as e:
-        print(f"\u274c Error al llamar a OpenAI: {e}")
-        return {"test": []}
+    texto_generado = respuesta.choices[0].message.content.strip()
 
-    # ✅ Convertir texto a JSON
-    try:
-        import json
-        preguntas = json.loads(contenido)
-        print(f"\u2705 Preguntas generadas: {len(preguntas)}")
-    except Exception as e:
-        print(f"\u274c Error al convertir la respuesta en JSON: {e}")
-        return {"test": []}
+    # Aquí podrías usar lógica más robusta
+    preguntas = []  # 👈 Lógica para parsear preguntas, sustituir si tienes algo mejor
 
-    # ✅ Validar preguntas
-    preguntas_validas = [p for p in preguntas if es_pregunta_valida(p)]
-    print(f"\u2705 Preguntas válidas: {len(preguntas_validas)}")
+    for linea in texto_generado.split("\n\n"):
+        if es_pregunta_valida(linea):
+            preguntas.append(linea)
 
-    if not preguntas_validas:
-        print("\u274c Ninguna pregunta pasó la validación")
-        return {"test": []}
-
-    seleccionadas = random.sample(preguntas_validas, min(num_preguntas, len(preguntas_validas)))
-    return {"test": seleccionadas}
+    return preguntas

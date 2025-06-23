@@ -1,4 +1,5 @@
-def validar_pregunta(pregunta):
+
+def es_pregunta_valida(pregunta):
     if not isinstance(pregunta, dict):
         return False
 
@@ -14,6 +15,3 @@ def validar_pregunta(pregunta):
         return False
 
     return True
-
-# ✅ Alias exportado para compatibilidad con test_generator
-es_pregunta_valida = validar_pregunta
