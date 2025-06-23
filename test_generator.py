@@ -10,10 +10,11 @@ def generar_test_avanzado(db, temas, num_preguntas=10):
     subbloques = obtener_subbloques_individuales(db, temas)
     contexto = ""
     for sub in subbloques:
-        contexto += f"[{sub['etiqueta']}]
+        contexto += f"""[{sub['etiqueta']}]
 {sub['titulo']}
 {sub['texto']}
-\n"
+
+"""
 
     if not contexto:
         return []
