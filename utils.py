@@ -1,31 +1,61 @@
-import firebase_admin
-from firebase_admin import credentials, firestore
-import os
 import tiktoken
+from typing import List
 
-# Inicializar Firebase solo si no se ha hecho ya
-if not firebase_admin._apps:
-    cred = credentials.Certificate("clave-firebase.json")
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
-
-def contar_tokens(texto, modelo="gpt-3.5-turbo"):
+# ✅ Función para contar tokens aproximados
+def contar_tokens(texto: str, modelo="gpt-3.5-turbo") -> int:
     try:
         encoding = tiktoken.encoding_for_model(modelo)
     except KeyError:
         encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(texto))
 
+# ✅ Función CORREGIDA: acceder por bloque y tema separados
+def obtener_subbloques_individuales(db, temas: List[str], limite_total_tokens=3000) -> List[dict]:
+    subbloques_utilizados = []
+    total_tokens = 0
 
+    for tema_completo in temas:
+        if "-" not in tema_completo:
+            continue
+
+        bloque_id, tema_id = tema_completo.split("-", 1)
+
+        temas_ref = db.collection("Temario AGE").document(bloque_id).collection("temas")
+        tema_doc = temas_ref.document(tema_id).get()
+        if not tema_doc.exists:
+            continue
+
+        subbloques_ref = temas_ref.document(tema_id).collection("subbloques").stream()
+
+        for sub in subbloques_ref:
+            datos = sub.to_dict()
+            texto = datos.get("texto", "")
+            titulo = datos.get("titulo", "")
+            etiqueta = f"{bloque_id}-{tema_id}-{sub.id}"
+
+            tokens = contar_tokens(texto)
+            if total_tokens + tokens > limite_total_tokens:
+                return subbloques_utilizados
+
+            subbloques_utilizados.append({
+                "etiqueta": etiqueta,
+                "titulo": titulo,
+                "texto": texto
+            })
+            total_tokens += tokens
+
+    return subbloques_utilizados
+
+# ✅ Función adicional que ya tenías y se mantiene
 def obtener_contexto_por_temas(db, temas, token_limit=3000):
     contexto_total = ""
     usados = set()
 
-    for tema in temas:
-        bloques = db.collection("Temario AGE").list_documents()
-        for bloque_doc in bloques:
-            temas_ref = bloque_doc.collection("temas")
+    bloques = db.collection("Temario AGE").list_documents()
+
+    for bloque_doc in bloques:
+        temas_ref = bloque_doc.collection("temas")
+        for tema in temas:
             tema_doc = temas_ref.document(tema).get()
             if not tema_doc.exists:
                 continue
@@ -45,41 +75,4 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000):
                     return contexto_total.strip()
                 contexto_total += fragmento
 
-def obtener_subbloques_individuales(db, temas, limite_total_tokens=3000):
-    """
-    Recupera los subbloques individualmente hasta llegar al límite de tokens.
-    Devuelve una lista de diccionarios: {"etiqueta": ..., "titulo": ..., "texto": ...}
-    """
-    subbloques_utilizados = []
-    total_tokens = 0
-
-    bloques = db.collection("Temario AGE").list_documents()
-
-    for bloque_doc in bloques:
-        temas_ref = bloque_doc.collection("temas")
-        for tema in temas:
-            tema_doc = temas_ref.document(tema).get()
-            if not tema_doc.exists:
-                continue
-
-            subbloques_ref = temas_ref.document(tema).collection("subbloques")
-            subbloques = subbloques_ref.stream()
-
-            for sub in subbloques:
-                datos = sub.to_dict()
-                texto = datos.get("texto", "")
-                titulo = datos.get("titulo", "")
-                etiqueta = f"{bloque_doc.id}-{tema}-{sub.id}"
-
-                tokens = contar_tokens(texto)
-                if total_tokens + tokens > limite_total_tokens:
-                    return subbloques_utilizados
-
-                subbloques_utilizados.append({
-                    "etiqueta": etiqueta,
-                    "titulo": titulo,
-                    "texto": texto
-                })
-                total_tokens += tokens
-
-    return subbloques_utilizados
+    return contexto_total.strip()
