@@ -14,3 +14,6 @@ def validar_pregunta(pregunta):
         return False
 
     return True
+
+# ✅ Alias exportado para compatibilidad con test_generator
+es_pregunta_valida = validar_pregunta
