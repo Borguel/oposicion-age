@@ -1,6 +1,6 @@
-
 import tiktoken
 
+# ✅ Cuenta tokens del texto usando el modelo adecuado
 def contar_tokens(texto: str, modelo="gpt-3.5-turbo") -> int:
     try:
         encoding = tiktoken.encoding_for_model(modelo)
@@ -8,6 +8,8 @@ def contar_tokens(texto: str, modelo="gpt-3.5-turbo") -> int:
         encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(texto))
 
+
+# ✅ Obtiene subbloques individuales por temas, sin pasarse del límite de tokens
 def obtener_subbloques_individuales(db, temas, limite_total_tokens=3000):
     subbloques_utilizados = []
     total_tokens = 0
@@ -42,3 +44,24 @@ def obtener_subbloques_individuales(db, temas, limite_total_tokens=3000):
             total_tokens += tokens
 
     return subbloques_utilizados
+
+
+# ✅ Devuelve todos los temas disponibles para mostrarlos en el frontend
+def obtener_temas_disponibles(db):
+    temas_disponibles = []
+
+    bloques_ref = db.collection("Temario AGE").list_documents()
+    for bloque_doc in bloques_ref:
+        bloque_id = bloque_doc.id
+        temas_ref = bloque_doc.collection("temas").list_documents()
+
+        for tema_doc in temas_ref:
+            tema_id = tema_doc.id
+            datos = tema_doc.get().to_dict()
+            titulo = datos.get("titulo", "Sin título")
+            temas_disponibles.append({
+                "id": f"{bloque_id}-{tema_id}",
+                "titulo": titulo
+            })
+
+    return temas_disponibles
