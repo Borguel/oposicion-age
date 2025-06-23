@@ -1,7 +1,6 @@
 import os
 from flask import Flask, request, jsonify
 from test_generator import generar_test_avanzado
-from utils import obtener_temas_disponibles
 
 app = Flask(__name__)
 
