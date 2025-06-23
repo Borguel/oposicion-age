@@ -1,4 +1,3 @@
-
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -42,9 +41,17 @@ def chat_route():
 @app.route("/generar-test-avanzado", methods=["POST"])
 def generar_test_avanzado_route():
     data = request.get_json()
+    print(f"📥 Petición recibida en /generar-test-avanzado: {data}")
+
     temas = data.get("temas", [])
     num_preguntas = data.get("num_preguntas", 5)
+
+    print(f"📋 Temas extraídos: {temas}")
+    print(f"🧪 Número de preguntas solicitadas: {num_preguntas}")
+
     resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas)
+
+    print(f"📤 Resultado del test: {resultado}")
     return jsonify(resultado)
 
 @app.route("/generar-esquema", methods=["POST"])
