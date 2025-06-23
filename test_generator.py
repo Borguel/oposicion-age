@@ -1,10 +1,10 @@
-
 import random
 from utils import obtener_subbloques_individuales
 from validador_preguntas import validar_pregunta
 from openai import OpenAI
 import os
 from collections import defaultdict
+import json  # Necesario para convertir el string de OpenAI a JSON
 
 openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -36,7 +36,7 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
         "  \"pregunta\": \"...\",\n"
         "  \"opciones\": {\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"},\n"
         "  \"respuesta_correcta\": \"...\",\n"
-        "  \"explicacion\": \"...\""
+        "  \"explicacion\": \"...\"\n"
         "}"
     )
 
@@ -57,13 +57,19 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
                 temperature=0.4
             )
             generado = respuesta.choices[0].message.content.strip()
-            pregunta = validar_pregunta(generado)
-            if pregunta:
-                preguntas_generadas.append(pregunta)
-                preguntas_por_subbloque[etiqueta] += 1
+
+            try:
+                generado_json = json.loads(generado)
+                if validar_pregunta(generado_json):
+                    preguntas_generadas.append(generado_json)
+                    preguntas_por_subbloque[etiqueta] += 1
+            except json.JSONDecodeError as je:
+                print(f"⚠️ Error JSON en subbloque {etiqueta}: {je}")
+
         except Exception as e:
             print(f"❌ Error con subbloque {etiqueta}: {e}")
 
         intentos += 1
 
     return {"test": preguntas_generadas}
+
