@@ -9,7 +9,7 @@ def contar_tokens(texto: str, modelo="gpt-3.5-turbo") -> int:
         encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(texto))
 
-# ✅ Función CORREGIDA: acceder por bloque y tema separados
+# ✅ Función corregida: acceder por bloque y tema separados
 def obtener_subbloques_individuales(db, temas: List[str], limite_total_tokens=3000) -> List[dict]:
     subbloques_utilizados = []
     total_tokens = 0
@@ -35,7 +35,7 @@ def obtener_subbloques_individuales(db, temas: List[str], limite_total_tokens=30
 
             tokens = contar_tokens(texto)
             if total_tokens + tokens > limite_total_tokens:
-                return subbloques_utilizados
+                continue  # ⬅️ Cambio importante: seguir en lugar de cortar
 
             subbloques_utilizados.append({
                 "etiqueta": etiqueta,
@@ -46,7 +46,7 @@ def obtener_subbloques_individuales(db, temas: List[str], limite_total_tokens=30
 
     return subbloques_utilizados
 
-# ✅ Función adicional que ya tenías y se mantiene
+# ✅ Función para obtener contexto por temas
 def obtener_contexto_por_temas(db, temas, token_limit=3000):
     contexto_total = ""
     usados = set()
@@ -76,3 +76,4 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000):
                 contexto_total += fragmento
 
     return contexto_total.strip()
+
