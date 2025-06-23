@@ -87,7 +87,7 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
             intentos += 1
 
         print(f"\n🎯 Total de preguntas generadas: {len(preguntas_generadas)}")
-        return {"test": preguntas_generadas"}
+        return {"test": preguntas_generadas}
 
     except Exception as error:
         print(f"🔥 Error inesperado en generar_test_avanzado: {error}")
