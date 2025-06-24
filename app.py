@@ -1,38 +1,89 @@
 import os
-import sys
 from flask import Flask, request, jsonify
-from firebase_admin import credentials, firestore, initialize_app
+from flask_cors import CORS
+from dotenv import load_dotenv
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Módulos personalizados
 from test_generator import generar_test_avanzado
-from utils import obtener_temas_disponibles
+from chat_controller import responder_chat
+from esquema_generator import generar_esquema
+from save_controller import guardar_test_route, guardar_esquema_route
+from rutas_progreso import registrar_rutas_progreso
+
+# Cargar variables de entorno
+load_dotenv()
+print("🔑 Clave OpenAI:", os.getenv("OPENAI_API_KEY"))
+
+# Inicializar Firebase
+firebase_key_path = os.getenv("FIREBASE_KEY_PATH", "clave-firebase.json")
+
+if not firebase_admin._apps:
+    cred = credentials.Certificate(firebase_key_path)
+    firebase_admin.initialize_app(cred)
+
+db = firestore.client()
 
 # Inicializar Flask
 app = Flask(__name__)
+CORS(app, origins=["https://lightslategray-caribou-622401.hostingersite.com"])
+print("✅ CORS activado para tu WordPress")
 
-# Inicializar Firebase
-cred = credentials.Certificate("clave-firebase.json")
-initialize_app(cred)
-db = firestore.client()
+@app.route("/chat", methods=["POST"])
+def chat_route():
+    data = request.get_json()
+    mensaje = data.get("mensaje")
+    temas = data.get("temas", [])
+    respuesta = responder_chat(mensaje=mensaje, temas=temas, db=db)
+    return jsonify({"respuesta": respuesta})
 
-# Ruta para obtener los temas disponibles desde Firestore
-@app.route('/temas-disponibles', methods=['GET'])
-def temas_disponibles():
-    temas = obtener_temas_disponibles(db)
-    print("🧪 Temas devueltos:", temas, file=sys.stdout)
-    return jsonify({"temas": temas})
+@app.route("/generar-test-avanzado", methods=["POST"])
+def generar_test_avanzado_route():
+    data = request.get_json()
+    print(f"📥 Petición recibida en /generar-test-avanzado: {data}")
 
-# Ruta para generar un test avanzado con IA
-@app.route('/generar-test-avanzado', methods=['POST'])
-def generar_test():
-    datos = request.get_json()
-    temas = datos.get('temas', [])
-    num_preguntas = datos.get('num_preguntas', 10)
-    print(f"⚙️ Solicitado test con temas: {temas} y {num_preguntas} preguntas", file=sys.stdout)
-    preguntas = generar_test_avanzado(db, temas, num_preguntas)
-    print(f"✅ Preguntas generadas: {len(preguntas)}", file=sys.stdout)
-    return jsonify({"test": preguntas})
+    temas = data.get("temas", [])
+    num_preguntas = data.get("num_preguntas", 5)
 
-# 🔧 Especificar puerto dinámico que Render espera
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    print(f"📋 Temas extraídos: {temas}")
+    print(f"🧪 Número de preguntas solicitadas: {num_preguntas}")
 
+    resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas)
+
+    print(f"📤 Resultado del test: {resultado}")
+    return jsonify(resultado)
+
+@app.route("/generar-esquema", methods=["POST"])
+def generar_esquema_route():
+    data = request.get_json()
+    temas = data.get("temas", [])
+    instrucciones = data.get("instrucciones", "Resume los contenidos clave.")
+    nivel = data.get("nivel", "general")
+    resultado = generar_esquema(temas=temas, db=db, instrucciones=instrucciones, nivel=nivel)
+    return jsonify({"esquema": resultado})
+
+app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["POST"])
+app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), methods=["POST"])
+
+registrar_rutas_progreso(app, db)
+
+@app.route("/temas-disponibles", methods=["GET"])
+def obtener_temas_disponibles():
+    temas_disponibles = []
+    bloques = db.collection("Temario AGE").stream()
+    for bloque in bloques:
+        bloque_id = bloque.id
+        temas_ref = db.collection("Temario AGE").document(bloque_id).collection("temas").stream()
+        for tema in temas_ref:
+            tema_data = tema.to_dict()
+            tema_id = tema.id
+            titulo = tema_data.get("titulo", f"{tema_id}")
+            temas_disponibles.append({
+                "id": f"{bloque_id}-{tema_id}",
+                "titulo": titulo
+            })
+    return jsonify({"temas": temas_disponibles})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
