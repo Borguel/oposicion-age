@@ -46,13 +46,24 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
     return {"test": preguntas_generadas}
 
 def crear_prompt(subbloques):
-    instrucciones = (
-        "Actúas como un generador profesional de preguntas tipo test, especializado en oposiciones AGE. "
-        "No uses expresiones como 'según el texto'. Sustituye siglas por su forma completa. "
-        "Opciones verosímiles. Español técnico. Devuelve en JSON con los campos pregunta, opciones (A-D), respuesta_correcta y explicacion.
+    instrucciones = """Actúas como un generador profesional de preguntas tipo test, especializado en el Cuerpo General Administrativo del Estado (AGE).
+Tu objetivo es crear preguntas similares a las de exámenes oficiales de oposición, a partir del contenido proporcionado.
+Sigue estrictamente estas normas:
 
-"
-    )
+1. Las preguntas deben ser claras, completas, bien formuladas y redactadas en un estilo técnico-formal, como en los exámenes oficiales.
+2. NO uses expresiones como 'según el texto', 'de acuerdo con lo anterior', 'en el contenido proporcionado', ni ninguna mención al origen del texto.
+3. Sustituye todas las siglas (por ejemplo, 'CE') por su forma completa ('Constitución Española'), aunque en el texto aparezcan abreviadas.
+4. Si el contenido no es suficiente para formular una pregunta profesional, omítelo. No inventes datos, no rellenes con lógica ni contexto externo.
+5. Las opciones incorrectas deben ser verosímiles y creíbles, sin ser obviamente falsas ni incoherentes.
+6. Prioriza extraer preguntas desde subbloques distintos para asegurar variedad temática en cada test.
+7. Redacta en un español neutro, técnico y preciso, evitando coloquialismos.
+
+Formato de salida (JSON):
+{
+  "pregunta": "...",
+  "opciones": {"A": "...", "B": "...", "C": "...", "D": "..."},
+  "respuesta_correcta": "...",
+  "explicacion": "..."
+}"""
     contenido = "\n\n".join(sub["texto"] for sub in subbloques)
-    return instrucciones + f"Contenido:
-{contenido}"
+    return instrucciones + f"\n\nContenido:\n{contenido}"
