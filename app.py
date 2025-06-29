@@ -85,5 +85,25 @@ def obtener_temas_disponibles():
             })
     return jsonify({"temas": temas_disponibles})
 
+@app.route("/progreso-usuario", methods=["GET"])
+def progreso_usuario():
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Falta el parámetro user_id"}), 400
+
+    doc_user = db.collection("usuarios").document(user_id)
+    progreso = doc_user.get().to_dict()
+    
+    if not progreso:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    return jsonify({
+        "tests_realizados": progreso.get("tests_realizados", 0),
+        "puntuacion_media_test": progreso.get("puntuacion_media_test", 0),
+        "ultimo_test": progreso.get("ultimo_test", {}),
+        "total_aciertos": progreso.get("total_aciertos", 0),
+        "esquemas_generados": progreso.get("esquemas_generados", 0)
+    })
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
