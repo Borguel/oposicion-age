@@ -17,12 +17,15 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
     preguntas_restantes = num_preguntas
 
     for tema, bloques in bloques_por_tema.items():
+        print(f"📦 Tema: {tema}, grupos disponibles: {len(bloques)}")
         random.shuffle(bloques)
         preguntas_tema = 0
         for grupo in bloques:
             if preguntas_tema >= preguntas_por_tema:
                 break
             prompt = crear_prompt(grupo)
+            print(f"📌 Intentando generar pregunta {preguntas_tema + 1} para tema {tema}")
+            print(f"🔤 Prompt tokens: {len(prompt)}")
             try:
                 respuesta = openai.chat.completions.create(
                     model="gpt-3.5-turbo",
@@ -30,19 +33,27 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
                     temperature=0.4
                 )
                 generado = respuesta.choices[0].message.content.strip()
+                print(f"📤 Respuesta cruda:
+{generado[:500]}")
+
                 generado_json = json.loads(generado)
                 if validar_pregunta(generado_json):
                     preguntas_generadas.append(generado_json)
                     preguntas_tema += 1
                     preguntas_restantes -= 1
+                    print(f"✅ Pregunta válida añadida")
                     if preguntas_restantes <= 0:
                         break
+                else:
+                    print(f"⚠️ Pregunta inválida (no pasó validador)")
+            except json.JSONDecodeError as je:
+                print(f"❌ Error JSON: {je}")
             except Exception as e:
                 print(f"❌ Error generando pregunta: {e}")
         if preguntas_restantes <= 0:
             break
 
-    print(f"✅ Preguntas generadas: {len(preguntas_generadas)} / {num_preguntas}")
+    print(f"🎯 Total preguntas generadas: {len(preguntas_generadas)} / {num_preguntas}")
     return {"test": preguntas_generadas}
 
 def crear_prompt(subbloques):
@@ -66,4 +77,4 @@ Formato de salida (JSON):
   "explicacion": "..."
 }"""
     contenido = "\n\n".join(sub["texto"] for sub in subbloques)
-    return instrucciones + f"\n\nContenido:\n{contenido}"
+    return instrucciones + f"\n\nContenido:\n{{contenido}}"
