@@ -33,8 +33,7 @@ def generar_test_avanzado(temas, db, num_preguntas=5):
                     temperature=0.4
                 )
                 generado = respuesta.choices[0].message.content.strip()
-                print(f"📤 Respuesta cruda:
-{generado[:500]}")
+                print(f"📤 Respuesta cruda:{generado[:500]}")
 
                 generado_json = json.loads(generado)
                 if validar_pregunta(generado_json):
@@ -77,4 +76,5 @@ Formato de salida (JSON):
   "explicacion": "..."
 }"""
     contenido = "\n\n".join(sub["texto"] for sub in subbloques)
-    return instrucciones + f"\n\nContenido:\n{{contenido}}"
+    return instrucciones + f"\n\nContenido:\n{contenido}"
+
