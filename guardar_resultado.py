@@ -11,7 +11,6 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
     doc_user = db.collection("usuarios").document(usuario_id)
 
     if tipo == "test":
-        # Calcular resultados
         respuestas = metadatos.get("respuestas", [])
         aciertos, fallos, blancos = 0, 0, 0
         for i, p in enumerate(contenido):
@@ -42,7 +41,8 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
                     "pregunta": p.get("pregunta"),
                     "respuesta_correcta": p.get("respuesta_correcta"),
                     "respuesta_usuario": respuestas[i] if i < len(respuestas) else None,
-                    "opciones": p.get("opciones")
+                    "opciones": p.get("opciones"),
+                    "explicacion": p.get("explicacion", "Sin explicación.")
                 } for i, p in enumerate(contenido)
             ]
         })
