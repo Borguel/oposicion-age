@@ -13,7 +13,7 @@ def inicializar_estadisticas_usuario(db, usuario_id):
             "esquemas_realizados": 0,
             "temas_test": [],
             "temas_esquemas": [],
-            "tiempo_total_dedicado_min": 0,
+            "tiempo_total": 0,
             "ultimo_test": {},
             "historial_tests": [],
             "ultima_actividad": None,
@@ -27,13 +27,11 @@ def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo
     doc_ref = db.collection("usuarios").document(usuario_id)
     usuario = doc_ref.get().to_dict()
 
-    tiempo_en_min = round(tiempo_en_segundos / 60, 2)
-
     total_tests = usuario.get("tests_realizados", 0) + 1
     total_aciertos = usuario.get("total_aciertos", 0) + aciertos
     total_fallos = usuario.get("total_fallos", 0) + fallos
     temas_test = list(set(usuario.get("temas_test", []) + temas))
-    tiempo_total = usuario.get("tiempo_total_dedicado_min", 0) + tiempo_en_min
+    tiempo_total = usuario.get("tiempo_total", 0) + tiempo_en_segundos
     puntuacion_media = round(total_aciertos / total_tests, 2) if total_tests else 0
 
     aprobados = usuario.get("tests_aprobados", 0)
@@ -63,14 +61,14 @@ def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo
         "tests_aprobados": aprobados,
         "tests_suspendidos": suspendidos,
         "temas_test": temas_test,
-        "tiempo_total_dedicado_min": tiempo_total,
+        "tiempo_total": tiempo_total,
         "puntuacion_media_test": puntuacion_media,
         "historial_tests": historial,
         "ultimo_test": {
             "aciertos": aciertos,
             "fallos": fallos,
             "temas": temas,
-            "tiempo_min": tiempo_en_min,
+            "tiempo": tiempo_en_segundos,
             "fecha": datetime.utcnow().isoformat()
         },
         "ultima_actividad": datetime.utcnow().isoformat()
@@ -89,7 +87,6 @@ def actualizar_estadisticas_esquema(db, usuario_id, temas):
         "ultima_actividad": datetime.utcnow().isoformat()
     })
 
-# ✅ NUEVA RUTA PARA /resumen-progreso
 def obtener_resumen_progreso(db, usuario_id):
     doc_ref = db.collection("usuarios").document(usuario_id)
     doc = doc_ref.get()
@@ -106,7 +103,7 @@ def obtener_resumen_progreso(db, usuario_id):
         "total_fallos": datos.get("total_fallos", 0),
         "puntuacion_media_test": datos.get("puntuacion_media_test", 0),
         "esquemas_realizados": datos.get("esquemas_realizados", 0),
-        "tiempo_total_dedicado_min": datos.get("tiempo_total_dedicado_min", 0),
+        "tiempo_total": datos.get("tiempo_total", 0),
         "temas_test": datos.get("temas_test", []),
         "temas_esquemas": datos.get("temas_esquemas", []),
         "ultimo_test": datos.get("ultimo_test", {}),
