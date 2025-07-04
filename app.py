@@ -1,4 +1,5 @@
 import os
+import random
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -18,7 +19,6 @@ print("🔑 Clave OpenAI:", os.getenv("OPENAI_API_KEY"))
 
 # Inicializar Firebase
 firebase_key_path = os.getenv("FIREBASE_KEY_PATH", "clave-firebase.json")
-
 if not firebase_admin._apps:
     cred = credentials.Certificate(firebase_key_path)
     firebase_admin.initialize_app(cred)
@@ -50,7 +50,6 @@ def generar_test_avanzado_route():
     print(f"🧪 Número de preguntas solicitadas: {num_preguntas}")
 
     resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas)
-
     print(f"📤 Resultado del test: {resultado}")
     return jsonify(resultado)
 
@@ -63,9 +62,42 @@ def generar_esquema_route():
     resultado = generar_esquema(temas=temas, db=db, instrucciones=instrucciones, nivel=nivel)
     return jsonify({"esquema": resultado})
 
+@app.route("/generar-test-oficial", methods=["POST"])
+def generar_test_oficial():
+    data = request.get_json()
+    num_preguntas = data.get("num_preguntas", 10)
+    examenes_filtrados = data.get("examenes", [])  # opcional
+
+    print(f"📥 Petición recibida en /generar-test-oficial: {data}")
+    docs = db.collection("examenes_oficiales_AGE").stream()
+
+    preguntas = []
+    for doc in docs:
+        d = doc.to_dict()
+        if d.get("tipo") != "pregunta":
+            continue
+        if examenes_filtrados:
+            if d.get("examen", "").lower().replace(" ", "_") not in [e.lower() for e in examenes_filtrados]:
+                continue
+        preguntas.append({
+            "pregunta": d.get("pregunta", ""),
+            "opciones": d.get("opciones", {}),
+            "respuesta_correcta": d.get("respuesta_correcta", ""),
+            "explicacion": d.get("explicacion", ""),
+            "examen": d.get("examen", ""),
+            "numero": d.get("número", 0)
+        })
+
+    print(f"📚 Preguntas encontradas: {len(preguntas)}")
+    if not preguntas:
+        return jsonify({"test": [], "mensaje": "No se encontraron preguntas"}), 404
+
+    seleccionadas = random.sample(preguntas, min(num_preguntas, len(preguntas)))
+    return jsonify({"test": seleccionadas})
+
+# Guardado y progreso
 app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["POST"])
 app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), methods=["POST"])
-
 registrar_rutas_progreso(app, db)
 
 @app.route("/temas-disponibles", methods=["GET"])
