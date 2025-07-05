@@ -143,8 +143,6 @@ def progreso_usuario():
         "esquemas_generados": progreso.get("esquemas_generados", 0)
     })
 
-from flask import jsonify
-
 @app.route("/", methods=["GET"])
 def listar_rutas():
     rutas = [rule.rule for rule in app.url_map.iter_rules()]
@@ -153,6 +151,7 @@ def listar_rutas():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
 
 
