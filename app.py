@@ -1,7 +1,20 @@
-import os
+mport os
 import random
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+
+def traducir_temas_para_IA(lista_codigos):
+    traducciones = {
+        "bloque_01-tema_01": "La Constitución Española de 1978",
+        "bloque_01-tema_02": "Derechos y deberes fundamentales",
+        "bloque_01-tema_03": "El Gobierno y la Administración",
+        "bloque_01-tema_04": "Organización territorial del Estado",
+        "bloque_02-tema_01": "La Administración General del Estado",
+        "bloque_02-tema_02": "Organización administrativa y órganos superiores",
+        # Añade más temas si lo deseas
+    }
+    return [traducciones.get(codigo, codigo) for codigo in lista_codigos]
+
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -205,13 +218,42 @@ def generar_test_inteligente():
         return jsonify({"error": "No se ha recibido un cuerpo JSON válido"}), 400
 
     print("📩 Datos recibidos en /generar-test-inteligente:", data)
-    temas = data.get("temas", [])
+        temas = data.get("temas", [])
     num_preguntas = data.get("num_preguntas", 5)
 
     if not temas:
         return jsonify({"error": "No se han proporcionado temas"}), 400
 
+    temas_legibles = traducir_temas_para_IA(temas)
+    temas_str = ", ".join(temas_legibles)
+
     prompt = f"""
+Actúa como un generador experto de preguntas tipo test para opositores del Cuerpo General Administrativo del Estado.
+
+Crea {num_preguntas} preguntas tipo test realistas sobre los siguientes temas: {temas_str}.
+
+Cada pregunta debe incluir:
+- Enunciado claro
+- Cuatro opciones (A, B, C, D)
+- Una única opción correcta
+- Una breve explicación
+
+Devuélvelo en formato JSON como este:
+
+[
+  {{
+    "pregunta": "...",
+    "opciones": {{
+      "A": "...",
+      "B": "...",
+      "C": "...",
+      "D": "..."
+    }},
+    "respuesta_correcta": "A",
+    "explicacion": "..."
+  }}
+]
+"""
 Actúa como un generador experto de preguntas tipo test para opositores del Cuerpo General Administrativo del Estado (AGE).
 
 Crea {num_preguntas} preguntas profesionales y realistas (tipo test) sobre los siguientes temas: {', '.join(temas)}.
@@ -256,6 +298,8 @@ Devuélvelo en un array JSON con este formato:
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
+
 
 
 
