@@ -141,6 +141,15 @@ def progreso_usuario():
         "esquemas_generados": progreso.get("esquemas_generados", 0)
     })
 
+# RUTA PARA LISTAR TODAS LAS RUTAS ACTIVAS
+@app.route('/rutas', methods=['GET'])
+def listar_rutas():
+    rutas = []
+    for regla in app.url_map.iter_rules():
+        rutas.append(str(regla))
+    return jsonify({"rutas": rutas})
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
