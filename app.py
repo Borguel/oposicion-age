@@ -186,7 +186,67 @@ def listar_rutas():
     rutas = [rule.rule for rule in app.url_map.iter_rules()]
     return jsonify({"rutas_disponibles": rutas})
 
+
+from openai import OpenAI
+import json
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+@app.route("/generar-test-inteligente", methods=["POST"])
+def generar_test_inteligente():
+    data = request.get_json()
+    temas = data.get("temas", [])
+    num_preguntas = data.get("num_preguntas", 5)
+
+    if not temas:
+        return jsonify({"error": "No se han proporcionado temas"}), 400
+
+    prompt = f"""
+Actúa como un generador experto de preguntas tipo test para opositores del Cuerpo General Administrativo del Estado (AGE).
+
+Crea {num_preguntas} preguntas profesionales y realistas (tipo test) sobre los siguientes temas: {', '.join(temas)}.
+
+Para cada pregunta, incluye:
+- El enunciado claro y preciso.
+- Cuatro opciones (A, B, C, D).
+- La opción correcta (solo una).
+- Una breve explicación.
+
+Devuélvelo en un array JSON con este formato:
+
+[
+  {{
+    "pregunta": "...",
+    "opciones": {{
+      "A": "...",
+      "B": "...",
+      "C": "...",
+      "D": "..."
+    }},
+    "respuesta_correcta": "A",
+    "explicacion": "..."
+  }},
+  ...
+]
+"""
+
+    try:
+        respuesta = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.6,
+        )
+        generado = respuesta.choices[0].message.content.strip()
+        preguntas = json.loads(generado)
+        return jsonify({"test": preguntas})
+    except Exception as e:
+        print("❌ Error al generar test inteligente:", e)
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
+
 
 
