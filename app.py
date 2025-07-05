@@ -65,24 +65,33 @@ def generar_esquema_route():
 @app.route("/generar-test-oficial", methods=["POST"])
 def generar_test_oficial():
     data = request.get_json()
-    num_preguntas = data.get("num_preguntas", 10)
-    examenes_filtrados = data.get("examenes", [])  # opcional
+    print("✅ Ruta /generar-test-oficial llamada")
+    print("📥 Datos recibidos:", data)
 
-    print(f"📥 Petición recibida en /generar-test-oficial: {data}")
-    docs = db.collection("examenes_oficiales_AGE").stream()
+    num_preguntas = data.get("num_preguntas", 10)
+    examenes_filtrados = data.get("examenes", [])
+    print("🔍 Número de preguntas solicitado:", num_preguntas)
+    print("📚 Exámenes filtrados:", examenes_filtrados)
+
+    try:
+        docs = db.collection("examenes_oficiales_AGE").stream()
+    except Exception as e:
+        print("❌ Error accediendo a Firestore:", e)
+        return jsonify({"error": "No se pudo acceder a Firestore"}), 500
 
     preguntas = []
     for doc in docs:
         d = doc.to_dict()
+        print("📄 Documento encontrado:", d.get("examen"), "| tipo:", d.get("tipo"))
+
         if d.get("tipo") != "pregunta":
             continue
-        
+
         if examenes_filtrados:
-            print(f"Filtrando examen: campo examen='{d.get('examen')}', examenes_filtrados={examenes_filtrados}")
-            # Comparación solo en minúsculas sin modificar espacios ni guiones
+            print(f"➡️ Comparando '{d.get('examen')}' con filtros {examenes_filtrados}")
             if d.get("examen", "").lower() not in [e.lower() for e in examenes_filtrados]:
                 continue
-        
+
         opciones_originales = d.get("opciones", {})
         opciones_mayus = {k.upper(): v for k, v in opciones_originales.items()}
 
@@ -92,16 +101,17 @@ def generar_test_oficial():
             "respuesta_correcta": d.get("respuesta_correcta", "").upper(),
             "explicacion": d.get("explicacion", ""),
             "examen": d.get("examen", ""),
-            "numero": d.get("numero", 0)  # sin tilde en la clave
+            "numero": d.get("numero", 0)
         })
 
-    print(f"📚 Preguntas encontradas: {len(preguntas)}")
+    print(f"✅ Preguntas encontradas tras filtro: {len(preguntas)}")
+
     if not preguntas:
         return jsonify({"test": [], "mensaje": "No se encontraron preguntas"}), 404
 
     seleccionadas = random.sample(preguntas, min(num_preguntas, len(preguntas)))
+    print(f"🎯 Preguntas seleccionadas aleatoriamente: {len(seleccionadas)}")
     return jsonify({"test": seleccionadas})
-
 
 # Guardado y progreso
 app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["POST"])
@@ -152,4 +162,5 @@ def listar_rutas():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
