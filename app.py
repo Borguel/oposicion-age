@@ -55,7 +55,11 @@ def generar_test_avanzado_route():
 
 @app.route("/generar-esquema", methods=["POST"])
 def generar_esquema_route():
-    data = request.get_json()
+    data = request.get_json(silent=True)
+    if not data:
+        print("❌ No se ha recibido JSON en la petición")
+        return jsonify({"error": "No se ha recibido un cuerpo JSON válido"}), 400
+
     print("📩 Datos recibidos en /generar-test-inteligente:", data)
     temas = data.get("temas", [])
     instrucciones = data.get("instrucciones", "Resume los contenidos clave.")
@@ -195,7 +199,11 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/generar-test-inteligente", methods=["POST"])
 def generar_test_inteligente():
-    data = request.get_json()
+    data = request.get_json(silent=True)
+    if not data:
+        print("❌ No se ha recibido JSON en la petición")
+        return jsonify({"error": "No se ha recibido un cuerpo JSON válido"}), 400
+
     print("📩 Datos recibidos en /generar-test-inteligente:", data)
     temas = data.get("temas", [])
     num_preguntas = data.get("num_preguntas", 5)
@@ -248,7 +256,6 @@ Devuélvelo en un array JSON con este formato:
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
 
 
 
