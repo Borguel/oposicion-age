@@ -79,8 +79,8 @@ def generar_test_oficial():
         
         if examenes_filtrados:
             print(f"Filtrando examen: campo examen='{d.get('examen')}', examenes_filtrados={examenes_filtrados}")
-            # Comparación en minúsculas y sin espacios para evitar fallos
-            if d.get("examen", "").lower().replace(" ", "_") not in [e.lower() for e in examenes_filtrados]:
+            # Comparación solo en minúsculas sin modificar espacios ni guiones
+            if d.get("examen", "").lower() not in [e.lower() for e in examenes_filtrados]:
                 continue
         
         opciones_originales = d.get("opciones", {})
@@ -101,6 +101,7 @@ def generar_test_oficial():
 
     seleccionadas = random.sample(preguntas, min(num_preguntas, len(preguntas)))
     return jsonify({"test": seleccionadas})
+
 
 # Guardado y progreso
 app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["POST"])
@@ -151,8 +152,4 @@ def listar_rutas():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
-
-
-
 
