@@ -56,6 +56,7 @@ def generar_test_avanzado_route():
 @app.route("/generar-esquema", methods=["POST"])
 def generar_esquema_route():
     data = request.get_json()
+    print("📩 Datos recibidos en /generar-test-inteligente:", data)
     temas = data.get("temas", [])
     instrucciones = data.get("instrucciones", "Resume los contenidos clave.")
     nivel = data.get("nivel", "general")
@@ -195,6 +196,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 @app.route("/generar-test-inteligente", methods=["POST"])
 def generar_test_inteligente():
     data = request.get_json()
+    print("📩 Datos recibidos en /generar-test-inteligente:", data)
     temas = data.get("temas", [])
     num_preguntas = data.get("num_preguntas", 5)
 
@@ -237,14 +239,8 @@ Devuélvelo en un array JSON con este formato:
             temperature=0.6,
         )
         generado = respuesta.choices[0].message.content.strip()
-        print("📤 Texto generado por GPT:")
-        print(generado)
-        try:
-            preguntas = json.loads(generado)
-            return jsonify({"test": preguntas})
-        except json.JSONDecodeError as je:
-            print("❌ Error al parsear JSON:", je)
-            return jsonify({"error": "El modelo generó un JSON no válido", "texto_generado": generado}), 500
+        preguntas = json.loads(generado)
+        return jsonify({"test": preguntas})
     except Exception as e:
         print("❌ Error al generar test inteligente:", e)
         return jsonify({"error": str(e)}), 500
@@ -252,6 +248,7 @@ Devuélvelo en un array JSON con este formato:
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
 
 
