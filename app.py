@@ -237,8 +237,14 @@ Devuélvelo en un array JSON con este formato:
             temperature=0.6,
         )
         generado = respuesta.choices[0].message.content.strip()
-        preguntas = json.loads(generado)
-        return jsonify({"test": preguntas})
+        print("📤 Texto generado por GPT:")
+        print(generado)
+        try:
+            preguntas = json.loads(generado)
+            return jsonify({"test": preguntas})
+        except json.JSONDecodeError as je:
+            print("❌ Error al parsear JSON:", je)
+            return jsonify({"error": "El modelo generó un JSON no válido", "texto_generado": generado}), 500
     except Exception as e:
         print("❌ Error al generar test inteligente:", e)
         return jsonify({"error": str(e)}), 500
@@ -246,6 +252,8 @@ Devuélvelo en un array JSON con este formato:
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
+
 
 
 
