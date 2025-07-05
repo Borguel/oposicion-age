@@ -79,6 +79,7 @@ def generar_test_oficial():
         
         if examenes_filtrados:
             print(f"Filtrando examen: campo examen='{d.get('examen')}', examenes_filtrados={examenes_filtrados}")
+            # Comparación en minúsculas y sin espacios para evitar fallos
             if d.get("examen", "").lower().replace(" ", "_") not in [e.lower() for e in examenes_filtrados]:
                 continue
         
@@ -91,7 +92,7 @@ def generar_test_oficial():
             "respuesta_correcta": d.get("respuesta_correcta", "").upper(),
             "explicacion": d.get("explicacion", ""),
             "examen": d.get("examen", ""),
-            "numero": d.get("numero", 0)  # sin tilde
+            "numero": d.get("numero", 0)  # sin tilde en la clave
         })
 
     print(f"📚 Preguntas encontradas: {len(preguntas)}")
@@ -148,9 +149,9 @@ def listar_rutas():
     rutas = [rule.rule for rule in app.url_map.iter_rules()]
     return jsonify({"rutas_disponibles": rutas})
 
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
 
 
