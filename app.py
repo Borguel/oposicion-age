@@ -79,13 +79,17 @@ def generar_test_oficial():
         if examenes_filtrados:
             if d.get("examen", "").lower().replace(" ", "_") not in [e.lower() for e in examenes_filtrados]:
                 continue
+        
+        opciones_originales = d.get("opciones", {})
+        opciones_mayus = {k.upper(): v for k, v in opciones_originales.items()}
+
         preguntas.append({
             "pregunta": d.get("pregunta", ""),
-            "opciones": d.get("opciones", {}),
-            "respuesta_correcta": d.get("respuesta_correcta", ""),
+            "opciones": opciones_mayus,
+            "respuesta_correcta": d.get("respuesta_correcta", "").upper(),
             "explicacion": d.get("explicacion", ""),
             "examen": d.get("examen", ""),
-            "numero": d.get("número", 0)
+            "numero": d.get("numero", 0)  # sin tilde
         })
 
     print(f"📚 Preguntas encontradas: {len(preguntas)}")
@@ -139,3 +143,4 @@ def progreso_usuario():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
