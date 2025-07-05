@@ -41,7 +41,7 @@ def chat_route():
 @app.route("/generar-test-avanzado", methods=["POST"])
 def generar_test_avanzado_route():
     data = request.get_json()
-    print(f"📥 Petición recibida en /generar-test-avanzado: {data}")
+    print(f"📅 Petición recibida en /generar-test-avanzado: {data}")
 
     temas = data.get("temas", [])
     num_preguntas = data.get("num_preguntas", 5)
@@ -50,7 +50,7 @@ def generar_test_avanzado_route():
     print(f"🧪 Número de preguntas solicitadas: {num_preguntas}")
 
     resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas)
-    print(f"📤 Resultado del test: {resultado}")
+    print(f"📄 Resultado del test: {resultado}")
     return jsonify(resultado)
 
 @app.route("/generar-esquema", methods=["POST"])
@@ -88,7 +88,6 @@ def generar_test_oficial():
             continue
 
         if examenes_filtrados:
-            print(f"➡️ Comparando '{d.get('examen')}' con filtros {examenes_filtrados}")
             if d.get("examen", "").lower() not in [e.lower() for e in examenes_filtrados]:
                 continue
 
@@ -105,13 +104,40 @@ def generar_test_oficial():
         })
 
     print(f"✅ Preguntas encontradas tras filtro: {len(preguntas)}")
-
     if not preguntas:
         return jsonify({"test": [], "mensaje": "No se encontraron preguntas"}), 404
 
     seleccionadas = random.sample(preguntas, min(num_preguntas, len(preguntas)))
     print(f"🎯 Preguntas seleccionadas aleatoriamente: {len(seleccionadas)}")
+
     return jsonify({"test": seleccionadas})
+
+@app.route("/guardar-test-oficial", methods=["POST"])
+def guardar_test_oficial():
+    data = request.get_json()
+    print("💾 Guardando test oficial:", data)
+
+    usuario_id = data.get("usuario_id")
+    contenido = data.get("contenido")
+    respuestas = data.get("respuestas")
+    metadatos = data.get("metadatos", {})
+
+    if not usuario_id or not contenido or not respuestas:
+        return jsonify({"error": "Faltan datos requeridos"}), 400
+
+    try:
+        doc_ref = db.collection("test_oficiales").document()
+        doc_ref.set({
+            "usuario_id": usuario_id,
+            "contenido": contenido,
+            "respuestas": respuestas,
+            "metadatos": metadatos
+        })
+        print("✅ Test oficial guardado correctamente")
+        return jsonify({"mensaje": "Test oficial guardado correctamente"}), 200
+    except Exception as e:
+        print("❌ Error al guardar test oficial:", e)
+        return jsonify({"error": str(e)}), 500
 
 # Guardado y progreso
 app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["POST"])
@@ -143,7 +169,7 @@ def progreso_usuario():
 
     doc_user = db.collection("usuarios").document(user_id)
     progreso = doc_user.get().to_dict()
-    
+
     if not progreso:
         return jsonify({"error": "Usuario no encontrado"}), 404
 
