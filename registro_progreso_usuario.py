@@ -61,28 +61,30 @@ def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo
     if len(historial) > 50:
         historial = historial[-50:]
 
-    doc_ref.update({
-        "tests_realizados": total_tests,
-        "total_aciertos": total_aciertos,
-        "total_fallos": total_fallos,
-        "tests_aprobados": aprobados,
-        "tests_suspendidos": suspendidos,
-        "temas_test": temas_test,
-        "tiempo_total": tiempo_total,
-        "puntuacion_media_test": puntuacion_media,
-        "historial_tests": historial,
-        "ultimo_test": {
-            "aciertos": aciertos,
-            "fallos": fallos,
-            "temas": temas,
-            "tiempo": tiempo_en_segundos,
-            "tipo": tipo,
-            "puntuacion_final": puntuacion,
-            "resultado": resultado,
-            "fecha": datetime.utcnow().isoformat()
-        },
-        "ultima_actividad": datetime.utcnow().isoformat()
-    })
+doc_ref.update({
+    "tests_realizados": total_tests,
+    "total_aciertos": total_aciertos,
+    "total_fallos": total_fallos,
+    "tests_aprobados": aprobados,
+    "tests_suspendidos": suspendidos,
+    "temas_test": temas_test,
+    "tiempo_total": usuario.get("tiempo_total", 0) + tiempo_en_segundos,  # en segundos
+    "tiempo_total_dedicado_min": usuario.get("tiempo_total_dedicado_min", 0) + round(tiempo_en_segundos / 60),  # en minutos
+    "puntuacion_media_test": puntuacion_media,
+    "historial_tests": historial,
+    "ultimo_test": {
+        "aciertos": aciertos,
+        "fallos": fallos,
+        "temas": temas,
+        "tiempo": tiempo_en_segundos,
+        "tipo": tipo,
+        "puntuacion_final": puntuacion,
+        "resultado": resultado,
+        "fecha": datetime.utcnow().isoformat()
+    },
+    "ultima_actividad": datetime.utcnow().isoformat()
+})
+
 
 def actualizar_estadisticas_esquema(db, usuario_id, temas):
     doc_ref = db.collection("usuarios").document(usuario_id)
