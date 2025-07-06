@@ -197,6 +197,34 @@ import json
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+def traducir_temas_para_IA(lista_codigos):
+    traducciones = {
+        "bloque_01-tema_01": "Constitución Española",
+        "bloque_01-tema_02": "La Jefatura del Estado. La Corona. Funciones constitucionales del Rey. Sucesión y regencia.",
+        "bloque_01-tema_03": "Las Cortes Generales. Composición, atribuciones y funcionamiento del Congreso de los Diputados y del Senado.",
+        "bloque_01-tema_04": "EL PODER JUDICIAL",
+        "bloque_01-tema_05": "EL GOBIERNO Y LA ADMINISTRACIÓN.",
+        "bloque_01-tema_06": "El Gobierno Abierto, Agenda 2030 y Digitalización",
+        "bloque_01-tema_07": "LA LEY 19/2013, DE 9 DE DICIEMBRE, DE TRANSPARENCIA, ACCESO A LA INFORMACIÓN PÚBLICA Y BUEN GOBIERNO. EL CONSEJO DE TRANSPARENCIA Y BUEN GOBIERNO: FUNCIONES.",
+        "bloque_01-tema_08": "Administración General del Estado",
+        "bloque_01-tema_09": "LA ORGANIZACIÓN TERRITORIAL DEL ESTADO: LAS COMUNIDADES AUTÓNOMAS. CONSTITUCIÓN Y DISTRIBUCIÓN DE COMPETENCIAS ENTRE EL ESTADO Y LAS COMUNIDADES AUTÓNOMAS. ESTATUTOS DE AUTONOMÍA.",
+        "bloque_01-tema_10": "LA ADMINISTRACIÓN LOCAL: ENTIDADES QUE LA INTEGRAN. LA PROVINCIA, EL MUNICIPIO Y LA ISLA.",
+        "bloque_01-tema_11": "LA ORGANIZACIÓN DE LA UNIÓN EUROPEA. EL CONSEJO EUROPEO, EL CONSEJO, EL PARLAMENTO EUROPEO, LA COMISIÓN EUROPEA Y EL TRIBUNAL DE JUSTICIA DE LA UNIÓN EUROPEA. EFECTOS DE LA INTEGRACIÓN EUROPEA SOBRE LA ORGANIZACIÓN DEL ESTADO ESPAÑOL.",
+        "bloque_02-tema_01": "ATENCION AL PUBLICO",
+        "bloque_02-tema_02": "REGISTRO Y ARCHIVO",
+        "bloque_02-tema_03": "ADMINISTRACION ELECTRONICA",
+        "bloque_02-tema_04": "PROTECCION DE DATOS PERSONALES",
+        "bloque_03-tema_01": "FUENTES DEL DERECHO ADMINISTRATIVO",
+        "bloque_03-tema_02": "EL ACTO ADMINISTRATIVO",
+        "bloque_03-tema_03": "EL PROCEDIMIENTO ADMINISTRATIVO COMÚN",
+        "bloque_03-tema_04": "CONTRATOS DEL SECTOR PÚBLICO",
+        "bloque_03-tema_05": "LA ACTIVIDAD ADMINISTRATIVA.",
+        "bloque_03-tema_06": "RESPONSABILIDAD PATRIMONIAL (VACIO)",
+        "bloque_03-tema_07": "IGUALDAD DE GÉNERO (VACIO)"
+    }
+    return [traducciones.get(codigo, codigo) for codigo in lista_codigos]
+
+
 @app.route("/generar-test-inteligente", methods=["POST"])
 def generar_test_inteligente():
     data = request.get_json(silent=True)
@@ -211,18 +239,21 @@ def generar_test_inteligente():
     if not temas:
         return jsonify({"error": "No se han proporcionado temas"}), 400
 
+    temas_legibles = traducir_temas_para_IA(temas)
     prompt = f"""
-Actúa como un generador experto de preguntas tipo test para opositores del Cuerpo General Administrativo del Estado (AGE).
+Eres un generador experto de preguntas tipo test para oposiciones del Cuerpo General Administrativo del Estado (grupo C1).
 
-Crea {num_preguntas} preguntas profesionales y realistas (tipo test) sobre los siguientes temas: {', '.join(temas)}.
+Crea {num_preguntas} preguntas tipo test con el estilo oficial de exámenes del INAP: realistas, bien redactadas y con trampas habituales.
 
-Para cada pregunta, incluye:
-- El enunciado claro y preciso.
-- Cuatro opciones (A, B, C, D).
-- La opción correcta (solo una).
-- Una breve explicación.
+Temas seleccionados: {', '.join(temas_legibles)}
 
-Devuélvelo en un array JSON con este formato:
+Cada pregunta debe tener:
+- Enunciado claro
+- Opciones A, B, C y D (sin ambigüedades)
+- Una única opción correcta
+- Explicación técnica o jurídica breve
+
+Devuelve solo un array JSON como este:
 
 [
   {{
@@ -233,7 +264,7 @@ Devuélvelo en un array JSON con este formato:
       "C": "...",
       "D": "..."
     }},
-    "respuesta_correcta": "A",
+    "respuesta_correcta": "B",
     "explicacion": "..."
   }},
   ...
@@ -244,7 +275,7 @@ Devuélvelo en un array JSON con este formato:
         respuesta = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.6,
+            temperature=0.5,
         )
         generado = respuesta.choices[0].message.content.strip()
         preguntas = json.loads(generado)
