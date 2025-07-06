@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from google.cloud import firestore
 
@@ -15,6 +14,7 @@ def inicializar_estadisticas_usuario(db, usuario_id):
             "temas_test": [],
             "temas_esquemas": [],
             "tiempo_total": 0,
+            "tiempo_total_dedicado_min": 0,
             "ultimo_test": {},
             "historial_tests": [],
             "ultima_actividad": None,
@@ -33,6 +33,7 @@ def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo
     total_fallos = usuario.get("total_fallos", 0) + fallos
     temas_test = list(set(usuario.get("temas_test", []) + temas))
     tiempo_total = usuario.get("tiempo_total", 0) + tiempo_en_segundos
+    tiempo_total_min = usuario.get("tiempo_total_dedicado_min", 0) + round(tiempo_en_segundos / 60)
 
     total_preguntas = aciertos + fallos
     puntuacion = puntuacion_final if puntuacion_final is not None else round(aciertos / total_preguntas, 2) if total_preguntas else 0
@@ -61,30 +62,29 @@ def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo
     if len(historial) > 50:
         historial = historial[-50:]
 
-doc_ref.update({
-    "tests_realizados": total_tests,
-    "total_aciertos": total_aciertos,
-    "total_fallos": total_fallos,
-    "tests_aprobados": aprobados,
-    "tests_suspendidos": suspendidos,
-    "temas_test": temas_test,
-    "tiempo_total": usuario.get("tiempo_total", 0) + tiempo_en_segundos,  # en segundos
-    "tiempo_total_dedicado_min": usuario.get("tiempo_total_dedicado_min", 0) + round(tiempo_en_segundos / 60),  # en minutos
-    "puntuacion_media_test": puntuacion_media,
-    "historial_tests": historial,
-    "ultimo_test": {
-        "aciertos": aciertos,
-        "fallos": fallos,
-        "temas": temas,
-        "tiempo": tiempo_en_segundos,
-        "tipo": tipo,
-        "puntuacion_final": puntuacion,
-        "resultado": resultado,
-        "fecha": datetime.utcnow().isoformat()
-    },
-    "ultima_actividad": datetime.utcnow().isoformat()
-})
-
+    doc_ref.update({
+        "tests_realizados": total_tests,
+        "total_aciertos": total_aciertos,
+        "total_fallos": total_fallos,
+        "tests_aprobados": aprobados,
+        "tests_suspendidos": suspendidos,
+        "temas_test": temas_test,
+        "tiempo_total": tiempo_total,
+        "tiempo_total_dedicado_min": tiempo_total_min,
+        "puntuacion_media_test": puntuacion_media,
+        "historial_tests": historial,
+        "ultimo_test": {
+            "aciertos": aciertos,
+            "fallos": fallos,
+            "temas": temas,
+            "tiempo": tiempo_en_segundos,
+            "tipo": tipo,
+            "puntuacion_final": puntuacion,
+            "resultado": resultado,
+            "fecha": datetime.utcnow().isoformat()
+        },
+        "ultima_actividad": datetime.utcnow().isoformat()
+    })
 
 def actualizar_estadisticas_esquema(db, usuario_id, temas):
     doc_ref = db.collection("usuarios").document(usuario_id)
@@ -124,5 +124,3 @@ def obtener_resumen_progreso(db, usuario_id):
     }
 
     return resumen
-
-
