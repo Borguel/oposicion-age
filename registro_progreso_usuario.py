@@ -1,3 +1,4 @@
+
 from datetime import datetime
 from google.cloud import firestore
 
@@ -23,7 +24,7 @@ def inicializar_estadisticas_usuario(db, usuario_id):
             "puntuacion_media_test": 0
         })
 
-def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo_en_segundos):
+def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None):
     doc_ref = db.collection("usuarios").document(usuario_id)
     usuario = doc_ref.get().to_dict()
 
@@ -32,16 +33,19 @@ def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo
     total_fallos = usuario.get("total_fallos", 0) + fallos
     temas_test = list(set(usuario.get("temas_test", []) + temas))
     tiempo_total = usuario.get("tiempo_total", 0) + tiempo_en_segundos
+
+    total_preguntas = aciertos + fallos
+    puntuacion = puntuacion_final if puntuacion_final is not None else round(aciertos / total_preguntas, 2) if total_preguntas else 0
     puntuacion_media = round(total_aciertos / total_tests, 2) if total_tests else 0
 
     aprobados = usuario.get("tests_aprobados", 0)
     suspendidos = usuario.get("tests_suspendidos", 0)
-    total_preguntas = aciertos + fallos
-    ratio = aciertos / total_preguntas if total_preguntas else 0
-    if ratio >= 0.5:
+    if puntuacion >= 0.5:
         aprobados += 1
+        resultado = "aprobado"
     else:
         suspendidos += 1
+        resultado = "suspendido"
 
     historial = usuario.get("historial_tests", [])
     historial.append({
@@ -49,7 +53,10 @@ def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo
         "aciertos": aciertos,
         "fallos": fallos,
         "temas": temas,
-        "tiempo": tiempo_en_segundos
+        "tiempo": tiempo_en_segundos,
+        "tipo": tipo,
+        "puntuacion_final": puntuacion,
+        "resultado": resultado
     })
     if len(historial) > 50:
         historial = historial[-50:]
@@ -69,6 +76,9 @@ def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo
             "fallos": fallos,
             "temas": temas,
             "tiempo": tiempo_en_segundos,
+            "tipo": tipo,
+            "puntuacion_final": puntuacion,
+            "resultado": resultado,
             "fecha": datetime.utcnow().isoformat()
         },
         "ultima_actividad": datetime.utcnow().isoformat()
@@ -112,4 +122,5 @@ def obtener_resumen_progreso(db, usuario_id):
     }
 
     return resumen
+
 
