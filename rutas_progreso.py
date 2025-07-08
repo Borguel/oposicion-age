@@ -6,6 +6,7 @@ from registro_progreso_usuario import (
     actualizar_estadisticas_esquema,
     obtener_resumen_progreso
 )
+import random
 
 def registrar_rutas_progreso(app, db):
     @app.route("/registrar-usuario", methods=["POST"])
@@ -67,3 +68,41 @@ def registrar_rutas_progreso(app, db):
 
         resumen = obtener_resumen_progreso(db, usuario_id)
         return jsonify({"resumen": resumen})
+
+    @app.route("/ultimo-test", methods=["GET"])
+    def obtener_ultimo_test():
+        usuario_id = request.args.get("usuario_id")
+        if not usuario_id:
+            return jsonify({"error": "Falta usuario_id"}), 400
+
+        doc = db.collection("usuarios").document(usuario_id).get()
+        if not doc.exists:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        data = doc.to_dict()
+        return jsonify(data.get("ultimo_test", {}))
+
+    @app.route("/test-desde-historial", methods=["GET"])
+    def generar_test_desde_historial():
+        usuario_id = request.args.get("usuario_id")
+        cantidad = int(request.args.get("cantidad", 10))
+
+        if not usuario_id:
+            return jsonify({"error": "Falta usuario_id"}), 400
+
+        try:
+            tests_ref = db.collection("usuarios").document(usuario_id).collection("tests").stream()
+            preguntas = []
+            for test in tests_ref:
+                test_data = test.to_dict()
+                preguntas.extend(test_data.get("preguntas", []))
+        except Exception as e:
+            return jsonify({"error": f"Error leyendo tests: {str(e)}"}), 500
+
+        if not preguntas:
+            return jsonify({"test": [], "mensaje": "No se encontraron preguntas anteriores"}), 404
+
+        random.shuffle(preguntas)
+        seleccionadas = preguntas[:cantidad]
+
+        return jsonify({"test": seleccionadas})
