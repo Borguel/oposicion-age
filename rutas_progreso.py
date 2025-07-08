@@ -75,12 +75,18 @@ def registrar_rutas_progreso(app, db):
         if not usuario_id:
             return jsonify({"error": "Falta usuario_id"}), 400
 
-        doc = db.collection("usuarios").document(usuario_id).get()
-        if not doc.exists:
-            return jsonify({"error": "Usuario no encontrado"}), 404
+        try:
+            tests_ref = db.collection("usuarios").document(usuario_id).collection("tests")
+            query = tests_ref.order_by("fecha", direction=firestore.Query.DESCENDING).limit(1).stream()
+            test = next(query, None)
 
-        data = doc.to_dict()
-        return jsonify(data.get("ultimo_test", {}))
+            if not test:
+                return jsonify({"mensaje": "No se encontró test anterior", "test": []}), 404
+
+            test_data = test.to_dict()
+            return jsonify({"test": test_data.get("preguntas", [])})
+        except Exception as e:
+            return jsonify({"error": f"Error buscando test: {str(e)}"}), 500
 
     @app.route("/test-desde-historial", methods=["GET"])
     def generar_test_desde_historial():
