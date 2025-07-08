@@ -2,11 +2,6 @@ from datetime import datetime
 from firebase_admin import firestore
 
 def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None):
-    """
-    Guarda un test o un esquema dentro del documento del usuario en Firestore.
-    Si es un test, calcula la puntuación, guarda en subcolección 'tests' y actualiza totales.
-    Si es un esquema, guarda en subcolección 'esquemas' y actualiza totales.
-    """
     metadatos = metadatos or {}
     doc_user = db.collection("usuarios").document(usuario_id)
 
@@ -34,7 +29,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             "fallos": fallos,
             "blancos": blancos,
             "puntuacion_final": puntuacion,
-            "tiempo": metadatos.get("tiempo", 0),
+            "tiempo": metadatos.get("tiempo", 0),  # en segundos
             "temas": metadatos.get("temas", []),
             "preguntas": [
                 {
@@ -53,11 +48,12 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             doc_user.set({})
             doc = doc_user.get()
         data = doc.to_dict()
+
         total_tests = data.get("tests_realizados", 0) + 1
         total_aciertos = data.get("total_aciertos", 0) + aciertos
         total_fallos = data.get("total_fallos", 0) + fallos
         temas_test = list(set(data.get("temas_test", []) + metadatos.get("temas", [])))
-        tiempo_total = data.get("tiempo_total_dedicado_min", 0) + round(metadatos.get("tiempo", 0) / 60)
+        tiempo_total = data.get("tiempo_total", 0) + metadatos.get("tiempo", 0)  # en segundos
         puntuacion_media = round(total_aciertos / total_tests, 2)
 
         doc_user.update({
@@ -65,7 +61,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             "total_aciertos": total_aciertos,
             "total_fallos": total_fallos,
             "temas_test": temas_test,
-            "tiempo_total_dedicado_min": tiempo_total,
+            "tiempo_total": tiempo_total,
             "ultimo_test": {
                 "aciertos": aciertos,
                 "fallos": fallos,
@@ -73,7 +69,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
                 "puntuacion_final": puntuacion,
                 "tipo": metadatos.get("tipo", "personalizado"),
                 "temas": metadatos.get("temas", []),
-                "tiempo_min": round(metadatos.get("tiempo", 0) / 60),
+                "tiempo": metadatos.get("tiempo", 0),  # en segundos
                 "fecha": datetime.utcnow().isoformat()
             },
             "ultima_actividad": datetime.utcnow().isoformat(),
@@ -103,3 +99,4 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             "temas_esquemas": temas_esquema,
             "ultima_actividad": datetime.utcnow().isoformat()
         })
+
