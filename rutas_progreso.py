@@ -28,13 +28,16 @@ def registrar_rutas_progreso(app, db):
         if not usuario_id:
             return jsonify({"error": "Falta usuario_id"}), 400
 
+        tiempo_min = metadatos.get("tiempo", 0)
+        tiempo_en_segundos = int(tiempo_min * 60)
+
         actualizar_estadisticas_test(
             db=db,
             usuario_id=usuario_id,
             aciertos=metadatos.get("aciertos", 0),
             fallos=metadatos.get("fallos", 0),
             temas=metadatos.get("temas", []),
-            tiempo_en_segundos=metadatos.get("tiempo", 0)
+            tiempo_en_segundos=tiempo_en_segundos
         )
 
         return jsonify({"mensaje": "Progreso de test actualizado"})
