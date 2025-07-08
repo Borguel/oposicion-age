@@ -1,4 +1,4 @@
-rom datetime import datetime
+from datetime import datetime
 from google.cloud import firestore
 
 def inicializar_estadisticas_usuario(db, usuario_id):
