@@ -20,6 +20,10 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
 
         puntuacion = round(aciertos - (fallos / 3), 2)
 
+        # Calcular si es aprobado o suspendido
+        total_preguntas = aciertos + fallos
+        resultado = "aprobado" if total_preguntas > 0 and (aciertos / total_preguntas) >= 0.5 else "suspendido"
+
         # Guardar en subcolección tests
         test_ref = doc_user.collection("tests").document()
         test_ref.set({
@@ -31,6 +35,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             "puntuacion_final": puntuacion,
             "tiempo": metadatos.get("tiempo", 0),  # en segundos
             "temas": metadatos.get("temas", []),
+            "resultado": resultado,
             "preguntas": [
                 {
                     "pregunta": p.get("pregunta"),
@@ -56,12 +61,22 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
         tiempo_total = data.get("tiempo_total", 0) + metadatos.get("tiempo", 0)  # en segundos
         puntuacion_media = round(total_aciertos / total_tests, 2)
 
+        aprobados = data.get("tests_aprobados", 0)
+        suspendidos = data.get("tests_suspendidos", 0)
+        if resultado == "aprobado":
+            aprobados += 1
+        else:
+            suspendidos += 1
+
         doc_user.update({
             "tests_realizados": total_tests,
             "total_aciertos": total_aciertos,
             "total_fallos": total_fallos,
+            "tests_aprobados": aprobados,
+            "tests_suspendidos": suspendidos,
             "temas_test": temas_test,
             "tiempo_total": tiempo_total,
+            "puntuacion_media_test": puntuacion_media,
             "ultimo_test": {
                 "aciertos": aciertos,
                 "fallos": fallos,
@@ -70,10 +85,10 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
                 "tipo": metadatos.get("tipo", "personalizado"),
                 "temas": metadatos.get("temas", []),
                 "tiempo": metadatos.get("tiempo", 0),  # en segundos
+                "resultado": resultado,
                 "fecha": datetime.utcnow().isoformat()
             },
-            "ultima_actividad": datetime.utcnow().isoformat(),
-            "puntuacion_media_test": puntuacion_media
+            "ultima_actividad": datetime.utcnow().isoformat()
         })
 
     elif tipo == "esquema":
