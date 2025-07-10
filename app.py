@@ -36,8 +36,11 @@ def chat_route():
     data = request.get_json()
     mensaje = data.get("mensaje")
     temas = data.get("temas", [])
-    respuesta = responder_chat(mensaje=mensaje, temas=temas, db=db)
+    usuario_id = data.get("usuario_id", "anonimo")  # Nuevo campo que viene del frontend
+
+    respuesta = responder_chat(mensaje=mensaje, temas=temas, db=db, usuario_id=usuario_id)
     return jsonify({"respuesta": respuesta})
+
 
 @app.route("/consultar-asistente-examen", methods=["POST"])
 def ruta_asistente_examen():

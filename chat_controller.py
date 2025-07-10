@@ -1,13 +1,14 @@
 
 import os
 import time
+from datetime import datetime
 from openai import OpenAI
 from utils import obtener_contexto_por_temas
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# 📌 Asistente tipo chat con el temario (IA + Firestore)
-def responder_chat(mensaje, temas, db):
+# 📌 Asistente tipo chat con el temario (IA + Firestore + historial)
+def responder_chat(mensaje, temas, db, usuario_id="anonimo"):
     contexto = obtener_contexto_por_temas(db, temas)
 
     prompt = f"""Eres un asistente experto en oposiciones. Utiliza el siguiente contenido del temario para responder con claridad y precisión a la pregunta del usuario.
@@ -29,7 +30,17 @@ PREGUNTA DEL USUARIO:
         max_tokens=800
     )
 
-    return respuesta.choices[0].message.content.strip()
+    texto_respuesta = respuesta.choices[0].message.content.strip()
+
+    # 💾 Guardar en Firestore
+    db.collection("conversaciones_ia").add({
+        "usuario_id": usuario_id,
+        "timestamp": datetime.utcnow().isoformat(),
+        "mensaje_usuario": mensaje,
+        "respuesta_ia": texto_respuesta
+    })
+
+    return texto_respuesta
 
 # ✅ Asistente OpenAI con instrucciones predefinidas (examen AGE)
 ASSISTANT_EXAMEN_ID = "asst_EDmGPHxH7FNsEXtFpMWd4Ip4"  # ← cambia esto por tu ID real
