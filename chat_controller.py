@@ -1,3 +1,4 @@
+
 import os
 import time
 from datetime import datetime
@@ -7,10 +8,14 @@ from utils import obtener_contexto_por_temas
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# ✅ Crear conversación con título y mensajes
+# ✅ Crear conversación con título y mensajes en subcolección por usuario
+
 def crear_conversacion(db, usuario_id, mensaje_usuario, respuesta_ia):
     titulo = mensaje_usuario[:80] + ("..." if len(mensaje_usuario) > 80 else "")
-    nueva = db.collection("conversaciones_IA").document()
+    nueva = db.collection("conversaciones_IA") \
+              .document(usuario_id) \
+              .collection("conversaciones") \
+              .document()
     nueva.set({
         "usuario_id": usuario_id,
         "titulo": titulo,
@@ -23,12 +28,18 @@ def crear_conversacion(db, usuario_id, mensaje_usuario, respuesta_ia):
     return nueva.id
 
 # ✅ Añadir mensaje a conversación existente
-def agregar_mensaje_a_conversacion(db, conversacion_id, role, content):
-    db.collection("conversaciones_IA").document(conversacion_id).update({
-        "mensajes": firestore.ArrayUnion([{ "role": role, "content": content }])
-    })
+
+def agregar_mensaje_a_conversacion(db, usuario_id, conversacion_id, role, content):
+    db.collection("conversaciones_IA") \
+      .document(usuario_id) \
+      .collection("conversaciones") \
+      .document(conversacion_id) \
+      .update({
+          "mensajes": firestore.ArrayUnion([{"role": role, "content": content}])
+      })
 
 # 📌 Asistente tipo chat con el temario (IA + Firestore + historial)
+
 def responder_chat(mensaje, temas, db, usuario_id="anonimo", chat_id=None):
     contexto = obtener_contexto_por_temas(db, temas)
 
@@ -54,8 +65,8 @@ PREGUNTA DEL USUARIO:
     texto_respuesta = respuesta.choices[0].message.content.strip()
 
     if chat_id:
-        agregar_mensaje_a_conversacion(db, chat_id, "user", mensaje)
-        agregar_mensaje_a_conversacion(db, chat_id, "assistant", texto_respuesta)
+        agregar_mensaje_a_conversacion(db, usuario_id, chat_id, "user", mensaje)
+        agregar_mensaje_a_conversacion(db, usuario_id, chat_id, "assistant", texto_respuesta)
     else:
         chat_id = crear_conversacion(db, usuario_id, mensaje, texto_respuesta)
 
@@ -88,4 +99,3 @@ def consultar_asistente_examen_AGE(mensaje_usuario):
 
     messages = client.beta.threads.messages.list(thread_id=thread.id)
     return messages.data[0].content[0].text.value
-

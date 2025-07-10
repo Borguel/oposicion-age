@@ -311,13 +311,21 @@ Devuelve solo un array JSON como este:
     except Exception as e:
         print("❌ Error al generar test inteligente:", e)
         return jsonify({"error": str(e)}), 500
+
+
+# 🔹 Ruta para obtener el historial de conversaciones por usuario
 @app.route("/conversaciones", methods=["GET"])
 def obtener_conversaciones_usuario():
     usuario_id = request.args.get("usuario_id")
     if not usuario_id:
         return jsonify({"error": "Falta usuario_id"}), 400
 
-    docs = db.collection("conversaciones_IA").where("usuario_id", "==", usuario_id).order_by("timestamp_inicio", direction=firestore.Query.DESCENDING).stream()
+    docs = db.collection("conversaciones_IA") \
+             .document(usuario_id) \
+             .collection("conversaciones") \
+             .order_by("timestamp_inicio", direction=firestore.Query.DESCENDING) \
+             .stream()
+
     resultado = []
     for doc in docs:
         data = doc.to_dict()
@@ -329,20 +337,27 @@ def obtener_conversaciones_usuario():
     return jsonify({"conversaciones": resultado})
 
 
+# 🔹 Ruta para obtener una conversación concreta
 @app.route("/conversacion/<conversacion_id>", methods=["GET"])
-def obtener_conversacion(completa=True):
-    conversacion_id = request.view_args['conversacion_id']
-    doc = db.collection("conversaciones_IA").document(conversacion_id).get()
+def obtener_conversacion(conversacion_id):
+    usuario_id = request.args.get("usuario_id")
+    if not usuario_id:
+        return jsonify({"error": "Falta usuario_id"}), 400
+
+    doc = db.collection("conversaciones_IA") \
+            .document(usuario_id) \
+            .collection("conversaciones") \
+            .document(conversacion_id) \
+            .get()
+
     if not doc.exists:
         return jsonify({"error": "Conversación no encontrada"}), 404
+
     return jsonify(doc.to_dict())
 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
-
-
 
 
 
