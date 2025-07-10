@@ -9,6 +9,7 @@ from firebase_admin import credentials, firestore
 # Módulos personalizados
 from test_generator import generar_test_avanzado
 from chat_controller import responder_chat
+from chat_controller import consultar_asistente_examen_AGE
 from esquema_generator import generar_esquema
 from save_controller import guardar_test_route, guardar_esquema_route
 from rutas_progreso import registrar_rutas_progreso
@@ -37,6 +38,19 @@ def chat_route():
     temas = data.get("temas", [])
     respuesta = responder_chat(mensaje=mensaje, temas=temas, db=db)
     return jsonify({"respuesta": respuesta})
+
+@app.route("/consultar-asistente-examen", methods=["POST"])
+def ruta_asistente_examen():
+    data = request.get_json()
+    mensaje = data.get("mensaje", "")
+    if not mensaje:
+        return jsonify({"error": "Falta el mensaje"}), 400
+    try:
+        respuesta = consultar_asistente_examen_AGE(mensaje)
+        return jsonify({"respuesta": respuesta})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/generar-test-avanzado", methods=["POST"])
 def generar_test_avanzado_route():
