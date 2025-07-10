@@ -1,14 +1,35 @@
-
 import os
 import time
 from datetime import datetime
 from openai import OpenAI
+from firebase_admin import firestore
 from utils import obtener_contexto_por_temas
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# ✅ Crear conversación con título y mensajes
+def crear_conversacion(db, usuario_id, mensaje_usuario, respuesta_ia):
+    titulo = mensaje_usuario[:80] + ("..." if len(mensaje_usuario) > 80 else "")
+    nueva = db.collection("conversaciones_IA").document()
+    nueva.set({
+        "usuario_id": usuario_id,
+        "titulo": titulo,
+        "timestamp_inicio": datetime.utcnow().isoformat(),
+        "mensajes": [
+            {"role": "user", "content": mensaje_usuario},
+            {"role": "assistant", "content": respuesta_ia}
+        ]
+    })
+    return nueva.id
+
+# ✅ Añadir mensaje a conversación existente
+def agregar_mensaje_a_conversacion(db, conversacion_id, role, content):
+    db.collection("conversaciones_IA").document(conversacion_id).update({
+        "mensajes": firestore.ArrayUnion([{ "role": role, "content": content }])
+    })
+
 # 📌 Asistente tipo chat con el temario (IA + Firestore + historial)
-def responder_chat(mensaje, temas, db, usuario_id="anonimo"):
+def responder_chat(mensaje, temas, db, usuario_id="anonimo", chat_id=None):
     contexto = obtener_contexto_por_temas(db, temas)
 
     prompt = f"""Eres un asistente experto en oposiciones. Utiliza el siguiente contenido del temario para responder con claridad y precisión a la pregunta del usuario.
@@ -32,18 +53,16 @@ PREGUNTA DEL USUARIO:
 
     texto_respuesta = respuesta.choices[0].message.content.strip()
 
-    # 💾 Guardar en Firestore
-    db.collection("conversaciones_ia").add({
-        "usuario_id": usuario_id,
-        "timestamp": datetime.utcnow().isoformat(),
-        "mensaje_usuario": mensaje,
-        "respuesta_ia": texto_respuesta
-    })
+    if chat_id:
+        agregar_mensaje_a_conversacion(db, chat_id, "user", mensaje)
+        agregar_mensaje_a_conversacion(db, chat_id, "assistant", texto_respuesta)
+    else:
+        chat_id = crear_conversacion(db, usuario_id, mensaje, texto_respuesta)
 
-    return texto_respuesta
+    return texto_respuesta, chat_id
 
 # ✅ Asistente OpenAI con instrucciones predefinidas (examen AGE)
-ASSISTANT_EXAMEN_ID = "asst_EDmGPHxH7FNsEXtFpMWd4Ip4"  # ← cambia esto por tu ID real
+ASSISTANT_EXAMEN_ID = "asst_EDmGPHxH7FNsEXtFpMWd4Ip4"  # ← reemplaza si cambia tu ID
 
 def consultar_asistente_examen_AGE(mensaje_usuario):
     thread = client.beta.threads.create()
@@ -69,3 +88,4 @@ def consultar_asistente_examen_AGE(mensaje_usuario):
 
     messages = client.beta.threads.messages.list(thread_id=thread.id)
     return messages.data[0].content[0].text.value
+

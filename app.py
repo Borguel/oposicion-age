@@ -36,10 +36,21 @@ def chat_route():
     data = request.get_json()
     mensaje = data.get("mensaje")
     temas = data.get("temas", [])
-    usuario_id = data.get("usuario_id", "anonimo")  # Nuevo campo que viene del frontend
+    usuario_id = data.get("usuario_id", "anonimo")
+    chat_id = data.get("chat_id")  # ← opcional
 
-    respuesta = responder_chat(mensaje=mensaje, temas=temas, db=db, usuario_id=usuario_id)
-    return jsonify({"respuesta": respuesta})
+    respuesta, chat_id = responder_chat(
+        mensaje=mensaje,
+        temas=temas,
+        db=db,
+        usuario_id=usuario_id,
+        chat_id=chat_id
+    )
+
+    return jsonify({
+        "respuesta": respuesta,
+        "chat_id": chat_id
+    })
 
 
 @app.route("/consultar-asistente-examen", methods=["POST"])
@@ -300,6 +311,31 @@ Devuelve solo un array JSON como este:
     except Exception as e:
         print("❌ Error al generar test inteligente:", e)
         return jsonify({"error": str(e)}), 500
+@app.route("/conversaciones", methods=["GET"])
+def obtener_conversaciones_usuario():
+    usuario_id = request.args.get("usuario_id")
+    if not usuario_id:
+        return jsonify({"error": "Falta usuario_id"}), 400
+
+    docs = db.collection("conversaciones_IA").where("usuario_id", "==", usuario_id).order_by("timestamp_inicio", direction=firestore.Query.DESCENDING).stream()
+    resultado = []
+    for doc in docs:
+        data = doc.to_dict()
+        resultado.append({
+            "id": doc.id,
+            "titulo": data.get("titulo", "Sin título"),
+            "timestamp_inicio": data.get("timestamp_inicio")
+        })
+    return jsonify({"conversaciones": resultado})
+
+
+@app.route("/conversacion/<conversacion_id>", methods=["GET"])
+def obtener_conversacion(completa=True):
+    conversacion_id = request.view_args['conversacion_id']
+    doc = db.collection("conversaciones_IA").document(conversacion_id).get()
+    if not doc.exists:
+        return jsonify({"error": "Conversación no encontrada"}), 404
+    return jsonify(doc.to_dict())
 
 
 if __name__ == "__main__":
