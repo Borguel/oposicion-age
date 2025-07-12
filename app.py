@@ -354,6 +354,45 @@ def obtener_conversacion(conversacion_id):
         return jsonify({"error": "Conversación no encontrada"}), 404
 
     return jsonify(doc.to_dict())
+@app.route("/generar-test-fallos", methods=["POST"])
+def generar_test_fallos():
+    data = request.get_json()
+    usuario_id = data.get("usuario_id")
+    num_preguntas = data.get("num_preguntas", 10)
+
+    if not usuario_id:
+        return jsonify({"error": "Falta usuario_id"}), 400
+
+    # Recupera todos los tests del usuario
+    tests_ref = db.collection("usuarios").document(usuario_id).collection("tests").stream()
+
+    preguntas_falladas = []
+    for test_doc in tests_ref:
+        test = test_doc.to_dict()
+        for pregunta in test.get("preguntas", []):
+            if (
+                "respuesta_usuario" in pregunta and 
+                "respuesta_correcta" in pregunta and
+                pregunta["respuesta_usuario"] != pregunta["respuesta_correcta"] and
+                pregunta["respuesta_usuario"] is not None
+            ):
+                preguntas_falladas.append(pregunta)
+
+    # Quitar duplicados por enunciado
+    preguntas_unicas = []
+    vistos = set()
+    for p in preguntas_falladas:
+        clave = p.get("pregunta", "")
+        if clave not in vistos:
+            preguntas_unicas.append(p)
+            vistos.add(clave)
+
+    # Mezclar y recortar a las N que pida el usuario
+    import random
+    random.shuffle(preguntas_unicas)
+    preguntas_finales = preguntas_unicas[:num_preguntas]
+
+    return jsonify({"test": preguntas_finales})
 
 
 if __name__ == "__main__":
