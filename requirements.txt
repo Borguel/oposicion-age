@@ -4,3 +4,5 @@ firebase-admin
 python-dotenv
 openai
 tiktoken
+requests
+PyPDF2

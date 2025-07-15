@@ -1,10 +1,14 @@
+
 import os
 import random
+import requests  # Para llamadas a DeepSeek API
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, firestore
+from PyPDF2 import PdfReader  # Para procesar PDFs
+from io import BytesIO  # Para manejar archivos en memoria
 
 # Módulos personalizados
 from test_generator import generar_test_avanzado
@@ -17,6 +21,7 @@ from rutas_progreso import registrar_rutas_progreso
 # Cargar variables de entorno
 load_dotenv()
 print("🔑 Clave OpenAI:", os.getenv("OPENAI_API_KEY"))
+print("🔑 Clave DeepSeek:", "configurada" if os.getenv("DEEPSEEK_API_KEY") else "no configurada")
 
 # Inicializar Firebase
 firebase_key_path = os.getenv("FIREBASE_KEY_PATH", "clave-firebase.json")
@@ -354,6 +359,7 @@ def obtener_conversacion(conversacion_id):
         return jsonify({"error": "Conversación no encontrada"}), 404
 
     return jsonify(doc.to_dict())
+
 @app.route("/generar-test-fallos", methods=["POST"])
 def generar_test_fallos():
     data = request.get_json()
@@ -394,9 +400,156 @@ def generar_test_fallos():
 
     return jsonify({"test": preguntas_finales})
 
+# ===================================================================
+# NUEVAS RUTAS PARA DEEPSEEK (PDFs y chat)
+# ===================================================================
+
+@app.route('/resumir-pdf', methods=['POST'])
+def resumir_pdf():
+    """
+    Endpoint para subir un PDF y obtener un resumen generado por DeepSeek
+    """
+    # Verificar si se envió un archivo
+    if 'pdf' not in request.files:
+        return jsonify({"error": "No se encontró archivo PDF"}), 400
+    
+    pdf_file = request.files['pdf']
+    
+    # Verificar que el archivo tenga un nombre válido
+    if pdf_file.filename == '':
+        return jsonify({"error": "Nombre de archivo inválido"}), 400
+    
+    try:
+        # Leer el PDF y extraer texto
+        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+        text = ""
+        for page in pdf_reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+        
+        # Si el texto está vacío, puede ser un PDF escaneado (imagen)
+        if not text.strip():
+            return jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400
+        
+        # Limitar el tamaño del texto para no exceder los tokens máximos
+        max_length = 300000  # ~100,000 tokens (DeepSeek soporta hasta 128K)
+        if len(text) > max_length:
+            text = text[:max_length]
+        
+        # Crear el prompt para DeepSeek
+        system_prompt = (
+            "Eres un experto en oposiciones. Resume este documento en puntos clave, "
+            "destacando conceptos fundamentales, leyes importantes y fechas relevantes. "
+            "Usa viñetas claras y estructura organizada. El resumen debe ser útil para un opositor."
+        )
+        
+        # Preparar payload para DeepSeek API
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
+            
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Documento para resumir:\n\n{text}"}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 2000
+        }
+        
+        # Llamar a la API de DeepSeek
+        response = requests.post(
+            "https://api.deepseek.com/chat/completions",
+            headers=headers,
+            json=payload
+        )
+        
+        # Verificar respuesta
+        if response.status_code != 200:
+            return jsonify({
+                "error": f"Error en DeepSeek API: {response.status_code}",
+                "details": response.text
+            }), 500
+        
+        data = response.json()
+        resumen = data['choices'][0]['message']['content']
+        
+        return jsonify({"resumen": resumen})
+    
+    except Exception as e:
+        return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
+
+@app.route("/chat-deepseek", methods=["POST"])
+def chat_deepseek():
+    """
+    Endpoint para chatear directamente con DeepSeek
+    """
+    data = request.get_json()
+    mensaje = data.get("mensaje")
+    
+    if not mensaje:
+        return jsonify({"error": "Falta el mensaje"}), 400
+    
+    try:
+        # Preparar payload para DeepSeek API
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
+            
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [
+                {
+                    "role": "system", 
+                    "content": "Eres un asistente especializado en oposiciones. Responde de manera clara, concisa y útil."
+                },
+                {
+                    "role": "user", 
+                    "content": mensaje
+                }
+            ],
+            "temperature": 0.7,
+            "max_tokens": 1000
+        }
+        
+        # Llamar a la API de DeepSeek
+        response = requests.post(
+            "https://api.deepseek.com/chat/completions",
+            headers=headers,
+            json=payload
+        )
+        
+        # Verificar respuesta
+        if response.status_code != 200:
+            return jsonify({
+                "error": f"Error en DeepSeek API: {response.status_code}",
+                "details": response.text
+            }), 500
+        
+        data = response.json()
+        respuesta = data['choices'][0]['message']['content']
+        
+        return jsonify({"respuesta": respuesta})
+    
+    except Exception as e:
+        return jsonify({"error": f"Error en el servicio de chat: {str(e)}"}), 500
+
+# ===================================================================
+# FIN DE NUEVAS RUTAS
+# ===================================================================
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
-
 
