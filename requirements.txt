@@ -6,3 +6,5 @@ openai
 tiktoken
 requests
 PyPDF2
+gunicorn
+google-cloud-storage
