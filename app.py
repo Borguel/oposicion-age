@@ -1,18 +1,14 @@
 
 import os
 import random
-import requests
-import uuid
-import json
-from datetime import datetime
+import requests  # Para llamadas a DeepSeek API
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import firebase_admin
-from firebase_admin import credentials, firestore, storage
-from PyPDF2 import PdfReader
-from io import BytesIO
-from openai import OpenAI
+from firebase_admin import credentials, firestore
+from PyPDF2 import PdfReader  # Para procesar PDFs
+from io import BytesIO  # Para manejar archivos en memoria
 
 # Módulos personalizados
 from test_generator import generar_test_avanzado
@@ -21,7 +17,6 @@ from chat_controller import consultar_asistente_examen_AGE
 from esquema_generator import generar_esquema
 from save_controller import guardar_test_route, guardar_esquema_route
 from rutas_progreso import registrar_rutas_progreso
-from deepseek_utils import call_deepseek_api
 
 # Cargar variables de entorno
 load_dotenv()
@@ -32,21 +27,14 @@ print("🔑 Clave DeepSeek:", "configurada" if os.getenv("DEEPSEEK_API_KEY") els
 firebase_key_path = os.getenv("FIREBASE_KEY_PATH", "clave-firebase.json")
 if not firebase_admin._apps:
     cred = credentials.Certificate(firebase_key_path)
-    firebase_app = firebase_admin.initialize_app(cred, {
-        'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET")
-    })
+    firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-bucket = storage.bucket()
 
 # Inicializar Flask
 app = Flask(__name__)
 CORS(app, origins=["https://lightslategray-caribou-622401.hostingersite.com"])
 print("✅ CORS activado para tu WordPress")
-
-# ===================================================================
-# RUTAS EXISTENTES
-# ===================================================================
 
 @app.route("/chat", methods=["POST"])
 def chat_route():
@@ -236,6 +224,12 @@ def listar_rutas():
     rutas = [rule.rule for rule in app.url_map.iter_rules()]
     return jsonify({"rutas_disponibles": rutas})
 
+
+from openai import OpenAI
+import json
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 def traducir_temas_para_IA(lista_codigos):
     traducciones = {
         "bloque_01-tema_01": "Constitución Española",
@@ -311,7 +305,6 @@ Devuelve solo un array JSON como este:
 """
 
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         respuesta = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
@@ -401,13 +394,14 @@ def generar_test_fallos():
             vistos.add(clave)
 
     # Mezclar y recortar a las N que pida el usuario
+    import random
     random.shuffle(preguntas_unicas)
     preguntas_finales = preguntas_unicas[:num_preguntas]
 
     return jsonify({"test": preguntas_finales})
 
 # ===================================================================
-# NUEVAS RUTAS PARA CHAT CON PDFs
+# NUEVAS RUTAS PARA DEEPSEEK (PDFs y chat)
 # ===================================================================
 
 @app.route('/resumir-pdf', methods=['POST'])
@@ -552,167 +546,10 @@ def chat_deepseek():
     except Exception as e:
         return jsonify({"error": f"Error en el servicio de chat: {str(e)}"}), 500
 
-@app.route('/upload-pdf-chat', methods=['POST'])
-def upload_pdf_chat():
-    """
-    Sube un PDF para iniciar una sesión de chat
-    """
-    try:
-        if 'pdf' not in request.files:
-            return jsonify({"error": "No se encontró archivo PDF"}), 400
-        
-        pdf_file = request.files['pdf']
-        usuario_id = request.form.get('usuario_id', 'anonimo')
-        session_id = str(uuid.uuid4())  # ID único para esta sesión de chat
-        
-        if pdf_file.filename == '':
-            return jsonify({"error": "Nombre de archivo inválido"}), 400
-        
-        # Guardar PDF en Firebase Storage
-        blob = bucket.blob(f"pdf_chats/{usuario_id}/{session_id}/{pdf_file.filename}")
-        blob.upload_from_string(
-            pdf_file.read(),
-            content_type='application/pdf'
-        )
-        
-        # Crear registro en Firestore
-        pdf_ref = db.collection("pdf_chats").document()
-        pdf_ref.set({
-            "usuario_id": usuario_id,
-            "session_id": session_id,
-            "nombre_archivo": pdf_file.filename,
-            "ruta_storage": blob.name,
-            "timestamp": datetime.utcnow().isoformat(),
-            "historial": []
-        })
-        
-        return jsonify({
-            "mensaje": "PDF subido correctamente",
-            "session_id": session_id
-        })
-    
-    except Exception as e:
-        return jsonify({"error": f"Error al procesar PDF: {str(e)}"}), 500
-
-@app.route('/chat-pdf', methods=['POST'])
-def chat_pdf():
-    """
-    Envía un mensaje a una sesión de chat de PDF existente
-    """
-    data = request.get_json()
-    session_id = data.get('session_id')
-    mensaje = data.get('mensaje')
-    usuario_id = data.get('usuario_id', 'anonimo')
-    
-    if not session_id or not mensaje:
-        return jsonify({"error": "Faltan parámetros requeridos"}), 400
-    
-    try:
-        # Recuperar información del PDF
-        pdf_ref = db.collection("pdf_chats").where("session_id", "==", session_id).limit(1).get()
-        if not pdf_ref:
-            return jsonify({"error": "Sesión no encontrada"}), 404
-        
-        pdf_doc = pdf_ref[0]
-        pdf_data = pdf_doc.to_dict()
-        
-        # Verificar que el usuario tiene permiso para esta sesión
-        if pdf_data['usuario_id'] != usuario_id:
-            return jsonify({"error": "No autorizado para esta sesión"}), 403
-        
-        # Obtener texto del PDF desde Storage
-        blob = bucket.blob(pdf_data['ruta_storage'])
-        pdf_content = blob.download_as_text()
-        
-        # Preparar prompt para DeepSeek
-        prompt = f"CONTEXTO DEL PDF:\n{pdf_content}\n\nPREGUNTA DEL USUARIO:\n{mensaje}"
-        
-        # Llamar a DeepSeek API usando la función utilitaria
-        response = call_deepseek_api([
-            {"role": "system", "content": "Eres un asistente especializado en analizar documentos PDF. Responde preguntas basadas únicamente en el contenido proporcionado."},
-            {"role": "user", "content": prompt}
-        ], max_tokens=1000, temperature=0.3)
-        
-        if not response:
-            return jsonify({"error": "Error al obtener respuesta de DeepSeek"}), 500
-        
-        respuesta = response
-        
-        # Actualizar historial en Firestore
-        nuevo_historial = pdf_data['historial'] + [
-            {"role": "user", "content": mensaje, "timestamp": datetime.utcnow().isoformat()},
-            {"role": "assistant", "content": respuesta, "timestamp": datetime.utcnow().isoformat()}
-        ]
-        
-        pdf_doc.reference.update({"historial": nuevo_historial})
-        
-        return jsonify({"respuesta": respuesta})
-    
-    except Exception as e:
-        return jsonify({"error": f"Error en el chat: {str(e)}"}), 500
-
-@app.route('/generate-test-from-pdf', methods=['POST'])
-def generate_test_from_pdf():
-    """
-    Genera un test a partir de un PDF subido
-    """
-    data = request.get_json()
-    session_id = data.get('session_id')
-    num_preguntas = data.get('num_preguntas', 5)
-    usuario_id = data.get('usuario_id', 'anonimo')
-    
-    if not session_id:
-        return jsonify({"error": "Falta session_id"}), 400
-    
-    try:
-        # Recuperar información del PDF
-        pdf_ref = db.collection("pdf_chats").where("session_id", "==", session_id).limit(1).get()
-        if not pdf_ref:
-            return jsonify({"error": "Sesión no encontrada"}), 404
-        
-        pdf_doc = pdf_ref[0]
-        pdf_data = pdf_doc.to_dict()
-        
-        # Verificar que el usuario tiene permiso para esta sesión
-        if pdf_data['usuario_id'] != usuario_id:
-            return jsonify({"error": "No autorizado para esta sesión"}), 403
-        
-        # Obtener texto del PDF desde Storage
-        blob = bucket.blob(pdf_data['ruta_storage'])
-        pdf_content = blob.download_as_text()
-        
-        # Preparar prompt para DeepSeek
-        prompt = f"CONTEXTO DEL PDF:\n{pdf_content}\n\nINSTRUCCIONES:\nGenera {num_preguntas} preguntas tipo test con 4 opciones (A, B, C, D) basadas exclusivamente en el contenido del PDF. Incluye la respuesta correcta y una breve explicación. Devuelve solo un JSON válido con la siguiente estructura: [{{'pregunta': '...', 'opciones': {{'A': '...', 'B': '...', 'C': '...', 'D': '...'}}, 'respuesta_correcta': 'A', 'explicacion': '...'}}]"
-        
-        # Llamar a DeepSeek API
-        response = call_deepseek_api([
-            {"role": "user", "content": prompt}
-        ], max_tokens=2000, temperature=0.4)
-        
-        if not response:
-            return jsonify({"error": "Error al obtener respuesta de DeepSeek"}), 500
-        
-        # Parsear y validar el test generado
-        test_data = json.loads(response)
-        
-        # Guardar el test en Firestore
-        test_ref = db.collection("pdf_tests").document()
-        test_ref.set({
-            "usuario_id": usuario_id,
-            "session_id": session_id,
-            "num_preguntas": num_preguntas,
-            "timestamp": datetime.utcnow().isoformat(),
-            "test": test_data
-        })
-        
-        return jsonify({"test": test_data})
-    
-    except Exception as e:
-        return jsonify({"error": f"Error generando test: {str(e)}"}), 500
-
 # ===================================================================
-# FIN DE RUTAS
+# FIN DE NUEVAS RUTAS
 # ===================================================================
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
