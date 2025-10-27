@@ -1,4 +1,3 @@
-
 import os
 import random
 import requests  # Para llamadas a DeepSeek API
@@ -486,6 +485,255 @@ def resumir_pdf():
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 
+# ===================================================================
+# NUEVAS RUTAS PARA PROCESAR PDFs (Esquemas, Tests y Tarjetas)
+# ===================================================================
+
+@app.route('/generar-esquema-desde-pdf', methods=['POST'])
+def generar_esquema_desde_pdf():
+    """
+    Genera un esquema desde un PDF usando DeepSeek
+    """
+    if 'pdf' not in request.files:
+        return jsonify({"error": "No se encontró archivo PDF"}), 400
+    
+    pdf_file = request.files['pdf']
+    
+    if pdf_file.filename == '':
+        return jsonify({"error": "Nombre de archivo inválido"}), 400
+    
+    try:
+        # Extraer texto del PDF (reutilizando tu código existente)
+        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+        text = ""
+        for page in pdf_reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+        
+        if not text.strip():
+            return jsonify({"error": "El PDF no contiene texto extraíble"}), 400
+        
+        # Limitar tamaño del texto
+        max_length = 300000
+        if len(text) > max_length:
+            text = text[:max_length]
+        
+        # Preparar prompt específico para esquemas
+        system_prompt = (
+            "Eres un experto en oposiciones. Crea un esquema estructurado y organizado "
+            "a partir del siguiente documento. Usa títulos, subtítulos y viñetas claras. "
+            "El esquema debe ser útil para estudiar y repasar."
+        )
+        
+        # Usar DeepSeek para generar el esquema
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
+            
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Documento para crear esquema:\n\n{text}"}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 2000
+        }
+        
+        response = requests.post(
+            "https://api.deepseek.com/chat/completions",
+            headers=headers,
+            json=payload
+        )
+        
+        if response.status_code != 200:
+            return jsonify({
+                "error": f"Error en DeepSeek API: {response.status_code}",
+                "details": response.text
+            }), 500
+        
+        data = response.json()
+        esquema = data['choices'][0]['message']['content']
+        
+        return jsonify({"esquema": esquema})
+    
+    except Exception as e:
+        return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
+
+@app.route('/generar-test-desde-pdf', methods=['POST'])
+def generar_test_desde_pdf():
+    """
+    Genera preguntas test desde un PDF usando DeepSeek
+    """
+    if 'pdf' not in request.files:
+        return jsonify({"error": "No se encontró archivo PDF"}), 400
+    
+    pdf_file = request.files['pdf']
+    
+    if pdf_file.filename == '':
+        return jsonify({"error": "Nombre de archivo inválido"}), 400
+    
+    try:
+        # Extraer texto del PDF
+        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+        text = ""
+        for page in pdf_reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+        
+        if not text.strip():
+            return jsonify({"error": "El PDF no contiene texto extraíble"}), 400
+        
+        # Limitar tamaño del texto
+        max_length = 150000  # Más pequeño para tests
+        if len(text) > max_length:
+            text = text[:max_length]
+        
+        # Preparar prompt específico para tests
+        system_prompt = (
+            "Eres un generador experto de preguntas tipo test para oposiciones. "
+            "Crea preguntas claras con 4 opciones (A, B, C, D) y una única respuesta correcta. "
+            "Incluye una explicación breve de por qué la respuesta es correcta. "
+            "Devuelve SOLO un array JSON válido con este formato:\n"
+            "[{\"pregunta\": \"...\", \"opciones\": {\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}]"
+        )
+        
+        # Usar DeepSeek para generar el test
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
+            
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Documento para crear preguntas test:\n\n{text}"}
+            ],
+            "temperature": 0.4,
+            "max_tokens": 3000
+        }
+        
+        response = requests.post(
+            "https://api.deepseek.com/chat/completions",
+            headers=headers,
+            json=payload
+        )
+        
+        if response.status_code != 200:
+            return jsonify({
+                "error": f"Error en DeepSeek API: {response.status_code}",
+                "details": response.text
+            }), 500
+        
+        data = response.json()
+        respuesta = data['choices'][0]['message']['content']
+        
+        # Parsear la respuesta JSON
+        try:
+            preguntas = json.loads(respuesta)
+            return jsonify({"test": preguntas})
+        except json.JSONDecodeError:
+            return jsonify({"error": "La IA no devolvió un JSON válido", "respuesta_cruda": respuesta}), 500
+    
+    except Exception as e:
+        return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
+
+@app.route('/generar-tarjetas-desde-pdf', methods=['POST'])
+def generar_tarjetas_desde_pdf():
+    """
+    Genera tarjetas de memoria (flashcards) desde un PDF usando DeepSeek
+    """
+    if 'pdf' not in request.files:
+        return jsonify({"error": "No se encontró archivo PDF"}), 400
+    
+    pdf_file = request.files['pdf']
+    
+    if pdf_file.filename == '':
+        return jsonify({"error": "Nombre de archivo inválido"}), 400
+    
+    try:
+        # Extraer texto del PDF
+        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+        text = ""
+        for page in pdf_reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+        
+        if not text.strip():
+            return jsonify({"error": "El PDF no contiene texto extraíble"}), 400
+        
+        # Limitar tamaño del texto
+        max_length = 150000
+        if len(text) > max_length:
+            text = text[:max_length]
+        
+        # Preparar prompt específico para tarjetas de memoria
+        system_prompt = (
+            "Eres un experto en crear tarjetas de memoria para estudiar. "
+            "Crea tarjetas con preguntas claras en el anverso y respuestas concisas en el reverso. "
+            "Las tarjetas deben cubrir los conceptos más importantes del documento. "
+            "Devuelve SOLO un array JSON válido con este formato:\n"
+            "[{\"pregunta\": \"...\", \"respuesta\": \"...\"}]"
+        )
+        
+        # Usar DeepSeek para generar las tarjetas
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
+            
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Documento para crear tarjetas de memoria:\n\n{text}"}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 2000
+        }
+        
+        response = requests.post(
+            "https://api.deepseek.com/chat/completions",
+            headers=headers,
+            json=payload
+        )
+        
+        if response.status_code != 200:
+            return jsonify({
+                "error": f"Error en DeepSeek API: {response.status_code}",
+                "details": response.text
+            }), 500
+        
+        data = response.json()
+        respuesta = data['choices'][0]['message']['content']
+        
+        # Parsear la respuesta JSON
+        try:
+            tarjetas = json.loads(respuesta)
+            return jsonify({"tarjetas": tarjetas})
+        except json.JSONDecodeError:
+            return jsonify({"error": "La IA no devolvió un JSON válido", "respuesta_cruda": respuesta}), 500
+    
+    except Exception as e:
+        return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
+
 @app.route("/chat-deepseek", methods=["POST"])
 def chat_deepseek():
     """
@@ -552,4 +800,3 @@ def chat_deepseek():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
