@@ -9,31 +9,26 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from PyPDF2 import PdfReader
 from io import BytesIO
-
 # Módulos personalizados
 from test_generator import generar_test_avanzado
 from chat_controller import responder_chat, consultar_asistente_examen_AGE
 from esquema_generator import generar_esquema
 from save_controller import guardar_test_route, guardar_esquema_route
 from rutas_progreso import registrar_rutas_progreso
-
 # Cargar variables de entorno
 load_dotenv()
 print("🔑 Clave OpenAI:", os.getenv("OPENAI_API_KEY"))
 print("🔑 Clave DeepSeek:", "configurada" if os.getenv("DEEPSEEK_API_KEY") else "no configurada")
-
 # Inicializar Firebase
 firebase_key_path = os.getenv("FIREBASE_KEY_PATH", "clave-firebase.json")
 if not firebase_admin._apps:
     cred = credentials.Certificate(firebase_key_path)
     firebase_admin.initialize_app(cred)
 db = firestore.client()
-
 # Inicializar Flask
 app = Flask(__name__)
 CORS(app, origins=["https://lightslategray-caribou-622401.hostingersite.com"])
 print("✅ CORS activado para tu WordPress")
-
 
 @app.route("/chat", methods=["POST"])
 def chat_route():
@@ -51,7 +46,6 @@ def chat_route():
     )
     return jsonify({"respuesta": respuesta, "chat_id": chat_id})
 
-
 @app.route("/consultar-asistente-examen", methods=["POST"])
 def ruta_asistente_examen():
     data = request.get_json()
@@ -63,7 +57,6 @@ def ruta_asistente_examen():
         return jsonify({"respuesta": respuesta})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route("/generar-test-avanzado", methods=["POST"])
 def generar_test_avanzado_route():
@@ -77,7 +70,6 @@ def generar_test_avanzado_route():
     print(f"📄 Resultado del test: {resultado}")
     return jsonify(resultado)
 
-
 @app.route("/generar-esquema", methods=["POST"])
 def generar_esquema_route():
     data = request.get_json(silent=True)
@@ -90,7 +82,6 @@ def generar_esquema_route():
     nivel = data.get("nivel", "general")
     resultado = generar_esquema(temas=temas, db=db, instrucciones=instrucciones, nivel=nivel)
     return jsonify({"esquema": resultado})
-
 
 @app.route("/generar-test-oficial", methods=["POST"])
 def generar_test_oficial():
@@ -106,6 +97,7 @@ def generar_test_oficial():
     except Exception as e:
         print("❌ Error accediendo a Firestore:", e)
         return jsonify({"error": "No se pudo acceder a Firestore"}), 500
+
     preguntas = []
     for doc in docs:
         d = doc.to_dict()
@@ -124,13 +116,14 @@ def generar_test_oficial():
             "examen": d.get("examen", ""),
             "numero": d.get("numero", 0)
         })
+
     print(f"✅ Preguntas encontradas tras filtro: {len(preguntas)}")
     if not preguntas:
         return jsonify({"test": [], "mensaje": "No se encontraron preguntas"}), 404
+
     seleccionadas = random.sample(preguntas, min(num_preguntas, len(preguntas)))
     print(f"🎯 Preguntas seleccionadas aleatoriamente: {len(seleccionadas)}")
     return jsonify({"test": seleccionadas})
-
 
 @app.route("/guardar-test-oficial", methods=["POST"])
 def guardar_test_oficial():
@@ -140,8 +133,10 @@ def guardar_test_oficial():
     contenido = data.get("contenido")
     respuestas = data.get("respuestas")
     metadatos = data.get("metadatos", {})
+
     if not usuario_id or not contenido or not respuestas:
         return jsonify({"error": "Faltan datos requeridos"}), 400
+
     try:
         doc_ref = db.collection("test_oficiales").document()
         doc_ref.set({
@@ -156,12 +151,10 @@ def guardar_test_oficial():
         print("❌ Error al guardar test oficial:", e)
         return jsonify({"error": str(e)}), 500
 
-
 # Guardado y progreso
 app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["POST"])
 app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), methods=["POST"])
 registrar_rutas_progreso(app, db)
-
 
 @app.route("/temas-disponibles", methods=["GET"])
 def obtener_temas_disponibles():
@@ -180,7 +173,6 @@ def obtener_temas_disponibles():
             })
     return jsonify({"temas": temas_disponibles})
 
-
 @app.route("/progreso-usuario", methods=["GET"])
 def progreso_usuario():
     user_id = request.args.get("user_id")
@@ -198,12 +190,10 @@ def progreso_usuario():
         "esquemas_generados": progreso.get("esquemas_generados", 0)
     })
 
-
 @app.route("/", methods=["GET"])
 def listar_rutas():
     rutas = [rule.rule for rule in app.url_map.iter_rules()]
     return jsonify({"rutas_disponibles": rutas})
-
 
 # Traducción de temas (para IA)
 def traducir_temas_para_IA(lista_codigos):
@@ -233,17 +223,20 @@ def traducir_temas_para_IA(lista_codigos):
     }
     return [traducciones.get(codigo, codigo) for codigo in lista_codigos]
 
-
 @app.route("/generar-test-inteligente", methods=["POST"])
 def generar_test_inteligente():
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "No se ha recibido un cuerpo JSON válido"}), 400
+
     temas = data.get("temas", [])
     num_preguntas = data.get("num_preguntas", 5)
+
     if not temas:
         return jsonify({"error": "No se han proporcionado temas"}), 400
+
     temas_legibles = traducir_temas_para_IA(temas)
+
     prompt = f"""
 Eres un generador experto de preguntas tipo test para oposiciones del Cuerpo General Administrativo del Estado (grupo C1).
 Crea {num_preguntas} preguntas tipo test con el estilo oficial de exámenes del INAP: realistas, bien redactadas y con trampas habituales.
@@ -283,7 +276,6 @@ Devuelve solo un array JSON como este:
         print("❌ Error al generar test inteligente:", e)
         return jsonify({"error": str(e)}), 500
 
-
 @app.route("/conversaciones", methods=["GET"])
 def obtener_conversaciones_usuario():
     usuario_id = request.args.get("usuario_id")
@@ -304,7 +296,6 @@ def obtener_conversaciones_usuario():
         })
     return jsonify({"conversaciones": resultado})
 
-
 @app.route("/conversacion/<conversacion_id>", methods=["GET"])
 def obtener_conversacion(conversacion_id):
     usuario_id = request.args.get("usuario_id")
@@ -319,7 +310,6 @@ def obtener_conversacion(conversacion_id):
         return jsonify({"error": "Conversación no encontrada"}), 404
     return jsonify(doc.to_dict())
 
-
 @app.route("/generar-test-fallos", methods=["POST"])
 def generar_test_fallos():
     data = request.get_json()
@@ -327,18 +317,20 @@ def generar_test_fallos():
     num_preguntas = data.get("num_preguntas", 10)
     if not usuario_id:
         return jsonify({"error": "Falta usuario_id"}), 400
+
     tests_ref = db.collection("usuarios").document(usuario_id).collection("tests").stream()
     preguntas_falladas = []
     for test_doc in tests_ref:
         test = test_doc.to_dict()
         for pregunta in test.get("preguntas", []):
             if (
-                "respuesta_usuario" in pregunta and 
+                "respuesta_usuario" in pregunta and
                 "respuesta_correcta" in pregunta and
                 pregunta["respuesta_usuario"] != pregunta["respuesta_correcta"] and
                 pregunta["respuesta_usuario"] is not None
             ):
                 preguntas_falladas.append(pregunta)
+
     preguntas_unicas = []
     vistos = set()
     for p in preguntas_falladas:
@@ -346,10 +338,10 @@ def generar_test_fallos():
         if clave not in vistos:
             preguntas_unicas.append(p)
             vistos.add(clave)
+
     random.shuffle(preguntas_unicas)
     preguntas_finales = preguntas_unicas[:num_preguntas]
     return jsonify({"test": preguntas_finales})
-
 
 # ===================================================================
 # RUTAS PARA DEEPSEEK (PDFs)
@@ -401,7 +393,6 @@ def resumir_pdf():
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 
-
 @app.route('/generar-esquema-desde-pdf', methods=['POST'])
 def generar_esquema_desde_pdf():
     if 'pdf' not in request.files:
@@ -448,7 +439,6 @@ def generar_esquema_desde_pdf():
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 
-
 @app.route('/generar-test-desde-pdf', methods=['POST'])
 def generar_test_desde_pdf():
     if 'pdf' not in request.files:
@@ -456,7 +446,6 @@ def generar_test_desde_pdf():
     pdf_file = request.files['pdf']
     if pdf_file.filename == '':
         return jsonify({"error": "Nombre de archivo inválido"}), 400
-
     # 👉 Leer num_preguntas desde request.form (no JSON)
     try:
         num_preguntas = int(request.form.get("num_preguntas", 10))
@@ -464,7 +453,6 @@ def generar_test_desde_pdf():
             num_preguntas = 10
     except (ValueError, TypeError):
         num_preguntas = 10
-
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
         text = ""
@@ -478,12 +466,15 @@ def generar_test_desde_pdf():
         if len(text) > max_length:
             text = text[:max_length]
 
+        # --- PROMPT ACTUALIZADO PARA EXPERTO EN OPOSICIONES ---
         system_prompt = (
-            f"Eres un generador experto de preguntas tipo test para oposiciones. "
-            f"Crea EXACTAMENTE {num_preguntas} preguntas claras con 4 opciones (A, B, C, D) y una única respuesta correcta. "
-            f"Incluye una explicación breve de por qué la respuesta es correcta. "
-            f"Devuelve SOLO un array JSON válido con este formato:\n"
-            "[{\"pregunta\": \"...\", \"opciones\": {\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}]"
+            f"Eres un generador experto de preguntas tipo test para oposiciones en España. "
+            f"Tu objetivo es crear EXACTAMENTE {num_preguntas} preguntas de opción múltiple (4 opciones) de alta calidad, "
+            f"simulando un examen oficial. Las preguntas deben ser claras, concisas, realistas y con trampas sutiles habituales en exámenes oficiales. "
+            f"Extrae conceptos, artículos de ley, principios, funciones, competencias, plazos, definiciones y procesos clave del documento proporcionado. "
+            f"Devuelve SOLO un array JSON válido con este formato exacto:\n"
+            "[{\"pregunta\": \"...\", \"opciones\": {\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}]\n"
+            "NO añadas texto adicional antes ni después del array JSON."
         )
 
         api_key = os.getenv("DEEPSEEK_API_KEY")
@@ -502,34 +493,68 @@ def generar_test_desde_pdf():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
-
         data = response.json()
         respuesta = data['choices'][0]['message']['content']
 
-        # Limpiar y parsear JSON
-        inicio = respuesta.find("[")
-        fin = respuesta.rfind("]") + 1
-        if inicio != -1 and fin > inicio:
-            json_str = respuesta[inicio:fin]
-        else:
-            json_str = respuesta
+        # --- LIMPIEZA Y PARSE DEL JSON (misma lógica robusta que para tarjetas) ---
+        # Buscar el inicio y fin del array JSON
+        start_index = respuesta.find("[")
+        end_index = respuesta.rfind("]") + 1
 
+        if start_index == -1 or end_index <= start_index:
+            # Si no se encuentra un array JSON, intentar arreglarlo
+            raise ValueError("No se encontró un array JSON en la respuesta.")
+
+        json_str = respuesta[start_index:end_index]
+
+        # Intentar parsear
         try:
             preguntas = json.loads(json_str)
-            preguntas_validadas = []
-            for p in preguntas:
-                if all(k in p for k in ["pregunta", "opciones", "respuesta_correcta"]):
-                    if "explicacion" not in p:
-                        p["explicacion"] = "Explicación no disponible."
-                    preguntas_validadas.append(p)
-            if not preguntas_validadas:
-                raise ValueError("Ninguna pregunta válida")
-            return jsonify({"test": preguntas_validadas})
-        except json.JSONDecodeError:
-            return jsonify({"error": "La IA no devolvió un JSON válido", "respuesta_cruda": respuesta[:500]}), 500
+        except json.JSONDecodeError as e:
+            # Si falla, intentar arreglar errores comunes
+            json_str_fixed = json_str.replace("'", '"')
+            try:
+                preguntas = json.loads(json_str_fixed)
+            except json.JSONDecodeError:
+                # Si sigue fallando, devolver un error con la respuesta cruda para depuración
+                return jsonify({
+                    "error": "La IA no devolvió un JSON válido para las preguntas. Error técnico.",
+                    "respuesta_cruda": respuesta[:500] # Mostrar los primeros 500 caracteres
+                }), 500
+
+        # Validar que cada pregunta tenga las claves necesarias
+        preguntas_validadas = []
+        for p in preguntas:
+            if all(k in p for k in ["pregunta", "opciones", "respuesta_correcta"]):
+                # Asegurar que 'explicacion' exista
+                if "explicacion" not in p:
+                    p["explicacion"] = "Explicación no disponible."
+                # Limpiar posibles espacios en blanco
+                p["pregunta"] = str(p["pregunta"]).strip() if p["pregunta"] else "Pregunta no disponible"
+                p["explicacion"] = str(p["explicacion"]).strip() if p["explicacion"] else "Explicación no disponible"
+                # Asegurar que 'opciones' sea un dict
+                if not isinstance(p["opciones"], dict):
+                    p["opciones"] = {}
+                # Limpiar opciones
+                for key in list(p["opciones"].keys()):
+                    p["opciones"][key] = str(p["opciones"][key]).strip() if p["opciones"][key] else "Opción no disponible"
+                p["respuesta_correcta"] = str(p["respuesta_correcta"]).upper() if p["respuesta_correcta"] else "A" # Asumir A por defecto si no hay
+
+                preguntas_validadas.append(p)
+
+        if not preguntas_validadas:
+            return jsonify({
+                "error": "La IA generó preguntas vacías o inválidas.",
+                "respuesta_cruda": respuesta[:500]
+            }), 500
+
+        return jsonify({"test": preguntas_validadas})
 
     except Exception as e:
-        return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
+        return jsonify({
+            "error": f"Error al procesar el PDF o generar preguntas: {str(e)}",
+            "respuesta_cruda": respuesta[:500] if 'respuesta' in locals() else "N/A"
+        }), 500
 
 
 @app.route('/generar-tarjetas-desde-pdf', methods=['POST'])
@@ -551,13 +576,24 @@ def generar_tarjetas_desde_pdf():
         max_length = 150000
         if len(text) > max_length:
             text = text[:max_length]
+
+        # --- PROMPT ACTUALIZADO PARA EXPERTO EN OPOSICIONES ---
         system_prompt = (
-            "Eres un experto en crear tarjetas de memoria para estudiar. "
-            "Crea tarjetas con preguntas claras en el anverso y respuestas concisas en el reverso. "
-            "Las tarjetas deben cubrir los conceptos más importantes del documento. "
-            "Devuelve SOLO un array JSON válido con este formato:\n"
-            "[{\"pregunta\": \"...\", \"respuesta\": \"...\"}]"
+            "Eres un experto en oposiciones en España. Tu objetivo es ayudar a opositores a estudiar "
+            "de forma eficiente. Analiza el documento proporcionado y extrae los conceptos, definiciones, "
+            "leyes, artículos, principios, funciones, estructuras, procesos, plazos, competencias, "
+            "características y cualquier otro elemento clave que sea crucial para recordar en un examen de oposición. "
+            "Crea tarjetas de memoria con preguntas claras, directas y precisas en el anverso. "
+            "La respuesta en el reverso debe ser concisa, específica, y contener la información más importante. "
+            "Asegúrate de que las tarjetas sean útiles para la memorización activa y el repaso. "
+            "Devuelve SOLO un array JSON válido con este formato exacto:\n"
+            "[{\"pregunta\": \"...\", \"respuesta\": \"...\"}]\n"
+            "NO añadas texto adicional antes ni después del array JSON. "
+            "Evita preguntas demasiado generales o muy largas. "
+            "Prioriza conceptos legales, fechas, artículos de ley, principios constitucionales, "
+            "organización administrativa, competencias, plazos, y términos técnicos."
         )
+
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
@@ -576,14 +612,55 @@ def generar_tarjetas_desde_pdf():
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
         data = response.json()
         respuesta = data['choices'][0]['message']['content']
-        try:
-            tarjetas = json.loads(respuesta)
-            return jsonify({"tarjetas": tarjetas})
-        except json.JSONDecodeError:
-            return jsonify({"error": "La IA no devolvió un JSON válido", "respuesta_cruda": respuesta}), 500
-    except Exception as e:
-        return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 
+        # --- LIMPIEZA Y PARSE DEL JSON (misma lógica robusta que antes) ---
+        # Buscar el inicio y fin del array JSON
+        start_index = respuesta.find("[")
+        end_index = respuesta.rfind("]") + 1
+
+        if start_index == -1 or end_index <= start_index:
+            # Si no se encuentra un array JSON, intentar arreglarlo
+            raise ValueError("No se encontró un array JSON en la respuesta.")
+
+        json_str = respuesta[start_index:end_index]
+
+        # Intentar parsear
+        try:
+            tarjetas = json.loads(json_str)
+        except json.JSONDecodeError as e:
+            # Si falla, intentar arreglar errores comunes
+            json_str_fixed = json_str.replace("'", '"')
+            try:
+                tarjetas = json.loads(json_str_fixed)
+            except json.JSONDecodeError:
+                # Si sigue fallando, devolver un error con la respuesta cruda para depuración
+                return jsonify({
+                    "error": "La IA no devolvió un JSON válido. Error técnico.",
+                    "respuesta_cruda": respuesta[:500] # Mostrar los primeros 500 caracteres
+                }), 500
+
+        # Validar que cada tarjeta tenga las claves necesarias
+        tarjetas_validadas = []
+        for t in tarjetas:
+            if isinstance(t, dict) and "pregunta" in t and "respuesta" in t:
+                # Limpiar posibles espacios en blanco
+                t["pregunta"] = str(t["pregunta"]).strip() if t["pregunta"] else "Pregunta no disponible"
+                t["respuesta"] = str(t["respuesta"]).strip() if t["respuesta"] else "Respuesta no disponible"
+                tarjetas_validadas.append(t)
+
+        if not tarjetas_validadas:
+            return jsonify({
+                "error": "La IA generó tarjetas vacías o inválidas.",
+                "respuesta_cruda": respuesta[:500]
+            }), 500
+
+        return jsonify({"tarjetas": tarjetas_validadas})
+
+    except Exception as e:
+        return jsonify({
+            "error": f"Error al procesar el PDF o generar tarjetas: {str(e)}",
+            "respuesta_cruda": respuesta[:500] if 'respuesta' in locals() else "N/A"
+        }), 500
 
 @app.route("/chat-deepseek", methods=["POST"])
 def chat_deepseek():
@@ -613,7 +690,6 @@ def chat_deepseek():
         return jsonify({"respuesta": respuesta})
     except Exception as e:
         return jsonify({"error": f"Error en el servicio de chat: {str(e)}"}), 500
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
