@@ -20,7 +20,14 @@ def inicializar_estadisticas_usuario(db, usuario_id):
             "notas_personales": "",
             "resumen_mensual": {},
             "recomendaciones_ia": [],
-            "puntuacion_media_test": 0
+            "puntuacion_media_test": 0,
+            # NUEVOS CAMPOS PARA CONTENIDO DESDE PDF
+            "tests_pdf_realizados": 0,
+            "resumenes_pdf_realizados": 0,
+            "esquemas_pdf_realizados": 0,
+            "tarjetas_pdf_realizados": 0,
+            "total_archivos_procesados": 0,
+            "fecha_creacion": datetime.utcnow().isoformat()
         })
 
 def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None):
@@ -117,7 +124,41 @@ def obtener_resumen_progreso(db, usuario_id):
         "temas_esquemas": datos.get("temas_esquemas", []),
         "ultimo_test": datos.get("ultimo_test", {}),
         "historial_tests": datos.get("historial_tests", []),
-        "ultima_actividad": datos.get("ultima_actividad", None)
+        "ultima_actividad": datos.get("ultima_actividad", None),
+        # NUEVOS CAMPOS PARA CONTENIDO DESDE PDF
+        "tests_pdf_realizados": datos.get("tests_pdf_realizados", 0),
+        "resumenes_pdf_realizados": datos.get("resumenes_pdf_realizados", 0),
+        "esquemas_pdf_realizados": datos.get("esquemas_pdf_realizados", 0),
+        "tarjetas_pdf_realizados": datos.get("tarjetas_pdf_realizados", 0),
+        "total_archivos_procesados": datos.get("total_archivos_procesados", 0),
+        "fecha_creacion": datos.get("fecha_creacion")
     }
 
     return resumen
+
+# NUEVA FUNCIÓN: Actualizar estadísticas para contenido desde PDF
+def actualizar_estadisticas_pdf(db, usuario_id, tipo_pdf):
+    """Actualizar estadísticas cuando se guarda contenido desde PDF"""
+    doc_ref = db.collection("usuarios").document(usuario_id)
+    
+    # Verificar si el usuario existe
+    if not doc_ref.get().exists:
+        inicializar_estadisticas_usuario(db, usuario_id)
+    
+    # Preparar actualizaciones según el tipo de contenido PDF
+    field_updates = {
+        "ultima_actividad": datetime.utcnow().isoformat(),
+        "total_archivos_procesados": firestore.Increment(1)
+    }
+    
+    if tipo_pdf == "test_pdf":
+        field_updates["tests_pdf_realizados"] = firestore.Increment(1)
+    elif tipo_pdf == "resumen_pdf":
+        field_updates["resumenes_pdf_realizados"] = firestore.Increment(1)
+    elif tipo_pdf == "esquema_pdf":
+        field_updates["esquemas_pdf_realizados"] = firestore.Increment(1)
+    elif tipo_pdf == "tarjetas_pdf":
+        field_updates["tarjetas_pdf_realizados"] = firestore.Increment(1)
+    
+    # Aplicar actualizaciones
+    doc_ref.update(field_updates)

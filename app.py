@@ -9,12 +9,14 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from PyPDF2 import PdfReader
 from io import BytesIO
+from datetime import datetime
 # Módulos personalizados
 from test_generator import generar_test_avanzado
 from chat_controller import responder_chat, consultar_asistente_examen_AGE
 from esquema_generator import generar_esquema
 from save_controller import guardar_test_route, guardar_esquema_route
 from rutas_progreso import registrar_rutas_progreso
+from guardar_resultado import guardar_resultado_en_firestore
 
 # Cargar variables de entorno
 load_dotenv()
@@ -34,8 +36,6 @@ CORS(app, origins=["https://lightslategray-caribou-622401.hostingersite.com"])
 print("✅ CORS activado para tu WordPress")
 
 # === Todas tus rutas existentes aquí ===
-# (se mantienen exactamente igual, no se modifican)
-
 @app.route("/chat", methods=["POST"])
 def chat_route():
     data = request.get_json()
@@ -645,6 +645,107 @@ def chat_deepseek():
         return jsonify({"respuesta": respuesta})
     except Exception as e:
         return jsonify({"error": f"Error en el servicio de chat: {str(e)}"}), 500
+
+# ===================================================================
+# NUEVAS RUTAS PARA GUARDAR CONTENIDO DESDE PDF
+# ===================================================================
+
+@app.route('/guardar-test-pdf', methods=['POST'])
+def guardar_test_pdf():
+    try:
+        data = request.get_json()
+        usuario_id = data.get('usuario_id', 'anonimo')
+        test_data = data.get('test_data', {})
+        preguntas = test_data.get('preguntas', [])
+        nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
+        
+        resultado = guardar_resultado_en_firestore(
+            db=db,
+            tipo="test_pdf",
+            contenido=preguntas,
+            usuario_id=usuario_id,
+            metadatos={
+                'nombre_archivo': nombre_archivo,
+                'num_preguntas': len(preguntas),
+                'fecha_procesamiento': datetime.utcnow().isoformat()
+            }
+        )
+        
+        return jsonify({'mensaje': 'Test desde PDF guardado correctamente'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/guardar-resumen-pdf', methods=['POST'])
+def guardar_resumen_pdf():
+    try:
+        data = request.get_json()
+        usuario_id = data.get('usuario_id', 'anonimo')
+        resumen = data.get('resumen', '')
+        nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
+        
+        resultado = guardar_resultado_en_firestore(
+            db=db,
+            tipo="resumen_pdf",
+            contenido=resumen,
+            usuario_id=usuario_id,
+            metadatos={
+                'nombre_archivo': nombre_archivo,
+                'longitud': len(resumen),
+                'fecha_procesamiento': datetime.utcnow().isoformat()
+            }
+        )
+        
+        return jsonify({'mensaje': 'Resumen desde PDF guardado correctamente'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/guardar-esquema-pdf', methods=['POST'])
+def guardar_esquema_pdf():
+    try:
+        data = request.get_json()
+        usuario_id = data.get('usuario_id', 'anonimo')
+        esquema = data.get('esquema', '')
+        nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
+        
+        resultado = guardar_resultado_en_firestore(
+            db=db,
+            tipo="esquema_pdf",
+            contenido=esquema,
+            usuario_id=usuario_id,
+            metadatos={
+                'nombre_archivo': nombre_archivo,
+                'longitud': len(esquema),
+                'fecha_procesamiento': datetime.utcnow().isoformat()
+            }
+        )
+        
+        return jsonify({'mensaje': 'Esquema desde PDF guardado correctamente'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/guardar-tarjetas-pdf', methods=['POST'])
+def guardar_tarjetas_pdf():
+    try:
+        data = request.get_json()
+        usuario_id = data.get('usuario_id', 'anonimo')
+        tarjetas = data.get('tarjetas', [])
+        nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
+        
+        resultado = guardar_resultado_en_firestore(
+            db=db,
+            tipo="tarjetas_pdf",
+            contenido=tarjetas,
+            usuario_id=usuario_id,
+            metadatos={
+                'nombre_archivo': nombre_archivo,
+                'num_tarjetas': len(tarjetas),
+                'fecha_procesamiento': datetime.utcnow().isoformat()
+            }
+        )
+        
+        return jsonify({'mensaje': 'Tarjetas desde PDF guardadas correctamente'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
