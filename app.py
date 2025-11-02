@@ -17,24 +17,20 @@ from esquema_generator import generar_esquema
 from save_controller import guardar_test_route, guardar_esquema_route
 from rutas_progreso import registrar_rutas_progreso
 from guardar_resultado import guardar_resultado_en_firestore
-
 # Cargar variables de entorno
 load_dotenv()
 print("🔑 Clave OpenAI:", os.getenv("OPENAI_API_KEY"))
 print("🔑 Clave DeepSeek:", "configurada" if os.getenv("DEEPSEEK_API_KEY") else "no configurada")
-
 # Inicializar Firebase
 firebase_key_path = os.getenv("FIREBASE_KEY_PATH", "clave-firebase.json")
 if not firebase_admin._apps:
     cred = credentials.Certificate(firebase_key_path)
     firebase_admin.initialize_app(cred)
 db = firestore.client()
-
 # Inicializar Flask
 app = Flask(__name__)
 CORS(app, origins=["https://lightslategray-caribou-622401.hostingersite.com"])
 print("✅ CORS activado para tu WordPress")
-
 # === Todas tus rutas existentes aquí ===
 @app.route("/chat", methods=["POST"])
 def chat_route():
@@ -51,7 +47,6 @@ def chat_route():
         chat_id=chat_id
     )
     return jsonify({"respuesta": respuesta, "chat_id": chat_id})
-
 @app.route("/consultar-asistente-examen", methods=["POST"])
 def ruta_asistente_examen():
     data = request.get_json()
@@ -63,7 +58,6 @@ def ruta_asistente_examen():
         return jsonify({"respuesta": respuesta})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 @app.route("/generar-test-avanzado", methods=["POST"])
 def generar_test_avanzado_route():
     data = request.get_json()
@@ -75,7 +69,6 @@ def generar_test_avanzado_route():
     resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas)
     print(f"📄 Resultado del test: {resultado}")
     return jsonify(resultado)
-
 @app.route("/generar-esquema", methods=["POST"])
 def generar_esquema_route():
     data = request.get_json(silent=True)
@@ -88,7 +81,6 @@ def generar_esquema_route():
     nivel = data.get("nivel", "general")
     resultado = generar_esquema(temas=temas, db=db, instrucciones=instrucciones, nivel=nivel)
     return jsonify({"esquema": resultado})
-
 @app.route("/generar-test-oficial", methods=["POST"])
 def generar_test_oficial():
     data = request.get_json()
@@ -127,7 +119,6 @@ def generar_test_oficial():
     seleccionadas = random.sample(preguntas, min(num_preguntas, len(preguntas)))
     print(f"🎯 Preguntas seleccionadas aleatoriamente: {len(seleccionadas)}")
     return jsonify({"test": seleccionadas})
-
 @app.route("/guardar-test-oficial", methods=["POST"])
 def guardar_test_oficial():
     data = request.get_json()
@@ -151,12 +142,10 @@ def guardar_test_oficial():
     except Exception as e:
         print("❌ Error al guardar test oficial:", e)
         return jsonify({"error": str(e)}), 500
-
 # Guardado y progreso
 app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["POST"])
 app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), methods=["POST"])
 registrar_rutas_progreso(app, db)
-
 @app.route("/temas-disponibles", methods=["GET"])
 def obtener_temas_disponibles():
     temas_disponibles = []
@@ -173,7 +162,6 @@ def obtener_temas_disponibles():
                 "titulo": titulo
             })
     return jsonify({"temas": temas_disponibles})
-
 @app.route("/progreso-usuario", methods=["GET"])
 def progreso_usuario():
     user_id = request.args.get("user_id")
@@ -190,12 +178,10 @@ def progreso_usuario():
         "total_aciertos": progreso.get("total_aciertos", 0),
         "esquemas_generados": progreso.get("esquemas_generados", 0)
     })
-
 @app.route("/", methods=["GET"])
 def listar_rutas():
     rutas = [rule.rule for rule in app.url_map.iter_rules()]
     return jsonify({"rutas_disponibles": rutas})
-
 # Traducción de temas (para IA)
 def traducir_temas_para_IA(lista_codigos):
     traducciones = {
@@ -223,7 +209,6 @@ def traducir_temas_para_IA(lista_codigos):
         "bloque_03-tema_07": "IGUALDAD DE GÉNERO (VACIO)"
     }
     return [traducciones.get(codigo, codigo) for codigo in lista_codigos]
-
 @app.route("/generar-test-inteligente", methods=["POST"])
 def generar_test_inteligente():
     data = request.get_json(silent=True)
@@ -272,7 +257,6 @@ Devuelve solo un array JSON como este:
     except Exception as e:
         print("❌ Error al generar test inteligente:", e)
         return jsonify({"error": str(e)}), 500
-
 @app.route("/conversaciones", methods=["GET"])
 def obtener_conversaciones_usuario():
     usuario_id = request.args.get("usuario_id")
@@ -292,7 +276,6 @@ def obtener_conversaciones_usuario():
             "timestamp_inicio": data.get("timestamp_inicio")
         })
     return jsonify({"conversaciones": resultado})
-
 @app.route("/conversacion/<conversacion_id>", methods=["GET"])
 def obtener_conversacion(conversacion_id):
     usuario_id = request.args.get("usuario_id")
@@ -306,7 +289,6 @@ def obtener_conversacion(conversacion_id):
     if not doc.exists:
         return jsonify({"error": "Conversación no encontrada"}), 404
     return jsonify(doc.to_dict())
-
 @app.route("/generar-test-fallos", methods=["POST"])
 def generar_test_fallos():
     data = request.get_json()
@@ -336,11 +318,9 @@ def generar_test_fallos():
     random.shuffle(preguntas_unicas)
     preguntas_finales = preguntas_unicas[:num_preguntas]
     return jsonify({"test": preguntas_finales})
-
 # ===================================================================
 # RUTAS PARA DEEPSEEK (PDFs)
 # ===================================================================
-
 @app.route('/resumir-pdf', methods=['POST'])
 def resumir_pdf():
     if 'pdf' not in request.files:
@@ -386,12 +366,10 @@ def resumir_pdf():
         return jsonify({"resumen": resumen})
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
-
 # ✅ NUEVA RUTA: alias para compatibilidad con frontend
 @app.route('/resumir-documento', methods=['POST'])
 def resumir_documento():
     return resumir_pdf()
-
 @app.route('/generar-esquema-desde-pdf', methods=['POST'])
 def generar_esquema_desde_pdf():
     if 'pdf' not in request.files:
@@ -437,7 +415,6 @@ def generar_esquema_desde_pdf():
         return jsonify({"esquema": esquema})
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
-
 @app.route('/generar-test-desde-pdf', methods=['POST'])
 def generar_test_desde_pdf():
     if 'pdf' not in request.files:
@@ -464,13 +441,18 @@ def generar_test_desde_pdf():
         if len(text) > max_length:
             text = text[:max_length]
         system_prompt = (
-            f"Eres un generador experto de preguntas tipo test para oposiciones en España. "
-            f"Tu objetivo es crear EXACTAMENTE {num_preguntas} preguntas de opción múltiple (4 opciones) de alta calidad, "
-            f"simulando un examen oficial. Las preguntas deben ser claras, concisas, realistas y con trampas sutiles habituales en exámenes oficiales. "
-            f"Extrae conceptos, artículos de ley, principios, funciones, competencias, plazos, definiciones y procesos clave del documento proporcionado. "
+            f"Eres un experto en la elaboración de preguntas tipo test para oposiciones oficiales en España. "
+            f"Tu tarea es generar EXACTAMENTE {num_preguntas} preguntas de opción múltiple de alta calidad, "
+            f"basadas únicamente en el documento proporcionado. Cada pregunta debe cumplir lo siguiente:\n"
+            f"1. **Formato**: pregunta clara y directa, seguida de cuatro opciones (A, B, C, D).\n"
+            f"2. **Precisión**: si el documento menciona leyes, artículos, plazos, funciones, definiciones, principios o procedimientos, la pregunta debe reflejarlos con exactitud.\n"
+            f"3. **Respuesta correcta**: debe ser inequívoca y extraída directamente del texto.\n"
+            f"4. **Distractores**: deben ser técnicamente plausibles, basados en confusiones comunes, errores típicos o elementos similares del propio documento.\n"
+            f"5. **Neutralidad**: evita lenguaje coloquial, ambigüedades, opiniones o preguntas triviales.\n"
+            f"6. **Explicación**: incluye una justificación breve que cite o se base en el contenido del documento.\n"
             f"Devuelve SOLO un array JSON válido con este formato exacto:\n"
-            "[{\"pregunta\": \"...\", \"opciones\": {\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}]\n"
-            "NO añadas texto adicional antes ni después del array JSON."
+            f"[{{\"pregunta\": \"...\", \"opciones\": {{\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}}]\n"
+            f"NO añadas texto adicional antes ni después del array JSON."
         )
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
@@ -530,7 +512,6 @@ def generar_test_desde_pdf():
             "error": f"Error al procesar el PDF o generar preguntas: {str(e)}",
             "respuesta_cruda": respuesta[:500] if 'respuesta' in locals() else "N/A"
         }), 500
-
 @app.route('/generar-tarjetas-desde-pdf', methods=['POST'])
 def generar_tarjetas_desde_pdf():
     if 'pdf' not in request.files:
@@ -551,19 +532,22 @@ def generar_tarjetas_desde_pdf():
         if len(text) > max_length:
             text = text[:max_length]
         system_prompt = (
-            "Eres un experto en oposiciones en España. Tu objetivo es ayudar a opositores a estudiar "
-            "de forma eficiente. Analiza el documento proporcionado y extrae los conceptos, definiciones, "
-            "leyes, artículos, principios, funciones, estructuras, procesos, plazos, competencias, "
-            "características y cualquier otro elemento clave que sea crucial para recordar en un examen de oposición. "
-            "Crea tarjetas de memoria con preguntas claras, directas y precisas en el anverso. "
-            "La respuesta en el reverso debe ser concisa, específica, y contener la información más importante. "
-            "Asegúrate de que las tarjetas sean útiles para la memorización activa y el repaso. "
-            "Devuelve SOLO un array JSON válido con este formato exacto:\n"
+            "Eres un experto en metodologías de estudio para oposiciones en España. Tu tarea es crear tarjetas de memoria (flashcards) "
+            "de alta calidad a partir de un documento normativo o temario. Cada tarjeta debe cumplir lo siguiente:\n"
+            "1. **Formato**: una pregunta clara y específica en el anverso; una respuesta concisa, precisa y completa en el reverso.\n"
+            "2. **Tipos de tarjetas**: combina diferentes formatos:\n"
+            "   - Definiciones: \"¿Qué es...?\"\n"
+            "   - Enumeraciones: \"¿Cuáles son los principios de...?\", \"¿Qué plazos establece la ley para...?\"\n"
+            "   - Comparaciones: \"¿Cuál es la diferencia entre X e Y?\"\n"
+            "   - Funciones/competencias: \"¿A quién corresponde...?\", \"¿Qué órgano es competente para...?\"\n"
+            "   - Supuestos prácticos breves: \"Si un funcionario hace X, ¿qué tipo de falta comete?\"\n"
+            "   - Excepciones o límites: \"¿En qué casos NO se aplica...?\"\n"
+            "3. **Profundidad, no repetición**: evita generar múltiples tarjetas del mismo artículo. En su lugar, extrae los conceptos clave y formula preguntas distintas.\n"
+            "4. **Precisión normativa**: si el texto menciona leyes, artículos, reales decretos, etc., inclúyelos en la respuesta, pero no como copia literal.\n"
+            "5. **Evita**: preguntas vagas, respuestas largas, frases incompletas o contenido redundante.\n"
+            "Genera exactamente un array JSON con este formato:\n"
             "[{\"pregunta\": \"...\", \"respuesta\": \"...\"}]\n"
-            "NO añadas texto adicional antes ni después del array JSON. "
-            "Evita preguntas demasiado generales o muy largas. "
-            "Prioriza conceptos legales, fechas, artículos de ley, principios constitucionales, "
-            "organización administrativa, competencias, plazos, y términos técnicos."
+            "NO añadas texto adicional antes ni después del JSON."
         )
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
@@ -616,7 +600,6 @@ def generar_tarjetas_desde_pdf():
             "error": f"Error al procesar el PDF o generar tarjetas: {str(e)}",
             "respuesta_cruda": respuesta[:500] if 'respuesta' in locals() else "N/A"
         }), 500
-
 @app.route("/chat-deepseek", methods=["POST"])
 def chat_deepseek():
     data = request.get_json()
@@ -645,11 +628,9 @@ def chat_deepseek():
         return jsonify({"respuesta": respuesta})
     except Exception as e:
         return jsonify({"error": f"Error en el servicio de chat: {str(e)}"}), 500
-
 # ===================================================================
 # NUEVAS RUTAS PARA GUARDAR CONTENIDO DESDE PDF
 # ===================================================================
-
 @app.route('/guardar-test-pdf', methods=['POST'])
 def guardar_test_pdf():
     try:
@@ -658,7 +639,6 @@ def guardar_test_pdf():
         test_data = data.get('test_data', {})
         preguntas = test_data.get('preguntas', [])
         nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
-        
         resultado = guardar_resultado_en_firestore(
             db=db,
             tipo="test_pdf",
@@ -670,11 +650,9 @@ def guardar_test_pdf():
                 'fecha_procesamiento': datetime.utcnow().isoformat()
             }
         )
-        
         return jsonify({'mensaje': 'Test desde PDF guardado correctamente'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 @app.route('/guardar-resumen-pdf', methods=['POST'])
 def guardar_resumen_pdf():
     try:
@@ -682,7 +660,6 @@ def guardar_resumen_pdf():
         usuario_id = data.get('usuario_id', 'anonimo')
         resumen = data.get('resumen', '')
         nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
-        
         resultado = guardar_resultado_en_firestore(
             db=db,
             tipo="resumen_pdf",
@@ -694,11 +671,9 @@ def guardar_resumen_pdf():
                 'fecha_procesamiento': datetime.utcnow().isoformat()
             }
         )
-        
         return jsonify({'mensaje': 'Resumen desde PDF guardado correctamente'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 @app.route('/guardar-esquema-pdf', methods=['POST'])
 def guardar_esquema_pdf():
     try:
@@ -706,7 +681,6 @@ def guardar_esquema_pdf():
         usuario_id = data.get('usuario_id', 'anonimo')
         esquema = data.get('esquema', '')
         nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
-        
         resultado = guardar_resultado_en_firestore(
             db=db,
             tipo="esquema_pdf",
@@ -718,11 +692,9 @@ def guardar_esquema_pdf():
                 'fecha_procesamiento': datetime.utcnow().isoformat()
             }
         )
-        
         return jsonify({'mensaje': 'Esquema desde PDF guardado correctamente'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 @app.route('/guardar-tarjetas-pdf', methods=['POST'])
 def guardar_tarjetas_pdf():
     try:
@@ -730,7 +702,6 @@ def guardar_tarjetas_pdf():
         usuario_id = data.get('usuario_id', 'anonimo')
         tarjetas = data.get('tarjetas', [])
         nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
-        
         resultado = guardar_resultado_en_firestore(
             db=db,
             tipo="tarjetas_pdf",
@@ -742,10 +713,8 @@ def guardar_tarjetas_pdf():
                 'fecha_procesamiento': datetime.utcnow().isoformat()
             }
         )
-        
         return jsonify({'mensaje': 'Tarjetas desde PDF guardadas correctamente'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
