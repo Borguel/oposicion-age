@@ -1,0 +1,11 @@
+{
+  "enunciado": "¿Cuál es el artículo que regula la igualdad ante la ley?",
+  "opciones": {
+    "a": "Artículo 14",
+    "b": "Artículo 16",
+    "c": "Artículo 20",
+    "d": "Artículo 23"
+  },
+  "correcta": "a",
+  "explicacion": "El artículo 14 de la Constitución Española garantiza la igualdad ante la ley."
+}

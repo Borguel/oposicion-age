@@ -1,0 +1,256 @@
+<div class="pdf-chat-container">
+    <div class="pdf-upload-section">
+        <h2>Analizador de PDFs</h2>
+        <div class="upload-area" id="pdf-upload-area">
+            <i class="fas fa-file-pdf"></i>
+            <p>Arrastra tu PDF aquí o haz clic para seleccionar</p>
+            <input type="file" id="pdf-file" accept=".pdf" hidden>
+            <button class="btn" id="select-pdf-btn">Seleccionar PDF</button>
+        </div>
+        <div id="pdf-info" class="hidden">
+            <p><strong>Archivo:</strong> <span id="pdf-filename"></span></p>
+            <button class="btn" id="generate-summary-btn">Generar Resumen</button>
+            <button class="btn" id="generate-test-btn">Generar Test</button>
+        </div>
+        <div id="test-options" class="hidden">
+            <label for="num-questions">Número de preguntas:</label>
+            <input type="number" id="num-questions" min="1" max="20" value="5">
+        </div>
+    </div>
+    
+    <div class="chat-section">
+        <div class="chat-header">
+            <h2>Chat sobre el PDF</h2>
+            <p id="session-info"></p>
+        </div>
+        <div class="chat-box" id="pdf-chat-box">
+            <div class="message bot-message">
+                <p>Por favor, sube un PDF para comenzar a analizarlo. Puedo ayudarte a:</p>
+                <ul>
+                    <li>Resumir el contenido</li>
+                    <li>Responder preguntas específicas</li>
+                    <li>Generar tests basados en el documento</li>
+                </ul>
+            </div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="pdf-user-input" placeholder="Pregunta sobre el PDF...">
+            <button id="pdf-send-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Variables globales
+    let currentSessionId = null;
+    let currentPdfFile = null;
+
+    // Elementos DOM
+    const pdfUploadArea = document.getElementById('pdf-upload-area');
+    const pdfFileInput = document.getElementById('pdf-file');
+    const selectPdfBtn = document.getElementById('select-pdf-btn');
+    const pdfInfo = document.getElementById('pdf-info');
+    const pdfFilename = document.getElementById('pdf-filename');
+    const generateSummaryBtn = document.getElementById('generate-summary-btn');
+    const generateTestBtn = document.getElementById('generate-test-btn');
+    const testOptions = document.getElementById('test-options');
+    const numQuestionsInput = document.getElementById('num-questions');
+    const pdfChatBox = document.getElementById('pdf-chat-box');
+    const pdfUserInput = document.getElementById('pdf-user-input');
+    const pdfSendBtn = document.getElementById('pdf-send-btn');
+    const sessionInfo = document.getElementById('session-info');
+
+    // Event listeners
+    selectPdfBtn.addEventListener('click', () => pdfFileInput.click());
+    pdfFileInput.addEventListener('change', handlePdfUpload);
+    generateSummaryBtn.addEventListener('click', generateSummary);
+    generateTestBtn.addEventListener('click', showTestOptions);
+    pdfSendBtn.addEventListener('click', sendPdfMessage);
+    pdfUserInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendPdfMessage();
+    });
+
+    // Manejar subida de PDF
+    async function handlePdfUpload() {
+        const file = pdfFileInput.files[0];
+        if (!file) return;
+        
+        currentPdfFile = file;
+        pdfFilename.textContent = file.name;
+        pdfInfo.classList.remove('hidden');
+        
+        const formData = new FormData();
+        formData.append('pdf', file);
+        formData.append('usuario_id', 'ID_DEL_USUARIO'); // Reemplazar con ID real
+        
+        try {
+            const response = await fetch('/upload-pdf-chat', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (data.session_id) {
+                currentSessionId = data.session_id;
+                sessionInfo.textContent = `Sesión: ${currentSessionId}`;
+                
+                // Mostrar mensaje de confirmación
+                addMessageToPdfChat(`PDF "${file.name}" cargado correctamente. Ahora puedes hacer preguntas sobre el documento o generar un resumen/test.`, 'bot');
+            }
+        } catch (error) {
+            console.error('Error subiendo PDF:', error);
+            addMessageToPdfChat('Error al subir el PDF. Inténtalo de nuevo.', 'bot');
+        }
+    }
+
+    // Generar resumen
+    async function generateSummary() {
+        if (!currentSessionId) return;
+        
+        addMessageToPdfChat('Generando resumen del documento...', 'user');
+        showTypingIndicator();
+        
+        try {
+            const response = await fetch('/chat-pdf', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    session_id: currentSessionId,
+                    mensaje: "Genera un resumen detallado de este documento en formato de puntos clave."
+                })
+            });
+            
+            const data = await response.json();
+            hideTypingIndicator();
+            
+            if (data.respuesta) {
+                addMessageToPdfChat(data.respuesta, 'bot');
+            } else {
+                addMessageToPdfChat('Error generando el resumen. Inténtalo de nuevo.', 'bot');
+            }
+        } catch (error) {
+            console.error('Error generando resumen:', error);
+            hideTypingIndicator();
+            addMessageToPdfChat('Error generando el resumen. Inténtalo de nuevo.', 'bot');
+        }
+    }
+
+    // Mostrar opciones de test
+    function showTestOptions() {
+        testOptions.classList.toggle('hidden');
+        
+        if (!testOptions.classList.contains('hidden')) {
+            addMessageToPdfChat('Por favor, selecciona el número de preguntas para el test:', 'bot');
+        }
+    }
+
+    // Generar test
+    async function generateTest() {
+        if (!currentSessionId) return;
+        
+        const numQuestions = numQuestionsInput.value || 5;
+        testOptions.classList.add('hidden');
+        
+        addMessageToPdfChat(`Generando test de ${numQuestions} preguntas...`, 'user');
+        showTypingIndicator();
+        
+        try {
+            const response = await fetch('/generate-test-from-pdf', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    session_id: currentSessionId,
+                    num_preguntas: numQuestions,
+                    usuario_id: 'ID_DEL_USUARIO' // Reemplazar con ID real
+                })
+            });
+            
+            const data = await response.json();
+            hideTypingIndicator();
+            
+            if (data.test && data.test.length > 0) {
+                addMessageToPdfChat(`Test de ${numQuestions} preguntas generado correctamente.`, 'bot');
+                
+                // Mostrar preguntas
+                data.test.forEach((pregunta, index) => {
+                    const preguntaHtml = `
+                        <div class="test-question">
+                            <p><strong>Pregunta ${index + 1}:</strong> ${pregunta.pregunta}</p>
+                            <ul>
+                                ${Object.entries(pregunta.opciones).map(([key, value]) => 
+                                    `<li>${key}) ${value}</li>`).join('')}
+                            </ul>
+                            <p class="answer"><strong>Respuesta:</strong> ${pregunta.respuesta_correcta}</p>
+                            <p class="explanation">${pregunta.explicacion}</p>
+                        </div>
+                    `;
+                    addMessageToPdfChat(preguntaHtml, 'bot');
+                });
+            } else {
+                addMessageToPdfChat('Error generando el test. Inténtalo de nuevo.', 'bot');
+            }
+        } catch (error) {
+            console.error('Error generando test:', error);
+            hideTypingIndicator();
+            addMessageToPdfChat('Error generando el test. Inténtalo de nuevo.', 'bot');
+        }
+    }
+
+    // Enviar mensaje al chat del PDF
+    async function sendPdfMessage() {
+        const message = pdfUserInput.value.trim();
+        if (!message || !currentSessionId) return;
+        
+        addMessageToPdfChat(message, 'user');
+        pdfUserInput.value = '';
+        showTypingIndicator();
+        
+        try {
+            const response = await fetch('/chat-pdf', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    session_id: currentSessionId,
+                    mensaje: message,
+                    usuario_id: 'ID_DEL_USUARIO' // Reemplazar con ID real
+                })
+            });
+            
+            const data = await response.json();
+            hideTypingIndicator();
+            
+            if (data.respuesta) {
+                addMessageToPdfChat(data.respuesta, 'bot');
+            } else {
+                addMessageToPdfChat('No se pudo obtener una respuesta. Inténtalo de nuevo.', 'bot');
+            }
+        } catch (error) {
+            console.error('Error en el chat:', error);
+            hideTypingIndicator();
+            addMessageToPdfChat('Error en el servicio de chat. Inténtalo de nuevo.', 'bot');
+        }
+    }
+
+    // Funciones auxiliares para la interfaz
+    function addMessageToPdfChat(message, sender) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', `${sender}-message`);
+        messageElement.innerHTML = `<p>${message}</p>`;
+        pdfChatBox.appendChild(messageElement);
+        pdfChatBox.scrollTop = pdfChatBox.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+        const typingElement = document.createElement('div');
+        typingElement.classList.add('message', 'bot-message');
+        typingElement.id = 'typing-indicator';
+        typingElement.innerHTML = '<div class="spinner"></div> <span>Escribiendo...</span>';
+        pdfChatBox.appendChild(typingElement);
+        pdfChatBox.scrollTop = pdfChatBox.scrollHeight;
+    }
+
+    function hideTypingIndicator() {
+        const typingElement = document.getElementById('typing-indicator');
+        if (typingElement) typingElement.remove();
+    }
+</script>

@@ -1,0 +1,349 @@
+<div class="chat-container">
+  <button id="toggle-sidebar" title="Historial">☰</button>
+
+  <div class="chat-sidebar" id="chat-sidebar">
+    <h3>💬 Conversaciones</h3>
+    <ul id="chat-history">
+    </ul>
+  </div>
+
+  <div class="chat-box">
+    <div class="chat-header">
+      <img src="https://randomuser.me/api/portraits/women/44.jpg" class="chat-avatar">
+      <div>
+        <div class="chat-title">Asistente IA</div>
+        <div class="chat-status">🟢 En línea</div>
+      </div>
+    </div>
+
+    <div id="chat-messages" class="chat-messages"></div>
+
+    <div class="chat-input-container" id="chat-input-container">
+      <textarea id="chat-input" placeholder="Escribe tu mensaje..." rows="1"></textarea>
+      <button id="chat-send" title="Enviar">
+        <img src="https://cdn-icons-png.flaticon.com/512/2099/2099085.png" />
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.chat-container {
+  display: flex;
+  max-width: 1200px;
+  margin: 30px auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  font-family: 'Segoe UI', sans-serif;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  height: 90vh;
+  position: relative;
+}
+
+#toggle-sidebar {
+  display: none;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 24px;
+  background: none;
+  border: none;
+  z-index: 10;
+  cursor: pointer;
+}
+
+.chat-sidebar {
+  width: 250px;
+  background: #f9fafb;
+  padding: 20px;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+}
+
+.chat-sidebar.hidden {
+  transform: translateX(-100%);
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(249, 250, 251, 0.95);
+  z-index: 9;
+}
+
+.chat-sidebar h3 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: #1f2937;
+}
+
+#chat-history {
+  list-style: none;
+  padding: 0;
+}
+
+#chat-history li {
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  background: #e5e7eb;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#chat-history li.active {
+  background: #cbd5e1;
+  font-weight: bold;
+}
+
+.chat-box {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f1f5f9;
+}
+
+.chat-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 15px;
+}
+
+.chat-title {
+  font-weight: bold;
+  font-size: 16px;
+  color: #1f2937;
+}
+
+.chat-status {
+  font-size: 13px;
+  color: #10b981;
+}
+
+.chat-messages {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: #ffffff;
+  scroll-behavior: smooth;
+}
+
+.chat-message {
+  margin-bottom: 15px;
+  max-width: 75%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.chat-message.user {
+  background: #e5e7eb;
+  align-self: flex-end;
+  text-align: right;
+  margin-left: auto;
+  color: #1f2937;
+}
+
+.chat-message.bot {
+  background: #f3f4f6;
+  align-self: flex-start;
+  text-align: left;
+  margin-right: auto;
+  color: #1f2937;
+}
+
+.chat-input-container {
+  display: flex;
+  padding: 12px 20px;
+  background: #f9fafb;
+  align-items: center;
+  border-top: 1px solid #e5e7eb;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+#chat-input {
+  flex-grow: 1;
+  resize: none;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  padding: 10px 15px;
+  font-size: 14px;
+  min-height: 40px;
+  max-height: 150px;
+  outline: none;
+  overflow-y: auto;
+}
+
+#chat-send {
+  background: #000;
+  border: none;
+  border-radius: 50%;
+  margin-left: 10px;
+  padding: 10px;
+  cursor: pointer;
+  height: 42px;
+  width: 42px;
+}
+
+#chat-send img {
+  width: 18px;
+  height: 18px;
+  filter: invert(1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #toggle-sidebar {
+    display: block;
+  }
+  .chat-sidebar {
+    transform: translateX(-100%);
+    position: absolute;
+    height: 100%;
+  }
+  .chat-sidebar.hidden {
+    transform: translateX(0);
+  }
+}
+</style>
+<script>
+const input = document.getElementById("chat-input");
+const sendBtn = document.getElementById("chat-send");
+const chatMessages = document.getElementById("chat-messages");
+const toggleSidebar = document.getElementById("toggle-sidebar");
+const chatSidebar = document.getElementById("chat-sidebar");
+const chatHistory = document.getElementById("chat-history");
+
+let conversaciones = [];
+let chatIdActual = null;
+
+// Abrir/cerrar sidebar
+toggleSidebar.addEventListener("click", () => {
+  chatSidebar.classList.toggle("hidden");
+});
+
+// Mostrar mensaje
+function agregarMensaje(tipo, texto) {
+  const div = document.createElement("div");
+  div.className = `chat-message ${tipo}`;
+  div.textContent = texto;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Enviar mensaje al backend
+function enviarMensaje() {
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  agregarMensaje("user", texto);
+  input.value = "";
+
+  fetch("https://oposicion-age.onrender.com/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      mensaje: texto,
+      temas: [],
+      usuario_id: usuarioEmail || "anonimo",
+      chat_id: chatIdActual
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+      agregarMensaje("bot", data.respuesta || "Sin respuesta.");
+      chatIdActual = data.chat_id;
+      cargarHistorial(); // actualiza lista lateral
+    })
+    .catch(() => {
+      agregarMensaje("bot", "❌ Error al conectar.");
+    });
+}
+
+// Cargar historial de Firestore
+function cargarHistorial() {
+  const id = usuarioEmail || "anonimo";
+  fetch(`https://oposicion-age.onrender.com/conversaciones?usuario_id=${id}`)
+    .then(res => res.json())
+    .then(data => {
+      conversaciones = data.conversaciones || [];
+      mostrarHistorialEnSidebar();
+    })
+    .catch(err => {
+      console.error("❌ Error al cargar historial:", err);
+    });
+}
+
+// Mostrar lista de conversaciones en el sidebar
+function mostrarHistorialEnSidebar() {
+  chatHistory.innerHTML = "";
+  const nueva = document.createElement("li");
+  nueva.textContent = "➕ Nueva conversación";
+  nueva.onclick = iniciarNuevaConversacion;
+  chatHistory.appendChild(nueva);
+
+  conversaciones.forEach((conv) => {
+    const li = document.createElement("li");
+li.textContent = conv.titulo || "Conversación";
+li.dataset.id = conv.id; // 🔹 Para poder resaltar la conversación activa
+li.onclick = () => cargarConversacion(conv.id);
+    chatHistory.appendChild(li);
+  });
+}
+
+// Cargar mensajes de una conversación
+function cargarConversacion(id) {
+  chatMessages.innerHTML = "";
+  chatIdActual = id;
+
+  fetch(`https://oposicion-age.onrender.com/conversacion/${id}?usuario_id=${usuarioEmail || "anonimo"}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.mensajes) {
+        data.mensajes.forEach(m => {
+          agregarMensaje(m.role === "user" ? "user" : "bot", m.content);
+        });
+      }
+    });
+
+  // 🔹 Marcar activa la conversación en la lista
+  document.querySelectorAll("#chat-history li").forEach(li => {
+    li.classList.remove("active");
+    if (li.dataset.id === id) li.classList.add("active");
+  });
+}
+
+// Empezar conversación nueva
+function iniciarNuevaConversacion() {
+  chatMessages.innerHTML = "";
+  chatIdActual = null;
+}
+
+// Eventos
+sendBtn.addEventListener("click", enviarMensaje);
+input.addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    enviarMensaje();
+  }
+});
+
+window.addEventListener("DOMContentLoaded", cargarHistorial);
+</script>

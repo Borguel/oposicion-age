@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente IA para Opositores AGE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a3a, #2c3e50);
+            color: var(--light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: rgba(26, 37, 54, 0.9);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, var(--secondary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .logo-text h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .logo-text p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 1.5rem;
+        }
+
+        nav a {
+            color: var(--light);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        nav a:hover, nav a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--secondary);
+        }
+
+        /* Main Container */
+        .container {
+            display: flex;
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 1.5rem;
+            gap: 1.5rem;
+        }
+
+        /* PDF Section */
+        .pdf-section {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--shadow);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title i {
+            color: var(--secondary);
+            font-size: 1.5rem;
+        }
+
+        .section-title h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: var(--secondary);
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--secondary);
+            margin-bottom: 1rem;
+        }
+
+        .upload-text h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text p {
+            opacity: 0.7;
+            margin-bottom: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--secondary), #2980b9);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-accent {
+            background: linear-gradient(45deg, var(--accent), #c0392b);
+        }
+
+        .resumen-container {
+            margin-top: 1.5rem;
+            flex: 1;
+            display: none;
+            flex-direction: column;
+        }
+
+        .resumen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .resumen-content {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .resumen-content p {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        /* Chat Section */
+        .chat-section {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .ai-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #9b59b6, var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .chat-info h2 {
+            font-size: 1.3rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .chat-info p {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .chat-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.3rem;
+            font-size: 0.85rem;
+            color: var(--success);
+        }
+
+        .chat-status .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--success);
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 1rem 1.5rem;
+            border-radius: 18px;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background: linear-gradient(45deg, var(--secondary), #2980b9);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .bot-message {
+            background: rgba(255, 255, 255, 0.1);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .message-content {
+            line-height: 1.6;
+        }
+
+        .message-content p {
+            margin-bottom: 0.5rem;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            text-align: right;
+            margin-top: 0.5rem;
+        }
+
+        .input-container {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border-radius: 50px;
+            border: none;
+            background: rgba(255, 255, 255, 0.07);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .message-input:focus {
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 2px var(--secondary);
+        }
+
+        .send-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--secondary), #2980b9);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1.2rem;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .pdf-section, .chat-section {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            nav ul {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .input-container {
+                padding: 1rem;
+            }
+            
+            .message-input {
+                padding: 0.8rem 1.2rem;
+            }
+            
+            .send-btn {
+                width: 45px;
+                height: 45px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo-text h1 {
+                font-size: 1.3rem;
+            }
+            
+            .section-title h2 {
+                font-size: 1.3rem;
+            }
+            
+            .upload-area {
+                padding: 1.5rem 1rem;
+            }
+            
+            .upload-icon {
+                font-size: 2.5rem;
+            }
+            
+            .resumen-content {
+                padding: 1rem;
+            }
+            
+            .chat-header {
+                padding: 1rem;
+            }
+            
+            .chat-box {
+                padding: 1rem;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--secondary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="logo-text">
+                <h1>Asistente IA para Opositores</h1>
+                <p>Administrativo del Estado | AGE</p>
+            </div>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#" class="active"><i class="fas fa-home"></i> Inicio</a></li>
+                <li><a href="#"><i class="fas fa-book"></i> Temario</a></li>
+                <li><a href="#"><i class="fas fa-file-alt"></i> Tests</a></li>
+                <li><a href="#"><i class="fas fa-chart-line"></i> Progreso</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <section class="pdf-section">
+            <div class="section-title">
+                <i class="fas fa-file-pdf"></i>
+                <h2>Subir Documento PDF</h2>
+            </div>
+            
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div class="upload-text">
+                    <h3>Arrastra y suelta tu PDF aquí</h3>
+                    <p>O haz clic para seleccionar un archivo</p>
+                </div>
+                <button class="btn">
+                    <i class="fas fa-file-upload"></i> Seleccionar PDF
+                </button>
+                <input type="file" id="pdf-file" class="file-input" accept=".pdf">
+            </div>
+            
+            <div class="resumen-container" id="resumen-container">
+                <div class="resumen-header">
+                    <h3>Resumen del documento</h3>
+                    <button class="btn btn-secondary">
+                        <i class="fas fa-copy"></i> Copiar
+                    </button>
+                </div>
+                <div class="resumen-content" id="resumen-content"></div>
+            </div>
+        </section>
+
+        <section class="chat-section">
+            <div class="chat-header">
+                <div class="ai-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="chat-info">
+                    <h2>Asistente DeepSeek</h2>
+                    <p>Especialista en oposiciones AGE</p>
+                    <div class="chat-status">
+                        <span class="status-dot"></span>
+                        <span>En línea</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-box" id="chat-box">
+                <div class="message bot-message">
+                    <div class="message-header">
+                        <i class="fas fa-robot"></i>
+                        <span>Asistente IA</span>
+                    </div>
+                    <div class="message-content">
+                        <p>¡Hola! Soy tu asistente especializado en oposiciones para Administrativo del Estado. ¿En qué puedo ayudarte hoy?</p>
+                        <p>Puedes:</p>
+                        <ul>
+                            <li>Subir un PDF para que lo resuma</li>
+                            <li>Preguntarme sobre cualquier tema del temario</li>
+                            <li>Pedirme que cree un test personalizado</li>
+                            <li>Solicitar un esquema de estudio</li>
+                        </ul>
+                        <p>¿Por dónde empezamos?</p>
+                    </div>
+                    <div class="message-time">12:45 PM</div>
+                </div>
+                
+                <div class="message user-message">
+                    <div class="message-header">
+                        <i class="fas fa-user"></i>
+                        <span>Tú</span>
+                    </div>
+                    <div class="message-content">
+                        <p>Hola, ¿puedes explicarme la organización territorial del Estado español?</p>
+                    </div>
+                    <div class="message-time">12:47 PM</div>
+                </div>
+                
+                <div class="message bot-message">
+                    <div class="message-header">
+                        <i class="fas fa-robot"></i>
+                        <span>Asistente IA</span>
+                    </div>
+                    <div class="message-content">
+                        <p>¡Claro! La organización territorial del Estado español está definida en el Título VIII de la Constitución Española de 1978. Se estructura en:</p>
+                        <ol>
+                            <li><strong>Administración Central:</strong> Gobierna todo el territorio nacional.</li>
+                            <li><strong>Comunidades Autónomas:</strong> 17 regiones con competencias transferidas.</li>
+                            <li><strong>Provincias:</strong> 50 divisiones administrativas.</li>
+                            <li><strong>Municipios:</strong> Unidades básicas de organización territorial.</li>
+                        </ol>
+                        <p>¿Quieres que profundice en algún aspecto en particular?</p>
+                    </div>
+                    <div class="message-time">12:48 PM</div>
+                </div>
+            </div>
+            
+            <div class="input-container">
+                <input type="text" class="message-input" id="user-input" placeholder="Escribe tu pregunta...">
+                <button class="send-btn" id="send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // ✅ Usa tu URL de Render
+        const BACKEND_URL = "https://oposicion-age.onrender.com";
+        
+        // Elementos del DOM
+        const uploadArea = document.getElementById('upload-area');
+        const pdfFileInput = document.getElementById('pdf-file');
+        const resumenContainer = document.getElementById('resumen-container');
+        const resumenContent = document.getElementById('resumen-content');
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        // Evento para abrir el selector de archivos al hacer clic en el área de carga
+        uploadArea.addEventListener('click', () => {
+            pdfFileInput.click();
+        });
+        
+        // Evento para arrastrar y soltar archivos
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            
+            if (e.dataTransfer.files.length) {
+                pdfFileInput.files = e.dataTransfer.files;
+                subirPDF();
+            }
+        });
+        
+        // Evento para cuando se selecciona un archivo
+        pdfFileInput.addEventListener('change', subirPDF);
+        
+        // Función para subir y resumir PDF
+        async function subirPDF() {
+            const file = pdfFileInput.files[0];
+            
+            if (!file) {
+                alert('Por favor selecciona un archivo PDF');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('pdf', file);
+            
+            try {
+                // Mostrar mensaje de espera
+                resumenContent.innerHTML = '<div class="spinner"></div> <span>Procesando documento...</span>';
+                resumenContainer.style.display = 'flex';
+                
+                // Simulación de carga
+                setTimeout(async () => {
+                    try {
+                        const response = await fetch(`${BACKEND_URL}/resumir-pdf`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.resumen) {
+                            // Formatear el resumen con saltos de línea
+                            const formattedResumen = data.resumen.replace(/\n/g, '<br>');
+                            resumenContent.innerHTML = formattedResumen;
+                            
+                            // Añadir mensaje al chat
+                            addMessageToChat("He subido un documento PDF para que lo resumas.", 'user');
+                            
+                            // Simular respuesta del asistente
+                            setTimeout(() => {
+                                addMessageToChat("¡Documento procesado con éxito! He creado un resumen del PDF que subiste. ¿Te gustaría que te explique algún punto en particular o que genere un test basado en este contenido?", 'bot');
+                            }, 1500);
+                        } else {
+                            resumenContent.innerHTML = "Error: " + (data.error || 'Error desconocido');
+                        }
+                    } catch (error) {
+                        resumenContent.innerHTML = "Error de conexión: " + error.message;
+                    }
+                }, 2000);
+            } catch (error) {
+                resumenContent.innerHTML = "Error: " + error.message;
+            }
+        }
+        
+        // Función para enviar mensajes
+        function enviarMensaje() {
+            const message = userInput.value.trim();
+            
+            if (!message) return;
+            
+            // Añadir mensaje de usuario al chat
+            addMessageToChat(message, 'user');
+            
+            // Limpiar el input
+            userInput.value = '';
+            
+            // Mostrar estado de "escribiendo"
+            showTypingIndicator();
+            
+            // Simular respuesta después de un retraso
+            setTimeout(() => {
+                // Ocultar indicador de escritura
+                hideTypingIndicator();
+                
+                // Generar respuesta basada en el mensaje del usuario
+                let response = "Gracias por tu pregunta. Estoy procesando tu consulta y te responderé en breve.";
+                
+                if (message.toLowerCase().includes('test')) {
+                    response = "¡Claro! Puedo generar un test personalizado para ti. ¿Sobre qué temas específicos te gustaría que fuera el test? Puedo crearlo basado en los documentos que has subido o en el temario general.";
+                } else if (message.toLowerCase().includes('esquema')) {
+                    response = "Excelente idea. Los esquemas son muy útiles para estudiar. ¿De qué tema te gustaría que prepare un esquema? Puedo hacerlo detallado o resumido, según tus preferencias.";
+                } else if (message.toLowerCase().includes('temario')) {
+                    response = "El temario para Administrativo del Estado consta de 3 bloques principales:<br><br>1. Organización del Estado y Administración Electrónica<br>2. Gestión de Personal y Derecho Administrativo<br>3. Gestión Financiera<br><br>¿Quieres que te detalle algún bloque específico?";
+                } else if (message.toLowerCase().includes('ayuda') || message.toLowerCase().includes('qué puedes hacer')) {
+                    response = "Puedo ayudarte con:<br><br>- Resumir documentos PDF<br>- Explicar temas del temario<br>- Generar tests personalizados<br>- Crear esquemas de estudio<br>- Resolver dudas sobre procedimientos administrativos<br><br>Solo dime qué necesitas 😊";
+                } else {
+                    response = "Entiendo tu consulta sobre \"" + message + "\". Como asistente especializado en oposiciones para Administrativo del Estado, puedo darte información precisa sobre este tema. ¿Te gustaría que profundice en algún aspecto en particular o que te proporcione ejemplos prácticos?";
+                }
+                
+                addMessageToChat(response, 'bot');
+            }, 2000);
+        }
+        
+        // Función para añadir mensajes al chat
+        function addMessageToChat(message, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+            
+            const now = new Date();
+            const timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+            
+            messageElement.innerHTML = `
+                <div class="message-header">
+                    <i class="fas ${sender === 'user' ? 'fa-user' : 'fa-robot'}"></i>
+                    <span>${sender === 'user' ? 'Tú' : 'Asistente IA'}</span>
+                </div>
+                <div class="message-content">
+                    <p>${message}</p>
+                </div>
+                <div class="message-time">${timeString}</div>
+            `;
+            
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // Función para mostrar indicador de "escribiendo"
+        function showTypingIndicator() {
+            const typingElement = document.createElement('div');
+            typingElement.classList.add('message', 'bot-message');
+            typingElement.id = 'typing-indicator';
+            typingElement.innerHTML = `
+                <div class="message-header">
+                    <i class="fas fa-robot"></i>
+                    <span>Asistente IA</span>
+                </div>
+                <div class="message-content">
+                    <div class="spinner"></div> <span>Escribiendo...</span>
+                </div>
+            `;
+            
+            chatBox.appendChild(typingElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // Función para ocultar indicador de "escribiendo"
+        function hideTypingIndicator() {
+            const typingElement = document.getElementById('typing-indicator');
+            if (typingElement) {
+                typingElement.remove();
+            }
+        }
+        
+        // Event listeners
+        sendBtn.addEventListener('click', enviarMensaje);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                enviarMensaje();
+            }
+        });
+        
+        // Ejemplo de mensaje inicial
+        setTimeout(() => {
+            addMessageToChat("Recuerda que puedes subir cualquier documento relacionado con tu oposición (apuntes, exámenes, normativas) y te ayudaré a resumirlo y estudiarlo.", 'bot');
+        }, 3000);
+    </script>
+</body>
+</html>

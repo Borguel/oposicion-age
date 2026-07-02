@@ -1,0 +1,248 @@
+<h2 id="titulo-formulario">Genera tu Test Personalizado</h2>
+
+<form id="form-generar-test" style="max-width: 600px; margin-bottom: 30px;">
+  <label for="num_preguntas">Número de preguntas:</label><br>
+  <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="50" value="5" required><br><br>
+
+  <label for="tema">Selecciona uno o varios temas:</label><br>
+  <select id="tema" name="tema" multiple required style="height: 200px; width: 100%;">
+    <option disabled>Cargando temas...</option>
+  </select><br><br>
+
+  <button type="submit" style="background-color: #4caf50; color: white; padding: 10px 20px; border: none; border-radius: 6px;">Generar Test</button>
+</form>
+
+<div id="contenedor-test"></div>
+<div id="contenedor-resultados" style="display:none;"></div>
+
+<button id="btn-descargar-pdf" style="display:none; margin-top:20px; background-color:#2196F3; color:white; padding:10px 20px; border:none; border-radius:6px;">Descargar PDF del test</button>
+<button id="btn-guardar-test" style="display:none; margin-top:20px; background-color:#FF5722; color:white; padding:10px 20px; border:none; border-radius:6px;">Guardar Test</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+let preguntas = [];
+let indicePreguntaActual = 0;
+let respuestasUsuario = [];
+
+window.addEventListener("DOMContentLoaded", async () => {
+  const select = document.getElementById("tema");
+  select.innerHTML = "<option disabled>Cargando temas...</option>";
+
+  try {
+    const res = await fetch("https://oposicion-age.onrender.com/temas-disponibles");
+    const datos = await res.json();
+    const temas = datos.temas || [];
+
+    if (temas.length === 0) {
+      select.innerHTML = "<option disabled>No hay temas disponibles.</option>";
+      return;
+    }
+
+    select.innerHTML = "";
+    temas.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = t.titulo;
+      select.appendChild(opt);
+    });
+
+  } catch (err) {
+    select.innerHTML = "<option disabled>Error al cargar temas.</option>";
+    console.error(err);
+  }
+});
+
+document.getElementById('form-generar-test').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const select = document.getElementById('tema');
+  const temas = Array.from(select.selectedOptions).map(option => option.value);
+  const numPreguntas = parseInt(document.getElementById('num_preguntas').value);
+  const contenedor = document.getElementById('contenedor-test');
+  const tituloFormulario = document.getElementById('titulo-formulario');
+  respuestasUsuario = [];
+  indicePreguntaActual = 0;
+
+  contenedor.innerHTML = "<p><em>⏳ Generando test, por favor espera...</em></p>";
+
+  try {
+    const res = await fetch("https://oposicion-age.onrender.com/generar-test-avanzado", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ temas: temas, num_preguntas: numPreguntas })
+    });
+
+    const datos = await res.json();
+    preguntas = Array.isArray(datos.test) ? datos.test : [];
+
+    if (preguntas.length === 0) {
+      contenedor.innerHTML = "<p>No se han recibido preguntas.</p>";
+      return;
+    }
+
+    // Oculta formulario y muestra la primera pregunta
+    document.getElementById('form-generar-test').style.display = "none";
+    tituloFormulario.style.display = "none";
+
+    mostrarPregunta(indicePreguntaActual);
+
+  } catch (error) {
+    contenedor.innerHTML = "<p>Error al generar el test. Inténtalo más tarde.</p>";
+    console.error(error);
+  }
+});
+
+function mostrarPregunta(index) {
+  const contenedor = document.getElementById('contenedor-test');
+  contenedor.innerHTML = "";
+
+  if (index < 0 || index >= preguntas.length) {
+    contenedor.innerHTML = "<p>No hay más preguntas.</p>";
+    return;
+  }
+
+  const p = preguntas[index];
+  let html = `<form id="form-pregunta">
+    <fieldset>
+      <legend><strong>Pregunta ${index + 1} de ${preguntas.length}:</strong> ${p.pregunta}</legend>`;
+
+  for (const letra in p.opciones) {
+    const texto = p.opciones[letra];
+    html += `
+      <label style="color: black;">
+        <input type="radio" name="respuesta" value="${letra}" required
+          ${respuestasUsuario[index] === letra ? "checked" : ""}>
+        ${letra}) ${texto}
+      </label><br>`;
+  }
+
+  html += `
+    </fieldset>
+    <button type="submit">${index === preguntas.length - 1 ? "Enviar Test" : "Siguiente Pregunta"}</button>
+  </form>`;
+
+  contenedor.innerHTML = html;
+
+  document.getElementById("form-pregunta").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const seleccionada = document.querySelector('input[name="respuesta"]:checked').value;
+    respuestasUsuario[index] = seleccionada;
+
+    if (index === preguntas.length - 1) {
+      mostrarResultados();
+    } else {
+      indicePreguntaActual++;
+      mostrarPregunta(indicePreguntaActual);
+    }
+  });
+}
+
+function mostrarResultados() {
+  const contenedor = document.getElementById('contenedor-test');
+  const contenedorResultados = document.getElementById('contenedor-resultados');
+  contenedor.innerHTML = "";
+  contenedorResultados.style.display = "block";
+
+  let aciertos = 0;
+  let html = "<ol>";
+
+  preguntas.forEach((p, i) => {
+    let correcta = p.respuesta_correcta && p.respuesta_correcta.trim() !== "" ? p.respuesta_correcta : "No indicada";
+    let explicacion = p.explicacion && p.explicacion.trim() !== "" ? p.explicacion : "Explicación no disponible.";
+    let seleccion = respuestasUsuario[i];
+
+    html += `<li><strong>${p.pregunta}</strong><br>`;
+
+    // Opciones coloreadas y marcadas
+    for (const letra in p.opciones) {
+      const texto = p.opciones[letra];
+      const esCorrecta = letra === correcta;
+      const esSeleccionada = letra === seleccion;
+
+      let color = "black";
+      let checked = "";
+      if (esCorrecta) {
+        color = "green";
+        checked = "checked";
+      } else if (esSeleccionada && !esCorrecta) {
+        color = "red";
+        checked = "checked";
+      }
+
+      html += `
+        <label style="color:${color};">
+          <input type="radio" disabled name="respuesta_${i}" value="${letra}" ${checked}>
+          ${letra}) ${texto}
+        </label><br>
+      `;
+    }
+
+    html += `<p>Tu respuesta: ${seleccion || "No respondida"}</p>`;
+    html += `<p><strong>Explicación:</strong> ${explicacion}</p></li>`;
+    
+    if (seleccion === correcta) aciertos++;
+  });
+
+  html += "</ol>";
+  html += `<h3>Has acertado ${aciertos} de ${preguntas.length} preguntas.</h3>`;
+
+  contenedorResultados.innerHTML = html;
+
+  // Mostrar botones PDF y Guardar
+  document.getElementById("btn-descargar-pdf").style.display = "inline-block";
+  document.getElementById("btn-guardar-test").style.display = "inline-block";
+}
+
+document.getElementById("btn-descargar-pdf").addEventListener("click", () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let texto = "";
+
+  preguntas.forEach((p, i) => {
+    let correcta = p.respuesta_correcta && p.respuesta_correcta.trim() !== "" ? p.respuesta_correcta : "No indicada";
+    let explicacion = p.explicacion && p.explicacion.trim() !== "" ? p.explicacion : "Explicación no disponible.";
+    let seleccion = respuestasUsuario[i] || "No respondida";
+
+    texto += `Pregunta ${i + 1}: ${p.pregunta}\n`;
+    Object.entries(p.opciones).forEach(([letra, textoOpcion]) => {
+      texto += `${letra}) ${textoOpcion}\n`;
+    });
+    texto += `Tu respuesta: ${seleccion}\nRespuesta correcta: ${correcta}\nExplicación: ${explicacion}\n\n`;
+  });
+
+  doc.setFontSize(10);
+  doc.text(texto, 10, 10, { maxWidth: 190 });
+  doc.save("test_resultado.pdf");
+});
+
+document.getElementById("btn-guardar-test").addEventListener("click", async () => {
+  const usuario_id = "usuario_prueba";
+
+  try {
+    await fetch("https://oposicion-age.onrender.com/guardar-test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        usuario_id,
+        contenido: preguntas.map((p, i) => ({
+          ...p,
+          respuesta_usuario: respuestasUsuario[i] || null,
+          correcta: p.respuesta_correcta,
+          explicacion: p.explicacion
+        })),
+        metadatos: {
+          aciertos: respuestasUsuario.reduce((acc, r, i) => acc + (r === preguntas[i].respuesta_correcta ? 1 : 0), 0),
+          fallos: respuestasUsuario.reduce((acc, r, i) => acc + (r !== preguntas[i].respuesta_correcta ? 1 : 0), 0),
+          temas: Array.from(document.getElementById('tema').selectedOptions).map(o => o.value),
+          tiempo: 0
+        }
+      })
+    });
+    alert("Test guardado correctamente.");
+  } catch (error) {
+    console.error("Error guardando test:", error);
+    alert("Error guardando test. Inténtalo más tarde.");
+  }
+});
+</script>

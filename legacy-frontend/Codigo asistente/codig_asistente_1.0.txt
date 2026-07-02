@@ -1,0 +1,458 @@
+<style>
+/* CHAT ASISTENTE RESPONSIVE (SIN HISTORIAL) */
+.chat-container-asistente {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  font-family: 'Segoe UI', 'Inter', sans-serif;
+  background: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+}
+
+/* Cabecera */
+.chat-header-asistente {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, #fffbe6 0%, #e8f6ff 100%);
+  padding: 12px 16px;
+  border-bottom: 1.5px solid #f6c56e;
+  position: sticky;
+  top: 0;
+  z-index: 11;
+  gap: 11px;
+  min-height: 62px;
+}
+
+.avatar-bot {
+  position: relative;
+  margin-right: 3px;
+}
+
+.avatar-bot img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+}
+
+.pulse {
+  position: absolute;
+  right: -6px;
+  bottom: 2px;
+  width: 12px;
+  height: 12px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 #10b98188;
+  animation: pulse 1.3s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 #10b98188; }
+  70% { box-shadow: 0 0 0 8px #10b98100; }
+  100% { box-shadow: 0 0 0 0 #10b98100; }
+}
+
+.titulo-chat {
+  font-weight: bold;
+  font-size: 17px;
+  color: #223049;
+}
+
+.estado-enlinea {
+  color: #10b981;
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+/* Área de mensajes */
+.chat-messages-asistente {
+  flex: 1;
+  padding: 16px 16px 100px;
+  overflow-y: auto;
+  background: linear-gradient(120deg, #f7f8fa 80%, #e8f6ff 100%);
+  scroll-behavior: smooth;
+}
+
+.mensaje-user, .mensaje-bot {
+  display: flex;
+  margin-bottom: 18px;
+  align-items: flex-end;
+  animation: fadeIn 0.45s;
+}
+
+.bubble-user {
+  background: #fff;
+  color: #223049;
+  border-radius: 20px 20px 6px 20px;
+  padding: 13px 18px;
+  box-shadow: 0 2px 7px #0002;
+  margin-left: auto;
+  max-width: 80%;
+  font-size: 15px;
+  word-break: break-word;
+  border: 1px solid #ececec;
+}
+
+.bubble-bot {
+  background: #e7f1fa;
+  color: #223049;
+  border-radius: 20px 20px 20px 6px;
+  padding: 13px 18px;
+  box-shadow: 0 2px 7px #0002;
+  margin-right: 8px;
+  max-width: 85%;
+  font-size: 15px;
+  position: relative;
+  word-break: break-word;
+  border: 1px solid #cbe6f9;
+}
+
+.avatar-bot-mini img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  margin-right: 7px;
+}
+
+/* Área de entrada */
+.input-area-asistente {
+  display: flex;
+  align-items: center;
+  border-top: 1.5px solid #f6c56e;
+  background: #fff;
+  padding: 14px 16px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 12;
+  gap: 7px;
+}
+
+.input-area-asistente textarea {
+  flex: 1;
+  border: none;
+  border-radius: 17px;
+  padding: 11px 15px;
+  font-size: 15px;
+  background: #f4f6f8;
+  min-height: 36px;
+  max-height: 110px;
+  resize: none;
+  outline: none;
+  box-shadow: 0 1px 4px #0001;
+  transition: background 0.2s;
+  overflow-y: auto;
+}
+
+.input-area-asistente textarea:focus {
+  background: #f9fafb;
+}
+
+.btn-enviar {
+  border: none;
+  background: #223049;
+  border-radius: 50%;
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  margin-left: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s;
+  box-shadow: 0 1px 4px #0001;
+}
+
+.btn-enviar:hover {
+  background: #10a37f;
+}
+
+.btn-enviar svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  background: #f7f8fa;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e7e7e7;
+  border-radius: 7px;
+}
+
+/* Botón cerrar (solo móvil) */
+.btn-cerrar-chat {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  width: 42px;
+  height: 42px;
+  background: #e54848;
+  color: #fff;
+  font-size: 30px;
+  font-weight: bold;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 20000;
+  display: none;
+  transition: background 0.18s;
+  box-shadow: 0 2px 12px #faacac77;
+  line-height: 38px;
+  text-align: center;
+  padding: 0;
+}
+
+.btn-cerrar-chat:hover {
+  background: #b62020;
+}
+
+/* Versión escritorio */
+@media (min-width: 768px) {
+  .chat-container-asistente {
+    max-width: 700px;
+    height: 85vh;
+    margin: 5vh auto;
+    border-radius: 16px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.10);
+    position: relative;
+    border: 1.5px solid #e2e8f0;
+  }
+  
+  .chat-header-asistente {
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .input-area-asistente {
+    position: sticky;
+    border-radius: 0 0 16px 16px;
+  }
+  
+  .chat-messages-asistente {
+    padding-bottom: 20px;
+  }
+  
+  .btn-cerrar-chat {
+    display: none !important;
+  }
+}
+
+/* Versión móvil */
+@media (max-width: 767px) {
+  .btn-cerrar-chat {
+    display: block;
+  }
+  
+  .input-area-asistente {
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+  
+  .chat-messages-asistente {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  }
+}
+</style>
+
+<div class="chat-container-asistente">
+  <!-- Botón cerrar (solo móvil) -->
+  <button id="cerrar-chat" class="btn-cerrar-chat" title="Cerrar asistente">&times;</button>
+  
+  <!-- Cabecera -->
+  <div class="chat-header-asistente">
+    <div class="avatar-bot">
+      <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Asistente" />
+      <span class="pulse"></span>
+    </div>
+    <div>
+      <div class="titulo-chat">Asistente Examen AGE</div>
+      <div class="estado-enlinea">En línea</div>
+    </div>
+  </div>
+  
+  <!-- Área de mensajes -->
+  <div id="chat-messages" class="chat-messages-asistente">
+    <div class="mensaje-bot">
+      <div class="avatar-bot-mini">
+        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Asistente" />
+      </div>
+      <div class="bubble-bot">Hola 👋, soy tu asistente para los exámenes AGE. Pregúntame cualquier duda sobre el proceso, estructura o temario.</div>
+    </div>
+  </div>
+  
+  <!-- Área de entrada -->
+  <div class="input-area-asistente">
+    <textarea id="chat-input" placeholder="Escribe tu pregunta..." rows="1"></textarea>
+    <button id="chat-send" class="btn-enviar" title="Enviar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const input = document.getElementById("chat-input");
+  const sendBtn = document.getElementById("chat-send");
+  const chatMessages = document.getElementById("chat-messages");
+  const cerrarChat = document.getElementById("cerrar-chat");
+  
+  // Cerrar chat (solo móvil)
+  if(cerrarChat) {
+    cerrarChat.addEventListener("click", function() {
+      // Aquí puedes agregar la lógica para cerrar el chat
+      // Por ejemplo: window.location.href = "/";
+      console.log("Chat cerrado");
+    });
+  }
+  
+  // Autoajustar altura del textarea
+  input.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+  });
+  
+  // Enviar mensaje con Enter (Shift+Enter para nueva línea)
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensaje();
+    }
+  });
+  
+  // Enviar mensaje al hacer clic
+  sendBtn.addEventListener('click', enviarMensaje);
+  
+  // Función para agregar mensajes al chat
+  function agregarMensaje(tipo, texto) {
+    const div = document.createElement("div");
+    if (tipo === "user") {
+      div.className = "mensaje-user";
+      div.innerHTML = `<div class="bubble-user">${texto.replace(/\n/g, '<br>')}</div>`;
+    } else {
+      div.className = "mensaje-bot";
+      div.innerHTML = `
+        <div class="avatar-bot-mini">
+          <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Asistente" />
+        </div>
+        <div class="bubble-bot">${texto.replace(/\n/g, '<br>')}</div>
+      `;
+    }
+    chatMessages.appendChild(div);
+    scrollToBottom();
+  }
+  
+  // Función para enviar mensaje
+  function enviarMensaje() {
+    const texto = input.value.trim();
+    if (!texto) return;
+    
+    agregarMensaje("user", texto);
+    input.value = "";
+    input.style.height = 'auto';
+    
+    // Mostrar "escribiendo..."
+    const typingIndicator = document.createElement("div");
+    typingIndicator.className = "mensaje-bot";
+    typingIndicator.id = "typing-indicator";
+    typingIndicator.innerHTML = `
+      <div class="avatar-bot-mini">
+        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Asistente" />
+      </div>
+      <div class="bubble-bot">
+        <div class="typing-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    `;
+    chatMessages.appendChild(typingIndicator);
+    scrollToBottom();
+    
+    // Enviar a la API
+    fetch("https://oposicion-age.onrender.com/consultar-asistente-examen", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mensaje: texto })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("typing-indicator").remove();
+      if (data.respuesta) {
+        agregarMensaje("bot", data.respuesta);
+      } else {
+        agregarMensaje("bot", "❌ Hubo un error: " + (data.error || "Respuesta vacía"));
+      }
+    })
+    .catch(err => {
+      document.getElementById("typing-indicator").remove();
+      agregarMensaje("bot", "❌ Error al conectar con el servidor");
+    });
+  }
+  
+  // Scroll al final
+  function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    // Pequeño retraso para asegurar el scroll
+    setTimeout(() => {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 50);
+  }
+  
+  // Enfocar el input al cargar
+  input.focus();
+  
+  // Añadir estilo para los puntos de "escribiendo..."
+  const style = document.createElement('style');
+  style.textContent = `
+    .typing-dots {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+    }
+    .typing-dots span {
+      width: 8px;
+      height: 8px;
+      background: #888;
+      border-radius: 50%;
+      display: inline-block;
+      margin: 0 2px;
+      animation: typingAnimation 1.4s infinite ease-in-out;
+    }
+    .typing-dots span:nth-child(1) {
+      animation-delay: 0s;
+    }
+    .typing-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    @keyframes typingAnimation {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-5px); }
+    }
+  `;
+  document.head.appendChild(style);
+});
+</script>

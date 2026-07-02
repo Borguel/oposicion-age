@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Generar Tarjetas de Memoria - Asistente AGE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4caf50;
+      --primary-dark: #45a047;
+      --primary-light: #e8f5e9;
+      --secondary: #2196F3;
+      --secondary-dark: #1e88e5;
+      --success: #4caf50;
+      --warning: #FF9800;
+      --warning-dark: #fb8c00;
+      --error: #ef5350;
+      --error-dark: #e53935;
+      --text-primary: #37474F;
+      --text-secondary: #6b7280;
+      --text-light: #9ca3af;
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f6fa;
+      --bg-tertiary: #f1f5f9;
+      --border: #e0e0e0;
+      --border-light: #f3f4f6;
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding: 2rem 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .logo-icon {
+      font-size: 2.5rem;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 1rem;
+      border-radius: 50%;
+    }
+
+    .titulo-principal {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitulo {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-primary);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border: 1px solid var(--border);
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--border-light);
+    }
+
+    .card-icon {
+      font-size: 1.5rem;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 0.75rem;
+      border-radius: 50%;
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+    }
+
+    .file-upload-area {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      text-align: center;
+      background: var(--bg-secondary);
+      transition: var(--transition);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .file-upload-area:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .file-upload-area.dragover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      transform: scale(1.02);
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      opacity: 0.8;
+    }
+
+    .upload-text h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .upload-text p {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .file-name {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      transition: var(--transition);
+      background: var(--bg-primary);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn:hover:before {
+      left: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: var(--secondary-dark);
+      transform: translateY(-2px);
+    }
+
+    .btn-warning {
+      background: var(--warning);
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: var(--warning-dark);
+      transform: translateY(-2px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-outline:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-outline-secondary {
+      background: transparent;
+      border: 2px solid var(--text-primary);
+      color: var(--text-primary);
+    }
+
+    .btn-outline-secondary:hover {
+      background: var(--text-primary);
+      color: white;
+    }
+
+    .btn-danger {
+      background: var(--error);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: var(--error-dark);
+      transform: translateY(-2px);
+    }
+
+    .btn-full {
+      width: 100%;
+    }
+
+    /* Progress and Loading */
+    .progress-container {
+      margin: 1.5rem 0;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .loading-container {
+      text-align: center;
+      padding: 3rem 2rem;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid var(--primary-light);
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert-warning {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+    }
+
+    .alert-info {
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
+      color: #1e40af;
+    }
+
+    /* Tarjeta de Memoria */
+    .tarjeta-container {
+      perspective: 1000px;
+      margin-bottom: 2rem;
+    }
+
+    .tarjeta {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      transform-style: preserve-3d;
+      transition: transform 0.8s;
+      cursor: pointer;
+    }
+
+    .tarjeta.volteada {
+      transform: rotateY(180deg);
+    }
+
+    .cara {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .cara.delantera {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+    }
+
+    .cara.trasera {
+      background: white;
+      color: var(--text-primary);
+      transform: rotateY(180deg);
+      border: 2px solid var(--primary);
+    }
+
+    .pregunta-tarjeta {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .respuesta-tarjeta {
+      font-size: 1.2rem;
+      line-height: 1.6;
+    }
+
+    .indicador-volteo {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+
+    /* Controles de Navegación */
+    .controles-tarjetas {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2rem;
+    }
+
+    .contador-tarjetas {
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Filtros */
+    .filters {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      background: var(--bg-primary);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 0.9rem;
+    }
+
+    .filter-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* Lista de Tarjetas */
+    .lista-tarjetas {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .tarjeta-miniatura {
+      background: white;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: var(--transition);
+      border-left: 4px solid var(--primary);
+    }
+
+    .tarjeta-miniatura:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .tarjeta-miniatura .pregunta {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .tarjeta-miniatura .respuesta {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .container {
+        padding: 0;
+      }
+      
+      .card {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .titulo-principal {
+        font-size: 2rem;
+      }
+      
+      .file-upload-area {
+        padding: 2rem 1rem;
+      }
+      
+      .tarjeta {
+        height: 250px;
+      }
+      
+      .pregunta-tarjeta {
+        font-size: 1.2rem;
+      }
+      
+      .respuesta-tarjeta {
+        font-size: 1rem;
+      }
+      
+      .controles-tarjetas {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .lista-tarjetas {
+        grid-template-columns: 1fr;
+      }
+      
+      .card-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+      }
+      
+      .filters {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .filters .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* Utility Classes */
+    .text-center { text-align: center; }
+    .text-success { color: var(--success); }
+    .text-error { color: var(--error); }
+    .text-warning { color: var(--warning); }
+    .hidden { display: none; }
+    .fade-in { animation: fadeIn 0.5s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <i class="fas fa-layer-group"></i>
+        </div>
+      </div>
+      <h1 class="titulo-principal">Generar Tarjetas de Memoria</h1>
+      <p class="subtitulo">Sube tu documento PDF y crea tarjetas de estudio automáticamente</p>
+    </div>
+
+    <!-- Formulario PDF -->
+    <div id="formulario-pdf" class="card fade-in">
+      <div class="card-header">
+        <div class="card-icon">
+          <i class="fas fa-upload"></i>
+        </div>
+        <h2 class="card-title">Subir Documento PDF</h2>
+      </div>
+      
+      <form id="form-subir-pdf">
+        <div class="form-group">
+          <label for="archivo-pdf">
+            <i class="fas fa-file-pdf"></i> Selecciona tu archivo PDF
+          </label>
+          <div class="file-upload-area" id="upload-area">
+            <div class="upload-icon">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <div class="upload-text">
+              <h3>Arrastra y suelta tu PDF aquí</h3>
+              <p>O haz clic para seleccionar un archivo</p>
+            </div>
+            <button type="button" class="btn btn-outline" id="select-file-btn">
+              <i class="fas fa-folder-open"></i> Explorar Archivos
+            </button>
+            <input type="file" id="archivo-pdf" class="file-input" accept=".pdf" required>
+          </div>
+          <div id="file-name" class="file-name hidden"></div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-full">
+          <i class="fas fa-magic"></i> Generar Tarjetas de Memoria
+        </button>
+      </form>
+    </div>
+
+    <!-- Estado de Carga -->
+    <div id="contenedor-carga" class="card hidden">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <h3>Procesando PDF</h3>
+        <p>Estamos analizando tu documento para crear tarjetas de memoria...</p>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div id="progreso-carga" class="progress-fill" style="width: 0%"></div>
+          </div>
+          <p id="texto-carga" class="text-center">0%</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertas -->
+    <div id="alerta-preguntas" class="alert alert-warning hidden"></div>
+    <div id="mensaje-error" class="alert alert-error hidden"></div>
+
+    <!-- Modo de Estudio -->
+    <div id="modo-estudio" class="card hidden">
+      <div class="card-header">
+        <div class="card-icon">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <h2 class="card-title">Modo de Estudio</h2>
+      </div>
+      
+      <div class="tarjeta-container">
+        <div class="tarjeta" id="tarjeta-actual">
+          <div class="cara delantera">
+            <div class="pregunta-tarjeta" id="pregunta-tarjeta"></div>
+            <div class="indicador-volteo">Haz clic para ver la respuesta</div>
+          </div>
+          <div class="cara trasera">
+            <div class="respuesta-tarjeta" id="respuesta-tarjeta"></div>
+            <div class="indicador-volteo">Haz clic para ver la pregunta</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="controles-tarjetas">
+        <button id="btn-anterior" class="btn btn-outline">
+          <i class="fas fa-arrow-left"></i> Anterior
+        </button>
+        
+        <div class="contador-tarjetas">
+          <span id="tarjeta-actual-num">1</span> de <span id="total-tarjetas">0</span>
+        </div>
+        
+        <button id="btn-siguiente" class="btn btn-outline">
+          Siguiente <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+      
+      <div class="filters" style="margin-top: 2rem;">
+        <button id="btn-lista-tarjetas" class="btn btn-secondary">
+          <i class="fas fa-list"></i> Ver Lista de Tarjetas
+        </button>
+        <button id="btn-descargar-tarjetas" class="btn btn-outline-secondary">
+          <i class="fas fa-download"></i> Descargar Tarjetas
+        </button>
+        <button id="btn-nuevo-pdf" class="btn btn-warning">
+          <i class="fas fa-plus"></i> Nuevo PDF
+        </button>
+        <button id="btn-finalizar" class="btn btn-danger">
+          <i class="fas fa-flag"></i> Finalizar
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista de Tarjetas -->
+    <div id="lista-tarjetas" class="card hidden">
+      <div class="card-header">
+        <div class="card-icon">
+          <i class="fas fa-list"></i>
+        </div>
+        <h2 class="card-title">Lista de Tarjetas</h2>
+      </div>
+      
+      <div class="filters">
+        <button id="btn-volver-estudio" class="btn btn-primary">
+          <i class="fas fa-arrow-left"></i> Volver al Modo Estudio
+        </button>
+      </div>
+      
+      <div id="contenedor-lista-tarjetas" class="lista-tarjetas"></div>
+    </div>
+  </div>
+
+  <!-- Librerías externas -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    let tarjetas = [];
+    let tarjetaActual = 0;
+    
+    // Elementos del DOM
+    const formularioPdf = document.getElementById('form-subir-pdf');
+    const uploadArea = document.getElementById('upload-area');
+    const selectFileBtn = document.getElementById('select-file-btn');
+    const archivoPdfInput = document.getElementById('archivo-pdf');
+    const fileNameDisplay = document.getElementById('file-name');
+    const contenedorCarga = document.getElementById('contenedor-carga');
+    const alertaPreguntas = document.getElementById('alerta-preguntas');
+    const mensajeError = document.getElementById('mensaje-error');
+    const modoEstudio = document.getElementById('modo-estudio');
+    const listaTarjetas = document.getElementById('lista-tarjetas');
+    const tarjetaElement = document.getElementById('tarjeta-actual');
+    const preguntaTarjeta = document.getElementById('pregunta-tarjeta');
+    const respuestaTarjeta = document.getElementById('respuesta-tarjeta');
+    const tarjetaActualNum = document.getElementById('tarjeta-actual-num');
+    const totalTarjetas = document.getElementById('total-tarjetas');
+    const btnAnterior = document.getElementById('btn-anterior');
+    const btnSiguiente = document.getElementById('btn-siguiente');
+    const btnListaTarjetas = document.getElementById('btn-lista-tarjetas');
+    const btnVolverEstudio = document.getElementById('btn-volver-estudio');
+    const btnDescargarTarjetas = document.getElementById('btn-descargar-tarjetas');
+    const btnNuevoPdf = document.getElementById('btn-nuevo-pdf');
+    const btnFinalizar = document.getElementById('btn-finalizar');
+    const contenedorListaTarjetas = document.getElementById('contenedor-lista-tarjetas');
+
+    // Función para mostrar mensaje de error
+    function mostrarError(mensaje) {
+      mensajeError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>Error:</strong> ${mensaje}`;
+      mensajeError.classList.remove('hidden');
+      
+      // Ocultar otros elementos
+      contenedorCarga.classList.add('hidden');
+      modoEstudio.classList.add('hidden');
+      listaTarjetas.classList.add('hidden');
+      
+      // Mostrar formulario nuevamente
+      formularioPdf.classList.remove('hidden');
+    }
+    
+    // Evento para seleccionar archivo
+    selectFileBtn.addEventListener('click', () => {
+      archivoPdfInput.click();
+    });
+    
+    // Evento para arrastrar y soltar archivos
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      
+      if (e.dataTransfer.files.length) {
+        archivoPdfInput.files = e.dataTransfer.files;
+        mostrarNombreArchivo();
+      }
+    });
+    
+    // Evento para cuando se selecciona un archivo
+    archivoPdfInput.addEventListener('change', mostrarNombreArchivo);
+    
+    // Mostrar nombre del archivo seleccionado
+    function mostrarNombreArchivo() {
+      const file = archivoPdfInput.files[0];
+      if (file) {
+        const fileName = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
+        fileNameDisplay.innerHTML = `<i class="fas fa-file-pdf"></i> ${fileName}`;
+        fileNameDisplay.classList.remove('hidden');
+      } else {
+        fileNameDisplay.classList.add('hidden');
+      }
+    }
+    
+    // Voltear tarjeta al hacer clic
+    tarjetaElement.addEventListener('click', () => {
+      tarjetaElement.classList.toggle('volteada');
+    });
+    
+    // Mostrar tarjeta actual
+    function mostrarTarjetaActual() {
+      if (tarjetas.length === 0) return;
+      
+      const tarjeta = tarjetas[tarjetaActual];
+      preguntaTarjeta.textContent = tarjeta.pregunta;
+      respuestaTarjeta.textContent = tarjeta.respuesta;
+      tarjetaActualNum.textContent = tarjetaActual + 1;
+      totalTarjetas.textContent = tarjetas.length;
+      
+      // Asegurarse de que la tarjeta esté en su estado inicial (no volteada)
+      tarjetaElement.classList.remove('volteada');
+      
+      // Actualizar estado de los botones de navegación
+      btnAnterior.disabled = tarjetaActual === 0;
+      btnSiguiente.disabled = tarjetaActual === tarjetas.length - 1;
+    }
+    
+    // Navegar a la tarjeta anterior
+    btnAnterior.addEventListener('click', () => {
+      if (tarjetaActual > 0) {
+        tarjetaActual--;
+        mostrarTarjetaActual();
+      }
+    });
+    
+    // Navegar a la siguiente tarjeta
+    btnSiguiente.addEventListener('click', () => {
+      if (tarjetaActual < tarjetas.length - 1) {
+        tarjetaActual++;
+        mostrarTarjetaActual();
+      }
+    });
+    
+    // Mostrar lista de tarjetas
+    btnListaTarjetas.addEventListener('click', () => {
+      modoEstudio.classList.add('hidden');
+      listaTarjetas.classList.remove('hidden');
+      mostrarListaTarjetas();
+    });
+    
+    // Volver al modo de estudio
+    btnVolverEstudio.addEventListener('click', () => {
+      listaTarjetas.classList.add('hidden');
+      modoEstudio.classList.remove('hidden');
+    });
+    
+    // Mostrar lista de todas las tarjetas
+    function mostrarListaTarjetas() {
+      let html = '';
+      
+      tarjetas.forEach((tarjeta, index) => {
+        html += `
+          <div class="tarjeta-miniatura" onclick="seleccionarTarjeta(${index})">
+            <div class="pregunta">${tarjeta.pregunta}</div>
+            <div class="respuesta">${tarjeta.respuesta}</div>
+          </div>
+        `;
+      });
+      
+      contenedorListaTarjetas.innerHTML = html;
+    }
+    
+    // Seleccionar tarjeta desde la lista
+    function seleccionarTarjeta(index) {
+      tarjetaActual = index;
+      listaTarjetas.classList.add('hidden');
+      modoEstudio.classList.remove('hidden');
+      mostrarTarjetaActual();
+    }
+    
+    // Descargar tarjetas como archivo JSON
+    btnDescargarTarjetas.addEventListener('click', () => {
+      const dataStr = JSON.stringify(tarjetas, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'tarjetas_memoria.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Tarjetas descargadas',
+        text: 'Las tarjetas se han descargado correctamente',
+        confirmButtonText: 'Aceptar'
+      });
+    });
+    
+    // Nuevo PDF
+    btnNuevoPdf.addEventListener('click', () => {
+      // Reiniciar todo
+      tarjetas = [];
+      tarjetaActual = 0;
+      
+      // Ocultar elementos
+      modoEstudio.classList.add('hidden');
+      listaTarjetas.classList.add('hidden');
+      alertaPreguntas.classList.add('hidden');
+      mensajeError.classList.add('hidden');
+      
+      // Mostrar formulario
+      formularioPdf.classList.remove('hidden');
+      
+      // Limpiar formulario
+      document.getElementById('form-subir-pdf').reset();
+      fileNameDisplay.classList.add('hidden');
+    });
+    
+    // Finalizar
+    btnFinalizar.addEventListener('click', () => {
+      Swal.fire({
+        icon: 'question',
+        title: '¿Finalizar estudio?',
+        text: '¿Estás seguro de que quieres finalizar el estudio de estas tarjetas?',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, finalizar',
+        cancelButtonText: 'Continuar estudiando',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Reiniciar todo
+          tarjetas = [];
+          tarjetaActual = 0;
+          
+          // Ocultar elementos
+          modoEstudio.classList.add('hidden');
+          listaTarjetas.classList.add('hidden');
+          alertaPreguntas.classList.add('hidden');
+          mensajeError.classList.add('hidden');
+          
+          // Mostrar formulario
+          formularioPdf.classList.remove('hidden');
+          
+          // Limpiar formulario
+          document.getElementById('form-subir-pdf').reset();
+          fileNameDisplay.classList.add('hidden');
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Estudio finalizado',
+            text: 'Puedes subir un nuevo PDF para generar más tarjetas',
+            confirmButtonText: 'Aceptar'
+          });
+        }
+      });
+    });
+    
+    // Event listener para el formulario de subida de PDF
+    formularioPdf.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const archivoInput = document.getElementById('archivo-pdf');
+      
+      if (!archivoInput.files.length) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Selecciona un archivo',
+          text: 'Debes seleccionar un archivo PDF para continuar.',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+      
+      const archivo = archivoInput.files[0];
+      
+      // Validar que sea un PDF
+      if (archivo.type !== 'application/pdf') {
+        mostrarError('El archivo seleccionado no es un PDF válido.');
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append('pdf', archivo);
+      
+      // Ocultar mensajes de error anteriores
+      mensajeError.classList.add('hidden');
+      alertaPreguntas.classList.add('hidden');
+      
+      // Mostrar estado de carga
+      formularioPdf.classList.add('hidden');
+      contenedorCarga.classList.remove('hidden');
+      
+      // Simular progreso de carga
+      let progreso = 0;
+      const intervalCarga = setInterval(() => {
+        if (progreso < 20) {
+          progreso += 1;
+        } else if (progreso < 45) {
+          progreso += Math.random() > 0.3 ? 1 : 0;
+        } else if (progreso < 70) {
+          progreso += Math.random() > 0.5 ? 1 : 0;
+        } else if (progreso < 90) {
+          progreso += Math.random() > 0.7 ? 1 : 0;
+        } else {
+          progreso += 1;
+        }
+        if (progreso > 100) progreso = 100;
+        document.getElementById("progreso-carga").style.width = `${progreso}%`;
+        document.getElementById("texto-carga").textContent = `${progreso}%`;
+      }, 120);
+      
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/generar-tarjetas-desde-pdf", {
+          method: "POST",
+          body: formData
+        });
+        
+        clearInterval(intervalCarga);
+        
+        // Verificar si la respuesta es válida
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+        }
+        
+        const datos = await res.json();
+        
+        // Verificar si la respuesta contiene tarjetas
+        if (!datos.tarjetas) {
+          if (datos.error) {
+            throw new Error(datos.error);
+          } else {
+            throw new Error("No se pudieron generar tarjetas desde el PDF");
+          }
+        }
+        
+        tarjetas = datos.tarjetas || [];
+        
+        if (tarjetas.length === 0) {
+          throw new Error("No se han generado tarjetas desde el PDF");
+        }
+        
+        // Mostrar alerta si hay alguna advertencia
+        if (datos.advertencia) {
+          alertaPreguntas.innerHTML = `
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+              <strong>Aviso:</strong> ${datos.advertencia}
+              ${datos.sugerencia ? `<br><em>${datos.sugerencia}</em>` : ''}
+            </div>
+          `;
+          alertaPreguntas.classList.remove('hidden');
+        }
+        
+        // Inicializar el modo de estudio
+        tarjetaActual = 0;
+        
+        // Mostrar elementos del modo de estudio
+        modoEstudio.classList.remove('hidden');
+        contenedorCarga.classList.add('hidden');
+        
+        // Mostrar primera tarjeta
+        mostrarTarjetaActual();
+        
+      } catch (error) {
+        clearInterval(intervalCarga);
+        
+        // Mostrar error específico
+        let mensajeError = error.message;
+        if (error.message.includes('JSON válido') && error.respuesta_cruda) {
+          mensajeError = `La IA no pudo generar un formato válido. Error técnico: ${error.respuesta_cruda.substring(0, 100)}...`;
+        }
+        
+        mostrarError(mensajeError);
+        console.error('Error completo:', error);
+      }
+    });
+  </script>
+</body>
+</html>

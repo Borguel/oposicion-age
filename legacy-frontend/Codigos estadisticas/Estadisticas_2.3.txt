@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estadísticas – Tu Progreso</title>
+  <style>
+    :root {
+      --primary: #ffa633; /* Naranja vibrante (tu color principal) */
+      --primary-dark: #ff8c00;
+      --secondary: #4caf50;
+      --secondary-dark: #388e3c;
+      --accent: #2196f3;
+      --accent-dark: #1976d2;
+      --danger: #f44336;
+      --danger-dark: #d32f2f;
+      --warning: #ffc107;
+      --warning-dark: #ffa000;
+      --info: #00bcd4;
+      --info-dark: #0097a7;
+      --dark: #2e3440;
+      --darker: #1d2229;
+      --light: #ffffff;
+      --gray: #ebebeb;
+      --border: #ebebeb;
+      --shadow: rgba(0, 0, 0, 0.1);
+      --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      --font-mono: 'Courier New', Courier, monospace;
+      --transition-fast: 0.2s ease-in-out;
+      --transition-normal: 0.3s ease-in-out;
+      --transition-slow: 0.5s ease-in-out;
+      --card-radius: 12px;
+      --btn-radius: 8px;
+      --modal-radius: 16px;
+      /* Colores específicos de tu tema */
+      --theme-bg: #ffffff;
+      --theme-text: #333;
+      --theme-link-hover: #ffa633;
+      --theme-header-bg: #ffffff;
+      --theme-header-text: #333;
+      --theme-content-bg: #ffffff;
+      --theme-content-alt-bg: #f6f6f6;
+      --theme-border: #ebebeb;
+      --theme-heading: #000;
+      --theme-primary: #ffa633;
+      --theme-secondary: #333;
+      --theme-disabled-text: #999;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background: var(--theme-bg);
+      color: var(--theme-text);
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    #estadisticas-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    #estadisticas-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    #estadisticas-header h3 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--theme-heading);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #estadisticas-refresh {
+      background: var(--theme-primary);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: var(--btn-radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 10px rgba(255, 166, 51, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+    }
+
+    #estadisticas-refresh:hover:not(:disabled) {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(255, 166, 51, 0.4);
+    }
+
+    #estadisticas-refresh:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: none;
+      position: absolute;
+      right: 10px;
+    }
+
+    #estadisticas-refresh.loading .spinner {
+      display: block;
+    }
+
+    #estadisticas-refresh.loading span {
+      opacity: 0;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #estadisticas-usuario {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .tarjeta-estadistica {
+      background: var(--theme-content-bg);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--card-radius);
+      padding: 24px;
+      box-shadow: 0 6px 16px var(--shadow);
+      transition: transform 0.3s, box-shadow 0.3s;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tarjeta-estadistica:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    }
+
+    .tarjeta-estadistica.destacada {
+      background: linear-gradient(135deg, var(--theme-primary), var(--primary-dark));
+      color: white;
+    }
+
+    .tarjeta-estadistica.positiva {
+      border-left: 4px solid var(--secondary);
+    }
+
+    .tarjeta-estadistica.negativa {
+      border-left: 4px solid var(--danger);
+    }
+
+    .tarjeta-estadistica.neutra {
+      border-left: 4px solid var(--warning);
+    }
+
+    .tarjeta-estadistica.pdf {
+      background: var(--theme-content-alt-bg);
+      border-left: 4px solid var(--theme-primary);
+    }
+
+    .tarjeta-estadistica.pdf .header svg {
+      fill: var(--theme-primary);
+    }
+
+    .tarjeta-estadistica.pdf .valor {
+      color: var(--theme-heading);
+    }
+
+    .tarjeta-estadistica .header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .tarjeta-estadistica .header svg {
+      width: 32px;
+      height: 32px;
+      margin-bottom: 10px;
+      fill: currentColor;
+    }
+
+    .tarjeta-estadistica h4 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--theme-heading);
+    }
+
+    .tarjeta-estadistica .valor {
+      font-size: 2rem;
+      font-weight: 800;
+      margin: 12px 0;
+      color: var(--theme-primary);
+    }
+
+    .tarjeta-estadistica.destacada .valor,
+    .tarjeta-estadistica.pdf .valor {
+      color: white;
+    }
+
+    .tarjeta-estadistica .detalle {
+      font-size: 0.9rem;
+      color: var(--theme-text);
+    }
+
+    .tarjeta-estadistica.destacada .detalle {
+      color: rgba(255,255,255,0.8);
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--theme-border);
+      border-radius: 3px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--secondary);
+      transition: width 0.5s ease;
+    }
+
+    .tarjeta-estadistica.negativa .progress-fill {
+      background: var(--danger);
+    }
+
+    .tendencia-up { color: var(--secondary); font-weight: bold; }
+    .tendencia-down { color: var(--danger); font-weight: bold; }
+    .tendencia-neutral { color: var(--warning); }
+
+    .seccion-separador {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 20px 0;
+      margin: 20px 0;
+      border-bottom: 2px solid var(--theme-border);
+      position: relative;
+    }
+
+    .seccion-separador h3 {
+      color: var(--theme-primary);
+      font-size: 1.4rem;
+      font-weight: 700;
+      display: inline-block;
+      padding: 0 20px;
+      background: var(--theme-bg);
+      position: relative;
+      top: -10px;
+    }
+
+    .tarjeta-resumen-pdf {
+      grid-column: 1 / -1;
+      background: var(--theme-content-alt-bg);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--card-radius);
+      padding: 25px;
+      box-shadow: 0 6px 20px var(--shadow);
+    }
+
+    .tarjeta-resumen-pdf .resumen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 15px;
+    }
+
+    .tarjeta-resumen-pdf .resumen-item {
+      text-align: center;
+      padding: 15px;
+      background: var(--theme-content-bg);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--card-radius);
+    }
+
+    .tarjeta-resumen-pdf .resumen-valor {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 5px;
+      color: var(--theme-heading);
+    }
+
+    .tarjeta-resumen-pdf .resumen-label {
+      font-size: 0.9rem;
+      color: var(--theme-text);
+    }
+
+    .tarjeta-temas {
+      background: var(--theme-content-alt-bg);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--card-radius);
+      padding: 24px;
+      box-shadow: 0 6px 16px var(--shadow);
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .tarjeta-temas.activo .temas-contenido {
+      max-height: 200px;
+      opacity: 1;
+      visibility: visible;
+      transition: all 0.3s ease;
+    }
+
+    .tarjeta-temas .temas-contenido {
+      max-height: 0;
+      opacity: 0;
+      visibility: hidden;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid var(--theme-border);
+    }
+
+    .lista-temas-inline {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .lista-temas-inline li {
+      background: var(--theme-content-bg);
+      border: 1px solid var(--theme-border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tema-nombre {
+      font-weight: 500;
+      color: var(--theme-heading);
+    }
+
+    .tema-count {
+      background: var(--theme-primary);
+      color: white;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .btn-ver-temas {
+      background: var(--theme-primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--btn-radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 15px;
+    }
+
+    .btn-ver-temas:hover {
+      background: var(--primary-dark);
+    }
+
+    .modal-temas {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(5px);
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .modal-temas.show {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-contenido {
+      background: var(--theme-bg);
+      border-radius: var(--modal-radius);
+      padding: 30px;
+      box-shadow: 0 10px 30px var(--shadow);
+      max-width: 800px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-cerrar {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: transparent;
+      border: none;
+      font-size: 2rem;
+      color: var(--theme-text);
+      cursor: pointer;
+      transition: color 0.2s;
+      z-index: 1001;
+    }
+
+    .modal-cerrar:hover {
+      color: var(--danger);
+    }
+
+    .modal-titulo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--theme-heading);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-busqueda {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .modal-busqueda input {
+      flex: 1;
+      padding: 12px 15px;
+      border: 1px solid var(--theme-border);
+      border-radius: var(--btn-radius);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .modal-busqueda input:focus {
+      border-color: var(--theme-primary);
+    }
+
+    .modal-busqueda svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--theme-text);
+      position: absolute;
+      right: 15px;
+      pointer-events: none;
+    }
+
+    .lista-temas {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .lista-temas li {
+      padding: 15px;
+      border-bottom: 1px solid var(--theme-border);
+      transition: background 0.2s;
+    }
+
+    .lista-temas li:last-child {
+      border-bottom: none;
+    }
+
+    .lista-temas li:hover {
+      background: var(--theme-content-alt-bg);
+    }
+
+    .tema-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tema-titulo {
+      font-weight: 500;
+      color: var(--theme-heading);
+      flex: 1;
+    }
+
+    .tema-id {
+      background: var(--theme-content-alt-bg);
+      border: 1px solid var(--theme-border);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--theme-text);
+    }
+
+    .tema-id:hover {
+      background: var(--theme-primary);
+      color: white;
+      border-color: var(--theme-primary);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+      gap: 10px;
+    }
+
+    .modal-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--btn-radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-btn-secondary {
+      background: var(--theme-content-alt-bg);
+      color: var(--theme-text);
+      border: 1px solid var(--theme-border);
+    }
+
+    .modal-btn-secondary:hover {
+      background: var(--theme-border);
+    }
+
+    @media (max-width: 768px) {
+      #estadisticas-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      #estadisticas-usuario {
+        grid-template-columns: 1fr;
+      }
+      .tarjeta-resumen-pdf .resumen-grid {
+        grid-template-columns: 1fr;
+      }
+      .modal-contenido {
+        width: 95%;
+        margin: 20px;
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="estadisticas-container">
+  <div id="estadisticas-header">
+    <h3>ESTADÍSTICAS DE TU ESTUDIO</h3>
+    <button id="estadisticas-refresh" type="button">
+      <span>Actualizar</span>
+      <div class="spinner"></div>
+    </button>
+  </div>
+  <div id="estadisticas-usuario">
+    <!-- Tests Realizados -->
+    <div class="tarjeta-estadistica destacada">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V5C19 3.89543 18.1046 3 17 3ZM16 17H8V15H16V17ZM16 13H8V11H16V13ZM16 9H8V7H16V9Z" fill="currentColor"/>
+        </svg>
+        <h4>Tests realizados</h4>
+      </div>
+      <div class="valor" id="tests">—</div>
+      <div class="detalle">Total de exámenes completados</div>
+    </div>
+    <!-- Tests Aprobados -->
+    <div class="tarjeta-estadistica positiva test-progress">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z" fill="currentColor"/>
+        </svg>
+        <h4>Tests aprobados</h4>
+      </div>
+      <div class="valor" id="aprobados">—</div>
+      <div class="detalle"><span id="aprobados-porcentaje">—</span>% de éxito</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="aprobados-progress" style="width: 0%"></div>
+      </div>
+    </div>
+    <!-- Tests Suspendidos -->
+    <div class="tarjeta-estadistica negativa test-progress">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
+        </svg>
+        <h4>Tests suspendidos</h4>
+      </div>
+      <div class="valor" id="suspendidos">—</div>
+      <div class="detalle"><span id="suspendidos-porcentaje">—</span>% de intentos</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="suspendidos-progress" style="width: 0%"></div>
+      </div>
+    </div>
+    <!-- Puntuación Media -->
+    <div class="tarjeta-estadistica neutra">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" fill="currentColor"/>
+        </svg>
+        <h4>Puntuación media</h4>
+      </div>
+      <div class="valor" id="media">—</div>
+      <div class="detalle">Sobre 10 puntos</div>
+      <div class="tendencia" id="tendencia-media">
+        <span>...</span>
+      </div>
+    </div>
+    <!-- Aciertos Totales -->
+    <div class="tarjeta-estadistica positiva">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 10H2v2h12v-2zm0-4H2v2h12V6zm4 8v6h-2v-6h-6v-2h6v-6h2v6h6v2h-6z" fill="currentColor"/>
+        </svg>
+        <h4>Aciertos totales</h4>
+      </div>
+      <div class="valor" id="aciertos">—</div>
+      <div class="detalle"><span id="aciertos-porcentaje">—</span>% de respuestas</div>
+    </div>
+    <!-- Fallos Totales -->
+    <div class="tarjeta-estadistica negativa">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-2.67 0-8-1.34-8-4v-1c0-4.67 8-7.33 8-7.33s8 2.66 8 7.33v1c0 2.66-5.33 4-8 4z" fill="currentColor"/>
+        </svg>
+        <h4>Fallos totales</h4>
+      </div>
+      <div class="valor" id="fallos">—</div>
+      <div class="detalle"><span id="fallos-porcentaje">—</span>% de respuestas</div>
+    </div>
+    <!-- Esquemas Generados -->
+    <div class="tarjeta-estadistica neutra">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" fill="currentColor"/>
+        </svg>
+        <h4>Esquemas generados</h4>
+      </div>
+      <div class="valor" id="esquemas">—</div>
+      <div class="detalle">Resúmenes creados</div>
+    </div>
+    <!-- Tiempo Total -->
+    <div class="tarjeta-estadistica neutra">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-1.67 0-3.17-.52-4.4-1.38l-.45-.28L6.8 18.04c-.43-.38-.76-.86-.95-1.4l-.15-.43C5.5 15.5 5.38 14.75 5.38 14h-.01v-4c0-2.65 2.15-4.8 4.8-4.8 2.65 0 4.8 2.15 4.8 4.8v4c0 .75-.12 1.5-.32 2.2l-.15.43c-.19.54-.52 1.02-.95 1.4l-.35.3c-1.23.86-2.73 1.38-4.4 1.38z" fill="currentColor"/>
+        </svg>
+        <h4>Tiempo total</h4>
+      </div>
+      <div class="valor" id="tiempo">—</div>
+      <div class="detalle">Dedicado a estudiar</div>
+    </div>
+    <!-- Temas Más Estudiados -->
+    <div class="tarjeta-estadistica tarjeta-temas" id="temas-top-container">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 20V4h12v16H6z" fill="currentColor"/>
+        </svg>
+        <h4>Temas más estudiados</h4>
+      </div>
+      <div class="valor">Top 3</div>
+      <div class="detalle">Tus áreas de mayor enfoque</div>
+      <button class="btn-ver-temas" id="btn-ver-temas-top" type="button">Mostrar temas</button>
+      <div class="temas-contenido">
+        <ul class="lista-temas-inline" id="lista-temas-top"></ul>
+      </div>
+    </div>
+    <!-- Temas No Estudiados -->
+    <div class="tarjeta-estadistica tarjeta-temas-nuevos" id="temas-nuevos-container">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-2.67 0-8-1.34-8-4v-1c0-4.67 8-7.33 8-7.33s8 2.66 8 7.33v1c0 2.66-5.33 4-8 4z" fill="currentColor"/>
+        </svg>
+        <h4>Temas no estudiados</h4>
+      </div>
+      <div class="valor" id="temas-nuevos">—</div>
+      <div class="detalle">Temas pendientes por estudiar</div>
+      <button class="btn-ver-temas" id="btn-ver-nuevos" type="button">Ver lista completa</button>
+    </div>
+    <!-- NUEVA SECCIÓN: CONTENIDO DESDE PDF -->
+    <div class="seccion-separador">
+      <h3>📄 CONTENIDO DESDE PDF</h3>
+    </div>
+    <!-- Tarjeta Resumen PDF -->
+    <div class="tarjeta-resumen-pdf">
+      <div class="header">
+        <h4 style="color: var(--theme-heading); margin: 0; display: flex; align-items: center; gap: 10px;">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 24px; height: 24px;">
+            <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" fill="currentColor"/>
+          </svg>
+          Resumen de Documentos Procesados
+        </h4>
+      </div>
+      <div class="resumen-grid">
+        <div class="resumen-item">
+          <div class="resumen-valor" id="total-archivos">—</div>
+          <div class="resumen-label">Documentos Subidos</div>
+        </div>
+        <div class="resumen-item">
+          <div class="resumen-valor" id="total-tests-pdf">—</div>
+          <div class="resumen-label">Tests desde PDF</div>
+        </div>
+        <div class="resumen-item">
+          <div class="resumen-valor" id="total-resumenes-pdf">—</div>
+          <div class="resumen-label">Resúmenes</div>
+        </div>
+        <div class="resumen-item">
+          <div class="resumen-valor" id="total-esquemas-pdf">—</div>
+          <div class="resumen-label">Esquemas</div>
+        </div>
+        <div class="resumen-item">
+          <div class="resumen-valor" id="total-tarjetas-pdf">—</div>
+          <div class="resumen-label">Tarjetas</div>
+        </div>
+      </div>
+    </div>
+    <!-- Tests desde PDF -->
+    <div class="tarjeta-estadistica pdf">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" fill="currentColor"/>
+        </svg>
+        <h4>Tests desde PDF</h4>
+      </div>
+      <div class="valor" id="tests-pdf">—</div>
+      <div class="detalle">Tests generados desde documentos</div>
+    </div>
+    <!-- Resúmenes desde PDF -->
+    <div class="tarjeta-estadistica pdf">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
+        </svg>
+        <h4>Resúmenes desde PDF</h4>
+      </div>
+      <div class="valor" id="resumenes-pdf">—</div>
+      <div class="detalle">Resúmenes creados desde documentos</div>
+    </div>
+    <!-- Esquemas desde PDF -->
+    <div class="tarjeta-estadistica pdf">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm2 4v-2H3v2h2zM3 9h2V7H3v2zm12 12h2v-2h-2v2zm4-18H9c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H9V5h10v12zm-8-6h2v-2h-2v2zm-4 0h2v-2H7v2z" fill="currentColor"/>
+        </svg>
+        <h4>Esquemas desde PDF</h4>
+      </div>
+      <div class="valor" id="esquemas-pdf">—</div>
+      <div class="detalle">Esquemas generados desde documentos</div>
+    </div>
+    <!-- Tarjetas desde PDF -->
+    <div class="tarjeta-estadistica pdf">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 12H8v-2h4v2zm0-4H8v-2h4v2zm6 4h-2v-2h2v2zm0-4h-2v-2h2v2z" fill="currentColor"/>
+        </svg>
+        <h4>Tarjetas desde PDF</h4>
+      </div>
+      <div class="valor" id="tarjetas-pdf">—</div>
+      <div class="detalle">Tarjetas de memoria creadas</div>
+    </div>
+  </div>
+</div>
+<!-- Modal para temas no estudiados -->
+<div class="modal-temas" id="modal-temas">
+  <div class="modal-contenido">
+    <button class="modal-cerrar" type="button">&times;</button>
+    <h3 class="modal-titulo">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-2.67 0-8-1.34-8-4v-1c0-4.67 8-7.33 8-7.33s8 2.66 8 7.33v1c0 2.66-5.33 4-8 4z" fill="currentColor"/>
+      </svg>
+      Temas No Estudiados
+    </h3>
+    <div class="modal-busqueda">
+      <input type="text" id="modal-busqueda-input" placeholder="Buscar tema...">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15.5 14h-.79l-.28-.28C16.41 12.53 17 11.06 17 9.5 17 5.91 14.09 3 10.5 3S4 5.91 4 9.5 6.91 16 10.5 16c1.56 0 3.03-.59 4.22-1.57l.28.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+      </svg>
+    </div>
+    <ul class="lista-temas" id="lista-temas-nuevos"></ul>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-secondary" id="modal-cerrar-btn" type="button">Cerrar</button>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+  const email = window.usuarioEmail || "test@ejemplo.com";
+  const refreshBtn = document.getElementById("estadisticas-refresh");
+  const modal = document.getElementById("modal-temas");
+  const modalCerrar = document.querySelector(".modal-cerrar");
+  const modalCerrarBtn = document.getElementById("modal-cerrar-btn");
+  const btnVerNuevos = document.getElementById("btn-ver-nuevos");
+  const btnVerTemasTop = document.getElementById("btn-ver-temas-top");
+  const busquedaInput = document.getElementById("modal-busqueda-input");
+  let temasFiltrados = [];
+  let todosLosTemas = [];
+  let temasTest = [];
+
+  // Función para cargar datos
+  async function cargarDatos() {
+    try {
+      // Resetear valores
+      document.querySelectorAll('.valor').forEach(el => {
+        if (!el.id.startsWith('tendencia')) {
+          el.textContent = '...';
+        }
+      });
+      document.querySelectorAll('.progress-fill').forEach(el => el.style.width = '0%');
+      document.getElementById("tendencia-media").innerHTML = '<span>...</span>';
+      // Resetear valores PDF
+      document.getElementById("total-archivos").textContent = '...';
+      document.getElementById("total-tests-pdf").textContent = '...';
+      document.getElementById("total-resumenes-pdf").textContent = '...';
+      document.getElementById("total-esquemas-pdf").textContent = '...';
+      document.getElementById("total-tarjetas-pdf").textContent = '...';
+      refreshBtn.classList.add('loading');
+      refreshBtn.disabled = true;
+
+      // NUEVO: Usar la ruta de estadísticas completas que incluye datos PDF
+      const [estadisticasRes, temasRes] = await Promise.all([
+        fetch(`https://oposicion-age.onrender.com/estadisticas-completas?usuario_id=${email}`),
+        fetch("https://oposicion-age.onrender.com/temas-disponibles")
+      ]);
+      const estadisticasData = await estadisticasRes.json();
+      const temasData = await temasRes.json();
+      const estadisticas = estadisticasData.estadisticas ?? {};
+
+      // Si hay error, usar la ruta antigua como fallback
+      if (estadisticas.error) {
+        console.warn("Usando ruta antigua como fallback");
+        const resumenRes = await fetch(`https://oposicion-age.onrender.com/resumen-progreso?usuario_id=${email}`);
+        const resumenData = await resumenRes.json();
+        procesarDatos(resumenData.resumen ?? {}, temasData.temas || []);
+      } else {
+        procesarDatos(estadisticas, temasData.temas || []);
+      }
+    } catch (err) {
+      console.error("Error cargando estadísticas:", err);
+      alert("Hubo un problema al cargar tus estadísticas. Por favor, inténtalo de nuevo.");
+    } finally {
+      refreshBtn.classList.remove('loading');
+      refreshBtn.disabled = false;
+    }
+  }
+
+  function procesarDatos(estadisticas, todosTemas) {
+    const totalTests = estadisticas.tests_realizados ?? 0;
+    const totalAciertos = estadisticas.total_aciertos ?? 0;
+    const totalFallos = estadisticas.total_fallos ?? 0;
+    const historial = estadisticas.historial_tests ?? [];
+    temasTest = estadisticas.temas_test ?? [];
+    const esquemas = estadisticas.esquemas_realizados ?? 0;
+    const aprobados = estadisticas.tests_aprobados ?? 0;
+    const suspendidos = estadisticas.tests_suspendidos ?? 0;
+    const puntuacionMedia = estadisticas.puntuacion_media_test ?? 0;
+    const tiempoTotalSegundos = estadisticas.tiempo_total ?? 0;
+
+    // NUEVOS DATOS PDF
+    const testsPdf = estadisticas.tests_pdf_realizados ?? estadisticas.total_tests_pdf ?? 0;
+    const resumenesPdf = estadisticas.resumenes_pdf_realizados ?? estadisticas.total_resumenes_pdf ?? 0;
+    const esquemasPdf = estadisticas.esquemas_pdf_realizados ?? estadisticas.total_esquemas_pdf ?? 0;
+    const tarjetasPdf = estadisticas.tarjetas_pdf_realizados ?? estadisticas.total_tarjetas_pdf ?? 0;
+    const totalArchivos = estadisticas.total_archivos_procesados ?? 0;
+
+    const horas = String(Math.floor(tiempoTotalSegundos / 3600)).padStart(2, '0');
+    const minutos = String(Math.floor((tiempoTotalSegundos % 3600) / 60)).padStart(2, '0');
+
+    const porcentajeAprobados = totalTests > 0 ? Math.round((aprobados / totalTests) * 100) : 0;
+    const porcentajeSuspendidos = totalTests > 0 ? Math.round((suspendidos / totalTests) * 100) : 0;
+    const porcentajeAciertos = (totalAciertos + totalFallos) > 0 
+      ? Math.round((totalAciertos / (totalAciertos + totalFallos)) * 100) 
+      : 0;
+    const porcentajeFallos = (totalAciertos + totalFallos) > 0 
+      ? Math.round((totalFallos / (totalAciertos + totalFallos)) * 100) 
+      : 0;
+
+    const contador = {};
+    historial.forEach(test => {
+      (test.temas || []).forEach(t => {
+        contador[t] = (contador[t] || 0) + 1;
+      });
+    });
+
+    const topTemasEntries = Object.entries(contador)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+
+    const todosLosTemasIds = todosTemas.map(t => t.id);
+    const noEstudiados = todosLosTemasIds.filter(t => !temasTest.includes(t));
+
+    // Actualizar estadísticas principales
+    document.getElementById("tests").textContent = totalTests;
+    document.getElementById("aprobados").textContent = aprobados;
+    document.getElementById("suspendidos").textContent = suspendidos;
+    document.getElementById("media").textContent = puntuacionMedia.toFixed(1);
+    document.getElementById("aciertos").textContent = totalAciertos;
+    document.getElementById("fallos").textContent = totalFallos;
+    document.getElementById("esquemas").textContent = esquemas;
+    document.getElementById("tiempo").textContent = `${horas}h ${minutos}m`;
+    document.getElementById("temas-nuevos").textContent = noEstudiados.length;
+
+    document.getElementById("aprobados-porcentaje").textContent = porcentajeAprobados;
+    document.getElementById("suspendidos-porcentaje").textContent = porcentajeSuspendidos;
+    document.getElementById("aciertos-porcentaje").textContent = porcentajeAciertos;
+    document.getElementById("fallos-porcentaje").textContent = porcentajeFallos;
+
+    document.getElementById("aprobados-progress").style.width = `${porcentajeAprobados}%`;
+    document.getElementById("suspendidos-progress").style.width = `${porcentajeSuspendidos}%`;
+
+    let tendenciaHTML = '<span class="tendencia-neutral">→ Estable</span>';
+    if (puntuacionMedia > 5) {
+      tendenciaHTML = `<span class="tendencia-up">↑ Mejorando</span>`;
+    } else if (puntuacionMedia < 3) {
+      tendenciaHTML = `<span class="tendencia-down">↓ Requiere atención</span>`;
+    }
+    document.getElementById("tendencia-media").innerHTML = tendenciaHTML;
+
+    // NUEVO: Actualizar estadísticas PDF
+    document.getElementById("tests-pdf").textContent = testsPdf;
+    document.getElementById("resumenes-pdf").textContent = resumenesPdf;
+    document.getElementById("esquemas-pdf").textContent = esquemasPdf;
+    document.getElementById("tarjetas-pdf").textContent = tarjetasPdf;
+    document.getElementById("total-archivos").textContent = totalArchivos;
+    document.getElementById("total-tests-pdf").textContent = testsPdf;
+    document.getElementById("total-resumenes-pdf").textContent = resumenesPdf;
+    document.getElementById("total-esquemas-pdf").textContent = esquemasPdf;
+    document.getElementById("total-tarjetas-pdf").textContent = tarjetasPdf;
+
+    actualizarTemas(topTemasEntries, todosTemas);
+    temasFiltrados = noEstudiados;
+    todosLosTemas = todosTemas;
+    mostrarTemasNoEstudiados(noEstudiados, todosTemas);
+  }
+
+  function actualizarTemas(temasEntries, todosTemas) {
+    const listaTemas = document.getElementById("lista-temas-top");
+    listaTemas.innerHTML = '';
+    if (temasEntries.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'No hay temas estudiados aún.';
+      li.style.color = '#777';
+      li.style.fontStyle = 'italic';
+      listaTemas.appendChild(li);
+      return;
+    }
+    temasEntries.forEach(([id, count]) => {
+      const tema = todosTemas.find(t => t.id === id);
+      const nombre = tema ? tema.titulo : `Tema ${id}`;
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span class="tema-nombre">${nombre}</span>
+        <span class="tema-count">${count}</span>
+      `;
+      listaTemas.appendChild(li);
+    });
+  }
+
+  function mostrarTemasNoEstudiados(temasIds, todosTemas) {
+    const listaTemas = document.getElementById("lista-temas-nuevos");
+    listaTemas.innerHTML = '';
+    if (temasIds.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = '¡Enhorabuena! Has estudiado todos los temas disponibles.';
+      li.style.color = '#777';
+      li.style.fontStyle = 'italic';
+      li.style.textAlign = 'center';
+      listaTemas.appendChild(li);
+      return;
+    }
+    temasIds.forEach(id => {
+      const tema = todosTemas.find(t => t.id === id);
+      const nombre = tema ? tema.titulo : `Tema ${id}`;
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div class="tema-info">
+          <div class="tema-titulo">${nombre}</div>
+          <span class="tema-id" data-id="${id}" title="Copiar ID">ID: ${id}</span>
+        </div>
+      `;
+      listaTemas.appendChild(li);
+      li.querySelector('.tema-id').addEventListener('click', function(e) {
+        e.stopPropagation();
+        navigator.clipboard.writeText(id).then(() => {
+          this.textContent = 'Copiado!';
+          setTimeout(() => {
+            this.textContent = `ID: ${id}`;
+          }, 1500);
+        }).catch(err => {
+          console.error('Error al copiar:', err);
+        });
+      });
+    });
+  }
+
+  function filtrarTemas() {
+    const filtro = busquedaInput.value.toLowerCase().trim();
+    const temasFiltradosLocal = todosLosTemas
+      .filter(t => !temasTest.includes(t.id))
+      .filter(t => t.titulo.toLowerCase().includes(filtro) || t.id.toString().includes(filtro));
+    mostrarTemasNoEstudiados(temasFiltradosLocal.map(t => t.id), todosLosTemas);
+  }
+
+  // Eventos interactivos
+  btnVerTemasTop.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.closest('.tarjeta-temas').classList.toggle('activo');
+  });
+
+  btnVerNuevos.addEventListener('click', function() {
+    modal.classList.add('show');
+    void modal.offsetWidth;
+    document.body.style.overflow = 'hidden';
+  });
+
+  modalCerrar.addEventListener('click', cerrarModal);
+  modalCerrarBtn.addEventListener('click', cerrarModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) cerrarModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('show')) {
+      cerrarModal();
+    }
+  });
+
+  busquedaInput.addEventListener('input', filtrarTemas);
+
+  refreshBtn.addEventListener('click', cargarDatos);
+
+  function cerrarModal() {
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+    busquedaInput.value = '';
+    filtrarTemas();
+  }
+
+  cargarDatos();
+});
+</script>
+</body>
+</html>

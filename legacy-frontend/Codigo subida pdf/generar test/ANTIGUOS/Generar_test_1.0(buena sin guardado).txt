@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Generar Test desde PDF - Asistente AGE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #4338ca;
+      --primary-light: #e0e7ff;
+      --secondary: #6b7280;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --text-light: #9ca3af;
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-tertiary: #f1f5f9;
+      --border: #e5e7eb;
+      --border-light: #f3f4f6;
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      color: var(--text-primary);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding: 2rem 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .logo-icon {
+      font-size: 2.5rem;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 1rem;
+      border-radius: 50%;
+    }
+
+    .titulo-principal {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitulo {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-primary);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border: 1px solid var(--border);
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--border-light);
+    }
+
+    .card-icon {
+      font-size: 1.5rem;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 0.75rem;
+      border-radius: 50%;
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+    }
+
+    .file-upload-area {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      text-align: center;
+      background: var(--bg-secondary);
+      transition: var(--transition);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .file-upload-area:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .file-upload-area.dragover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      transform: scale(1.02);
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      opacity: 0.8;
+    }
+
+    .upload-text h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .upload-text p {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .file-name {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      transition: var(--transition);
+      background: var(--bg-primary);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn:hover:before {
+      left: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #5a6268;
+      transform: translateY(-2px);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-outline:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-danger {
+      background: var(--error);
+      color: white;
+    }
+
+    .btn-full {
+      width: 100%;
+    }
+
+    /* Progress and Loading */
+    .progress-container {
+      margin: 1.5rem 0;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .loading-container {
+      text-align: center;
+      padding: 3rem 2rem;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid var(--primary-light);
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert-warning {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+    }
+
+    .alert-info {
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
+      color: #1e40af;
+    }
+
+    /* Test Elements */
+    .pregunta-container {
+      background: var(--bg-primary);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--primary);
+      box-shadow: var(--shadow);
+    }
+
+    .pregunta-texto {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    .opciones-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .opcion {
+      padding: 1rem 1.25rem;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .opcion:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .opcion.seleccionada {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .opcion-correcta {
+      border-color: var(--success);
+      background: #d1fae5;
+    }
+
+    .opcion-incorrecta {
+      border-color: var(--error);
+      background: #fee2e2;
+    }
+
+    .explicacion {
+      background: var(--bg-tertiary);
+      padding: 1.25rem;
+      border-radius: var(--radius-sm);
+      margin-top: 1rem;
+      border-left: 4px solid var(--secondary);
+    }
+
+    /* Results */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-primary);
+      padding: 1.5rem;
+      border-radius: var(--radius);
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .stat-aciertos { color: var(--success); }
+    .stat-fallos { color: var(--error); }
+    .stat-blanco { color: var(--secondary); }
+
+    /* Navigation */
+    .navigation {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      background: var(--bg-primary);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 0.9rem;
+    }
+
+    .filter-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .container {
+        padding: 0;
+      }
+      
+      .card {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .titulo-principal {
+        font-size: 2rem;
+      }
+      
+      .file-upload-area {
+        padding: 2rem 1rem;
+      }
+      
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .navigation {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .navigation .btn {
+        width: 100%;
+      }
+      
+      .card-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+      }
+      
+      .filters {
+        justify-content: center;
+      }
+    }
+
+    /* Utility Classes */
+    .text-center { text-align: center; }
+    .text-success { color: var(--success); }
+    .text-error { color: var(--error); }
+    .text-warning { color: var(--warning); }
+    .hidden { display: none; }
+    .fade-in { animation: fadeIn 0.5s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <i class="fas fa-file-pdf"></i>
+        </div>
+      </div>
+      <h1 class="titulo-principal">Generar Test desde PDF</h1>
+      <p class="subtitulo">Sube tu documento y crea tests personalizados automáticamente</p>
+    </div>
+
+    <!-- Formulario PDF -->
+    <div id="formulario-pdf" class="card fade-in">
+      <div class="card-header">
+        <div class="card-icon">
+          <i class="fas fa-upload"></i>
+        </div>
+        <h2 class="card-title">Subir Documento PDF</h2>
+      </div>
+      
+      <form id="form-subir-pdf">
+        <div class="form-group">
+          <label for="archivo-pdf">
+            <i class="fas fa-file-pdf"></i> Selecciona tu archivo PDF
+          </label>
+          <div class="file-upload-area" id="upload-area">
+            <div class="upload-icon">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <div class="upload-text">
+              <h3>Arrastra y suelta tu PDF aquí</h3>
+              <p>O haz clic para seleccionar un archivo</p>
+            </div>
+            <button type="button" class="btn btn-outline" id="select-file-btn">
+              <i class="fas fa-folder-open"></i> Explorar Archivos
+            </button>
+            <input type="file" id="archivo-pdf" class="file-input" accept=".pdf" required>
+          </div>
+          <div id="file-name" class="file-name hidden"></div>
+        </div>
+        
+        <div class="form-group">
+          <label for="num-preguntas">
+            <i class="fas fa-list-ol"></i> Número de preguntas para el test
+          </label>
+          <input type="number" id="num-preguntas" class="form-control" min="1" max="50" value="10" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-full">
+          <i class="fas fa-magic"></i> Generar Test desde PDF
+        </button>
+      </form>
+    </div>
+
+    <!-- Estado de Carga -->
+    <div id="contenedor-carga" class="card hidden">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <h3>Procesando PDF</h3>
+        <p>Estamos analizando tu documento para generar preguntas...</p>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div id="progreso-carga" class="progress-fill" style="width: 0%"></div>
+          </div>
+          <p id="texto-carga" class="text-center">0%</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertas -->
+    <div id="alerta-preguntas" class="alert alert-warning hidden"></div>
+    <div id="mensaje-error" class="alert alert-error hidden"></div>
+
+    <!-- Temporizador y Progreso -->
+    <div id="temporizador-container" class="card hidden">
+      <div class="card-header">
+        <div class="card-icon">
+          <i class="fas fa-clock"></i>
+        </div>
+        <h2 class="card-title">Test en Progreso</h2>
+      </div>
+      <div id="temporizador" class="text-center"></div>
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div id="progreso" class="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenedor del Test -->
+    <div id="contenedor-test" class="hidden"></div>
+
+    <!-- Resultados -->
+    <div id="contenedor-resultados" class="card hidden">
+      <div class="card-header">
+        <div class="card-icon">
+          <i class="fas fa-chart-bar"></i>
+        </div>
+        <h2 class="card-title">Resultados del Test</h2>
+      </div>
+      <div id="resultados-content"></div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div id="botones-accion" class="navigation hidden">
+      <button id="btn-finalizar" class="btn btn-danger">
+        <i class="fas fa-flag"></i> Finalizar Test
+      </button>
+      <button id="btn-descargar-pdf" class="btn btn-outline">
+        <i class="fas fa-download"></i> Descargar PDF
+      </button>
+      <button id="btn-nuevo-test" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Nuevo Test
+      </button>
+    </div>
+  </div>
+
+  <!-- Librerías externas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    let preguntas = [];
+    let indicePreguntaActual = 0;
+    let respuestasUsuario = [];
+    let tiempoInicio;
+    let intervaloTemporizador;
+    
+    // Elementos del DOM
+    const formularioPdf = document.getElementById('form-subir-pdf');
+    const uploadArea = document.getElementById('upload-area');
+    const selectFileBtn = document.getElementById('select-file-btn');
+    const archivoPdfInput = document.getElementById('archivo-pdf');
+    const fileNameDisplay = document.getElementById('file-name');
+    const contenedorCarga = document.getElementById('contenedor-carga');
+    const contenedorTest = document.getElementById('contenedor-test');
+    const contenedorResultados = document.getElementById('contenedor-resultados');
+    const alertaPreguntas = document.getElementById('alerta-preguntas');
+    const mensajeError = document.getElementById('mensaje-error');
+    const temporizadorContainer = document.getElementById('temporizador-container');
+    const temporizador = document.getElementById('temporizador');
+    const botonesAccion = document.getElementById('botones-accion');
+    const btnFinalizar = document.getElementById('btn-finalizar');
+    const btnDescargarPdf = document.getElementById('btn-descargar-pdf');
+    const btnNuevoTest = document.getElementById('btn-nuevo-test');
+
+    // Función para mostrar mensaje de error
+    function mostrarError(mensaje) {
+      mensajeError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>Error:</strong> ${mensaje}`;
+      mensajeError.classList.remove('hidden');
+      
+      // Ocultar otros elementos
+      contenedorCarga.classList.add('hidden');
+      contenedorTest.classList.add('hidden');
+      contenedorResultados.classList.add('hidden');
+      botonesAccion.classList.add('hidden');
+      temporizadorContainer.classList.add('hidden');
+      
+      // Mostrar formulario nuevamente
+      formularioPdf.classList.remove('hidden');
+    }
+    
+    // Evento para seleccionar archivo
+    selectFileBtn.addEventListener('click', () => {
+      archivoPdfInput.click();
+    });
+    
+    // Evento para arrastrar y soltar archivos
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      
+      if (e.dataTransfer.files.length) {
+        archivoPdfInput.files = e.dataTransfer.files;
+        mostrarNombreArchivo();
+      }
+    });
+    
+    // Evento para cuando se selecciona un archivo
+    archivoPdfInput.addEventListener('change', mostrarNombreArchivo);
+    
+    // Mostrar nombre del archivo seleccionado
+    function mostrarNombreArchivo() {
+      const file = archivoPdfInput.files[0];
+      if (file) {
+        const fileName = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
+        fileNameDisplay.innerHTML = `<i class="fas fa-file-pdf"></i> ${fileName}`;
+        fileNameDisplay.classList.remove('hidden');
+      } else {
+        fileNameDisplay.classList.add('hidden');
+      }
+    }
+    
+    // Función para iniciar el temporizador
+    function iniciarTemporizador() {
+      tiempoInicio = Date.now();
+      intervaloTemporizador = setInterval(() => {
+        const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
+        temporizador.textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
+      }, 1000);
+    }
+    
+    // Función para formatear el tiempo
+    function formatearTiempo(segundos) {
+      const m = String(Math.floor(segundos / 60)).padStart(2, '0');
+      const s = String(segundos % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+    
+    // Función para actualizar la barra de progreso
+    function actualizarBarraProgreso() {
+      const progreso = ((indicePreguntaActual + 1) / preguntas.length) * 100;
+      document.getElementById('progreso').style.width = `${progreso}%`;
+    }
+    
+    // Función para mostrar una pregunta
+    function mostrarPregunta(i) {
+      const p = preguntas[i];
+      let html = `
+        <div class="card-header">
+          <div class="card-icon">
+            <i class="fas fa-question-circle"></i>
+          </div>
+          <h2 class="card-title">Pregunta ${i + 1} de ${preguntas.length}</h2>
+        </div>
+        <form id="form-pregunta">
+          <div class="pregunta-container">
+            <div class="pregunta-texto">${p.pregunta}</div>
+            <div class="opciones-container">`;
+      
+      for (const letra in p.opciones) {
+        const opcion = p.opciones[letra];
+        const checked = respuestasUsuario[i] === letra ? "checked" : "";
+        const claseSeleccionada = respuestasUsuario[i] === letra ? "seleccionada" : "";
+        
+        html += `
+          <div class="opcion ${claseSeleccionada}" onclick="seleccionarOpcion(this, '${letra}', ${i})">
+            <input type="radio" name="respuesta" value="${letra}" ${checked} style="display: none;">
+            <span class="opcion-letra">${letra}</span>
+            <span class="opcion-texto">${opcion}</span>
+          </div>`;
+      }
+      
+      html += `
+            </div>
+          </div>
+          <div class="navigation">
+            ${i > 0 ? '<button type="button" id="btn-anterior" class="btn btn-outline">⬅️ Anterior</button>' : '<div></div>'} 
+            <div>
+              <button type="button" id="btn-desmarcar" class="btn btn-secondary">❌ Desmarcar</button>
+              <button type="submit" class="btn btn-primary">${i + 1 < preguntas.length ? 'Siguiente ➡️' : 'Finalizar 🏁'}</button>
+            </div>
+          </div>
+        </form>`;
+      
+      contenedorTest.innerHTML = html;
+      contenedorTest.classList.remove('hidden');
+      actualizarBarraProgreso();
+      
+      // Event listeners
+      document.getElementById("btn-desmarcar").addEventListener("click", () => {
+        respuestasUsuario[i] = null;
+        mostrarPregunta(i); // Recargar para actualizar estilos
+      });
+      
+      if (i > 0 && document.getElementById("btn-anterior")) {
+        document.getElementById("btn-anterior").addEventListener("click", () => mostrarPregunta(i - 1));
+      }
+      
+      document.getElementById("form-pregunta").addEventListener("submit", function(e) {
+        e.preventDefault();
+        
+        if (i + 1 < preguntas.length) {
+          mostrarPregunta(i + 1);
+        } else {
+          const sinContestar = respuestasUsuario.filter(r => r === null).length;
+          let mensaje = sinContestar > 0
+            ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+            : '¿Quieres finalizar el test y ver los resultados?';
+            
+          Swal.fire({
+            icon: 'question',
+            title: '¿Deseas finalizar el test?',
+            text: mensaje,
+            showCancelButton: true,
+            confirmButtonText: 'Sí, corregir',
+            cancelButtonText: 'Seguir revisando',
+          }).then((result) => {
+            if (result.isConfirmed) {
+              mostrarResultados();
+            }
+          });
+        }
+      });
+    }
+    
+    // Función para seleccionar una opción
+    function seleccionarOpcion(elemento, letra, indice) {
+      respuestasUsuario[indice] = letra;
+      
+      // Quitar selección de otras opciones
+      const opciones = elemento.parentElement.querySelectorAll('.opcion');
+      opciones.forEach(op => op.classList.remove('seleccionada'));
+      
+      // Marcar la opción seleccionada
+      elemento.classList.add('seleccionada');
+    }
+    
+    // Función para mostrar los resultados
+    function mostrarResultados() {
+      clearInterval(intervaloTemporizador);
+      contenedorTest.classList.add("hidden");
+      contenedorResultados.classList.remove("hidden");
+      botonesAccion.classList.remove("hidden");
+      
+      let aciertos = 0;
+      let html = `
+        <div class="results-grid">
+          <div class="stat-card">
+            <div class="stat-value">${preguntas.length}</div>
+            <div class="stat-label">Total Preguntas</div>
+          </div>`;
+      
+      preguntas.forEach((p, i) => {
+        const correcta = p.respuesta_correcta || "No indicada";
+        const seleccion = respuestasUsuario[i];
+        if (seleccion === correcta) aciertos++;
+      });
+      
+      let fallos = preguntas.length - aciertos - respuestasUsuario.filter(r => r === null).length;
+      let sinResponder = respuestasUsuario.filter(r => r === null).length;
+      const porcentaje = ((aciertos / preguntas.length) * 100).toFixed(1);
+      const nota = (aciertos * 1 - fallos * 0.33).toFixed(2);
+      const notaEquivalente = ((nota / preguntas.length) * 70).toFixed(2);
+      
+      html += `
+          <div class="stat-card">
+            <div class="stat-value stat-aciertos">${aciertos}</div>
+            <div class="stat-label">✅ Aciertos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value stat-fallos">${fallos}</div>
+            <div class="stat-label">❌ Fallos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value stat-blanco">${sinResponder}</div>
+            <div class="stat-label">⏸ En blanco</div>
+          </div>
+        </div>
+        
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${porcentaje}%"></div>
+          </div>
+          <p class="text-center"><strong>${porcentaje}%</strong> de aciertos</p>
+        </div>
+        
+        <div class="text-center" style="margin-bottom: 2rem;">
+          <p><strong>📘 Nota simulada:</strong> ${nota} / ${preguntas.length}</p>
+          <p><strong>📏 Nota equivalente AGE:</strong> ${notaEquivalente} / 70</p>
+        </div>
+        
+        <div class="filters">
+          <button onclick="aplicarFiltro('todos')" class="filter-btn active">🟡 Todos</button>
+          <button onclick="aplicarFiltro('acierto')" class="filter-btn">✅ Aciertos</button>
+          <button onclick="aplicarFiltro('fallo')" class="filter-btn">❌ Fallos</button>
+          <button onclick="aplicarFiltro('blanco')" class="filter-btn">⏸ En blanco</button>
+        </div>
+        
+        <div id="lista-preguntas">`;
+      
+      preguntas.forEach((p, i) => {
+        const correcta = p.respuesta_correcta || "No indicada";
+        const explicacion = p.explicacion || "Sin explicación disponible.";
+        const seleccion = respuestasUsuario[i];
+        let clase = seleccion === correcta ? "acierto" : (seleccion === null ? "blanco" : "fallo");
+        
+        html += `
+          <div class="pregunta-container ${clase}">
+            <div class="pregunta-texto">${i + 1}. ${p.pregunta}</div>
+            <div class="opciones-container">`;
+        
+        for (const letra in p.opciones) {
+          let tipoClase = "";
+          let icono = "";
+          
+          if (letra === correcta) {
+            tipoClase = "opcion-correcta";
+            icono = '<span class="icono-correcto">✅</span>';
+          } else if (letra === seleccion && seleccion !== correcta) {
+            tipoClase = "opcion-incorrecta";
+            icono = '<span class="icono-incorrecto">❌</span>';
+          }
+          
+          html += `
+            <div class="opcion ${tipoClase}">
+              ${icono}
+              <span class="opcion-letra">${letra}</span>
+              <span class="opcion-texto">${p.opciones[letra]}</span>
+            </div>`;
+        }
+        
+        html += `
+            </div>
+            <div class="explicacion">
+              <strong>Explicación:</strong> ${explicacion}
+            </div>
+          </div>`;
+      });
+      
+      html += `</div>`;
+      document.getElementById('resultados-content').innerHTML = html;
+    }
+    
+    // Función para aplicar filtros a los resultados
+    function aplicarFiltro(tipo) {
+      // Actualizar botones activos
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      const items = document.querySelectorAll("#lista-preguntas .pregunta-container");
+      items.forEach(item => {
+        if (tipo === 'todos') {
+          item.style.display = 'block';
+        } else {
+          item.style.display = item.classList.contains(tipo) ? 'block' : 'none';
+        }
+      });
+    }
+    
+    // Función para descargar PDF
+    function descargarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 20;
+      const pageHeight = doc.internal.pageSize.height;
+      const lineHeight = 7;
+      const margen = 10;
+      
+      doc.setFontSize(12);
+      preguntas.forEach((p, i) => {
+        const preguntaTexto = `Pregunta ${i + 1}: ${p.pregunta}`;
+        doc.setFont(undefined, "bold");
+        y = añadirTexto(doc, preguntaTexto, margen, y, lineHeight, pageHeight);
+        doc.setFont(undefined, "normal");
+        
+        for (const clave in p.opciones) {
+          let texto = `${clave}) ${p.opciones[clave]}`;
+          if (clave === p.respuesta_correcta) {
+            doc.setTextColor(67, 160, 71);
+            doc.setFont(undefined, "bold");
+          } else {
+            doc.setTextColor(0,0,0);
+            doc.setFont(undefined, "normal");
+          }
+          doc.text(texto, margen + 5, y + 4);
+          y += lineHeight + 3;
+          if (y > pageHeight - margen) {
+            doc.addPage();
+            y = margen;
+          }
+        }
+        
+        doc.setTextColor(0,0,0);
+        doc.setFont(undefined, "normal");
+        y = añadirTexto(doc, `Explicación: ${p.explicacion}`, margen, y, lineHeight, pageHeight);
+        y += 4;
+        if (y > pageHeight - margen) {
+          doc.addPage();
+          y = margen;
+        }
+      });
+      
+      doc.save("test_generado.pdf");
+    }
+    
+    // Función auxiliar para añadir texto al PDF
+    function añadirTexto(doc, texto, x, y, lh, ph) {
+      const lineas = doc.splitTextToSize(texto, 180);
+      lineas.forEach(linea => {
+        if (y + lh > ph - 10) {
+          doc.addPage();
+          y = 10;
+        }
+        doc.text(linea, x, y);
+        y += lh;
+      });
+      return y;
+    }
+    
+    // Event listener para el formulario de subida de PDF
+    formularioPdf.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const archivoInput = document.getElementById('archivo-pdf');
+      const numPreguntas = parseInt(document.getElementById('num-preguntas').value);
+      
+      if (!archivoInput.files.length) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Selecciona un archivo',
+          text: 'Debes seleccionar un archivo PDF para continuar.',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+      
+      const archivo = archivoInput.files[0];
+      
+      // Validar que sea un PDF
+      if (archivo.type !== 'application/pdf') {
+        mostrarError('El archivo seleccionado no es un PDF válido.');
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append('pdf', archivo);
+      formData.append('num_preguntas', numPreguntas);
+      
+      // Ocultar mensajes de error anteriores
+      mensajeError.classList.add('hidden');
+      alertaPreguntas.classList.add('hidden');
+      
+      // Mostrar estado de carga
+      formularioPdf.classList.add('hidden');
+      contenedorCarga.classList.remove('hidden');
+      
+      // Simular progreso de carga
+      let progreso = 0;
+      const intervalCarga = setInterval(() => {
+        if (progreso < 20) {
+          progreso += 1;
+        } else if (progreso < 45) {
+          progreso += Math.random() > 0.3 ? 1 : 0;
+        } else if (progreso < 70) {
+          progreso += Math.random() > 0.5 ? 1 : 0;
+        } else if (progreso < 90) {
+          progreso += Math.random() > 0.7 ? 1 : 0;
+        } else {
+          progreso += 1;
+        }
+        if (progreso > 100) progreso = 100;
+        document.getElementById("progreso-carga").style.width = `${progreso}%`;
+        document.getElementById("texto-carga").textContent = `${progreso}%`;
+      }, 120);
+      
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/generar-test-desde-pdf", {
+          method: "POST",
+          body: formData
+        });
+        
+        clearInterval(intervalCarga);
+        
+        // Verificar si la respuesta es válida
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+        }
+        
+        const datos = await res.json();
+        
+        // Verificar si la respuesta contiene un test
+        if (!datos.test) {
+          if (datos.error) {
+            throw new Error(datos.error);
+          } else {
+            throw new Error("No se pudieron generar preguntas desde el PDF");
+          }
+        }
+        
+        preguntas = datos.test || [];
+        
+        if (preguntas.length === 0) {
+          throw new Error("No se han generado preguntas desde el PDF");
+        }
+        
+        // Mostrar alerta si no se generaron todas las preguntas solicitadas
+        if (datos.advertencia) {
+          alertaPreguntas.innerHTML = `
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+              <strong>Aviso:</strong> ${datos.advertencia}
+              ${datos.sugerencia ? `<br><em>${datos.sugerencia}</em>` : ''}
+            </div>
+          `;
+          alertaPreguntas.classList.remove('hidden');
+        }
+        
+        // Inicializar el test
+        respuestasUsuario = Array(preguntas.length).fill(null);
+        indicePreguntaActual = 0;
+        
+        // Mostrar elementos del test
+        temporizadorContainer.classList.remove('hidden');
+        contenedorTest.classList.remove('hidden');
+        botonesAccion.classList.remove('hidden');
+        contenedorCarga.classList.add('hidden');
+        
+        // Iniciar temporizador y mostrar primera pregunta
+        iniciarTemporizador();
+        mostrarPregunta(indicePreguntaActual);
+        
+      } catch (error) {
+        clearInterval(intervalCarga);
+        
+        // Mostrar error específico
+        let mensajeError = error.message;
+        if (error.message.includes('JSON válido') && error.respuesta_cruda) {
+          mensajeError = `La IA no pudo generar un formato válido. Error técnico: ${error.respuesta_cruda.substring(0, 100)}...`;
+        }
+        
+        mostrarError(mensajeError);
+        console.error('Error completo:', error);
+      }
+    });
+    
+    // Event listeners para botones de acción
+    btnFinalizar.addEventListener('click', () => {
+      const sinContestar = respuestasUsuario.filter(r => r === null).length;
+      let mensaje = sinContestar > 0
+        ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+        : '¿Quieres finalizar el test y ver los resultados?';
+        
+      Swal.fire({
+        icon: 'question',
+        title: '¿Deseas finalizar el test?',
+        text: mensaje,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, corregir',
+        cancelButtonText: 'Seguir revisando',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          mostrarResultados();
+        }
+      });
+    });
+    
+    btnDescargarPdf.addEventListener('click', descargarPDF);
+    
+    btnNuevoTest.addEventListener('click', () => {
+      // Reiniciar todo
+      preguntas = [];
+      respuestasUsuario = [];
+      indicePreguntaActual = 0;
+      
+      // Ocultar elementos
+      contenedorTest.classList.add('hidden');
+      contenedorResultados.classList.add('hidden');
+      botonesAccion.classList.add('hidden');
+      temporizadorContainer.classList.add('hidden');
+      alertaPreguntas.classList.add('hidden');
+      mensajeError.classList.add('hidden');
+      
+      // Mostrar formulario
+      formularioPdf.classList.remove('hidden');
+      
+      // Limpiar formulario
+      document.getElementById('form-subir-pdf').reset();
+      fileNameDisplay.classList.add('hidden');
+    });
+  </script>
+</body>
+</html>

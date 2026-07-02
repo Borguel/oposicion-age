@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma Oposiciones AGE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .option-btn:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .file-input {
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px dashed #cbd5e0;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .process-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .process-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            margin: 15px 0;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f9ff;
+            border-radius: 8px;
+            text-align: left;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>¿Qué quieres hacer hoy?</h1>
+        
+        <div class="options-grid">
+            <button class="option-btn" onclick="openModal('resumir')">
+                📄 Resumir Documento
+            </button>
+            
+            <button class="option-btn" onclick="openModal('esquema')">
+                🗂️ Generar Esquema
+            </button>
+            
+            <button class="option-btn" onclick="openModal('test')">
+                🧪 Crear Test
+            </button>
+            
+            <button class="option-btn" onclick="openModal('tarjetas')">
+                🃏 Tarjetas de Memoria
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal para subir PDF -->
+    <div id="pdfModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h3 id="modalTitle">Subir Documento PDF</h3>
+            
+            <div class="file-input" onclick="document.getElementById('pdfFile').click()">
+                <p>📎 Haz clic para seleccionar PDF</p>
+                <input type="file" id="pdfFile" accept=".pdf" style="display: none;" onchange="handleFileSelect(this)">
+                <p id="fileName" style="margin-top: 10px; color: #666;"></p>
+            </div>
+
+            <div class="loading" id="loading">
+                <p>🔄 Procesando documento con IA...</p>
+            </div>
+
+            <button class="process-btn" id="processBtn" disabled onclick="processDocument()">
+                Procesar Documento
+            </button>
+
+            <div class="result" id="result">
+                <h4>Resultado:</h4>
+                <div id="resultContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAction = '';
+        let selectedFile = null;
+
+        function openModal(action) {
+            currentAction = action;
+            const modal = document.getElementById('pdfModal');
+            const title = document.getElementById('modalTitle');
+            
+            // Configurar título según la acción
+            const titles = {
+                'resumir': 'Resumir Documento PDF',
+                'esquema': 'Generar Esquema desde PDF', 
+                'test': 'Crear Test desde PDF',
+                'tarjetas': 'Generar Tarjetas de Memoria'
+            };
+            
+            title.textContent = titles[action] || 'Subir Documento PDF';
+            modal.style.display = 'flex';
+            
+            // Resetear estado
+            resetModal();
+        }
+
+        function closeModal() {
+            document.getElementById('pdfModal').style.display = 'none';
+            resetModal();
+        }
+
+        function resetModal() {
+            selectedFile = null;
+            document.getElementById('pdfFile').value = '';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('processBtn').disabled = true;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        function handleFileSelect(input) {
+            if (input.files.length > 0) {
+                selectedFile = input.files[0];
+                document.getElementById('fileName').textContent = selectedFile.name;
+                document.getElementById('processBtn').disabled = false;
+            }
+        }
+
+        async function processDocument() {
+            if (!selectedFile) return;
+
+            const loading = document.getElementById('loading');
+            const processBtn = document.getElementById('processBtn');
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+
+            // Mostrar loading
+            loading.style.display = 'block';
+            processBtn.disabled = true;
+            resultDiv.style.display = 'none';
+
+            try {
+                const formData = new FormData();
+                formData.append('pdf', selectedFile);
+
+                // Determinar endpoint según la acción
+                const endpoints = {
+                    'resumir': '/resumir-pdf',
+                    'esquema': '/generar-esquema-desde-pdf', // Necesitarás crear esta ruta
+                    'test': '/generar-test-desde-pdf', // Necesitarás crear esta ruta  
+                    'tarjetas': '/generar-tarjetas-desde-pdf' // Necesitarás crear esta ruta
+                };
+
+                const endpoint = endpoints[currentAction];
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error en el servidor');
+                }
+
+                const data = await response.json();
+                
+                // Mostrar resultado
+                resultContent.innerHTML = formatResult(data, currentAction);
+                resultDiv.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error:', error);
+                resultContent.innerHTML = `<p style="color: red;">Error al procesar el documento: ${error.message}</p>`;
+                resultDiv.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function formatResult(data, action) {
+            switch(action) {
+                case 'resumir':
+                    return `<div class="resumen">${data.resumen.replace(/\n/g, '<br>')}</div>`;
+                
+                case 'esquema':
+                    return `<div class="esquema">${data.esquema.replace(/\n/g, '<br>')}</div>`;
+                
+                case 'test':
+                    if (data.test && data.test.length > 0) {
+                        return data.test.map((pregunta, index) => `
+                            <div class="pregunta" style="margin-bottom: 15px; padding: 10px; border-left: 3px solid #4f46e5;">
+                                <strong>Pregunta ${index + 1}:</strong> ${pregunta.pregunta}<br>
+                                <strong>Opciones:</strong><br>
+                                ${Object.entries(pregunta.opciones).map(([key, value]) => 
+                                    `${key}) ${value}`).join('<br>')}<br>
+                                <strong>Respuesta correcta:</strong> ${pregunta.respuesta_correcta}<br>
+                                <em>Explicación:</em> ${pregunta.explicacion}
+                            </div>
+                        `).join('');
+                    }
+                    return '<p>No se pudieron generar preguntas</p>';
+                
+                case 'tarjetas':
+                    if (data.tarjetas && data.tarjetas.length > 0) {
+                        return data.tarjetas.map((tarjeta, index) => `
+                            <div class="tarjeta" style="margin-bottom: 10px; padding: 10px; background: #f8fafc; border-radius: 5px;">
+                                <strong>${index + 1}. ${tarjeta.pregunta}</strong><br>
+                                <span style="color: #059669;">→ ${tarjeta.respuesta}</span>
+                            </div>
+                        `).join('');
+                    }
+                    return '<p>No se pudieron generar tarjetas</p>';
+                
+                default:
+                    return '<p>Resultado no formateado</p>';
+            }
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('pdfModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

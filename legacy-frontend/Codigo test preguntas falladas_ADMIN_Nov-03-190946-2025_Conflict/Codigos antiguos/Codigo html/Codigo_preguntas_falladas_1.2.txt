@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Test de Preguntas Falladas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+body { font-family: 'Inter', sans-serif; background: #f5f6fa; }
+#form-falladas {
+  background: white;
+  box-shadow: 0 0 20px rgba(0,0,0,0.05);
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 700px;
+  margin: 0 auto 40px;
+}
+#titulo-formulario {
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+#form-falladas input[type="number"] {
+  accent-color: #4caf50;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  width: 100%;
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+#form-falladas button[type="submit"] {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.1rem;
+  background-color: #4caf50;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  color: #fff;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+#form-falladas button[type="submit"]:hover {
+  background-color: #45a047;
+}
+#temporizador {
+  text-align: center;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  background: #e7f5ff;
+  padding: 10px;
+  border-radius: 10px;
+}
+#barra-progreso {
+  width: 100%;
+  height: 18px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #e0e0e0;
+}
+#progreso {
+  height: 100%;
+  background: linear-gradient(to right, #4caf50, #66bb6a);
+  transition: width 0.3s ease;
+}
+#btn-finalizar,
+#btn-descargar-pdf {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  font-weight: bold;
+  font-size: 1rem;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+#btn-descargar-pdf {
+  background: #2196F3;
+  color: white;
+}
+#btn-descargar-pdf:hover {
+  background: #1e88e5;
+}
+#btn-finalizar {
+  background: #ef5350;
+  color: white;
+  padding: 10px 20px;
+  font-weight: bold;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+#btn-finalizar:hover {
+  background: #e53935;
+}
+.btn-naranja {
+  padding: 10px 20px;
+  background-color: #ffa726;
+  color: white;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 8px;
+}
+.btn-naranja:hover {
+  background-color: #fb8c00;
+}
+.pregunta-en-negrita {
+  font-weight: bold;
+  font-size: 1.08em;
+  margin-bottom: 12px;
+}
+.resp-correcta {
+  border: 2px solid #43a047;
+  background: #e8f5e9;
+  border-radius: 9px;
+  margin: 5px 0;
+  padding: 10px 15px;
+  color: #137333;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  position: relative;
+}
+.resp-incorrecta {
+  border: 2px solid #e53935;
+  background: #ffebee;
+  border-radius: 9px;
+  margin: 5px 0;
+  padding: 10px 15px;
+  color: #a31515;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  position: relative;
+}
+.resp-neutra {
+  border: 1.5px solid #ccc;
+  background: #fafafa;
+  border-radius: 9px;
+  margin: 5px 0;
+  padding: 10px 15px;
+  color: #222;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+.icono-correcto {
+  font-size: 1.2em;
+  color: #43a047;
+  margin-right: 8px;
+}
+.icono-incorrecto {
+  font-size: 1.2em;
+  color: #e53935;
+  margin-right: 8px;
+}
+  </style>
+</head>
+<body>
+
+<h2 id="titulo-formulario">Test solo de Preguntas Falladas</h2>
+<form id="form-falladas" style="max-width: 600px; margin-bottom: 30px;">
+  <label for="num_preguntas">¿Cuántas preguntas quieres repasar?</label><br>
+  <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="50" value="5" required><br><br>
+  <button type="submit">Generar Test con Preguntas Falladas</button>
+</form>
+
+<div id="aviso-falladas" style="color: #ef5350; font-weight: bold; margin-bottom: 18px; text-align: center; display:none;">
+  No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.
+</div>
+
+<div id="temporizador" style="font-weight: bold; font-size: 1.2em; margin-bottom: 10px;"></div>
+<div id="barra-progreso" style="height: 20px; background: #eee; border-radius: 10px; overflow: hidden; margin-bottom: 15px;">
+  <div id="progreso" style="height: 100%; background: #4caf50; width: 0%;"></div>
+</div>
+
+<div id="contenedor-test"></div>
+<div id="contenedor-resultados" style="display:none;"></div>
+<button id="btn-finalizar" style="display:none;">Finalizar Test</button>
+<button id="btn-descargar-pdf" style="display:none;">Descargar PDF del test</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// OBTÉN EL usuario_id DEL USUARIO LOGUEADO (vía PHP de WordPress, si está puesto en el header)
+const usuario_id = window.usuarioEmail || "";
+console.log("usuario_id que se va a enviar:", usuario_id);
+
+let preguntas = [];
+let indicePreguntaActual = 0;
+let respuestasUsuario = [];
+let tiempoInicio;
+let intervaloTemporizador;
+
+function mostrarAviso(texto) {
+  document.getElementById('aviso-falladas').innerText = texto;
+  document.getElementById('aviso-falladas').style.display = 'block';
+}
+
+function iniciarTemporizador() {
+  tiempoInicio = Date.now();
+  intervaloTemporizador = setInterval(() => {
+    const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
+    document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
+  }, 1000);
+}
+function formatearTiempo(segundos) {
+  const m = String(Math.floor(segundos / 60)).padStart(2, '0');
+  const s = String(segundos % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+document.getElementById("form-falladas").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  document.getElementById('contenedor-resultados').style.display = "none";
+  const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
+  document.getElementById('form-falladas').style.display = "none";
+  document.getElementById('titulo-formulario').style.display = "none";
+  document.getElementById('aviso-falladas').style.display = "none";
+  document.getElementById("contenedor-test").innerHTML = `
+    <div style="text-align: center; padding: 20px;">
+      <p>⏳ Buscando preguntas falladas...</p>
+      <progress id="barra-carga" value="0" max="100" style="width: 100%; height: 20px;"></progress>
+      <p id="texto-carga">0%</p>
+    </div>
+  `;
+  let progreso = 0;
+  const intervalCarga = setInterval(() => {
+    if (progreso < 100) progreso += 2;
+    document.getElementById("barra-carga").value = progreso;
+    document.getElementById("texto-carga").textContent = `${progreso}%`;
+    if (progreso >= 100) clearInterval(intervalCarga);
+  }, 60);
+
+  try {
+    const res = await fetch("https://oposicion-age.onrender.com/generar-test-fallos", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ usuario_id, num_preguntas })
+    });
+    clearInterval(intervalCarga);
+    const datos = await res.json();
+    preguntas = datos.test || [];
+    if (preguntas.length === 0) {
+      mostrarAviso("No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.");
+      document.getElementById("contenedor-test").innerHTML = "";
+      document.getElementById("form-falladas").style.display = "";
+      document.getElementById('titulo-formulario').style.display = "";
+      return;
+    }
+    respuestasUsuario = Array(preguntas.length).fill(null);
+    indicePreguntaActual = 0;
+    iniciarTemporizador();
+    mostrarPregunta(indicePreguntaActual);
+  } catch (error) {
+    clearInterval(intervalCarga);
+    mostrarAviso("❌ Error buscando preguntas falladas. Intenta más tarde.");
+    document.getElementById("contenedor-test").innerHTML = "";
+    document.getElementById("form-falladas").style.display = "";
+    document.getElementById('titulo-formulario').style.display = "";
+    console.error(error);
+  }
+});
+
+function mostrarPregunta(i) {
+  const p = preguntas[i];
+  let html = `<form id="form-pregunta"><fieldset>
+    <legend class="pregunta-en-negrita">${i + 1}. ${p.pregunta}</legend><br>`;
+  for (const letra in p.opciones) {
+    const opcion = p.opciones[letra];
+    const checked = respuestasUsuario[i] === letra ? "checked" : "";
+    html += `
+      <div style="margin-bottom: 8px;">
+        <label style="cursor: pointer;">
+          <input type="radio" name="respuesta" value="${letra}" ${checked}>
+          ${letra}) ${opcion}
+        </label>
+      </div>`;
+  }
+html += `
+  <div class="botones-navegacion-test">
+    ${i > 0 ? '<button type="button" id="btn-anterior" class="btn-naranja">⬅️ Anterior</button>' : ''} 
+    <button type="button" id="btn-desmarcar" class="btn-naranja">❌ Desmarcar</button>
+    <button type="submit" class="btn-naranja">Siguiente</button>
+  </div>
+  </fieldset></form>`;
+  document.getElementById("contenedor-test").innerHTML = html;
+
+  document.getElementById("btn-desmarcar").addEventListener("click", () => {
+    const marcadas = document.querySelectorAll('input[name="respuesta"]:checked');
+    marcadas.forEach(m => m.checked = false);
+    respuestasUsuario[i] = null;
+  });
+  document.getElementById("btn-finalizar").style.display = "inline-block";
+  if (i > 0 && document.getElementById("btn-anterior")) {
+    document.getElementById("btn-anterior").addEventListener("click", () => mostrarPregunta(i - 1));
+  }
+  document.getElementById("form-pregunta").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const seleccion = document.querySelector('input[name="respuesta"]:checked');
+    const respuestaSeleccionada = seleccion ? seleccion.value : null;
+    respuestasUsuario[i] = respuestaSeleccionada;
+    if (i + 1 < preguntas.length) {
+      mostrarPregunta(i + 1);
+    } else {
+      const sinContestar = respuestasUsuario.filter(r => r === null).length;
+      let mensaje = sinContestar > 0
+        ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+        : '¿Quieres finalizar el test y ver los resultados?';
+      Swal.fire({
+        icon: 'question',
+        title: '¿Deseas finalizar el test?',
+        text: mensaje,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, corregir',
+        cancelButtonText: 'Seguir revisando',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          mostrarResultados();
+        }
+      });
+      return;
+    }
+  });
+}
+
+// ------- GUARDADO AUTOMÁTICO DE TEST FALLADAS -------
+async function guardarTestFalladasAutomaticamente() {
+    const contenido = preguntas;
+    const respuestas = respuestasUsuario;
+    const tipo = "falladas";
+    const tiempo = Math.floor((Date.now() - tiempoInicio) / 1000);
+    const metadatos = { tipo, tiempo };
+    try {
+        const res = await fetch("https://oposicion-age.onrender.com/guardar-test", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                usuario_id,
+                contenido,
+                respuestas,
+                metadatos
+            })
+        });
+        const datos = await res.json();
+        if (!res.ok) {
+            Swal.fire("Error al guardar", datos.error || "No se pudo guardar el test.", "error");
+        }
+    } catch (e) {
+        console.error("Error al guardar test falladas:", e);
+    }
+}
+// -----------------------------------------------------
+
+async function mostrarResultados() {
+  clearInterval(intervaloTemporizador);
+  document.getElementById("contenedor-test").innerHTML = "";
+  document.getElementById("btn-finalizar").style.display = "none";
+  const cont = document.getElementById("contenedor-resultados");
+  cont.style.display = "block";
+
+  let aciertos = 0;
+  let html = `
+<div style="margin-bottom:10px;">
+<button onclick="aplicarFiltro('todos')">🟡 Todos</button>
+<button onclick="aplicarFiltro('acierto')">✅ Aciertos</button>
+<button onclick="aplicarFiltro('fallo')">❌ Fallos</button>
+<button onclick="aplicarFiltro('blanco')">⏸ En blanco</button>
+</div>
+<ol style="padding-left: 18px;">`;
+  preguntas.forEach((p, i) => {
+    const correcta = p.respuesta_correcta || "No indicada";
+    const explicacion = p.explicacion || "Sin explicación.";
+    const seleccion = respuestasUsuario[i];
+    let clase = seleccion === correcta ? "acierto" : (seleccion === null ? "blanco" : "fallo");
+    let preguntaSinNumero = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+    html += `<li class="${clase}" style="margin-bottom:20px;">
+      <div class="pregunta-en-negrita">${i + 1}. ${preguntaSinNumero}</div>
+    `;
+    for (const letra in p.opciones) {
+      let tipoRespuesta = "resp-neutra";
+      let icono = "";
+      if (letra === correcta) {
+        tipoRespuesta = "resp-correcta";
+        icono = '<span class="icono-correcto">✅</span>';
+      }
+      if (letra === seleccion && seleccion !== correcta) {
+        tipoRespuesta = "resp-incorrecta";
+        icono = '<span class="icono-incorrecto">❌ </span>';
+      }
+      html += `
+        <div class="${tipoRespuesta}">
+          ${icono}${letra}) ${p.opciones[letra]}
+        </div>`;
+    }
+    const idExp = "exp" + i;
+    html += `<button onclick="document.getElementById('${idExp}').style.display = document.getElementById('${idExp}').style.display === 'none' ? 'block' : 'none';">📘 Mostrar/Ocultar Explicación</button>`;
+    html += `<p id="${idExp}" style="display:none;"><strong>Explicación:</strong> ${explicacion}</p></li>`;
+    if (seleccion === correcta) aciertos++;
+  });
+
+  let fallos = preguntas.length - aciertos - respuestasUsuario.filter(r => r === null).length;
+  let sinResponder = respuestasUsuario.filter(r => r === null).length;
+  const porcentaje = ((aciertos / preguntas.length) * 100).toFixed(1);
+  const nota = (aciertos * 1 - fallos * 0.33).toFixed(2);
+  const notaEquivalente = ((nota / preguntas.length) * 70).toFixed(2);
+
+  html = `
+    <div style='background:#f4f4f4;padding:20px;border-radius:12px;margin-bottom:20px;'>
+      <h3>📊 Resumen del Test</h3>
+      <p><strong>Total:</strong> ${preguntas.length}</p>
+      <p style='color:green;'><strong>✅ Aciertos:</strong> ${aciertos}</p>
+      <p style='color:red;'><strong>❌ Fallos:</strong> ${fallos}</p>
+      <p style='color:gray;'><strong>⏸ En blanco:</strong> ${sinResponder}</p>
+      <p><strong>🎯 Porcentaje:</strong> ${porcentaje}%</p>
+      <p><strong>📘 Nota simulada:</strong> ${nota} / ${preguntas.length}<br><strong>📏 Nota equivalente AGE:</strong> ${notaEquivalente} / 70</p>
+      <div style='background:#ddd;border-radius:10px;overflow:hidden;margin-top:10px;'>
+        <div style='width:${porcentaje}%;background:linear-gradient(to right,#4caf50,#81c784);padding:6px 10px;color:white;'>${porcentaje}%</div>
+      </div>
+    </div>` + html;
+  html += `</ol><h3>Resultado: ${aciertos} / ${preguntas.length}</h3>`;
+  cont.innerHTML = html;
+
+  document.getElementById("btn-descargar-pdf").style.display = "inline-block";
+
+  // === GUARDAR AUTOMÁTICAMENTE EL TEST DE FALLADAS ===
+  guardarTestFalladasAutomaticamente();
+}
+
+document.getElementById("btn-descargar-pdf").addEventListener("click", () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 20;
+  const pageHeight = doc.internal.pageSize.height;
+  const lineHeight = 7;
+  const margen = 10;
+  doc.setFontSize(12);
+
+  preguntas.forEach((p, i) => {
+    let preguntaSinNumero = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+    const preguntaTexto = `Pregunta ${i + 1}: ${preguntaSinNumero}`;
+    doc.setFont(undefined, "bold");
+    y = añadirTexto(doc, preguntaTexto, margen, y, lineHeight, pageHeight);
+    doc.setFont(undefined, "normal");
+    for (const clave in p.opciones) {
+      let texto = `${clave}) ${p.opciones[clave]}`;
+      if (clave === p.respuesta_correcta) {
+        doc.setTextColor(67, 160, 71);
+        doc.setFont(undefined, "bold");
+      } else {
+        doc.setTextColor(0,0,0);
+        doc.setFont(undefined, "normal");
+      }
+      doc.text(texto, margen + 5, y + 4);
+      y += lineHeight + 3;
+      if (y > pageHeight - margen) {
+        doc.addPage();
+        y = margen;
+      }
+    }
+    doc.setTextColor(0,0,0);
+    doc.setFont(undefined, "normal");
+    y = añadirTexto(doc, `Explicación: ${p.explicacion}`, margen, y, lineHeight, pageHeight);
+    y += 4;
+    if (y > pageHeight - margen) {
+      doc.addPage();
+      y = margen;
+    }
+  });
+
+  doc.save("test_falladas.pdf");
+  function añadirTexto(doc, texto, x, y, lh, ph) {
+    const lineas = doc.splitTextToSize(texto, 180);
+    lineas.forEach(linea => {
+      if (y + lh > ph - 10) {
+        doc.addPage();
+        y = 10;
+      }
+      doc.text(linea, x, y);
+      y += lh;
+    });
+    return y;
+  }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const btnFinalizar = document.getElementById("btn-finalizar");
+  if (!btnFinalizar) return;
+  btnFinalizar.addEventListener("click", () => {
+    const sinContestar = respuestasUsuario.filter(r => r === null).length;
+    let mensaje = sinContestar > 0
+      ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+      : '¿Quieres finalizar el test y ver los resultados?';
+    Swal.fire({
+      icon: 'question',
+      title: '¿Deseas finalizar el test?',
+      text: mensaje,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, corregir',
+      cancelButtonText: 'Seguir revisando',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        mostrarResultados();
+      }
+    });
+  });
+});
+
+function aplicarFiltro(tipo) {
+  const items = document.querySelectorAll("#contenedor-resultados ol li");
+  items.forEach(li => {
+    if (tipo === 'todos') {
+      li.style.display = 'block';
+    } else {
+      li.style.display = li.classList.contains(tipo) ? 'block' : 'none';
+    }
+  });
+}
+</script>
+</body>
+</html>
+

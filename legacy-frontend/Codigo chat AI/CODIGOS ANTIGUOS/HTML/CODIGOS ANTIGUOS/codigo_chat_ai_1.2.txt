@@ -1,0 +1,382 @@
+<!-- ===========================
+     CHAT IA VISUAL PREMIUM 
+     (Versión corregida: burbujas pro, botón SVG, sin símbolo "?")
+=========================== -->
+
+<div class="chat-container-pro">
+  <!-- Sidebar (escritorio) -->
+  <div class="chat-sidebar-pro" id="chat-sidebar">
+    <h3>💬 Conversaciones</h3>
+    <ul id="chat-history"></ul>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="chat-box-pro">
+    <!-- CABECERA MEJORADA -->
+    <div class="chat-header-pro">
+      <div class="avatar-bot">
+        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Bot" />
+        <span class="pulse"></span>
+      </div>
+      <div>
+        <div class="titulo-chat">Asistente IA</div>
+        <div class="estado-enlinea"> En línea</div>
+      </div>
+      <!-- <button class="btn-ayuda" title="¿Qué puedes preguntarme?">?</button> -->
+      <button id="toggle-sidebar" title="Menú">☰</button>
+    </div>
+
+    <!-- ÁREA MENSAJES -->
+    <div id="chat-messages" class="chat-messages-pro"></div>
+    
+    <!-- INPUT MODERNO -->
+    <div class="input-area-pro" id="chat-input-container">
+      <textarea id="chat-input" placeholder="Escribe tu mensaje..." rows="1"></textarea>
+      <button class="btn-mic" title="(Próximamente) Enviar audio">
+      </button>
+      <!-- Botón enviar con flecha SVG -->
+      <button id="chat-send" class="btn-enviar" title="Enviar">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <circle cx="13" cy="13" r="13" fill="black"/>
+          <path d="M13 8v8M13 8l-3 3M13 8l3 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Contenedor general */
+.chat-container-pro {
+  display: flex;
+  max-width: 950px;
+  margin: 34px auto 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  font-family: 'Segoe UI', 'Inter', sans-serif;
+  background: #fff;
+  box-shadow: 0 6px 30px rgba(0,0,0,0.10);
+  height: 80vh;
+  min-height: 600px;
+  position: relative;
+}
+
+/* Sidebar visual */
+.chat-sidebar-pro {
+  width: 260px;
+  background: #f7f8fa;
+  padding: 28px 18px 18px 22px;
+  border-right: 1.5px solid #ececec;
+  overflow-y: auto;
+  transition: left 0.28s;
+  position: relative;
+  z-index: 10;
+  box-shadow: 2px 0 10px #0001;
+}
+.chat-sidebar-pro h3 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  color: #223049;
+  font-weight: 600;
+}
+#chat-history {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#chat-history li {
+  padding: 11px 12px 10px 12px;
+  border-radius: 9px;
+  margin-bottom: 7px;
+  background: #e9ecf1;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background 0.16s, box-shadow 0.16s;
+}
+#chat-history li.active, #chat-history li:hover {
+  background: #ffe7be;
+  font-weight: bold;
+  border-left: 5px solid #ffb84d;
+}
+
+/* Contenido principal */
+.chat-box-pro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+/* CABECERA moderna y sticky */
+.chat-header-pro {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, #fffbe6 0%, #e8f6ff 100%);
+  padding: 12px 24px 12px 24px;
+  border-bottom: 1.5px solid #f6c56e;
+  position: sticky; top: 0; z-index: 11;
+  gap: 15px;
+  min-height: 62px;
+}
+.avatar-bot {
+  position: relative;
+  margin-right: 3px;
+}
+.avatar-bot img { width: 42px; height: 42px; border-radius: 50%; }
+.pulse {
+  position: absolute; right: -6px; bottom: 2px; width: 12px; height: 12px;
+  background: #10b981; border-radius: 50%; box-shadow: 0 0 0 0 #10b98188;
+  animation: pulse 1.3s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 #10b98188; }
+  70% { box-shadow: 0 0 0 8px #10b98100; }
+  100% { box-shadow: 0 0 0 0 #10b98100; }
+}
+.titulo-chat { font-weight: bold; font-size: 17px; color: #223049; }
+.estado-enlinea { color: #10b981; font-size: 13px; margin-top: 3px;}
+#toggle-sidebar {
+  margin-left: 10px;
+  background: none;
+  border: none;
+  font-size: 27px;
+  color: #495057;
+  cursor: pointer;
+  display: none;
+}
+
+@media (max-width: 950px) {
+  .chat-container-pro { max-width: 100vw; height: 100vh; min-height: 0; }
+  .chat-sidebar-pro {
+    position: fixed;
+    left: -320px; top: 0; height: 100vh; border-radius: 0 18px 18px 0;
+    box-shadow: 9px 0 35px #0003; width: 220px;
+    z-index: 99; transition: left 0.27s;
+    background: #f7f8fa;
+  }
+  .chat-sidebar-pro.visible { left: 0; }
+  #toggle-sidebar { display: block; }
+}
+
+/* Fondo mensajes glass, degradado muy suave */
+.chat-messages-pro {
+  flex: 1;
+  padding: 36px 22px 14px 22px;
+  overflow-y: auto;
+  background: linear-gradient(120deg, #f7f8fa 80%, #e8f6ff 100%);
+  min-height: 310px;
+  scroll-behavior: smooth;
+}
+
+/* Mensajes tipo burbuja */
+.mensaje-user, .mensaje-bot { display: flex; margin-bottom: 18px; align-items: flex-end; }
+.bubble-user {
+  background: #fff;
+  color: #223049;
+  border-radius: 20px 20px 6px 20px;
+  padding: 13px 18px;
+  box-shadow: 0 2px 7px #0002;
+  margin-left: auto;
+  max-width: 70%;
+  font-size: 15px;
+  word-break: break-word;
+  border: 1px solid #ececec;
+  animation: fadeIn .45s;
+}
+.bubble-bot {
+  background: #e7f1fa;
+  color: #223049;
+  border-radius: 20px 20px 20px 6px;
+  padding: 13px 18px;
+  box-shadow: 0 2px 7px #0002;
+  margin-right: 8px;
+  max-width: 78%;
+  font-size: 15px;
+  position: relative;
+  word-break: break-word;
+  border: 1px solid #cbe6f9;
+  animation: fadeIn .5s;
+}
+.avatar-bot-mini img { width: 26px; height: 26px; border-radius: 50%; margin-right: 7px;}
+
+/* Input moderno */
+.input-area-pro {
+  display: flex; align-items: center;
+  border-top: 1.5px solid #f6c56e;
+  background: #fff;
+  padding: 14px 18px 14px 18px;
+  position: sticky; bottom: 0; z-index: 12;
+  gap: 7px;
+}
+.input-area-pro textarea {
+  flex: 1; border: none; border-radius: 17px; padding: 11px 15px;
+  font-size: 15px; background: #f4f6f8; min-height: 36px; max-height: 110px; resize: none;
+  outline: none; box-shadow: 0 1px 4px #0001;
+  transition: background 0.2s;
+  overflow-y: auto;
+}
+.input-area-pro textarea:focus { background: #f9fafb; }
+.btn-mic, .btn-enviar {
+  border: none; background: #fff; border-radius: 50%; cursor: pointer; width: 38px; height: 38px; margin-left: 4px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.18s;
+  box-shadow: 0 1px 4px #0001;
+}
+.btn-enviar:hover { background: #223049;}
+.btn-enviar svg { display: block;}
+.btn-mic img { width: 18px; opacity: .7;}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: none; } }
+
+::-webkit-scrollbar { width: 7px; background: #f7f8fa;}
+::-webkit-scrollbar-thumb { background: #e7e7e7; border-radius: 7px;}
+</style>
+<script>
+const input = document.getElementById("chat-input");
+const sendBtn = document.getElementById("chat-send");
+const chatMessages = document.getElementById("chat-messages");
+const toggleSidebar = document.getElementById("toggle-sidebar");
+const chatSidebar = document.getElementById("chat-sidebar");
+const chatHistory = document.getElementById("chat-history");
+
+let conversaciones = [];
+let chatIdActual = null;
+
+// Muestra/oculta el sidebar (menú) en móvil/tablet
+toggleSidebar.addEventListener("click", () => {
+  chatSidebar.classList.toggle("visible");
+});
+
+// Cierra el sidebar al pulsar fuera en móvil/tablet
+document.addEventListener("click", (e) => {
+  if (
+    window.innerWidth <= 900 &&
+    chatSidebar.classList.contains("visible") &&
+    !chatSidebar.contains(e.target) &&
+    e.target !== toggleSidebar
+  ) {
+    chatSidebar.classList.remove("visible");
+  }
+});
+
+// NUEVA función para burbujas visuales diferenciadas
+function agregarMensaje(tipo, texto) {
+  const div = document.createElement("div");
+  if (tipo === "user") {
+    div.className = "mensaje-user";
+    div.innerHTML = `<div class="bubble-user">${texto}</div>`;
+  } else {
+    div.className = "mensaje-bot";
+    div.innerHTML = `
+      <div class="avatar-bot-mini">
+        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Bot" />
+      </div>
+      <div class="bubble-bot anim-fade-in">${texto}</div>
+    `;
+  }
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Envía mensaje al backend
+function enviarMensaje() {
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  agregarMensaje("user", texto);
+  input.value = "";
+
+  fetch("https://oposicion-age.onrender.com/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      mensaje: texto,
+      temas: [],
+      usuario_id: typeof usuarioEmail !== "undefined" ? usuarioEmail : "anonimo",
+      chat_id: chatIdActual
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+      agregarMensaje("bot", data.respuesta || "Sin respuesta.");
+      chatIdActual = data.chat_id;
+      cargarHistorial(); // Actualiza el historial lateral
+    })
+    .catch(() => {
+      agregarMensaje("bot", "❌ Error al conectar.");
+    });
+}
+
+// Cargar historial de Firestore
+function cargarHistorial() {
+  const id = typeof usuarioEmail !== "undefined" ? usuarioEmail : "anonimo";
+  fetch(`https://oposicion-age.onrender.com/conversaciones?usuario_id=${id}`)
+    .then(res => res.json())
+    .then(data => {
+      conversaciones = data.conversaciones || [];
+      mostrarHistorialEnSidebar();
+    })
+    .catch(err => {
+      console.error("❌ Error al cargar historial:", err);
+    });
+}
+
+// Mostrar lista de conversaciones en el sidebar
+function mostrarHistorialEnSidebar() {
+  chatHistory.innerHTML = "";
+  const nueva = document.createElement("li");
+  nueva.textContent = "➕ Nueva conversación";
+  nueva.onclick = iniciarNuevaConversacion;
+  chatHistory.appendChild(nueva);
+
+  conversaciones.forEach((conv) => {
+    const li = document.createElement("li");
+    li.textContent = conv.titulo || "Conversación";
+    li.dataset.id = conv.id;
+    li.onclick = () => cargarConversacion(conv.id);
+    chatHistory.appendChild(li);
+  });
+}
+
+// Cargar mensajes de una conversación
+function cargarConversacion(id) {
+  chatMessages.innerHTML = "";
+  chatIdActual = id;
+
+  fetch(`https://oposicion-age.onrender.com/conversacion/${id}?usuario_id=${typeof usuarioEmail !== "undefined" ? usuarioEmail : "anonimo"}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.mensajes) {
+        data.mensajes.forEach(m => {
+          agregarMensaje(m.role === "user" ? "user" : "bot", m.content);
+        });
+      }
+    });
+
+  // Marcar activa la conversación en la lista
+  document.querySelectorAll("#chat-history li").forEach(li => {
+    li.classList.remove("active");
+    if (li.dataset.id === id) li.classList.add("active");
+  });
+}
+
+// Nueva conversación
+function iniciarNuevaConversacion() {
+  chatMessages.innerHTML = "";
+  chatIdActual = null;
+}
+
+// Eventos de envío de mensaje
+sendBtn.addEventListener("click", enviarMensaje);
+input.addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    enviarMensaje();
+  }
+});
+
+window.addEventListener("DOMContentLoaded", cargarHistorial);
+</script>
