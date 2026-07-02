@@ -88,7 +88,7 @@ let preguntas = [];
           contenedor.appendChild(label);
         });
       } catch (err) {
-        contenedor.innerHTML = "<p>Error al cargar temas.</p>";
+        contenedor.innerHTML = `<p>Error al cargar temas: ${err.message}</p>`;
         console.error(err);
       }
     }

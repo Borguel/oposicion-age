@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
     } catch (err) {
       console.error("Error cargando estadísticas:", err);
-      alert("Hubo un problema al cargar tus estadísticas. Por favor, inténtalo de nuevo.");
+      alert("Hubo un problema al cargar tus estadísticas: " + err.message);
     } finally {
       refreshBtn.classList.remove('loading');
       refreshBtn.disabled = false;
