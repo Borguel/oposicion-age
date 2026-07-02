@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Generar Test desde PDF - Asistente AGE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="Generar_test_pdf_CSS_1.3.UNIFICADO.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1 id="titulo-formulario">Generar Test desde PDF</h1>
+
+    <!-- Formulario PDF -->
+    <div class="card fade-in">
+      <form id="form-subir-pdf">
+        <label for="archivo-pdf">Sube tu documento PDF (máx. 10 MB)</label>
+        <div class="file-upload-area" id="upload-area">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">
+            <h3>Arrastra y suelta aquí tu PDF</h3>
+            <p>o pincha para cargarlo</p>
+          </div>
+          <input type="file" id="archivo-pdf" accept=".pdf" class="file-input" required>
+        </div>
+        <div id="file-name" class="file-name"></div>
+        <div class="form-group">
+          <label for="num_preguntas">Número de preguntas (1–50):</label>
+          <input type="number" id="num_preguntas" min="1" max="50" value="10" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Generar Test desde PDF</button>
+      </form>
+    </div>
+
+    <!-- Contenedor de carga -->
+    <div id="contenedor-carga" class="card fade-in" style="display:none;">
+      <div class="loading-container">
+        <div class="ai-icon" id="ai-icon">🤖</div>
+        <div class="mensaje-estado">
+          <span id="texto-estado" class="typewriter">Leyendo texto del PDF…</span>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div id="progreso-carga" class="progress-fill"></div>
+          </div>
+          <div id="texto-carga" class="progress-text">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Temporizador -->
+    <div id="temporizador" style="display:none;"></div>
+
+    <!-- Barra de progreso de preguntas -->
+    <div id="barra-progreso-preguntas" class="progress-container" style="display:none;">
+      <div id="progreso-preguntas" class="progress-bar"></div>
+      <div id="texto-progreso-preguntas" class="progress-text"></div>
+    </div>
+
+    <!-- Contenedor de test -->
+    <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
+
+    <!-- Resultados -->
+    <div id="contenedor-resultados" class="card fade-in" style="display:none;"></div>
+
+    <!-- Botones finales -->
+    <button id="btn-finalizar" class="btn btn-danger btn-block" style="display:none;">Finalizar Test</button>
+    <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
+  </div>
+
+  
+  <script src="script.js"></script>
+</body>
+</html>

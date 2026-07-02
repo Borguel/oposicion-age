@@ -1,0 +1,183 @@
+/* Estilos generales */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f6fa 0%, #e1e5f0 100%);
+            min-height: 100vh; /* Asegura que el body tenga al menos la altura de la pantalla */
+            padding: 20px;
+            display: flex;
+            flex-direction: column; /* Organiza los hijos en columna */
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            flex: 1; /* Hace que el contenedor principal ocupe el espacio disponible entre header y footer */
+        }
+
+        /* Encabezado */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Grid de opciones */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Flexible */
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .option-card {
+            background: white;
+            border-radius: 16px;
+            padding: 35px 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            height: 100%; /* Ocupa la altura disponible */
+        }
+
+        .option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+
+        .option-icon {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .option-title {
+            color: #2d3748;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .option-description {
+            color: #6b7280;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            flex-grow: 1; /* Empuja el botón hacia abajo */
+        }
+
+        .option-button {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(76, 175, 80, 0.2);
+        }
+
+        .option-button:hover {
+            background: #45a047;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        /* Colores específicos para cada opción */
+        .test-card .option-icon { color: #FF9800; }
+        .test-card .option-button { background: #FF9800; }
+        .test-card .option-button:hover { background: #fb8c00; }
+
+        .resume-card .option-icon { color: #2196F3; }
+        .resume-card .option-button { background: #2196F3; }
+        .resume-card .option-button:hover { background: #1e88e5; }
+
+        .scheme-card .option-icon { color: #00BCD4; }
+        .scheme-card .option-button { background: #00BCD4; }
+        .scheme-card .option-button:hover { background: #00acc1; }
+
+        .cards-card .option-icon { color: #9C27B0; }
+        .cards-card .option-button { background: #9C27B0; }
+        .cards-card .option-button:hover { background: #8E24AA; }
+
+        /* Estilos para el Footer */
+        .footer {
+            margin-top: auto; /* Empuja el footer al final */
+            background-color: #2d3748; /* Color de ejemplo */
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            width: 100%;
+            /* Si necesitas que el footer esté SIEMPRE abajo de la pantalla, descomenta la siguiente línea */
+            /* position: fixed; */
+            /* bottom: 0; */
+            /* left: 0; */
+            /* right: 0; */
+            /* z-index: 1000; /* Asegura que esté encima si es fijo */
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px; /* Reduce el padding en móviles */
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr; /* Una columna en móviles */
+                gap: 20px; /* Reduce el espacio entre tarjetas */
+            }
+
+            .header h1 {
+                font-size: 2rem; /* Reduce el tamaño del título */
+            }
+
+            .header p {
+                font-size: 1rem; /* Reduce el tamaño del párrafo */
+                max-width: 100%; /* Asegura que el texto no se corte */
+            }
+
+            .option-card {
+                padding: 25px 20px; /* Ajusta el padding de las tarjetas */
+            }
+
+            .option-icon {
+                font-size: 2rem; /* Reduce el tamaño del icono */
+            }
+
+            .option-title {
+                font-size: 1.25rem; /* Reduce el tamaño del título de la tarjeta */
+            }
+
+            .option-description {
+                font-size: 0.95rem; /* Reduce el tamaño de la descripción */
+            }
+
+            .option-button {
+                padding: 12px 20px; /* Ajusta el padding del botón */
+                font-size: 0.95rem; /* Reduce el tamaño del texto del botón */
+            }
+        }

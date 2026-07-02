@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oposición AGE - Plataforma de Estudio</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f6f6f6;
+      color: #333;
+      padding: 40px 20px;
+    }
+    h1 { text-align: center; margin-bottom: 8px; }
+    p.subtitle { text-align: center; color: #666; margin-bottom: 32px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    a.card {
+      display: block;
+      background: #fff;
+      border: 1px solid #ebebeb;
+      border-radius: 12px;
+      padding: 20px;
+      text-decoration: none;
+      color: #333;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      transition: transform 0.2s ease-in-out;
+    }
+    a.card:hover { transform: translateY(-3px); border-color: #ffa633; }
+  </style>
+</head>
+<body>
+  <h1>Oposición AGE</h1>
+  <p class="subtitle">Elige una herramienta para empezar a estudiar</p>
+  <div class="grid">
+    <a class="card" href="./subida-pdf-pagina-principal/">📄 Herramientas PDF (inicio)</a>
+    <a class="card" href="./test-generator/">📝 Generador de Test</a>
+    <a class="card" href="./subida-pdf-generar-test/">📄➜📝 Generar Test desde PDF</a>
+    <a class="card" href="./subida-pdf-tarjetas/">🗂️ Tarjetas de Memoria</a>
+    <a class="card" href="./subida-pdf-esquemas/">🧩 Esquemas desde PDF</a>
+    <a class="card" href="./subida-pdf-resumen/">📑 Resumir Documentos</a>
+    <a class="card" href="./subida-pdf-chat-pdf/">💬 Analizador de PDFs</a>
+    <a class="card" href="./repetir-test/">🔁 Repetir Último Test</a>
+    <a class="card" href="./preguntas-falladas/">❌ Preguntas Falladas</a>
+    <a class="card" href="./estadisticas/">📊 Estadísticas</a>
+    <a class="card" href="./chat-ai/">🤖 Chat con IA</a>
+    <a class="card" href="./asistente/">🧑‍💼 Asistente Premium</a>
+  </div>
+</body>
+</html>

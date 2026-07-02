@@ -1,0 +1,255 @@
+document.addEventListener("DOMContentLoaded", async function () {
+  const email = window.usuarioEmail || "test@ejemplo.com";
+  const refreshBtn = document.getElementById("estadisticas-refresh");
+  const modal = document.getElementById("modal-temas");
+  const modalCerrar = document.querySelector(".modal-cerrar");
+  const modalCerrarBtn = document.getElementById("modal-cerrar-btn");
+  const btnVerNuevos = document.getElementById("btn-ver-nuevos");
+  const btnVerTemasTop = document.getElementById("btn-ver-temas-top");
+  const busquedaInput = document.getElementById("modal-busqueda-input");
+  let temasFiltrados = [];
+  let todosLosTemas = [];
+  let temasTest = [];
+
+  // Función para cargar datos
+  async function cargarDatos() {
+    try {
+      // Resetear valores
+      document.querySelectorAll('.valor').forEach(el => {
+        if (!el.id.startsWith('tendencia')) {
+          el.textContent = '...';
+        }
+      });
+      document.querySelectorAll('.progress-fill').forEach(el => el.style.width = '0%');
+      document.getElementById("tendencia-media").innerHTML = '<span>...</span>';
+      // Resetear valores PDF
+      document.getElementById("total-archivos").textContent = '...';
+      document.getElementById("total-tests-pdf").textContent = '...';
+      document.getElementById("total-resumenes-pdf").textContent = '...';
+      document.getElementById("total-esquemas-pdf").textContent = '...';
+      document.getElementById("total-tarjetas-pdf").textContent = '...';
+      refreshBtn.classList.add('loading');
+      refreshBtn.disabled = true;
+
+      // NUEVO: Usar la ruta de estadísticas completas que incluye datos PDF
+      const [estadisticasRes, temasRes] = await Promise.all([
+        fetch(`https://oposicion-age.onrender.com/estadisticas-completas?usuario_id=${email}`),
+        fetch("https://oposicion-age.onrender.com/temas-disponibles")
+      ]);
+      const estadisticasData = await estadisticasRes.json();
+      const temasData = await temasRes.json();
+      const estadisticas = estadisticasData.estadisticas ?? {};
+
+      // Si hay error, usar la ruta antigua como fallback
+      if (estadisticas.error) {
+        console.warn("Usando ruta antigua como fallback");
+        const resumenRes = await fetch(`https://oposicion-age.onrender.com/resumen-progreso?usuario_id=${email}`);
+        const resumenData = await resumenRes.json();
+        procesarDatos(resumenData.resumen ?? {}, temasData.temas || []);
+      } else {
+        procesarDatos(estadisticas, temasData.temas || []);
+      }
+    } catch (err) {
+      console.error("Error cargando estadísticas:", err);
+      alert("Hubo un problema al cargar tus estadísticas. Por favor, inténtalo de nuevo.");
+    } finally {
+      refreshBtn.classList.remove('loading');
+      refreshBtn.disabled = false;
+    }
+  }
+
+  function procesarDatos(estadisticas, todosTemas) {
+    const totalTests = estadisticas.tests_realizados ?? 0;
+    const totalAciertos = estadisticas.total_aciertos ?? 0;
+    const totalFallos = estadisticas.total_fallos ?? 0;
+    const historial = estadisticas.historial_tests ?? [];
+    temasTest = estadisticas.temas_test ?? [];
+    const esquemas = estadisticas.esquemas_realizados ?? 0;
+    const aprobados = estadisticas.tests_aprobados ?? 0;
+    const suspendidos = estadisticas.tests_suspendidos ?? 0;
+    const puntuacionMedia = estadisticas.puntuacion_media_test ?? 0;
+    const tiempoTotalSegundos = estadisticas.tiempo_total ?? 0;
+
+    // NUEVOS DATOS PDF
+    const testsPdf = estadisticas.tests_pdf_realizados ?? estadisticas.total_tests_pdf ?? 0;
+    const resumenesPdf = estadisticas.resumenes_pdf_realizados ?? estadisticas.total_resumenes_pdf ?? 0;
+    const esquemasPdf = estadisticas.esquemas_pdf_realizados ?? estadisticas.total_esquemas_pdf ?? 0;
+    const tarjetasPdf = estadisticas.tarjetas_pdf_realizados ?? estadisticas.total_tarjetas_pdf ?? 0;
+    const totalArchivos = estadisticas.total_archivos_procesados ?? 0;
+
+    const horas = String(Math.floor(tiempoTotalSegundos / 3600)).padStart(2, '0');
+    const minutos = String(Math.floor((tiempoTotalSegundos % 3600) / 60)).padStart(2, '0');
+
+    const porcentajeAprobados = totalTests > 0 ? Math.round((aprobados / totalTests) * 100) : 0;
+    const porcentajeSuspendidos = totalTests > 0 ? Math.round((suspendidos / totalTests) * 100) : 0;
+    const porcentajeAciertos = (totalAciertos + totalFallos) > 0 
+      ? Math.round((totalAciertos / (totalAciertos + totalFallos)) * 100) 
+      : 0;
+    const porcentajeFallos = (totalAciertos + totalFallos) > 0 
+      ? Math.round((totalFallos / (totalAciertos + totalFallos)) * 100) 
+      : 0;
+
+    const contador = {};
+    historial.forEach(test => {
+      (test.temas || []).forEach(t => {
+        contador[t] = (contador[t] || 0) + 1;
+      });
+    });
+
+    const topTemasEntries = Object.entries(contador)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+
+    const todosLosTemasIds = todosTemas.map(t => t.id);
+    const noEstudiados = todosLosTemasIds.filter(t => !temasTest.includes(t));
+
+    // Actualizar estadísticas principales
+    document.getElementById("tests").textContent = totalTests;
+    document.getElementById("aprobados").textContent = aprobados;
+    document.getElementById("suspendidos").textContent = suspendidos;
+    document.getElementById("media").textContent = puntuacionMedia.toFixed(1);
+    document.getElementById("aciertos").textContent = totalAciertos;
+    document.getElementById("fallos").textContent = totalFallos;
+    document.getElementById("esquemas").textContent = esquemas;
+    document.getElementById("tiempo").textContent = `${horas}h ${minutos}m`;
+    document.getElementById("temas-nuevos").textContent = noEstudiados.length;
+
+    document.getElementById("aprobados-porcentaje").textContent = porcentajeAprobados;
+    document.getElementById("suspendidos-porcentaje").textContent = porcentajeSuspendidos;
+    document.getElementById("aciertos-porcentaje").textContent = porcentajeAciertos;
+    document.getElementById("fallos-porcentaje").textContent = porcentajeFallos;
+
+    document.getElementById("aprobados-progress").style.width = `${porcentajeAprobados}%`;
+    document.getElementById("suspendidos-progress").style.width = `${porcentajeSuspendidos}%`;
+
+    let tendenciaHTML = '<span class="tendencia-neutral">→ Estable</span>';
+    if (puntuacionMedia > 5) {
+      tendenciaHTML = `<span class="tendencia-up">↑ Mejorando</span>`;
+    } else if (puntuacionMedia < 3) {
+      tendenciaHTML = `<span class="tendencia-down">↓ Requiere atención</span>`;
+    }
+    document.getElementById("tendencia-media").innerHTML = tendenciaHTML;
+
+    // NUEVO: Actualizar estadísticas PDF
+    document.getElementById("tests-pdf").textContent = testsPdf;
+    document.getElementById("resumenes-pdf").textContent = resumenesPdf;
+    document.getElementById("esquemas-pdf").textContent = esquemasPdf;
+    document.getElementById("tarjetas-pdf").textContent = tarjetasPdf;
+    document.getElementById("total-archivos").textContent = totalArchivos;
+    document.getElementById("total-tests-pdf").textContent = testsPdf;
+    document.getElementById("total-resumenes-pdf").textContent = resumenesPdf;
+    document.getElementById("total-esquemas-pdf").textContent = esquemasPdf;
+    document.getElementById("total-tarjetas-pdf").textContent = tarjetasPdf;
+
+    actualizarTemas(topTemasEntries, todosTemas);
+    temasFiltrados = noEstudiados;
+    todosLosTemas = todosTemas;
+    mostrarTemasNoEstudiados(noEstudiados, todosTemas);
+  }
+
+  function actualizarTemas(temasEntries, todosTemas) {
+    const listaTemas = document.getElementById("lista-temas-top");
+    listaTemas.innerHTML = '';
+    if (temasEntries.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'No hay temas estudiados aún.';
+      li.style.color = '#777';
+      li.style.fontStyle = 'italic';
+      listaTemas.appendChild(li);
+      return;
+    }
+    temasEntries.forEach(([id, count]) => {
+      const tema = todosTemas.find(t => t.id === id);
+      const nombre = tema ? tema.titulo : `Tema ${id}`;
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span class="tema-nombre">${nombre}</span>
+        <span class="tema-count">${count}</span>
+      `;
+      listaTemas.appendChild(li);
+    });
+  }
+
+  function mostrarTemasNoEstudiados(temasIds, todosTemas) {
+    const listaTemas = document.getElementById("lista-temas-nuevos");
+    listaTemas.innerHTML = '';
+    if (temasIds.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = '¡Enhorabuena! Has estudiado todos los temas disponibles.';
+      li.style.color = '#777';
+      li.style.fontStyle = 'italic';
+      li.style.textAlign = 'center';
+      listaTemas.appendChild(li);
+      return;
+    }
+    temasIds.forEach(id => {
+      const tema = todosTemas.find(t => t.id === id);
+      const nombre = tema ? tema.titulo : `Tema ${id}`;
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div class="tema-info">
+          <div class="tema-titulo">${nombre}</div>
+          <span class="tema-id" data-id="${id}" title="Copiar ID">ID: ${id}</span>
+        </div>
+      `;
+      listaTemas.appendChild(li);
+      li.querySelector('.tema-id').addEventListener('click', function(e) {
+        e.stopPropagation();
+        navigator.clipboard.writeText(id).then(() => {
+          this.textContent = 'Copiado!';
+          setTimeout(() => {
+            this.textContent = `ID: ${id}`;
+          }, 1500);
+        }).catch(err => {
+          console.error('Error al copiar:', err);
+        });
+      });
+    });
+  }
+
+  function filtrarTemas() {
+    const filtro = busquedaInput.value.toLowerCase().trim();
+    const temasFiltradosLocal = todosLosTemas
+      .filter(t => !temasTest.includes(t.id))
+      .filter(t => t.titulo.toLowerCase().includes(filtro) || t.id.toString().includes(filtro));
+    mostrarTemasNoEstudiados(temasFiltradosLocal.map(t => t.id), todosLosTemas);
+  }
+
+  // Eventos interactivos
+  btnVerTemasTop.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.closest('.tarjeta-temas').classList.toggle('activo');
+  });
+
+  btnVerNuevos.addEventListener('click', function() {
+    modal.classList.add('show');
+    void modal.offsetWidth;
+    document.body.style.overflow = 'hidden';
+  });
+
+  modalCerrar.addEventListener('click', cerrarModal);
+  modalCerrarBtn.addEventListener('click', cerrarModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) cerrarModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('show')) {
+      cerrarModal();
+    }
+  });
+
+  busquedaInput.addEventListener('input', filtrarTemas);
+
+  refreshBtn.addEventListener('click', cargarDatos);
+
+  function cerrarModal() {
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+    busquedaInput.value = '';
+    filtrarTemas();
+  }
+
+  cargarDatos();
+});

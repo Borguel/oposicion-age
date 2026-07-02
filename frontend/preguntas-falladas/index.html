@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Test de Preguntas Falladas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1 id="titulo-formulario">Test de Preguntas Falladas</h1>
+
+    <div class="card fade-in">
+      <form id="form-falladas">
+        <div class="test-type-container">
+          <div class="test-type-card selected">
+            <div class="icon">📊</div>
+            <div class="title">Repaso de Fallos</div>
+            <div class="description">Practica con las preguntas que has fallado anteriormente</div>
+          </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+          <label for="num_preguntas">Número de preguntas:</label>
+          <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="50" value="5" required
+                 style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin: 10px 0 20px; font-size: 1rem;">
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-block">Generar Test con Preguntas Falladas</button>
+      </form>
+    </div>
+
+    <div id="aviso-falladas" class="aviso">
+      No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.
+    </div>
+
+    <div id="temporizador"></div>
+    
+    <div id="barra-progreso-preguntas" class="progress-container" style="display: none;">
+      <div id="progreso-preguntas" class="progress-bar" style="background: linear-gradient(90deg, #2196F3, #64b5f6);"></div>
+      <div id="texto-progreso-preguntas" class="progress-text"></div>
+    </div>
+
+    <div id="contenedor-test" class="card fade-in"></div>
+    <div id="contenedor-resultados" class="card fade-in" style="display:none;"></div>
+
+    <button id="btn-finalizar" class="btn btn-danger btn-block" style="display:none;">Finalizar Test</button>
+    <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  
+  <script src="script.js"></script>
+</body>
+</html>

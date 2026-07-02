@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Analizador de PDFs - Herramienta de Estudio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Analizador de PDFs con IA</h1>
+      <p>Sube cualquier documento y utiliza IA para estudiar de forma más eficiente</p>
+    </div>
+
+    <div class="card">
+      <div class="pdf-chat-container">
+        <div class="pdf-upload-section">
+          <h2>Analizador de PDFs</h2>
+          <div class="upload-area" id="pdf-upload-area">
+            <i class="fas fa-file-pdf"></i>
+            <p>Arrastra tu PDF aquí o haz clic para seleccionar</p>
+            <input type="file" id="pdf-file" accept=".pdf" hidden>
+            <button class="btn btn-secondary" id="select-pdf-btn">Seleccionar PDF</button>
+          </div>
+          
+          <div id="pdf-info" class="hidden">
+            <p><strong>Archivo:</strong> <span id="pdf-filename"></span></p>
+            <div class="pdf-preview">
+              <h3>Vista previa del documento</h3>
+              <p id="pdf-preview-text">Cargando información del documento...</p>
+              <div class="pdf-stats">
+                <div class="stat-item">
+                  <div class="stat-value" id="page-count">-</div>
+                  <div class="stat-label">Páginas</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value" id="word-count">-</div>
+                  <div class="stat-label">Palabras</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="action-buttons">
+              <button class="btn btn-primary" id="generate-summary-btn">Generar Resumen</button>
+              <button class="btn btn-accent" id="generate-test-btn">Generar Test</button>
+            </div>
+          </div>
+          
+          <div id="test-options" class="hidden">
+            <label for="num-questions">Número de preguntas:</label>
+            <input type="number" id="num-questions" min="1" max="20" value="5">
+            <label for="question-type">Tipo de preguntas:</label>
+            <select id="question-type" class="btn">
+              <option value="multiple">Opción múltiple</option>
+              <option value="truefalse">Verdadero/Falso</option>
+              <option value="conceptos">Conceptos clave</option>
+            </select>
+            <button class="btn btn-accent" id="generate-test-final-btn">Generar Test</button>
+          </div>
+        </div>
+        
+        <div class="chat-section">
+          <div class="chat-header">
+            <h2>Asistente de Estudio</h2>
+            <p id="session-info">Esperando documento...</p>
+          </div>
+          <div class="chat-box" id="pdf-chat-box">
+            <div class="message bot-message">
+              <p>¡Hola! Soy tu asistente de estudio con IA. Puedo ayudarte a:</p>
+              <ul>
+                <li>Resumir documentos PDF</li>
+                <li>Generar tests personalizados</li>
+                <li>Responder preguntas sobre el contenido</li>
+                <li>Explicar conceptos complejos</li>
+                <li>Crear esquemas de estudio</li>
+              </ul>
+              <p>Comienza subiendo un documento PDF para analizar.</p>
+            </div>
+          </div>
+          <div class="input-container">
+            <input type="text" id="pdf-user-input" placeholder="Haz una pregunta sobre el documento...">
+            <button id="pdf-send-btn"><i class="fas fa-paper-plane"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <script src="script.js"></script>
+</body>
+</html>

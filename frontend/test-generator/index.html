@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Generador de Test Mejorado</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilos-test-mejorado.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1 id="titulo-formulario">Genera tu Test</h1>
+    <div class="card fade-in">
+      <form id="form-generar-test">
+        <label for="num_preguntas">Número de preguntas:</label>
+        <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="50" value="10" required>
+        <label style="margin-top: 20px;">Tipo de test:</label>
+        <div class="test-type-container">
+          <div class="test-type-card" data-tipo="personalizado">
+            <div class="icon">📝</div>
+            <div class="title">Personalizado</div>
+            <div class="description">Selecciona los temas que quieres practicar</div>
+          </div>
+          <div class="test-type-card" data-tipo="oficial">
+            <div class="icon">🏛️</div>
+            <div class="title">Oficial</div>
+            <div class="description">Simulacros de exámenes oficiales</div>
+          </div>
+          <div class="test-type-card" data-tipo="inteligente">
+            <div class="icon">🤖</div>
+            <div class="title">Inteligente IA</div>
+            <div class="description">Preguntas adaptadas a tu nivel</div>
+          </div>
+        </div>
+        <input type="hidden" id="tipo_test" name="tipo_test" value="personalizado">
+        <div class="timer-settings">
+          <label>
+            <input type="checkbox" id="modo_cronometrado"> Activar modo examen cronometrado
+          </label>
+          <div id="tiempo_cronometro" style="display: none;">
+            <label for="minutos_cronometro">Tiempo (minutos):</label>
+            <input type="number" id="minutos_cronometro" min="1" value="60">
+          </div>
+        </div>
+        <label>Selecciona uno o varios temas:</label>
+        <div id="lista-temas"></div>
+        <button type="submit" class="btn btn-primary btn-block">Generar Test</button>
+      </form>
+    </div>
+    <div id="temporizador"></div>
+    <div id="barra-progreso-tiempo" class="progress-container" style="display: none;">
+      <div id="progreso-tiempo" class="progress-bar" style="background: linear-gradient(90deg, #4caf50, #66bb6a);"></div>
+      <div id="texto-progreso-tiempo" class="progress-text"></div>
+    </div>
+    <div id="barra-progreso-preguntas" class="progress-container" style="display: none; margin-top: 10px;">
+      <div id="progreso-preguntas" class="progress-bar" style="background: linear-gradient(90deg, #2196F3, #64b5f6);"></div>
+      <div id="texto-progreso-preguntas" class="progress-text"></div>
+    </div>
+    <div id="contenedor-test" class="card fade-in"></div>
+    <div id="contenedor-resultados" class="card fade-in" style="display:none;"></div>
+    <button id="btn-finalizar" class="btn btn-danger btn-block" style="display:none;">Finalizar Test</button>
+    <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
+  </div>
+
+  <!-- Librerías externas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  
+  <script src="script.js"></script>
+</body>
+</html>

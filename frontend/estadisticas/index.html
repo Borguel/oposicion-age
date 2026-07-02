@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estadísticas – Tu Progreso</title>
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="estadisticas-container">
+  <div id="estadisticas-header">
+    <h3>ESTADÍSTICAS DE TU ESTUDIO</h3>
+    <button id="estadisticas-refresh" type="button">
+      <span>Actualizar</span>
+      <div class="spinner"></div>
+    </button>
+  </div>
+  <div id="estadisticas-usuario">
+    <!-- Tests Realizados -->
+    <div class="tarjeta-estadistica destacada">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V5C19 3.89543 18.1046 3 17 3ZM16 17H8V15H16V17ZM16 13H8V11H16V13ZM16 9H8V7H16V9Z" fill="currentColor"/>
+        </svg>
+        <h4>Tests realizados</h4>
+      </div>
+      <div class="valor" id="tests">—</div>
+      <div class="detalle">Total de exámenes completados</div>
+    </div>
+    <!-- Tests Aprobados -->
+    <div class="tarjeta-estadistica positiva test-progress">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z" fill="currentColor"/>
+        </svg>
+        <h4>Tests aprobados</h4>
+      </div>
+      <div class="valor" id="aprobados">—</div>
+      <div class="detalle"><span id="aprobados-porcentaje">—</span>% de éxito</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="aprobados-progress" style="width: 0%"></div>
+      </div>
+    </div>
+    <!-- Tests Suspendidos -->
+    <div class="tarjeta-estadistica negativa test-progress">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
+        </svg>
+        <h4>Tests suspendidos</h4>
+      </div>
+      <div class="valor" id="suspendidos">—</div>
+      <div class="detalle"><span id="suspendidos-porcentaje">—</span>% de intentos</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="suspendidos-progress" style="width: 0%"></div>
+      </div>
+    </div>
+    <!-- Puntuación Media -->
+    <div class="tarjeta-estadistica neutra">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" fill="currentColor"/>
+        </svg>
+        <h4>Puntuación media</h4>
+      </div>
+      <div class="valor" id="media">—</div>
+      <div class="detalle">Sobre 10 puntos</div>
+      <div class="tendencia" id="tendencia-media">
+        <span>...</span>
+      </div>
+    </div>
+    <!-- Aciertos Totales -->
+    <div class="tarjeta-estadistica positiva">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 10H2v2h12v-2zm0-4H2v2h12V6zm4 8v6h-2v-6h-6v-2h6v-6h2v6h6v2h-6z" fill="currentColor"/>
+        </svg>
+        <h4>Aciertos totales</h4>
+      </div>
+      <div class="valor" id="aciertos">—</div>
+      <div class="detalle"><span id="aciertos-porcentaje">—</span>% de respuestas</div>
+    </div>
+    <!-- Fallos Totales -->
+    <div class="tarjeta-estadistica negativa">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-2.67 0-8-1.34-8-4v-1c0-4.67 8-7.33 8-7.33s8 2.66 8 7.33v1c0 2.66-5.33 4-8 4z" fill="currentColor"/>
+        </svg>
+        <h4>Fallos totales</h4>
+      </div>
+      <div class="valor" id="fallos">—</div>
+      <div class="detalle"><span id="fallos-porcentaje">—</span>% de respuestas</div>
+    </div>
+    <!-- Esquemas Generados -->
+    <div class="tarjeta-estadistica neutra">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" fill="currentColor"/>
+        </svg>
+        <h4>Esquemas generados</h4>
+      </div>
+      <div class="valor" id="esquemas">—</div>
+      <div class="detalle">Resúmenes creados</div>
+    </div>
+    <!-- Tiempo Total -->
+    <div class="tarjeta-estadistica neutra">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-1.67 0-3.17-.52-4.4-1.38l-.45-.28L6.8 18.04c-.43-.38-.76-.86-.95-1.4l-.15-.43C5.5 15.5 5.38 14.75 5.38 14h-.01v-4c0-2.65 2.15-4.8 4.8-4.8 2.65 0 4.8 2.15 4.8 4.8v4c0 .75-.12 1.5-.32 2.2l-.15.43c-.19.54-.52 1.02-.95 1.4l-.35.3c-1.23.86-2.73 1.38-4.4 1.38z" fill="currentColor"/>
+        </svg>
+        <h4>Tiempo total</h4>
+      </div>
+      <div class="valor" id="tiempo">—</div>
+      <div class="detalle">Dedicado a estudiar</div>
+    </div>
+    <!-- Temas Más Estudiados -->
+    <div class="tarjeta-estadistica tarjeta-temas" id="temas-top-container">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 20V4h12v16H6z" fill="currentColor"/>
+        </svg>
+        <h4>Temas más estudiados</h4>
+      </div>
+      <div class="valor">Top 3</div>
+      <div class="detalle">Tus áreas de mayor enfoque</div>
+      <button class="btn-ver-temas" id="btn-ver-temas-top" type="button">Mostrar temas</button>
+      <div class="temas-contenido">
+        <ul class="lista-temas-inline" id="lista-temas-top"></ul>
+      </div>
+    </div>
+    <!-- Temas No Estudiados -->
+    <div class="tarjeta-estadistica tarjeta-temas-nuevos" id="temas-nuevos-container">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-2.67 0-8-1.34-8-4v-1c0-4.67 8-7.33 8-7.33s8 2.66 8 7.33v1c0 2.66-5.33 4-8 4z" fill="currentColor"/>
+        </svg>
+        <h4>Temas no estudiados</h4>
+      </div>
+      <div class="valor" id="temas-nuevos">—</div>
+      <div class="detalle">Temas pendientes por estudiar</div>
+      <button class="btn-ver-temas" id="btn-ver-nuevos" type="button">Ver lista completa</button>
+    </div>
+    <!-- NUEVA SECCIÓN: CONTENIDO DESDE PDF -->
+    <div class="seccion-separador">
+      <h3>📄 CONTENIDO DESDE PDF</h3>
+    </div>
+    <!-- Tarjeta Resumen PDF -->
+    <div class="tarjeta-resumen-pdf">
+      <div class="header">
+        <h4 style="color: var(--theme-heading); margin: 0; display: flex; align-items: center; gap: 10px;">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 24px; height: 24px;">
+            <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" fill="currentColor"/>
+          </svg>
+          Resumen de Documentos Procesados
+        </h4>
+      </div>
+      <div class="resumen-grid">
+        <div class="resumen-item">
+          <div class="resumen-valor" id="total-archivos">—</div>
+          <div class="resumen-label">Documentos Subidos</div>
+        </div>
+        <div class="resumen-item">
+          <div class="resumen-valor" id="total-tests-pdf">—</div>
+          <div class="resumen-label">Tests desde PDF</div>
+        </div>
+        <div class="resumen-item">
+          <div class="resumen-valor" id="total-resumenes-pdf">—</div>
+          <div class="resumen-label">Resúmenes</div>
+        </div>
+        <div class="resumen-item">
+          <div class="resumen-valor" id="total-esquemas-pdf">—</div>
+          <div class="resumen-label">Esquemas</div>
+        </div>
+        <div class="resumen-item">
+          <div class="resumen-valor" id="total-tarjetas-pdf">—</div>
+          <div class="resumen-label">Tarjetas</div>
+        </div>
+      </div>
+    </div>
+    <!-- Tests desde PDF -->
+    <div class="tarjeta-estadistica pdf">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" fill="currentColor"/>
+        </svg>
+        <h4>Tests desde PDF</h4>
+      </div>
+      <div class="valor" id="tests-pdf">—</div>
+      <div class="detalle">Tests generados desde documentos</div>
+    </div>
+    <!-- Resúmenes desde PDF -->
+    <div class="tarjeta-estadistica pdf">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
+        </svg>
+        <h4>Resúmenes desde PDF</h4>
+      </div>
+      <div class="valor" id="resumenes-pdf">—</div>
+      <div class="detalle">Resúmenes creados desde documentos</div>
+    </div>
+    <!-- Esquemas desde PDF -->
+    <div class="tarjeta-estadistica pdf">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm2 4v-2H3v2h2zM3 9h2V7H3v2zm12 12h2v-2h-2v2zm4-18H9c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H9V5h10v12zm-8-6h2v-2h-2v2zm-4 0h2v-2H7v2z" fill="currentColor"/>
+        </svg>
+        <h4>Esquemas desde PDF</h4>
+      </div>
+      <div class="valor" id="esquemas-pdf">—</div>
+      <div class="detalle">Esquemas generados desde documentos</div>
+    </div>
+    <!-- Tarjetas desde PDF -->
+    <div class="tarjeta-estadistica pdf">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 12H8v-2h4v2zm0-4H8v-2h4v2zm6 4h-2v-2h2v2zm0-4h-2v-2h2v2z" fill="currentColor"/>
+        </svg>
+        <h4>Tarjetas desde PDF</h4>
+      </div>
+      <div class="valor" id="tarjetas-pdf">—</div>
+      <div class="detalle">Tarjetas de memoria creadas</div>
+    </div>
+  </div>
+</div>
+<!-- Modal para temas no estudiados -->
+<div class="modal-temas" id="modal-temas">
+  <div class="modal-contenido">
+    <button class="modal-cerrar" type="button">&times;</button>
+    <h3 class="modal-titulo">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-2.67 0-8-1.34-8-4v-1c0-4.67 8-7.33 8-7.33s8 2.66 8 7.33v1c0 2.66-5.33 4-8 4z" fill="currentColor"/>
+      </svg>
+      Temas No Estudiados
+    </h3>
+    <div class="modal-busqueda">
+      <input type="text" id="modal-busqueda-input" placeholder="Buscar tema...">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15.5 14h-.79l-.28-.28C16.41 12.53 17 11.06 17 9.5 17 5.91 14.09 3 10.5 3S4 5.91 4 9.5 6.91 16 10.5 16c1.56 0 3.03-.59 4.22-1.57l.28.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+      </svg>
+    </div>
+    <ul class="lista-temas" id="lista-temas-nuevos"></ul>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-secondary" id="modal-cerrar-btn" type="button">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+  <script src="script.js"></script>
+</body>
+</html>
