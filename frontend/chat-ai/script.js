@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const cerrarChat = document.getElementById("cerrar-chat-total");
   if (cerrarChat) {
     cerrarChat.addEventListener("click", () => {
-      window.location.href = "https://lightslategray-caribou-622401.hostingersite.com/panel-de-usuario/";
+      window.location.href = "../";
     });
   }
 
@@ -218,7 +218,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // SALIR
   document.getElementById("salir-del-chat-sidebar")?.addEventListener("click", () => {
-    window.location.href = "https://lightslategray-caribou-622401.hostingersite.com/panel-de-usuario/";
+    window.location.href = "../";
   });
 
   // INICIO

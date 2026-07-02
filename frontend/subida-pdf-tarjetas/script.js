@@ -1,17 +1,3 @@
-{
-    "name": "Asistente AGE - Tarjetas",
-    "short_name": "Tarjetas AGE",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#2c3e50",
-    "theme_color": "#2c3e50",
-    "icons": [{
-      "src": "image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
-    }]
-  }
-
 // === Modo Oscuro ===
     const themeToggle = document.getElementById('themeToggle');
     const isDark = localStorage.getItem('darkMode') === 'true' || 

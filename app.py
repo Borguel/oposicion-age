@@ -22,15 +22,26 @@ load_dotenv()
 print("🔑 Clave OpenAI:", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
 print("🔑 Clave DeepSeek:", "configurada" if os.getenv("DEEPSEEK_API_KEY") else "no configurada")
 # Inicializar Firebase
-firebase_key_path = os.getenv("FIREBASE_KEY_PATH", "clave-firebase.json")
+# Admite dos formas de dar la clave de servicio: un fichero (FIREBASE_KEY_PATH,
+# útil con "Secret Files" de Render) o el JSON completo en una variable de
+# entorno (FIREBASE_CREDENTIALS_JSON), útil en plataformas sin subida de ficheros.
 if not firebase_admin._apps:
-    cred = credentials.Certificate(firebase_key_path)
+    firebase_credentials_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
+    if firebase_credentials_json:
+        cred = credentials.Certificate(json.loads(firebase_credentials_json))
+    else:
+        firebase_key_path = os.getenv("FIREBASE_KEY_PATH", "clave-firebase.json")
+        cred = credentials.Certificate(firebase_key_path)
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 # Inicializar Flask
 app = Flask(__name__)
-CORS(app, origins=["https://lightslategray-caribou-622401.hostingersite.com"])
-print("✅ CORS activado para tu WordPress")
+cors_origins_env = os.getenv("CORS_ORIGINS", "")
+cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+if not cors_origins:
+    cors_origins = ["http://localhost:8080", "http://127.0.0.1:8080"]
+CORS(app, origins=cors_origins)
+print(f"✅ CORS activado para: {cors_origins}")
 
 # Protección por API key: se activa automáticamente en cuanto se defina
 # API_SECRET_KEY en el entorno. Mientras no exista, el comportamiento no
