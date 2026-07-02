@@ -18,6 +18,14 @@
             --transition-speed: 0.3s;
         }
 
+        /* Unificación de marca (Oposición AGE): el tema por defecto usa
+           el naranja de la marca en vez del verde azulado original. */
+        :root {
+            --secondary-color: var(--age-primary);
+            --accent-color: var(--age-primary-light);
+            --header-border: var(--age-primary);
+        }
+
         /* Modo oscuro */
         .dark-mode {
             --primary-color: #2c3e50;
@@ -83,12 +91,21 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         }
 
+        /* Unificación de marca: el body usaba flex para centrar el chat,
+           lo que descolocaba la barra de navegación compartida al ser
+           otro hijo del mismo body. Se centra el chat con margin auto
+           en su lugar. */
+        body {
+            display: block;
+        }
+
         /* ESTRUCTURA PRINCIPAL */
         .premium-chat-container {
             display: flex;
             flex-direction: column;
             width: 100%;
             max-width: 1200px;
+            margin: 20px auto;
             height: 90vh;
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
@@ -810,7 +827,8 @@
             }
             
             .premium-chat-container {
-                height: 100vh;
+                height: calc(100vh - var(--age-nav-height, 56px));
+                margin: 0 auto;
                 border-radius: 0;
             }
             

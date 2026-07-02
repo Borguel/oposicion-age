@@ -1,0 +1,112 @@
+/* ============================================================
+   Oposición AGE — sistema de diseño compartido
+   Un único fichero de tokens + barra de navegación para que las
+   12 páginas (heredadas de fragmentos sueltos de WordPress) se
+   sientan como una sola web coherente.
+   ============================================================ */
+
+:root {
+  --age-primary: #ffa633;
+  --age-primary-dark: #ff8c00;
+  --age-primary-light: #ffc266;
+  --age-ink: #1d1d1f;
+  --age-ink-soft: #6e6e73;
+  --age-bg: #f5f5f7;
+  --age-card: #ffffff;
+  --age-border: #e5e5ea;
+  --age-radius-lg: 20px;
+  --age-radius-md: 14px;
+  --age-radius-sm: 10px;
+  --age-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  --age-shadow-hover: 0 14px 40px rgba(0, 0, 0, 0.12);
+  --age-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+    Inter, Roboto, Helvetica, Arial, sans-serif;
+  --age-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --age-nav-height: 56px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--age-font) !important;
+}
+
+/* ---------- Barra de navegación ----------
+   "sticky" en vez de "fixed": ocupa su hueco normal en el flujo del
+   documento (no se superpone al contenido) pero se queda pegada arriba
+   al hacer scroll. Esto evita romper páginas que ya usan 100vh en sus
+   propios contenedores (el chat, el asistente, etc). */
+.age-nav {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--age-nav-height);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  white-space: nowrap;
+  font-family: var(--age-font);
+}
+
+.age-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.age-nav a {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--age-ink-soft);
+  text-decoration: none;
+  transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease);
+  white-space: nowrap;
+}
+
+.age-nav a:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--age-ink);
+}
+
+.age-nav a.age-nav-active {
+  background: var(--age-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.age-nav a.age-nav-home {
+  font-weight: 700;
+  color: var(--age-ink);
+  padding-right: 10px;
+  margin-right: 6px;
+  border-right: 1px solid var(--age-border);
+  border-radius: 0;
+}
+
+.age-nav a.age-nav-home:hover {
+  background: transparent;
+  color: var(--age-primary);
+}
+
+@media (max-width: 640px) {
+  .age-nav a {
+    font-size: 12.5px;
+    padding: 7px 10px;
+  }
+}

@@ -401,3 +401,9 @@
         grid-template-columns: 1fr;
       }
     }
+
+/* --- Unificación de marca (Oposición AGE) --- */
+:root {
+  --color-primary: var(--age-primary);
+  --color-primary-dark: var(--age-primary-dark);
+}

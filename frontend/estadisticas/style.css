@@ -574,3 +574,11 @@
         padding: 20px;
       }
     }
+
+/* --- Unificación de marca (Oposición AGE) --- */
+:root {
+  --primary: var(--age-primary);
+  --primary-dark: var(--age-primary-dark);
+  --theme-primary: var(--age-primary);
+  --theme-link-hover: var(--age-primary);
+}

@@ -462,3 +462,9 @@ h1, h2, h3 {
     width: 100%;
   }
 }
+
+/* --- Unificación de marca (Oposición AGE) --- */
+:root {
+  --color-primary: var(--age-primary);
+  --color-primary-dark: var(--age-primary-dark);
+}

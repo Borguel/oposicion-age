@@ -27,7 +27,7 @@ html { scroll-behavior: smooth; }
 /* X ROJA - SIEMPRE EN MÓVIL */
 .btn-cerrar-chat-total {
   position: fixed;
-  top: 18px;
+  top: calc(var(--age-nav-height, 0px) + 18px);
   right: 18px;
   width: 42px;
   height: 42px;
@@ -141,8 +141,8 @@ html { scroll-behavior: smooth; }
   .chat-sidebar-pro {
     position: fixed;
     left: -320px;
-    top: 0;
-    height: 100dvh;
+    top: var(--age-nav-height, 0px);
+    height: calc(100dvh - var(--age-nav-height, 0px));
     width: 220px;
     border-radius: 0 18px 18px 0;
     box-shadow: 9px 0 35px #0003;
@@ -156,10 +156,10 @@ html { scroll-behavior: smooth; }
   .sidebar-overlay {
     display: none;
     position: fixed;
-    top: 0;
+    top: var(--age-nav-height, 0px);
     left: 0;
     width: 100vw;
-    height: 100dvh;
+    height: calc(100dvh - var(--age-nav-height, 0px));
     background: rgba(0,0,0,0.4);
     z-index: 98;
   }
