@@ -226,7 +226,7 @@ let preguntas = [];
       } catch (error) {
         clearInterval(intervalCarga);
         document.getElementById('contenedor-test').innerHTML = `
-          <p>Error al generar el test.</p>
+          <p>Error al generar el test: ${error.message}</p>
           <button class="btn btn-primary" onclick="location.reload()">Volver a intentar</button>
         `;
         console.error(error);
