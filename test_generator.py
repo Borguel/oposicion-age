@@ -1,12 +1,9 @@
 import random
-import os
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from openai import OpenAI
+from deepseek_utils import call_deepseek_api
 from utils import obtener_subbloques_individuales, contar_tokens
 from validador_preguntas import validar_pregunta
-
-openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 INSTRUCCIONES = (
     "Actúas como un generador profesional de preguntas tipo test, especializado en el Cuerpo General Administrativo del Estado (AGE). "
@@ -32,13 +29,13 @@ def _generar_pregunta_desde_subbloque(sub):
 
     prompt = f"{INSTRUCCIONES}\n\nContenido:\n{contenido}"
 
+    messages = [{"role": "user", "content": prompt}]
+
     try:
-        respuesta = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.4
-        )
-        generado = respuesta.choices[0].message.content.strip()
+        generado = call_deepseek_api(messages, max_tokens=800, temperature=0.4)
+        if not generado:
+            return {"etiqueta": etiqueta, "error": "Sin respuesta de DeepSeek"}
+
         generado_json = json.loads(generado)
 
         if validar_pregunta(generado_json):
@@ -48,7 +45,7 @@ def _generar_pregunta_desde_subbloque(sub):
     except json.JSONDecodeError as je:
         return {"etiqueta": etiqueta, "error": f"JSON inválido: {je}"}
     except Exception as e:
-        return {"etiqueta": etiqueta, "error": f"Error GPT: {e}"}
+        return {"etiqueta": etiqueta, "error": f"Error DeepSeek: {e}"}
 
 
 def generar_test_avanzado(temas, db, num_preguntas=5):
