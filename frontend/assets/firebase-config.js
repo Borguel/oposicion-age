@@ -3,12 +3,12 @@
 // Sustituye estos valores por los de tu proyecto: Firebase console →
 // Configuración del proyecto → General → "Tus apps" → app web.
 export const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_PROYECTO.firebaseapp.com",
-  projectId: "TU_PROYECTO",
-  storageBucket: "TU_PROYECTO.appspot.com",
-  messagingSenderId: "TU_SENDER_ID",
-  appId: "TU_APP_ID"
+  apiKey: "AIzaSyCaNQn-w5AYy-jeI5Ue1AYFAn6amFZQG5w",
+  authDomain: "app-oposicion.firebaseapp.com",
+  projectId: "app-oposicion",
+  storageBucket: "app-oposicion.firebasestorage.app",
+  messagingSenderId: "432501857547",
+  appId: "1:432501857547:web:f8e886fd901857f144160e"
 };
 
 // URL del backend Flask (servicio "oposicion-age" en Render).
