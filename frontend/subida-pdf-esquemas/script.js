@@ -7,6 +7,16 @@
       document.body.classList.toggle('dark-mode');
       localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
     });
+    async function obtenerAuthHeaders() {
+      const { idToken } = await import("/assets/auth.js");
+      const token = await idToken();
+      if (!token) {
+        window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
+        return null;
+      }
+      return { "Authorization": "Bearer " + token };
+    }
+
     // === Estado global ===
     let esquema = '';
     let nombreArchivo = 'documento.pdf';
@@ -31,14 +41,14 @@
     const autoSaveIndicator = document.getElementById('auto-save-indicator');
     // === Guardado Automático en Firebase ===
     async function guardarEsquemaAutomaticamente() {
-      const usuario_id = window.usuarioEmail || "usuario_prueba";
       const nombreArchivoActual = nombreArchivo;
       try {
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
         const res = await fetch("https://oposicion-age.onrender.com/guardar-esquema-pdf", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({
-            usuario_id,
             esquema: esquema,
             nombre_archivo: nombreArchivoActual
           })
@@ -231,11 +241,17 @@
       let datosIA = null;
       let errorIA = null;
       let iaTerminada = false;
+      const authHeaders = await obtenerAuthHeaders();
+      if (!authHeaders) return;
       fetch("https://oposicion-age.onrender.com/generar-esquema-desde-pdf", {
         method: "POST",
+        headers: authHeaders,
         body: formData
       })
       .then(async res => {
+        if (res.status === 403) {
+          throw new Error("Esta herramienta requiere el plan Premium. Ve a /planes/ para activarlo.");
+        }
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
           throw new Error(errorData.error || `Error del servidor: ${res.status}`);

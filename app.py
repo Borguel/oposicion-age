@@ -2,7 +2,8 @@ import os
 import random
 import requests
 import json
-from flask import Flask, request, jsonify
+import stripe
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from dotenv import load_dotenv
 import firebase_admin
@@ -17,6 +18,8 @@ from esquema_generator import generar_esquema
 from save_controller import guardar_test_route, guardar_esquema_route
 from rutas_progreso import registrar_rutas_progreso
 from guardar_resultado import guardar_resultado_en_firestore
+from auth_utils import requiere_login, requiere_plan
+from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario
 # Cargar variables de entorno
 load_dotenv()
 print("🔑 Clave OpenAI:", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
@@ -59,28 +62,39 @@ def verificar_api_key():
         return
     if request.method == "OPTIONS":
         return
-    if request.path == "/":
+    if request.path in ("/", "/webhook-stripe"):
         return
     if request.headers.get("X-API-Key") != API_SECRET_KEY:
         return jsonify({"error": "No autorizado"}), 401
 
+# Configuración de Stripe (pagos y suscripciones)
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+STRIPE_PRICE_IDS = {
+    "basico": os.getenv("STRIPE_PRICE_ID_BASICO"),
+    "premium": os.getenv("STRIPE_PRICE_ID_PREMIUM"),
+}
+PRECIO_A_PLAN = {v: k for k, v in STRIPE_PRICE_IDS.items() if v}
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8080")
+
 # === Todas tus rutas existentes aquí ===
 @app.route("/chat", methods=["POST"])
+@requiere_plan(db, "premium")
 def chat_route():
     data = request.get_json()
     mensaje = data.get("mensaje")
     temas = data.get("temas", [])
-    usuario_id = data.get("usuario_id", "anonimo")
     chat_id = data.get("chat_id")
     respuesta, chat_id = responder_chat(
         mensaje=mensaje,
         temas=temas,
         db=db,
-        usuario_id=usuario_id,
+        usuario_id=g.uid,
         chat_id=chat_id
     )
     return jsonify({"respuesta": respuesta, "chat_id": chat_id})
 @app.route("/consultar-asistente-examen", methods=["POST"])
+@requiere_plan(db, "premium")
 def ruta_asistente_examen():
     data = request.get_json()
     mensaje = data.get("mensaje", "")
@@ -92,6 +106,7 @@ def ruta_asistente_examen():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 @app.route("/generar-test-avanzado", methods=["POST"])
+@requiere_plan(db, "basico")
 def generar_test_avanzado_route():
     data = request.get_json()
     print(f"📅 Petición recibida en /generar-test-avanzado: {data}")
@@ -103,6 +118,7 @@ def generar_test_avanzado_route():
     print(f"📄 Resultado del test: {resultado}")
     return jsonify(resultado)
 @app.route("/generar-esquema", methods=["POST"])
+@requiere_plan(db, "basico")
 def generar_esquema_route():
     data = request.get_json(silent=True)
     if not data:
@@ -115,6 +131,7 @@ def generar_esquema_route():
     resultado = generar_esquema(temas=temas, db=db, instrucciones=instrucciones, nivel=nivel)
     return jsonify({"esquema": resultado})
 @app.route("/generar-test-oficial", methods=["POST"])
+@requiere_login(db)
 def generar_test_oficial():
     data = request.get_json()
     print("✅ Ruta /generar-test-oficial llamada")
@@ -153,19 +170,19 @@ def generar_test_oficial():
     print(f"🎯 Preguntas seleccionadas aleatoriamente: {len(seleccionadas)}")
     return jsonify({"test": seleccionadas})
 @app.route("/guardar-test-oficial", methods=["POST"])
+@requiere_login(db)
 def guardar_test_oficial():
     data = request.get_json()
     print("💾 Guardando test oficial:", data)
-    usuario_id = data.get("usuario_id")
     contenido = data.get("contenido")
     respuestas = data.get("respuestas")
     metadatos = data.get("metadatos", {})
-    if not usuario_id or not contenido or not respuestas:
+    if not contenido or not respuestas:
         return jsonify({"error": "Faltan datos requeridos"}), 400
     try:
         doc_ref = db.collection("test_oficiales").document()
         doc_ref.set({
-            "usuario_id": usuario_id,
+            "usuario_id": g.uid,
             "contenido": contenido,
             "respuestas": respuestas,
             "metadatos": metadatos
@@ -180,6 +197,7 @@ app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["PO
 app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), methods=["POST"])
 registrar_rutas_progreso(app, db)
 @app.route("/temas-disponibles", methods=["GET"])
+@requiere_login(db)
 def obtener_temas_disponibles():
     temas_disponibles = []
     bloques = db.collection("Temario AGE").stream()
@@ -196,11 +214,9 @@ def obtener_temas_disponibles():
             })
     return jsonify({"temas": temas_disponibles})
 @app.route("/progreso-usuario", methods=["GET"])
+@requiere_login(db)
 def progreso_usuario():
-    user_id = request.args.get("user_id")
-    if not user_id:
-        return jsonify({"error": "Falta el parámetro user_id"}), 400
-    doc_user = db.collection("usuarios").document(user_id)
+    doc_user = db.collection("usuarios").document(g.uid)
     progreso = doc_user.get().to_dict()
     if not progreso:
         return jsonify({"error": "Usuario no encontrado"}), 404
@@ -243,6 +259,7 @@ def traducir_temas_para_IA(lista_codigos):
     }
     return [traducciones.get(codigo, codigo) for codigo in lista_codigos]
 @app.route("/generar-test-inteligente", methods=["POST"])
+@requiere_plan(db, "basico")
 def generar_test_inteligente():
     data = request.get_json(silent=True)
     if not data:
@@ -291,12 +308,10 @@ Devuelve solo un array JSON como este:
         print("❌ Error al generar test inteligente:", e)
         return jsonify({"error": str(e)}), 500
 @app.route("/conversaciones", methods=["GET"])
+@requiere_plan(db, "premium")
 def obtener_conversaciones_usuario():
-    usuario_id = request.args.get("usuario_id")
-    if not usuario_id:
-        return jsonify({"error": "Falta usuario_id"}), 400
     docs = db.collection("conversaciones_IA") \
-             .document(usuario_id) \
+             .document(g.uid) \
              .collection("conversaciones") \
              .order_by("timestamp_inicio", direction=firestore.Query.DESCENDING) \
              .stream()
@@ -310,12 +325,10 @@ def obtener_conversaciones_usuario():
         })
     return jsonify({"conversaciones": resultado})
 @app.route("/conversacion/<conversacion_id>", methods=["GET"])
+@requiere_plan(db, "premium")
 def obtener_conversacion(conversacion_id):
-    usuario_id = request.args.get("usuario_id")
-    if not usuario_id:
-        return jsonify({"error": "Falta usuario_id"}), 400
     doc = db.collection("conversaciones_IA") \
-            .document(usuario_id) \
+            .document(g.uid) \
             .collection("conversaciones") \
             .document(conversacion_id) \
             .get()
@@ -323,13 +336,11 @@ def obtener_conversacion(conversacion_id):
         return jsonify({"error": "Conversación no encontrada"}), 404
     return jsonify(doc.to_dict())
 @app.route("/generar-test-fallos", methods=["POST"])
+@requiere_login(db)
 def generar_test_fallos():
     data = request.get_json()
-    usuario_id = data.get("usuario_id")
     num_preguntas = data.get("num_preguntas", 10)
-    if not usuario_id:
-        return jsonify({"error": "Falta usuario_id"}), 400
-    tests_ref = db.collection("usuarios").document(usuario_id).collection("tests").stream()
+    tests_ref = db.collection("usuarios").document(g.uid).collection("tests").stream()
     preguntas_falladas = []
     for test_doc in tests_ref:
         test = test_doc.to_dict()
@@ -355,6 +366,7 @@ def generar_test_fallos():
 # RUTAS PARA DEEPSEEK (PDFs)
 # ===================================================================
 @app.route('/resumir-pdf', methods=['POST'])
+@requiere_plan(db, "premium")
 def resumir_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -401,9 +413,11 @@ def resumir_pdf():
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 # ✅ NUEVA RUTA: alias para compatibilidad con frontend
 @app.route('/resumir-documento', methods=['POST'])
+@requiere_plan(db, "premium")
 def resumir_documento():
     return resumir_pdf()
 @app.route('/generar-esquema-desde-pdf', methods=['POST'])
+@requiere_plan(db, "premium")
 def generar_esquema_desde_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -449,6 +463,7 @@ def generar_esquema_desde_pdf():
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 @app.route('/generar-test-desde-pdf', methods=['POST'])
+@requiere_plan(db, "premium")
 def generar_test_desde_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -546,6 +561,7 @@ def generar_test_desde_pdf():
             "respuesta_cruda": respuesta[:500] if 'respuesta' in locals() else "N/A"
         }), 500
 @app.route('/generar-tarjetas-desde-pdf', methods=['POST'])
+@requiere_plan(db, "premium")
 def generar_tarjetas_desde_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -634,6 +650,7 @@ def generar_tarjetas_desde_pdf():
             "respuesta_cruda": respuesta[:500] if 'respuesta' in locals() else "N/A"
         }), 500
 @app.route("/chat-deepseek", methods=["POST"])
+@requiere_plan(db, "premium")
 def chat_deepseek():
     data = request.get_json()
     mensaje = data.get("mensaje")
@@ -665,10 +682,10 @@ def chat_deepseek():
 # NUEVAS RUTAS PARA GUARDAR CONTENIDO DESDE PDF
 # ===================================================================
 @app.route('/guardar-test-pdf', methods=['POST'])
+@requiere_plan(db, "premium")
 def guardar_test_pdf():
     try:
         data = request.get_json()
-        usuario_id = data.get('usuario_id', 'anonimo')
         test_data = data.get('test_data', {})
         preguntas = test_data.get('preguntas', [])
         nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
@@ -676,7 +693,7 @@ def guardar_test_pdf():
             db=db,
             tipo="test_pdf",
             contenido=preguntas,
-            usuario_id=usuario_id,
+            usuario_id=g.uid,
             metadatos={
                 'nombre_archivo': nombre_archivo,
                 'num_preguntas': len(preguntas),
@@ -687,17 +704,17 @@ def guardar_test_pdf():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 @app.route('/guardar-resumen-pdf', methods=['POST'])
+@requiere_plan(db, "premium")
 def guardar_resumen_pdf():
     try:
         data = request.get_json()
-        usuario_id = data.get('usuario_id', 'anonimo')
         resumen = data.get('resumen', '')
         nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
         resultado = guardar_resultado_en_firestore(
             db=db,
             tipo="resumen_pdf",
             contenido=resumen,
-            usuario_id=usuario_id,
+            usuario_id=g.uid,
             metadatos={
                 'nombre_archivo': nombre_archivo,
                 'longitud': len(resumen),
@@ -708,17 +725,17 @@ def guardar_resumen_pdf():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 @app.route('/guardar-esquema-pdf', methods=['POST'])
+@requiere_plan(db, "premium")
 def guardar_esquema_pdf():
     try:
         data = request.get_json()
-        usuario_id = data.get('usuario_id', 'anonimo')
         esquema = data.get('esquema', '')
         nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
         resultado = guardar_resultado_en_firestore(
             db=db,
             tipo="esquema_pdf",
             contenido=esquema,
-            usuario_id=usuario_id,
+            usuario_id=g.uid,
             metadatos={
                 'nombre_archivo': nombre_archivo,
                 'longitud': len(esquema),
@@ -729,17 +746,17 @@ def guardar_esquema_pdf():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 @app.route('/guardar-tarjetas-pdf', methods=['POST'])
+@requiere_plan(db, "premium")
 def guardar_tarjetas_pdf():
     try:
         data = request.get_json()
-        usuario_id = data.get('usuario_id', 'anonimo')
         tarjetas = data.get('tarjetas', [])
         nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
         resultado = guardar_resultado_en_firestore(
             db=db,
             tipo="tarjetas_pdf",
             contenido=tarjetas,
-            usuario_id=usuario_id,
+            usuario_id=g.uid,
             metadatos={
                 'nombre_archivo': nombre_archivo,
                 'num_tarjetas': len(tarjetas),
@@ -749,5 +766,123 @@ def guardar_tarjetas_pdf():
         return jsonify({'mensaje': 'Tarjetas desde PDF guardadas correctamente'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+# ===================================================================
+# RUTAS DE SUSCRIPCIÓN (STRIPE)
+# ===================================================================
+@app.route("/mi-perfil", methods=["GET"])
+@requiere_login(db)
+def mi_perfil():
+    return jsonify(obtener_perfil_usuario(db, g.uid))
+
+@app.route("/crear-sesion-checkout", methods=["POST"])
+@requiere_login(db)
+def crear_sesion_checkout():
+    data = request.get_json(silent=True) or {}
+    plan = data.get("plan")
+    price_id = STRIPE_PRICE_IDS.get(plan)
+    if not price_id:
+        return jsonify({"error": "Plan no válido"}), 400
+    try:
+        doc_ref = db.collection("usuarios").document(g.uid)
+        usuario = doc_ref.get().to_dict() or {}
+        stripe_customer_id = usuario.get("stripe_customer_id")
+        if not stripe_customer_id:
+            customer = stripe.Customer.create(email=g.email, metadata={"uid": g.uid})
+            stripe_customer_id = customer.id
+            actualizar_suscripcion(db, g.uid, stripe_customer_id=stripe_customer_id)
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            customer=stripe_customer_id,
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=f"{FRONTEND_URL}/mi-cuenta/?checkout=success",
+            cancel_url=f"{FRONTEND_URL}/planes/?checkout=cancel",
+            client_reference_id=g.uid,
+            metadata={"uid": g.uid, "plan": plan}
+        )
+        return jsonify({"url": session.url})
+    except Exception as e:
+        print("❌ Error creando sesión de Stripe Checkout:", e)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/crear-sesion-portal", methods=["POST"])
+@requiere_login(db)
+def crear_sesion_portal():
+    usuario = db.collection("usuarios").document(g.uid).get().to_dict() or {}
+    stripe_customer_id = usuario.get("stripe_customer_id")
+    if not stripe_customer_id:
+        return jsonify({"error": "Todavía no tienes ninguna suscripción"}), 400
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=stripe_customer_id,
+            return_url=f"{FRONTEND_URL}/mi-cuenta/"
+        )
+        return jsonify({"url": session.url})
+    except Exception as e:
+        print("❌ Error creando sesión del portal de Stripe:", e)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/webhook-stripe", methods=["POST"])
+def webhook_stripe():
+    payload = request.get_data()
+    firma = request.headers.get("Stripe-Signature", "")
+    try:
+        event = stripe.Webhook.construct_event(payload, firma, STRIPE_WEBHOOK_SECRET)
+    except (ValueError, stripe.error.SignatureVerificationError) as e:
+        print("❌ Webhook de Stripe con firma inválida:", e)
+        return jsonify({"error": "Firma inválida"}), 400
+
+    evento_ref = db.collection("stripe_events").document(event["id"])
+    if evento_ref.get().exists:
+        return jsonify({"mensaje": "Evento ya procesado"}), 200
+
+    tipo = event["type"]
+    objeto = event["data"]["object"]
+
+    try:
+        if tipo == "checkout.session.completed":
+            uid = objeto.get("client_reference_id") or (objeto.get("metadata") or {}).get("uid")
+            subscription_id = objeto.get("subscription")
+            if uid and subscription_id:
+                subscription = stripe.Subscription.retrieve(subscription_id)
+                price_id = subscription["items"]["data"][0]["price"]["id"]
+                plan = PRECIO_A_PLAN.get(price_id, "gratis")
+                actualizar_suscripcion(
+                    db, uid,
+                    plan=plan,
+                    stripe_customer_id=objeto.get("customer"),
+                    stripe_subscription_id=subscription_id,
+                    subscription_status=subscription["status"],
+                    current_period_end=datetime.utcfromtimestamp(subscription["current_period_end"]).isoformat()
+                )
+        elif tipo == "customer.subscription.updated":
+            customer_id = objeto.get("customer")
+            docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
+            if docs:
+                price_id = objeto["items"]["data"][0]["price"]["id"]
+                plan = PRECIO_A_PLAN.get(price_id, "gratis")
+                actualizar_suscripcion(
+                    db, docs[0].id,
+                    plan=plan,
+                    stripe_subscription_id=objeto.get("id"),
+                    subscription_status=objeto.get("status"),
+                    current_period_end=datetime.utcfromtimestamp(objeto["current_period_end"]).isoformat()
+                )
+        elif tipo == "customer.subscription.deleted":
+            customer_id = objeto.get("customer")
+            docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
+            if docs:
+                actualizar_suscripcion(db, docs[0].id, plan="gratis", subscription_status="canceled")
+        elif tipo == "invoice.payment_failed":
+            customer_id = objeto.get("customer")
+            docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
+            if docs:
+                actualizar_suscripcion(db, docs[0].id, subscription_status="past_due")
+    except Exception as e:
+        print(f"❌ Error procesando webhook de Stripe ({tipo}):", e)
+        return jsonify({"error": str(e)}), 500
+
+    evento_ref.set({"type": tipo, "processed_at": datetime.utcnow().isoformat()})
+    return jsonify({"mensaje": "Evento procesado"}), 200
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))

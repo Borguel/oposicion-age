@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi cuenta - Oposición AGE</title>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/mi-cuenta/style.css" />
+</head>
+<body>
+  <nav class="age-nav">
+    <a href="/" class="age-nav-home">🏠 Inicio</a>
+    <a href="/subida-pdf-pagina-principal/">📄 Herramientas PDF</a>
+    <a href="/test-generator/">📝 Generador de Test</a>
+    <a href="/subida-pdf-generar-test/">📄➜📝 Test desde PDF</a>
+    <a href="/subida-pdf-tarjetas/">🗂️ Tarjetas</a>
+    <a href="/subida-pdf-esquemas/">🧩 Esquemas</a>
+    <a href="/subida-pdf-resumen/">📑 Resumen</a>
+    <a href="/subida-pdf-chat-pdf/">💬 Analizar PDF</a>
+    <a href="/repetir-test/">🔁 Repetir Test</a>
+    <a href="/preguntas-falladas/">❌ Falladas</a>
+    <a href="/estadisticas/">📊 Estadísticas</a>
+    <a href="/chat-ai/">🤖 Chat IA</a>
+    <a href="/asistente/">🧑‍💼 Asistente</a>
+  </nav>
+
+  <div class="cuenta-wrap">
+    <div class="cuenta-card">
+      <h1>Mi cuenta</h1>
+      <div id="cuenta-email" class="cuenta-email">Cargando…</div>
+
+      <div class="cuenta-plan">
+        <div class="cuenta-plan-label">Plan actual</div>
+        <div id="cuenta-plan-nombre" class="cuenta-plan-nombre">—</div>
+        <div id="cuenta-plan-estado" class="cuenta-plan-estado"></div>
+      </div>
+
+      <button type="button" id="btn-portal" class="btn-primary">Gestionar suscripción</button>
+      <a href="/planes/" class="btn-secundario">Ver / cambiar de plan</a>
+      <button type="button" id="btn-logout" class="btn-texto">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <script type="module" src="/assets/auth.js"></script>
+  <script type="module" src="/mi-cuenta/script.js"></script>
+</body>
+</html>

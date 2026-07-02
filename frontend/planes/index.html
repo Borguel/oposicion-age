@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planes - Oposición AGE</title>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/planes/style.css" />
+</head>
+<body>
+  <nav class="age-nav">
+    <a href="/" class="age-nav-home">🏠 Inicio</a>
+    <a href="/subida-pdf-pagina-principal/">📄 Herramientas PDF</a>
+    <a href="/test-generator/">📝 Generador de Test</a>
+    <a href="/subida-pdf-generar-test/">📄➜📝 Test desde PDF</a>
+    <a href="/subida-pdf-tarjetas/">🗂️ Tarjetas</a>
+    <a href="/subida-pdf-esquemas/">🧩 Esquemas</a>
+    <a href="/subida-pdf-resumen/">📑 Resumen</a>
+    <a href="/subida-pdf-chat-pdf/">💬 Analizar PDF</a>
+    <a href="/repetir-test/">🔁 Repetir Test</a>
+    <a href="/preguntas-falladas/">❌ Falladas</a>
+    <a href="/estadisticas/">📊 Estadísticas</a>
+    <a href="/chat-ai/">🤖 Chat IA</a>
+    <a href="/asistente/">🧑‍💼 Asistente</a>
+  </nav>
+
+  <div class="hero">
+    <h1>Elige tu plan</h1>
+    <p>Empieza gratis y sube de nivel cuando quieras. Puedes cancelar cuando quieras desde "Mi cuenta".</p>
+  </div>
+
+  <div id="mensaje-checkout" class="mensaje-checkout" style="display:none;"></div>
+
+  <div class="planes-grid">
+    <div class="plan-card" data-plan="gratis">
+      <div class="plan-nombre">Gratis</div>
+      <div class="plan-precio">0€</div>
+      <ul class="plan-features">
+        <li>Test oficiales (preguntas de exámenes reales)</li>
+        <li>Repetir tu último test</li>
+        <li>Test de preguntas falladas</li>
+        <li>Estadísticas de tu progreso</li>
+      </ul>
+      <button type="button" class="btn-plan" data-plan-btn="gratis">Empezar gratis</button>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-nombre">Básico</div>
+      <div class="plan-precio">—</div>
+      <ul class="plan-features">
+        <li>Todo lo del plan Gratis</li>
+        <li>Generador de test personalizado con IA</li>
+        <li>Test "inteligente" adaptado a tu nivel</li>
+        <li>Generación de esquemas con IA</li>
+      </ul>
+      <button type="button" class="btn-plan btn-plan-primary" data-plan-btn="basico">Elegir Básico</button>
+    </div>
+
+    <div class="plan-card plan-destacado">
+      <div class="plan-badge">Más completo</div>
+      <div class="plan-nombre">Premium</div>
+      <div class="plan-precio">—</div>
+      <ul class="plan-features">
+        <li>Todo lo del plan Básico</li>
+        <li>Todas las herramientas desde PDF (test, tarjetas, esquemas, resumen, chat)</li>
+        <li>Chat IA general</li>
+        <li>Asistente premium de examen</li>
+      </ul>
+      <button type="button" class="btn-plan btn-plan-primary" data-plan-btn="premium">Elegir Premium</button>
+    </div>
+  </div>
+
+  <script type="module" src="/assets/auth.js"></script>
+  <script type="module" src="/planes/script.js"></script>
+</body>
+</html>

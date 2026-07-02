@@ -7,6 +7,16 @@
       document.body.classList.toggle('dark-mode');
       localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
     });
+    async function obtenerAuthHeaders() {
+      const { idToken } = await import("/assets/auth.js");
+      const token = await idToken();
+      if (!token) {
+        window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
+        return null;
+      }
+      return { "Authorization": "Bearer " + token };
+    }
+
     // === Estado global ===
     let tarjetas = [];
     let tarjetaActual = 0;
@@ -41,15 +51,15 @@
 
     // === Guardado Automático en Firebase ===
     async function guardarTarjetasAutomaticamente() {
-      const usuario_id = window.usuarioEmail || "usuario_prueba";
       const nombreArchivo = document.getElementById('archivo-pdf').files[0]?.name || "documento.pdf";
-      
+
       try {
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
         const res = await fetch("https://oposicion-age.onrender.com/guardar-tarjetas-pdf", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({
-            usuario_id,
             tarjetas: tarjetas,
             nombre_archivo: nombreArchivo
           })
@@ -411,11 +421,17 @@
       let errorIA = null;
       let iaTerminada = false;
       // Llamada a la IA
+      const authHeaders = await obtenerAuthHeaders();
+      if (!authHeaders) return;
       fetch("https://oposicion-age.onrender.com/generar-tarjetas-desde-pdf", {
         method: "POST",
+        headers: authHeaders,
         body: formData
       })
       .then(async res => {
+        if (res.status === 403) {
+          throw new Error("Esta herramienta requiere el plan Premium. Ve a /planes/ para activarlo.");
+        }
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
           throw new Error(errorData.error || `Error del servidor: ${res.status}`);

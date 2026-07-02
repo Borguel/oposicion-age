@@ -1,4 +1,12 @@
-const usuarioEmail = window.usuarioEmail || "usuario_prueba";
+async function obtenerAuthHeaders() {
+  const { idToken } = await import("/assets/auth.js");
+  const token = await idToken();
+  if (!token) {
+    window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
+    return null;
+  }
+  return { "Authorization": "Bearer " + token };
+}
 
 let preguntas = [];
 let respuestasUsuario = [];
@@ -164,11 +172,12 @@ async function mostrarResultados() {
 
   // guardar test en Firestore
   try {
+    const authHeaders = await obtenerAuthHeaders();
+    if (!authHeaders) return;
     await fetch("https://oposicion-age.onrender.com/guardar-test", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders },
       body: JSON.stringify({
-        usuario_id: usuarioEmail,
         contenido: preguntas,
         respuestas: respuestasUsuario,
         metadatos: {
@@ -188,7 +197,9 @@ async function mostrarResultados() {
 // Carga el último test al cargar la página
 window.addEventListener("load", async () => {
   try {
-    const res = await fetch(`https://oposicion-age.onrender.com/ultimo-test?usuario_id=${usuarioEmail}`);
+    const authHeaders = await obtenerAuthHeaders();
+    if (!authHeaders) return;
+    const res = await fetch("https://oposicion-age.onrender.com/ultimo-test", { headers: authHeaders });
     const datos = await res.json();
 
     if (!datos.test || datos.test.length === 0) {

@@ -1,4 +1,14 @@
-let preguntas = [];
+async function obtenerAuthHeaders() {
+      const { idToken } = await import("/assets/auth.js");
+      const token = await idToken();
+      if (!token) {
+        window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
+        return null;
+      }
+      return { "Authorization": "Bearer " + token };
+    }
+
+    let preguntas = [];
     let indicePreguntaActual = 0;
     let respuestasUsuario = [];
     let tiempoInicio;
@@ -40,7 +50,6 @@ let preguntas = [];
     });
 
     async function guardarTestAutomaticamente() {
-      const usuario_id = window.usuarioEmail || "usuario_prueba";
       const contenido = preguntas;
       const respuestas = respuestasUsuario;
       const tipo = document.getElementById('tipo_test').value;
@@ -53,10 +62,12 @@ let preguntas = [];
       }
       const metadatos = { tipo, tiempo, temas };
       try {
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
         const res = await fetch("https://oposicion-age.onrender.com/guardar-test", {
           method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ usuario_id, contenido, respuestas, metadatos })
+          headers: {"Content-Type": "application/json", ...authHeaders},
+          body: JSON.stringify({ contenido, respuestas, metadatos })
         });
         const datos = await res.json();
         if (!res.ok) {
@@ -71,7 +82,9 @@ let preguntas = [];
       const contenedor = document.getElementById("lista-temas");
       contenedor.innerHTML = "<p>Cargando temas...</p>";
       try {
-        const res = await fetch("https://oposicion-age.onrender.com/temas-disponibles");
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
+        const res = await fetch("https://oposicion-age.onrender.com/temas-disponibles", { headers: authHeaders });
         const datos = await res.json();
         listaTemasGlobal = datos.temas || [];
         if (listaTemasGlobal.length === 0) {
@@ -200,12 +213,22 @@ let preguntas = [];
         }
       }, 190);
       try {
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) { clearInterval(intervalCarga); return; }
         const res = await fetch("https://oposicion-age.onrender.com" + endpoint, {
           method: "POST",
-          headers: {"Content-Type": "application/json"},
+          headers: {"Content-Type": "application/json", ...authHeaders},
           body: JSON.stringify({ temas, num_preguntas })
         });
         clearInterval(intervalCarga);
+        if (res.status === 403) {
+          const datosError = await res.json();
+          document.getElementById('contenedor-test').innerHTML = `
+            <p>${datosError.error === "Requiere plan superior" ? `Este tipo de test requiere el plan <strong>${datosError.plan_requerido}</strong>.` : "No tienes acceso a esta función."}</p>
+            <a class="btn btn-primary" href="/planes/">Ver planes</a>
+          `;
+          return;
+        }
         const datos = await res.json();
         preguntas = datos.test || [];
         if (preguntas.length === 0) {

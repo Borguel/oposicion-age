@@ -1,7 +1,7 @@
 from datetime import datetime
 from google.cloud import firestore
 
-def inicializar_estadisticas_usuario(db, usuario_id):
+def inicializar_estadisticas_usuario(db, usuario_id, email=None):
     doc_ref = db.collection("usuarios").document(usuario_id)
     if not doc_ref.get().exists:
         doc_ref.set({
@@ -27,7 +27,15 @@ def inicializar_estadisticas_usuario(db, usuario_id):
             "esquemas_pdf_realizados": 0,
             "tarjetas_pdf_realizados": 0,
             "total_archivos_procesados": 0,
-            "fecha_creacion": datetime.utcnow().isoformat()
+            "fecha_creacion": datetime.utcnow().isoformat(),
+            # CAMPOS DE IDENTIDAD Y SUSCRIPCIÓN (Firebase Auth + Stripe)
+            "email": email,
+            "plan": "gratis",
+            "stripe_customer_id": None,
+            "stripe_subscription_id": None,
+            "subscription_status": None,
+            "plan_updated_at": datetime.utcnow().isoformat(),
+            "current_period_end": None
         })
 
 def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None):
@@ -159,6 +167,42 @@ def actualizar_estadisticas_pdf(db, usuario_id, tipo_pdf):
         field_updates["esquemas_pdf_realizados"] = firestore.Increment(1)
     elif tipo_pdf == "tarjetas_pdf":
         field_updates["tarjetas_pdf_realizados"] = firestore.Increment(1)
-    
+
     # Aplicar actualizaciones
     doc_ref.update(field_updates)
+
+def actualizar_suscripcion(db, usuario_id, plan=None, stripe_customer_id=None,
+                            stripe_subscription_id=None, subscription_status=None,
+                            current_period_end=None):
+    """Sincroniza en Firestore el estado de la suscripción de Stripe de un usuario.
+    Solo se actualizan los campos que se pasan (distintos de None), salvo
+    stripe_customer_id, que si se pasa se guarda aunque sea la primera vez."""
+    doc_ref = db.collection("usuarios").document(usuario_id)
+    if not doc_ref.get().exists:
+        inicializar_estadisticas_usuario(db, usuario_id)
+
+    field_updates = {"plan_updated_at": datetime.utcnow().isoformat()}
+    if plan is not None:
+        field_updates["plan"] = plan
+    if stripe_customer_id is not None:
+        field_updates["stripe_customer_id"] = stripe_customer_id
+    if stripe_subscription_id is not None:
+        field_updates["stripe_subscription_id"] = stripe_subscription_id
+    if subscription_status is not None:
+        field_updates["subscription_status"] = subscription_status
+    if current_period_end is not None:
+        field_updates["current_period_end"] = current_period_end
+
+    doc_ref.update(field_updates)
+
+def obtener_perfil_usuario(db, usuario_id):
+    """Datos mínimos de plan/suscripción para pintar la UI del frontend."""
+    doc = db.collection("usuarios").document(usuario_id).get()
+    if not doc.exists:
+        return {"plan": "gratis", "subscription_status": None}
+    datos = doc.to_dict() or {}
+    return {
+        "plan": datos.get("plan", "gratis"),
+        "subscription_status": datos.get("subscription_status"),
+        "current_period_end": datos.get("current_period_end")
+    }

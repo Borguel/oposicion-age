@@ -1,7 +1,9 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 from guardar_resultado import guardar_resultado_en_firestore
+from auth_utils import requiere_login
 
 def guardar_test_route(db):
+    @requiere_login(db)
     def guardar_test():
         datos = request.get_json()
         contenido = datos.get("contenido", [])
@@ -12,7 +14,7 @@ def guardar_test_route(db):
             db=db,
             tipo="test",
             contenido=contenido,
-            usuario_id=datos.get("usuario_id", "usuario_prueba"),
+            usuario_id=g.uid,
             metadatos=metadatos
         )
         return jsonify({"mensaje": "Test guardado correctamente"})
@@ -21,13 +23,14 @@ def guardar_test_route(db):
     return guardar_test
 
 def guardar_esquema_route(db):
+    @requiere_login(db)
     def guardar_esquema():
         datos = request.get_json()
         resultado = guardar_resultado_en_firestore(
             db=db,
             tipo="esquema",
             contenido=datos.get("contenido", {}),
-            usuario_id=datos.get("usuario_id", "usuario_prueba"),
+            usuario_id=g.uid,
             metadatos=datos.get("metadatos", {})
         )
         return jsonify({"mensaje": "Esquema guardado correctamente"})

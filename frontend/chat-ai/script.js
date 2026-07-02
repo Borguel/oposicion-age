@@ -1,3 +1,14 @@
+// ===== AUTENTICACIÓN =====
+async function obtenerAuthHeaders() {
+  const { idToken } = await import("/assets/auth.js");
+  const token = await idToken();
+  if (!token) {
+    window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
+    return null;
+  }
+  return { "Authorization": "Bearer " + token };
+}
+
 // ===== FUNCIONES AUXILIARES =====
 function escapeHtml(text) {
   const map = { '&': '&amp;', '<': '<', '>': '>', '"': '&quot;', "'": '&#039;' };
@@ -95,7 +106,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ENVÍO
-  function enviarMensaje() {
+  async function enviarMensaje() {
     const texto = input.value.trim();
     if (!texto) return;
 
@@ -104,24 +115,31 @@ document.addEventListener("DOMContentLoaded", function () {
     input.style.height = "auto";
     input.style.height = Math.min(input.scrollHeight, 110) + "px";
 
+    const authHeaders = await obtenerAuthHeaders();
+    if (!authHeaders) return;
+
     mostrarTyping(true);
 
     fetch("https://oposicion-age.onrender.com/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders },
       body: JSON.stringify({
         mensaje: texto,
         temas: [],
-        usuario_id: typeof usuarioEmail !== "undefined" ? usuarioEmail : "anonimo",
         chat_id: chatIdActual
       }),
       signal: AbortSignal.timeout(10000)
     })
       .then(res => {
         mostrarTyping(false);
+        if (res.status === 403) {
+          agregarMensaje("bot", "🔒 El chat con IA requiere el plan Premium. Ve a /planes/ para activarlo.");
+          return null;
+        }
         return res.json();
       })
       .then(data => {
+        if (!data) return;
         agregarMensaje("bot", data.respuesta || "Sin respuesta.");
         chatIdActual = data.chat_id;
         cargarHistorial();
@@ -136,9 +154,10 @@ document.addEventListener("DOMContentLoaded", function () {
   let conversaciones = [];
   let chatIdActual = null;
 
-  function cargarHistorial() {
-    const id = typeof usuarioEmail !== "undefined" ? usuarioEmail : "anonimo";
-    fetch(`https://oposicion-age.onrender.com/conversaciones?usuario_id=${encodeURIComponent(id)}`)
+  async function cargarHistorial() {
+    const authHeaders = await obtenerAuthHeaders();
+    if (!authHeaders) return;
+    fetch("https://oposicion-age.onrender.com/conversaciones", { headers: authHeaders })
       .then(res => res.json())
       .then(data => {
         conversaciones = data.conversaciones || [];
@@ -169,12 +188,13 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  function cargarConversacion(id) {
+  async function cargarConversacion(id) {
     chatMessages.innerHTML = "";
     chatIdActual = id;
     mostrarTyping(true);
-    const idUser = typeof usuarioEmail !== "undefined" ? usuarioEmail : "anonimo";
-    fetch(`https://oposicion-age.onrender.com/conversacion/${id}?usuario_id=${encodeURIComponent(idUser)}`)
+    const authHeaders = await obtenerAuthHeaders();
+    if (!authHeaders) return;
+    fetch(`https://oposicion-age.onrender.com/conversacion/${id}`, { headers: authHeaders })
       .then(res => res.json())
       .then(data => {
         mostrarTyping(false);

@@ -1,5 +1,12 @@
-const usuario_id = window.usuarioEmail || "";
-    console.log("usuario_id que se va a enviar:", usuario_id);
+async function obtenerAuthHeaders() {
+      const { idToken } = await import("/assets/auth.js");
+      const token = await idToken();
+      if (!token) {
+        window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
+        return null;
+      }
+      return { "Authorization": "Bearer " + token };
+    }
 
     let preguntas = [];
     let indicePreguntaActual = 0;
@@ -72,10 +79,12 @@ const usuario_id = window.usuarioEmail || "";
       }, 60);
 
       try {
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) { clearInterval(intervalCarga); return; }
         const res = await fetch("https://oposicion-age.onrender.com/generar-test-fallos", {
           method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ usuario_id, num_preguntas })
+          headers: {"Content-Type": "application/json", ...authHeaders},
+          body: JSON.stringify({ num_preguntas })
         });
         
         clearInterval(intervalCarga);
@@ -182,18 +191,19 @@ const usuario_id = window.usuarioEmail || "";
     }
 
     async function guardarTestFalladasAutomaticamente() {
-      const usuario_id = window.usuarioEmail || "usuario_prueba";
       const contenido = preguntas;
       const respuestas = respuestasUsuario;
       const tipo = "falladas";
       const tiempo = Math.floor((Date.now() - tiempoInicio) / 1000);
       const metadatos = { tipo, tiempo };
-      
+
       try {
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
         const res = await fetch("https://oposicion-age.onrender.com/guardar-test", {
           method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ usuario_id, contenido, respuestas, metadatos })
+          headers: {"Content-Type": "application/json", ...authHeaders},
+          body: JSON.stringify({ contenido, respuestas, metadatos })
         });
         
         const datos = await res.json();

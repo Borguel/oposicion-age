@@ -1,3 +1,13 @@
+async function obtenerAuthHeaders() {
+    const { idToken } = await import("/assets/auth.js");
+    const token = await idToken();
+    if (!token) {
+        window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
+        return null;
+    }
+    return { "Authorization": "Bearer " + token };
+}
+
 document.addEventListener("DOMContentLoaded", function() {
             // Elementos DOM
             const input = document.getElementById("chat-input");
@@ -138,15 +148,25 @@ document.addEventListener("DOMContentLoaded", function() {
                 mostrarTypingIndicator();
                 
                 // Simular respuesta mientras se conecta con la API
-                setTimeout(() => {
+                setTimeout(async () => {
+                    const authHeaders = await obtenerAuthHeaders();
+                    if (!authHeaders) { ocultarTypingIndicator(); return; }
                     // Enviar a la API usando tu endpoint
                     fetch("https://oposicion-age.onrender.com/consultar-asistente-examen", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: { "Content-Type": "application/json", ...authHeaders },
                         body: JSON.stringify({ mensaje: texto })
                     })
-                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === 403) {
+                            ocultarTypingIndicator();
+                            agregarMensaje("bot", "🔒 El asistente premium requiere el plan Premium. Ve a /planes/ para activarlo.");
+                            return null;
+                        }
+                        return res.json();
+                    })
                     .then(data => {
+                        if (!data) return;
                         ocultarTypingIndicator();
                         if (data.respuesta) {
                             agregarMensaje("bot", data.respuesta);

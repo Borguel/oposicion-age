@@ -1,4 +1,14 @@
-let preguntas = [];
+async function obtenerAuthHeaders() {
+      const { idToken } = await import("/assets/auth.js");
+      const token = await idToken();
+      if (!token) {
+        window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
+        return null;
+      }
+      return { "Authorization": "Bearer " + token };
+    }
+
+    let preguntas = [];
     let indicePreguntaActual = 0;
     let respuestasUsuario = [];
     let tiempoInicio;
@@ -58,12 +68,11 @@ let preguntas = [];
 
     // === GUARDADO EN FIRESTORE VIA BACKEND ===
     async function guardarTestEnBackend() {
-      const usuario_id = window.usuarioEmail || "anonimo";
       const contenido = preguntas;
       const respuestas = respuestasUsuario;
       const nombreArchivo = document.getElementById('archivo-pdf').files[0]?.name || "documento.pdf";
       const tiempo = Math.floor((Date.now() - tiempoInicio) / 1000);
-      
+
       const metadatos = {
         tipo: "test_pdf",
         tiempo: tiempo,
@@ -72,12 +81,13 @@ let preguntas = [];
       };
 
       try {
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
         const res = await fetch("https://oposicion-age.onrender.com/guardar-test-pdf", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({
-            usuario_id: usuario_id,
-            test_data: { 
+            test_data: {
               preguntas: contenido,
               respuestas: respuestas,
               metadatos: metadatos
@@ -204,31 +214,37 @@ let preguntas = [];
         }
       }, 500); // Más rápido: 0.5 segundos por 1%
 
-      const endpoints = [
-        "https://oposicion-age.onrender.com/generar-test-pdf",
-        "https://oposicion-age.onrender.com/generar_test_pdf", 
-        "https://oposicion-age.onrender.com/generar-test-desde-pdf"
-      ];
+      const authHeaders = await obtenerAuthHeaders();
+      if (!authHeaders) { clearInterval(intervaloProgreso); return; }
 
       // Ejecutar la petición en segundo plano
       let peticionExitosa = false;
-      for (const url of endpoints) {
-        try {
-          const res = await fetch(url, { method: "POST", body: formData });
-          if (res.ok) {
-            const datos = await res.json();
-            if (datos.test && datos.test.length > 0) {
-              datosIA = datos;
-              peticionExitosa = true;
-              break;
-            }
+      let requierePlanSuperior = false;
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/generar-test-desde-pdf", {
+          method: "POST",
+          headers: authHeaders,
+          body: formData
+        });
+        if (res.status === 403) {
+          requierePlanSuperior = true;
+        } else if (res.ok) {
+          const datos = await res.json();
+          if (datos.test && datos.test.length > 0) {
+            datosIA = datos;
+            peticionExitosa = true;
           }
-        } catch (err) {
-          console.warn(`Fallo en endpoint: ${url}`, err);
         }
+      } catch (err) {
+        console.warn("Fallo generando test desde PDF", err);
       }
 
-      if (!peticionExitosa) errorIA = new Error("Ningún endpoint devolvió preguntas válidas.");
+      if (requierePlanSuperior) {
+        clearInterval(intervaloProgreso);
+        mostrarError("Esta herramienta requiere el plan Premium. Ve a /planes/ para activarlo.");
+        return;
+      }
+      if (!peticionExitosa) errorIA = new Error("No se pudieron generar preguntas válidas desde el PDF.");
 
       // Detener el intervalo de progreso
       clearInterval(intervaloProgreso);

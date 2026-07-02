@@ -1,5 +1,14 @@
+async function obtenerAuthHeaders() {
+  const { idToken } = await import("/assets/auth.js");
+  const token = await idToken();
+  if (!token) {
+    window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
+    return null;
+  }
+  return { "Authorization": "Bearer " + token };
+}
+
 document.addEventListener("DOMContentLoaded", async function () {
-  const email = window.usuarioEmail || "test@ejemplo.com";
   const refreshBtn = document.getElementById("estadisticas-refresh");
   const modal = document.getElementById("modal-temas");
   const modalCerrar = document.querySelector(".modal-cerrar");
@@ -31,10 +40,13 @@ document.addEventListener("DOMContentLoaded", async function () {
       refreshBtn.classList.add('loading');
       refreshBtn.disabled = true;
 
+      const authHeaders = await obtenerAuthHeaders();
+      if (!authHeaders) return;
+
       // NUEVO: Usar la ruta de estadísticas completas que incluye datos PDF
       const [estadisticasRes, temasRes] = await Promise.all([
-        fetch(`https://oposicion-age.onrender.com/estadisticas-completas?usuario_id=${email}`),
-        fetch("https://oposicion-age.onrender.com/temas-disponibles")
+        fetch("https://oposicion-age.onrender.com/estadisticas-completas", { headers: authHeaders }),
+        fetch("https://oposicion-age.onrender.com/temas-disponibles", { headers: authHeaders })
       ]);
       const estadisticasData = await estadisticasRes.json();
       const temasData = await temasRes.json();
@@ -43,7 +55,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       // Si hay error, usar la ruta antigua como fallback
       if (estadisticas.error) {
         console.warn("Usando ruta antigua como fallback");
-        const resumenRes = await fetch(`https://oposicion-age.onrender.com/resumen-progreso?usuario_id=${email}`);
+        const resumenRes = await fetch("https://oposicion-age.onrender.com/resumen-progreso", { headers: authHeaders });
         const resumenData = await resumenRes.json();
         procesarDatos(resumenData.resumen ?? {}, temasData.temas || []);
       } else {
