@@ -24,6 +24,8 @@
         <label for="password">Contraseña</label>
         <input type="password" id="password" required autocomplete="current-password" minlength="6" />
 
+        <button type="button" id="btn-olvide-password" class="login-link-olvide">¿Olvidaste tu contraseña?</button>
+
         <div id="mensaje-error" class="mensaje-error" style="display:none;"></div>
 
         <button type="submit" class="btn-primary" id="btn-submit">Iniciar sesión</button>
@@ -67,6 +69,25 @@
 
         <button type="submit" class="btn-primary" id="btn-perfil-submit">Continuar</button>
       </form>
+    </div>
+  </div>
+
+  <div class="login-modal-overlay" id="modal-recuperar" style="display:none;">
+    <div class="login-card login-modal-card">
+      <h2 class="login-titulo">Recuperar contraseña</h2>
+      <p class="login-subtitulo">Te enviaremos un enlace a tu correo para crear una nueva contraseña.</p>
+      <form id="form-recuperar">
+        <label for="recuperar-email">Correo electrónico</label>
+        <input type="email" id="recuperar-email" required autocomplete="email" />
+
+        <div id="recuperar-mensaje-error" class="mensaje-error" style="display:none;"></div>
+
+        <button type="submit" class="btn-primary" id="btn-recuperar-submit">Enviar enlace</button>
+      </form>
+      <div id="recuperar-mensaje-ok" class="login-mensaje-ok" style="display:none;">
+        Si existe una cuenta con ese correo, te hemos enviado un enlace para restablecer la contraseña. Revisa también la carpeta de spam.
+      </div>
+      <button type="button" class="btn-secundario" id="btn-recuperar-cancelar">Cancelar</button>
     </div>
   </div>
 

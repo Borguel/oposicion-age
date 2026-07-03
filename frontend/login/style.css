@@ -49,7 +49,8 @@ body {
 }
 
 #form-auth label,
-#form-perfil label {
+#form-perfil label,
+#form-recuperar label {
   display: block;
   font-size: 13px;
   font-weight: 600;
@@ -58,7 +59,8 @@ body {
 }
 
 #form-auth input,
-#form-perfil input {
+#form-perfil input,
+#form-recuperar input {
   width: 100%;
   padding: 11px 14px;
   border-radius: var(--age-radius-sm);
@@ -178,4 +180,67 @@ body {
 
 .login-legal a:hover {
   color: var(--age-primary-dark);
+}
+
+.login-link-olvide {
+  display: block;
+  margin: 8px 0 0;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--age-font);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--age-primary-dark);
+  cursor: pointer;
+  text-align: right;
+  width: 100%;
+}
+
+.login-link-olvide:hover {
+  text-decoration: underline;
+}
+
+.login-mensaje-ok {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--age-radius-sm);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.login-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 20, 30, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 500;
+}
+
+.login-modal-card {
+  box-shadow: var(--age-shadow-hover, var(--age-shadow));
+}
+
+.btn-secundario {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 0;
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-sm);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-family: var(--age-font);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s var(--age-ease);
+}
+
+.btn-secundario:hover {
+  background: var(--age-neutral-bg, var(--age-bg));
 }

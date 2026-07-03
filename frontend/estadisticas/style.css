@@ -137,6 +137,100 @@
       margin-bottom: 40px;
     }
 
+    .tarjeta-recomendacion {
+      display: flex;
+      gap: 18px;
+      background: var(--age-primary-soft);
+      border: 1.5px solid var(--age-primary);
+      border-radius: var(--age-radius-lg);
+      padding: 24px 26px;
+      margin-bottom: 28px;
+    }
+
+    .tarjeta-recomendacion .recomendacion-icono {
+      font-size: 2rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .tarjeta-recomendacion h4 {
+      margin: 0 0 4px;
+      font-size: 1.1rem;
+      color: var(--age-ink);
+    }
+
+    .tarjeta-recomendacion p {
+      margin: 0 0 14px;
+      color: var(--age-ink-soft);
+      font-size: 0.92rem;
+    }
+
+    .tarjeta-recomendacion ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tarjeta-recomendacion li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-md);
+      padding: 10px 14px;
+    }
+
+    .tarjeta-recomendacion .tema-flojo-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .tarjeta-recomendacion .tema-flojo-nombre {
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--age-ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tarjeta-recomendacion .tema-flojo-porcentaje {
+      font-size: 0.82rem;
+      color: var(--age-danger);
+      font-weight: 600;
+    }
+
+    .tarjeta-recomendacion .btn-repasar-tema {
+      flex-shrink: 0;
+      background: var(--age-primary);
+      color: #1b1f2e;
+      border: none;
+      border-radius: var(--age-radius-sm);
+      padding: 8px 16px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .tarjeta-recomendacion .btn-repasar-tema:hover {
+      background: var(--age-primary-dark);
+    }
+
+    @media (max-width: 640px) {
+      .tarjeta-recomendacion {
+        flex-direction: column;
+      }
+    }
+
     .tarjeta-estadistica {
       background: var(--theme-content-bg);
       border: 1px solid var(--theme-border);

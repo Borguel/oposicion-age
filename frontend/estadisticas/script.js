@@ -167,6 +167,49 @@ document.addEventListener("DOMContentLoaded", async function () {
     temasFiltrados = noEstudiados;
     todosLosTemas = todosTemas;
     mostrarTemasNoEstudiados(noEstudiados, todosTemas);
+    mostrarTemasFlojos(rendimientoPorTema, todosTemas);
+  }
+
+  // "Tema flojo" = ha respondido al menos 3 preguntas de ese tema (para que
+  // no sea ruido de una sola pregunta con mala suerte) y acierta menos del
+  // 60%. Se muestran como mucho los 3 peores, de menor a mayor acierto.
+  const UMBRAL_ACIERTO_FLOJO = 60;
+  const MINIMO_PREGUNTAS_FLOJO = 3;
+
+  function mostrarTemasFlojos(rendimientoPorTema, todosTemas) {
+    const tarjeta = document.getElementById("tarjeta-temas-flojos");
+    const lista = document.getElementById("lista-temas-flojos");
+
+    const temasFlojos = Object.entries(rendimientoPorTema || {})
+      .map(([id, r]) => {
+        const respondidas = (r.aciertos || 0) + (r.fallos || 0);
+        const porcentaje = respondidas > 0 ? Math.round((r.aciertos / respondidas) * 100) : null;
+        return { id, respondidas, porcentaje };
+      })
+      .filter(t => t.respondidas >= MINIMO_PREGUNTAS_FLOJO && t.porcentaje !== null && t.porcentaje < UMBRAL_ACIERTO_FLOJO)
+      .sort((a, b) => a.porcentaje - b.porcentaje)
+      .slice(0, 3);
+
+    if (temasFlojos.length === 0) {
+      tarjeta.style.display = "none";
+      return;
+    }
+
+    lista.innerHTML = "";
+    temasFlojos.forEach(t => {
+      const tema = todosTemas.find(x => x.id === t.id);
+      const nombre = tema ? tema.titulo : `Tema ${t.id}`;
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <div class="tema-flojo-info">
+          <span class="tema-flojo-nombre" title="${nombre}">${nombre}</span>
+          <span class="tema-flojo-porcentaje">${t.porcentaje}% de acierto</span>
+        </div>
+        <a class="btn-repasar-tema" href="/test-generator/?temas=${encodeURIComponent(t.id)}">Repasar</a>
+      `;
+      lista.appendChild(li);
+    });
+    tarjeta.style.display = "flex";
   }
 
   function actualizarTemas(temasEntries, todosTemas, rendimientoPorTema) {

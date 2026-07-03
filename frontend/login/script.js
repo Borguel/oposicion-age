@@ -1,4 +1,4 @@
-import { signIn, signUp, signInWithGoogle, idToken } from "/assets/auth.js";
+import { signIn, signUp, signInWithGoogle, idToken, recuperarContrasena } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 
 const tabLogin = document.getElementById("tab-login");
@@ -13,6 +13,14 @@ const pasoPerfil = document.getElementById("paso-perfil");
 const formPerfil = document.getElementById("form-perfil");
 const btnPerfilSubmit = document.getElementById("btn-perfil-submit");
 const perfilMensajeError = document.getElementById("perfil-mensaje-error");
+
+const btnOlvidePassword = document.getElementById("btn-olvide-password");
+const modalRecuperar = document.getElementById("modal-recuperar");
+const formRecuperar = document.getElementById("form-recuperar");
+const btnRecuperarSubmit = document.getElementById("btn-recuperar-submit");
+const btnRecuperarCancelar = document.getElementById("btn-recuperar-cancelar");
+const recuperarMensajeError = document.getElementById("recuperar-mensaje-error");
+const recuperarMensajeOk = document.getElementById("recuperar-mensaje-ok");
 
 let modo = "login";
 
@@ -55,7 +63,13 @@ const MENSAJES_ERROR = {
   "auth/invalid-credential": "Correo o contraseña incorrectos.",
   "auth/email-already-in-use": "Ya existe una cuenta con ese correo.",
   "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
-  "auth/popup-closed-by-user": "Has cerrado la ventana de Google antes de terminar."
+  "auth/popup-closed-by-user": "Has cerrado la ventana de Google antes de terminar.",
+  "auth/popup-blocked": "Tu navegador ha bloqueado la ventana de Google. Permite las ventanas emergentes para este sitio e inténtalo de nuevo.",
+  "auth/cancelled-popup-request": "Ya había una ventana de Google abierta. Inténtalo de nuevo.",
+  "auth/unauthorized-domain": "Este dominio no está autorizado para iniciar sesión con Google. Contacta con el soporte de la web.",
+  "auth/account-exists-with-different-credential": "Ya existe una cuenta con ese correo usando otro método de acceso (contraseña). Inicia sesión con tu contraseña.",
+  "auth/operation-not-allowed": "El inicio de sesión con Google no está disponible ahora mismo. Inténtalo más tarde o usa correo y contraseña.",
+  "auth/network-request-failed": "No se pudo conectar. Revisa tu conexión a internet e inténtalo de nuevo."
 };
 
 form.addEventListener("submit", async (evento) => {
@@ -99,6 +113,50 @@ btnGoogle.addEventListener("click", async () => {
     mensajeError.style.display = "block";
   } finally {
     btnGoogle.disabled = false;
+  }
+});
+
+function abrirModalRecuperar() {
+  document.getElementById("recuperar-email").value = document.getElementById("email").value.trim();
+  recuperarMensajeError.style.display = "none";
+  recuperarMensajeOk.style.display = "none";
+  formRecuperar.style.display = "block";
+  btnRecuperarSubmit.disabled = false;
+  modalRecuperar.style.display = "flex";
+}
+
+function cerrarModalRecuperar() {
+  modalRecuperar.style.display = "none";
+}
+
+btnOlvidePassword.addEventListener("click", abrirModalRecuperar);
+btnRecuperarCancelar.addEventListener("click", cerrarModalRecuperar);
+modalRecuperar.addEventListener("click", (evento) => {
+  if (evento.target === modalRecuperar) cerrarModalRecuperar();
+});
+
+formRecuperar.addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  recuperarMensajeError.style.display = "none";
+  btnRecuperarSubmit.disabled = true;
+
+  const email = document.getElementById("recuperar-email").value.trim();
+
+  try {
+    await recuperarContrasena(email);
+    formRecuperar.style.display = "none";
+    recuperarMensajeOk.style.display = "block";
+  } catch (error) {
+    if (error.code === "auth/invalid-email") {
+      recuperarMensajeError.textContent = MENSAJES_ERROR[error.code];
+      recuperarMensajeError.style.display = "block";
+      btnRecuperarSubmit.disabled = false;
+    } else {
+      // Por seguridad, no revelamos si el correo existe o no: cualquier otro
+      // error (p. ej. user-not-found) se trata igual que un envío correcto.
+      formRecuperar.style.display = "none";
+      recuperarMensajeOk.style.display = "block";
+    }
   }
 });
 

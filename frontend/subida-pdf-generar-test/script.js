@@ -192,8 +192,6 @@ async function obtenerAuthHeaders() {
       if (!authHeaders) { clearInterval(intervaloMensajes); return; }
 
       // Ejecutar la petición en segundo plano
-      let peticionExitosa = false;
-      let requierePlanSuperior = false;
       try {
         const res = await fetch("https://oposicion-age.onrender.com/generar-test-desde-pdf", {
           method: "POST",
@@ -201,25 +199,22 @@ async function obtenerAuthHeaders() {
           body: formData
         });
         if (res.status === 403) {
-          requierePlanSuperior = true;
-        } else if (res.ok) {
-          const datos = await res.json();
-          if (datos.test && datos.test.length > 0) {
-            datosIA = datos;
-            peticionExitosa = true;
-          }
+          throw new Error("Esta herramienta requiere el plan Premium. Ve a /planes/ para activarlo.");
         }
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+        }
+        const datos = await res.json();
+        if (!datos.test || datos.test.length === 0) {
+          throw new Error(datos.error || "No se pudieron generar preguntas válidas desde el PDF.");
+        }
+        datosIA = datos;
       } catch (err) {
-        console.warn("Fallo generando test desde PDF", err);
+        errorIA = err;
       }
 
       clearInterval(intervaloMensajes);
-
-      if (requierePlanSuperior) {
-        mostrarError("Esta herramienta requiere el plan Premium. Ve a /planes/ para activarlo.");
-        return;
-      }
-      if (!peticionExitosa) errorIA = new Error("No se pudieron generar preguntas válidas desde el PDF.");
 
       if (errorIA) {
         mostrarError(errorIA.message || "Error al generar el test.");

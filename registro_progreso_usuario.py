@@ -2,6 +2,7 @@ from datetime import datetime
 from google.cloud import firestore
 
 from oposiciones import OPOSICION_POR_DEFECTO
+from email_utils import enviar_email_bienvenida
 
 def inicializar_estadisticas_usuario(db, usuario_id, email=None):
     doc_ref = db.collection("usuarios").document(usuario_id)
@@ -39,6 +40,7 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None):
             "stripe_customer_id": None,
             "suscripciones": {},
         })
+        enviar_email_bienvenida(email)
 
 def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None, rendimiento_temas=None):
     doc_ref = db.collection("usuarios").document(usuario_id)

@@ -93,6 +93,7 @@ def requiere_plan(db, minimo, global_check=False):
                 g.oposicion = obtener_oposicion_solicitada()
                 sub = suscripciones.get(g.oposicion, {}) or {}
                 plan_actual = sub.get("plan", "gratis")
+            g.plan_actual = plan_actual
 
             if ORDEN_PLANES.get(plan_actual, 0) < ORDEN_PLANES.get(minimo, 0):
                 return jsonify({"error": "Requiere plan superior", "plan_actual": plan_actual, "plan_requerido": minimo}), 403

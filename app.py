@@ -23,6 +23,7 @@ from guardar_resultado import guardar_resultado_en_firestore
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida, coleccion_temario, coleccion_examenes_oficiales
+from limites_uso import MAX_PAGINAS_PDF, verificar_limite_uso, registrar_uso
 # Cargar variables de entorno
 load_dotenv()
 print("🔑 Clave OpenAI:", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
@@ -48,6 +49,16 @@ if not cors_origins:
     cors_origins = ["http://localhost:8080", "http://127.0.0.1:8080"]
 CORS(app, origins=cors_origins)
 print(f"✅ CORS activado para: {cors_origins}")
+
+# Tamaño máximo de subida (20 MB): un PDF de exámenes normal pesa unos pocos
+# MB incluso con muchas páginas, así que esto solo frena subidas anómalas
+# (ficheros gigantes) antes de que lleguen a ocupar memoria del servidor.
+app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
+
+
+@app.errorhandler(413)
+def fichero_demasiado_grande(_error):
+    return jsonify({"error": "El archivo es demasiado grande (máximo 20 MB)."}), 413
 
 # Protección por API key: se activa automáticamente en cuanto se defina
 # API_SECRET_KEY en el entorno. Mientras no exista, el comportamiento no
@@ -390,8 +401,13 @@ def resumir_pdf():
     pdf_file = request.files['pdf']
     if pdf_file.filename == '':
         return jsonify({"error": "Nombre de archivo inválido"}), 400
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+        if len(pdf_reader.pages) > MAX_PAGINAS_PDF:
+            return jsonify({"error": f"El PDF tiene demasiadas páginas (máx. {MAX_PAGINAS_PDF}). Divide el documento en partes más pequeñas."}), 400
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
@@ -423,6 +439,7 @@ def resumir_pdf():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
+        registrar_uso(db, g.uid, "pdf_ia")
         data = response.json()
         resumen = data['choices'][0]['message']['content']
         return jsonify({"resumen": resumen})
@@ -441,8 +458,13 @@ def generar_esquema_desde_pdf():
     pdf_file = request.files['pdf']
     if pdf_file.filename == '':
         return jsonify({"error": "Nombre de archivo inválido"}), 400
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+        if len(pdf_reader.pages) > MAX_PAGINAS_PDF:
+            return jsonify({"error": f"El PDF tiene demasiadas páginas (máx. {MAX_PAGINAS_PDF}). Divide el documento en partes más pequeñas."}), 400
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
@@ -474,6 +496,7 @@ def generar_esquema_desde_pdf():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
+        registrar_uso(db, g.uid, "pdf_ia")
         data = response.json()
         esquema = data['choices'][0]['message']['content']
         return jsonify({"esquema": esquema})
@@ -493,8 +516,13 @@ def generar_test_desde_pdf():
             num_preguntas = 10
     except (ValueError, TypeError):
         num_preguntas = 10
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+        if len(pdf_reader.pages) > MAX_PAGINAS_PDF:
+            return jsonify({"error": f"El PDF tiene demasiadas páginas (máx. {MAX_PAGINAS_PDF}). Divide el documento en partes más pequeñas."}), 400
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
@@ -535,6 +563,7 @@ def generar_test_desde_pdf():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
+        registrar_uso(db, g.uid, "pdf_ia")
         data = response.json()
         respuesta = data['choices'][0]['message']['content']
         start_index = respuesta.find("[")
@@ -585,8 +614,13 @@ def generar_tarjetas_desde_pdf():
     pdf_file = request.files['pdf']
     if pdf_file.filename == '':
         return jsonify({"error": "Nombre de archivo inválido"}), 400
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+        if len(pdf_reader.pages) > MAX_PAGINAS_PDF:
+            return jsonify({"error": f"El PDF tiene demasiadas páginas (máx. {MAX_PAGINAS_PDF}). Divide el documento en partes más pequeñas."}), 400
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
@@ -639,6 +673,7 @@ def generar_tarjetas_desde_pdf():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
+        registrar_uso(db, g.uid, "pdf_ia")
         data = response.json()
         respuesta = data['choices'][0]['message']['content']
         start_index = respuesta.find("[")
@@ -674,6 +709,105 @@ def generar_tarjetas_desde_pdf():
             "error": f"Error al procesar el PDF o generar tarjetas: {str(e)}",
             "respuesta_cruda": respuesta[:500] if 'respuesta' in locals() else "N/A"
         }), 500
+
+# Nº de caracteres del PDF que se guardan para poder chatear sobre él. Se
+# recorta más que en resumen/esquema porque este texto se reenvía en el
+# prompt de CADA mensaje del chat (no una sola vez), así que hay que
+# mantenerlo comedido para no disparar el coste por conversación.
+MAX_CARACTERES_CHAT_PDF = 12000
+
+@app.route('/subir-pdf-chat', methods=['POST'])
+@requiere_plan(db, "premium", global_check=True)
+def subir_pdf_chat():
+    if 'pdf' not in request.files:
+        return jsonify({"error": "No se encontró archivo PDF"}), 400
+    pdf_file = request.files['pdf']
+    if pdf_file.filename == '':
+        return jsonify({"error": "Nombre de archivo inválido"}), 400
+    try:
+        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+        if len(pdf_reader.pages) > MAX_PAGINAS_PDF:
+            return jsonify({"error": f"El PDF tiene demasiadas páginas (máx. {MAX_PAGINAS_PDF}). Divide el documento en partes más pequeñas."}), 400
+        text = ""
+        for page in pdf_reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+        if not text.strip():
+            return jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400
+        db.collection("usuarios").document(g.uid).update({
+            "chat_pdf_activo": {
+                "texto": text[:MAX_CARACTERES_CHAT_PDF],
+                "nombre_archivo": pdf_file.filename,
+                "fecha": datetime.utcnow().isoformat()
+            }
+        })
+        return jsonify({
+            "mensaje": "PDF cargado correctamente",
+            "nombre_archivo": pdf_file.filename,
+            "paginas": len(pdf_reader.pages)
+        })
+    except Exception as e:
+        return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
+
+@app.route('/chat-pdf-mensaje', methods=['POST'])
+@requiere_plan(db, "premium", global_check=True)
+def chat_pdf_mensaje():
+    datos = request.get_json(silent=True) or {}
+    mensaje = (datos.get("mensaje") or "").strip()
+    if not mensaje:
+        return jsonify({"error": "Falta el mensaje"}), 400
+    historial = datos.get("historial") or []
+    if not isinstance(historial, list):
+        historial = []
+
+    doc = db.collection("usuarios").document(g.uid).get()
+    sesion = (doc.to_dict() or {}).get("chat_pdf_activo") or {}
+    texto_pdf = sesion.get("texto")
+    if not texto_pdf:
+        return jsonify({"error": "Primero sube un PDF para poder chatear sobre él."}), 400
+
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_pdf")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
+
+    try:
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
+        system_prompt = (
+            "Eres un asistente que ayuda a un opositor a entender un documento que ha subido. "
+            "Responde SOLO basándote en el contenido de este documento. Si la respuesta no está "
+            "en el documento, dilo claramente en vez de inventar información.\n\n"
+            f"Documento ({sesion.get('nombre_archivo', 'sin nombre')}):\n{texto_pdf}"
+        )
+        mensajes = [{"role": "system", "content": system_prompt}]
+        # Últimos turnos de la conversación, para que la IA recuerde el
+        # contexto sin dejar que el prompt crezca sin límite en chats largos.
+        for turno in historial[-12:]:
+            role = turno.get("role")
+            content = turno.get("content")
+            if role in ("user", "assistant") and content:
+                mensajes.append({"role": role, "content": str(content)[:2000]})
+        mensajes.append({"role": "user", "content": mensaje})
+
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": "deepseek-chat",
+            "messages": mensajes,
+            "temperature": 0.4,
+            "max_tokens": 800
+        }
+        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
+        if response.status_code != 200:
+            return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
+        registrar_uso(db, g.uid, "chat_pdf")
+        data_resp = response.json()
+        respuesta = data_resp['choices'][0]['message']['content']
+        return jsonify({"respuesta": respuesta})
+    except Exception as e:
+        return jsonify({"error": f"Error en el chat: {str(e)}"}), 500
+
 @app.route("/chat-deepseek", methods=["POST"])
 @requiere_plan(db, "premium", global_check=True)
 def chat_deepseek():
@@ -681,6 +815,9 @@ def chat_deepseek():
     mensaje = data.get("mensaje")
     if not mensaje:
         return jsonify({"error": "Falta el mensaje"}), 400
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_pdf")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     try:
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
@@ -698,6 +835,7 @@ def chat_deepseek():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
+        registrar_uso(db, g.uid, "chat_pdf")
         data = response.json()
         respuesta = data['choices'][0]['message']['content']
         return jsonify({"respuesta": respuesta})

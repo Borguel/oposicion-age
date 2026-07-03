@@ -10,6 +10,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   getAdditionalUserInfo,
+  sendPasswordResetEmail,
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { firebaseConfig } from "/assets/firebase-config.js";
@@ -41,6 +42,13 @@ export async function signInWithGoogle() {
     nombre: partes[0] || "",
     apellidos: partes.slice(1).join(" ")
   };
+}
+
+// Envía el correo de "restablecer contraseña" de Firebase. Firebase no dice
+// si el correo existe o no (para no filtrar qué correos están registrados),
+// así que desde fuera siempre se muestra el mismo mensaje de éxito.
+export function recuperarContrasena(email) {
+  return sendPasswordResetEmail(auth, email);
 }
 
 export function signOut() {

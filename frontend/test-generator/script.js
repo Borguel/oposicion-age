@@ -96,10 +96,17 @@ async function obtenerAuthHeaders() {
           return;
         }
         contenedor.innerHTML = "";
+        // Si se llega desde el enlace "repasar tema flojo" de estadísticas
+        // (?temas=id1,id2), se marcan esos temas para que el usuario solo
+        // tenga que pulsar "Generar test".
+        const temasPreseleccionados = new Set(
+          (new URLSearchParams(window.location.search).get("temas") || "")
+            .split(",").map(t => t.trim()).filter(Boolean)
+        );
         listaTemasGlobal.forEach(t => {
           const label = document.createElement("label");
           label.innerHTML = `
-            <input type="checkbox" name="tema" value="${t.id}">
+            <input type="checkbox" name="tema" value="${t.id}" ${temasPreseleccionados.has(t.id) ? "checked" : ""}>
             ${t.titulo}
           `;
           contenedor.appendChild(label);
