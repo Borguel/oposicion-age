@@ -7,12 +7,16 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  getAdditionalUserInfo,
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { firebaseConfig } from "/assets/firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
 export function signIn(email, password) {
   return signInWithEmailAndPassword(auth, email, password);
@@ -20,6 +24,22 @@ export function signIn(email, password) {
 
 export function signUp(email, password) {
   return createUserWithEmailAndPassword(auth, email, password);
+}
+
+// Inicia sesión (o crea la cuenta la primera vez) con Google. Devuelve
+// { user, esNuevo, nombre, apellidos } para poder pedir el resto de datos
+// del perfil solo quien entra por primera vez.
+export async function signInWithGoogle() {
+  const resultado = await signInWithPopup(auth, googleProvider);
+  const esNuevo = getAdditionalUserInfo(resultado)?.isNewUser ?? false;
+  const nombreCompleto = (resultado.user.displayName || "").trim();
+  const partes = nombreCompleto.split(/\s+/).filter(Boolean);
+  return {
+    user: resultado.user,
+    esNuevo,
+    nombre: partes[0] || "",
+    apellidos: partes.slice(1).join(" ")
+  };
 }
 
 export function signOut() {

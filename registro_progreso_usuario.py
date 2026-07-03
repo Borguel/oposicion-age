@@ -30,6 +30,10 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None):
             "fecha_creacion": datetime.utcnow().isoformat(),
             # CAMPOS DE IDENTIDAD Y SUSCRIPCIÓN (Firebase Auth + Stripe)
             "email": email,
+            "nombre": "",
+            "apellidos": "",
+            "telefono": "",
+            "direccion": "",
             "plan": "gratis",
             "stripe_customer_id": None,
             "stripe_subscription_id": None,
@@ -204,5 +208,10 @@ def obtener_perfil_usuario(db, usuario_id):
     return {
         "plan": datos.get("plan", "gratis"),
         "subscription_status": datos.get("subscription_status"),
-        "current_period_end": datos.get("current_period_end")
+        "current_period_end": datos.get("current_period_end"),
+        "email": datos.get("email"),
+        "nombre": datos.get("nombre", ""),
+        "apellidos": datos.get("apellidos", ""),
+        "telefono": datos.get("telefono", ""),
+        "direccion": datos.get("direccion", "")
     }

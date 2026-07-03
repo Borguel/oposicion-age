@@ -17,6 +17,16 @@ def registrar_rutas_progreso(app, db):
     @requiere_login(db)
     def registrar_usuario():
         # requiere_login ya crea el documento del usuario si no existía.
+        # Aquí solo completamos los datos básicos del perfil (si se mandan).
+        datos = request.get_json(silent=True) or {}
+        campos_permitidos = ("nombre", "apellidos", "telefono", "direccion")
+        actualizacion = {}
+        for campo in campos_permitidos:
+            valor = datos.get(campo)
+            if isinstance(valor, str) and valor.strip():
+                actualizacion[campo] = valor.strip()
+        if actualizacion:
+            db.collection("usuarios").document(g.uid).update(actualizacion)
         return jsonify({"mensaje": "Usuario registrado correctamente"})
 
     @app.route("/actualizar-progreso-test", methods=["POST"])
