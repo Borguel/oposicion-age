@@ -29,6 +29,7 @@ import os
 import pickle
 import re
 import sys
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from PyPDF2 import PdfReader
@@ -305,28 +306,32 @@ def clasificar_subbloque(texto_subbloque, bloque_num, norma_titulo=None):
     # sin ninguna pista de qué ley son, así que se lo indicamos aparte para
     # que la IA no tenga que adivinarlo solo por el contenido.
     contexto_norma = f"Este fragmento pertenece a la norma: \"{norma_titulo}\".\n\n" if norma_titulo else ""
+    # No se ofrece la opción de "no encaja en ninguno": es texto legal oficial
+    # del BOE y todo tiene que quedar clasificado en algún tema del bloque, aunque
+    # sea el que más se le acerque (p. ej. una norma de detalle técnico se cuelga
+    # del tema que trata esa misma norma de forma general).
     prompt = (
         f"Perteneces a un sistema que clasifica fragmentos de leyes españolas dentro del temario "
         f"oficial de una oposición. El bloque es \"{TEMARIO[bloque_num - 1]['bloque']}\", con estos temas:\n\n"
         f"{lista_temas}\n\n"
         f"{contexto_norma}"
         f"Lee este fragmento de texto legal y responde ÚNICAMENTE con el número del tema (1-{len(temas)}) "
-        f"al que pertenece mayoritariamente. Si de verdad no encaja en ninguno, responde 0.\n\n"
+        f"con el que más relación tenga, aunque no sea un encaje perfecto. Todo fragmento pertenece a algún "
+        f"tema del bloque, así que elige siempre el más cercano. Responde solo el número.\n\n"
         f"FRAGMENTO:\n{texto_subbloque[:3000]}"
     )
-    respuesta = call_deepseek_api(
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0,
-        max_tokens=10
-    )
-    if not respuesta:
-        return None
-    m = re.search(r"\d+", respuesta)
-    if not m:
-        return None
-    num = int(m.group())
-    if 1 <= num <= len(temas):
-        return num
+    for intento in range(2):
+        respuesta = call_deepseek_api(
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0,
+            max_tokens=10
+        )
+        if respuesta:
+            m = re.search(r"\d+", respuesta)
+            if m:
+                num = int(m.group())
+                if 1 <= num <= len(temas):
+                    return num
     return None
 
 
@@ -374,6 +379,21 @@ def construir_subbloques_clasificados(paginas, sumario, offset, limite_chunks=No
             completados += 1
             if completados % 25 == 0:
                 print(f"   ...clasificados {completados}/{len(tareas)}")
+
+    # Red de seguridad: si algún fragmento se quedó sin tema (p. ej. por un
+    # fallo puntual de red tras los reintentos), no se descarta -- se le
+    # asigna el tema más votado entre el resto de fragmentos de esa misma
+    # norma, ya que es lo más probable que trate del mismo tema.
+    pendientes = [r for r in resultados if not r["tema_num"]]
+    if pendientes:
+        votos_por_norma = {}
+        for r in resultados:
+            if r["tema_num"]:
+                votos_por_norma.setdefault(r["norma_numero"], Counter())[r["tema_num"]] += 1
+        for r in pendientes:
+            votos = votos_por_norma.get(r["norma_numero"])
+            r["tema_num"] = votos.most_common(1)[0][0] if votos else 1
+        print(f"🔧 {len(pendientes)} fragmentos sin clasificar por la IA se asignaron por mayoría de su misma norma.")
 
     return resultados
 
