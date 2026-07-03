@@ -162,3 +162,20 @@ body {
   color: var(--age-ink-soft);
   font-size: 14px;
 }
+
+.login-legal {
+  margin-top: 18px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--age-ink-soft);
+  text-align: center;
+}
+
+.login-legal a {
+  color: var(--age-ink-soft);
+  text-decoration: underline;
+}
+
+.login-legal a:hover {
+  color: var(--age-primary-dark);
+}

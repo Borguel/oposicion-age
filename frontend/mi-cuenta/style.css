@@ -6,7 +6,9 @@ body {
 
 .cuenta-wrap {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
   padding: 64px 20px;
 }
 
@@ -112,4 +114,59 @@ body {
 
 .btn-texto:hover {
   color: var(--age-ink);
+}
+
+.cuenta-subtitulo {
+  font-size: 1.15rem;
+  margin: 0 0 18px;
+  text-align: left;
+}
+
+#form-datos {
+  text-align: left;
+}
+
+#form-datos label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--age-ink-soft);
+  margin: 14px 0 6px;
+}
+
+#form-datos label:first-child {
+  margin-top: 0;
+}
+
+#form-datos input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: var(--age-radius-sm);
+  border: 1px solid var(--age-border);
+  font-family: var(--age-font);
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+#form-datos input:focus {
+  outline: none;
+  border-color: var(--age-primary);
+}
+
+.datos-mensaje {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--age-radius-sm);
+  font-size: 13.5px;
+  text-align: left;
+}
+
+.datos-mensaje.ok {
+  background: #eaf7ee;
+  color: #1e7e34;
+}
+
+.datos-mensaje.error {
+  background: #fdecea;
+  color: #c62828;
 }

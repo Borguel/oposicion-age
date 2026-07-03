@@ -37,6 +37,30 @@
 
       <button type="button" id="btn-portal" class="btn-primary">Gestionar suscripción</button>
       <a href="/planes/" class="btn-secundario">Ver / cambiar de plan</a>
+    </div>
+
+    <div class="cuenta-card">
+      <h2 class="cuenta-subtitulo">Datos personales</h2>
+      <form id="form-datos">
+        <label for="datos-nombre">Nombre</label>
+        <input type="text" id="datos-nombre" autocomplete="given-name" />
+
+        <label for="datos-apellidos">Apellidos</label>
+        <input type="text" id="datos-apellidos" autocomplete="family-name" />
+
+        <label for="datos-telefono">Teléfono</label>
+        <input type="tel" id="datos-telefono" autocomplete="tel" />
+
+        <label for="datos-direccion">Dirección</label>
+        <input type="text" id="datos-direccion" autocomplete="street-address" />
+
+        <div id="datos-mensaje" class="datos-mensaje" style="display:none;"></div>
+
+        <button type="submit" class="btn-primary" id="btn-guardar-datos">Guardar cambios</button>
+      </form>
+    </div>
+
+    <div class="cuenta-card">
       <button type="button" id="btn-logout" class="btn-texto">Cerrar sesión</button>
     </div>
   </div>

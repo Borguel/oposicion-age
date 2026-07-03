@@ -110,3 +110,25 @@ body {
     padding: 7px 10px;
   }
 }
+
+/* ---------- Pie de página ---------- */
+.age-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 18px;
+  padding: 28px 20px 36px;
+  font-family: var(--age-font);
+  font-size: 12.5px;
+  color: var(--age-ink-soft);
+}
+
+.age-footer a {
+  color: var(--age-ink-soft);
+  text-decoration: none;
+}
+
+.age-footer a:hover {
+  color: var(--age-primary-dark);
+  text-decoration: underline;
+}

@@ -112,4 +112,18 @@ function inyectarNav(user) {
   }
 }
 
+function inyectarFooter() {
+  if (document.querySelector(".age-footer")) return;
+  const footer = document.createElement("footer");
+  footer.className = "age-footer";
+  const anio = new Date().getFullYear();
+  footer.innerHTML = `
+    <span>© ${anio} Oposición AGE</span>
+    <a href="/terminos/">Términos y condiciones</a>
+    <a href="/privacidad/">Privacidad</a>
+  `;
+  document.body.appendChild(footer);
+}
+
 onAuthStateChanged(auth, inyectarNav);
+inyectarFooter();
