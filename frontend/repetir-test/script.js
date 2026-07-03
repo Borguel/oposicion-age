@@ -16,6 +16,8 @@ let ultimasEstadisticas = null;
 
 function iniciarTemporizador() {
   tiempoInicio = Date.now();
+  document.getElementById("temporizador").style.display = "block";
+  document.getElementById("temporizador").textContent = `⏱ Tiempo: 00:00`;
   intervaloTemporizador = setInterval(() => {
     const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
     const m = String(Math.floor(transcurrido / 60)).padStart(2, '0');
@@ -43,31 +45,30 @@ function confirmarFinalizar() {
 function mostrarPregunta(i) {
   const p = preguntas[i];
   let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
-  let html = `<form id="form-pregunta"><fieldset style="padding: 20px;">
-    <legend class="pregunta-en-negrita">${i + 1}. ${textoPregunta}</legend><br>`;
+  let html = `<form id="form-pregunta">
+    <div class="pregunta-en-negrita">${i + 1}. ${textoPregunta}</div>`;
 
   for (const letra in p.opciones) {
     const opcion = p.opciones[letra];
     const checked = respuestasUsuario[i] === letra ? "checked" : "";
     html += `
-      <div style="margin-bottom: 12px;">
-        <label style="cursor: pointer; display: flex; align-items: flex-start;">
-          <input type="radio" name="respuesta" value="${letra}" ${checked} style="margin-top: 4px; margin-right: 10px;">
-          <div>${letra}) ${opcion}</div>
-        </label>
-      </div>`;
+      <label class="opcion-respuesta">
+        <input type="radio" name="respuesta" value="${letra}" ${checked}>
+        <span class="opcion-letra">${letra}</span>
+        <span class="opcion-texto">${opcion}</span>
+      </label>`;
   }
 
   html += `
     <div class="botones-navegacion-test">
-      ${i > 0 ? '<button type="button" id="btn-anterior" class="btn btn-accent">⬅️ Anterior</button>' : ''}
-      <button type="button" id="btn-desmarcar" class="btn btn-accent">❌ Desmarcar</button>
+      ${i > 0 ? '<button type="button" id="btn-anterior" class="age-btn age-btn-outline">← Anterior</button>' : ''}
+      <button type="button" id="btn-desmarcar" class="age-btn age-btn-outline">Desmarcar</button>
     </div>
-    <button type="submit" class="btn btn-primary btn-block" style="margin-top:15px;">
-      ${i + 1 < preguntas.length ? 'Siguiente ➡️' : 'Finalizar test ✅'}
+    <button type="submit" class="age-btn age-btn-primary age-btn-block" style="margin-top:12px;">
+      ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
     </button>
     <button type="button" id="btn-finalizar" class="btn btn-danger btn-block" style="margin-top:10px;">Finalizar Test</button>
-  </fieldset></form>`;
+  </form>`;
 
   document.getElementById("contenedor-test").innerHTML = html;
 
@@ -97,7 +98,9 @@ function mostrarPregunta(i) {
 
 async function mostrarResultados() {
   clearInterval(intervaloTemporizador);
+  document.getElementById("temporizador").style.display = "none";
   document.getElementById("contenedor-test").innerHTML = "";
+  document.getElementById("contenedor-test").style.display = "none";
   const cont = document.getElementById("contenedor-resultados");
   cont.style.display = "block";
 

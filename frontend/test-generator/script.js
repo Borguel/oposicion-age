@@ -112,11 +112,13 @@ async function obtenerAuthHeaders() {
 
     function iniciarTemporizador() {
       tiempoInicio = Date.now();
+      document.getElementById("temporizador").style.display = "block";
       if (document.getElementById('modo_cronometrado').checked) {
         const minutos = parseInt(document.getElementById('minutos_cronometro').value) || 60;
         tiempoLimite = minutos * 60;
         tiempoTotalAsignado = tiempoLimite;
         document.getElementById("barra-progreso-tiempo").style.display = "block";
+        document.getElementById("temporizador").innerHTML = `⏱ Tiempo restante: <span class="pulse">${formatearTiempo(tiempoLimite)}</span>`;
         intervaloTemporizador = setInterval(() => {
           tiempoLimite--;
           if (tiempoLimite <= 0) {
@@ -146,6 +148,7 @@ async function obtenerAuthHeaders() {
           document.getElementById("texto-progreso-tiempo").textContent = `${Math.round(porcentajeTiempo)}%`;
         }, 1000);
       } else {
+        document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(0)}`;
         intervaloTemporizador = setInterval(() => {
           const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
           document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
@@ -185,37 +188,30 @@ async function obtenerAuthHeaders() {
           return;
         }
       }
-      const endpoint = tipo === "oficial" ? "/generar-test-oficial" : 
-                      tipo === "inteligente" ? "/generar-test-inteligente" : 
+      const endpoint = tipo === "oficial" ? "/generar-test-oficial" :
+                      tipo === "inteligente" ? "/generar-test-inteligente" :
                       "/generar-test-avanzado";
-      document.getElementById('form-generar-test').style.display = "none";
+      document.getElementById('tarjeta-formulario').style.display = "none";
       document.getElementById('titulo-formulario').style.display = "none";
+      document.getElementById("contenedor-test").style.display = "block";
       document.getElementById("contenedor-test").innerHTML = `
-        <div style="text-align: center; padding: 20px;">
-          <p id="mensaje-carga">⏳ Iniciando generación de test...</p>
-          <div class="progress-container">
-            <div id="barra-carga" class="barra-carga" style="width: 0%"></div>
-            <div id="texto-carga" class="progress-text">0%</div>
-          </div>
+        <div class="carga-generando">
+          <p id="mensaje-carga">Obteniendo preguntas...</p>
+          <div class="barra-indeterminada"><div class="barra-indeterminada-fill"></div></div>
         </div>
       `;
-      let progreso = 0;
       const mensajes = [
         "Obteniendo preguntas...",
         "Generando opciones...",
         "Validando contenido...",
-        "Preparando test...",
-        "Finalizando..."
+        "Preparando tu test..."
       ];
+      let indiceMensaje = 0;
       const intervalCarga = setInterval(() => {
-        if (progreso < 100) {
-          progreso += 1;
-          const indiceMensaje = Math.min(Math.floor(progreso / 20), mensajes.length - 1);
-          document.getElementById("mensaje-carga").textContent = `⏳ ${mensajes[indiceMensaje]}`;
-          document.getElementById("barra-carga").style.width = `${progreso}%`;
-          document.getElementById("texto-carga").textContent = `${progreso}%`;
-        }
-      }, 190);
+        indiceMensaje = (indiceMensaje + 1) % mensajes.length;
+        const elMensaje = document.getElementById("mensaje-carga");
+        if (elMensaje) elMensaje.textContent = mensajes[indiceMensaje];
+      }, 2200);
       try {
         const authHeaders = await obtenerAuthHeaders();
         if (!authHeaders) { clearInterval(intervalCarga); return; }
@@ -267,28 +263,27 @@ async function obtenerAuthHeaders() {
       actualizarBarraProgresoPreguntas();
       const p = preguntas[i];
       let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
-      let html = `<form id="form-pregunta"><fieldset style="padding: 20px;">
-        <legend class="pregunta-en-negrita">${i + 1}. ${textoPregunta}</legend><br>`;
+      let html = `<form id="form-pregunta">
+        <div class="pregunta-en-negrita">${i + 1}. ${textoPregunta}</div>`;
       for (const letra in p.opciones) {
         const opcion = p.opciones[letra];
         const checked = respuestasUsuario[i] === letra ? "checked" : "";
         html += `
-          <div style="margin-bottom: 12px;">
-            <label style="cursor: pointer; display: flex; align-items: flex-start;">
-              <input type="radio" name="respuesta" value="${letra}" ${checked} style="margin-top: 4px; margin-right: 10px;">
-              <div>${letra}) ${opcion}</div>
-            </label>
-          </div>`;
+          <label class="opcion-respuesta">
+            <input type="radio" name="respuesta" value="${letra}" ${checked}>
+            <span class="opcion-letra">${letra}</span>
+            <span class="opcion-texto">${opcion}</span>
+          </label>`;
       }
       html += `
-        <div style="margin-top: 30px; display: flex; justify-content: space-between;">
-          ${i > 0 ? '<button type="button" id="btn-anterior" class="btn btn-accent" style="width: 48%;">⬅️ Anterior</button>' : ''} 
-          <button type="button" id="btn-desmarcar" class="btn btn-accent" style="width: ${i > 0 ? '48%' : '100%'};">❌ Desmarcar</button>
+        <div class="botones-navegacion-test">
+          ${i > 0 ? '<button type="button" id="btn-anterior" class="age-btn age-btn-outline">← Anterior</button>' : ''}
+          <button type="button" id="btn-desmarcar" class="age-btn age-btn-outline">Desmarcar</button>
         </div>
-        <button type="submit" class="btn btn-primary btn-siguiente" style="margin-top: 15px;">
-          ${i + 1 < preguntas.length ? 'Siguiente ➡️' : 'Finalizar test ✅'}
+        <button type="submit" class="age-btn age-btn-primary age-btn-block" style="margin-top: 12px;">
+          ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
         </button>
-      </fieldset></form>`;
+      </form>`;
       document.getElementById("contenedor-test").innerHTML = html;
       document.getElementById("btn-desmarcar").addEventListener("click", () => {
         const marcadas = document.querySelectorAll('input[name="respuesta"]:checked');
@@ -334,9 +329,11 @@ async function obtenerAuthHeaders() {
     async function mostrarResultados() {
       clearInterval(intervaloTemporizador);
       if (tiempoLimite !== null) clearInterval(intervaloCronometro);
+      document.getElementById("temporizador").style.display = "none";
       document.getElementById("barra-progreso-tiempo").style.display = "none";
       document.getElementById("barra-progreso-preguntas").style.display = "none";
       document.getElementById("contenedor-test").innerHTML = "";
+      document.getElementById("contenedor-test").style.display = "none";
       document.getElementById("btn-finalizar").style.display = "none";
       const cont = document.getElementById("contenedor-resultados");
       cont.style.display = "block";

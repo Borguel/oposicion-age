@@ -2,11 +2,10 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Test de Preguntas Falladas</title>
+  <title>Preguntas falladas - Oposición AGE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  <link rel="stylesheet" href="/assets/theme.css" />
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="/assets/theme.css" />
   <link rel="stylesheet" href="/preguntas-falladas/style.css" />
 </head>
 <body>
@@ -15,7 +14,7 @@
   <div class="container">
     <h1 id="titulo-formulario">Test de Preguntas Falladas</h1>
 
-    <div class="card fade-in">
+    <div class="card fade-in" id="tarjeta-formulario">
       <form id="form-falladas">
         <div class="test-type-container">
           <div class="test-type-card selected">
@@ -39,15 +38,15 @@
       No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.
     </div>
 
-    <div id="temporizador"></div>
-    
+    <div id="temporizador" style="display:none;"></div>
+
     <div id="barra-progreso-preguntas" class="progress-container" style="display: none;">
       <div id="progreso-preguntas" class="progress-bar" style="background: linear-gradient(90deg, #2196F3, #64b5f6);"></div>
       <div id="texto-progreso-preguntas" class="progress-text"></div>
     </div>
 
-    <div id="contenedor-test" class="card fade-in"></div>
-    <div id="contenedor-resultados" class="card fade-in" style="display:none;"></div>
+    <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
+    <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
 
     <button id="btn-finalizar" class="btn btn-danger btn-block" style="display:none;">Finalizar Test</button>
     <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>

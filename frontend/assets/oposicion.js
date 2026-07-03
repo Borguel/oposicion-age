@@ -4,8 +4,8 @@
 // (no en la cuenta) porque es solo "qué estoy mirando ahora", no depende
 // de qué oposiciones tenga contratadas -- eso lo dice /mi-perfil.
 export const OPOSICIONES = [
-  { id: "AGE", nombre: "Cuerpo General Administrativo (AGE)" },
-  { id: "GACE", nombre: "Cuerpo de Gestión (GACE)" }
+  { id: "AGE", nombre: "Cuerpo General Administrativo (AGE)", siglas: "AGE" },
+  { id: "GACE", nombre: "Cuerpo de Gestión (GACE)", siglas: "GACE" }
 ];
 
 const CLAVE = "age_oposicion_actual";
@@ -34,7 +34,10 @@ export function inyectarSelectorOposicion() {
   OPOSICIONES.forEach((o) => {
     const opcion = document.createElement("option");
     opcion.value = o.id;
-    opcion.textContent = o.nombre;
+    // Siglas cortas en el menú (con el nombre completo en el "title" del
+    // <option>) para que no se corte en pantallas de móvil estrechas.
+    opcion.textContent = o.siglas || o.nombre;
+    opcion.title = o.nombre;
     select.appendChild(opcion);
   });
   select.value = obtenerOposicionActual();

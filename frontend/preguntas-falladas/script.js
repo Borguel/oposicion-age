@@ -26,6 +26,8 @@ async function obtenerAuthHeaders() {
 
     function iniciarTemporizador() {
       tiempoInicio = Date.now();
+      document.getElementById("temporizador").style.display = "block";
+      document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(0)}`;
       intervaloTemporizador = setInterval(() => {
         const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
         document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
@@ -49,34 +51,25 @@ async function obtenerAuthHeaders() {
       e.preventDefault();
       document.getElementById('contenedor-resultados').style.display = "none";
       const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
-      document.getElementById('form-falladas').style.display = "none";
+      document.getElementById('tarjeta-formulario').style.display = "none";
       document.getElementById('titulo-formulario').style.display = "none";
       document.getElementById('aviso-falladas').style.display = "none";
-      
+
+      document.getElementById("contenedor-test").style.display = "block";
       document.getElementById("contenedor-test").innerHTML = `
-        <div class="loading-container">
-          <p>⏳ Buscando preguntas falladas...</p>
-          <progress id="barra-carga" value="0" max="100" style="width: 100%; height: 20px;"></progress>
-          <p id="texto-carga">0%</p>
+        <div class="carga-generando">
+          <p id="mensaje-carga">Buscando tus preguntas falladas...</p>
+          <div class="barra-indeterminada"><div class="barra-indeterminada-fill"></div></div>
         </div>
       `;
-      
-      let progreso = 0;
-      const mensajes = [
-        "Obteniendo preguntas...",
-        "Cargando contenido...",
-        "Preparando test...",
-        "Finalizando..."
-      ];
-      
+
+      const mensajes = ["Buscando tus preguntas falladas...", "Cargando contenido...", "Preparando el test..."];
+      let indiceMensaje = 0;
       const intervalCarga = setInterval(() => {
-        if (progreso < 100) {
-          progreso += 2;
-          const indiceMensaje = Math.min(Math.floor(progreso / 25), mensajes.length - 1);
-          document.getElementById("texto-carga").textContent = `${mensajes[indiceMensaje]} ${progreso}%`;
-          document.getElementById("barra-carga").value = progreso;
-        }
-      }, 60);
+        indiceMensaje = (indiceMensaje + 1) % mensajes.length;
+        const elMensaje = document.getElementById("mensaje-carga");
+        if (elMensaje) elMensaje.textContent = mensajes[indiceMensaje];
+      }, 2200);
 
       try {
         const authHeaders = await obtenerAuthHeaders();
@@ -87,32 +80,34 @@ async function obtenerAuthHeaders() {
           headers: {"Content-Type": "application/json", ...authHeaders},
           body: JSON.stringify({ num_preguntas, oposicion: obtenerOposicionActual() })
         });
-        
+
         clearInterval(intervalCarga);
         const datos = await res.json();
         preguntas = datos.test || [];
-        
+
         if (preguntas.length === 0) {
           mostrarAviso("No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.");
           document.getElementById("contenedor-test").innerHTML = "";
-          document.getElementById("form-falladas").style.display = "";
+          document.getElementById("contenedor-test").style.display = "none";
+          document.getElementById('tarjeta-formulario').style.display = "";
           document.getElementById('titulo-formulario').style.display = "";
           return;
         }
-        
+
         respuestasUsuario = Array(preguntas.length).fill(null);
         indicePreguntaActual = 0;
         iniciarTemporizador();
-        
+
         document.getElementById("barra-progreso-preguntas").style.display = "block";
         actualizarBarraProgresoPreguntas();
-        
+
         mostrarPregunta(indicePreguntaActual);
       } catch (error) {
         clearInterval(intervalCarga);
         mostrarAviso("❌ Error buscando preguntas falladas. Intenta más tarde.");
         document.getElementById("contenedor-test").innerHTML = "";
-        document.getElementById("form-falladas").style.display = "";
+        document.getElementById("contenedor-test").style.display = "none";
+        document.getElementById('tarjeta-formulario').style.display = "";
         document.getElementById('titulo-formulario').style.display = "";
         console.error(error);
       }
@@ -121,33 +116,32 @@ async function obtenerAuthHeaders() {
     function mostrarPregunta(i) {
       indicePreguntaActual = i;
       actualizarBarraProgresoPreguntas();
-      
+
       const p = preguntas[i];
-      let html = `<form id="form-pregunta"><fieldset style="padding: 20px;">
-        <legend class="pregunta-en-negrita">${i + 1}. ${p.pregunta}</legend><br>`;
-      
+      let html = `<form id="form-pregunta">
+        <div class="pregunta-en-negrita">${i + 1}. ${p.pregunta}</div>`;
+
       for (const letra in p.opciones) {
         const opcion = p.opciones[letra];
         const checked = respuestasUsuario[i] === letra ? "checked" : "";
         html += `
-          <div style="margin-bottom: 12px;">
-            <label style="cursor: pointer; display: flex; align-items: flex-start;">
-              <input type="radio" name="respuesta" value="${letra}" ${checked} style="margin-top: 4px; margin-right: 10px;">
-              <div>${letra}) ${opcion}</div>
-            </label>
-          </div>`;
+          <label class="opcion-respuesta">
+            <input type="radio" name="respuesta" value="${letra}" ${checked}>
+            <span class="opcion-letra">${letra}</span>
+            <span class="opcion-texto">${opcion}</span>
+          </label>`;
       }
-      
+
       html += `
         <div class="botones-navegacion-test">
-          ${i > 0 ? '<button type="button" id="btn-anterior" class="btn-naranja">⬅️ Anterior</button>' : ''} 
-          <button type="button" id="btn-desmarcar" class="btn-naranja">❌ Desmarcar</button>
+          ${i > 0 ? '<button type="button" id="btn-anterior" class="age-btn age-btn-outline">← Anterior</button>' : ''}
+          <button type="button" id="btn-desmarcar" class="age-btn age-btn-outline">Desmarcar</button>
         </div>
-        <button type="submit" class="btn btn-primary" style="margin-top: 15px; width: 100%;">
-          ${i + 1 < preguntas.length ? 'Siguiente ➡️' : 'Finalizar test ✅'}
+        <button type="submit" class="age-btn age-btn-primary age-btn-block" style="margin-top:12px;">
+          ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
         </button>
-      </fieldset></form>`;
-      
+      </form>`;
+
       document.getElementById("contenedor-test").innerHTML = html;
       document.getElementById("btn-desmarcar").addEventListener("click", () => {
         const marcadas = document.querySelectorAll('input[name="respuesta"]:checked');
@@ -221,7 +215,10 @@ async function obtenerAuthHeaders() {
 
     async function mostrarResultados() {
       clearInterval(intervaloTemporizador);
+      document.getElementById("temporizador").style.display = "none";
+      document.getElementById("barra-progreso-preguntas").style.display = "none";
       document.getElementById("contenedor-test").innerHTML = "";
+      document.getElementById("contenedor-test").style.display = "none";
       document.getElementById("btn-finalizar").style.display = "none";
       const cont = document.getElementById("contenedor-resultados");
       cont.style.display = "block";

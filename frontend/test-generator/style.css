@@ -27,13 +27,12 @@ body {
   line-height: 1.6;
   background: var(--color-bg);
   color: var(--color-text);
-  padding: 20px;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px 20px;
 }
 
 .card {
@@ -329,92 +328,123 @@ h1, h2, h3 {
   border-radius: 10px;
 }
 
-/* ========== BOTONES DE NAVEGACIÓN PERSONALIZADOS ========== */
+/* ========== BOTONES DE NAVEGACIÓN (usan .age-btn del sistema compartido) ========== */
 .botones-navegacion-test {
   display: flex;
   flex-direction: row;
-  gap: 14px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 30px;
-  margin-bottom: 15px;
+  gap: 12px;
+  margin-top: 24px;
+  margin-bottom: 4px;
 }
 
-.botones-navegacion-test button {
-  min-width: 120px;
-  font-size: 1.08em;
-  padding: 14px 20px;
-  border-radius: 8px;
-  font-weight: bold;
-  text-transform: uppercase;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s, box-shadow 0.18s;
-  box-shadow: 0 2px 12px rgba(40, 80, 70, 0.09);
-  color: #fff;
+.botones-navegacion-test .age-btn {
+  flex: 1 1 0;
 }
 
-/* Botón ANTERIOR - Azul */
-#btn-anterior {
-  background: #4f8cff;
-}
-
-#btn-anterior:hover,
-#btn-anterior:focus {
-  background: #1864ab;
-}
-
-/* Botón DESMARCAR - Gris oscuro */
-#btn-desmarcar {
-  background: #6d6d6d;
-}
-
-#btn-desmarcar:hover,
-#btn-desmarcar:focus {
-  background: #4d4d4d;
-}
-
-/* 🔥 CORRECCIÓN: Botón SIGUIENTE ocupa todo el ancho */
-#form-pregunta button[type="submit"] {
-  background: #ffa726;
-  color: white;
-  width: 100%;
-  margin-top: 20px;
-  padding: 16px;
-  font-size: 1.1em;
-  font-weight: bold;
-  text-transform: uppercase;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s, box-shadow 0.18s;
-  box-shadow: 0 2px 12px rgba(255, 167, 38, 0.3);
-}
-
-#form-pregunta button[type="submit"]:hover,
-#form-pregunta button[type="submit"]:focus {
-  background: #fb8c00;
-  box-shadow: 0 4px 16px rgba(255, 167, 38, 0.4);
-}
-
-/* Botón FINALIZAR TEST - Rojo */
+/* Botón FINALIZAR TEST (fuera del flujo de preguntas, sigue usando .btn-danger) */
 #btn-finalizar {
-  background: #ef5350;
-  color: white;
+  text-transform: none;
+  border-radius: var(--age-radius-sm);
 }
 
-#btn-finalizar:hover,
-#btn-finalizar:focus {
-  background: #d32f2f;
+/* ========== Opciones de respuesta con letra en círculo ========== */
+.opcion-respuesta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  margin-bottom: 10px;
+  border: 1.5px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  cursor: pointer;
+  transition: border-color 0.2s var(--age-ease), background 0.2s var(--age-ease);
+}
+
+.opcion-respuesta:hover {
+  border-color: var(--age-primary-light);
+  background: var(--age-primary-soft);
+}
+
+.opcion-respuesta:has(input:checked) {
+  border-color: var(--age-primary);
+  background: var(--age-primary-soft);
+}
+
+.opcion-respuesta input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.opcion-letra {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--age-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--age-ink-soft);
+  background: var(--age-card);
+}
+
+.opcion-respuesta input:checked ~ .opcion-letra {
+  background: var(--age-primary);
+  border-color: var(--age-primary);
+  color: #1b1f2e;
+}
+
+.opcion-texto {
+  flex: 1;
+}
+
+/* ========== Carga indeterminada al generar el test (honesta: no finge un %) ========== */
+.carga-generando {
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.carga-generando #mensaje-carga {
+  margin-bottom: 18px;
+  color: var(--age-ink-soft);
+  font-weight: 600;
+}
+
+.barra-indeterminada {
+  height: 8px;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-neutral-bg);
+  overflow: hidden;
+  position: relative;
+}
+
+.barra-indeterminada-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-primary);
+  animation: barra-indeterminada-mov 1.3s ease-in-out infinite;
+}
+
+@keyframes barra-indeterminada-mov {
+  0% { left: -40%; }
+  100% { left: 100%; }
 }
 
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
   .container {
-    padding: 10px;
-    max-width: 95vw;
+    padding: 16px 14px;
   }
-  
+
   body {
     font-size: 14px;
   }
