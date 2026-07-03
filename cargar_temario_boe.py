@@ -260,18 +260,35 @@ def extraer_texto_normas(paginas, sumario, offset):
 
 
 def dividir_en_subbloques(texto, max_tokens=MAX_TOKENS_SUBBLOQUE):
-    parrafos = [p.strip() for p in re.split(r"\n\s*\n", texto) if p.strip()]
+    # PyPDF2 extrae el texto línea a línea sin líneas en blanco entre
+    # párrafos, así que re.split(r"\n\s*\n", ...) casi nunca encuentra un
+    # corte y una norma entera (a veces cientos de miles de caracteres)
+    # acababa como un único "subbloque". Si no hay párrafos reales, se
+    # trocea por líneas sueltas; si una unidad individual sigue siendo
+    # enorme (rarísimo), se trocea por caracteres como último recurso.
+    unidades = [p.strip() for p in re.split(r"\n\s*\n", texto) if p.strip()]
+    if len(unidades) <= 1:
+        unidades = [l.strip() for l in texto.split("\n") if l.strip()]
+
     subbloques = []
     actual = []
     tokens_actual = 0
-    for parrafo in parrafos:
-        tokens_parrafo = contar_tokens(parrafo)
-        if tokens_actual + tokens_parrafo > max_tokens and actual:
+    for unidad in unidades:
+        tokens_unidad = contar_tokens(unidad)
+        if tokens_unidad > max_tokens:
+            if actual:
+                subbloques.append("\n\n".join(actual))
+                actual, tokens_actual = [], 0
+            paso = max_tokens * 4  # aprox. 4 caracteres por token
+            for i in range(0, len(unidad), paso):
+                subbloques.append(unidad[i:i + paso])
+            continue
+        if tokens_actual + tokens_unidad > max_tokens and actual:
             subbloques.append("\n\n".join(actual))
             actual = []
             tokens_actual = 0
-        actual.append(parrafo)
-        tokens_actual += tokens_parrafo
+        actual.append(unidad)
+        tokens_actual += tokens_unidad
     if actual:
         subbloques.append("\n\n".join(actual))
     return subbloques
