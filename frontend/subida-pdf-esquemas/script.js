@@ -1,13 +1,4 @@
-// === Modo Oscuro ===
-    const themeToggle = document.getElementById('themeToggle');
-    const isDark = localStorage.getItem('darkMode') === 'true' || 
-                   (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (isDark) document.body.classList.add('dark-mode');
-    themeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-      localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-    });
-    async function obtenerAuthHeaders() {
+async function obtenerAuthHeaders() {
       const { idToken } = await import("/assets/auth.js");
       const token = await idToken();
       if (!token) {
@@ -70,7 +61,7 @@
     }
     // === Funciones auxiliares ===
     function mostrarError(mensaje) {
-      mensajeError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>Error:</strong> ${mensaje}`;
+      mensajeError.innerHTML = `⚠️ <strong>Error:</strong> ${mensaje}`;
       mensajeError.classList.remove('hidden');
       contenedorCarga.classList.add('hidden');
       resultadoEsquema.classList.add('hidden');
@@ -133,7 +124,7 @@
         }
         nombreArchivo = file.name;
         const fileName = nombreArchivo.length > 30 ? nombreArchivo.substring(0, 27) + '...' : nombreArchivo;
-        fileNameDisplay.innerHTML = `<i class="fas fa-file-pdf"></i> ${fileName}`;
+        fileNameDisplay.innerHTML = `📄 ${fileName}`;
         fileNameDisplay.classList.remove('hidden');
       } else {
         fileNameDisplay.classList.add('hidden');
@@ -227,28 +218,34 @@
       formularioPdf.classList.add('hidden');
       contenedorCarga.classList.remove('hidden');
       // Cargar estado
-      const barraProgreso = document.getElementById('progreso-carga');
-      const textoPorcentaje = document.getElementById('texto-carga');
       const textoEstado = document.getElementById('texto-estado');
       const aiIcon = document.getElementById('ai-icon');
       const etapas = [
-        { mensaje: "Leyendo texto del PDF…", icono: "📄", duracion: 12000 },
-        { mensaje: "Analizando estructura del documento…", icono: "🔍", duracion: 12000 },
-        { mensaje: "Identificando temas y subtemas…", icono: "📊", duracion: 12000 },
-        { mensaje: "Organizando jerarquía conceptual…", icono: "🧠", duracion: 12000 },
-        { mensaje: "Preparando esquema final…", icono: "✅", duracion: 12000 }
+        { mensaje: "Leyendo texto del PDF…", icono: "📄" },
+        { mensaje: "Analizando estructura del documento…", icono: "🔍" },
+        { mensaje: "Identificando temas y subtemas…", icono: "📊" },
+        { mensaje: "Organizando jerarquía conceptual…", icono: "🧠" },
+        { mensaje: "Preparando esquema final…", icono: "✅" }
       ];
+      let indiceEtapa = 0;
+      aiIcon.textContent = etapas[0].icono;
+      textoEstado.textContent = etapas[0].mensaje;
+      const intervaloEtapas = setInterval(() => {
+        indiceEtapa = (indiceEtapa + 1) % etapas.length;
+        aiIcon.textContent = etapas[indiceEtapa].icono;
+        textoEstado.textContent = etapas[indiceEtapa].mensaje;
+      }, 2200);
+
       let datosIA = null;
       let errorIA = null;
-      let iaTerminada = false;
       const authHeaders = await obtenerAuthHeaders();
-      if (!authHeaders) return;
-      fetch("https://oposicion-age.onrender.com/generar-esquema-desde-pdf", {
-        method: "POST",
-        headers: authHeaders,
-        body: formData
-      })
-      .then(async res => {
+      if (!authHeaders) { clearInterval(intervaloEtapas); return; }
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/generar-esquema-desde-pdf", {
+          method: "POST",
+          headers: authHeaders,
+          body: formData
+        });
         if (res.status === 403) {
           throw new Error("Esta herramienta requiere el plan Premium. Ve a /planes/ para activarlo.");
         }
@@ -259,42 +256,14 @@
         const datos = await res.json();
         if (!datos.esquema) throw new Error(datos.error || "No se pudo generar el esquema.");
         datosIA = datos;
-      })
-      .catch(err => { errorIA = err; })
-      .finally(() => { iaTerminada = true; });
-      function escribirTexto(elemento, texto) {
-        elemento.textContent = '';
-        setTimeout(() => {
-          elemento.textContent = texto;
-          elemento.style.animation = 'none';
-          setTimeout(() => {
-            elemento.style.animation = 'typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite';
-          }, 10);
-        }, 10);
+      } catch (err) {
+        errorIA = err;
       }
-      const inicio = Date.now();
-      const duracionTotal = 60000;
-      for (let i = 0; i < etapas.length; i++) {
-        const etapa = etapas[i];
-        aiIcon.textContent = etapa.icono;
-        escribirTexto(textoEstado, etapa.mensaje);
-        await new Promise(r => setTimeout(r, etapa.duracion));
-        const progreso = Math.min(99, Math.round(((i + 1) / etapas.length) * 99));
-        barraProgreso.style.width = `${progreso}%`;
-        textoPorcentaje.textContent = `${progreso}%`;
-      }
-      while (!(iaTerminada && (Date.now() - inicio >= duracionTotal))) {
-        await new Promise(r => setTimeout(r, 200));
-      }
+      clearInterval(intervaloEtapas);
       if (errorIA) {
         mostrarError(errorIA.message);
         return;
       }
-      aiIcon.textContent = "✅";
-      escribirTexto(textoEstado, "¡Listo! Generando esquema…");
-      barraProgreso.style.width = "100%";
-      textoPorcentaje.textContent = "100%";
-      await new Promise(r => setTimeout(r, 400));
       // Mostrar esquema
       esquema = datosIA.esquema || "No se pudo generar el esquema.";
       const fecha = new Date();
@@ -317,7 +286,3 @@
       // ✅ Guardar en Firebase
       guardarEsquemaAutomaticamente();
     });
-    // === PWA ===
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('application/javascript,');
-    }

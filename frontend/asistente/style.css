@@ -78,7 +78,7 @@
             font-family: 'Poppins', 'Segoe UI', sans-serif;
             background: var(--background-primary);
             color: var(--text-primary);
-            min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -106,7 +106,10 @@
             width: 100%;
             max-width: 1200px;
             margin: 20px auto;
-            height: 90vh;
+            /* "dvh" (no "vh") es clave en móvil: "vh" cuenta el hueco de la
+               barra de direcciones del navegador aunque esté oculta, dejando
+               la caja de escribir fuera de la pantalla visible. */
+            height: calc(100dvh - var(--age-nav-height, 64px) - 40px - var(--age-cookie-banner-height, 0px));
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
             border-radius: 20px;
@@ -256,6 +259,7 @@
         /* ÁREA DE MENSAJES */
         .premium-messages {
             flex: 1;
+            min-height: 0;
             padding: 20px;
             overflow-y: auto;
             background: var(--background-messages);
@@ -823,11 +827,11 @@
         @media (max-width: 768px) {
             body {
                 padding: 0;
-                min-height: 100vh;
+                min-height: 100dvh;
             }
-            
+
             .premium-chat-container {
-                height: calc(100vh - var(--age-nav-height, 56px));
+                height: calc(100dvh - var(--age-nav-height, 56px) - var(--age-cookie-banner-height, 0px));
                 margin: 0 auto;
                 border-radius: 0;
             }

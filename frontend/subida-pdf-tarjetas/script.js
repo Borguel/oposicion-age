@@ -1,13 +1,4 @@
-// === Modo Oscuro ===
-    const themeToggle = document.getElementById('themeToggle');
-    const isDark = localStorage.getItem('darkMode') === 'true' || 
-                   (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (isDark) document.body.classList.add('dark-mode');
-    themeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-      localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-    });
-    async function obtenerAuthHeaders() {
+async function obtenerAuthHeaders() {
       const { idToken } = await import("/assets/auth.js");
       const token = await idToken();
       if (!token) {
@@ -145,7 +136,7 @@
     }
     // === Funciones auxiliares ===
     function mostrarError(mensaje) {
-      mensajeError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>Error:</strong> ${mensaje}`;
+      mensajeError.innerHTML = `⚠️ <strong>Error:</strong> ${mensaje}`;
       mensajeError.classList.remove('hidden');
       contenedorCarga.classList.add('hidden');
       modoEstudio.classList.add('hidden');
@@ -216,7 +207,7 @@
           return;
         }
         const fileName = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
-        fileNameDisplay.innerHTML = `<i class="fas fa-file-pdf"></i> ${fileName}`;
+        fileNameDisplay.innerHTML = `📄 ${fileName}`;
         fileNameDisplay.classList.remove('hidden');
       } else {
         fileNameDisplay.classList.add('hidden');
@@ -407,29 +398,34 @@
       formularioPdf.classList.add('hidden');
       contenedorCarga.classList.remove('hidden');
       // Elementos de carga
-      const barraProgreso = document.getElementById('progreso-carga');
-      const textoPorcentaje = document.getElementById('texto-carga');
       const textoEstado = document.getElementById('texto-estado');
       const aiIcon = document.getElementById('ai-icon');
       const etapas = [
-        { mensaje: "Leyendo texto del PDF…", icono: "📄", duracion: 12000 },
-        { mensaje: "Extrayendo conceptos clave…", icono: "🔍", duracion: 12000 },
-        { mensaje: "Analizando estructura del temario…", icono: "📊", duracion: 12000 },
-        { mensaje: "Generando preguntas inteligentes…", icono: "🧠", duracion: 12000 },
-        { mensaje: "Preparando tarjetas de estudio…", icono: "✅", duracion: 12000 }
+        { mensaje: "Leyendo texto del PDF…", icono: "📄" },
+        { mensaje: "Extrayendo conceptos clave…", icono: "🔍" },
+        { mensaje: "Analizando estructura del temario…", icono: "📊" },
+        { mensaje: "Generando preguntas inteligentes…", icono: "🧠" },
+        { mensaje: "Preparando tarjetas de estudio…", icono: "✅" }
       ];
+      let indiceEtapa = 0;
+      aiIcon.textContent = etapas[0].icono;
+      textoEstado.textContent = etapas[0].mensaje;
+      const intervaloEtapas = setInterval(() => {
+        indiceEtapa = (indiceEtapa + 1) % etapas.length;
+        aiIcon.textContent = etapas[indiceEtapa].icono;
+        textoEstado.textContent = etapas[indiceEtapa].mensaje;
+      }, 2200);
+
       let datosIA = null;
       let errorIA = null;
-      let iaTerminada = false;
-      // Llamada a la IA
       const authHeaders = await obtenerAuthHeaders();
-      if (!authHeaders) return;
-      fetch("https://oposicion-age.onrender.com/generar-tarjetas-desde-pdf", {
-        method: "POST",
-        headers: authHeaders,
-        body: formData
-      })
-      .then(async res => {
+      if (!authHeaders) { clearInterval(intervaloEtapas); return; }
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/generar-tarjetas-desde-pdf", {
+          method: "POST",
+          headers: authHeaders,
+          body: formData
+        });
         if (res.status === 403) {
           throw new Error("Esta herramienta requiere el plan Premium. Ve a /planes/ para activarlo.");
         }
@@ -440,50 +436,14 @@
         const datos = await res.json();
         if (!datos.tarjetas) throw new Error(datos.error || "No se generaron tarjetas.");
         datosIA = datos;
-      })
-      .catch(err => {
+      } catch (err) {
         errorIA = err;
-      })
-      .finally(() => {
-        iaTerminada = true;
-      });
-      // Función para efecto typewriter
-      function escribirTexto(elemento, texto) {
-        elemento.textContent = '';
-        setTimeout(() => {
-          elemento.textContent = texto;
-          elemento.style.animation = 'none';
-          setTimeout(() => {
-            elemento.style.animation = 'typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite';
-          }, 10);
-        }, 10);
       }
-      const inicio = Date.now();
-      const duracionTotal = 60000; // 60 segundos
-      // Mostrar etapas
-      for (let i = 0; i < etapas.length; i++) {
-        const etapa = etapas[i];
-        aiIcon.textContent = etapa.icono;
-        escribirTexto(textoEstado, etapa.mensaje);
-        await new Promise(r => setTimeout(r, etapa.duracion));
-        const progreso = Math.min(99, Math.round(((i + 1) / etapas.length) * 99));
-        barraProgreso.style.width = `${progreso}%`;
-        textoPorcentaje.textContent = `${progreso}%`;
-      }
-      // Esperar a que IA termine y hayan pasado 60s
-      while (!(iaTerminada && (Date.now() - inicio >= duracionTotal))) {
-        await new Promise(r => setTimeout(r, 200));
-      }
+      clearInterval(intervaloEtapas);
       if (errorIA) {
         mostrarError(errorIA.message);
         return;
       }
-      // Completar al 100%
-      aiIcon.textContent = "✅";
-      escribirTexto(textoEstado, "¡Listo! Cargando tarjetas…");
-      barraProgreso.style.width = "100%";
-      textoPorcentaje.textContent = "100%";
-      await new Promise(r => setTimeout(r, 400));
       // Procesar tarjetas
       let tarjetasFinales = datosIA.tarjetas || [];
       if (numTarjetas < tarjetasFinales.length) {
@@ -497,7 +457,7 @@
       tarjetas = shuffleArray(tarjetasFinales);
       if (datosIA.advertencia) {
         alertaPreguntas.innerHTML = `
-          <i class="fas fa-exclamation-triangle"></i>
+          ⚠️
           <div>
             <strong>Aviso:</strong> ${datosIA.advertencia}
             ${datosIA.sugerencia ? `<br><em>${datosIA.sugerencia}</em>` : ''}
@@ -514,10 +474,6 @@
       // ✅ GUARDAR EN FIREBASE
       guardarTarjetasAutomaticamente();
     });
-    // === PWA ===
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('application/javascript,');
-    }
     // === Inicialización - Cargar estado guardado al inicio ===
     document.addEventListener('DOMContentLoaded', function() {
       // Esperar un poco para que la página cargue completamente

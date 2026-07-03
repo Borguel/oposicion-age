@@ -1,0 +1,351 @@
+/* Diseño compartido por las herramientas de "subir un PDF" (generar test,
+   tarjetas, resúmenes, esquemas, chat con el PDF), para que todas tengan la
+   misma cabecera, tarjetas, botones y zona de subida -- en vez de que cada
+   una tuviera su propio estilo suelto (con su propio modo oscuro, sus
+   propios iconos de Font Awesome, etc.) */
+
+.pdfherr-header {
+  background: var(--age-navy);
+  color: #fff;
+  padding: 40px 20px 32px;
+  text-align: center;
+}
+
+.pdfherr-header .pdfherr-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: var(--age-radius-md);
+  background: rgba(255, 166, 51, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.7rem;
+}
+
+.pdfherr-header h1 {
+  color: #fff;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.pdfherr-header p {
+  color: var(--age-navy-ink);
+  max-width: 620px;
+  margin: 0 auto;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.pdfherr-body {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+
+/* Tarjetas: mismo look que el resto de la web ya rediseñada */
+.pdfherr-body .card {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  box-shadow: var(--age-shadow);
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.pdfherr-body .card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.pdfherr-body .card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--age-radius-md);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.pdfherr-body .card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--age-ink);
+  margin: 0;
+}
+
+.pdfherr-body .form-group {
+  margin-bottom: 18px;
+}
+
+.pdfherr-body label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--age-ink);
+  margin-bottom: 8px;
+}
+
+.pdfherr-body input[type="number"],
+.pdfherr-body input[type="text"],
+.pdfherr-body select.form-control {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--age-radius-sm);
+  border: 1px solid var(--age-border);
+  font-family: var(--age-font);
+  font-size: 15px;
+  background: var(--age-card);
+  color: var(--age-ink);
+}
+
+/* Zona de subida (dropzone) */
+.pdfherr-body .file-upload-area {
+  border: 2px dashed var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 34px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s var(--age-ease), background 0.2s var(--age-ease);
+  background: var(--age-neutral-bg);
+}
+
+.pdfherr-body .file-upload-area:hover,
+.pdfherr-body .file-upload-area.dragover {
+  border-color: var(--age-primary);
+  background: var(--age-primary-soft);
+}
+
+.pdfherr-body .file-upload-area .upload-icon {
+  font-size: 2.1rem;
+  margin-bottom: 10px;
+}
+
+.pdfherr-body .file-upload-area h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--age-ink);
+  margin: 0 0 4px;
+}
+
+.pdfherr-body .file-upload-area p {
+  color: var(--age-ink-soft);
+  font-size: 0.9rem;
+  margin: 0 0 14px;
+}
+
+.pdfherr-body .file-input {
+  display: none;
+}
+
+.pdfherr-body .file-name {
+  margin-top: 10px;
+  padding: 8px 14px;
+  background: var(--age-primary-soft);
+  border-radius: var(--age-radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--age-ink);
+  display: none;
+}
+
+.pdfherr-body .file-name.visible,
+.pdfherr-body .file-name:not(.hidden):not(:empty) {
+  display: inline-block;
+}
+
+.pdfherr-body .hidden {
+  display: none !important;
+}
+
+/* Botones: mapea las clases antiguas (btn, btn-primary, btn-outline...) al
+   sistema age-btn ya usado en el resto de la web, para no tener que tocar
+   el HTML/JS de cada herramienta uno a uno. */
+.pdfherr-body .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: var(--age-radius-sm);
+  border: 1.5px solid transparent;
+  font-family: var(--age-font);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s var(--age-ease), border-color 0.15s var(--age-ease), transform 0.15s var(--age-ease);
+  text-decoration: none;
+}
+
+.pdfherr-body .btn:active {
+  transform: scale(0.98);
+}
+
+.pdfherr-body .btn-full,
+.pdfherr-body .btn-block {
+  width: 100%;
+}
+
+.pdfherr-body .btn-primary {
+  background: var(--age-primary);
+  color: #1b1f2e;
+}
+.pdfherr-body .btn-primary:hover { background: var(--age-primary-dark); }
+
+.pdfherr-body .btn-secondary,
+.pdfherr-body .btn-accent {
+  background: var(--age-navy);
+  color: #fff;
+}
+.pdfherr-body .btn-secondary:hover,
+.pdfherr-body .btn-accent:hover { background: var(--age-navy-soft); }
+
+.pdfherr-body .btn-outline,
+.pdfherr-body .btn-outline-secondary {
+  background: var(--age-card);
+  color: var(--age-ink);
+  border-color: var(--age-border);
+}
+.pdfherr-body .btn-outline:hover,
+.pdfherr-body .btn-outline-secondary:hover { border-color: var(--age-primary); background: var(--age-primary-soft); }
+
+.pdfherr-body .btn-danger {
+  background: var(--age-danger);
+  color: #fff;
+}
+.pdfherr-body .btn-danger:hover { filter: brightness(0.92); }
+
+/* Alertas */
+.pdfherr-body .alert {
+  padding: 14px 18px;
+  border-radius: var(--age-radius-sm);
+  margin-bottom: 18px;
+  font-size: 0.92rem;
+}
+.pdfherr-body .alert-warning {
+  background: #fff3cd;
+  color: #7a5c00;
+  border: 1px solid #ffe69c;
+}
+.pdfherr-body .alert-error {
+  background: var(--age-danger-bg, #fdecea);
+  color: var(--age-danger);
+  border: 1px solid #f5b9b3;
+}
+
+/* Estado de carga: barra indeterminada honesta (no un % inventado) */
+.pdfherr-body .loading-container {
+  text-align: center;
+  padding: 30px 10px;
+}
+
+.pdfherr-body .ai-icon {
+  font-size: 2.4rem;
+  margin-bottom: 14px;
+}
+
+.pdfherr-body .mensaje-estado {
+  font-weight: 700;
+  color: var(--age-ink);
+  margin-bottom: 18px;
+}
+
+.pdfherr-body .barra-indeterminada {
+  height: 8px;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-neutral-bg);
+  overflow: hidden;
+  position: relative;
+}
+
+.pdfherr-body .barra-indeterminada-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-primary);
+  animation: pdfherr-barra-mov 1.3s ease-in-out infinite;
+}
+
+@keyframes pdfherr-barra-mov {
+  0% { left: -40%; }
+  100% { left: 100%; }
+}
+
+/* Barra de progreso NUMÉRICA (p. ej. "3 de 10 preguntas"), distinta de la
+   indeterminada de arriba: aquí el ancho lo fija JS con un % real. */
+.pdfherr-body .progress-container {
+  position: relative;
+  margin: 20px 0;
+  background: var(--age-neutral-bg);
+  border-radius: var(--age-radius-pill);
+  overflow: hidden;
+  height: 22px;
+}
+.pdfherr-body .progress-bar {
+  height: 100%;
+  position: relative;
+}
+.pdfherr-body .progress-fill {
+  height: 100%;
+  background: var(--age-primary);
+  transition: width 0.4s ease;
+}
+.pdfherr-body .progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  background: rgba(20, 20, 30, 0.55);
+  padding: 1px 8px;
+  border-radius: var(--age-radius-pill);
+  white-space: nowrap;
+}
+
+
+.auto-save-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--age-navy);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: var(--age-radius-sm);
+  font-size: 0.85rem;
+  box-shadow: var(--age-shadow-hover);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+  z-index: 400;
+}
+
+.auto-save-indicator.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+  .pdfherr-header {
+    padding: 30px 16px 26px;
+  }
+  .pdfherr-body {
+    padding: 20px 14px 40px;
+  }
+  .pdfherr-body .card {
+    padding: 20px;
+  }
+}

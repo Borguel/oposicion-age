@@ -2,67 +2,43 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Generar Esquema desde PDF - Asistente AGE</title>
+  <title>Generar Esquema desde PDF - Oposición AGE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;600;700&display=swap" rel="stylesheet">
-  <!-- PWA Manifest inline -->
-  <link rel="manifest" href="#inline-manifest">  <link rel="stylesheet" href="/assets/theme.css" />
-
-  
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/assets/pdf-tools.css" />
   <link rel="stylesheet" href="/subida-pdf-esquemas/style.css" />
 </head>
 <body>
 <nav class="age-nav"></nav>
 
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <div class="logo">
-        <div class="logo-icon">
-          <i class="fas fa-project-diagram"></i>
-        </div>
-        <div>
-          <h1 class="titulo-principal">Generar Esquema desde PDF</h1>
-          <p class="subtitulo">Sube tu documento y obtén un esquema estructurado, jerárquico y listo para estudiar. Ideal para repasar de forma visual y eficaz.</p>
-        </div>
-      </div>
-      <div class="theme-toggle" id="themeToggle" aria-label="Alternar modo claro/oscuro">
-        <i class="fas fa-sun sun"></i>
-        <i class="fas fa-moon moon" style="opacity:0"></i>
-      </div>
-    </div>
+  <div class="pdfherr-header">
+    <div class="pdfherr-icon">🗂️</div>
+    <h1>Generar Esquema desde PDF</h1>
+    <p>Sube tu documento y obtén un esquema estructurado, jerárquico y listo para estudiar. Ideal para repasar de forma visual y eficaz.</p>
+  </div>
+
+  <div class="pdfherr-body">
     <!-- Formulario PDF -->
     <div id="formulario-pdf" class="card fade-in">
       <div class="card-header">
-        <div class="card-icon">
-          <i class="fas fa-upload"></i>
-        </div>
+        <div class="card-icon">⬆️</div>
         <h2 class="card-title">Subir Documento PDF</h2>
       </div>
       <form id="form-subir-pdf">
         <div class="form-group">
-          <label for="archivo-pdf">
-            <i class="fas fa-file-pdf"></i> Selecciona tu archivo PDF (máx. 10 MB)
-          </label>
+          <label for="archivo-pdf">📄 Selecciona tu archivo PDF (máx. 10 MB)</label>
           <div class="file-upload-area" id="upload-area">
-            <div class="upload-icon">
-              <i class="fas fa-cloud-upload-alt"></i>
-            </div>
+            <div class="upload-icon">⬆️</div>
             <div class="upload-text">
               <h3>Arrastra y suelta tu PDF aquí</h3>
               <p>O haz clic para seleccionar un archivo</p>
             </div>
-            <button type="button" class="btn btn-outline" id="select-file-btn">
-              <i class="fas fa-folder-open"></i> Explorar Archivos
-            </button>
+            <button type="button" class="btn btn-outline" id="select-file-btn">📁 Explorar Archivos</button>
             <input type="file" id="archivo-pdf" class="file-input" accept=".pdf" required>
           </div>
           <div id="file-name" class="file-name hidden"></div>
         </div>
-        <button type="submit" class="btn btn-primary btn-full">
-          <i class="fas fa-magic"></i> Generar Esquema Automático
-        </button>
+        <button type="submit" class="btn btn-primary btn-full">✨ Generar Esquema Automático</button>
       </form>
     </div>
     <!-- Estado de Carga -->
@@ -70,14 +46,9 @@
       <div class="loading-container">
         <div class="ai-icon" id="ai-icon">🤖</div>
         <div class="mensaje-estado">
-          <span id="texto-estado" class="typewriter">Leyendo texto del PDF…</span>
+          <span id="texto-estado">Leyendo texto del PDF…</span>
         </div>
-        <div class="progress-container">
-          <div class="progress-bar">
-            <div id="progreso-carga" class="progress-fill" style="width: 0%"></div>
-          </div>
-          <p id="texto-carga" class="text-center">0%</p>
-        </div>
+        <div class="barra-indeterminada"><div class="barra-indeterminada-fill"></div></div>
       </div>
     </div>
     <!-- Alertas -->
@@ -86,9 +57,7 @@
     <!-- Resultado: Esquema Profesional -->
     <div id="resultado-esquema" class="card hidden">
       <div class="card-header">
-        <div class="card-icon">
-          <i class="fas fa-project-diagram"></i>
-        </div>
+        <div class="card-icon">🗂️</div>
         <h2 class="card-title">Esquema Generado</h2>
       </div>
       <div id="esquema-profesional">
@@ -101,25 +70,15 @@
         </div>
       </div>
       <div class="esquema-actions">
-        <button id="btn-descargar-pdf" class="btn btn-outline-secondary">
-          <i class="fas fa-file-pdf"></i> Descargar PDF
-        </button>
-        <button id="btn-descargar-txt" class="btn btn-outline-secondary">
-          <i class="fas fa-download"></i> Descargar TXT
-        </button>
-        <button id="btn-nuevo-pdf" class="btn btn-accent">
-          <i class="fas fa-plus"></i> Nuevo PDF
-        </button>
-        <button id="btn-finalizar" class="btn btn-danger">
-          <i class="fas fa-flag"></i> Finalizar
-        </button>
+        <button id="btn-descargar-pdf" class="btn btn-outline-secondary">📄 Descargar PDF</button>
+        <button id="btn-descargar-txt" class="btn btn-outline-secondary">⬇️ Descargar TXT</button>
+        <button id="btn-nuevo-pdf" class="btn btn-accent">➕ Nuevo PDF</button>
+        <button id="btn-finalizar" class="btn btn-danger">🏁 Finalizar</button>
       </div>
     </div>
   </div>
   <!-- Indicador de Auto-guardado -->
-  <div id="auto-save-indicator" class="auto-save-indicator">
-    <i class="fas fa-save"></i> Guardado automáticamente
-  </div>
+  <div id="auto-save-indicator" class="auto-save-indicator">💾 Guardado automáticamente</div>
   <!-- Librerías externas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>

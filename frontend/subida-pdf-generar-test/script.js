@@ -32,28 +32,28 @@ async function obtenerAuthHeaders() {
         text: mensaje,
         confirmButtonText: 'Entendido'
       });
-      document.getElementById('form-subir-pdf').style.display = 'block';
+      document.getElementById('tarjeta-formulario').style.display = 'block';
       document.getElementById('contenedor-carga').style.display = 'none';
     }
 
     // === TEMPORIZADOR ===
     function iniciarTemporizador() {
       tiempoInicio = Date.now();
+      const temporizadorEl = document.getElementById("temporizador");
+      temporizadorEl.style.display = "block";
+      temporizadorEl.style.textAlign = "center";
+      temporizadorEl.style.fontSize = "1.5rem";
+      temporizadorEl.style.fontWeight = "bold";
+      temporizadorEl.style.padding = "15px";
+      temporizadorEl.style.margin = "20px 0";
+      temporizadorEl.style.background = "linear-gradient(135deg, #d0ebff, #a5d8ff)";
+      temporizadorEl.style.color = "#1c7ed6";
+      temporizadorEl.style.borderRadius = "12px";
+      temporizadorEl.style.boxShadow = "0 4px 10px rgba(0,0,0,0.1)";
+      temporizadorEl.textContent = `⏱ Tiempo: ${formatearTiempo(0)}`;
       intervaloTemporizador = setInterval(() => {
         const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
-        document.getElementById("temporizador").innerHTML = `
-          ⏱ Tiempo: <span class="pulse">${formatearTiempo(transcurrido)}</span>
-        `;
-        document.getElementById("temporizador").style.display = "block";
-        document.getElementById("temporizador").style.textAlign = "center";
-        document.getElementById("temporizador").style.fontSize = "1.5rem";
-        document.getElementById("temporizador").style.fontWeight = "bold";
-        document.getElementById("temporizador").style.padding = "15px";
-        document.getElementById("temporizador").style.margin = "20px 0";
-        document.getElementById("temporizador").style.background = "linear-gradient(135deg, #d0ebff, #a5d8ff)";
-        document.getElementById("temporizador").style.color = "#1c7ed6";
-        document.getElementById("temporizador").style.borderRadius = "12px";
-        document.getElementById("temporizador").style.boxShadow = "0 4px 10px rgba(0,0,0,0.1)";
+        temporizadorEl.textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
       }, 1000);
     }
 
@@ -162,60 +162,34 @@ async function obtenerAuthHeaders() {
       formData.append('pdf', archivo);
       formData.append('num_preguntas', num_preguntas);
 
-      document.getElementById('form-subir-pdf').style.display = 'none';
-      document.getElementById('titulo-formulario').style.display = 'none';
+      document.getElementById('tarjeta-formulario').style.display = 'none';
       document.getElementById('contenedor-carga').style.display = 'block';
 
-      const barraProgreso = document.getElementById('progreso-carga');
-      const textoPorcentaje = document.getElementById('texto-carga');
       const textoEstado = document.getElementById('texto-estado');
       const aiIcon = document.getElementById('ai-icon');
 
-      const etapas = [
-        { mensaje: "Leyendo texto del PDF…", icono: "📄", porcentaje: 20 },
-        { mensaje: "Extrayendo conceptos clave…", icono: "🔍", porcentaje: 40 },
-        { mensaje: "Analizando estructura del temario…", icono: "📊", porcentaje: 60 },
-        { mensaje: "Generando preguntas inteligentes…", icono: "🧠", porcentaje: 80 },
-        { mensaje: "Preparando test…", icono: "✅", porcentaje: 95 }
+      const mensajes = [
+        { mensaje: "Leyendo texto del PDF…", icono: "📄" },
+        { mensaje: "Extrayendo conceptos clave…", icono: "🔍" },
+        { mensaje: "Analizando estructura del temario…", icono: "📊" },
+        { mensaje: "Generando preguntas inteligentes…", icono: "🧠" },
+        { mensaje: "Preparando test…", icono: "✅" }
       ];
 
       let datosIA = null;
       let errorIA = null;
 
-      // Iniciar progreso inmediatamente
-      barraProgreso.style.width = "5%";
-      textoPorcentaje.textContent = "5%";
-      aiIcon.textContent = "📄";
-      textoEstado.textContent = "Iniciando procesamiento del PDF…";
-
-      // Simular progreso inicial rápido
-      let progresoActual = 5;
-      const intervaloProgreso = setInterval(() => {
-        if (progresoActual < 95) {
-          progresoActual += 1;
-          barraProgreso.style.width = `${progresoActual}%`;
-          textoPorcentaje.textContent = `${progresoActual}%`;
-          
-          // Cambiar el color de la barra de progreso dinámicamente
-          if (progresoActual < 30) {
-            barraProgreso.style.background = `linear-gradient(90deg, #ff5252, #ff7675)`;
-          } else if (progresoActual < 70) {
-            barraProgreso.style.background = `linear-gradient(90deg, #ffa502, #ffb142)`;
-          } else {
-            barraProgreso.style.background = `linear-gradient(90deg, #2ed573, #7bed9f)`;
-          }
-          
-          // Cambiar etapa basado en el progreso
-          const etapa = etapas.find(e => progresoActual <= e.porcentaje) || etapas[etapas.length - 1];
-          if (textoEstado.textContent !== etapa.mensaje) {
-            aiIcon.textContent = etapa.icono;
-            textoEstado.textContent = etapa.mensaje;
-          }
-        }
-      }, 500); // Más rápido: 0.5 segundos por 1%
+      let indiceMensaje = 0;
+      textoEstado.textContent = mensajes[0].mensaje;
+      aiIcon.textContent = mensajes[0].icono;
+      const intervaloMensajes = setInterval(() => {
+        indiceMensaje = (indiceMensaje + 1) % mensajes.length;
+        textoEstado.textContent = mensajes[indiceMensaje].mensaje;
+        aiIcon.textContent = mensajes[indiceMensaje].icono;
+      }, 2200);
 
       const authHeaders = await obtenerAuthHeaders();
-      if (!authHeaders) { clearInterval(intervaloProgreso); return; }
+      if (!authHeaders) { clearInterval(intervaloMensajes); return; }
 
       // Ejecutar la petición en segundo plano
       let peticionExitosa = false;
@@ -239,28 +213,18 @@ async function obtenerAuthHeaders() {
         console.warn("Fallo generando test desde PDF", err);
       }
 
+      clearInterval(intervaloMensajes);
+
       if (requierePlanSuperior) {
-        clearInterval(intervaloProgreso);
         mostrarError("Esta herramienta requiere el plan Premium. Ve a /planes/ para activarlo.");
         return;
       }
       if (!peticionExitosa) errorIA = new Error("No se pudieron generar preguntas válidas desde el PDF.");
 
-      // Detener el intervalo de progreso
-      clearInterval(intervaloProgreso);
-
       if (errorIA) {
         mostrarError(errorIA.message || "Error al generar el test.");
         return;
       }
-
-      // Completar al 100%
-      barraProgreso.style.width = "100%";
-      textoPorcentaje.textContent = "100%";
-      barraProgreso.style.background = `linear-gradient(90deg, #2ed573, #7bed9f)`;
-      aiIcon.textContent = "✅";
-      textoEstado.textContent = "¡Listo! Cargando test…";
-      await new Promise(r => setTimeout(r, 800));
 
       preguntas = datosIA.test || [];
       if (preguntas.length === 0) {
@@ -284,30 +248,29 @@ async function obtenerAuthHeaders() {
 
       const p = preguntas[i];
       let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
-      let html = `<form id="form-pregunta"><fieldset style="padding: 20px;">
-        <legend class="pregunta-en-negrita">${i + 1}. ${textoPregunta}</legend><br>`;
+      let html = `<form id="form-pregunta">
+        <div class="pregunta-en-negrita">${i + 1}. ${textoPregunta}</div>`;
 
       for (const letra in p.opciones) {
         const opcion = p.opciones[letra];
         const checked = respuestasUsuario[i] === letra ? "checked" : "";
         html += `
-          <div style="margin-bottom: 12px;">
-            <label style="cursor: pointer; display: flex; align-items: flex-start;">
-              <input type="radio" name="respuesta" value="${letra}" ${checked} style="margin-top: 4px; margin-right: 10px;">
-              <div>${letra}) ${opcion}</div>
-            </label>
-          </div>`;
+          <label class="opcion-respuesta">
+            <input type="radio" name="respuesta" value="${letra}" ${checked}>
+            <span class="opcion-letra">${letra}</span>
+            <span class="opcion-texto">${opcion}</span>
+          </label>`;
       }
 
       html += `
         <div class="botones-navegacion-test">
-          ${i > 0 ? '<button type="button" id="btn-anterior" class="btn btn-accent btn-full">⬅️ Anterior</button>' : ''} 
-          <button type="button" id="btn-desmarcar" class="btn btn-accent btn-full">❌ Desmarcar</button>
+          ${i > 0 ? '<button type="button" id="btn-anterior" class="age-btn age-btn-outline">← Anterior</button>' : ''}
+          <button type="button" id="btn-desmarcar" class="age-btn age-btn-outline">Desmarcar</button>
         </div>
-        <button type="submit" class="btn btn-primary btn-full" style="margin-top: 15px;">
-          ${i + 1 < preguntas.length ? 'Siguiente ➡️' : 'Finalizar test ✅'}
+        <button type="submit" class="age-btn age-btn-primary age-btn-block" style="margin-top:12px;">
+          ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
         </button>
-      </fieldset></form>`;
+      </form>`;
 
       document.getElementById("contenedor-test").innerHTML = html;
       document.getElementById("contenedor-test").style.display = "block";
@@ -351,114 +314,35 @@ async function obtenerAuthHeaders() {
       });
     }
 
-    // === RESULTADOS FINALES ===
-    function mostrarResultados() {
+    // === RESULTADOS FINALES (módulo compartido con el resto de tests) ===
+    let ultimasEstadisticas = null;
+
+    async function mostrarResultados() {
       clearInterval(intervaloTemporizador);
+      document.getElementById("temporizador").style.display = "none";
       document.getElementById("barra-progreso-preguntas").style.display = "none";
       document.getElementById("contenedor-test").innerHTML = "";
       document.getElementById("contenedor-test").style.display = "none";
       document.getElementById("btn-finalizar").style.display = "none";
 
-      aciertos = 0;
-      preguntas.forEach((p, i) => {
-        const correcta = p.respuesta_correcta || "No indicada";
-        const seleccion = respuestasUsuario[i];
-        if (seleccion === correcta) aciertos++;
+      const cont = document.getElementById("contenedor-resultados");
+      cont.style.display = "block";
+
+      const { renderizarResultadosTest } = await import("/assets/resultados-test.js");
+      ultimasEstadisticas = renderizarResultadosTest({
+        contenedor: cont,
+        preguntas,
+        respuestasUsuario,
+        listaTemas: []
       });
-      fallos = preguntas.length - aciertos - respuestasUsuario.filter(r => r === null).length;
-      sinResponder = respuestasUsuario.filter(r => r === null).length;
-      porcentaje = ((aciertos / preguntas.length) * 100).toFixed(1);
-      const nota = (aciertos * 1 - fallos * 0.33).toFixed(2);
-      const notaEquivalente = ((nota / preguntas.length) * 70).toFixed(2);
+      aciertos = ultimasEstadisticas.aciertos;
+      fallos = ultimasEstadisticas.fallos;
+      sinResponder = ultimasEstadisticas.sinResponder;
+      porcentaje = ultimasEstadisticas.porcentaje;
 
-      let html = `
-        <div style='background:#f8f9fa;padding:25px;border-radius:12px;margin-bottom:25px;'>
-          <h3>📊 Resumen del Test</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
-            <div style="background: #e8f5e9; padding: 15px; border-radius: 10px;">
-              <p style="color:green; font-weight:600;">✅ Aciertos: ${aciertos}</p>
-            </div>
-            <div style="background: #ffebee; padding: 15px; border-radius: 10px;">
-              <p style="color:red; font-weight:600;">❌ Fallos: ${fallos}</p>
-            </div>
-            <div style="background: #e9ecef; padding: 15px; border-radius: 10px;">
-              <p style="color:#495057; font-weight:600;">⏸ En blanco: ${sinResponder}</p>
-            </div>
-            <div style="background: #e7f5ff; padding: 15px; border-radius: 10px;">
-              <p style="color:#1c7ed6; font-weight:600;">🎯 Porcentaje: ${porcentaje}%</p>
-            </div>
-          </div>
-          <p><strong>📘 Nota simulada:</strong> ${nota} / ${preguntas.length}</p>
-          <p><strong>📏 Nota equivalente AGE:</strong> ${notaEquivalente} / 70</p>
-          <div style='background:#e9ecef;border-radius:10px;overflow:hidden;margin-top:15px;height:20px;'>
-            <div style='width:${porcentaje}%;background:linear-gradient(to right,#4caf50,#81c784);height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;'>
-              ${porcentaje}%
-            </div>
-          </div>
-        </div>
-        <div class="filtros-container">
-          <button class="btn btn-accent" onclick="aplicarFiltro('todos')">🟡 Todos</button>
-          <button class="btn btn-primary" onclick="aplicarFiltro('acierto')">✅ Aciertos</button>
-          <button class="btn btn-danger" onclick="aplicarFiltro('fallo')">❌ Fallos</button>
-          <button class="btn" style="background: #adb5bd; color: white;" onclick="aplicarFiltro('blanco')">⏸ En blanco</button>
-        </div>
-        <h3 style="margin-top: 30px;">📝 Detalle de preguntas</h3>
-        <ol style="padding-left: 18px;">`;
-
-      preguntas.forEach((p, i) => {
-        const correcta = p.respuesta_correcta || "No indicada";
-        const seleccion = respuestasUsuario[i];
-        let clase = "fallo";
-        if (seleccion === correcta) {
-          clase = "acierto";
-        } else if (seleccion === null) {
-          clase = "blanco";
-        }
-
-        let preguntaSinNumero = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
-        html += `<li class="${clase}" style="margin-bottom:25px;">
-          <div class="pregunta-en-negrita">${i + 1}. ${preguntaSinNumero}</div>`;
-
-        for (const letra in p.opciones) {
-          let tipoRespuesta = "resp-neutra";
-          let icono = "";
-          if (letra === correcta) {
-            tipoRespuesta = "resp-correcta";
-            icono = '<span class="icono-correcto">✅</span>';
-          }
-          if (letra === seleccion && seleccion !== correcta) {
-            tipoRespuesta = "resp-incorrecta";
-            icono = '<span class="icono-incorrecto">❌ </span>';
-          }
-          html += `<div class="${tipoRespuesta}">${icono}${letra}) ${p.opciones[letra]}</div>`;
-        }
-
-        const idExp = "exp" + i;
-        html += `<button class="btn" style="margin-top: 10px; background: #e9ecef; color: #495057;" 
-                 onclick="document.getElementById('${idExp}').style.display = document.getElementById('${idExp}').style.display === 'none' ? 'block' : 'none';">
-                 📘 Mostrar/Ocultar Explicación</button>`;
-        html += `<div id="${idExp}" style="display:none; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                 <strong>Explicación:</strong> ${p.explicacion || "Sin explicación."}</div></li>`;
-      });
-
-      html += `</ol>`;
-      document.getElementById("contenedor-resultados").innerHTML = html;
-      document.getElementById("contenedor-resultados").style.display = "block";
       document.getElementById("btn-descargar-pdf").style.display = "block";
 
       guardarTestEnBackend();
-    }
-
-    // === FILTROS DE RESULTADOS ===
-    function aplicarFiltro(tipo) {
-      const items = document.querySelectorAll("#contenedor-resultados ol li");
-      items.forEach(li => {
-        if (tipo === 'todos') {
-          li.style.display = 'block';
-        } else {
-          li.style.display = li.classList.contains(tipo) ? 'block' : 'none';
-        }
-      });
     }
 
     // === FINALIZAR TEST ===
@@ -482,95 +366,13 @@ async function obtenerAuthHeaders() {
     });
 
     // === DESCARGAR PDF ===
-    document.getElementById("btn-descargar-pdf").addEventListener("click", function() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const margin = 15;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let yPos = 20;
-
-      function reemplazarEmojis(texto) {
-        if (!texto) return "";
-        return texto
-          .replace(/✅/g, '[Correcta]')
-          .replace(/❌/g, '[Incorrecta]')
-          .replace(/⏸/g, '[En blanco]')
-          .replace(/📘/g, 'Explicación:')
-          .replace(/📝/g, '')
-          .replace(/🤖/g, '')
-          .replace(/⏱/g, 'Tiempo:')
-          .replace(/📊/g, '')
-          .replace(/📈/g, '')
-          .replace(/🎯/g, '');
-      }
-
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text("Resultados del Test", pageWidth / 2, yPos, null, null, 'center');
-      yPos += 15;
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      const resumen = `Aciertos: ${aciertos} | Fallos: ${fallos} | En blanco: ${sinResponder} | Porcentaje: ${porcentaje}%`;
-      doc.text(resumen, pageWidth / 2, yPos, null, null, 'center');
-      yPos += 15;
-      doc.setFontSize(11);
-
-      preguntas.forEach((p, i) => {
-        if (yPos > pageHeight - 50) {
-          doc.addPage();
-          yPos = 20;
-        }
-        doc.setFont("helvetica", "bold");
-        let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
-        textoPregunta = `${i + 1}. ${reemplazarEmojis(textoPregunta)}`;
-        const preguntaLines = doc.splitTextToSize(textoPregunta, pageWidth - 2 * margin);
-        preguntaLines.forEach(line => {
-          if (yPos > pageHeight - 20) {
-            doc.addPage();
-            yPos = 20;
-          }
-          doc.text(line, margin, yPos);
-          yPos += 7;
-        });
-        doc.setFont("helvetica", "normal");
-        yPos += 5;
-        for (const letra in p.opciones) {
-          let opcionTexto = `${letra}) ${reemplazarEmojis(p.opciones[letra])}`;
-          if (letra === p.respuesta_correcta) {
-            opcionTexto += " [Correcta]";
-          }
-          const opcionLines = doc.splitTextToSize(opcionTexto, pageWidth - 2 * margin);
-          opcionLines.forEach(line => {
-            if (yPos > pageHeight - 20) {
-              doc.addPage();
-              yPos = 20;
-            }
-            doc.text(line, margin, yPos);
-            yPos += 7;
-          });
-        }
-        yPos += 5;
-        const explicacion = p.explicacion || "Sin explicación disponible.";
-        doc.setFont("helvetica", "bold");
-        doc.text("Explicación:", margin, yPos);
-        yPos += 7;
-        doc.setFont("helvetica", "normal");
-        const explicacionLines = doc.splitTextToSize(reemplazarEmojis(explicacion), pageWidth - 2 * margin);
-        explicacionLines.forEach(line => {
-          if (yPos > pageHeight - 20) {
-            doc.addPage();
-            yPos = 20;
-          }
-          doc.text(line, margin, yPos);
-          yPos += 7;
-        });
-        yPos += 10;
-        if (yPos < pageHeight - 10) {
-          doc.setDrawColor(200);
-          doc.line(margin, yPos, pageWidth - margin, yPos);
-          yPos += 15;
-        }
+    document.getElementById("btn-descargar-pdf").addEventListener("click", async function() {
+      const { descargarResultadosPDF } = await import("/assets/resultados-test.js");
+      descargarResultadosPDF({
+        preguntas,
+        respuestasUsuario,
+        stats: ultimasEstadisticas,
+        titulo: "Resultados: test desde PDF",
+        nombreArchivo: "resultados-test-pdf.pdf"
       });
-      doc.save("resultados-test.pdf");
     });

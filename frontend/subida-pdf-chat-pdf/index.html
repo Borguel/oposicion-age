@@ -2,29 +2,28 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Analizador de PDFs - Herramienta de Estudio</title>
+  <title>Analizador de PDFs - Oposición AGE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">  <link rel="stylesheet" href="/assets/theme.css" />
-
-  
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/assets/pdf-tools.css" />
   <link rel="stylesheet" href="/subida-pdf-chat-pdf/style.css" />
 </head>
 <body>
 <nav class="age-nav"></nav>
 
-  <div class="container">
-    <div class="header">
-      <h1>Analizador de PDFs con IA</h1>
-      <p>Sube cualquier documento y utiliza IA para estudiar de forma más eficiente</p>
-    </div>
+  <div class="pdfherr-header">
+    <div class="pdfherr-icon">💬</div>
+    <h1>Analizador de PDFs con IA</h1>
+    <p>Sube cualquier documento y utiliza IA para estudiar de forma más eficiente</p>
+  </div>
 
+  <div class="container">
     <div class="card">
       <div class="pdf-chat-container">
         <div class="pdf-upload-section">
           <h2>Analizador de PDFs</h2>
           <div class="upload-area" id="pdf-upload-area">
-            <i class="fas fa-file-pdf"></i>
+            <div class="upload-icon">📄</div>
             <p>Arrastra tu PDF aquí o haz clic para seleccionar</p>
             <input type="file" id="pdf-file" accept=".pdf" hidden>
             <button class="btn btn-secondary" id="select-pdf-btn">Seleccionar PDF</button>
@@ -86,7 +85,7 @@
           </div>
           <div class="input-container">
             <input type="text" id="pdf-user-input" placeholder="Haz una pregunta sobre el documento...">
-            <button id="pdf-send-btn"><i class="fas fa-paper-plane"></i></button>
+            <button id="pdf-send-btn">➤</button>
           </div>
         </div>
       </div>

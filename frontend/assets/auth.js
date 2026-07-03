@@ -223,9 +223,14 @@ function inyectarBannerCookies() {
   // El aviso es fixed en la parte inferior: reserva justo su alto real como
   // padding para que no tape botones que ya estuvieran anclados abajo (p.
   // ej. "Finalizar test"). Se mide en vez de usar un valor fijo porque el
-  // texto puede ocupar 1, 2 o 3 líneas según el ancho de pantalla.
+  // texto puede ocupar 1, 2 o 3 líneas según el ancho de pantalla. También
+  // se expone como variable CSS para páginas con su propio layout a pantalla
+  // completa (chat, asistente), que necesitan restarla de su propio alto en
+  // vez de depender del padding del body.
   const ajustarEspacio = () => {
-    document.body.style.paddingBottom = `${banner.offsetHeight}px`;
+    const alto = `${banner.offsetHeight}px`;
+    document.body.style.paddingBottom = alto;
+    document.documentElement.style.setProperty("--age-cookie-banner-height", alto);
   };
   ajustarEspacio();
   window.addEventListener("resize", ajustarEspacio);
@@ -234,6 +239,7 @@ function inyectarBannerCookies() {
     localStorage.setItem(CLAVE_COOKIES_ACEPTADAS, "1");
     banner.remove();
     document.body.style.paddingBottom = "";
+    document.documentElement.style.setProperty("--age-cookie-banner-height", "0px");
     window.removeEventListener("resize", ajustarEspacio);
   });
 }
