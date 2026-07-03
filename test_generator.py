@@ -54,6 +54,13 @@ def _generar_pregunta_desde_subbloque(sub, oposicion=OPOSICION_POR_DEFECTO):
         generado_json = json.loads(generado[inicio:fin])
 
         if validar_pregunta(generado_json):
+            # El id de tema tal y como lo expone /temas-disponibles es
+            # "bloque-tema" (sin el subbloque); se deriva de la etiqueta para
+            # que cada pregunta sepa de qué tema salió realmente, en vez de
+            # que el frontend tenga que adivinarlo/asignarlo al azar.
+            partes = etiqueta.split("-")
+            if len(partes) >= 2:
+                generado_json["tema_id"] = "-".join(partes[:2])
             return {"etiqueta": etiqueta, "pregunta": generado_json}
         return {"etiqueta": etiqueta, "error": "No pasó validación"}
 

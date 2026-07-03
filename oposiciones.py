@@ -27,3 +27,9 @@ def oposicion_valida(oposicion):
 def coleccion_temario(oposicion):
     datos = OPOSICIONES.get(oposicion) or OPOSICIONES[OPOSICION_POR_DEFECTO]
     return datos["coleccion_temario"]
+
+
+def coleccion_examenes_oficiales(oposicion):
+    if not oposicion_valida(oposicion):
+        oposicion = OPOSICION_POR_DEFECTO
+    return f"examenes_oficiales_{oposicion}"

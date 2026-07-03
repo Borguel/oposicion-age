@@ -197,9 +197,47 @@ function inyectarFooter() {
     <span>© ${anio} Oposición AGE</span>
     <a href="/terminos/">Términos y condiciones</a>
     <a href="/privacidad/">Privacidad</a>
+    <a href="/cookies/">Cookies</a>
   `;
   document.body.appendChild(footer);
 }
 
+const CLAVE_COOKIES_ACEPTADAS = "age_cookies_aceptadas";
+
+function inyectarBannerCookies() {
+  if (localStorage.getItem(CLAVE_COOKIES_ACEPTADAS) === "1") return;
+  if (document.querySelector(".age-cookies-banner")) return;
+
+  const banner = document.createElement("div");
+  banner.className = "age-cookies-banner";
+  banner.innerHTML = `
+    <p>
+      Usamos almacenamiento técnico necesario para que puedas iniciar sesión y usar la web
+      (por ejemplo, para recordar tu sesión y la oposición que estás estudiando). No usamos cookies
+      de publicidad. Más información en nuestra <a href="/cookies/">Política de Cookies</a>.
+    </p>
+    <button type="button" class="age-btn age-btn-primary" id="age-cookies-aceptar">Aceptar</button>
+  `;
+  document.body.appendChild(banner);
+
+  // El aviso es fixed en la parte inferior: reserva justo su alto real como
+  // padding para que no tape botones que ya estuvieran anclados abajo (p.
+  // ej. "Finalizar test"). Se mide en vez de usar un valor fijo porque el
+  // texto puede ocupar 1, 2 o 3 líneas según el ancho de pantalla.
+  const ajustarEspacio = () => {
+    document.body.style.paddingBottom = `${banner.offsetHeight}px`;
+  };
+  ajustarEspacio();
+  window.addEventListener("resize", ajustarEspacio);
+
+  document.getElementById("age-cookies-aceptar").addEventListener("click", () => {
+    localStorage.setItem(CLAVE_COOKIES_ACEPTADAS, "1");
+    banner.remove();
+    document.body.style.paddingBottom = "";
+    window.removeEventListener("resize", ajustarEspacio);
+  });
+}
+
 onAuthStateChanged(auth, inyectarNav);
 inyectarFooter();
+inyectarBannerCookies();

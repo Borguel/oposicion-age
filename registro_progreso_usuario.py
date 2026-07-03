@@ -40,7 +40,7 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None):
             "suscripciones": {},
         })
 
-def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None):
+def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None, rendimiento_temas=None):
     doc_ref = db.collection("usuarios").document(usuario_id)
     usuario = doc_ref.get().to_dict() or {}
     stats = (usuario.get("estadisticas", {}) or {}).get(oposicion, {}) or {}
@@ -50,6 +50,18 @@ def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, te
     total_fallos = stats.get("total_fallos", 0) + fallos
     temas_test = list(set(stats.get("temas_test", []) + temas))
     tiempo_total = stats.get("tiempo_total", 0) + tiempo_en_segundos
+
+    # Rendimiento acumulado por tema (aciertos/fallos/blancos), para poder
+    # mostrar no solo qué temas se han tocado sino en cuáles se rinde mejor
+    # o peor -- se acumula sumando sobre lo que ya hubiera guardado.
+    rendimiento_por_tema = stats.get("rendimiento_por_tema", {}) or {}
+    for tema_id, datos in (rendimiento_temas or {}).items():
+        acumulado = rendimiento_por_tema.get(tema_id, {"aciertos": 0, "fallos": 0, "blancos": 0})
+        rendimiento_por_tema[tema_id] = {
+            "aciertos": acumulado.get("aciertos", 0) + datos.get("aciertos", 0),
+            "fallos": acumulado.get("fallos", 0) + datos.get("fallos", 0),
+            "blancos": acumulado.get("blancos", 0) + datos.get("blancos", 0),
+        }
 
     total_preguntas = aciertos + fallos
     puntuacion = puntuacion_final if puntuacion_final is not None else round(aciertos / total_preguntas, 2) if total_preguntas else 0
@@ -86,6 +98,7 @@ def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, te
         f"{prefijo}tests_aprobados": aprobados,
         f"{prefijo}tests_suspendidos": suspendidos,
         f"{prefijo}temas_test": temas_test,
+        f"{prefijo}rendimiento_por_tema": rendimiento_por_tema,
         f"{prefijo}tiempo_total": tiempo_total,
         f"{prefijo}puntuacion_media_test": puntuacion_media,
         f"{prefijo}historial_tests": historial,
@@ -138,6 +151,7 @@ def obtener_resumen_progreso(db, usuario_id, oposicion=OPOSICION_POR_DEFECTO):
         "tiempo_total": stats.get("tiempo_total", 0),
         "temas_test": stats.get("temas_test", []),
         "temas_esquemas": stats.get("temas_esquemas", []),
+        "rendimiento_por_tema": stats.get("rendimiento_por_tema", {}),
         "ultimo_test": stats.get("ultimo_test", {}),
         "historial_tests": stats.get("historial_tests", []),
         "ultima_actividad": datos.get("ultima_actividad", None),

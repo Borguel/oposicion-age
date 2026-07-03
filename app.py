@@ -22,7 +22,7 @@ from rutas_progreso import registrar_rutas_progreso
 from guardar_resultado import guardar_resultado_en_firestore
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario
-from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida, coleccion_temario
+from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida, coleccion_temario, coleccion_examenes_oficiales
 # Cargar variables de entorno
 load_dotenv()
 print("🔑 Clave OpenAI:", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
@@ -135,7 +135,7 @@ def generar_esquema_route():
     resultado = generar_esquema(temas=temas, db=db, instrucciones=instrucciones, nivel=nivel, coleccion=coleccion_temario(g.oposicion))
     return jsonify({"esquema": resultado})
 @app.route("/generar-test-oficial", methods=["POST"])
-@requiere_login(db)
+@requiere_plan(db, "basico")
 def generar_test_oficial():
     data = request.get_json()
     print("✅ Ruta /generar-test-oficial llamada")
@@ -144,8 +144,9 @@ def generar_test_oficial():
     examenes_filtrados = data.get("examenes", [])
     print("🔍 Número de preguntas solicitado:", num_preguntas)
     print("📚 Exámenes filtrados:", examenes_filtrados)
+    coleccion = coleccion_examenes_oficiales(g.oposicion)
     try:
-        docs = db.collection("examenes_oficiales_AGE").stream()
+        docs = db.collection(coleccion).stream()
     except Exception as e:
         print("❌ Error accediendo a Firestore:", e)
         return jsonify({"error": "No se pudo acceder a Firestore"}), 500
@@ -167,9 +168,9 @@ def generar_test_oficial():
             "examen": d.get("examen", ""),
             "numero": d.get("numero", 0)
         })
-    print(f"✅ Preguntas encontradas tras filtro: {len(preguntas)}")
+    print(f"✅ Preguntas encontradas tras filtro en {coleccion}: {len(preguntas)}")
     if not preguntas:
-        return jsonify({"test": [], "mensaje": "No se encontraron preguntas"}), 404
+        return jsonify({"test": [], "mensaje": "Todavía no hay preguntas oficiales cargadas para esta oposición"}), 404
     seleccionadas = random.sample(preguntas, min(num_preguntas, len(preguntas)))
     print(f"🎯 Preguntas seleccionadas aleatoriamente: {len(seleccionadas)}")
     return jsonify({"test": seleccionadas})

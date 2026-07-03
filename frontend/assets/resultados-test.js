@@ -65,7 +65,7 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     if (seleccion === correcta) clase = "acierto";
     else if (seleccion === null || seleccion === undefined) clase = "blanco";
 
-    detalleHTML += `<li class="${clase}" style="margin-bottom:25px;">
+    detalleHTML += `<div class="${clase}" style="margin-bottom:25px;">
       <div class="pregunta-en-negrita">${i + 1}. ${quitarNumeracion(p.pregunta)}</div>`;
     for (const letra in p.opciones) {
       let tipoRespuesta = "resp-neutra";
@@ -82,7 +82,7 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     }
     const idExp = `exp-${i}-${Math.random().toString(36).slice(2, 6)}`;
     detalleHTML += `<button type="button" class="btn age-btn-toggle-exp" data-toggle-target="${idExp}" style="margin-top: 10px; background: #e9ecef; color: #495057;">📘 Mostrar/Ocultar Explicación</button>`;
-    detalleHTML += `<div id="${idExp}" style="display:none; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;"><strong>Explicación:</strong> ${explicacion}</div></li>`;
+    detalleHTML += `<div id="${idExp}" style="display:none; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;"><strong>Explicación:</strong> ${explicacion}</div></div>`;
   });
 
   const chartHTML = `
@@ -125,15 +125,15 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
       <button type="button" class="btn" style="background: #adb5bd; color: white;" data-filtro="blanco">⏸ En blanco</button>
     </div>
     <h3 style="margin-top: 20px;">📝 Detalle de preguntas</h3>
-    <ol style="padding-left: 18px;">${detalleHTML}</ol>
+    <div class="lista-detalle-preguntas">${detalleHTML}</div>
   `;
 
   // Filtros (delegado, sin onclick inline)
   contenedor.querySelectorAll("[data-filtro]").forEach((boton) => {
     boton.addEventListener("click", () => {
       const filtro = boton.dataset.filtro;
-      contenedor.querySelectorAll("ol > li").forEach((li) => {
-        li.style.display = filtro === "todos" || li.classList.contains(filtro) ? "block" : "none";
+      contenedor.querySelectorAll(".lista-detalle-preguntas > div").forEach((item) => {
+        item.style.display = filtro === "todos" || item.classList.contains(filtro) ? "block" : "none";
       });
     });
   });
@@ -234,8 +234,11 @@ export function descargarResultadosPDF({ preguntas, respuestasUsuario, stats, ti
   }
 
   function escribirLineas(lineas, opciones = {}) {
+    const color = doc.getTextColor();
     lineas.forEach((linea) => {
+      const alturaAntes = yPos;
       asegurarEspacio(6);
+      if (yPos !== alturaAntes) doc.setTextColor(color);
       doc.text(linea, opciones.x ?? margin, yPos);
       yPos += opciones.interlineado ?? 6;
     });
@@ -275,10 +278,21 @@ export function descargarResultadosPDF({ preguntas, respuestasUsuario, stats, ti
     const textoPregunta = `${i + 1}. ${limpiarTextoPDF(quitarNumeracion(p.pregunta))}`;
     const lineasPregunta = doc.splitTextToSize(textoPregunta, anchoTexto);
 
+    const correcta = p.respuesta_correcta;
+    const seleccion = respuestasUsuario[i];
+    const acerto = seleccion === correcta;
+
     const lineasPorOpcion = Object.keys(p.opciones).map((letra) => {
       let texto = `${letra}) ${limpiarTextoPDF(p.opciones[letra])}`;
-      if (letra === p.respuesta_correcta) texto += " [Correcta]";
-      return doc.splitTextToSize(texto, anchoTexto);
+      let color = [40, 40, 40];
+      if (letra === correcta) {
+        texto += " [Respuesta correcta]";
+        color = [46, 125, 50];
+      } else if (letra === seleccion && !acerto) {
+        texto += " [Tu respuesta]";
+        color = [198, 40, 40];
+      }
+      return { lineas: doc.splitTextToSize(texto, anchoTexto), color };
     });
     const explicacion = limpiarTextoPDF(p.explicacion || "Sin explicación disponible.");
     const lineasExplicacion = doc.splitTextToSize(explicacion, anchoTexto);
@@ -286,7 +300,7 @@ export function descargarResultadosPDF({ preguntas, respuestasUsuario, stats, ti
     // Alto total estimado del bloque (pregunta + opciones + "Explicación:" + texto + margen)
     const totalLineas =
       lineasPregunta.length +
-      lineasPorOpcion.reduce((sum, l) => sum + l.length, 0) +
+      lineasPorOpcion.reduce((sum, o) => sum + o.lineas.length, 0) +
       1 + lineasExplicacion.length;
     const altoBloque = totalLineas * 6 + 14;
 
@@ -298,11 +312,16 @@ export function descargarResultadosPDF({ preguntas, respuestasUsuario, stats, ti
     }
 
     doc.setFont("helvetica", "bold");
+    doc.setTextColor(0);
     escribirLineas(lineasPregunta, { interlineado: 6.5 });
     yPos += 2;
 
     doc.setFont("helvetica", "normal");
-    lineasPorOpcion.forEach((lineasOpcion) => escribirLineas(lineasOpcion));
+    lineasPorOpcion.forEach(({ lineas, color }) => {
+      doc.setTextColor(...color);
+      escribirLineas(lineas);
+    });
+    doc.setTextColor(0);
     yPos += 3;
 
     asegurarEspacio(6);

@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   let temasFiltrados = [];
   let todosLosTemas = [];
   let temasTest = [];
+  let temasTocados = new Set();
 
   // Función para cargar datos
   async function cargarDatos() {
@@ -80,6 +81,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const totalFallos = estadisticas.total_fallos ?? 0;
     const historial = estadisticas.historial_tests ?? [];
     temasTest = estadisticas.temas_test ?? [];
+    const rendimientoPorTema = estadisticas.rendimiento_por_tema ?? {};
     const esquemas = estadisticas.esquemas_realizados ?? 0;
     const aprobados = estadisticas.tests_aprobados ?? 0;
     const suspendidos = estadisticas.tests_suspendidos ?? 0;
@@ -105,19 +107,27 @@ document.addEventListener("DOMContentLoaded", async function () {
       ? Math.round((totalFallos / (totalAciertos + totalFallos)) * 100) 
       : 0;
 
-    const contador = {};
+    // "Más estudiado" = tema con más preguntas realmente contestadas
+    // (rendimiento_por_tema, que cuenta preguntas de verdad), y si un tema no
+    // tiene ese detalle (tests antiguos sin tema_id por pregunta) se cae al
+    // conteo antiguo por nº de tests que lo incluían entre sus temas.
+    const contadorPreguntas = {};
+    Object.entries(rendimientoPorTema).forEach(([id, r]) => {
+      contadorPreguntas[id] = (r.aciertos || 0) + (r.fallos || 0) + (r.blancos || 0);
+    });
     historial.forEach(test => {
       (test.temas || []).forEach(t => {
-        contador[t] = (contador[t] || 0) + 1;
+        if (!(t in contadorPreguntas)) contadorPreguntas[t] = (contadorPreguntas[t] || 0) + 1;
       });
     });
 
-    const topTemasEntries = Object.entries(contador)
+    const topTemasEntries = Object.entries(contadorPreguntas)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3);
 
     const todosLosTemasIds = todosTemas.map(t => t.id);
-    const noEstudiados = todosLosTemasIds.filter(t => !temasTest.includes(t));
+    temasTocados = new Set([...temasTest, ...Object.keys(rendimientoPorTema)]);
+    const noEstudiados = todosLosTemasIds.filter(t => !temasTocados.has(t));
 
     // Actualizar estadísticas principales
     document.getElementById("tests").textContent = totalTests;
@@ -147,23 +157,19 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("tendencia-media").innerHTML = tendenciaHTML;
 
     // NUEVO: Actualizar estadísticas PDF
-    document.getElementById("tests-pdf").textContent = testsPdf;
-    document.getElementById("resumenes-pdf").textContent = resumenesPdf;
-    document.getElementById("esquemas-pdf").textContent = esquemasPdf;
-    document.getElementById("tarjetas-pdf").textContent = tarjetasPdf;
     document.getElementById("total-archivos").textContent = totalArchivos;
     document.getElementById("total-tests-pdf").textContent = testsPdf;
     document.getElementById("total-resumenes-pdf").textContent = resumenesPdf;
     document.getElementById("total-esquemas-pdf").textContent = esquemasPdf;
     document.getElementById("total-tarjetas-pdf").textContent = tarjetasPdf;
 
-    actualizarTemas(topTemasEntries, todosTemas);
+    actualizarTemas(topTemasEntries, todosTemas, rendimientoPorTema);
     temasFiltrados = noEstudiados;
     todosLosTemas = todosTemas;
     mostrarTemasNoEstudiados(noEstudiados, todosTemas);
   }
 
-  function actualizarTemas(temasEntries, todosTemas) {
+  function actualizarTemas(temasEntries, todosTemas, rendimientoPorTema) {
     const listaTemas = document.getElementById("lista-temas-top");
     listaTemas.innerHTML = '';
     if (temasEntries.length === 0) {
@@ -177,9 +183,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     temasEntries.forEach(([id, count]) => {
       const tema = todosTemas.find(t => t.id === id);
       const nombre = tema ? tema.titulo : `Tema ${id}`;
+      const r = (rendimientoPorTema || {})[id];
+      const totalRespondidas = r ? (r.aciertos || 0) + (r.fallos || 0) : 0;
+      const porcentaje = totalRespondidas > 0 ? Math.round((r.aciertos / totalRespondidas) * 100) : null;
       const li = document.createElement('li');
       li.innerHTML = `
         <span class="tema-nombre">${nombre}</span>
+        ${porcentaje !== null ? `<span class="tema-acierto">${porcentaje}% acierto</span>` : ''}
         <span class="tema-count">${count}</span>
       `;
       listaTemas.appendChild(li);
@@ -226,7 +236,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   function filtrarTemas() {
     const filtro = busquedaInput.value.toLowerCase().trim();
     const temasFiltradosLocal = todosLosTemas
-      .filter(t => !temasTest.includes(t.id))
+      .filter(t => !temasTocados.has(t.id))
       .filter(t => t.titulo.toLowerCase().includes(filtro) || t.id.toString().includes(filtro));
     mostrarTemasNoEstudiados(temasFiltradosLocal.map(t => t.id), todosLosTemas);
   }

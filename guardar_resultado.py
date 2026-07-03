@@ -25,6 +25,33 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
         # Calcular resultado
         total_preguntas = aciertos + fallos
         resultado = "aprobado" if total_preguntas > 0 and (aciertos / total_preguntas) >= 0.5 else "suspendido"
+        porcentaje_acierto = round((aciertos / total_preguntas) * 100, 1) if total_preguntas else 0.0
+
+        # Temas "efectivos" del test: los elegidos explícitamente en el
+        # formulario (metadatos.temas) UNIDOS a los que trae cada pregunta en
+        # su propio tema_id. Así un test "oficial" o "inteligente" (donde no
+        # siempre se elige tema a mano) también puede contar para las
+        # estadísticas de "temas estudiados" si sus preguntas sí lo indican.
+        temas_metadatos = metadatos.get("temas", [])
+        temas_preguntas = [p.get("tema_id") for p in contenido if p.get("tema_id")]
+        temas_efectivos = list(dict.fromkeys([*temas_metadatos, *temas_preguntas]))
+
+        # Rendimiento por tema (solo de las preguntas que sí traen tema_id),
+        # para poder saber no solo qué temas se han tocado sino en cuáles se
+        # acierta más o menos -- útil para futuras recomendaciones de estudio.
+        rendimiento_temas = {}
+        for i, p in enumerate(contenido):
+            tema_id = p.get("tema_id")
+            if not tema_id:
+                continue
+            seleccion = respuestas[i] if i < len(respuestas) else None
+            entrada = rendimiento_temas.setdefault(tema_id, {"aciertos": 0, "fallos": 0, "blancos": 0})
+            if not seleccion:
+                entrada["blancos"] += 1
+            elif seleccion == p.get("respuesta_correcta"):
+                entrada["aciertos"] += 1
+            else:
+                entrada["fallos"] += 1
 
         # Guardar en subcolección tests (con la oposición a la que pertenece,
         # para poder filtrar "repetir test"/"preguntas falladas" por oposición)
@@ -33,12 +60,14 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             "fecha": datetime.utcnow().isoformat(),
             "tipo": metadatos.get("tipo", "personalizado"),
             "oposicion": oposicion,
+            "num_preguntas": len(contenido),
             "aciertos": aciertos,
             "fallos": fallos,
             "blancos": blancos,
+            "porcentaje_acierto": porcentaje_acierto,
             "puntuacion_final": puntuacion,
             "tiempo": metadatos.get("tiempo", 0),
-            "temas": metadatos.get("temas", []),
+            "temas": temas_efectivos,
             "resultado": resultado,
             "preguntas": [
                 {
@@ -46,13 +75,15 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
                     "respuesta_correcta": p.get("respuesta_correcta"),
                     "respuesta_usuario": respuestas[i] if i < len(respuestas) else None,
                     "opciones": p.get("opciones"),
-                    "explicacion": p.get("explicacion", "Sin explicación.")
+                    "explicacion": p.get("explicacion", "Sin explicación."),
+                    "tema_id": p.get("tema_id"),
+                    "acierto": (respuestas[i] if i < len(respuestas) else None) == p.get("respuesta_correcta")
                 } for i, p in enumerate(contenido)
             ]
         })
 
         # Actualizar resumen del usuario para esta oposición
-        actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, metadatos.get("temas", []), metadatos.get("tiempo", 0), metadatos.get("tipo", "personalizado"), puntuacion)
+        actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas_efectivos, metadatos.get("tiempo", 0), metadatos.get("tipo", "personalizado"), puntuacion, rendimiento_temas)
 
     elif tipo == "esquema":
         esquema_ref = doc_user.collection("esquemas").document()
@@ -212,6 +243,7 @@ def obtener_estadisticas_completas_usuario(db, usuario_id, oposicion=OPOSICION_P
             # Información adicional (de esta oposición)
             "temas_test": stats.get("temas_test", []),
             "temas_esquemas": stats.get("temas_esquemas", []),
+            "rendimiento_por_tema": stats.get("rendimiento_por_tema", {}),
             "ultimo_test": stats.get("ultimo_test", {}),
             "ultima_actividad": datos.get("ultima_actividad"),
             "fecha_creacion": datos.get("fecha_creacion")

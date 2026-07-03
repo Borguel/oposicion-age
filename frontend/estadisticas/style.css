@@ -365,6 +365,15 @@
       font-weight: 600;
     }
 
+    .tema-acierto {
+      background: var(--secondary);
+      color: white;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
     .btn-ver-temas {
       background: var(--theme-primary);
       color: white;

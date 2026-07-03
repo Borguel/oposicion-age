@@ -537,3 +537,48 @@ body {
   color: var(--age-primary-dark);
   text-decoration: underline;
 }
+
+/* ---------- Aviso de cookies ---------- */
+.age-cookies-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 16px 24px;
+  background: var(--age-navy);
+  box-shadow: 0 -6px 24px rgba(20, 24, 34, 0.18);
+}
+
+.age-cookies-banner p {
+  margin: 0;
+  max-width: 720px;
+  font-family: var(--age-font);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.age-cookies-banner a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.age-cookies-banner .age-btn {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .age-cookies-banner {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    padding: 16px 18px;
+  }
+}
+
