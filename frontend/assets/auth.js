@@ -47,22 +47,27 @@ export function signOut() {
   return firebaseSignOut(auth);
 }
 
-// Token que hay que mandar como "Authorization: Bearer <token>" en cada
-// fetch() a una ruta protegida del backend. Devuelve null si no hay sesión.
-export async function idToken() {
-  return auth.currentUser ? await auth.currentUser.getIdToken() : null;
-}
-
 // Espera a que Firebase resuelva el estado inicial de sesión (evita
 // redirecciones prematuras a /login/ mientras el SDK todavía está
 // comprobando si hay una sesión guardada).
 export function esperarUsuario() {
+  if (auth.currentUser) return Promise.resolve(auth.currentUser);
   return new Promise((resolve) => {
     const quitar = onAuthStateChanged(auth, (user) => {
       quitar();
       resolve(user);
     });
   });
+}
+
+// Token que hay que mandar como "Authorization: Bearer <token>" en cada
+// fetch() a una ruta protegida del backend. Devuelve null si no hay sesión.
+// Espera primero a que Firebase confirme la sesión guardada (si entras
+// directamente a una página, sin esto auth.currentUser podía estar
+// todavía sin resolver y te mandaba a /login/ aunque sí tuvieras sesión).
+export async function idToken() {
+  const user = await esperarUsuario();
+  return user ? await user.getIdToken() : null;
 }
 
 function inyectarNav(user) {
