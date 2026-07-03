@@ -104,6 +104,20 @@ body {
   color: var(--age-primary);
 }
 
+.age-nav select[data-nav-oposicion] {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-family: var(--age-font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 @media (max-width: 640px) {
   .age-nav a {
     font-size: 12.5px;

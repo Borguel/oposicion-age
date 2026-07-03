@@ -1,6 +1,7 @@
 import { auth, idToken, esperarUsuario, signOut } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
+import { OPOSICIONES } from "/assets/oposicion.js";
 
 const ESTADOS_LEGIBLES = {
   active: "activa",
@@ -25,10 +26,24 @@ async function iniciar() {
 
   document.getElementById("cuenta-email").textContent = usuario.email || "";
 
-  const { plan, subscription_status, nombre, apellidos, telefono, direccion } = await obtenerPlan(true);
-  document.getElementById("cuenta-plan-nombre").textContent = plan;
-  const estadoTexto = subscription_status ? ESTADOS_LEGIBLES[subscription_status] || subscription_status : "";
-  document.getElementById("cuenta-plan-estado").textContent = estadoTexto ? `Suscripción ${estadoTexto}` : "";
+  const { nombre, apellidos, telefono, direccion, suscripciones } = await obtenerPlan(true);
+
+  const contenedorOposiciones = document.getElementById("cuenta-oposiciones");
+  contenedorOposiciones.innerHTML = "";
+  let algunaDePago = false;
+  OPOSICIONES.forEach((op) => {
+    const sub = (suscripciones || {})[op.id] || {};
+    const plan = sub.plan || "gratis";
+    if (plan !== "gratis") algunaDePago = true;
+    const estadoTexto = sub.subscription_status ? ESTADOS_LEGIBLES[sub.subscription_status] || sub.subscription_status : "";
+    const fila = document.createElement("div");
+    fila.className = "cuenta-oposicion-fila";
+    fila.innerHTML = `
+      <span class="cuenta-oposicion-nombre">${op.nombre}</span>
+      <span class="cuenta-oposicion-plan">${plan}${estadoTexto ? ` · ${estadoTexto}` : ""}</span>
+    `;
+    contenedorOposiciones.appendChild(fila);
+  });
 
   document.getElementById("datos-nombre").value = nombre || "";
   document.getElementById("datos-apellidos").value = apellidos || "";
@@ -36,8 +51,8 @@ async function iniciar() {
   document.getElementById("datos-direccion").value = direccion || "";
 
   const btnPortal = document.getElementById("btn-portal");
-  if (plan === "gratis") {
-    btnPortal.textContent = "Sin suscripción activa";
+  if (!algunaDePago) {
+    btnPortal.textContent = "Sin suscripciones activas";
     btnPortal.disabled = true;
   }
   btnPortal.addEventListener("click", async () => {
@@ -81,7 +96,7 @@ formDatos.addEventListener("submit", async (evento) => {
       body: JSON.stringify({ nombre, apellidos, telefono, direccion })
     });
     if (!res.ok) throw new Error("No se pudieron guardar los cambios");
-    sessionStorage.removeItem("age_plan_cache");
+    sessionStorage.clear();
     datosMensaje.textContent = "Datos guardados correctamente.";
     datosMensaje.className = "datos-mensaje ok";
     datosMensaje.style.display = "block";

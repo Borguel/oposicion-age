@@ -48,12 +48,12 @@ def _generar_pregunta_desde_subbloque(sub):
         return {"etiqueta": etiqueta, "error": f"Error DeepSeek: {e}"}
 
 
-def generar_test_avanzado(temas, db, num_preguntas=5):
+def generar_test_avanzado(temas, db, num_preguntas=5, coleccion="Temario AGE"):
     print("🔍 función generar_test_avanzado() llamada")
     print(f"🧪 Temas recibidos: {temas}")
 
     try:
-        subbloques = obtener_subbloques_individuales(db, temas)
+        subbloques = obtener_subbloques_individuales(db, temas, coleccion=coleccion)
         if not subbloques:
             print("⚠️ No se encontraron subbloques.")
             return {"test": [], "advertencia": "No se encontraron subbloques válidos."}

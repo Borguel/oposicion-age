@@ -34,12 +34,13 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None):
             "apellidos": "",
             "telefono": "",
             "direccion": "",
-            "plan": "gratis",
+            # Un usuario tiene un único cliente de Stripe (global), pero puede
+            # tener una suscripción independiente POR OPOSICIÓN, ya que cada
+            # oposición se contrata y se paga por separado.
+            # suscripciones: { "AGE": {plan, stripe_subscription_id, subscription_status,
+            #                          plan_updated_at, current_period_end}, "GACE": {...} }
             "stripe_customer_id": None,
-            "stripe_subscription_id": None,
-            "subscription_status": None,
-            "plan_updated_at": datetime.utcnow().isoformat(),
-            "current_period_end": None
+            "suscripciones": {},
         })
 
 def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None):
@@ -175,43 +176,61 @@ def actualizar_estadisticas_pdf(db, usuario_id, tipo_pdf):
     # Aplicar actualizaciones
     doc_ref.update(field_updates)
 
-def actualizar_suscripcion(db, usuario_id, plan=None, stripe_customer_id=None,
+def actualizar_suscripcion(db, usuario_id, oposicion, plan=None, stripe_customer_id=None,
                             stripe_subscription_id=None, subscription_status=None,
                             current_period_end=None):
-    """Sincroniza en Firestore el estado de la suscripción de Stripe de un usuario.
-    Solo se actualizan los campos que se pasan (distintos de None), salvo
+    """Sincroniza en Firestore el estado de la suscripción de Stripe de un
+    usuario PARA UNA OPOSICIÓN CONCRETA (cada oposición tiene su propia
+    suscripción de Stripe, aunque compartan el mismo Customer). Solo se
+    actualizan los campos que se pasan (distintos de None), salvo
     stripe_customer_id, que si se pasa se guarda aunque sea la primera vez."""
     doc_ref = db.collection("usuarios").document(usuario_id)
     if not doc_ref.get().exists:
         inicializar_estadisticas_usuario(db, usuario_id)
 
-    field_updates = {"plan_updated_at": datetime.utcnow().isoformat()}
-    if plan is not None:
-        field_updates["plan"] = plan
+    prefijo = f"suscripciones.{oposicion}."
+    field_updates = {f"{prefijo}plan_updated_at": datetime.utcnow().isoformat()}
     if stripe_customer_id is not None:
         field_updates["stripe_customer_id"] = stripe_customer_id
+    if plan is not None:
+        field_updates[f"{prefijo}plan"] = plan
     if stripe_subscription_id is not None:
-        field_updates["stripe_subscription_id"] = stripe_subscription_id
+        field_updates[f"{prefijo}stripe_subscription_id"] = stripe_subscription_id
     if subscription_status is not None:
-        field_updates["subscription_status"] = subscription_status
+        field_updates[f"{prefijo}subscription_status"] = subscription_status
     if current_period_end is not None:
-        field_updates["current_period_end"] = current_period_end
+        field_updates[f"{prefijo}current_period_end"] = current_period_end
 
     doc_ref.update(field_updates)
 
-def obtener_perfil_usuario(db, usuario_id):
-    """Datos mínimos de plan/suscripción para pintar la UI del frontend."""
+def obtener_perfil_usuario(db, usuario_id, oposicion=None):
+    """Datos mínimos de plan/suscripción para pintar la UI del frontend.
+    Si se pasa `oposicion`, además de la lista completa de suscripciones se
+    incluyen plan/subscription_status/current_period_end de esa oposición
+    concreta (para no obligar al frontend a leer el mapa completo)."""
     doc = db.collection("usuarios").document(usuario_id).get()
     if not doc.exists:
-        return {"plan": "gratis", "subscription_status": None}
+        perfil = {"suscripciones": {}, "email": None, "nombre": "", "apellidos": "", "telefono": "", "direccion": ""}
+        if oposicion:
+            perfil.update({"oposicion": oposicion, "plan": "gratis", "subscription_status": None, "current_period_end": None})
+        return perfil
+
     datos = doc.to_dict() or {}
-    return {
-        "plan": datos.get("plan", "gratis"),
-        "subscription_status": datos.get("subscription_status"),
-        "current_period_end": datos.get("current_period_end"),
+    suscripciones = datos.get("suscripciones", {}) or {}
+    perfil = {
         "email": datos.get("email"),
         "nombre": datos.get("nombre", ""),
         "apellidos": datos.get("apellidos", ""),
         "telefono": datos.get("telefono", ""),
-        "direccion": datos.get("direccion", "")
+        "direccion": datos.get("direccion", ""),
+        "suscripciones": suscripciones,
     }
+    if oposicion:
+        sub = suscripciones.get(oposicion, {}) or {}
+        perfil.update({
+            "oposicion": oposicion,
+            "plan": sub.get("plan", "gratis"),
+            "subscription_status": sub.get("subscription_status"),
+            "current_period_end": sub.get("current_period_end"),
+        })
+    return perfil

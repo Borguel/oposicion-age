@@ -24,6 +24,38 @@ body {
   line-height: 1.5;
 }
 
+.selector-oposicion-planes {
+  max-width: 640px;
+  margin: 0 auto 24px;
+  padding: 14px 18px;
+  border-radius: var(--age-radius-sm);
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.selector-oposicion-planes label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.selector-oposicion-planes select {
+  padding: 8px 14px;
+  border-radius: var(--age-radius-sm);
+  border: 1px solid var(--age-border);
+  font-family: var(--age-font);
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--age-bg);
+  color: var(--age-ink);
+  cursor: pointer;
+}
+
 .mensaje-checkout {
   max-width: 640px;
   margin: 0 auto 24px;

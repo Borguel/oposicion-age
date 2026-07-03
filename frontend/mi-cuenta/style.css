@@ -63,6 +63,41 @@ body {
   margin-top: 4px;
 }
 
+.cuenta-oposiciones {
+  background: var(--age-bg);
+  border-radius: var(--age-radius-md);
+  padding: 6px 18px;
+  margin: 8px 0 22px;
+}
+
+.cuenta-oposicion-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--age-border);
+  text-align: left;
+}
+
+.cuenta-oposicion-fila:last-child {
+  border-bottom: none;
+}
+
+.cuenta-oposicion-nombre {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--age-ink);
+}
+
+.cuenta-oposicion-plan {
+  font-size: 13px;
+  color: var(--age-primary-dark);
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
 .btn-primary,
 .btn-secundario,
 .btn-texto {

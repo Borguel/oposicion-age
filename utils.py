@@ -10,13 +10,13 @@ def contar_tokens(texto: str, modelo="gpt-3.5-turbo") -> int:
     return len(encoding.encode(texto))
 
 # ✅ Agrupa subbloques por tema para prompts largos (estructura anterior, por si la usas aún)
-def agrupar_subbloques_por_tema(db, temas: List[str], limite_tokens=3000) -> Dict[str, List[List[dict]]]:
+def agrupar_subbloques_por_tema(db, temas: List[str], limite_tokens=3000, coleccion="Temario AGE") -> Dict[str, List[List[dict]]]:
     resultado = {}
     for tema_completo in temas:
         if "-" not in tema_completo:
             continue
         bloque_id, tema_id = tema_completo.split("-", 1)
-        subbloques_ref = db.collection("Temario AGE").document(bloque_id).collection("temas").document(tema_id).collection("subbloques").stream()
+        subbloques_ref = db.collection(coleccion).document(bloque_id).collection("temas").document(tema_id).collection("subbloques").stream()
         grupo_actual = []
         total_tokens = 0
         todos_grupos = []
@@ -48,11 +48,11 @@ def agrupar_subbloques_por_tema(db, temas: List[str], limite_tokens=3000) -> Dic
     return resultado
 
 # ✅ Obtiene el contexto completo de varios temas para usarlo en respuestas IA
-def obtener_contexto_por_temas(db, temas, token_limit=3000):
+def obtener_contexto_por_temas(db, temas, token_limit=3000, coleccion="Temario AGE"):
     contexto_total = ""
     usados = set()
 
-    bloques = db.collection("Temario AGE").list_documents()
+    bloques = db.collection(coleccion).list_documents()
 
     for bloque_doc in bloques:
         temas_ref = bloque_doc.collection("temas")
@@ -79,7 +79,7 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000):
     return contexto_total.strip()
 
 # ✅ NUEVA: Extrae todos los subbloques de todos los temas sin límite de tokens acumulados
-def obtener_subbloques_individuales(db, temas: List[str]) -> List[dict]:
+def obtener_subbloques_individuales(db, temas: List[str], coleccion="Temario AGE") -> List[dict]:
     subbloques_utilizados = []
 
     for tema_completo in temas:
@@ -87,7 +87,7 @@ def obtener_subbloques_individuales(db, temas: List[str]) -> List[dict]:
             continue
 
         bloque_id, tema_id = tema_completo.split("-", 1)
-        temas_ref = db.collection("Temario AGE").document(bloque_id).collection("temas")
+        temas_ref = db.collection(coleccion).document(bloque_id).collection("temas")
         subbloques_ref = temas_ref.document(tema_id).collection("subbloques").stream()
 
         for sub in subbloques_ref:

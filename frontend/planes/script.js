@@ -1,8 +1,10 @@
 import { idToken, esperarUsuario } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
+import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual } from "/assets/oposicion.js";
 
 const mensajeCheckout = document.getElementById("mensaje-checkout");
+const selectorOposicion = document.getElementById("selector-oposicion");
 
 function mostrarMensajeCheckout() {
   const params = new URLSearchParams(window.location.search);
@@ -18,10 +20,38 @@ function mostrarMensajeCheckout() {
   }
 }
 
+function inicializarSelectorOposicion() {
+  OPOSICIONES.forEach((o) => {
+    const opcion = document.createElement("option");
+    opcion.value = o.id;
+    opcion.textContent = o.nombre;
+    selectorOposicion.appendChild(opcion);
+  });
+  const params = new URLSearchParams(window.location.search);
+  const oposicionUrl = params.get("oposicion");
+  selectorOposicion.value = oposicionUrl && OPOSICIONES.some((o) => o.id === oposicionUrl)
+    ? oposicionUrl
+    : obtenerOposicionActual();
+  selectorOposicion.addEventListener("change", () => {
+    establecerOposicionActual(selectorOposicion.value);
+    marcarPlanActual();
+  });
+}
+
+function restaurarBotones() {
+  document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
+    boton.disabled = false;
+    boton.textContent = boton.dataset.planBtn === "basico" ? "Elegir Básico" : boton.dataset.planBtn === "premium" ? "Elegir Premium" : "Empezar gratis";
+  });
+}
+
 async function marcarPlanActual() {
+  restaurarBotones();
   const usuario = await esperarUsuario();
   if (!usuario) return;
-  const { plan } = await obtenerPlan(true);
+  const oposicion = selectorOposicion.value;
+  establecerOposicionActual(oposicion);
+  const { plan } = await obtenerPlan(true, oposicion);
   document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
     if (boton.dataset.planBtn === plan) {
       boton.textContent = "Tu plan actual";
@@ -33,6 +63,7 @@ async function marcarPlanActual() {
 document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
   boton.addEventListener("click", async () => {
     const plan = boton.dataset.planBtn;
+    const oposicion = selectorOposicion.value;
     const usuario = await esperarUsuario();
     if (!usuario) {
       window.location.href = "/login/?next=/planes/";
@@ -52,7 +83,7 @@ document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ plan })
+        body: JSON.stringify({ plan, oposicion })
       });
       const datos = await res.json();
       if (!res.ok || !datos.url) {
@@ -67,5 +98,6 @@ document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
   });
 });
 
+inicializarSelectorOposicion();
 mostrarMensajeCheckout();
 marcarPlanActual();

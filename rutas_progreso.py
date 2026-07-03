@@ -64,7 +64,7 @@ def registrar_rutas_progreso(app, db):
         return jsonify({"mensaje": "Progreso de esquema actualizado"})
 
     @app.route("/actualizar-progreso-pdf", methods=["POST"])
-    @requiere_plan(db, "premium")
+    @requiere_plan(db, "premium", global_check=True)
     def actualizar_progreso_pdf():
         datos = request.get_json()
         tipo_pdf = datos.get("tipo_pdf")
@@ -129,7 +129,7 @@ def registrar_rutas_progreso(app, db):
         return jsonify({"test": seleccionadas})
 
     @app.route("/contenido-pdf-guardado", methods=["GET"])
-    @requiere_plan(db, "premium")
+    @requiere_plan(db, "premium", global_check=True)
     def obtener_contenido_pdf_guardado():
         tipo_contenido = request.args.get("tipo_contenido")  # tests_pdf, resumenes_pdf, esquemas_pdf, tarjetas_pdf
         limite = int(request.args.get("limite", 10))

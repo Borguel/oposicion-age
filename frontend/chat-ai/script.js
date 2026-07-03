@@ -120,13 +120,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     mostrarTyping(true);
 
+    const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+    const oposicion = obtenerOposicionActual();
+
     fetch("https://oposicion-age.onrender.com/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders },
       body: JSON.stringify({
         mensaje: texto,
         temas: [],
-        chat_id: chatIdActual
+        chat_id: chatIdActual,
+        oposicion
       }),
       signal: AbortSignal.timeout(30000)
     })

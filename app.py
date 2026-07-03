@@ -20,8 +20,9 @@ from esquema_generator import generar_esquema
 from save_controller import guardar_test_route, guardar_esquema_route
 from rutas_progreso import registrar_rutas_progreso
 from guardar_resultado import guardar_resultado_en_firestore
-from auth_utils import requiere_login, requiere_plan
+from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario
+from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida, coleccion_temario
 # Cargar variables de entorno
 load_dotenv()
 print("🔑 Clave OpenAI:", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
@@ -92,11 +93,12 @@ def chat_route():
         temas=temas,
         db=db,
         usuario_id=g.uid,
-        chat_id=chat_id
+        chat_id=chat_id,
+        coleccion=coleccion_temario(g.oposicion)
     )
     return jsonify({"respuesta": respuesta, "chat_id": chat_id})
 @app.route("/consultar-asistente-examen", methods=["POST"])
-@requiere_plan(db, "premium")
+@requiere_plan(db, "premium", global_check=True)
 def ruta_asistente_examen():
     data = request.get_json()
     mensaje = data.get("mensaje", "")
@@ -116,7 +118,7 @@ def generar_test_avanzado_route():
     num_preguntas = data.get("num_preguntas", 5)
     print(f"📋 Temas extraídos: {temas}")
     print(f"🧪 Número de preguntas solicitadas: {num_preguntas}")
-    resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas)
+    resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas, coleccion=coleccion_temario(g.oposicion))
     print(f"📄 Resultado del test: {resultado}")
     return jsonify(resultado)
 @app.route("/generar-esquema", methods=["POST"])
@@ -130,7 +132,7 @@ def generar_esquema_route():
     temas = data.get("temas", [])
     instrucciones = data.get("instrucciones", "Resume los contenidos clave.")
     nivel = data.get("nivel", "general")
-    resultado = generar_esquema(temas=temas, db=db, instrucciones=instrucciones, nivel=nivel)
+    resultado = generar_esquema(temas=temas, db=db, instrucciones=instrucciones, nivel=nivel, coleccion=coleccion_temario(g.oposicion))
     return jsonify({"esquema": resultado})
 @app.route("/generar-test-oficial", methods=["POST"])
 @requiere_login(db)
@@ -198,14 +200,21 @@ def guardar_test_oficial():
 app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["POST"])
 app.add_url_rule("/guardar-esquema", view_func=guardar_esquema_route(db), methods=["POST"])
 registrar_rutas_progreso(app, db)
+@app.route("/oposiciones-disponibles", methods=["GET"])
+def obtener_oposiciones_disponibles():
+    return jsonify({
+        "oposiciones": [{"id": oid, "nombre": datos["nombre"]} for oid, datos in OPOSICIONES.items()]
+    })
 @app.route("/temas-disponibles", methods=["GET"])
 @requiere_login(db)
 def obtener_temas_disponibles():
+    oposicion = obtener_oposicion_solicitada()
+    coleccion = coleccion_temario(oposicion)
     temas_disponibles = []
-    bloques = db.collection("Temario AGE").stream()
+    bloques = db.collection(coleccion).stream()
     for bloque in bloques:
         bloque_id = bloque.id
-        temas_ref = db.collection("Temario AGE").document(bloque_id).collection("temas").stream()
+        temas_ref = db.collection(coleccion).document(bloque_id).collection("temas").stream()
         for tema in temas_ref:
             tema_data = tema.to_dict()
             tema_id = tema.id
@@ -214,7 +223,7 @@ def obtener_temas_disponibles():
                 "id": f"{bloque_id}-{tema_id}",
                 "titulo": titulo
             })
-    return jsonify({"temas": temas_disponibles})
+    return jsonify({"temas": temas_disponibles, "oposicion": oposicion})
 @app.route("/progreso-usuario", methods=["GET"])
 @requiere_login(db)
 def progreso_usuario():
@@ -371,7 +380,7 @@ def generar_test_fallos():
 # RUTAS PARA DEEPSEEK (PDFs)
 # ===================================================================
 @app.route('/resumir-pdf', methods=['POST'])
-@requiere_plan(db, "premium")
+@requiere_plan(db, "premium", global_check=True)
 def resumir_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -418,11 +427,11 @@ def resumir_pdf():
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 # ✅ NUEVA RUTA: alias para compatibilidad con frontend
 @app.route('/resumir-documento', methods=['POST'])
-@requiere_plan(db, "premium")
+@requiere_plan(db, "premium", global_check=True)
 def resumir_documento():
     return resumir_pdf()
 @app.route('/generar-esquema-desde-pdf', methods=['POST'])
-@requiere_plan(db, "premium")
+@requiere_plan(db, "premium", global_check=True)
 def generar_esquema_desde_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -468,7 +477,7 @@ def generar_esquema_desde_pdf():
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 @app.route('/generar-test-desde-pdf', methods=['POST'])
-@requiere_plan(db, "premium")
+@requiere_plan(db, "premium", global_check=True)
 def generar_test_desde_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -566,7 +575,7 @@ def generar_test_desde_pdf():
             "respuesta_cruda": respuesta[:500] if 'respuesta' in locals() else "N/A"
         }), 500
 @app.route('/generar-tarjetas-desde-pdf', methods=['POST'])
-@requiere_plan(db, "premium")
+@requiere_plan(db, "premium", global_check=True)
 def generar_tarjetas_desde_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -663,7 +672,7 @@ def generar_tarjetas_desde_pdf():
             "respuesta_cruda": respuesta[:500] if 'respuesta' in locals() else "N/A"
         }), 500
 @app.route("/chat-deepseek", methods=["POST"])
-@requiere_plan(db, "premium")
+@requiere_plan(db, "premium", global_check=True)
 def chat_deepseek():
     data = request.get_json()
     mensaje = data.get("mensaje")
@@ -785,13 +794,17 @@ def guardar_tarjetas_pdf():
 @app.route("/mi-perfil", methods=["GET"])
 @requiere_login(db)
 def mi_perfil():
-    return jsonify(obtener_perfil_usuario(db, g.uid))
+    oposicion = obtener_oposicion_solicitada()
+    return jsonify(obtener_perfil_usuario(db, g.uid, oposicion=oposicion))
 
 @app.route("/crear-sesion-checkout", methods=["POST"])
 @requiere_login(db)
 def crear_sesion_checkout():
     data = request.get_json(silent=True) or {}
     plan = data.get("plan")
+    oposicion = data.get("oposicion", OPOSICION_POR_DEFECTO)
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
     price_id = STRIPE_PRICE_IDS.get(plan)
     if not price_id:
         return jsonify({"error": "Plan no válido"}), 400
@@ -802,15 +815,22 @@ def crear_sesion_checkout():
         if not stripe_customer_id:
             customer = stripe.Customer.create(email=g.email, metadata={"uid": g.uid})
             stripe_customer_id = customer.id
-            actualizar_suscripcion(db, g.uid, stripe_customer_id=stripe_customer_id)
+            actualizar_suscripcion(db, g.uid, oposicion, stripe_customer_id=stripe_customer_id)
+        # La oposición viaja tanto en la metadata de la sesión de checkout
+        # (solo disponible en el evento checkout.session.completed) como en
+        # subscription_data.metadata, para que quede grabada en la propia
+        # Subscription de Stripe y así los eventos posteriores
+        # (customer.subscription.updated/deleted) también sepan a qué
+        # oposición pertenecen.
         session = stripe.checkout.Session.create(
             mode="subscription",
             customer=stripe_customer_id,
             line_items=[{"price": price_id, "quantity": 1}],
-            success_url=f"{FRONTEND_URL}/mi-cuenta/?checkout=success",
-            cancel_url=f"{FRONTEND_URL}/planes/?checkout=cancel",
+            success_url=f"{FRONTEND_URL}/mi-cuenta/?checkout=success&oposicion={oposicion}",
+            cancel_url=f"{FRONTEND_URL}/planes/?checkout=cancel&oposicion={oposicion}",
             client_reference_id=g.uid,
-            metadata={"uid": g.uid, "plan": plan}
+            metadata={"uid": g.uid, "plan": plan, "oposicion": oposicion},
+            subscription_data={"metadata": {"uid": g.uid, "plan": plan, "oposicion": oposicion}}
         )
         return jsonify({"url": session.url})
     except Exception as e:
@@ -879,6 +899,7 @@ def webhook_stripe():
         if tipo == "checkout.session.completed":
             metadata = _sget(objeto, "metadata", {}) or {}
             uid = _sget(objeto, "client_reference_id") or _sget(metadata, "uid")
+            oposicion = _sget(metadata, "oposicion") or OPOSICION_POR_DEFECTO
             subscription_id = _sget(objeto, "subscription")
             if uid and subscription_id:
                 subscription = stripe.Subscription.retrieve(subscription_id)
@@ -886,7 +907,7 @@ def webhook_stripe():
                 plan = PRECIO_A_PLAN.get(price_id, "gratis")
                 periodo_fin = _current_period_end(subscription)
                 actualizar_suscripcion(
-                    db, uid,
+                    db, uid, oposicion,
                     plan=plan,
                     stripe_customer_id=_sget(objeto, "customer"),
                     stripe_subscription_id=subscription_id,
@@ -895,13 +916,19 @@ def webhook_stripe():
                 )
         elif tipo == "customer.subscription.updated":
             customer_id = _sget(objeto, "customer")
+            # La oposición viaja en la metadata de la propia Subscription
+            # (puesta ahí al crear el checkout). Si falta -- suscripciones
+            # creadas antes de que existiera esta metadata -- se asume AGE,
+            # que era la única oposición que existía entonces.
+            metadata = _sget(objeto, "metadata", {}) or {}
+            oposicion = _sget(metadata, "oposicion") or OPOSICION_POR_DEFECTO
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
                 price_id = objeto["items"]["data"][0]["price"]["id"]
                 plan = PRECIO_A_PLAN.get(price_id, "gratis")
                 periodo_fin = _current_period_end(objeto)
                 actualizar_suscripcion(
-                    db, docs[0].id,
+                    db, docs[0].id, oposicion,
                     plan=plan,
                     stripe_subscription_id=_sget(objeto, "id"),
                     subscription_status=_sget(objeto, "status"),
@@ -909,14 +936,24 @@ def webhook_stripe():
                 )
         elif tipo == "customer.subscription.deleted":
             customer_id = _sget(objeto, "customer")
+            metadata = _sget(objeto, "metadata", {}) or {}
+            oposicion = _sget(metadata, "oposicion") or OPOSICION_POR_DEFECTO
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
-                actualizar_suscripcion(db, docs[0].id, plan="gratis", subscription_status="canceled")
+                actualizar_suscripcion(db, docs[0].id, oposicion, plan="gratis", subscription_status="canceled")
         elif tipo == "invoice.payment_failed":
             customer_id = _sget(objeto, "customer")
+            subscription_id = _sget(objeto, "subscription")
+            oposicion = OPOSICION_POR_DEFECTO
+            if subscription_id:
+                try:
+                    sub_obj = stripe.Subscription.retrieve(subscription_id)
+                    oposicion = _sget(_sget(sub_obj, "metadata", {}) or {}, "oposicion") or OPOSICION_POR_DEFECTO
+                except Exception:
+                    pass
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
-                actualizar_suscripcion(db, docs[0].id, subscription_status="past_due")
+                actualizar_suscripcion(db, docs[0].id, oposicion, subscription_status="past_due")
     except Exception as e:
         print(f"❌ Error procesando webhook de Stripe ({tipo}): {e}")
         traceback.print_exc()

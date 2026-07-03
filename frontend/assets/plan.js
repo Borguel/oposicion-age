@@ -1,4 +1,6 @@
-// Ayuda a pintar la interfaz según el plan del usuario (Gratis/Básico/Premium).
+// Ayuda a pintar la interfaz según el plan del usuario (Gratis/Básico/Premium)
+// PARA LA OPOSICIÓN QUE TENGA SELECCIONADA (cada oposición tiene su propio
+// plan/suscripción independiente).
 //
 // IMPORTANTE: esto es solo para la experiencia de usuario (mostrar avisos de
 // "esto requiere el plan X"). NO es una barrera de seguridad real: este es un
@@ -7,24 +9,29 @@
 // los decoradores @requiere_plan del backend (ver auth_utils.py).
 import { idToken, esperarUsuario } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
+import { obtenerOposicionActual } from "/assets/oposicion.js";
 
-const CACHE_KEY = "age_plan_cache";
 const ORDEN_PLANES = { gratis: 0, basico: 1, premium: 2 };
 
-export async function obtenerPlan(forzarRefresco = false) {
+function claveCache(oposicion) {
+  return `age_plan_cache_${oposicion}`;
+}
+
+export async function obtenerPlan(forzarRefresco = false, oposicion = obtenerOposicionActual()) {
+  const clave = claveCache(oposicion);
   if (!forzarRefresco) {
-    const cache = sessionStorage.getItem(CACHE_KEY);
+    const cache = sessionStorage.getItem(clave);
     if (cache) return JSON.parse(cache);
   }
   const token = await idToken();
   if (!token) return { plan: "anonimo", subscription_status: null };
   try {
-    const res = await fetch(`${BACKEND_URL}/mi-perfil`, {
+    const res = await fetch(`${BACKEND_URL}/mi-perfil?oposicion=${encodeURIComponent(oposicion)}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (!res.ok) return { plan: "gratis", subscription_status: null };
     const datos = await res.json();
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(datos));
+    sessionStorage.setItem(clave, JSON.stringify(datos));
     return datos;
   } catch (e) {
     return { plan: "gratis", subscription_status: null };
@@ -36,15 +43,15 @@ export function planCubre(planUsuario, planRequerido) {
 }
 
 // Redirige a /login/ si no hay sesión, o muestra un aviso de "requiere plan
-// X" si el usuario no tiene el nivel suficiente. Devuelve true si la página
-// puede usarse con normalidad.
-export async function requierePlanEnPagina(planMinimo) {
+// X" si el usuario no tiene el nivel suficiente EN LA OPOSICIÓN SELECCIONADA.
+// Devuelve true si la página puede usarse con normalidad.
+export async function requierePlanEnPagina(planMinimo, oposicion = obtenerOposicionActual()) {
   const usuario = await esperarUsuario();
   if (!usuario) {
     window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
     return false;
   }
-  const { plan } = await obtenerPlan();
+  const { plan } = await obtenerPlan(false, oposicion);
   if (!planCubre(plan, planMinimo)) {
     mostrarAvisoUpgrade(planMinimo, plan);
     return false;

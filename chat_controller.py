@@ -36,8 +36,8 @@ def agregar_mensaje_a_conversacion(db, usuario_id, conversacion_id, role, conten
 
 # 📌 Asistente tipo chat con el temario (IA + Firestore + historial)
 
-def responder_chat(mensaje, temas, db, usuario_id="anonimo", chat_id=None):
-    contexto = obtener_contexto_por_temas(db, temas)
+def responder_chat(mensaje, temas, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE"):
+    contexto = obtener_contexto_por_temas(db, temas, coleccion=coleccion)
 
     prompt = f"""Eres un asistente experto en oposiciones. Utiliza el siguiente contenido del temario para responder con claridad y precisión a la pregunta del usuario.
 

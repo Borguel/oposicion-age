@@ -7,11 +7,11 @@ from utils import obtener_contexto_por_temas
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def generar_esquema(temas, db, instrucciones="Resume los puntos clave del temario", nivel="general"):
+def generar_esquema(temas, db, instrucciones="Resume los puntos clave del temario", nivel="general", coleccion="Temario AGE"):
     """
     Genera un esquema a partir de los temas indicados y el contenido del temario en Firestore.
     """
-    contexto = obtener_contexto_por_temas(db, temas)
+    contexto = obtener_contexto_por_temas(db, temas, coleccion=coleccion)
 
     prompt = f"""
 Eres un experto en oposiciones. A continuación tienes contenido legal y técnico relacionado con los temas {temas}.

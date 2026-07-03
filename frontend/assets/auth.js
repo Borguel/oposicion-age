@@ -13,6 +13,7 @@ import {
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { firebaseConfig } from "/assets/firebase-config.js";
+import { inyectarSelectorOposicion } from "/assets/oposicion.js";
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
@@ -43,7 +44,7 @@ export async function signInWithGoogle() {
 }
 
 export function signOut() {
-  sessionStorage.removeItem("age_plan_cache");
+  sessionStorage.clear();
   return firebaseSignOut(auth);
 }
 
@@ -85,6 +86,8 @@ export async function idToken() {
 function inyectarNav(user) {
   const nav = document.querySelector(".age-nav");
   if (!nav) return;
+
+  inyectarSelectorOposicion();
 
   let enlacePlanes = nav.querySelector("[data-nav-planes]");
   if (!enlacePlanes) {

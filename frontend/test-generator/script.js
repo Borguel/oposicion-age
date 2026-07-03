@@ -84,7 +84,9 @@ async function obtenerAuthHeaders() {
       try {
         const authHeaders = await obtenerAuthHeaders();
         if (!authHeaders) return;
-        const res = await fetch("https://oposicion-age.onrender.com/temas-disponibles", { headers: authHeaders });
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const oposicion = obtenerOposicionActual();
+        const res = await fetch(`https://oposicion-age.onrender.com/temas-disponibles?oposicion=${encodeURIComponent(oposicion)}`, { headers: authHeaders });
         const datos = await res.json();
         listaTemasGlobal = datos.temas || [];
         if (listaTemasGlobal.length === 0) {
@@ -215,10 +217,12 @@ async function obtenerAuthHeaders() {
       try {
         const authHeaders = await obtenerAuthHeaders();
         if (!authHeaders) { clearInterval(intervalCarga); return; }
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const oposicion = obtenerOposicionActual();
         const res = await fetch("https://oposicion-age.onrender.com" + endpoint, {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
-          body: JSON.stringify({ temas, num_preguntas })
+          body: JSON.stringify({ temas, num_preguntas, oposicion })
         });
         clearInterval(intervalCarga);
         if (res.status === 403) {
