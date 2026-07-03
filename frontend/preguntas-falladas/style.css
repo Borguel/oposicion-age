@@ -130,14 +130,12 @@ h1, h2, h3 {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #fff;
+  color: var(--age-ink);
   font-weight: 700;
   font-size: 0.85rem;
   z-index: 1;
-  background: rgba(20, 20, 30, 0.55);
-  padding: 2px 10px;
-  border-radius: var(--age-radius-pill, 999px);
   white-space: nowrap;
+  text-shadow: 0 0 5px #fff, 0 0 5px #fff, 0 0 9px #fff;
 }
 
 /* ========== TEMPORIZADOR ========== */

@@ -50,13 +50,13 @@
       font-family: var(--font-main);
       background: var(--theme-bg);
       color: var(--theme-text);
-      padding: 20px;
       min-height: 100vh;
     }
 
     #estadisticas-container {
       max-width: 1400px;
       margin: 0 auto;
+      padding: 20px;
     }
 
     #estadisticas-header {
