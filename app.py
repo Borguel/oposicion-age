@@ -15,6 +15,7 @@ from datetime import datetime
 # Módulos personalizados
 from test_generator import generar_test_avanzado
 from chat_controller import responder_chat, consultar_asistente_examen_AGE
+from deepseek_utils import call_deepseek_api
 from esquema_generator import generar_esquema
 from save_controller import guardar_test_route, guardar_esquema_route
 from rutas_progreso import registrar_rutas_progreso
@@ -295,15 +296,18 @@ Devuelve solo un array JSON como este:
 ]
 """
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        respuesta = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+        generado = call_deepseek_api(
             messages=[{"role": "user", "content": prompt}],
             temperature=0.5,
+            max_tokens=min(4000, 300 * int(num_preguntas))
         )
-        generado = respuesta.choices[0].message.content.strip()
-        preguntas = json.loads(generado)
+        if not generado:
+            return jsonify({"error": "Sin respuesta de DeepSeek"}), 500
+        start_index = generado.find("[")
+        end_index = generado.rfind("]") + 1
+        if start_index == -1 or end_index <= start_index:
+            return jsonify({"error": "No se encontró un array JSON en la respuesta."}), 500
+        preguntas = json.loads(generado[start_index:end_index])
         return jsonify({"test": preguntas})
     except Exception as e:
         print("❌ Error al generar test inteligente:", e)

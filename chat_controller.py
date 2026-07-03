@@ -1,12 +1,8 @@
 
-import os
-import time
 from datetime import datetime
-from openai import OpenAI
 from firebase_admin import firestore
 from utils import obtener_contexto_por_temas
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+from deepseek_utils import call_deepseek_api
 
 # ✅ Crear conversación con título y mensajes en subcolección por usuario
 
@@ -52,8 +48,7 @@ PREGUNTA DEL USUARIO:
 {mensaje}
 """
 
-    respuesta = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+    respuesta = call_deepseek_api(
         messages=[
             {"role": "system", "content": "Eres un asistente experto en oposiciones."},
             {"role": "user", "content": prompt}
@@ -61,8 +56,7 @@ PREGUNTA DEL USUARIO:
         temperature=0.7,
         max_tokens=800
     )
-
-    texto_respuesta = respuesta.choices[0].message.content.strip()
+    texto_respuesta = (respuesta or "No se pudo generar una respuesta. Inténtalo de nuevo.").strip()
 
     if chat_id:
         agregar_mensaje_a_conversacion(db, usuario_id, chat_id, "user", mensaje)
@@ -72,30 +66,24 @@ PREGUNTA DEL USUARIO:
 
     return texto_respuesta, chat_id
 
-# ✅ Asistente OpenAI con instrucciones predefinidas (examen AGE)
-ASSISTANT_EXAMEN_ID = "asst_EDmGPHxH7FNsEXtFpMWd4Ip4"  # ← reemplaza si cambia tu ID
+# ✅ Asistente premium especializado en el examen AGE
+INSTRUCCIONES_ASISTENTE_EXAMEN = (
+    "Eres el Asistente Premium de Oposición AGE, especializado en el proceso selectivo del "
+    "Cuerpo General Administrativo del Estado. Ayudas con la estructura del examen, el temario "
+    "actualizado y consejos de estudio. Responde en español, de forma clara, precisa y con "
+    "formato técnico-formal propio de una oposición. Si no tienes datos concretos y actualizados "
+    "sobre una convocatoria, dilo explícitamente en vez de inventarlos."
+)
 
 def consultar_asistente_examen_AGE(mensaje_usuario):
-    thread = client.beta.threads.create()
-
-    client.beta.threads.messages.create(
-        thread_id=thread.id,
-        role="user",
-        content=mensaje_usuario
+    respuesta = call_deepseek_api(
+        messages=[
+            {"role": "system", "content": INSTRUCCIONES_ASISTENTE_EXAMEN},
+            {"role": "user", "content": mensaje_usuario}
+        ],
+        temperature=0.6,
+        max_tokens=900
     )
-
-    run = client.beta.threads.runs.create(
-        thread_id=thread.id,
-        assistant_id=ASSISTANT_EXAMEN_ID
-    )
-
-    while True:
-        run_status = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
-        if run_status.status == "completed":
-            break
-        elif run_status.status in ["failed", "cancelled", "expired"]:
-            raise Exception("❌ Error al ejecutar el asistente.")
-        time.sleep(1)
-
-    messages = client.beta.threads.messages.list(thread_id=thread.id)
-    return messages.data[0].content[0].text.value
+    if not respuesta:
+        raise Exception("❌ Error al consultar el asistente.")
+    return respuesta.strip()

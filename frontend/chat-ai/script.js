@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", function () {
         temas: [],
         chat_id: chatIdActual
       }),
-      signal: AbortSignal.timeout(10000)
+      signal: AbortSignal.timeout(30000)
     })
       .then(res => {
         mostrarTyping(false);
