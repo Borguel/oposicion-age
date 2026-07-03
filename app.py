@@ -821,6 +821,18 @@ def crear_sesion_portal():
         print("❌ Error creando sesión del portal de Stripe:", e)
         return jsonify({"error": str(e)}), 500
 
+def _current_period_end(subscription_obj):
+    """Extrae 'current_period_end' de una Subscription de Stripe.
+    En versiones recientes de la API (>= 2025) ese campo ya no está en la
+    propia suscripción, sino en cada "item" de la suscripción."""
+    valor = subscription_obj.get("current_period_end")
+    if valor is None:
+        items = (subscription_obj.get("items") or {}).get("data") or []
+        if items:
+            valor = items[0].get("current_period_end")
+    return valor
+
+
 @app.route("/webhook-stripe", methods=["POST"])
 def webhook_stripe():
     payload = request.get_data()
@@ -846,13 +858,14 @@ def webhook_stripe():
                 subscription = stripe.Subscription.retrieve(subscription_id)
                 price_id = subscription["items"]["data"][0]["price"]["id"]
                 plan = PRECIO_A_PLAN.get(price_id, "gratis")
+                periodo_fin = _current_period_end(subscription)
                 actualizar_suscripcion(
                     db, uid,
                     plan=plan,
                     stripe_customer_id=objeto.get("customer"),
                     stripe_subscription_id=subscription_id,
                     subscription_status=subscription["status"],
-                    current_period_end=datetime.utcfromtimestamp(subscription["current_period_end"]).isoformat()
+                    current_period_end=datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None
                 )
         elif tipo == "customer.subscription.updated":
             customer_id = objeto.get("customer")
@@ -860,12 +873,13 @@ def webhook_stripe():
             if docs:
                 price_id = objeto["items"]["data"][0]["price"]["id"]
                 plan = PRECIO_A_PLAN.get(price_id, "gratis")
+                periodo_fin = _current_period_end(objeto)
                 actualizar_suscripcion(
                     db, docs[0].id,
                     plan=plan,
                     stripe_subscription_id=objeto.get("id"),
                     subscription_status=objeto.get("status"),
-                    current_period_end=datetime.utcfromtimestamp(objeto["current_period_end"]).isoformat()
+                    current_period_end=datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None
                 )
         elif tipo == "customer.subscription.deleted":
             customer_id = objeto.get("customer")
