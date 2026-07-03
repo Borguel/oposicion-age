@@ -93,6 +93,12 @@ body {
   color: var(--age-primary-dark);
 }
 
+.plan-precio-periodo {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--age-ink-soft);
+}
+
 .plan-features {
   list-style: none;
   margin: 0;
