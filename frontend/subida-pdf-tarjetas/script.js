@@ -401,6 +401,7 @@
       }
       const formData = new FormData();
       formData.append('pdf', archivo);
+      formData.append('num_tarjetas', numTarjetasInput.value || 10);
       mensajeError.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
       formularioPdf.classList.add('hidden');

@@ -581,6 +581,11 @@ def generar_tarjetas_desde_pdf():
         max_length = 150000
         if len(text) > max_length:
             text = text[:max_length]
+        try:
+            num_tarjetas = int(request.form.get("num_tarjetas", 10))
+        except (TypeError, ValueError):
+            num_tarjetas = 10
+        num_tarjetas = max(1, min(num_tarjetas, 50))
         system_prompt = (
             "Eres un experto en metodologías de estudio para oposiciones en España. Tu tarea es crear tarjetas de memoria (flashcards) "
             "de alta calidad a partir de un documento normativo o temario. Cada tarjeta debe cumplir lo siguiente:\n"
@@ -595,7 +600,7 @@ def generar_tarjetas_desde_pdf():
             "3. **Profundidad, no repetición**: evita generar múltiples tarjetas del mismo artículo. En su lugar, extrae los conceptos clave y formula preguntas distintas.\n"
             "4. **Precisión normativa**: si el texto menciona leyes, artículos, reales decretos, etc., inclúyelos en la respuesta, pero no como copia literal.\n"
             "5. **Evita**: preguntas vagas, respuestas largas, frases incompletas o contenido redundante.\n"
-            "Genera exactamente un array JSON con este formato:\n"
+            f"Genera EXACTAMENTE {num_tarjetas} tarjetas (ni más ni menos), como un array JSON con este formato:\n"
             "[{\"pregunta\": \"...\", \"respuesta\": \"...\"}]\n"
             "NO añadas texto adicional antes ni después del JSON."
         )
@@ -610,7 +615,10 @@ def generar_tarjetas_desde_pdf():
                 {"role": "user", "content": f"Documento para crear tarjetas de memoria:\n{text}"}
             ],
             "temperature": 0.3,
-            "max_tokens": 2000
+            # Margen amplio por tarjeta para que no se corte la respuesta a
+            # medias (antes era un límite fijo de 2000, insuficiente para
+            # bastantes tarjetas y provocaba un JSON incompleto).
+            "max_tokens": min(8000, 200 + num_tarjetas * 220)
         }
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
         if response.status_code != 200:
