@@ -297,13 +297,19 @@ def dividir_en_subbloques(texto, max_tokens=MAX_TOKENS_SUBBLOQUE):
 # ---------------------------------------------------------------------------
 # 6) Clasificación de cada subbloque bajo el tema del bloque al que pertenece
 # ---------------------------------------------------------------------------
-def clasificar_subbloque(texto_subbloque, bloque_num):
+def clasificar_subbloque(texto_subbloque, bloque_num, norma_titulo=None):
     temas = TEMARIO[bloque_num - 1]["temas"]
     lista_temas = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(temas))
+    # Solo el primer subbloque de cada norma conserva el título de la ley en
+    # su propio texto (viene del PDF); el resto son continuaciones "a pelo"
+    # sin ninguna pista de qué ley son, así que se lo indicamos aparte para
+    # que la IA no tenga que adivinarlo solo por el contenido.
+    contexto_norma = f"Este fragmento pertenece a la norma: \"{norma_titulo}\".\n\n" if norma_titulo else ""
     prompt = (
         f"Perteneces a un sistema que clasifica fragmentos de leyes españolas dentro del temario "
         f"oficial de una oposición. El bloque es \"{TEMARIO[bloque_num - 1]['bloque']}\", con estos temas:\n\n"
         f"{lista_temas}\n\n"
+        f"{contexto_norma}"
         f"Lee este fragmento de texto legal y responde ÚNICAMENTE con el número del tema (1-{len(temas)}) "
         f"al que pertenece mayoritariamente. Si de verdad no encaja en ninguno, responde 0.\n\n"
         f"FRAGMENTO:\n{texto_subbloque[:3000]}"
@@ -351,7 +357,7 @@ def construir_subbloques_clasificados(paginas, sumario, offset, limite_chunks=No
     resultados = []  # (bloque_num, tema_num, norma_titulo, texto)
     with ThreadPoolExecutor(max_workers=12) as executor:
         futuros = {
-            executor.submit(clasificar_subbloque, texto, bloque_num): (bloque_num, norma_num, norma_titulo, i, texto)
+            executor.submit(clasificar_subbloque, texto, bloque_num, norma_titulo): (bloque_num, norma_num, norma_titulo, i, texto)
             for bloque_num, norma_num, norma_titulo, i, texto in tareas
         }
         completados = 0
