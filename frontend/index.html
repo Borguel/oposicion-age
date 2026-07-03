@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Oposición AGE - Plataforma de Estudio</title>
+  <title>Oposición AGE - Plataforma de Estudio con IA</title>
+  <meta name="description" content="Prepara tu oposición al Cuerpo General Administrativo del Estado (AGE) o de Gestión (GACE): tests ilimitados sobre el temario oficial, herramientas con IA para tus propios apuntes y estadísticas de progreso." />
   <link rel="stylesheet" href="/assets/theme.css" />
   <style>
     .home-hero {
       background: var(--age-navy);
       color: #fff;
-      padding: 76px 20px 96px;
+      padding: 76px 20px 88px;
       text-align: center;
     }
 
@@ -35,7 +36,7 @@
       font-size: 1.1rem;
       color: var(--age-navy-ink);
       line-height: 1.55;
-      margin-bottom: 30px;
+      margin-bottom: 24px;
     }
 
     .home-hero-ctas {
@@ -43,26 +44,46 @@
       gap: 12px;
       justify-content: center;
       flex-wrap: wrap;
+      margin-bottom: 26px;
+    }
+
+    .home-hero-trust {
+      display: flex;
+      gap: 18px;
+      justify-content: center;
+      flex-wrap: wrap;
+      font-size: 0.85rem;
+      color: var(--age-navy-ink);
+    }
+
+    .home-hero-trust span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .home-section {
       max-width: var(--age-container);
       margin: 0 auto;
-      padding: 56px 20px 20px;
+      padding: 64px 20px 20px;
     }
 
     .home-section-titulo {
-      font-size: 1.5rem;
+      font-size: clamp(1.5rem, 3vw, 2rem);
       font-weight: 800;
       letter-spacing: -0.01em;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       text-align: center;
     }
 
     .home-section-sub {
       text-align: center;
       color: var(--age-ink-soft);
-      margin-bottom: 30px;
+      margin-bottom: 34px;
+      max-width: 620px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.5;
     }
 
     .home-grid {
@@ -71,9 +92,424 @@
       gap: 18px;
     }
 
+    /* ---------- Highlights (4 tarjetas) ---------- */
+    .highlight-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 20px;
+    }
+
+    .highlight-card {
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-lg);
+      padding: 28px 24px;
+      box-shadow: var(--age-shadow);
+      transition: transform 0.2s var(--age-ease), box-shadow 0.2s var(--age-ease);
+    }
+
+    .highlight-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--age-shadow-hover);
+    }
+
+    .highlight-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--age-radius-md);
+      background: var(--age-primary-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
+
+    .highlight-card h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin: 0 0 8px;
+      color: var(--age-ink);
+    }
+
+    .highlight-card p {
+      color: var(--age-ink-soft);
+      font-size: 0.94rem;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    /* ---------- Cómo funciona ---------- */
+    .pasos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+      counter-reset: paso;
+    }
+
+    .paso-card {
+      position: relative;
+      padding: 8px 4px;
+    }
+
+    .paso-num {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--age-navy);
+      color: var(--age-primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.05rem;
+      margin-bottom: 14px;
+    }
+
+    .paso-card h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin: 0 0 6px;
+      color: var(--age-ink);
+    }
+
+    .paso-card p {
+      color: var(--age-ink-soft);
+      font-size: 0.92rem;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* ---------- Feature showcase (filas alternas con panel ilustrado) ---------- */
+    .showcase-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 44px;
+      align-items: center;
+      padding: 46px 0;
+      border-bottom: 1px solid var(--age-border);
+    }
+
+    .showcase-row:last-child {
+      border-bottom: none;
+    }
+
+    .showcase-row.reverse .showcase-text {
+      order: 2;
+    }
+
+    .showcase-row.reverse .showcase-visual {
+      order: 1;
+    }
+
+    .showcase-text h3 {
+      font-size: clamp(1.3rem, 2.4vw, 1.7rem);
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin: 0 0 14px;
+      color: var(--age-ink);
+    }
+
+    .showcase-text p {
+      color: var(--age-ink-soft);
+      font-size: 1rem;
+      line-height: 1.65;
+      margin: 0 0 20px;
+    }
+
+    .showcase-text strong {
+      color: var(--age-ink);
+    }
+
+    .showcase-visual {
+      border-radius: var(--age-radius-lg);
+      padding: 34px;
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .showcase-mock {
+      background: var(--age-card);
+      border-radius: var(--age-radius-md);
+      box-shadow: var(--age-shadow-hover);
+      padding: 18px 20px;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    /* mock: pregunta de test */
+    .mock-linea {
+      height: 10px;
+      border-radius: 6px;
+      background: var(--age-neutral-bg);
+      margin-bottom: 8px;
+    }
+    .mock-linea.corta { width: 55%; }
+    .mock-opcion {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1.5px solid var(--age-border);
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: var(--age-ink-soft);
+    }
+    .mock-opcion.correcta {
+      border-color: var(--age-success);
+      background: var(--age-success-bg);
+      color: var(--age-success);
+      font-weight: 700;
+    }
+    .mock-opcion .letra {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid currentColor;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+
+    /* mock: flashcard */
+    .mock-flashcard {
+      background: var(--age-card);
+      border-radius: var(--age-radius-md);
+      box-shadow: var(--age-shadow-hover);
+      padding: 26px 22px;
+      width: 100%;
+      max-width: 300px;
+      text-align: center;
+      border: 2px solid var(--age-primary);
+    }
+    .mock-flashcard .pregunta {
+      font-weight: 700;
+      color: var(--age-ink);
+      font-size: 0.95rem;
+      margin-bottom: 10px;
+    }
+    .mock-flashcard .progreso {
+      height: 6px;
+      border-radius: 999px;
+      background: var(--age-neutral-bg);
+      overflow: hidden;
+    }
+    .mock-flashcard .progreso-fill {
+      height: 100%;
+      width: 62%;
+      background: var(--age-primary);
+      border-radius: 999px;
+    }
+
+    /* mock: esquema */
+    .mock-esquema .mock-linea:nth-child(1) { width: 70%; }
+    .mock-esquema .sub { margin-left: 18px; width: 60%; background: var(--age-border); }
+
+    /* mock: chat */
+    .mock-chat .bubble {
+      max-width: 82%;
+      padding: 9px 13px;
+      border-radius: 14px;
+      font-size: 0.82rem;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .mock-chat .bubble.bot {
+      background: var(--age-neutral-bg);
+      color: var(--age-ink);
+      border-bottom-left-radius: 4px;
+    }
+    .mock-chat .bubble.user {
+      background: var(--age-primary-soft);
+      color: var(--age-ink);
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+      font-weight: 500;
+    }
+
+    /* mock: estadísticas */
+    .mock-stats {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      height: 90px;
+      padding: 0 6px;
+    }
+    .mock-stats .barra {
+      flex: 1;
+      border-radius: 6px 6px 0 0;
+      background: var(--age-primary);
+    }
+    .mock-stats .barra:nth-child(2) { background: var(--age-primary-light); }
+    .mock-stats .barra:nth-child(3) { background: var(--age-navy-soft); }
+    .mock-stats .barra:nth-child(4) { background: var(--age-primary-light); }
+
+    @media (max-width: 820px) {
+      .showcase-row,
+      .showcase-row.reverse .showcase-text,
+      .showcase-row.reverse .showcase-visual {
+        order: initial;
+        grid-template-columns: 1fr;
+      }
+      .showcase-row {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        padding: 34px 0;
+      }
+    }
+
+    /* ---------- Pricing teaser ---------- */
+    .pricing-teaser-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .pricing-teaser-card {
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-lg);
+      padding: 26px 22px;
+      text-align: center;
+    }
+
+    .pricing-teaser-card.destacado {
+      border: 2px solid var(--age-primary);
+      box-shadow: var(--age-shadow-hover);
+      position: relative;
+    }
+
+    .pricing-teaser-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--age-primary);
+      color: #1b1f2e;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 3px 12px;
+      border-radius: var(--age-radius-pill);
+    }
+
+    .pricing-teaser-card h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin: 4px 0 6px;
+    }
+
+    .pricing-teaser-price {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: var(--age-ink);
+      margin-bottom: 4px;
+    }
+
+    .pricing-teaser-price span {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--age-ink-soft);
+    }
+
+    .pricing-teaser-card p.desc {
+      color: var(--age-ink-soft);
+      font-size: 0.88rem;
+      margin-bottom: 16px;
+    }
+
+    .pricing-teaser-note {
+      text-align: center;
+      color: var(--age-ink-soft);
+      margin-top: 24px;
+      font-size: 0.92rem;
+    }
+
+    /* ---------- FAQ ---------- */
+    .faq-list {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .faq-item {
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-md);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .faq-item summary {
+      cursor: pointer;
+      padding: 18px 22px;
+      font-weight: 700;
+      color: var(--age-ink);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .faq-item summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .faq-item summary::after {
+      content: "+";
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: var(--age-ink-soft);
+      flex-shrink: 0;
+      transition: transform 0.2s var(--age-ease);
+    }
+
+    .faq-item[open] summary::after {
+      transform: rotate(45deg);
+    }
+
+    .faq-item p {
+      padding: 0 22px 20px;
+      color: var(--age-ink-soft);
+      line-height: 1.6;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    /* ---------- CTA final ---------- */
+    .home-cta-final {
+      background: var(--age-navy);
+      color: #fff;
+      text-align: center;
+      padding: 64px 20px;
+      margin-top: 64px;
+    }
+
+    .home-cta-final h2 {
+      font-size: clamp(1.5rem, 3vw, 2.1rem);
+      font-weight: 800;
+      margin: 0 0 10px;
+    }
+
+    .home-cta-final p {
+      color: var(--age-navy-ink);
+      margin: 0 0 26px;
+    }
+
     @media (max-width: 480px) {
       .home-hero {
-        padding: 52px 18px 72px;
+        padding: 52px 18px 64px;
+      }
+      .home-section {
+        padding: 48px 16px 16px;
       }
     }
   </style>
@@ -85,16 +521,231 @@
     <div class="home-hero-inner">
       <span class="age-pill age-pill-primary">🎯 Estudia con IA, a tu ritmo</span>
       <h1>Prepara tu oposición sin perderte entre apuntes</h1>
-      <p>Test ilimitados sobre el temario oficial, herramientas con IA para tus propios documentos y estadísticas claras de tu progreso — todo en un solo sitio.</p>
+      <p>Tests ilimitados sobre el temario oficial de AGE y GACE, herramientas con inteligencia artificial avanzada para tus propios documentos, y estadísticas claras de tu progreso — todo en un solo sitio.</p>
       <div class="home-hero-ctas">
-        <a href="/test-generator/" class="age-btn age-btn-primary">Empezar un test</a>
+        <a href="/test-generator/" class="age-btn age-btn-primary">Empezar un test gratis</a>
         <a href="/planes/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Ver planes</a>
+      </div>
+      <div class="home-hero-trust">
+        <span>✅ Sin permanencia</span>
+        <span>✅ Cancela cuando quieras</span>
+        <span>✅ Temario oficial incluido gratis</span>
       </div>
     </div>
   </section>
 
   <section class="home-section">
-    <div class="home-section-titulo">Todo lo que necesitas para estudiar</div>
+    <div class="home-section-titulo">Todo lo que necesitas para aprobar tu oposición</div>
+    <p class="home-section-sub">Herramientas pensadas para opositores que quieren estudiar de forma inteligente, no solo memorizar.</p>
+    <div class="highlight-grid">
+      <div class="highlight-card">
+        <div class="highlight-icon">📝</div>
+        <h3>Tests personalizados y oficiales</h3>
+        <p>Elige los temas que quieres practicar, simula exámenes con preguntas reales o deja que la IA adapte el nivel a cómo vas rindiendo.</p>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-icon">🔁</div>
+        <h3>Intentos ilimitados</h3>
+        <p>Repite el último test, repasa solo las preguntas que has fallado y vuelve sobre cualquier tema tantas veces como necesites.</p>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-icon">🤖</div>
+        <h3>IA avanzada</h3>
+        <p>Nuestro motor de IA analiza tus propios apuntes o el BOE y genera preguntas relevantes con explicaciones detalladas para cada respuesta.</p>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-icon">⚡</div>
+        <h3>Resultados instantáneos</h3>
+        <p>Corrección automática, feedback inmediato y estadísticas por tema para saber exactamente dónde flojeas.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <div class="home-section-titulo">¿Cómo funciona?</div>
+    <p class="home-section-sub">De cero a tu primer test en menos de un minuto.</p>
+    <div class="pasos-grid">
+      <div class="paso-card">
+        <div class="paso-num">1</div>
+        <h3>Elige tu oposición</h3>
+        <p>AGE (Cuerpo General Administrativo) o GACE (Cuerpo de Gestión). Puedes preparar las dos a la vez y llevar el progreso por separado.</p>
+      </div>
+      <div class="paso-card">
+        <div class="paso-num">2</div>
+        <h3>Practica gratis con el temario oficial</h3>
+        <p>Tests oficiales, repetir tu último test, repasar fallos y ver tus estadísticas — sin coste, sin tarjeta.</p>
+      </div>
+      <div class="paso-card">
+        <div class="paso-num">3</div>
+        <h3>Sube tus propios apuntes</h3>
+        <p>Un PDF de tus resúmenes, del BOE o de cualquier temario: la IA lo convierte en tests, tarjetas, esquemas o resúmenes.</p>
+      </div>
+      <div class="paso-card">
+        <div class="paso-num">4</div>
+        <h3>Estudia y repasa sin límite</h3>
+        <p>Chatea con la IA sobre cualquier duda, habla con el asistente de examen y repite lo que necesites hasta dominarlo.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <div class="home-section-titulo">Todo lo que puedes hacer en Oposición AGE</div>
+    <p class="home-section-sub">Un vistazo a las herramientas que tienes disponibles, todas conectadas entre sí.</p>
+
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <h3>📝 Tests que se adaptan a ti</h3>
+        <p>Genera exámenes <strong>personalizados</strong> eligiendo los temas que quieres reforzar, ponte a prueba con <strong>preguntas oficiales</strong> reales de convocatorias anteriores, o deja que la IA cree un test <strong>inteligente</strong> que se ajusta a tu nivel según tus aciertos y fallos.</p>
+        <a href="/test-generator/" class="age-btn age-btn-outline">Generar un test</a>
+      </div>
+      <div class="showcase-visual" style="background: var(--age-primary-soft);">
+        <div class="showcase-mock">
+          <div class="mock-linea"></div>
+          <div class="mock-linea corta"></div>
+          <div class="mock-opcion"><span class="letra">A</span> Primera opción</div>
+          <div class="mock-opcion correcta"><span class="letra">B</span> Segunda opción ✓</div>
+          <div class="mock-opcion"><span class="letra">C</span> Tercera opción</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-row reverse">
+      <div class="showcase-text">
+        <h3>🃏 Tarjetas de memoria</h3>
+        <p>Avanza más rápido con <strong>memorización activa</strong>. Convierte cualquier PDF en tarjetas de pregunta/respuesta, repásalas en modo estudio y trabaja la <strong>memoria a largo plazo</strong> en vez de releer lo mismo una y otra vez.</p>
+        <a href="/subida-pdf-tarjetas/" class="age-btn age-btn-outline">Crear tarjetas de memoria</a>
+      </div>
+      <div class="showcase-visual" style="background: #eafaf0;">
+        <div class="mock-flashcard">
+          <div class="pregunta">¿Qué son las Cortes Generales?</div>
+          <div class="progreso"><div class="progreso-fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <h3>🗂️ Esquemas y resúmenes automáticos</h3>
+        <p>Sube un documento largo y consigue un <strong>esquema jerárquico</strong> listo para repasar de un vistazo, o un <strong>resumen</strong> con los puntos clave para sintetizar un tema entero en minutos.</p>
+        <a href="/subida-pdf-esquemas/" class="age-btn age-btn-outline">Generar un esquema</a>
+      </div>
+      <div class="showcase-visual" style="background: #eef1fb;">
+        <div class="showcase-mock mock-esquema">
+          <div class="mock-linea"></div>
+          <div class="mock-linea sub"></div>
+          <div class="mock-linea sub"></div>
+          <div class="mock-linea corta"></div>
+          <div class="mock-linea sub"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-row reverse">
+      <div class="showcase-text">
+        <h3>💬 Chat IA y Asistente de examen</h3>
+        <p>Resuelve cualquier duda del temario charlando con la IA como lo harías con un compañero de estudio, o habla con el <strong>asistente premium de examen</strong> para preguntas sobre estructura, plazos y consejos de cara a la prueba.</p>
+        <a href="/chat-ai/" class="age-btn age-btn-outline">Abrir el chat</a>
+      </div>
+      <div class="showcase-visual" style="background: #fff4e8;">
+        <div class="showcase-mock mock-chat">
+          <div class="bubble bot">¿En qué puedo ayudarte hoy?</div>
+          <div class="bubble user">Explícame el Título Preliminar</div>
+          <div class="bubble bot">Claro, empieza estableciendo que...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-row">
+      <div class="showcase-text">
+        <h3>📊 Estadísticas de tu progreso</h3>
+        <p>Aciertos, fallos, nota media, temas más estudiados y temas pendientes — todo separado por oposición, para que sepas exactamente qué repasar antes del examen.</p>
+        <a href="/estadisticas/" class="age-btn age-btn-outline">Ver mis estadísticas</a>
+      </div>
+      <div class="showcase-visual" style="background: var(--age-primary-soft);">
+        <div class="showcase-mock">
+          <div class="mock-stats">
+            <div class="barra" style="height:40%;"></div>
+            <div class="barra" style="height:75%;"></div>
+            <div class="barra" style="height:55%;"></div>
+            <div class="barra" style="height:90%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <div class="home-section-titulo">Elige tu plan</div>
+    <p class="home-section-sub">Sin permanencia: empieza gratis y sube de nivel cuando quieras. Cancela cuando quieras desde "Mi cuenta".</p>
+    <div class="pricing-teaser-grid">
+      <div class="pricing-teaser-card">
+        <h3>Gratis</h3>
+        <div class="pricing-teaser-price">0€</div>
+        <p class="desc">Tests oficiales, repite tu último test, repasa fallos y estadísticas.</p>
+      </div>
+      <div class="pricing-teaser-card destacado">
+        <div class="pricing-teaser-badge">Más completo</div>
+        <h3>Premium</h3>
+        <div class="pricing-teaser-price">9,99€<span>/mes</span></div>
+        <p class="desc">Todas las herramientas desde PDF, chat IA y asistente premium de examen.</p>
+      </div>
+      <div class="pricing-teaser-card">
+        <h3>Básico</h3>
+        <div class="pricing-teaser-price">4,99€<span>/mes</span></div>
+        <p class="desc">Test personalizado e inteligente con IA, y generación de esquemas.</p>
+      </div>
+    </div>
+    <p class="pricing-teaser-note">
+      <a href="/planes/" class="age-btn age-btn-primary" style="margin-top:8px;">Ver todos los planes en detalle</a>
+    </p>
+  </section>
+
+  <section class="home-section">
+    <div class="home-section-titulo">Preguntas frecuentes</div>
+    <p class="home-section-sub">Todo lo que necesitas saber sobre Oposición AGE.</p>
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary>¿Para qué oposiciones sirve la web?</summary>
+        <p>Ahora mismo puedes preparar el Cuerpo General Administrativo del Estado (AGE, C1) y el Cuerpo de Gestión de la Administración Civil del Estado (GACE, A2). Puedes estudiar las dos a la vez: cada una tiene su propio temario, tests y estadísticas independientes.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Qué tipo de archivos puedo subir a las herramientas de IA?</summary>
+        <p>De momento admitimos documentos en formato PDF de hasta 10 MB. Si tienes tus apuntes en Word, expórtalos a PDF antes de subirlos.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Qué pasa si mi PDF está escaneado como imagen?</summary>
+        <p>Nuestras herramientas leen el texto del documento, así que necesitan que el PDF tenga texto seleccionable (no solo una foto o escaneo sin OCR). Si tu PDF es un escaneo, prueba a pasarlo antes por un conversor de "PDF escaneado a texto".</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cuántas preguntas puedo generar por test?</summary>
+        <p>Puedes pedir entre 1 y 50 preguntas por test, tanto en los generadores desde el temario oficial como en los que parten de tu propio PDF.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Los planes de pago caducan o son una suscripción?</summary>
+        <p>Son una suscripción mensual, no un pack de créditos que caduque: mientras tu plan esté activo tienes acceso ilimitado a todo lo que incluye. Puedes cancelarla cuando quieras desde "Mi cuenta" y seguirá activa hasta el final del periodo ya pagado.</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Puedo repetir los tests que ya he generado?</summary>
+        <p>Sí, tantas veces como quieras. Puedes repetir tu último test completo desde "Tests → Repetir último test", o quedarte solo con las preguntas que fallaste desde "Preguntas falladas".</p>
+      </details>
+      <details class="faq-item">
+        <summary>¿Por qué mi test tiene a veces menos preguntas de las que pedí?</summary>
+        <p>Puede pasar si el tema elegido tiene poco contenido disponible en el temario, o si alguna pregunta generada por la IA no supera nuestras validaciones de calidad. En esos casos seguimos intentándolo con más contenido del tema antes de darte el test, para acercarnos lo máximo posible al número que pediste.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="home-cta-final">
+    <h2>¿Listo para empezar a practicar?</h2>
+    <p>Prueba gratis con el temario oficial. Sin tarjeta, sin compromiso.</p>
+    <div class="home-hero-ctas">
+      <a href="/test-generator/" class="age-btn age-btn-primary">Probar gratis ahora</a>
+      <a href="/login/?next=/mi-cuenta/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Crear cuenta</a>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <div class="home-section-titulo">Todo en un solo sitio</div>
     <p class="home-section-sub">Elige por dónde quieres empezar hoy</p>
     <div class="home-grid">
       <a class="age-option-card" href="/test-generator/">
