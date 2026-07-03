@@ -47,17 +47,28 @@ export function signOut() {
   return firebaseSignOut(auth);
 }
 
+// Devuelve una promesa que se resuelve con "valorSiTarda" si "promesa" no
+// se ha resuelto pasados "ms" milisegundos. Evita que la web se quede
+// colgada sin explicación si Firebase (o la red) tarda demasiado.
+function conLimiteDeTiempo(promesa, ms, valorSiTarda) {
+  return Promise.race([
+    promesa,
+    new Promise((resolve) => setTimeout(() => resolve(valorSiTarda), ms))
+  ]);
+}
+
 // Espera a que Firebase resuelva el estado inicial de sesión (evita
 // redirecciones prematuras a /login/ mientras el SDK todavía está
 // comprobando si hay una sesión guardada).
 export function esperarUsuario() {
   if (auth.currentUser) return Promise.resolve(auth.currentUser);
-  return new Promise((resolve) => {
+  const promesa = new Promise((resolve) => {
     const quitar = onAuthStateChanged(auth, (user) => {
       quitar();
       resolve(user);
     });
   });
+  return conLimiteDeTiempo(promesa, 8000, null);
 }
 
 // Token que hay que mandar como "Authorization: Bearer <token>" en cada
@@ -67,7 +78,8 @@ export function esperarUsuario() {
 // todavía sin resolver y te mandaba a /login/ aunque sí tuvieras sesión).
 export async function idToken() {
   const user = await esperarUsuario();
-  return user ? await user.getIdToken() : null;
+  if (!user) return null;
+  return conLimiteDeTiempo(user.getIdToken(), 8000, null);
 }
 
 function inyectarNav(user) {
