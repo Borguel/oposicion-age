@@ -2,6 +2,7 @@ import os
 import random
 import requests
 import json
+import traceback
 import stripe
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
@@ -892,7 +893,8 @@ def webhook_stripe():
             if docs:
                 actualizar_suscripcion(db, docs[0].id, subscription_status="past_due")
     except Exception as e:
-        print(f"❌ Error procesando webhook de Stripe ({tipo}):", e)
+        print(f"❌ Error procesando webhook de Stripe ({tipo}): {e}")
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
     evento_ref.set({"type": tipo, "processed_at": datetime.utcnow().isoformat()})
