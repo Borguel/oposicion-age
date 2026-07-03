@@ -8,58 +8,62 @@
   <link rel="stylesheet" href="/mi-cuenta/style.css" />
 </head>
 <body>
-  <nav class="age-nav">
-    <a href="/" class="age-nav-home">🏠 Inicio</a>
-    <a href="/subida-pdf-pagina-principal/">📄 Herramientas PDF</a>
-    <a href="/test-generator/">📝 Generador de Test</a>
-    <a href="/subida-pdf-generar-test/">📄➜📝 Test desde PDF</a>
-    <a href="/subida-pdf-tarjetas/">🗂️ Tarjetas</a>
-    <a href="/subida-pdf-esquemas/">🧩 Esquemas</a>
-    <a href="/subida-pdf-resumen/">📑 Resumen</a>
-    <a href="/subida-pdf-chat-pdf/">💬 Analizar PDF</a>
-    <a href="/repetir-test/">🔁 Repetir Test</a>
-    <a href="/preguntas-falladas/">❌ Falladas</a>
-    <a href="/estadisticas/">📊 Estadísticas</a>
-    <a href="/chat-ai/">🤖 Chat IA</a>
-    <a href="/asistente/">🧑‍💼 Asistente</a>
-  </nav>
+  <nav class="age-nav"></nav>
 
-  <div class="cuenta-wrap">
-    <div class="cuenta-card">
+  <div class="cuenta-header">
+    <div class="age-container">
       <h1>Mi cuenta</h1>
-      <div id="cuenta-email" class="cuenta-email">Cargando…</div>
-
-      <div class="cuenta-plan-label">Mis oposiciones</div>
-      <div id="cuenta-oposiciones" class="cuenta-oposiciones">Cargando…</div>
-
-      <button type="button" id="btn-portal" class="btn-primary">Gestionar suscripciones</button>
-      <a href="/planes/" class="btn-secundario">Ver / contratar otra oposición</a>
+      <p>Gestiona tus oposiciones, tu suscripción y tus datos personales.</p>
     </div>
+  </div>
 
-    <div class="cuenta-card">
-      <h2 class="cuenta-subtitulo">Datos personales</h2>
-      <form id="form-datos">
-        <label for="datos-nombre">Nombre</label>
-        <input type="text" id="datos-nombre" autocomplete="given-name" />
+  <div class="age-container cuenta-layout">
+    <aside class="cuenta-aside">
+      <div class="age-card cuenta-perfil-card">
+        <div id="cuenta-avatar" class="cuenta-avatar">?</div>
+        <div id="cuenta-email" class="cuenta-email">Cargando…</div>
+        <button type="button" id="btn-logout" class="age-btn age-btn-outline age-btn-block">Cerrar sesión</button>
+      </div>
+    </aside>
 
-        <label for="datos-apellidos">Apellidos</label>
-        <input type="text" id="datos-apellidos" autocomplete="family-name" />
+    <main class="cuenta-main">
+      <section class="age-card cuenta-section">
+        <div class="cuenta-section-titulo">
+          <h2>Mis oposiciones</h2>
+          <a href="/planes/" class="age-btn age-btn-primary cuenta-btn-contratar">+ Contratar otra oposición</a>
+        </div>
+        <div id="cuenta-oposiciones" class="cuenta-oposiciones">Cargando…</div>
+        <button type="button" id="btn-portal" class="age-btn age-btn-outline age-btn-block cuenta-btn-portal">Gestionar facturación y suscripciones</button>
+      </section>
 
-        <label for="datos-telefono">Teléfono</label>
-        <input type="tel" id="datos-telefono" autocomplete="tel" />
+      <section class="age-card cuenta-section">
+        <h2>Datos personales</h2>
+        <form id="form-datos" class="cuenta-form">
+          <div class="cuenta-form-grid">
+            <div class="cuenta-campo">
+              <label for="datos-nombre">Nombre</label>
+              <input type="text" id="datos-nombre" autocomplete="given-name" placeholder="Tu nombre" />
+            </div>
+            <div class="cuenta-campo">
+              <label for="datos-apellidos">Apellidos</label>
+              <input type="text" id="datos-apellidos" autocomplete="family-name" placeholder="Tus apellidos" />
+            </div>
+            <div class="cuenta-campo">
+              <label for="datos-telefono">Teléfono</label>
+              <input type="tel" id="datos-telefono" autocomplete="tel" placeholder="600 000 000" />
+            </div>
+            <div class="cuenta-campo cuenta-campo-full">
+              <label for="datos-direccion">Dirección</label>
+              <input type="text" id="datos-direccion" autocomplete="street-address" placeholder="Calle, número, ciudad" />
+            </div>
+          </div>
 
-        <label for="datos-direccion">Dirección</label>
-        <input type="text" id="datos-direccion" autocomplete="street-address" />
+          <div id="datos-mensaje" class="datos-mensaje" style="display:none;"></div>
 
-        <div id="datos-mensaje" class="datos-mensaje" style="display:none;"></div>
-
-        <button type="submit" class="btn-primary" id="btn-guardar-datos">Guardar cambios</button>
-      </form>
-    </div>
-
-    <div class="cuenta-card">
-      <button type="button" id="btn-logout" class="btn-texto">Cerrar sesión</button>
-    </div>
+          <button type="submit" class="age-btn age-btn-primary" id="btn-guardar-datos">Guardar cambios</button>
+        </form>
+      </section>
+    </main>
   </div>
 
   <script type="module" src="/assets/auth.js"></script>

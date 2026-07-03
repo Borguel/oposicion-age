@@ -1,5 +1,5 @@
-// Firebase Authentication (email + contraseña) + inyección del enlace de
-// cuenta/login en la barra de navegación compartida (.age-nav). Se importa
+// Firebase Authentication (email + contraseña) + construcción dinámica de la
+// barra de navegación compartida (.age-nav) y su menú de cuenta. Se importa
 // como módulo en cada página del frontend.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
@@ -83,36 +83,109 @@ export async function idToken() {
   return conLimiteDeTiempo(user.getIdToken(), 8000, null);
 }
 
-function inyectarNav(user) {
+// ============================================================
+// Barra de navegación: se construye entera desde aquí (una sola
+// fuente de verdad) en vez de repetir <a> sueltos en cada página.
+// ============================================================
+const NAV_LINKS = [
+  { href: "/", label: "Inicio", match: ["/"] },
+  { href: "/test-generator/", label: "Tests", match: ["/test-generator/", "/repetir-test/", "/preguntas-falladas/"] },
+  { href: "/subida-pdf-pagina-principal/", label: "Herramientas IA", match: ["/subida-pdf-"] },
+  { href: "/chat-ai/", label: "Chat IA", match: ["/chat-ai/"] },
+  { href: "/asistente/", label: "Asistente", match: ["/asistente/"] },
+  { href: "/estadisticas/", label: "Estadísticas", match: ["/estadisticas/"] }
+];
+
+function esEnlaceActivo(match, ruta) {
+  return match.some((prefijo) => (prefijo === "/" ? ruta === "/" : ruta.startsWith(prefijo)));
+}
+
+function construirEsqueletoNav() {
   const nav = document.querySelector(".age-nav");
-  if (!nav) return;
+  if (!nav || nav.dataset.built) return;
+  nav.dataset.built = "1";
+  nav.innerHTML = "";
 
-  inyectarSelectorOposicion();
+  const inner = document.createElement("div");
+  inner.className = "age-nav-inner";
 
-  let enlacePlanes = nav.querySelector("[data-nav-planes]");
-  if (!enlacePlanes) {
-    enlacePlanes = document.createElement("a");
-    enlacePlanes.href = "/planes/";
-    enlacePlanes.textContent = "💳 Planes";
-    enlacePlanes.setAttribute("data-nav-planes", "");
-    nav.appendChild(enlacePlanes);
-  }
+  const brand = document.createElement("a");
+  brand.className = "age-nav-brand";
+  brand.href = "/";
+  brand.innerHTML = `<span class="age-nav-brand-mark">✓</span><span class="age-nav-brand-text">Oposición AGE</span>`;
 
-  let enlaceCuenta = nav.querySelector("[data-nav-cuenta]");
-  if (!enlaceCuenta) {
-    enlaceCuenta = document.createElement("a");
-    enlaceCuenta.setAttribute("data-nav-cuenta", "");
-    nav.appendChild(enlaceCuenta);
-  }
+  const links = document.createElement("div");
+  links.className = "age-nav-links";
+  const ruta = window.location.pathname;
+  NAV_LINKS.forEach(({ href, label, match }) => {
+    const a = document.createElement("a");
+    a.href = href;
+    a.textContent = label;
+    if (esEnlaceActivo(match, ruta)) a.classList.add("age-nav-active");
+    links.appendChild(a);
+  });
+
+  const right = document.createElement("div");
+  right.className = "age-nav-right";
+  right.id = "age-nav-right";
+
+  const burger = document.createElement("button");
+  burger.type = "button";
+  burger.className = "age-nav-burger";
+  burger.setAttribute("aria-label", "Abrir menú");
+  burger.textContent = "☰";
+  burger.addEventListener("click", () => links.classList.toggle("open"));
+
+  inner.appendChild(brand);
+  inner.appendChild(links);
+  inner.appendChild(right);
+  inner.appendChild(burger);
+  nav.appendChild(inner);
+}
+
+function construirMenuCuenta(user) {
+  const right = document.getElementById("age-nav-right");
+  if (!right) return;
+
+  let acc = right.querySelector(".age-account");
+  if (acc) acc.remove();
+  acc = document.createElement("div");
+  acc.className = "age-account";
+  right.appendChild(acc);
 
   if (user) {
-    enlaceCuenta.href = "/mi-cuenta/";
-    enlaceCuenta.textContent = "👤 Mi cuenta";
+    const inicial = (user.email || "?").trim().charAt(0).toUpperCase();
+    acc.innerHTML = `
+      <button type="button" class="age-account-btn" data-account-toggle>
+        <span class="age-account-avatar">${inicial}</span>
+        <span class="age-account-caret">▾</span>
+      </button>
+      <div class="age-account-menu">
+        <a href="/mi-cuenta/">👤 Mi cuenta</a>
+        <a href="/planes/">💳 Planes</a>
+        <div class="age-account-menu-divider"></div>
+        <button type="button" data-account-logout>🚪 Cerrar sesión</button>
+      </div>
+    `;
+    acc.querySelector("[data-account-toggle]").addEventListener("click", (evento) => {
+      evento.stopPropagation();
+      acc.classList.toggle("open");
+    });
+    acc.querySelector("[data-account-logout]").addEventListener("click", async () => {
+      await signOut();
+      window.location.href = "/";
+    });
+    document.addEventListener("click", () => acc.classList.remove("open"));
   } else {
     const destino = encodeURIComponent(window.location.pathname);
-    enlaceCuenta.href = `/login/?next=${destino}`;
-    enlaceCuenta.textContent = "🔑 Iniciar sesión";
+    acc.innerHTML = `<a class="age-btn age-btn-primary" style="padding:9px 18px;font-size:13.5px;" href="/login/?next=${destino}">Iniciar sesión</a>`;
   }
+}
+
+function inyectarNav(user) {
+  construirEsqueletoNav();
+  inyectarSelectorOposicion();
+  construirMenuCuenta(user);
 }
 
 function inyectarFooter() {

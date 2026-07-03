@@ -3,75 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma Oposiciones AGE</title>  <link rel="stylesheet" href="/assets/theme.css" />
-
-    
-  <link rel="stylesheet" href="/subida-pdf-pagina-principal/style.css" />
+    <title>Herramientas IA - Oposición AGE</title>
+    <link rel="stylesheet" href="/assets/theme.css" />
+    <link rel="stylesheet" href="/subida-pdf-pagina-principal/style.css" />
 </head>
 <body>
-<nav class="age-nav">
-  <a href="/" class="age-nav-home">🏠 Inicio</a>
-  <a href="/subida-pdf-pagina-principal/" class="age-nav-active">📄 Herramientas PDF</a>
-  <a href="/test-generator/">📝 Generador de Test</a>
-  <a href="/subida-pdf-generar-test/">📄➜📝 Test desde PDF</a>
-  <a href="/subida-pdf-tarjetas/">🗂️ Tarjetas</a>
-  <a href="/subida-pdf-esquemas/">🧩 Esquemas</a>
-  <a href="/subida-pdf-resumen/">📑 Resumen</a>
-  <a href="/subida-pdf-chat-pdf/">💬 Analizar PDF</a>
-  <a href="/repetir-test/">🔁 Repetir Test</a>
-  <a href="/preguntas-falladas/">❌ Falladas</a>
-  <a href="/estadisticas/">📊 Estadísticas</a>
-  <a href="/chat-ai/">🤖 Chat IA</a>
-  <a href="/asistente/">🧑‍💼 Asistente</a>
-</nav>
+<nav class="age-nav"></nav>
 
-    <!-- Contenido Principal -->
-    <div class="container">
-        <div class="header">
-            <h1>¿Qué quieres hacer hoy?</h1>
-            <p>Selecciona una de nuestras herramientas de estudio para preparar tus oposiciones de manera más eficiente</p>
-        </div>
+    <div class="herramientas-header">
+      <div class="age-container">
+        <h1>Herramientas IA</h1>
+        <p>Sube cualquier documento (apuntes, un PDF del BOE, tus propios resúmenes...) y deja que la IA lo convierta en material de estudio.</p>
+      </div>
+    </div>
 
-        <div class="options-grid">
-            <!-- Tarjeta para hacer test -->
-            <div class="option-card test-card">
-                <div class="option-icon">🧪</div>
-                <h2 class="option-title">Realizar Test</h2>
-                <p class="option-description">Pon a prueba tus conocimientos con preguntas tipo test de tu temario. Practica con exámenes simulados y mejora tu velocidad de respuesta.</p>
-                <a href="../subida-pdf-generar-test/" class="option-button">Comenzar Test</a>
-            </div>
+    <div class="age-container herramientas-wrap">
+        <div class="age-option-grid">
+            <a class="age-option-card" href="/subida-pdf-generar-test/">
+                <span class="age-option-icon">🧪</span>
+                <span class="age-option-title">Generar test desde PDF</span>
+                <span class="age-option-desc">Convierte cualquier documento en preguntas tipo test para ponerte a prueba.</span>
+            </a>
 
-            <!-- Tarjeta para resumir documentos -->
-            <div class="option-card resume-card">
-                <div class="option-icon">📄</div>
-                <h2 class="option-title">Resumir Documentos</h2>
-                <p class="option-description">Sube tus documentos y obtén resúmenes automáticos con los puntos clave. Ideal para sintetizar temas extensos y estudiar de forma más eficaz.</p>
-                <a href="../subida-pdf-resumen/" class="option-button">Resumir Documento</a>
-            </div>
+            <a class="age-option-card" href="/subida-pdf-resumen/">
+                <span class="age-option-icon">📄</span>
+                <span class="age-option-title">Resumir documentos</span>
+                <span class="age-option-desc">Obtén los puntos clave de un documento largo en segundos.</span>
+            </a>
 
-            <!-- Tarjeta para generar esquemas -->
-            <div class="option-card scheme-card">
-                <div class="option-icon">🗂️</div>
-                <h2 class="option-title">Generar Esquemas</h2>
-                <p class="option-description">Crea esquemas visuales a partir de tus documentos para comprender mejor la estructura de los temas. Organiza la información de forma clara y visual.</p>
-                <a href="../subida-pdf-esquemas/" class="option-button">Crear Esquema</a>
-            </div>
+            <a class="age-option-card" href="/subida-pdf-esquemas/">
+                <span class="age-option-icon">🗂️</span>
+                <span class="age-option-title">Generar esquemas</span>
+                <span class="age-option-desc">Convierte el documento en un esquema claro, jerárquico y fácil de repasar.</span>
+            </a>
 
-            <!-- Tarjeta para tarjetas de memoria -->
-            <div class="option-card cards-card">
-                <div class="option-icon">🃏</div>
-                <h2 class="option-title">Tarjetas de Memoria</h2>
-                <p class="option-description">Estudia con tarjetas de memoria interactivas para retener información de forma activa. Perfecto para memorizar conceptos, definiciones y artículos.</p>
-                <a href="../subida-pdf-tarjetas/" class="option-button">Estudiar con Tarjetas</a>
-            </div>
+            <a class="age-option-card" href="/subida-pdf-tarjetas/">
+                <span class="age-option-icon">🃏</span>
+                <span class="age-option-title">Tarjetas de memoria</span>
+                <span class="age-option-desc">Genera flashcards de estudio activo a partir de tu documento.</span>
+            </a>
+
+            <a class="age-option-card" href="/subida-pdf-chat-pdf/">
+                <span class="age-option-icon">💬</span>
+                <span class="age-option-title">Analizar PDF (chat)</span>
+                <span class="age-option-desc">Pregúntale directamente a tu documento y obtén respuestas al momento.</span>
+            </a>
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <p>&copy; 2025 Oposita Con AI. Todos los derechos reservados.</p>
-        <!-- Añade aquí más elementos del footer si los tienes -->
-    </footer>
   <script src="/subida-pdf-pagina-principal/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
 </body>

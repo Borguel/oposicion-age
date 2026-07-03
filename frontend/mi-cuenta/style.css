@@ -4,204 +4,214 @@ body {
   margin: 0;
 }
 
-.cuenta-wrap {
+.cuenta-header {
+  background: var(--age-navy);
+  color: #fff;
+  padding: 40px 0 56px;
+}
+
+.cuenta-header h1 {
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.cuenta-header p {
+  color: var(--age-navy-ink);
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.cuenta-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  align-items: start;
+  margin-top: -34px;
+  padding-bottom: 60px;
+}
+
+@media (max-width: 860px) {
+  .cuenta-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cuenta-aside {
+  position: sticky;
+  top: calc(var(--age-nav-height) + 16px);
+}
+
+@media (max-width: 860px) {
+  .cuenta-aside {
+    position: static;
+  }
+}
+
+.cuenta-perfil-card {
+  padding: 28px 22px;
+  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 64px 20px;
+  gap: 14px;
 }
 
-.cuenta-card {
-  width: 100%;
-  max-width: 420px;
-  background: var(--age-card);
-  border: 1px solid var(--age-border);
-  border-radius: var(--age-radius-lg);
-  box-shadow: var(--age-shadow);
-  padding: 30px 28px 34px;
-  text-align: center;
-}
-
-.cuenta-card h1 {
+.cuenta-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.6rem;
-  margin: 0 0 6px;
+  font-weight: 800;
 }
 
 .cuenta-email {
   color: var(--age-ink-soft);
-  font-size: 14px;
-  margin-bottom: 24px;
+  font-size: 13.5px;
+  word-break: break-all;
+  margin-bottom: 4px;
 }
 
-.cuenta-plan {
-  background: var(--age-bg);
-  border-radius: var(--age-radius-md);
-  padding: 18px;
-  margin-bottom: 22px;
+.cuenta-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
 }
 
-.cuenta-plan-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--age-ink-soft);
-  font-weight: 700;
+.cuenta-section {
+  padding: 26px 26px 28px;
 }
 
-.cuenta-plan-nombre {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--age-primary-dark);
-  text-transform: capitalize;
-  margin-top: 4px;
+.cuenta-section h2 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 0 0 18px;
 }
 
-.cuenta-plan-estado {
-  font-size: 13px;
-  color: var(--age-ink-soft);
-  margin-top: 4px;
+.cuenta-section-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.cuenta-section-titulo h2 {
+  margin: 0;
+}
+
+.cuenta-btn-contratar {
+  font-size: 13.5px;
+  padding: 9px 16px;
 }
 
 .cuenta-oposiciones {
-  background: var(--age-bg);
-  border-radius: var(--age-radius-md);
-  padding: 6px 18px;
-  margin: 8px 0 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
 .cuenta-oposicion-fila {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--age-border);
-  text-align: left;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  background: var(--age-bg);
 }
 
-.cuenta-oposicion-fila:last-child {
-  border-bottom: none;
+.cuenta-oposicion-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .cuenta-oposicion-nombre {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 14.5px;
+  font-weight: 700;
   color: var(--age-ink);
 }
 
-.cuenta-oposicion-plan {
+.cuenta-oposicion-estado {
+  font-size: 12.5px;
+  color: var(--age-ink-soft);
+}
+
+.cuenta-btn-portal {
+  margin-top: 4px;
+}
+
+.cuenta-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 560px) {
+  .cuenta-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cuenta-campo-full {
+  grid-column: 1 / -1;
+}
+
+.cuenta-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cuenta-campo label {
   font-size: 13px;
-  color: var(--age-primary-dark);
   font-weight: 700;
-  text-transform: capitalize;
-  white-space: nowrap;
+  color: var(--age-ink-soft);
 }
 
-.btn-primary,
-.btn-secundario,
-.btn-texto {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 12px 0;
+.cuenta-campo input {
+  padding: 12px 14px;
   border-radius: var(--age-radius-sm);
-  font-family: var(--age-font);
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-  margin-top: 10px;
-  transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease);
-}
-
-.btn-primary {
-  border: none;
-  background: var(--age-primary);
-  color: #fff;
-}
-
-.btn-primary:hover {
-  background: var(--age-primary-dark);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.btn-secundario {
   border: 1px solid var(--age-border);
+  font-family: var(--age-font);
+  font-size: 14.5px;
+  box-sizing: border-box;
   background: var(--age-card);
   color: var(--age-ink);
 }
 
-.btn-secundario:hover {
-  background: var(--age-bg);
-}
-
-.btn-texto {
-  border: none;
-  background: transparent;
-  color: var(--age-ink-soft);
-  font-weight: 600;
-}
-
-.btn-texto:hover {
-  color: var(--age-ink);
-}
-
-.cuenta-subtitulo {
-  font-size: 1.15rem;
-  margin: 0 0 18px;
-  text-align: left;
-}
-
-#form-datos {
-  text-align: left;
-}
-
-#form-datos label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--age-ink-soft);
-  margin: 14px 0 6px;
-}
-
-#form-datos label:first-child {
-  margin-top: 0;
-}
-
-#form-datos input {
-  width: 100%;
-  padding: 11px 14px;
-  border-radius: var(--age-radius-sm);
-  border: 1px solid var(--age-border);
-  font-family: var(--age-font);
-  font-size: 15px;
-  box-sizing: border-box;
-}
-
-#form-datos input:focus {
+.cuenta-campo input:focus {
   outline: none;
   border-color: var(--age-primary);
+  box-shadow: 0 0 0 3px var(--age-primary-soft);
 }
 
 .datos-mensaje {
-  margin-top: 14px;
-  padding: 10px 12px;
+  margin-bottom: 16px;
+  padding: 11px 14px;
   border-radius: var(--age-radius-sm);
   font-size: 13.5px;
-  text-align: left;
+  font-weight: 600;
 }
 
 .datos-mensaje.ok {
-  background: #eaf7ee;
-  color: #1e7e34;
+  background: var(--age-success-bg);
+  color: var(--age-success);
 }
 
 .datos-mensaje.error {
-  background: #fdecea;
-  color: #c62828;
+  background: var(--age-danger-bg);
+  color: var(--age-danger);
 }

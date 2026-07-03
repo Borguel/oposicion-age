@@ -6,161 +6,120 @@
   <title>Oposición AGE - Plataforma de Estudio</title>
   <link rel="stylesheet" href="/assets/theme.css" />
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      background: var(--age-bg);
-      color: var(--age-ink);
+    .home-hero {
+      background: var(--age-navy);
+      color: #fff;
+      padding: 76px 20px 96px;
+      text-align: center;
     }
 
-    .hero {
-      text-align: center;
-      padding: 72px 20px 48px;
+    .home-hero-inner {
       max-width: 720px;
       margin: 0 auto;
     }
 
-    .hero h1 {
+    .home-hero .age-pill-primary {
+      background: rgba(255, 166, 51, 0.18);
+      color: var(--age-primary-light);
+    }
+
+    .home-hero h1 {
       font-size: clamp(2.2rem, 5vw, 3.4rem);
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: -0.02em;
-      margin-bottom: 12px;
+      margin: 18px 0 14px;
+      line-height: 1.1;
     }
 
-    .hero p {
-      font-size: 1.2rem;
-      color: var(--age-ink-soft);
-      line-height: 1.5;
+    .home-hero p {
+      font-size: 1.1rem;
+      color: var(--age-navy-ink);
+      line-height: 1.55;
+      margin-bottom: 30px;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 16px;
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 0 20px 72px;
-    }
-
-    a.card {
+    .home-hero-ctas {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
-      background: var(--age-card);
-      border: 1px solid var(--age-border);
-      border-radius: var(--age-radius-lg);
-      padding: 24px 22px;
-      text-decoration: none;
-      color: var(--age-ink);
-      box-shadow: var(--age-shadow);
-      transition: transform 0.25s var(--age-ease), box-shadow 0.25s var(--age-ease);
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
-    a.card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--age-shadow-hover);
+    .home-section {
+      max-width: var(--age-container);
+      margin: 0 auto;
+      padding: 56px 20px 20px;
     }
 
-    a.card .icon {
-      font-size: 1.8rem;
+    .home-section-titulo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
+      text-align: center;
     }
 
-    a.card .label {
-      font-weight: 600;
-      font-size: 1.05rem;
-    }
-
-    a.card .desc {
-      font-size: 0.88rem;
+    .home-section-sub {
+      text-align: center;
       color: var(--age-ink-soft);
-      font-weight: 400;
+      margin-bottom: 30px;
+    }
+
+    .home-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 18px;
+    }
+
+    @media (max-width: 480px) {
+      .home-hero {
+        padding: 52px 18px 72px;
+      }
     }
   </style>
 </head>
 <body>
-  <nav class="age-nav">
-    <a href="/" class="age-nav-home age-nav-active">🏠 Inicio</a>
-    <a href="/subida-pdf-pagina-principal/">📄 Herramientas PDF</a>
-    <a href="/test-generator/">📝 Generador de Test</a>
-    <a href="/subida-pdf-generar-test/">📄➜📝 Test desde PDF</a>
-    <a href="/subida-pdf-tarjetas/">🗂️ Tarjetas</a>
-    <a href="/subida-pdf-esquemas/">🧩 Esquemas</a>
-    <a href="/subida-pdf-resumen/">📑 Resumen</a>
-    <a href="/subida-pdf-chat-pdf/">💬 Analizar PDF</a>
-    <a href="/repetir-test/">🔁 Repetir Test</a>
-    <a href="/preguntas-falladas/">❌ Falladas</a>
-    <a href="/estadisticas/">📊 Estadísticas</a>
-    <a href="/chat-ai/">🤖 Chat IA</a>
-    <a href="/asistente/">🧑‍💼 Asistente</a>
-  </nav>
+  <nav class="age-nav"></nav>
 
-  <div class="hero">
-    <h1>Oposición AGE</h1>
-    <p>Todo lo que necesitas para preparar tu oposición: test, tarjetas, esquemas y estadísticas de tu progreso, en un solo sitio.</p>
-  </div>
+  <section class="home-hero">
+    <div class="home-hero-inner">
+      <span class="age-pill age-pill-primary">🎯 Estudia con IA, a tu ritmo</span>
+      <h1>Prepara tu oposición sin perderte entre apuntes</h1>
+      <p>Test ilimitados sobre el temario oficial, herramientas con IA para tus propios documentos y estadísticas claras de tu progreso — todo en un solo sitio.</p>
+      <div class="home-hero-ctas">
+        <a href="/test-generator/" class="age-btn age-btn-primary">Empezar un test</a>
+        <a href="/planes/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Ver planes</a>
+      </div>
+    </div>
+  </section>
 
-  <div class="grid">
-    <a class="card" href="/subida-pdf-pagina-principal/">
-      <span class="icon">📄</span>
-      <span class="label">Herramientas PDF</span>
-      <span class="desc">Todo lo que puedes hacer a partir de un documento</span>
-    </a>
-    <a class="card" href="/test-generator/">
-      <span class="icon">📝</span>
-      <span class="label">Generador de Test</span>
-      <span class="desc">Test oficiales, personalizados o con IA</span>
-    </a>
-    <a class="card" href="/subida-pdf-generar-test/">
-      <span class="icon">📄➜📝</span>
-      <span class="label">Generar Test desde PDF</span>
-      <span class="desc">Convierte un documento en preguntas tipo test</span>
-    </a>
-    <a class="card" href="/subida-pdf-tarjetas/">
-      <span class="icon">🗂️</span>
-      <span class="label">Tarjetas de Memoria</span>
-      <span class="desc">Estudia con flashcards generadas desde tu PDF</span>
-    </a>
-    <a class="card" href="/subida-pdf-esquemas/">
-      <span class="icon">🧩</span>
-      <span class="label">Esquemas desde PDF</span>
-      <span class="desc">Resúmenes estructurados y jerárquicos</span>
-    </a>
-    <a class="card" href="/subida-pdf-resumen/">
-      <span class="icon">📑</span>
-      <span class="label">Resumir Documentos</span>
-      <span class="desc">La idea clave de cada documento, al momento</span>
-    </a>
-    <a class="card" href="/subida-pdf-chat-pdf/">
-      <span class="icon">💬</span>
-      <span class="label">Analizador de PDFs</span>
-      <span class="desc">Pregúntale directamente a tu documento</span>
-    </a>
-    <a class="card" href="/repetir-test/">
-      <span class="icon">🔁</span>
-      <span class="label">Repetir Último Test</span>
-      <span class="desc">Vuelve sobre lo que ya practicaste</span>
-    </a>
-    <a class="card" href="/preguntas-falladas/">
-      <span class="icon">❌</span>
-      <span class="label">Preguntas Falladas</span>
-      <span class="desc">Repasa justo lo que más te cuesta</span>
-    </a>
-    <a class="card" href="/estadisticas/">
-      <span class="icon">📊</span>
-      <span class="label">Estadísticas</span>
-      <span class="desc">Tu progreso, aciertos y temas pendientes</span>
-    </a>
-    <a class="card" href="/chat-ai/">
-      <span class="icon">🤖</span>
-      <span class="label">Chat con IA</span>
-      <span class="desc">Resuelve dudas mientras estudias</span>
-    </a>
-    <a class="card" href="/asistente/">
-      <span class="icon">🧑‍💼</span>
-      <span class="label">Asistente Premium</span>
-      <span class="desc">Tu acompañante de estudio personalizado</span>
-    </a>
-  </div>
+  <section class="home-section">
+    <div class="home-section-titulo">Todo lo que necesitas para estudiar</div>
+    <p class="home-section-sub">Elige por dónde quieres empezar hoy</p>
+    <div class="home-grid">
+      <a class="age-option-card" href="/test-generator/">
+        <span class="age-option-icon">📝</span>
+        <span class="age-option-title">Tests</span>
+        <span class="age-option-desc">Personalizados, oficiales, con IA, repite el último o repasa tus fallos.</span>
+      </a>
+      <a class="age-option-card" href="/subida-pdf-pagina-principal/">
+        <span class="age-option-icon">🧠</span>
+        <span class="age-option-title">Herramientas IA</span>
+        <span class="age-option-desc">Sube un PDF y consigue resúmenes, esquemas, tarjetas o preguntas al momento.</span>
+      </a>
+      <a class="age-option-card" href="/chat-ai/">
+        <span class="age-option-icon">💬</span>
+        <span class="age-option-title">Chat y Asistente</span>
+        <span class="age-option-desc">Resuelve dudas del temario o habla con el asistente premium de examen.</span>
+      </a>
+      <a class="age-option-card" href="/estadisticas/">
+        <span class="age-option-icon">📊</span>
+        <span class="age-option-title">Estadísticas</span>
+        <span class="age-option-desc">Tu progreso, aciertos y temas pendientes, separado por cada oposición.</span>
+      </a>
+    </div>
+  </section>
+
   <script type="module" src="/assets/auth.js"></script>
 </body>
 </html>

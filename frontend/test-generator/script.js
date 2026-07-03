@@ -329,6 +329,8 @@ async function obtenerAuthHeaders() {
       });
     }
 
+    let ultimasEstadisticas = null;
+
     async function mostrarResultados() {
       clearInterval(intervaloTemporizador);
       if (tiempoLimite !== null) clearInterval(intervaloCronometro);
@@ -338,194 +340,21 @@ async function obtenerAuthHeaders() {
       document.getElementById("btn-finalizar").style.display = "none";
       const cont = document.getElementById("contenedor-resultados");
       cont.style.display = "block";
-      aciertos = 0;
-      const tipo = document.getElementById('tipo_test').value;
-      let html = `
-        <div class="filtros-container">
-          <button class="btn btn-accent" onclick="aplicarFiltro('todos')">🟡 Todos</button>
-          <button class="btn btn-primary" onclick="aplicarFiltro('acierto')">✅ Aciertos</button>
-          <button class="btn btn-danger" onclick="aplicarFiltro('fallo')">❌ Fallos</button>
-          <button class="btn" style="background: #adb5bd; color: white;" onclick="aplicarFiltro('blanco')">⏸ En blanco</button>
-        </div>
-        <ol style="padding-left: 18px;">`;
-      const statsPorTema = {};
-      preguntas.forEach((p, i) => {
-        const tema = listaTemasGlobal.find(t => t.id === p.tema_id);
-        const temaId = tema ? tema.id : "desconocido";
-        const tituloTema = tema ? tema.titulo : "Tema desconocido";
-        if (!statsPorTema[temaId]) {
-          statsPorTema[temaId] = {
-            titulo: tituloTema,
-            total: 0,
-            aciertos: 0,
-            fallos: 0,
-            blancos: 0
-          };
-        }
-        statsPorTema[temaId].total++;
-        const correcta = p.respuesta_correcta || "No indicada";
-        const explicacion = p.explicacion || "Sin explicación.";
-        const seleccion = respuestasUsuario[i];
-        let clase = "fallo";
-        if (seleccion === correcta) {
-          aciertos++;
-          clase = "acierto";
-          statsPorTema[temaId].aciertos++;
-        } else if (seleccion === null) {
-          clase = "blanco";
-          statsPorTema[temaId].blancos++;
-        } else {
-          statsPorTema[temaId].fallos++;
-        }
-        let preguntaSinNumero = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
-        html += `<li class="${clase}" style="margin-bottom:25px;">
-          <div class="pregunta-en-negrita">${i + 1}. ${preguntaSinNumero}</div>`;
-        for (const letra in p.opciones) {
-          let tipoRespuesta = "resp-neutra";
-          let icono = "";
-          if (letra === correcta) {
-            tipoRespuesta = "resp-correcta";
-            icono = '<span class="icono-correcto">✅</span>';
-          }
-          if (letra === seleccion && seleccion !== correcta) {
-            tipoRespuesta = "resp-incorrecta";
-            icono = '<span class="icono-incorrecto">❌ </span>';
-          }
-          html += `<div class="${tipoRespuesta}">${icono}${letra}) ${p.opciones[letra]}</div>`;
-        }
-        const idExp = "exp" + i;
-        html += `<button class="btn" style="margin-top: 10px; background: #e9ecef; color: #495057;" 
-                 onclick="document.getElementById('${idExp}').style.display = document.getElementById('${idExp}').style.display === 'none' ? 'block' : 'none';">
-                 📘 Mostrar/Ocultar Explicación</button>`;
-        html += `<div id="${idExp}" style="display:none; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                 <strong>Explicación:</strong> ${explicacion}</div></li>`;
+
+      const { renderizarResultadosTest } = await import("/assets/resultados-test.js");
+      ultimasEstadisticas = renderizarResultadosTest({
+        contenedor: cont,
+        preguntas,
+        respuestasUsuario,
+        listaTemas: listaTemasGlobal
       });
-      fallos = preguntas.length - aciertos - respuestasUsuario.filter(r => r === null).length;
-      sinResponder = respuestasUsuario.filter(r => r === null).length;
-      porcentaje = ((aciertos / preguntas.length) * 100).toFixed(1);
-      const nota = (aciertos * 1 - fallos * 0.33).toFixed(2);
-      const notaEquivalente = ((nota / preguntas.length) * 70).toFixed(2);
-      let chartHTML = '';
-      if (tipo !== "oficial") {
-        chartHTML = '<div class="stats-container">';
-        chartHTML += '<div class="chart-container"><canvas id="chart-temas"></canvas></div>';
-        chartHTML += '<div class="chart-container"><canvas id="chart-rendimiento"></canvas></div></div>';
-      }
-      html = `
-        <div style='background:#f8f9fa;padding:25px;border-radius:12px;margin-bottom:25px;'>
-          <h3>📊 Resumen del Test</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
-            <div style="background: #e8f5e9; padding: 15px; border-radius: 10px;">
-              <p style="color:green; font-weight:600;">✅ Aciertos: ${aciertos}</p>
-            </div>
-            <div style="background: #ffebee; padding: 15px; border-radius: 10px;">
-              <p style="color:red; font-weight:600;">❌ Fallos: ${fallos}</p>
-            </div>
-            <div style="background: #e9ecef; padding: 15px; border-radius: 10px;">
-              <p style="color:#495057; font-weight:600;">⏸ En blanco: ${sinResponder}</p>
-            </div>
-            <div style="background: #e7f5ff; padding: 15px; border-radius: 10px;">
-              <p style="color:#1c7ed6; font-weight:600;">🎯 Porcentaje: ${porcentaje}%</p>
-            </div>
-          </div>
-          <p><strong>📘 Nota simulada:</strong> ${nota} / ${preguntas.length}</p>
-          <p><strong>📏 Nota equivalente AGE:</strong> ${notaEquivalente} / 70</p>
-          <div style='background:#e9ecef;border-radius:10px;overflow:hidden;margin-top:15px;height:20px;'>
-            <div style='width:${porcentaje}%;background:linear-gradient(to right,#4caf50,#81c784);height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;'>
-              ${porcentaje}%
-            </div>
-          </div>
-        </div>
-        ${chartHTML ? '<h3>📈 Estadísticas por Temas</h3>' + chartHTML : ''}
-        <h3 style="margin-top: 30px;">📝 Detalle de preguntas</h3>
-      ` + html;
-      html += `</ol>`;
-      cont.innerHTML = html;
+      aciertos = ultimasEstadisticas.aciertos;
+      fallos = ultimasEstadisticas.fallos;
+      sinResponder = ultimasEstadisticas.sinResponder;
+      porcentaje = ultimasEstadisticas.porcentaje;
+
       document.getElementById("btn-descargar-pdf").style.display = "block";
-      if (tipo !== "oficial") {
-        crearGraficoTemas(statsPorTema);
-        crearGraficoRendimiento(statsPorTema);
-      }
       guardarTestAutomaticamente();
-    }
-
-    function crearGraficoTemas(stats) {
-      const ctx = document.getElementById('chart-temas').getContext('2d');
-      const temas = Object.values(stats);
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: temas.map(t => t.titulo.length > 20 ? t.titulo.substring(0, 17) + '...' : t.titulo),
-          datasets: [{
-            label: 'Aciertos',
-            data: temas.map(t => t.aciertos),
-            backgroundColor: '#4caf50',
-            borderColor: '#388e3c',
-            borderWidth: 1
-          }, {
-            label: 'Fallos',
-            data: temas.map(t => t.fallos),
-            backgroundColor: '#ef5350',
-            borderColor: '#d32f2f',
-            borderWidth: 1
-          }, {
-            label: 'Blancos',
-            data: temas.map(t => t.blancos),
-            backgroundColor: '#bdbdbd',
-            borderColor: '#757575',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            title: {
-              display: true,
-              text: 'Rendimiento por tema',
-              font: { size: 16 }
-            },
-            legend: { position: 'top' }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: { display: true, text: 'Cantidad' }
-            }
-          }
-        }
-      });
-    }
-
-    function crearGraficoRendimiento(stats) {
-      const ctx = document.getElementById('chart-rendimiento').getContext('2d');
-      const temas = Object.values(stats);
-      new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Aciertos', 'Fallos', 'Blancos'],
-          datasets: [{
-            data: [
-              temas.reduce((sum, t) => sum + t.aciertos, 0),
-              temas.reduce((sum, t) => sum + t.fallos, 0),
-              temas.reduce((sum, t) => sum + t.blancos, 0)
-            ],
-            backgroundColor: ['#4caf50', '#ef5350', '#bdbdbd'],
-            borderColor: ['#388e3c', '#d32f2f', '#757575'],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            title: {
-              display: true,
-              text: 'Distribución general',
-              font: { size: 16 }
-            },
-            legend: { position: 'top' }
-          }
-        }
-      });
     }
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -551,107 +380,14 @@ async function obtenerAuthHeaders() {
       });
     });
 
-    function aplicarFiltro(tipo) {
-      const items = document.querySelectorAll("#contenedor-resultados ol li");
-      items.forEach(li => {
-        if (tipo === 'todos') {
-          li.style.display = 'block';
-        } else {
-          li.style.display = li.classList.contains(tipo) ? 'block' : 'none';
-        }
+    document.getElementById("btn-descargar-pdf").addEventListener("click", async function() {
+      const { descargarResultadosPDF } = await import("/assets/resultados-test.js");
+      descargarResultadosPDF({
+        preguntas,
+        respuestasUsuario,
+        stats: ultimasEstadisticas,
+        titulo: "Resultados del Test"
       });
-    }
-
-    document.getElementById("btn-descargar-pdf").addEventListener("click", function() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const margin = 15;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let yPos = 20;
-      function reemplazarEmojis(texto) {
-        if (!texto) return "";
-        return texto
-          .replace(/✅/g, '[Correcta]')
-          .replace(/❌/g, '[Incorrecta]')
-          .replace(/⏸/g, '[En blanco]')
-          .replace(/📘/g, 'Explicación:')
-          .replace(/📝/g, '')
-          .replace(/🏛️/g, '')
-          .replace(/🤖/g, '')
-          .replace(/⏱/g, 'Tiempo:')
-          .replace(/📊/g, '')
-          .replace(/📈/g, '')
-          .replace(/📝/g, '')
-          .replace(/🎯/g, '');
-      }
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text("Resultados del Test", pageWidth / 2, yPos, null, null, 'center');
-      yPos += 15;
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      const resumen = `Aciertos: ${aciertos} | Fallos: ${fallos} | En blanco: ${sinResponder} | Porcentaje: ${porcentaje}%`;
-      doc.text(resumen, pageWidth / 2, yPos, null, null, 'center');
-      yPos += 15;
-      doc.setFontSize(11);
-      preguntas.forEach((p, i) => {
-        if (yPos > pageHeight - 50) {
-          doc.addPage();
-          yPos = 20;
-        }
-        doc.setFont("helvetica", "bold");
-        let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
-        textoPregunta = `${i + 1}. ${reemplazarEmojis(textoPregunta)}`;
-        const preguntaLines = doc.splitTextToSize(textoPregunta, pageWidth - 2 * margin);
-        preguntaLines.forEach(line => {
-          if (yPos > pageHeight - 20) {
-            doc.addPage();
-            yPos = 20;
-          }
-          doc.text(line, margin, yPos);
-          yPos += 7;
-        });
-        doc.setFont("helvetica", "normal");
-        yPos += 5;
-        for (const letra in p.opciones) {
-          let opcionTexto = `${letra}) ${reemplazarEmojis(p.opciones[letra])}`;
-          if (letra === p.respuesta_correcta) {
-            opcionTexto += " [Correcta]";
-          }
-          const opcionLines = doc.splitTextToSize(opcionTexto, pageWidth - 2 * margin);
-          opcionLines.forEach(line => {
-            if (yPos > pageHeight - 20) {
-              doc.addPage();
-              yPos = 20;
-            }
-            doc.text(line, margin, yPos);
-            yPos += 7;
-          });
-        }
-        yPos += 5;
-        const explicacion = p.explicacion || "Sin explicación disponible.";
-        doc.setFont("helvetica", "bold");
-        doc.text("Explicación:", margin, yPos);
-        yPos += 7;
-        doc.setFont("helvetica", "normal");
-        const explicacionLines = doc.splitTextToSize(reemplazarEmojis(explicacion), pageWidth - 2 * margin);
-        explicacionLines.forEach(line => {
-          if (yPos > pageHeight - 20) {
-            doc.addPage();
-            yPos = 20;
-          }
-          doc.text(line, margin, yPos);
-          yPos += 7;
-        });
-        yPos += 10;
-        if (yPos < pageHeight - 10) {
-          doc.setDrawColor(200);
-          doc.line(margin, yPos, pageWidth - margin, yPos);
-          yPos += 15;
-        }
-      });
-      doc.save("resultados-test.pdf");
     });
 
     window.addEventListener("load", () => {

@@ -2,34 +2,25 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>🔁 Repetir Último Test</title>  <link rel="stylesheet" href="/assets/theme.css" />
-
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Repetir último test - Oposición AGE</title>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="/test-generator/style.css" />
   <link rel="stylesheet" href="/repetir-test/style.css" />
 </head>
 <body>
-<nav class="age-nav">
-  <a href="/" class="age-nav-home">🏠 Inicio</a>
-  <a href="/subida-pdf-pagina-principal/">📄 Herramientas PDF</a>
-  <a href="/test-generator/">📝 Generador de Test</a>
-  <a href="/subida-pdf-generar-test/">📄➜📝 Test desde PDF</a>
-  <a href="/subida-pdf-tarjetas/">🗂️ Tarjetas</a>
-  <a href="/subida-pdf-esquemas/">🧩 Esquemas</a>
-  <a href="/subida-pdf-resumen/">📑 Resumen</a>
-  <a href="/subida-pdf-chat-pdf/">💬 Analizar PDF</a>
-  <a href="/repetir-test/" class="age-nav-active">🔁 Repetir Test</a>
-  <a href="/preguntas-falladas/">❌ Falladas</a>
-  <a href="/estadisticas/">📊 Estadísticas</a>
-  <a href="/chat-ai/">🤖 Chat IA</a>
-  <a href="/asistente/">🧑‍💼 Asistente</a>
-</nav>
+<nav class="age-nav"></nav>
 
-<!-- Aquí va el resto de tu HTML... -->
-<h2 style="text-align:center;">🔁 Repetir Último Test</h2>
-<div id="temporizador">⏱ Tiempo: 00:00</div>
-<div id="contenedor-test">Cargando test anterior...</div>
-<div id="contenedor-resultados" style="display:none;"></div>
+<div class="container">
+  <h1 id="titulo-formulario">🔁 Repetir último test</h1>
+  <div id="temporizador">⏱ Tiempo: 00:00</div>
+  <div id="contenedor-test" class="card fade-in">Cargando test anterior...</div>
+  <div id="contenedor-resultados" class="card fade-in" style="display:none;"></div>
+  <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
+</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script src="/repetir-test/script.js"></script>

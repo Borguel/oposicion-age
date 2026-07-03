@@ -10,9 +10,9 @@ async function obtenerAuthHeaders() {
 
 let preguntas = [];
 let respuestasUsuario = [];
-let indicePreguntaActual = 0;
 let tiempoInicio;
 let intervaloTemporizador;
+let ultimasEstadisticas = null;
 
 function iniciarTemporizador() {
   tiempoInicio = Date.now();
@@ -24,66 +24,65 @@ function iniciarTemporizador() {
   }, 1000);
 }
 
+function confirmarFinalizar() {
+  const sinContestar = respuestasUsuario.filter(r => r === null).length;
+  Swal.fire({
+    icon: 'question',
+    title: '¿Deseas finalizar el test?',
+    text: sinContestar > 0
+      ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+      : '¿Quieres finalizar el test y ver los resultados?',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, corregir',
+    cancelButtonText: 'Seguir revisando',
+  }).then((result) => {
+    if (result.isConfirmed) mostrarResultados();
+  });
+}
+
 function mostrarPregunta(i) {
   const p = preguntas[i];
-  let html = `<form id="form-pregunta"><fieldset>
-    <legend><strong>Pregunta ${i + 1} de ${preguntas.length}:</strong> <strong>${p.pregunta}</strong></legend><br>`;
+  let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+  let html = `<form id="form-pregunta"><fieldset style="padding: 20px;">
+    <legend class="pregunta-en-negrita">${i + 1}. ${textoPregunta}</legend><br>`;
 
   for (const letra in p.opciones) {
     const opcion = p.opciones[letra];
     const checked = respuestasUsuario[i] === letra ? "checked" : "";
     html += `
-      <div style="margin-bottom: 8px;">
-        <label style="cursor: pointer;">
-          <input type="radio" name="respuesta" value="${letra}" ${checked}>
-          ${letra}) ${opcion}
+      <div style="margin-bottom: 12px;">
+        <label style="cursor: pointer; display: flex; align-items: flex-start;">
+          <input type="radio" name="respuesta" value="${letra}" ${checked} style="margin-top: 4px; margin-right: 10px;">
+          <div>${letra}) ${opcion}</div>
         </label>
       </div>`;
   }
 
   html += `
     <div class="botones-navegacion-test">
-      ${i > 0 ? '<button type="button" id="btn-anterior">⬅️ Anterior</button>' : ''}
-      <button type="button" id="btn-desmarcar">❌ Desmarcar</button>
-      <button type="submit">Siguiente</button>
+      ${i > 0 ? '<button type="button" id="btn-anterior" class="btn btn-accent">⬅️ Anterior</button>' : ''}
+      <button type="button" id="btn-desmarcar" class="btn btn-accent">❌ Desmarcar</button>
     </div>
-    <button type="button" id="btn-finalizar">Finalizar Test</button>
+    <button type="submit" class="btn btn-primary btn-block" style="margin-top:15px;">
+      ${i + 1 < preguntas.length ? 'Siguiente ➡️' : 'Finalizar test ✅'}
+    </button>
+    <button type="button" id="btn-finalizar" class="btn btn-danger btn-block" style="margin-top:10px;">Finalizar Test</button>
   </fieldset></form>`;
 
   document.getElementById("contenedor-test").innerHTML = html;
 
-  // Botón desmarcar
   document.getElementById("btn-desmarcar").addEventListener("click", () => {
     document.querySelectorAll('input[name="respuesta"]:checked').forEach(el => el.checked = false);
     respuestasUsuario[i] = null;
   });
 
-  // Botón anterior
   if (i > 0) {
     document.getElementById("btn-anterior").addEventListener("click", () => mostrarPregunta(i - 1));
   }
 
-  // Botón finalizar
-  document.getElementById("btn-finalizar").addEventListener("click", () => {
-    const sinContestar = respuestasUsuario.filter(r => r === null).length;
-    Swal.fire({
-      icon: 'question',
-      title: '¿Deseas finalizar el test?',
-      text: sinContestar > 0
-        ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
-        : '¿Quieres finalizar el test y ver los resultados?',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, corregir',
-      cancelButtonText: 'Seguir revisando',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        mostrarResultados();
-      }
-    });
-  });
+  document.getElementById("btn-finalizar").addEventListener("click", confirmarFinalizar);
 
-  // Siguiente
-  document.getElementById("form-pregunta").addEventListener("submit", function(e) {
+  document.getElementById("form-pregunta").addEventListener("submit", function (e) {
     e.preventDefault();
     const seleccion = document.querySelector('input[name="respuesta"]:checked');
     respuestasUsuario[i] = seleccion ? seleccion.value : null;
@@ -91,21 +90,7 @@ function mostrarPregunta(i) {
     if (i + 1 < preguntas.length) {
       mostrarPregunta(i + 1);
     } else {
-      const sinContestar = respuestasUsuario.filter(r => r === null).length;
-      Swal.fire({
-        icon: 'question',
-        title: '¿Deseas finalizar el test?',
-        text: sinContestar > 0
-          ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
-          : '¿Quieres finalizar el test y ver los resultados?',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, corregir',
-        cancelButtonText: 'Seguir revisando',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          mostrarResultados();
-        }
-      });
+      confirmarFinalizar();
     }
   });
 }
@@ -116,61 +101,17 @@ async function mostrarResultados() {
   const cont = document.getElementById("contenedor-resultados");
   cont.style.display = "block";
 
-  let aciertos = 0;
-  let html = "<ol style='padding-left:15px;'>";
-  preguntas.forEach((p, i) => {
-    const correcta = p.respuesta_correcta;
-    const seleccion = respuestasUsuario[i];
-    const explicacion = p.explicacion || "Sin explicación.";
-    let clase = "resultado-pregunta";
-    if (seleccion === correcta) clase = "resultado-pregunta";
-    else if (seleccion === null) clase = "resultado-blanco";
-    else clase = "resultado-fallo";
-
-    html += `<li class="${clase}" style="margin-bottom:18px;list-style: decimal inside;">
-      <div style="font-weight:bold;margin-bottom:7px;">${i + 1}. ${p.pregunta}</div>`;
-    for (const letra in p.opciones) {
-      let tipoResp = "";
-      if (letra === correcta) tipoResp = `<span class="respuesta-correcta" style="background:#c0f2d0;padding:3px 7px;border-radius:5px;border:1px solid #66cc7b;color:#21892f;font-weight:500;">✅ ${letra}) ${p.opciones[letra]}</span>`;
-      else if (letra === seleccion && seleccion !== correcta)
-        tipoResp = `<span class="respuesta-usuario" style="background:#ffd5d5;padding:3px 7px;border-radius:5px;border:1px solid #e96565;color:#a60d15;font-weight:500;">❌ ${letra}) ${p.opciones[letra]}</span>`;
-      else
-        tipoResp = `<span>${letra}) ${p.opciones[letra]}</span>`;
-      html += `<div style="margin-bottom:3px;display:inline-block;">${tipoResp}</div><br>`;
-    }
-    html += `<details><summary style="margin-top:8px;">📘 Explicación</summary><p>${explicacion}</p></details></li>`;
-    if (seleccion === correcta) aciertos++;
+  const { renderizarResultadosTest } = await import("/assets/resultados-test.js");
+  ultimasEstadisticas = renderizarResultadosTest({
+    contenedor: cont,
+    preguntas,
+    respuestasUsuario,
+    listaTemas: []
   });
 
-  const fallos = respuestasUsuario.filter((r, idx) => r !== null && r !== preguntas[idx].respuesta_correcta).length;
-  const sinResponder = respuestasUsuario.filter(r => r === null).length;
+  document.getElementById("btn-descargar-pdf").style.display = "block";
+
   const segundosTotales = Math.floor((Date.now() - tiempoInicio) / 1000);
-
-  html += "</ol>";
-
-  const porcentaje = ((aciertos / preguntas.length) * 100).toFixed(1);
-  const nota = (aciertos * 1 - fallos * 0.33).toFixed(2);
-  const notaEquivalente = ((nota / preguntas.length) * 70).toFixed(2);
-
-  html = `
-    <div style='background:#f4f4f4;padding:20px;border-radius:12px;margin-bottom:20px;max-width:850px;margin:auto;'>
-      <h3>📊 Resumen del Test</h3>
-      <p><strong>Total:</strong> ${preguntas.length}</p>
-      <p style='color:green;'><strong>✅ Aciertos:</strong> ${aciertos}</p>
-      <p style='color:red;'><strong>❌ Fallos:</strong> ${fallos}</p>
-      <p style='color:gray;'><strong>⏸ En blanco:</strong> ${sinResponder}</p>
-      <p><strong>🎯 Porcentaje:</strong> ${porcentaje}%</p>
-      <p><strong>📘 Nota simulada:</strong> ${nota} / ${preguntas.length}<br><strong>📏 Nota equivalente AGE:</strong> ${notaEquivalente} / 70</p>
-      <div style='background:#ddd;border-radius:10px;overflow:hidden;margin-top:10px;'>
-        <div style='width:${porcentaje}%;background:linear-gradient(to right,#4caf50,#81c784);padding:6px 10px;color:white;'>${porcentaje}%</div>
-      </div>
-    </div>
-    <div style="max-width:850px;margin:auto;">${html}</div>
-  `;
-
-  cont.innerHTML = html;
-
-  // guardar test en Firestore
   try {
     const authHeaders = await obtenerAuthHeaders();
     if (!authHeaders) return;
@@ -181,20 +122,24 @@ async function mostrarResultados() {
       body: JSON.stringify({
         contenido: preguntas,
         respuestas: respuestasUsuario,
-        metadatos: {
-          tiempo: segundosTotales,
-          tipo: "repetido",
-          temas: []
-        },
+        metadatos: { tiempo: segundosTotales, tipo: "repetido", temas: [] },
         oposicion: obtenerOposicionActual()
       })
     });
-    console.log("✅ Test guardado como repetido");
   } catch (err) {
     console.error("❌ Error al guardar test:", err);
   }
 }
 
+document.getElementById("btn-descargar-pdf").addEventListener("click", async () => {
+  const { descargarResultadosPDF } = await import("/assets/resultados-test.js");
+  descargarResultadosPDF({
+    preguntas,
+    respuestasUsuario,
+    stats: ultimasEstadisticas,
+    titulo: "Resultados del test repetido"
+  });
+});
 
 // Carga el último test al cargar la página
 window.addEventListener("load", async () => {
@@ -212,9 +157,8 @@ window.addEventListener("load", async () => {
 
     preguntas = datos.test;
     respuestasUsuario = Array(preguntas.length).fill(null);
-    indicePreguntaActual = 0;
     iniciarTemporizador();
-    mostrarPregunta(indicePreguntaActual);
+    mostrarPregunta(0);
   } catch (err) {
     console.error("Error:", err);
     document.getElementById("contenedor-test").innerHTML = "<p>Error al cargar el test.</p>";

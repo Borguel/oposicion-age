@@ -1,28 +1,51 @@
 /* ============================================================
    Oposición AGE — sistema de diseño compartido
-   Un único fichero de tokens + barra de navegación para que las
-   12 páginas (heredadas de fragmentos sueltos de WordPress) se
-   sientan como una sola web coherente.
+   Un único fichero de tokens + barra de navegación para que todas
+   las páginas se sientan como una sola web coherente y profesional.
    ============================================================ */
 
 :root {
   --age-primary: #ffa633;
-  --age-primary-dark: #ff8c00;
+  --age-primary-dark: #e8860f;
   --age-primary-light: #ffc266;
-  --age-ink: #1d1d1f;
-  --age-ink-soft: #6e6e73;
-  --age-bg: #f5f5f7;
+  --age-primary-soft: #fff1de;
+
+  --age-navy: #1b1f2e;
+  --age-navy-soft: #262c40;
+  --age-navy-ink: #aab0c6;
+
+  --age-ink: #16181d;
+  --age-ink-soft: #6b7280;
+  --age-ink-faint: #9aa0ac;
+
+  --age-bg: #f6f7f9;
   --age-card: #ffffff;
-  --age-border: #e5e5ea;
+  --age-border: #e6e8ec;
+
+  --age-success: #1e9e63;
+  --age-success-bg: #e7f7ee;
+  --age-danger: #e0473f;
+  --age-danger-bg: #fdeceb;
+  --age-neutral-bg: #eef0f3;
+
   --age-radius-lg: 20px;
   --age-radius-md: 14px;
   --age-radius-sm: 10px;
-  --age-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  --age-shadow-hover: 0 14px 40px rgba(0, 0, 0, 0.12);
-  --age-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+  --age-radius-pill: 999px;
+
+  --age-shadow: 0 6px 20px rgba(20, 24, 34, 0.06);
+  --age-shadow-hover: 0 16px 36px rgba(20, 24, 34, 0.12);
+  --age-shadow-nav: 0 2px 16px rgba(20, 24, 34, 0.08);
+
+  --age-font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
     Inter, Roboto, Helvetica, Arial, sans-serif;
   --age-ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --age-nav-height: 56px;
+  --age-nav-height: 64px;
+  --age-container: 1160px;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 html {
@@ -31,98 +54,466 @@ html {
 
 body {
   font-family: var(--age-font) !important;
+  background: var(--age-bg);
+  color: var(--age-ink);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ---------- Barra de navegación ----------
-   "sticky" en vez de "fixed": ocupa su hueco normal en el flujo del
-   documento (no se superpone al contenido) pero se queda pegada arriba
-   al hacer scroll. Esto evita romper páginas que ya usan 100vh en sus
-   propios contenedores (el chat, el asistente, etc). */
+/* ============================================================
+   Barra de navegación
+   ============================================================ */
 .age-nav {
   position: sticky;
   top: 0;
   left: 0;
   right: 0;
-  height: var(--age-nav-height);
   z-index: 500;
+  height: var(--age-nav-height);
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 12px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  white-space: nowrap;
+  padding: 0 20px;
+  background: var(--age-navy);
+  box-shadow: var(--age-shadow-nav);
   font-family: var(--age-font);
 }
 
-.age-nav::-webkit-scrollbar {
+.age-nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.age-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 16px;
+  color: #fff;
+  text-decoration: none;
+  padding-right: 14px;
+  margin-right: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+}
+
+.age-nav-brand .age-nav-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--age-primary);
+  color: #1b1f2e;
+  font-size: 15px;
+}
+
+.age-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.age-nav-links::-webkit-scrollbar {
   display: none;
 }
 
-.age-nav a {
+.age-nav-links a {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--age-ink-soft);
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: var(--age-radius-pill);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--age-navy-ink);
   text-decoration: none;
   transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease);
   white-space: nowrap;
 }
 
-.age-nav a:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--age-ink);
-}
-
-.age-nav a.age-nav-active {
-  background: var(--age-primary);
+.age-nav-links a:hover {
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  font-weight: 600;
 }
 
-.age-nav a.age-nav-home {
-  font-weight: 700;
-  color: var(--age-ink);
-  padding-right: 10px;
-  margin-right: 6px;
-  border-right: 1px solid var(--age-border);
-  border-radius: 0;
+.age-nav-links a.age-nav-active {
+  background: var(--age-primary);
+  color: #1b1f2e;
 }
 
-.age-nav a.age-nav-home:hover {
-  background: transparent;
-  color: var(--age-primary);
+.age-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  margin-left: 8px;
 }
 
 .age-nav select[data-nav-oposicion] {
-  flex: 0 0 auto;
-  margin-left: auto;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--age-border);
-  background: var(--age-card);
-  color: var(--age-ink);
+  padding: 8px 12px;
+  border-radius: var(--age-radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
   font-family: var(--age-font);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
 
-@media (max-width: 640px) {
-  .age-nav a {
+.age-nav select[data-nav-oposicion] option {
+  color: var(--age-ink);
+}
+
+/* ---------- Menú de cuenta (avatar + desplegable) ---------- */
+.age-account {
+  position: relative;
+}
+
+.age-account-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 6px;
+  border-radius: var(--age-radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-family: var(--age-font);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s var(--age-ease);
+}
+
+.age-account-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.age-account-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--age-primary);
+  color: #1b1f2e;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 12.5px;
+  flex-shrink: 0;
+}
+
+.age-account-caret {
+  font-size: 10px;
+  opacity: 0.7;
+  transition: transform 0.2s var(--age-ease);
+}
+
+.age-account.open .age-account-caret {
+  transform: rotate(180deg);
+}
+
+.age-account-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 220px;
+  background: var(--age-card);
+  border-radius: var(--age-radius-md);
+  box-shadow: var(--age-shadow-hover);
+  border: 1px solid var(--age-border);
+  padding: 8px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 600;
+}
+
+.age-account.open .age-account-menu {
+  display: flex;
+}
+
+.age-account-menu a,
+.age-account-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--age-radius-sm);
+  font-family: var(--age-font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--age-ink);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.age-account-menu a:hover,
+.age-account-menu button:hover {
+  background: var(--age-bg);
+}
+
+.age-account-menu .age-account-menu-divider {
+  height: 1px;
+  background: var(--age-border);
+  margin: 6px 4px;
+}
+
+/* ---------- Menú hamburguesa (móvil) ---------- */
+.age-nav-burger {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--age-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 18px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .age-nav-burger {
+    display: inline-flex;
+  }
+
+  .age-nav select[data-nav-oposicion] {
+    max-width: 96px;
+    text-overflow: ellipsis;
+    padding: 8px 6px 8px 10px;
+  }
+
+  .age-nav-links {
+    position: fixed;
+    top: var(--age-nav-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--age-navy);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+    gap: 4px;
+    overflow-y: auto;
+    display: none;
+    z-index: 499;
+  }
+
+  .age-nav-links.open {
+    display: flex;
+  }
+
+  .age-nav-links a {
+    padding: 14px 16px;
+    border-radius: var(--age-radius-sm);
+    font-size: 15.5px;
+  }
+
+  .age-nav-right {
+    margin-left: auto;
+  }
+
+  .age-nav select[data-nav-oposicion] {
     font-size: 12.5px;
     padding: 7px 10px;
   }
+}
+
+@media (max-width: 480px) {
+  .age-nav {
+    padding: 0 12px;
+  }
+
+  .age-nav-brand span.age-nav-brand-text {
+    display: none;
+  }
+}
+
+/* ============================================================
+   Componentes comunes: contenedor, tarjetas, botones, badges
+   ============================================================ */
+.age-container {
+  width: 100%;
+  max-width: var(--age-container);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.age-card {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  box-shadow: var(--age-shadow);
+}
+
+.age-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 24px;
+  border-radius: var(--age-radius-sm);
+  font-family: var(--age-font);
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease),
+    transform 0.15s var(--age-ease), box-shadow 0.2s var(--age-ease);
+  white-space: nowrap;
+}
+
+.age-btn:active {
+  transform: translateY(1px);
+}
+
+.age-btn-primary {
+  background: var(--age-primary);
+  color: #1b1f2e;
+}
+
+.age-btn-primary:hover {
+  background: var(--age-primary-dark);
+  box-shadow: 0 8px 20px rgba(255, 166, 51, 0.35);
+}
+
+.age-btn-dark {
+  background: var(--age-navy);
+  color: #fff;
+}
+
+.age-btn-dark:hover {
+  background: var(--age-navy-soft);
+}
+
+.age-btn-outline {
+  background: transparent;
+  color: var(--age-ink);
+  border: 1.5px solid var(--age-border);
+}
+
+.age-btn-outline:hover {
+  border-color: var(--age-ink);
+  background: var(--age-bg);
+}
+
+.age-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.age-btn-block {
+  display: flex;
+  width: 100%;
+}
+
+.age-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--age-radius-pill);
+  font-size: 12.5px;
+  font-weight: 700;
+  background: var(--age-neutral-bg);
+  color: var(--age-ink-soft);
+}
+
+.age-pill-success {
+  background: var(--age-success-bg);
+  color: var(--age-success);
+}
+
+.age-pill-danger {
+  background: var(--age-danger-bg);
+  color: var(--age-danger);
+}
+
+.age-pill-primary {
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+}
+
+/* Tarjetas de opción tipo "elige qué quieres hacer" (hubs) */
+.age-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.age-option-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  padding: 26px 24px;
+  text-decoration: none;
+  color: var(--age-ink);
+  box-shadow: var(--age-shadow);
+  transition: transform 0.2s var(--age-ease), box-shadow 0.2s var(--age-ease), border-color 0.2s var(--age-ease);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--age-font);
+}
+
+.age-option-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--age-shadow-hover);
+  border-color: var(--age-primary-light);
+}
+
+.age-option-card.selected {
+  border-color: var(--age-primary);
+  box-shadow: 0 0 0 3px var(--age-primary-soft);
+}
+
+.age-option-card .age-option-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--age-radius-md);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.age-option-card .age-option-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.age-option-card .age-option-desc {
+  font-size: 0.9rem;
+  color: var(--age-ink-soft);
+  line-height: 1.45;
 }
 
 /* ---------- Pie de página ---------- */
@@ -131,7 +522,7 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   gap: 6px 18px;
-  padding: 28px 20px 36px;
+  padding: 32px 20px 40px;
   font-family: var(--age-font);
   font-size: 12.5px;
   color: var(--age-ink-soft);

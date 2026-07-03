@@ -25,8 +25,11 @@ async function iniciar() {
   }
 
   document.getElementById("cuenta-email").textContent = usuario.email || "";
+  document.getElementById("cuenta-avatar").textContent = (usuario.email || "?").trim().charAt(0).toUpperCase();
 
   const { nombre, apellidos, telefono, direccion, suscripciones } = await obtenerPlan(true);
+
+  const PILL_PLAN = { gratis: "age-pill", basico: "age-pill age-pill-primary", premium: "age-pill age-pill-success" };
 
   const contenedorOposiciones = document.getElementById("cuenta-oposiciones");
   contenedorOposiciones.innerHTML = "";
@@ -39,8 +42,11 @@ async function iniciar() {
     const fila = document.createElement("div");
     fila.className = "cuenta-oposicion-fila";
     fila.innerHTML = `
-      <span class="cuenta-oposicion-nombre">${op.nombre}</span>
-      <span class="cuenta-oposicion-plan">${plan}${estadoTexto ? ` · ${estadoTexto}` : ""}</span>
+      <div class="cuenta-oposicion-info">
+        <span class="cuenta-oposicion-nombre">${op.nombre}</span>
+        ${estadoTexto ? `<span class="cuenta-oposicion-estado">Suscripción ${estadoTexto}</span>` : ""}
+      </div>
+      <span class="${PILL_PLAN[plan] || "age-pill"}">${plan}</span>
     `;
     contenedorOposiciones.appendChild(fila);
   });

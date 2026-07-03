@@ -467,4 +467,52 @@ h1, h2, h3 {
 :root {
   --color-primary: var(--age-primary);
   --color-primary-dark: var(--age-primary-dark);
+  --color-bg: var(--age-bg);
+  --color-card: var(--age-card);
+  --color-border: var(--age-border);
+  --color-text: var(--age-ink);
+  --shadow: var(--age-shadow);
+}
+
+body {
+  font-family: var(--age-font), 'Inter', sans-serif;
+}
+
+.card {
+  border-radius: var(--age-radius-lg);
+  border: 1px solid var(--age-border);
+}
+
+.test-type-card .icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--age-radius-md);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 4px;
+}
+
+.stats-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.chart-container {
+  background: var(--age-card);
+  border-radius: var(--age-radius-md);
+  padding: 20px;
+  box-shadow: var(--age-shadow);
+}
+
+@media (max-width: 768px) {
+  .stats-container {
+    grid-template-columns: 1fr;
+  }
 }

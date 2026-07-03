@@ -21,11 +21,12 @@ export function establecerOposicionActual(id) {
 }
 
 // Inserta (si no existe ya) un selector de oposición en la barra de
-// navegación compartida (.age-nav). Al cambiarlo se recarga la página para
-// que temas/tests/chat se actualicen con la oposición nueva.
+// navegación compartida (dentro de #age-nav-right si existe, o en .age-nav
+// como fallback). Al cambiarlo se recarga la página para que temas/tests/
+// chat se actualicen con la oposición nueva.
 export function inyectarSelectorOposicion() {
-  const nav = document.querySelector(".age-nav");
-  if (!nav || nav.querySelector("[data-nav-oposicion]")) return;
+  const contenedor = document.getElementById("age-nav-right") || document.querySelector(".age-nav");
+  if (!contenedor || contenedor.querySelector("[data-nav-oposicion]")) return;
 
   const select = document.createElement("select");
   select.setAttribute("data-nav-oposicion", "");
@@ -42,5 +43,5 @@ export function inyectarSelectorOposicion() {
     sessionStorage.clear();
     window.location.reload();
   });
-  nav.appendChild(select);
+  contenedor.insertBefore(select, contenedor.firstChild);
 }

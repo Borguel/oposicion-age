@@ -59,8 +59,8 @@ h1, h2, h3 {
 
 .test-type-container {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
   margin: 20px 0;
 }
 
@@ -546,4 +546,96 @@ h1, h2, h3 {
 :root {
   --color-primary: var(--age-primary);
   --color-primary-dark: var(--age-primary-dark);
+  --color-bg: var(--age-bg);
+  --color-card: var(--age-card);
+  --color-border: var(--age-border);
+  --color-text: var(--age-ink);
+  --shadow: var(--age-shadow);
+}
+
+body {
+  font-family: var(--age-font), 'Inter', sans-serif;
+}
+
+#form-generar-test > label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+#num_preguntas {
+  display: block;
+  width: 100%;
+  max-width: 160px;
+  padding: 10px 12px;
+  border-radius: var(--age-radius-sm);
+  border: 1px solid var(--age-border);
+  font-family: var(--age-font);
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.card {
+  border-radius: var(--age-radius-lg);
+  border: 1px solid var(--age-border);
+}
+
+#titulo-formulario {
+  color: var(--age-ink);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+h1, h2, h3 {
+  color: var(--age-ink);
+}
+
+.test-type-card {
+  border-radius: var(--age-radius-lg);
+  border-color: var(--age-border);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.test-type-card.selected {
+  background: var(--age-primary-soft);
+  box-shadow: 0 0 0 3px var(--age-primary-soft);
+}
+
+.test-type-card .icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--age-radius-md);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 4px;
+}
+
+.test-type-card .title {
+  font-weight: 800;
+  color: var(--age-ink);
+}
+
+.test-type-card .description {
+  color: var(--age-ink-soft);
+}
+
+.btn-primary,
+#form-pregunta button[type="submit"] {
+  background: var(--age-primary);
+  color: #1b1f2e;
+  box-shadow: none;
+}
+
+.btn-primary:hover,
+#form-pregunta button[type="submit"]:hover {
+  background: var(--age-primary-dark);
 }

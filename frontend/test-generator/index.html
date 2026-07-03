@@ -11,21 +11,7 @@
   <link rel="stylesheet" href="/test-generator/style.css" />
 </head>
 <body>
-<nav class="age-nav">
-  <a href="/" class="age-nav-home">🏠 Inicio</a>
-  <a href="/subida-pdf-pagina-principal/">📄 Herramientas PDF</a>
-  <a href="/test-generator/" class="age-nav-active">📝 Generador de Test</a>
-  <a href="/subida-pdf-generar-test/">📄➜📝 Test desde PDF</a>
-  <a href="/subida-pdf-tarjetas/">🗂️ Tarjetas</a>
-  <a href="/subida-pdf-esquemas/">🧩 Esquemas</a>
-  <a href="/subida-pdf-resumen/">📑 Resumen</a>
-  <a href="/subida-pdf-chat-pdf/">💬 Analizar PDF</a>
-  <a href="/repetir-test/">🔁 Repetir Test</a>
-  <a href="/preguntas-falladas/">❌ Falladas</a>
-  <a href="/estadisticas/">📊 Estadísticas</a>
-  <a href="/chat-ai/">🤖 Chat IA</a>
-  <a href="/asistente/">🧑‍💼 Asistente</a>
-</nav>
+<nav class="age-nav"></nav>
 
   <div class="container">
     <h1 id="titulo-formulario">Genera tu Test</h1>
@@ -33,7 +19,7 @@
       <form id="form-generar-test">
         <label for="num_preguntas">Número de preguntas:</label>
         <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="50" value="10" required>
-        <label style="margin-top: 20px;">Tipo de test:</label>
+        <label style="margin-top: 20px;">¿Qué test quieres hacer?</label>
         <div class="test-type-container">
           <div class="test-type-card" data-tipo="personalizado">
             <div class="icon">📝</div>
@@ -50,6 +36,16 @@
             <div class="title">Inteligente IA</div>
             <div class="description">Preguntas adaptadas a tu nivel</div>
           </div>
+          <a class="test-type-card" href="/repetir-test/">
+            <div class="icon">🔁</div>
+            <div class="title">Repetir último test</div>
+            <div class="description">Vuelve sobre el test que ya hiciste</div>
+          </a>
+          <a class="test-type-card" href="/preguntas-falladas/">
+            <div class="icon">❌</div>
+            <div class="title">Preguntas falladas</div>
+            <div class="description">Repasa justo lo que más te cuesta</div>
+          </a>
         </div>
         <input type="hidden" id="tipo_test" name="tipo_test" value="personalizado">
         <div class="timer-settings">
