@@ -822,15 +822,27 @@ def crear_sesion_portal():
         print("❌ Error creando sesión del portal de Stripe:", e)
         return jsonify({"error": str(e)}), 500
 
+def _sget(obj, key, default=None):
+    """Equivalente a dict.get() pero que también funciona con los objetos
+    de la librería de Stripe: en la versión que usamos, esos objetos
+    soportan obj["clave"] pero NO tienen un método .get() real (lo
+    resuelven vía __getattr__ y acaban lanzando AttributeError)."""
+    try:
+        valor = obj[key]
+        return default if valor is None else valor
+    except (KeyError, TypeError):
+        return default
+
+
 def _current_period_end(subscription_obj):
     """Extrae 'current_period_end' de una Subscription de Stripe.
     En versiones recientes de la API (>= 2025) ese campo ya no está en la
     propia suscripción, sino en cada "item" de la suscripción."""
-    valor = subscription_obj.get("current_period_end")
+    valor = _sget(subscription_obj, "current_period_end")
     if valor is None:
-        items = (subscription_obj.get("items") or {}).get("data") or []
+        items = _sget(_sget(subscription_obj, "items", {}), "data", [])
         if items:
-            valor = items[0].get("current_period_end")
+            valor = _sget(items[0], "current_period_end")
     return valor
 
 
@@ -853,8 +865,9 @@ def webhook_stripe():
 
     try:
         if tipo == "checkout.session.completed":
-            uid = objeto.get("client_reference_id") or (objeto.get("metadata") or {}).get("uid")
-            subscription_id = objeto.get("subscription")
+            metadata = _sget(objeto, "metadata", {}) or {}
+            uid = _sget(objeto, "client_reference_id") or _sget(metadata, "uid")
+            subscription_id = _sget(objeto, "subscription")
             if uid and subscription_id:
                 subscription = stripe.Subscription.retrieve(subscription_id)
                 price_id = subscription["items"]["data"][0]["price"]["id"]
@@ -863,13 +876,13 @@ def webhook_stripe():
                 actualizar_suscripcion(
                     db, uid,
                     plan=plan,
-                    stripe_customer_id=objeto.get("customer"),
+                    stripe_customer_id=_sget(objeto, "customer"),
                     stripe_subscription_id=subscription_id,
                     subscription_status=subscription["status"],
                     current_period_end=datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None
                 )
         elif tipo == "customer.subscription.updated":
-            customer_id = objeto.get("customer")
+            customer_id = _sget(objeto, "customer")
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
                 price_id = objeto["items"]["data"][0]["price"]["id"]
@@ -878,17 +891,17 @@ def webhook_stripe():
                 actualizar_suscripcion(
                     db, docs[0].id,
                     plan=plan,
-                    stripe_subscription_id=objeto.get("id"),
-                    subscription_status=objeto.get("status"),
+                    stripe_subscription_id=_sget(objeto, "id"),
+                    subscription_status=_sget(objeto, "status"),
                     current_period_end=datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None
                 )
         elif tipo == "customer.subscription.deleted":
-            customer_id = objeto.get("customer")
+            customer_id = _sget(objeto, "customer")
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
                 actualizar_suscripcion(db, docs[0].id, plan="gratis", subscription_status="canceled")
         elif tipo == "invoice.payment_failed":
-            customer_id = objeto.get("customer")
+            customer_id = _sget(objeto, "customer")
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
                 actualizar_suscripcion(db, docs[0].id, subscription_status="past_due")
