@@ -9,7 +9,7 @@ from registro_progreso_usuario import (
     actualizar_estadisticas_pdf
 )
 from guardar_resultado import obtener_estadisticas_completas_usuario
-from auth_utils import requiere_login, requiere_plan
+from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 import random
 
 def registrar_rutas_progreso(app, db):
@@ -41,6 +41,7 @@ def registrar_rutas_progreso(app, db):
         actualizar_estadisticas_test(
             db=db,
             usuario_id=g.uid,
+            oposicion=obtener_oposicion_solicitada(),
             aciertos=metadatos.get("aciertos", 0),
             fallos=metadatos.get("fallos", 0),
             temas=metadatos.get("temas", []),
@@ -58,6 +59,7 @@ def registrar_rutas_progreso(app, db):
         actualizar_estadisticas_esquema(
             db=db,
             usuario_id=g.uid,
+            oposicion=obtener_oposicion_solicitada(),
             temas=metadatos.get("temas", [])
         )
 
@@ -81,27 +83,30 @@ def registrar_rutas_progreso(app, db):
     @app.route("/resumen-progreso", methods=["GET"])
     @requiere_login(db)
     def obtener_resumen_progreso_route():
-        resumen = obtener_resumen_progreso(db, g.uid)
+        resumen = obtener_resumen_progreso(db, g.uid, oposicion=obtener_oposicion_solicitada())
         return jsonify({"resumen": resumen})
 
     @app.route("/estadisticas-completas", methods=["GET"])
     @requiere_login(db)
     def obtener_estadisticas_completas():
-        estadisticas = obtener_estadisticas_completas_usuario(db, g.uid)
+        estadisticas = obtener_estadisticas_completas_usuario(db, g.uid, oposicion=obtener_oposicion_solicitada())
         return jsonify({"estadisticas": estadisticas})
 
     @app.route("/ultimo-test", methods=["GET"])
     @requiere_login(db)
     def obtener_ultimo_test():
+        oposicion = obtener_oposicion_solicitada()
         try:
             tests_ref = db.collection("usuarios").document(g.uid).collection("tests")
-            query = tests_ref.order_by("fecha", direction=firestore.Query.DESCENDING).limit(1).stream()
-            test = next(query, None)
+            # Se filtra por oposición sin combinarlo con order_by (eso exigiría
+            # crear un índice compuesto en Firestore); como no son muchos tests
+            # por usuario, se ordena en Python tras traerlos.
+            tests = [t.to_dict() for t in tests_ref.where("oposicion", "==", oposicion).stream()]
 
-            if not test:
+            if not tests:
                 return jsonify({"mensaje": "No se encontró test anterior", "test": []}), 404
 
-            test_data = test.to_dict()
+            test_data = max(tests, key=lambda t: t.get("fecha", ""))
             return jsonify({"test": test_data.get("preguntas", [])})
         except Exception as e:
             return jsonify({"error": f"Error buscando test: {str(e)}"}), 500
@@ -110,9 +115,11 @@ def registrar_rutas_progreso(app, db):
     @requiere_login(db)
     def generar_test_desde_historial():
         cantidad = int(request.args.get("cantidad", 10))
+        oposicion = obtener_oposicion_solicitada()
 
         try:
-            tests_ref = db.collection("usuarios").document(g.uid).collection("tests").stream()
+            tests_ref = db.collection("usuarios").document(g.uid).collection("tests") \
+                .where("oposicion", "==", oposicion).stream()
             preguntas = []
             for test in tests_ref:
                 test_data = test.to_dict()
@@ -168,11 +175,12 @@ def registrar_rutas_progreso(app, db):
     @requiere_login(db)
     def obtener_progreso_general():
         try:
+            oposicion = obtener_oposicion_solicitada()
             # Obtener estadísticas básicas
-            resumen = obtener_resumen_progreso(db, g.uid)
+            resumen = obtener_resumen_progreso(db, g.uid, oposicion=oposicion)
 
             # Obtener estadísticas completas (incluye conteos reales de documentos)
-            estadisticas_completas = obtener_estadisticas_completas_usuario(db, g.uid)
+            estadisticas_completas = obtener_estadisticas_completas_usuario(db, g.uid, oposicion=oposicion)
 
             # Calcular métricas adicionales
             total_actividades = (

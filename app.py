@@ -14,7 +14,7 @@ from io import BytesIO
 from datetime import datetime
 # Módulos personalizados
 from test_generator import generar_test_avanzado
-from chat_controller import responder_chat, consultar_asistente_examen_AGE
+from chat_controller import responder_chat, consultar_asistente_examen
 from deepseek_utils import call_deepseek_api
 from esquema_generator import generar_esquema
 from save_controller import guardar_test_route, guardar_esquema_route
@@ -98,14 +98,14 @@ def chat_route():
     )
     return jsonify({"respuesta": respuesta, "chat_id": chat_id})
 @app.route("/consultar-asistente-examen", methods=["POST"])
-@requiere_plan(db, "premium", global_check=True)
+@requiere_plan(db, "premium")
 def ruta_asistente_examen():
     data = request.get_json()
     mensaje = data.get("mensaje", "")
     if not mensaje:
         return jsonify({"error": "Falta el mensaje"}), 400
     try:
-        respuesta = consultar_asistente_examen_AGE(mensaje)
+        respuesta = consultar_asistente_examen(mensaje, oposicion=g.oposicion)
         return jsonify({"respuesta": respuesta})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -354,7 +354,9 @@ def obtener_conversacion(conversacion_id):
 def generar_test_fallos():
     data = request.get_json()
     num_preguntas = data.get("num_preguntas", 10)
-    tests_ref = db.collection("usuarios").document(g.uid).collection("tests").stream()
+    oposicion = obtener_oposicion_solicitada()
+    tests_ref = db.collection("usuarios").document(g.uid).collection("tests") \
+        .where("oposicion", "==", oposicion).stream()
     preguntas_falladas = []
     for test_doc in tests_ref:
         test = test_doc.to_dict()

@@ -43,10 +43,14 @@ document.addEventListener("DOMContentLoaded", async function () {
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
 
+      const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+      const oposicion = obtenerOposicionActual();
+      const sufijo = `?oposicion=${encodeURIComponent(oposicion)}`;
+
       // NUEVO: Usar la ruta de estadísticas completas que incluye datos PDF
       const [estadisticasRes, temasRes] = await Promise.all([
-        fetch("https://oposicion-age.onrender.com/estadisticas-completas", { headers: authHeaders }),
-        fetch("https://oposicion-age.onrender.com/temas-disponibles", { headers: authHeaders })
+        fetch(`https://oposicion-age.onrender.com/estadisticas-completas${sufijo}`, { headers: authHeaders }),
+        fetch(`https://oposicion-age.onrender.com/temas-disponibles${sufijo}`, { headers: authHeaders })
       ]);
       const estadisticasData = await estadisticasRes.json();
       const temasData = await temasRes.json();
@@ -55,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       // Si hay error, usar la ruta antigua como fallback
       if (estadisticas.error) {
         console.warn("Usando ruta antigua como fallback");
-        const resumenRes = await fetch("https://oposicion-age.onrender.com/resumen-progreso", { headers: authHeaders });
+        const resumenRes = await fetch(`https://oposicion-age.onrender.com/resumen-progreso${sufijo}`, { headers: authHeaders });
         const resumenData = await resumenRes.json();
         procesarDatos(resumenData.resumen ?? {}, temasData.temas || []);
       } else {

@@ -81,10 +81,11 @@ async function obtenerAuthHeaders() {
       try {
         const authHeaders = await obtenerAuthHeaders();
         if (!authHeaders) { clearInterval(intervalCarga); return; }
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
         const res = await fetch("https://oposicion-age.onrender.com/generar-test-fallos", {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
-          body: JSON.stringify({ num_preguntas })
+          body: JSON.stringify({ num_preguntas, oposicion: obtenerOposicionActual() })
         });
         
         clearInterval(intervalCarga);
@@ -200,12 +201,13 @@ async function obtenerAuthHeaders() {
       try {
         const authHeaders = await obtenerAuthHeaders();
         if (!authHeaders) return;
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
         const res = await fetch("https://oposicion-age.onrender.com/guardar-test", {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
-          body: JSON.stringify({ contenido, respuestas, metadatos })
+          body: JSON.stringify({ contenido, respuestas, metadatos, oposicion: obtenerOposicionActual() })
         });
-        
+
         const datos = await res.json();
         if (!res.ok) {
           console.error("Error al guardar test:", datos.error || "No se pudo guardar el test.");

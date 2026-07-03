@@ -64,10 +64,12 @@ async function obtenerAuthHeaders() {
       try {
         const authHeaders = await obtenerAuthHeaders();
         if (!authHeaders) return;
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const oposicion = obtenerOposicionActual();
         const res = await fetch("https://oposicion-age.onrender.com/guardar-test", {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
-          body: JSON.stringify({ contenido, respuestas, metadatos })
+          body: JSON.stringify({ contenido, respuestas, metadatos, oposicion })
         });
         const datos = await res.json();
         if (!res.ok) {

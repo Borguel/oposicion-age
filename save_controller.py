@@ -1,6 +1,6 @@
 from flask import request, jsonify, g
 from guardar_resultado import guardar_resultado_en_firestore
-from auth_utils import requiere_login
+from auth_utils import requiere_login, obtener_oposicion_solicitada
 
 def guardar_test_route(db):
     @requiere_login(db)
@@ -15,7 +15,8 @@ def guardar_test_route(db):
             tipo="test",
             contenido=contenido,
             usuario_id=g.uid,
-            metadatos=metadatos
+            metadatos=metadatos,
+            oposicion=obtener_oposicion_solicitada()
         )
         return jsonify({"mensaje": "Test guardado correctamente"})
 
@@ -31,7 +32,8 @@ def guardar_esquema_route(db):
             tipo="esquema",
             contenido=datos.get("contenido", {}),
             usuario_id=g.uid,
-            metadatos=datos.get("metadatos", {})
+            metadatos=datos.get("metadatos", {}),
+            oposicion=obtener_oposicion_solicitada()
         )
         return jsonify({"mensaje": "Esquema guardado correctamente"})
 

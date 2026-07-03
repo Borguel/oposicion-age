@@ -174,6 +174,7 @@ async function mostrarResultados() {
   try {
     const authHeaders = await obtenerAuthHeaders();
     if (!authHeaders) return;
+    const { obtenerOposicionActual } = await import("/assets/oposicion.js");
     await fetch("https://oposicion-age.onrender.com/guardar-test", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders },
@@ -184,7 +185,8 @@ async function mostrarResultados() {
           tiempo: segundosTotales,
           tipo: "repetido",
           temas: []
-        }
+        },
+        oposicion: obtenerOposicionActual()
       })
     });
     console.log("✅ Test guardado como repetido");
@@ -199,7 +201,8 @@ window.addEventListener("load", async () => {
   try {
     const authHeaders = await obtenerAuthHeaders();
     if (!authHeaders) return;
-    const res = await fetch("https://oposicion-age.onrender.com/ultimo-test", { headers: authHeaders });
+    const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+    const res = await fetch(`https://oposicion-age.onrender.com/ultimo-test?oposicion=${encodeURIComponent(obtenerOposicionActual())}`, { headers: authHeaders });
     const datos = await res.json();
 
     if (!datos.test || datos.test.length === 0) {

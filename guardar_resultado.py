@@ -1,8 +1,9 @@
 from datetime import datetime
 from firebase_admin import firestore
 from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_estadisticas_esquema
+from oposiciones import OPOSICION_POR_DEFECTO
 
-def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None):
+def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None, oposicion=OPOSICION_POR_DEFECTO):
     metadatos = metadatos or {}
     doc_user = db.collection("usuarios").document(usuario_id)
 
@@ -25,11 +26,13 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
         total_preguntas = aciertos + fallos
         resultado = "aprobado" if total_preguntas > 0 and (aciertos / total_preguntas) >= 0.5 else "suspendido"
 
-        # Guardar en subcolección tests
+        # Guardar en subcolección tests (con la oposición a la que pertenece,
+        # para poder filtrar "repetir test"/"preguntas falladas" por oposición)
         test_ref = doc_user.collection("tests").document()
         test_ref.set({
             "fecha": datetime.utcnow().isoformat(),
             "tipo": metadatos.get("tipo", "personalizado"),
+            "oposicion": oposicion,
             "aciertos": aciertos,
             "fallos": fallos,
             "blancos": blancos,
@@ -48,18 +51,19 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             ]
         })
 
-        # Actualizar resumen general del usuario
-        actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, metadatos.get("temas", []), metadatos.get("tiempo", 0), metadatos.get("tipo", "personalizado"), puntuacion)
+        # Actualizar resumen del usuario para esta oposición
+        actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, metadatos.get("temas", []), metadatos.get("tiempo", 0), metadatos.get("tipo", "personalizado"), puntuacion)
 
     elif tipo == "esquema":
         esquema_ref = doc_user.collection("esquemas").document()
         esquema_ref.set({
             "fecha": datetime.utcnow().isoformat(),
             "temas": metadatos.get("temas", []),
+            "oposicion": oposicion,
             "contenido": contenido
         })
 
-        actualizar_estadisticas_esquema(db, usuario_id, metadatos.get("temas", []))
+        actualizar_estadisticas_esquema(db, usuario_id, oposicion, metadatos.get("temas", []))
 
     # ===================================================================
     # NUEVOS TIPOS PARA CONTENIDO DESDE PDF
@@ -158,59 +162,63 @@ def actualizar_estadisticas_usuario(db, usuario_id, tipo):
         print(f"❌ Error actualizando estadísticas del usuario: {e}")
 
 # Función auxiliar para obtener estadísticas completas del usuario
-def obtener_estadisticas_completas_usuario(db, usuario_id):
-    """Obtener estadísticas completas del usuario incluyendo contenido desde PDF"""
+def obtener_estadisticas_completas_usuario(db, usuario_id, oposicion=OPOSICION_POR_DEFECTO):
+    """Obtener estadísticas completas del usuario para UNA OPOSICIÓN (test,
+    esquemas...), incluyendo además el contenido desde PDF (que es global,
+    no depende de la oposición)."""
     try:
         user_ref = db.collection("usuarios").document(usuario_id)
         user_doc = user_ref.get()
-        
+
         if not user_doc.exists:
             return {
                 "error": "Usuario no encontrado"
             }
-        
+
         datos = user_doc.to_dict()
-        
+        stats = (datos.get("estadisticas", {}) or {}).get(oposicion, {}) or {}
+
         # Contar elementos en cada subcolección
         tests_pdf_count = len(list(user_ref.collection("tests_pdf").stream()))
         resumenes_pdf_count = len(list(user_ref.collection("resumenes_pdf").stream()))
         esquemas_pdf_count = len(list(user_ref.collection("esquemas_pdf").stream()))
         tarjetas_pdf_count = len(list(user_ref.collection("tarjetas_pdf").stream()))
-        
+
         estadisticas = {
-            # Estadísticas existentes
-            "tests_realizados": datos.get("tests_realizados", 0),
-            "tests_aprobados": datos.get("tests_aprobados", 0),
-            "tests_suspendidos": datos.get("tests_suspendidos", 0),
-            "total_aciertos": datos.get("total_aciertos", 0),
-            "total_fallos": datos.get("total_fallos", 0),
-            "puntuacion_media_test": datos.get("puntuacion_media_test", 0),
-            "esquemas_realizados": datos.get("esquemas_realizados", 0),
-            "tiempo_total": datos.get("tiempo_total", 0),
-            
-            # Nuevas estadísticas desde PDF
+            "oposicion": oposicion,
+            # Estadísticas del temario oficial de esta oposición
+            "tests_realizados": stats.get("tests_realizados", 0),
+            "tests_aprobados": stats.get("tests_aprobados", 0),
+            "tests_suspendidos": stats.get("tests_suspendidos", 0),
+            "total_aciertos": stats.get("total_aciertos", 0),
+            "total_fallos": stats.get("total_fallos", 0),
+            "puntuacion_media_test": stats.get("puntuacion_media_test", 0),
+            "esquemas_realizados": stats.get("esquemas_realizados", 0),
+            "tiempo_total": stats.get("tiempo_total", 0),
+
+            # Estadísticas desde PDF (globales, no dependen de la oposición)
             "tests_pdf_realizados": datos.get("tests_pdf_realizados", 0),
             "resumenes_pdf_realizados": datos.get("resumenes_pdf_realizados", 0),
             "esquemas_pdf_realizados": datos.get("esquemas_pdf_realizados", 0),
             "tarjetas_pdf_realizados": datos.get("tarjetas_pdf_realizados", 0),
             "total_archivos_procesados": datos.get("total_archivos_procesados", 0),
-            
+
             # Conteos reales de documentos
             "total_tests_pdf": tests_pdf_count,
             "total_resumenes_pdf": resumenes_pdf_count,
             "total_esquemas_pdf": esquemas_pdf_count,
             "total_tarjetas_pdf": tarjetas_pdf_count,
-            
-            # Información adicional
-            "temas_test": datos.get("temas_test", []),
-            "temas_esquemas": datos.get("temas_esquemas", []),
-            "ultimo_test": datos.get("ultimo_test", {}),
+
+            # Información adicional (de esta oposición)
+            "temas_test": stats.get("temas_test", []),
+            "temas_esquemas": stats.get("temas_esquemas", []),
+            "ultimo_test": stats.get("ultimo_test", {}),
             "ultima_actividad": datos.get("ultima_actividad"),
             "fecha_creacion": datos.get("fecha_creacion")
         }
-        
+
         return estadisticas
-        
+
     except Exception as e:
         print(f"❌ Error obteniendo estadísticas del usuario: {e}")
         return {"error": str(e)}

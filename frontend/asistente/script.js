@@ -151,11 +151,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 setTimeout(async () => {
                     const authHeaders = await obtenerAuthHeaders();
                     if (!authHeaders) { ocultarTypingIndicator(); return; }
+                    const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+                    const oposicion = obtenerOposicionActual();
                     // Enviar a la API usando tu endpoint
                     fetch("https://oposicion-age.onrender.com/consultar-asistente-examen", {
                         method: "POST",
                         headers: { "Content-Type": "application/json", ...authHeaders },
-                        body: JSON.stringify({ mensaje: texto })
+                        body: JSON.stringify({ mensaje: texto, oposicion })
                     })
                     .then(res => {
                         if (res.status === 403) {

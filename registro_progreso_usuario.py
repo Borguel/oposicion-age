@@ -1,27 +1,24 @@
 from datetime import datetime
 from google.cloud import firestore
 
+from oposiciones import OPOSICION_POR_DEFECTO
+
 def inicializar_estadisticas_usuario(db, usuario_id, email=None):
     doc_ref = db.collection("usuarios").document(usuario_id)
     if not doc_ref.get().exists:
         doc_ref.set({
-            "tests_realizados": 0,
-            "total_aciertos": 0,
-            "total_fallos": 0,
-            "tests_aprobados": 0,
-            "tests_suspendidos": 0,
-            "esquemas_realizados": 0,
-            "temas_test": [],
-            "temas_esquemas": [],
-            "tiempo_total": 0,
-            "ultimo_test": {},
-            "historial_tests": [],
+            # Estadísticas de tests/esquemas del temario oficial, UNA POR
+            # OPOSICIÓN (un usuario que estudia AGE y GACE a la vez quiere ver
+            # su progreso de cada una por separado):
+            # estadisticas: { "AGE": {tests_realizados, total_aciertos, ...}, "GACE": {...} }
+            "estadisticas": {},
             "ultima_actividad": None,
             "notas_personales": "",
             "resumen_mensual": {},
             "recomendaciones_ia": [],
-            "puntuacion_media_test": 0,
-            # NUEVOS CAMPOS PARA CONTENIDO DESDE PDF
+            # Herramientas sobre PDF propio (resumen/test/tarjetas/esquema
+            # desde un documento que sube el usuario): esto SÍ es global, no
+            # depende de ninguna oposición ni de su temario oficial.
             "tests_pdf_realizados": 0,
             "resumenes_pdf_realizados": 0,
             "esquemas_pdf_realizados": 0,
@@ -43,22 +40,23 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None):
             "suscripciones": {},
         })
 
-def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None):
+def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None):
     doc_ref = db.collection("usuarios").document(usuario_id)
     usuario = doc_ref.get().to_dict() or {}
+    stats = (usuario.get("estadisticas", {}) or {}).get(oposicion, {}) or {}
 
-    total_tests = usuario.get("tests_realizados", 0) + 1
-    total_aciertos = usuario.get("total_aciertos", 0) + aciertos
-    total_fallos = usuario.get("total_fallos", 0) + fallos
-    temas_test = list(set(usuario.get("temas_test", []) + temas))
-    tiempo_total = usuario.get("tiempo_total", 0) + tiempo_en_segundos
+    total_tests = stats.get("tests_realizados", 0) + 1
+    total_aciertos = stats.get("total_aciertos", 0) + aciertos
+    total_fallos = stats.get("total_fallos", 0) + fallos
+    temas_test = list(set(stats.get("temas_test", []) + temas))
+    tiempo_total = stats.get("tiempo_total", 0) + tiempo_en_segundos
 
     total_preguntas = aciertos + fallos
     puntuacion = puntuacion_final if puntuacion_final is not None else round(aciertos / total_preguntas, 2) if total_preguntas else 0
     puntuacion_media = round(total_aciertos / total_tests, 2) if total_tests else 0
 
-    aprobados = usuario.get("tests_aprobados", 0)
-    suspendidos = usuario.get("tests_suspendidos", 0)
+    aprobados = stats.get("tests_aprobados", 0)
+    suspendidos = stats.get("tests_suspendidos", 0)
     if puntuacion >= 0.5:
         aprobados += 1
         resultado = "aprobado"
@@ -66,7 +64,7 @@ def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo
         suspendidos += 1
         resultado = "suspendido"
 
-    historial = usuario.get("historial_tests", [])
+    historial = stats.get("historial_tests", [])
     historial.append({
         "fecha": datetime.utcnow().isoformat(),
         "aciertos": aciertos,
@@ -80,17 +78,18 @@ def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo
     if len(historial) > 50:
         historial = historial[-50:]
 
+    prefijo = f"estadisticas.{oposicion}."
     doc_ref.update({
-        "tests_realizados": total_tests,
-        "total_aciertos": total_aciertos,
-        "total_fallos": total_fallos,
-        "tests_aprobados": aprobados,
-        "tests_suspendidos": suspendidos,
-        "temas_test": temas_test,
-        "tiempo_total": tiempo_total,
-        "puntuacion_media_test": puntuacion_media,
-        "historial_tests": historial,
-        "ultimo_test": {
+        f"{prefijo}tests_realizados": total_tests,
+        f"{prefijo}total_aciertos": total_aciertos,
+        f"{prefijo}total_fallos": total_fallos,
+        f"{prefijo}tests_aprobados": aprobados,
+        f"{prefijo}tests_suspendidos": suspendidos,
+        f"{prefijo}temas_test": temas_test,
+        f"{prefijo}tiempo_total": tiempo_total,
+        f"{prefijo}puntuacion_media_test": puntuacion_media,
+        f"{prefijo}historial_tests": historial,
+        f"{prefijo}ultimo_test": {
             "aciertos": aciertos,
             "fallos": fallos,
             "temas": temas,
@@ -103,42 +102,46 @@ def actualizar_estadisticas_test(db, usuario_id, aciertos, fallos, temas, tiempo
         "ultima_actividad": datetime.utcnow().isoformat()
     })
 
-def actualizar_estadisticas_esquema(db, usuario_id, temas):
+def actualizar_estadisticas_esquema(db, usuario_id, oposicion, temas):
     doc_ref = db.collection("usuarios").document(usuario_id)
     usuario = doc_ref.get().to_dict() or {}
+    stats = (usuario.get("estadisticas", {}) or {}).get(oposicion, {}) or {}
 
-    total_esquemas = usuario.get("esquemas_realizados", 0) + 1
-    temas_esquemas = list(set(usuario.get("temas_esquemas", []) + temas))
+    total_esquemas = stats.get("esquemas_realizados", 0) + 1
+    temas_esquemas = list(set(stats.get("temas_esquemas", []) + temas))
 
+    prefijo = f"estadisticas.{oposicion}."
     doc_ref.update({
-        "esquemas_realizados": total_esquemas,
-        "temas_esquemas": temas_esquemas,
+        f"{prefijo}esquemas_realizados": total_esquemas,
+        f"{prefijo}temas_esquemas": temas_esquemas,
         "ultima_actividad": datetime.utcnow().isoformat()
     })
 
-def obtener_resumen_progreso(db, usuario_id):
+def obtener_resumen_progreso(db, usuario_id, oposicion=OPOSICION_POR_DEFECTO):
     doc_ref = db.collection("usuarios").document(usuario_id)
     doc = doc_ref.get()
     if not doc.exists:
         return {}
 
     datos = doc.to_dict()
+    stats = (datos.get("estadisticas", {}) or {}).get(oposicion, {}) or {}
 
     resumen = {
-        "tests_realizados": datos.get("tests_realizados", 0),
-        "tests_aprobados": datos.get("tests_aprobados", 0),
-        "tests_suspendidos": datos.get("tests_suspendidos", 0),
-        "total_aciertos": datos.get("total_aciertos", 0),
-        "total_fallos": datos.get("total_fallos", 0),
-        "puntuacion_media_test": datos.get("puntuacion_media_test", 0),
-        "esquemas_realizados": datos.get("esquemas_realizados", 0),
-        "tiempo_total": datos.get("tiempo_total", 0),
-        "temas_test": datos.get("temas_test", []),
-        "temas_esquemas": datos.get("temas_esquemas", []),
-        "ultimo_test": datos.get("ultimo_test", {}),
-        "historial_tests": datos.get("historial_tests", []),
+        "oposicion": oposicion,
+        "tests_realizados": stats.get("tests_realizados", 0),
+        "tests_aprobados": stats.get("tests_aprobados", 0),
+        "tests_suspendidos": stats.get("tests_suspendidos", 0),
+        "total_aciertos": stats.get("total_aciertos", 0),
+        "total_fallos": stats.get("total_fallos", 0),
+        "puntuacion_media_test": stats.get("puntuacion_media_test", 0),
+        "esquemas_realizados": stats.get("esquemas_realizados", 0),
+        "tiempo_total": stats.get("tiempo_total", 0),
+        "temas_test": stats.get("temas_test", []),
+        "temas_esquemas": stats.get("temas_esquemas", []),
+        "ultimo_test": stats.get("ultimo_test", {}),
+        "historial_tests": stats.get("historial_tests", []),
         "ultima_actividad": datos.get("ultima_actividad", None),
-        # NUEVOS CAMPOS PARA CONTENIDO DESDE PDF
+        # Herramientas sobre PDF propio: global, no depende de la oposición
         "tests_pdf_realizados": datos.get("tests_pdf_realizados", 0),
         "resumenes_pdf_realizados": datos.get("resumenes_pdf_realizados", 0),
         "esquemas_pdf_realizados": datos.get("esquemas_pdf_realizados", 0),
@@ -149,21 +152,22 @@ def obtener_resumen_progreso(db, usuario_id):
 
     return resumen
 
-# NUEVA FUNCIÓN: Actualizar estadísticas para contenido desde PDF
+# NUEVA FUNCIÓN: Actualizar estadísticas para contenido desde PDF (global,
+# no depende de ninguna oposición -- ver nota en inicializar_estadisticas_usuario)
 def actualizar_estadisticas_pdf(db, usuario_id, tipo_pdf):
     """Actualizar estadísticas cuando se guarda contenido desde PDF"""
     doc_ref = db.collection("usuarios").document(usuario_id)
-    
+
     # Verificar si el usuario existe
     if not doc_ref.get().exists:
         inicializar_estadisticas_usuario(db, usuario_id)
-    
+
     # Preparar actualizaciones según el tipo de contenido PDF
     field_updates = {
         "ultima_actividad": datetime.utcnow().isoformat(),
         "total_archivos_procesados": firestore.Increment(1)
     }
-    
+
     if tipo_pdf == "test_pdf":
         field_updates["tests_pdf_realizados"] = firestore.Increment(1)
     elif tipo_pdf == "resumen_pdf":

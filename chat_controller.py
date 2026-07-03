@@ -3,6 +3,7 @@ from datetime import datetime
 from firebase_admin import firestore
 from utils import obtener_contexto_por_temas
 from deepseek_utils import call_deepseek_api
+from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
 # ✅ Crear conversación con título y mensajes en subcolección por usuario
 
@@ -66,19 +67,22 @@ PREGUNTA DEL USUARIO:
 
     return texto_respuesta, chat_id
 
-# ✅ Asistente premium especializado en el examen AGE
-INSTRUCCIONES_ASISTENTE_EXAMEN = (
-    "Eres el Asistente Premium de Oposición AGE, especializado en el proceso selectivo del "
-    "Cuerpo General Administrativo del Estado. Ayudas con la estructura del examen, el temario "
-    "actualizado y consejos de estudio. Responde en español, de forma clara, precisa y con "
-    "formato técnico-formal propio de una oposición. Si no tienes datos concretos y actualizados "
-    "sobre una convocatoria, dilo explícitamente en vez de inventarlos."
-)
+# ✅ Asistente premium especializado en el examen, adaptado a la oposición
+# concreta que esté estudiando el usuario (mismo asistente, distinto "traje").
+def _instrucciones_asistente_examen(oposicion):
+    nombre = OPOSICIONES.get(oposicion, OPOSICIONES[OPOSICION_POR_DEFECTO])["nombre"]
+    return (
+        f"Eres el Asistente Premium de Oposición, especializado en el proceso selectivo del "
+        f"{nombre}. Ayudas con la estructura del examen, el temario actualizado y consejos de "
+        "estudio. Responde en español, de forma clara, precisa y con formato técnico-formal propio "
+        "de una oposición. Si no tienes datos concretos y actualizados sobre una convocatoria, dilo "
+        "explícitamente en vez de inventarlos."
+    )
 
-def consultar_asistente_examen_AGE(mensaje_usuario):
+def consultar_asistente_examen(mensaje_usuario, oposicion=OPOSICION_POR_DEFECTO):
     respuesta = call_deepseek_api(
         messages=[
-            {"role": "system", "content": INSTRUCCIONES_ASISTENTE_EXAMEN},
+            {"role": "system", "content": _instrucciones_asistente_examen(oposicion)},
             {"role": "user", "content": mensaje_usuario}
         ],
         temperature=0.6,
