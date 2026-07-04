@@ -15,7 +15,10 @@ from PyPDF2 import PdfReader
 from firebase_setup import db
 from auth_utils import requiere_login, requiere_plan
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso
-from documentos_pdf import obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta
+from documentos_pdf import (
+    obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta,
+    listar_carpetas, crear_carpeta, eliminar_carpeta
+)
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import generar_preguntas_ia_en_lotes
 
@@ -580,7 +583,28 @@ def guardar_tarjetas_pdf():
 @bp.route('/mis-documentos', methods=['GET'])
 @requiere_login(db)
 def mis_documentos():
-    return jsonify({"documentos": listar_documentos(db, g.uid)})
+    return jsonify({
+        "documentos": listar_documentos(db, g.uid),
+        "carpetas": listar_carpetas(db, g.uid),
+    })
+
+
+@bp.route('/carpetas-documentos', methods=['POST'])
+@requiere_login(db)
+def crear_carpeta_documentos():
+    datos = request.get_json(silent=True) or {}
+    nombre = crear_carpeta(db, g.uid, datos.get("nombre"))
+    if not nombre:
+        return jsonify({"error": "El nombre de la carpeta no puede estar vacío."}), 400
+    return jsonify({"mensaje": "ok", "nombre": nombre})
+
+
+@bp.route('/carpetas-documentos', methods=['DELETE'])
+@requiere_login(db)
+def eliminar_carpeta_documentos():
+    datos = request.get_json(silent=True) or {}
+    eliminar_carpeta(db, g.uid, datos.get("nombre") or "")
+    return jsonify({"mensaje": "ok"})
 
 
 @bp.route('/documento/<documento_id>/carpeta', methods=['POST'])

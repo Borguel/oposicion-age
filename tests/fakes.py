@@ -3,6 +3,26 @@
 probar rutas y lógica de negocio sin depender de un proyecto real de
 Firebase ni de red. Cubre solo el subconjunto de la API que se usa aquí --
 no pretende ser un sustituto completo de google-cloud-firestore."""
+from google.cloud.firestore_v1.transforms import ArrayUnion, ArrayRemove, Increment
+
+
+def _resolver_valor(actual, valor):
+    """Aplica los "sentinel" de Firestore (ArrayUnion/ArrayRemove/Increment)
+    igual que lo haría el servidor real, en vez de guardar el objeto tal
+    cual -- si no, cualquier código que dependa de ellos (como el catálogo
+    de carpetas) vería el sentinel en vez del valor final al releerlo."""
+    if isinstance(valor, ArrayUnion):
+        lista = list(actual) if isinstance(actual, list) else []
+        for v in valor._values:
+            if v not in lista:
+                lista.append(v)
+        return lista
+    if isinstance(valor, ArrayRemove):
+        lista = list(actual) if isinstance(actual, list) else []
+        return [v for v in lista if v not in valor._values]
+    if isinstance(valor, Increment):
+        return (actual or 0) + valor._value
+    return valor
 
 
 def _cumple_filtro(datos, filtro):
@@ -14,16 +34,22 @@ def _cumple_filtro(datos, filtro):
 
 
 class FakeDocumentSnapshot:
-    def __init__(self, doc_id, datos):
+    def __init__(self, doc_id, datos, store=None, path=None):
         self.id = doc_id
         self._datos = datos
         self.exists = datos is not None
+        self._store = store
+        self._path = path
 
     def to_dict(self):
         return dict(self._datos) if self._datos is not None else None
 
     def __getitem__(self, clave):
         return self._datos[clave]
+
+    @property
+    def reference(self):
+        return FakeDocumentRef(self._store, self._path)
 
 
 class FakeDocumentRef:
@@ -36,7 +62,7 @@ class FakeDocumentRef:
         return self._path[-1]
 
     def get(self):
-        return FakeDocumentSnapshot(self._path[-1], self._store.get(self._path))
+        return FakeDocumentSnapshot(self._path[-1], self._store.get(self._path), self._store, self._path)
 
     def set(self, datos, merge=False):
         if merge and self._path in self._store:
@@ -57,7 +83,7 @@ class FakeDocumentRef:
             cursor = existente
             for parte in partes[:-1]:
                 cursor = cursor.setdefault(parte, {})
-            cursor[partes[-1]] = valor
+            cursor[partes[-1]] = _resolver_valor(cursor.get(partes[-1]), valor)
         self._store[self._path] = existente
 
     def delete(self):
@@ -86,7 +112,7 @@ class FakeCollectionRef:
         for path, datos in list(self._store.items()):
             if len(path) == largo + 1 and path[:largo] == self._path:
                 if all(_cumple_filtro(datos, f) for f in self._filtros):
-                    yield FakeDocumentSnapshot(path[-1], datos)
+                    yield FakeDocumentSnapshot(path[-1], datos, self._store, path)
 
 
 class FakeFirestore:

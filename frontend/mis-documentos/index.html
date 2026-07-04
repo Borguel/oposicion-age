@@ -38,12 +38,41 @@
   </div>
 
   <div id="documentos-contenido" class="hidden">
-    <div class="documentos-toolbar">
-      <label for="filtro-carpeta">Carpeta</label>
-      <select id="filtro-carpeta"></select>
-      <input type="search" id="filtro-busqueda" placeholder="Buscar por nombre…" />
+    <!-- Nivel 1: carpetas -->
+    <div id="vista-carpetas">
+      <div class="carpetas-toolbar">
+        <input type="search" id="filtro-busqueda" placeholder="Buscar documento por nombre…" />
+        <button type="button" class="age-btn age-btn-primary" id="btn-crear-carpeta">+ Crear carpeta</button>
+      </div>
+      <div id="carpetas-grid" class="carpetas-grid"></div>
+      <div id="busqueda-resultados" class="documentos-lista hidden"></div>
     </div>
-    <div id="documentos-grupos"></div>
+
+    <!-- Nivel 2: dentro de una carpeta -->
+    <div id="vista-carpeta-detalle" class="hidden">
+      <button type="button" class="carpeta-detalle-volver" id="btn-volver-carpetas">← Volver a carpetas</button>
+      <div class="carpeta-detalle-cabecera">
+        <h2 id="carpeta-detalle-titulo"></h2>
+        <div class="carpeta-detalle-acciones">
+          <button type="button" class="age-btn age-btn-outline" id="btn-eliminar-carpeta">Eliminar carpeta</button>
+          <button type="button" class="age-btn age-btn-primary" id="btn-anadir-documentos">+ Añadir documentos</button>
+        </div>
+      </div>
+      <div id="carpeta-detalle-lista" class="documentos-lista"></div>
+    </div>
+  </div>
+</div>
+
+<div class="documentos-modal-overlay hidden" id="modal-anadir-documentos">
+  <div class="age-card documentos-modal-card">
+    <div class="documentos-modal-cabecera">
+      <h3>Añadir documentos a "<span id="modal-anadir-carpeta-nombre"></span>"</h3>
+      <button type="button" class="documentos-modal-cerrar" id="modal-anadir-cerrar" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="modal-anadir-lista" class="documentos-modal-lista"></div>
+    <div class="documentos-modal-acciones">
+      <button type="button" class="age-btn age-btn-primary" id="modal-anadir-confirmar">Añadir seleccionados</button>
+    </div>
   </div>
 </div>
 

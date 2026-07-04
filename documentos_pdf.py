@@ -122,3 +122,45 @@ def actualizar_carpeta(db, uid, documento_id, carpeta):
         return False
     ref.update({"carpeta": (carpeta or "").strip()[:60]})
     return True
+
+
+def listar_carpetas(db, uid):
+    """Catálogo de carpetas del usuario: las creadas explícitamente con
+    crear_carpeta() más cualquier nombre que ya tuviera asignado algún
+    documento antes de que existiera este catálogo (para no perder carpetas
+    de usuarios que ya las usaban con el sistema anterior)."""
+    usuario = db.collection("usuarios").document(uid).get().to_dict() or {}
+    explicitas = set(usuario.get("carpetas_documentos") or [])
+    de_documentos = {
+        (doc.to_dict() or {}).get("carpeta")
+        for doc in db.collection("usuarios").document(uid).collection("documentos").stream()
+    }
+    de_documentos.discard("")
+    de_documentos.discard(None)
+    return sorted(explicitas | de_documentos)
+
+
+def crear_carpeta(db, uid, nombre):
+    nombre = (nombre or "").strip()[:60]
+    if not nombre:
+        return None
+    from firebase_admin import firestore
+    db.collection("usuarios").document(uid).update({
+        "carpetas_documentos": firestore.ArrayUnion([nombre])
+    })
+    return nombre
+
+
+def eliminar_carpeta(db, uid, nombre):
+    """Borra la carpeta del catálogo y deja "sin carpeta" a los documentos
+    que estuvieran dentro, en vez de borrarlos."""
+    from firebase_admin import firestore
+    nombre = (nombre or "").strip()
+    if not nombre:
+        return
+    docs_ref = db.collection("usuarios").document(uid).collection("documentos")
+    for doc in docs_ref.where("carpeta", "==", nombre).stream():
+        doc.reference.update({"carpeta": ""})
+    db.collection("usuarios").document(uid).update({
+        "carpetas_documentos": firestore.ArrayRemove([nombre])
+    })
