@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clasificación - Oposición AGE</title>
+  <meta name="description" content="Apúntate de forma anónima a la clasificación por racha de estudio y compárate con otros opositores, siempre con un alias, nunca con tu nombre real." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Clasificación - Oposición AGE" />
+  <meta property="og:description" content="Apúntate de forma anónima a la clasificación por racha de estudio y compárate con otros opositores." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/ranking/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+<div class="ranking-header">
+  <div class="age-container">
+    <h1>Clasificación</h1>
+    <p>Un ranking por racha de estudio, completamente anónimo y opcional: solo aparecen quienes se apuntan, con un alias que ellos mismos eligen. Nunca se muestra tu nombre real ni tu correo.</p>
+  </div>
+</div>
+
+<div class="age-container ranking-wrap">
+  <section class="age-card ranking-participacion" id="ranking-participacion">
+    <p>Cargando…</p>
+  </section>
+
+  <section class="age-card ranking-tabla-card">
+    <div class="ranking-tabla-cabecera">
+      <h2>Top racha de estudio</h2>
+      <span id="ranking-total-participantes" class="ranking-total"></span>
+    </div>
+    <div id="ranking-lista" class="ranking-lista">
+      <p class="ranking-cargando">Cargando clasificación…</p>
+    </div>
+  </section>
+</div>
+
+<script type="module" src="/assets/auth.js"></script>
+<script type="module" src="/ranking/script.js"></script>
+</body>
+</html>
