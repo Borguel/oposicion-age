@@ -32,6 +32,12 @@ services:
         sync: false
       - key: SENDGRID_FROM_EMAIL
         sync: false
+      - key: SENDGRID_TEMPLATE_BIENVENIDA
+        sync: false
+      - key: SENDGRID_TEMPLATE_RACHA_RIESGO
+        sync: false
+      - key: SENDGRID_TEMPLATE_REENGAGEMENT
+        sync: false
       - key: SENTRY_DSN
         sync: false
       - key: CRON_SECRET_KEY

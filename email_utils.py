@@ -2,7 +2,13 @@
 usando la API de SendGrid. Si SENDGRID_API_KEY no está configurada, o el
 envío falla, no se lanza ninguna excepción hacia quien llama: ninguna
 acción del usuario (registro, guardado de progreso...) debe romperse
-porque un email no se haya podido enviar."""
+porque un email no se haya podido enviar.
+
+Cada correo se manda por un SendGrid Dynamic Template (el diseño vive en
+SendGrid, editable sin tocar código) si su variable de entorno
+SENDGRID_TEMPLATE_* está configurada; si no, cae al HTML de reserva
+definido aquí mismo, para que el envío nunca dependa de haber montado ya
+los templates."""
 import logging
 import os
 import requests
@@ -19,7 +25,7 @@ def _remitente():
     }
 
 
-def _enviar(destinatario, asunto, html, motivo):
+def _enviar(destinatario, motivo, *, asunto=None, html=None, template_id=None, datos=None):
     if not destinatario:
         return
     api_key = os.getenv("SENDGRID_API_KEY")
@@ -27,12 +33,16 @@ def _enviar(destinatario, asunto, html, motivo):
         logger.warning("SENDGRID_API_KEY no configurada: no se envía email de %s", motivo)
         return
 
-    payload = {
-        "personalizations": [{"to": [{"email": destinatario}]}],
-        "from": _remitente(),
-        "subject": asunto,
-        "content": [{"type": "text/html", "value": html}],
-    }
+    personalizacion = {"to": [{"email": destinatario}]}
+    payload = {"personalizations": [personalizacion], "from": _remitente()}
+
+    if template_id:
+        personalizacion["dynamic_template_data"] = datos or {}
+        payload["template_id"] = template_id
+    else:
+        payload["subject"] = asunto
+        payload["content"] = [{"type": "text/html", "value": html}]
+
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     try:
         respuesta = requests.post(SENDGRID_API_URL, headers=headers, json=payload, timeout=10)
@@ -57,6 +67,15 @@ def _boton(texto, url):
 def enviar_email_bienvenida(destinatario, nombre=""):
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
     saludo = f"Hola{f' {nombre}' if nombre else ''}"
+
+    template_id = os.getenv("SENDGRID_TEMPLATE_BIENVENIDA")
+    if template_id:
+        _enviar(destinatario, "bienvenida", template_id=template_id, datos={
+            "saludo": saludo,
+            "frontend_url": frontend_url,
+        })
+        return
+
     html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #1b1f2e;">
       <h2 style="color: #1b1f2e;">¡Bienvenido/a a Oposición AGE!</h2>
@@ -71,7 +90,7 @@ def enviar_email_bienvenida(destinatario, nombre=""):
       </p>
     </div>
     """
-    _enviar(destinatario, "Bienvenido/a a Oposición AGE", html, motivo="bienvenida")
+    _enviar(destinatario, "bienvenida", asunto="Bienvenido/a a Oposición AGE", html=html)
 
 
 def enviar_email_racha_en_riesgo(destinatario, racha_actual, nombre=""):
@@ -79,6 +98,18 @@ def enviar_email_racha_en_riesgo(destinatario, racha_actual, nombre=""):
     se envía a quien estudió ayer pero todavía no hoy."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
     saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    racha_dias_texto = f"{racha_actual} día{'s' if racha_actual != 1 else ''}"
+
+    template_id = os.getenv("SENDGRID_TEMPLATE_RACHA_RIESGO")
+    if template_id:
+        _enviar(destinatario, "racha en riesgo", template_id=template_id, datos={
+            "saludo": saludo,
+            "racha_actual": racha_actual,
+            "racha_dias_texto": racha_dias_texto,
+            "frontend_url": frontend_url,
+        })
+        return
+
     html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #1b1f2e;">
       <h2 style="color: #1b1f2e;">🔥 Tu racha de {racha_actual} día{'s' if racha_actual != 1 else ''} está en juego</h2>
@@ -86,7 +117,7 @@ def enviar_email_racha_en_riesgo(destinatario, racha_actual, nombre=""):
       {_boton("Hacer un test rápido", f"{frontend_url}/zona-opositor/")}
     </div>
     """
-    _enviar(destinatario, f"No pierdas tu racha de {racha_actual} días", html, motivo="racha en riesgo")
+    _enviar(destinatario, "racha en riesgo", asunto=f"No pierdas tu racha de {racha_actual} días", html=html)
 
 
 def enviar_email_reengagement(destinatario, dias_inactivo, nombre=""):
@@ -94,6 +125,16 @@ def enviar_email_reengagement(destinatario, dias_inactivo, nombre=""):
     racha, para intentar que retome la preparación."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
     saludo = f"Hola{f' {nombre}' if nombre else ''}"
+
+    template_id = os.getenv("SENDGRID_TEMPLATE_REENGAGEMENT")
+    if template_id:
+        _enviar(destinatario, "reengagement", template_id=template_id, datos={
+            "saludo": saludo,
+            "dias_inactivo": dias_inactivo,
+            "frontend_url": frontend_url,
+        })
+        return
+
     html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #1b1f2e;">
       <h2 style="color: #1b1f2e;">Llevas {dias_inactivo} días sin estudiar</h2>
@@ -101,4 +142,4 @@ def enviar_email_reengagement(destinatario, dias_inactivo, nombre=""):
       {_boton("Volver a estudiar", f"{frontend_url}/zona-opositor/")}
     </div>
     """
-    _enviar(destinatario, "Retoma tu preparación de la oposición", html, motivo="reengagement")
+    _enviar(destinatario, "reengagement", asunto="Retoma tu preparación de la oposición", html=html)
