@@ -174,10 +174,10 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
       <button type="button" id="btn-analisis-ia" class="btn age-btn-outline">🤖 Ver análisis de mi rendimiento con IA</button>
       <div id="analisis-ia-resultado"></div>
     </div>
-    <details class="resultado-temas-desplegable">
-      <summary>📈 Estadísticas por tema</summary>
-      ${tablaTemasHTML}
-    </details>
+    <div class="resultado-temas-desplegable">
+      <button type="button" class="resultado-temas-toggle" id="btn-temas-toggle" aria-expanded="false">📈 Estadísticas por tema</button>
+      <div class="resultado-temas-panel" id="panel-temas" style="display:none;">${tablaTemasHTML}</div>
+    </div>
     <div class="resultado-filtros">
       <button type="button" class="resultado-filtro-chip activo" data-filtro="todos">🟡 Todos</button>
       <button type="button" class="resultado-filtro-chip" data-filtro="acierto">✅ Aciertos</button>
@@ -198,6 +198,20 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
       });
     });
   });
+
+  // Desplegable de estadísticas por tema (no se usa <details> nativo porque
+  // en algunos navegadores móviles el summary con marcador personalizado no
+  // responde bien al toque).
+  const btnTemasToggle = contenedor.querySelector("#btn-temas-toggle");
+  if (btnTemasToggle) {
+    btnTemasToggle.addEventListener("click", () => {
+      const panel = contenedor.querySelector("#panel-temas");
+      const abierto = panel.style.display !== "none";
+      panel.style.display = abierto ? "none" : "block";
+      btnTemasToggle.setAttribute("aria-expanded", String(!abierto));
+      btnTemasToggle.classList.toggle("abierto", !abierto);
+    });
+  }
 
   // Mostrar/ocultar explicación
   contenedor.querySelectorAll("[data-toggle-target]").forEach((boton) => {

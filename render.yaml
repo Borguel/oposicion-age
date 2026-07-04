@@ -75,9 +75,12 @@ services:
       # Los ficheros de /assets/ no llevan hash en el nombre, así que se usa
       # un TTL corto con revalidación en vez de un max-age largo: evita que
       # un despliegue nuevo deje a los navegadores sirviendo JS/CSS viejo.
+      # 60s (no más) mientras el sitio recibe despliegues frecuentes -- un
+      # max-age más largo hizo que cambios ya desplegados tardaran hasta una
+      # hora en verse reflejados en el navegador de un usuario real.
       - path: /assets/*
         name: Cache-Control
-        value: "public, max-age=3600, must-revalidate"
+        value: "public, max-age=60, must-revalidate"
       # Sin 'unsafe-inline' en script-src: todo el JS del sitio vive en
       # ficheros .js propios (ningún <script> inline) y no quedan atributos
       # onclick="" inline (los 3 que había se pasaron a addEventListener
