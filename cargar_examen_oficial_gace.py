@@ -1,20 +1,24 @@
-"""Carga el Primer Ejercicio de la convocatoria GACE 2025 (Cuerpo de Gestión
-de la Administración Civil del Estado, Ingreso Libre) en Firestore, bajo
-la colección de exámenes oficiales de GACE, generando además con DeepSeek
-una explicación de la respuesta correcta para cada pregunta.
+"""Carga el Primer Ejercicio de una convocatoria GACE (Cuerpo de Gestión de la
+Administración Civil del Estado, Ingreso Libre) en Firestore, bajo la colección
+de exámenes oficiales de GACE.
 
-Las 105 preguntas (100 + 5 de reserva) ya están extraídas y revisadas en
-datos_examenes/gacel_2025_1er_ejercicio.json -- este script solo genera la
-explicación de cada una y las sube.
+Las preguntas (100 + 5 de reserva) deben estar ya extraídas y revisadas en
+datos_examenes/gacel_<anio>_1er_ejercicio.json. La explicación de cada
+respuesta correcta se toma de datos_examenes/gacel_<anio>_1er_ejercicio_explicaciones.json
+si existe (clave = número de pregunta como string); si no existe o falta
+alguna pregunta, se genera con DeepSeek en el momento de la subida.
 
 Requiere las mismas variables de entorno que el resto del proyecto (ver
 app.py / .env): FIREBASE_CREDENTIALS_JSON (o FIREBASE_KEY_PATH apuntando a
-clave-firebase.json) y DEEPSEEK_API_KEY.
+clave-firebase.json) y, si hace falta generar alguna explicación con IA,
+DEEPSEEK_API_KEY.
 
 Uso:
-    python cargar_examen_oficial_gace.py
+    python cargar_examen_oficial_gace.py <anio>
+    python cargar_examen_oficial_gace.py 2022
 """
 import os
+import sys
 import json
 import time
 
@@ -27,8 +31,7 @@ from oposiciones import coleccion_examenes_oficiales
 
 load_dotenv()
 
-RUTA_DATOS = os.path.join(os.path.dirname(__file__), "datos_examenes", "gacel_2025_1er_ejercicio.json")
-NOMBRE_EXAMEN = "GACE 2025 - 1er ejercicio"
+BASE_DIR = os.path.dirname(__file__)
 
 if not firebase_admin._apps:
     firebase_credentials_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
@@ -61,22 +64,41 @@ def generar_explicacion(pregunta, opciones, respuesta_correcta):
     return (respuesta or "").strip()
 
 
-def cargar_examen():
-    with open(RUTA_DATOS, encoding="utf-8") as f:
+def cargar_examen(anio):
+    ruta_datos = os.path.join(BASE_DIR, "datos_examenes", f"gacel_{anio}_1er_ejercicio.json")
+    ruta_explicaciones = os.path.join(
+        BASE_DIR, "datos_examenes", f"gacel_{anio}_1er_ejercicio_explicaciones.json"
+    )
+    nombre_examen = f"GACE {anio} - 1er ejercicio"
+
+    with open(ruta_datos, encoding="utf-8") as f:
         preguntas = json.load(f)
 
+    explicaciones = {}
+    if os.path.exists(ruta_explicaciones):
+        with open(ruta_explicaciones, encoding="utf-8") as f:
+            explicaciones = json.load(f)
+
     coleccion = coleccion_examenes_oficiales("GACE")
-    print(f"Subiendo {len(preguntas)} preguntas a Firestore -> colección '{coleccion}'")
+    print(f"Subiendo {len(preguntas)} preguntas de {anio} a Firestore -> colección '{coleccion}'")
 
     for p in preguntas:
+        if p.get("anulada"):
+            print(f"  Pregunta {p['numero']}... ANULADA, se omite.")
+            continue
+
         print(f"  Pregunta {p['numero']}...", end=" ", flush=True)
-        explicacion = generar_explicacion(p["pregunta"], p["opciones"], p["respuesta_correcta"])
+        explicacion = explicaciones.get(str(p["numero"]), "").strip()
         if not explicacion:
-            print("(sin explicación, DeepSeek no respondió; se sube igualmente)", end=" ")
-        doc_id = f"gacel_2025_1ej_{p['numero']:03d}"
+            explicacion = generar_explicacion(p["pregunta"], p["opciones"], p["respuesta_correcta"])
+            if not explicacion:
+                print("(sin explicación, no disponible ni generable)", end=" ")
+            time.sleep(0.3)  # margen prudente frente al límite de tasa de DeepSeek
+
+        doc_id = f"gacel_{anio}_1ej_{p['numero']:03d}"
         db.collection(coleccion).document(doc_id).set({
             "tipo": "pregunta",
-            "examen": NOMBRE_EXAMEN,
+            "examen": nombre_examen,
             "numero": p["numero"],
             "pregunta": p["pregunta"],
             "opciones": p["opciones"],
@@ -85,10 +107,12 @@ def cargar_examen():
             "reserva": p.get("reserva", False),
         })
         print("OK")
-        time.sleep(0.3)  # margen prudente frente al límite de tasa de DeepSeek
 
     print("Carga completada.")
 
 
 if __name__ == "__main__":
-    cargar_examen()
+    if len(sys.argv) != 2:
+        print("Uso: python cargar_examen_oficial_gace.py <anio>")
+        sys.exit(1)
+    cargar_examen(sys.argv[1])
