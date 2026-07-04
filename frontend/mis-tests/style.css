@@ -177,6 +177,35 @@ body {
   margin-bottom: 10px;
 }
 
+.test-card-temas-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  padding: 6px 0;
+  border: none;
+  background: transparent;
+  color: var(--age-ink-soft);
+  font-family: var(--age-font);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+
+.test-card-temas-toggle:hover {
+  color: var(--age-ink);
+}
+
+.test-card-temas-caret {
+  transition: transform 0.15s var(--age-ease);
+}
+
+.test-card-temas-toggle.open .test-card-temas-caret {
+  transform: rotate(180deg);
+}
+
 .test-card-temas {
   display: flex;
   flex-wrap: wrap;

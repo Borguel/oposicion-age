@@ -1,0 +1,56 @@
+.dp-layout {
+  max-width: 720px;
+  padding-bottom: 60px;
+  margin-top: -34px;
+}
+
+.dp-volver {
+  display: inline-block;
+  color: var(--age-ink-soft);
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+  margin: 0 0 16px 2px;
+}
+
+.dp-volver:hover {
+  color: var(--age-ink);
+}
+
+.dp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 20, 30, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 500;
+}
+
+.dp-modal-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 28px 26px;
+}
+
+.dp-modal-titulo {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.dp-modal-subtitulo {
+  color: var(--age-ink-soft);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+
+.dp-modal-card .cuenta-campo {
+  margin-bottom: 14px;
+}
+
+.dp-modal-card #btn-reautenticar-cancelar {
+  margin-top: 10px;
+}

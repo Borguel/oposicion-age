@@ -65,6 +65,7 @@ function mostrarPregunta(i) {
     <div class="botones-navegacion-test">
       ${i > 0 ? '<button type="button" id="btn-anterior" class="age-btn age-btn-outline">← Anterior</button>' : ''}
       <button type="button" id="btn-desmarcar" class="age-btn age-btn-outline">Desmarcar</button>
+      <button type="button" id="btn-guardar-salir" class="age-btn age-btn-outline">💾 Guardar y salir</button>
     </div>
     <button type="submit" class="age-btn age-btn-primary age-btn-block" style="margin-top:12px;">
       ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
@@ -77,6 +78,18 @@ function mostrarPregunta(i) {
   document.getElementById("btn-desmarcar").addEventListener("click", () => {
     document.querySelectorAll('input[name="respuesta"]:checked').forEach(el => el.checked = false);
     respuestasUsuario[i] = null;
+  });
+
+  document.getElementById("btn-guardar-salir").addEventListener("click", async function () {
+    const boton = this;
+    boton.disabled = true;
+    boton.textContent = "Guardando…";
+    const { guardarProgresoInmediato } = await import("/assets/test-progreso.js");
+    await guardarProgresoInmediato({
+      respuestas_usuario: respuestasUsuario,
+      indice_actual: indicePreguntaActual
+    });
+    window.location.href = "/mis-tests/";
   });
 
   if (i > 0) {

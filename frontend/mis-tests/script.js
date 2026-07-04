@@ -41,12 +41,19 @@ function acortarTitulo(titulo, maxLength = 42) {
   return titulo.slice(0, maxLength - 1).trim() + "…";
 }
 
-function pillsTemas(temaIds) {
+function pillsTemas(temaIds, testId) {
   if (!temaIds || !temaIds.length) return "";
-  return `<div class="test-card-temas">${temaIds.map((id) => {
+  const pills = temaIds.map((id) => {
     const titulo = temasPorId.get(id) || id;
     return `<span class="age-pill">${acortarTitulo(titulo)}</span>`;
-  }).join("")}</div>`;
+  }).join("");
+  return `
+    <button type="button" class="test-card-temas-toggle" data-toggle-temas="${testId}">
+      <span>📚 ${temaIds.length} tema${temaIds.length !== 1 ? "s" : ""}</span>
+      <span class="test-card-temas-caret">▾</span>
+    </button>
+    <div class="test-card-temas hidden" id="temas-${testId}">${pills}</div>
+  `;
 }
 
 function tarjetaTest(t) {
@@ -69,7 +76,7 @@ function tarjetaTest(t) {
     `;
     acciones = `
       <a class="age-btn age-btn-outline" href="/repetir-test/?repetir=${t.id}">Repetir</a>
-      <button type="button" class="age-btn age-btn-primary" data-ver-resultados="${t.id}">Ver resultados</button>
+      <a class="age-btn age-btn-primary" href="/mis-tests/resultado/?id=${t.id}">Ver resultados</a>
     `;
   }
 
@@ -83,9 +90,8 @@ function tarjetaTest(t) {
         </div>
       </div>
       <div class="test-card-estado">${bloqueEstado}</div>
-      ${pillsTemas(t.temas)}
+      ${pillsTemas(t.temas, t.id)}
       <div class="test-card-acciones">${acciones}</div>
-      <div class="test-card-resultados hidden" id="resultados-${t.id}"></div>
     </div>
   `;
 }
@@ -111,44 +117,13 @@ function renderizar() {
   sinResultados.classList.add("hidden");
   lista.innerHTML = filtrados.map(tarjetaTest).join("");
 
-  lista.querySelectorAll("[data-ver-resultados]").forEach((boton) => {
-    boton.addEventListener("click", () => alternarResultados(boton.dataset.verResultados, boton));
-  });
-}
-
-async function alternarResultados(testId, boton) {
-  const contenedor = document.getElementById(`resultados-${testId}`);
-  if (!contenedor.classList.contains("hidden")) {
-    contenedor.classList.add("hidden");
-    boton.textContent = "Ver resultados";
-    return;
-  }
-  boton.disabled = true;
-  boton.textContent = "Cargando…";
-  try {
-    const token = await idToken();
-    const res = await fetch(`${BACKEND_URL}/mi-test/${testId}`, { headers: { Authorization: `Bearer ${token}` } });
-    const datos = await res.json();
-    if (!res.ok || !datos.test) throw new Error(datos.error || "No se pudo cargar el test.");
-    const preguntas = datos.test.preguntas || [];
-    const respuestasUsuario = preguntas.map((p) => p.respuesta_usuario ?? null);
-    const { renderizarResultadosTest } = await import("/assets/resultados-test.js");
-    contenedor.innerHTML = "";
-    renderizarResultadosTest({
-      contenedor,
-      preguntas,
-      respuestasUsuario,
-      listaTemas: Array.from(temasPorId, ([id, titulo]) => ({ id, titulo }))
+  lista.querySelectorAll("[data-toggle-temas]").forEach((boton) => {
+    boton.addEventListener("click", () => {
+      const contenedor = document.getElementById(`temas-${boton.dataset.toggleTemas}`);
+      contenedor.classList.toggle("hidden");
+      boton.classList.toggle("open", !contenedor.classList.contains("hidden"));
     });
-    contenedor.classList.remove("hidden");
-    boton.textContent = "Ocultar resultados";
-  } catch (e) {
-    contenedor.innerHTML = `<p>${e.message || "No se pudieron cargar los resultados."}</p>`;
-    contenedor.classList.remove("hidden");
-    boton.textContent = "Ver resultados";
-  } finally {
-    boton.disabled = false;
-  }
+  });
 }
 
 async function cargarTemas(oposicion, token) {

@@ -13,10 +13,6 @@ const ESTADOS_LEGIBLES = {
   unpaid: "impagada"
 };
 
-const formDatos = document.getElementById("form-datos");
-const datosMensaje = document.getElementById("datos-mensaje");
-const btnGuardarDatos = document.getElementById("btn-guardar-datos");
-
 const MENSAJES_RACHA = [
   { minimo: 0, texto: "Empieza hoy tu racha: haz un test o repasa algo para arrancar." },
   { minimo: 1, texto: "¡Buen comienzo! Vuelve mañana para no perder la racha." },
@@ -91,10 +87,11 @@ async function iniciar() {
     contenedorOposiciones.appendChild(fila);
   });
 
-  document.getElementById("datos-nombre").value = nombre || "";
-  document.getElementById("datos-apellidos").value = apellidos || "";
-  document.getElementById("datos-telefono").value = telefono || "";
-  document.getElementById("datos-direccion").value = direccion || "";
+  document.getElementById("resumen-nombre").textContent = nombre || "—";
+  document.getElementById("resumen-apellidos").textContent = apellidos || "—";
+  document.getElementById("resumen-telefono").textContent = telefono || "—";
+  document.getElementById("resumen-email").textContent = usuario.email || "—";
+  document.getElementById("resumen-direccion").textContent = direccion || "—";
 
   const btnPortal = document.getElementById("btn-portal");
   if (!algunaDePago) {
@@ -122,39 +119,6 @@ async function iniciar() {
     }
   });
 }
-
-formDatos.addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  datosMensaje.style.display = "none";
-  btnGuardarDatos.disabled = true;
-  btnGuardarDatos.textContent = "Guardando…";
-
-  const nombre = document.getElementById("datos-nombre").value.trim();
-  const apellidos = document.getElementById("datos-apellidos").value.trim();
-  const telefono = document.getElementById("datos-telefono").value.trim();
-  const direccion = document.getElementById("datos-direccion").value.trim();
-
-  try {
-    const token = await idToken();
-    const res = await fetch(`${BACKEND_URL}/registrar-usuario`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ nombre, apellidos, telefono, direccion })
-    });
-    if (!res.ok) throw new Error("No se pudieron guardar los cambios");
-    sessionStorage.clear();
-    datosMensaje.textContent = "Datos guardados correctamente.";
-    datosMensaje.className = "datos-mensaje ok";
-    datosMensaje.style.display = "block";
-  } catch (error) {
-    datosMensaje.textContent = error.message || "No se pudieron guardar los cambios.";
-    datosMensaje.className = "datos-mensaje error";
-    datosMensaje.style.display = "block";
-  } finally {
-    btnGuardarDatos.disabled = false;
-    btnGuardarDatos.textContent = "Guardar cambios";
-  }
-});
 
 document.getElementById("btn-logout").addEventListener("click", async () => {
   await signOut();

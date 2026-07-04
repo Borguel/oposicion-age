@@ -30,9 +30,7 @@ async function obtenerAuthHeaders() {
     const esquemaMeta = document.getElementById('esquema-meta');
     const fechaEsquema = document.getElementById('fecha-esquema');
     const btnDescargarPdf = document.getElementById('btn-descargar-pdf');
-    const btnDescargarTxt = document.getElementById('btn-descargar-txt');
-    const btnNuevoPdf = document.getElementById('btn-nuevo-pdf');
-    const btnFinalizar = document.getElementById('btn-finalizar');
+    const btnCerrar = document.getElementById('btn-cerrar');
     const autoSaveIndicator = document.getElementById('auto-save-indicator');
     // === Guardado Automático en Firebase ===
     async function guardarEsquemaAutomaticamente() {
@@ -71,17 +69,6 @@ async function obtenerAuthHeaders() {
       contenedorCarga.classList.add('hidden');
       resultadoEsquema.classList.add('hidden');
       formularioCard.classList.remove('hidden');
-    }
-    function descargarArchivo(contenido, nombre, tipo) {
-      const blob = new Blob([contenido], { type });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = nombre;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
     }
     function formatearFecha(fecha) {
       return new Intl.DateTimeFormat('es-ES', {
@@ -302,7 +289,11 @@ async function obtenerAuthHeaders() {
         archivoPdfInput.dispatchEvent(new Event('change'));
       }
     });
-    btnNuevoPdf.addEventListener('click', () => {
+    // "Cerrar" hace exactamente lo que antes hacía "Nuevo PDF": vuelve al
+    // formulario para adjuntar otro documento -- por eso ya no hace falta un
+    // botón "Nuevo documento" aparte, ni un "Finalizar" con diálogo de
+    // confirmación previo.
+    btnCerrar.addEventListener('click', () => {
       esquema = '';
       resultadoEsquema.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
@@ -310,32 +301,6 @@ async function obtenerAuthHeaders() {
       formularioCard.classList.remove('hidden');
       formularioPdf.reset();
       fileNameDisplay.classList.add('hidden');
-    });
-    btnFinalizar.addEventListener('click', () => {
-      Swal.fire({
-        icon: 'question',
-        title: '¿Finalizar esquema?',
-        text: '¿Estás seguro de que quieres finalizar?',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, finalizar',
-        cancelButtonText: 'Continuar',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          esquema = '';
-          resultadoEsquema.classList.add('hidden');
-          alertaPreguntas.classList.add('hidden');
-          mensajeError.classList.add('hidden');
-          formularioCard.classList.remove('hidden');
-          formularioPdf.reset();
-          fileNameDisplay.classList.add('hidden');
-          Swal.fire({ icon: 'success', title: 'Esquema finalizado', text: 'Puedes subir un nuevo documento.', confirmButtonText: 'Aceptar' });
-        }
-      });
-    });
-    btnDescargarTxt.addEventListener('click', () => {
-      if (!esquema) return;
-      descargarArchivo(esquema, `esquema_${nombreArchivo.replace('.pdf', '')}.txt`, 'text/plain');
-      Swal.fire({ icon: 'success', title: 'Esquema descargado', text: 'El esquema se ha guardado como archivo de texto.', confirmButtonText: 'Aceptar' });
     });
     btnDescargarPdf.addEventListener('click', () => {
       if (!esquema) return;

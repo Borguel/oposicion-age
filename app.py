@@ -237,6 +237,7 @@ def obtener_temas_disponibles():
     bloques = db.collection(coleccion).stream()
     for bloque in bloques:
         bloque_id = bloque.id
+        bloque_titulo = (bloque.to_dict() or {}).get("titulo", bloque_id)
         temas_ref = db.collection(coleccion).document(bloque_id).collection("temas").stream()
         for tema in temas_ref:
             tema_data = tema.to_dict()
@@ -244,7 +245,9 @@ def obtener_temas_disponibles():
             titulo = tema_data.get("titulo", f"{tema_id}")
             temas_disponibles.append({
                 "id": f"{bloque_id}-{tema_id}",
-                "titulo": titulo
+                "titulo": titulo,
+                "bloque_id": bloque_id,
+                "bloque_titulo": bloque_titulo
             })
     return jsonify({"temas": temas_disponibles, "oposicion": oposicion})
 @app.route("/progreso-usuario", methods=["GET"])

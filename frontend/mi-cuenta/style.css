@@ -216,30 +216,97 @@ body {
   color: var(--age-danger);
 }
 
-.cuenta-accesos-card {
-  margin-top: 16px;
-  padding: 10px;
+.cuenta-accesos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
-.cuenta-acceso-link {
+@media (max-width: 640px) {
+  .cuenta-accesos-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cuenta-acceso-boton {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: var(--age-radius-sm);
+  gap: 14px;
+  padding: 20px;
+  border-radius: var(--age-radius-md);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  text-decoration: none;
+  transition: border-color 0.15s var(--age-ease), background 0.15s var(--age-ease), transform 0.15s var(--age-ease);
+}
+
+.cuenta-acceso-boton:hover {
+  border-color: var(--age-primary);
+  background: var(--age-primary-soft);
+  transform: translateY(-1px);
+}
+
+.cuenta-acceso-boton-icono {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: var(--age-radius-md);
+  background: var(--age-primary-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+}
+
+.cuenta-acceso-boton-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.cuenta-acceso-boton-texto strong {
+  font-size: 1rem;
+}
+
+.cuenta-acceso-boton-texto small {
+  color: var(--age-ink-soft);
+  font-size: 12.5px;
+}
+
+.cuenta-acceso-boton-flecha {
+  font-size: 1.2rem;
+  color: var(--age-ink-faint);
+}
+
+.cuenta-datos-resumen {
+  margin-bottom: 20px;
+}
+
+.cuenta-datos-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--age-border);
+  font-size: 14px;
+}
+
+.cuenta-datos-fila:first-child {
+  border-top: none;
+}
+
+.cuenta-datos-fila span {
+  color: var(--age-ink-soft);
+  font-weight: 600;
+}
+
+.cuenta-datos-fila strong {
   color: var(--age-ink);
   font-weight: 700;
-  font-size: 14px;
-  text-decoration: none;
-  transition: background 0.15s var(--age-ease);
-}
-
-.cuenta-acceso-link:hover {
-  background: var(--age-primary-soft);
-}
-
-.cuenta-acceso-icono {
-  font-size: 1.2rem;
+  text-align: right;
 }
 
 .cuenta-racha-card {

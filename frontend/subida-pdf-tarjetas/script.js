@@ -37,8 +37,7 @@ async function obtenerAuthHeaders() {
     const btnSiguiente = document.getElementById('btn-siguiente');
     const btnListaTarjetas = document.getElementById('btn-lista-tarjetas');
     const btnVolverEstudio = document.getElementById('btn-volver-estudio');
-    const btnNuevoPdf = document.getElementById('btn-nuevo-pdf');
-    const btnFinalizar = document.getElementById('btn-finalizar');
+    const btnCerrar = document.getElementById('btn-cerrar');
     const contenedorListaTarjetas = document.getElementById('contenedor-lista-tarjetas');
     const btnEscuchar = document.getElementById('btn-escuchar');
     const autoSaveIndicator = document.getElementById('auto-save-indicator');
@@ -282,57 +281,20 @@ async function obtenerAuthHeaders() {
       listaTarjetas.classList.add('hidden');
       modoEstudio.classList.remove('hidden');
     });
-    btnNuevoPdf.addEventListener('click', () => {
-      Swal.fire({
-        title: '¿Comenzar con nuevo PDF?',
-        text: 'Se perderán las tarjetas actuales no guardadas.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, nuevo PDF',
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          tarjetas = [];
-          tarjetaActual = 0;
-          modoEstudio.classList.add('hidden');
-          listaTarjetas.classList.add('hidden');
-          alertaPreguntas.classList.add('hidden');
-          mensajeError.classList.add('hidden');
-          formularioCard.classList.remove('hidden');
-          formularioPdf.reset();
-          fileNameDisplay.classList.add('hidden');
-          limpiarEstado();
-        }
-      });
-    });
-    btnFinalizar.addEventListener('click', () => {
-      Swal.fire({
-        icon: 'question',
-        title: '¿Finalizar estudio?',
-        text: '¿Estás seguro de que quieres finalizar el estudio de estas tarjetas?',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, finalizar',
-        cancelButtonText: 'Continuar estudiando',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          tarjetas = [];
-          tarjetaActual = 0;
-          modoEstudio.classList.add('hidden');
-          listaTarjetas.classList.add('hidden');
-          alertaPreguntas.classList.add('hidden');
-          mensajeError.classList.add('hidden');
-          formularioCard.classList.remove('hidden');
-          formularioPdf.reset();
-          fileNameDisplay.classList.add('hidden');
-          limpiarEstado();
-          Swal.fire({
-            icon: 'success',
-            title: 'Estudio finalizado',
-            text: 'Puedes subir un nuevo PDF para generar más tarjetas',
-            confirmButtonText: 'Aceptar'
-          });
-        }
-      });
+    // "Cerrar" reúne lo que antes hacían por separado "Nuevo PDF" y
+    // "Finalizar" (los dos volvían al formulario para adjuntar otro
+    // documento): un único botón, sin diálogo de confirmación previo.
+    btnCerrar.addEventListener('click', () => {
+      tarjetas = [];
+      tarjetaActual = 0;
+      modoEstudio.classList.add('hidden');
+      listaTarjetas.classList.add('hidden');
+      alertaPreguntas.classList.add('hidden');
+      mensajeError.classList.add('hidden');
+      formularioCard.classList.remove('hidden');
+      formularioPdf.reset();
+      fileNameDisplay.classList.add('hidden');
+      limpiarEstado();
     });
     // === Envío del formulario con carga mejorada ===
     formularioPdf.addEventListener('submit', async function(e) {

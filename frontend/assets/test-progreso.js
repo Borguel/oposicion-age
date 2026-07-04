@@ -71,6 +71,16 @@ export function autoguardarProgreso(datosParciales) {
   }, 1500);
 }
 
+// Guardado inmediato (sin debounce) para el botón "Guardar y salir": el
+// usuario pide explícitamente irse, así que se espera a que la petición
+// termine antes de navegar fuera de la página, en vez de fiarse del
+// guardado automático en segundo plano.
+export async function guardarProgresoInmediato(datosParciales) {
+  if (!testIdActual) return;
+  clearTimeout(temporizadorDebounce);
+  await enviarAutosave({ test_id: testIdActual, ...datosParciales }, false);
+}
+
 // Guardado best-effort al ocultarse/cerrarse la pestaña. Se usa
 // fetch(...,{keepalive:true}) en vez de navigator.sendBeacon porque
 // sendBeacon no permite mandar cabeceras, y toda la app autentica con

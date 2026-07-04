@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modificar datos personales - Oposición AGE</title>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/mi-cuenta/style.css" />
+  <link rel="stylesheet" href="/mi-cuenta/datos-personales/style.css" />
+</head>
+<body>
+  <nav class="age-nav"></nav>
+
+  <div class="cuenta-header">
+    <div class="age-container">
+      <h1>Datos personales</h1>
+      <p>Modifica tu nombre, teléfono, correo electrónico y dirección.</p>
+    </div>
+  </div>
+
+  <div class="age-container dp-layout">
+    <a href="/mi-cuenta/" class="dp-volver">← Volver a Mi cuenta</a>
+
+    <section class="age-card cuenta-section">
+      <form id="form-datos">
+        <div class="cuenta-form-grid">
+          <div class="cuenta-campo">
+            <label for="campo-nombre">Nombre</label>
+            <input type="text" id="campo-nombre" autocomplete="given-name" />
+          </div>
+          <div class="cuenta-campo">
+            <label for="campo-apellidos">Apellidos</label>
+            <input type="text" id="campo-apellidos" autocomplete="family-name" />
+          </div>
+          <div class="cuenta-campo">
+            <label for="campo-telefono">Teléfono</label>
+            <input type="tel" id="campo-telefono" autocomplete="tel" />
+          </div>
+          <div class="cuenta-campo">
+            <label for="campo-email">Correo electrónico</label>
+            <input type="email" id="campo-email" autocomplete="email" />
+          </div>
+          <div class="cuenta-campo cuenta-campo-full">
+            <label for="campo-direccion">Dirección (opcional)</label>
+            <input type="text" id="campo-direccion" autocomplete="street-address" />
+          </div>
+        </div>
+
+        <div id="datos-mensaje" class="datos-mensaje" style="display:none;"></div>
+
+        <button type="submit" class="age-btn age-btn-primary" id="btn-guardar">Guardar cambios</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="dp-modal-overlay" id="modal-reautenticar" style="display:none;">
+    <div class="age-card dp-modal-card">
+      <h2 class="dp-modal-titulo">Confirma tu contraseña</h2>
+      <p class="dp-modal-subtitulo">
+        Para cambiar tu correo electrónico necesitamos que confirmes tu contraseña actual.
+      </p>
+      <form id="form-reautenticar">
+        <div class="cuenta-campo">
+          <label for="reautenticar-password">Contraseña</label>
+          <input type="password" id="reautenticar-password" required autocomplete="current-password" minlength="6" />
+        </div>
+        <div id="reautenticar-mensaje-error" class="datos-mensaje error" style="display:none;"></div>
+        <button type="submit" class="age-btn age-btn-primary age-btn-block" id="btn-reautenticar-submit">Confirmar</button>
+      </form>
+      <button type="button" class="age-btn age-btn-outline age-btn-block" id="btn-reautenticar-cancelar">Cancelar</button>
+    </div>
+  </div>
+
+  <script type="module" src="/assets/auth.js"></script>
+  <script type="module" src="/mi-cuenta/datos-personales/script.js"></script>
+</body>
+</html>

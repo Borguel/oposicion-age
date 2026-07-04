@@ -9,9 +9,12 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
+  EmailAuthProvider,
   getAdditionalUserInfo,
   sendPasswordResetEmail,
   linkWithCredential,
+  verifyBeforeUpdateEmail,
+  reauthenticateWithCredential,
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { firebaseConfig } from "/assets/firebase-config.js";
@@ -59,6 +62,32 @@ export function credencialGoogleDesdeError(error) {
 // con ese correo.
 export function vincularCredencialGoogle(user, pendingCredential) {
   return linkWithCredential(user, pendingCredential);
+}
+
+// La cuenta tiene contraseña (además de, o en vez de, Google) si Firebase
+// tiene un proveedor "password" en providerData -- solo entonces se puede
+// reautenticar con contraseña para operaciones sensibles como cambiar el
+// correo.
+export function tieneProveedorPassword() {
+  const user = auth.currentUser;
+  return !!user && user.providerData.some((p) => p.providerId === "password");
+}
+
+// Reautentica con la contraseña actual (paso previo obligatorio de Firebase
+// para operaciones sensibles como cambiar el correo, si hace tiempo que no
+// se inició sesión: error "auth/requires-recent-login").
+export function reautenticarConPassword(password) {
+  const user = auth.currentUser;
+  const credencial = EmailAuthProvider.credential(user.email, password);
+  return reauthenticateWithCredential(user, credencial);
+}
+
+// Pide el cambio de correo: Firebase manda un enlace de verificación a la
+// NUEVA dirección y el cambio no se hace efectivo hasta que el usuario lo
+// confirma -- así se evita que alguien cambie el correo de una cuenta ajena
+// sin acceso real a esa bandeja de entrada.
+export function cambiarEmail(nuevoEmail) {
+  return verifyBeforeUpdateEmail(auth.currentUser, nuevoEmail);
 }
 
 // Envía el correo de "restablecer contraseña" de Firebase. Firebase no dice

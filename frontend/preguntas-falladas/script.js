@@ -41,15 +41,8 @@ async function obtenerAuthHeaders() {
           contenedor.innerHTML = "<p>No hay temas disponibles.</p>";
           return;
         }
-        contenedor.innerHTML = "";
-        listaTemasGlobal.forEach(t => {
-          const label = document.createElement("label");
-          label.innerHTML = `
-            <input type="checkbox" name="tema" value="${t.id}">
-            ${t.titulo}
-          `;
-          contenedor.appendChild(label);
-        });
+        const { renderizarSelectorTemas } = await import("/assets/temas-selector.js");
+        renderizarSelectorTemas(contenedor, listaTemasGlobal);
       } catch (err) {
         contenedor.innerHTML = `<p>Error al cargar temas: ${err.message}</p>`;
         console.error(err);
@@ -193,6 +186,7 @@ async function obtenerAuthHeaders() {
         <div class="botones-navegacion-test">
           ${i > 0 ? '<button type="button" id="btn-anterior" class="age-btn age-btn-outline">← Anterior</button>' : ''}
           <button type="button" id="btn-desmarcar" class="age-btn age-btn-outline">Desmarcar</button>
+          <button type="button" id="btn-guardar-salir" class="age-btn age-btn-outline">💾 Guardar y salir</button>
         </div>
         <button type="submit" class="age-btn age-btn-primary age-btn-block" style="margin-top:12px;">
           ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
@@ -205,7 +199,18 @@ async function obtenerAuthHeaders() {
         marcadas.forEach(m => m.checked = false);
         respuestasUsuario[i] = null;
       });
-      
+      document.getElementById("btn-guardar-salir").addEventListener("click", async function() {
+        const boton = this;
+        boton.disabled = true;
+        boton.textContent = "Guardando…";
+        const { guardarProgresoInmediato } = await import("/assets/test-progreso.js");
+        await guardarProgresoInmediato({
+          respuestas_usuario: respuestasUsuario,
+          indice_actual: indicePreguntaActual
+        });
+        window.location.href = "/mis-tests/";
+      });
+
       document.getElementById("btn-finalizar").style.display = "block";
       
       if (i > 0 && document.getElementById("btn-anterior")) {
