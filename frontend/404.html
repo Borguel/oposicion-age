@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Página no encontrada - Oposición AGE</title>
+  <meta name="description" content="Esta página no existe o se ha movido." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Página no encontrada - Oposición AGE" />
+  <meta property="og:description" content="Esta página no existe o se ha movido." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <style>
+    .error-404-wrap {
+      min-height: calc(100vh - var(--age-nav-height));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .error-404-inner {
+      max-width: 480px;
+    }
+
+    .error-404-codigo {
+      font-size: clamp(3.5rem, 10vw, 5rem);
+      font-weight: 800;
+      color: var(--age-primary);
+      line-height: 1;
+      margin: 0 0 12px;
+    }
+
+    .error-404-inner h1 {
+      font-size: clamp(1.3rem, 3vw, 1.7rem);
+      font-weight: 800;
+      margin: 0 0 12px;
+    }
+
+    .error-404-inner p {
+      color: var(--age-ink-soft);
+      font-size: 1rem;
+      line-height: 1.55;
+      margin: 0 0 28px;
+    }
+
+    .error-404-acciones {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <nav class="age-nav"></nav>
+
+  <div class="error-404-wrap">
+    <div class="error-404-inner">
+      <p class="error-404-codigo">404</p>
+      <h1>Esta página no existe o se ha movido</h1>
+      <p>Comprueba la dirección o vuelve a un sitio conocido desde aquí.</p>
+      <div class="error-404-acciones">
+        <a href="/zona-opositor/" class="age-btn age-btn-primary">Ir a tu Zona opositor</a>
+        <a href="/" class="age-btn age-btn-outline">Ir a Inicio</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/assets/auth.js"></script>
+</body>
+</html>

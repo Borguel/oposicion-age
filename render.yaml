@@ -41,6 +41,13 @@ services:
     plan: free
     staticPublishPath: frontend
     buildCommand: ""
+    routes:
+      # Cualquier ruta que no corresponda a un fichero real (Render no
+      # aplica esta regla si el path sí existe) sirve la página 404 propia
+      # en vez del error genérico de Render.
+      - type: rewrite
+        source: /*
+        destination: /404.html
     headers:
       - path: /*
         name: X-Frame-Options
