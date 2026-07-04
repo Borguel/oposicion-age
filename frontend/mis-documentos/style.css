@@ -83,6 +83,19 @@ body {
   font-size: 0.9rem;
 }
 
+#filtro-busqueda {
+  flex: 1;
+  min-width: 160px;
+  max-width: 280px;
+  padding: 8px 14px;
+  border-radius: var(--age-radius-pill);
+  border: 1px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-family: var(--age-font);
+  font-size: 0.9rem;
+}
+
 .documentos-grupo {
   margin-bottom: 32px;
 }

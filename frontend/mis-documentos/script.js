@@ -104,6 +104,10 @@ function nombreCarpetaMostrado(carpeta) {
   return carpeta ? `📁 ${carpeta}` : "📂 Sin carpeta";
 }
 
+function normalizarTexto(texto) {
+  return (texto || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
 function renderizar(filtroCarpeta) {
   const todasLasCarpetas = [...new Set(documentos.map(d => d.carpeta).filter(Boolean))].sort();
 
@@ -116,10 +120,13 @@ function renderizar(filtroCarpeta) {
   ].join("");
   selectFiltro.value = valorPrevio || "";
 
+  const busqueda = normalizarTexto(document.getElementById('filtro-busqueda').value);
+
   const documentosFiltrados = documentos.filter(d => {
-    if (!selectFiltro.value) return true;
-    if (selectFiltro.value === SIN_CARPETA) return !d.carpeta;
-    return d.carpeta === selectFiltro.value;
+    if (selectFiltro.value === SIN_CARPETA && d.carpeta) return false;
+    if (selectFiltro.value && selectFiltro.value !== SIN_CARPETA && d.carpeta !== selectFiltro.value) return false;
+    if (busqueda && !normalizarTexto(d.titulo || d.nombre_archivo).includes(busqueda)) return false;
+    return true;
   });
 
   // Agrupar por carpeta (las que no tienen, al final)
@@ -208,6 +215,12 @@ async function cargarDocumentos() {
 
     document.getElementById('documentos-contenido').classList.remove('hidden');
     document.getElementById('filtro-carpeta').addEventListener('change', () => renderizar());
+
+    const inputBusqueda = document.getElementById('filtro-busqueda');
+    const qInicial = new URLSearchParams(window.location.search).get('q');
+    if (qInicial) inputBusqueda.value = qInicial;
+    inputBusqueda.addEventListener('input', () => renderizar());
+
     renderizar();
   } catch (e) {
     document.getElementById('documentos-cargando').textContent = e.message || "No se pudieron cargar tus documentos.";

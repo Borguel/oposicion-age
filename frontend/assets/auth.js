@@ -18,8 +18,8 @@ import {
   sendEmailVerification,
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { firebaseConfig } from "/assets/firebase-config.js";
-import { inyectarSelectorOposicion } from "/assets/oposicion.js";
+import { firebaseConfig, BACKEND_URL } from "/assets/firebase-config.js";
+import { inyectarSelectorOposicion, obtenerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
 
 const app = initializeApp(firebaseConfig);
@@ -208,6 +208,124 @@ function construirEsqueletoNav() {
   nav.appendChild(inner);
 }
 
+// ============================================================
+// Buscador global: filtra en el cliente entre los temas del temario y
+// los documentos subidos por el usuario (ambos ya expuestos por rutas
+// existentes -- /temas-disponibles y /mis-documentos). Se cargan una
+// sola vez por sesión de página y se filtran en memoria en cada tecla,
+// sin volver a pedirlos al backend.
+let cacheBusquedaGlobal = null;
+
+function escapeHtmlBuscador(texto) {
+  const div = document.createElement("div");
+  div.textContent = texto == null ? "" : String(texto);
+  return div.innerHTML;
+}
+
+function normalizarBusqueda(texto) {
+  return (texto || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+async function cargarDatosBusquedaGlobal() {
+  if (cacheBusquedaGlobal) return cacheBusquedaGlobal;
+  const token = await idToken();
+  if (!token) return { temas: [], documentos: [] };
+  try {
+    const oposicion = obtenerOposicionActual();
+    const [resTemas, resDocs] = await Promise.all([
+      fetch(`${BACKEND_URL}/temas-disponibles?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${BACKEND_URL}/mis-documentos`, { headers: { Authorization: `Bearer ${token}` } })
+    ]);
+    const temas = resTemas.ok ? (await resTemas.json()).temas || [] : [];
+    const documentos = resDocs.ok ? (await resDocs.json()).documentos || [] : [];
+    cacheBusquedaGlobal = { temas, documentos };
+  } catch (e) {
+    cacheBusquedaGlobal = { temas: [], documentos: [] };
+  }
+  return cacheBusquedaGlobal;
+}
+
+function renderizarResultadosBusqueda(contenedor, query) {
+  const q = normalizarBusqueda(query.trim());
+  if (!q) {
+    contenedor.innerHTML = `<p class="age-buscador-vacio">Escribe para buscar entre tus temas y documentos.</p>`;
+    return;
+  }
+  const { temas, documentos } = cacheBusquedaGlobal || { temas: [], documentos: [] };
+  const temasCoinciden = temas.filter((t) => normalizarBusqueda(t.titulo).includes(q)).slice(0, 6);
+  const docsCoinciden = documentos.filter((d) => normalizarBusqueda(d.titulo || d.nombre_archivo).includes(q)).slice(0, 6);
+
+  if (temasCoinciden.length === 0 && docsCoinciden.length === 0) {
+    contenedor.innerHTML = `<p class="age-buscador-vacio">Sin resultados para "${escapeHtmlBuscador(query)}".</p>`;
+    return;
+  }
+
+  const bloques = [];
+  if (temasCoinciden.length) {
+    bloques.push(`
+      <div class="age-buscador-grupo">
+        <p class="age-buscador-grupo-titulo">Temas</p>
+        ${temasCoinciden.map((t) => `<a class="age-buscador-item" href="/test-generator/?temas=${encodeURIComponent(t.id)}"><span class="age-buscador-item-tag">Tema</span>${escapeHtmlBuscador(t.titulo)}</a>`).join("")}
+      </div>
+    `);
+  }
+  if (docsCoinciden.length) {
+    bloques.push(`
+      <div class="age-buscador-grupo">
+        <p class="age-buscador-grupo-titulo">Documentos</p>
+        ${docsCoinciden.map((d) => `<a class="age-buscador-item" href="/mis-documentos/?q=${encodeURIComponent(d.nombre_archivo || d.titulo || "")}"><span class="age-buscador-item-tag">PDF</span>${escapeHtmlBuscador(d.titulo || d.nombre_archivo || "Documento")}</a>`).join("")}
+      </div>
+    `);
+  }
+  contenedor.innerHTML = bloques.join("");
+}
+
+function construirBusquedaGlobal(user) {
+  const right = document.getElementById("age-nav-right");
+  if (!right) return;
+
+  let buscador = right.querySelector(".age-buscador");
+  if (buscador) buscador.remove();
+  if (!user) return;
+
+  buscador = document.createElement("div");
+  buscador.className = "age-buscador";
+  buscador.innerHTML = `
+    <button type="button" class="age-buscador-btn" aria-label="Buscar temas y documentos">${icono("buscar", 18)}</button>
+    <div class="age-buscador-panel">
+      <input type="search" class="age-buscador-input" placeholder="Buscar temas o documentos…" />
+      <div class="age-buscador-resultados"><p class="age-buscador-vacio">Escribe para buscar entre tus temas y documentos.</p></div>
+    </div>
+  `;
+  right.insertBefore(buscador, right.firstChild);
+
+  const input = buscador.querySelector(".age-buscador-input");
+  const resultados = buscador.querySelector(".age-buscador-resultados");
+  let temporizador = null;
+
+  buscador.querySelector(".age-buscador-btn").addEventListener("click", async (evento) => {
+    evento.stopPropagation();
+    const abriendo = !buscador.classList.contains("open");
+    buscador.classList.toggle("open");
+    if (abriendo) {
+      input.focus();
+      await cargarDatosBusquedaGlobal();
+      renderizarResultadosBusqueda(resultados, input.value);
+    }
+  });
+
+  input.addEventListener("input", () => {
+    clearTimeout(temporizador);
+    temporizador = setTimeout(() => renderizarResultadosBusqueda(resultados, input.value), 150);
+  });
+  input.addEventListener("click", (evento) => evento.stopPropagation());
+
+  document.addEventListener("click", () => buscador.classList.remove("open"));
+  document.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape") buscador.classList.remove("open");
+  });
+}
+
 function construirMenuCuenta(user) {
   const right = document.getElementById("age-nav-right");
   if (!right) return;
@@ -294,6 +412,7 @@ function inyectarBannerVerificacion(user) {
 function inyectarNav(user) {
   construirEsqueletoNav();
   inyectarSelectorOposicion();
+  construirBusquedaGlobal(user);
   construirMenuCuenta(user);
   inyectarBannerVerificacion(user);
 }

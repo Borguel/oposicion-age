@@ -20,7 +20,8 @@ const PATHS = {
   chat: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
   brujula: '<circle cx="12" cy="12" r="9"/><polygon points="15.5,8.5 12.8,12.8 8.5,15.5 11.2,11.2" fill="currentColor" stroke="none"/>',
   grafico: '<line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="14" width="3" height="6"/><rect x="11" y="10" width="3" height="10"/><rect x="16" y="6" width="3" height="14"/>',
-  check: '<path d="M4 12.5l5 5L20 6"/>'
+  check: '<path d="M4 12.5l5 5L20 6"/>',
+  buscar: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/>'
 };
 
 // tamano en px; el resto de atributos vienen ya fijados por el estilo
