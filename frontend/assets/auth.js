@@ -20,6 +20,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { firebaseConfig } from "/assets/firebase-config.js";
 import { inyectarSelectorOposicion } from "/assets/oposicion.js";
+import { icono } from "/assets/icons.js";
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
@@ -197,7 +198,7 @@ function construirEsqueletoNav() {
   burger.type = "button";
   burger.className = "age-nav-burger";
   burger.setAttribute("aria-label", "Abrir menú");
-  burger.textContent = "☰";
+  burger.innerHTML = icono("menu", 22);
   burger.addEventListener("click", () => links.classList.toggle("open"));
 
   inner.appendChild(brand);
@@ -225,11 +226,11 @@ function construirMenuCuenta(user) {
         <span class="age-account-caret">▾</span>
       </button>
       <div class="age-account-menu">
-        <a href="/zona-opositor/">🎯 Zona opositor</a>
-        <a href="/mi-cuenta/">⚙️ Mi cuenta</a>
-        <a href="/planes/">💳 Planes</a>
+        <a href="/zona-opositor/">${icono("diana")} Zona opositor</a>
+        <a href="/mi-cuenta/">${icono("usuario")} Mi cuenta</a>
+        <a href="/planes/">${icono("tarjeta")} Planes</a>
         <div class="age-account-menu-divider"></div>
-        <button type="button" data-account-logout>🚪 Cerrar sesión</button>
+        <button type="button" data-account-logout>${icono("salir")} Cerrar sesión</button>
       </div>
     `;
     acc.querySelector("[data-account-toggle]").addEventListener("click", (evento) => {

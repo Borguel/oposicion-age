@@ -2,6 +2,7 @@ import { idToken, esperarUsuario } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual } from "/assets/oposicion.js";
+import { icono } from "/assets/icons.js";
 
 const MENSAJES_RACHA = [
   { minimo: 0, texto: "Empieza hoy tu racha: haz un test o repasa algo para arrancar." },
@@ -30,7 +31,7 @@ async function cargarRacha() {
     document.getElementById("racha-numero").textContent = racha_actual;
     document.getElementById("racha-plural").textContent = racha_actual === 1 ? "" : "s";
     document.getElementById("racha-mensaje").textContent = mensajeParaRacha(racha_actual);
-    document.getElementById("racha-icono").textContent = racha_actual > 0 ? "🔥" : "💤";
+    document.getElementById("racha-icono").innerHTML = icono(racha_actual > 0 ? "llama" : "luna", 28);
     if (racha_maxima > racha_actual) {
       const elMaxima = document.getElementById("racha-maxima");
       elMaxima.textContent = `Tu mejor racha: ${racha_maxima} día${racha_maxima === 1 ? "" : "s"}`;
@@ -46,28 +47,28 @@ async function cargarRacha() {
 // herramienta real de la web, no son solo texto decorativo.
 const AVISOS = [
   {
-    icono: "🔥",
+    iconoNombre: "llama",
     titulo: "No rompas tu racha de estudio",
     texto: "Cada día que practicas cuenta. Haz aunque sea un test corto para mantener viva tu racha.",
     cta: "Hacer un test",
     href: "/test-generator/"
   },
   {
-    icono: "🎯",
+    iconoNombre: "diana",
     titulo: "Repasa lo que más se te resiste",
     texto: "Identifica tus temas flojos en las estadísticas y genera un test inteligente centrado justo en ellos.",
     cta: "Ver mis estadísticas",
     href: "/estadisticas/"
   },
   {
-    icono: "🗂️",
+    iconoNombre: "carpeta",
     titulo: "Convierte cualquier PDF en material de estudio",
     texto: "Sube tus apuntes y genera resúmenes, esquemas o tarjetas de memoria en segundos.",
     cta: "Probar Herramientas IA",
     href: "/subida-pdf-pagina-principal/"
   },
   {
-    icono: "🏛️",
+    iconoNombre: "edificio",
     titulo: "Practica con exámenes oficiales reales",
     texto: "Ponte a prueba con convocatorias reales de tu oposición, tal y como caerán el día del examen.",
     cta: "Hacer un test oficial",
@@ -82,7 +83,7 @@ function renderAviso() {
   const a = AVISOS[avisoActual];
   contenedor.innerHTML = `
     <div class="zona-avisos-card">
-      <span class="zona-avisos-icono">${a.icono}</span>
+      <span class="zona-avisos-icono">${icono(a.iconoNombre, 32)}</span>
       <div class="zona-avisos-texto">
         <h3>${a.titulo}</h3>
         <p>${a.texto}</p>
