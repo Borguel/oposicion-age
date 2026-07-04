@@ -157,8 +157,9 @@ body {
 }
 
 .zona-avisos-card {
-  background: var(--age-navy);
-  color: #fff;
+  background: var(--age-card);
+  color: var(--age-ink);
+  border: 1px solid var(--age-border);
   border-radius: var(--age-radius-lg);
   box-shadow: var(--age-shadow);
   padding: 28px 26px;
@@ -168,20 +169,28 @@ body {
 }
 
 .zona-avisos-icono {
-  font-size: 2.4rem;
+  font-size: 2.2rem;
   flex-shrink: 0;
   line-height: 1;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--age-radius-md);
+  background: var(--age-primary-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .zona-avisos-texto h3 {
   margin: 0 0 8px;
   font-size: 1.05rem;
   font-weight: 800;
+  color: var(--age-ink);
 }
 
 .zona-avisos-texto p {
   margin: 0 0 16px;
-  color: var(--age-navy-ink);
+  color: var(--age-ink-soft);
   font-size: 0.92rem;
   line-height: 1.5;
 }
@@ -239,4 +248,80 @@ body {
   font-size: 1.2rem;
   font-weight: 800;
   margin: 0 0 16px;
+}
+
+.zona-accesos-subtitulo {
+  margin-top: 28px;
+}
+
+.zona-mis-cosas-card {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.zona-mis-cosas-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 22px;
+  text-decoration: none;
+  color: var(--age-ink);
+  min-width: 0;
+  transition: background 0.15s var(--age-ease);
+}
+
+.zona-mis-cosas-item:hover {
+  background: var(--age-primary-soft);
+}
+
+.zona-mis-cosas-icono {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: var(--age-radius-md);
+  background: var(--age-primary-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+}
+
+.zona-mis-cosas-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.zona-mis-cosas-texto strong {
+  font-size: 1rem;
+}
+
+.zona-mis-cosas-texto small {
+  color: var(--age-ink-soft);
+  font-size: 12.5px;
+}
+
+.zona-mis-cosas-flecha {
+  font-size: 1.2rem;
+  color: var(--age-ink-faint);
+  flex-shrink: 0;
+}
+
+.zona-mis-cosas-divisor {
+  width: 1px;
+  background: var(--age-border);
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .zona-mis-cosas-card {
+    flex-direction: column;
+  }
+  .zona-mis-cosas-divisor {
+    width: auto;
+    height: 1px;
+  }
 }
