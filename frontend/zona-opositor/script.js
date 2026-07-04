@@ -31,7 +31,7 @@ async function cargarRacha() {
     document.getElementById("racha-numero").textContent = racha_actual;
     document.getElementById("racha-plural").textContent = racha_actual === 1 ? "" : "s";
     document.getElementById("racha-mensaje").textContent = mensajeParaRacha(racha_actual);
-    document.getElementById("racha-icono").innerHTML = icono(racha_actual > 0 ? "llama" : "luna", 28);
+    document.getElementById("racha-icono").textContent = racha_actual > 0 ? "🔥" : "💤";
     if (racha_maxima > racha_actual) {
       const elMaxima = document.getElementById("racha-maxima");
       elMaxima.textContent = `Tu mejor racha: ${racha_maxima} día${racha_maxima === 1 ? "" : "s"}`;
@@ -46,13 +46,6 @@ async function cargarRacha() {
 // inicio de la competencia (aula.opositatest.com): cada uno enlaza a una
 // herramienta real de la web, no son solo texto decorativo.
 const AVISOS = [
-  {
-    iconoNombre: "llama",
-    titulo: "No rompas tu racha de estudio",
-    texto: "Cada día que practicas cuenta. Haz aunque sea un test corto para mantener viva tu racha.",
-    cta: "Hacer un test",
-    href: "/test-generator/"
-  },
   {
     iconoNombre: "diana",
     titulo: "Repasa lo que más se te resiste",
@@ -73,6 +66,13 @@ const AVISOS = [
     texto: "Ponte a prueba con convocatorias reales de tu oposición, tal y como caerán el día del examen.",
     cta: "Hacer un test oficial",
     href: "/test-generator/"
+  },
+  {
+    emoji: "🔥",
+    titulo: "No rompas tu racha de estudio",
+    texto: "Cada día que practicas cuenta. Haz aunque sea un test corto para mantener viva tu racha.",
+    cta: "Hacer un test",
+    href: "/test-generator/"
   }
 ];
 
@@ -83,7 +83,7 @@ function renderAviso() {
   const a = AVISOS[avisoActual];
   contenedor.innerHTML = `
     <div class="zona-avisos-card">
-      <span class="zona-avisos-icono">${icono(a.iconoNombre, 32)}</span>
+      <span class="zona-avisos-icono">${a.emoji || icono(a.iconoNombre, 32)}</span>
       <div class="zona-avisos-texto">
         <h3>${a.titulo}</h3>
         <p>${a.texto}</p>

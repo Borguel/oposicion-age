@@ -57,6 +57,15 @@ async function enviarPerfilVacio() {
   });
 }
 
+async function guardarPerfilBasico(nombre, apellidos) {
+  const token = await idToken();
+  await fetch(`${BACKEND_URL}/registrar-usuario`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ nombre, apellidos })
+  });
+}
+
 function mostrarPasoPerfil(nombre = "", apellidos = "") {
   document.getElementById("perfil-nombre").value = nombre;
   document.getElementById("perfil-apellidos").value = apellidos;
@@ -114,15 +123,17 @@ btnGoogle.addEventListener("click", async () => {
   try {
     const { esNuevo, nombre, apellidos } = await signInWithGoogle();
     if (esNuevo) {
-      await enviarPerfilVacio();
-      mostrarPasoPerfil(nombre, apellidos);
-    } else {
-      // Al iniciar sesión con una cuenta de Google ya existente se va
-      // directo a "Zona opositor" en vez de a siguienteDestino(), a
-      // petición explícita (a diferencia del login por email/contraseña,
-      // que sí respeta a dónde quería volver el usuario).
-      window.location.href = "/zona-opositor/";
+      // A diferencia del alta por email/contraseña, Google ya nos da nombre
+      // y apellidos -- pedir además teléfono/dirección antes de dejar
+      // entrar daría la sensación de que el login se ha quedado colgado.
+      // Se guardan los datos que ya tenemos y se puede completar el resto
+      // más tarde desde Mi Cuenta.
+      await guardarPerfilBasico(nombre, apellidos);
     }
+    // Al iniciar sesión con Google se va directo a "Zona opositor" en vez
+    // de a siguienteDestino(), a petición explícita (a diferencia del login
+    // por email/contraseña, que sí respeta a dónde quería volver el usuario).
+    window.location.href = "/zona-opositor/";
   } catch (error) {
     if (error.code === "auth/account-exists-with-different-credential") {
       // Este correo ya tiene cuenta por contraseña: en vez de dejar al

@@ -1,6 +1,5 @@
 import { idToken } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
-import { icono } from "/assets/icons.js";
 
 function escaparHtml(texto) {
   const div = document.createElement("div");
@@ -76,7 +75,7 @@ function renderizarLista(datos) {
         <li class="ranking-fila${p.tu ? " ranking-fila-tu" : ""}">
           <span class="ranking-fila-puesto">${i + 1}</span>
           <span class="ranking-fila-alias">${escaparHtml(p.alias)}${p.tu ? " (tú)" : ""}</span>
-          <span class="ranking-fila-racha">${icono("llama", 16)} ${p.racha_actual}</span>
+          <span class="ranking-fila-racha">🔥 ${p.racha_actual}</span>
         </li>
       `).join("")}
     </ol>
