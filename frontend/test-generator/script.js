@@ -266,6 +266,11 @@ async function obtenerAuthHeaders() {
           `;
           return;
         }
+        if (res.status === 429) {
+          const datosError = await res.json();
+          document.getElementById('contenedor-test').innerHTML = `<p>⏳ ${datosError.error || "Has alcanzado el límite de uso de esta herramienta por ahora."}</p>`;
+          return;
+        }
         const datos = await res.json();
         preguntas = datos.test || [];
         if (preguntas.length === 0) {

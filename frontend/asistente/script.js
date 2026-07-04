@@ -159,10 +159,16 @@ document.addEventListener("DOMContentLoaded", function() {
                         headers: { "Content-Type": "application/json", ...authHeaders },
                         body: JSON.stringify({ mensaje: texto, oposicion })
                     })
-                    .then(res => {
+                    .then(async res => {
                         if (res.status === 403) {
                             ocultarTypingIndicator();
                             agregarMensaje("bot", "🔒 El asistente premium requiere el plan Premium. Ve a /planes/ para activarlo.");
+                            return null;
+                        }
+                        if (res.status === 429) {
+                            ocultarTypingIndicator();
+                            const datosError = await res.json();
+                            agregarMensaje("bot", `⏳ ${datosError.error || "Has alcanzado el límite de uso del asistente por ahora."}`);
                             return null;
                         }
                         return res.json();

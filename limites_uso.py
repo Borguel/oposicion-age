@@ -29,6 +29,23 @@ LIMITES = {
         "basico": ("mes", 30),
         "premium": ("dia", 40),
     },
+    # Generación de tests/esquemas/análisis a partir del TEMARIO (no de un
+    # PDF subido) -- /generar-test-avanzado, /generar-esquema,
+    # /generar-test-inteligente, /analisis-rendimiento. Requieren plan
+    # básico como mínimo (ver @requiere_plan de cada ruta), así que gratis
+    # queda en 0 solo por coherencia con ese requisito.
+    "generacion_ia": {
+        "gratis": ("mes", 0),
+        "basico": ("mes", 60),
+        "premium": ("dia", 40),
+    },
+    # Chat conversacional sobre el temario -- /chat, /consultar-asistente-examen.
+    # Requieren plan premium (ver @requiere_plan de cada ruta).
+    "chat_temario": {
+        "gratis": ("mes", 0),
+        "basico": ("mes", 0),
+        "premium": ("dia", 60),
+    },
 }
 
 

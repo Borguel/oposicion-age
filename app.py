@@ -97,6 +97,9 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8080")
 @app.route("/chat", methods=["POST"])
 @requiere_plan(db, "premium")
 def chat_route():
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_temario")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     data = request.get_json()
     mensaje = data.get("mensaje")
     temas = data.get("temas", [])
@@ -109,6 +112,7 @@ def chat_route():
         chat_id=chat_id,
         coleccion=coleccion_temario(g.oposicion)
     )
+    registrar_uso(db, g.uid, "chat_temario", g.plan_actual)
     return jsonify({"respuesta": respuesta, "chat_id": chat_id})
 @app.route("/consultar-asistente-examen", methods=["POST"])
 @requiere_plan(db, "premium")
@@ -117,14 +121,21 @@ def ruta_asistente_examen():
     mensaje = data.get("mensaje", "")
     if not mensaje:
         return jsonify({"error": "Falta el mensaje"}), 400
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_temario")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     try:
         respuesta = consultar_asistente_examen(mensaje, oposicion=g.oposicion)
+        registrar_uso(db, g.uid, "chat_temario", g.plan_actual)
         return jsonify({"respuesta": respuesta})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 @app.route("/generar-test-avanzado", methods=["POST"])
 @requiere_plan(db, "basico")
 def generar_test_avanzado_route():
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "generacion_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     data = request.get_json()
     print(f"📅 Petición recibida en /generar-test-avanzado: {data}")
     temas = data.get("temas", [])
@@ -136,6 +147,7 @@ def generar_test_avanzado_route():
     print(f"🧪 Número de preguntas solicitadas: {num_preguntas}")
     resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas, coleccion=coleccion_temario(g.oposicion), oposicion=g.oposicion)
     print(f"📄 Resultado del test: {resultado}")
+    registrar_uso(db, g.uid, "generacion_ia", g.plan_actual)
     return jsonify(resultado)
 @app.route("/generar-esquema", methods=["POST"])
 @requiere_plan(db, "basico")
@@ -144,11 +156,15 @@ def generar_esquema_route():
     if not data:
         print("❌ No se ha recibido JSON en la petición")
         return jsonify({"error": "No se ha recibido un cuerpo JSON válido"}), 400
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "generacion_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     print("📩 Datos recibidos en /generar-esquema:", data)
     temas = data.get("temas", [])
     instrucciones = data.get("instrucciones", "Resume los contenidos clave.")
     nivel = data.get("nivel", "general")
     resultado = generar_esquema(temas=temas, db=db, instrucciones=instrucciones, nivel=nivel, coleccion=coleccion_temario(g.oposicion))
+    registrar_uso(db, g.uid, "generacion_ia", g.plan_actual)
     return jsonify({"esquema": resultado})
 @app.route("/generar-test-oficial", methods=["POST"])
 @requiere_plan(db, "basico")
@@ -297,6 +313,9 @@ def generar_test_inteligente():
         num_preguntas = 5
     if not temas:
         return jsonify({"error": "No se han proporcionado temas"}), 400
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "generacion_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     coleccion = coleccion_temario(g.oposicion)
     temas_legibles = obtener_titulos_temas_reales(db, coleccion, temas)
@@ -333,6 +352,7 @@ Devuelve SOLO un array JSON con este formato exacto, sin texto adicional ni bloq
         resultado = {"test": preguntas}
         if len(preguntas) < num_preguntas:
             resultado["advertencia"] = f"Solo se generaron {len(preguntas)} de {num_preguntas} preguntas."
+        registrar_uso(db, g.uid, "generacion_ia", g.plan_actual)
         return jsonify(resultado)
     except Exception as e:
         print("❌ Error al generar test inteligente:", e)
@@ -361,6 +381,10 @@ def analisis_rendimiento():
     if len(filas) < 2:
         return jsonify({"analisis": None, "mensaje": "Todavía no tienes suficientes tests por tema para un análisis. ¡Sigue practicando y vuelve a intentarlo más adelante!"})
 
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "generacion_ia")
+    if not permitido:
+        return jsonify({"analisis": None, "mensaje": mensaje_error}), 429
+
     coleccion = coleccion_temario(oposicion)
     titulos = obtener_titulos_temas_reales(db, coleccion, [f["tema_id"] for f in filas])
     resumen_temas = "\n".join(
@@ -382,6 +406,7 @@ Escribe un análisis breve (máximo 3-4 frases), cercano y motivador, en españo
 
     if not analisis:
         return jsonify({"analisis": None, "mensaje": "No se ha podido generar el análisis ahora mismo. Inténtalo de nuevo más tarde."})
+    registrar_uso(db, g.uid, "generacion_ia", g.plan_actual)
     return jsonify({"analisis": analisis.strip()})
 @app.route("/conversaciones", methods=["GET"])
 @requiere_plan(db, "premium")

@@ -137,10 +137,15 @@ document.addEventListener("DOMContentLoaded", function () {
       }),
       signal: AbortSignal.timeout(30000)
     })
-      .then(res => {
+      .then(async res => {
         mostrarTyping(false);
         if (res.status === 403) {
           agregarMensaje("bot", "🔒 El chat con IA requiere el plan Premium. Ve a /planes/ para activarlo.");
+          return null;
+        }
+        if (res.status === 429) {
+          const datosError = await res.json();
+          agregarMensaje("bot", `⏳ ${datosError.error || "Has alcanzado el límite de uso del chat por ahora."}`);
           return null;
         }
         return res.json();
