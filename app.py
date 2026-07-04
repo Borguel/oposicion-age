@@ -2,6 +2,7 @@ import os
 import random
 import requests
 import json
+import logging
 import traceback
 import stripe
 from flask import Flask, request, jsonify, g
@@ -12,6 +13,12 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from PyPDF2 import PdfReader
 from io import BytesIO
+
+# Logging estructurado (con nivel y hora) en vez de print(): así se puede
+# filtrar por gravedad y, sobre todo, se ve en los logs de Render con
+# marca de tiempo real en vez de perderse entre el resto de la salida.
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
 from datetime import datetime, date
 # Módulos personalizados
 from test_generator import generar_test_avanzado, generar_preguntas_ia_en_lotes
@@ -29,8 +36,8 @@ from documentos_pdf import obtener_o_crear_documento, obtener_documento, listar_
 from utils import seleccionar_preguntas_con_cuota
 # Cargar variables de entorno
 load_dotenv()
-print("🔑 Clave OpenAI:", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
-print("🔑 Clave DeepSeek:", "configurada" if os.getenv("DEEPSEEK_API_KEY") else "no configurada")
+logger.info("Clave OpenAI: %s", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
+logger.info("Clave DeepSeek: %s", "configurada" if os.getenv("DEEPSEEK_API_KEY") else "no configurada")
 # Inicializar Firebase
 # Admite dos formas de dar la clave de servicio: un fichero (FIREBASE_KEY_PATH,
 # útil con "Secret Files" de Render) o el JSON completo en una variable de
@@ -51,7 +58,7 @@ cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if orig
 if not cors_origins:
     cors_origins = ["http://localhost:8080", "http://127.0.0.1:8080"]
 CORS(app, origins=cors_origins)
-print(f"✅ CORS activado para: {cors_origins}")
+logger.info("CORS activado para: %s", cors_origins)
 
 # Cabeceras de seguridad para las respuestas de la API (el frontend estático
 # no pasa por Flask -- sus cabeceras equivalentes, incluida la CSP, se
@@ -82,9 +89,9 @@ def fichero_demasiado_grande(_error):
 # actual hasta que el frontend envíe la cabecera X-API-Key.
 API_SECRET_KEY = os.getenv("API_SECRET_KEY")
 if API_SECRET_KEY:
-    print("🔒 Protección por API key activada")
+    logger.info("Protección por API key activada")
 else:
-    print("⚠️ API_SECRET_KEY no configurada: las rutas quedan abiertas sin autenticación")
+    logger.warning("API_SECRET_KEY no configurada: las rutas quedan abiertas sin autenticación")
 
 @app.before_request
 def verificar_api_key():
@@ -151,16 +158,16 @@ def generar_test_avanzado_route():
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
     data = request.get_json()
-    print(f"📅 Petición recibida en /generar-test-avanzado: {data}")
+    logger.info("Petición recibida en /generar-test-avanzado: %s", data)
     temas = data.get("temas", [])
     try:
         num_preguntas = max(1, min(100, int(data.get("num_preguntas", 5))))
     except (TypeError, ValueError):
         num_preguntas = 5
-    print(f"📋 Temas extraídos: {temas}")
-    print(f"🧪 Número de preguntas solicitadas: {num_preguntas}")
+    logger.info("Temas extraídos: %s", temas)
+    logger.info("Número de preguntas solicitadas: %s", num_preguntas)
     resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas, coleccion=coleccion_temario(g.oposicion), oposicion=g.oposicion)
-    print(f"📄 Resultado del test: {resultado}")
+    logger.info("Resultado del test: %s", resultado)
     registrar_uso(db, g.uid, "generacion_ia", g.plan_actual)
     return jsonify(resultado)
 @app.route("/generar-esquema", methods=["POST"])
@@ -168,12 +175,12 @@ def generar_test_avanzado_route():
 def generar_esquema_route():
     data = request.get_json(silent=True)
     if not data:
-        print("❌ No se ha recibido JSON en la petición")
+        logger.warning("No se ha recibido JSON en la petición")
         return jsonify({"error": "No se ha recibido un cuerpo JSON válido"}), 400
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "generacion_ia")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
-    print("📩 Datos recibidos en /generar-esquema:", data)
+    logger.info("Datos recibidos en /generar-esquema: %s", data)
     temas = data.get("temas", [])
     instrucciones = data.get("instrucciones", "Resume los contenidos clave.")
     nivel = data.get("nivel", "general")
@@ -184,22 +191,19 @@ def generar_esquema_route():
 @requiere_plan(db, "basico")
 def generar_test_oficial():
     data = request.get_json()
-    print("✅ Ruta /generar-test-oficial llamada")
-    print("📥 Datos recibidos:", data)
+    logger.info("Ruta /generar-test-oficial llamada con datos: %s", data)
     try:
         num_preguntas = max(1, min(100, int(data.get("num_preguntas", 10))))
     except (TypeError, ValueError):
         num_preguntas = 10
     examenes_filtrados = data.get("examenes", [])
     temas_filtrados = data.get("temas", [])
-    print("🔍 Número de preguntas solicitado:", num_preguntas)
-    print("📚 Exámenes filtrados:", examenes_filtrados)
-    print("🏷️ Temas filtrados:", temas_filtrados)
+    logger.info("Número de preguntas solicitado: %s, exámenes filtrados: %s, temas filtrados: %s", num_preguntas, examenes_filtrados, temas_filtrados)
     coleccion = coleccion_examenes_oficiales(g.oposicion)
     try:
         docs = db.collection(coleccion).stream()
     except Exception as e:
-        print("❌ Error accediendo a Firestore:", e)
+        logger.exception("Error accediendo a Firestore")
         return jsonify({"error": "No se pudo acceder a Firestore"}), 500
     preguntas = []
     for doc in docs:
@@ -220,17 +224,17 @@ def generar_test_oficial():
             "numero": d.get("numero", 0),
             "tema_id": d.get("tema_id", "")
         })
-    print(f"✅ Preguntas encontradas tras filtro en {coleccion}: {len(preguntas)}")
+    logger.info("Preguntas encontradas tras filtro en %s: %d", coleccion, len(preguntas))
     if not preguntas:
         return jsonify({"test": [], "mensaje": "Todavía no hay preguntas oficiales cargadas para esta oposición"}), 404
     seleccionadas = seleccionar_preguntas_con_cuota(preguntas, num_preguntas, temas_filtrados)
-    print(f"🎯 Preguntas seleccionadas: {len(seleccionadas)}")
+    logger.info("Preguntas seleccionadas: %d", len(seleccionadas))
     return jsonify({"test": seleccionadas})
 @app.route("/guardar-test-oficial", methods=["POST"])
 @requiere_login(db)
 def guardar_test_oficial():
     data = request.get_json()
-    print("💾 Guardando test oficial:", data)
+    logger.info("Guardando test oficial: %s", data)
     contenido = data.get("contenido")
     respuestas = data.get("respuestas")
     metadatos = data.get("metadatos", {})
@@ -244,10 +248,10 @@ def guardar_test_oficial():
             "respuestas": respuestas,
             "metadatos": metadatos
         })
-        print("✅ Test oficial guardado correctamente")
+        logger.info("Test oficial guardado correctamente")
         return jsonify({"mensaje": "Test oficial guardado correctamente"}), 200
     except Exception as e:
-        print("❌ Error al guardar test oficial:", e)
+        logger.exception("Error al guardar test oficial")
         return jsonify({"error": str(e)}), 500
 # Guardado y progreso
 app.add_url_rule("/guardar-test", view_func=guardar_test_route(db), methods=["POST"])
@@ -369,7 +373,7 @@ Devuelve SOLO un array JSON con este formato exacto, sin texto adicional ni bloq
         registrar_uso(db, g.uid, "generacion_ia", g.plan_actual)
         return jsonify(resultado)
     except Exception as e:
-        print("❌ Error al generar test inteligente:", e)
+        logger.exception("Error al generar test inteligente")
         return jsonify({"error": str(e)}), 500
 @app.route("/analisis-rendimiento", methods=["GET"])
 @requiere_plan(db, "basico")
@@ -415,7 +419,7 @@ Escribe un análisis breve (máximo 3-4 frases), cercano y motivador, en españo
     try:
         analisis = call_deepseek_api(messages=[{"role": "user", "content": prompt}], temperature=0.5, max_tokens=300)
     except Exception as e:
-        print("❌ Error al generar análisis de rendimiento:", e)
+        logger.exception("Error al generar análisis de rendimiento")
         analisis = None
 
     if not analisis:
@@ -936,7 +940,7 @@ def guardar_test_pdf():
             try:
                 db.collection("usuarios").document(g.uid).collection("tests").document(test_id).delete()
             except Exception as e:
-                print(f"⚠️ No se pudo borrar el borrador de test en progreso {test_id}: {e}")
+                logger.warning("No se pudo borrar el borrador de test en progreso %s: %s", test_id, e)
         return jsonify({'mensaje': 'Test desde PDF guardado correctamente'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1157,7 +1161,7 @@ def crear_sesion_checkout():
         )
         return jsonify({"url": session.url})
     except Exception as e:
-        print("❌ Error creando sesión de Stripe Checkout:", e)
+        logger.exception("Error creando sesión de Stripe Checkout")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/crear-sesion-portal", methods=["POST"])
@@ -1174,7 +1178,7 @@ def crear_sesion_portal():
         )
         return jsonify({"url": session.url})
     except Exception as e:
-        print("❌ Error creando sesión del portal de Stripe:", e)
+        logger.exception("Error creando sesión del portal de Stripe")
         return jsonify({"error": str(e)}), 500
 
 def _sget(obj, key, default=None):
@@ -1208,7 +1212,7 @@ def webhook_stripe():
     try:
         event = stripe.Webhook.construct_event(payload, firma, STRIPE_WEBHOOK_SECRET)
     except (ValueError, stripe.error.SignatureVerificationError) as e:
-        print("❌ Webhook de Stripe con firma inválida:", e)
+        logger.warning("Webhook de Stripe con firma inválida: %s", e)
         return jsonify({"error": "Firma inválida"}), 400
 
     evento_ref = db.collection("stripe_events").document(event["id"])
@@ -1278,7 +1282,7 @@ def webhook_stripe():
             if docs:
                 actualizar_suscripcion(db, docs[0].id, oposicion, subscription_status="past_due")
     except Exception as e:
-        print(f"❌ Error procesando webhook de Stripe ({tipo}): {e}")
+        logger.exception("Error procesando webhook de Stripe (%s)", tipo)
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 

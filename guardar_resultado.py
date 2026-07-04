@@ -1,9 +1,12 @@
+import logging
 from datetime import datetime
 from firebase_admin import firestore
 from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_estadisticas_esquema, registrar_actividad_racha
 from oposiciones import OPOSICION_POR_DEFECTO
 from documentos_pdf import marcar_generado
 from banco_fallos import actualizar_banco_fallos
+
+logger = logging.getLogger(__name__)
 
 def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None, oposicion=OPOSICION_POR_DEFECTO, test_id=None):
     metadatos = metadatos or {}
@@ -216,7 +219,7 @@ def actualizar_estadisticas_usuario(db, usuario_id, tipo):
         user_ref.update(field_updates)
         
     except Exception as e:
-        print(f"❌ Error actualizando estadísticas del usuario: {e}")
+        logger.exception("Error actualizando estadísticas del usuario")
 
 # Función auxiliar para obtener estadísticas completas del usuario
 def obtener_estadisticas_completas_usuario(db, usuario_id, oposicion=OPOSICION_POR_DEFECTO):
@@ -278,5 +281,5 @@ def obtener_estadisticas_completas_usuario(db, usuario_id, oposicion=OPOSICION_P
         return estadisticas
 
     except Exception as e:
-        print(f"❌ Error obteniendo estadísticas del usuario: {e}")
+        logger.exception("Error obteniendo estadísticas del usuario")
         return {"error": str(e)}
