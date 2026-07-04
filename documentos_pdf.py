@@ -55,6 +55,7 @@ def obtener_o_crear_documento(db, uid, texto, nombre_archivo, num_paginas):
         "num_paginas": num_paginas,
         "texto": texto[:MAX_CARACTERES_DOCUMENTO],
         "hash_texto": hash_texto,
+        "carpeta": "",
         "tiene_resumen": False,
         "tiene_esquema": False,
         "num_tarjetas": 0,
@@ -104,6 +105,7 @@ def listar_documentos(db, uid):
             "nombre_archivo": datos.get("nombre_archivo"),
             "fecha_subida": datos.get("fecha_subida"),
             "num_paginas": datos.get("num_paginas"),
+            "carpeta": datos.get("carpeta", ""),
             "tiene_resumen": datos.get("tiene_resumen", False),
             "tiene_esquema": datos.get("tiene_esquema", False),
             "num_tarjetas": datos.get("num_tarjetas", 0),
@@ -112,3 +114,11 @@ def listar_documentos(db, uid):
         })
     resultado.sort(key=lambda d: d.get("ultima_actividad") or "", reverse=True)
     return resultado
+
+
+def actualizar_carpeta(db, uid, documento_id, carpeta):
+    ref = db.collection("usuarios").document(uid).collection("documentos").document(documento_id)
+    if not ref.get().exists:
+        return False
+    ref.update({"carpeta": (carpeta or "").strip()[:60]})
+    return True

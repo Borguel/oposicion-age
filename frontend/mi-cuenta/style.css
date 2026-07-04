@@ -215,3 +215,73 @@ body {
   background: var(--age-danger-bg);
   color: var(--age-danger);
 }
+
+.cuenta-accesos-card {
+  margin-top: 16px;
+  padding: 10px;
+}
+
+.cuenta-acceso-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--age-radius-sm);
+  color: var(--age-ink);
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background 0.15s var(--age-ease);
+}
+
+.cuenta-acceso-link:hover {
+  background: var(--age-primary-soft);
+}
+
+.cuenta-acceso-icono {
+  font-size: 1.2rem;
+}
+
+.cuenta-racha-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 26px;
+  background: linear-gradient(135deg, var(--age-navy), var(--age-navy-soft, var(--age-navy)));
+  color: #fff;
+}
+
+.cuenta-racha-icono {
+  font-size: 2.6rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.cuenta-racha-info {
+  min-width: 0;
+}
+
+.cuenta-racha-numero {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.cuenta-racha-mensaje {
+  color: var(--age-navy-ink);
+  font-size: 0.92rem;
+}
+
+.cuenta-racha-maxima {
+  color: var(--age-navy-ink);
+  font-size: 0.8rem;
+  margin-top: 6px;
+  opacity: 0.85;
+}
+
+@media (max-width: 480px) {
+  .cuenta-racha-card {
+    flex-direction: column;
+    text-align: center;
+  }
+}

@@ -17,6 +17,44 @@ const formDatos = document.getElementById("form-datos");
 const datosMensaje = document.getElementById("datos-mensaje");
 const btnGuardarDatos = document.getElementById("btn-guardar-datos");
 
+const MENSAJES_RACHA = [
+  { minimo: 0, texto: "Empieza hoy tu racha: haz un test o repasa algo para arrancar." },
+  { minimo: 1, texto: "¡Buen comienzo! Vuelve mañana para no perder la racha." },
+  { minimo: 3, texto: "Llevas varios días seguidos, ¡vas genial!" },
+  { minimo: 7, texto: "¡Una semana entera estudiando! Imparable." },
+  { minimo: 14, texto: "Dos semanas de constancia. Tu esfuerzo se nota." },
+  { minimo: 30, texto: "¡Un mes seguido! Nivel opositor de verdad." },
+  { minimo: 60, texto: "Una racha así solo la consigue quien de verdad se lo toma en serio." }
+];
+
+function mensajeParaRacha(dias) {
+  let elegido = MENSAJES_RACHA[0];
+  for (const m of MENSAJES_RACHA) {
+    if (dias >= m.minimo) elegido = m;
+  }
+  return elegido.texto;
+}
+
+async function cargarRacha() {
+  try {
+    const token = await idToken();
+    const res = await fetch(`${BACKEND_URL}/mi-racha`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return;
+    const { racha_actual, racha_maxima } = await res.json();
+    document.getElementById("racha-numero").textContent = racha_actual;
+    document.getElementById("racha-plural").textContent = racha_actual === 1 ? "" : "s";
+    document.getElementById("racha-mensaje").textContent = mensajeParaRacha(racha_actual);
+    document.getElementById("racha-icono").textContent = racha_actual > 0 ? "🔥" : "💤";
+    if (racha_maxima > racha_actual) {
+      const elMaxima = document.getElementById("racha-maxima");
+      elMaxima.textContent = `Tu mejor racha: ${racha_maxima} día${racha_maxima === 1 ? "" : "s"}`;
+      elMaxima.style.display = "block";
+    }
+  } catch (e) {
+    console.error("Error cargando racha:", e);
+  }
+}
+
 async function iniciar() {
   const usuario = await esperarUsuario();
   if (!usuario) {
@@ -26,6 +64,8 @@ async function iniciar() {
 
   document.getElementById("cuenta-email").textContent = usuario.email || "";
   document.getElementById("cuenta-avatar").textContent = (usuario.email || "?").trim().charAt(0).toUpperCase();
+
+  cargarRacha();
 
   const { nombre, apellidos, telefono, direccion, suscripciones } = await obtenerPlan(true);
 

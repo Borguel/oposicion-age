@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mis documentos - Oposición AGE</title>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/mis-documentos/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+<div class="documentos-header">
+  <div class="age-container">
+    <h1>📚 Mis documentos</h1>
+    <p>Todos los PDF que has subido, organizados por carpetas, con todo lo que ya generaste de cada uno listo para repasar.</p>
+  </div>
+</div>
+
+<div class="age-container documentos-wrap">
+  <div id="documentos-cargando" class="documentos-cargando">Cargando tus documentos…</div>
+
+  <div id="documentos-vacio" class="documentos-vacio hidden">
+    <div class="documentos-vacio-icono">📄</div>
+    <h2>Todavía no has subido ningún documento</h2>
+    <p>Sube un PDF en Herramientas IA para generar resúmenes, esquemas, tarjetas o tests, y aparecerá aquí para que puedas repasarlo cuando quieras.</p>
+    <a class="age-btn age-btn-primary" href="/subida-pdf-pagina-principal/">Ir a Herramientas IA</a>
+  </div>
+
+  <div id="documentos-contenido" class="hidden">
+    <div class="documentos-toolbar">
+      <label for="filtro-carpeta">Carpeta</label>
+      <select id="filtro-carpeta"></select>
+    </div>
+    <div id="documentos-grupos"></div>
+  </div>
+</div>
+
+<script type="module" src="/assets/auth.js"></script>
+<script type="module" src="/mis-documentos/script.js"></script>
+</body>
+</html>

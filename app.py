@@ -11,7 +11,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from PyPDF2 import PdfReader
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, date
 # Módulos personalizados
 from test_generator import generar_test_avanzado
 from chat_controller import responder_chat, consultar_asistente_examen
@@ -24,7 +24,7 @@ from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicita
 from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida, coleccion_temario, coleccion_examenes_oficiales
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso
-from documentos_pdf import obtener_o_crear_documento, obtener_documento, listar_documentos
+from documentos_pdf import obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta
 # Cargar variables de entorno
 load_dotenv()
 print("🔑 Clave OpenAI:", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
@@ -256,32 +256,21 @@ def listar_rutas():
     rutas = [rule.rule for rule in app.url_map.iter_rules()]
     return jsonify({"rutas_disponibles": rutas})
 # Traducción de temas (para IA)
-def traducir_temas_para_IA(lista_codigos):
-    traducciones = {
-        "bloque_01-tema_01": "Constitución Española",
-        "bloque_01-tema_02": "La Jefatura del Estado. La Corona. Funciones constitucionales del Rey. Sucesión y regencia.",
-        "bloque_01-tema_03": "Las Cortes Generales. Composición, atribuciones y funcionamiento del Congreso de los Diputados y del Senado.",
-        "bloque_01-tema_04": "EL PODER JUDICIAL",
-        "bloque_01-tema_05": "EL GOBIERNO Y LA ADMINISTRACIÓN.",
-        "bloque_01-tema_06": "El Gobierno Abierto, Agenda 2030 y Digitalización",
-        "bloque_01-tema_07": "LA LEY 19/2013, DE 9 DE DICIEMBRE, DE TRANSPARENCIA, ACCESO A LA INFORMACIÓN PÚBLICA Y BUEN GOBIERNO. EL CONSEJO DE TRANSPARENCIA Y BUEN GOBIERNO: FUNCIONES.",
-        "bloque_01-tema_08": "Administración General del Estado",
-        "bloque_01-tema_09": "LA ORGANIZACIÓN TERRITORIAL DEL ESTADO: LAS COMUNIDADES AUTÓNOMAS. CONSTITUCIÓN Y DISTRIBUCIÓN DE COMPETENCIAS ENTRE EL ESTADO Y LAS COMUNIDADES AUTÓNOMAS. ESTATUTOS DE AUTONOMÍA.",
-        "bloque_01-tema_10": "LA ADMINISTRACIÓN LOCAL: ENTIDADES QUE LA INTEGRAN. LA PROVINCIA, EL MUNICIPIO Y LA ISLA.",
-        "bloque_01-tema_11": "LA ORGANIZACIÓN DE LA UNIÓN EUROPEA. EL CONSEJO EUROPEO, EL CONSEJO, EL PARLAMENTO EUROPEO, LA COMISIÓN EUROPEA Y EL TRIBUNAL DE JUSTICIA DE LA UNIÓN EUROPEA. EFECTOS DE LA INTEGRACIÓN EUROPEA SOBRE LA ORGANIZACIÓN DEL ESTADO ESPAÑOL.",
-        "bloque_02-tema_01": "ATENCION AL PUBLICO",
-        "bloque_02-tema_02": "REGISTRO Y ARCHIVO",
-        "bloque_02-tema_03": "ADMINISTRACION ELECTRONICA",
-        "bloque_02-tema_04": "PROTECCION DE DATOS PERSONALES",
-        "bloque_03-tema_01": "FUENTES DEL DERECHO ADMINISTRATIVO",
-        "bloque_03-tema_02": "EL ACTO ADMINISTRATIVO",
-        "bloque_03-tema_03": "EL PROCEDIMIENTO ADMINISTRATIVO COMÚN",
-        "bloque_03-tema_04": "CONTRATOS DEL SECTOR PÚBLICO",
-        "bloque_03-tema_05": "LA ACTIVIDAD ADMINISTRATIVA.",
-        "bloque_03-tema_06": "RESPONSABILIDAD PATRIMONIAL (VACIO)",
-        "bloque_03-tema_07": "IGUALDAD DE GÉNERO (VACIO)"
-    }
-    return [traducciones.get(codigo, codigo) for codigo in lista_codigos]
+def obtener_titulos_temas_reales(db, coleccion, lista_codigos):
+    """Traduce códigos "bloque-tema" (p. ej. "bloque_01-tema_02") a sus
+    títulos reales guardados en Firestore -- la misma fuente que usa
+    /temas-disponibles -- en vez de una lista fija en el código que solo
+    cubría los temas de AGE y no servía para el resto de oposiciones."""
+    titulos = []
+    for codigo in lista_codigos:
+        partes = codigo.split("-", 1)
+        if len(partes) < 2:
+            titulos.append(codigo)
+            continue
+        bloque_id, tema_id = partes
+        doc = db.collection(coleccion).document(bloque_id).collection("temas").document(tema_id).get()
+        titulos.append(doc.to_dict().get("titulo", codigo) if doc.exists else codigo)
+    return titulos
 @app.route("/generar-test-inteligente", methods=["POST"])
 @requiere_plan(db, "basico")
 def generar_test_inteligente():
@@ -289,29 +278,35 @@ def generar_test_inteligente():
     if not data:
         return jsonify({"error": "No se ha recibido un cuerpo JSON válido"}), 400
     temas = data.get("temas", [])
-    num_preguntas = data.get("num_preguntas", 5)
+    try:
+        num_preguntas = int(data.get("num_preguntas", 5))
+    except (TypeError, ValueError):
+        num_preguntas = 5
     if not temas:
         return jsonify({"error": "No se han proporcionado temas"}), 400
-    temas_legibles = traducir_temas_para_IA(temas)
-    prompt = f"""
-Eres un generador experto de preguntas tipo test para oposiciones del Cuerpo General Administrativo del Estado (grupo C1).
-Crea {num_preguntas} preguntas tipo test con el estilo oficial de exámenes del INAP: realistas, bien redactadas y con trampas habituales.
+
+    coleccion = coleccion_temario(g.oposicion)
+    temas_legibles = obtener_titulos_temas_reales(db, coleccion, temas)
+    nombre_oposicion = OPOSICIONES.get(g.oposicion, OPOSICIONES[OPOSICION_POR_DEFECTO])["nombre"]
+
+    prompt = f"""Actúas como un generador profesional de preguntas tipo test, especializado en la oposición al {nombre_oposicion}.
+Crea EXACTAMENTE {num_preguntas} preguntas tipo test con el nivel y el estilo de un examen oficial real de esta oposición: técnicas, precisas y basadas en la legislación y el temario oficial vigente sobre estos temas.
 Temas seleccionados: {', '.join(temas_legibles)}
-Cada pregunta debe tener:
-- Enunciado claro
-- Opciones A, B, C y D (sin ambigüedades)
-- Una única opción correcta
-- Explicación técnica o jurídica breve
-Devuelve solo un array JSON como este:
+
+Sigue estrictamente estas normas:
+1. Las preguntas deben ser claras, completas y redactadas en un estilo técnico-formal, citando artículos, leyes o normativa concreta cuando proceda (p. ej. "Según el artículo 62 de la Constitución Española...").
+2. NO uses expresiones como "según el texto", "de acuerdo con lo anterior" o "en el contenido proporcionado": las preguntas se basan en tu conocimiento normativo, no en ningún documento.
+3. Sustituye todas las siglas por su forma completa la primera vez que aparezcan.
+4. Las cuatro opciones deben ser plausibles, basadas en confusiones habituales entre conceptos, plazos, órganos o competencias similares -- evita opciones absurdas o claramente descartables.
+5. Evita preguntas triviales o de cultura general: cada pregunta debe exigir conocimiento normativo o técnico específico del tema.
+6. Prioriza variedad temática entre los temas seleccionados.
+7. La explicación debe justificar brevemente (2-3 frases) por qué la respuesta es correcta, citando la base normativa si procede.
+
+Devuelve SOLO un array JSON con este formato exacto, sin texto adicional ni bloques de código:
 [
   {{
     "pregunta": "...",
-    "opciones": {{
-      "A": "...",
-      "B": "...",
-      "C": "...",
-      "D": "..."
-    }},
+    "opciones": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
     "respuesta_correcta": "B",
     "explicacion": "..."
   }}
@@ -320,8 +315,8 @@ Devuelve solo un array JSON como este:
     try:
         generado = call_deepseek_api(
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.5,
-            max_tokens=min(4000, 300 * int(num_preguntas))
+            temperature=0.4,
+            max_tokens=min(4000, 300 * num_preguntas)
         )
         if not generado:
             return jsonify({"error": "Sin respuesta de DeepSeek"}), 500
@@ -932,6 +927,15 @@ def guardar_tarjetas_pdf():
 def mis_documentos():
     return jsonify({"documentos": listar_documentos(db, g.uid)})
 
+@app.route('/documento/<documento_id>/carpeta', methods=['POST'])
+@requiere_login(db)
+def documento_carpeta(documento_id):
+    datos = request.get_json(silent=True) or {}
+    ok = actualizar_carpeta(db, g.uid, documento_id, datos.get("carpeta", ""))
+    if not ok:
+        return jsonify({"error": "No se encontró el documento indicado."}), 404
+    return jsonify({"mensaje": "Carpeta actualizada"})
+
 
 def _ultimo_por_documento(coleccion, documento_id, uid):
     docs = list(
@@ -1002,6 +1006,29 @@ def documento_tarjetas(documento_id):
 def mi_perfil():
     oposicion = obtener_oposicion_solicitada()
     return jsonify(obtener_perfil_usuario(db, g.uid, oposicion=oposicion))
+
+@app.route("/mi-racha", methods=["GET"])
+@requiere_login(db)
+def mi_racha():
+    doc = db.collection("usuarios").document(g.uid).get()
+    racha = (doc.to_dict() or {}).get("racha") or {}
+    racha_actual = racha.get("racha_actual", 0)
+    ultima_fecha_str = racha.get("ultima_fecha")
+    # Si la última actividad fue hace más de un día, la racha ya está rota
+    # aunque en Firestore no se "confirme" hasta la próxima actividad: se
+    # calcula al vuelo para no mostrar un número desfasado.
+    if ultima_fecha_str:
+        try:
+            dias_sin_actividad = (datetime.utcnow().date() - date.fromisoformat(ultima_fecha_str)).days
+            if dias_sin_actividad > 1:
+                racha_actual = 0
+        except ValueError:
+            pass
+    return jsonify({
+        "racha_actual": racha_actual,
+        "racha_maxima": racha.get("racha_maxima", 0),
+        "ultima_fecha": ultima_fecha_str
+    })
 
 @app.route("/crear-sesion-checkout", methods=["POST"])
 @requiere_login(db)

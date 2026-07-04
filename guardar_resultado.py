@@ -1,12 +1,13 @@
 from datetime import datetime
 from firebase_admin import firestore
-from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_estadisticas_esquema
+from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_estadisticas_esquema, registrar_actividad_racha
 from oposiciones import OPOSICION_POR_DEFECTO
 from documentos_pdf import marcar_generado
 
 def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None, oposicion=OPOSICION_POR_DEFECTO):
     metadatos = metadatos or {}
     doc_user = db.collection("usuarios").document(usuario_id)
+    registrar_actividad_racha(db, usuario_id)
 
     if tipo == "test":
         respuestas = metadatos.get("respuestas", [])

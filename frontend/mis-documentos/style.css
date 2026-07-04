@@ -1,0 +1,236 @@
+body {
+  background: var(--age-bg);
+  color: var(--age-ink);
+  margin: 0;
+}
+
+.hidden { display: none !important; }
+
+.documentos-header {
+  background: var(--age-navy);
+  color: #fff;
+  padding: 44px 0 34px;
+  text-align: center;
+}
+
+.documentos-header h1 {
+  font-size: clamp(1.7rem, 3.4vw, 2.3rem);
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+
+.documentos-header p {
+  color: var(--age-navy-ink);
+  max-width: 640px;
+  margin: 0 auto;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.documentos-wrap {
+  padding: 32px 20px 60px;
+}
+
+.documentos-cargando {
+  text-align: center;
+  color: var(--age-ink-soft);
+  padding: 60px 20px;
+}
+
+.documentos-vacio {
+  text-align: center;
+  padding: 60px 20px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.documentos-vacio-icono {
+  font-size: 3rem;
+  margin-bottom: 14px;
+}
+
+.documentos-vacio h2 {
+  font-size: 1.3rem;
+  margin: 0 0 10px;
+}
+
+.documentos-vacio p {
+  color: var(--age-ink-soft);
+  margin: 0 0 22px;
+  line-height: 1.5;
+}
+
+.documentos-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.documentos-toolbar label {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--age-ink-soft);
+}
+
+.documentos-toolbar select {
+  padding: 8px 12px;
+  border-radius: var(--age-radius-sm);
+  border: 1px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-family: var(--age-font);
+  font-size: 0.9rem;
+}
+
+.documentos-grupo {
+  margin-bottom: 32px;
+}
+
+.documentos-grupo-titulo {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--age-ink);
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.documentos-grupo-titulo .contador {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--age-ink-soft);
+}
+
+.documentos-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.documento-card {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  box-shadow: var(--age-shadow);
+  padding: 22px;
+}
+
+.documento-card-header {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.documento-card-icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--age-radius-md);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.documento-card-titulo {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--age-ink);
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+
+.documento-card-meta {
+  color: var(--age-ink-soft);
+  font-size: 0.82rem;
+}
+
+.documento-card-carpeta {
+  margin-bottom: 14px;
+}
+
+.documento-card-carpeta select {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--age-radius-sm);
+  border: 1px solid var(--age-border);
+  background: var(--age-bg);
+  color: var(--age-ink);
+  font-family: var(--age-font);
+  font-size: 0.82rem;
+}
+
+.documento-card-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--age-border);
+  flex-wrap: wrap;
+}
+
+.documento-card-fila-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--age-ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.documento-card-fila-acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.documento-card-btn {
+  padding: 6px 12px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s var(--age-ease), background 0.15s var(--age-ease);
+}
+
+.documento-card-btn:hover {
+  border-color: var(--age-primary);
+  background: var(--age-primary-soft);
+}
+
+.documento-card-btn.principal {
+  background: var(--age-primary);
+  border-color: var(--age-primary);
+  color: #1b1f2e;
+}
+
+.documento-card-btn.principal:hover {
+  background: var(--age-primary-dark);
+  border-color: var(--age-primary-dark);
+}
+
+@media (max-width: 640px) {
+  .documentos-lista {
+    grid-template-columns: 1fr;
+  }
+  .documento-card-fila {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .documento-card-fila-acciones {
+    width: 100%;
+  }
+}
