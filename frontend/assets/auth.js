@@ -15,6 +15,7 @@ import {
   linkWithCredential,
   verifyBeforeUpdateEmail,
   reauthenticateWithCredential,
+  sendEmailVerification,
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { firebaseConfig } from "/assets/firebase-config.js";
@@ -30,6 +31,14 @@ export function signIn(email, password) {
 
 export function signUp(email, password) {
   return createUserWithEmailAndPassword(auth, email, password);
+}
+
+// Envía (o reenvía) el correo de verificación de dirección. No bloquea el
+// uso de la web -- solo se avisa con un banner (ver inyectarBannerVerificacion)
+// para que quien se registró con un correo que no controla no quede
+// atrapado sin poder confirmar nunca.
+export function enviarVerificacionEmail(user = auth.currentUser) {
+  return sendEmailVerification(user);
 }
 
 // Inicia sesión (o crea la cuenta la primera vez) con Google. Devuelve
@@ -238,10 +247,54 @@ function construirMenuCuenta(user) {
   }
 }
 
+// Aviso no bloqueante para quien todavía no ha confirmado su correo (solo
+// aplica a cuentas por contraseña -- una cuenta de Google ya viene con el
+// correo verificado por el propio proveedor). Se puede cerrar y no vuelve a
+// salir en lo que dure la pestaña, para no ser pesado en cada página.
+const CLAVE_BANNER_VERIFICACION_CERRADO = "age_banner_verificacion_cerrado";
+
+function inyectarBannerVerificacion(user) {
+  const existente = document.querySelector(".age-verificacion-banner");
+  if (existente) existente.remove();
+
+  if (!user || user.emailVerified) return;
+  if (!user.providerData.some((p) => p.providerId === "password")) return;
+  if (sessionStorage.getItem(CLAVE_BANNER_VERIFICACION_CERRADO) === "1") return;
+
+  const banner = document.createElement("div");
+  banner.className = "age-verificacion-banner";
+  banner.innerHTML = `
+    <p>📧 Confirma tu correo electrónico (<strong>${user.email}</strong>) para proteger tu cuenta. Revisa tu bandeja de entrada (y la carpeta de spam).</p>
+    <div class="age-verificacion-banner-acciones">
+      <button type="button" class="age-btn age-btn-outline" id="age-verificacion-reenviar">Reenviar correo</button>
+      <button type="button" class="age-verificacion-banner-cerrar" id="age-verificacion-cerrar" aria-label="Cerrar aviso">✕</button>
+    </div>
+  `;
+  document.body.prepend(banner);
+
+  document.getElementById("age-verificacion-reenviar").addEventListener("click", async (evento) => {
+    const boton = evento.currentTarget;
+    boton.disabled = true;
+    boton.textContent = "Enviando…";
+    try {
+      await enviarVerificacionEmail(user);
+      boton.textContent = "Correo enviado";
+    } catch (e) {
+      boton.textContent = "Reenviar correo";
+      boton.disabled = false;
+    }
+  });
+  document.getElementById("age-verificacion-cerrar").addEventListener("click", () => {
+    sessionStorage.setItem(CLAVE_BANNER_VERIFICACION_CERRADO, "1");
+    banner.remove();
+  });
+}
+
 function inyectarNav(user) {
   construirEsqueletoNav();
   inyectarSelectorOposicion();
   construirMenuCuenta(user);
+  inyectarBannerVerificacion(user);
 }
 
 function inyectarFooter() {

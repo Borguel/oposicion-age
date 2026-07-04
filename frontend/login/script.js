@@ -1,4 +1,4 @@
-import { signIn, signUp, signInWithGoogle, idToken, recuperarContrasena, credencialGoogleDesdeError, vincularCredencialGoogle } from "/assets/auth.js";
+import { signIn, signUp, signInWithGoogle, idToken, recuperarContrasena, credencialGoogleDesdeError, vincularCredencialGoogle, enviarVerificacionEmail } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 
 const tabLogin = document.getElementById("tab-login");
@@ -94,6 +94,9 @@ form.addEventListener("submit", async (evento) => {
       window.location.href = siguienteDestino();
     } else {
       await signUp(email, password);
+      // Mejor esfuerzo: si falla el envío del correo de verificación no se
+      // bloquea el alta -- el banner de auth.js ya ofrece reenviarlo luego.
+      enviarVerificacionEmail().catch(() => {});
       await enviarPerfilVacio();
       mostrarPasoPerfil();
     }

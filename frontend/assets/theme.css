@@ -582,6 +582,57 @@ body {
   }
 }
 
+/* ---------- Aviso de verificación de correo ---------- */
+.age-verificacion-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 24px;
+  background: var(--age-primary-soft);
+  border-bottom: 1px solid var(--age-primary-light);
+}
+
+.age-verificacion-banner p {
+  margin: 0;
+  max-width: 640px;
+  font-family: var(--age-font);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--age-primary-dark);
+}
+
+.age-verificacion-banner-acciones {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.age-verificacion-banner-acciones .age-btn {
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.age-verificacion-banner-cerrar {
+  border: none;
+  background: transparent;
+  color: var(--age-primary-dark);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .age-verificacion-banner {
+    flex-direction: column;
+    padding: 14px 18px;
+    text-align: center;
+  }
+}
+
 /* ============================================================
    Resultados de test: tabla por tema + mensaje de racha
    (usado por resultados-test.js en test-generator, repetir-test,
