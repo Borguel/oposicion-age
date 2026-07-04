@@ -47,10 +47,11 @@
     }
 
     body {
-      font-family: var(--font-main);
-      background: var(--theme-bg);
-      color: var(--theme-text);
+      font-family: var(--age-font, var(--font-main));
+      background: var(--age-bg);
+      color: var(--age-ink);
       min-height: 100vh;
+      margin: 0;
     }
 
     #estadisticas-container {
@@ -232,12 +233,12 @@
     }
 
     .tarjeta-estadistica {
-      background: var(--theme-content-bg);
-      border: 1px solid var(--theme-border);
-      border-radius: var(--card-radius);
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-lg);
       padding: 24px;
-      box-shadow: 0 6px 16px var(--shadow);
-      transition: transform 0.3s, box-shadow 0.3s;
+      box-shadow: var(--age-shadow);
+      transition: transform 0.2s var(--age-ease), box-shadow 0.2s var(--age-ease);
       text-align: center;
       position: relative;
       overflow: hidden;
@@ -245,24 +246,24 @@
 
     .tarjeta-estadistica:hover {
       transform: translateY(-4px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+      box-shadow: var(--age-shadow-hover);
     }
 
     .tarjeta-estadistica.destacada {
-      background: linear-gradient(135deg, var(--theme-primary), var(--primary-dark));
+      background: linear-gradient(135deg, var(--age-primary), var(--age-primary-dark));
       color: white;
     }
 
     .tarjeta-estadistica.positiva {
-      border-left: 4px solid var(--secondary);
+      border-left: 4px solid var(--age-success);
     }
 
     .tarjeta-estadistica.negativa {
-      border-left: 4px solid var(--danger);
+      border-left: 4px solid var(--age-danger);
     }
 
     .tarjeta-estadistica.neutra {
-      border-left: 4px solid var(--warning);
+      border-left: 4px solid var(--age-primary);
     }
 
     .tarjeta-estadistica.pdf {
@@ -295,14 +296,14 @@
     .tarjeta-estadistica h4 {
       font-size: 1.05rem;
       font-weight: 600;
-      color: var(--theme-heading);
+      color: var(--age-ink);
     }
 
     .tarjeta-estadistica .valor {
       font-size: 2rem;
       font-weight: 800;
       margin: 12px 0;
-      color: var(--theme-primary);
+      color: var(--age-primary-dark);
     }
 
     .tarjeta-estadistica.destacada .valor,
@@ -312,7 +313,7 @@
 
     .tarjeta-estadistica .detalle {
       font-size: 0.9rem;
-      color: var(--theme-text);
+      color: var(--age-ink-soft);
     }
 
     .tarjeta-estadistica.destacada .detalle {
@@ -321,7 +322,7 @@
 
     .progress-bar {
       height: 6px;
-      background: var(--theme-border);
+      background: var(--age-neutral-bg);
       border-radius: 3px;
       margin-top: 12px;
       overflow: hidden;
@@ -329,17 +330,17 @@
 
     .progress-fill {
       height: 100%;
-      background: var(--secondary);
+      background: var(--age-success);
       transition: width 0.5s ease;
     }
 
     .tarjeta-estadistica.negativa .progress-fill {
-      background: var(--danger);
+      background: var(--age-danger);
     }
 
-    .tendencia-up { color: var(--secondary); font-weight: bold; }
-    .tendencia-down { color: var(--danger); font-weight: bold; }
-    .tendencia-neutral { color: var(--warning); }
+    .tendencia-up { color: var(--age-success); font-weight: bold; }
+    .tendencia-down { color: var(--age-danger); font-weight: bold; }
+    .tendencia-neutral { color: var(--age-primary-dark); }
 
     .seccion-separador {
       grid-column: 1 / -1;
@@ -348,6 +349,10 @@
       margin: 20px 0;
       border-bottom: 2px solid var(--theme-border);
       position: relative;
+    }
+
+    .seccion-separador-primera {
+      margin-top: 0;
     }
 
     .seccion-separador h3 {
@@ -678,10 +683,29 @@
       }
     }
 
-/* --- Unificación de marca (Oposición AGE) --- */
+/* --- Unificación de marca (Oposición AGE) ---
+   Esta página nació con su propio sistema de variables (--theme-*, --primary,
+   --secondary...) antes de que existiera el sistema compartido de
+   /assets/theme.css. En vez de reescribir cada regla una a una, se
+   redefinen aquí esas variables para que apunten a los tokens --age-* --
+   así toda la página (tarjetas, modal, resumen de PDF...) hereda el mismo
+   aspecto que el resto del sitio sin duplicar reglas. */
 :root {
   --primary: var(--age-primary);
   --primary-dark: var(--age-primary-dark);
+  --secondary: var(--age-success);
+  --danger: var(--age-danger);
+  --warning: var(--age-primary);
   --theme-primary: var(--age-primary);
   --theme-link-hover: var(--age-primary);
+  --theme-bg: var(--age-bg);
+  --theme-text: var(--age-ink-soft);
+  --theme-heading: var(--age-ink);
+  --theme-content-bg: var(--age-card);
+  --theme-content-alt-bg: var(--age-neutral-bg);
+  --theme-border: var(--age-border);
+  --shadow: rgba(20, 24, 34, 0.06);
+  --card-radius: var(--age-radius-lg);
+  --btn-radius: var(--age-radius-pill);
+  --modal-radius: var(--age-radius-lg);
 }
