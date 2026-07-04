@@ -122,7 +122,7 @@ async function obtenerAuthHeaders() {
         }
         nombreArchivo = file.name;
         const fileName = nombreArchivo.length > 30 ? nombreArchivo.substring(0, 27) + '...' : nombreArchivo;
-        fileNameDisplay.innerHTML = `📄 ${fileName}`;
+        fileNameDisplay.textContent = `📄 ${fileName}`;
         fileNameDisplay.classList.remove('hidden');
       } else {
         fileNameDisplay.classList.add('hidden');
@@ -244,13 +244,22 @@ async function obtenerAuthHeaders() {
       mostrarResumenResultado(datosIA.resumen, true);
     });
 
+    // El resumen lo genera la IA a partir de un PDF subido por el usuario:
+    // se escapa antes de aplicar el formato Markdown para que un documento
+    // con "<script>" o similar como texto plano no se ejecute al pintarlo.
+    function escaparHtml(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto ?? '';
+      return div.innerHTML;
+    }
+
     function mostrarResumenResultado(textoResumen, guardar) {
       resumen = textoResumen || "No se pudo generar el resumen.";
       const fecha = new Date();
       fechaResumen.textContent = formatearFecha(fecha);
       resumenTitulo.textContent = `Resumen de ${nombreArchivo}`;
       // Procesar y mostrar con formato
-      let htmlResumen = resumen
+      let htmlResumen = escaparHtml(resumen)
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/^(#+)\s+(.*)$/gm, (match, hashes, title) => {
           const level = hashes.length;

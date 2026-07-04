@@ -82,7 +82,10 @@ document.addEventListener("DOMContentLoaded", function () {
       div.className = "mensaje-user";
       div.innerHTML = `<div class="bubble-user">${safeText}</div>`;
     } else {
-      const copyBtn = `<button onclick="copyToClipboard(${JSON.stringify(texto)})" title="Copiar">📋</button>`;
+      // JSON.stringify solo escapa comillas para JS, no para HTML: sin pasar
+      // también por escapeHtml, una respuesta de la IA con una comilla doble
+      // seguida de más marcado podría romper el atributo onclick.
+      const copyBtn = `<button onclick="copyToClipboard(${escapeHtml(JSON.stringify(texto))})" title="Copiar">📋</button>`;
       div.className = "mensaje-bot";
       div.innerHTML = `
         <div class="avatar-bot-mini">

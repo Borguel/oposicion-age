@@ -118,8 +118,16 @@ async function obtenerAuthHeaders() {
       }
       return bloques;
     }
+    // El esquema lo genera la IA a partir de un PDF subido por el usuario:
+    // se escapa antes de aplicar el marcado de negrita para que un documento
+    // con "<script>" o similar como texto plano no se ejecute al pintarlo.
+    function escaparHtml(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto ?? '';
+      return div.innerHTML;
+    }
     function negritaInlineHtml(texto) {
-      return texto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      return escaparHtml(texto).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     }
     function quitarMarcadoresNegrita(texto) {
       return texto.replace(/\*\*(.*?)\*\*/g, '$1');
@@ -255,7 +263,7 @@ async function obtenerAuthHeaders() {
         }
         nombreArchivo = file.name;
         const fileName = nombreArchivo.length > 30 ? nombreArchivo.substring(0, 27) + '...' : nombreArchivo;
-        fileNameDisplay.innerHTML = `📄 ${fileName}`;
+        fileNameDisplay.textContent = `📄 ${fileName}`;
         fileNameDisplay.classList.remove('hidden');
       } else {
         fileNameDisplay.classList.add('hidden');

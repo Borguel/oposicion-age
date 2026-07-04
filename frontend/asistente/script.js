@@ -185,19 +185,29 @@ document.addEventListener("DOMContentLoaded", function() {
                 }, 1000);
             }
             
+            // El chat pinta tanto lo que escribe el usuario como la
+            // respuesta de la IA: se escapa antes de convertir saltos de
+            // línea en <br> para que ningún mensaje pueda ejecutar HTML.
+            function escaparHtml(texto) {
+                const div = document.createElement("div");
+                div.textContent = texto ?? "";
+                return div.innerHTML;
+            }
+
             // Función para agregar mensajes al chat
             function agregarMensaje(tipo, texto) {
                 const div = document.createElement("div");
                 div.className = tipo === "user" ? "mensaje-user" : "mensaje-bot";
-                
+
                 if (animationsEnabled) {
                     div.style.animation = "fadeIn 0.5s ease-out";
                 }
-                
+
+                const textoSeguro = escaparHtml(texto).replace(/\n/g, "<br>");
                 if (tipo === "user") {
                     div.innerHTML = `
                         <div class="bubble-user">
-                            <div class="message-content">${texto.replace(/\n/g, "<br>")}</div>
+                            <div class="message-content">${textoSeguro}</div>
                             <div class="message-time">${getCurrentTime()}</div>
                         </div>
                         <div class="user-avatar">
@@ -210,7 +220,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Asistente">
                         </div>
                         <div class="bubble-bot">
-                            <div class="message-content">${texto.replace(/\n/g, "<br>")}</div>
+                            <div class="message-content">${textoSeguro}</div>
                             <div class="message-actions">
                                 <button class="action-btn copy-btn" title="Copiar">
                                     <i class="far fa-copy"></i>
@@ -296,9 +306,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 conversationHistory.forEach(conv => {
                     const historyItem = document.createElement("div");
                     historyItem.className = "history-item";
+                    const preguntaCorta = conv.question.substring(0, 50) + (conv.question.length > 50 ? "..." : "");
                     historyItem.innerHTML = `
-                        <div class="history-date">${conv.date}</div>
-                        <div class="history-question">${conv.question.substring(0, 50)}${conv.question.length > 50 ? "..." : ""}</div>
+                        <div class="history-date">${escaparHtml(conv.date)}</div>
+                        <div class="history-question">${escaparHtml(preguntaCorta)}</div>
                         <button class="history-load-btn" data-id="${conv.id}">
                             <i class="fas fa-history"></i> Cargar
                         </button>

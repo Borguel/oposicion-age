@@ -174,13 +174,21 @@ async function obtenerAuthHeaders() {
       // Auto-guardar al cambiar de tarjeta
       guardarEstado();
     }
+    // Las tarjetas las genera la IA a partir de un PDF subido por el
+    // usuario: se escapan antes de pintarlas para que un documento con
+    // "<script>" o similar como texto plano no se ejecute al mostrarlas.
+    function escaparHtml(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto ?? '';
+      return div.innerHTML;
+    }
     function mostrarListaTarjetas() {
       let html = '';
       tarjetas.forEach((tarjeta, index) => {
         html += `
           <div class="tarjeta-miniatura" onclick="seleccionarTarjeta(${index})">
-            <div class="pregunta">${tarjeta.pregunta}</div>
-            <div class="respuesta">${tarjeta.respuesta}</div>
+            <div class="pregunta">${escaparHtml(tarjeta.pregunta)}</div>
+            <div class="respuesta">${escaparHtml(tarjeta.respuesta)}</div>
           </div>
         `;
       });
@@ -208,7 +216,7 @@ async function obtenerAuthHeaders() {
           return;
         }
         const fileName = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
-        fileNameDisplay.innerHTML = `📄 ${fileName}`;
+        fileNameDisplay.textContent = `📄 ${fileName}`;
         fileNameDisplay.classList.remove('hidden');
       } else {
         fileNameDisplay.classList.add('hidden');

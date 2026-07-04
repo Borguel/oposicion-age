@@ -48,6 +48,16 @@ function quitarNumeracion(texto) {
   return (texto || "").replace(/^\s*\d+\s*[\.\)]\s*/, "");
 }
 
+// El texto de preguntas/opciones/explicaciones viene de la IA (a partir de
+// temario o de un PDF subido por el usuario) y se interpola en innerHTML:
+// se escapa para que un documento con "<script>" o similar como texto plano
+// no pueda ejecutarse en el navegador de quien lo generó.
+function escaparHtml(texto) {
+  const div = document.createElement("div");
+  div.textContent = texto ?? "";
+  return div.innerHTML;
+}
+
 /**
  * Racha de aciertos más larga dentro de este test (rachas de "en blanco"
  * cortan la racha igual que un fallo, solo cuenta consecutivos correctos).
@@ -96,7 +106,7 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     else if (seleccion === null || seleccion === undefined) clase = "blanco";
 
     detalleHTML += `<div class="${clase}" style="margin-bottom:25px;">
-      <div class="pregunta-en-negrita">${i + 1}. ${quitarNumeracion(p.pregunta)}</div>`;
+      <div class="pregunta-en-negrita">${i + 1}. ${escaparHtml(quitarNumeracion(p.pregunta))}</div>`;
     for (const letra in p.opciones) {
       let tipoRespuesta = "resp-neutra";
       let icono = "";
@@ -108,18 +118,18 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
         tipoRespuesta = "resp-incorrecta";
         icono = '<span class="icono-incorrecto">❌ </span>';
       }
-      detalleHTML += `<div class="${tipoRespuesta}">${icono}${letra}) ${p.opciones[letra]}</div>`;
+      detalleHTML += `<div class="${tipoRespuesta}">${icono}${letra}) ${escaparHtml(p.opciones[letra])}</div>`;
     }
     const idExp = `exp-${i}-${Math.random().toString(36).slice(2, 6)}`;
     detalleHTML += `<button type="button" class="btn age-btn-toggle-exp" data-toggle-target="${idExp}" style="margin-top: 10px; background: #e9ecef; color: #495057;">📘 Mostrar/Ocultar Explicación</button>`;
-    detalleHTML += `<div id="${idExp}" style="display:none; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;"><strong>Explicación:</strong> ${explicacion}</div></div>`;
+    detalleHTML += `<div id="${idExp}" style="display:none; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;"><strong>Explicación:</strong> ${escaparHtml(explicacion)}</div></div>`;
   });
 
   const filasTema = Object.values(statsPorTema).map((t) => {
     const resolucion = t.total ? ((t.aciertos / t.total) * 100).toFixed(0) : "0";
     return `
       <tr>
-        <td>${acortarTitulo(t.titulo)}</td>
+        <td>${escaparHtml(acortarTitulo(t.titulo))}</td>
         <td>${t.total}</td>
         <td class="celda-acierto">${t.aciertos}</td>
         <td class="celda-fallo">${t.fallos}</td>
