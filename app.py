@@ -89,7 +89,7 @@ def verificar_api_key():
         return
     if request.method == "OPTIONS":
         return
-    if request.path in ("/", "/webhook-stripe"):
+    if request.path in ("/", "/webhook-stripe", "/tareas/recordatorios-racha"):
         return
     if request.headers.get("X-API-Key") != API_SECRET_KEY:
         return jsonify({"error": "No autorizado"}), 401
@@ -101,6 +101,7 @@ from blueprints.chat_ia import bp as chat_ia_bp
 from blueprints.pdf_ia import bp as pdf_ia_bp
 from blueprints.pagos import bp as pagos_bp
 from blueprints.ranking import bp as ranking_bp
+from blueprints.tareas_programadas import bp as tareas_programadas_bp
 
 app.register_blueprint(temario_bp)
 app.register_blueprint(test_ia_bp)
@@ -108,6 +109,7 @@ app.register_blueprint(chat_ia_bp)
 app.register_blueprint(pdf_ia_bp)
 app.register_blueprint(pagos_bp)
 app.register_blueprint(ranking_bp)
+app.register_blueprint(tareas_programadas_bp)
 
 # Guardado y progreso (rutas_progreso.py ya registra las suyas directamente
 # sobre `app`, con el mismo patrón de "función que recibe app y db").
