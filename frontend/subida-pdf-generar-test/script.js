@@ -199,7 +199,7 @@ async function obtenerAuthHeaders() {
           body: formData
         });
         if (res.status === 403) {
-          throw new Error("Esta herramienta requiere el plan Premium. Ve a /planes/ para activarlo.");
+          throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
         }
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));

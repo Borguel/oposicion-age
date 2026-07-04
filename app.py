@@ -23,7 +23,7 @@ from guardar_resultado import guardar_resultado_en_firestore
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida, coleccion_temario, coleccion_examenes_oficiales
-from limites_uso import MAX_PAGINAS_PDF, verificar_limite_uso, registrar_uso
+from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso
 # Cargar variables de entorno
 load_dotenv()
 print("🔑 Clave OpenAI:", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
@@ -394,7 +394,7 @@ def generar_test_fallos():
 # RUTAS PARA DEEPSEEK (PDFs)
 # ===================================================================
 @app.route('/resumir-pdf', methods=['POST'])
-@requiere_plan(db, "premium", global_check=True)
+@requiere_plan(db, "gratis", global_check=True)
 def resumir_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -406,8 +406,9 @@ def resumir_pdf():
         return jsonify({"error": mensaje_error}), 429
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        if len(pdf_reader.pages) > MAX_PAGINAS_PDF:
-            return jsonify({"error": f"El PDF tiene demasiadas páginas (máx. {MAX_PAGINAS_PDF}). Divide el documento en partes más pequeñas."}), 400
+        limite_paginas = max_paginas_para_plan(g.plan_actual)
+        if len(pdf_reader.pages) > limite_paginas:
+            return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
@@ -439,7 +440,7 @@ def resumir_pdf():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
-        registrar_uso(db, g.uid, "pdf_ia")
+        registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
         data = response.json()
         resumen = data['choices'][0]['message']['content']
         return jsonify({"resumen": resumen})
@@ -447,11 +448,11 @@ def resumir_pdf():
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 # ✅ NUEVA RUTA: alias para compatibilidad con frontend
 @app.route('/resumir-documento', methods=['POST'])
-@requiere_plan(db, "premium", global_check=True)
+@requiere_plan(db, "gratis", global_check=True)
 def resumir_documento():
     return resumir_pdf()
 @app.route('/generar-esquema-desde-pdf', methods=['POST'])
-@requiere_plan(db, "premium", global_check=True)
+@requiere_plan(db, "gratis", global_check=True)
 def generar_esquema_desde_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -463,8 +464,9 @@ def generar_esquema_desde_pdf():
         return jsonify({"error": mensaje_error}), 429
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        if len(pdf_reader.pages) > MAX_PAGINAS_PDF:
-            return jsonify({"error": f"El PDF tiene demasiadas páginas (máx. {MAX_PAGINAS_PDF}). Divide el documento en partes más pequeñas."}), 400
+        limite_paginas = max_paginas_para_plan(g.plan_actual)
+        if len(pdf_reader.pages) > limite_paginas:
+            return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
@@ -496,14 +498,14 @@ def generar_esquema_desde_pdf():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
-        registrar_uso(db, g.uid, "pdf_ia")
+        registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
         data = response.json()
         esquema = data['choices'][0]['message']['content']
         return jsonify({"esquema": esquema})
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 @app.route('/generar-test-desde-pdf', methods=['POST'])
-@requiere_plan(db, "premium", global_check=True)
+@requiere_plan(db, "gratis", global_check=True)
 def generar_test_desde_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -521,8 +523,9 @@ def generar_test_desde_pdf():
         return jsonify({"error": mensaje_error}), 429
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        if len(pdf_reader.pages) > MAX_PAGINAS_PDF:
-            return jsonify({"error": f"El PDF tiene demasiadas páginas (máx. {MAX_PAGINAS_PDF}). Divide el documento en partes más pequeñas."}), 400
+        limite_paginas = max_paginas_para_plan(g.plan_actual)
+        if len(pdf_reader.pages) > limite_paginas:
+            return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
@@ -563,7 +566,7 @@ def generar_test_desde_pdf():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
-        registrar_uso(db, g.uid, "pdf_ia")
+        registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
         data = response.json()
         respuesta = data['choices'][0]['message']['content']
         start_index = respuesta.find("[")
@@ -607,7 +610,7 @@ def generar_test_desde_pdf():
             "respuesta_cruda": respuesta[:500] if 'respuesta' in locals() else "N/A"
         }), 500
 @app.route('/generar-tarjetas-desde-pdf', methods=['POST'])
-@requiere_plan(db, "premium", global_check=True)
+@requiere_plan(db, "gratis", global_check=True)
 def generar_tarjetas_desde_pdf():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -619,8 +622,9 @@ def generar_tarjetas_desde_pdf():
         return jsonify({"error": mensaje_error}), 429
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        if len(pdf_reader.pages) > MAX_PAGINAS_PDF:
-            return jsonify({"error": f"El PDF tiene demasiadas páginas (máx. {MAX_PAGINAS_PDF}). Divide el documento en partes más pequeñas."}), 400
+        limite_paginas = max_paginas_para_plan(g.plan_actual)
+        if len(pdf_reader.pages) > limite_paginas:
+            return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
@@ -673,7 +677,7 @@ def generar_tarjetas_desde_pdf():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
-        registrar_uso(db, g.uid, "pdf_ia")
+        registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
         data = response.json()
         respuesta = data['choices'][0]['message']['content']
         start_index = respuesta.find("[")
@@ -717,7 +721,7 @@ def generar_tarjetas_desde_pdf():
 MAX_CARACTERES_CHAT_PDF = 12000
 
 @app.route('/subir-pdf-chat', methods=['POST'])
-@requiere_plan(db, "premium", global_check=True)
+@requiere_plan(db, "basico", global_check=True)
 def subir_pdf_chat():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -726,8 +730,9 @@ def subir_pdf_chat():
         return jsonify({"error": "Nombre de archivo inválido"}), 400
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        if len(pdf_reader.pages) > MAX_PAGINAS_PDF:
-            return jsonify({"error": f"El PDF tiene demasiadas páginas (máx. {MAX_PAGINAS_PDF}). Divide el documento en partes más pequeñas."}), 400
+        limite_paginas = max_paginas_para_plan(g.plan_actual)
+        if len(pdf_reader.pages) > limite_paginas:
+            return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
@@ -751,7 +756,7 @@ def subir_pdf_chat():
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 
 @app.route('/chat-pdf-mensaje', methods=['POST'])
-@requiere_plan(db, "premium", global_check=True)
+@requiere_plan(db, "basico", global_check=True)
 def chat_pdf_mensaje():
     datos = request.get_json(silent=True) or {}
     mensaje = (datos.get("mensaje") or "").strip()
@@ -801,7 +806,7 @@ def chat_pdf_mensaje():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
-        registrar_uso(db, g.uid, "chat_pdf")
+        registrar_uso(db, g.uid, "chat_pdf", g.plan_actual)
         data_resp = response.json()
         respuesta = data_resp['choices'][0]['message']['content']
         return jsonify({"respuesta": respuesta})
@@ -835,7 +840,7 @@ def chat_deepseek():
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
-        registrar_uso(db, g.uid, "chat_pdf")
+        registrar_uso(db, g.uid, "chat_pdf", g.plan_actual)
         data = response.json()
         respuesta = data['choices'][0]['message']['content']
         return jsonify({"respuesta": respuesta})
@@ -845,7 +850,7 @@ def chat_deepseek():
 # NUEVAS RUTAS PARA GUARDAR CONTENIDO DESDE PDF
 # ===================================================================
 @app.route('/guardar-test-pdf', methods=['POST'])
-@requiere_plan(db, "premium")
+@requiere_plan(db, "gratis", global_check=True)
 def guardar_test_pdf():
     try:
         data = request.get_json()
@@ -867,7 +872,7 @@ def guardar_test_pdf():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 @app.route('/guardar-resumen-pdf', methods=['POST'])
-@requiere_plan(db, "premium")
+@requiere_plan(db, "gratis", global_check=True)
 def guardar_resumen_pdf():
     try:
         data = request.get_json()
@@ -888,7 +893,7 @@ def guardar_resumen_pdf():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 @app.route('/guardar-esquema-pdf', methods=['POST'])
-@requiere_plan(db, "premium")
+@requiere_plan(db, "gratis", global_check=True)
 def guardar_esquema_pdf():
     try:
         data = request.get_json()
@@ -909,7 +914,7 @@ def guardar_esquema_pdf():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 @app.route('/guardar-tarjetas-pdf', methods=['POST'])
-@requiere_plan(db, "premium")
+@requiere_plan(db, "gratis", global_check=True)
 def guardar_tarjetas_pdf():
     try:
         data = request.get_json()

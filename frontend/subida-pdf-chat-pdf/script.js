@@ -77,8 +77,8 @@ async function handlePdfUpload() {
     });
     hideTypingIndicator();
     if (response.status === 403) {
-      pdfPreviewText.textContent = "Esta herramienta requiere el plan Premium.";
-      addMessageToPdfChat('Esta herramienta requiere el plan Premium. Ve a <a href="/planes/">/planes/</a> para activarlo.', 'bot');
+      pdfPreviewText.textContent = "Esta herramienta requiere el plan Básico o superior.";
+      addMessageToPdfChat('Esta herramienta requiere el plan Básico o superior. Ve a <a href="/planes/">/planes/</a> para activarlo.', 'bot');
       return;
     }
     const datos = await response.json().catch(() => ({}));
@@ -124,7 +124,7 @@ async function enviarMensajePdf() {
     hideTypingIndicator();
     const datos = await response.json().catch(() => ({}));
     if (response.status === 403) {
-      addMessageToPdfChat('Esta herramienta requiere el plan Premium. Ve a <a href="/planes/">/planes/</a> para activarlo.', 'bot');
+      addMessageToPdfChat('Esta herramienta requiere el plan Básico o superior. Ve a <a href="/planes/">/planes/</a> para activarlo.', 'bot');
       return;
     }
     if (!response.ok) {
