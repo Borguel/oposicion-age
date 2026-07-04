@@ -1,0 +1,1262 @@
+[
+  {
+    "numero": 1,
+    "pregunta": "El Título I de la Constitución Española de 1978  se denomina:",
+    "opciones": {
+      "A": "De los derechos y deberes fundamentales.",
+      "B": "De los derechos y deberes de los ciudadanos.",
+      "C": "De los españoles y los extranjeros.",
+      "D": "Derechos y libertades."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 2,
+    "pregunta": "Según el artículo 2 de la Ley Orgánica 3/1981, de 6 de abril, del Defensor del Pueblo, si en el procedimiento inicial no se alcanzan las mayorías exigidas para la elección del Defensor del Pueblo :",
+    "opciones": {
+      "A": "Se convoca directamente un nuevo Pleno conjunto de las Cortes Generales , y el candidato será designado por mayoría absoluta de ambas Cámaras.",
+      "B": "Se convoca directamente un nuevo Pleno conjunto de las Cortes Generales , y el candidato será designado por mayoría simple de ambas Cámaras.",
+      "C": "Se procede a una nueva sesión de la Comisión Mixta Congreso -Senado y, en el plazo máximo de un mes, se formulan sucesivas propuestas; una vez obtenidos tres quintos en el Congreso, la designación queda realizada al alcanzarse mayoría absoluta en el Senado.",
+      "D": "Se procede a una nueva sesión de la Comisión Mixta Congreso -Senado y, en el plazo máximo de quince días, se formulan sucesivas propuestas; una vez obtenidos tres quintos en el Congreso, la designación queda realizada al alcanzarse mayoría simple en el Senado."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 3,
+    "pregunta": "¿Quién propone a los Magistrados del Tribunal Constitucional , de acuerdo con el artículo 159 de la Constitución Española de 1978 ?",
+    "opciones": {
+      "A": "4 el Congreso, 4 el Senado, 2 el Gobierno y 2 el Consejo General del Poder Judicial.",
+      "B": "6 el Congreso y 6 el Senado.",
+      "C": "4 el Congreso, 4 el Senado y 4 el Gobierno.",
+      "D": "6 el Congreso, 2 el Senado, 2 el Gobierno y 2 el Presidente del Tribunal Supremo."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 4,
+    "pregunta": "Según el artículo 99 de la Constitución Española de 1978, e l Rey propone candidato a la Presidencia del Gobierno:",
+    "opciones": {
+      "A": "Libremente y sin consulta previa.",
+      "B": "Tras consultar a los Grupos Parlamentarios del Congreso y el Senado.",
+      "C": "Tras consultar a los representantes designados por los grupos políticos con representación parlamentaria.",
+      "D": "A propuesta del Presidente del Congreso ."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 5,
+    "pregunta": "Según el artículo 62 de la Constitución Española de 1978, ¿cuál de las siguientes funciones corresponde al Rey en los términos expresamente previstos por dicho precepto?",
+    "opciones": {
+      "A": "Autorizar indultos generales mediante Real Decreto, a propuesta del Gobierno.",
+      "B": "Ser informado de los asuntos de Estado y presidir las sesiones de las Cortes Generales.",
+      "C": "El Alto Patronazgo de las Fuerzas Armadas.",
+      "D": "Ejercer el derecho de gracia con arreglo a la ley, sin que esta pueda autorizar indultos generales."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 6,
+    "pregunta": "De acuerdo con el artículo 56.1 de la Constitución Española de 1978, ¿qué arbitra y modera el Rey?",
+    "opciones": {
+      "A": "Las relaciones diplomáticas.",
+      "B": "El funcionamiento regular de las instituciones.",
+      "C": "La unidad y permanencia del Estado Español.",
+      "D": "Las relaciones entre las naciones de su comunidad histórica."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 7,
+    "pregunta": "Según el artículo 75 de la Constitución Española de 1978, ¿cuál de las siguientes materias NO puede ser objeto de delegación en las Comisiones Legislativas Permanentes para la aprobación de proyectos o proposiciones de ley?",
+    "opciones": {
+      "A": "Una ley orgánica.",
+      "B": "Una ley ordinaria que regule aspectos sectoriales de una política pública.",
+      "C": "Una proposición de ley ordinaria presentada por un grupo parlamentario.",
+      "D": "Un proyecto de ley ordinaria cuya tramitación haya sido delegada, aunque el Pleno pueda recabar en cualquier momento el debate y votación."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 8,
+    "pregunta": "De conformidad con lo establecido en la Ley Orgánica 3/1980, de 22 de abril, del Consejo de Estado, el Pleno estará compuesto  por, entre otros :",
+    "opciones": {
+      "A": "El vicepresidente.",
+      "B": "Los consejeros electivos, en número de doce, nombrados entre quienes hayan desempeñado el cargo de Fiscal General del Estado.",
+      "C": "Los consejeros natos , entre los que figurarán los ex gobernadores del Banco de España.",
+      "D": "Los consejeros permanentes, en numero igual al de las Secciones del Consejo, que son nombrados, sin límite de tiempo, por Real Decreto."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 9,
+    "pregunta": "Según el artículo 124.4 de la Constitución Española de 1978, el Fiscal General del Estado es nombrado por :",
+    "opciones": {
+      "A": "El Congreso de los Diputados, a propuesta del Gobierno, previo informe vinculante del Consejo General del Poder Judicial.",
+      "B": "El Rey, a propuesta del Consejo General del Poder Judicial, oído el Gobierno.",
+      "C": "El Rey, a propuesta del Gobierno, oído el Consejo General del Poder Judicial.",
+      "D": "El Rey, a propuesta del Gobierno, previa autorización del Senado."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 10,
+    "pregunta": "Según el artículo 3.2 de la Ley Orgánica 6/1985, de 1 de julio, del Poder Judicial, ¿en qué ámbito administran Justicia los órganos de la jurisdicción militar?",
+    "opciones": {
+      "A": "En cualquiera en el que estén implicados los miembros de las Fuerzas Armadas, con independencia de su naturaleza.",
+      "B": "En el estrictamente castrense  y, en su caso, en las materias que establezca la declaración del estado de sitio .",
+      "C": "Únicamente en el disciplinario militar, con exclusión de las materias penales y procesales.",
+      "D": "Exclusivamente en el del estado de sitio."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 11,
+    "pregunta": "Según el artículo 55 bis de la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, ¿qué criterio debe observarse en el nombramiento de las personas titulares de las Secretarías de Estado y de los órganos directivos?",
+    "opciones": {
+      "A": "Debe asegurarse que, en cada departamento ministerial, las personas de cada sexo no superen el 60% ni sean menos del 40 %.",
+      "B": "Debe asegurarse que, en el conjunto de la Administración General del Estado, las personas de cada sexo no superen el 70% ni sean menos del 30  %.",
+      "C": "Debe asegurarse que, en el conjunto de la Administración General del Estado, las personas de cada sexo no superen el 60% ni sean menos del 40  %.",
+      "D": "En las Secretarías de Estado se aplica el principio de presencia equilibrada de hombres y mujeres, y en el resto de los órganos directivos de cada departamento ministerial, el de paridad."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 12,
+    "pregunta": "Según el artículo 82.1 de la Ley 40/2015, de 1 de octubre, del Régimen Jurídico del Sector Público , el Inventario de Entidades del Sector Público Estatal, Autonómico y Local:",
+    "opciones": {
+      "A": "Es un registro público administrativo que garantiza la información pública y la ordenación de todas las entidades del sector público institucional, y su integración, gestión y publicación dependen de la Intervención General de la Administración del Estado.",
+      "B": "Es un registro público administrativo que garantiza la información pública y la ordenación de todas las entidades del sector público institucional, y su integración, gestión y publicación dependen de la Autoridad Independiente de Responsabilidad Fiscal.",
+      "C": "Es un registro administrativo interno, que recoge la clasificación de todas las entidades del sector público institucional y su gestión depende del Tribunal de Cuentas.",
+      "D": "Es un registro administrativo interno, que recoge la clasificación de todas las entidades del sector público institucional y su gestión depende de la Subdirección General de Datos del Empleo Público."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 13,
+    "pregunta": "¿Sobre cuál de las siguientes materias tiene competencia exclusiva el Estado, de acuerdo con el artículo 149.1 de la Constitución de 1978?",
+    "opciones": {
+      "A": "Ordenación del territorio, urbanismo y vivienda.",
+      "B": "Asistencia social.",
+      "C": "Marina mercante.",
+      "D": "Pesca fluvial."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 14,
+    "pregunta": "¿Cuál de las siguientes afirmaciones es correcta?",
+    "opciones": {
+      "A": "La Constitución prohíbe expresamente la federación de Comunidades Autónomas.",
+      "B": "La Constitución permite la federación de Comunidades Autónomas siempre que se autorice mediante ley orgánica.",
+      "C": "La Constitución permite la federación de Comunidades Autónomas si lo aprueban por mayoría absoluta las Asambleas Legislativas de las Comunidades afectadas.",
+      "D": "La Constitución no regula la federación de Comunidades Autónomas, y se limita a lo que dispongan los Estatutos de Autonomía."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 15,
+    "pregunta": "Según el artículo 141.4 de la Constitución Española de 1978, ¿cómo se articula la administración propia de las islas en los archipiélagos?",
+    "opciones": {
+      "A": "Mediante Diputaciones Provinciales insulares.",
+      "B": "Mediante Mancomunidades insulares, creadas mediante acuerdo de los municipios que las integran.",
+      "C": "Mediante Cabildos o Consejos.",
+      "D": "Mediante Delegaciones del Gobierno en cada isla."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 16,
+    "pregunta": "Indique la respuesta correcta en relación con los municipios , de conformidad con lo establecido en la Ley 7/1985, de 2 de abril, Reguladora de las Bases del Régimen Local:",
+    "opciones": {
+      "A": "El Alcalde, los Tenientes de Alcalde, el Pleno y la Junta de Gobierno Local existen en todos los ayuntamientos.",
+      "B": "Los Tenientes de Alcalde sustituyen, por el orden de su nombramiento y en los casos de vacante, ausencia o enfermedad, al Alcalde, siendo libremente designados y removidos por los miembros del Pleno municipal.",
+      "C": "El Alcalde es el Presidente de la Corporación y ostenta el control y la fiscalización de los órganos de gobierno.",
+      "D": "Corresponde al Pleno municipal en los Ayuntamientos y a la Asamblea vecinal en el régimen de Concejo Abierto la declaración de lesividad de los actos del Ayuntamiento."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 17,
+    "pregunta": "Indique qué país de los siguientes NO forma parte de la eurozona:",
+    "opciones": {
+      "A": "Dinamarca.",
+      "B": "Letonia.",
+      "C": "Eslovenia.",
+      "D": "Malta."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 18,
+    "pregunta": "El Día de Europa  se celebra cada 9 de mayo . ¿Qué conmemora?",
+    "opciones": {
+      "A": "La firma del Tratado de Roma.",
+      "B": "Celebra el aniversario de la Declaración Schuman.",
+      "C": "La primera ampliación de la Unión Europea.",
+      "D": "La entrada en vigor del Acuerdo de Schengen."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 19,
+    "pregunta": "En relación con el mandato del Presidente del Consejo Europeo  indique la respuesta correcta de acuerdo con el artículo 15 del Tratado de la Unión Europea :",
+    "opciones": {
+      "A": "Se elige para un mandato de cinco años, renovable una vez.",
+      "B": "Se elige para un mandato de dos años, no renovable.",
+      "C": "Se elige para un mandato de dos años y medio, renovable una vez.",
+      "D": "Se elige para un mandato de cuatro años, renovable una vez."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 20,
+    "pregunta": "¿Quién se encargará de preparar los trabajos del Consejo , de acuerdo con el artículo 16 del Tratado de la Unión Europea ?",
+    "opciones": {
+      "A": "Un Comité de Representantes Permanentes de los Gobiernos de los estados miembros.",
+      "B": "Un Comité de Representantes Especiales de los Gobiernos de los estados miembros.",
+      "C": "Un Comité de Representantes Expertos de los Gobiernos de los estados miembros.",
+      "D": "Un Comité de Representantes Profesionales de los Gobiernos de los estados miembros."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 21,
+    "pregunta": "De acuerdo con el artículo 249 del Tratado de Funcionamiento de la Unión Europea, ¿en qué plazo  la Comisión publicará todos los años, con carácter previo a la apertura del período de sesiones del Parlamento Europeo, un informe general sobre las actividades de la Unión?",
+    "opciones": {
+      "A": "Al menos tres meses antes.",
+      "B": "Al menos seis meses antes.",
+      "C": "Al menos un mes antes.",
+      "D": "Al menos cuatro meses antes."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 22,
+    "pregunta": "Según el artículo 14 del Tratado de la Unión Europea, señale la respuesta correcta:",
+    "opciones": {
+      "A": "El Parlamento Europeo elegirá a su Presidente y a la Mesa de entre sus diputados.",
+      "B": "La función presupuestaria es ejercida en exclusiva por el Parlamento.",
+      "C": "El Consejo de Asuntos Exteriores velará por la coherencia de los trabajos de las diferentes formaciones del Consejo.",
+      "D": "El mandato de la Comisión será de cuatro años."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 23,
+    "pregunta": "De acuerdo con lo establecido en el artículo 263 del Tratado de Funcionamiento de la Unión Europea, el Tribunal de Justicia de la Unión Europea NO será competente para pronunciarse sobre los recursos interpuestos por:",
+    "opciones": {
+      "A": "El Comité de las Regiones.",
+      "B": "El Banco Central Europeo.",
+      "C": "El Tribunal de Cuentas.",
+      "D": "El Comité Económico y Social."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 24,
+    "pregunta": "De acuerdo con lo establecido en el artículo 288 del Tratado de Funcionamiento de la Unión Europea, la Decisión:",
+    "opciones": {
+      "A": "Tendrá alcance general y directamente aplicable en cada Estado miembro.",
+      "B": "Será obligatoria en todos sus elementos. Cuando designe destinatarios, sólo será obligatoria para éstos.",
+      "C": "Obligará al Estado miembro destinatario en cuanto al resultado que deba conseguirse, dejando, sin embargo, a las autoridades nacionales la elección de la forma y de los medios.",
+      "D": "No será vinculante."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 25,
+    "pregunta": "¿Qué sentencia del Tribunal de Justicia de la Unión Europea estableció el principio de \"efecto directo\"?",
+    "opciones": {
+      "A": "Sentencia Simmenthal.",
+      "B": "Sentencia Van Duyn.",
+      "C": "Sentencia Van Gend & Loos.",
+      "D": "Sentencia Francovich."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 26,
+    "pregunta": "Indique la respuesta correcta en relación con el  presupuesto de la Unión Europea  de acuerdo con el artículo 319 del Tratado de Funcionamiento de la Unión Europea :",
+    "opciones": {
+      "A": "El presupuesto anual de la Unión Europea se establecerá en euros salvo para Hungría y Dinamarca.",
+      "B": "Dentro del presupuesto, el Parlamento por su cuenta podrá transferir créditos de capítulo a capítulo o de subdivisión a subdivisión.",
+      "C": "El Parlamento Europeo, por recomendación del Consejo, aprobará la gestión de la Comisión en la ejecución del presupuesto.",
+      "D": "Los gastos consignados en el presupuesto para todo el ejercicio presupuestario serán autorizados con carácter semestral."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 27,
+    "pregunta": "¿Cuál es el programa marco de investigación e innovación (I+I) de la Unión Europea (UE) para el período 2021 -2027?",
+    "opciones": {
+      "A": "React EU.",
+      "B": "Invest EU.",
+      "C": "Next Generation EU.",
+      "D": "Horizonte Europa."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 28,
+    "pregunta": "De acuerdo con el artículo 3 del Tratado de Funcionamiento de la Unión Europea, indique cuál de las siguientes es una competencia exclusiva  de la Unión Europea :",
+    "opciones": {
+      "A": "El mercado interior.",
+      "B": "La energía.",
+      "C": "La política comercial común.",
+      "D": "Los transportes."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 29,
+    "pregunta": "De acuerdo con el artículo 82 del Tratado de Funcionamiento de la Unión Europea, la cooperación judicial en materia penal en la Unión, ¿en qué principio se basará?",
+    "opciones": {
+      "A": "Reconocimiento mutuo de las sentencias y resoluciones judiciales.",
+      "B": "Atribución de competencias.",
+      "C": "Proporcionalidad .",
+      "D": "Subsidiariedad."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 30,
+    "pregunta": "Indique cuál de los siguientes países NO firmó el Tratado de Estabilidad, Coordinación y Gobernanza en la Unión Económica y Monetaria:",
+    "opciones": {
+      "A": "Chipre.",
+      "B": "Malta.",
+      "C": "Estonia.",
+      "D": "República Checa."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 31,
+    "pregunta": "¿A qué eje de España Digital 2026 pertenece la medida \"Atracción de talento nacional e internacional\"?",
+    "opciones": {
+      "A": "España, Hub Audiovisual.",
+      "B": "Transformación digital de la empresa y emprendimiento digital.",
+      "C": "Competencias digitales.",
+      "D": "Economía del dato e inteligencia artificial."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 32,
+    "pregunta": "De acuerdo con lo establecido en el Real Decreto 931/2017, de 27 de octubre, por el que se regula la Memoria del Análisis de Impacto Normativo (MAIN), ¿qué debe incluir, al menos, la memoria abreviada de análisis de impacto normativo?",
+    "opciones": {
+      "A": "Anexo con todas las aportaciones recibidas analizadas con detalle.",
+      "B": "Listado de las normas que quedan derogadas.",
+      "C": "Identificación de las personas que han trabajado en la elaboración de la norma.",
+      "D": "Previsión de fechas de su futura aprobación."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 33,
+    "pregunta": "De acuerdo con la Ley Orgánica 6/2013, de 14 de noviembre, de creación de la Autoridad Independiente de Responsabilidad Fiscal, ¿antes de qué fecha la Autoridad Independiente de Responsabilidad Fiscal informará sobre el cumplimento de los objetivos de estabilidad presupuestaria y deuda pública del ejercicio en curso , así como de la regla de gasto de todas las Administraciones Públicas?",
+    "opciones": {
+      "A": "15 de octubre.",
+      "B": "1 de abril.",
+      "C": "15 de abril.",
+      "D": "15 de julio."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 34,
+    "pregunta": "La Actualización del Programa Nacional de Control de la Contaminación Atmosférica 2023 -2030, ¿de cuántas medidas individuales se compone y en cuántos paquetes específicos se agrupan?",
+    "opciones": {
+      "A": "57 medidas individuales agrupadas en 13 paquetes específicos.",
+      "B": "60 medidas individuales agrupadas en 14 paquetes específicos.",
+      "C": "61 medidas individuales agrupadas en 12 paquetes específicos.",
+      "D": "57 medidas individuales agrupadas en 14 paquetes específicos."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 35,
+    "pregunta": "Según el artículo 125 del Real Decreto Legislativo 8/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley General de la Seguridad Social , ¿cada cuánto tiempo conocerá la Comisión de Seguimiento del Fondo de Reserva de la Seguridad Social de la evolución y composición del Fondo de Reserva?",
+    "opciones": {
+      "A": "Semestralmente.",
+      "B": "Anualmente.",
+      "C": "Trimestralmente.",
+      "D": "Bimestralmente."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 36,
+    "pregunta": "Según la Ley 22/2009, de 18 de diciembre, por la que se regula el sistema de financiación de las Comunidades Autónomas de régimen común y Ciudades con Estatuto de Autonomía y se modifican determinadas normas tributarias, ¿qué fondo opera como recurso de ci erre del sistema?",
+    "opciones": {
+      "A": "El Fondo de Cohesión Sanitaria.",
+      "B": "El Fondo de Garantía Asistencial.",
+      "C": "El Fondo de Suficiencia Global.",
+      "D": "El Fondo de Garantía de los Servicios Públicos Fundamentales."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 37,
+    "pregunta": "De acuerdo con el Real Decreto 633/2025, de 15 de julio, por el que se aprueba la Estrategia Española de Apoyo Activo al Empleo 2025 -2028, indique cuál de las siguientes opciones es un objetivo operativo :",
+    "opciones": {
+      "A": "Promover la digitalización del Sistema Nacional de Empleo y el desarrollo de herramientas digitales de apoyo a la labor de los servicios públicos de empleo.",
+      "B": "Promover la participación de las entidades colaboradoras de los servicios públicos de empleo.",
+      "C": "Promover el acompañamiento integral a las empresas.",
+      "D": "Promover la plena implementación de los servicios garantizados a las personas."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 38,
+    "pregunta": "¿Qué NO debe contener el modelo de gestión de contingencias migratorias extraordinarias  para la infancia y la adolescencia migrante no acompañada, de acuerdo con lo establecido legalmente  de acuerdo con la Ley Orgánica 4/2000, de 11 de enero, sobre derechos y libertades de los extranjeros en España y su integración social ?",
+    "opciones": {
+      "A": "El conjunto de criterios objetivos para la determinación, por el órgano competente de la Administración General del Estado, de cuál será la ubicación de las personas menores de edad extranjeras no acompañadas en las diferentes comunidades o ciudades autónomas.",
+      "B": "La regulación del mecanismo de derivación de las personas menores de edad extranjeras no acompañadas a otras comunidades o ciudades autónomas.",
+      "C": "Los criterios para la determinación del número de plazas por comunidad autónoma o ciudad autónoma, para atender a las personas menores de edad extranjeras no acompañadas en caso de derivación.",
+      "D": "Un análisis de la situación de las familias de las personas menores de edad extranjeras no acompañadas."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 39,
+    "pregunta": "El V Plan de Gobierno Abierto, aprobado en 2025, contiene:",
+    "opciones": {
+      "A": "Diez compromisos.",
+      "B": "Seis compromisos.",
+      "C": "Ocho compromisos.",
+      "D": "Cuatro compromisos."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 40,
+    "pregunta": "De acuerdo con el artículo 6.2 del Real Decreto 389/2021, de 1 de junio, por el que se aprueba el Estatuto de la Agencia Española de Protección de Datos, ¿quién suscribe el informe técnico que da inicio al Proyecto de Circular?",
+    "opciones": {
+      "A": "La persona titular de la Adjuntía a la Presidencia de la Agencia Española de Protección de Datos únicamente.",
+      "B": "La persona titular de la Adjuntía con la aprobación de la persona titular de la Presidencia de la Agencia Española de Protección de Datos.",
+      "C": "El Subdirector General o el Director de División correspondiente únicamente.",
+      "D": "La persona titular de la Adjuntía a la Presidencia de la Agencia Española de Protección de Datos o el Subdirector General o el Director de División correspondiente."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 41,
+    "pregunta": "De acuerdo con la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales, el derecho a la desconexión digital:",
+    "opciones": {
+      "A": "Solo se reconoce al personal funcionario.",
+      "B": "Garantiza el respeto al tiempo de descanso y a la intimidad personal y familiar fuera del tiempo de trabajo.",
+      "C": "Impide cualquier comunicación empresarial fuera del horario laboral.",
+      "D": "Es un principio meramente programático sin eficacia jurídica."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 42,
+    "pregunta": "De acuerdo con el Real Decreto 675/2023, de 18 de julio, por el que se modifica el Real Decreto 1051/2013, de 27 de diciembre, por el que se regulan las prestaciones del Sistema para la Autonomía y Atención a la Dependencia, establecidas en la Ley 39/2006,  de 14 de diciembre, de Promoción de la Autonomía Personal y Atención a las personas en situación de dependencia, ¿qué cantidad de horas mensuales se establece de intensidad del servicio de ayuda a domicilio en el Grado II?",
+    "opciones": {
+      "A": "De 20 a 37 horas mensuales.",
+      "B": "De 65 a 94 horas mensuales.",
+      "C": "De 42 a 68 horas mensuales.",
+      "D": "De 38 a 64 horas mensuales."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 43,
+    "pregunta": "La Ley 4/2023, de 28 de febrero, para la igualdad real y efectiva de las personas trans y para la garantía de los derechos de las personas LGTBI, define el acoso discriminatorio como:",
+    "opciones": {
+      "A": "Cualquier conducta realizada por razón de alguna de las causas de discriminación previstas en esta ley, con el objetivo o la consecuencia de atentar contra la dignidad de una persona o grupo en que se integra y de crear un entorno intimidatorio, hostil, degradante, humillante u ofensivo.",
+      "B": "Toda actitud, conducta o discurso de rechazo, repudio, prejuicio, discriminación o intolerancia hacia las personas LGTBI por el hecho de serlo, o ser percibidas como tales.",
+      "C": "Situación en que se encuentra una persona o grupo en que se integra que sea, haya sido o pudiera ser tratada de manera menos favorable que otras en situación análoga o comparable por razón de orientación sexual e identidad sexual, expresión de género o características sexuales.",
+      "D": "Diferencias de trato orientadas a prevenir, eliminar y, en su caso, compensar cualquier forma de discriminación o desventaja en su dimensión colectiva o social. Tales medidas serán aplicables en tanto subsistan las situaciones de discriminación o las desventajas que las justifican y habrán de ser razonables y proporcionadas en relación con los medios para su desarrollo y los objetivos que persigan."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 44,
+    "pregunta": "La Estrategia de Acción Exterior de España 2025 -2028 tiene entre sus grandes ejes de actuación:",
+    "opciones": {
+      "A": "Una España con presencia comercial en Asia .",
+      "B": "Una Europa reforzada.",
+      "C": "Una alianza en defensa que sustituya a la OTAN.",
+      "D": "No existe esa Estrategia."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 45,
+    "pregunta": "Mediante la Ley 7/2025, de 28 de julio, se ha creado una entidad con el objetivo de reforzar las capacidades del Estado para mejorar la salud de la población, la equidad en salud y su bienestar y proteger a la población frente a riesgos y amenazas sanitarias, con un enfoque salutogénico que potencie las capacidades y el empoderamiento de las personas y las comunidades. ¿De qué entidad se trata?",
+    "opciones": {
+      "A": "Instituto de Salud Pública O.A.",
+      "B": "Agencia Estatal de Salud Pública.",
+      "C": "Agencia Estatal de Control de Pandemias.",
+      "D": "Autoridad Administrativa Independiente de Control de Pandemias."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 46,
+    "pregunta": "Según lo dispuesto en el artículo 1.1 del Código Civil, ¿ cuáles de las siguientes son fuentes del Ordenamiento Jurídico Español?",
+    "opciones": {
+      "A": "La Ley, los Tratados Internacionales y la jurisprudencia.",
+      "B": "La Ley, los Reglamentos y l a doctrina  del Tribunal Supremo .",
+      "C": "La Ley, los Reglamentos y la jurisprudencia.",
+      "D": "La Ley, la costumbre y los principios generales del derecho."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 47,
+    "pregunta": "Según el artículo 85 de la Constitución Española de 1978, ¿ qué título recibirán las disposiciones del Gobierno que contengan legislación delegada?",
+    "opciones": {
+      "A": "Decretos -Leyes.",
+      "B": "Leyes de bases.",
+      "C": "Decretos Legislativos.",
+      "D": "Leyes Marco ."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 48,
+    "pregunta": "Según el artículo 133 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, ¿ cuándo podrá prescindirse del trámite de consulta pública?",
+    "opciones": {
+      "A": "En caso de normas no organizativas de la Administración autonómica.",
+      "B": "En caso de normas no presupuestarias de la Administración General del Estado.",
+      "C": "Cuando concurran razones graves de interés público que lo justifiquen.",
+      "D": "En caso de normas no organizativas de la Administración General del Estado."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 49,
+    "pregunta": "Según el artículo 48 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, son anulables los actos administrativos que:",
+    "opciones": {
+      "A": "Incurran en cualquier infracción del ordenamiento jurídico, incluso la desviación de poder.",
+      "B": "Lesionen derechos fundamentales.",
+      "C": "Se dicten prescindiendo total y absolutamente del procedimiento.",
+      "D": "Sean inexistentes jurídicamente."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 50,
+    "pregunta": "Según el artículo 44 de la Ley 9/2017, de 8 de noviembre, de Contratos del Sector Público, ¿ en qué casos los  contratos administrativos especiales serán susceptibles de recurso especial en materia de contratación?",
+    "opciones": {
+      "A": "Cuando su valor estimado sea igual al establecido para los contratos de servicios.",
+      "B": "Cuando por sus características no sea posible fijar su precio de licitación.",
+      "C": "Cuando su valor estimado sea inferior al establecido para los contratos de servicios.",
+      "D": "Cuando por sus caracteristicas no sea posible fijar su valor estimado."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 51,
+    "pregunta": "Según el artículo 36 de la Ley 9/2017, de 8 de noviembre, de Contratos del Sector Público, ¿ cómo se perfeccionan los contratos basados en un acuerdo marco?",
+    "opciones": {
+      "A": "Con su formalización.",
+      "B": "Con su publicación en el Diario Oficial de la Unión Europea.",
+      "C": "Con su adjudicación.",
+      "D": "De conformidad por la legislación por la que se rijan."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 52,
+    "pregunta": "Según el artículo 88 de la Ley 9/2017, de 8 de noviembre, de Contratos del Sector Público, en los contratos de obras, la solvencia técnica del empresario podrá ser acreditada a elección del órgano de contratación teniendo en cuenta  la relación de las obras ejecutadas en el curso de :",
+    "opciones": {
+      "A": "Los dos últimos años.",
+      "B": "Los cinco últimos años.",
+      "C": "Los tres últimos años.",
+      "D": "Los cuatro  últimos años."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 53,
+    "pregunta": "Según lo dispuesto en el artículo 20 de la Ley 38/2003, de 17 de noviembre, General de Subvenciones, ¿cuál de los siguientes es el órgano responsable de la administración y custodia de la Base de Datos Nacional de Subvenciones?",
+    "opciones": {
+      "A": "El Ministerio de Hacienda.",
+      "B": "La Intervención General de la Administración del Estado.",
+      "C": "El Ministerio de Economía, Comercio y Empresa.",
+      "D": "La Autoridad Independiente de Responsabilidad Fiscal."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 54,
+    "pregunta": "Según el artículo veintidós  de la Ley de 16 de diciembre de 1954 sobre expropiación forzosa, ¿qué recurso cabrá interponer contra el acuerdo de necesidad de ocupación?",
+    "opciones": {
+      "A": "Recurso de súplica ante el Delegado del Gobierno.",
+      "B": "Recurso de reposición ante el Subdelegado del Gobierno.",
+      "C": "Recurso de revisión ante el Subdelegado del Gobierno.",
+      "D": "Recurso de alzada ante el Ministerio correspondiente."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 55,
+    "pregunta": "Según la Ley 33/2003, de 3 de noviembre, del Patrimonio de las Administraciones Públicas, en relación con la potestad de deslinde, ¿ cuál de las siguientes afirmaciones es correcta?",
+    "opciones": {
+      "A": "Iniciado el procedimiento administrativo de deslinde, y mientras dure su tramitación, podrá instarse procedimiento judicial con igual pretensión.",
+      "B": "La incoación del procedimiento para deslindar bienes patrimoniales de la Adminsitración General del Estado se acordará por el Ministro de Hacienda.",
+      "C": "La resolución del procedimiento corresponderá al Director General de Patrimonio del Estado.",
+      "D": "La instrucción del procedimiento corresponderá a los Delegados de Economía y Hacienda."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 56,
+    "pregunta": "Según el artículo 91.3 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, en los procedimientos de responsabilidad patrimonial , ¿cuándo podrá entenderse que la resolución es contraria a la indemnización del particular?",
+    "opciones": {
+      "A": "Cuando hayan transcurrido cinco meses desde que se inició el procedimiento sin que haya recaído y se notifique resolución expresa, o en su caso, se haya formalizado el acuerdo.",
+      "B": "Cuando hayan transcurrido tres meses desde que se inició el procedimiento sin que haya recaído y se notifique resolución expresa.",
+      "C": "Cuando hayan transcurrido seis meses desde que se inició el procedimiento sin que haya recaido y se notifique resolución expresa o, en su caso, se haya formalizado el acuerdo.",
+      "D": "Cuando hayan transcurrido dos meses desde que se inició el procedimiento sin que haya recaído y se notifique resolución expresa."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 57,
+    "pregunta": "Según el artículo 73 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, ¿en qué plazo deberán realizarse los trámites que deban ser cumplimentados por los interesados?",
+    "opciones": {
+      "A": "En el plazo de cinco días a partir del siguiente al de la notificación del correspondiente acto, salvo en el caso de que en l a norma correspondiente se fije plazo distinto.",
+      "B": "En el plazo de tres días a partir del siguiente al de la notificación del correspondiente acto, salvo en el caso de que en la norma correspondiente se fije un plazo distinto.",
+      "C": "En el plazo de diez días a partir del siguiente al de la notificación del correspondiente acto, salvo en el caso de que en la norma correspondiente se fije plazo distinto.",
+      "D": "En el plazo de veinte días a partir del siguiente al de la notificación del correspondiente acto, salvo en el caso de que en la norma correspondiente se fije un plazo distinto."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 58,
+    "pregunta": "Según el artículo 24 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, en los procedimientos iniciados a solicitud del interesado, ¿en cuál de los siguientes casos tendrá efecto desestimatorio el s ilencio administrativo?",
+    "opciones": {
+      "A": "En los procedimientos de responsabilidad sancionadora de las A dministraciones Públicas.",
+      "B": "En los procedimientos relativos al ejercicio del derecho de asociación a que se refiere el artículo 22 de la Constitución Española  de 1978 .",
+      "C": "En los procedimientos que impliquen el ejercicio de actividades que puedan dañar el medio ambiente.",
+      "D": "En los procedimientos cuya estimación tuviera como consecuencia que se transfieran al solicitante facultades relativas al dominio privado."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 59,
+    "pregunta": "Según el artículo 121.2 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, ¿qué ocurre si el recurso de alzada se interpone ante el mismo órgano que dictó el acto impugnado?",
+    "opciones": {
+      "A": "El órgano que dictó el acto que se impugna deberá resolver el recurso de alzada el plazo de diez días desde que lo haya recibido.",
+      "B": "El órgano que dictó el acto que se impugna podrá remitirlo al competente en el plazo de quince  días, con su informe y con una copia completa y ordenada del expediente.",
+      "C": "El órgano que dictó el acto que se impugna deberá remitirlo al competente en el plazo de diez días, con su informe y con una copia completa y ordenada del expediente.",
+      "D": "El órgano que dictó el acto que se impugna deberá resolver el recurso de alzada en el plazo de quince  días desde que lo haya recibido."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 60,
+    "pregunta": "Según se establece en el artículo 19 de la Ley 29/1998, de 13 de julio, reguladora de la Jurisdicción Contencioso - administrativa, están legitimados ante el orden jurisdiccional contencioso -administrativo:",
+    "opciones": {
+      "A": "Cualquier ciudadano sin interés directo.",
+      "B": "Solo quienes ostenten un derecho subjetivo.",
+      "C": "Las personas físicas o jurídicas que ostenten un derecho o interés legítimo.",
+      "D": "Únicamente la Administración demandada."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 61,
+    "pregunta": "De acuerdo con el artículo 62 del texto refundido de la Ley del Estatuto Básico del Empleado Público, aprobado mediante Real Decreto Legislativo 5/2015, de 30 de octubre,  ¿cuál de los siguientes NO es un requisito para la adquisición de la condición de funcionario de carrera?",
+    "opciones": {
+      "A": "La firma del contrato y e l alta en nómina.",
+      "B": "La toma de posesión dentro del plazo que se establezca.",
+      "C": "El acto de acatamiento de la Constitución y, en su caso, del Estatuto de Autonomía correspondiente y del resto del Ordenamiento Jurídico.",
+      "D": "El nombramiento por el órgano o autoridad competente, que será publicado en el Diario Oficial correspondiente."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 62,
+    "pregunta": "De acuerdo con el artículo 64 del texto refundido de la Ley del Estatuto Básico del Empleado Público, aprobado mediante Real Decreto Legislativo 5/2015, de 30 de octubre,  ¿es la renuncia una forma de pérdida de la condición  de funcionario?",
+    "opciones": {
+      "A": "No, la relación de servicio es inamovible y solo puede perderse por jubilación, sanción firme de separación de servicio o pen a principal o accesoria de inhabilitación absoluta o especial para cargo público que tuviere carácter firme.",
+      "B": "Sí, no pudiendo la persona que renuncia  ingresar de nuevo en la Administración Pública a través del procedimiento de selección establecido.",
+      "C": "Sí, manifestada por escrito y aceptada expresamente por la Administración .",
+      "D": "No, los funcionarios se deben al interés general y a la obediencia debida, no existiendo en su relación estatutaria la renuncia como fórmula equivalente a la dimisión del Estatuto de los Trabajadores."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 63,
+    "pregunta": "Según el artículo 16 del texto refundido de la Ley del Estatuto Básico del Empleado Público, aprobado mediante Real Decreto Legislativo 5/2015, de 30 de octubre,  las modalidades de carrera profesional son:",
+    "opciones": {
+      "A": "Carrera horizontal, carrera vertical, promoción interna vertical y promoción interna horizontal.",
+      "B": "Carrera vertical, carrera horizontal, consolidación de grado y formación permanente.",
+      "C": "Carrera horizontal y ascensos internos específicos.",
+      "D": "Carrera vertical, carrera horizontal y carrera \"per saltum\"."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 64,
+    "pregunta": "De acuerdo con el artículo 96 del texto refundido de la Ley del Estatuto Básico del Empleado Público, aprobado mediante Real Decreto Legislativo 5/2015, de 30 de octubre, ¿qué puede suponer la sanción de demérito?",
+    "opciones": {
+      "A": "La revocación del nombramiento en el caso de los funcionarios interinos.",
+      "B": "La inhabilitación para ser titular de un nuevo contrato de trabajo con funciones similares a las desempeñadas.",
+      "C": "La suspensión firme de sueldo.",
+      "D": "La penalización a efectos de movilidad voluntaria."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 65,
+    "pregunta": "Conforme al artículo 70 del texto refundido de la Ley del Estatuto Básico del Empleado Público, aprobado mediante Real Decreto Legislativo 5/2015, de 30 de octubre,  la ejecución de la oferta de empleo público o instrumento similar deberá desarrollarse dentro del plazo improrrogable de:",
+    "opciones": {
+      "A": "Un año.",
+      "B": "Dos años.",
+      "C": "Tres años.",
+      "D": "Cuatro años."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 66,
+    "pregunta": "De acuerdo con el artículo 110.3 del Real Decreto -Ley 6/2023, de 19 de diciembre, por el que se aprueban medidas urgentes para la ejecución del plan de recuperación, transformación y resiliencia en materia de servicio público de justicia, función pública, régimen local y mecenazgo, con carácter general, en la reestructuración de puestos de trabajo, ¿a qué se adscriben los puestos resultantes?",
+    "opciones": {
+      "A": "A la oferta de empleo público.",
+      "B": "A una o varias áreas funcionales.",
+      "C": "A los perfiles profesionales .",
+      "D": "Al Registro Central de Personal ."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 67,
+    "pregunta": "De acuerdo con el artículo 127 del Real Decreto -Ley 6/2023, de 19 de diciembre, por el que se aprueban medidas urgentes para la ejecución del plan de recuperación, transformación y resiliencia en materia de servicio público de justicia, función pública, régimen local y mecenazgo , ¿es posible nombrar a una Subdirectora General en la Administración General del Estado mediante adscripción provisional?",
+    "opciones": {
+      "A": "Sí, pero solo si se ha publicado la convocatoria de libre designación y mientras esta se resuelve.",
+      "B": "Sí, si la previa convocatoria de libre designación queda desierta.",
+      "C": "No, los puestos de personal directivo público profesional no pueden cubrirse de manera provisional.",
+      "D": "No, la adscripción provisional no es una forma de provisión de puestos."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 68,
+    "pregunta": "De acuerdo con el artículo 111 del Real Decreto -Ley 6/2023, de 19 de diciembre, por el que se aprueban medidas urgentes para la ejecución del plan de recuperación, transformación y resiliencia en materia de  servicio público de justicia, función pública, régimen local y mecenazgo, ¿cómo se denominan los instrumentos de planificación de carácter abierto y permanente, en los que se podrán incluir puestos de trabajo vacantes, para fomentar una mayor ocupación de las plazas de necesaria cobertura y favorecer una movilidad ordenada y coordinada?",
+    "opciones": {
+      "A": "Planes de ámbito general de función pública.",
+      "B": "Concursos unitarios.",
+      "C": "Planes específicos de vacantes.",
+      "D": "Concursos de reestructuración de sectores concretos."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 69,
+    "pregunta": "¿Cuál de las siguientes NO es una situación administrativa de los funcionarios de carrera contemplada en el texto refundido de la Ley del Estatuto Básico del Empleado Público , aprobado mediante Real Decreto Legislativo 5/2015, de 30 de octubre ?",
+    "opciones": {
+      "A": "Excedencia.",
+      "B": "Comisión de servicios.",
+      "C": "Servicios especiales.",
+      "D": "Suspensión de funciones."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 70,
+    "pregunta": "De acuerdo con lo establecido en el artículo quinto de la Ley 53/1984, de 26 de diciembre, de Incompatibilidades del personal al servicio de las Administraciones Públicas, ¿es compatible el desempeño de un puesto de funcionario de carrera de la Administración General del Estado con el de cargo electivo, miembro de una corporación local?",
+    "opciones": {
+      "A": "Sí, salvo que en la corporación local desempeñe cargos retribuidos en régimen de dedicación exclusiva.",
+      "B": "Sí, puesto que el derecho al sufragio pasivo prima sobre la condición de funcionario.",
+      "C": "No, debe pasar a situación de excedencia por cargo electo.",
+      "D": "No, salvo que se trate de municipios de más de dos millones de habitantes."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 71,
+    "pregunta": "Según el Real Decreto 462/2002, de 24 de mayo, sobre indemnizaciones por razón del servicio, la duración de una comisión con derecho a indemnización:",
+    "opciones": {
+      "A": "Salvo casos excepcionales, será de un máximo de un mes en territorio nacional y de tres en el extranjero.",
+      "B": "Será de un máximo de un mes en territorio nacional y de tres en el extranjero, improrrogables.",
+      "C": "Salvo casos excepcionales, no durará más de quince días en territorio nacional y de un mes en el extranjero.",
+      "D": "Será de un máximo de dos meses en territorio nacional o en el extranjero, improrrogables."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 72,
+    "pregunta": "De acuerdo con la Ley 30/1984, de 2 de agosto, de medidas para la reforma de la Función Pública, ¿cuál de las siguientes afirmaciones sobre los trienios es correcta?",
+    "opciones": {
+      "A": "Serán iguales, en todas las Administraciones públicas, para cada uno de los grupos de clasificación según el nivel del complemento de destino que se perciba.",
+      "B": "Corresponde al índice de proporcionalidad asignado anualmente a cada uno de los grupos en que se organizan los Cuerpos y Escalas, Clases o Categorías.",
+      "C": "Serán iguales en todas las Administraciones públicas, para cada uno de los grupos en que se clasifican los cuerpos, escalas, categorías o clases de funcionarios.",
+      "D": "Corresponde al índice de proporcionalidad asignado cada tres años  a cada uno de los grupos en que se organizan los Cuerpos y Escalas, Clases o Categorías."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 73,
+    "pregunta": "Conforme al Real Decreto 462/2002, de 24 de mayo, sobre indemnizaciones por razón del servicio, ¿cuál de los siguientes supuestos NO da lugar a indemnización o compensación?",
+    "opciones": {
+      "A": "Desplazamientos dentro del término municipal por razón de servicio.",
+      "B": "Redistribución de efectivos.",
+      "C": "Traslados de residencia.",
+      "D": "Colaboración en centros de formación y perfeccionamiento del personal de las Administraciones públicas."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 74,
+    "pregunta": "De acuerdo con el IV Convenio colectivo único para el personal laboral de la Administración General del Estado, registrado y publicado mediante Resolución de 13 de mayo de 2019, de la Dirección General de Trabajo, ¿qué titulación mínima se exige para el grupo profesional E2?",
+    "opciones": {
+      "A": "Título clasificado en el Nivel 1 del Marco Español de Cualificaciones para la Educación Superior o equivalentes.",
+      "B": "Título de Bachiller o Técnico o equivalentes.",
+      "C": "Título clasificado en el Nivel 3 del Marco Español de Cualificaciones para la Educación Superior o equivalentes.",
+      "D": "Título clasificado en el Nivel 2 del Marco Español de Cualificaciones para la Educación Superior o equivalentes."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 75,
+    "pregunta": "De acuerdo con el IV Convenio colectivo único para el personal laboral de la Administración General del Estado, registrado y publicado mediante Resolución de 13 de mayo de 2019, de la Dirección General de Trabajo, ¿cuál de las siguientes opciones se considera órgano de representación unitaria de este personal laboral?",
+    "opciones": {
+      "A": "El delegado o delegada sindical.",
+      "B": "El delegado o delegada de personal.",
+      "C": "La sección sindical.",
+      "D": "El comité de Seguridad y Salud."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 76,
+    "pregunta": "¿Cuál de las siguientes materias está excluida de la obligatoriedad de negociación , de acuerdo con el artículo 37 del texto refundido de la Ley del Estatuto Básico del Empleado Público, aprobado mediante Real Decreto Legislativo 5/2015, de 30 de octubre ?",
+    "opciones": {
+      "A": "La determinación y aplicación de las retribuciones complementarias de los funcionarios.",
+      "B": "La regulación y determinación concreta, en cada caso, de los sistemas, criterios, órganos y procedimientos de acceso al empleo público y la promoción profesional.",
+      "C": "Los criterios generales sobre ofertas de empleo público.",
+      "D": "Los criterios generales para la determinación de prestaciones sociales y pensiones de clases pasivas."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 77,
+    "pregunta": "De acuerdo con el artículo 3 del Real Decreto Legislativo 4/2000, de 23 de junio, por el que se aprueba el texto refundido de la Ley sobre Seguridad Social de los Funcionarios Civiles del Estado, ¿quiénes quedan obligatoriamente incluidos  en el campo de aplicación del régimen especial de la Seguridad Social de los funcionarios civiles del Estado?",
+    "opciones": {
+      "A": "Los funcionarios de la Administración Local.",
+      "B": "Los funcionarios de organismos autónomos.",
+      "C": "Los funcionarios en prácticas que aspiren a incorporarse a Cuerpos de la Administración Civil del Estado.",
+      "D": "Los funcionarios de la Administración de Justicia."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 78,
+    "pregunta": "Según el artículo 66 del Real Decreto 375/2003, de 28 de marzo, por el que se aprueba el Reglamento General del Mutualismo Administrativo, ¿es el embarazo una contingencia protegida por la prestación sanitaria de MUFACE?",
+    "opciones": {
+      "A": "El embarazo no se considera contingencia , por lo tanto no está protegida por la prestación sanitaria .",
+      "B": "El embarazo no se considera enfermedad, por lo tanto no es una contingencia protegida por la prestación sanitaria.",
+      "C": "Es una contingencia protegida, pero no por la prestación sanitaria, sino por la prestación asistencial.",
+      "D": "Sí, así lo establece el Reglamento General del Mutualismo Administrativo."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 79,
+    "pregunta": "¿En qué régimen cotiza y genera su derecho a la pensión de jubilación una funcionaria de nuevo ingreso de la OEP 2021?",
+    "opciones": {
+      "A": "En el Régimen de Clases Pasivas.",
+      "B": "En el Régimen General de la Seguridad Social.",
+      "C": "Puede optar entre el Régimen de Clases Pasivas y el Régimen General de la Seguridad Social.",
+      "D": "En el Régimen de Mutualismo Administrativo."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 80,
+    "pregunta": "De acuerdo con el Real Decreto 2271/2004, de 3 de diciembre, por el que se regula el acceso al empleo público y la provisión de puestos de trabajo de las personas con discapacidad, una vez superado el proceso selectivo, ¿qué pueden solicitar al órgano conv ocante las personas que ingresen y hayan sido admitidas en la convocatoria ordinaria por el cupo de reserva para personas con discapacidad?",
+    "opciones": {
+      "A": "Un destino en la provincia de residencia habitual de la persona admitida con plaza de reserva para personas con discapacidad, por motivos de dependencia personal .",
+      "B": "La alteración del orden de prelación para la elección de las plazas dentro del ámbito territorial que se determine en la convocatoria, por motivos de dificultades de desplazamiento.",
+      "C": "Un destino en la Comunidad Autónoma de residencia habitual de la persona admitida con plaza de reserva para personas con discapacidad, por motivos de dependencia personal.",
+      "D": "Un destino en la ciudad de residencia habitual de la persona admitida con plaza de reserva para personas con discapacidad, por motivos de dependencia personal."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 81,
+    "pregunta": "De acuerdo con la Orden PJC/804/2025, de 23 de julio, por la que se establecen criterios generales para la adaptación de medios y tiempos y la realización de otros ajustes razonables en los procesos selectivos para el acceso al empleo público de personas con discapacidad, las adaptaciones de medios humanos podrán consistir en:",
+    "opciones": {
+      "A": "Un asistente personal.",
+      "B": "La concesión de un tiempo adicional para la realización de los ejercicios correspondientes a las pruebas selectivas.",
+      "C": "La puesta a disposición de la persona aspirante con discapacidad de los medios materiales que precise para la realización de las pruebas en las que participe.",
+      "D": "La puesta a disposición de la persona aspirante con discapacidad de los productos de apoyo y de las tecnologías asistidas que precise para la realización de las pruebas en las que participe."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 82,
+    "pregunta": "¿Qué articulo de la Constitución de 1978 recoge el principio de estabilidad presupuestaria?",
+    "opciones": {
+      "A": "El articulo 134, referido a los Presupuestos Generales del Estado.",
+      "B": "El artículo 135, dentro del capítulo de Econ omía y Hacienda.",
+      "C": "El artículo 40, dentro del capítulo referido a los principios rectores de la política social y económica.",
+      "D": "El artículo 66, dentro del capítulo referido la Cámaras."
+    },
+    "reserva": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 83,
+    "pregunta": "¿Cómo define el principio de estabilidad presupuestaria la Ley Orgánica 2/2012, de 27 de abril, de Estabilidad Presupuestaria y Sostenibilidad Financiera?",
+    "opciones": {
+      "A": "La situación de equilibrio estructural.",
+      "B": "La situación de superávit estructural.",
+      "C": "La situación de equilibrio o superávit estructural.",
+      "D": "La capacidad para financiar compromisos de gasto presentes y futuros dentro de los límites de déficit."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 84,
+    "pregunta": "De acuerdo con la clasificación orgánica regulada en la Ley 47/2003, de 26 de noviembre, General Presupuestaria, señale la respuesta correcta en relación con la aplicación presupuestari a 13.91.112A.240 de los Presupuestos Generales del Estado:",
+    "opciones": {
+      "A": "El 13 hace referencia al Servicio.",
+      "B": "El 112A hace referencia a la Sección.",
+      "C": "El 13 hace referencia a la Sección.",
+      "D": "El 240 hace referencia al Subconcepto."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 85,
+    "pregunta": "La clasificación económica de los estados de gastos de los Presupuestos Generales del Estado:",
+    "opciones": {
+      "A": "Agrupa los créditos asignados a los distintos centros gestores de gastos por secciones y servicios.",
+      "B": "Agrupa los créditos asignados a los distintos centros gestores de gasto por órganos administrativos  de la estructura orgánica.",
+      "C": "Agrupa los créditos por capítulos separando las operaciones corrientes, las de capital, las financieras y el Fondo de Contingencia de ejecución presupuestaria.",
+      "D": "Agrupa los créditos por objetivos de las políticas de gasto contenidas en la programación plurianual."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 86,
+    "pregunta": "¿Cuál de las siguientes NO es una modificación presupuestaria conforme a la Ley 47/2003, de 26 de noviembre, General Presupuestaria ?",
+    "opciones": {
+      "A": "La ampliación de crédito.",
+      "B": "El suplemento de crédito.",
+      "C": "El gasto plurianual de crédito.",
+      "D": "La incorporación de crédito."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 87,
+    "pregunta": "La competencia para autorizar créditos extraordinarios y suplementarios de los organismos autónomos corresponde:",
+    "opciones": {
+      "A": "A los Presidentes o Directores de los organismos hasta un importe del 10  % del correspondiente capítulo de su presupuesto inicial de gastos, cuando no supere la cuantía de 1 millón de euros, excluidos los que afecten a gastos de personal o a los contemplados en el apartado 2 del artículo 44 de esta Ley, dando cuenta de los acue rdos al Ministro de que dependan y al Ministro de Hacienda.",
+      "B": "A los Presidentes o Directores de los organismos hasta un importe del 50  % del correspondiente capítulo de su presupuesto inicial de gastos, cuando no supere la cuantía de 500.000 euros, excluidos los que afecten a gastos de personal o a los contemplados en el apartado 2 del artículo 44 de esta Ley, dando cuenta de los acuerdos  al Ministro de que dependan y al Ministro de Hacienda.",
+      "C": "A los Presidentes o Directores de los organismos hasta un importe del 10  % del correspondiente capítulo de su presupuesto inicial de gastos, cuando no supere la cuantía de 500.000 euros, excluidos los que afecten a gastos de personal o a los contemplados en el apartado 2 del artículo 44 de esta Ley, dando cuenta de los acuerdos  al Ministro de que dependan y al Ministro de Hacienda.",
+      "D": "A los Presidentes o Directores de los organismos hasta un importe del 25  % del correspondiente capítulo de su presupuesto inicial de gastos, cuando no supere la cuantía de un millón de euros, excluidos los que afecten a gastos de personal o a los contemplados en el apartado 2 del artículo 44 de esta Ley, dando cuenta de los acuerdos al Ministro de que dependan y al Ministro de Hacienda."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 88,
+    "pregunta": "De acuerdo con  el artículo 150 bis de  la Ley 47/2003, de 26 de noviembre, General Presupuestaria, ¿qué podrá avocar el Interventor General para sí en la función interventora?",
+    "opciones": {
+      "A": "Cualquier acto o expediente que considere oportuno.",
+      "B": "Solo las competencias delegadas en favor de los interventores delegados.",
+      "C": "La avocación se halla prohibida en la función interventora.",
+      "D": "Solo aquellos derivados de la modalidad de intervención material."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 89,
+    "pregunta": "Conforme al artículo treinta y ocho  de la Ley Orgánica 2/1982, de 12 de mayo, del Tribunal de Cuentas, las responsabilidades derivadas de la  responsabilidad contable:",
+    "opciones": {
+      "A": "Se transmiten a los causahabientes de los responsables por la aceptación expresa o tácita de la herencia, pero solo en la cuantía a que ascienda el importe líquido de la misma.",
+      "B": "Siempre serán solidarias y comprenderán todos los perjuicios causados.",
+      "C": "Cuando se demuestra que es directa, la cuantía de su responsabilidad se limitará a los perjuicios que sean consecuencia de sus actos y podrá moderarse en forma prudencial y equitativa.",
+      "D": "Serán subsidiarias cuando se haya producido alcance."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 90,
+    "pregunta": "De acuerdo con la Ley 47/2003, de 26 de noviembre, General Presupuestaria, el reconocimiento de la obligación es:",
+    "opciones": {
+      "A": "El acto mediante el que se declara la existencia de un crédito exigible contra la Hacienda Pública estatal.",
+      "B": "El acto mediante el cual se acuerda la realización de gastos previamente aprobados, por un importe determinado o determinable.",
+      "C": "El acto mediante el cual se autoriza la realización de un gasto determinado por una cuantía cierta o aproximada.",
+      "D": "El ingreso del pago."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 91,
+    "pregunta": "Según lo dispuesto en la  regla 23 de la  Orden de 1 de febrero de 1996, por la que se aprueba la Instrucción Operatoria Contable a seguir en la ejecución del gasto del Estado, una vez acordado el reconocimiento de la obligación, el Servicio gestor competente de la Administración General del Estado, expedirá:",
+    "opciones": {
+      "A": "Un documento OK.",
+      "B": "Un documento OP.",
+      "C": "Un documento AD.",
+      "D": "Un documento ADOK."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 92,
+    "pregunta": "De acuerdo con lo dispuesto en la Orden de 1 de febrero de 1996 por la que se aprueban los documentos contables a utilizar por la Administración General del Estado, ¿qué documento contable se expedirá para la tramitación de un crédito extraordinario?",
+    "opciones": {
+      "A": "MC070.",
+      "B": "MC060.",
+      "C": "MC030.",
+      "D": "MC040."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 93,
+    "pregunta": "¿Para qué se utiliza el documento contable D de ejercicio corriente en la Administración General del Estado?",
+    "opciones": {
+      "A": "Se utiliza en las operaciones de compromiso de gasto imputables al presupuesto corriente.",
+      "B": "Se utiliza en las operaciones de compromiso de gasto imputables a presupuestos futuros.",
+      "C": "Se utiliza en las operaciones de autorización del gasto imputables al presupuesto corriente.",
+      "D": "Se utiliza en las operaciones que combinen autorización y compromiso de gasto imputables a presupuestos futuros."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 94,
+    "pregunta": "Señale el artículo presupuestario a que debe imputarse el gasto por indemnizaciones por razón del servicio, de acuerdo con lo dispuesto en la Resolución de 20 de enero de 2014, de la Dirección General de Presupuestos, por la que se establecen los códigos que definen la clasificación económica:",
+    "opciones": {
+      "A": "Artículo 21.",
+      "B": "Artículo 12.",
+      "C": "Artículo 23.",
+      "D": "Artículo 14."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 95,
+    "pregunta": "De acuerdo con el artículo 79 de la Ley 47/2003, de 26 de noviembre, General Presupuestaria , ¿quién es responsable de la custodia y uso de los fondos y de la rendición de la cuenta de los pagos a justificar?",
+    "opciones": {
+      "A": "El cuentadante.",
+      "B": "El Ministro, o en quien este delegue, y, en su caso, los presidentes o directores de los organismos autónomos del Estado y de las entidades gestoras y servicios comunes de la Seguridad Social.",
+      "C": "El Subsecretario.",
+      "D": "El perceptor de la orden de pago a justificar."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 96,
+    "pregunta": "¿Qué nivel de especificación tienen las inversiones reales en el presupuesto del Estado , de acuerdo con lo establecido en el artículo 43 de la Ley 47/2003, de 26 de noviembre, General Presupuestaria ?",
+    "opciones": {
+      "A": "Capítulo.",
+      "B": "Artículo.",
+      "C": "Concepto.",
+      "D": "Subconcepto."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 97,
+    "pregunta": "De acuerdo con la Ley 58/2003, de 17 de diciembre, General Tributaria, los tributos cuyo hecho imponible consiste en la obtención por el obligado tributario de un beneficio o de un aumento de valor de sus bienes como consecuencia de la realización de obras  públicas o del establecimiento o ampliación de servicios públicos, son:",
+    "opciones": {
+      "A": "Tasas.",
+      "B": "Precios públicos.",
+      "C": "Impuestos indirectos.",
+      "D": "Contribuciones especiales."
+    },
+    "reserva": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 98,
+    "pregunta": "El establecimiento de tasas , de acuerdo con la Ley 8/1989, de 13 de abril, de Tasas y Precios Públicos,  se hará:",
+    "opciones": {
+      "A": "Por Ley.",
+      "B": "Por Real Decreto.",
+      "C": "Por Ley Orgánica.",
+      "D": "Por Orden del Departamento ministerial del que dependa el órgano que ha de percibirlos y a propuesta de este, o directamente por los organismos públicos, previa autorización del Departamento ministerial del que dependan."
+    },
+    "reserva": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 99,
+    "pregunta": "De acuerdo con lo dispuesto en el artículo 23 de la Ley 30/1984, de 2 de agosto, de medidas para la reforma de la Función Pública, ¿cuál es el complemento destinado a retribuir las condiciones particulares de algunos puestos de trabajo en atención a su especial dificultad técnica, dedicación, responsabilidad, incompatibilidad, peligrosidad o penosidad?",
+    "opciones": {
+      "A": "Complemento de destino.",
+      "B": "Complemento de productividad.",
+      "C": "Complemento específico.",
+      "D": "Gratificación por servicios extraordinarios."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 100,
+    "pregunta": "Las nóminas ordinarias del personal al servicio de la Administración General del Estado se cerrarán:",
+    "opciones": {
+      "A": "El día 28 del mes de devengo.",
+      "B": "El día 1 de cada mes.",
+      "C": "El día 5 de cada mes.",
+      "D": "El día 30 de cada mes, excepto en febrero, que será el 28."
+    },
+    "reserva": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 101,
+    "pregunta": "Según el artículo 4 del Real Decreto 345/2001, de 4 de abril, por el que se regula el Observatorio Permanente de la Inmigración, ¿cuántos vocales conforman dicho Observatorio?",
+    "opciones": {
+      "A": "Quince.",
+      "B": "Dieciséis.",
+      "C": "Dieciocho.",
+      "D": "Diecisiete."
+    },
+    "reserva": true,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 102,
+    "pregunta": "Señale la respuesta correcta en relación con el artículo 25.1 del Reglamento (UE) 2021/1139 del Parlamento Europeo y del Consejo de 7 de julio de 2021 por el que se establece el Fondo Europeo Marítimo, de Pesca y de Acuicultura  (FEMPA) , y por el que se modifica el Reglamento (UE) 2017/1004:",
+    "opciones": {
+      "A": "El FEMPA podrá apoyar acciones que contribuyan a la protección y la recuperación de la biodiversidad y los ecosistemas acuáticos, incluso en las aguas interiores.",
+      "B": "El FEMPA podrá apoyar acciones que contribuyan a la protección y la recuperación de la biodiversidad y los ecosistemas acuáticos, salvo en las aguas interiores.",
+      "C": "El FEMPA podrá apoyar acciones que contribuyan a la protección y la recuperación de la biodiversidad y los ecosistemas acuáticos, incluso en las aguas fluviales.",
+      "D": "El FEMPA podrá apoyar acciones que contribuyan a la protección y la recuperación de la biodiversidad y los ecosistemas acuáticos, salvo en las aguas fluviales."
+    },
+    "reserva": true,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 103,
+    "pregunta": "El Pacto de Estado contra la Violencia de Género, renovado y actualizado por el Congreso de los Diputados el 26 de febrero de 2025, amplía las medidas que incluía en 2017 de:",
+    "opciones": {
+      "A": "251 a 725.",
+      "B": "15 a 62.",
+      "C": "290 a 461.",
+      "D": "100 a 180."
+    },
+    "reserva": true,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 104,
+    "pregunta": "¿Qué organización sindical NO forma parte de la vigente Mesa General de Negociación de la Administración General del Estado prevista en el artículo 34.1 del texto refundido de la Ley del Estatuto Básico del Empleado Público, aprobado mediante Real Decreto Legislativo 5/2015, de 30 de octubre?",
+    "opciones": {
+      "A": "Confederación Intersindical Galega (CIG).",
+      "B": "Central Sindical Independiente y de Funcionarios (CSIF).",
+      "C": "Eusko Langileen Alkartasuna - Solidaridad de los Trabajadores Vascos (ELA).",
+      "D": "Unión Sindical Obrera (USO)."
+    },
+    "reserva": true,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 105,
+    "pregunta": "De acuerdo con el texto refundido de la Ley sobre Seguridad Social de los funcionarios civiles del Estado, aprobado mediante el Real Decreto Legislativo 4/2000, de 23 de junio, ¿qué contiene el fondo especial?",
+    "opciones": {
+      "A": "La asistencia sanitaria, la prestación de los servicios médicos, quirúrgicos y farmacéuticos conducentes a conservar o restablecer la salud de los beneficiarios de ese Régimen especial.",
+      "B": "La totalidad de los bienes, derechos y acciones de las Mutualidades, Asociaciones y Montepíos aportados con su integración a la Mutualidad General de Funcionarios Civiles del Estado.",
+      "C": "La totalidad de las cotizaciones de los mutualistas a la Mutualidad General de Funcionarios Civiles del Estado, con excepción de los mutualistas jubilados y de quienes se encuentren en la situación de excedencia voluntaria para atender al cuidado de hijos o familiares.",
+      "D": "Los servicios y auxilios económicos que, en atención a estados y situaciones de necesidad, se consideren precisos."
+    },
+    "reserva": true,
+    "respuesta_correcta": "B"
+  }
+]

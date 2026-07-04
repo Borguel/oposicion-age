@@ -11,8 +11,12 @@
   color: var(--age-ink);
 }
 
-/* Opciones de respuesta con letra en círculo (igual que test-generator) */
-.opcion-respuesta {
+/* Opciones de respuesta con letra en círculo (igual que test-generator).
+   Los selectores van prefijados con .pdfherr-body para tener más
+   especificidad que ".pdfherr-body label" (assets/pdf-tools.css), que si no
+   gana el pulso y fuerza display:block, dejando la letra encima del texto
+   en vez de al lado. */
+.pdfherr-body .opcion-respuesta {
   position: relative;
   display: flex;
   align-items: center;
@@ -24,21 +28,21 @@
   cursor: pointer;
   transition: border-color 0.2s var(--age-ease), background 0.2s var(--age-ease);
 }
-.opcion-respuesta:hover {
+.pdfherr-body .opcion-respuesta:hover {
   border-color: var(--age-primary-light);
   background: var(--age-primary-soft);
 }
-.opcion-respuesta:has(input:checked) {
+.pdfherr-body .opcion-respuesta:has(input:checked) {
   border-color: var(--age-primary);
   background: var(--age-primary-soft);
 }
-.opcion-respuesta input[type="radio"] {
+.pdfherr-body .opcion-respuesta input[type="radio"] {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
-.opcion-letra {
+.pdfherr-body .opcion-letra {
   flex-shrink: 0;
   width: 28px;
   height: 28px;
@@ -52,12 +56,12 @@
   color: var(--age-ink-soft);
   background: var(--age-card);
 }
-.opcion-respuesta input:checked ~ .opcion-letra {
+.pdfherr-body .opcion-respuesta input:checked ~ .opcion-letra {
   background: var(--age-primary);
   border-color: var(--age-primary);
   color: #1b1f2e;
 }
-.opcion-texto {
+.pdfherr-body .opcion-texto {
   flex: 1;
 }
 
