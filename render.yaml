@@ -32,6 +32,8 @@ services:
         sync: false
       - key: SENDGRID_FROM_EMAIL
         sync: false
+      - key: SENTRY_DSN
+        sync: false
 
   - type: web
     name: oposicion-age-frontend

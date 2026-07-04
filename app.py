@@ -36,6 +36,27 @@ from documentos_pdf import obtener_o_crear_documento, obtener_documento, listar_
 from utils import seleccionar_preguntas_con_cuota
 # Cargar variables de entorno
 load_dotenv()
+
+# Sentry es opcional: sin SENTRY_DSN esto no hace nada (ni falla), así que
+# no bloquea el despliegue hasta que se cree una cuenta y se configure la
+# variable. Con DSN, cualquier excepción no controlada (y los logger.error/
+# logger.exception de arriba) llegan también a Sentry, no solo a los logs.
+sentry_dsn = os.getenv("SENTRY_DSN")
+if sentry_dsn:
+    import sentry_sdk
+    from sentry_sdk.integrations.flask import FlaskIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        integrations=[FlaskIntegration(), LoggingIntegration(level=logging.INFO, event_level=logging.ERROR)],
+        traces_sample_rate=0.0,
+        environment=os.getenv("SENTRY_ENVIRONMENT", "production"),
+    )
+    logger.info("Sentry activado")
+else:
+    logger.info("SENTRY_DSN no configurada: Sentry desactivado (los errores solo van a los logs)")
+
 logger.info("Clave OpenAI: %s", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
 logger.info("Clave DeepSeek: %s", "configurada" if os.getenv("DEEPSEEK_API_KEY") else "no configurada")
 # Inicializar Firebase
