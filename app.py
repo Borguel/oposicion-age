@@ -24,6 +24,7 @@ from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicita
 from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida, coleccion_temario, coleccion_examenes_oficiales
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso
+from documentos_pdf import obtener_o_crear_documento, obtener_documento, listar_documentos
 # Cargar variables de entorno
 load_dotenv()
 print("🔑 Clave OpenAI:", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
@@ -393,29 +394,50 @@ def generar_test_fallos():
 # ===================================================================
 # RUTAS PARA DEEPSEEK (PDFs)
 # ===================================================================
+
+def _resolver_texto_documento(plan_actual):
+    """Punto de entrada común de las 4 rutas de generación desde PDF: o bien
+    viene un 'documento_id' (contenido ya subido antes, de la biblioteca de
+    "Mis documentos"), o bien viene un archivo 'pdf' nuevo. Devuelve
+    (texto, documento_id, nombre_archivo, respuesta_error_o_None); si el
+    último elemento no es None, la ruta debe devolverlo tal cual."""
+    documento_id = request.form.get("documento_id")
+    if documento_id:
+        documento = obtener_documento(db, g.uid, documento_id)
+        if not documento:
+            return None, None, None, (jsonify({"error": "No se encontró el documento indicado."}), 404)
+        return documento["texto"], documento_id, documento.get("nombre_archivo", "documento.pdf"), None
+
+    if 'pdf' not in request.files:
+        return None, None, None, (jsonify({"error": "No se encontró archivo PDF"}), 400)
+    pdf_file = request.files['pdf']
+    if pdf_file.filename == '':
+        return None, None, None, (jsonify({"error": "Nombre de archivo inválido"}), 400)
+    pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+    limite_paginas = max_paginas_para_plan(plan_actual)
+    if len(pdf_reader.pages) > limite_paginas:
+        return None, None, None, (jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400)
+    text = ""
+    for page in pdf_reader.pages:
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text + "\n"
+    if not text.strip():
+        return None, None, None, (jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400)
+    documento_id, documento = obtener_o_crear_documento(db, g.uid, text, pdf_file.filename, len(pdf_reader.pages))
+    return text, documento_id, pdf_file.filename, None
+
+
 @app.route('/resumir-pdf', methods=['POST'])
 @requiere_plan(db, "gratis", global_check=True)
 def resumir_pdf():
-    if 'pdf' not in request.files:
-        return jsonify({"error": "No se encontró archivo PDF"}), 400
-    pdf_file = request.files['pdf']
-    if pdf_file.filename == '':
-        return jsonify({"error": "Nombre de archivo inválido"}), 400
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
+    text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
+    if error:
+        return error
     try:
-        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        limite_paginas = max_paginas_para_plan(g.plan_actual)
-        if len(pdf_reader.pages) > limite_paginas:
-            return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
-        text = ""
-        for page in pdf_reader.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + "\n"
-        if not text.strip():
-            return jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400
         max_length = 300000
         if len(text) > max_length:
             text = text[:max_length]
@@ -443,7 +465,7 @@ def resumir_pdf():
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
         data = response.json()
         resumen = data['choices'][0]['message']['content']
-        return jsonify({"resumen": resumen})
+        return jsonify({"resumen": resumen, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 # ✅ NUEVA RUTA: alias para compatibilidad con frontend
@@ -454,26 +476,13 @@ def resumir_documento():
 @app.route('/generar-esquema-desde-pdf', methods=['POST'])
 @requiere_plan(db, "gratis", global_check=True)
 def generar_esquema_desde_pdf():
-    if 'pdf' not in request.files:
-        return jsonify({"error": "No se encontró archivo PDF"}), 400
-    pdf_file = request.files['pdf']
-    if pdf_file.filename == '':
-        return jsonify({"error": "Nombre de archivo inválido"}), 400
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
+    text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
+    if error:
+        return error
     try:
-        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        limite_paginas = max_paginas_para_plan(g.plan_actual)
-        if len(pdf_reader.pages) > limite_paginas:
-            return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
-        text = ""
-        for page in pdf_reader.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + "\n"
-        if not text.strip():
-            return jsonify({"error": "El PDF no contiene texto extraíble"}), 400
         max_length = 300000
         if len(text) > max_length:
             text = text[:max_length]
@@ -501,17 +510,12 @@ def generar_esquema_desde_pdf():
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
         data = response.json()
         esquema = data['choices'][0]['message']['content']
-        return jsonify({"esquema": esquema})
+        return jsonify({"esquema": esquema, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 @app.route('/generar-test-desde-pdf', methods=['POST'])
 @requiere_plan(db, "gratis", global_check=True)
 def generar_test_desde_pdf():
-    if 'pdf' not in request.files:
-        return jsonify({"error": "No se encontró archivo PDF"}), 400
-    pdf_file = request.files['pdf']
-    if pdf_file.filename == '':
-        return jsonify({"error": "Nombre de archivo inválido"}), 400
     try:
         num_preguntas = int(request.form.get("num_preguntas", 10))
         if num_preguntas < 1 or num_preguntas > 50:
@@ -521,18 +525,10 @@ def generar_test_desde_pdf():
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
+    text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
+    if error:
+        return error
     try:
-        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        limite_paginas = max_paginas_para_plan(g.plan_actual)
-        if len(pdf_reader.pages) > limite_paginas:
-            return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
-        text = ""
-        for page in pdf_reader.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + "\n"
-        if not text.strip():
-            return jsonify({"error": "El PDF no contiene texto extraíble"}), 400
         max_length = 150000
         if len(text) > max_length:
             text = text[:max_length]
@@ -603,7 +599,7 @@ def generar_test_desde_pdf():
                 "error": "La IA generó preguntas vacías o inválidas.",
                 "respuesta_cruda": respuesta[:500]
             }), 500
-        return jsonify({"test": preguntas_validadas})
+        return jsonify({"test": preguntas_validadas, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
     except Exception as e:
         return jsonify({
             "error": f"Error al procesar el PDF o generar preguntas: {str(e)}",
@@ -612,26 +608,13 @@ def generar_test_desde_pdf():
 @app.route('/generar-tarjetas-desde-pdf', methods=['POST'])
 @requiere_plan(db, "gratis", global_check=True)
 def generar_tarjetas_desde_pdf():
-    if 'pdf' not in request.files:
-        return jsonify({"error": "No se encontró archivo PDF"}), 400
-    pdf_file = request.files['pdf']
-    if pdf_file.filename == '':
-        return jsonify({"error": "Nombre de archivo inválido"}), 400
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
+    text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
+    if error:
+        return error
     try:
-        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        limite_paginas = max_paginas_para_plan(g.plan_actual)
-        if len(pdf_reader.pages) > limite_paginas:
-            return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
-        text = ""
-        for page in pdf_reader.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + "\n"
-        if not text.strip():
-            return jsonify({"error": "El PDF no contiene texto extraíble"}), 400
         max_length = 150000
         if len(text) > max_length:
             text = text[:max_length]
@@ -707,7 +690,7 @@ def generar_tarjetas_desde_pdf():
                 "error": "La IA generó tarjetas vacías o inválidas.",
                 "respuesta_cruda": respuesta[:500]
             }), 500
-        return jsonify({"tarjetas": tarjetas_validadas})
+        return jsonify({"tarjetas": tarjetas_validadas, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
     except Exception as e:
         return jsonify({
             "error": f"Error al procesar el PDF o generar tarjetas: {str(e)}",
@@ -864,6 +847,7 @@ def guardar_test_pdf():
             usuario_id=g.uid,
             metadatos={
                 'nombre_archivo': nombre_archivo,
+                'documento_id': data.get('documento_id'),
                 'num_preguntas': len(preguntas),
                 'fecha_procesamiento': datetime.utcnow().isoformat()
             }
@@ -885,6 +869,7 @@ def guardar_resumen_pdf():
             usuario_id=g.uid,
             metadatos={
                 'nombre_archivo': nombre_archivo,
+                'documento_id': data.get('documento_id'),
                 'longitud': len(resumen),
                 'fecha_procesamiento': datetime.utcnow().isoformat()
             }
@@ -906,6 +891,7 @@ def guardar_esquema_pdf():
             usuario_id=g.uid,
             metadatos={
                 'nombre_archivo': nombre_archivo,
+                'documento_id': data.get('documento_id'),
                 'longitud': len(esquema),
                 'fecha_procesamiento': datetime.utcnow().isoformat()
             }
@@ -927,6 +913,7 @@ def guardar_tarjetas_pdf():
             usuario_id=g.uid,
             metadatos={
                 'nombre_archivo': nombre_archivo,
+                'documento_id': data.get('documento_id'),
                 'num_tarjetas': len(tarjetas),
                 'fecha_procesamiento': datetime.utcnow().isoformat()
             }
@@ -934,6 +921,79 @@ def guardar_tarjetas_pdf():
         return jsonify({'mensaje': 'Tarjetas desde PDF guardadas correctamente'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ===================================================================
+# "MIS DOCUMENTOS": biblioteca de PDFs subidos, para repasar más tarde el
+# contenido de IA ya generado (resumen/esquema/tarjetas/test) sin tener que
+# volver a subir el archivo ni volver a generarlo.
+# ===================================================================
+@app.route('/mis-documentos', methods=['GET'])
+@requiere_login(db)
+def mis_documentos():
+    return jsonify({"documentos": listar_documentos(db, g.uid)})
+
+
+def _ultimo_por_documento(coleccion, documento_id, uid):
+    docs = list(
+        db.collection("usuarios").document(uid).collection(coleccion)
+        .where("documento_id", "==", documento_id)
+        .stream()
+    )
+    if not docs:
+        return None
+    docs.sort(key=lambda d: d.to_dict().get("fecha") or "", reverse=True)
+    return docs[0].to_dict()
+
+
+@app.route('/documento/<documento_id>/resumen', methods=['GET'])
+@requiere_login(db)
+def documento_resumen(documento_id):
+    datos = _ultimo_por_documento("resumenes_pdf", documento_id, g.uid)
+    if not datos:
+        return jsonify({"error": "Este documento todavía no tiene un resumen generado."}), 404
+    return jsonify({"resumen": datos.get("resumen"), "nombre_archivo": datos.get("nombre_archivo"), "fecha": datos.get("fecha")})
+
+
+@app.route('/documento/<documento_id>/esquema', methods=['GET'])
+@requiere_login(db)
+def documento_esquema(documento_id):
+    datos = _ultimo_por_documento("esquemas_pdf", documento_id, g.uid)
+    if not datos:
+        return jsonify({"error": "Este documento todavía no tiene un esquema generado."}), 404
+    return jsonify({"esquema": datos.get("esquema"), "nombre_archivo": datos.get("nombre_archivo"), "fecha": datos.get("fecha")})
+
+
+@app.route('/documento/<documento_id>/test', methods=['GET'])
+@requiere_login(db)
+def documento_test(documento_id):
+    datos = _ultimo_por_documento("tests_pdf", documento_id, g.uid)
+    if not datos:
+        return jsonify({"error": "Este documento todavía no tiene un test generado."}), 404
+    return jsonify({"test": datos.get("preguntas", []), "nombre_archivo": datos.get("nombre_archivo"), "fecha": datos.get("fecha")})
+
+
+@app.route('/documento/<documento_id>/tarjetas', methods=['GET'])
+@requiere_login(db)
+def documento_tarjetas(documento_id):
+    docs = (
+        db.collection("usuarios").document(g.uid).collection("tarjetas_pdf")
+        .where("documento_id", "==", documento_id)
+        .stream()
+    )
+    todas = []
+    for d in docs:
+        todas.extend((d.to_dict() or {}).get("tarjetas", []))
+    if not todas:
+        return jsonify({"error": "Este documento todavía no tiene tarjetas generadas."}), 404
+    modo = request.args.get("modo", "todas")
+    if modo == "aleatorias":
+        try:
+            cantidad = int(request.args.get("cantidad", 10))
+        except (TypeError, ValueError):
+            cantidad = 10
+        cantidad = max(1, min(cantidad, len(todas)))
+        todas = random.sample(todas, cantidad)
+    return jsonify({"tarjetas": todas})
 # ===================================================================
 # RUTAS DE SUSCRIPCIÓN (STRIPE)
 # ===================================================================

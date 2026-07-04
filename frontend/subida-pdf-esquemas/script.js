@@ -11,8 +11,12 @@ async function obtenerAuthHeaders() {
     // === Estado global ===
     let esquema = '';
     let nombreArchivo = 'documento.pdf';
+    let documentoIdActual = null;
     // === Referencias DOM ===
     const formularioPdf = document.getElementById('form-subir-pdf');
+    // La tarjeta que envuelve el formulario: hay que ocultar esta, no solo
+    // el <form>, o su cabecera se queda visible y vacía.
+    const formularioCard = document.getElementById('formulario-pdf');
     const uploadArea = document.getElementById('upload-area');
     const selectFileBtn = document.getElementById('select-file-btn');
     const archivoPdfInput = document.getElementById('archivo-pdf');
@@ -41,7 +45,8 @@ async function obtenerAuthHeaders() {
           headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({
             esquema: esquema,
-            nombre_archivo: nombreArchivoActual
+            nombre_archivo: nombreArchivoActual,
+            documento_id: documentoIdActual
           })
         });
         const datos = await res.json();
@@ -65,7 +70,7 @@ async function obtenerAuthHeaders() {
       mensajeError.classList.remove('hidden');
       contenedorCarga.classList.add('hidden');
       resultadoEsquema.classList.add('hidden');
-      formularioPdf.classList.remove('hidden');
+      formularioCard.classList.remove('hidden');
     }
     function descargarArchivo(contenido, nombre, tipo) {
       const blob = new Blob([contenido], { type });
@@ -163,7 +168,7 @@ async function obtenerAuthHeaders() {
       resultadoEsquema.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
       mensajeError.classList.add('hidden');
-      formularioPdf.classList.remove('hidden');
+      formularioCard.classList.remove('hidden');
       formularioPdf.reset();
       fileNameDisplay.classList.add('hidden');
     });
@@ -181,7 +186,7 @@ async function obtenerAuthHeaders() {
           resultadoEsquema.classList.add('hidden');
           alertaPreguntas.classList.add('hidden');
           mensajeError.classList.add('hidden');
-          formularioPdf.classList.remove('hidden');
+          formularioCard.classList.remove('hidden');
           formularioPdf.reset();
           fileNameDisplay.classList.add('hidden');
           Swal.fire({ icon: 'success', title: 'Esquema finalizado', text: 'Puedes subir un nuevo documento.', confirmButtonText: 'Aceptar' });
@@ -215,7 +220,7 @@ async function obtenerAuthHeaders() {
       formData.append('pdf', archivo);
       mensajeError.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
-      formularioPdf.classList.add('hidden');
+      formularioCard.classList.add('hidden');
       contenedorCarga.classList.remove('hidden');
       // Cargar estado
       const textoEstado = document.getElementById('texto-estado');
@@ -265,7 +270,12 @@ async function obtenerAuthHeaders() {
         return;
       }
       // Mostrar esquema
-      esquema = datosIA.esquema || "No se pudo generar el esquema.";
+      documentoIdActual = datosIA.documento_id || documentoIdActual;
+      mostrarEsquemaResultado(datosIA.esquema, true);
+    });
+
+    function mostrarEsquemaResultado(textoEsquema, guardar) {
+      esquema = textoEsquema || "No se pudo generar el esquema.";
       const fecha = new Date();
       fechaEsquema.textContent = formatearFecha(fecha);
       esquemaTitulo.textContent = `Esquema de ${nombreArchivo}`;
@@ -283,6 +293,60 @@ async function obtenerAuthHeaders() {
       contenidoEsquema.innerHTML = htmlEsquema;
       contenedorCarga.classList.add('hidden');
       resultadoEsquema.classList.remove('hidden');
-      // ✅ Guardar en Firebase
-      guardarEsquemaAutomaticamente();
-    });
+      // ✅ Guardar en Firebase (solo si es contenido recién generado)
+      if (guardar) guardarEsquemaAutomaticamente();
+    }
+
+    // === Llegar desde "Mis documentos" ===
+    (async function inicializarDesdeDocumento() {
+      const params = new URLSearchParams(window.location.search);
+      const documentoId = params.get('documento_id');
+      const ver = params.get('ver');
+      if (!documentoId) return;
+
+      documentoIdActual = documentoId;
+      formularioCard.classList.add('hidden');
+      contenedorCarga.classList.remove('hidden');
+      const textoEstado = document.getElementById('texto-estado');
+      const aiIcon = document.getElementById('ai-icon');
+
+      const authHeaders = await obtenerAuthHeaders();
+      if (!authHeaders) return;
+
+      if (ver === 'esquema') {
+        textoEstado.textContent = 'Cargando tu esquema guardado…';
+        try {
+          const res = await fetch(`https://oposicion-age.onrender.com/documento/${documentoId}/esquema`, { headers: authHeaders });
+          const datos = await res.json();
+          if (!res.ok) throw new Error(datos.error || 'No se pudo cargar el esquema.');
+          nombreArchivo = datos.nombre_archivo || nombreArchivo;
+          mostrarEsquemaResultado(datos.esquema, false);
+        } catch (err) {
+          mostrarError(err.message);
+        }
+        return;
+      }
+
+      textoEstado.textContent = 'Generando esquema desde tu documento…';
+      aiIcon.textContent = '🧠';
+      try {
+        const formData = new FormData();
+        formData.append('documento_id', documentoId);
+        const res = await fetch("https://oposicion-age.onrender.com/generar-esquema-desde-pdf", {
+          method: "POST",
+          headers: authHeaders,
+          body: formData
+        });
+        if (res.status === 403) throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+        }
+        const datos = await res.json();
+        if (!datos.esquema) throw new Error(datos.error || "No se pudo generar el esquema.");
+        nombreArchivo = datos.nombre_archivo || nombreArchivo;
+        mostrarEsquemaResultado(datos.esquema, true);
+      } catch (err) {
+        mostrarError(err.message);
+      }
+    })();

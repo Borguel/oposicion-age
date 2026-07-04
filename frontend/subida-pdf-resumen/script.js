@@ -11,8 +11,13 @@ async function obtenerAuthHeaders() {
     // === Estado global ===
     let resumen = '';
     let nombreArchivo = 'documento.pdf';
+    let documentoIdActual = null;
     // === Referencias DOM ===
     const formularioPdf = document.getElementById('form-subir-pdf');
+    // La tarjeta que envuelve el formulario ("Subir Documento PDF"): hay que
+    // ocultar esta, no solo el <form>, o su cabecera se queda visible y
+    // vacía por encima del resultado o del estado de carga.
+    const formularioCard = document.getElementById('formulario-pdf');
     const uploadArea = document.getElementById('upload-area');
     const selectFileBtn = document.getElementById('select-file-btn');
     const archivoPdfInput = document.getElementById('archivo-pdf');
@@ -41,7 +46,8 @@ async function obtenerAuthHeaders() {
           headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({
             resumen: resumen,
-            nombre_archivo: nombreArchivoActual
+            nombre_archivo: nombreArchivoActual,
+            documento_id: documentoIdActual
           })
         });
         const datos = await res.json();
@@ -65,7 +71,7 @@ async function obtenerAuthHeaders() {
       mensajeError.classList.remove('hidden');
       contenedorCarga.classList.add('hidden');
       resultadoResumen.classList.add('hidden');
-      formularioPdf.classList.remove('hidden');
+      formularioCard.classList.remove('hidden');
     }
     function descargarArchivo(contenido, nombre, tipo) {
       const blob = new Blob([contenido], { type });
@@ -168,7 +174,7 @@ async function obtenerAuthHeaders() {
       resultadoResumen.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
       mensajeError.classList.add('hidden');
-      formularioPdf.classList.remove('hidden');
+      formularioCard.classList.remove('hidden');
       formularioPdf.reset();
       fileNameDisplay.classList.add('hidden');
     });
@@ -186,7 +192,7 @@ async function obtenerAuthHeaders() {
           resultadoResumen.classList.add('hidden');
           alertaPreguntas.classList.add('hidden');
           mensajeError.classList.add('hidden');
-          formularioPdf.classList.remove('hidden');
+          formularioCard.classList.remove('hidden');
           formularioPdf.reset();
           fileNameDisplay.classList.add('hidden');
           Swal.fire({ icon: 'success', title: 'Resumen finalizado', text: 'Puedes subir un nuevo documento.', confirmButtonText: 'Aceptar' });
@@ -220,7 +226,7 @@ async function obtenerAuthHeaders() {
       formData.append('pdf', archivo);
       mensajeError.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
-      formularioPdf.classList.add('hidden');
+      formularioCard.classList.add('hidden');
       contenedorCarga.classList.remove('hidden');
       // Cargar estado
       const textoEstado = document.getElementById('texto-estado');
@@ -270,7 +276,12 @@ async function obtenerAuthHeaders() {
         return;
       }
       // Mostrar resumen
-      resumen = datosIA.resumen || "No se pudo generar el resumen.";
+      documentoIdActual = datosIA.documento_id || documentoIdActual;
+      mostrarResumenResultado(datosIA.resumen, true);
+    });
+
+    function mostrarResumenResultado(textoResumen, guardar) {
+      resumen = textoResumen || "No se pudo generar el resumen.";
       const fecha = new Date();
       fechaResumen.textContent = formatearFecha(fecha);
       resumenTitulo.textContent = `Resumen de ${nombreArchivo}`;
@@ -288,6 +299,64 @@ async function obtenerAuthHeaders() {
       contenidoResumen.innerHTML = htmlResumen;
       contenedorCarga.classList.add('hidden');
       resultadoResumen.classList.remove('hidden');
-      // ✅ Guardar en Firebase
-      guardarResumenAutomaticamente();
-    });
+      // ✅ Guardar en Firebase (solo si es contenido recién generado, no al
+      // solo visualizar un resumen que ya estaba guardado)
+      if (guardar) guardarResumenAutomaticamente();
+    }
+
+    // === Llegar desde "Mis documentos" (biblioteca de la página Herramientas
+    // IA): con ?documento_id= se salta la subida y usa el texto ya
+    // extraído; con &ver=resumen carga directamente el resumen ya guardado
+    // en vez de generar uno nuevo. ===
+    (async function inicializarDesdeDocumento() {
+      const params = new URLSearchParams(window.location.search);
+      const documentoId = params.get('documento_id');
+      const ver = params.get('ver');
+      if (!documentoId) return;
+
+      documentoIdActual = documentoId;
+      formularioCard.classList.add('hidden');
+      contenedorCarga.classList.remove('hidden');
+      const textoEstado = document.getElementById('texto-estado');
+      const aiIcon = document.getElementById('ai-icon');
+
+      const authHeaders = await obtenerAuthHeaders();
+      if (!authHeaders) return;
+
+      if (ver === 'resumen') {
+        textoEstado.textContent = 'Cargando tu resumen guardado…';
+        try {
+          const res = await fetch(`https://oposicion-age.onrender.com/documento/${documentoId}/resumen`, { headers: authHeaders });
+          const datos = await res.json();
+          if (!res.ok) throw new Error(datos.error || 'No se pudo cargar el resumen.');
+          nombreArchivo = datos.nombre_archivo || nombreArchivo;
+          mostrarResumenResultado(datos.resumen, false);
+        } catch (err) {
+          mostrarError(err.message);
+        }
+        return;
+      }
+
+      textoEstado.textContent = 'Generando resumen desde tu documento…';
+      aiIcon.textContent = '🧠';
+      try {
+        const formData = new FormData();
+        formData.append('documento_id', documentoId);
+        const res = await fetch("https://oposicion-age.onrender.com/resumir-documento", {
+          method: "POST",
+          headers: authHeaders,
+          body: formData
+        });
+        if (res.status === 403) throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+        }
+        const datos = await res.json();
+        if (!datos.resumen) throw new Error(datos.error || "No se pudo generar el resumen.");
+        nombreArchivo = datos.nombre_archivo || nombreArchivo;
+        mostrarResumenResultado(datos.resumen, true);
+      } catch (err) {
+        mostrarError(err.message);
+      }
+    })();

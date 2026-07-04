@@ -17,6 +17,8 @@ async function obtenerAuthHeaders() {
     let fallos = 0;
     let sinResponder = 0;
     let porcentaje = 0;
+    let nombreArchivo = 'documento.pdf';
+    let documentoIdActual = null;
 
     // === FUNCIONES AUXILIARES ===
     function formatearTiempo(segundos) {
@@ -70,7 +72,6 @@ async function obtenerAuthHeaders() {
     async function guardarTestEnBackend() {
       const contenido = preguntas;
       const respuestas = respuestasUsuario;
-      const nombreArchivo = document.getElementById('archivo-pdf').files[0]?.name || "documento.pdf";
       const tiempo = Math.floor((Date.now() - tiempoInicio) / 1000);
 
       const metadatos = {
@@ -92,7 +93,8 @@ async function obtenerAuthHeaders() {
               respuestas: respuestas,
               metadatos: metadatos
             },
-            nombre_archivo: nombreArchivo
+            nombre_archivo: nombreArchivo,
+            documento_id: documentoIdActual
           })
         });
         
@@ -158,6 +160,7 @@ async function obtenerAuthHeaders() {
       if (!archivo) return mostrarError('Selecciona un archivo PDF.');
       if (archivo.type !== 'application/pdf') return mostrarError('El archivo debe ser un PDF.');
 
+      nombreArchivo = archivo.name;
       const formData = new FormData();
       formData.append('pdf', archivo);
       formData.append('num_preguntas', num_preguntas);
@@ -221,7 +224,12 @@ async function obtenerAuthHeaders() {
         return;
       }
 
-      preguntas = datosIA.test || [];
+      documentoIdActual = datosIA.documento_id || documentoIdActual;
+      iniciarTest(datosIA.test);
+    });
+
+    function iniciarTest(preguntasEntrada) {
+      preguntas = preguntasEntrada || [];
       if (preguntas.length === 0) {
         mostrarError("No se generaron preguntas válidas.");
         return;
@@ -234,7 +242,66 @@ async function obtenerAuthHeaders() {
       actualizarBarraProgresoPreguntas();
       mostrarPregunta(indicePreguntaActual);
       document.getElementById('btn-finalizar').style.display = 'block';
-    });
+    }
+
+    // === Llegar desde "Mis documentos" ===
+    (async function inicializarDesdeDocumento() {
+      const params = new URLSearchParams(window.location.search);
+      const documentoId = params.get('documento_id');
+      const ver = params.get('ver');
+      if (!documentoId) return;
+
+      documentoIdActual = documentoId;
+      document.getElementById('tarjeta-formulario').style.display = 'none';
+      document.getElementById('contenedor-carga').style.display = 'block';
+      const textoEstado = document.getElementById('texto-estado');
+      const aiIcon = document.getElementById('ai-icon');
+
+      const authHeaders = await obtenerAuthHeaders();
+      if (!authHeaders) return;
+
+      if (ver === 'test') {
+        textoEstado.textContent = 'Cargando tu test guardado…';
+        try {
+          const res = await fetch(`https://oposicion-age.onrender.com/documento/${documentoId}/test`, { headers: authHeaders });
+          const datos = await res.json();
+          if (!res.ok) throw new Error(datos.error || 'No se pudo cargar el test.');
+          nombreArchivo = datos.nombre_archivo || nombreArchivo;
+          iniciarTest(datos.test);
+        } catch (err) {
+          mostrarError(err.message);
+        }
+        return;
+      }
+
+      textoEstado.textContent = 'Generando test desde tu documento…';
+      aiIcon.textContent = '🧠';
+      try {
+        const numPreguntas = parseInt(params.get('num_preguntas')) || 10;
+        const formData = new FormData();
+        formData.append('documento_id', documentoId);
+        formData.append('num_preguntas', numPreguntas);
+        const res = await fetch("https://oposicion-age.onrender.com/generar-test-desde-pdf", {
+          method: "POST",
+          headers: authHeaders,
+          body: formData
+        });
+        if (res.status === 403) throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+        }
+        const datos = await res.json();
+        if (!datos.test || datos.test.length === 0) {
+          throw new Error(datos.error || "No se pudieron generar preguntas válidas desde el PDF.");
+        }
+        nombreArchivo = datos.nombre_archivo || nombreArchivo;
+        documentoIdActual = datos.documento_id || documentoIdActual;
+        iniciarTest(datos.test);
+      } catch (err) {
+        mostrarError(err.message);
+      }
+    })();
 
     // === RENDERIZADO DE PREGUNTAS ===
     function mostrarPregunta(i) {

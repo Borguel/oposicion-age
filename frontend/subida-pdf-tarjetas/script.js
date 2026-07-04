@@ -11,8 +11,13 @@ async function obtenerAuthHeaders() {
     // === Estado global ===
     let tarjetas = [];
     let tarjetaActual = 0;
+    let nombreArchivo = 'documento.pdf';
+    let documentoIdActual = null;
     // === Referencias DOM ===
     const formularioPdf = document.getElementById('form-subir-pdf');
+    // La tarjeta que envuelve el formulario: hay que ocultar esta, no solo
+    // el <form>, o su cabecera se queda visible y vacía.
+    const formularioCard = document.getElementById('formulario-pdf');
     const uploadArea = document.getElementById('upload-area');
     const selectFileBtn = document.getElementById('select-file-btn');
     const archivoPdfInput = document.getElementById('archivo-pdf');
@@ -32,8 +37,6 @@ async function obtenerAuthHeaders() {
     const btnSiguiente = document.getElementById('btn-siguiente');
     const btnListaTarjetas = document.getElementById('btn-lista-tarjetas');
     const btnVolverEstudio = document.getElementById('btn-volver-estudio');
-    const btnDescargarJson = document.getElementById('btn-descargar-json');
-    const btnDescargarCsv = document.getElementById('btn-descargar-csv');
     const btnNuevoPdf = document.getElementById('btn-nuevo-pdf');
     const btnFinalizar = document.getElementById('btn-finalizar');
     const contenedorListaTarjetas = document.getElementById('contenedor-lista-tarjetas');
@@ -42,8 +45,6 @@ async function obtenerAuthHeaders() {
 
     // === Guardado Automático en Firebase ===
     async function guardarTarjetasAutomaticamente() {
-      const nombreArchivo = document.getElementById('archivo-pdf').files[0]?.name || "documento.pdf";
-
       try {
         const authHeaders = await obtenerAuthHeaders();
         if (!authHeaders) return;
@@ -52,7 +53,8 @@ async function obtenerAuthHeaders() {
           headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({
             tarjetas: tarjetas,
-            nombre_archivo: nombreArchivo
+            nombre_archivo: nombreArchivo,
+            documento_id: documentoIdActual
           })
         });
         const datos = await res.json();
@@ -119,7 +121,7 @@ async function obtenerAuthHeaders() {
           if (result.isConfirmed) {
             tarjetas = estado.tarjetas;
             tarjetaActual = estado.tarjetaActual || 0;
-            formularioPdf.classList.add('hidden');
+            formularioCard.classList.add('hidden');
             modoEstudio.classList.remove('hidden');
             mostrarTarjetaActual();
             Swal.fire({
@@ -141,7 +143,7 @@ async function obtenerAuthHeaders() {
       contenedorCarga.classList.add('hidden');
       modoEstudio.classList.add('hidden');
       listaTarjetas.classList.add('hidden');
-      formularioPdf.classList.remove('hidden');
+      formularioCard.classList.remove('hidden');
     }
     function shuffleArray(array) {
       const arr = [...array];
@@ -280,45 +282,6 @@ async function obtenerAuthHeaders() {
       listaTarjetas.classList.add('hidden');
       modoEstudio.classList.remove('hidden');
     });
-    btnDescargarJson.addEventListener('click', () => {
-      const dataStr = JSON.stringify(tarjetas, null, 2);
-      const dataBlob = new Blob([dataStr], {type: 'application/json'});
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'tarjetas_memoria.json';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      Swal.fire({
-        icon: 'success',
-        title: 'Tarjetas descargadas',
-        text: 'Las tarjetas se han descargado correctamente',
-        confirmButtonText: 'Aceptar'
-      });
-    });
-    btnDescargarCsv.addEventListener('click', () => {
-      const csvContent = "Pregunta,Respuesta\n" + 
-        tarjetas.map(t => 
-          `"${(t.pregunta || '').replace(/"/g, '""')}","${(t.respuesta || '').replace(/"/g, '""')}"`
-        ).join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'tarjetas_memoria.csv';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      Swal.fire({
-        icon: 'success',
-        title: 'CSV descargado',
-        text: 'Archivo listo para importar en Anki o Quizlet.',
-        confirmButtonText: 'Aceptar'
-      });
-    });
     btnNuevoPdf.addEventListener('click', () => {
       Swal.fire({
         title: '¿Comenzar con nuevo PDF?',
@@ -335,7 +298,7 @@ async function obtenerAuthHeaders() {
           listaTarjetas.classList.add('hidden');
           alertaPreguntas.classList.add('hidden');
           mensajeError.classList.add('hidden');
-          formularioPdf.classList.remove('hidden');
+          formularioCard.classList.remove('hidden');
           formularioPdf.reset();
           fileNameDisplay.classList.add('hidden');
           limpiarEstado();
@@ -358,7 +321,7 @@ async function obtenerAuthHeaders() {
           listaTarjetas.classList.add('hidden');
           alertaPreguntas.classList.add('hidden');
           mensajeError.classList.add('hidden');
-          formularioPdf.classList.remove('hidden');
+          formularioCard.classList.remove('hidden');
           formularioPdf.reset();
           fileNameDisplay.classList.add('hidden');
           limpiarEstado();
@@ -390,12 +353,13 @@ async function obtenerAuthHeaders() {
         mostrarError('El archivo seleccionado no es un PDF válido.');
         return;
       }
+      nombreArchivo = archivo.name;
       const formData = new FormData();
       formData.append('pdf', archivo);
       formData.append('num_tarjetas', numTarjetasInput.value || 10);
       mensajeError.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
-      formularioPdf.classList.add('hidden');
+      formularioCard.classList.add('hidden');
       contenedorCarga.classList.remove('hidden');
       // Elementos de carga
       const textoEstado = document.getElementById('texto-estado');
@@ -449,18 +413,23 @@ async function obtenerAuthHeaders() {
       if (numTarjetas < tarjetasFinales.length) {
         tarjetasFinales = tarjetasFinales.slice(0, numTarjetas);
       }
-      if (tarjetasFinales.length === 0) {
+      documentoIdActual = datosIA.documento_id || documentoIdActual;
+      iniciarModoEstudio(tarjetasFinales, true, datosIA.advertencia, datosIA.sugerencia);
+    });
+
+    function iniciarModoEstudio(tarjetasEntrada, guardar, advertencia, sugerencia) {
+      if (!tarjetasEntrada || tarjetasEntrada.length === 0) {
         mostrarError("No se generaron tarjetas válidas.");
         return;
       }
       // ✅ ALEATORIZAR
-      tarjetas = shuffleArray(tarjetasFinales);
-      if (datosIA.advertencia) {
+      tarjetas = shuffleArray(tarjetasEntrada);
+      if (advertencia) {
         alertaPreguntas.innerHTML = `
           ⚠️
           <div>
-            <strong>Aviso:</strong> ${datosIA.advertencia}
-            ${datosIA.sugerencia ? `<br><em>${datosIA.sugerencia}</em>` : ''}
+            <strong>Aviso:</strong> ${advertencia}
+            ${sugerencia ? `<br><em>${sugerencia}</em>` : ''}
           </div>
         `;
         alertaPreguntas.classList.remove('hidden');
@@ -469,13 +438,74 @@ async function obtenerAuthHeaders() {
       contenedorCarga.classList.add('hidden');
       modoEstudio.classList.remove('hidden');
       mostrarTarjetaActual();
-      // Guardar estado después de generar tarjetas
       guardarEstado();
-      // ✅ GUARDAR EN FIREBASE
-      guardarTarjetasAutomaticamente();
-    });
-    // === Inicialización - Cargar estado guardado al inicio ===
+      // ✅ Guardar en Firebase (solo si es contenido recién generado, no al
+      // solo repasar tarjetas ya guardadas)
+      if (guardar) guardarTarjetasAutomaticamente();
+    }
+
+    // === Llegar desde "Mis documentos" ===
+    (async function inicializarDesdeDocumento() {
+      const params = new URLSearchParams(window.location.search);
+      const documentoId = params.get('documento_id');
+      const ver = params.get('ver');
+      if (!documentoId) return;
+
+      documentoIdActual = documentoId;
+      formularioCard.classList.add('hidden');
+      contenedorCarga.classList.remove('hidden');
+      const textoEstado = document.getElementById('texto-estado');
+      const aiIcon = document.getElementById('ai-icon');
+
+      const authHeaders = await obtenerAuthHeaders();
+      if (!authHeaders) return;
+
+      if (ver === 'tarjetas') {
+        const modo = params.get('modo') || 'todas';
+        const cantidad = params.get('cantidad') || '10';
+        textoEstado.textContent = 'Cargando tus tarjetas guardadas…';
+        try {
+          const qs = modo === 'aleatorias' ? `?modo=aleatorias&cantidad=${encodeURIComponent(cantidad)}` : '?modo=todas';
+          const res = await fetch(`https://oposicion-age.onrender.com/documento/${documentoId}/tarjetas${qs}`, { headers: authHeaders });
+          const datos = await res.json();
+          if (!res.ok) throw new Error(datos.error || 'No se pudieron cargar las tarjetas.');
+          iniciarModoEstudio(datos.tarjetas, false);
+        } catch (err) {
+          mostrarError(err.message);
+        }
+        return;
+      }
+
+      textoEstado.textContent = 'Generando tarjetas desde tu documento…';
+      aiIcon.textContent = '🧠';
+      try {
+        const formData = new FormData();
+        formData.append('documento_id', documentoId);
+        formData.append('num_tarjetas', numTarjetasInput.value || 10);
+        const res = await fetch("https://oposicion-age.onrender.com/generar-tarjetas-desde-pdf", {
+          method: "POST",
+          headers: authHeaders,
+          body: formData
+        });
+        if (res.status === 403) throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+        }
+        const datos = await res.json();
+        if (!datos.tarjetas) throw new Error(datos.error || "No se generaron tarjetas.");
+        documentoIdActual = datos.documento_id || documentoIdActual;
+        iniciarModoEstudio(datos.tarjetas, true, datos.advertencia, datos.sugerencia);
+      } catch (err) {
+        mostrarError(err.message);
+      }
+    })();
+
+    // === Inicialización - Cargar estado guardado al inicio (solo si no se
+    // llega desde "Mis documentos", para no pisar esa carga con un aviso de
+    // restaurar una sesión de tarjetas antigua sin relación) ===
     document.addEventListener('DOMContentLoaded', function() {
+      if (new URLSearchParams(window.location.search).get('documento_id')) return;
       // Esperar un poco para que la página cargue completamente
       setTimeout(() => {
         mostrarConfirmacionRestaurar();

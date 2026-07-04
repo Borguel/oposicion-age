@@ -2,6 +2,7 @@ from datetime import datetime
 from firebase_admin import firestore
 from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_estadisticas_esquema
 from oposiciones import OPOSICION_POR_DEFECTO
+from documentos_pdf import marcar_generado
 
 def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None, oposicion=OPOSICION_POR_DEFECTO):
     metadatos = metadatos or {}
@@ -102,55 +103,71 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
     
     elif tipo == "test_pdf":
         # Guardar test generado desde PDF
+        documento_id = metadatos.get("documento_id")
         test_pdf_ref = doc_user.collection("tests_pdf").document()
         test_pdf_ref.set({
             "fecha": datetime.utcnow().isoformat(),
             "nombre_archivo": metadatos.get("nombre_archivo", "documento.pdf"),
+            "documento_id": documento_id,
             "preguntas": contenido,
             "num_preguntas": len(contenido),
             "tipo": "test_pdf",
             "metadatos": metadatos
         })
         actualizar_estadisticas_usuario(db, usuario_id, "test_pdf")
+        if documento_id:
+            marcar_generado(db, usuario_id, documento_id, "test_pdf")
 
     elif tipo == "resumen_pdf":
         # Guardar resumen generado desde PDF
+        documento_id = metadatos.get("documento_id")
         resumen_pdf_ref = doc_user.collection("resumenes_pdf").document()
         resumen_pdf_ref.set({
             "fecha": datetime.utcnow().isoformat(),
             "nombre_archivo": metadatos.get("nombre_archivo", "documento.pdf"),
+            "documento_id": documento_id,
             "resumen": contenido,
             "longitud": len(contenido),
             "tipo": "resumen_pdf",
             "metadatos": metadatos
         })
         actualizar_estadisticas_usuario(db, usuario_id, "resumen_pdf")
+        if documento_id:
+            marcar_generado(db, usuario_id, documento_id, "resumen_pdf")
 
     elif tipo == "esquema_pdf":
         # Guardar esquema generado desde PDF
+        documento_id = metadatos.get("documento_id")
         esquema_pdf_ref = doc_user.collection("esquemas_pdf").document()
         esquema_pdf_ref.set({
             "fecha": datetime.utcnow().isoformat(),
             "nombre_archivo": metadatos.get("nombre_archivo", "documento.pdf"),
+            "documento_id": documento_id,
             "esquema": contenido,
             "longitud": len(contenido),
             "tipo": "esquema_pdf",
             "metadatos": metadatos
         })
         actualizar_estadisticas_usuario(db, usuario_id, "esquema_pdf")
+        if documento_id:
+            marcar_generado(db, usuario_id, documento_id, "esquema_pdf")
 
     elif tipo == "tarjetas_pdf":
         # Guardar tarjetas generadas desde PDF
+        documento_id = metadatos.get("documento_id")
         tarjetas_pdf_ref = doc_user.collection("tarjetas_pdf").document()
         tarjetas_pdf_ref.set({
             "fecha": datetime.utcnow().isoformat(),
             "nombre_archivo": metadatos.get("nombre_archivo", "documento.pdf"),
+            "documento_id": documento_id,
             "tarjetas": contenido,
             "num_tarjetas": len(contenido),
             "tipo": "tarjetas_pdf",
             "metadatos": metadatos
         })
         actualizar_estadisticas_usuario(db, usuario_id, "tarjetas_pdf")
+        if documento_id:
+            marcar_generado(db, usuario_id, documento_id, "tarjetas_pdf", num_tarjetas_nuevas=len(contenido))
 
 def actualizar_estadisticas_usuario(db, usuario_id, tipo):
     """Actualizar estadísticas del usuario cuando guarda contenido desde PDF (NUEVO)"""
