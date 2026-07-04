@@ -1,3 +1,4 @@
+import random
 import tiktoken
 from typing import List, Dict
 
@@ -110,4 +111,60 @@ def obtener_subbloques_individuales(db, temas: List[str], coleccion="Temario AGE
 
 
     return contexto_total.strip()
+
+
+def repartir_cupos_por_tema(temas_ids, cantidad):
+    """Reparte 'cantidad' unidades lo más equitativamente posible entre
+    temas_ids (división entera + resto). Se baraja el orden antes de asignar
+    el resto para que este no recaiga siempre sobre los mismos temas.
+    Compartido por la generación del test personalizado (test_generator.py)
+    y la selección de preguntas oficiales por tema (ver
+    seleccionar_preguntas_con_cuota más abajo), para que elegir varios temas
+    reparta el test entre ellos en vez de dejar que gane el que más
+    contenido tenga cargado."""
+    ids = list(temas_ids)
+    if not ids:
+        return {}
+    random.shuffle(ids)
+    base, resto = divmod(cantidad, len(ids))
+    return {tid: base + (1 if i < resto else 0) for i, tid in enumerate(ids)}
+
+
+def seleccionar_preguntas_con_cuota(preguntas, num_preguntas, temas_filtro=None):
+    """Selecciona num_preguntas de una lista ya completa de preguntas (cada
+    una con su propio campo 'tema_id'), repartiendo en cuotas equitativas
+    entre los temas de temas_filtro que sí tengan preguntas disponibles. Si
+    temas_filtro es None/vacío, se comporta como el muestreo aleatorio simple
+    de siempre (sin tema elegido = sin filtrar). Usado por
+    /generar-test-oficial."""
+    if not temas_filtro:
+        return random.sample(preguntas, min(num_preguntas, len(preguntas)))
+
+    filtro = set(temas_filtro)
+    pendientes_por_tema = {}
+    for p in preguntas:
+        tid = p.get("tema_id")
+        if tid in filtro:
+            pendientes_por_tema.setdefault(tid, []).append(p)
+    for lista in pendientes_por_tema.values():
+        random.shuffle(lista)
+
+    seleccionadas = []
+    candidatos = list(pendientes_por_tema.keys())
+    restante = num_preguntas
+    while restante > 0 and candidatos:
+        cupos = repartir_cupos_por_tema(candidatos, restante)
+        avance = 0
+        for tid, cupo in cupos.items():
+            tomadas = pendientes_por_tema[tid][:cupo]
+            del pendientes_por_tema[tid][:cupo]
+            seleccionadas.extend(tomadas)
+            avance += len(tomadas)
+        restante -= avance
+        if avance == 0:
+            break
+        candidatos = [tid for tid in candidatos if pendientes_por_tema[tid]]
+
+    random.shuffle(seleccionadas)  # no dejar el orden agrupado por tema
+    return seleccionadas
 

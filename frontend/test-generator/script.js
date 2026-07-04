@@ -31,14 +31,16 @@ async function obtenerAuthHeaders() {
           const tipo = this.dataset.tipo;
           document.getElementById('tipo_test').value = tipo;
           const listaTemas = document.getElementById("lista-temas");
+          const labelListaTemas = document.getElementById("label-lista-temas");
           const tituloFormulario = document.getElementById("titulo-formulario");
+          listaTemas.style.display = "grid";
           if (tipo === "oficial") {
-            listaTemas.style.display = "none";
+            labelListaTemas.textContent = "Filtra por tema (opcional, deja todo sin marcar para todos los temas):";
             tituloFormulario.textContent = "Genera tu Test Oficial";
           } else {
-            listaTemas.style.display = "grid";
-            tituloFormulario.textContent = tipo === "personalizado" 
-              ? "Genera tu Test Personalizado" 
+            labelListaTemas.textContent = "Selecciona uno o varios temas:";
+            tituloFormulario.textContent = tipo === "personalizado"
+              ? "Genera tu Test Personalizado"
               : "Genera tu Test Inteligente IA";
           }
         });
@@ -182,18 +184,18 @@ async function obtenerAuthHeaders() {
       document.getElementById("barra-progreso-preguntas").style.display = "none";
       const tipo = document.getElementById('tipo_test').value;
       const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
-      let temas = [];
-      if (tipo !== "oficial") {
-        temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
-        if (temas.length === 0) {
-          Swal.fire({
-            icon: "warning",
-            title: "Selecciona un tema",
-            text: "Debes elegir al menos un tema para continuar.",
-            confirmButtonText: "Entendido"
-          });
-          return;
-        }
+      // Para "oficial" el tema es un filtro opcional (sin marcar ninguno =
+      // todos los temas); para los demás tipos sigue siendo obligatorio
+      // elegir al menos uno.
+      const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
+      if (tipo !== "oficial" && temas.length === 0) {
+        Swal.fire({
+          icon: "warning",
+          title: "Selecciona un tema",
+          text: "Debes elegir al menos un tema para continuar.",
+          confirmButtonText: "Entendido"
+        });
+        return;
       }
       const endpoint = tipo === "oficial" ? "/generar-test-oficial" :
                       tipo === "inteligente" ? "/generar-test-inteligente" :

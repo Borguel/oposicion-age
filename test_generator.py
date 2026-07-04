@@ -2,7 +2,7 @@ import random
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from deepseek_utils import call_deepseek_api
-from utils import obtener_subbloques_individuales, contar_tokens
+from utils import obtener_subbloques_individuales, contar_tokens, repartir_cupos_por_tema
 from validador_preguntas import validar_pregunta
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
@@ -26,6 +26,17 @@ def _instrucciones(oposicion):
         "{\"pregunta\": \"...\", \"opciones\": {\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}, \"respuesta_correcta\": \"...\", \"explicacion\": \"...\"}\n"
         "Devuelve ÚNICAMENTE ese JSON: sin bloques de código, sin backticks (```), sin ningún texto antes o después."
     )
+
+
+def _tema_id_de_etiqueta(etiqueta):
+    """Extrae 'bloque_XX-tema_YY' de una etiqueta 'bloque_XX-tema_YY-sub_ZZZ'.
+    Se centraliza aquí (en vez de repetir el split en cada sitio que lo
+    necesita) para que el agrupado de subbloques por tema y el tema_id que
+    se asigna a cada pregunta generada nunca puedan divergir."""
+    partes = etiqueta.split("-")
+    if len(partes) >= 2:
+        return "-".join(partes[:2])
+    return etiqueta
 
 
 def _generar_pregunta_desde_subbloque(sub, oposicion=OPOSICION_POR_DEFECTO):
@@ -54,13 +65,10 @@ def _generar_pregunta_desde_subbloque(sub, oposicion=OPOSICION_POR_DEFECTO):
         generado_json = json.loads(generado[inicio:fin])
 
         if validar_pregunta(generado_json):
-            # El id de tema tal y como lo expone /temas-disponibles es
-            # "bloque-tema" (sin el subbloque); se deriva de la etiqueta para
-            # que cada pregunta sepa de qué tema salió realmente, en vez de
-            # que el frontend tenga que adivinarlo/asignarlo al azar.
-            partes = etiqueta.split("-")
-            if len(partes) >= 2:
-                generado_json["tema_id"] = "-".join(partes[:2])
+            # Se deriva de la etiqueta para que cada pregunta sepa de qué
+            # tema salió realmente, en vez de que el frontend tenga que
+            # adivinarlo/asignarlo al azar.
+            generado_json["tema_id"] = _tema_id_de_etiqueta(etiqueta)
             return {"etiqueta": etiqueta, "pregunta": generado_json}
         return {"etiqueta": etiqueta, "error": "No pasó validación"}
 
@@ -70,43 +78,123 @@ def _generar_pregunta_desde_subbloque(sub, oposicion=OPOSICION_POR_DEFECTO):
         return {"etiqueta": etiqueta, "error": f"Error DeepSeek: {e}"}
 
 
+def _generar_preguntas_por_lotes(pendientes_por_tema, cupos, oposicion):
+    """Genera preguntas para varios temas a la vez respetando la cuota
+    (cupo) de cada uno, con un único ThreadPoolExecutor compartido por ronda
+    -- para no perder el paralelismo entre temas que tenía la versión
+    anterior con una única bolsa. En cada vuelta se pide "el doble" de
+    subbloques por tema (misma heurística de siempre para compensar fallos
+    de validación) y se repite hasta que cada tema alcanza su cupo o se le
+    agotan los subbloques.
+
+    pendientes_por_tema: dict tema_id -> lista de subbloques sin probar
+        (mutable, ya barajada; se van consumiendo por el principio).
+    cupos: dict tema_id -> nº de preguntas deseadas de ese tema.
+
+    Devuelve (conseguidos, usados, errores):
+      - conseguidos: dict tema_id -> lista de preguntas conseguidas (<= cupo)
+      - usados: lista de etiquetas de subbloques usadas
+      - errores: lista de {"etiqueta":..., "motivo":...}
+    """
+    conseguidos = {tid: [] for tid in cupos}
+    usados = []
+    errores = []
+
+    while True:
+        lote_total = []  # [(tema_id, subbloque), ...]
+        for tid, cupo in cupos.items():
+            faltan = cupo - len(conseguidos[tid])
+            if faltan <= 0:
+                continue
+            pendientes = pendientes_por_tema[tid]
+            if not pendientes:
+                continue
+            tamano = min(len(pendientes), max(faltan * 2, faltan))
+            for _ in range(tamano):
+                lote_total.append((tid, pendientes.pop(0)))
+
+        if not lote_total:
+            break  # nadie tiene ya cupo pendiente con subbloques que probar
+
+        with ThreadPoolExecutor(max_workers=min(10, len(lote_total))) as executor:
+            futuros = {
+                executor.submit(_generar_pregunta_desde_subbloque, sub, oposicion): tid
+                for tid, sub in lote_total
+            }
+            for futuro in as_completed(futuros):
+                tid = futuros[futuro]
+                resultado = futuro.result()
+                if "pregunta" in resultado:
+                    if len(conseguidos[tid]) < cupos[tid]:
+                        conseguidos[tid].append(resultado["pregunta"])
+                        usados.append(resultado["etiqueta"])
+                else:
+                    errores.append({"etiqueta": resultado["etiqueta"], "motivo": resultado["error"]})
+
+    return conseguidos, usados, errores
+
+
 def generar_test_avanzado(temas, db, num_preguntas=5, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO):
     print("🔍 función generar_test_avanzado() llamada")
     print(f"🧪 Temas recibidos: {temas}")
 
     try:
-        subbloques = obtener_subbloques_individuales(db, temas, coleccion=coleccion)
+        # Deduplicar preservando orden: evita pedir dos veces los subbloques
+        # de un tema repetido en la lista y contarlo dos veces al repartir.
+        temas_unicos = list(dict.fromkeys(temas))
+
+        subbloques = obtener_subbloques_individuales(db, temas_unicos, coleccion=coleccion)
         if not subbloques:
             print("⚠️ No se encontraron subbloques.")
-            return {"test": [], "advertencia": "No se encontraron subbloques válidos."}
+            return {"test": [], "subbloques_utilizados": [], "errores": [],
+                    "advertencia": "No se encontraron subbloques válidos."}
 
         print(f"📚 Subbloques encontrados: {len(subbloques)}")
-        random.shuffle(subbloques)
+
+        # Agrupar por tema (a partir de la etiqueta) en vez de barajar la
+        # bolsa conjunta: cada tema elegido reparte y consume su propio
+        # contenido de forma independiente, así uno con muchos más
+        # subbloques cargados que otro no se lleva casi todas las preguntas.
+        pendientes_por_tema = {}
+        for sub in subbloques:
+            tid = _tema_id_de_etiqueta(sub["etiqueta"])
+            pendientes_por_tema.setdefault(tid, []).append(sub)
+        for lista in pendientes_por_tema.values():
+            random.shuffle(lista)
 
         preguntas_generadas = []
         usados = []
         errores = []
-        indice = 0
 
-        # Se pide de más (el doble de lo que falta) para compensar preguntas
-        # que no pasen la validación o fallen al generarse. Si aun así no se
-        # llega al número pedido, se sigue intentando con más subbloques sin
-        # usar -- en vez de rendirse tras el primer lote -- hasta agotarlos.
-        while len(preguntas_generadas) < num_preguntas and indice < len(subbloques):
-            faltan = num_preguntas - len(preguntas_generadas)
-            lote = subbloques[indice: indice + max(faltan * 2, faltan)]
-            indice += len(lote)
+        # Reparto equitativo con "mejor esfuerzo": se reparte la cuota entre
+        # todos los temas con contenido; si en una ronda algún tema se queda
+        # corto (agotó sus subbloques), el hueco se reparte de nuevo --
+        # equitativamente y sin sesgo posicional -- entre los temas que
+        # todavía tengan subbloques sin probar, en sucesivas rondas, hasta
+        # completar el total pedido o hasta que ya nadie tenga contenido.
+        candidatos = list(pendientes_por_tema.keys())
+        restante = num_preguntas
+        while restante > 0 and candidatos:
+            cupos = repartir_cupos_por_tema(candidatos, restante)
+            print(f"🧮 Cupos de esta ronda: {cupos}")
+            conseguidos, usados_ronda, errores_ronda = _generar_preguntas_por_lotes(
+                pendientes_por_tema, cupos, oposicion
+            )
+            usados.extend(usados_ronda)
+            errores.extend(errores_ronda)
 
-            with ThreadPoolExecutor(max_workers=min(10, len(lote))) as executor:
-                futuros = [executor.submit(_generar_pregunta_desde_subbloque, sub, oposicion) for sub in lote]
-                for futuro in as_completed(futuros):
-                    resultado = futuro.result()
-                    if "pregunta" in resultado:
-                        if len(preguntas_generadas) < num_preguntas:
-                            preguntas_generadas.append(resultado["pregunta"])
-                            usados.append(resultado["etiqueta"])
-                    else:
-                        errores.append({"etiqueta": resultado["etiqueta"], "motivo": resultado["error"]})
+            avance = 0
+            for tid in candidatos:
+                preguntas_generadas.extend(conseguidos[tid])
+                avance += len(conseguidos[tid])
+            restante -= avance
+
+            if avance == 0:
+                break  # ningún tema pudo aportar más pese a tener pendientes
+
+            # Solo siguen siendo candidatos los temas a los que aún les
+            # quede contenido sin probar, para la siguiente ronda de reparto.
+            candidatos = [tid for tid in candidatos if pendientes_por_tema[tid]]
 
         resultado_final = {
             "test": preguntas_generadas,

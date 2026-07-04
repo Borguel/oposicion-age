@@ -25,6 +25,7 @@ from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usu
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida, coleccion_temario, coleccion_examenes_oficiales
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso
 from documentos_pdf import obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta
+from utils import seleccionar_preguntas_con_cuota
 # Cargar variables de entorno
 load_dotenv()
 print("🔑 Clave OpenAI:", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
@@ -154,8 +155,10 @@ def generar_test_oficial():
     print("📥 Datos recibidos:", data)
     num_preguntas = data.get("num_preguntas", 10)
     examenes_filtrados = data.get("examenes", [])
+    temas_filtrados = data.get("temas", [])
     print("🔍 Número de preguntas solicitado:", num_preguntas)
     print("📚 Exámenes filtrados:", examenes_filtrados)
+    print("🏷️ Temas filtrados:", temas_filtrados)
     coleccion = coleccion_examenes_oficiales(g.oposicion)
     try:
         docs = db.collection(coleccion).stream()
@@ -184,8 +187,8 @@ def generar_test_oficial():
     print(f"✅ Preguntas encontradas tras filtro en {coleccion}: {len(preguntas)}")
     if not preguntas:
         return jsonify({"test": [], "mensaje": "Todavía no hay preguntas oficiales cargadas para esta oposición"}), 404
-    seleccionadas = random.sample(preguntas, min(num_preguntas, len(preguntas)))
-    print(f"🎯 Preguntas seleccionadas aleatoriamente: {len(seleccionadas)}")
+    seleccionadas = seleccionar_preguntas_con_cuota(preguntas, num_preguntas, temas_filtrados)
+    print(f"🎯 Preguntas seleccionadas: {len(seleccionadas)}")
     return jsonify({"test": seleccionadas})
 @app.route("/guardar-test-oficial", methods=["POST"])
 @requiere_login(db)
