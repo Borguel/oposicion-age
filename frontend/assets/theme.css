@@ -912,13 +912,12 @@ body {
   border-radius: var(--age-radius-md);
   margin: 8px 0;
   padding: 12px 15px;
-  font-weight: 600;
+  font-weight: 400;
   color: var(--age-ink);
 }
 
 .detalle-opcion.correcta,
 .detalle-opcion.incorrecta {
-  font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 3px;
   text-decoration-thickness: 2px;
