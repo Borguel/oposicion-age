@@ -6,6 +6,7 @@ import traceback
 import stripe
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
+from flask_talisman import Talisman
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -51,6 +52,19 @@ if not cors_origins:
     cors_origins = ["http://localhost:8080", "http://127.0.0.1:8080"]
 CORS(app, origins=cors_origins)
 print(f"✅ CORS activado para: {cors_origins}")
+
+# Cabeceras de seguridad para las respuestas de la API (el frontend estático
+# no pasa por Flask -- sus cabeceras equivalentes, incluida la CSP, se
+# configuran en render.yaml). force_https=False porque Render ya sirve todo
+# por HTTPS en el borde y forzar la redirección dentro de la propia app
+# puede acabar en bucle si el proxy le habla por HTTP puertas adentro.
+Talisman(
+    app,
+    force_https=False,
+    content_security_policy={"default-src": "'none'"},
+    referrer_policy="strict-origin-when-cross-origin",
+    frame_options="DENY",
+)
 
 # Tamaño máximo de subida (20 MB): un PDF de exámenes normal pesa unos pocos
 # MB incluso con muchas páginas, así que esto solo frena subidas anómalas

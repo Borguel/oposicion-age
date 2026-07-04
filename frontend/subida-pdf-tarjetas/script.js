@@ -186,13 +186,18 @@ async function obtenerAuthHeaders() {
       let html = '';
       tarjetas.forEach((tarjeta, index) => {
         html += `
-          <div class="tarjeta-miniatura" onclick="seleccionarTarjeta(${index})">
+          <div class="tarjeta-miniatura" data-index="${index}">
             <div class="pregunta">${escaparHtml(tarjeta.pregunta)}</div>
             <div class="respuesta">${escaparHtml(tarjeta.respuesta)}</div>
           </div>
         `;
       });
       contenedorListaTarjetas.innerHTML = html;
+      // Delegado en vez de onclick inline en cada miniatura, para no
+      // depender de 'unsafe-inline' en la política de seguridad de contenido.
+      contenedorListaTarjetas.querySelectorAll('[data-index]').forEach((el) => {
+        el.addEventListener('click', () => seleccionarTarjeta(Number(el.dataset.index)));
+      });
     }
     function seleccionarTarjeta(index) {
       tarjetaActual = index;

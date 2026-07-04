@@ -82,10 +82,6 @@ document.addEventListener("DOMContentLoaded", function () {
       div.className = "mensaje-user";
       div.innerHTML = `<div class="bubble-user">${safeText}</div>`;
     } else {
-      // JSON.stringify solo escapa comillas para JS, no para HTML: sin pasar
-      // también por escapeHtml, una respuesta de la IA con una comilla doble
-      // seguida de más marcado podría romper el atributo onclick.
-      const copyBtn = `<button onclick="copyToClipboard(${escapeHtml(JSON.stringify(texto))})" title="Copiar">📋</button>`;
       div.className = "mensaje-bot";
       div.innerHTML = `
         <div class="avatar-bot-mini">
@@ -93,9 +89,13 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
         <div class="bubble-bot">
           ${safeText}
-          <div class="bubble-bot-actions">${copyBtn}</div>
+          <div class="bubble-bot-actions"><button type="button" class="btn-copiar-mensaje" title="Copiar">📋</button></div>
         </div>
       `;
+      // addEventListener con "texto" capturado por closure, en vez de un
+      // onclick inline: no depende de 'unsafe-inline' en el CSP y evita
+      // tener que serializar el texto dentro de un atributo HTML.
+      div.querySelector(".btn-copiar-mensaje").addEventListener("click", () => copyToClipboard(texto));
     }
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;

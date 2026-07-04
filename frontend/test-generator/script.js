@@ -312,10 +312,12 @@ async function obtenerAuthHeaders() {
         mostrarPregunta(indicePreguntaActual);
       } catch (error) {
         clearInterval(intervalCarga);
-        document.getElementById('contenedor-test').innerHTML = `
+        const contenedorTest = document.getElementById('contenedor-test');
+        contenedorTest.innerHTML = `
           <p>Error al generar el test: ${error.message}</p>
-          <button class="btn btn-primary" onclick="location.reload()">Volver a intentar</button>
+          <button type="button" class="btn btn-primary" id="btn-volver-a-intentar">Volver a intentar</button>
         `;
+        document.getElementById('btn-volver-a-intentar').addEventListener('click', () => location.reload());
         console.error(error);
       }
     });
