@@ -216,68 +216,17 @@ body {
   color: var(--age-danger);
 }
 
-.cuenta-accesos-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-@media (max-width: 640px) {
-  .cuenta-accesos-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.cuenta-acceso-boton {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 20px;
-  border-radius: var(--age-radius-md);
-  border: 1.5px solid var(--age-border);
-  background: var(--age-card);
-  color: var(--age-ink);
-  text-decoration: none;
-  transition: border-color 0.15s var(--age-ease), background 0.15s var(--age-ease), transform 0.15s var(--age-ease);
-}
-
-.cuenta-acceso-boton:hover {
-  border-color: var(--age-primary);
-  background: var(--age-primary-soft);
-  transform: translateY(-1px);
-}
-
-.cuenta-acceso-boton-icono {
-  width: 52px;
-  height: 52px;
-  flex-shrink: 0;
-  border-radius: var(--age-radius-md);
-  background: var(--age-primary-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.6rem;
-}
-
-.cuenta-acceso-boton-texto {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.cuenta-acceso-boton-texto strong {
-  font-size: 1rem;
-}
-
-.cuenta-acceso-boton-texto small {
+.cuenta-volver-zona {
+  display: inline-block;
   color: var(--age-ink-soft);
-  font-size: 12.5px;
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+  margin: 0 0 4px 2px;
 }
 
-.cuenta-acceso-boton-flecha {
-  font-size: 1.2rem;
-  color: var(--age-ink-faint);
+.cuenta-volver-zona:hover {
+  color: var(--age-ink);
 }
 
 .cuenta-datos-resumen {
@@ -307,48 +256,4 @@ body {
   color: var(--age-ink);
   font-weight: 700;
   text-align: right;
-}
-
-.cuenta-racha-card {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 22px 26px;
-  background: linear-gradient(135deg, var(--age-navy), var(--age-navy-soft, var(--age-navy)));
-  color: #fff;
-}
-
-.cuenta-racha-icono {
-  font-size: 2.6rem;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.cuenta-racha-info {
-  min-width: 0;
-}
-
-.cuenta-racha-numero {
-  font-size: 1.25rem;
-  font-weight: 800;
-  margin-bottom: 4px;
-}
-
-.cuenta-racha-mensaje {
-  color: var(--age-navy-ink);
-  font-size: 0.92rem;
-}
-
-.cuenta-racha-maxima {
-  color: var(--age-navy-ink);
-  font-size: 0.8rem;
-  margin-top: 6px;
-  opacity: 0.85;
-}
-
-@media (max-width: 480px) {
-  .cuenta-racha-card {
-    flex-direction: column;
-    text-align: center;
-  }
 }

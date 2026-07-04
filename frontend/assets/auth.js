@@ -143,6 +143,7 @@ export async function idToken() {
 // ============================================================
 const NAV_LINKS = [
   { href: "/", label: "Inicio", match: ["/"] },
+  { href: "/zona-opositor/", label: "Zona opositor", match: ["/zona-opositor/"] },
   { href: "/test-generator/", label: "Tests", match: ["/test-generator/", "/repetir-test/", "/preguntas-falladas/", "/mis-tests/"] },
   { href: "/subida-pdf-pagina-principal/", label: "Herramientas IA", match: ["/subida-pdf-"] },
   { href: "/chat-ai/", label: "Chat IA", match: ["/chat-ai/"] },
@@ -215,7 +216,8 @@ function construirMenuCuenta(user) {
         <span class="age-account-caret">▾</span>
       </button>
       <div class="age-account-menu">
-        <a href="/mi-cuenta/">👤 Mi cuenta</a>
+        <a href="/zona-opositor/">🎯 Zona opositor</a>
+        <a href="/mi-cuenta/">⚙️ Mi cuenta</a>
         <a href="/planes/">💳 Planes</a>
         <div class="age-account-menu-divider"></div>
         <button type="button" data-account-logout>🚪 Cerrar sesión</button>

@@ -45,7 +45,7 @@ tabSignup.addEventListener("click", () => cambiarModo("signup"));
 
 function siguienteDestino() {
   const params = new URLSearchParams(window.location.search);
-  return params.get("next") || "/";
+  return params.get("next") || "/zona-opositor/";
 }
 
 async function enviarPerfilVacio() {
@@ -115,10 +115,10 @@ btnGoogle.addEventListener("click", async () => {
       mostrarPasoPerfil(nombre, apellidos);
     } else {
       // Al iniciar sesión con una cuenta de Google ya existente se va
-      // directo a "Mi cuenta" en vez de a siguienteDestino(), a petición
-      // explícita (a diferencia del login por email/contraseña, que sí
-      // respeta a dónde quería volver el usuario).
-      window.location.href = "/mi-cuenta/";
+      // directo a "Zona opositor" en vez de a siguienteDestino(), a
+      // petición explícita (a diferencia del login por email/contraseña,
+      // que sí respeta a dónde quería volver el usuario).
+      window.location.href = "/zona-opositor/";
     }
   } catch (error) {
     if (error.code === "auth/account-exists-with-different-credential") {
@@ -169,7 +169,7 @@ formVincularGoogle.addEventListener("submit", async (evento) => {
     const userCredential = await signIn(emailPendienteVincular, password);
     await vincularCredencialGoogle(userCredential.user, credencialPendienteVincular);
     cerrarModalVincularGoogle();
-    window.location.href = "/mi-cuenta/";
+    window.location.href = "/zona-opositor/";
   } catch (error) {
     vincularMensajeError.textContent = MENSAJES_ERROR[error.code] || error.message || "Contraseña incorrecta. Inténtalo de nuevo.";
     vincularMensajeError.style.display = "block";
