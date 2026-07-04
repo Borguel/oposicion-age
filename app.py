@@ -21,7 +21,7 @@ from save_controller import guardar_test_route, guardar_esquema_route
 from rutas_progreso import registrar_rutas_progreso
 from guardar_resultado import guardar_resultado_en_firestore
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
-from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario
+from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario, obtener_resumen_progreso
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida, coleccion_temario, coleccion_examenes_oficiales
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso
 from documentos_pdf import obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta
@@ -178,7 +178,8 @@ def generar_test_oficial():
             "respuesta_correcta": d.get("respuesta_correcta", "").upper(),
             "explicacion": d.get("explicacion", ""),
             "examen": d.get("examen", ""),
-            "numero": d.get("numero", 0)
+            "numero": d.get("numero", 0),
+            "tema_id": d.get("tema_id", "")
         })
     print(f"✅ Preguntas encontradas tras filtro en {coleccion}: {len(preguntas)}")
     if not preguntas:
@@ -329,6 +330,52 @@ Devuelve SOLO un array JSON con este formato exacto, sin texto adicional ni bloq
     except Exception as e:
         print("❌ Error al generar test inteligente:", e)
         return jsonify({"error": str(e)}), 500
+@app.route("/analisis-rendimiento", methods=["GET"])
+@requiere_plan(db, "basico")
+def analisis_rendimiento():
+    """Análisis breve generado por IA a partir del rendimiento POR TEMA
+    acumulado (rendimiento_por_tema), no de un único test: así puede decir
+    con datos reales en qué temas domina el usuario y en cuáles flojea. Se
+    pide bajo demanda desde la pantalla de resultados, no automáticamente en
+    cada test, para no disparar una llamada a DeepSeek por cada corrección."""
+    oposicion = obtener_oposicion_solicitada()
+    resumen = obtener_resumen_progreso(db, g.uid, oposicion=oposicion)
+    rendimiento = resumen.get("rendimiento_por_tema", {}) or {}
+
+    UMBRAL_MUESTRA_MINIMA = 3
+    filas = []
+    for tema_id, datos in rendimiento.items():
+        total = datos.get("aciertos", 0) + datos.get("fallos", 0) + datos.get("blancos", 0)
+        if total < UMBRAL_MUESTRA_MINIMA:
+            continue
+        porcentaje = round(datos.get("aciertos", 0) / total * 100) if total else 0
+        filas.append({"tema_id": tema_id, "total": total, "porcentaje": porcentaje})
+
+    if len(filas) < 2:
+        return jsonify({"analisis": None, "mensaje": "Todavía no tienes suficientes tests por tema para un análisis. ¡Sigue practicando y vuelve a intentarlo más adelante!"})
+
+    coleccion = coleccion_temario(oposicion)
+    titulos = obtener_titulos_temas_reales(db, coleccion, [f["tema_id"] for f in filas])
+    resumen_temas = "\n".join(
+        f"- {titulo}: {fila['porcentaje']}% de acierto ({fila['total']} preguntas contestadas)"
+        for fila, titulo in zip(filas, titulos)
+    )
+    nombre_oposicion = OPOSICIONES.get(oposicion, OPOSICIONES[OPOSICION_POR_DEFECTO])["nombre"]
+
+    prompt = f"""Eres un tutor personal de la oposición al {nombre_oposicion}. Este es el rendimiento acumulado de un alumno por tema, en porcentaje de acierto sobre las preguntas que ha contestado en sus tests:
+{resumen_temas}
+
+Escribe un análisis breve (máximo 3-4 frases), cercano y motivador, en español, que destaque el tema o los temas donde mejor rinde y aquellos en los que más necesita reforzar. Cita los nombres de los temas tal cual aparecen arriba. No uses markdown, listas ni encabezados: solo texto corrido, como si se lo dijeras directamente al alumno."""
+
+    try:
+        analisis = call_deepseek_api(messages=[{"role": "user", "content": prompt}], temperature=0.5, max_tokens=300)
+    except Exception as e:
+        print("❌ Error al generar análisis de rendimiento:", e)
+        analisis = None
+
+    if not analisis:
+        return jsonify({"analisis": None, "mensaje": "No se ha podido generar el análisis ahora mismo. Inténtalo de nuevo más tarde."})
+    return jsonify({"analisis": analisis.strip()})
 @app.route("/conversaciones", methods=["GET"])
 @requiere_plan(db, "premium")
 def obtener_conversaciones_usuario():
@@ -362,30 +409,28 @@ def obtener_conversacion(conversacion_id):
 def generar_test_fallos():
     data = request.get_json()
     num_preguntas = data.get("num_preguntas", 10)
+    temas_filtro = set(data.get("temas", []) or [])
     oposicion = obtener_oposicion_solicitada()
-    tests_ref = db.collection("usuarios").document(g.uid).collection("tests") \
+
+    docs = db.collection("usuarios").document(g.uid).collection("preguntas_falladas") \
         .where("oposicion", "==", oposicion).stream()
-    preguntas_falladas = []
-    for test_doc in tests_ref:
-        test = test_doc.to_dict()
-        for pregunta in test.get("preguntas", []):
-            if (
-                "respuesta_usuario" in pregunta and
-                "respuesta_correcta" in pregunta and
-                pregunta["respuesta_usuario"] != pregunta["respuesta_correcta"] and
-                pregunta["respuesta_usuario"] is not None
-            ):
-                preguntas_falladas.append(pregunta)
-    preguntas_unicas = []
-    vistos = set()
-    for p in preguntas_falladas:
-        clave = p.get("pregunta", "")
-        if clave not in vistos:
-            preguntas_unicas.append(p)
-            vistos.add(clave)
-    random.shuffle(preguntas_unicas)
-    preguntas_finales = preguntas_unicas[:num_preguntas]
-    return jsonify({"test": preguntas_finales})
+    candidatas = [d.to_dict() for d in docs]
+    if temas_filtro:
+        candidatas = [p for p in candidatas if p.get("tema_id") in temas_filtro]
+
+    total_disponibles = len(candidatas)
+    random.shuffle(candidatas)
+    seleccionadas = candidatas[:num_preguntas]
+
+    if total_disponibles == 0:
+        mensaje = "No tienes preguntas falladas pendientes con estos filtros. ¡Buen trabajo!"
+    elif total_disponibles < num_preguntas:
+        plural = "s" if total_disponibles != 1 else ""
+        mensaje = f"Solo hemos encontrado {total_disponibles} pregunta{plural} fallada{plural} con estos filtros (pediste {num_preguntas})."
+    else:
+        mensaje = None
+
+    return jsonify({"test": seleccionadas, "mensaje": mensaje, "total_disponibles": total_disponibles})
 # ===================================================================
 # RUTAS PARA DEEPSEEK (PDFs)
 # ===================================================================

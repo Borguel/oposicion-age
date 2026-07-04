@@ -1,12 +1,11 @@
-// Renderizado compartido de "resultados de test" (resumen + gráficas por
-// tema + detalle filtrable de preguntas) y descarga en PDF. Antes cada
-// página (test-generator, repetir-test, preguntas-falladas) tenía su
-// propia versión -- solo la de "personalizado" mostraba gráficas -- así
-// que ahora todas usan este mismo módulo para que el resultado sea
-// siempre el mismo, sea cual sea el tipo de test.
+// Renderizado compartido de "resultados de test" (resumen + tabla por tema +
+// detalle filtrable de preguntas) y descarga en PDF. Antes cada página
+// (test-generator, repetir-test, preguntas-falladas) tenía su propia
+// versión -- así que ahora todas usan este mismo módulo para que el
+// resultado sea siempre el mismo, sea cual sea el tipo de test.
 //
-// Requiere que la página ya tenga cargado Chart.js (para las gráficas) y
-// jsPDF (para la descarga) via <script> normales antes de este módulo.
+// Requiere que la página ya tenga cargado jsPDF (para la descarga) via
+// <script> normal antes de este módulo.
 
 function calcularEstadisticas(preguntas, respuestasUsuario) {
   let aciertos = 0;
@@ -17,8 +16,9 @@ function calcularEstadisticas(preguntas, respuestasUsuario) {
   const fallos = preguntas.length - aciertos - sinResponder;
   const porcentaje = preguntas.length ? ((aciertos / preguntas.length) * 100).toFixed(1) : "0.0";
   const nota = (aciertos * 1 - fallos * 0.33).toFixed(2);
-  const notaEquivalente = preguntas.length ? ((nota / preguntas.length) * 70).toFixed(2) : "0.00";
-  return { aciertos, fallos, sinResponder, porcentaje, nota, notaEquivalente };
+  const notaSobre10 = preguntas.length ? Math.max(0, (nota / preguntas.length) * 10).toFixed(2) : "0.00";
+  const apto = parseFloat(notaSobre10) >= 5;
+  return { aciertos, fallos, sinResponder, porcentaje, nota, notaSobre10, apto };
 }
 
 function agruparPorTema(preguntas, respuestasUsuario, listaTemas) {
@@ -39,22 +39,52 @@ function agruparPorTema(preguntas, respuestasUsuario, listaTemas) {
   return stats;
 }
 
+function acortarTitulo(titulo, maxLength = 55) {
+  if (!titulo) return titulo;
+  return titulo.length > maxLength ? titulo.slice(0, maxLength - 1).trimEnd() + "…" : titulo;
+}
+
 function quitarNumeracion(texto) {
   return (texto || "").replace(/^\s*\d+\s*[\.\)]\s*/, "");
 }
 
 /**
- * Pinta el bloque de resumen + gráficas + listado detallado dentro de
+ * Racha de aciertos más larga dentro de este test (rachas de "en blanco"
+ * cortan la racha igual que un fallo, solo cuenta consecutivos correctos).
+ * Sirve para el mensaje motivacional -- un simple "llevas X aciertos
+ * seguidos" anima mucho más que una estadística fría.
+ */
+function calcularMejorRacha(preguntas, respuestasUsuario) {
+  let mejor = 0;
+  let actual = 0;
+  preguntas.forEach((p, i) => {
+    if (respuestasUsuario[i] === p.respuesta_correcta) {
+      actual++;
+      mejor = Math.max(mejor, actual);
+    } else {
+      actual = 0;
+    }
+  });
+  return mejor;
+}
+
+function mensajeMotivacional(mejorRacha) {
+  if (mejorRacha >= 20) return `🔥 ¡Racha brutal! ${mejorRacha} aciertos seguidos en este test.`;
+  if (mejorRacha >= 10) return `💪 ¡${mejorRacha} aciertos seguidos! Vas a por todas.`;
+  if (mejorRacha >= 5) return `👏 Llevas ${mejorRacha} aciertos seguidos, ¡sigue así!`;
+  return null;
+}
+
+/**
+ * Pinta el bloque de resumen + tabla por tema + listado detallado dentro de
  * `contenedor`. Devuelve las estadísticas calculadas por si la página
  * necesita guardarlas (p. ej. para mandarlas al backend).
  */
 export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsuario, listaTemas = [] }) {
   const stats = calcularEstadisticas(preguntas, respuestasUsuario);
   const statsPorTema = agruparPorTema(preguntas, respuestasUsuario, listaTemas);
-  const idsGraficos = {
-    temas: `chart-temas-${Math.random().toString(36).slice(2)}`,
-    rendimiento: `chart-rendimiento-${Math.random().toString(36).slice(2)}`
-  };
+  const mejorRacha = calcularMejorRacha(preguntas, respuestasUsuario);
+  const mensajeRacha = mensajeMotivacional(mejorRacha);
 
   let detalleHTML = "";
   preguntas.forEach((p, i) => {
@@ -85,11 +115,32 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     detalleHTML += `<div id="${idExp}" style="display:none; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;"><strong>Explicación:</strong> ${explicacion}</div></div>`;
   });
 
-  const chartHTML = `
-    <div class="stats-container">
-      <div class="chart-container"><canvas id="${idsGraficos.temas}"></canvas></div>
-      <div class="chart-container"><canvas id="${idsGraficos.rendimiento}"></canvas></div>
+  const filasTema = Object.values(statsPorTema).map((t) => {
+    const resolucion = t.total ? ((t.aciertos / t.total) * 100).toFixed(0) : "0";
+    return `
+      <tr>
+        <td>${acortarTitulo(t.titulo)}</td>
+        <td>${t.total}</td>
+        <td class="celda-acierto">${t.aciertos}</td>
+        <td class="celda-fallo">${t.fallos}</td>
+        <td class="celda-blanco">${t.blancos}</td>
+        <td>${resolucion}%</td>
+      </tr>`;
+  }).join("");
+
+  const tablaTemasHTML = `
+    <div class="tabla-temas-container">
+      <table class="tabla-temas">
+        <thead>
+          <tr><th>Tema</th><th>Preguntas</th><th>Aciertos</th><th>Fallos</th><th>Blanco</th><th>% resolución</th></tr>
+        </thead>
+        <tbody>${filasTema}</tbody>
+      </table>
     </div>`;
+
+  const rachaHTML = mensajeRacha
+    ? `<div class="mensaje-racha-test">${mensajeRacha}</div>`
+    : "";
 
   contenedor.innerHTML = `
     <div style='background:#f8f9fa;padding:25px;border-radius:12px;margin-bottom:25px;'>
@@ -108,16 +159,21 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
           <p style="color:#1c7ed6; font-weight:600;">🎯 Porcentaje: ${stats.porcentaje}%</p>
         </div>
       </div>
-      <p><strong>📘 Nota simulada:</strong> ${stats.nota} / ${preguntas.length}</p>
-      <p><strong>📏 Nota equivalente AGE:</strong> ${stats.notaEquivalente} / 70</p>
+      <p><strong>📘 Nota de este test:</strong> ${stats.nota} / ${preguntas.length}</p>
+      <p><strong>📏 Nota estilo examen oficial:</strong> ${stats.notaSobre10} / 10 — <span style="color:${stats.apto ? "#2e7d32" : "#c62828"}; font-weight:700;">${stats.apto ? "Apto" : "No apto"}</span></p>
       <div style='background:#e9ecef;border-radius:10px;overflow:hidden;margin-top:15px;height:20px;'>
         <div style='width:${stats.porcentaje}%;background:linear-gradient(to right,#4caf50,#81c784);height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;'>
           ${stats.porcentaje}%
         </div>
       </div>
+      ${rachaHTML}
     </div>
-    <h3>📈 Estadísticas por temas</h3>
-    ${chartHTML}
+    <div class="analisis-ia-bloque">
+      <button type="button" id="btn-analisis-ia" class="btn age-btn-outline">🤖 Ver análisis de mi rendimiento con IA</button>
+      <div id="analisis-ia-resultado"></div>
+    </div>
+    <h3>📈 Estadísticas por tema</h3>
+    ${tablaTemasHTML}
     <div class="filtros-container">
       <button type="button" class="btn btn-accent" data-filtro="todos">🟡 Todos</button>
       <button type="button" class="btn btn-primary" data-filtro="acierto">✅ Aciertos</button>
@@ -146,39 +202,31 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     });
   });
 
-  if (window.Chart) {
-    const temas = Object.values(statsPorTema);
-    new window.Chart(document.getElementById(idsGraficos.temas).getContext("2d"), {
-      type: "bar",
-      data: {
-        labels: temas.map((t) => (t.titulo.length > 20 ? t.titulo.substring(0, 17) + "..." : t.titulo)),
-        datasets: [
-          { label: "Aciertos", data: temas.map((t) => t.aciertos), backgroundColor: "#4caf50", borderColor: "#388e3c", borderWidth: 1 },
-          { label: "Fallos", data: temas.map((t) => t.fallos), backgroundColor: "#ef5350", borderColor: "#d32f2f", borderWidth: 1 },
-          { label: "Blancos", data: temas.map((t) => t.blancos), backgroundColor: "#bdbdbd", borderColor: "#757575", borderWidth: 1 }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: { title: { display: true, text: "Rendimiento por tema", font: { size: 16 } }, legend: { position: "top" } },
-        scales: { y: { beginAtZero: true, title: { display: true, text: "Cantidad" } } }
-      }
-    });
-
-    new window.Chart(document.getElementById(idsGraficos.rendimiento).getContext("2d"), {
-      type: "doughnut",
-      data: {
-        labels: ["Aciertos", "Fallos", "Blancos"],
-        datasets: [{
-          data: [stats.aciertos, stats.fallos, stats.sinResponder],
-          backgroundColor: ["#4caf50", "#ef5350", "#bdbdbd"],
-          borderColor: ["#388e3c", "#d32f2f", "#757575"],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { title: { display: true, text: "Distribución general", font: { size: 16 } }, legend: { position: "top" } }
+  // Análisis de rendimiento con IA (bajo demanda, no automático: usa el
+  // histórico acumulado del usuario, no solo este test, así que se pide
+  // explícitamente en vez de disparar una llamada a IA en cada resultado).
+  const btnAnalisisIA = contenedor.querySelector("#btn-analisis-ia");
+  if (btnAnalisisIA) {
+    btnAnalisisIA.addEventListener("click", async () => {
+      const destino = contenedor.querySelector("#analisis-ia-resultado");
+      btnAnalisisIA.disabled = true;
+      btnAnalisisIA.textContent = "Analizando tu rendimiento...";
+      destino.innerHTML = "";
+      try {
+        const { idToken } = await import("/assets/auth.js");
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const token = await idToken();
+        if (!token) return;
+        const res = await fetch(`https://oposicion-age.onrender.com/analisis-rendimiento?oposicion=${encodeURIComponent(obtenerOposicionActual())}`, {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        const datos = await res.json();
+        destino.innerHTML = `<p>${datos.analisis || datos.mensaje || "No se ha podido generar el análisis ahora mismo."}</p>`;
+      } catch (err) {
+        destino.innerHTML = `<p>No se ha podido generar el análisis ahora mismo.</p>`;
+        console.error(err);
+      } finally {
+        btnAnalisisIA.style.display = "none";
       }
     });
   }
@@ -265,7 +313,7 @@ export function descargarResultadosPDF({ preguntas, respuestasUsuario, stats, ti
   doc.text(resumen, pageWidth / 2, yPos, { align: "center" });
   yPos += 8;
   doc.setFont("helvetica", "normal");
-  doc.text(`Nota simulada: ${stats.nota} / ${preguntas.length}   ·   Nota equivalente AGE: ${stats.notaEquivalente} / 70`, pageWidth / 2, yPos, { align: "center" });
+  doc.text(`Nota de este test: ${stats.nota} / ${preguntas.length}   ·   Nota estilo examen oficial: ${stats.notaSobre10} / 10 (${stats.apto ? "Apto" : "No apto"})`, pageWidth / 2, yPos, { align: "center" });
   yPos += 14;
   doc.setDrawColor(220);
   doc.line(margin, yPos, pageWidth - margin, yPos);

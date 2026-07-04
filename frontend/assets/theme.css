@@ -582,3 +582,77 @@ body {
   }
 }
 
+/* ============================================================
+   Resultados de test: tabla por tema + mensaje de racha
+   (usado por resultados-test.js en test-generator, repetir-test,
+   preguntas-falladas y subida-pdf-generar-test)
+   ============================================================ */
+.tabla-temas-container {
+  overflow-x: auto;
+  margin: 16px 0 24px;
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+}
+
+.tabla-temas {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: var(--age-card);
+}
+
+.tabla-temas th,
+.tabla-temas td {
+  padding: 10px 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tabla-temas th:first-child,
+.tabla-temas td:first-child {
+  white-space: normal;
+  min-width: 220px;
+}
+
+.tabla-temas thead th {
+  background: var(--age-neutral-bg);
+  color: var(--age-ink-soft);
+  font-weight: 700;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tabla-temas tbody tr:not(:last-child) {
+  border-bottom: 1px solid var(--age-border);
+}
+
+.tabla-temas .celda-acierto { color: var(--age-success); font-weight: 700; }
+.tabla-temas .celda-fallo { color: var(--age-danger); font-weight: 700; }
+.tabla-temas .celda-blanco { color: var(--age-ink-soft); font-weight: 700; }
+
+.mensaje-racha-test {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: var(--age-radius-md);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  font-weight: 700;
+  text-align: center;
+}
+
+.analisis-ia-bloque {
+  margin: 20px 0 28px;
+  text-align: center;
+}
+
+.analisis-ia-bloque #analisis-ia-resultado p {
+  margin-top: 14px;
+  padding: 16px 20px;
+  border-radius: var(--age-radius-md);
+  background: var(--age-navy-soft);
+  color: #fff;
+  text-align: left;
+  line-height: 1.55;
+}
+

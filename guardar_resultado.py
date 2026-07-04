@@ -3,6 +3,7 @@ from firebase_admin import firestore
 from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_estadisticas_esquema, registrar_actividad_racha
 from oposiciones import OPOSICION_POR_DEFECTO
 from documentos_pdf import marcar_generado
+from banco_fallos import actualizar_banco_fallos
 
 def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None, oposicion=OPOSICION_POR_DEFECTO):
     metadatos = metadatos or {}
@@ -11,6 +12,8 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
 
     if tipo == "test":
         respuestas = metadatos.get("respuestas", [])
+        tipo_test = metadatos.get("tipo", "personalizado")
+        actualizar_banco_fallos(db, usuario_id, oposicion, tipo_test, contenido, respuestas)
         aciertos, fallos, blancos = 0, 0, 0
         for i, p in enumerate(contenido):
             correcta = p.get("respuesta_correcta")
@@ -60,7 +63,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
         test_ref = doc_user.collection("tests").document()
         test_ref.set({
             "fecha": datetime.utcnow().isoformat(),
-            "tipo": metadatos.get("tipo", "personalizado"),
+            "tipo": tipo_test,
             "oposicion": oposicion,
             "num_preguntas": len(contenido),
             "aciertos": aciertos,
@@ -85,7 +88,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
         })
 
         # Actualizar resumen del usuario para esta oposición
-        actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas_efectivos, metadatos.get("tiempo", 0), metadatos.get("tipo", "personalizado"), puntuacion, rendimiento_temas)
+        actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas_efectivos, metadatos.get("tiempo", 0), tipo_test, puntuacion, rendimiento_temas)
 
     elif tipo == "esquema":
         esquema_ref = doc_user.collection("esquemas").document()

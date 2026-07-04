@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Preguntas falladas - Oposición AGE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="/assets/theme.css" />
   <link rel="stylesheet" href="/preguntas-falladas/style.css" />
 </head>
@@ -29,7 +28,10 @@
           <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="50" value="5" required
                  style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin: 10px 0 20px; font-size: 1rem;">
         </div>
-        
+
+        <label>Filtra por tema (opcional, deja todo sin marcar para repasar de todos):</label>
+        <div id="lista-temas"></div>
+
         <button type="submit" class="btn btn-primary btn-block">Generar Test con Preguntas Falladas</button>
       </form>
     </div>

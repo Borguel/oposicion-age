@@ -18,10 +18,42 @@ async function obtenerAuthHeaders() {
     let sinResponder = 0;
     let porcentaje = 0;
 
+    let listaTemasGlobal = [];
+
     function mostrarAviso(texto) {
       const aviso = document.getElementById('aviso-falladas');
       aviso.innerText = texto;
       aviso.style.display = 'block';
+    }
+
+    async function cargarTemas() {
+      const contenedor = document.getElementById("lista-temas");
+      contenedor.innerHTML = "<p>Cargando temas...</p>";
+      try {
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const oposicion = obtenerOposicionActual();
+        const res = await fetch(`https://oposicion-age.onrender.com/temas-disponibles?oposicion=${encodeURIComponent(oposicion)}`, { headers: authHeaders });
+        const datos = await res.json();
+        listaTemasGlobal = datos.temas || [];
+        if (listaTemasGlobal.length === 0) {
+          contenedor.innerHTML = "<p>No hay temas disponibles.</p>";
+          return;
+        }
+        contenedor.innerHTML = "";
+        listaTemasGlobal.forEach(t => {
+          const label = document.createElement("label");
+          label.innerHTML = `
+            <input type="checkbox" name="tema" value="${t.id}">
+            ${t.titulo}
+          `;
+          contenedor.appendChild(label);
+        });
+      } catch (err) {
+        contenedor.innerHTML = `<p>Error al cargar temas: ${err.message}</p>`;
+        console.error(err);
+      }
     }
 
     function iniciarTemporizador() {
@@ -51,6 +83,7 @@ async function obtenerAuthHeaders() {
       e.preventDefault();
       document.getElementById('contenedor-resultados').style.display = "none";
       const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
+      const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
       document.getElementById('tarjeta-formulario').style.display = "none";
       document.getElementById('titulo-formulario').style.display = "none";
       document.getElementById('aviso-falladas').style.display = "none";
@@ -78,7 +111,7 @@ async function obtenerAuthHeaders() {
         const res = await fetch("https://oposicion-age.onrender.com/generar-test-fallos", {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
-          body: JSON.stringify({ num_preguntas, oposicion: obtenerOposicionActual() })
+          body: JSON.stringify({ num_preguntas, temas, oposicion: obtenerOposicionActual() })
         });
 
         clearInterval(intervalCarga);
@@ -86,12 +119,21 @@ async function obtenerAuthHeaders() {
         preguntas = datos.test || [];
 
         if (preguntas.length === 0) {
-          mostrarAviso("No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.");
+          mostrarAviso(datos.mensaje || "No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.");
           document.getElementById("contenedor-test").innerHTML = "";
           document.getElementById("contenedor-test").style.display = "none";
           document.getElementById('tarjeta-formulario').style.display = "";
           document.getElementById('titulo-formulario').style.display = "";
           return;
+        }
+
+        if (datos.mensaje) {
+          await Swal.fire({
+            icon: "info",
+            title: "Menos preguntas de las pedidas",
+            text: datos.mensaje,
+            confirmButtonText: "Empezar de todas formas"
+          });
         }
 
         respuestasUsuario = Array(preguntas.length).fill(null);
@@ -228,7 +270,7 @@ async function obtenerAuthHeaders() {
         contenedor: cont,
         preguntas,
         respuestasUsuario,
-        listaTemas: []
+        listaTemas: listaTemasGlobal
       });
       aciertos = ultimasEstadisticas.aciertos;
       fallos = ultimasEstadisticas.fallos;
@@ -274,4 +316,8 @@ async function obtenerAuthHeaders() {
         titulo: "Resultados: preguntas falladas",
         nombreArchivo: "test_falladas.pdf"
       });
+    });
+
+    window.addEventListener("load", () => {
+      cargarTemas();
     });
