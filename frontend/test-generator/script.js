@@ -63,6 +63,7 @@ async function obtenerAuthHeaders() {
         tiempo = Math.floor((Date.now() - tiempoInicio) / 1000);
       }
       const metadatos = { tipo, tiempo, temas };
+      const { testIdEnCurso, limpiarSeguimiento } = await import("/assets/test-progreso.js");
       try {
         const authHeaders = await obtenerAuthHeaders();
         if (!authHeaders) return;
@@ -71,11 +72,16 @@ async function obtenerAuthHeaders() {
         const res = await fetch("https://oposicion-age.onrender.com/guardar-test", {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
-          body: JSON.stringify({ contenido, respuestas, metadatos, oposicion })
+          // Se manda el mismo test_id que se usó para autoguardar el
+          // progreso mientras se hacía: así el documento "en_progreso" se
+          // sobrescribe con el resultado final en vez de quedar duplicado.
+          body: JSON.stringify({ contenido, respuestas, metadatos, oposicion, test_id: testIdEnCurso() })
         });
         const datos = await res.json();
         if (!res.ok) {
           Swal.fire("Error al guardar", datos.error || "No se pudo guardar el test.", "error");
+        } else {
+          limpiarSeguimiento();
         }
       } catch (e) {
         console.error("Error al guardar test:", e);
@@ -119,14 +125,30 @@ async function obtenerAuthHeaders() {
       }
     }
 
-    function iniciarTemporizador() {
+    // tiempoRestanteReanudado: si se pasa (al reanudar un test guardado), se
+    // usa como tiempoLimite inicial en vez de recalcularlo desde el campo
+    // "minutos_cronometro" del formulario (que al reanudar no tiene por qué
+    // reflejar lo que se eligió la vez anterior) -- así el cronómetro
+    // continúa en pausa desde donde se dejó, no se reinicia.
+    function iniciarTemporizador(tiempoRestanteReanudado) {
       tiempoInicio = Date.now();
       document.getElementById("temporizador").style.display = "block";
       if (document.getElementById('modo_cronometrado').checked) {
-        const minutos = parseInt(document.getElementById('minutos_cronometro').value) || 60;
-        tiempoLimite = minutos * 60;
-        tiempoTotalAsignado = tiempoLimite;
-        document.getElementById("barra-progreso-tiempo").style.display = "block";
+        if (tiempoRestanteReanudado == null) {
+          const minutos = parseInt(document.getElementById('minutos_cronometro').value) || 60;
+          tiempoLimite = minutos * 60;
+          tiempoTotalAsignado = tiempoLimite;
+        } else {
+          tiempoLimite = tiempoRestanteReanudado;
+          // tiempoTotalAsignado ya lo fija quien llama (restaurado del guardado)
+        }
+        // En los tests oficiales se oculta la barra verde de tiempo (queda
+        // solo la azul de progreso de preguntas); el cronómetro en sí y su
+        // texto de cuenta atrás siguen funcionando igual.
+        const tipoActual = document.getElementById('tipo_test').value;
+        if (tipoActual !== "oficial") {
+          document.getElementById("barra-progreso-tiempo").style.display = "block";
+        }
         document.getElementById("temporizador").innerHTML = `⏱ Tiempo restante: <span class="pulse">${formatearTiempo(tiempoLimite)}</span>`;
         intervaloTemporizador = setInterval(() => {
           tiempoLimite--;
@@ -152,9 +174,20 @@ async function obtenerAuthHeaders() {
             document.getElementById("temporizador").style.background = 'linear-gradient(135deg, #d0ebff, #a5d8ff)';
             document.getElementById("temporizador").style.color = '#1c7ed6';
           }
-          const porcentajeTiempo = ((minutos * 60 - tiempoLimite) / (minutos * 60)) * 100;
+          const porcentajeTiempo = ((tiempoTotalAsignado - tiempoLimite) / tiempoTotalAsignado) * 100;
           document.getElementById("progreso-tiempo").style.width = `${porcentajeTiempo}%`;
           document.getElementById("texto-progreso-tiempo").textContent = `${Math.round(porcentajeTiempo)}%`;
+          // Autoguardado de progreso cada ~10s reales de cronómetro (no en
+          // cada tick, para no saturar el backend).
+          if (tiempoLimite % 10 === 0) {
+            import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+              autoguardarProgreso({
+                respuestas_usuario: respuestasUsuario,
+                indice_actual: indicePreguntaActual,
+                tiempo_restante_segundos: tiempoLimite
+              });
+            });
+          }
         }, 1000);
       } else {
         document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(0)}`;
@@ -253,6 +286,28 @@ async function obtenerAuthHeaders() {
         });
         respuestasUsuario = Array(preguntas.length).fill(null);
         indicePreguntaActual = 0;
+
+        const modoCronometrado = document.getElementById('modo_cronometrado').checked;
+        const minutosCronometro = parseInt(document.getElementById('minutos_cronometro').value) || 60;
+        const { generarTestId, guardarContenidoInicial, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
+        generarTestId();
+        guardarContenidoInicial({
+          oposicion, tipo, temas,
+          contenido: preguntas,
+          respuestas_usuario: respuestasUsuario,
+          indice_actual: indicePreguntaActual,
+          modo_cronometrado: modoCronometrado,
+          tiempo_restante_segundos: modoCronometrado ? minutosCronometro * 60 : null,
+          tiempo_total_asignado_segundos: modoCronometrado ? minutosCronometro * 60 : null,
+          pagina_origen: "/test-generator/"
+        });
+        activarGuardadoAlSalir(() => ({
+          respuestas_usuario: respuestasUsuario,
+          indice_actual: indicePreguntaActual,
+          modo_cronometrado: tiempoLimite !== null,
+          tiempo_restante_segundos: tiempoLimite
+        }));
+
         iniciarTemporizador();
         document.getElementById("barra-progreso-preguntas").style.display = "block";
         actualizarBarraProgresoPreguntas();
@@ -310,6 +365,13 @@ async function obtenerAuthHeaders() {
         const seleccion = document.querySelector('input[name="respuesta"]:checked');
         const respuestaSeleccionada = seleccion ? seleccion.value : null;
         respuestasUsuario[i] = respuestaSeleccionada;
+        import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+          autoguardarProgreso({
+            respuestas_usuario: respuestasUsuario,
+            indice_actual: i + 1 < preguntas.length ? i + 1 : i,
+            tiempo_restante_segundos: tiempoLimite
+          });
+        });
         if (i + 1 < preguntas.length) {
           mostrarPregunta(i + 1);
         } else {
@@ -396,6 +458,58 @@ async function obtenerAuthHeaders() {
       });
     });
 
-    window.addEventListener("load", () => {
-      cargarTemas();
+    // Reanuda un test guardado "en_progreso" (llegado desde "Mis Tests" con
+    // ?resume=<id>) exactamente donde se dejó: mismas preguntas, mismas
+    // respuestas ya marcadas, misma pregunta actual y -- si era
+    // cronometrado -- el cronómetro continúa desde los segundos restantes
+    // guardados la última vez, no se reinicia por reloj real transcurrido.
+    async function reanudarTest(resumeId) {
+      const { usarTestId, cargarTestEnProgreso, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
+      const guardado = await cargarTestEnProgreso(resumeId);
+      if (!guardado || !guardado.contenido || !guardado.contenido.length) {
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo reanudar',
+          text: 'No se ha encontrado ese test guardado.',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+      usarTestId(resumeId);
+      preguntas = guardado.contenido;
+      respuestasUsuario = Array.isArray(guardado.respuestas_usuario) && guardado.respuestas_usuario.length === preguntas.length
+        ? guardado.respuestas_usuario
+        : Array(preguntas.length).fill(null);
+      indicePreguntaActual = guardado.indice_actual || 0;
+      document.getElementById('tipo_test').value = guardado.tipo || "personalizado";
+
+      document.getElementById('tarjeta-formulario').style.display = "none";
+      document.getElementById('titulo-formulario').style.display = "none";
+      document.getElementById("contenedor-test").style.display = "block";
+
+      if (guardado.modo_cronometrado) {
+        document.getElementById('modo_cronometrado').checked = true;
+        tiempoTotalAsignado = guardado.tiempo_total_asignado_segundos || guardado.tiempo_restante_segundos || 0;
+        iniciarTemporizador(guardado.tiempo_restante_segundos ?? tiempoTotalAsignado);
+      } else {
+        iniciarTemporizador();
+      }
+      document.getElementById("barra-progreso-preguntas").style.display = "block";
+      actualizarBarraProgresoPreguntas();
+      mostrarPregunta(indicePreguntaActual);
+      activarGuardadoAlSalir(() => ({
+        respuestas_usuario: respuestasUsuario,
+        indice_actual: indicePreguntaActual,
+        modo_cronometrado: tiempoLimite !== null,
+        tiempo_restante_segundos: tiempoLimite
+      }));
+    }
+
+    window.addEventListener("load", async () => {
+      await cargarTemas();
+      const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
+      const resumeId = idDesdeUrlResume();
+      if (resumeId) {
+        reanudarTest(resumeId);
+      }
     });

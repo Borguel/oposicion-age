@@ -5,7 +5,7 @@ from oposiciones import OPOSICION_POR_DEFECTO
 from documentos_pdf import marcar_generado
 from banco_fallos import actualizar_banco_fallos
 
-def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None, oposicion=OPOSICION_POR_DEFECTO):
+def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None, oposicion=OPOSICION_POR_DEFECTO, test_id=None):
     metadatos = metadatos or {}
     doc_user = db.collection("usuarios").document(usuario_id)
     registrar_actividad_racha(db, usuario_id)
@@ -59,12 +59,17 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
                 entrada["fallos"] += 1
 
         # Guardar en subcolección tests (con la oposición a la que pertenece,
-        # para poder filtrar "repetir test"/"preguntas falladas" por oposición)
-        test_ref = doc_user.collection("tests").document()
+        # para poder filtrar "repetir test"/"preguntas falladas" por oposición).
+        # Si test_id viene informado (el test se autoguardó "en_progreso" con
+        # ese mismo id mientras se hacía), se reutiliza el mismo documento en
+        # vez de crear uno nuevo -- así finalizar un test reanudado no deja un
+        # borrador duplicado suelto.
+        test_ref = doc_user.collection("tests").document(test_id) if test_id else doc_user.collection("tests").document()
         test_ref.set({
             "fecha": datetime.utcnow().isoformat(),
             "tipo": tipo_test,
             "oposicion": oposicion,
+            "estado": "finalizado",
             "num_preguntas": len(contenido),
             "aciertos": aciertos,
             "fallos": fallos,

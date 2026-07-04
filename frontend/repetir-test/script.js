@@ -10,6 +10,7 @@ async function obtenerAuthHeaders() {
 
 let preguntas = [];
 let respuestasUsuario = [];
+let indicePreguntaActual = 0;
 let tiempoInicio;
 let intervaloTemporizador;
 let ultimasEstadisticas = null;
@@ -43,6 +44,7 @@ function confirmarFinalizar() {
 }
 
 function mostrarPregunta(i) {
+  indicePreguntaActual = i;
   const p = preguntas[i];
   let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
   let html = `<form id="form-pregunta">
@@ -87,6 +89,12 @@ function mostrarPregunta(i) {
     e.preventDefault();
     const seleccion = document.querySelector('input[name="respuesta"]:checked');
     respuestasUsuario[i] = seleccion ? seleccion.value : null;
+    import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+      autoguardarProgreso({
+        respuestas_usuario: respuestasUsuario,
+        indice_actual: i + 1 < preguntas.length ? i + 1 : i
+      });
+    });
 
     if (i + 1 < preguntas.length) {
       mostrarPregunta(i + 1);
@@ -115,6 +123,7 @@ async function mostrarResultados() {
   document.getElementById("btn-descargar-pdf").style.display = "block";
 
   const segundosTotales = Math.floor((Date.now() - tiempoInicio) / 1000);
+  const { testIdEnCurso, limpiarSeguimiento } = await import("/assets/test-progreso.js");
   try {
     const authHeaders = await obtenerAuthHeaders();
     if (!authHeaders) return;
@@ -126,9 +135,11 @@ async function mostrarResultados() {
         contenido: preguntas,
         respuestas: respuestasUsuario,
         metadatos: { tiempo: segundosTotales, tipo: "repetido", temas: [] },
-        oposicion: obtenerOposicionActual()
+        oposicion: obtenerOposicionActual(),
+        test_id: testIdEnCurso()
       })
     });
+    limpiarSeguimiento();
   } catch (err) {
     console.error("❌ Error al guardar test:", err);
   }
@@ -144,13 +155,75 @@ document.getElementById("btn-descargar-pdf").addEventListener("click", async () 
   });
 });
 
-// Carga el último test al cargar la página
+// Carga el último test al cargar la página; si se llega con ?resume=<id>
+// desde "Mis Tests" reanuda ese borrador tal cual se dejó, y si se llega con
+// ?repetir=<id> empieza un intento NUEVO (sin las respuestas de la vez
+// anterior) a partir del contenido de ESE test concreto, no solo el último.
 window.addEventListener("load", async () => {
+  const { idDesdeUrlResume, usarTestId, cargarTestEnProgreso, generarTestId, guardarContenidoInicial, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
+  const resumeId = idDesdeUrlResume();
+  const repetirId = new URLSearchParams(window.location.search).get("repetir");
   try {
+    if (resumeId) {
+      const guardado = await cargarTestEnProgreso(resumeId);
+      if (!guardado || !guardado.contenido || !guardado.contenido.length) {
+        document.getElementById("contenedor-test").innerHTML = "<p>No se ha encontrado ese test guardado.</p>";
+        return;
+      }
+      usarTestId(resumeId);
+      preguntas = guardado.contenido;
+      respuestasUsuario = Array.isArray(guardado.respuestas_usuario) && guardado.respuestas_usuario.length === preguntas.length
+        ? guardado.respuestas_usuario
+        : Array(preguntas.length).fill(null);
+      iniciarTemporizador();
+      mostrarPregunta(guardado.indice_actual || 0);
+      activarGuardadoAlSalir(() => ({
+        respuestas_usuario: respuestasUsuario,
+        indice_actual: indicePreguntaActual
+      }));
+      return;
+    }
+
+    if (repetirId) {
+      const authHeadersRepetir = await obtenerAuthHeaders();
+      if (!authHeadersRepetir) return;
+      const resRepetir = await fetch(`https://oposicion-age.onrender.com/mi-test/${repetirId}`, { headers: authHeadersRepetir });
+      const datosRepetir = await resRepetir.json();
+      // Un test ya finalizado guarda sus preguntas bajo "preguntas" (con el
+      // resultado de aquel intento ya incluido); aquí solo interesa el
+      // enunciado/opciones/respuesta_correcta/explicacion para arrancar un
+      // intento nuevo, así que basta reutilizar ese mismo array tal cual.
+      const preguntasRepetir = datosRepetir.test?.preguntas;
+      if (!resRepetir.ok || !preguntasRepetir || !preguntasRepetir.length) {
+        document.getElementById("contenedor-test").innerHTML = "<p>No se ha encontrado ese test.</p>";
+        return;
+      }
+      preguntas = preguntasRepetir;
+      respuestasUsuario = Array(preguntas.length).fill(null);
+      const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+      const oposicion = obtenerOposicionActual();
+      generarTestId();
+      guardarContenidoInicial({
+        oposicion, tipo: "repetido", temas: [],
+        contenido: preguntas,
+        respuestas_usuario: respuestasUsuario,
+        indice_actual: 0,
+        pagina_origen: "/repetir-test/"
+      });
+      activarGuardadoAlSalir(() => ({
+        respuestas_usuario: respuestasUsuario,
+        indice_actual: indicePreguntaActual
+      }));
+      iniciarTemporizador();
+      mostrarPregunta(0);
+      return;
+    }
+
     const authHeaders = await obtenerAuthHeaders();
     if (!authHeaders) return;
     const { obtenerOposicionActual } = await import("/assets/oposicion.js");
-    const res = await fetch(`https://oposicion-age.onrender.com/ultimo-test?oposicion=${encodeURIComponent(obtenerOposicionActual())}`, { headers: authHeaders });
+    const oposicion = obtenerOposicionActual();
+    const res = await fetch(`https://oposicion-age.onrender.com/ultimo-test?oposicion=${encodeURIComponent(oposicion)}`, { headers: authHeaders });
     const datos = await res.json();
 
     if (!datos.test || datos.test.length === 0) {
@@ -160,6 +233,18 @@ window.addEventListener("load", async () => {
 
     preguntas = datos.test;
     respuestasUsuario = Array(preguntas.length).fill(null);
+    generarTestId();
+    guardarContenidoInicial({
+      oposicion, tipo: "repetido", temas: [],
+      contenido: preguntas,
+      respuestas_usuario: respuestasUsuario,
+      indice_actual: 0,
+      pagina_origen: "/repetir-test/"
+    });
+    activarGuardadoAlSalir(() => ({
+      respuestas_usuario: respuestasUsuario,
+      indice_actual: indicePreguntaActual
+    }));
     iniciarTemporizador();
     mostrarPregunta(0);
   } catch (err) {

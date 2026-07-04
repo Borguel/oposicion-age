@@ -91,6 +91,26 @@
     </div>
   </div>
 
+  <div class="login-modal-overlay" id="modal-vincular-google" style="display:none;">
+    <div class="login-card login-modal-card">
+      <h2 class="login-titulo">Vincula tu cuenta de Google</h2>
+      <p class="login-subtitulo">
+        Ya existe una cuenta con este correo usando contraseña. Introduce esa
+        contraseña para vincular también el acceso con Google: a partir de
+        ahora podrás entrar con cualquiera de los dos métodos.
+      </p>
+      <form id="form-vincular-google">
+        <label for="vincular-password">Contraseña</label>
+        <input type="password" id="vincular-password" required autocomplete="current-password" minlength="6" />
+
+        <div id="vincular-mensaje-error" class="mensaje-error" style="display:none;"></div>
+
+        <button type="submit" class="btn-primary" id="btn-vincular-submit">Vincular e iniciar sesión</button>
+      </form>
+      <button type="button" class="btn-secundario" id="btn-vincular-cancelar">Cancelar</button>
+    </div>
+  </div>
+
   <script type="module" src="/assets/auth.js"></script>
   <script type="module" src="/login/script.js"></script>
 </body>

@@ -16,7 +16,8 @@ def guardar_test_route(db):
             contenido=contenido,
             usuario_id=g.uid,
             metadatos=metadatos,
-            oposicion=obtener_oposicion_solicitada()
+            oposicion=obtener_oposicion_solicitada(),
+            test_id=datos.get("test_id")
         )
         return jsonify({"mensaje": "Test guardado correctamente"})
 

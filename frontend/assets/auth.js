@@ -11,6 +11,7 @@ import {
   GoogleAuthProvider,
   getAdditionalUserInfo,
   sendPasswordResetEmail,
+  linkWithCredential,
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { firebaseConfig } from "/assets/firebase-config.js";
@@ -42,6 +43,22 @@ export async function signInWithGoogle() {
     nombre: partes[0] || "",
     apellidos: partes.slice(1).join(" ")
   };
+}
+
+// Cuando signInWithGoogle() falla con "auth/account-exists-with-different-credential"
+// (el correo ya tiene cuenta por contraseña), Firebase adjunta al error la
+// credencial de Google pendiente; hay que guardarla para completar la
+// vinculación en cuanto el usuario confirme su contraseña con signIn().
+export function credencialGoogleDesdeError(error) {
+  return GoogleAuthProvider.credentialFromError(error);
+}
+
+// Une la credencial de Google pendiente a la cuenta (ya autenticada por
+// contraseña) del mismo correo, para que a partir de ahora sirvan los dos
+// métodos de acceso en vez de dejar al usuario sin poder usar Google nunca
+// con ese correo.
+export function vincularCredencialGoogle(user, pendingCredential) {
+  return linkWithCredential(user, pendingCredential);
 }
 
 // Envía el correo de "restablecer contraseña" de Firebase. Firebase no dice
@@ -97,7 +114,7 @@ export async function idToken() {
 // ============================================================
 const NAV_LINKS = [
   { href: "/", label: "Inicio", match: ["/"] },
-  { href: "/test-generator/", label: "Tests", match: ["/test-generator/", "/repetir-test/", "/preguntas-falladas/"] },
+  { href: "/test-generator/", label: "Tests", match: ["/test-generator/", "/repetir-test/", "/preguntas-falladas/", "/mis-tests/"] },
   { href: "/subida-pdf-pagina-principal/", label: "Herramientas IA", match: ["/subida-pdf-"] },
   { href: "/chat-ai/", label: "Chat IA", match: ["/chat-ai/"] },
   { href: "/asistente/", label: "Asistente", match: ["/asistente/"] },

@@ -1,10 +1,79 @@
 import random
+import re
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from deepseek_utils import call_deepseek_api
 from utils import obtener_subbloques_individuales, contar_tokens, repartir_cupos_por_tema
 from validador_preguntas import validar_pregunta
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
+
+
+def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, tamano_lote=15, temperature=0.4):
+    """Genera 'num_preguntas' preguntas pidiéndolas a DeepSeek en varios lotes
+    en paralelo (ThreadPoolExecutor) en vez de una única llamada gigante.
+
+    Antes, /generar-test-inteligente y /generar-test-desde-pdf pedían todo el
+    test de golpe con max_tokens=min(4000, 300*num_preguntas): a partir de
+    ~13-14 preguntas ese tope de 4000 tokens ya se queda corto para el JSON
+    completo (pregunta+opciones+explicación ronda 400-600 tokens cada una), y
+    la respuesta se corta a medio JSON. Pedir lotes de como mucho
+    'tamano_lote' preguntas mantiene cada llamada individual muy por debajo
+    del límite, sea cual sea el total pedido.
+
+    construir_prompt(n) debe devolver el prompt completo pidiendo EXACTAMENTE
+    n preguntas, en el mismo formato de array JSON que ya usan esas dos rutas.
+
+    Devuelve (preguntas, errores): preguntas ya deduplicadas por texto de
+    pregunta normalizado (pedir el mismo tema en varios lotes en paralelo
+    puede repetir alguna), errores es una lista de motivos de fallo por lote
+    (vacía si todo fue bien) para poder avisar si faltan preguntas respecto a
+    las pedidas.
+    """
+    lotes = []
+    restante = num_preguntas
+    while restante > 0:
+        n = min(tamano_lote, restante)
+        lotes.append(n)
+        restante -= n
+
+    def _pedir_lote(n):
+        prompt = construir_prompt(n)
+        generado = call_deepseek_api(
+            messages=[{"role": "user", "content": prompt}],
+            temperature=temperature,
+            max_tokens=min(4000, 300 * n)
+        )
+        if not generado:
+            return [], f"Sin respuesta de DeepSeek para un lote de {n} preguntas"
+        inicio = generado.find("[")
+        fin = generado.rfind("]") + 1
+        if inicio == -1 or fin <= inicio:
+            return [], "No se encontró un array JSON en la respuesta de un lote"
+        try:
+            return json.loads(generado[inicio:fin]), None
+        except json.JSONDecodeError as je:
+            return [], f"JSON inválido en un lote: {je}"
+
+    preguntas = []
+    errores = []
+    with ThreadPoolExecutor(max_workers=min(5, len(lotes))) as executor:
+        futuros = [executor.submit(_pedir_lote, n) for n in lotes]
+        for futuro in as_completed(futuros):
+            lote_preguntas, error = futuro.result()
+            if error:
+                errores.append(error)
+            else:
+                preguntas.extend(lote_preguntas)
+
+    vistas = set()
+    preguntas_unicas = []
+    for p in preguntas:
+        clave = re.sub(r"\s+", " ", str(p.get("pregunta", "")).strip().lower())
+        if clave and clave not in vistas:
+            vistas.add(clave)
+            preguntas_unicas.append(p)
+
+    return preguntas_unicas, errores
 
 
 def _instrucciones(oposicion):

@@ -13,7 +13,7 @@ from PyPDF2 import PdfReader
 from io import BytesIO
 from datetime import datetime, date
 # Módulos personalizados
-from test_generator import generar_test_avanzado
+from test_generator import generar_test_avanzado, generar_preguntas_ia_en_lotes
 from chat_controller import responder_chat, consultar_asistente_examen
 from deepseek_utils import call_deepseek_api
 from esquema_generator import generar_esquema
@@ -128,7 +128,10 @@ def generar_test_avanzado_route():
     data = request.get_json()
     print(f"📅 Petición recibida en /generar-test-avanzado: {data}")
     temas = data.get("temas", [])
-    num_preguntas = data.get("num_preguntas", 5)
+    try:
+        num_preguntas = max(1, min(100, int(data.get("num_preguntas", 5))))
+    except (TypeError, ValueError):
+        num_preguntas = 5
     print(f"📋 Temas extraídos: {temas}")
     print(f"🧪 Número de preguntas solicitadas: {num_preguntas}")
     resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas, coleccion=coleccion_temario(g.oposicion), oposicion=g.oposicion)
@@ -153,7 +156,10 @@ def generar_test_oficial():
     data = request.get_json()
     print("✅ Ruta /generar-test-oficial llamada")
     print("📥 Datos recibidos:", data)
-    num_preguntas = data.get("num_preguntas", 10)
+    try:
+        num_preguntas = max(1, min(100, int(data.get("num_preguntas", 10))))
+    except (TypeError, ValueError):
+        num_preguntas = 10
     examenes_filtrados = data.get("examenes", [])
     temas_filtrados = data.get("temas", [])
     print("🔍 Número de preguntas solicitado:", num_preguntas)
@@ -283,7 +289,7 @@ def generar_test_inteligente():
         return jsonify({"error": "No se ha recibido un cuerpo JSON válido"}), 400
     temas = data.get("temas", [])
     try:
-        num_preguntas = int(data.get("num_preguntas", 5))
+        num_preguntas = max(1, min(100, int(data.get("num_preguntas", 5))))
     except (TypeError, ValueError):
         num_preguntas = 5
     if not temas:
@@ -293,8 +299,9 @@ def generar_test_inteligente():
     temas_legibles = obtener_titulos_temas_reales(db, coleccion, temas)
     nombre_oposicion = OPOSICIONES.get(g.oposicion, OPOSICIONES[OPOSICION_POR_DEFECTO])["nombre"]
 
-    prompt = f"""Actúas como un generador profesional de preguntas tipo test, especializado en la oposición al {nombre_oposicion}.
-Crea EXACTAMENTE {num_preguntas} preguntas tipo test con el nivel y el estilo de un examen oficial real de esta oposición: técnicas, precisas y basadas en la legislación y el temario oficial vigente sobre estos temas.
+    def construir_prompt(n):
+        return f"""Actúas como un generador profesional de preguntas tipo test, especializado en la oposición al {nombre_oposicion}.
+Crea EXACTAMENTE {n} preguntas tipo test con el nivel y el estilo de un examen oficial real de esta oposición: técnicas, precisas y basadas en la legislación y el temario oficial vigente sobre estos temas.
 Temas seleccionados: {', '.join(temas_legibles)}
 
 Sigue estrictamente estas normas:
@@ -317,19 +324,13 @@ Devuelve SOLO un array JSON con este formato exacto, sin texto adicional ni bloq
 ]
 """
     try:
-        generado = call_deepseek_api(
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.4,
-            max_tokens=min(4000, 300 * num_preguntas)
-        )
-        if not generado:
+        preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas)
+        if not preguntas:
             return jsonify({"error": "Sin respuesta de DeepSeek"}), 500
-        start_index = generado.find("[")
-        end_index = generado.rfind("]") + 1
-        if start_index == -1 or end_index <= start_index:
-            return jsonify({"error": "No se encontró un array JSON en la respuesta."}), 500
-        preguntas = json.loads(generado[start_index:end_index])
-        return jsonify({"test": preguntas})
+        resultado = {"test": preguntas}
+        if len(preguntas) < num_preguntas:
+            resultado["advertencia"] = f"Solo se generaron {len(preguntas)} de {num_preguntas} preguntas."
+        return jsonify(resultado)
     except Exception as e:
         print("❌ Error al generar test inteligente:", e)
         return jsonify({"error": str(e)}), 500
@@ -530,9 +531,21 @@ def generar_esquema_desde_pdf():
         if len(text) > max_length:
             text = text[:max_length]
         system_prompt = (
-            "Eres un experto en oposiciones. Crea un esquema estructurado y organizado "
-            "a partir del siguiente documento. Usa títulos, subtítulos y viñetas claras. "
-            "El esquema debe ser útil para estudiar y repasar."
+            "Eres un experto en oposiciones. Crea un esquema de estudio estructurado y "
+            "visual a partir del siguiente documento, útil para repasar. Usa EXACTAMENTE "
+            "este formato Markdown, sin desviarte de él:\n"
+            "- Encabezados de nivel 1 con \"# \" para las secciones principales del temario.\n"
+            "- Encabezados de nivel 2 con \"## \" para subsecciones.\n"
+            "- Texto en **negrita** para términos clave, nombres de leyes o artículos, la "
+            "primera vez que aparecen.\n"
+            "- Listas con \"- \" para viñetas normales.\n"
+            "- Listas numeradas con \"1. \", \"2. \", etc. cuando el orden importe (por "
+            "ejemplo, pasos de un procedimiento o fases de un proceso).\n"
+            "- Cuando definas formalmente un concepto, usa el prefijo \"> \" para esa línea, "
+            "de forma que se pueda destacar como una caja de definición aparte.\n"
+            "No uses tablas, bloques de código, ni HTML. No anides más de un nivel de viñetas. "
+            "Cada línea de texto debe ir en su propio párrafo o viñeta, sin mezclar varias "
+            "ideas en una misma línea larga."
         )
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
@@ -561,7 +574,7 @@ def generar_esquema_desde_pdf():
 def generar_test_desde_pdf():
     try:
         num_preguntas = int(request.form.get("num_preguntas", 10))
-        if num_preguntas < 1 or num_preguntas > 50:
+        if num_preguntas < 1 or num_preguntas > 100:
             num_preguntas = 10
     except (ValueError, TypeError):
         num_preguntas = 10
@@ -575,55 +588,31 @@ def generar_test_desde_pdf():
         max_length = 150000
         if len(text) > max_length:
             text = text[:max_length]
-        system_prompt = (
-            f"Eres un experto en la elaboración de preguntas tipo test para oposiciones oficiales en España. "
-            f"Tu tarea es generar EXACTAMENTE {num_preguntas} preguntas de opción múltiple de alta calidad, "
-            f"basadas únicamente en el documento proporcionado. Cada pregunta debe cumplir lo siguiente:\n"
-            f"1. **Formato**: pregunta clara y directa, seguida de cuatro opciones (A, B, C, D).\n"
-            f"2. **Precisión**: si el documento menciona leyes, artículos, plazos, funciones, definiciones, principios o procedimientos, la pregunta debe reflejarlos con exactitud.\n"
-            f"3. **Respuesta correcta**: debe ser inequívoca y extraída directamente del texto.\n"
-            f"4. **Distractores**: deben ser técnicamente plausibles, basados en confusiones comunes, errores típicos o elementos similares del propio documento.\n"
-            f"5. **Neutralidad**: evita lenguaje coloquial, ambigüedades, opiniones o preguntas triviales.\n"
-            f"6. **Explicación**: incluye una justificación breve que cite o se base en el contenido del documento.\n"
-            f"Devuelve SOLO un array JSON válido con este formato exacto:\n"
-            f"[{{\"pregunta\": \"...\", \"opciones\": {{\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}}]\n"
-            f"NO añadas texto adicional antes ni después del array JSON."
-        )
-        api_key = os.getenv("DEEPSEEK_API_KEY")
-        if not api_key:
-            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        payload = {
-            "model": "deepseek-chat",
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Documento para crear preguntas test:\n{text}"}
-            ],
-            "temperature": 0.4,
-            "max_tokens": min(4000, 300 * num_preguntas)
-        }
-        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
-        if response.status_code != 200:
-            return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
+
+        def construir_prompt(n):
+            system_prompt = (
+                f"Eres un experto en la elaboración de preguntas tipo test para oposiciones oficiales en España. "
+                f"Tu tarea es generar EXACTAMENTE {n} preguntas de opción múltiple de alta calidad, "
+                f"basadas únicamente en el documento proporcionado. Cada pregunta debe cumplir lo siguiente:\n"
+                f"1. **Formato**: pregunta clara y directa, seguida de cuatro opciones (A, B, C, D).\n"
+                f"2. **Precisión**: si el documento menciona leyes, artículos, plazos, funciones, definiciones, principios o procedimientos, la pregunta debe reflejarlos con exactitud.\n"
+                f"3. **Respuesta correcta**: debe ser inequívoca y extraída directamente del texto.\n"
+                f"4. **Distractores**: deben ser técnicamente plausibles, basados en confusiones comunes, errores típicos o elementos similares del propio documento.\n"
+                f"5. **Neutralidad**: evita lenguaje coloquial, ambigüedades, opiniones o preguntas triviales.\n"
+                f"6. **Explicación**: incluye una justificación breve que cite o se base en el contenido del documento.\n"
+                f"Devuelve SOLO un array JSON válido con este formato exacto:\n"
+                f"[{{\"pregunta\": \"...\", \"opciones\": {{\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}}]\n"
+                f"NO añadas texto adicional antes ni después del array JSON."
+            )
+            return f"{system_prompt}\n\nDocumento para crear preguntas test:\n{text}"
+
+        preguntas, errores_lotes = generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas)
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
-        data = response.json()
-        respuesta = data['choices'][0]['message']['content']
-        start_index = respuesta.find("[")
-        end_index = respuesta.rfind("]") + 1
-        if start_index == -1 or end_index <= start_index:
-            raise ValueError("No se encontró un array JSON en la respuesta.")
-        json_str = respuesta[start_index:end_index]
-        try:
-            preguntas = json.loads(json_str)
-        except json.JSONDecodeError:
-            json_str_fixed = json_str.replace("'", '"')
-            try:
-                preguntas = json.loads(json_str_fixed)
-            except json.JSONDecodeError:
-                return jsonify({
-                    "error": "La IA no devolvió un JSON válido para las preguntas. Error técnico.",
-                    "respuesta_cruda": respuesta[:500]
-                }), 500
+        if not preguntas:
+            return jsonify({
+                "error": "La IA no devolvió un JSON válido para las preguntas. Error técnico.",
+                "respuesta_cruda": "; ".join(errores_lotes)[:500]
+            }), 500
         preguntas_validadas = []
         for p in preguntas:
             if all(k in p for k in ["pregunta", "opciones", "respuesta_correcta"]):
@@ -639,14 +628,15 @@ def generar_test_desde_pdf():
                 preguntas_validadas.append(p)
         if not preguntas_validadas:
             return jsonify({
-                "error": "La IA generó preguntas vacías o inválidas.",
-                "respuesta_cruda": respuesta[:500]
+                "error": "La IA generó preguntas vacías o inválidas."
             }), 500
-        return jsonify({"test": preguntas_validadas, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
+        resultado = {"test": preguntas_validadas, "documento_id": documento_id, "nombre_archivo": nombre_archivo}
+        if len(preguntas_validadas) < num_preguntas:
+            resultado["advertencia"] = f"Solo se generaron {len(preguntas_validadas)} de {num_preguntas} preguntas."
+        return jsonify(resultado)
     except Exception as e:
         return jsonify({
-            "error": f"Error al procesar el PDF o generar preguntas: {str(e)}",
-            "respuesta_cruda": respuesta[:500] if 'respuesta' in locals() else "N/A"
+            "error": f"Error al procesar el PDF o generar preguntas: {str(e)}"
         }), 500
 @app.route('/generar-tarjetas-desde-pdf', methods=['POST'])
 @requiere_plan(db, "gratis", global_check=True)
@@ -895,6 +885,16 @@ def guardar_test_pdf():
                 'fecha_procesamiento': datetime.utcnow().isoformat()
             }
         )
+        # Si este test se autoguardó "en_progreso" mientras se hacía (mismo
+        # mecanismo que usan test-generator/repetir-test/preguntas-falladas),
+        # se borra ese borrador -- ya quedó guardado como test_pdf de verdad,
+        # no debe seguir apareciendo como "en progreso" en ningún sitio.
+        test_id = data.get('test_id')
+        if test_id:
+            try:
+                db.collection("usuarios").document(g.uid).collection("tests").document(test_id).delete()
+            except Exception as e:
+                print(f"⚠️ No se pudo borrar el borrador de test en progreso {test_id}: {e}")
         return jsonify({'mensaje': 'Test desde PDF guardado correctamente'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500

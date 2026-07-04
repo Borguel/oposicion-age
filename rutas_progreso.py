@@ -1,4 +1,5 @@
 
+from datetime import datetime
 from flask import request, jsonify, g
 from firebase_admin import firestore
 from registro_progreso_usuario import (
@@ -11,6 +12,15 @@ from registro_progreso_usuario import (
 from guardar_resultado import obtener_estadisticas_completas_usuario
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 import random
+
+# Campos ligeros que devuelve /mis-tests -- deliberadamente sin el array
+# completo de "preguntas"/"contenido", para no cargar cada test entero solo
+# para listarlo (eso se pide aparte con /mi-test/<id> cuando hace falta).
+CAMPOS_RESUMEN_MIS_TESTS = (
+    "fecha", "tipo", "oposicion", "estado", "num_preguntas", "aciertos",
+    "fallos", "blancos", "porcentaje_acierto", "resultado", "temas",
+    "tiempo", "indice_actual", "pagina_origen"
+)
 
 def registrar_rutas_progreso(app, db):
     @app.route("/registrar-usuario", methods=["POST"])
@@ -100,8 +110,15 @@ def registrar_rutas_progreso(app, db):
             tests_ref = db.collection("usuarios").document(g.uid).collection("tests")
             # Se filtra por oposición sin combinarlo con order_by (eso exigiría
             # crear un índice compuesto en Firestore); como no son muchos tests
-            # por usuario, se ordena en Python tras traerlos.
-            tests = [t.to_dict() for t in tests_ref.where("oposicion", "==", oposicion).stream()]
+            # por usuario, se ordena en Python tras traerlos. Se excluyen los
+            # que todavía están "en_progreso" (borradores autoguardados sin
+            # terminar) para que "repetir último test" no coja uno sin acabar
+            # -- los documentos antiguos, sin campo "estado", cuentan como ya
+            # finalizados.
+            tests = [
+                t.to_dict() for t in tests_ref.where("oposicion", "==", oposicion).stream()
+                if t.to_dict().get("estado", "finalizado") != "en_progreso"
+            ]
 
             if not tests:
                 return jsonify({"mensaje": "No se encontró test anterior", "test": []}), 404
@@ -110,6 +127,102 @@ def registrar_rutas_progreso(app, db):
             return jsonify({"test": test_data.get("preguntas", [])})
         except Exception as e:
             return jsonify({"error": f"Error buscando test: {str(e)}"}), 500
+
+    @app.route("/autosave-test", methods=["POST"])
+    @requiere_login(db)
+    def autosave_test():
+        datos = request.get_json(silent=True) or {}
+        test_id = datos.get("test_id")
+        if not test_id:
+            return jsonify({"error": "Falta test_id"}), 400
+
+        test_ref = db.collection("usuarios").document(g.uid).collection("tests").document(test_id)
+        ahora = datetime.utcnow().isoformat()
+
+        campos_variables = {
+            "respuestas_usuario": datos.get("respuestas_usuario", []),
+            "indice_actual": datos.get("indice_actual", 0),
+            "modo_cronometrado": bool(datos.get("modo_cronometrado", False)),
+            "tiempo_restante_segundos": datos.get("tiempo_restante_segundos"),
+            "fecha_actualizacion": ahora,
+        }
+
+        try:
+            # "contenido" (las preguntas en sí) solo se manda una vez, en el
+            # primer autoguardado de este test_id -- a partir de ahí basta con
+            # actualizar los campos que cambian en cada pregunta/tick.
+            if datos.get("contenido") is not None or not test_ref.get().exists:
+                test_ref.set({
+                    "fecha": ahora,
+                    "estado": "en_progreso",
+                    "oposicion": datos.get("oposicion", obtener_oposicion_solicitada()),
+                    "tipo": datos.get("tipo", "personalizado"),
+                    "temas": datos.get("temas", []),
+                    "num_preguntas": len(datos.get("contenido", []) or []),
+                    "contenido": datos.get("contenido", []),
+                    "tiempo_total_asignado_segundos": datos.get("tiempo_total_asignado_segundos"),
+                    "pagina_origen": datos.get("pagina_origen", ""),
+                    "documento_id": datos.get("documento_id"),
+                    **campos_variables,
+                })
+            else:
+                test_ref.set(campos_variables, merge=True)
+            return jsonify({"mensaje": "ok"})
+        except Exception as e:
+            return jsonify({"error": f"Error autoguardando el test: {str(e)}"}), 500
+
+    @app.route("/mis-tests", methods=["GET"])
+    @requiere_login(db)
+    def obtener_mis_tests():
+        oposicion = obtener_oposicion_solicitada()
+        estado_filtro = request.args.get("estado")  # "en_progreso" | "finalizado" | None (todos)
+        tema_filtro = request.args.get("tema_id")
+        tipo_filtro = request.args.get("tipo")
+        try:
+            tests_ref = db.collection("usuarios").document(g.uid).collection("tests")
+            resultado = []
+            for doc in tests_ref.where("oposicion", "==", oposicion).stream():
+                d = doc.to_dict()
+                estado = d.get("estado", "finalizado")
+                if estado_filtro and estado != estado_filtro:
+                    continue
+                if tipo_filtro and d.get("tipo") != tipo_filtro:
+                    continue
+                if tema_filtro and tema_filtro not in (d.get("temas") or []):
+                    continue
+                resumen = {campo: d.get(campo) for campo in CAMPOS_RESUMEN_MIS_TESTS}
+                resumen["estado"] = estado
+                resumen["id"] = doc.id
+                resultado.append(resumen)
+            resultado.sort(key=lambda t: t.get("fecha") or "", reverse=True)
+            return jsonify({"tests": resultado})
+        except Exception as e:
+            return jsonify({"error": f"Error listando tests: {str(e)}"}), 500
+
+    @app.route("/mi-test/<test_id>", methods=["GET"])
+    @requiere_login(db)
+    def obtener_mi_test(test_id):
+        try:
+            # La propiedad ya está garantizada por vivir bajo la subcolección
+            # de ESTE usuario -- no hace falta comprobar dueño aparte.
+            doc = db.collection("usuarios").document(g.uid).collection("tests").document(test_id).get()
+            if not doc.exists:
+                return jsonify({"error": "Test no encontrado"}), 404
+            datos = doc.to_dict()
+            datos["id"] = doc.id
+            datos.setdefault("estado", "finalizado")
+            return jsonify({"test": datos})
+        except Exception as e:
+            return jsonify({"error": f"Error obteniendo el test: {str(e)}"}), 500
+
+    @app.route("/mi-test/<test_id>", methods=["DELETE"])
+    @requiere_login(db)
+    def borrar_mi_test(test_id):
+        try:
+            db.collection("usuarios").document(g.uid).collection("tests").document(test_id).delete()
+            return jsonify({"mensaje": "Test borrado"})
+        except Exception as e:
+            return jsonify({"error": f"Error borrando el test: {str(e)}"}), 500
 
     @app.route("/test-desde-historial", methods=["GET"])
     @requiere_login(db)

@@ -1,4 +1,4 @@
-import { signIn, signUp, signInWithGoogle, idToken, recuperarContrasena } from "/assets/auth.js";
+import { signIn, signUp, signInWithGoogle, idToken, recuperarContrasena, credencialGoogleDesdeError, vincularCredencialGoogle } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 
 const tabLogin = document.getElementById("tab-login");
@@ -21,6 +21,14 @@ const btnRecuperarSubmit = document.getElementById("btn-recuperar-submit");
 const btnRecuperarCancelar = document.getElementById("btn-recuperar-cancelar");
 const recuperarMensajeError = document.getElementById("recuperar-mensaje-error");
 const recuperarMensajeOk = document.getElementById("recuperar-mensaje-ok");
+
+const modalVincularGoogle = document.getElementById("modal-vincular-google");
+const formVincularGoogle = document.getElementById("form-vincular-google");
+const btnVincularSubmit = document.getElementById("btn-vincular-submit");
+const btnVincularCancelar = document.getElementById("btn-vincular-cancelar");
+const vincularMensajeError = document.getElementById("vincular-mensaje-error");
+let emailPendienteVincular = null;
+let credencialPendienteVincular = null;
 
 let modo = "login";
 
@@ -109,10 +117,59 @@ btnGoogle.addEventListener("click", async () => {
       window.location.href = siguienteDestino();
     }
   } catch (error) {
-    mensajeError.textContent = MENSAJES_ERROR[error.code] || "No se pudo continuar con Google. Inténtalo de nuevo.";
-    mensajeError.style.display = "block";
+    if (error.code === "auth/account-exists-with-different-credential") {
+      // Este correo ya tiene cuenta por contraseña: en vez de dejar al
+      // usuario atascado con un mensaje sin salida, se le ofrece vincular
+      // la credencial de Google pendiente en cuanto confirme su contraseña.
+      credencialPendienteVincular = credencialGoogleDesdeError(error);
+      emailPendienteVincular = error.customData?.email || "";
+      abrirModalVincularGoogle();
+    } else {
+      mensajeError.textContent = MENSAJES_ERROR[error.code] || "No se pudo continuar con Google. Inténtalo de nuevo.";
+      mensajeError.style.display = "block";
+    }
   } finally {
     btnGoogle.disabled = false;
+  }
+});
+
+function abrirModalVincularGoogle() {
+  document.getElementById("vincular-password").value = "";
+  vincularMensajeError.style.display = "none";
+  btnVincularSubmit.disabled = false;
+  modalVincularGoogle.style.display = "flex";
+}
+
+function cerrarModalVincularGoogle() {
+  modalVincularGoogle.style.display = "none";
+  credencialPendienteVincular = null;
+  emailPendienteVincular = null;
+}
+
+btnVincularCancelar.addEventListener("click", cerrarModalVincularGoogle);
+modalVincularGoogle.addEventListener("click", (evento) => {
+  if (evento.target === modalVincularGoogle) cerrarModalVincularGoogle();
+});
+
+formVincularGoogle.addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  vincularMensajeError.style.display = "none";
+  btnVincularSubmit.disabled = true;
+
+  const password = document.getElementById("vincular-password").value;
+
+  try {
+    if (!emailPendienteVincular || !credencialPendienteVincular) {
+      throw new Error("No se pudo continuar la vinculación. Vuelve a intentarlo con el botón de Google.");
+    }
+    const userCredential = await signIn(emailPendienteVincular, password);
+    await vincularCredencialGoogle(userCredential.user, credencialPendienteVincular);
+    cerrarModalVincularGoogle();
+    window.location.href = siguienteDestino();
+  } catch (error) {
+    vincularMensajeError.textContent = MENSAJES_ERROR[error.code] || error.message || "Contraseña incorrecta. Inténtalo de nuevo.";
+    vincularMensajeError.style.display = "block";
+    btnVincularSubmit.disabled = false;
   }
 });
 

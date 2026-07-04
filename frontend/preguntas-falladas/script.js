@@ -138,6 +138,21 @@ async function obtenerAuthHeaders() {
 
         respuestasUsuario = Array(preguntas.length).fill(null);
         indicePreguntaActual = 0;
+
+        const { generarTestId, guardarContenidoInicial, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
+        generarTestId();
+        guardarContenidoInicial({
+          oposicion: obtenerOposicionActual(), tipo: "falladas", temas,
+          contenido: preguntas,
+          respuestas_usuario: respuestasUsuario,
+          indice_actual: indicePreguntaActual,
+          pagina_origen: "/preguntas-falladas/"
+        });
+        activarGuardadoAlSalir(() => ({
+          respuestas_usuario: respuestasUsuario,
+          indice_actual: indicePreguntaActual
+        }));
+
         iniciarTemporizador();
 
         document.getElementById("barra-progreso-preguntas").style.display = "block";
@@ -202,7 +217,13 @@ async function obtenerAuthHeaders() {
         const seleccion = document.querySelector('input[name="respuesta"]:checked');
         const respuestaSeleccionada = seleccion ? seleccion.value : null;
         respuestasUsuario[i] = respuestaSeleccionada;
-        
+        import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+          autoguardarProgreso({
+            respuestas_usuario: respuestasUsuario,
+            indice_actual: i + 1 < preguntas.length ? i + 1 : i
+          });
+        });
+
         if (i + 1 < preguntas.length) {
           mostrarPregunta(i + 1);
         } else {
@@ -233,6 +254,7 @@ async function obtenerAuthHeaders() {
       const tipo = "falladas";
       const tiempo = Math.floor((Date.now() - tiempoInicio) / 1000);
       const metadatos = { tipo, tiempo };
+      const { testIdEnCurso, limpiarSeguimiento } = await import("/assets/test-progreso.js");
 
       try {
         const authHeaders = await obtenerAuthHeaders();
@@ -241,12 +263,14 @@ async function obtenerAuthHeaders() {
         const res = await fetch("https://oposicion-age.onrender.com/guardar-test", {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
-          body: JSON.stringify({ contenido, respuestas, metadatos, oposicion: obtenerOposicionActual() })
+          body: JSON.stringify({ contenido, respuestas, metadatos, oposicion: obtenerOposicionActual(), test_id: testIdEnCurso() })
         });
 
         const datos = await res.json();
         if (!res.ok) {
           console.error("Error al guardar test:", datos.error || "No se pudo guardar el test.");
+        } else {
+          limpiarSeguimiento();
         }
       } catch (e) {
         console.error("Error al guardar test falladas:", e);
@@ -318,6 +342,39 @@ async function obtenerAuthHeaders() {
       });
     });
 
-    window.addEventListener("load", () => {
-      cargarTemas();
+    async function reanudarTest(resumeId) {
+      const { usarTestId, cargarTestEnProgreso, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
+      const guardado = await cargarTestEnProgreso(resumeId);
+      if (!guardado || !guardado.contenido || !guardado.contenido.length) {
+        mostrarAviso("No se ha encontrado ese test guardado.");
+        return;
+      }
+      usarTestId(resumeId);
+      preguntas = guardado.contenido;
+      respuestasUsuario = Array.isArray(guardado.respuestas_usuario) && guardado.respuestas_usuario.length === preguntas.length
+        ? guardado.respuestas_usuario
+        : Array(preguntas.length).fill(null);
+      indicePreguntaActual = guardado.indice_actual || 0;
+
+      document.getElementById('tarjeta-formulario').style.display = "none";
+      document.getElementById('titulo-formulario').style.display = "none";
+      document.getElementById("contenedor-test").style.display = "block";
+
+      iniciarTemporizador();
+      document.getElementById("barra-progreso-preguntas").style.display = "block";
+      actualizarBarraProgresoPreguntas();
+      mostrarPregunta(indicePreguntaActual);
+      activarGuardadoAlSalir(() => ({
+        respuestas_usuario: respuestasUsuario,
+        indice_actual: indicePreguntaActual
+      }));
+    }
+
+    window.addEventListener("load", async () => {
+      await cargarTemas();
+      const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
+      const resumeId = idDesdeUrlResume();
+      if (resumeId) {
+        reanudarTest(resumeId);
+      }
     });

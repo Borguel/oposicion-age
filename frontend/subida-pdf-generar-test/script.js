@@ -81,6 +81,7 @@ async function obtenerAuthHeaders() {
         origen: "Generar_test_pdf_html+js_1.3.UNIFICADO"
       };
 
+      const { testIdEnCurso, limpiarSeguimiento } = await import("/assets/test-progreso.js");
       try {
         const authHeaders = await obtenerAuthHeaders();
         if (!authHeaders) return;
@@ -94,15 +95,20 @@ async function obtenerAuthHeaders() {
               metadatos: metadatos
             },
             nombre_archivo: nombreArchivo,
-            documento_id: documentoIdActual
+            documento_id: documentoIdActual,
+            // Si este test se autoguardó "en_progreso" mientras se hacía, el
+            // backend borra ese borrador en cuanto queda guardado de verdad
+            // como test_pdf -- no debe quedar como "en progreso" en ningún sitio.
+            test_id: testIdEnCurso()
           })
         });
-        
+
         const datos = await res.json();
         if (!res.ok) {
           console.warn("Test guardado: advertencia del backend", datos);
         } else {
           console.log("Test guardado exitosamente en Firebase");
+          limpiarSeguimiento();
         }
       } catch (e) {
         console.error("Error al guardar test en backend:", e);
@@ -228,7 +234,7 @@ async function obtenerAuthHeaders() {
       iniciarTest(datosIA.test);
     });
 
-    function iniciarTest(preguntasEntrada) {
+    async function iniciarTest(preguntasEntrada) {
       preguntas = preguntasEntrada || [];
       if (preguntas.length === 0) {
         mostrarError("No se generaron preguntas válidas.");
@@ -238,11 +244,65 @@ async function obtenerAuthHeaders() {
       respuestasUsuario = Array(preguntas.length).fill(null);
       indicePreguntaActual = 0;
       document.getElementById('contenedor-carga').style.display = 'none';
+
+      const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+      const { generarTestId, guardarContenidoInicial, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
+      generarTestId();
+      guardarContenidoInicial({
+        oposicion: obtenerOposicionActual(), tipo: "test_pdf", temas: [],
+        contenido: preguntas,
+        respuestas_usuario: respuestasUsuario,
+        indice_actual: indicePreguntaActual,
+        pagina_origen: "/subida-pdf-generar-test/",
+        documento_id: documentoIdActual
+      });
+      activarGuardadoAlSalir(() => ({
+        respuestas_usuario: respuestasUsuario,
+        indice_actual: indicePreguntaActual
+      }));
+
       iniciarTemporizador();
       actualizarBarraProgresoPreguntas();
       mostrarPregunta(indicePreguntaActual);
       document.getElementById('btn-finalizar').style.display = 'block';
     }
+
+    // === Reanudar un test guardado "en_progreso" (llegado desde "Mis
+    // Tests" con ?resume=<id>) ===
+    (async function intentarReanudarTest() {
+      const { idDesdeUrlResume, usarTestId, cargarTestEnProgreso, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
+      const resumeId = idDesdeUrlResume();
+      if (!resumeId) return;
+
+      document.getElementById('tarjeta-formulario').style.display = 'none';
+      document.getElementById('contenedor-carga').style.display = 'block';
+      const textoEstado = document.getElementById('texto-estado');
+      if (textoEstado) textoEstado.textContent = 'Cargando tu test guardado…';
+
+      const guardado = await cargarTestEnProgreso(resumeId);
+      if (!guardado || !guardado.contenido || !guardado.contenido.length) {
+        mostrarError("No se ha encontrado ese test guardado.");
+        return;
+      }
+      usarTestId(resumeId);
+      nombreArchivo = guardado.nombre_archivo || nombreArchivo;
+      documentoIdActual = guardado.documento_id || documentoIdActual;
+      preguntas = guardado.contenido;
+      respuestasUsuario = Array.isArray(guardado.respuestas_usuario) && guardado.respuestas_usuario.length === preguntas.length
+        ? guardado.respuestas_usuario
+        : Array(preguntas.length).fill(null);
+      indicePreguntaActual = guardado.indice_actual || 0;
+
+      document.getElementById('contenedor-carga').style.display = 'none';
+      iniciarTemporizador();
+      actualizarBarraProgresoPreguntas();
+      mostrarPregunta(indicePreguntaActual);
+      document.getElementById('btn-finalizar').style.display = 'block';
+      activarGuardadoAlSalir(() => ({
+        respuestas_usuario: respuestasUsuario,
+        indice_actual: indicePreguntaActual
+      }));
+    })();
 
     // === Llegar desde "Mis documentos" ===
     (async function inicializarDesdeDocumento() {
@@ -353,6 +413,12 @@ async function obtenerAuthHeaders() {
         e.preventDefault();
         const seleccion = document.querySelector('input[name="respuesta"]:checked');
         respuestasUsuario[i] = seleccion ? seleccion.value : null;
+        import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+          autoguardarProgreso({
+            respuestas_usuario: respuestasUsuario,
+            indice_actual: i + 1 < preguntas.length ? i + 1 : i
+          });
+        });
         if (i + 1 < preguntas.length) {
           mostrarPregunta(i + 1);
         } else {

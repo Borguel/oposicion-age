@@ -92,30 +92,169 @@ async function obtenerAuthHeaders() {
         minute: '2-digit'
       }).format(fecha);
     }
-    async function descargarPDF() {
-      const { jsPDF } = window.jspdf;
-      const element = document.getElementById('esquema-profesional');
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: null
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 190;
-      const pageHeight = 295;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 10;
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight - position - 10;
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight + 10;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+    // === Parser del esquema Markdown-lite a bloques ===
+    // Única fuente de verdad para el formato del esquema: tanto el render en
+    // pantalla (bloquesAHtml) como la descarga en PDF (descargarPDF) recorren
+    // esta misma lista de bloques, en vez de tener dos parsers de markdown
+    // distintos que puedan divergir.
+    function parsearEsquemaABloques(texto) {
+      const lineas = (texto || "").split("\n");
+      const bloques = [];
+      for (const lineaOriginal of lineas) {
+        const linea = lineaOriginal.trim();
+        if (!linea) continue;
+        if (linea.startsWith("## ")) {
+          bloques.push({ tipo: "h3", texto: linea.slice(3).trim() });
+          continue;
+        }
+        if (linea.startsWith("# ")) {
+          bloques.push({ tipo: "h2", texto: linea.slice(2).trim() });
+          continue;
+        }
+        if (linea.startsWith("> ")) {
+          bloques.push({ tipo: "definicion", texto: linea.slice(2).trim() });
+          continue;
+        }
+        const matchNumerado = linea.match(/^(\d+)\.\s+(.*)$/);
+        if (matchNumerado) {
+          bloques.push({ tipo: "numero", numero: matchNumerado[1], texto: matchNumerado[2].trim() });
+          continue;
+        }
+        if (linea.startsWith("- ") || linea.startsWith("* ")) {
+          bloques.push({ tipo: "bullet", texto: linea.slice(2).trim() });
+          continue;
+        }
+        // Cualquier línea que no encaje en un marcador conocido se trata
+        // como párrafo normal -- así nunca se pierde texto aunque la IA no
+        // siga el formato al pie de la letra.
+        bloques.push({ tipo: "parrafo", texto: linea });
       }
-      pdf.save(`esquema_${nombreArchivo.replace('.pdf', '')}.pdf`);
+      return bloques;
+    }
+    function negritaInlineHtml(texto) {
+      return texto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    }
+    function quitarMarcadoresNegrita(texto) {
+      return texto.replace(/\*\*(.*?)\*\*/g, '$1');
+    }
+    function bloquesAHtml(bloques) {
+      const html = [];
+      let listaAbierta = null;
+      function cerrarLista() {
+        if (listaAbierta) { html.push(`</${listaAbierta}>`); listaAbierta = null; }
+      }
+      bloques.forEach((b) => {
+        if (b.tipo === "h2") { cerrarLista(); html.push(`<h2>${negritaInlineHtml(b.texto)}</h2>`); return; }
+        if (b.tipo === "h3") { cerrarLista(); html.push(`<h3>${negritaInlineHtml(b.texto)}</h3>`); return; }
+        if (b.tipo === "definicion") { cerrarLista(); html.push(`<div class="esquema-definicion">${negritaInlineHtml(b.texto)}</div>`); return; }
+        if (b.tipo === "numero") {
+          if (listaAbierta !== "ol") { cerrarLista(); html.push("<ol>"); listaAbierta = "ol"; }
+          html.push(`<li>${negritaInlineHtml(b.texto)}</li>`);
+          return;
+        }
+        if (b.tipo === "bullet") {
+          if (listaAbierta !== "ul") { cerrarLista(); html.push("<ul>"); listaAbierta = "ul"; }
+          html.push(`<li>${negritaInlineHtml(b.texto)}</li>`);
+          return;
+        }
+        cerrarLista();
+        html.push(`<p>${negritaInlineHtml(b.texto)}</p>`);
+      });
+      cerrarLista();
+      return html.join("\n");
+    }
+
+    // === Descarga en PDF ===
+    // Antes se rasterizaba todo el esquema con html2canvas y se recortaba la
+    // imagen resultante cada 295mm sin mirar dónde caían las líneas de
+    // texto -- de ahí que el PDF cortase frases a la mitad entre páginas.
+    // Ahora se recorre la misma lista de bloques del parser con el patrón ya
+    // usado en assets/resultados-test.js: se mide el alto de cada bloque
+    // antes de dibujarlo y se salta de página si no cabe entero.
+    function descargarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+      const margin = 18;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const anchoTexto = pageWidth - margin * 2;
+      const limiteInferior = pageHeight - 22;
+      let yPos = 0;
+      let pagina = 0;
+
+      function pintarPie() {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(150);
+        doc.text(`Página ${pagina + 1}`, pageWidth - margin, pageHeight - 10, { align: "right" });
+        doc.text("Oposición AGE", margin, pageHeight - 10);
+        doc.setTextColor(0);
+      }
+      function nuevaPagina() {
+        doc.addPage();
+        pagina++;
+        yPos = 24;
+        pintarPie();
+      }
+      function asegurarEspacio(altura) {
+        if (yPos + altura > limiteInferior) nuevaPagina();
+      }
+
+      // Portada
+      yPos = 26;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text(`Esquema de ${nombreArchivo}`, pageWidth / 2, yPos, { align: "center" });
+      yPos += 10;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(110);
+      doc.text(formatearFecha(new Date()), pageWidth / 2, yPos, { align: "center" });
+      doc.setTextColor(0);
+      yPos += 14;
+      pintarPie();
+
+      const bloques = parsearEsquemaABloques(esquema);
+      bloques.forEach((b) => {
+        let fontSize = 11;
+        let fontStyle = "normal";
+        let prefijo = "";
+        let indent = 0;
+        let extraArriba = 0;
+        const esDefinicion = b.tipo === "definicion";
+
+        if (b.tipo === "h2") { fontSize = 15; fontStyle = "bold"; extraArriba = 6; }
+        else if (b.tipo === "h3") { fontSize = 12.5; fontStyle = "bold"; extraArriba = 4; }
+        else if (b.tipo === "bullet") { prefijo = "• "; indent = 5; }
+        else if (b.tipo === "numero") { prefijo = `${b.numero}. `; indent = 5; }
+        else if (esDefinicion) { fontStyle = "italic"; indent = 4; }
+
+        const texto = quitarMarcadoresNegrita(b.texto);
+        doc.setFont("helvetica", fontStyle);
+        doc.setFontSize(fontSize);
+        const lineas = doc.splitTextToSize(prefijo + texto, anchoTexto - indent - (esDefinicion ? 4 : 0));
+        const altoLinea = fontSize * 0.42;
+        const alturaBloque = extraArriba + lineas.length * altoLinea + (esDefinicion ? 4 : 2);
+
+        asegurarEspacio(alturaBloque);
+        yPos += extraArriba;
+
+        if (esDefinicion) {
+          doc.setFillColor(255, 241, 222);
+          doc.setDrawColor(255, 166, 51);
+          doc.roundedRect(margin, yPos - altoLinea * 0.75, anchoTexto, lineas.length * altoLinea + 4, 2, 2, "FD");
+          yPos += 3;
+        }
+
+        doc.setTextColor(0);
+        lineas.forEach((linea) => {
+          doc.text(linea, margin + indent + (esDefinicion ? 2 : 0), yPos);
+          yPos += altoLinea;
+        });
+        yPos += esDefinicion ? 4 : 2;
+      });
+
+      doc.save(`esquema_${nombreArchivo.replace('.pdf', '')}.pdf`);
     }
     // === Eventos ===
     selectFileBtn.addEventListener('click', () => archivoPdfInput.click());
@@ -279,18 +418,8 @@ async function obtenerAuthHeaders() {
       const fecha = new Date();
       fechaEsquema.textContent = formatearFecha(fecha);
       esquemaTitulo.textContent = `Esquema de ${nombreArchivo}`;
-      // Procesar y mostrar con formato
-      let htmlEsquema = esquema
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/^(#+)\s+(.*)$/gm, (match, hashes, title) => {
-          const level = hashes.length;
-          if (level === 1) return `<h2>${title}</h2>`;
-          if (level === 2) return `<h3>${title}</h3>`;
-          return `<p><strong>${title}</strong></p>`;
-        })
-        .replace(/^-\s+(.*)$/gm, '<li>$1</li>')
-        .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
-      contenidoEsquema.innerHTML = htmlEsquema;
+      // Procesar y mostrar con formato (mismo parser que usa la descarga en PDF)
+      contenidoEsquema.innerHTML = bloquesAHtml(parsearEsquemaABloques(esquema));
       contenedorCarga.classList.add('hidden');
       resultadoEsquema.classList.remove('hidden');
       // ✅ Guardar en Firebase (solo si es contenido recién generado)
