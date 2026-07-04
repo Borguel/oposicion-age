@@ -394,71 +394,6 @@ h1, h2, h3 {
   100% { left: 100%; }
 }
 
-/* ========== PREGUNTAS Y RESPUESTAS ========== */
-.pregunta-en-negrita {
-  font-weight: bold;
-  font-size: 1.1em;
-  margin-bottom: 15px;
-  color: #2c3e50;
-}
-
-.resp-correcta {
-  border: 2px solid #43a047;
-  background: #e8f5e9;
-  border-radius: 9px;
-  margin: 8px 0;
-  padding: 12px 15px;
-  color: #137333;
-  display: flex;
-  align-items: center;
-  font-weight: 500;
-}
-
-.resp-incorrecta {
-  border: 2px solid #e53935;
-  background: #ffebee;
-  border-radius: 9px;
-  margin: 8px 0;
-  padding: 12px 15px;
-  color: #a31515;
-  display: flex;
-  align-items: center;
-  font-weight: 500;
-}
-
-.resp-neutra {
-  border: 1.5px solid #ccc;
-  background: #fafafa;
-  border-radius: 9px;
-  margin: 8px 0;
-  padding: 12px 15px;
-  color: #222;
-  display: flex;
-  align-items: center;
-  font-weight: 500;
-}
-
-.icono-correcto {
-  font-size: 1.2em;
-  color: #43a047;
-  margin-right: 10px;
-}
-
-.icono-incorrecto {
-  font-size: 1.2em;
-  color: #e53935;
-  margin-right: 10px;
-}
-
-/* ========== FILTROS ========== */
-.filtros-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
-  justify-content: center;
-}
-
 /* ========== AVISOS ========== */
 .aviso {
   color: #ef5350;
@@ -573,15 +508,6 @@ h1, h2, h3 {
   
   #titulo-formulario {
     font-size: 1.7rem;
-  }
-  
-  .filtros-container {
-    flex-direction: column;
-  }
-  
-  .filtros-container button {
-    width: 100%;
-    margin-bottom: 5px;
   }
   
   .botones-navegacion-test {

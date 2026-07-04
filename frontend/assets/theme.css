@@ -745,10 +745,227 @@ body {
 }
 
 /* ============================================================
-   Resultados de test: tabla por tema + mensaje de racha
-   (usado por resultados-test.js en test-generator, repetir-test,
-   preguntas-falladas y subida-pdf-generar-test)
+   Resultados de test (usado por resultados-test.js, compartido por
+   test-generator, repetir-test, preguntas-falladas, subida-pdf-generar-test
+   y mis-tests/resultado): resumen, tabla por tema desplegable, filtros y
+   detalle de preguntas. Centralizado aquí -- antes vivía repartido (y
+   parcialmente ausente) entre los style.css de cada página, lo que hacía
+   que esta misma vista saliera sin ningún estilo en mis-tests/resultado.
    ============================================================ */
+.resultado-resumen-card {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  padding: 24px 26px;
+  margin-bottom: 24px;
+}
+
+.resultado-resumen-card h3 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.resultado-resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.resultado-resumen-tile {
+  padding: 14px 16px;
+  border-radius: var(--age-radius-md);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resultado-resumen-tile.tile-acierto { background: var(--age-success-bg); color: var(--age-success); }
+.resultado-resumen-tile.tile-fallo { background: var(--age-danger-bg); color: var(--age-danger); }
+.resultado-resumen-tile.tile-blanco { background: var(--age-neutral-bg); color: var(--age-ink-soft); }
+.resultado-resumen-tile.tile-porcentaje { background: var(--age-primary-soft); color: var(--age-primary-dark); }
+
+.resultado-notas p {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.resultado-apto {
+  font-weight: 800;
+}
+
+.resultado-apto.apto { color: var(--age-success); }
+.resultado-apto.no-apto { color: var(--age-danger); }
+
+.resultado-barra-progreso {
+  background: var(--age-neutral-bg);
+  border-radius: var(--age-radius-pill);
+  overflow: hidden;
+  margin-top: 16px;
+  height: 22px;
+}
+
+.resultado-barra-progreso-relleno {
+  height: 100%;
+  background: linear-gradient(to right, var(--age-success), #81c784);
+  color: #fff;
+  font-weight: 700;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2em;
+}
+
+.resultado-temas-desplegable {
+  margin-bottom: 20px;
+}
+
+.resultado-temas-desplegable summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resultado-temas-desplegable summary::-webkit-details-marker {
+  display: none;
+}
+
+.resultado-temas-desplegable summary::after {
+  content: "▸";
+  color: var(--age-ink-faint);
+  font-size: 0.85em;
+  transition: transform 0.15s var(--age-ease);
+}
+
+.resultado-temas-desplegable[open] summary::after {
+  transform: rotate(90deg);
+}
+
+.resultado-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.resultado-filtro-chip {
+  padding: 8px 16px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink-soft);
+  font-family: var(--age-font);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s var(--age-ease), background 0.15s var(--age-ease), color 0.15s var(--age-ease);
+}
+
+.resultado-filtro-chip:hover {
+  border-color: var(--age-primary);
+}
+
+.resultado-filtro-chip.activo {
+  background: var(--age-primary);
+  border-color: var(--age-primary);
+  color: #1b1f2e;
+}
+
+.resultado-detalle-titulo {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 0 0 16px;
+}
+
+.lista-detalle-preguntas {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pregunta-en-negrita {
+  font-weight: 800;
+  font-size: 1.05rem;
+  margin-bottom: 14px;
+  color: var(--age-ink);
+}
+
+.detalle-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  border-radius: var(--age-radius-md);
+  margin: 8px 0;
+  padding: 12px 15px;
+  font-weight: 600;
+  color: var(--age-ink);
+}
+
+.detalle-opcion.correcta {
+  border-color: var(--age-success);
+  background: var(--age-success-bg);
+  color: var(--age-success);
+}
+
+.detalle-opcion.incorrecta {
+  border-color: var(--age-danger);
+  background: var(--age-danger-bg);
+  color: var(--age-danger);
+}
+
+.icono-correcto,
+.icono-incorrecto {
+  font-size: 1.1em;
+  flex-shrink: 0;
+}
+
+.detalle-explicacion-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink-soft);
+  font-family: var(--age-font);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.detalle-explicacion-btn:hover {
+  border-color: var(--age-primary);
+  color: var(--age-ink);
+}
+
+.detalle-explicacion-panel {
+  margin-top: 10px;
+  padding: 14px 16px;
+  background: var(--age-neutral-bg);
+  border-radius: var(--age-radius-md);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--age-ink-soft);
+}
+
+@media (max-width: 640px) {
+  .resultado-filtros {
+    flex-direction: column;
+  }
+  .resultado-filtro-chip {
+    width: 100%;
+  }
+}
+
 .tabla-temas-container {
   overflow-x: auto;
   margin: 16px 0 24px;

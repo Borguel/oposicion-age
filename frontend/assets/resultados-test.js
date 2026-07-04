@@ -105,24 +105,24 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     if (seleccion === correcta) clase = "acierto";
     else if (seleccion === null || seleccion === undefined) clase = "blanco";
 
-    detalleHTML += `<div class="${clase}" style="margin-bottom:25px;">
+    detalleHTML += `<div class="${clase}">
       <div class="pregunta-en-negrita">${i + 1}. ${escaparHtml(quitarNumeracion(p.pregunta))}</div>`;
     for (const letra in p.opciones) {
-      let tipoRespuesta = "resp-neutra";
+      let tipoRespuesta = "detalle-opcion";
       let icono = "";
       if (letra === correcta) {
-        tipoRespuesta = "resp-correcta";
+        tipoRespuesta = "detalle-opcion correcta";
         icono = '<span class="icono-correcto">✅</span>';
       }
       if (letra === seleccion && seleccion !== correcta) {
-        tipoRespuesta = "resp-incorrecta";
-        icono = '<span class="icono-incorrecto">❌ </span>';
+        tipoRespuesta = "detalle-opcion incorrecta";
+        icono = '<span class="icono-incorrecto">❌</span>';
       }
       detalleHTML += `<div class="${tipoRespuesta}">${icono}${letra}) ${escaparHtml(p.opciones[letra])}</div>`;
     }
     const idExp = `exp-${i}-${Math.random().toString(36).slice(2, 6)}`;
-    detalleHTML += `<button type="button" class="btn age-btn-toggle-exp" data-toggle-target="${idExp}" style="margin-top: 10px; background: #e9ecef; color: #495057;">📘 Mostrar/Ocultar Explicación</button>`;
-    detalleHTML += `<div id="${idExp}" style="display:none; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;"><strong>Explicación:</strong> ${escaparHtml(explicacion)}</div></div>`;
+    detalleHTML += `<button type="button" class="detalle-explicacion-btn" data-toggle-target="${idExp}">📘 Mostrar/Ocultar Explicación</button>`;
+    detalleHTML += `<div id="${idExp}" class="detalle-explicacion-panel" style="display:none;"><strong>Explicación:</strong> ${escaparHtml(explicacion)}</div></div>`;
   });
 
   const filasTema = Object.values(statsPorTema).map((t) => {
@@ -153,28 +153,20 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     : "";
 
   contenedor.innerHTML = `
-    <div style='background:#f8f9fa;padding:25px;border-radius:12px;margin-bottom:25px;'>
+    <div class="resultado-resumen-card">
       <h3>📊 Resumen del Test</h3>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin: 15px 0;">
-        <div style="background: #e8f5e9; padding: 15px; border-radius: 10px;">
-          <p style="color:green; font-weight:600;">✅ Aciertos: ${stats.aciertos}</p>
-        </div>
-        <div style="background: #ffebee; padding: 15px; border-radius: 10px;">
-          <p style="color:red; font-weight:600;">❌ Fallos: ${stats.fallos}</p>
-        </div>
-        <div style="background: #e9ecef; padding: 15px; border-radius: 10px;">
-          <p style="color:#495057; font-weight:600;">⏸ En blanco: ${stats.sinResponder}</p>
-        </div>
-        <div style="background: #e7f5ff; padding: 15px; border-radius: 10px;">
-          <p style="color:#1c7ed6; font-weight:600;">🎯 Porcentaje: ${stats.porcentaje}%</p>
-        </div>
+      <div class="resultado-resumen-grid">
+        <div class="resultado-resumen-tile tile-acierto">✅ Aciertos: ${stats.aciertos}</div>
+        <div class="resultado-resumen-tile tile-fallo">❌ Fallos: ${stats.fallos}</div>
+        <div class="resultado-resumen-tile tile-blanco">⏸ En blanco: ${stats.sinResponder}</div>
+        <div class="resultado-resumen-tile tile-porcentaje">🎯 Porcentaje: ${stats.porcentaje}%</div>
       </div>
-      <p><strong>📘 Nota de este test:</strong> ${stats.nota} / ${preguntas.length}</p>
-      <p><strong>📏 Nota estilo examen oficial:</strong> ${stats.notaSobre10} / 10 — <span style="color:${stats.apto ? "#2e7d32" : "#c62828"}; font-weight:700;">${stats.apto ? "Apto" : "No apto"}</span></p>
-      <div style='background:#e9ecef;border-radius:10px;overflow:hidden;margin-top:15px;height:20px;'>
-        <div style='width:${stats.porcentaje}%;background:linear-gradient(to right,#4caf50,#81c784);height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;'>
-          ${stats.porcentaje}%
-        </div>
+      <div class="resultado-notas">
+        <p><strong>📘 Nota de este test:</strong> ${stats.nota} / ${preguntas.length}</p>
+        <p><strong>📏 Nota estilo examen oficial:</strong> ${stats.notaSobre10} / 10 — <span class="resultado-apto ${stats.apto ? "apto" : "no-apto"}">${stats.apto ? "Apto" : "No apto"}</span></p>
+      </div>
+      <div class="resultado-barra-progreso">
+        <div class="resultado-barra-progreso-relleno" style="width:${stats.porcentaje}%;">${stats.porcentaje}%</div>
       </div>
       ${rachaHTML}
     </div>
@@ -182,15 +174,17 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
       <button type="button" id="btn-analisis-ia" class="btn age-btn-outline">🤖 Ver análisis de mi rendimiento con IA</button>
       <div id="analisis-ia-resultado"></div>
     </div>
-    <h3>📈 Estadísticas por tema</h3>
-    ${tablaTemasHTML}
-    <div class="filtros-container">
-      <button type="button" class="btn btn-accent" data-filtro="todos">🟡 Todos</button>
-      <button type="button" class="btn btn-primary" data-filtro="acierto">✅ Aciertos</button>
-      <button type="button" class="btn btn-danger" data-filtro="fallo">❌ Fallos</button>
-      <button type="button" class="btn" style="background: #adb5bd; color: white;" data-filtro="blanco">⏸ En blanco</button>
+    <details class="resultado-temas-desplegable">
+      <summary>📈 Estadísticas por tema</summary>
+      ${tablaTemasHTML}
+    </details>
+    <div class="resultado-filtros">
+      <button type="button" class="resultado-filtro-chip activo" data-filtro="todos">🟡 Todos</button>
+      <button type="button" class="resultado-filtro-chip" data-filtro="acierto">✅ Aciertos</button>
+      <button type="button" class="resultado-filtro-chip" data-filtro="fallo">❌ Fallos</button>
+      <button type="button" class="resultado-filtro-chip" data-filtro="blanco">⏸ En blanco</button>
     </div>
-    <h3 style="margin-top: 20px;">📝 Detalle de preguntas</h3>
+    <h3 class="resultado-detalle-titulo">📝 Detalle de preguntas</h3>
     <div class="lista-detalle-preguntas">${detalleHTML}</div>
   `;
 
@@ -198,6 +192,7 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
   contenedor.querySelectorAll("[data-filtro]").forEach((boton) => {
     boton.addEventListener("click", () => {
       const filtro = boton.dataset.filtro;
+      contenedor.querySelectorAll("[data-filtro]").forEach((b) => b.classList.toggle("activo", b === boton));
       contenedor.querySelectorAll(".lista-detalle-preguntas > div").forEach((item) => {
         item.style.display = filtro === "todos" || item.classList.contains(filtro) ? "block" : "none";
       });

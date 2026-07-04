@@ -49,6 +49,18 @@ body {
   flex-wrap: wrap;
 }
 
+/* .age-btn-outline usa color oscuro pensado para fondos claros -- sobre el
+   navy de esta cabecera quedaba casi ilegible, así que aquí se invierte. */
+.resultado-acciones-top .age-btn-outline {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.resultado-acciones-top .age-btn-outline:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .resultado-wrap {
   padding: 28px 20px 60px;
 }

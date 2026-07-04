@@ -4,13 +4,6 @@
    que en /test-generator/style.css para que se vea coherente en toda la
    web sea cual sea el origen de las preguntas. */
 
-.pregunta-en-negrita {
-  font-weight: bold;
-  font-size: 1.1em;
-  margin-bottom: 15px;
-  color: var(--age-ink);
-}
-
 /* Opciones de respuesta con letra en círculo (igual que test-generator).
    Los selectores van prefijados con .pdfherr-body para tener más
    especificidad que ".pdfherr-body label" (assets/pdf-tools.css), que si no
@@ -79,58 +72,6 @@
   text-transform: none;
   border-radius: var(--age-radius-sm);
   margin-top: 15px;
-}
-
-/* Detalle de resultados (usado por /assets/resultados-test.js) */
-.resp-correcta {
-  border: 2px solid #43a047;
-  background: #e8f5e9;
-  border-radius: 9px;
-  margin: 8px 0;
-  padding: 12px 15px;
-  color: #137333;
-  display: flex;
-  align-items: center;
-  font-weight: 500;
-}
-.resp-incorrecta {
-  border: 2px solid #e53935;
-  background: #ffebee;
-  border-radius: 9px;
-  margin: 8px 0;
-  padding: 12px 15px;
-  color: #a31515;
-  display: flex;
-  align-items: center;
-  font-weight: 500;
-}
-.resp-neutra {
-  border: 1.5px solid #ccc;
-  background: #fafafa;
-  border-radius: 9px;
-  margin: 8px 0;
-  padding: 12px 15px;
-  color: #222;
-  display: flex;
-  align-items: center;
-  font-weight: 500;
-}
-.icono-correcto {
-  font-size: 1.2em;
-  color: #43a047;
-  margin-right: 10px;
-}
-.icono-incorrecto {
-  font-size: 1.2em;
-  color: #e53935;
-  margin-right: 10px;
-}
-
-.filtros-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
 }
 
 .stats-container {
