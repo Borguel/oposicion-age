@@ -106,6 +106,65 @@ function renderAviso() {
   });
 }
 
+// Checklist de bienvenida: 3 pasos que ayudan a un usuario nuevo a
+// descubrir lo esencial de la web. Se oculta sola en cuanto los 3 pasos
+// están hechos, o si el usuario la cierra manualmente (persistido en
+// localStorage, no hace falta seguir preguntando al backend en ese caso).
+const CLAVE_ONBOARDING_CERRADO = "age_onboarding_cerrado";
+
+const PASOS_ONBOARDING = [
+  { id: "test", texto: "Haz tu primer test", href: "/test-generator/" },
+  { id: "ia", texto: "Prueba las Herramientas IA con un PDF", href: "/subida-pdf-pagina-principal/" },
+  { id: "estadisticas", texto: "Consulta tus estadísticas", href: "/estadisticas/" }
+];
+
+async function comprobarPasosOnboarding(token) {
+  const completado = { test: false, ia: false, estadisticas: localStorage.getItem("age_visito_estadisticas") === "1" };
+  try {
+    const oposicion = obtenerOposicionActual();
+    const [resTests, resDocs] = await Promise.all([
+      fetch(`${BACKEND_URL}/mis-tests?oposicion=${encodeURIComponent(oposicion)}&estado=finalizado`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${BACKEND_URL}/mis-documentos`, { headers: { Authorization: `Bearer ${token}` } })
+    ]);
+    if (resTests.ok) {
+      const { tests } = await resTests.json();
+      completado.test = Array.isArray(tests) && tests.length > 0;
+    }
+    if (resDocs.ok) {
+      const { documentos } = await resDocs.json();
+      completado.ia = Array.isArray(documentos) && documentos.length > 0;
+    }
+  } catch (e) {
+    console.error("Error comprobando progreso de onboarding:", e);
+  }
+  return completado;
+}
+
+async function renderOnboarding() {
+  const tarjeta = document.getElementById("zona-onboarding");
+  if (localStorage.getItem(CLAVE_ONBOARDING_CERRADO) === "1") return;
+
+  const token = await idToken();
+  const completado = await comprobarPasosOnboarding(token);
+  if (PASOS_ONBOARDING.every((p) => completado[p.id])) return;
+
+  const lista = document.getElementById("zona-onboarding-lista");
+  lista.innerHTML = PASOS_ONBOARDING.map((p) => `
+    <li class="zona-onboarding-paso${completado[p.id] ? " completado" : ""}">
+      <a href="${p.href}">
+        <span class="zona-onboarding-check">${icono("check", 14)}</span>
+        <span class="zona-onboarding-texto">${p.texto}</span>
+      </a>
+    </li>
+  `).join("");
+  tarjeta.style.display = "";
+
+  document.getElementById("zona-onboarding-cerrar").addEventListener("click", () => {
+    localStorage.setItem(CLAVE_ONBOARDING_CERRADO, "1");
+    tarjeta.style.display = "none";
+  });
+}
+
 function renderSwitcher() {
   const contenedor = document.getElementById("zona-oposicion-switcher");
   const actual = obtenerOposicionActual();
@@ -136,6 +195,7 @@ async function iniciar() {
   cargarRacha();
   renderAviso();
   renderSwitcher();
+  renderOnboarding();
 
   const { nombre, plan } = await obtenerPlan(true);
   if (nombre) document.getElementById("zona-nombre").textContent = nombre;

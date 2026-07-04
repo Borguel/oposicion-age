@@ -9,6 +9,8 @@ async function obtenerAuthHeaders() {
 }
 
 document.addEventListener("DOMContentLoaded", async function () {
+  localStorage.setItem("age_visito_estadisticas", "1");
+
   const refreshBtn = document.getElementById("estadisticas-refresh");
   const modal = document.getElementById("modal-temas");
   const modalCerrar = document.querySelector(".modal-cerrar");
