@@ -168,3 +168,20 @@ def seleccionar_preguntas_con_cuota(preguntas, num_preguntas, temas_filtro=None)
     random.shuffle(seleccionadas)  # no dejar el orden agrupado por tema
     return seleccionadas
 
+
+def obtener_titulos_temas_reales(db, coleccion, lista_codigos):
+    """Traduce códigos "bloque-tema" (p. ej. "bloque_01-tema_02") a sus
+    títulos reales guardados en Firestore -- la misma fuente que usa
+    /temas-disponibles -- en vez de una lista fija en el código que solo
+    cubría los temas de AGE y no servía para el resto de oposiciones."""
+    titulos = []
+    for codigo in lista_codigos:
+        partes = codigo.split("-", 1)
+        if len(partes) < 2:
+            titulos.append(codigo)
+            continue
+        bloque_id, tema_id = partes
+        doc = db.collection(coleccion).document(bloque_id).collection("temas").document(tema_id).get()
+        titulos.append(doc.to_dict().get("titulo", codigo) if doc.exists else codigo)
+    return titulos
+
