@@ -257,3 +257,79 @@ body {
   font-weight: 700;
   text-align: right;
 }
+
+.cuenta-privacidad-texto {
+  color: var(--age-ink-soft);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.cuenta-privacidad-acciones {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cuenta-btn-peligro {
+  padding: 11px 22px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-danger);
+  background: var(--age-card);
+  color: var(--age-danger);
+  font-family: var(--age-font);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s var(--age-ease), color 0.15s var(--age-ease);
+}
+
+.cuenta-btn-peligro:hover {
+  background: var(--age-danger);
+  color: #fff;
+}
+
+.cuenta-btn-peligro:disabled {
+  opacity: 0.5;
+  cursor: default;
+  background: var(--age-card);
+  color: var(--age-danger);
+}
+
+.cuenta-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 20, 30, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 500;
+}
+
+.cuenta-modal-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 26px;
+}
+
+.cuenta-modal-titulo {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.cuenta-modal-subtitulo {
+  color: var(--age-ink-soft);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+
+.cuenta-modal-card .cuenta-campo {
+  margin-bottom: 14px;
+}
+
+.cuenta-modal-card #btn-cancelar-eliminar {
+  margin-top: 10px;
+}

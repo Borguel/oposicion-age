@@ -12,6 +12,7 @@ from flask import Blueprint, g, jsonify, request
 from firebase_setup import db
 from auth_utils import requiere_login, obtener_oposicion_solicitada
 from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario
+from gestion_cuenta import exportar_datos_usuario, eliminar_cuenta_usuario
 from oposiciones import OPOSICION_POR_DEFECTO, oposicion_valida
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,19 @@ def mi_racha():
         "racha_maxima": racha.get("racha_maxima", 0),
         "ultima_fecha": ultima_fecha_str
     })
+
+
+@bp.route("/mi-cuenta/exportar-datos", methods=["GET"])
+@requiere_login(db)
+def exportar_datos():
+    return jsonify(exportar_datos_usuario(db, g.uid))
+
+
+@bp.route("/mi-cuenta", methods=["DELETE"])
+@requiere_login(db)
+def eliminar_cuenta():
+    eliminar_cuenta_usuario(db, g.uid)
+    return jsonify({"mensaje": "Cuenta eliminada"})
 
 
 @bp.route("/crear-sesion-checkout", methods=["POST"])

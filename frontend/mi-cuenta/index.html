@@ -60,7 +60,32 @@
         </div>
         <a href="/mi-cuenta/datos-personales/" class="age-btn age-btn-primary">✏️ Modificar datos personales</a>
       </section>
+
+      <section class="age-card cuenta-section">
+        <h2>Tus datos y privacidad</h2>
+        <p class="cuenta-privacidad-texto">Puedes descargar una copia de todo lo que guardamos sobre ti, o eliminar tu cuenta de forma permanente.</p>
+        <div class="cuenta-privacidad-acciones">
+          <button type="button" id="btn-exportar-datos" class="age-btn age-btn-outline">⬇️ Descargar mis datos</button>
+          <button type="button" id="btn-eliminar-cuenta" class="cuenta-btn-peligro">🗑️ Eliminar mi cuenta</button>
+        </div>
+      </section>
     </main>
+  </div>
+
+  <div class="cuenta-modal-overlay" id="modal-eliminar-cuenta" style="display:none;">
+    <div class="age-card cuenta-modal-card">
+      <h2 class="cuenta-modal-titulo">Eliminar tu cuenta</h2>
+      <p class="cuenta-modal-subtitulo">
+        Esto borrará permanentemente tu perfil, tests, documentos y todo lo demás asociado a tu cuenta, y cancelará cualquier suscripción activa. No se puede deshacer.
+      </p>
+      <div class="cuenta-campo">
+        <label for="campo-confirmar-eliminar">Escribe <strong>ELIMINAR</strong> para confirmar</label>
+        <input type="text" id="campo-confirmar-eliminar" autocomplete="off" />
+      </div>
+      <div id="eliminar-mensaje-error" class="datos-mensaje error" style="display:none;"></div>
+      <button type="button" class="cuenta-btn-peligro age-btn-block" id="btn-confirmar-eliminar" disabled>Eliminar mi cuenta para siempre</button>
+      <button type="button" class="age-btn age-btn-outline age-btn-block" id="btn-cancelar-eliminar">Cancelar</button>
+    </div>
   </div>
 
   <script type="module" src="/assets/auth.js"></script>
