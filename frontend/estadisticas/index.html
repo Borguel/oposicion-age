@@ -97,6 +97,20 @@
       </div>
     </div>
 
+    <!-- Tiempo dedicado a hacer test: barra de ancho completo -->
+    <div class="tarjeta-estadistica neutra tarjeta-tiempo-total">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
+        </svg>
+        <h4>Tiempo dedicado a hacer test</h4>
+      </div>
+      <div class="tiempo-total-datos">
+        <div class="valor" id="tiempo">—</div>
+        <div class="detalle">Dedicado a estudiar</div>
+      </div>
+    </div>
+
     <div class="seccion-separador">
       <h3>🎯 ACIERTOS Y FALLOS</h3>
     </div>
@@ -168,54 +182,60 @@
       <div class="valor" id="esquemas">—</div>
       <div class="detalle">Resúmenes creados</div>
     </div>
-    <!-- Tiempo Total -->
+    <!-- Documentos subidos -->
     <div class="tarjeta-estadistica neutra">
       <div class="header">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
+          <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" fill="currentColor"/>
         </svg>
-        <h4>Tiempo total</h4>
+        <h4>Documentos subidos</h4>
       </div>
-      <div class="valor" id="tiempo">—</div>
-      <div class="detalle">Dedicado a estudiar</div>
+      <div class="valor" id="total-archivos">—</div>
+      <div class="detalle">Procesados desde PDF</div>
     </div>
-
-    <!-- NUEVA SECCIÓN: CONTENIDO DESDE PDF -->
-    <div class="seccion-separador">
-      <h3>📄 CONTENIDO DESDE PDF</h3>
-    </div>
-    <!-- Tarjeta Resumen PDF -->
-    <div class="tarjeta-resumen-pdf">
+    <!-- Tests desde PDF -->
+    <div class="tarjeta-estadistica neutra">
       <div class="header">
-        <h4 style="color: var(--theme-heading); margin: 0; display: flex; align-items: center; gap: 10px;">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 24px; height: 24px;">
-            <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" fill="currentColor"/>
-          </svg>
-          Resumen de Documentos Procesados
-        </h4>
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V5C19 3.89543 18.1046 3 17 3ZM16 17H8V15H16V17ZM16 13H8V11H16V13ZM16 9H8V7H16V9Z" fill="currentColor"/>
+        </svg>
+        <h4>Tests desde PDF</h4>
       </div>
-      <div class="resumen-grid">
-        <div class="resumen-item">
-          <div class="resumen-valor" id="total-archivos">—</div>
-          <div class="resumen-label">Documentos Subidos</div>
-        </div>
-        <div class="resumen-item">
-          <div class="resumen-valor" id="total-tests-pdf">—</div>
-          <div class="resumen-label">Tests desde PDF</div>
-        </div>
-        <div class="resumen-item">
-          <div class="resumen-valor" id="total-resumenes-pdf">—</div>
-          <div class="resumen-label">Resúmenes</div>
-        </div>
-        <div class="resumen-item">
-          <div class="resumen-valor" id="total-esquemas-pdf">—</div>
-          <div class="resumen-label">Esquemas</div>
-        </div>
-        <div class="resumen-item">
-          <div class="resumen-valor" id="total-tarjetas-pdf">—</div>
-          <div class="resumen-label">Tarjetas</div>
-        </div>
+      <div class="valor" id="total-tests-pdf">—</div>
+      <div class="detalle">Generados desde tus documentos</div>
+    </div>
+    <!-- Resúmenes desde PDF -->
+    <div class="tarjeta-estadistica neutra">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" fill="currentColor"/>
+        </svg>
+        <h4>Resúmenes</h4>
       </div>
+      <div class="valor" id="total-resumenes-pdf">—</div>
+      <div class="detalle">Generados desde PDF</div>
+    </div>
+    <!-- Esquemas desde PDF -->
+    <div class="tarjeta-estadistica neutra">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
+        </svg>
+        <h4>Esquemas desde PDF</h4>
+      </div>
+      <div class="valor" id="total-esquemas-pdf">—</div>
+      <div class="detalle">Generados desde PDF</div>
+    </div>
+    <!-- Tarjetas desde PDF -->
+    <div class="tarjeta-estadistica neutra">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" fill="currentColor"/>
+        </svg>
+        <h4>Tarjetas</h4>
+      </div>
+      <div class="valor" id="total-tarjetas-pdf">—</div>
+      <div class="detalle">Generadas desde PDF</div>
     </div>
   </div>
 </div>

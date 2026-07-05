@@ -154,6 +154,11 @@
       flex-shrink: 0;
     }
 
+    .tarjeta-recomendacion .recomendacion-texto {
+      min-width: 0;
+      flex: 1;
+    }
+
     .tarjeta-recomendacion h4 {
       margin: 0 0 4px;
       font-size: 1.1rem;
@@ -366,40 +371,36 @@
       top: -10px;
     }
 
-    .tarjeta-resumen-pdf {
+    .tarjeta-tiempo-total {
       grid-column: 1 / -1;
-      background: var(--theme-content-alt-bg);
-      border: 1px solid var(--theme-border);
-      border-radius: var(--card-radius);
-      padding: 25px;
-      box-shadow: 0 6px 20px var(--shadow);
-    }
-
-    .tarjeta-resumen-pdf .resumen-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 20px;
-      margin-top: 15px;
+      text-align: left;
+      flex-wrap: wrap;
     }
 
-    .tarjeta-resumen-pdf .resumen-item {
-      text-align: center;
-      padding: 15px;
-      background: var(--theme-content-bg);
-      border: 1px solid var(--theme-border);
-      border-radius: var(--card-radius);
+    .tarjeta-tiempo-total .header {
+      flex-direction: row;
+      margin-bottom: 0;
     }
 
-    .tarjeta-resumen-pdf .resumen-valor {
-      font-size: 2rem;
-      font-weight: 800;
-      margin-bottom: 5px;
-      color: var(--theme-heading);
+    .tarjeta-tiempo-total .header svg {
+      margin-bottom: 0;
+      margin-right: 12px;
     }
 
-    .tarjeta-resumen-pdf .resumen-label {
-      font-size: 0.9rem;
-      color: var(--theme-text);
+    .tiempo-total-datos {
+      text-align: right;
+    }
+
+    .tiempo-total-datos .valor {
+      margin: 0;
+    }
+
+    .tiempo-total-datos .detalle {
+      margin: 0;
     }
 
     .tarjeta-temas {
@@ -666,8 +667,19 @@
       #estadisticas-usuario {
         grid-template-columns: 1fr;
       }
-      .tarjeta-resumen-pdf .resumen-grid {
-        grid-template-columns: 1fr;
+      .tarjeta-tiempo-total {
+        flex-direction: column;
+        text-align: center;
+      }
+      .tarjeta-tiempo-total .header {
+        flex-direction: column;
+      }
+      .tarjeta-tiempo-total .header svg {
+        margin-right: 0;
+        margin-bottom: 10px;
+      }
+      .tiempo-total-datos {
+        text-align: center;
       }
       .modal-contenido {
         width: 95%;
