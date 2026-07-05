@@ -27,6 +27,41 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Notificaciones push (recordatorio de racha, enviado por el cron del
+// backend). El payload es JSON con {title, body, url}; al hacer clic se
+// enfoca una pestaña ya abierta de la web si existe, o si no se abre una.
+self.addEventListener("push", (event) => {
+  let datos = { title: "Oposición AGE", body: "Tienes novedades.", url: "/zona-opositor/" };
+  if (event.data) {
+    try {
+      datos = { ...datos, ...event.data.json() };
+    } catch (e) {
+      datos.body = event.data.text();
+    }
+  }
+  event.waitUntil(
+    self.registration.showNotification(datos.title, {
+      body: datos.body,
+      icon: "/assets/apple-touch-icon.png",
+      badge: "/assets/apple-touch-icon.png",
+      data: { url: datos.url },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/zona-opositor/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((listaClientes) => {
+      for (const cliente of listaClientes) {
+        if (new URL(cliente.url).pathname === url && "focus" in cliente) return cliente.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
+  );
+});
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.origin !== self.location.origin || !url.pathname.startsWith("/assets/")) {

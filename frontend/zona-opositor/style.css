@@ -130,6 +130,13 @@ body {
 
 .zona-racha-info {
   min-width: 0;
+  flex: 1;
+}
+
+.zona-racha-notif-boton {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .zona-racha-numero {
@@ -153,6 +160,10 @@ body {
   .zona-racha-card {
     flex-direction: column;
     text-align: center;
+  }
+
+  .zona-racha-notif-boton {
+    width: 100%;
   }
 }
 

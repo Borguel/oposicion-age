@@ -42,6 +42,36 @@ async function cargarRacha() {
   }
 }
 
+async function iniciarBotonNotificaciones() {
+  const boton = document.getElementById("racha-notif-boton");
+  const { pushDisponibleEnNavegador, pushConfiguradoEnServidor, notificacionesActivas, activarNotificaciones, desactivarNotificaciones } = await import("/assets/push.js");
+
+  if (!(await pushDisponibleEnNavegador()) || !(await pushConfiguradoEnServidor())) return;
+
+  const pintar = (activas) => {
+    boton.textContent = activas ? "🔕 Desactivar avisos" : "🔔 Avisarme si la pierdo";
+  };
+  pintar(await notificacionesActivas());
+  boton.style.display = "";
+
+  boton.addEventListener("click", async () => {
+    boton.disabled = true;
+    try {
+      if (await notificacionesActivas()) {
+        await desactivarNotificaciones();
+        pintar(false);
+      } else {
+        await activarNotificaciones();
+        pintar(true);
+      }
+    } catch (e) {
+      alert(e.message || "No se pudieron activar las notificaciones.");
+    } finally {
+      boton.disabled = false;
+    }
+  });
+}
+
 function formatearCuentaAtras(fechaISO) {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
@@ -280,6 +310,7 @@ async function iniciar() {
   document.getElementById("zona-nombre").textContent = (usuario.email || "").split("@")[0] || "opositor/a";
 
   cargarRacha();
+  iniciarBotonNotificaciones();
   cargarCuentaAtras();
   renderAviso();
   renderSwitcher();

@@ -11,6 +11,7 @@ from registro_progreso_usuario import (
 )
 from guardar_resultado import obtener_estadisticas_completas_usuario
 from banco_favoritas import marcar_favorita, desmarcar_favorita, listar_favoritas
+from push_utils import VAPID_PUBLIC_KEY, push_disponible, guardar_suscripcion, borrar_suscripcion
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 import random
 
@@ -154,6 +155,29 @@ def registrar_rutas_progreso(app, db):
     def preguntas_favoritas_route():
         favoritas = listar_favoritas(db, g.uid, obtener_oposicion_solicitada())
         return jsonify({"favoritas": favoritas})
+
+    @app.route("/notificaciones-push/clave-publica", methods=["GET"])
+    def clave_publica_push_route():
+        return jsonify({"clave_publica": VAPID_PUBLIC_KEY, "disponible": push_disponible()})
+
+    @app.route("/notificaciones-push/suscribir", methods=["POST"])
+    @requiere_login(db)
+    def suscribir_push_route():
+        suscripcion = request.get_json(silent=True) or {}
+        if not suscripcion.get("endpoint"):
+            return jsonify({"error": "Suscripción no válida"}), 400
+        guardar_suscripcion(db, g.uid, suscripcion)
+        return jsonify({"mensaje": "Notificaciones activadas"})
+
+    @app.route("/notificaciones-push/desuscribir", methods=["POST"])
+    @requiere_login(db)
+    def desuscribir_push_route():
+        datos = request.get_json(silent=True) or {}
+        endpoint = datos.get("endpoint")
+        if not endpoint:
+            return jsonify({"error": "Falta el endpoint"}), 400
+        borrar_suscripcion(db, g.uid, endpoint)
+        return jsonify({"mensaje": "Notificaciones desactivadas"})
 
     @app.route("/ultimo-test", methods=["GET"])
     @requiere_login(db)

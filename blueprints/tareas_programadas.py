@@ -10,6 +10,7 @@ from flask import Blueprint, jsonify, request
 
 from firebase_setup import db
 from email_utils import enviar_email_racha_en_riesgo, enviar_email_reengagement
+from push_utils import enviar_push
 
 logger = logging.getLogger(__name__)
 bp = Blueprint("tareas_programadas", __name__)
@@ -54,6 +55,12 @@ def enviar_recordatorios_racha():
 
         if dias_sin_actividad == 1 and racha.get("racha_actual", 0) > 0:
             enviar_email_racha_en_riesgo(email, racha["racha_actual"], nombre=nombre)
+            for suscripcion in datos.get("push_subscriptions", []):
+                enviar_push(
+                    suscripcion,
+                    "🔥 No pierdas tu racha",
+                    f"Llevas {racha['racha_actual']} días seguidos estudiando. Haz un test hoy para no perderla.",
+                )
             en_riesgo += 1
         elif dias_sin_actividad in UMBRALES_REENGAGEMENT:
             enviar_email_reengagement(email, dias_sin_actividad, nombre=nombre)
