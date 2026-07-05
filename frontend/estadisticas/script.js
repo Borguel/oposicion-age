@@ -180,6 +180,57 @@ document.addEventListener("DOMContentLoaded", async function () {
     todosLosTemas = todosTemas;
     mostrarTemasNoEstudiados(noEstudiados, todosTemas);
     mostrarTemasFlojos(rendimientoPorTema, todosTemas);
+    renderizarEvolucion(historial);
+  }
+
+  // Gráfica de evolución de la nota: una línea sencilla en SVG (sin
+  // depender de ninguna librería) con los últimos tests, en la misma
+  // escala 0-10 que "Puntuación media". Cada punto se colorea según si
+  // ese test se aprobó o no, y muestra un tooltip nativo con la fecha.
+  const MAX_TESTS_EVOLUCION = 15;
+
+  function renderizarEvolucion(historial) {
+    const contenedor = document.getElementById("evolucion-grafica");
+    const vacio = document.getElementById("evolucion-vacio");
+    const tarjeta = document.getElementById("tarjeta-evolucion");
+    const recientes = historial.slice(-MAX_TESTS_EVOLUCION);
+
+    if (recientes.length < 2) {
+      contenedor.style.display = "none";
+      vacio.style.display = "block";
+      return;
+    }
+    contenedor.style.display = "block";
+    vacio.style.display = "none";
+
+    const ancho = 600;
+    const alto = 160;
+    const margen = 20;
+    const notas = recientes.map(t => Math.round((t.puntuacion_final ?? 0) * 100) / 10);
+    const paso = (ancho - margen * 2) / (recientes.length - 1);
+
+    const coordX = (i) => margen + i * paso;
+    const coordY = (nota) => alto - margen - (nota / 10) * (alto - margen * 2);
+
+    const puntos = notas.map((nota, i) => `${coordX(i)},${coordY(nota)}`).join(" ");
+
+    const circulos = recientes.map((t, i) => {
+      const nota = notas[i];
+      const color = t.resultado === "aprobado" ? "var(--age-success)" : "var(--age-danger)";
+      const fecha = t.fecha ? new Date(t.fecha).toLocaleDateString("es-ES") : "";
+      return `<circle cx="${coordX(i)}" cy="${coordY(nota)}" r="4" fill="${color}"><title>${fecha}: ${nota.toFixed(1)}/10</title></circle>`;
+    }).join("");
+
+    const lineaAprobado = coordY(5);
+
+    contenedor.innerHTML = `
+      <svg viewBox="0 0 ${ancho} ${alto}" preserveAspectRatio="none" class="evolucion-svg">
+        <line x1="${margen}" y1="${lineaAprobado}" x2="${ancho - margen}" y2="${lineaAprobado}" class="evolucion-linea-aprobado" />
+        <polyline points="${puntos}" fill="none" class="evolucion-linea" />
+        ${circulos}
+      </svg>
+    `;
+    tarjeta.style.display = "flex";
   }
 
   // "Tema flojo" = ha respondido al menos 3 preguntas de ese tema (para que

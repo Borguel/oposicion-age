@@ -412,6 +412,44 @@
       font-weight: 600;
     }
 
+    .tarjeta-evolucion {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    .evolucion-grafica {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .evolucion-svg {
+      width: 100%;
+      height: 160px;
+      display: block;
+      overflow: visible;
+    }
+
+    .evolucion-linea {
+      stroke: var(--theme-primary);
+      stroke-width: 2.5;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+
+    .evolucion-linea-aprobado {
+      stroke: var(--theme-border);
+      stroke-width: 1;
+      stroke-dasharray: 4 4;
+    }
+
+    .evolucion-vacio {
+      color: var(--theme-text);
+      font-size: 0.92rem;
+      margin: 8px 0 0;
+    }
+
     .tema-acierto {
       background: var(--secondary);
       color: white;
