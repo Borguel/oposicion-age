@@ -199,3 +199,8 @@ clave-firebase.json
 # cargar_temario_boe.py generated artifacts
 cache_paginas_pdf.pkl
 preview_temario.json
+
+# Node / Playwright (tests-frontend)
+node_modules/
+test-results/
+playwright-report/

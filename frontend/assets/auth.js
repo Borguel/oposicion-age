@@ -198,8 +198,12 @@ function construirEsqueletoNav() {
   burger.type = "button";
   burger.className = "age-nav-burger";
   burger.setAttribute("aria-label", "Abrir menú");
+  burger.setAttribute("aria-expanded", "false");
   burger.innerHTML = icono("menu", 22);
-  burger.addEventListener("click", () => links.classList.toggle("open"));
+  burger.addEventListener("click", () => {
+    const abierto = links.classList.toggle("open");
+    burger.setAttribute("aria-expanded", String(abierto));
+  });
 
   inner.appendChild(brand);
   inner.appendChild(links);

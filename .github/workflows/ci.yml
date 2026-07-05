@@ -40,3 +40,12 @@ jobs:
       - name: Comprobar sintaxis de todo el JS del frontend
         run: |
           find frontend -name "*.js" -print0 | xargs -0 -n1 node --check
+
+      - name: Instalar dependencias de test
+        run: npm install
+
+      - name: Instalar navegador de Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Ejecutar tests end-to-end del frontend
+        run: npx playwright test
