@@ -15,28 +15,29 @@ def test_estadisticas_publicas_sin_autenticacion(client):
     assert resp.status_code != 401
 
 
-def test_estadisticas_publicas_cuenta_usuarios_y_tests(client, db):
+def test_estadisticas_publicas_cuenta_preguntas_oficiales_y_generadas(client, db):
     _limpiar_cache()
-    db.sembrar(("usuarios", "u1"), {})
-    db.sembrar(("usuarios", "u2"), {})
-    db.sembrar(("usuarios", "u1", "tests", "t1"), {})
-    db.sembrar(("usuarios", "u1", "tests", "t2"), {})
-    db.sembrar(("usuarios", "u2", "tests", "t3"), {})
+    db.sembrar(("examenes_oficiales_AGE", "p1"), {})
+    db.sembrar(("examenes_oficiales_AGE", "p2"), {})
+    db.sembrar(("examenes_oficiales_GACE", "p1"), {})
+    db.sembrar(("usuarios", "u1", "tests", "t1"), {"num_preguntas": 10})
+    db.sembrar(("usuarios", "u1", "tests", "t2"), {"num_preguntas": 20})
+    db.sembrar(("usuarios", "u2", "tests", "t3"), {"num_preguntas": 5})
 
     resp = client.get("/estadisticas-publicas")
     assert resp.status_code == 200
     datos = resp.get_json()
-    assert datos["total_usuarios"] == 2
-    assert datos["total_tests"] == 3
+    assert datos["total_preguntas_oficiales"] == 3
+    assert datos["total_preguntas_generadas"] == 35
 
 
 def test_estadisticas_publicas_usa_cache(client, db):
     _limpiar_cache()
-    db.sembrar(("usuarios", "u1"), {})
+    db.sembrar(("examenes_oficiales_AGE", "p1"), {})
     primera = client.get("/estadisticas-publicas").get_json()
-    assert primera["total_usuarios"] == 1
+    assert primera["total_preguntas_oficiales"] == 1
 
-    db.sembrar(("usuarios", "u2"), {})
+    db.sembrar(("examenes_oficiales_AGE", "p2"), {})
     segunda = client.get("/estadisticas-publicas").get_json()
-    # Dentro de la ventana de caché: no ve el nuevo usuario todavía.
-    assert segunda["total_usuarios"] == 1
+    # Dentro de la ventana de caché: no ve la nueva pregunta todavía.
+    assert segunda["total_preguntas_oficiales"] == 1

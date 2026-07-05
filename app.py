@@ -41,6 +41,7 @@ logger.info("Clave DeepSeek: %s", "configurada" if os.getenv("DEEPSEEK_API_KEY")
 # db se inicializa en firebase_setup.py (import ahí arriba de todo, antes de
 # que ningún blueprint lo necesite).
 from firebase_setup import db
+from oposiciones import OPOSICIONES, coleccion_examenes_oficiales
 
 # Inicializar Flask
 app = Flask(__name__)
@@ -158,14 +159,20 @@ def estadisticas_publicas():
     if _cache_estadisticas_publicas and ahora - _cache_estadisticas_publicas["momento"] < _CACHE_ESTADISTICAS_PUBLICAS_SEGUNDOS:
         return jsonify(_cache_estadisticas_publicas["datos"])
     try:
-        total_usuarios = db.collection("usuarios").count().get()[0][0].value
-        total_tests = db.collection_group("tests").count().get()[0][0].value
-        datos = {"total_usuarios": total_usuarios, "total_tests": total_tests}
+        total_preguntas_oficiales = sum(
+            db.collection(coleccion_examenes_oficiales(op)).count().get()[0][0].value
+            for op in OPOSICIONES
+        )
+        total_preguntas_generadas = db.collection_group("tests").sum("num_preguntas").get()[0][0].value or 0
+        datos = {
+            "total_preguntas_oficiales": total_preguntas_oficiales,
+            "total_preguntas_generadas": int(total_preguntas_generadas),
+        }
         _cache_estadisticas_publicas = {"momento": ahora, "datos": datos}
         return jsonify(datos)
     except Exception:
         logger.exception("Fallo calculando estadísticas públicas")
-        return jsonify({"total_usuarios": 0, "total_tests": 0})
+        return jsonify({"total_preguntas_oficiales": 0, "total_preguntas_generadas": 0})
 
 
 if __name__ == "__main__":

@@ -121,29 +121,36 @@
       display: none;
       max-width: var(--age-container);
       margin: 0 auto;
-      padding: 28px 20px 0;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
+      padding: 36px 20px 0;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      justify-items: center;
     }
 
     .home-prueba-social-item {
       display: flex;
-      align-items: baseline;
-      gap: 8px;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
       background: var(--age-card);
       border: 1px solid var(--age-border);
-      border-radius: var(--age-radius-pill);
-      padding: 10px 20px;
+      border-radius: var(--age-radius-lg);
+      box-shadow: var(--age-shadow);
+      padding: 28px 32px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
     }
 
     .home-prueba-social-item strong {
-      font-size: 1.15rem;
+      font-size: clamp(2.2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.1;
       color: var(--age-primary-dark);
     }
 
     .home-prueba-social-item span {
-      font-size: 0.88rem;
+      font-size: 0.95rem;
       color: var(--age-ink-soft);
     }
 
@@ -613,12 +620,12 @@
 
   <div class="home-prueba-social" id="home-prueba-social">
     <div class="home-prueba-social-item">
-      <strong id="home-stat-tests">—</strong>
-      <span>tests generados</span>
+      <strong class="home-prueba-social-num" id="home-stat-oficiales" data-target="0">0</strong>
+      <span>preguntas oficiales disponibles</span>
     </div>
     <div class="home-prueba-social-item">
-      <strong id="home-stat-usuarios">—</strong>
-      <span>opositores usando la plataforma</span>
+      <strong class="home-prueba-social-num" id="home-stat-generadas" data-target="0">0</strong>
+      <span>preguntas generadas por opositores</span>
     </div>
   </div>
 
@@ -862,16 +869,42 @@
   <script type="module" src="/assets/auth.js"></script>
   <script type="module">
     import { BACKEND_URL } from "/assets/firebase-config.js";
+
+    function animarConteo(elemento, destino, duracionMs = 1500) {
+      const inicio = performance.now();
+      function paso(ahora) {
+        const t = Math.min((ahora - inicio) / duracionMs, 1);
+        const progreso = 1 - (1 - t) * (1 - t); // easeOutQuad
+        const valor = Math.round(destino * progreso);
+        elemento.textContent = `+${valor.toLocaleString("es-ES")}`;
+        if (t < 1) requestAnimationFrame(paso);
+      }
+      requestAnimationFrame(paso);
+    }
+
     // Cifras reales de uso (nunca inventadas): si la app es aún muy joven
-    // y el número de tests es bajo, se omite en vez de mostrar algo poco
-    // convincente como "+3 tests generados".
+    // y apenas hay preguntas generadas, se omite en vez de mostrar algo
+    // poco convincente.
     fetch(`${BACKEND_URL}/estadisticas-publicas`)
       .then((res) => (res.ok ? res.json() : null))
       .then((datos) => {
-        if (!datos || datos.total_tests < 10) return;
-        document.getElementById("home-stat-tests").textContent = `+${datos.total_tests}`;
-        document.getElementById("home-stat-usuarios").textContent = `+${datos.total_usuarios}`;
-        document.getElementById("home-prueba-social").style.display = "flex";
+        if (!datos || datos.total_preguntas_generadas < 10) return;
+        const fila = document.getElementById("home-prueba-social");
+        const elOficiales = document.getElementById("home-stat-oficiales");
+        const elGeneradas = document.getElementById("home-stat-generadas");
+        elOficiales.dataset.target = datos.total_preguntas_oficiales;
+        elGeneradas.dataset.target = datos.total_preguntas_generadas;
+        fila.style.display = "grid";
+
+        const observador = new IntersectionObserver((entradas) => {
+          entradas.forEach((entrada) => {
+            if (!entrada.isIntersecting) return;
+            animarConteo(elOficiales, Number(elOficiales.dataset.target));
+            animarConteo(elGeneradas, Number(elGeneradas.dataset.target));
+            observador.disconnect();
+          });
+        }, { threshold: 0.4 });
+        observador.observe(fila);
       })
       .catch(() => {});
   </script>
