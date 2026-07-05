@@ -94,10 +94,11 @@ class FakeDocumentRef:
 
 
 class FakeCollectionRef:
-    def __init__(self, store, path, filtros=None):
+    def __init__(self, store, path, filtros=None, limite=None):
         self._store = store
         self._path = path
         self._filtros = filtros or []
+        self._limite = limite
 
     def document(self, doc_id=None):
         if doc_id is None:
@@ -105,13 +106,20 @@ class FakeCollectionRef:
         return FakeDocumentRef(self._store, self._path + (doc_id,))
 
     def where(self, campo, operador, valor):
-        return FakeCollectionRef(self._store, self._path, self._filtros + [(campo, operador, valor)])
+        return FakeCollectionRef(self._store, self._path, self._filtros + [(campo, operador, valor)], self._limite)
+
+    def limit(self, n):
+        return FakeCollectionRef(self._store, self._path, self._filtros, n)
 
     def stream(self):
         largo = len(self._path)
+        vistos = 0
         for path, datos in list(self._store.items()):
+            if self._limite is not None and vistos >= self._limite:
+                break
             if len(path) == largo + 1 and path[:largo] == self._path:
                 if all(_cumple_filtro(datos, f) for f in self._filtros):
+                    vistos += 1
                     yield FakeDocumentSnapshot(path[-1], datos, self._store, path)
 
 

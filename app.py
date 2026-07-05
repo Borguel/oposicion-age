@@ -89,7 +89,7 @@ def verificar_api_key():
         return
     if request.method == "OPTIONS":
         return
-    if request.path in ("/", "/webhook-stripe", "/tareas/recordatorios-racha"):
+    if request.path in ("/", "/health", "/webhook-stripe", "/tareas/recordatorios-racha"):
         return
     if request.headers.get("X-API-Key") != API_SECRET_KEY:
         return jsonify({"error": "No autorizado"}), 401
@@ -125,6 +125,20 @@ registrar_rutas_progreso(app, db)
 def listar_rutas():
     rutas = [rule.rule for rule in app.url_map.iter_rules()]
     return jsonify({"rutas_disponibles": rutas})
+
+
+@app.route("/health", methods=["GET"])
+def estado_salud():
+    """Sin autenticación a propósito: la usa el monitor externo (GitHub
+    Actions, o el que sea) para comprobar que el backend responde, y de
+    paso sirve de "keep-alive" en el plan gratuito de Render, que duerme
+    el servicio tras un rato de inactividad."""
+    try:
+        next(db.collection("usuarios").limit(1).stream(), None)
+        return jsonify({"estado": "ok"})
+    except Exception:
+        logger.exception("Fallo en /health comprobando Firestore")
+        return jsonify({"estado": "error"}), 503
 
 
 if __name__ == "__main__":

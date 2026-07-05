@@ -1,0 +1,19 @@
+name: Comprobación de salud del backend
+
+on:
+  schedule:
+    # Cada 10 minutos: además de servir de monitor de disponibilidad (si
+    # este workflow falla, GitHub avisa por email automáticamente al dueño
+    # del repositorio), mantiene "despierto" el backend en el plan gratuito
+    # de Render, que lo duerme tras un rato sin peticiones.
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  comprobar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar a /health
+        run: |
+          curl -sS --max-time 20 --fail-with-body \
+            "${{ vars.BACKEND_URL || 'https://oposicion-age.onrender.com' }}/health"
