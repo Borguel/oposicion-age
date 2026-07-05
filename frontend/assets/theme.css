@@ -610,6 +610,53 @@ body {
   width: 100%;
 }
 
+/* ---------- Botón flotante "Guardar y salir" durante un test ---------- */
+/* Fuera del flujo de Anterior/Desmarcar/Siguiente para que no compita
+   visualmente con la navegación entre preguntas: una esquina fija y
+   discreta, visible en todo momento sin interrumpir. */
+.btn-guardar-salir-flotante {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 300;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink-soft);
+  font-family: var(--age-font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--age-shadow-hover);
+  transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease),
+    transform 0.15s var(--age-ease);
+}
+
+.btn-guardar-salir-flotante:hover {
+  background: var(--age-bg);
+  color: var(--age-ink);
+  transform: translateY(-1px);
+}
+
+.btn-guardar-salir-flotante:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+@media (max-width: 640px) {
+  .btn-guardar-salir-flotante {
+    bottom: 14px;
+    right: 14px;
+    padding: 8px 13px;
+    font-size: 0.78rem;
+  }
+}
+
 .age-pill {
   display: inline-flex;
   align-items: center;

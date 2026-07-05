@@ -425,7 +425,6 @@ async function obtenerAuthHeaders() {
         <div class="botones-navegacion-test">
           ${i > 0 ? '<button type="button" id="btn-anterior" class="age-btn age-btn-outline">← Anterior</button>' : ''}
           <button type="button" id="btn-desmarcar" class="age-btn age-btn-outline">Desmarcar</button>
-          <button type="button" id="btn-guardar-salir" class="age-btn age-btn-outline">💾 Guardar y salir</button>
         </div>
         <button type="submit" class="age-btn age-btn-primary age-btn-block" style="margin-top:12px;">
           ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
@@ -442,7 +441,11 @@ async function obtenerAuthHeaders() {
         respuestasUsuario[i] = null;
       });
 
-      document.getElementById("btn-guardar-salir").addEventListener("click", async function() {
+      const botonGuardarSalir = document.getElementById("btn-guardar-salir");
+      botonGuardarSalir.style.display = "inline-flex";
+      botonGuardarSalir.disabled = false;
+      botonGuardarSalir.textContent = "💾 Guardar y salir";
+      botonGuardarSalir.onclick = async function() {
         const boton = this;
         boton.disabled = true;
         boton.textContent = "Guardando…";
@@ -453,7 +456,7 @@ async function obtenerAuthHeaders() {
           tiempo_transcurrido_segundos: tiempoTranscurridoActual()
         });
         window.location.href = "/mis-tests/";
-      });
+      };
 
       if (i > 0 && document.getElementById("btn-anterior")) {
         document.getElementById("btn-anterior").addEventListener("click", () => {
@@ -505,6 +508,7 @@ async function obtenerAuthHeaders() {
       document.getElementById("contenedor-test").innerHTML = "";
       document.getElementById("contenedor-test").style.display = "none";
       document.getElementById("btn-finalizar").style.display = "none";
+      document.getElementById("btn-guardar-salir").style.display = "none";
 
       const cont = document.getElementById("contenedor-resultados");
       cont.style.display = "block";
