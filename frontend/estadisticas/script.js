@@ -54,12 +54,14 @@ document.addEventListener("DOMContentLoaded", async function () {
       const sufijo = `?oposicion=${encodeURIComponent(oposicion)}`;
 
       // NUEVO: Usar la ruta de estadísticas completas que incluye datos PDF
-      const [estadisticasRes, temasRes] = await Promise.all([
+      const [estadisticasRes, temasRes, rachaRes] = await Promise.all([
         fetch(`https://oposicion-age.onrender.com/estadisticas-completas${sufijo}`, { headers: authHeaders }),
-        fetch(`https://oposicion-age.onrender.com/temas-disponibles${sufijo}`, { headers: authHeaders })
+        fetch(`https://oposicion-age.onrender.com/temas-disponibles${sufijo}`, { headers: authHeaders }),
+        fetch(`https://oposicion-age.onrender.com/mi-racha`, { headers: authHeaders })
       ]);
       const estadisticasData = await estadisticasRes.json();
       const temasData = await temasRes.json();
+      const racha = rachaRes.ok ? await rachaRes.json() : { racha_actual: 0, racha_maxima: 0 };
       const estadisticas = estadisticasData.estadisticas ?? {};
 
       // Si hay error, usar la ruta antigua como fallback
@@ -67,9 +69,9 @@ document.addEventListener("DOMContentLoaded", async function () {
         console.warn("Usando ruta antigua como fallback");
         const resumenRes = await fetch(`https://oposicion-age.onrender.com/resumen-progreso${sufijo}`, { headers: authHeaders });
         const resumenData = await resumenRes.json();
-        procesarDatos(resumenData.resumen ?? {}, temasData.temas || []);
+        procesarDatos(resumenData.resumen ?? {}, temasData.temas || [], racha);
       } else {
-        procesarDatos(estadisticas, temasData.temas || []);
+        procesarDatos(estadisticas, temasData.temas || [], racha);
       }
     } catch (err) {
       console.error("Error cargando estadísticas:", err);
@@ -80,7 +82,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
   }
 
-  function procesarDatos(estadisticas, todosTemas) {
+  function procesarDatos(estadisticas, todosTemas, racha) {
     const totalTests = estadisticas.tests_realizados ?? 0;
     const totalAciertos = estadisticas.total_aciertos ?? 0;
     const totalFallos = estadisticas.total_fallos ?? 0;
@@ -181,6 +183,47 @@ document.addEventListener("DOMContentLoaded", async function () {
     mostrarTemasNoEstudiados(noEstudiados, todosTemas);
     mostrarTemasFlojos(rendimientoPorTema, todosTemas);
     renderizarEvolucion(historial);
+    renderizarInsignias({
+      testsRealizados: totalTests,
+      testsAprobados: aprobados,
+      puntuacionMedia: puntuacionMedia,
+      esquemas: esquemas,
+      totalArchivos: totalArchivos,
+      rachaMaxima: racha.racha_maxima ?? 0
+    });
+  }
+
+  // Insignias: logros calculados a partir de datos que ya se piden para el
+  // resto de la página (más /mi-racha), sin ninguna ruta nueva. Cada una
+  // tiene un umbral simple; si no está conseguida se muestra en gris con
+  // el progreso actual para animar a seguir usando la web.
+  const INSIGNIAS = [
+    { icono: "🎯", titulo: "Primer test", descripcion: "Completa tu primer test", valor: (d) => d.testsRealizados, umbral: 1 },
+    { icono: "🔥", titulo: "Racha de 3 días", descripcion: "Estudia 3 días seguidos", valor: (d) => d.rachaMaxima, umbral: 3 },
+    { icono: "🔥", titulo: "Racha de 7 días", descripcion: "Estudia 7 días seguidos", valor: (d) => d.rachaMaxima, umbral: 7 },
+    { icono: "🔥", titulo: "Racha de 30 días", descripcion: "Estudia 30 días seguidos", valor: (d) => d.rachaMaxima, umbral: 30 },
+    { icono: "📚", titulo: "10 tests", descripcion: "Completa 10 tests", valor: (d) => d.testsRealizados, umbral: 10 },
+    { icono: "🎓", titulo: "50 tests", descripcion: "Completa 50 tests", valor: (d) => d.testsRealizados, umbral: 50 },
+    { icono: "✅", titulo: "10 aprobados", descripcion: "Aprueba 10 tests", valor: (d) => d.testsAprobados, umbral: 10 },
+    { icono: "🏆", titulo: "Excelencia", descripcion: "Nota media de 8 o más", valor: (d) => d.puntuacionMedia, umbral: 8 },
+    { icono: "🗂️", titulo: "Esquematizador", descripcion: "Genera 5 esquemas", valor: (d) => d.esquemas, umbral: 5 },
+    { icono: "📄", titulo: "Documentalista", descripcion: "Sube 3 documentos PDF", valor: (d) => d.totalArchivos, umbral: 3 }
+  ];
+
+  function renderizarInsignias(datos) {
+    const contenedor = document.getElementById("insignias-grid");
+    contenedor.innerHTML = INSIGNIAS.map((insignia) => {
+      const actual = insignia.valor(datos) || 0;
+      const conseguida = actual >= insignia.umbral;
+      const actualMostrado = Number.isInteger(insignia.umbral) ? Math.floor(Math.min(actual, insignia.umbral)) : Math.min(actual, insignia.umbral).toFixed(1);
+      return `
+        <div class="insignia${conseguida ? " conseguida" : ""}" title="${insignia.descripcion}">
+          <div class="insignia-icono">${insignia.icono}</div>
+          <div class="insignia-titulo">${insignia.titulo}</div>
+          <div class="insignia-estado">${conseguida ? "Conseguida" : `${actualMostrado}/${insignia.umbral}`}</div>
+        </div>
+      `;
+    }).join("");
   }
 
   // Gráfica de evolución de la nota: una línea sencilla en SVG (sin
