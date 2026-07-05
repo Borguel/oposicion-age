@@ -158,21 +158,32 @@ def estadisticas_publicas():
     ahora = time.time()
     if _cache_estadisticas_publicas and ahora - _cache_estadisticas_publicas["momento"] < _CACHE_ESTADISTICAS_PUBLICAS_SEGUNDOS:
         return jsonify(_cache_estadisticas_publicas["datos"])
+    # Cada cifra se calcula en su propio try/except: son dos aggregation
+    # queries independientes (una de ellas, el sum() sobre un
+    # collection_group, puede fallar por falta de un índice compuesto en
+    # Firestore) y un fallo en una no debe esconder la otra, que sí
+    # funciona bien.
     try:
         total_preguntas_oficiales = sum(
             db.collection(coleccion_examenes_oficiales(op)).count().get()[0][0].value
             for op in OPOSICIONES
         )
-        total_preguntas_generadas = db.collection_group("tests").sum("num_preguntas").get()[0][0].value or 0
-        datos = {
-            "total_preguntas_oficiales": total_preguntas_oficiales,
-            "total_preguntas_generadas": int(total_preguntas_generadas),
-        }
-        _cache_estadisticas_publicas = {"momento": ahora, "datos": datos}
-        return jsonify(datos)
     except Exception:
-        logger.exception("Fallo calculando estadísticas públicas")
-        return jsonify({"total_preguntas_oficiales": 0, "total_preguntas_generadas": 0})
+        logger.exception("Fallo calculando total_preguntas_oficiales")
+        total_preguntas_oficiales = 0
+
+    try:
+        total_preguntas_generadas = int(db.collection_group("tests").sum("num_preguntas").get()[0][0].value or 0)
+    except Exception:
+        logger.exception("Fallo calculando total_preguntas_generadas")
+        total_preguntas_generadas = 0
+
+    datos = {
+        "total_preguntas_oficiales": total_preguntas_oficiales,
+        "total_preguntas_generadas": total_preguntas_generadas,
+    }
+    _cache_estadisticas_publicas = {"momento": ahora, "datos": datos}
+    return jsonify(datos)
 
 
 if __name__ == "__main__":
