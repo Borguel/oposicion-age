@@ -150,10 +150,7 @@
       </div>
       <div class="valor" id="temas-top-valor">—</div>
       <div class="detalle" id="temas-top-detalle">Tus áreas de mayor enfoque</div>
-      <button class="btn-ver-temas" id="btn-ver-temas-top" type="button">Mostrar temas</button>
-      <div class="temas-contenido">
-        <ul class="lista-temas" id="lista-temas-top"></ul>
-      </div>
+      <button class="btn-ver-temas" id="btn-ver-temas-top" type="button">Ver lista completa</button>
     </div>
     <!-- Temas No Estudiados -->
     <div class="tarjeta-estadistica tarjeta-temas-nuevos" id="temas-nuevos-container">
@@ -242,7 +239,7 @@
 <!-- Modal para temas no estudiados -->
 <div class="modal-temas" id="modal-temas">
   <div class="modal-contenido">
-    <button class="modal-cerrar" type="button" aria-label="Cerrar">&times;</button>
+    <button class="modal-cerrar" type="button" id="modal-cerrar" aria-label="Cerrar">&times;</button>
     <h3 class="modal-titulo">
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-2.67 0-8-1.34-8-4v-1c0-4.67 8-7.33 8-7.33s8 2.66 8 7.33v1c0 2.66-5.33 4-8 4z" fill="currentColor"/>
@@ -258,6 +255,22 @@
     <ul class="lista-temas" id="lista-temas-nuevos"></ul>
     <div class="modal-actions">
       <button class="modal-btn modal-btn-secondary" id="modal-cerrar-btn" type="button">Cerrar</button>
+    </div>
+  </div>
+</div>
+<!-- Modal para temas más estudiados -->
+<div class="modal-temas" id="modal-temas-top">
+  <div class="modal-contenido">
+    <button class="modal-cerrar" type="button" id="modal-temas-top-cerrar" aria-label="Cerrar">&times;</button>
+    <h3 class="modal-titulo">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill="currentColor"/>
+      </svg>
+      Temas Más Estudiados
+    </h3>
+    <ul class="lista-temas" id="lista-temas-top"></ul>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-secondary" id="modal-temas-top-cerrar-btn" type="button">Cerrar</button>
     </div>
   </div>
 </div>

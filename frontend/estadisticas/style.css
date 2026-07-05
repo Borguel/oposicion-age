@@ -403,34 +403,6 @@
       margin: 0;
     }
 
-    .tarjeta-temas {
-      background: var(--theme-content-alt-bg);
-      border: 1px solid var(--theme-border);
-      border-radius: var(--card-radius);
-      padding: 24px;
-      box-shadow: 0 6px 16px var(--shadow);
-      transition: all 0.3s;
-      position: relative;
-    }
-
-    .tarjeta-temas.activo .temas-contenido {
-      max-height: 200px;
-      opacity: 1;
-      visibility: visible;
-      transition: all 0.3s ease;
-    }
-
-    .tarjeta-temas .temas-contenido {
-      max-height: 0;
-      opacity: 0;
-      visibility: hidden;
-      overflow: hidden;
-      transition: all 0.3s ease;
-      margin-top: 15px;
-      padding-top: 15px;
-      border-top: 1px solid var(--theme-border);
-    }
-
     .tema-count {
       background: var(--theme-primary);
       color: white;
@@ -617,6 +589,25 @@
 
     .tema-item:hover {
       background: var(--theme-content-alt-bg);
+    }
+
+    .tema-item-con-datos {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+    }
+
+    .tema-item-cabecera {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tema-item-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     .tema-numero {

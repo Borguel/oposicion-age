@@ -13,8 +13,11 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   const refreshBtn = document.getElementById("estadisticas-refresh");
   const modal = document.getElementById("modal-temas");
-  const modalCerrar = document.querySelector(".modal-cerrar");
+  const modalCerrar = document.getElementById("modal-cerrar");
   const modalCerrarBtn = document.getElementById("modal-cerrar-btn");
+  const modalTop = document.getElementById("modal-temas-top");
+  const modalTopCerrar = document.getElementById("modal-temas-top-cerrar");
+  const modalTopCerrarBtn = document.getElementById("modal-temas-top-cerrar-btn");
   const btnVerNuevos = document.getElementById("btn-ver-nuevos");
   const btnVerTemasTop = document.getElementById("btn-ver-temas-top");
   const busquedaInput = document.getElementById("modal-busqueda-input");
@@ -258,11 +261,15 @@ document.addEventListener("DOMContentLoaded", async function () {
           ${grupo.temas.map((t) => {
             const { count, porcentaje } = datosPorId.get(t.id);
             return `
-              <li class="tema-item">
-                <span class="tema-numero">Tema ${t.numeroTema}</span>
-                <span class="tema-item-titulo">${t.titulo}</span>
-                ${porcentaje !== null ? `<span class="tema-acierto">${porcentaje}% acierto</span>` : ''}
-                <span class="tema-count">${count} pregunta${count === 1 ? '' : 's'} respondida${count === 1 ? '' : 's'}</span>
+              <li class="tema-item tema-item-con-datos">
+                <div class="tema-item-cabecera">
+                  <span class="tema-numero">Tema ${t.numeroTema}</span>
+                  <span class="tema-item-titulo">${t.titulo}</span>
+                </div>
+                <div class="tema-item-stats">
+                  ${porcentaje !== null ? `<span class="tema-acierto">${porcentaje}% acierto</span>` : ''}
+                  <span class="tema-count">${count} pregunta${count === 1 ? '' : 's'} respondida${count === 1 ? '' : 's'}</span>
+                </div>
               </li>
             `;
           }).join('')}
@@ -317,16 +324,30 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   // Eventos interactivos
+  function abrirModalGenerico(modalEl) {
+    modalEl.classList.add('show');
+    void modalEl.offsetWidth;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function cerrarModalGenerico(modalEl) {
+    modalEl.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
   btnVerTemasTop.addEventListener('click', function(e) {
     e.preventDefault();
-    e.stopPropagation();
-    this.closest('.tarjeta-temas').classList.toggle('activo');
+    abrirModalGenerico(modalTop);
+  });
+
+  modalTopCerrar.addEventListener('click', () => cerrarModalGenerico(modalTop));
+  modalTopCerrarBtn.addEventListener('click', () => cerrarModalGenerico(modalTop));
+  modalTop.addEventListener('click', (e) => {
+    if (e.target === modalTop) cerrarModalGenerico(modalTop);
   });
 
   btnVerNuevos.addEventListener('click', function() {
-    modal.classList.add('show');
-    void modal.offsetWidth;
-    document.body.style.overflow = 'hidden';
+    abrirModalGenerico(modal);
   });
 
   modalCerrar.addEventListener('click', cerrarModal);
@@ -336,9 +357,9 @@ document.addEventListener("DOMContentLoaded", async function () {
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('show')) {
-      cerrarModal();
-    }
+    if (e.key !== 'Escape') return;
+    if (modal.classList.contains('show')) cerrarModal();
+    if (modalTop.classList.contains('show')) cerrarModalGenerico(modalTop);
   });
 
   busquedaInput.addEventListener('input', filtrarTemas);
@@ -346,8 +367,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   refreshBtn.addEventListener('click', cargarDatos);
 
   function cerrarModal() {
-    modal.classList.remove('show');
-    document.body.style.overflow = '';
+    cerrarModalGenerico(modal);
     busquedaInput.value = '';
     filtrarTemas();
   }
