@@ -128,9 +128,6 @@ class FakeCollectionRef:
     def count(self):
         return FakeAggregationQuery(self)
 
-    def sum(self, campo):
-        return FakeSumAggregationQuery(self, campo)
-
 
 class FakeAggregationResult:
     """Imita el objeto que devuelve una aggregation query real de
@@ -150,16 +147,6 @@ class FakeAggregationQuery:
         return [[FakeAggregationResult(total)]]
 
 
-class FakeSumAggregationQuery:
-    def __init__(self, origen, campo):
-        self._origen = origen
-        self._campo = campo
-
-    def get(self):
-        total = sum((doc.to_dict().get(self._campo) or 0) for doc in self._origen.stream())
-        return [[FakeAggregationResult(total)]]
-
-
 class FakeCollectionGroupRef:
     """Simplificación de una collection_group query real: encuentra
     documentos por el nombre de su colección sin importar bajo qué padre
@@ -176,9 +163,6 @@ class FakeCollectionGroupRef:
 
     def count(self):
         return FakeAggregationQuery(self)
-
-    def sum(self, campo):
-        return FakeSumAggregationQuery(self, campo)
 
     def stream(self):
         for path, datos in list(self._store.items()):
