@@ -1,0 +1,111 @@
+/* --- Botones de navegación alineados en horizontal y modernos --- */
+.botones-navegacion-test {
+  display: flex;
+  flex-direction: row;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 30px !important;
+  margin-bottom: 15px !important;
+}
+.btn-naranja {
+  min-width: 120px;
+  font-size: 1.08em;
+  padding: 14px 0;
+  border-radius: 8px;
+  margin-right: 0 !important; /* Elimina márgenes antiguos */
+  background-color: #ffa726;
+  color: white;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.18s;
+  box-shadow: 0 2px 12px rgba(40, 80, 70, 0.09);
+}
+.btn-naranja:hover,
+.btn-naranja:focus {
+  background-color: #fb8c00;
+  color: white;
+}
+/* Si quieres que "Desmarcar" sea rojo */
+#btn-desmarcar {
+  background-color: #ef5350;
+}
+#btn-desmarcar:hover,
+#btn-desmarcar:focus {
+  background-color: #d32f2f;
+}
+/* ----- Personalización de colores individuales ----- */
+
+/* Botón ANTERIOR - Azul */
+#btn-anterior {
+  background: #4f8cff;
+  color: #fff;
+}
+#btn-anterior:hover, #btn-anterior:focus {
+  background: #1864ab;
+  color: #fff;
+}
+
+/* Botón DESMARCAR - Gris oscuro */
+#btn-desmarcar {
+  background: #6d6d6d;
+  color: #fff;
+}
+#btn-desmarcar:hover, #btn-desmarcar:focus {
+  background: #4d4d4d;
+  color: #fff;
+}
+
+/* Botón SIGUIENTE - Naranja (el submit del test) */
+#form-pregunta .btn-naranja[type="submit"] {
+  background: #ffa726;
+  color: #fff;
+}
+#form-pregunta .btn-naranja[type="submit"]:hover,
+#form-pregunta .btn-naranja[type="submit"]:focus {
+  background: #fb8c00;
+}
+
+/* Botón FINALIZAR TEST - Rojo fuerte */
+#btn-finalizar {
+  background: #ef5350;
+  color: #fff;
+}
+#btn-finalizar:hover, #btn-finalizar:focus {
+  background: #d32f2f;
+  color: #fff;
+}
+.botones-navegacion-test #btn-anterior {
+  background: #4f8cff !important;
+  color: #fff !important;
+}
+.botones-navegacion-test #btn-anterior:hover,
+.botones-navegacion-test #btn-anterior:focus {
+  background: #1864ab !important;
+  color: #fff !important;
+}
+
+.botones-navegacion-test #btn-desmarcar {
+  background: #6d6d6d !important;
+  color: #fff !important;
+}
+.botones-navegacion-test #btn-desmarcar:hover,
+.botones-navegacion-test #btn-desmarcar:focus {
+  background: #4d4d4d !important;
+  color: #fff !important;
+}
+
+.botones-navegacion-test .btn-naranja[type="submit"], 
+.botones-navegacion-test button[type="submit"] {
+  background: #ffa726 !important;
+  color: #fff !important;
+}
+.botones-navegacion-test .btn-naranja[type="submit"]:hover,
+.botones-navegacion-test .btn-naranja[type="submit"]:focus,
+.botones-navegacion-test button[type="submit"]:hover,
+.botones-navegacion-test button[type="submit"]:focus {
+  background: #fb8c00 !important;
+  color: #fff !important;
+}

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi cuenta - Oposición AGE</title>
+  <meta name="description" content="Gestiona tus oposiciones, tu suscripción y tus datos personales." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Mi cuenta - Oposición AGE" />
+  <meta property="og:description" content="Gestiona tus oposiciones, tu suscripción y tus datos personales." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/mi-cuenta/style.css" />
+</head>
+<body>
+  <nav class="age-nav"></nav>
+
+  <div class="cuenta-header">
+    <div class="age-container">
+      <h1>Mi cuenta</h1>
+      <p>Gestiona tus oposiciones, tu suscripción y tus datos personales.</p>
+    </div>
+  </div>
+
+  <div class="age-container cuenta-layout">
+    <aside class="cuenta-aside">
+      <div class="age-card cuenta-perfil-card">
+        <div id="cuenta-avatar" class="cuenta-avatar">?</div>
+        <div id="cuenta-email" class="cuenta-email">Cargando…</div>
+        <button type="button" id="btn-logout" class="age-btn age-btn-outline age-btn-block">Cerrar sesión</button>
+      </div>
+
+    </aside>
+
+    <main class="cuenta-main">
+      <a href="/zona-opositor/" class="cuenta-volver-zona">← Volver a tu zona de estudio</a>
+
+      <section class="age-card cuenta-section">
+        <div class="cuenta-section-titulo">
+          <h2>Mis oposiciones</h2>
+          <a href="/planes/" class="age-btn age-btn-primary cuenta-btn-contratar">+ Contratar otra oposición</a>
+        </div>
+        <div id="cuenta-oposiciones" class="cuenta-oposiciones">Cargando…</div>
+        <button type="button" id="btn-portal" class="age-btn age-btn-outline age-btn-block cuenta-btn-portal">Gestionar facturación y suscripciones</button>
+      </section>
+
+      <section class="age-card cuenta-section">
+        <h2>Datos personales</h2>
+        <div class="cuenta-datos-resumen">
+          <div class="cuenta-datos-fila"><span>Nombre</span><strong id="resumen-nombre">—</strong></div>
+          <div class="cuenta-datos-fila"><span>Apellidos</span><strong id="resumen-apellidos">—</strong></div>
+          <div class="cuenta-datos-fila"><span>Teléfono</span><strong id="resumen-telefono">—</strong></div>
+          <div class="cuenta-datos-fila"><span>Correo electrónico</span><strong id="resumen-email">—</strong></div>
+          <div class="cuenta-datos-fila"><span>Dirección</span><strong id="resumen-direccion">—</strong></div>
+        </div>
+        <a href="/mi-cuenta/datos-personales/" class="age-btn age-btn-primary">✏️ Modificar datos personales</a>
+      </section>
+
+      <section class="age-card cuenta-section">
+        <h2>Tus datos y privacidad</h2>
+        <p class="cuenta-privacidad-texto">Puedes descargar una copia de todo lo que guardamos sobre ti, o eliminar tu cuenta de forma permanente.</p>
+        <div class="cuenta-privacidad-acciones">
+          <button type="button" id="btn-exportar-datos" class="age-btn age-btn-outline">⬇️ Descargar mis datos</button>
+          <button type="button" id="btn-eliminar-cuenta" class="cuenta-btn-peligro">🗑️ Eliminar mi cuenta</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="cuenta-modal-overlay" id="modal-eliminar-cuenta" style="display:none;">
+    <div class="age-card cuenta-modal-card">
+      <h2 class="cuenta-modal-titulo">Eliminar tu cuenta</h2>
+      <p class="cuenta-modal-subtitulo">
+        Esto borrará permanentemente tu perfil, tests, documentos y todo lo demás asociado a tu cuenta, y cancelará cualquier suscripción activa. No se puede deshacer.
+      </p>
+      <div class="cuenta-campo">
+        <label for="campo-confirmar-eliminar">Escribe <strong>ELIMINAR</strong> para confirmar</label>
+        <input type="text" id="campo-confirmar-eliminar" autocomplete="off" />
+      </div>
+      <div id="eliminar-mensaje-error" class="datos-mensaje error" style="display:none;"></div>
+      <button type="button" class="cuenta-btn-peligro age-btn-block" id="btn-confirmar-eliminar" disabled>Eliminar mi cuenta para siempre</button>
+      <button type="button" class="age-btn age-btn-outline age-btn-block" id="btn-cancelar-eliminar">Cancelar</button>
+    </div>
+  </div>
+
+  <script type="module" src="/assets/auth.js"></script>
+  <script type="module" src="/mi-cuenta/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Repetir último test - Oposición AGE</title>
+  <meta name="description" content="Repite un test que ya hiciste antes, con las mismas preguntas." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Repetir último test - Oposición AGE" />
+  <meta property="og:description" content="Repite un test que ya hiciste antes, con las mismas preguntas." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/test-generator/style.css" />
+  <link rel="stylesheet" href="/repetir-test/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+<div class="container">
+  <h1 id="titulo-formulario">🔁 Repetir último test</h1>
+  <div id="temporizador" style="display:none;">⏱ Tiempo: 00:00</div>
+  <div id="contenedor-test" class="card fade-in">Cargando test anterior...</div>
+  <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
+  <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script src="/repetir-test/script.js"></script>
+  <script type="module" src="/assets/auth.js"></script>
+</body>
+</html>

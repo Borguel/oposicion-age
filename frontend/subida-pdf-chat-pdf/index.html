@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <title>Analizador de PDFs - Oposición AGE</title>
+  <meta name="description" content="Sube un PDF y pregúntale directamente con IA para entender su contenido." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Analizador de PDFs - Oposición AGE" />
+  <meta property="og:description" content="Sube un PDF y pregúntale directamente con IA para entender su contenido." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/assets/pdf-tools.css" />
+  <link rel="stylesheet" href="/subida-pdf-chat-pdf/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+  <div class="pdfherr-header">
+    <div class="pdfherr-icon">💬</div>
+    <h1>Chat con tu PDF</h1>
+    <p>Sube un documento y pregúntale a la IA lo que quieras sobre su contenido, como si chatearas con alguien que se lo ha leído entero.</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="pdf-chat-container">
+        <div class="pdf-upload-section">
+          <h2>Sube tu documento</h2>
+          <div class="upload-area" id="pdf-upload-area">
+            <div class="upload-icon">📄</div>
+            <p>Arrastra tu PDF aquí o haz clic para seleccionar</p>
+            <input type="file" id="pdf-file" accept=".pdf" hidden>
+            <button class="btn btn-secondary" id="select-pdf-btn">Seleccionar PDF</button>
+          </div>
+
+          <div id="pdf-info" class="hidden">
+            <p><strong>Archivo:</strong> <span id="pdf-filename"></span></p>
+            <div class="pdf-preview">
+              <h3>Documento cargado</h3>
+              <p id="pdf-preview-text">Analizando documento...</p>
+              <div class="pdf-stats">
+                <div class="stat-item">
+                  <div class="stat-value" id="page-count">-</div>
+                  <div class="stat-label">Páginas</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-section">
+          <div class="chat-header">
+            <h2>Asistente de Estudio</h2>
+            <p id="session-info">Esperando documento...</p>
+          </div>
+          <div class="chat-box" id="pdf-chat-box">
+            <div class="message bot-message">
+              <p>¡Hola! Sube un PDF y podrás preguntarme lo que quieras sobre su contenido: dudas, conceptos, artículos concretos, lo que necesites.</p>
+            </div>
+          </div>
+          <div class="input-container">
+            <input type="text" id="pdf-user-input" placeholder="Haz una pregunta sobre el documento..." disabled>
+            <button id="pdf-send-btn" disabled>➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/assets/auth.js"></script>
+  <script type="module" src="/subida-pdf-chat-pdf/script.js"></script>
+</body>
+</html>

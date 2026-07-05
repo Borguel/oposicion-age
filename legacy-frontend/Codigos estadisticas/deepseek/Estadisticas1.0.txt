@@ -1,0 +1,522 @@
+<style>
+:root {
+  --primary-color: #2e7d32; /* Color principal - verde oscuro */
+  --secondary-color: #4caf50; /* Color secundario - verde */
+  --accent-color: #8bc34a; /* Acento - verde claro */
+  --dark-color: #333; /* Texto oscuro */
+  --light-color: #f5f5f5; /* Fondo claro */
+  --danger-color: #f44336; /* Rojo para errores */
+  --warning-color: #ff9800; /* Amarillo/naranja */
+  --info-color: #2196f3; /* Azul para información */
+  --header-bg: #2e7d32; /* Fondo del encabezado */
+  --header-text: #ffffff; /* Texto del encabezado */
+  --card-bg: #ffffff; /* Fondo de las tarjetas */
+  --card-border: #e0e0e0; /* Borde de las tarjetas */
+  --alternative-bg: #f9f9f9; /* Fondo alternativo */
+}
+
+#estadisticas-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Inter', sans-serif;
+}
+
+#estadisticas-header {
+  background-color: var(--header-bg);
+  color: var(--header-text);
+  padding: 20px;
+  border-radius: 12px 12px 0 0;
+  margin-bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#estadisticas-header h3 {
+  font-size: 1.5rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#estadisticas-refresh {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+#estadisticas-refresh:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+#estadisticas-usuario {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  background-color: var(--alternative-bg);
+  padding: 20px;
+  border-radius: 0 0 12px 12px;
+  border: 1px solid var(--card-border);
+  border-top: none;
+}
+
+.tarjeta-estadistica {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.tarjeta-estadistica:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+}
+
+.tarjeta-estadistica h4 {
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+  color: var(--dark-color);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tarjeta-estadistica .valor {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--primary-color);
+  margin: 8px 0;
+}
+
+.tarjeta-estadistica .detalle {
+  font-size: 0.85rem;
+  color: #777;
+  margin-top: 6px;
+}
+
+/* Estilos específicos para tarjetas importantes */
+.tarjeta-estadistica.destacada {
+  border-left: 4px solid var(--primary-color);
+}
+
+.tarjeta-estadistica.negativa .valor {
+  color: var(--danger-color);
+}
+
+.tarjeta-estadistica.neutra .valor {
+  color: var(--dark-color);
+}
+
+/* Modal para temas */
+.modal-temas {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-contenido {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+.modal-cerrar {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #777;
+}
+
+.modal-titulo {
+  margin-top: 0;
+  color: var(--primary-color);
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.lista-temas {
+  list-style: none;
+  padding: 0;
+  margin: 15px 0 0 0;
+}
+
+.lista-temas li {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Tooltip mejorado */
+.tooltip-temas {
+  cursor: pointer;
+  position: relative;
+}
+
+.tooltip-temas .tooltip-contenido {
+  visibility: hidden;
+  background-color: var(--dark-color);
+  color: white;
+  text-align: left;
+  border-radius: 8px;
+  padding: 12px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.85rem;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.tooltip-temas .tooltip-contenido::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--dark-color) transparent transparent transparent;
+}
+
+.tooltip-temas:hover .tooltip-contenido {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #estadisticas-usuario {
+    grid-template-columns: 1fr;
+  }
+  
+  #estadisticas-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .modal-contenido {
+    width: 95%;
+    padding: 15px;
+  }
+}
+</style>
+
+<div id="estadisticas-container">
+  <div id="estadisticas-header">
+    <h3><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+      <path d="M10 20H14V4H10V20ZM4 20H8V12H4V20ZM16 9V20H20V9H16Z" fill="white"/>
+    </svg> Tu Progreso</h3>
+    <button id="estadisticas-refresh">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4C7.58 4 4 7.58 4 12C4 16.42 7.58 20 12 20C15.73 20 18.84 17.45 19.73 14H17.65C16.83 16.33 14.61 18 12 18C8.69 18 6 15.31 6 12C6 8.69 8.69 6 12 6C13.66 6 15.14 6.69 16.22 7.78L13 11H20V4L17.65 6.35Z" fill="white"/>
+      </svg>
+      Actualizar
+    </button>
+  </div>
+  
+  <div id="estadisticas-usuario">
+    <div class="tarjeta-estadistica destacada">
+      <h4>📝 Tests realizados</h4>
+      <div class="valor" id="tests">—</div>
+      <div class="detalle">Total de exámenes completados</div>
+    </div>
+    
+    <div class="tarjeta-estadistica destacada">
+      <h4>✅ Tests aprobados</h4>
+      <div class="valor" id="aprobados">—</div>
+      <div class="detalle"><span id="aprobados-porcentaje">—</span>% de éxito</div>
+    </div>
+    
+    <div class="tarjeta-estadistica negativa">
+      <h4>❌ Tests suspendidos</h4>
+      <div class="valor" id="suspendidos">—</div>
+      <div class="detalle"><span id="suspendidos-porcentaje">—</span>% de intentos</div>
+    </div>
+    
+    <div class="tarjeta-estadistica">
+      <h4>📈 Puntuación media</h4>
+      <div class="valor" id="media">—</div>
+      <div class="detalle">Sobre 10 puntos</div>
+    </div>
+    
+    <div class="tarjeta-estadistica">
+      <h4>📊 Aciertos totales</h4>
+      <div class="valor" id="aciertos">—</div>
+      <div class="detalle"><span id="aciertos-porcentaje">—</span>% de respuestas</div>
+    </div>
+    
+    <div class="tarjeta-estadistica negativa">
+      <h4>⚠️ Fallos totales</h4>
+      <div class="valor" id="fallos">—</div>
+      <div class="detalle"><span id="fallos-porcentaje">—</span>% de respuestas</div>
+    </div>
+    
+    <div class="tarjeta-estadistica">
+      <h4>🧠 Esquemas generados</h4>
+      <div class="valor" id="esquemas">—</div>
+      <div class="detalle">Resúmenes creados</div>
+    </div>
+    
+    <div class="tarjeta-estadistica">
+      <h4>⏱️ Tiempo total</h4>
+      <div class="valor" id="tiempo">—</div>
+      <div class="detalle">Dedicado a estudiar</div>
+    </div>
+    
+    <div class="tarjeta-estadistica tooltip-temas" id="temas-top-container">
+      <h4>📚 Temas más estudiados</h4>
+      <div class="valor" id="temas-top">—</div>
+      <div class="detalle">Haz clic para ver detalles</div>
+      <div class="tooltip-contenido" id="tooltip-temas-top">—</div>
+    </div>
+    
+    <div class="tarjeta-estadistica tooltip-temas" id="temas-nuevos-container">
+      <h4>🚫 Temas no estudiados</h4>
+      <div class="valor" id="temas-nuevos">—</div>
+      <div class="detalle">Haz clic para ver la lista</div>
+      <div class="tooltip-contenido" id="tooltip-temas-nuevos">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para mostrar la lista completa de temas -->
+<div class="modal-temas" id="modal-temas">
+  <div class="modal-contenido">
+    <button class="modal-cerrar">&times;</button>
+    <h3 class="modal-titulo" id="modal-titulo">Temas</h3>
+    <ul class="lista-temas" id="lista-temas"></ul>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+  const email = window.usuarioEmail || "test@ejemplo.com";
+  const refreshBtn = document.getElementById("estadisticas-refresh");
+  const modal = document.getElementById("modal-temas");
+  const modalCerrar = document.querySelector(".modal-cerrar");
+  
+  // Función para cargar datos
+  async function cargarDatos() {
+    try {
+      // Mostrar estado de carga
+      document.querySelectorAll('.valor').forEach(el => {
+        el.textContent = '...';
+      });
+      
+      refreshBtn.disabled = true;
+      refreshBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation: spin 1s linear infinite;">
+          <path d="M12 4V8L16 4L12 0V4ZM12 20V16L8 20L12 24V20Z" fill="white"/>
+        </svg>
+        Cargando...
+      `;
+      
+      const [resumenRes, temasRes] = await Promise.all([
+        fetch(`https://oposicion-age.onrender.com/resumen-progreso?usuario_id=${email}`),
+        fetch("https://oposicion-age.onrender.com/temas-disponibles")
+      ]);
+      
+      const resumenData = await resumenRes.json();
+      console.log("Datos recibidos:", resumenData);
+      const temasData = await temasRes.json();
+
+      const resumen = resumenData.resumen ?? {};
+      const totalTests = resumen.tests_realizados ?? 0;
+      const totalAciertos = resumen.total_aciertos ?? 0;
+      const totalFallos = resumen.total_fallos ?? 0;
+      const historial = resumen.historial_tests ?? [];
+      const temasTest = resumen.temas_test ?? [];
+      const esquemas = resumen.esquemas_realizados ?? 0;
+      const aprobados = resumen.tests_aprobados ?? 0;
+      const suspendidos = resumen.tests_suspendidos ?? 0;
+      const puntuacionMedia = resumen.puntuacion_media_test ?? 0;
+
+      // Tiempo total
+      const totalSeg = resumen.tiempo_total ?? 0;
+      const horas = String(Math.floor(totalSeg / 3600)).padStart(2, '0');
+      const minutos = String(Math.floor((totalSeg % 3600) / 60)).padStart(2, '0');
+      
+      // Porcentajes
+      const porcentajeAprobados = totalTests > 0 ? Math.round((aprobados / totalTests) * 100) : 0;
+      const porcentajeSuspendidos = totalTests > 0 ? Math.round((suspendidos / totalTests) * 100) : 0;
+      const porcentajeAciertos = (totalAciertos + totalFallos) > 0 
+        ? Math.round((totalAciertos / (totalAciertos + totalFallos)) * 100) 
+        : 0;
+      const porcentajeFallos = (totalAciertos + totalFallos) > 0 
+        ? Math.round((totalFallos / (totalAciertos + totalFallos)) * 100) 
+        : 0;
+
+      // Temas más estudiados
+      const contador = {};
+      historial.forEach(test => {
+        (test.temas || []).forEach(t => {
+          contador[t] = (contador[t] || 0) + 1;
+        });
+      });
+      
+      const topTemasEntries = Object.entries(contador)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+      
+      const topTemas = topTemasEntries
+        .map(([id]) => {
+          const tema = (temasData.temas || []).find(t => t.id === id);
+          return tema ? tema.titulo : id;
+        })
+        .join(", ") || "—";
+
+      // Detalle para tooltip
+      const topTemasDetalle = topTemasEntries
+        .map(([id, count]) => {
+          const tema = (temasData.temas || []).find(t => t.id === id);
+          const nombre = tema ? tema.titulo : id;
+          return `• ${nombre} (${count} tests)`;
+        })
+        .join("<br>") || "—";
+
+      // Temas no estudiados
+      const todosLosTemas = (temasData.temas || []).map(t => t.id);
+      const noEstudiados = todosLosTemas.filter(t => !temasTest.includes(t));
+      const noEstudiadosStr = noEstudiados.length ? noEstudiados.length : "0";
+      
+      const noEstudiadosNombres = noEstudiados
+        .map(id => {
+          const tema = (temasData.temas || []).find(t => t.id === id);
+          return tema ? tema.titulo : id;
+        });
+
+      // Mostrar en HTML
+      document.getElementById("tests").textContent = totalTests;
+      document.getElementById("aprobados").textContent = aprobados;
+      document.getElementById("suspendidos").textContent = suspendidos;
+      document.getElementById("media").textContent = puntuacionMedia.toFixed(1);
+      document.getElementById("aciertos").textContent = totalAciertos;
+      document.getElementById("fallos").textContent = totalFallos;
+      document.getElementById("esquemas").textContent = esquemas;
+      document.getElementById("tiempo").textContent = `${horas}h ${minutos}m`;
+      document.getElementById("temas-top").textContent = topTemas;
+      document.getElementById("temas-nuevos").textContent = noEstudiadosStr;
+      
+      // Tooltips
+      document.getElementById("tooltip-temas-top").innerHTML = topTemasDetalle;
+      document.getElementById("tooltip-temas-nuevos").innerHTML = noEstudiadosNombres.length
+        ? noEstudiadosNombres.map(t => `• ${t}`).join("<br>")
+        : "—";
+      
+      // Porcentajes
+      document.getElementById("aprobados-porcentaje").textContent = porcentajeAprobados;
+      document.getElementById("suspendidos-porcentaje").textContent = porcentajeSuspendidos;
+      document.getElementById("aciertos-porcentaje").textContent = porcentajeAciertos;
+      document.getElementById("fallos-porcentaje").textContent = porcentajeFallos;
+      
+      // Configurar eventos para los modales
+      document.getElementById("temas-top-container").addEventListener("click", () => {
+        mostrarModal("Temas más estudiados", topTemasEntries, temasData.temas);
+      });
+      
+      document.getElementById("temas-nuevos-container").addEventListener("click", () => {
+        mostrarModal("Temas no estudiados", noEstudiados.map(id => [id, 0]), temasData.temas);
+      });
+      
+    } catch (err) {
+      console.error("Error cargando estadísticas:", err);
+    } finally {
+      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4C7.58 4 4 7.58 4 12C4 16.42 7.58 20 12 20C15.73 20 18.84 17.45 19.73 14H17.65C16.83 16.33 14.61 18 12 18C8.69 18 6 15.31 6 12C6 8.69 8.69 6 12 6C13.66 6 15.14 6.69 16.22 7.78L13 11H20V4L17.65 6.35Z" fill="white"/>
+        </svg>
+        Actualizar
+      `;
+    }
+  }
+  
+  // Función para mostrar el modal con la lista de temas
+  function mostrarModal(titulo, temasEntries, todosTemas) {
+    const modalTitulo = document.getElementById("modal-titulo");
+    const listaTemas = document.getElementById("lista-temas");
+    
+    modalTitulo.textContent = titulo;
+    listaTemas.innerHTML = '';
+    
+    temasEntries.forEach(([id, count]) => {
+      const tema = (todosTemas || []).find(t => t.id === id);
+      const nombre = tema ? tema.titulo : id;
+      
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span>${nombre}</span>
+        ${count > 0 ? `<span style="color: var(--primary-color); font-weight: bold;">${count} tests</span>` : ''}
+      `;
+      listaTemas.appendChild(li);
+    });
+    
+    modal.style.display = 'flex';
+  }
+  
+  // Cerrar modal al hacer clic en la X
+  modalCerrar.addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+  
+  // Cerrar modal al hacer clic fuera del contenido
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+  
+  // Configurar botón de refrescar
+  refreshBtn.addEventListener('click', cargarDatos);
+  
+  // Cargar datos iniciales
+  cargarDatos();
+  
+  // Animación para el icono de carga
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+});
+</script>

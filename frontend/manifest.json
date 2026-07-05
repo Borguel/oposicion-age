@@ -1,0 +1,29 @@
+{
+  "name": "Oposición AGE",
+  "short_name": "Oposición AGE",
+  "description": "Prepara tu oposición AGE: tests, temario, herramientas IA y seguimiento de tu progreso.",
+  "start_url": "/zona-opositor/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f7f9",
+  "theme_color": "#ffa633",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/assets/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

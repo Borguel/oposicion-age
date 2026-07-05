@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mis tests - Oposición AGE</title>
+  <meta name="description" content="Continúa, repite o revisa todos los tests que has hecho, en progreso o finalizados." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Mis tests - Oposición AGE" />
+  <meta property="og:description" content="Continúa, repite o revisa todos los tests que has hecho, en progreso o finalizados." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/mis-tests/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+<div class="tests-header">
+  <div class="age-container">
+    <h1>🧪 Mis tests</h1>
+    <p>Todos los tests que has empezado o terminado: continúa donde lo dejaste, repite uno ya finalizado o filtra por tema y tipo.</p>
+  </div>
+</div>
+
+<div class="age-container tests-wrap">
+  <div id="tests-cargando" class="tests-cargando">Cargando tus tests…</div>
+
+  <div id="tests-vacio" class="tests-vacio hidden">
+    <div class="tests-vacio-icono">🧪</div>
+    <h2>Todavía no has hecho ningún test</h2>
+    <p>En cuanto generes y respondas un test aparecerá aquí, tanto si lo terminas como si lo dejas a medias.</p>
+    <a class="age-btn age-btn-primary" href="/test-generator/">Generar un test</a>
+  </div>
+
+  <div id="tests-contenido" class="hidden">
+    <div class="tests-toolbar">
+      <div class="tests-estado-tabs" id="tests-estado-tabs">
+        <button type="button" class="tests-tab active" data-estado="">Todos</button>
+        <button type="button" class="tests-tab" data-estado="en_progreso">En progreso</button>
+        <button type="button" class="tests-tab" data-estado="finalizado">Finalizados</button>
+      </div>
+      <div class="tests-filtros">
+        <label for="filtro-tipo">Tipo</label>
+        <select id="filtro-tipo">
+          <option value="">Todos</option>
+          <option value="personalizado">Personalizado</option>
+          <option value="oficial">Oficial</option>
+          <option value="inteligente">Inteligente IA</option>
+          <option value="repetido">Repetido</option>
+          <option value="falladas">Preguntas falladas</option>
+          <option value="favoritas">Preguntas favoritas</option>
+        </select>
+        <label for="filtro-tema">Tema</label>
+        <select id="filtro-tema">
+          <option value="">Todos</option>
+        </select>
+      </div>
+    </div>
+    <div id="tests-lista"></div>
+    <div id="tests-sin-resultados" class="tests-vacio hidden">
+      <p>No hay tests que coincidan con este filtro.</p>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/assets/auth.js"></script>
+<script type="module" src="/mis-tests/script.js"></script>
+</body>
+</html>

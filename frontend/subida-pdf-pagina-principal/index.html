@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramientas IA - Oposición AGE</title>
+  <meta name="description" content="Genera resúmenes, esquemas, tarjetas y tests con IA a partir de tus propios documentos PDF." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Herramientas IA - Oposición AGE" />
+  <meta property="og:description" content="Genera resúmenes, esquemas, tarjetas y tests con IA a partir de tus propios documentos PDF." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+        <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+    <link rel="stylesheet" href="/assets/theme.css" />
+    <link rel="stylesheet" href="/subida-pdf-pagina-principal/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+    <div class="herramientas-header">
+      <div class="age-container">
+        <h1>Herramientas IA</h1>
+        <p>Sube cualquier documento (apuntes, un PDF del BOE, tus propios resúmenes...) y deja que la IA lo convierta en material de estudio.</p>
+      </div>
+    </div>
+
+    <div class="age-container herramientas-wrap">
+        <a id="mis-documentos-banner" href="/mis-documentos/" class="mis-documentos-banner hidden">
+            <span class="mis-documentos-banner-icono">📚</span>
+            <span class="mis-documentos-banner-texto">
+              <strong>Mis documentos</strong>
+              <span id="mis-documentos-banner-resumen">Tienes documentos guardados con contenido listo para repasar.</span>
+            </span>
+            <span class="mis-documentos-banner-flecha">→</span>
+        </a>
+
+        <div class="age-option-grid">
+            <a class="age-option-card" href="/subida-pdf-generar-test/">
+                <span class="age-option-icon">🧪</span>
+                <span class="age-option-title">Generar test desde PDF</span>
+                <span class="age-option-desc">Convierte cualquier documento en preguntas tipo test para ponerte a prueba.</span>
+            </a>
+
+            <a class="age-option-card" href="/subida-pdf-resumen/">
+                <span class="age-option-icon">📄</span>
+                <span class="age-option-title">Resumir documentos</span>
+                <span class="age-option-desc">Obtén los puntos clave de un documento largo en segundos.</span>
+            </a>
+
+            <a class="age-option-card" href="/subida-pdf-esquemas/">
+                <span class="age-option-icon">🗂️</span>
+                <span class="age-option-title">Generar esquemas</span>
+                <span class="age-option-desc">Convierte el documento en un esquema claro, jerárquico y fácil de repasar.</span>
+            </a>
+
+            <a class="age-option-card" href="/subida-pdf-tarjetas/">
+                <span class="age-option-icon">🃏</span>
+                <span class="age-option-title">Tarjetas de memoria</span>
+                <span class="age-option-desc">Genera flashcards de estudio activo a partir de tu documento.</span>
+            </a>
+
+            <a class="age-option-card" href="/subida-pdf-chat-pdf/">
+                <span class="age-option-icon">💬</span>
+                <span class="age-option-title">Analizar PDF (chat)</span>
+                <span class="age-option-desc">Pregúntale directamente a tu documento y obtén respuestas al momento.</span>
+            </a>
+        </div>
+    </div>
+
+  <script type="module" src="/assets/auth.js"></script>
+  <script type="module" src="/subida-pdf-pagina-principal/script.js"></script>
+</body>
+</html>

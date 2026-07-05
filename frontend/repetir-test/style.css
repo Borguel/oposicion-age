@@ -1,0 +1,9 @@
+/* La mayoría de estilos (tarjetas, botones, resultados, gráficas) vienen
+   de /test-generator/style.css, reutilizado aquí para que "Repetir test"
+   se vea exactamente igual que el resto de tests. Aquí solo lo específico
+   de esta página. */
+
+#temporizador {
+  max-width: 1200px;
+  margin: 0 auto 20px;
+}

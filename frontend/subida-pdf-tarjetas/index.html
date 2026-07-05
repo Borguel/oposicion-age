@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <title>Tarjetas de Memoria - Oposición AGE</title>
+  <meta name="description" content="Genera tarjetas de memoria (flashcards) para estudio activo a partir de un PDF con IA." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Tarjetas de Memoria - Oposición AGE" />
+  <meta property="og:description" content="Genera tarjetas de memoria (flashcards) para estudio activo a partir de un PDF con IA." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/assets/pdf-tools.css" />
+  <link rel="stylesheet" href="/subida-pdf-tarjetas/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+  <div class="pdfherr-header">
+    <div class="pdfherr-icon">🃏</div>
+    <h1>Tarjetas de Memoria</h1>
+    <p>Sube tu documento PDF y crea tarjetas de estudio automáticamente</p>
+  </div>
+
+  <div class="pdfherr-body">
+    <!-- Formulario PDF -->
+    <div id="formulario-pdf" class="card fade-in">
+      <div class="card-header">
+        <div class="card-icon">⬆️</div>
+        <h2 class="card-title">Subir Documento PDF</h2>
+      </div>
+      <form id="form-subir-pdf">
+        <div class="form-group">
+          <label for="archivo-pdf">📄 Selecciona tu archivo PDF (máx. 10 MB)</label>
+          <div class="file-upload-area" id="upload-area">
+            <div class="upload-icon">⬆️</div>
+            <div class="upload-text">
+              <h3>Arrastra y suelta tu PDF aquí</h3>
+              <p>O haz clic para seleccionar un archivo</p>
+            </div>
+            <button type="button" class="btn btn-outline" id="select-file-btn">📁 Explorar Archivos</button>
+            <input type="file" id="archivo-pdf" class="file-input" accept=".pdf" required>
+          </div>
+          <div id="file-name" class="file-name hidden"></div>
+        </div>
+        <div class="form-group">
+          <label for="num-tarjetas">🃏 Número de tarjetas a generar (1–50)</label>
+          <input type="number" id="num-tarjetas" class="form-control" min="1" max="50" value="10" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">✨ Generar Tarjetas de Memoria</button>
+      </form>
+    </div>
+    <!-- Estado de Carga -->
+    <div id="contenedor-carga" class="card hidden">
+      <div class="loading-container">
+        <div class="ai-icon" id="ai-icon">🤖</div>
+        <div class="mensaje-estado">
+          <span id="texto-estado">Leyendo texto del PDF…</span>
+        </div>
+        <div class="barra-indeterminada"><div class="barra-indeterminada-fill"></div></div>
+      </div>
+    </div>
+    <!-- Alertas -->
+    <div id="alerta-preguntas" class="alert alert-warning hidden"></div>
+    <div id="mensaje-error" class="alert alert-error hidden"></div>
+    <!-- Modo de Estudio -->
+    <div id="modo-estudio" class="card hidden">
+      <div class="card-header">
+        <div class="card-icon">🎓</div>
+        <h2 class="card-title">Modo de Estudio</h2>
+      </div>
+      <div class="tarjeta-container">
+        <div class="tarjeta" id="tarjeta-actual">
+          <div class="cara delantera">
+            <div class="pregunta-tarjeta" id="pregunta-tarjeta"></div>
+            <div class="indicador-volteo">Haz clic para ver la respuesta</div>
+          </div>
+          <div class="cara trasera">
+            <div class="respuesta-tarjeta" id="respuesta-tarjeta"></div>
+            <button class="btn btn-secondary" id="btn-escuchar" style="margin-top:1rem; padding:0.5rem 1rem; font-size:0.9rem;">🔊 Escuchar</button>
+            <div class="indicador-volteo">Haz clic para ver la pregunta</div>
+          </div>
+        </div>
+      </div>
+      <div class="controles-tarjetas">
+        <div class="contador-tarjetas">
+          <span id="tarjeta-actual-num">1</span> de <span id="total-tarjetas">0</span>
+        </div>
+        <div class="botones-navegacion-tarjetas">
+          <button id="btn-anterior" class="btn btn-outline">← Anterior</button>
+          <button id="btn-siguiente" class="btn btn-outline">Siguiente →</button>
+        </div>
+      </div>
+      <div class="filters" style="margin-top: 2rem;">
+        <button id="btn-lista-tarjetas" class="btn btn-secondary">📋 Ver Lista de Tarjetas</button>
+        <button id="btn-cerrar" class="btn btn-primary">✖️ Cerrar</button>
+      </div>
+    </div>
+    <!-- Lista de Tarjetas -->
+    <div id="lista-tarjetas" class="card hidden">
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <h2 class="card-title">Lista de Tarjetas</h2>
+      </div>
+      <div class="filters">
+        <button id="btn-volver-estudio" class="btn btn-primary">← Volver al Modo Estudio</button>
+      </div>
+      <div id="contenedor-lista-tarjetas" class="lista-tarjetas"></div>
+    </div>
+  </div>
+  <!-- Indicador de Auto-guardado -->
+  <div id="auto-save-indicator" class="auto-save-indicator">💾 Guardado automáticamente</div>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <script src="/subida-pdf-tarjetas/script.js"></script>
+  <script type="module" src="/assets/auth.js"></script>
+</body>
+</html>

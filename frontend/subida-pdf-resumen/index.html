@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <title>Resumir Documentos - Oposición AGE</title>
+  <meta name="description" content="Obtén un resumen con los puntos clave de cualquier PDF en segundos con IA." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Resumir Documentos - Oposición AGE" />
+  <meta property="og:description" content="Obtén un resumen con los puntos clave de cualquier PDF en segundos con IA." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/assets/pdf-tools.css" />
+  <link rel="stylesheet" href="/subida-pdf-resumen/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+  <div class="pdfherr-header">
+    <div class="pdfherr-icon">📄</div>
+    <h1>Resumir Documentos</h1>
+    <p>Sube tus documentos y obtén resúmenes automáticos con los puntos clave. Ideal para sintetizar temas extensos y estudiar de forma más eficaz.</p>
+  </div>
+
+  <div class="pdfherr-body">
+    <!-- Formulario PDF -->
+    <div id="formulario-pdf" class="card fade-in">
+      <div class="card-header">
+        <div class="card-icon">⬆️</div>
+        <h2 class="card-title">Subir Documento PDF</h2>
+      </div>
+      <form id="form-subir-pdf">
+        <div class="form-group">
+          <label for="archivo-pdf">📄 Selecciona tu archivo PDF (máx. 10 MB)</label>
+          <div class="file-upload-area" id="upload-area">
+            <div class="upload-icon">⬆️</div>
+            <div class="upload-text">
+              <h3>Arrastra y suelta tu PDF aquí</h3>
+              <p>O haz clic para seleccionar un archivo</p>
+            </div>
+            <button type="button" class="btn btn-outline" id="select-file-btn">📁 Explorar Archivos</button>
+            <input type="file" id="archivo-pdf" class="file-input" accept=".pdf" required>
+          </div>
+          <div id="file-name" class="file-name hidden"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">✨ Generar Resumen Automático</button>
+      </form>
+    </div>
+    <!-- Estado de Carga -->
+    <div id="contenedor-carga" class="card hidden">
+      <div class="loading-container">
+        <div class="ai-icon" id="ai-icon">🤖</div>
+        <div class="mensaje-estado">
+          <span id="texto-estado">Leyendo texto del PDF…</span>
+        </div>
+        <div class="barra-indeterminada"><div class="barra-indeterminada-fill"></div></div>
+      </div>
+    </div>
+    <!-- Alertas -->
+    <div id="alerta-preguntas" class="alert alert-warning hidden"></div>
+    <div id="mensaje-error" class="alert alert-error hidden"></div>
+    <!-- Resultado: Resumen Profesional -->
+    <div id="resultado-resumen" class="card hidden">
+      <div class="card-header">
+        <div class="card-icon">📄</div>
+        <h2 class="card-title">Resumen Generado</h2>
+      </div>
+      <div id="resumen-profesional">
+        <div class="resumen-header">
+          <div class="resumen-titulo" id="resumen-titulo">Resumen del Documento</div>
+          <div class="resumen-meta" id="resumen-meta">Generado el <span id="fecha-resumen"></span></div>
+        </div>
+        <div class="resumen-contenido" id="contenido-resumen">
+          <!-- Aquí se insertará el resumen -->
+        </div>
+      </div>
+      <div class="resumen-actions">
+        <button id="btn-descargar-pdf" class="btn btn-outline-secondary">📄 Descargar PDF</button>
+        <button id="btn-cerrar" class="btn btn-primary">✖️ Cerrar</button>
+      </div>
+    </div>
+  </div>
+  <!-- Indicador de Auto-guardado -->
+  <div id="auto-save-indicator" class="auto-save-indicator">💾 Guardado automáticamente</div>
+  <!-- Librerías externas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <script src="/subida-pdf-resumen/script.js"></script>
+  <script type="module" src="/assets/auth.js"></script>
+</body>
+</html>

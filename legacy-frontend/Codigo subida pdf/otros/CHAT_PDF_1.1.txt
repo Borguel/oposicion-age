@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente IA para Opositores AGE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #f36363;
+            --secondary: #333;
+            --text: #333;
+            --light-text: #999;
+            --background: #fff;
+            --alt-background: #f6f6f6;
+            --border: #ebebeb;
+            --header: #800;
+            --link: #f36363;
+            --link-hover: #000;
+            --overlay: rgba(0,0,0,0.75);
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: var(--header);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-text h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .logo-text p {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Main Container */
+        .container {
+            display: flex;
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 1.5rem;
+            gap: 1.5rem;
+        }
+
+        /* PDF Section */
+        .pdf-section {
+            flex: 1;
+            background: var(--alt-background);
+            border-radius: 8px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+        }
+
+        .section-title {
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-title h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--header);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            background: white;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .upload-text h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .upload-text p {
+            color: var(--light-text);
+            margin-bottom: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            background: #e05050;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+        }
+
+        .btn-secondary:hover {
+            background: #222;
+        }
+
+        .resumen-container {
+            margin-top: 1.5rem;
+            flex: 1;
+            display: none;
+            flex-direction: column;
+        }
+
+        .resumen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .resumen-content {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+            border: 1px solid var(--border);
+        }
+
+        .resumen-content p {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        /* Chat Section */
+        .chat-section {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--alt-background);
+        }
+
+        .chat-info h2 {
+            font-size: 1.3rem;
+            margin-bottom: 0.2rem;
+            color: var(--header);
+        }
+
+        .chat-info p {
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: var(--alt-background);
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 1rem;
+            border-radius: 8px;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background: white;
+            align-self: flex-end;
+            border: 1px solid var(--border);
+        }
+
+        .bot-message {
+            background: white;
+            align-self: flex-start;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .message-content {
+            line-height: 1.6;
+            color: var(--text);
+        }
+
+        .message-content p {
+            margin-bottom: 0.5rem;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            color: var(--light-text);
+            text-align: right;
+            margin-top: 0.5rem;
+        }
+
+        .input-container {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            background: white;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text);
+            font-size: 1rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .message-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(243, 99, 99, 0.2);
+        }
+
+        .send-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            background: var(--primary);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1.2rem;
+        }
+
+        .send-btn:hover {
+            background: #e05050;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(243, 99, 99, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .pdf-section, .chat-section {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 1rem;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .input-container {
+                padding: 0.8rem;
+            }
+            
+            .message-input {
+                padding: 0.7rem 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-title h2 {
+                font-size: 1.3rem;
+            }
+            
+            .upload-area {
+                padding: 1.5rem 1rem;
+            }
+            
+            .upload-icon {
+                font-size: 2.5rem;
+            }
+            
+            .resumen-content {
+                padding: 1rem;
+            }
+            
+            .chat-header {
+                padding: 0.8rem 1rem;
+            }
+            
+            .chat-box {
+                padding: 1rem;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(243, 99, 99, 0.05);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #e05050;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <div class="logo-text">
+                <h1>Asistente IA para Opositores</h1>
+                <p>Administrativo del Estado | AGE</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <section class="pdf-section">
+            <div class="section-title">
+                <h2>Subir Documento PDF</h2>
+            </div>
+            
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">
+                    <i class="fas fa-file-pdf"></i>
+                </div>
+                <div class="upload-text">
+                    <h3>Arrastra y suelta tu PDF aquí</h3>
+                    <p>O haz clic para seleccionar un archivo</p>
+                </div>
+                <button class="btn" id="select-pdf-btn">
+                    <i class="fas fa-file-upload"></i> Seleccionar PDF
+                </button>
+                <input type="file" id="pdf-file" class="file-input" accept=".pdf">
+            </div>
+            
+            <div class="btn-container" style="display: none; margin-top: 1rem;" id="generate-btn-container">
+                <button class="btn btn-secondary" id="generate-btn">
+                    <i class="fas fa-file-contract"></i> Generar Resumen
+                </button>
+            </div>
+            
+            <div class="resumen-container" id="resumen-container">
+                <div class="resumen-header">
+                    <h3>Resumen del documento</h3>
+                    <button class="btn btn-secondary" id="copy-btn">
+                        <i class="fas fa-copy"></i> Copiar
+                    </button>
+                </div>
+                <div class="resumen-content" id="resumen-content"></div>
+            </div>
+        </section>
+
+        <section class="chat-section">
+            <div class="chat-header">
+                <div class="chat-info">
+                    <h2>Asistente IA</h2>
+                    <p>Pregunta sobre el documento subido o el temario</p>
+                </div>
+            </div>
+            
+            <div class="chat-box" id="chat-box">
+                <div class="message bot-message">
+                    <div class="message-header">
+                        <i class="fas fa-robot"></i>
+                        <span>Asistente IA</span>
+                    </div>
+                    <div class="message-content">
+                        <p>¡Hola! Soy tu asistente especializado en oposiciones para Administrativo del Estado.</p>
+                        <p>Puedes:</p>
+                        <ul>
+                            <li>Subir un PDF para analizarlo</li>
+                            <li>Generar un resumen del documento</li>
+                            <li>Preguntarme sobre cualquier tema</li>
+                        </ul>
+                    </div>
+                    <div class="message-time">Ahora</div>
+                </div>
+            </div>
+            
+            <div class="input-container">
+                <input type="text" class="message-input" id="user-input" placeholder="Escribe tu pregunta...">
+                <button class="send-btn" id="send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // ✅ Usa tu URL de Render
+        const BACKEND_URL = "https://oposicion-age.onrender.com";
+        
+        // Elementos del DOM
+        const uploadArea = document.getElementById('upload-area');
+        const pdfFileInput = document.getElementById('pdf-file');
+        const selectPdfBtn = document.getElementById('select-pdf-btn');
+        const generateBtnContainer = document.getElementById('generate-btn-container');
+        const generateBtn = document.getElementById('generate-btn');
+        const resumenContainer = document.getElementById('resumen-container');
+        const resumenContent = document.getElementById('resumen-content');
+        const copyBtn = document.getElementById('copy-btn');
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        let currentPdfFile = null;
+        
+        // Evento para abrir el selector de archivos
+        selectPdfBtn.addEventListener('click', () => {
+            pdfFileInput.click();
+        });
+        
+        // Evento para arrastrar y soltar archivos
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            
+            if (e.dataTransfer.files.length) {
+                pdfFileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+        
+        // Evento para cuando se selecciona un archivo
+        pdfFileInput.addEventListener('change', handleFileSelect);
+        
+        // Manejar la selección de archivos
+        function handleFileSelect() {
+            const file = pdfFileInput.files[0];
+            
+            if (!file) {
+                alert('Por favor selecciona un archivo PDF');
+                return;
+            }
+            
+            currentPdfFile = file;
+            
+            // Mostrar el nombre del archivo
+            const fileName = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
+            uploadArea.innerHTML = `
+                <div class="upload-icon">
+                    <i class="fas fa-file-pdf"></i>
+                </div>
+                <div class="upload-text">
+                    <h3>Archivo seleccionado</h3>
+                    <p>${fileName}</p>
+                </div>
+                <button class="btn" id="change-file-btn">
+                    <i class="fas fa-sync"></i> Cambiar archivo
+                </button>
+            `;
+            
+            // Mostrar botón de generar resumen
+            generateBtnContainer.style.display = 'block';
+            
+            // Añadir evento al botón de cambiar archivo
+            document.getElementById('change-file-btn').addEventListener('click', () => {
+                pdfFileInput.click();
+            });
+        }
+        
+        // Generar resumen al hacer clic en el botón
+        generateBtn.addEventListener('click', generateSummary);
+        
+        // Función para generar resumen
+        async function generateSummary() {
+            if (!currentPdfFile) return;
+            
+            const formData = new FormData();
+            formData.append('pdf', currentPdfFile);
+            
+            try {
+                // Mostrar mensaje de espera
+                generateBtn.innerHTML = '<div class="spinner"></div> Generando...';
+                generateBtn.disabled = true;
+                
+                const response = await fetch(`${BACKEND_URL}/resumir-pdf`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                generateBtn.innerHTML = '<i class="fas fa-file-contract"></i> Generar Resumen';
+                generateBtn.disabled = false;
+                
+                if (data.resumen) {
+                    // Formatear el resumen con saltos de línea
+                    const formattedResumen = data.resumen.replace(/\n/g, '<br>');
+                    resumenContent.innerHTML = formattedResumen;
+                    resumenContainer.style.display = 'flex';
+                    
+                    // Añadir mensaje al chat
+                    addMessageToChat("He generado un resumen del documento PDF.", 'user');
+                    
+                    // Simular respuesta del asistente
+                    setTimeout(() => {
+                        addMessageToChat("He creado un resumen del PDF que subiste. ¿Te gustaría que te explique algún punto en particular o que responda preguntas sobre este contenido?", 'bot');
+                    }, 1000);
+                } else {
+                    alert("Error: " + (data.error || 'Error al generar el resumen'));
+                }
+            } catch (error) {
+                generateBtn.innerHTML = '<i class="fas fa-file-contract"></i> Generar Resumen';
+                generateBtn.disabled = false;
+                alert("Error de conexión: " + error.message);
+            }
+        }
+        
+        // Copiar resumen al portapapeles
+        copyBtn.addEventListener('click', () => {
+            const textToCopy = resumenContent.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                }, 2000);
+            });
+        });
+        
+        // Función para enviar mensajes
+        function enviarMensaje() {
+            const message = userInput.value.trim();
+            
+            if (!message) return;
+            
+            // Añadir mensaje de usuario al chat
+            addMessageToChat(message, 'user');
+            
+            // Limpiar el input
+            userInput.value = '';
+            
+            // Mostrar estado de "escribiendo"
+            showTypingIndicator();
+            
+            // Simular respuesta después de un retraso
+            setTimeout(() => {
+                // Ocultar indicador de escritura
+                hideTypingIndicator();
+                
+                // Generar respuesta basada en el mensaje del usuario
+                let response = "Gracias por tu pregunta. Estoy procesando tu consulta y te responderé en breve.";
+                
+                if (message.toLowerCase().includes('resumen')) {
+                    response = "Para generar un resumen, primero sube un documento PDF usando el panel de la izquierda y luego haz clic en 'Generar Resumen'.";
+                } else if (message.toLowerCase().includes('ayuda')) {
+                    response = "Puedo ayudarte a:<br>- Resumir documentos PDF<br>- Responder preguntas sobre el temario<br>- Explicar conceptos complejos<br>- Prepararte para los exámenes";
+                } else {
+                    response = "He procesado tu pregunta sobre \"" + message + "\". Como asistente especializado en oposiciones para Administrativo del Estado, puedo darte información precisa sobre este tema. ¿Quieres que profundice en algún aspecto específico?";
+                }
+                
+                addMessageToChat(response, 'bot');
+            }, 1500);
+        }
+        
+        // Función para añadir mensajes al chat
+        function addMessageToChat(message, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+            
+            const now = new Date();
+            const timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+            
+            messageElement.innerHTML = `
+                <div class="message-header">
+                    <i class="fas ${sender === 'user' ? 'fa-user' : 'fa-robot'}"></i>
+                    <span>${sender === 'user' ? 'Tú' : 'Asistente IA'}</span>
+                </div>
+                <div class="message-content">
+                    ${message}
+                </div>
+                <div class="message-time">${timeString}</div>
+            `;
+            
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // Función para mostrar indicador de "escribiendo"
+        function showTypingIndicator() {
+            const typingElement = document.createElement('div');
+            typingElement.classList.add('message', 'bot-message');
+            typingElement.id = 'typing-indicator';
+            typingElement.innerHTML = `
+                <div class="message-header">
+                    <i class="fas fa-robot"></i>
+                    <span>Asistente IA</span>
+                </div>
+                <div class="message-content">
+                    <div class="spinner"></div> <span>Escribiendo...</span>
+                </div>
+            `;
+            
+            chatBox.appendChild(typingElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // Función para ocultar indicador de "escribiendo"
+        function hideTypingIndicator() {
+            const typingElement = document.getElementById('typing-indicator');
+            if (typingElement) {
+                typingElement.remove();
+            }
+        }
+        
+        // Event listeners
+        sendBtn.addEventListener('click', enviarMensaje);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                enviarMensaje();
+            }
+        });
+    </script>
+</body>
+</html>

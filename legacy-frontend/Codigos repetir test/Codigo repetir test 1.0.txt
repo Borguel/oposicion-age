@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>🔁 Repetir Último Test</title>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      padding: 30px;
+      background: #f7f7f7;
+    }
+    #contenedor-test {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      max-width: 800px;
+      margin: 0 auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .btn-verde {
+      padding: 10px 20px;
+      background-color: #4caf50;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-verde:hover {
+      background-color: #45a047;
+    }
+  </style>
+</head>
+<body>
+
+<h2 style="text-align:center;">🔁 Repetir Último Test</h2>
+<div id="contenedor-test">Cargando test anterior...</div>
+
+<script>
+const usuarioEmail = window.usuarioEmail || "usuario_prueba";
+
+let preguntas = [];
+let indicePreguntaActual = 0;
+let respuestasUsuario = [];
+let tiempoInicio;
+let intervaloTemporizador;
+
+function iniciarTemporizador() {
+  tiempoInicio = Date.now();
+  intervaloTemporizador = setInterval(() => {
+    const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
+    console.log(`⏱ Tiempo transcurrido: ${transcurrido}s`);
+  }, 1000);
+}
+
+function mostrarPregunta(i) {
+  const p = preguntas[i];
+  let html = `<form id="form-pregunta"><fieldset>
+    <legend><strong>Pregunta ${i + 1} de ${preguntas.length}:</strong> ${p.pregunta}</legend><br>`;
+
+  for (const letra in p.opciones) {
+    const opcion = p.opciones[letra];
+    const checked = respuestasUsuario[i] === letra ? "checked" : "";
+    html += `
+      <div style="margin-bottom: 8px;">
+        <label style="cursor: pointer;">
+          <input type="radio" name="respuesta" value="${letra}" ${checked}>
+          ${letra}) ${opcion}
+        </label>
+      </div>`;
+  }
+
+  html += `
+    <div style="margin-top: 30px;">
+      ${i > 0 ? '<button type="button" id="btn-anterior" class="btn-verde" style="margin-right: 10px;">⬅️ Anterior</button>' : ''}
+      <button type="submit" class="btn-verde">Siguiente</button>
+    </div>
+  </fieldset></form>`;
+
+  document.getElementById("contenedor-test").innerHTML = html;
+
+  if (i > 0 && document.getElementById("btn-anterior")) {
+    document.getElementById("btn-anterior").addEventListener("click", () => mostrarPregunta(i - 1));
+  }
+
+  document.getElementById("form-pregunta").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const seleccion = document.querySelector('input[name="respuesta"]:checked');
+    const respuestaSeleccionada = seleccion ? seleccion.value : null;
+    respuestasUsuario[i] = respuestaSeleccionada;
+
+    if (i + 1 < preguntas.length) {
+      mostrarPregunta(i + 1);
+    } else {
+      alert("Has finalizado el test.");
+    }
+  });
+}
+
+window.addEventListener("load", async () => {
+  try {
+    const res = await fetch(`https://oposicion-age.onrender.com/ultimo-test?usuario_id=${usuarioEmail}`);
+    const datos = await res.json();
+
+    if (!datos.test || datos.test.length === 0) {
+      document.getElementById("contenedor-test").innerHTML = "<p>No se ha encontrado ningún test anterior.</p>";
+      return;
+    }
+
+    preguntas = datos.test;
+    indicePreguntaActual = 0;
+    respuestasUsuario = Array(preguntas.length).fill(null);
+    iniciarTemporizador();
+    mostrarPregunta(indicePreguntaActual);
+  } catch (err) {
+    console.error("Error:", err);
+    document.getElementById("contenedor-test").innerHTML = "<p>Error al cargar el test.</p>";
+  }
+});
+</script>
+
+</body>
+</html>

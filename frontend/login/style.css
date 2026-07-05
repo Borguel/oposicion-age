@@ -1,0 +1,246 @@
+body {
+  background: var(--age-bg);
+  color: var(--age-ink);
+  margin: 0;
+}
+
+.login-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 64px 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  box-shadow: var(--age-shadow);
+  padding: 28px 26px 32px;
+}
+
+.login-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 22px;
+  background: var(--age-bg);
+  border-radius: var(--age-radius-md);
+  padding: 4px;
+}
+
+.login-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 0;
+  border-radius: var(--age-radius-sm);
+  font-family: var(--age-font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--age-ink-soft);
+  cursor: pointer;
+  transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease);
+}
+
+.login-tab.active {
+  background: var(--age-primary);
+  color: #fff;
+}
+
+#form-auth label,
+#form-perfil label,
+#form-recuperar label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--age-ink-soft);
+  margin: 14px 0 6px;
+}
+
+#form-auth input,
+#form-perfil input,
+#form-recuperar input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: var(--age-radius-sm);
+  border: 1px solid var(--age-border);
+  font-family: var(--age-font);
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+#form-auth input:focus,
+#form-perfil input:focus {
+  outline: none;
+  border-color: var(--age-primary);
+}
+
+.btn-primary {
+  width: 100%;
+  margin-top: 22px;
+  padding: 12px 0;
+  border: none;
+  border-radius: var(--age-radius-sm);
+  background: var(--age-primary);
+  color: #fff;
+  font-family: var(--age-font);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s var(--age-ease);
+}
+
+.btn-primary:hover {
+  background: var(--age-primary-dark);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.mensaje-error {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--age-radius-sm);
+  background: #fdecea;
+  color: #c62828;
+  font-size: 13.5px;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 18px;
+  color: var(--age-ink-soft);
+  font-size: 13px;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--age-border);
+}
+
+.btn-google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 0;
+  border-radius: var(--age-radius-sm);
+  border: 1px solid var(--age-border);
+  background: #fff;
+  color: var(--age-ink);
+  font-family: var(--age-font);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s var(--age-ease), box-shadow 0.2s var(--age-ease);
+}
+
+.btn-google:hover {
+  background: #f8f8f8;
+  box-shadow: var(--age-shadow);
+}
+
+.btn-google:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.login-titulo {
+  margin: 0 0 6px;
+  font-size: 1.3rem;
+}
+
+.login-subtitulo {
+  margin: 0 0 4px;
+  color: var(--age-ink-soft);
+  font-size: 14px;
+}
+
+.login-legal {
+  margin-top: 18px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--age-ink-soft);
+  text-align: center;
+}
+
+.login-legal a {
+  color: var(--age-ink-soft);
+  text-decoration: underline;
+}
+
+.login-legal a:hover {
+  color: var(--age-primary-dark);
+}
+
+.login-link-olvide {
+  display: block;
+  margin: 8px 0 0;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--age-font);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--age-primary-dark);
+  cursor: pointer;
+  text-align: right;
+  width: 100%;
+}
+
+.login-link-olvide:hover {
+  text-decoration: underline;
+}
+
+.login-mensaje-ok {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--age-radius-sm);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.login-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 20, 30, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 500;
+}
+
+.login-modal-card {
+  box-shadow: var(--age-shadow-hover, var(--age-shadow));
+}
+
+.btn-secundario {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 0;
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-sm);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-family: var(--age-font);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s var(--age-ease);
+}
+
+.btn-secundario:hover {
+  background: var(--age-neutral-bg, var(--age-bg));
+}

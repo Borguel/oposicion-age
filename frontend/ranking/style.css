@@ -1,0 +1,170 @@
+body {
+  background: var(--age-bg);
+  color: var(--age-ink);
+  margin: 0;
+}
+
+.ranking-header {
+  background: linear-gradient(160deg, var(--age-navy), var(--age-navy-soft));
+  color: #fff;
+  padding: 44px 0 56px;
+}
+
+.ranking-header h1 {
+  font-size: clamp(1.8rem, 3.6vw, 2.4rem);
+  font-weight: 800;
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+}
+
+.ranking-header p {
+  color: var(--age-navy-ink);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 640px;
+}
+
+.ranking-wrap {
+  margin-top: -30px;
+  padding-bottom: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ranking-participacion {
+  padding: 24px 26px;
+}
+
+.ranking-participacion h3 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.ranking-participacion p {
+  margin: 0 0 16px;
+  color: var(--age-ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.ranking-form-alias {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ranking-form-alias input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 16px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  font-family: var(--age-font);
+  font-size: 14px;
+  color: var(--age-ink);
+  background: var(--age-bg);
+}
+
+.ranking-form-alias input:focus {
+  outline: none;
+  border-color: var(--age-primary);
+}
+
+.ranking-error {
+  color: var(--age-danger, #d92d20);
+  font-size: 0.85rem;
+  margin-top: 10px;
+}
+
+.ranking-participacion-acciones {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ranking-tabla-card {
+  padding: 24px 26px;
+}
+
+.ranking-tabla-cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.ranking-tabla-cabecera h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.ranking-total {
+  color: var(--age-ink-faint);
+  font-size: 0.85rem;
+}
+
+.ranking-cargando,
+.ranking-vacio {
+  color: var(--age-ink-faint);
+  font-size: 0.92rem;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.ranking-filas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ranking-fila {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: var(--age-radius-sm);
+}
+
+.ranking-fila-tu {
+  background: var(--age-primary-soft);
+}
+
+.ranking-fila-puesto {
+  width: 28px;
+  flex-shrink: 0;
+  font-weight: 800;
+  color: var(--age-ink-faint);
+  text-align: center;
+}
+
+.ranking-fila-alias {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.ranking-fila-racha {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.ranking-tu-posicion {
+  margin: 14px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--age-border);
+  font-size: 0.9rem;
+  color: var(--age-ink-soft);
+  text-align: center;
+}

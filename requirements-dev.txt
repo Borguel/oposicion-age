@@ -1,0 +1,4 @@
+# Dependencias solo para desarrollo/tests: python -m pytest usa este fichero
+# (pip install -r requirements-dev.txt), no el de producción.
+-r requirements.txt
+pytest==9.1.1

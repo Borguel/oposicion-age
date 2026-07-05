@@ -1,0 +1,602 @@
+/* ========== VARIABLES CSS ========== */
+:root {
+  --primary: #ffa633;
+  --primary-dark: #ff8c00;
+  --secondary: #4caf50;
+  --secondary-dark: #388e3c;
+  --accent: #2196f3;
+  --accent-dark: #1976d2;
+  --danger: #f44336;
+  --danger-dark: #d32f2f;
+  --warning: #ffc107;
+  --warning-dark: #ffa000;
+  --info: #00bcd4;
+  --info-dark: #0097a7;
+  --dark: #2e3440;
+  --darker: #1d2229;
+  --light: #ffffff;
+  --gray: #ebebeb;
+  --border: #ebebeb;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-mono: 'Courier New', Courier, monospace;
+  --transition-fast: 0.2s ease-in-out;
+  --transition-normal: 0.3s ease-in-out;
+  --transition-slow: 0.5s ease-in-out;
+  --card-radius: 12px;
+  --btn-radius: 8px;
+  --modal-radius: 16px;
+  --theme-bg: #ffffff;
+  --theme-text: #333;
+  --theme-link-hover: #ffa633;
+  --theme-header-bg: #ffffff;
+  --theme-header-text: #333;
+  --theme-content-bg: #ffffff;
+  --theme-content-alt-bg: #f6f6f6;
+  --theme-border: #ebebeb;
+  --theme-heading: #000;
+  --theme-primary: #ffa633;
+  --theme-secondary: #333;
+  --theme-disabled-text: #999;
+}
+
+/* ========== RESET Y BASE ========== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-main);
+  background: var(--theme-bg);
+  color: var(--theme-text);
+  padding: 20px;
+  min-height: 100vh;
+}
+
+/* ========== CONTENEDORES ========== */
+#estadisticas-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+#estadisticas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+#estadisticas-header h3 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--theme-heading);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ========== BOTÓN ACTUALIZAR ========== */
+#estadisticas-refresh {
+  background: var(--theme-primary);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: var(--btn-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 10px rgba(255, 166, 51, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+#estadisticas-refresh:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(255, 166, 51, 0.4);
+}
+
+#estadisticas-refresh:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: none;
+  position: absolute;
+  right: 10px;
+}
+
+#estadisticas-refresh.loading .spinner {
+  display: block;
+}
+
+#estadisticas-refresh.loading span {
+  opacity: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ========== GRID DE ESTADÍSTICAS ========== */
+#estadisticas-usuario {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+/* ========== TARJETAS BASE ========== */
+.tarjeta-estadistica {
+  background: var(--theme-content-bg);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--card-radius);
+  padding: 24px;
+  box-shadow: 0 6px 16px var(--shadow);
+  transition: transform 0.3s, box-shadow 0.3s;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.tarjeta-estadistica:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+.tarjeta-estadistica.destacada {
+  background: linear-gradient(135deg, var(--theme-primary), var(--primary-dark));
+  color: white;
+}
+
+.tarjeta-estadistica.positiva {
+  border-left: 4px solid var(--secondary);
+}
+
+.tarjeta-estadistica.negativa {
+  border-left: 4px solid var(--danger);
+}
+
+.tarjeta-estadistica.neutra {
+  border-left: 4px solid var(--warning);
+}
+
+/* ========== TARJETAS PDF (CORRECCIÓN DE COLOR) ========== */
+.tarjeta-estadistica.pdf {
+  background: var(--theme-content-alt-bg);
+  border-left: 4px solid var(--theme-primary);
+}
+
+.tarjeta-estadistica.pdf .header svg {
+  fill: var(--theme-primary);
+}
+
+/* 🔥 CORRECCIÓN: Color de números en tarjetas PDF en NEGRO */
+.tarjeta-estadistica.pdf .valor {
+  color: #000 !important;
+}
+
+/* ========== HEADER DE TARJETAS ========== */
+.tarjeta-estadistica .header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.tarjeta-estadistica .header svg {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 10px;
+  fill: currentColor;
+}
+
+.tarjeta-estadistica h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--theme-heading);
+}
+
+/* ========== VALORES Y DETALLES ========== */
+.tarjeta-estadistica .valor {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 12px 0;
+  color: var(--theme-primary);
+}
+
+.tarjeta-estadistica.destacada .valor {
+  color: white;
+}
+
+.tarjeta-estadistica .detalle {
+  font-size: 0.9rem;
+  color: var(--theme-text);
+}
+
+.tarjeta-estadistica.destacada .detalle {
+  color: rgba(255,255,255,0.8);
+}
+
+/* ========== BARRAS DE PROGRESO ========== */
+.progress-bar {
+  height: 6px;
+  background: var(--theme-border);
+  border-radius: 3px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--secondary);
+  transition: width 0.5s ease;
+}
+
+.tarjeta-estadistica.negativa .progress-fill {
+  background: var(--danger);
+}
+
+/* ========== TENDENCIAS ========== */
+.tendencia-up { 
+  color: var(--secondary); 
+  font-weight: bold; 
+}
+
+.tendencia-down { 
+  color: var(--danger); 
+  font-weight: bold; 
+}
+
+.tendencia-neutral { 
+  color: var(--warning); 
+}
+
+/* ========== SEPARADOR DE SECCIÓN ========== */
+.seccion-separador {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 20px 0;
+  margin: 20px 0;
+  border-bottom: 2px solid var(--theme-border);
+  position: relative;
+}
+
+.seccion-separador h3 {
+  color: var(--theme-primary);
+  font-size: 1.4rem;
+  font-weight: 700;
+  display: inline-block;
+  padding: 0 20px;
+  background: var(--theme-bg);
+  position: relative;
+  top: -10px;
+}
+
+/* ========== TARJETA RESUMEN PDF ========== */
+.tarjeta-resumen-pdf {
+  grid-column: 1 / -1;
+  background: var(--theme-content-alt-bg);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--card-radius);
+  padding: 25px;
+  box-shadow: 0 6px 20px var(--shadow);
+}
+
+.tarjeta-resumen-pdf .resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.tarjeta-resumen-pdf .resumen-item {
+  text-align: center;
+  padding: 15px;
+  background: var(--theme-content-bg);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--card-radius);
+}
+
+/* 🔥 CORRECCIÓN: Color de números del resumen PDF en NEGRO */
+.tarjeta-resumen-pdf .resumen-valor {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 5px;
+  color: #000 !important;
+}
+
+.tarjeta-resumen-pdf .resumen-label {
+  font-size: 0.9rem;
+  color: var(--theme-text);
+}
+
+/* ========== TEMAS EXPANDIBLES ========== */
+.tarjeta-temas {
+  background: var(--theme-content-alt-bg);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--card-radius);
+  padding: 24px;
+  box-shadow: 0 6px 16px var(--shadow);
+  transition: all 0.3s;
+  position: relative;
+}
+
+.tarjeta-temas.activo .temas-contenido {
+  max-height: 200px;
+  opacity: 1;
+  visibility: visible;
+  transition: all 0.3s ease;
+}
+
+.tarjeta-temas .temas-contenido {
+  max-height: 0;
+  opacity: 0;
+  visibility: hidden;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--theme-border);
+}
+
+.lista-temas-inline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lista-temas-inline li {
+  background: var(--theme-content-bg);
+  border: 1px solid var(--theme-border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tema-nombre {
+  font-weight: 500;
+  color: var(--theme-heading);
+}
+
+.tema-count {
+  background: var(--theme-primary);
+  color: white;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.btn-ver-temas {
+  background: var(--theme-primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--btn-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 15px;
+}
+
+.btn-ver-temas:hover {
+  background: var(--primary-dark);
+}
+
+/* ========== MODAL ========== */
+.modal-temas {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-temas.show {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-contenido {
+  background: var(--theme-bg);
+  border-radius: var(--modal-radius);
+  padding: 30px;
+  box-shadow: 0 10px 30px var(--shadow);
+  max-width: 800px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-cerrar {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 2rem;
+  color: var(--theme-text);
+  cursor: pointer;
+  transition: color 0.2s;
+  z-index: 1001;
+}
+
+.modal-cerrar:hover {
+  color: var(--danger);
+}
+
+.modal-titulo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--theme-heading);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-busqueda {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.modal-busqueda input {
+  flex: 1;
+  padding: 12px 15px;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--btn-radius);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.modal-busqueda input:focus {
+  border-color: var(--theme-primary);
+}
+
+.modal-busqueda svg {
+  width: 20px;
+  height: 20px;
+  fill: var(--theme-text);
+  position: absolute;
+  right: 15px;
+  pointer-events: none;
+}
+
+.lista-temas {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.lista-temas li {
+  padding: 15px;
+  border-bottom: 1px solid var(--theme-border);
+  transition: background 0.2s;
+}
+
+.lista-temas li:last-child {
+  border-bottom: none;
+}
+
+.lista-temas li:hover {
+  background: var(--theme-content-alt-bg);
+}
+
+.tema-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tema-titulo {
+  font-weight: 500;
+  color: var(--theme-heading);
+  flex: 1;
+}
+
+.tema-id {
+  background: var(--theme-content-alt-bg);
+  border: 1px solid var(--theme-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--theme-text);
+}
+
+.tema-id:hover {
+  background: var(--theme-primary);
+  color: white;
+  border-color: var(--theme-primary);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  gap: 10px;
+}
+
+.modal-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--btn-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-btn-secondary {
+  background: var(--theme-content-alt-bg);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+}
+
+.modal-btn-secondary:hover {
+  background: var(--theme-border);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+  #estadisticas-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #estadisticas-usuario {
+    grid-template-columns: 1fr;
+  }
+  .tarjeta-resumen-pdf .resumen-grid {
+    grid-template-columns: 1fr;
+  }
+  .modal-contenido {
+    width: 95%;
+    margin: 20px;
+    padding: 20px;
+  }
+}

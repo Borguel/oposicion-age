@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>🔁 Repetir Último Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root {
+      --color-primary: #4caf50;
+      --color-primary-dark: #45a047;
+      --color-secondary: #2196F3;
+      --color-secondary-dark: #1e88e5;
+      --color-accent: #FF9800;
+      --color-accent-dark: #fb8c00;
+      --color-danger: #ef5350;
+      --color-danger-dark: #e53935;
+      --color-text: #333;
+      --color-bg: #f5f6fa;
+      --color-card: #ffffff;
+      --color-border: #e1e1e1;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      background: var(--color-bg);
+      color: var(--color-text);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: var(--color-card);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 30px;
+      margin-bottom: 30px;
+      transition: var(--transition);
+    }
+
+    h1, h2, h3 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+
+    #titulo-formulario {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+
+    #temporizador {
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      padding: 15px;
+      margin: 20px 0;
+      background: linear-gradient(135deg, #d0ebff, #a5d8ff);
+      color: #1c7ed6;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .progress-container {
+      position: relative;
+      margin: 30px 0;
+      background: #f0f0f0;
+      border-radius: 10px;
+      overflow: hidden;
+      height: 25px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0;
+      transition: width 0.5s ease;
+      position: relative;
+    }
+
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-weight: 600;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      z-index: 1;
+    }
+
+    .btn {
+      display: block;
+      padding: 14px;
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 1rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--color-primary-dark);
+    }
+
+    .btn-secondary {
+      background: var(--color-secondary);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: var(--color-secondary-dark);
+    }
+
+    .btn-accent {
+      background: var(--color-accent);
+      color: white;
+    }
+
+    .btn-accent:hover {
+      background: var(--color-accent-dark);
+    }
+
+    .btn-danger {
+      background: var(--color-danger);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: var(--color-danger-dark);
+    }
+
+    .pregunta-en-negrita {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin-bottom: 15px;
+      color: #2c3e50;
+    }
+
+    .resp-correcta {
+      border: 2px solid #43a047;
+      background: #e8f5e9;
+      border-radius: 9px;
+      margin: 8px 0;
+      padding: 12px 15px;
+      color: #137333;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+    }
+
+    .resp-incorrecta {
+      border: 2px solid #e53935;
+      background: #ffebee;
+      border-radius: 9px;
+      margin: 8px 0;
+      padding: 12px 15px;
+      color: #a31515;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+    }
+
+    .resp-neutra {
+      border: 1.5px solid #ccc;
+      background: #fafafa;
+      border-radius: 9px;
+      margin: 8px 0;
+      padding: 12px 15px;
+      color: #222;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+    }
+
+    .icono-correcto {
+      font-size: 1.2em;
+      color: #43a047;
+      margin-right: 10px;
+    }
+
+    .icono-incorrecto {
+      font-size: 1.2em;
+      color: #e53935;
+      margin-right: 10px;
+    }
+
+    .filtros-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    /* Botón Siguiente más grande */
+    #form-pregunta button[type="submit"] {
+      padding: 15px 25px;
+      font-size: 1.2rem;
+      width: 100%;
+      margin: 20px auto;
+      display: block;
+    }
+
+    /* MEJORAS IMPLEMENTADAS */
+    
+    /* Barra de carga con porcentaje visible */
+    .barra-carga {
+      transition: width 1s ease;
+      background: linear-gradient(90deg, #4caf50, #66bb6a);
+      height: 100%;
+      border-radius: 10px;
+    }
+    
+    /* Botón siguiente más grande */
+    .btn-siguiente {
+      width: 100%;
+      padding: 18px !important;
+      font-size: 1.3rem !important;
+    }
+    
+    /* Más espacio en móvil */
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+        max-width: 95vw; /* Ancho mayor en móviles */
+      }
+      
+      body {
+        font-size: 14px; /* Tamaño de fuente reducido en móviles */
+      }
+      
+      .card {
+        padding: 20px;
+      }
+      
+      .filtros-container {
+        flex-direction: column;
+      }
+      
+      .filtros-container button {
+        width: 100%;
+        margin-bottom: 5px;
+      }
+      
+      /* Más espacio en móvil */
+      #form-pregunta fieldset {
+        padding: 10px;
+      }
+      
+      #form-pregunta button[type="submit"] {
+        padding: 16px !important; /* Ajuste para móviles */
+        font-size: 1.2rem !important;
+      }
+
+      /* Ajuste de tamaño de fuente para preguntas en móviles */
+      .pregunta-en-negrita {
+        font-size: 1em !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #titulo-formulario {
+        font-size: 1.7rem;
+      }
+      
+      /* Más espacio en móvil */
+      .container {
+        padding: 5px;
+      }
+      
+      .card {
+        padding: 15px;
+      }
+      
+      #form-pregunta fieldset {
+        padding: 5px;
+      }
+    }
+
+    /* Animaciones */
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @media (min-width: 1200px) {
+      .container {
+        max-width: 1200px;
+      }
+      
+      .card {
+        padding: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="titulo-formulario">🔁 Repetir Último Test</h1>
+    
+    <div id="temporizador">⏱ Tiempo: 00:00</div>
+    
+    <!-- Barra de progreso para preguntas -->
+    <div id="barra-progreso-preguntas" class="progress-container" style="display: none; margin-top: 10px;">
+      <div id="progreso-preguntas" class="progress-bar" style="background: linear-gradient(90deg, #2196F3, #64b5f6);"></div>
+      <div id="texto-progreso-preguntas" class="progress-text"></div>
+    </div>
+
+    <div id="contenedor-test" class="card fade-in">Cargando test anterior...</div>
+    <div id="contenedor-resultados" class="card fade-in" style="display:none;"></div>
+
+    <button id="btn-finalizar" class="btn btn-danger btn-block" style="display:none;">Finalizar Test</button>
+  </div>
+
+  <script>
+    const usuarioEmail = window.usuarioEmail || "usuario_prueba";
+    let preguntas = [];
+    let respuestasUsuario = [];
+    let indicePreguntaActual = 0;
+    let tiempoInicio;
+    let intervaloTemporizador;
+
+    function iniciarTemporizador() {
+      tiempoInicio = Date.now();
+      intervaloTemporizador = setInterval(() => {
+        const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
+        const m = String(Math.floor(transcurrido / 60)).padStart(2, '0');
+        const s = String(transcurrido % 60).padStart(2, '0');
+        document.getElementById("temporizador").textContent = `⏱ Tiempo: ${m}:${s}`;
+      }, 1000);
+    }
+
+    function actualizarBarraProgresoPreguntas() {
+      const vistas = indicePreguntaActual + 1;
+      const porcentaje = (vistas / preguntas.length) * 100;
+      document.getElementById("progreso-preguntas").style.width = `${porcentaje}%`;
+      document.getElementById("texto-progreso-preguntas").textContent = `${Math.round(porcentaje)}% (${vistas}/${preguntas.length})`;
+    }
+
+    function mostrarPregunta(i) {
+      indicePreguntaActual = i;
+      actualizarBarraProgresoPreguntas();
+      
+      const p = preguntas[i];
+      // Eliminar número de la pregunta si ya lo tiene
+      let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+      let html = `<form id="form-pregunta"><fieldset style="padding: 20px;">
+        <legend class="pregunta-en-negrita">${i + 1}. ${textoPregunta}</legend><br>`;
+      
+      for (const letra in p.opciones) {
+        const opcion = p.opciones[letra];
+        const checked = respuestasUsuario[i] === letra ? "checked" : "";
+        html += `
+          <div style="margin-bottom: 12px;">
+            <label style="cursor: pointer; display: flex; align-items: flex-start;">
+              <input type="radio" name="respuesta" value="${letra}" ${checked} style="margin-top: 4px; margin-right: 10px;">
+              <div>${letra}) ${opcion}</div>
+            </label>
+          </div>`;
+      }
+      
+      html += `
+        <div style="margin-top: 30px; display: flex; justify-content: space-between;">
+          ${i > 0 ? '<button type="button" id="btn-anterior" class="btn btn-accent" style="width: 48%;">⬅️ Anterior</button>' : ''} 
+          <button type="button" id="btn-desmarcar" class="btn btn-accent" style="width: ${i > 0 ? '48%' : '100%'};">❌ Desmarcar</button>
+        </div>
+        <button type="submit" class="btn btn-primary btn-siguiente" style="margin-top: 15px;">
+          ${i + 1 < preguntas.length ? 'Siguiente ➡️' : 'Finalizar test ✅'}
+        </button>
+      </fieldset></form>`;
+      
+      document.getElementById("contenedor-test").innerHTML = html;
+      document.getElementById("btn-desmarcar").addEventListener("click", () => {
+        const marcadas = document.querySelectorAll('input[name="respuesta"]:checked');
+        marcadas.forEach(m => m.checked = false);
+        respuestasUsuario[i] = null;
+      });
+      
+      document.getElementById("btn-finalizar").style.display = "block";
+      
+      if (i > 0 && document.getElementById("btn-anterior")) {
+        document.getElementById("btn-anterior").addEventListener("click", () => {
+          mostrarPregunta(i - 1);
+        });
+      }
+      
+      document.getElementById("form-pregunta").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const seleccion = document.querySelector('input[name="respuesta"]:checked');
+        const respuestaSeleccionada = seleccion ? seleccion.value : null;
+        respuestasUsuario[i] = respuestaSeleccionada;
+        
+        if (i + 1 < preguntas.length) {
+          mostrarPregunta(i + 1);
+        } else {
+          const sinContestar = respuestasUsuario.filter(r => r === null).length;
+          let mensaje = sinContestar > 0
+            ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+            : '¿Quieres finalizar el test y ver los resultados?';
+          
+          Swal.fire({
+            icon: 'question',
+            title: '¿Deseas finalizar el test?',
+            text: mensaje,
+            showCancelButton: true,
+            confirmButtonText: 'Sí, corregir',
+            cancelButtonText: 'Seguir revisando',
+          }).then((result) => {
+            if (result.isConfirmed) {
+              mostrarResultados();
+            }
+          });
+        }
+      });
+    }
+
+    async function mostrarResultados() {
+      clearInterval(intervaloTemporizador);
+      document.getElementById("contenedor-test").innerHTML = "";
+      document.getElementById("btn-finalizar").style.display = "none";
+      
+      const cont = document.getElementById("contenedor-resultados");
+      cont.style.display = "block";
+      
+      let aciertos = 0;
+      
+      // Nuevo diseño para filtros - botones en horizontal
+      let html = `
+        <div class="filtros-container">
+          <button class="btn btn-accent" onclick="aplicarFiltro('todos')">🟡 Todos</button>
+          <button class="btn btn-primary" onclick="aplicarFiltro('acierto')">✅ Aciertos</button>
+          <button class="btn btn-danger" onclick="aplicarFiltro('fallo')">❌ Fallos</button>
+          <button class="btn" style="background: #adb5bd; color: white;" onclick="aplicarFiltro('blanco')">⏸ En blanco</button>
+        </div>
+        <ol style="padding-left: 18px;">`;
+      
+      preguntas.forEach((p, i) => {
+        const correcta = p.respuesta_correcta || "No indicada";
+        const explicacion = p.explicacion || "Sin explicación.";
+        const seleccion = respuestasUsuario[i];
+        
+        let clase = "fallo";
+        if (seleccion === correcta) {
+          aciertos++;
+          clase = "acierto";
+        } else if (seleccion === null) {
+          clase = "blanco";
+        }
+        
+        // Eliminar número de la pregunta si ya lo tiene
+        let preguntaSinNumero = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+        html += `<li class="${clase}" style="margin-bottom:25px;">
+          <div class="pregunta-en-negrita">${i + 1}. ${preguntaSinNumero}</div>`;
+        
+        for (const letra in p.opciones) {
+          let tipoRespuesta = "resp-neutra";
+          let icono = "";
+          
+          if (letra === correcta) {
+            tipoRespuesta = "resp-correcta";
+            icono = '<span class="icono-correcto">✅</span>';
+          }
+          
+          if (letra === seleccion && letra !== correcta) {
+            tipoRespuesta = "resp-incorrecta";
+            icono = '<span class="icono-incorrecto">❌ </span>';
+          }
+          
+          html += `<div class="${tipoRespuesta}">${icono}${letra}) ${p.opciones[letra]}</div>`;
+        }
+        
+        const idExp = "exp" + i;
+        html += `<button class="btn" style="margin-top: 10px; background: #e9ecef; color: #495057;" 
+                 onclick="document.getElementById('${idExp}').style.display = document.getElementById('${idExp}').style.display === 'none' ? 'block' : 'none';">
+                 📘 Mostrar/Ocultar Explicación</button>`;
+        html += `<div id="${idExp}" style="display:none; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                 <strong>Explicación:</strong> ${explicacion}</div></li>`;
+      });
+      
+      const fallos = preguntas.length - aciertos - respuestasUsuario.filter(r => r === null).length;
+      const sinResponder = respuestasUsuario.filter(r => r === null).length;
+      const porcentaje = ((aciertos / preguntas.length) * 100).toFixed(1);
+      const nota = (aciertos * 1 - fallos * 0.33).toFixed(2);
+      const notaEquivalente = ((nota / preguntas.length) * 70).toFixed(2);
+      
+      html = `
+        <div style='background:#f8f9fa;padding:25px;border-radius:12px;margin-bottom:25px;'>
+          <h3>📊 Resumen del Test</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
+            <div style="background: #e8f5e9; padding: 15px; border-radius: 10px;">
+              <p style="color:green; font-weight:600;">✅ Aciertos: ${aciertos}</p>
+            </div>
+            <div style="background: #ffebee; padding: 15px; border-radius: 10px;">
+              <p style="color:red; font-weight:600;">❌ Fallos: ${fallos}</p>
+            </div>
+            <div style="background: #e9ecef; padding: 15px; border-radius: 10px;">
+              <p style="color:#495057; font-weight:600;">⏸ En blanco: ${sinResponder}</p>
+            </div>
+            <div style="background: #e7f5ff; padding: 15px; border-radius: 10px;">
+              <p style="color:#1c7ed6; font-weight:600;">🎯 Porcentaje: ${porcentaje}%</p>
+            </div>
+          </div>
+          <p><strong>📘 Nota simulada:</strong> ${nota} / ${preguntas.length}</p>
+          <p><strong>📏 Nota equivalente AGE:</strong> ${notaEquivalente} / 70</p>
+          <div style='background:#e9ecef;border-radius:10px;overflow:hidden;margin-top:15px;height:20px;'>
+            <div style='width:${porcentaje}%;background:linear-gradient(to right,#4caf50,#81c784);height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;'>
+              ${porcentaje}%
+            </div>
+          </div>
+        </div>
+        <h3 style="margin-top: 30px;">📝 Detalle de preguntas</h3>
+      ` + html;
+      
+      html += `</ol>`;
+      html += `<div style="text-align:center; margin-top:30px;">
+        <button class="btn btn-primary" onclick="location.reload()">🔁 Repetir Test</button>
+      </div>`;
+      
+      cont.innerHTML = html;
+    }
+
+    // Filtro de resultados
+    function aplicarFiltro(tipo) {
+      const items = document.querySelectorAll("#contenedor-resultados ol li");
+      items.forEach(li => {
+        if (tipo === 'todos') {
+          li.style.display = 'block';
+        } else {
+          li.style.display = li.classList.contains(tipo) ? 'block' : 'none';
+        }
+      });
+    }
+
+    document.getElementById("btn-finalizar").addEventListener("click", () => {
+      const sinContestar = respuestasUsuario.filter(r => r === null).length;
+      let mensaje = sinContestar > 0
+        ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+        : '¿Quieres finalizar el test y ver los resultados?';
+      
+      Swal.fire({
+        icon: 'question',
+        title: '¿Deseas finalizar el test?',
+        text: mensaje,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, corregir',
+        cancelButtonText: 'Seguir revisando',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          mostrarResultados();
+        }
+      });
+    });
+
+    window.addEventListener("load", async () => {
+      try {
+        // Mostrar mensaje de carga
+        document.getElementById("contenedor-test").innerHTML = `
+          <div style="text-align: center; padding: 20px;">
+            <p id="mensaje-carga">⏳ Cargando último test...</p>
+            <div class="progress-container">
+              <div id="barra-carga" class="barra-carga" style="width: 0%"></div>
+              <div id="texto-carga" class="progress-text">0%</div>
+            </div>
+          </div>
+        `;
+        
+        // Simular progreso de carga
+        let progreso = 0;
+        const intervalCarga = setInterval(() => {
+          if (progreso < 100) {
+            progreso += 10;
+            document.getElementById("barra-carga").style.width = `${progreso}%`;
+            document.getElementById("texto-carga").textContent = `${progreso}%`;
+          }
+        }, 100);
+        
+        const res = await fetch(`https://oposicion-age.onrender.com/ultimo-test?usuario_id=${usuarioEmail}`);
+        const datos = await res.json();
+        
+        clearInterval(intervalCarga);
+        preguntas = datos.test || [];
+        
+        if (preguntas.length === 0) {
+          document.getElementById("contenedor-test").innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+              <h3>No se encontró test anterior</h3>
+              <p>No hay ningún test disponible para repetir.</p>
+              <button class="btn btn-primary" onclick="location.reload()">Reintentar</button>
+            </div>`;
+          return;
+        }
+        
+        respuestasUsuario = Array(preguntas.length).fill(null);
+        indicePreguntaActual = 0;
+        
+        // Mostrar barra de progreso de preguntas
+        document.getElementById("barra-progreso-preguntas").style.display = "block";
+        
+        iniciarTemporizador();
+        mostrarPregunta(indicePreguntaActual);
+      } catch (err) {
+        console.error("Error:", err);
+        document.getElementById("contenedor-test").innerHTML = `
+          <div style="text-align: center; padding: 40px; color:#ef5350;">
+            <h3>Error al cargar el test</h3>
+            <p>Por favor intenta nuevamente más tarde.</p>
+            <button class="btn btn-primary" onclick="location.reload()">Reintentar</button>
+          </div>`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+name: Recordatorio de racha
+
+on:
+  schedule:
+    # 19:00 UTC todos los días: por la tarde/noche para casi todas las zonas
+    # horarias de habla hispana, antes de que se acabe el día y se rompa la
+    # racha de quien ya estudió ayer pero todavía no hoy.
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+jobs:
+  enviar-recordatorios:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al backend
+        run: |
+          curl -sS -X POST "${{ vars.BACKEND_URL || 'https://oposicion-age.onrender.com' }}/tareas/recordatorios-racha" \
+            -H "X-Cron-Key: ${{ secrets.CRON_SECRET_KEY }}" \
+            --fail-with-body

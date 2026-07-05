@@ -1,0 +1,92 @@
+/* Estilos propios de "Resumir Documentos" -- la cabecera, tarjetas, botones,
+   zona de subida y estado de carga son compartidos (ver /assets/pdf-tools.css);
+   aquí solo queda lo específico de esta herramienta: la tipografía del
+   resumen generado y las animaciones puntuales. */
+
+.hidden { display: none !important; }
+.fade-in { animation: fadeIn 0.5s ease; }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ai-icon { animation: pulseIcon 2s infinite; }
+@keyframes pulseIcon {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.typewriter {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid var(--age-primary);
+  animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+}
+@keyframes typing {
+  from { width: 0; }
+  to { width: 100%; }
+}
+@keyframes blink-caret {
+  50% { border-color: transparent; }
+}
+
+/* Resumen profesional */
+#resumen-profesional {
+  font-family: var(--age-font);
+  line-height: 1.8;
+}
+.resumen-header {
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 2px solid var(--age-border);
+}
+.resumen-titulo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--age-ink);
+  margin-bottom: 6px;
+}
+.resumen-meta {
+  color: var(--age-ink-soft);
+  font-size: 0.92rem;
+}
+.resumen-contenido {
+  font-size: 1.05rem;
+  color: var(--age-ink);
+}
+.resumen-contenido h2 {
+  font-size: 1.25rem;
+  margin: 24px 0 12px;
+  color: var(--age-ink);
+  font-weight: 800;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--age-border);
+}
+.resumen-contenido h3 {
+  font-size: 1.1rem;
+  margin: 18px 0 10px;
+  color: var(--age-primary-dark);
+  font-weight: 700;
+}
+.resumen-contenido ul, .resumen-contenido ol {
+  padding-left: 22px;
+  margin: 14px 0;
+}
+.resumen-contenido li {
+  margin-bottom: 8px;
+}
+.resumen-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .resumen-titulo { font-size: 1.3rem; }
+  .resumen-actions { flex-direction: column; }
+  .resumen-actions .btn { width: 100%; }
+}

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Generar Test desde PDF - Asistente AGE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- ✅ CSS EXTERNO -->
+  <link rel="stylesheet" href="CSS_TESTGENERATOR_1.3.txt">
+</head>
+<body>
+  <div class="container">
+    <h1 id="titulo-formulario">Generar Test desde PDF</h1>
+
+    <!-- Formulario PDF -->
+    <div class="card fade-in">
+      <form id="form-subir-pdf">
+        <label for="archivo-pdf"><i class="fas fa-file-pdf"></i> Sube tu documento PDF (máx. 10 MB)</label>
+        <div class="file-upload-area" id="upload-area" style="border:2px dashed #ccc; padding:25px; text-align:center; margin:15px 0; border-radius:12px; background:#fafafa;">
+          <div style="font-size:2.5rem; margin-bottom:15px; color:#4caf50;">📄</div>
+          <h3>Arrastra y suelta tu PDF aquí</h3>
+          <p>O haz clic en el botón de abajo</p>
+          <button type="button" class="btn btn-primary" id="select-file-btn" style="margin-top:10px;">Seleccionar archivo</button>
+          <input type="file" id="archivo-pdf" accept=".pdf" style="display:none;" required>
+        </div>
+        <div id="file-name" style="margin-top:10px; padding:8px; background:#f0f0f0; border-radius:6px; display:none;"></div>
+
+        <label for="num_preguntas" style="margin-top:20px;">Número de preguntas (1–50):</label>
+        <input type="number" id="num_preguntas" min="1" max="50" value="10" required style="padding:10px; width:100%; margin-top:8px; border:1px solid #ccc; border-radius:8px;">
+
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:25px;">Generar Test desde PDF</button>
+      </form>
+    </div>
+
+    <!-- Contenedor de Carga Mejorada -->
+    <div id="contenedor-carga" class="card fade-in" style="display:none; text-align:center; padding:30px;">
+      <div style="font-size:3rem; margin-bottom:20px;" id="ai-icon">🤖</div>
+      <div style="min-height:2rem; margin:15px 0; font-size:1.1rem; color:#666;">
+        <span id="texto-estado" class="typewriter">Leyendo texto del PDF…</span>
+      </div>
+      <div class="progress-container" style="margin:20px auto; max-width:500px; height:25px; background:#f0f0f0; border-radius:12px; overflow:hidden; position:relative;">
+        <div id="progreso-carga" class="barra-carga" style="height:100%; width:0%; background:linear-gradient(90deg, #4caf50, #66bb6a);"></div>
+        <div id="texto-carga" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-weight:600;">0%</div>
+      </div>
+    </div>
+
+    <!-- Temporizador y Barra de Progreso -->
+    <div id="temporizador" style="display:none; text-align:center; font-size:1.8rem; font-weight:bold; padding:15px; margin:20px 0; background:linear-gradient(135deg, #d0ebff, #a5d8ff); color:#1c7ed6; border-radius:12px;"></div>
+    <div id="barra-progreso-preguntas" class="progress-container" style="display:none; margin:20px 0;">
+      <div id="progreso-preguntas" class="barra-carga" style="width:0%; background:linear-gradient(90deg, #2196F3, #64b5f6);"></div>
+      <div id="texto-progreso-preguntas" class="progress-text" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; font-weight:600;">0%</div>
+    </div>
+
+    <!-- Contenedor del Test -->
+    <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
+
+    <!-- Resultados -->
+    <div id="contenedor-resultados" class="card fade-in" style="display:none;"></div>
+
+    <!-- Botones Finales -->
+    <button id="btn-finalizar" class="btn btn-danger btn-block" style="display:none; margin-top:15px; width:100%;">Finalizar Test</button>
+    <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none; margin-top:10px; width:100%;">Descargar PDF del test</button>
+  </div>
+
+  <!-- Librerías -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    // === Variables Globales ===
+    let preguntas = [];
+    let indicePreguntaActual = 0;
+    let respuestasUsuario = [];
+    let tiempoInicio;
+    let intervaloTemporizador;
+
+    // === Referencias DOM ===
+    const formularioPdf = document.getElementById('form-subir-pdf');
+    const uploadArea = document.getElementById('upload-area');
+    const selectFileBtn = document.getElementById('select-file-btn');
+    const archivoPdfInput = document.getElementById('archivo-pdf');
+    const fileNameDisplay = document.getElementById('file-name');
+    const numPreguntasInput = document.getElementById('num_preguntas');
+    const contenedorCarga = document.getElementById('contenedor-carga');
+    const contenedorTest = document.getElementById('contenedor-test');
+    const contenedorResultados = document.getElementById('contenedor-resultados');
+    const temporizador = document.getElementById('temporizador');
+    const btnFinalizar = document.getElementById('btn-finalizar');
+    const btnDescargarPdf = document.getElementById('btn-descargar-pdf');
+
+    // === Función de Guardado en Firebase ===
+    async function guardarTestEnFirebase() {
+      const usuario_id = window.usuarioEmail || "usuario_prueba";
+      const nombreArchivo = documentoPdfInput.files[0]?.name || "documento.pdf";
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/guardar-test-pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ usuario_id, test_ { preguntas }, nombre_archivo: nombreArchivo })
+        });
+        const datos = await res.json();
+        if (!res.ok) {
+          console.error("❌ Error al guardar test en Firebase:", datos.error);
+        } else {
+          console.log("✅ Test guardado en Firebase");
+        }
+      } catch (e) {
+        console.error("⚠️ Error al guardar test en Firebase:", e);
+      }
+    }
+
+    // === Funciones de ayuda ===
+    function mostrarError(mensaje) {
+      Swal.fire({ icon: 'error', title: 'Error', text: mensaje, confirmButtonText: 'Entendido' });
+      formularioPdf.style.display = 'block';
+      contenedorCarga.style.display = 'none';
+    }
+
+    function formatearTiempo(segundos) {
+      const m = String(Math.floor(segundos / 60)).padStart(2, '0');
+      const s = String(segundos % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function iniciarTemporizador() {
+      tiempoInicio = Date.now();
+      intervaloTemporizador = setInterval(() => {
+        const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
+        temporizador.textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
+        temporizador.style.display = "block";
+      }, 1000);
+    }
+
+    function actualizarBarraProgresoPreguntas() {
+      const vistas = indicePreguntaActual + 1;
+      const porcentaje = (vistas / preguntas.length) * 100;
+      document.getElementById("progreso-preguntas").style.width = `${porcentaje}%`;
+      document.getElementById("texto-progreso-preguntas").textContent = `${Math.round(porcentaje)}% (${vistas}/${preguntas.length})`;
+      document.getElementById("barra-progreso-preguntas").style.display = "block";
+    }
+
+    // === Eventos de archivo ===
+    selectFileBtn.addEventListener('click', () => archivoPdfInput.click());
+    archivoPdfInput.addEventListener('change', () => {
+      const file = archivoPdfInput.files[0];
+      if (file) {
+        if (file.size > 10 * 1024 * 1024) {
+          Swal.fire({ icon: 'error', title: 'Archivo demasiado grande', text: 'Máx. 10 MB.', confirmButtonText: 'Entendido' });
+          archivoPdfInput.value = '';
+          return;
+        }
+        const name = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
+        fileNameDisplay.textContent = name;
+        fileNameDisplay.style.display = 'block';
+      }
+    });
+
+    // === Envío del formulario con carga mejorada ===
+    formularioPdf.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const archivo = archivoPdfInput.files[0];
+      const num_preguntas = parseInt(numPreguntasInput.value);
+
+      if (!archivo) { mostrarError('Selecciona un archivo PDF.'); return; }
+      if (archivo.type !== 'application/pdf') { mostrarError('El archivo debe ser un PDF.'); return; }
+
+      const formData = new FormData();
+      formData.append('pdf', archivo);
+      formData.append('num_preguntas', num_preguntas);
+
+      formularioPdf.style.display = 'none';
+      contenedorCarga.style.display = 'block';
+
+      const barraProgreso = document.getElementById('progreso-carga');
+      const textoPorcentaje = document.getElementById('texto-carga');
+      const textoEstado = document.getElementById('texto-estado');
+      const aiIcon = document.getElementById('ai-icon');
+
+      const etapas = [
+        { mensaje: "Leyendo texto del PDF…", icono: "📄", duracion: 12000 },
+        { mensaje: "Extrayendo conceptos clave…", icono: "🔍", duracion: 12000 },
+        { mensaje: "Analizando estructura del temario…", icono: "📊", duracion: 12000 },
+        { mensaje: "Generando preguntas inteligentes…", icono: "🧠", duracion: 12000 },
+        { mensaje: "Preparando test…", icono: "✅", duracion: 12000 }
+      ];
+
+      let datosIA = null;
+      let errorIA = null;
+      let iaTerminada = false;
+
+      fetch("https://oposicion-age.onrender.com/generar-test-desde-pdf", {
+        method: "POST",
+        body: formData
+      })
+      .then(async res => {
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error: ${res.status}`);
+        }
+        const datos = await res.json();
+        if (!datos.test) throw new Error(datos.error || "No se generaron preguntas.");
+        datosIA = datos;
+      })
+      .catch(err => { errorIA = err; })
+      .finally(() => { iaTerminada = true; });
+
+      function escribirTexto(elemento, texto) {
+        elemento.textContent = '';
+        setTimeout(() => { elemento.textContent = texto; }, 10);
+      }
+
+      const inicio = Date.now();
+      const duracionTotal = 60000;
+
+      for (let i = 0; i < etapas.length; i++) {
+        const etapa = etapas[i];
+        aiIcon.textContent = etapa.icono;
+        escribirTexto(textoEstado, etapa.mensaje);
+        await new Promise(r => setTimeout(r, etapa.duracion));
+        const progreso = Math.min(99, Math.round(((i + 1) / etapas.length) * 99));
+        barraProgreso.style.width = `${progreso}%`;
+        textoPorcentaje.textContent = `${progreso}%`;
+      }
+
+      while (!(iaTerminada && (Date.now() - inicio >= duracionTotal))) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      if (errorIA) { mostrarError(errorIA.message); return; }
+
+      aiIcon.textContent = "✅";
+      escribirTexto(textoEstado, "¡Listo! Cargando test…");
+      barraProgreso.style.width = "100%";
+      textoPorcentaje.textContent = "100%";
+      await new Promise(r => setTimeout(r, 400));
+
+      preguntas = datosIA.test || [];
+      if (preguntas.length === 0) { mostrarError("No se generaron preguntas válidas."); return; }
+
+      respuestasUsuario = Array(preguntas.length).fill(null);
+      indicePreguntaActual = 0;
+      contenedorCarga.style.display = 'none';
+      iniciarTemporizador();
+      actualizarBarraProgresoPreguntas();
+      mostrarPregunta(indicePreguntaActual);
+      btnFinalizar.style.display = 'block';
+    });
+
+    // === Lógica de preguntas ===
+    function mostrarPregunta(i) {
+      indicePreguntaActual = i;
+      const p = preguntas[i];
+      let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+      let html = `<form id="form-pregunta"><fieldset style="padding: 20px;">
+        <legend class="pregunta-en-negrita">${textoPregunta}</legend><br>`;
+      for (const letra in p.opciones) {
+        const opcion = p.opciones[letra];
+        const checked = respuestasUsuario[i] === letra ? "checked" : "";
+        html += `
+          <div style="margin-bottom: 12px;">
+            <label style="cursor: pointer; display: flex; align-items: flex-start;">
+              <input type="radio" name="respuesta" value="${letra}" ${checked} style="margin-top: 4px; margin-right: 10px;">
+              <div>${letra}) ${opcion}</div>
+            </label>
+          </div>`;
+      }
+      html += `
+        <div class="botones-navegacion-test">
+          ${i > 0 ? '<button type="button" id="btn-anterior" class="btn btn-secondary" style="width: 48%;">⬅️ Anterior</button>' : ''}
+          <button type="button" id="btn-desmarcar" class="btn btn-secondary" style="width: ${i > 0 ? '48%' : '100%'};">❌ Desmarcar</button>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:15px; width:100%;">
+          ${i + 1 < preguntas.length ? 'Siguiente ➡️' : 'Finalizar test ✅'}
+        </button>
+      </fieldset></form>`;
+      contenedorTest.innerHTML = html;
+      contenedorTest.style.display = "block";
+
+      document.getElementById("btn-desmarcar").addEventListener("click", () => {
+        const marcadas = document.querySelectorAll('input[name="respuesta"]:checked');
+        marcadas.forEach(m => m.checked = false);
+        respuestasUsuario[i] = null;
+      });
+
+      if (i > 0) {
+        document.getElementById("btn-anterior").addEventListener("click", () => mostrarPregunta(i - 1));
+      }
+
+      document.getElementById("form-pregunta").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const seleccion = document.querySelector('input[name="respuesta"]:checked');
+        respuestasUsuario[i] = seleccion ? seleccion.value : null;
+        if (i + 1 < preguntas.length) {
+          mostrarPregunta(i + 1);
+        } else {
+          const sinContestar = respuestasUsuario.filter(r => r === null).length;
+          let mensaje = sinContestar > 0
+            ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+            : '¿Quieres finalizar el test y ver los resultados?';
+          Swal.fire({
+            icon: 'question',
+            title: '¿Deseas finalizar el test?',
+            text: mensaje,
+            showCancelButton: true,
+            confirmButtonText: 'Sí, corregir',
+            cancelButtonText: 'Seguir revisando',
+          }).then((result) => {
+            if (result.isConfirmed) {
+              mostrarResultados();
+            }
+          });
+        }
+      });
+    }
+
+    // === Resultados ===
+    function mostrarResultados() {
+      clearInterval(intervaloTemporizador);
+      contenedorTest.style.display = "none";
+      btnFinalizar.style.display = "none";
+
+      let aciertos = 0, fallos = 0, sinResponder = 0;
+      preguntas.forEach((p, i) => {
+        const correcta = p.respuesta_correcta || "No indicada";
+        const seleccion = respuestasUsuario[i];
+        if (seleccion === correcta) aciertos++;
+      });
+      fallos = preguntas.length - aciertos - respuestasUsuario.filter(r => r === null).length;
+      sinResponder = respuestasUsuario.filter(r => r === null).length;
+      const porcentaje = ((aciertos / preguntas.length) * 100).toFixed(1);
+      const nota = (aciertos * 1 - fallos * 0.33).toFixed(2);
+      const notaEquivalente = ((nota / preguntas.length) * 70).toFixed(2);
+
+      let html = `
+        <div style='background:#f8f9fa;padding:25px;border-radius:12px;margin-bottom:25px;'>
+          <h3>📊 Resumen del Test</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
+            <div style="background: #e8f5e9; padding: 15px; border-radius: 10px;">
+              <p style="color:green; font-weight:600;">✅ Aciertos: ${aciertos}</p>
+            </div>
+            <div style="background: #ffebee; padding: 15px; border-radius: 10px;">
+              <p style="color:red; font-weight:600;">❌ Fallos: ${fallos}</p>
+            </div>
+            <div style="background: #e9ecef; padding: 15px; border-radius: 10px;">
+              <p style="color:#495057; font-weight:600;">⏸ En blanco: ${sinResponder}</p>
+            </div>
+            <div style="background: #e7f5ff; padding: 15px; border-radius: 10px;">
+              <p style="color:#1c7ed6; font-weight:600;">🎯 Porcentaje: ${porcentaje}%</p>
+            </div>
+          </div>
+          <p><strong>📘 Nota simulada:</strong> ${nota} / ${preguntas.length}</p>
+          <p><strong>📏 Nota equivalente AGE:</strong> ${notaEquivalente} / 70</p>
+          <div style='background:#e9ecef;border-radius:10px;overflow:hidden;margin-top:15px;height:20px;'>
+            <div style='width:${porcentaje}%;background:linear-gradient(to right,#4caf50,#81c784);height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;'>
+              ${porcentaje}%
+            </div>
+          </div>
+        </div>
+        <h3 style="margin-top: 30px;">📝 Detalle de preguntas</h3>
+        <ol style="padding-left: 18px;">`;
+
+      preguntas.forEach((p, i) => {
+        const correcta = p.respuesta_correcta || "No indicada";
+        const seleccion = respuestasUsuario[i];
+        let clase = "fallo";
+        if (seleccion === correcta) clase = "acierto";
+        else if (seleccion === null) clase = "blanco";
+        let preguntaSinNumero = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+        html += `<li class="${clase}" style="margin-bottom:25px;">
+          <div class="pregunta-en-negrita">${preguntaSinNumero}</div>`;
+        for (const letra in p.opciones) {
+          let tipoRespuesta = "resp-neutra";
+          let icono = "";
+          if (letra === correcta) {
+            tipoRespuesta = "resp-correcta";
+            icono = '<span class="icono-correcto">✅</span>';
+          }
+          if (letra === seleccion && seleccion !== correcta) {
+            tipoRespuesta = "resp-incorrecta";
+            icono = '<span class="icono-incorrecto">❌ </span>';
+          }
+          html += `<div class="${tipoRespuesta}">${icono}${letra}) ${p.opciones[letra]}</div>`;
+        }
+        const idExp = "exp" + i;
+        html += `<button class="btn" style="margin-top: 10px; background: #e9ecef; color: #495057;" 
+                 onclick="document.getElementById('${idExp}').style.display = document.getElementById('${idExp}').style.display === 'none' ? 'block' : 'none';">
+                 📘 Mostrar/Ocultar Explicación</button>`;
+        html += `<div id="${idExp}" style="display:none; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                 <strong>Explicación:</strong> ${p.explicacion || "Sin explicación."}</div></li>`;
+      });
+      html += `</ol>`;
+
+      contenedorResultados.innerHTML = html;
+      contenedorResultados.style.display = "block";
+      btnDescargarPdf.style.display = "block";
+
+      // ✅ GUARDAR EN FIREBASE AL FINALIZAR
+      guardarTestEnFirebase();
+    }
+
+    // === Eventos de botones finales ===
+    btnFinalizar.addEventListener("click", () => {
+      const sinContestar = respuestasUsuario.filter(r => r === null).length;
+      let mensaje = sinContestar > 0
+        ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+        : '¿Quieres finalizar el test y ver los resultados?';
+      Swal.fire({
+        icon: 'question',
+        title: '¿Deseas finalizar el test?',
+        text: mensaje,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, corregir',
+        cancelButtonText: 'Seguir revisando',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          mostrarResultados();
+        }
+      });
+    });
+
+    // ✅ DESCARGA DE PDF FUNCIONAL
+    btnDescargarPdf.addEventListener("click", function() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const margin = 15;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      let yPos = 20;
+
+      function addText(text, x, y, maxWidth = pageWidth - 2*margin) {
+        const lines = doc.splitTextToSize(text, maxWidth);
+        lines.forEach(line => {
+          if (yPos > 280) { doc.addPage(); yPos = 20; }
+          doc.text(line, x, yPos);
+          yPos += 7;
+        });
+        yPos += 5;
+      }
+
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Resultados del Test", pageWidth / 2, yPos, null, null, 'center');
+      yPos += 15;
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      const resumen = `Aciertos: ${aciertos} | Fallos: ${fallos} | En blanco: ${sinResponder} | Porcentaje: ${porcentaje}%`;
+      addText(resumen, margin, yPos);
+      yPos += 15;
+
+      preguntas.forEach((p, i) => {
+        doc.setFont("helvetica", "bold");
+        let preguntaTexto = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+        addText(`${i + 1}. ${preguntaTexto}`, margin, yPos);
+        doc.setFont("helvetica", "normal");
+        for (const letra in p.opciones) {
+          let txt = `${letra}) ${p.opciones[letra]}`;
+          if (letra === p.respuesta_correcta) txt += " [CORRECTA]";
+          addText(txt, margin, yPos);
+        }
+        addText(`Explicación: ${p.explicacion || "Sin explicación."}`, margin, yPos);
+        yPos += 10;
+      });
+
+      doc.save("test_generado_desde_pdf.pdf");
+    });
+  </script>
+</body>
+</html>

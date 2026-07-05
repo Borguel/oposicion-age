@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma Oposiciones AGE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f6fa 0%, #e1e5f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 30px;
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .option-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 18px 20px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 6px rgba(76, 175, 80, 0.2);
+        }
+
+        .option-btn:hover {
+            background: #45a047;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .option-btn.resumir { background: #4caf50; }
+        .option-btn.esquema { background: #2196F3; }
+        .option-btn.test { background: #FF9800; }
+        .option-btn.tarjetas { background: #9C27B0; }
+
+        .option-btn.resumir:hover { background: #45a047; }
+        .option-btn.esquema:hover { background: #1e88e5; }
+        .option-btn.test:hover { background: #fb8c00; }
+        .option-btn.tarjetas:hover { background: #8E24AA; }
+
+        /* Modal mejorado */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #666;
+            background: none;
+            border: none;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .close-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .file-input {
+            margin: 25px 0;
+            padding: 25px;
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-input:hover {
+            border-color: #4caf50;
+            background: #f9fff9;
+        }
+
+        .process-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(76, 175, 80, 0.2);
+        }
+
+        .process-btn:hover {
+            background: #45a047;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .process-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4caf50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Resultado mejorado */
+        .result {
+            margin-top: 25px;
+            padding: 0;
+            border-radius: 12px;
+            text-align: left;
+            display: none;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn.download {
+            background: #2196F3;
+            color: white;
+        }
+
+        .action-btn.download:hover {
+            background: #1e88e5;
+        }
+
+        .action-btn.close {
+            background: #6b7280;
+            color: white;
+        }
+
+        .action-btn.close:hover {
+            background: #4b5563;
+        }
+
+        .result-content {
+            padding: 0 5px;
+        }
+
+        /* Estilos específicos para cada tipo de resultado */
+        .resumen-content, .esquema-content {
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .resumen-content p, .esquema-content p {
+            margin-bottom: 15px;
+        }
+
+        /* Estilos para tarjetas de memoria */
+        .flashcards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .flashcard {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            border: 1px solid #e2e8f0;
+        }
+
+        .flashcard:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .flashcard-front {
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .flashcard-back {
+            display: none;
+            text-align: left;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .flashcard.flipped .flashcard-front {
+            display: none;
+        }
+
+        .flashcard.flipped .flashcard-back {
+            display: block;
+        }
+
+        .flashcard-number {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: #4caf50;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* Estilos para test */
+        .test-container {
+            margin-top: 20px;
+        }
+
+        .pregunta-test {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4caf50;
+        }
+
+        .pregunta-texto {
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .opciones-test {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .opcion-test {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px 15px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .opcion-test:hover {
+            border-color: #4caf50;
+            background: #f0fff4;
+        }
+
+        .opcion-test input {
+            margin-right: 10px;
+            margin-top: 3px;
+        }
+
+        .test-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+        }
+
+        .btn-test {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-test.primary {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-test.primary:hover {
+            background: #45a047;
+        }
+
+        .btn-test.secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-test.secondary:hover {
+            background: #4b5563;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>¿Qué quieres hacer hoy?</h1>
+        
+        <div class="options-grid">
+            <button class="option-btn resumir" onclick="openModal('resumir')">
+                📄 Resumir Documento
+            </button>
+            
+            <button class="option-btn esquema" onclick="openModal('esquema')">
+                🗂️ Generar Esquema
+            </button>
+            
+            <button class="option-btn test" onclick="openModal('test')">
+                🧪 Crear Test
+            </button>
+            
+            <button class="option-btn tarjetas" onclick="openModal('tarjetas')">
+                🃏 Tarjetas de Memoria
+            </button>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 0.95rem; margin-top: 20px;">
+            Selecciona una opción para procesar tu documento PDF con IA
+        </p>
+    </div>
+
+    <!-- Modal para subir PDF -->
+    <div id="pdfModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h3 id="modalTitle">Subir Documento PDF</h3>
+            
+            <div class="file-input" onclick="document.getElementById('pdfFile').click()">
+                <p style="font-size: 1.1rem;">📎 Haz clic para seleccionar PDF</p>
+                <input type="file" id="pdfFile" accept=".pdf" style="display: none;" onchange="handleFileSelect(this)">
+                <p id="fileName" style="margin-top: 10px; color: #666; font-style: italic;"></p>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <p>Procesando documento con IA...</p>
+            </div>
+
+            <button class="process-btn" id="processBtn" disabled onclick="processDocument()">
+                Procesar Documento
+            </button>
+
+            <div class="result" id="result">
+                <div class="result-header">
+                    <h4 id="resultTitle">Resultado</h4>
+                    <div class="result-actions">
+                        <button class="action-btn download" onclick="downloadResult()">Descargar PDF</button>
+                        <button class="action-btn close" onclick="closeResult()">Cerrar</button>
+                    </div>
+                </div>
+                <div class="result-content" id="resultContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        let currentAction = '';
+        let selectedFile = null;
+        let processedData = null;
+
+        function openModal(action) {
+            currentAction = action;
+            const modal = document.getElementById('pdfModal');
+            const title = document.getElementById('modalTitle');
+            
+            // Configurar título según la acción
+            const titles = {
+                'resumir': 'Resumir Documento PDF',
+                'esquema': 'Generar Esquema desde PDF', 
+                'test': 'Crear Test desde PDF',
+                'tarjetas': 'Generar Tarjetas de Memoria'
+            };
+            
+            title.textContent = titles[action] || 'Subir Documento PDF';
+            modal.style.display = 'flex';
+            
+            // Resetear estado
+            resetModal();
+        }
+
+        function closeModal() {
+            document.getElementById('pdfModal').style.display = 'none';
+            resetModal();
+        }
+
+        function resetModal() {
+            selectedFile = null;
+            document.getElementById('pdfFile').value = '';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('processBtn').disabled = true;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('resultContent').innerHTML = '';
+        }
+
+        function handleFileSelect(input) {
+            if (input.files.length > 0) {
+                selectedFile = input.files[0];
+                document.getElementById('fileName').textContent = selectedFile.name;
+                document.getElementById('processBtn').disabled = false;
+            }
+        }
+
+        function closeResult() {
+            document.getElementById('result').style.display = 'none';
+        }
+
+        async function processDocument() {
+            if (!selectedFile) return;
+
+            const loading = document.getElementById('loading');
+            const processBtn = document.getElementById('processBtn');
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            const resultTitle = document.getElementById('resultTitle');
+
+            // Mostrar loading
+            loading.style.display = 'block';
+            processBtn.disabled = true;
+            resultDiv.style.display = 'none';
+
+            try {
+                // Simular procesamiento (en un caso real, aquí iría la llamada a tu API)
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Datos de ejemplo según el tipo de acción
+                processedData = generateSampleData(currentAction);
+                
+                // Mostrar resultado
+                resultTitle.textContent = getResultTitle(currentAction);
+                resultContent.innerHTML = formatResult(processedData, currentAction);
+                resultDiv.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error:', error);
+                resultContent.innerHTML = `<p style="color: red; text-align: center;">Error al procesar el documento: ${error.message}</p>`;
+                resultDiv.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function getResultTitle(action) {
+            const titles = {
+                'resumir': 'Resumen del Documento',
+                'esquema': 'Esquema Generado', 
+                'test': 'Test Creado',
+                'tarjetas': 'Tarjetas de Memoria'
+            };
+            return titles[action] || 'Resultado';
+        }
+
+        function formatResult(data, action) {
+            switch(action) {
+                case 'resumir':
+                    return `<div class="resumen-content">${data.texto.replace(/\n/g, '</p><p>')}</div>`;
+                
+                case 'esquema':
+                    return `<div class="esquema-content">${data.texto.replace(/\n/g, '</p><p>')}</div>`;
+                
+                case 'test':
+                    if (data.preguntas && data.preguntas.length > 0) {
+                        let html = '<div class="test-container">';
+                        data.preguntas.forEach((pregunta, index) => {
+                            html += `
+                                <div class="pregunta-test">
+                                    <div class="pregunta-texto">${index + 1}. ${pregunta.pregunta}</div>
+                                    <div class="opciones-test">
+                            `;
+                            
+                            Object.entries(pregunta.opciones).forEach(([key, value]) => {
+                                html += `
+                                    <div class="opcion-test">
+                                        <input type="radio" id="p${index}_${key}" name="pregunta_${index}" value="${key}">
+                                        <label for="p${index}_${key}">${key}) ${value}</label>
+                                    </div>
+                                `;
+                            });
+                            
+                            html += `</div></div>`;
+                        });
+                        
+                        html += `
+                            <div class="test-actions">
+                                <button class="btn-test secondary" onclick="closeResult()">Volver</button>
+                                <button class="btn-test primary" onclick="iniciarTest()">Iniciar Test</button>
+                            </div>
+                        </div>`;
+                        
+                        return html;
+                    }
+                    return '<p>No se pudieron generar preguntas</p>';
+                
+                case 'tarjetas':
+                    if (data.tarjetas && data.tarjetas.length > 0) {
+                        let html = '<div class="flashcards-container">';
+                        data.tarjetas.forEach((tarjeta, index) => {
+                            html += `
+                                <div class="flashcard" onclick="this.classList.toggle('flipped')">
+                                    <div class="flashcard-number">${index + 1}</div>
+                                    <div class="flashcard-front">
+                                        ${tarjeta.pregunta}
+                                    </div>
+                                    <div class="flashcard-back">
+                                        ${tarjeta.respuesta}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        return html;
+                    }
+                    return '<p>No se pudieron generar tarjetas</p>';
+                
+                default:
+                    return '<p>Resultado no formateado</p>';
+            }
+        }
+
+        function generateSampleData(action) {
+            // Datos de ejemplo basados en el esquema proporcionado
+            switch(action) {
+                case 'resumir':
+                    return {
+                        texto: "La Constitución Española de 1978 establece los principios fundamentales del ordenamiento jurídico español. Se estructura en un Título Preliminar y diez Títulos adicionales, que abarcan desde los derechos y deberes fundamentales hasta la organización territorial del Estado.\n\nEl Título Preliminar define España como un Estado social y democrático de Derecho, cuya forma política es la Monarquía parlamentaria. Los valores superiores del ordenamiento jurídico son la libertad, la justicia, la igualdad y el pluralismo político.\n\nEl Título I desarrolla los derechos y deberes fundamentales, garantizando la dignidad de la persona y estableciendo mecanismos de protección. Los órganos constitucionales principales son la Corona, las Cortes Generales, el Gobierno, el Poder Judicial y el Tribunal Constitucional."
+                    };
+                
+                case 'esquema':
+                    return {
+                        texto: "ESQUEMA - CONSTITUCIÓN ESPAÑOLA DE 1978\n\n1. ESTRUCTURA BÁSICA\n   - Título Preliminar\n   - Título I: Derechos y deberes fundamentales\n   - Títulos II-X: Organización del Estado\n\n2. PRINCIPIOS CONSTITUCIONALES (Art. 1-2)\n   - Estado social y democrático de Derecho\n   - Monarquía parlamentaria\n   - Unidad de la Nación y derecho a la autonomía\n   - Solidaridad interterritorial\n\n3. VALORES SUPERIORES (Art. 1.1)\n   - Libertad\n   - Justicia\n   - Igualdad\n   - Pluralismo político\n\n4. DERECHOS FUNDAMENTALES\n   - Sección 1ª: Derechos fundamentales (art. 15-29)\n   - Sección 2ª: Derechos y deberes ciudadanos (art. 30-38)\n   - Principios rectores de política social y económica (art. 39-52)"
+                    };
+                
+                case 'test':
+                    return {
+                        preguntas: [
+                            {
+                                pregunta: "¿Qué forma política tiene España según la Constitución?",
+                                opciones: {
+                                    "a": "República federal",
+                                    "b": "Monarquía parlamentaria",
+                                    "c": "Estado unitario",
+                                    "d": "Confederación de comunidades"
+                                },
+                                respuesta_correcta: "b"
+                            },
+                            {
+                                pregunta: "¿Cuáles son los valores superiores del ordenamiento jurídico español?",
+                                opciones: {
+                                    "a": "Libertad, justicia, igualdad y pluralismo político",
+                                    "b": "Solidaridad, subsidiariedad, eficiencia y transparencia",
+                                    "c": "Unidad, libertad, igualdad y fraternidad",
+                                    "d": "Democracia, república, laicidad y justicia social"
+                                },
+                                respuesta_correcta: "a"
+                            },
+                            {
+                                pregunta: "¿Qué Título de la Constitución regula los derechos y deberes fundamentales?",
+                                opciones: {
+                                    "a": "Título Preliminar",
+                                    "b": "Título I",
+                                    "c": "Título II",
+                                    "d": "Título III"
+                                },
+                                respuesta_correcta: "b"
+                            }
+                        ]
+                    };
+                
+                case 'tarjetas':
+                    return {
+                        tarjetas: [
+                            {
+                                pregunta: "¿Qué es el Estado social y democrático de Derecho?",
+                                respuesta: "Un Estado donde los poderes públicos están sometidos al ordenamiento jurídico y promueven condiciones para que la libertad e igualdad sean reales y efectivas."
+                            },
+                            {
+                                pregunta: "¿Qué establece el artículo 9 de la Constitución?",
+                                respuesta: "Los principios de legalidad, jerarquía normativa, publicidad de las normas, irretroactividad de disposiciones sancionadoras no favorables, seguridad jurídica, responsabilidad e interdicción de la arbitrariedad."
+                            },
+                            {
+                                pregunta: "¿Qué son los principios rectores de la política social y económica?",
+                                respuesta: "Directrices que orientan la legislación, la práctica judicial y la actuación de los poderes públicos en materia social y económica (art. 39-52 CE)."
+                            },
+                            {
+                                pregunta: "¿Qué función tiene el Tribunal Constitucional?",
+                                respuesta: "Es el intérprete supremo de la Constitución y controla la constitucionalidad de las leyes y actos con fuerza de ley."
+                            }
+                        ]
+                    };
+                
+                default:
+                    return { texto: "No hay datos disponibles" };
+            }
+        }
+
+        function downloadResult() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const resultContent = document.getElementById('resultContent');
+            const resultTitle = document.getElementById('resultTitle').textContent;
+            
+            // Obtener texto del resultado (simplificado)
+            let text = resultContent.innerText || resultContent.textContent;
+            
+            // Configurar el PDF
+            doc.setFontSize(16);
+            doc.text(resultTitle, 20, 20);
+            doc.setFontSize(12);
+            
+            // Dividir el texto en líneas
+            const lines = doc.splitTextToSize(text, 170);
+            doc.text(lines, 20, 40);
+            
+            // Guardar el PDF
+            doc.save(`${resultTitle.toLowerCase().replace(/\s+/g, '_')}.pdf`);
+        }
+
+        function iniciarTest() {
+            alert("Redirigiendo al test completo...");
+            // En una implementación real, aquí redirigirías a la página de test
+            // o mostrarías el test completo con temporizador y corrección
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('pdfModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

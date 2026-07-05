@@ -1,0 +1,116 @@
+/* Estilos propios de "Generar Test desde PDF" -- la cabecera, tarjeta de
+   subida y estado de carga son compartidos (ver /assets/pdf-tools.css);
+   aquí queda lo específico del test en sí (preguntas, resultados), igual
+   que en /test-generator/style.css para que se vea coherente en toda la
+   web sea cual sea el origen de las preguntas. */
+
+/* Opciones de respuesta con letra en círculo (igual que test-generator).
+   Los selectores van prefijados con .pdfherr-body para tener más
+   especificidad que ".pdfherr-body label" (assets/pdf-tools.css), que si no
+   gana el pulso y fuerza display:block, dejando la letra encima del texto
+   en vez de al lado. */
+.pdfherr-body .opcion-respuesta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  margin-bottom: 10px;
+  border: 1.5px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  cursor: pointer;
+  transition: border-color 0.2s var(--age-ease), background 0.2s var(--age-ease);
+}
+.pdfherr-body .opcion-respuesta:hover {
+  border-color: var(--age-primary-light);
+  background: var(--age-primary-soft);
+}
+.pdfherr-body .opcion-respuesta:has(input:checked) {
+  border-color: var(--age-primary);
+  background: var(--age-primary-soft);
+}
+.pdfherr-body .opcion-respuesta input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.pdfherr-body .opcion-letra {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--age-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--age-ink-soft);
+  background: var(--age-card);
+}
+.pdfherr-body .opcion-respuesta input:checked ~ .opcion-letra {
+  background: var(--age-primary);
+  border-color: var(--age-primary);
+  color: #1b1f2e;
+}
+.pdfherr-body .opcion-texto {
+  flex: 1;
+}
+
+.botones-navegacion-test {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  margin-top: 24px;
+  margin-bottom: 4px;
+}
+.botones-navegacion-test .age-btn {
+  flex: 1 1 0;
+}
+#btn-finalizar {
+  text-transform: none;
+  border-radius: var(--age-radius-sm);
+  margin-top: 15px;
+}
+
+.stats-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+.chart-container {
+  background: var(--age-card);
+  border-radius: var(--age-radius-md);
+  padding: 20px;
+  box-shadow: var(--age-shadow);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@media (max-width: 768px) {
+  .stats-container {
+    grid-template-columns: 1fr;
+  }
+  .botones-navegacion-test {
+    flex-direction: column;
+    gap: 10px;
+  }
+}

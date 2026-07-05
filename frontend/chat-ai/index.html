@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat IA - Asistente AGE</title>
+  <meta name="description" content="Chat con IA especializado en el temario de la oposición AGE para resolver tus dudas de estudio." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Chat IA - Asistente AGE" />
+  <meta property="og:description" content="Chat con IA especializado en el temario de la oposición AGE para resolver tus dudas de estudio." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+
+  <link rel="stylesheet" href="/chat-ai/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+<!-- CHAT IA VISUAL PREMIUM - VERSIÓN FINAL CORREGIDA -->
+<div class="chat-container-pro" role="application" aria-label="Chat con asistente de IA">
+  <!-- Botón X salir (móvil) -->
+  <button id="cerrar-chat-total" class="btn-cerrar-chat-total" aria-label="Salir del chat" title="Salir del chat">&times;</button>
+
+  <!-- Sidebar (historial) -->
+  <div class="chat-sidebar-pro" id="chat-sidebar" role="region" aria-label="Historial de conversaciones">
+    <h3>💬 Conversaciones</h3>
+    <ul id="chat-history" role="list"></ul>
+    <div class="sidebar-bottom-actions">
+      <button id="salir-del-chat-sidebar" class="btn-salir-sidebar" aria-label="Salir del chat">Salir del chat</button>
+    </div>
+    <!-- Overlay para móvil -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="chat-box-pro">
+    <!-- Cabecera -->
+    <div class="chat-header-pro" role="banner">
+      <button id="toggle-sidebar" aria-label="Abrir historial" class="btn-menu-historial" title="Historial">☰</button>
+      <div class="avatar-bot">
+        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Asistente IA" />
+        <span class="pulse" aria-hidden="true"></span>
+      </div>
+      <div>
+        <div class="titulo-chat">Asistente IA</div>
+        <div class="estado-enlinea">En línea</div>
+      </div>
+    </div>
+
+    <!-- Área de mensajes -->
+    <div id="chat-messages" class="chat-messages-pro" role="log" aria-live="polite"></div>
+
+    <!-- Indicador de "escribiendo..." -->
+    <div id="typing-indicator" class="typing-indicator" style="display: none;">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area-pro" id="chat-input-container">
+      <textarea id="chat-input" placeholder="Escribe tu mensaje..." rows="1" aria-label="Escribe tu mensaje"></textarea>
+      <button id="chat-send" class="btn-enviar" aria-label="Enviar mensaje" title="Enviar">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <circle cx="13" cy="13" r="13" fill="black"/>
+          <path d="M13 8v8M13 8l-3 3M13 8l3 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+<script src="/chat-ai/script.js"></script>
+  <script type="module" src="/assets/auth.js"></script>
+</body>
+</html>

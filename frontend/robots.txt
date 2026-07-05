@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Allow: /planes/
+Allow: /login/
+Allow: /privacidad/
+Allow: /cookies/
+Allow: /terminos/
+Disallow: /zona-opositor/
+Disallow: /mi-cuenta/
+Disallow: /mis-documentos/
+Disallow: /mis-tests/
+Disallow: /estadisticas/
+Disallow: /test-generator/
+Disallow: /repetir-test/
+Disallow: /preguntas-falladas/
+Disallow: /preguntas-favoritas/
+Disallow: /subida-pdf-*/
+Disallow: /asistente/
+Disallow: /chat-ai/
+Disallow: /ranking/
+
+Sitemap: https://oposicion-age-1.onrender.com/sitemap.xml

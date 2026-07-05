@@ -1,0 +1,335 @@
+body {
+  background: var(--age-bg);
+  color: var(--age-ink);
+  margin: 0;
+}
+
+.cuenta-header {
+  background: var(--age-navy);
+  color: #fff;
+  padding: 40px 0 56px;
+}
+
+.cuenta-header h1 {
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.cuenta-header p {
+  color: var(--age-navy-ink);
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.cuenta-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  align-items: start;
+  margin-top: -34px;
+  padding-bottom: 60px;
+}
+
+@media (max-width: 860px) {
+  .cuenta-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cuenta-aside {
+  position: sticky;
+  top: calc(var(--age-nav-height) + 16px);
+}
+
+@media (max-width: 860px) {
+  .cuenta-aside {
+    position: static;
+  }
+}
+
+.cuenta-perfil-card {
+  padding: 28px 22px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.cuenta-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.cuenta-email {
+  color: var(--age-ink-soft);
+  font-size: 13.5px;
+  word-break: break-all;
+  margin-bottom: 4px;
+}
+
+.cuenta-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.cuenta-section {
+  padding: 26px 26px 28px;
+}
+
+.cuenta-section h2 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 0 0 18px;
+}
+
+.cuenta-section-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.cuenta-section-titulo h2 {
+  margin: 0;
+}
+
+.cuenta-btn-contratar {
+  font-size: 13.5px;
+  padding: 9px 16px;
+}
+
+.cuenta-oposiciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.cuenta-oposicion-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  background: var(--age-bg);
+}
+
+.cuenta-oposicion-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cuenta-oposicion-nombre {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--age-ink);
+}
+
+.cuenta-oposicion-estado {
+  font-size: 12.5px;
+  color: var(--age-ink-soft);
+}
+
+.cuenta-btn-portal {
+  margin-top: 4px;
+}
+
+.cuenta-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 560px) {
+  .cuenta-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cuenta-campo-full {
+  grid-column: 1 / -1;
+}
+
+.cuenta-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cuenta-campo label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--age-ink-soft);
+}
+
+.cuenta-campo input {
+  padding: 12px 14px;
+  border-radius: var(--age-radius-sm);
+  border: 1px solid var(--age-border);
+  font-family: var(--age-font);
+  font-size: 14.5px;
+  box-sizing: border-box;
+  background: var(--age-card);
+  color: var(--age-ink);
+}
+
+.cuenta-campo input:focus {
+  outline: none;
+  border-color: var(--age-primary);
+  box-shadow: 0 0 0 3px var(--age-primary-soft);
+}
+
+.datos-mensaje {
+  margin-bottom: 16px;
+  padding: 11px 14px;
+  border-radius: var(--age-radius-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.datos-mensaje.ok {
+  background: var(--age-success-bg);
+  color: var(--age-success);
+}
+
+.datos-mensaje.error {
+  background: var(--age-danger-bg);
+  color: var(--age-danger);
+}
+
+.cuenta-volver-zona {
+  display: inline-block;
+  color: var(--age-ink-soft);
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+  margin: 0 0 4px 2px;
+}
+
+.cuenta-volver-zona:hover {
+  color: var(--age-ink);
+}
+
+.cuenta-datos-resumen {
+  margin-bottom: 20px;
+}
+
+.cuenta-datos-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--age-border);
+  font-size: 14px;
+}
+
+.cuenta-datos-fila:first-child {
+  border-top: none;
+}
+
+.cuenta-datos-fila span {
+  color: var(--age-ink-soft);
+  font-weight: 600;
+}
+
+.cuenta-datos-fila strong {
+  color: var(--age-ink);
+  font-weight: 700;
+  text-align: right;
+}
+
+.cuenta-privacidad-texto {
+  color: var(--age-ink-soft);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.cuenta-privacidad-acciones {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cuenta-btn-peligro {
+  padding: 11px 22px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-danger);
+  background: var(--age-card);
+  color: var(--age-danger);
+  font-family: var(--age-font);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s var(--age-ease), color 0.15s var(--age-ease);
+}
+
+.cuenta-btn-peligro:hover {
+  background: var(--age-danger);
+  color: #fff;
+}
+
+.cuenta-btn-peligro:disabled {
+  opacity: 0.5;
+  cursor: default;
+  background: var(--age-card);
+  color: var(--age-danger);
+}
+
+.cuenta-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 20, 30, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 500;
+}
+
+.cuenta-modal-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 26px;
+}
+
+.cuenta-modal-titulo {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.cuenta-modal-subtitulo {
+  color: var(--age-ink-soft);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+
+.cuenta-modal-card .cuenta-campo {
+  margin-bottom: 14px;
+}
+
+.cuenta-modal-card #btn-cancelar-eliminar {
+  margin-top: 10px;
+}

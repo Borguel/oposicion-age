@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Analizador de PDFs - Herramienta de Estudio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --color-primary: #4caf50;
+      --color-primary-dark: #45a047;
+      --color-secondary: #2196F3;
+      --color-secondary-dark: #1e88e5;
+      --color-accent: #FF9800;
+      --color-accent-dark: #fb8c00;
+      --color-danger: #ef5350;
+      --color-danger-dark: #e53935;
+      --color-text: #333;
+      --color-bg: #f5f6fa;
+      --color-card: #ffffff;
+      --color-border: #e1e1e1;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
+      --transition: all 0.3s ease;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      background: var(--color-bg);
+      color: var(--color-text);
+      padding: 15px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .card {
+      background: var(--color-card);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 25px;
+      margin-bottom: 20px;
+      transition: var(--transition);
+    }
+    h1, h2, h3 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: 2.2rem;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    .header p {
+      color: #666;
+      font-size: 1.1rem;
+    }
+    .btn {
+      display: inline-block;
+      padding: 16px 24px;
+      margin: 10px 0;
+      font-weight: bold;
+      font-size: 1rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(40, 80, 70, 0.09);
+      width: 100%;
+    }
+    .btn-primary {
+      background: var(--color-primary);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: var(--color-primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    }
+    .btn-secondary {
+      background: var(--color-secondary);
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: var(--color-secondary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+    }
+    .btn-accent {
+      background: var(--color-accent);
+      color: white;
+    }
+    .btn-accent:hover {
+      background: var(--color-accent-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+    }
+    .btn-danger {
+      background: var(--color-danger);
+      color: white;
+    }
+    .btn-danger:hover {
+      background: var(--color-danger-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(239, 83, 80, 0.3);
+    }
+    .hidden {
+      display: none !important;
+    }
+    .pdf-chat-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+    }
+    .pdf-upload-section {
+      display: flex;
+      flex-direction: column;
+    }
+    .upload-area {
+      border: 3px dashed #ddd;
+      border-radius: 16px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background: #f9f9f9;
+      margin-bottom: 20px;
+    }
+    .upload-area:hover {
+      border-color: var(--color-secondary);
+      background: #f0f8ff;
+    }
+    .upload-area.active {
+      border-color: var(--color-primary);
+      background: #f0fdf4;
+    }
+    .upload-area i {
+      font-size: 3rem;
+      color: var(--color-secondary);
+      margin-bottom: 15px;
+    }
+    .upload-area p {
+      margin-bottom: 15px;
+      color: #666;
+    }
+    #pdf-info {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      border-left: 4px solid var(--color-secondary);
+    }
+    #pdf-info p {
+      margin-bottom: 15px;
+    }
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .action-buttons .btn {
+      margin: 0;
+    }
+    #test-options {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      border-left: 4px solid var(--color-accent);
+    }
+    #test-options label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    #test-options input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 1rem;
+    }
+    .chat-section {
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+    }
+    .chat-header {
+      padding: 15px 20px;
+      background: var(--color-secondary);
+      color: white;
+      border-radius: 12px 12px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chat-header h2 {
+      margin: 0;
+      color: white;
+      text-align: left;
+    }
+    #session-info {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+    .chat-box {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      border-left: 1px solid #e1e1e1;
+      border-right: 1px solid #e1e1e1;
+    }
+    .message {
+      margin-bottom: 20px;
+      padding: 15px;
+      border-radius: 12px;
+      max-width: 85%;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .user-message {
+      background: var(--color-secondary);
+      color: white;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+    .bot-message {
+      background: white;
+      border: 1px solid #e1e1e1;
+      margin-right: auto;
+      border-bottom-left-radius: 4px;
+    }
+    .bot-message ul {
+      padding-left: 20px;
+      margin: 10px 0;
+    }
+    .bot-message li {
+      margin-bottom: 5px;
+    }
+    .input-container {
+      display: flex;
+      padding: 15px;
+      background: white;
+      border: 1px solid #e1e1e1;
+      border-radius: 0 0 12px 12px;
+    }
+    #pdf-user-input {
+      flex: 1;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-right: 10px;
+    }
+    #pdf-send-btn {
+      padding: 12px 20px;
+      background: var(--color-secondary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    #pdf-send-btn:hover {
+      background: var(--color-secondary-dark);
+    }
+    .test-question {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 4px solid var(--color-accent);
+    }
+    .test-question p {
+      margin-bottom: 10px;
+    }
+    .test-question ul {
+      padding-left: 20px;
+      margin-bottom: 10px;
+    }
+    .test-question li {
+      margin-bottom: 5px;
+    }
+    .answer {
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+    .explanation {
+      font-style: italic;
+      color: #666;
+      padding: 10px;
+      background: #f0f0f0;
+      border-radius: 8px;
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .suggested-questions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .suggested-question {
+      padding: 10px;
+      background: #e7f3ff;
+      border: 1px solid #b3d9ff;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    .suggested-question:hover {
+      background: #d0e7ff;
+    }
+    .pdf-preview {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      border-left: 4px solid var(--color-primary);
+    }
+    .pdf-preview h3 {
+      text-align: left;
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+    .pdf-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .stat-item {
+      padding: 10px;
+      background: white;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .stat-value {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--color-secondary);
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: #666;
+    }
+    @media (max-width: 1024px) {
+      .pdf-chat-container {
+        grid-template-columns: 1fr;
+      }
+      .chat-section {
+        height: 500px;
+      }
+    }
+    @media (max-width: 768px) {
+      body {
+        font-size: 14px;
+        padding: 10px;
+      }
+      .card {
+        padding: 20px 15px;
+      }
+      .header h1 {
+        font-size: 1.8rem;
+      }
+      .action-buttons {
+        grid-template-columns: 1fr;
+      }
+      .suggested-questions {
+        grid-template-columns: 1fr;
+      }
+      .message {
+        max-width: 90%;
+      }
+      .pdf-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Analizador de PDFs con IA</h1>
+      <p>Sube cualquier documento y utiliza IA para estudiar de forma más eficiente</p>
+    </div>
+
+    <div class="card">
+      <div class="pdf-chat-container">
+        <div class="pdf-upload-section">
+          <h2>Analizador de PDFs</h2>
+          <div class="upload-area" id="pdf-upload-area">
+            <i class="fas fa-file-pdf"></i>
+            <p>Arrastra tu PDF aquí o haz clic para seleccionar</p>
+            <input type="file" id="pdf-file" accept=".pdf" hidden>
+            <button class="btn btn-secondary" id="select-pdf-btn">Seleccionar PDF</button>
+          </div>
+          
+          <div id="pdf-info" class="hidden">
+            <p><strong>Archivo:</strong> <span id="pdf-filename"></span></p>
+            <div class="pdf-preview">
+              <h3>Vista previa del documento</h3>
+              <p id="pdf-preview-text">Cargando información del documento...</p>
+              <div class="pdf-stats">
+                <div class="stat-item">
+                  <div class="stat-value" id="page-count">-</div>
+                  <div class="stat-label">Páginas</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value" id="word-count">-</div>
+                  <div class="stat-label">Palabras</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="action-buttons">
+              <button class="btn btn-primary" id="generate-summary-btn">Generar Resumen</button>
+              <button class="btn btn-accent" id="generate-test-btn">Generar Test</button>
+            </div>
+          </div>
+          
+          <div id="test-options" class="hidden">
+            <label for="num-questions">Número de preguntas:</label>
+            <input type="number" id="num-questions" min="1" max="20" value="5">
+            <label for="question-type">Tipo de preguntas:</label>
+            <select id="question-type" class="btn">
+              <option value="multiple">Opción múltiple</option>
+              <option value="truefalse">Verdadero/Falso</option>
+              <option value="conceptos">Conceptos clave</option>
+            </select>
+            <button class="btn btn-accent" id="generate-test-final-btn">Generar Test</button>
+          </div>
+        </div>
+        
+        <div class="chat-section">
+          <div class="chat-header">
+            <h2>Asistente de Estudio</h2>
+            <p id="session-info">Esperando documento...</p>
+          </div>
+          <div class="chat-box" id="pdf-chat-box">
+            <div class="message bot-message">
+              <p>¡Hola! Soy tu asistente de estudio con IA. Puedo ayudarte a:</p>
+              <ul>
+                <li>Resumir documentos PDF</li>
+                <li>Generar tests personalizados</li>
+                <li>Responder preguntas sobre el contenido</li>
+                <li>Explicar conceptos complejos</li>
+                <li>Crear esquemas de estudio</li>
+              </ul>
+              <p>Comienza subiendo un documento PDF para analizar.</p>
+            </div>
+          </div>
+          <div class="input-container">
+            <input type="text" id="pdf-user-input" placeholder="Haz una pregunta sobre el documento...">
+            <button id="pdf-send-btn"><i class="fas fa-paper-plane"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Variables globales
+    let currentSessionId = null;
+    let currentPdfFile = null;
+    let pdfTextContent = "";
+
+    // Elementos DOM
+    const pdfUploadArea = document.getElementById('pdf-upload-area');
+    const pdfFileInput = document.getElementById('pdf-file');
+    const selectPdfBtn = document.getElementById('select-pdf-btn');
+    const pdfInfo = document.getElementById('pdf-info');
+    const pdfFilename = document.getElementById('pdf-filename');
+    const pdfPreviewText = document.getElementById('pdf-preview-text');
+    const pageCount = document.getElementById('page-count');
+    const wordCount = document.getElementById('word-count');
+    const generateSummaryBtn = document.getElementById('generate-summary-btn');
+    const generateTestBtn = document.getElementById('generate-test-btn');
+    const testOptions = document.getElementById('test-options');
+    const numQuestionsInput = document.getElementById('num-questions');
+    const questionTypeSelect = document.getElementById('question-type');
+    const generateTestFinalBtn = document.getElementById('generate-test-final-btn');
+    const pdfChatBox = document.getElementById('pdf-chat-box');
+    const pdfUserInput = document.getElementById('pdf-user-input');
+    const pdfSendBtn = document.getElementById('pdf-send-btn');
+    const sessionInfo = document.getElementById('session-info');
+
+    // Event listeners
+    selectPdfBtn.addEventListener('click', () => pdfFileInput.click());
+    pdfFileInput.addEventListener('change', handlePdfUpload);
+    pdfUploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      pdfUploadArea.classList.add('active');
+    });
+    pdfUploadArea.addEventListener('dragleave', () => {
+      pdfUploadArea.classList.remove('active');
+    });
+    pdfUploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      pdfUploadArea.classList.remove('active');
+      if (e.dataTransfer.files.length) {
+        pdfFileInput.files = e.dataTransfer.files;
+        handlePdfUpload();
+      }
+    });
+    generateSummaryBtn.addEventListener('click', generateSummary);
+    generateTestBtn.addEventListener('click', showTestOptions);
+    generateTestFinalBtn.addEventListener('click', generateTest);
+    pdfSendBtn.addEventListener('click', sendPdfMessage);
+    pdfUserInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendPdfMessage();
+    });
+
+    // Manejar subida de PDF
+    async function handlePdfUpload() {
+      const file = pdfFileInput.files[0];
+      if (!file) return;
+      
+      // Verificar que sea un PDF
+      if (file.type !== 'application/pdf') {
+        addMessageToPdfChat('Por favor, selecciona un archivo PDF válido.', 'bot');
+        return;
+      }
+      
+      currentPdfFile = file;
+      pdfFilename.textContent = file.name;
+      pdfInfo.classList.remove('hidden');
+      
+      // Simular análisis del PDF (en un caso real, esto se haría en el servidor)
+      pdfPreviewText.textContent = "Analizando documento...";
+      showTypingIndicator();
+      
+      // Simular delay de análisis
+      setTimeout(() => {
+        hideTypingIndicator();
+        
+        // Simular contenido extraído del PDF
+        pdfTextContent = `Documento: ${file.name}\n\nEste es un documento de ejemplo con contenido educativo. Contiene información sobre diversos temas que pueden ser útiles para el estudio. En un caso real, aquí estaría el texto extraído del PDF.`;
+        
+        pdfPreviewText.textContent = pdfTextContent.substring(0, 200) + "...";
+        pageCount.textContent = "12";
+        wordCount.textContent = "5,240";
+        
+        addMessageToPdfChat(`PDF "${file.name}" cargado correctamente. He analizado el documento y estoy listo para ayudarte.`, 'bot');
+        
+        // Mostrar preguntas sugeridas
+        showSuggestedQuestions();
+        
+        // En un caso real, aquí enviaríamos el PDF al servidor
+        uploadPdfToServer(file);
+      }, 2000);
+    }
+
+    // Subir PDF al servidor (simulado)
+    async function uploadPdfToServer(file) {
+      const formData = new FormData();
+      formData.append('pdf', file);
+      formData.append('usuario_id', 'ID_DEL_USUARIO'); // Reemplazar con ID real
+      
+      try {
+        const response = await fetch('/upload-pdf-chat', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        if (data.session_id) {
+          currentSessionId = data.session_id;
+          sessionInfo.textContent = `Documento: ${file.name}`;
+        }
+      } catch (error) {
+        console.error('Error subiendo PDF:', error);
+      }
+    }
+
+    // Generar resumen
+    async function generateSummary() {
+      if (!currentPdfFile) return;
+      
+      addMessageToPdfChat('Por favor, genera un resumen detallado de este documento.', 'user');
+      showTypingIndicator();
+      
+      // Simular generación de resumen
+      setTimeout(() => {
+        hideTypingIndicator();
+        
+        const summary = `
+          <h3>Resumen del Documento</h3>
+          <p>Este documento aborda temas fundamentales sobre [Tema del documento]. A continuación, se presentan los puntos clave:</p>
+          <ul>
+            <li><strong>Concepto Principal 1:</strong> Explicación breve del primer concepto importante.</li>
+            <li><strong>Concepto Principal 2:</strong> Explicación breve del segundo concepto importante.</li>
+            <li><strong>Concepto Principal 3:</strong> Explicación breve del tercer concepto importante.</li>
+            <li><strong>Aplicaciones prácticas:</strong> Cómo aplicar estos conceptos en situaciones reales.</li>
+            <li><strong>Conclusiones:</strong> Puntos clave a recordar del documento.</li>
+          </ul>
+          <p>Este resumen te ayudará a comprender los aspectos más importantes del documento y a prepararte para evaluaciones.</p>
+        `;
+        
+        addMessageToPdfChat(summary, 'bot');
+      }, 3000);
+    }
+
+    // Mostrar opciones de test
+    function showTestOptions() {
+      testOptions.classList.remove('hidden');
+      addMessageToPdfChat('He configurado las opciones para generar un test. Selecciona el número y tipo de preguntas.', 'bot');
+    }
+
+    // Generar test
+    async function generateTest() {
+      if (!currentPdfFile) return;
+      
+      const numQuestions = numQuestionsInput.value || 5;
+      const questionType = questionTypeSelect.value;
+      testOptions.classList.add('hidden');
+      
+      addMessageToPdfChat(`Generando test de ${numQuestions} preguntas (${questionType})...`, 'user');
+      showTypingIndicator();
+      
+      // Simular generación de test
+      setTimeout(() => {
+        hideTypingIndicator();
+        
+        addMessageToPdfChat(`He creado un test de ${numQuestions} preguntas basado en el documento. ¡Buena suerte!`, 'bot');
+        
+        // Generar preguntas de ejemplo
+        for (let i = 1; i <= numQuestions; i++) {
+          const preguntaHtml = `
+            <div class="test-question">
+              <p><strong>Pregunta ${i}:</strong> ¿Cuál es el concepto principal explicado en la sección ${i} del documento?</p>
+              <ul>
+                <li>A) Opción A de respuesta</li>
+                <li>B) Opción B de respuesta</li>
+                <li>C) Opción C de respuesta</li>
+                <li>D) Opción D de respuesta</li>
+              </ul>
+              <p class="answer"><strong>Respuesta correcta:</strong> C</p>
+              <p class="explanation">Esta es la explicación de por qué la respuesta C es correcta, basada en el contenido del documento.</p>
+            </div>
+          `;
+          addMessageToPdfChat(preguntaHtml, 'bot');
+        }
+        
+        // En un caso real, aquí enviaríamos la solicitud al servidor
+        // generateTestFromServer(numQuestions, questionType);
+      }, 4000);
+    }
+
+    // Enviar mensaje al chat del PDF
+    async function sendPdfMessage() {
+      const message = pdfUserInput.value.trim();
+      if (!message) return;
+      
+      addMessageToPdfChat(message, 'user');
+      pdfUserInput.value = '';
+      showTypingIndicator();
+      
+      // Simular respuesta de la IA
+      setTimeout(() => {
+        hideTypingIndicator();
+        
+        let response = "";
+        if (message.toLowerCase().includes('explica') || message.toLowerCase().includes('qué es')) {
+          response = `Basándome en el documento, puedo explicarte ese concepto. [Aquí iría una explicación detallada del concepto solicitado, extraída del contenido del PDF]. ¿Te ha quedado claro o necesitas más información?`;
+        } else if (message.toLowerCase().includes('importante') || message.toLowerCase().includes('clave')) {
+          response = `Según el análisis del documento, los puntos clave son: 1) [Primer punto importante], 2) [Segundo punto importante], 3) [Tercer punto importante]. Estos conceptos son fundamentales para comprender el tema.`;
+        } else {
+          response = `En relación con tu pregunta sobre "${message}", el documento menciona que [aquí iría la respuesta específica basada en el contenido del PDF]. ¿Te gustaría que profundice en algún aspecto en particular?`;
+        }
+        
+        addMessageToPdfChat(response, 'bot');
+      }, 2000);
+    }
+
+    // Mostrar preguntas sugeridas
+    function showSuggestedQuestions() {
+      const suggestedQuestions = [
+        "¿Cuáles son los puntos principales del documento?",
+        "Explícame el concepto más importante",
+        "¿Qué aplicaciones prácticas tiene este contenido?",
+        "Genera un esquema de estudio"
+      ];
+      
+      let questionsHtml = `<div class="suggested-questions">`;
+      suggestedQuestions.forEach(question => {
+        questionsHtml += `<div class="suggested-question" onclick="askSuggestedQuestion('${question}')">${question}</div>`;
+      });
+      questionsHtml += `</div>`;
+      
+      addMessageToPdfChat("Puedes hacerme alguna de estas preguntas para comenzar:", 'bot');
+      addMessageToPdfChat(questionsHtml, 'bot');
+    }
+
+    // Pregunta sugerida
+    function askSuggestedQuestion(question) {
+      pdfUserInput.value = question;
+      sendPdfMessage();
+    }
+
+    // Funciones auxiliares para la interfaz
+    function addMessageToPdfChat(message, sender) {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message', `${sender}-message`);
+      
+      if (sender === 'user') {
+        messageElement.innerHTML = `<p>${message}</p>`;
+      } else {
+        // Para mensajes del bot, permitimos HTML para formato más rico
+        messageElement.innerHTML = message;
+      }
+      
+      pdfChatBox.appendChild(messageElement);
+      pdfChatBox.scrollTop = pdfChatBox.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+      const typingElement = document.createElement('div');
+      typingElement.classList.add('message', 'bot-message');
+      typingElement.id = 'typing-indicator';
+      typingElement.innerHTML = '<div class="spinner"></div> <span>Analizando...</span>';
+      pdfChatBox.appendChild(typingElement);
+      pdfChatBox.scrollTop = pdfChatBox.scrollHeight;
+    }
+
+    function hideTypingIndicator() {
+      const typingElement = document.getElementById('typing-indicator');
+      if (typingElement) typingElement.remove();
+    }
+
+    // En un caso real, estas funciones se conectarían con el backend
+    async function generateTestFromServer(numQuestions, questionType) {
+      try {
+        const response = await fetch('/generate-test-from-pdf', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            session_id: currentSessionId,
+            num_preguntas: numQuestions,
+            tipo_preguntas: questionType,
+            usuario_id: 'ID_DEL_USUARIO'
+          })
+        });
+        
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('Error generando test:', error);
+        return null;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+services:
+  - type: web
+    name: oposicion-age
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: API_SECRET_KEY
+        sync: false
+      - key: FIREBASE_CREDENTIALS_JSON
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_ID_BASICO
+        sync: false
+      - key: STRIPE_PRICE_ID_PREMIUM
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDGRID_FROM_EMAIL
+        sync: false
+      - key: SENDGRID_TEMPLATE_BIENVENIDA
+        sync: false
+      - key: SENDGRID_TEMPLATE_RACHA_RIESGO
+        sync: false
+      - key: SENDGRID_TEMPLATE_REENGAGEMENT
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: CRON_SECRET_KEY
+        sync: false
+
+  - type: web
+    name: oposicion-age-frontend
+    env: static
+    plan: free
+    staticPublishPath: frontend
+    buildCommand: ""
+    routes:
+      # Cualquier ruta que no corresponda a un fichero real (Render no
+      # aplica esta regla si el path sí existe) sirve la página 404 propia
+      # en vez del error genérico de Render.
+      - type: rewrite
+        source: /*
+        destination: /404.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: "geolocation=(), microphone=(), camera=()"
+      - path: /*
+        name: Strict-Transport-Security
+        value: "max-age=31536000; includeSubDomains"
+      # Los ficheros de /assets/ no llevan hash en el nombre, así que se usa
+      # un TTL corto con revalidación en vez de un max-age largo: evita que
+      # un despliegue nuevo deje a los navegadores sirviendo JS/CSS viejo.
+      # 60s (no más) mientras el sitio recibe despliegues frecuentes -- un
+      # max-age más largo hizo que cambios ya desplegados tardaran hasta una
+      # hora en verse reflejados en el navegador de un usuario real.
+      - path: /assets/*
+        name: Cache-Control
+        value: "public, max-age=60, must-revalidate"
+      # Sin 'unsafe-inline' en script-src: todo el JS del sitio vive en
+      # ficheros .js propios (ningún <script> inline) y no quedan atributos
+      # onclick="" inline (los 3 que había se pasaron a addEventListener
+      # para poder mantener esta política sin aflojarla).
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self' https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https://randomuser.me; connect-src 'self' https://oposicion-age.onrender.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; frame-src 'self' https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"

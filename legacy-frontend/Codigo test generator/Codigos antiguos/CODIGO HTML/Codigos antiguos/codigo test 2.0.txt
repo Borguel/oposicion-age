@@ -1,0 +1,228 @@
+<h2 id="titulo-formulario">Genera tu Test</h2>
+
+<form id="form-generar-test" style="max-width: 600px; margin-bottom: 30px;">
+  <label for="num_preguntas">Número de preguntas:</label><br>
+  <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="50" value="5" required><br><br>
+
+  <label>Tipo de test:</label><br>
+  <label><input type="radio" name="tipo_test" value="personalizado" checked> Test Personalizado</label>
+  <label><input type="radio" name="tipo_test" value="oficial"> Test Oficial</label><br><br>
+
+  <label>Selecciona uno o varios temas:</label>
+  <div id="lista-temas" style="border: 1px solid #ccc; padding: 10px; max-height: 250px; overflow-y: scroll;"></div><br>
+
+  <button type="submit" style="background-color: #4caf50; color: white; padding: 10px 20px; border: none; border-radius: 6px;">Generar Test</button>
+</form>
+
+<div id="temporizador" style="font-weight: bold; font-size: 1.2em; margin-bottom: 10px;"></div>
+<div id="barra-progreso" style="height: 20px; background: #eee; border-radius: 10px; overflow: hidden; margin-bottom: 15px;">
+  <div id="progreso" style="height: 100%; background: #4caf50; width: 0%;"></div>
+</div>
+
+<div id="contenedor-test"></div>
+<div id="contenedor-resultados" style="display:none;"></div>
+
+<button id="btn-finalizar" style="display:none; background-color: #f44336; color:white; margin-top:10px;">Finalizar Test</button>
+<button id="btn-descargar-pdf" style="display:none; margin-top:20px; background-color:#2196F3; color:white;">Descargar PDF del test</button>
+<button id="btn-guardar-test" style="display:none; margin-top:20px; background-color:#FF5722; color:white;">Guardar Test</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+let preguntas = [];
+let indicePreguntaActual = 0;
+let respuestasUsuario = [];
+let tiempoInicio;
+let intervaloTemporizador;
+
+async function cargarTemas() {
+  const contenedor = document.getElementById("lista-temas");
+  contenedor.innerHTML = "<p>Cargando temas...</p>";
+  try {
+    const res = await fetch("https://oposicion-age.onrender.com/temas-disponibles");
+    const datos = await res.json();
+    const temas = datos.temas || [];
+
+    if (temas.length === 0) {
+      contenedor.innerHTML = "<p>No hay temas disponibles.</p>";
+      return;
+    }
+
+    contenedor.innerHTML = "";
+    temas.forEach(t => {
+      const label = document.createElement("label");
+      label.style.display = "block";
+      label.innerHTML = `
+        <input type="checkbox" name="tema" value="${t.id}" style="margin-right: 8px;">
+        ${t.titulo}`;
+      contenedor.appendChild(label);
+    });
+  } catch (err) {
+    contenedor.innerHTML = "<p>Error al cargar temas.</p>";
+    console.error(err);
+  }
+}
+
+function iniciarTemporizador() {
+  tiempoInicio = Date.now();
+  intervaloTemporizador = setInterval(() => {
+    const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
+    document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
+  }, 1000);
+}
+
+function formatearTiempo(segundos) {
+  const m = String(Math.floor(segundos / 60)).padStart(2, '0');
+  const s = String(segundos % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function guardarProgreso() {
+  const progreso = {
+    preguntas, respuestasUsuario, indicePreguntaActual,
+    tiempo: Math.floor((Date.now() - tiempoInicio) / 1000)
+  };
+  localStorage.setItem("test_en_progreso", JSON.stringify(progreso));
+}
+
+function cargarProgreso() {
+  const data = JSON.parse(localStorage.getItem("test_en_progreso") || "null");
+  if (!data) return false;
+  preguntas = data.preguntas;
+  respuestasUsuario = data.respuestasUsuario;
+  indicePreguntaActual = data.indicePreguntaActual;
+  tiempoInicio = Date.now() - data.tiempo * 1000;
+  iniciarTemporizador();
+  mostrarPregunta(indicePreguntaActual);
+  return true;
+}
+
+document.getElementById("form-generar-test").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
+  const tipo = document.querySelector('input[name="tipo_test"]:checked').value;
+  const numPreguntas = parseInt(document.getElementById("num_preguntas").value);
+  if (temas.length === 0) return alert("Selecciona al menos un tema");
+
+  const endpoint = tipo === "oficial" ? "/generar-test-oficial" : "/generar-test-avanzado";
+
+  document.getElementById('form-generar-test').style.display = "none";
+  document.getElementById('titulo-formulario').style.display = "none";
+  document.getElementById('contenedor-test').innerHTML = "<p>⏳ Generando test...</p>";
+
+  try {
+    const res = await fetch("https://oposicion-age.onrender.com" + endpoint, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ temas, num_preguntas: numPreguntas })
+    });
+    const datos = await res.json();
+    preguntas = datos.test || [];
+    if (preguntas.length === 0) {
+      document.getElementById('contenedor-test').innerHTML = "<p>No se han recibido preguntas.</p>";
+      return;
+    }
+    respuestasUsuario = Array(preguntas.length).fill(null);
+    indicePreguntaActual = 0;
+    iniciarTemporizador();
+    mostrarPregunta(indicePreguntaActual);
+  } catch (error) {
+    document.getElementById('contenedor-test').innerHTML = "<p>Error al generar el test.</p>";
+    console.error(error);
+  }
+});
+
+function mostrarPregunta(i) {
+  const p = preguntas[i];
+  let html = `<form id="form-pregunta"><fieldset>
+    <legend><strong>Pregunta ${i + 1} de ${preguntas.length}:</strong> ${p.pregunta}</legend>`;
+  for (const letra in p.opciones) {
+    html += `
+      <label style="color: black;">
+        <input type="radio" name="respuesta" value="${letra}" ${respuestasUsuario[i] === letra ? "checked" : ""} required>
+        ${letra}) ${p.opciones[letra]}
+      </label><br>`;
+  }
+  html += `</fieldset>
+    <button type="submit">${i === preguntas.length - 1 ? "Finalizar Test" : "Siguiente"}</button>
+  </form>`;
+  document.getElementById("contenedor-test").innerHTML = html;
+
+  // Actualizar progreso
+  const progreso = ((i + 1) / preguntas.length) * 100;
+  document.getElementById("progreso").style.width = `${progreso}%`;
+
+  document.getElementById("btn-finalizar").style.display = "inline-block";
+
+  document.getElementById("form-pregunta").addEventListener("submit", e => {
+    e.preventDefault();
+    const seleccionada = document.querySelector('input[name="respuesta"]:checked').value;
+    respuestasUsuario[i] = seleccionada;
+    guardarProgreso();
+    if (i === preguntas.length - 1) mostrarResultados();
+    else {
+      indicePreguntaActual++;
+      mostrarPregunta(indicePreguntaActual);
+    }
+  });
+}
+
+document.getElementById("btn-finalizar").addEventListener("click", () => {
+  if (confirm("¿Estás seguro de que quieres finalizar el test?")) mostrarResultados();
+});
+
+function mostrarResultados() {
+  clearInterval(intervaloTemporizador);
+  localStorage.removeItem("test_en_progreso");
+  document.getElementById("contenedor-test").innerHTML = "";
+  document.getElementById("btn-finalizar").style.display = "none";
+  const cont = document.getElementById("contenedor-resultados");
+  cont.style.display = "block";
+
+  let aciertos = 0;
+  let html = "<ol>";
+  preguntas.forEach((p, i) => {
+    const correcta = p.respuesta_correcta || "No indicada";
+    const explicacion = p.explicacion || "Sin explicación.";
+    const seleccion = respuestasUsuario[i];
+    html += `<li><strong>${p.pregunta}</strong><br>`;
+    for (const letra in p.opciones) {
+      const color = letra === correcta ? "green" : (letra === seleccion ? "red" : "black");
+      const check = letra === seleccion ? "checked" : "";
+      html += `
+        <label style="color:${color};">
+          <input type="radio" disabled ${check}> ${letra}) ${p.opciones[letra]}
+        </label><br>`;
+    }
+    html += `<p><strong>Explicación:</strong> ${explicacion}</p></li>`;
+    if (seleccion === correcta) aciertos++;
+  });
+  html += `</ol><h3>Resultado: ${aciertos} / ${preguntas.length}</h3>`;
+  cont.innerHTML = html;
+
+  document.getElementById("btn-descargar-pdf").style.display = "inline-block";
+  document.getElementById("btn-guardar-test").style.display = "inline-block";
+}
+
+document.getElementById("btn-descargar-pdf").addEventListener("click", () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let texto = "";
+  preguntas.forEach((p, i) => {
+    const correcta = p.respuesta_correcta;
+    const explicacion = p.explicacion;
+    const seleccion = respuestasUsuario[i] || "No respondida";
+    texto += `Pregunta ${i + 1}: ${p.pregunta}\n`;
+    Object.entries(p.opciones).forEach(([l, t]) => texto += `${l}) ${t}\n`);
+    texto += `Tu respuesta: ${seleccion}\nCorrecta: ${correcta}\nExplicación: ${explicacion}\n\n`;
+  });
+  doc.setFontSize(10);
+  doc.text(texto, 10, 10, { maxWidth: 190 });
+  doc.save("resultado_test.pdf");
+});
+
+cargarTemas();
+if (!cargarProgreso()) {
+  // nada, espera a que el usuario inicie test
+}
+</script>

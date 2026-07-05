@@ -1,0 +1,659 @@
+<!-- CHAT IA VISUAL PREMIUM - VERSIÓN MEJORADA -->
+<div class="chat-container-pro" role="application" aria-label="Chat con asistente de IA">
+  <!-- Botón X salir (móvil) -->
+  <button id="cerrar-chat-total" class="btn-cerrar-chat-total" aria-label="Salir del chat" title="Salir del chat">&times;</button>
+
+  <!-- Sidebar (historial) -->
+  <div class="chat-sidebar-pro" id="chat-sidebar" role="region" aria-label="Historial de conversaciones">
+    <h3>💬 Conversaciones</h3>
+    <ul id="chat-history" role="list"></ul>
+    <div class="sidebar-bottom-actions">
+      <button id="salir-del-chat-sidebar" class="btn-salir-sidebar" aria-label="Salir del chat">Salir del chat</button>
+    </div>
+    <!-- Overlay para móvil -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="chat-box-pro">
+    <!-- Cabecera -->
+    <div class="chat-header-pro" role="banner">
+      <button id="toggle-sidebar" aria-label="Abrir historial" class="btn-menu-historial" title="Historial">☰</button>
+      <div class="avatar-bot">
+        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Asistente IA" />
+        <span class="pulse" aria-hidden="true"></span>
+      </div>
+      <div>
+        <div class="titulo-chat">Asistente IA</div>
+        <div class="estado-enlinea">En línea</div>
+      </div>
+    </div>
+
+    <!-- Área de mensajes -->
+    <div id="chat-messages" class="chat-messages-pro" role="log" aria-live="polite"></div>
+
+    <!-- Indicador de "escribiendo..." -->
+    <div id="typing-indicator" class="typing-indicator" style="display: none;">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area-pro" id="chat-input-container">
+      <textarea id="chat-input" placeholder="Escribe tu mensaje..." rows="1" aria-label="Escribe tu mensaje"></textarea>
+      <button id="chat-send" class="btn-enviar" aria-label="Enviar mensaje" title="Enviar">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <circle cx="13" cy="13" r="13" fill="black"/>
+          <path d="M13 8v8M13 8l-3 3M13 8l3 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ===== MOBILE FIXES & ACCESSIBILITY ===== */
+html { scroll-behavior: smooth; }
+.chat-container-pro {
+  display: flex;
+  max-width: 1200px;
+  margin: 34px auto 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  font-family: 'Segoe UI', 'Inter', sans-serif;
+  background: #fff;
+  box-shadow: 0 6px 30px rgba(0,0,0,0.10);
+  height: 90vh;
+  min-height: 600px;
+  position: relative;
+}
+@media (max-width: 950px) {
+  .chat-container-pro {
+    height: 100dvh;
+    min-height: 0;
+    max-width: 100vw;
+    border-radius: 0;
+    margin: 0;
+  }
+}
+
+/* X ROJA - SIEMPRE EN MÓVIL */
+.btn-cerrar-chat-total {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  width: 42px;
+  height: 42px;
+  background: #e54848;
+  color: #fff;
+  font-size: 30px;
+  font-weight: bold;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 20000;
+  display: none;
+  transition: background 0.18s;
+  box-shadow: 0 2px 12px #faacac77;
+  line-height: 38px;
+  text-align: center;
+  padding: 0;
+}
+.btn-cerrar-chat-total:hover,
+.btn-cerrar-chat-total:focus {
+  background: #b62020;
+  outline: 2px solid #fff;
+}
+@media (max-width: 950px) {
+  .btn-cerrar-chat-total { display: block !important; }
+}
+
+/* SIDEBAR */
+.chat-sidebar-pro {
+  width: 260px;
+  background: #f7f8fa;
+  padding: 28px 18px 0 22px;
+  border-right: 1.5px solid #ececec;
+  box-shadow: 2px 0 10px #0001;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  transition: left 0.28s;
+  z-index: 10;
+}
+#chat-history {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  margin-bottom: 0;
+  padding-bottom: 64px;
+}
+#chat-history li {
+  padding: 11px 12px 10px 12px;
+  border-radius: 9px;
+  margin-bottom: 7px;
+  background: #e9ecf1;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.16s;
+  outline: none;
+}
+#chat-history li:focus,
+#chat-history li:hover {
+  background: #ffe7be;
+  font-weight: bold;
+  border-left: 5px solid #ffb84d;
+}
+.sidebar-bottom-actions {
+  flex-shrink: 0;
+  padding-bottom: 20px;
+  background: linear-gradient(to top, #f7f8fa 85%, transparent 100%);
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  width: 100%;
+  text-align: center;
+}
+.btn-salir-sidebar {
+  width: 92%;
+  margin: 0 auto;
+  padding: 15px 0;
+  background: #e54848;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 18px;
+  font-weight: 700;
+  box-shadow: 0 2px 12px #faacac77;
+  cursor: pointer;
+  transition: background 0.18s;
+  display: block;
+}
+.btn-salir-sidebar:hover,
+.btn-salir-sidebar:focus {
+  background: #b62020;
+  outline: 2px solid #fff;
+}
+
+/* MOBILE SIDEBAR */
+@media (max-width: 950px) {
+  .chat-sidebar-pro {
+    position: fixed;
+    left: -320px;
+    top: 0;
+    height: 100dvh;
+    width: 220px;
+    border-radius: 0 18px 18px 0;
+    box-shadow: 9px 0 35px #0003;
+    z-index: 99;
+    background: #f7f8fa;
+    padding-bottom: 0;
+  }
+  .chat-sidebar-pro.visible { left: 0; }
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100dvh;
+    background: rgba(0,0,0,0.4);
+    z-index: 98;
+  }
+  .chat-sidebar-pro.visible + .sidebar-overlay {
+    display: block;
+  }
+}
+
+/* HEADER */
+.chat-header-pro {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, #fffbe6 0%, #e8f6ff 100%);
+  padding: 12px 8px 12px 8px;
+  border-bottom: 1.5px solid #f6c56e;
+  position: sticky;
+  top: 0;
+  z-index: 11;
+  gap: 11px;
+  min-height: 62px;
+}
+.btn-menu-historial {
+  font-size: 27px;
+  background: none;
+  border: none;
+  color: #495057;
+  cursor: pointer;
+  padding: 0 5px;
+  margin-right: 6px;
+}
+.btn-menu-historial:focus {
+  outline: 2px solid #ffb84d;
+  border-radius: 6px;
+}
+
+.avatar-bot img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+}
+.pulse {
+  position: absolute;
+  right: -6px;
+  bottom: 2px;
+  width: 12px;
+  height: 12px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 #10b98188;
+  animation: pulse 1.3s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 #10b98188; }
+  70% { box-shadow: 0 0 0 8px #10b98100; }
+  100% { box-shadow: 0 0 0 0 #10b98100; }
+}
+.titulo-chat { font-weight: bold; font-size: 17px; color: #223049; }
+.estado-enlinea { color: #10b981; font-size: 13px; margin-top: 3px; }
+
+/* MESSAGES */
+.chat-box-pro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  position: relative;
+}
+.chat-messages-pro {
+  flex: 1;
+  padding: 36px 22px 14px 22px;
+  overflow-y: auto;
+  background: linear-gradient(120deg, #f7f8fa 80%, #e8f6ff 100%);
+  min-height: 310px;
+  scroll-behavior: smooth;
+}
+.mensaje-user, .mensaje-bot {
+  display: flex;
+  margin-bottom: 18px;
+  align-items: flex-end;
+  position: relative;
+}
+.bubble-user {
+  background: #fff;
+  color: #223049;
+  border-radius: 20px 20px 6px 20px;
+  padding: 13px 18px;
+  box-shadow: 0 2px 7px #0002;
+  margin-left: auto;
+  max-width: 70%;
+  font-size: 15px;
+  word-break: break-word;
+  border: 1px solid #ececec;
+  animation: fadeIn .45s;
+}
+.bubble-bot {
+  background: #e7f1fa;
+  color: #223049;
+  border-radius: 20px 20px 20px 6px;
+  padding: 13px 18px;
+  box-shadow: 0 2px 7px #0002;
+  margin-right: 8px;
+  max-width: 78%;
+  font-size: 15px;
+  position: relative;
+  word-break: break-word;
+  border: 1px solid #cbe6f9;
+  animation: fadeIn .5s;
+}
+.avatar-bot-mini img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  margin-right: 7px;
+}
+.bubble-bot-actions {
+  position: absolute;
+  top: -22px;
+  right: 0;
+  display: none;
+}
+.bubble-bot:hover .bubble-bot-actions {
+  display: block;
+}
+.bubble-bot-actions button {
+  background: none;
+  border: none;
+  color: #10b981;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.bubble-bot-actions button:hover {
+  background: #e0f0ff;
+}
+
+/* TYPING INDICATOR */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  padding: 8px 18px;
+  margin: 0 22px 18px auto;
+  background: #e7f1fa;
+  border-radius: 20px 20px 6px 20px;
+  max-width: 100px;
+}
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: #10b981;
+  border-radius: 50%;
+  margin: 0 2px;
+  animation: typing 1.4s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-5px); }
+}
+
+/* INPUT */
+.input-area-pro {
+  display: flex;
+  align-items: flex-end;
+  border-top: 1.5px solid #f6c56e;
+  background: #fff;
+  padding: 14px 18px env(safe-area-inset-bottom, 120px);
+  position: sticky;
+  bottom: 0;
+  z-index: 12;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.input-area-pro textarea {
+  flex: 1;
+  border: none;
+  border-radius: 17px;
+  padding: 11px 15px;
+  font-size: 15px;
+  background: #f4f6f8;
+  min-height: 36px;
+  max-height: 110px;
+  resize: none;
+  outline: none;
+  box-shadow: 0 1px 4px #0001;
+  transition: background 0.2s;
+  overflow-y: auto;
+  width: calc(100% - 50px);
+}
+.input-area-pro textarea:focus {
+  background: #f9fafb;
+  outline: 2px solid #ffb84d;
+  border-radius: 17px;
+}
+.btn-enviar {
+  border: none;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  width: 38px;
+  height: 38px;
+  margin-left: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s;
+  box-shadow: 0 1px 4px #0001;
+}
+.btn-enviar:hover,
+.btn-enviar:focus {
+  background: #223049;
+  outline: 2px solid #fff;
+}
+.btn-enviar svg { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* SCROLLBARS */
+::-webkit-scrollbar { width: 7px; background: #f7f8fa; }
+::-webkit-scrollbar-thumb { background: #e7e7e7; border-radius: 7px; }
+</style>
+
+<script>
+// ===== FUNCIONES AUXILIARES =====
+function escapeHtml(text) {
+  const map = { '&': '&amp;', '<': '<', '>': '>', '"': '&quot;', "'": '&#039;' };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(console.error);
+  } else {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  }
+}
+
+// ===== LÓGICA PRINCIPAL =====
+document.addEventListener("DOMContentLoaded", function () {
+  const input = document.getElementById("chat-input");
+  const sendBtn = document.getElementById("chat-send");
+  const chatMessages = document.getElementById("chat-messages");
+  const toggleSidebar = document.getElementById("toggle-sidebar");
+  const chatSidebar = document.getElementById("chat-sidebar");
+  const chatHistory = document.getElementById("chat-history");
+  const sidebarOverlay = document.getElementById("sidebar-overlay");
+  const typingIndicator = document.getElementById("typing-indicator");
+
+  // Botón X móvil
+  const cerrarChat = document.getElementById("cerrar-chat-total");
+  if (cerrarChat) {
+    cerrarChat.addEventListener("click", () => {
+      window.location.href = "https://lightslategray-caribou-622401.hostingersite.com/panel-de-usuario/";
+    });
+  }
+
+  // SIDEBAR
+  toggleSidebar.addEventListener("click", () => {
+    chatSidebar.classList.toggle("visible");
+    if (window.innerWidth <= 950) {
+      sidebarOverlay.style.display = chatSidebar.classList.contains("visible") ? "block" : "none";
+    }
+  });
+
+  function closeSidebar() {
+    chatSidebar.classList.remove("visible");
+    sidebarOverlay.style.display = "none";
+  }
+
+  document.addEventListener("click", (e) => {
+    if (
+      window.innerWidth <= 950 &&
+      chatSidebar.classList.contains("visible") &&
+      !chatSidebar.contains(e.target) &&
+      e.target !== toggleSidebar
+    ) {
+      closeSidebar();
+    }
+  });
+
+  sidebarOverlay?.addEventListener("click", closeSidebar);
+
+  // GESTIÓN DE MENSAJES
+  function agregarMensaje(tipo, texto) {
+    const safeText = escapeHtml(texto);
+    const div = document.createElement("div");
+    if (tipo === "user") {
+      div.className = "mensaje-user";
+      div.innerHTML = `<div class="bubble-user">${safeText}</div>`;
+    } else {
+      const copyBtn = `<button onclick="copyToClipboard(${JSON.stringify(texto)})" title="Copiar">📋</button>`;
+      div.className = "mensaje-bot";
+      div.innerHTML = `
+        <div class="avatar-bot-mini">
+          <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Asistente IA" />
+        </div>
+        <div class="bubble-bot">
+          ${safeText}
+          <div class="bubble-bot-actions">${copyBtn}</div>
+        </div>
+      `;
+    }
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function mostrarTyping(show) {
+    typingIndicator.style.display = show ? "flex" : "none";
+    if (show) {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  }
+
+  // ENVÍO
+  function enviarMensaje() {
+    const texto = input.value.trim();
+    if (!texto) return;
+
+    agregarMensaje("user", texto);
+    input.value = "";
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 110) + "px";
+
+    mostrarTyping(true);
+
+    fetch("https://oposicion-age.onrender.com/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mensaje: texto,
+        temas: [],
+        usuario_id: typeof usuarioEmail !== "undefined" ? usuarioEmail : "anonimo",
+        chat_id: chatIdActual
+      }),
+      signal: AbortSignal.timeout(10000)
+    })
+      .then(res => {
+        mostrarTyping(false);
+        return res.json();
+      })
+      .then(data => {
+        agregarMensaje("bot", data.respuesta || "Sin respuesta.");
+        chatIdActual = data.chat_id;
+        cargarHistorial();
+      })
+      .catch(() => {
+        mostrarTyping(false);
+        agregarMensaje("bot", "❌ Error al conectar con el servidor.");
+      });
+  }
+
+  // HISTORIAL
+  let conversaciones = [];
+  let chatIdActual = null;
+
+  function cargarHistorial() {
+    const id = typeof usuarioEmail !== "undefined" ? usuarioEmail : "anonimo";
+    fetch(`https://oposicion-age.onrender.com/conversaciones?usuario_id=${encodeURIComponent(id)}`)
+      .then(res => res.json())
+      .then(data => {
+        conversaciones = data.conversaciones || [];
+        mostrarHistorialEnSidebar();
+      })
+      .catch(err => console.error("❌ Error al cargar historial:", err));
+  }
+
+  function mostrarHistorialEnSidebar() {
+    chatHistory.innerHTML = "";
+    const nueva = document.createElement("li");
+    nueva.textContent = "➕ Nueva conversación";
+    nueva.setAttribute("role", "button");
+    nueva.setAttribute("tabindex", "0");
+    nueva.onclick = iniciarNuevaConversacion;
+    nueva.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") iniciarNuevaConversacion(); };
+    chatHistory.appendChild(nueva);
+
+    conversaciones.forEach((conv) => {
+      const li = document.createElement("li");
+      li.textContent = conv.titulo || "Conversación";
+      li.dataset.id = conv.id;
+      li.setAttribute("role", "button");
+      li.setAttribute("tabindex", "0");
+      li.onclick = () => cargarConversacion(conv.id);
+      li.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") cargarConversacion(conv.id); };
+      chatHistory.appendChild(li);
+    });
+  }
+
+  function cargarConversacion(id) {
+    chatMessages.innerHTML = "";
+    chatIdActual = id;
+    mostrarTyping(true);
+    const idUser = typeof usuarioEmail !== "undefined" ? usuarioEmail : "anonimo";
+    fetch(`https://oposicion-age.onrender.com/conversacion/${id}?usuario_id=${encodeURIComponent(idUser)}`)
+      .then(res => res.json())
+      .then(data => {
+        mostrarTyping(false);
+        if (data.mensajes) {
+          data.mensajes.forEach(m => {
+            agregarMensaje(m.role === "user" ? "user" : "bot", m.content);
+          });
+        }
+      })
+      .catch(() => {
+        mostrarTyping(false);
+        agregarMensaje("bot", "❌ No se pudo cargar la conversación.");
+      });
+
+    document.querySelectorAll("#chat-history li").forEach(li => {
+      li.classList.remove("active");
+      if (li.dataset.id === id) li.classList.add("active");
+    });
+    if (window.innerWidth <= 950) closeSidebar();
+  }
+
+  function iniciarNuevaConversacion() {
+    chatMessages.innerHTML = "";
+    chatIdActual = null;
+    document.querySelectorAll("#chat-history li").forEach(li => li.classList.remove("active"));
+    if (window.innerWidth <= 950) closeSidebar();
+  }
+
+  // EVENTOS
+  sendBtn.addEventListener("click", enviarMensaje);
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensaje();
+    }
+  });
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 110) + "px";
+  });
+
+  // SALIR
+  document.getElementById("salir-del-chat-sidebar")?.addEventListener("click", () => {
+    window.location.href = "https://lightslategray-caribou-622401.hostingersite.com/panel-de-usuario/";
+  });
+
+  // INICIO
+  cargarHistorial();
+});
+</script>

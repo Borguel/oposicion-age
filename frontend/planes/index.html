@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planes - Oposición AGE</title>
+  <meta name="description" content="Compara los planes Gratis, Básico y Premium de Oposición AGE y elige el que necesitas." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Planes - Oposición AGE" />
+  <meta property="og:description" content="Compara los planes Gratis, Básico y Premium de Oposición AGE y elige el que necesitas." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/planes/style.css" />
+</head>
+<body>
+  <nav class="age-nav"></nav>
+
+  <div class="hero">
+    <h1>Elige tu plan</h1>
+    <p>Empieza gratis y sube de nivel cuando quieras. Puedes cancelar cuando quieras desde "Mi cuenta".</p>
+  </div>
+
+  <div class="planes-confianza">
+    <span>🔒 Pago seguro con Stripe</span>
+    <span>🔄 Cancela cuando quieras, sin permanencia</span>
+    <span>⚡ Acceso inmediato tras el pago</span>
+  </div>
+
+  <div class="selector-oposicion-planes">
+    <label for="selector-oposicion">¿Para qué oposición?</label>
+    <select id="selector-oposicion"></select>
+  </div>
+
+  <div id="mensaje-checkout" class="mensaje-checkout" style="display:none;"></div>
+
+  <div class="planes-grid">
+    <div class="plan-card" data-plan="gratis">
+      <div class="plan-nombre">Gratis</div>
+      <div class="plan-precio">0€</div>
+      <ul class="plan-features">
+        <li>Test oficiales (preguntas de exámenes reales)</li>
+        <li>Repetir tu último test</li>
+        <li>Test de preguntas falladas</li>
+        <li>Estadísticas de tu progreso</li>
+      </ul>
+      <button type="button" class="btn-plan" data-plan-btn="gratis">Empezar gratis</button>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-nombre">Básico</div>
+      <div class="plan-precio">4,99 €<span class="plan-precio-periodo">/mes</span></div>
+      <ul class="plan-features">
+        <li>Todo lo del plan Gratis</li>
+        <li>Generador de test personalizado con IA</li>
+        <li>Test "inteligente" adaptado a tu nivel</li>
+        <li>Generación de esquemas con IA</li>
+      </ul>
+      <button type="button" class="btn-plan btn-plan-primary" data-plan-btn="basico">Elegir Básico</button>
+    </div>
+
+    <div class="plan-card plan-destacado">
+      <div class="plan-badge">Más completo</div>
+      <div class="plan-nombre">Premium</div>
+      <div class="plan-precio">9,99 €<span class="plan-precio-periodo">/mes</span></div>
+      <ul class="plan-features">
+        <li>Todo lo del plan Básico</li>
+        <li>Todas las herramientas desde PDF (test, tarjetas, esquemas, resumen, chat)</li>
+        <li>Chat IA general</li>
+        <li>Asistente premium de examen</li>
+      </ul>
+      <button type="button" class="btn-plan btn-plan-primary" data-plan-btn="premium">Elegir Premium</button>
+    </div>
+  </div>
+
+  <section class="planes-beneficios">
+    <h2>¿Por qué merece la pena?</h2>
+    <div class="planes-beneficios-grid">
+      <div class="planes-beneficio">
+        <div class="planes-beneficio-icono">⏱️</div>
+        <h3>Ahorra horas de estudio</h3>
+        <p>Genera test, esquemas, tarjetas y resúmenes al instante desde tus propios apuntes o el temario oficial, en vez de prepararlos a mano.</p>
+      </div>
+      <div class="planes-beneficio">
+        <div class="planes-beneficio-icono">🎯</div>
+        <h3>Como el examen real</h3>
+        <p>Simulacros con preguntas de exámenes oficiales ya publicados y un test "inteligente" que se adapta a lo que más te cuesta.</p>
+      </div>
+      <div class="planes-beneficio">
+        <div class="planes-beneficio-icono">📈</div>
+        <h3>Progresa con datos</h3>
+        <p>Estadísticas claras por tema para saber exactamente qué repasar antes del examen, no solo "cuánto llevas estudiado".</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="planes-faq">
+    <h2>Preguntas frecuentes</h2>
+    <div class="planes-faq-lista">
+      <div class="planes-faq-item">
+        <button type="button" class="planes-faq-pregunta" data-faq-toggle aria-expanded="false">
+          ¿Puedo cancelar cuando quiera?
+          <span class="planes-faq-chevron">▾</span>
+        </button>
+        <div class="planes-faq-respuesta" style="display:none;">
+          Sí. Puedes cancelar tu suscripción en cualquier momento desde "Mi cuenta → Gestionar suscripción", sin permanencia ni penalización. Seguirás teniendo acceso hasta el final del periodo ya pagado.
+        </div>
+      </div>
+      <div class="planes-faq-item">
+        <button type="button" class="planes-faq-pregunta" data-faq-toggle aria-expanded="false">
+          ¿El plan se aplica a todas las oposiciones o solo a una?
+          <span class="planes-faq-chevron">▾</span>
+        </button>
+        <div class="planes-faq-respuesta" style="display:none;">
+          Cada oposición (AGE, GACE...) tiene su propia suscripción independiente. Puedes tener, por ejemplo, el plan Premium en una y el plan Gratis en otra.
+        </div>
+      </div>
+      <div class="planes-faq-item">
+        <button type="button" class="planes-faq-pregunta" data-faq-toggle aria-expanded="false">
+          ¿Es seguro el pago?
+          <span class="planes-faq-chevron">▾</span>
+        </button>
+        <div class="planes-faq-respuesta" style="display:none;">
+          Sí, todos los pagos se gestionan a través de Stripe, una de las pasarelas de pago más usadas del mundo. Nosotros nunca almacenamos los datos de tu tarjeta.
+        </div>
+      </div>
+      <div class="planes-faq-item">
+        <button type="button" class="planes-faq-pregunta" data-faq-toggle aria-expanded="false">
+          ¿Puedo cambiar de plan más adelante?
+          <span class="planes-faq-chevron">▾</span>
+        </button>
+        <div class="planes-faq-respuesta" style="display:none;">
+          Sí, puedes subir o bajar de plan cuando quieras desde "Mi cuenta". Los cambios se aplican de inmediato.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="/assets/auth.js"></script>
+  <script type="module" src="/planes/script.js"></script>
+</body>
+</html>

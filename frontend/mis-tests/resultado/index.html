@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resultados del test - Oposición AGE</title>
+  <meta name="description" content="Revisa el resultado detallado de tu test: aciertos, fallos y explicaciones por pregunta." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Resultados del test - Oposición AGE" />
+  <meta property="og:description" content="Revisa el resultado detallado de tu test: aciertos, fallos y explicaciones por pregunta." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/mis-tests/resultado/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+<div class="resultado-header">
+  <div class="age-container resultado-header-inner">
+    <div class="resultado-header-titulo">
+      <span id="resultado-icono" class="resultado-header-icono">🧪</span>
+      <div>
+        <h1 id="resultado-titulo">Resultados del test</h1>
+        <p id="resultado-fecha"></p>
+      </div>
+    </div>
+    <div class="resultado-acciones-top">
+      <a href="/mis-tests/" class="age-btn age-btn-outline">← Volver</a>
+      <a href="#" class="age-btn age-btn-primary" data-repetir-link>🔁 Repetir</a>
+    </div>
+  </div>
+</div>
+
+<div class="age-container resultado-wrap">
+  <div id="resultado-cargando" class="resultado-cargando">Cargando resultados…</div>
+  <div id="resultado-contenido" class="hidden">
+    <div id="resultado-render"></div>
+    <div class="resultado-acciones-bottom">
+      <a href="/mis-tests/" class="age-btn age-btn-outline">← Volver a Mis tests</a>
+      <a href="#" class="age-btn age-btn-primary" data-repetir-link>🔁 Repetir este test</a>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/assets/auth.js"></script>
+<script type="module" src="/mis-tests/resultado/script.js"></script>
+</body>
+</html>
