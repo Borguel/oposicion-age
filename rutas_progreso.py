@@ -102,6 +102,32 @@ def registrar_rutas_progreso(app, db):
         estadisticas = obtener_estadisticas_completas_usuario(db, g.uid, oposicion=obtener_oposicion_solicitada())
         return jsonify({"estadisticas": estadisticas})
 
+    @app.route("/fecha-examen", methods=["GET"])
+    @requiere_login(db)
+    def obtener_fecha_examen():
+        oposicion = obtener_oposicion_solicitada()
+        doc = db.collection("usuarios").document(g.uid).get()
+        datos = doc.to_dict() or {}
+        fecha = (datos.get("fechas_examen") or {}).get(oposicion)
+        return jsonify({"fecha_examen": fecha})
+
+    @app.route("/fecha-examen", methods=["POST"])
+    @requiere_login(db)
+    def guardar_fecha_examen():
+        oposicion = obtener_oposicion_solicitada()
+        datos = request.get_json(silent=True) or {}
+        fecha = (datos.get("fecha_examen") or "").strip()
+        ref = db.collection("usuarios").document(g.uid)
+        if fecha:
+            try:
+                datetime.strptime(fecha, "%Y-%m-%d")
+            except ValueError:
+                return jsonify({"error": "Formato de fecha no válido"}), 400
+            ref.set({"fechas_examen": {oposicion: fecha}}, merge=True)
+        else:
+            ref.update({f"fechas_examen.{oposicion}": firestore.DELETE_FIELD})
+        return jsonify({"mensaje": "Fecha de examen actualizada"})
+
     @app.route("/ultimo-test", methods=["GET"])
     @requiere_login(db)
     def obtener_ultimo_test():

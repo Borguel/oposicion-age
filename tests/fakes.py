@@ -3,7 +3,7 @@
 probar rutas y lógica de negocio sin depender de un proyecto real de
 Firebase ni de red. Cubre solo el subconjunto de la API que se usa aquí --
 no pretende ser un sustituto completo de google-cloud-firestore."""
-from google.cloud.firestore_v1.transforms import ArrayUnion, ArrayRemove, Increment
+from google.cloud.firestore_v1.transforms import ArrayUnion, ArrayRemove, Increment, Sentinel
 
 
 def _resolver_valor(actual, valor):
@@ -83,7 +83,10 @@ class FakeDocumentRef:
             cursor = existente
             for parte in partes[:-1]:
                 cursor = cursor.setdefault(parte, {})
-            cursor[partes[-1]] = _resolver_valor(cursor.get(partes[-1]), valor)
+            if isinstance(valor, Sentinel):
+                cursor.pop(partes[-1], None)
+            else:
+                cursor[partes[-1]] = _resolver_valor(cursor.get(partes[-1]), valor)
         self._store[self._path] = existente
 
     def delete(self):

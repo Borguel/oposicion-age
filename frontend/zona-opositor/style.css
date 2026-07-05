@@ -156,6 +156,78 @@ body {
   }
 }
 
+.zona-cuenta-atras-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 26px;
+  flex-wrap: wrap;
+}
+
+.zona-cuenta-atras-icono {
+  font-size: 2.6rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.zona-cuenta-atras-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.zona-cuenta-atras-numero {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.zona-cuenta-atras-mensaje {
+  color: var(--age-ink-soft);
+  font-size: 0.92rem;
+}
+
+.zona-cuenta-atras-boton {
+  flex-shrink: 0;
+}
+
+.zona-cuenta-atras-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.zona-cuenta-atras-form input[type="date"] {
+  padding: 10px 14px;
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-sm);
+  font-family: var(--age-font);
+  background: var(--age-card);
+  color: var(--age-ink);
+}
+
+.zona-cuenta-atras-quitar {
+  border: none;
+  background: none;
+  color: var(--age-danger);
+  cursor: pointer;
+  font-size: 0.88rem;
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .zona-cuenta-atras-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .zona-cuenta-atras-form {
+    justify-content: center;
+  }
+}
+
 .zona-onboarding-card {
   padding: 22px 26px;
 }
