@@ -16,6 +16,7 @@ acierta en cualquiera de esos tres tipos; si se vuelve a fallar en el
 repaso de "falladas" se actualiza la misma entrada (nunca se duplica).
 """
 import hashlib
+import random
 from datetime import datetime
 from firebase_admin import firestore
 
@@ -25,6 +26,31 @@ TIPOS_QUE_ALIMENTAN_BANCO = {"personalizado", "oficial", "falladas"}
 def _id_pregunta(oposicion, pregunta):
     clave = f"{oposicion}||{(pregunta or '').strip()}"
     return hashlib.sha256(clave.encode("utf-8", "ignore")).hexdigest()[:24]
+
+
+def ordenar_por_prioridad_repaso(candidatas):
+    """Repaso espaciado simple: en vez de elegir al azar entre las
+    preguntas falladas disponibles, prioriza las que de verdad hace falta
+    repasar ya -- primero las falladas más veces (`veces_fallada`) y, a
+    igualdad de eso, las que llevan más tiempo sin volver a intentarse
+    (`fecha_ultimo_fallo` más antigua). Se baraja antes de ordenar para
+    que los empates exactos no salgan siempre en el mismo orden (el sort
+    de Python es estable, así que el orden barajado se conserva dentro de
+    cada grupo con la misma prioridad)."""
+    ahora = datetime.utcnow()
+
+    def _dias_sin_repasar(pregunta):
+        fecha_str = pregunta.get("fecha_ultimo_fallo")
+        if not fecha_str:
+            return 0
+        try:
+            return (ahora - datetime.fromisoformat(fecha_str)).days
+        except ValueError:
+            return 0
+
+    random.shuffle(candidatas)
+    candidatas.sort(key=lambda p: (p.get("veces_fallada", 1) or 1, _dias_sin_repasar(p)), reverse=True)
+    return candidatas
 
 
 def actualizar_banco_fallos(db, usuario_id, oposicion, tipo_test, contenido, respuestas):

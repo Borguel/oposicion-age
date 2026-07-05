@@ -1,7 +1,6 @@
 """Generación de tests/esquemas/análisis a partir del TEMARIO oficial (no
 de un PDF subido por el usuario -- eso vive en blueprints/pdf_ia.py)."""
 import logging
-import random
 
 from flask import Blueprint, g, jsonify, request
 
@@ -14,6 +13,8 @@ from test_generator import generar_test_avanzado, generar_preguntas_ia_en_lotes
 from esquema_generator import generar_esquema
 from deepseek_utils import call_deepseek_api
 from registro_progreso_usuario import obtener_resumen_progreso
+from banco_fallos import ordenar_por_prioridad_repaso as ordenar_fallos_por_prioridad
+from banco_favoritas import ordenar_por_prioridad_repaso as ordenar_favoritas_por_prioridad, marcar_repasadas
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +258,10 @@ def generar_test_fallos():
         candidatas = [p for p in candidatas if p.get("tema_id") in temas_filtro]
 
     total_disponibles = len(candidatas)
-    random.shuffle(candidatas)
+    # Repaso espaciado: prioriza las falladas más veces y, a igualdad, las
+    # que llevan más tiempo sin volver a intentarse, en vez de un muestreo
+    # puramente aleatorio.
+    candidatas = ordenar_fallos_por_prioridad(candidatas)
     seleccionadas = candidatas[:num_preguntas]
 
     if total_disponibles == 0:
@@ -286,8 +290,13 @@ def generar_test_favoritas():
         candidatas = [p for p in candidatas if p.get("tema_id") in temas_filtro]
 
     total_disponibles = len(candidatas)
-    random.shuffle(candidatas)
+    # Repaso espaciado: prioriza las nunca repasadas y las que llevan más
+    # tiempo sin salir en un test de favoritas, para rotar por todo el
+    # banco en vez de repetir siempre las mismas al azar.
+    candidatas = ordenar_favoritas_por_prioridad(candidatas)
     seleccionadas = candidatas[:num_preguntas]
+    if seleccionadas:
+        marcar_repasadas(db, g.uid, oposicion, seleccionadas)
 
     if total_disponibles == 0:
         mensaje = "No tienes preguntas marcadas como favoritas con estos filtros."
