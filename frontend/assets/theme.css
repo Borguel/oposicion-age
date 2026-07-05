@@ -610,51 +610,36 @@ body {
   width: 100%;
 }
 
-/* ---------- Botón flotante "Guardar y salir" durante un test ---------- */
+/* ---------- Botón "Guardar y salir" durante un test ---------- */
 /* Fuera del flujo de Anterior/Desmarcar/Siguiente para que no compita
-   visualmente con la navegación entre preguntas: una esquina fija y
-   discreta, visible en todo momento sin interrumpir. */
-.btn-guardar-salir-flotante {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 300;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border-radius: var(--age-radius-pill);
-  border: 1.5px solid var(--age-border);
-  background: var(--age-card);
-  color: var(--age-ink-soft);
+   visualmente con la navegación entre preguntas: fijo justo encima de
+   "Finalizar Test", con su mismo ancho, en vez de flotar sobre el
+   contenido. */
+.btn-guardar-salir-estatico {
+  display: block;
+  width: 100%;
+  padding: 13px 16px;
+  margin-top: 15px;
+  border-radius: 12px;
+  border: 1.5px solid var(--age-border, #e6e8ec);
+  background: var(--age-card, #fff);
+  color: var(--age-ink-soft, #6b7280);
   font-family: var(--age-font);
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
   cursor: pointer;
-  box-shadow: var(--age-shadow-hover);
-  transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease),
-    transform 0.15s var(--age-ease);
+  transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease);
 }
 
-.btn-guardar-salir-flotante:hover {
-  background: var(--age-bg);
-  color: var(--age-ink);
-  transform: translateY(-1px);
+.btn-guardar-salir-estatico:hover {
+  background: var(--age-bg, #f6f7f9);
+  color: var(--age-ink, #16181d);
 }
 
-.btn-guardar-salir-flotante:disabled {
+.btn-guardar-salir-estatico:disabled {
   opacity: 0.6;
   cursor: default;
-  transform: none;
-}
-
-@media (max-width: 640px) {
-  .btn-guardar-salir-flotante {
-    bottom: 14px;
-    right: 14px;
-    padding: 8px 13px;
-    font-size: 0.78rem;
-  }
 }
 
 .age-pill {

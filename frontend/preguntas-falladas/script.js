@@ -230,7 +230,7 @@ async function obtenerAuthHeaders() {
         respuestasUsuario[i] = null;
       });
       const botonGuardarSalir = document.getElementById("btn-guardar-salir");
-      botonGuardarSalir.style.display = "inline-flex";
+      botonGuardarSalir.style.display = "block";
       botonGuardarSalir.disabled = false;
       botonGuardarSalir.textContent = "💾 Guardar y salir";
       botonGuardarSalir.onclick = async function() {

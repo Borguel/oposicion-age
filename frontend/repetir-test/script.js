@@ -97,6 +97,7 @@ function mostrarPregunta(i) {
     <button type="submit" class="age-btn age-btn-primary age-btn-block" style="margin-top:12px;">
       ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
     </button>
+    <button type="button" id="btn-guardar-salir" class="btn-guardar-salir-estatico">💾 Guardar y salir</button>
     <button type="button" id="btn-finalizar" class="btn btn-danger btn-block" style="margin-top:10px;">Finalizar Test</button>
   </form>`;
 
@@ -108,11 +109,7 @@ function mostrarPregunta(i) {
     respuestasUsuario[i] = null;
   });
 
-  const botonGuardarSalir = document.getElementById("btn-guardar-salir");
-  botonGuardarSalir.style.display = "inline-flex";
-  botonGuardarSalir.disabled = false;
-  botonGuardarSalir.textContent = "💾 Guardar y salir";
-  botonGuardarSalir.onclick = async function () {
+  document.getElementById("btn-guardar-salir").addEventListener("click", async function () {
     const boton = this;
     boton.disabled = true;
     boton.textContent = "Guardando…";
@@ -123,7 +120,7 @@ function mostrarPregunta(i) {
       tiempo_transcurrido_segundos: tiempoTranscurridoActual()
     });
     window.location.href = "/mis-tests/";
-  };
+  });
 
   if (i > 0) {
     document.getElementById("btn-anterior").addEventListener("click", () => mostrarPregunta(i - 1));
@@ -156,7 +153,6 @@ async function mostrarResultados() {
   document.getElementById("temporizador").style.display = "none";
   document.getElementById("contenedor-test").innerHTML = "";
   document.getElementById("contenedor-test").style.display = "none";
-  document.getElementById("btn-guardar-salir").style.display = "none";
   const cont = document.getElementById("contenedor-resultados");
   cont.style.display = "block";
 
