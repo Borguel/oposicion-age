@@ -78,6 +78,13 @@
       gap: 12px;
     }
 
+    .estadisticas-header-botones {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
     #estadisticas-refresh {
       background: var(--theme-primary);
       color: white;

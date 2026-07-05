@@ -21,10 +21,12 @@ document.addEventListener("DOMContentLoaded", async function () {
   const btnVerNuevos = document.getElementById("btn-ver-nuevos");
   const btnVerTemasTop = document.getElementById("btn-ver-temas-top");
   const busquedaInput = document.getElementById("modal-busqueda-input");
+  const exportarPdfBtn = document.getElementById("estadisticas-exportar-pdf");
   let temasFiltrados = [];
   let todosLosTemas = [];
   let temasTest = [];
   let temasTocados = new Set();
+  let datosParaExportarPDF = null;
 
   // Función para cargar datos
   async function cargarDatos() {
@@ -49,7 +51,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
 
-      const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+      const { obtenerOposicionActual, OPOSICIONES } = await import("/assets/oposicion.js");
       const oposicion = obtenerOposicionActual();
       const sufijo = `?oposicion=${encodeURIComponent(oposicion)}`;
 
@@ -69,9 +71,9 @@ document.addEventListener("DOMContentLoaded", async function () {
         console.warn("Usando ruta antigua como fallback");
         const resumenRes = await fetch(`https://oposicion-age.onrender.com/resumen-progreso${sufijo}`, { headers: authHeaders });
         const resumenData = await resumenRes.json();
-        procesarDatos(resumenData.resumen ?? {}, temasData.temas || [], racha);
+        procesarDatos(resumenData.resumen ?? {}, temasData.temas || [], racha, oposicion, OPOSICIONES);
       } else {
-        procesarDatos(estadisticas, temasData.temas || [], racha);
+        procesarDatos(estadisticas, temasData.temas || [], racha, oposicion, OPOSICIONES);
       }
     } catch (err) {
       console.error("Error cargando estadísticas:", err);
@@ -82,7 +84,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
   }
 
-  function procesarDatos(estadisticas, todosTemas, racha) {
+  function procesarDatos(estadisticas, todosTemas, racha, oposicion, OPOSICIONES) {
     const totalTests = estadisticas.tests_realizados ?? 0;
     const totalAciertos = estadisticas.total_aciertos ?? 0;
     const totalFallos = estadisticas.total_fallos ?? 0;
@@ -183,7 +185,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     mostrarTemasNoEstudiados(noEstudiados, todosTemas);
     mostrarTemasFlojos(rendimientoPorTema, todosTemas);
     renderizarEvolucion(historial);
-    renderizarInsignias({
+    const insigniasConseguidas = renderizarInsignias({
       testsRealizados: totalTests,
       testsAprobados: aprobados,
       puntuacionMedia: puntuacionMedia,
@@ -191,6 +193,42 @@ document.addEventListener("DOMContentLoaded", async function () {
       totalArchivos: totalArchivos,
       rachaMaxima: racha.racha_maxima ?? 0
     });
+
+    const temasFlojosPDF = Object.entries(rendimientoPorTema || {})
+      .map(([id, r]) => {
+        const respondidas = (r.aciertos || 0) + (r.fallos || 0);
+        const porcentajeAcierto = respondidas > 0 ? Math.round((r.aciertos / respondidas) * 100) : null;
+        const tema = todosTemas.find(x => x.id === id);
+        return { nombre: tema ? tema.titulo : `Tema ${id}`, respondidas, porcentaje: porcentajeAcierto };
+      })
+      .filter(t => t.respondidas >= MINIMO_PREGUNTAS_FLOJO && t.porcentaje !== null && t.porcentaje < UMBRAL_ACIERTO_FLOJO)
+      .sort((a, b) => a.porcentaje - b.porcentaje)
+      .slice(0, 3);
+
+    datosParaExportarPDF = {
+      nombreOposicion: (OPOSICIONES.find(o => o.id === oposicion) || {}).nombre || "Oposición AGE",
+      testsRealizados: totalTests,
+      testsAprobados: aprobados,
+      testsSuspendidos: suspendidos,
+      porcentajeAprobados,
+      porcentajeSuspendidos,
+      puntuacionMedia,
+      tiempoTotalTexto: `${horas}h ${minutos}m`,
+      totalAciertos,
+      totalFallos,
+      totalBlancos,
+      porcentajeAciertos,
+      porcentajeFallos,
+      porcentajeBlancos,
+      temasFlojos: temasFlojosPDF,
+      insigniasConseguidas,
+      historialReciente: historial.slice(-10).map(t => ({
+        fecha: t.fecha,
+        nota: Math.round((t.puntuacion_final ?? 0) * 100) / 10,
+        resultado: t.resultado
+      })),
+      nombreArchivo: "resumen-progreso.pdf"
+    };
   }
 
   // Insignias: logros calculados a partir de datos que ya se piden para el
@@ -212,9 +250,11 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   function renderizarInsignias(datos) {
     const contenedor = document.getElementById("insignias-grid");
+    const conseguidas = [];
     contenedor.innerHTML = INSIGNIAS.map((insignia) => {
       const actual = insignia.valor(datos) || 0;
       const conseguida = actual >= insignia.umbral;
+      if (conseguida) conseguidas.push(`${insignia.icono} ${insignia.titulo}`);
       const actualMostrado = Number.isInteger(insignia.umbral) ? Math.floor(Math.min(actual, insignia.umbral)) : Math.min(actual, insignia.umbral).toFixed(1);
       return `
         <div class="insignia${conseguida ? " conseguida" : ""}" title="${insignia.descripcion}">
@@ -224,6 +264,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         </div>
       `;
     }).join("");
+    return conseguidas;
   }
 
   // Gráfica de evolución de la nota: una línea sencilla en SVG (sin
@@ -466,6 +507,23 @@ document.addEventListener("DOMContentLoaded", async function () {
   busquedaInput.addEventListener('input', filtrarTemas);
 
   refreshBtn.addEventListener('click', cargarDatos);
+
+  exportarPdfBtn.addEventListener('click', async () => {
+    if (!datosParaExportarPDF) return;
+    exportarPdfBtn.disabled = true;
+    const textoOriginal = exportarPdfBtn.textContent;
+    exportarPdfBtn.textContent = "Generando…";
+    try {
+      const { descargarResumenProgresoPDF } = await import("/assets/progreso-pdf.js");
+      descargarResumenProgresoPDF(datosParaExportarPDF);
+    } catch (e) {
+      console.error("Error exportando el PDF de progreso:", e);
+      alert("No se pudo generar el PDF. Inténtalo de nuevo.");
+    } finally {
+      exportarPdfBtn.disabled = false;
+      exportarPdfBtn.textContent = textoOriginal;
+    }
+  });
 
   function cerrarModal() {
     cerrarModalGenerico(modal);
