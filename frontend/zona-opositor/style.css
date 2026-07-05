@@ -486,3 +486,21 @@ body {
     height: 1px;
   }
 }
+
+.zona-reabrir-onboarding {
+  display: block;
+  margin: 18px auto 0;
+  background: none;
+  border: none;
+  color: var(--age-ink-soft);
+  font-family: var(--age-font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.zona-reabrir-onboarding:hover {
+  color: var(--age-ink);
+}

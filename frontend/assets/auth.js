@@ -436,11 +436,14 @@ function inyectarBannerVerificacion(user) {
       <button type="button" class="age-btn age-btn-outline" id="age-verificacion-reenviar">Reenviar correo</button>
       <button type="button" class="age-verificacion-banner-cerrar" id="age-verificacion-cerrar" aria-label="Cerrar aviso">✕</button>
     </div>
+    <p class="age-verificacion-banner-error" id="age-verificacion-error" style="display:none;">No se pudo enviar el correo. Inténtalo de nuevo en unos segundos.</p>
   `;
   document.body.prepend(banner);
 
   document.getElementById("age-verificacion-reenviar").addEventListener("click", async (evento) => {
     const boton = evento.currentTarget;
+    const mensajeError = document.getElementById("age-verificacion-error");
+    mensajeError.style.display = "none";
     boton.disabled = true;
     boton.textContent = "Enviando…";
     try {
@@ -449,6 +452,7 @@ function inyectarBannerVerificacion(user) {
     } catch (e) {
       boton.textContent = "Reenviar correo";
       boton.disabled = false;
+      mensajeError.style.display = "block";
     }
   });
   document.getElementById("age-verificacion-cerrar").addEventListener("click", () => {

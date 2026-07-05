@@ -13,7 +13,25 @@
   <meta property="og:title" content="Oposición AGE - Plataforma de Estudio con IA" />
   <meta property="og:description" content="Prepara tu oposición al Cuerpo General Administrativo del Estado (AGE) o de Gestión (GACE): tests ilimitados, herramientas con IA y estadísticas de progreso." />
   <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta property="og:url" content="https://oposicion-age-1.onrender.com/" />
   <meta name="twitter:card" content="summary" />
+  <link rel="canonical" href="https://oposicion-age-1.onrender.com/" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Oposición AGE",
+    "url": "https://oposicion-age-1.onrender.com/",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web",
+    "description": "Prepara tu oposición al Cuerpo General Administrativo del Estado (AGE) o de Gestión (GACE): tests ilimitados sobre el temario oficial, herramientas con IA para tus propios apuntes y estadísticas de progreso.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EUR"
+    }
+  }
+  </script>
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
   <link rel="stylesheet" href="/assets/theme.css" />
   <style>
@@ -97,6 +115,43 @@
       max-width: var(--age-container);
       margin: 0 auto;
       padding: 64px 20px 20px;
+    }
+
+    .home-prueba-social {
+      display: none;
+      max-width: var(--age-container);
+      margin: 0 auto;
+      padding: 36px 20px 0;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      justify-items: center;
+    }
+
+    .home-prueba-social-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-lg);
+      box-shadow: var(--age-shadow);
+      padding: 28px 32px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
+    }
+
+    .home-prueba-social-item strong {
+      font-size: clamp(2.2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--age-primary-dark);
+    }
+
+    .home-prueba-social-item span {
+      font-size: 0.95rem;
+      color: var(--age-ink-soft);
     }
 
     .home-section-titulo {
@@ -563,6 +618,17 @@
     </div>
   </section>
 
+  <div class="home-prueba-social" id="home-prueba-social">
+    <div class="home-prueba-social-item">
+      <strong class="home-prueba-social-num" id="home-stat-oficiales" data-target="0">0</strong>
+      <span>preguntas oficiales disponibles</span>
+    </div>
+    <div class="home-prueba-social-item">
+      <strong class="home-prueba-social-num" id="home-stat-generadas" data-target="0">0</strong>
+      <span>preguntas generadas por opositores</span>
+    </div>
+  </div>
+
   <section class="home-section">
     <div class="home-section-titulo">Todo lo que necesitas para aprobar tu oposición</div>
     <p class="home-section-sub">Herramientas pensadas para opositores que quieren estudiar de forma inteligente, no solo memorizar.</p>
@@ -801,5 +867,46 @@
   </section>
 
   <script type="module" src="/assets/auth.js"></script>
+  <script type="module">
+    import { BACKEND_URL } from "/assets/firebase-config.js";
+
+    function animarConteo(elemento, destino, duracionMs = 1500) {
+      const inicio = performance.now();
+      function paso(ahora) {
+        const t = Math.min((ahora - inicio) / duracionMs, 1);
+        const progreso = 1 - (1 - t) * (1 - t); // easeOutQuad
+        const valor = Math.round(destino * progreso);
+        elemento.textContent = `+${valor.toLocaleString("es-ES")}`;
+        if (t < 1) requestAnimationFrame(paso);
+      }
+      requestAnimationFrame(paso);
+    }
+
+    // Cifras reales de uso (nunca inventadas): si la app es aún muy joven
+    // y apenas hay preguntas generadas, se omite en vez de mostrar algo
+    // poco convincente.
+    fetch(`${BACKEND_URL}/estadisticas-publicas`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((datos) => {
+        if (!datos || datos.total_preguntas_generadas < 10) return;
+        const fila = document.getElementById("home-prueba-social");
+        const elOficiales = document.getElementById("home-stat-oficiales");
+        const elGeneradas = document.getElementById("home-stat-generadas");
+        elOficiales.dataset.target = datos.total_preguntas_oficiales;
+        elGeneradas.dataset.target = datos.total_preguntas_generadas;
+        fila.style.display = "grid";
+
+        const observador = new IntersectionObserver((entradas) => {
+          entradas.forEach((entrada) => {
+            if (!entrada.isIntersecting) return;
+            animarConteo(elOficiales, Number(elOficiales.dataset.target));
+            animarConteo(elGeneradas, Number(elGeneradas.dataset.target));
+            observador.disconnect();
+          });
+        }, { threshold: 0.4 });
+        observador.observe(fila);
+      })
+      .catch(() => {});
+  </script>
 </body>
 </html>

@@ -13,6 +13,7 @@ from guardar_resultado import obtener_estadisticas_completas_usuario
 from banco_favoritas import marcar_favorita, desmarcar_favorita, listar_favoritas
 from push_utils import VAPID_PUBLIC_KEY, push_disponible, guardar_suscripcion, borrar_suscripcion
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
+from utils import calcular_resultado_test
 import random
 
 # Campos ligeros que devuelve /mis-tests -- deliberadamente sin el array
@@ -271,6 +272,13 @@ def registrar_rutas_progreso(app, db):
                 resumen = {campo: d.get(campo) for campo in CAMPOS_RESUMEN_MIS_TESTS}
                 resumen["estado"] = estado
                 resumen["id"] = doc.id
+                if estado == "finalizado":
+                    # No nos fiamos del "resultado" tal cual guardado -- tests
+                    # guardados antes de corregir la fórmula oficial pueden
+                    # tenerlo mal, y aciertos/fallos/blancos sí son de fiar.
+                    _, _, resumen["resultado"] = calcular_resultado_test(
+                        d.get("aciertos", 0) or 0, d.get("fallos", 0) or 0, d.get("blancos", 0) or 0
+                    )
                 resultado.append(resumen)
             resultado.sort(key=lambda t: t.get("fecha") or "", reverse=True)
             return jsonify({"tests": resultado})

@@ -3,6 +3,7 @@ from google.cloud import firestore
 
 from oposiciones import OPOSICION_POR_DEFECTO
 from email_utils import enviar_email_bienvenida
+from utils import calcular_resultado_test
 
 
 def registrar_actividad_racha(db, usuario_id):
@@ -79,7 +80,7 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None):
         })
         enviar_email_bienvenida(email)
 
-def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None, rendimiento_temas=None):
+def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None, rendimiento_temas=None, blancos=0):
     doc_ref = db.collection("usuarios").document(usuario_id)
     usuario = doc_ref.get().to_dict() or {}
     stats = (usuario.get("estadisticas", {}) or {}).get(oposicion, {}) or {}
@@ -102,24 +103,23 @@ def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, te
             "blancos": acumulado.get("blancos", 0) + datos.get("blancos", 0),
         }
 
-    total_preguntas = aciertos + fallos
-    puntuacion = puntuacion_final if puntuacion_final is not None else round(aciertos / total_preguntas, 2) if total_preguntas else 0
+    puntuacion_calculada, _nota_sobre_10, resultado = calcular_resultado_test(aciertos, fallos, blancos)
+    puntuacion = puntuacion_final if puntuacion_final is not None else puntuacion_calculada
     puntuacion_media = round(total_aciertos / total_tests, 2) if total_tests else 0
 
     aprobados = stats.get("tests_aprobados", 0)
     suspendidos = stats.get("tests_suspendidos", 0)
-    if puntuacion >= 0.5:
+    if resultado == "aprobado":
         aprobados += 1
-        resultado = "aprobado"
     else:
         suspendidos += 1
-        resultado = "suspendido"
 
     historial = stats.get("historial_tests", [])
     historial.append({
         "fecha": datetime.utcnow().isoformat(),
         "aciertos": aciertos,
         "fallos": fallos,
+        "blancos": blancos,
         "temas": temas,
         "tiempo": tiempo_en_segundos,
         "tipo": tipo,

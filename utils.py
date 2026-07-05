@@ -113,6 +113,20 @@ def obtener_subbloques_individuales(db, temas: List[str], coleccion="Temario AGE
     return contexto_total.strip()
 
 
+def calcular_resultado_test(aciertos, fallos, blancos):
+    """Único criterio de "aprobado/suspendido" de toda la web, replicando
+    la tipología oficial de corrección de los exámenes (aciertos menos
+    fallos/3, sobre el total de preguntas -- las respuestas en blanco no
+    penalizan, pero sí cuentan en el total). Antes existían 3 versiones
+    distintas de este cálculo (guardar_resultado.py, resultados-test.js y
+    registro_progreso_usuario.py) que no siempre coincidían entre sí."""
+    puntuacion = round(aciertos - (fallos / 3), 2)
+    total = aciertos + fallos + blancos
+    nota_sobre_10 = round((puntuacion / total) * 10, 2) if total else 0.0
+    resultado = "aprobado" if nota_sobre_10 >= 5 else "suspendido"
+    return puntuacion, nota_sobre_10, resultado
+
+
 def repartir_cupos_por_tema(temas_ids, cantidad):
     """Reparte 'cantidad' unidades lo más equitativamente posible entre
     temas_ids (división entera + resto). Se baraja el orden antes de asignar

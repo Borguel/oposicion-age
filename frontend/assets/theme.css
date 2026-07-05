@@ -605,6 +605,17 @@ body {
   box-shadow: none;
 }
 
+/* Foco de teclado visible en los controles interactivos compartidos --
+   antes ninguno lo tenía salvo el buscador, lo que dejaba la navegación
+   por teclado sin ninguna referencia visual de dónde está el foco. */
+.age-btn:focus-visible,
+.age-nav-links a:focus-visible,
+.age-account-btn:focus-visible,
+.age-tema-btn:focus-visible {
+  outline: 2px solid var(--age-primary);
+  outline-offset: 2px;
+}
+
 .age-btn-block {
   display: flex;
   width: 100%;
@@ -835,6 +846,12 @@ body {
   cursor: pointer;
   padding: 4px 8px;
   line-height: 1;
+}
+
+.age-verificacion-banner p.age-verificacion-banner-error {
+  flex-basis: 100%;
+  color: var(--age-danger);
+  font-weight: 600;
 }
 
 @media (max-width: 640px) {
