@@ -214,7 +214,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     tarjeta.style.display = "flex";
   }
 
-  function actualizarTemas(temasEntries, todosTemas, rendimientoPorTema) {
+  async function actualizarTemas(temasEntries, todosTemas, rendimientoPorTema) {
     const listaTemas = document.getElementById("lista-temas-top");
     const valorTop = document.getElementById("temas-top-valor");
     const detalleTop = document.getElementById("temas-top-detalle");
@@ -233,19 +233,42 @@ document.addEventListener("DOMContentLoaded", async function () {
     const temaTop = todosTemas.find(t => t.id === idTop);
     valorTop.textContent = countTop;
     detalleTop.textContent = `Preguntas en tu tema más estudiado: ${temaTop ? temaTop.titulo : `Tema ${idTop}`}`;
+
+    // Mismo formato agrupado por bloque que "Temas no estudiados", pero aquí
+    // añadiendo el % de acierto y las preguntas respondidas de cada tema.
+    const datosPorId = new Map();
     temasEntries.forEach(([id, count]) => {
-      const tema = todosTemas.find(t => t.id === id);
-      const nombre = tema ? tema.titulo : `Tema ${id}`;
       const r = (rendimientoPorTema || {})[id];
       const totalRespondidas = r ? (r.aciertos || 0) + (r.fallos || 0) : 0;
       const porcentaje = totalRespondidas > 0 ? Math.round((r.aciertos / totalRespondidas) * 100) : null;
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <span class="tema-nombre">${nombre}</span>
-        ${porcentaje !== null ? `<span class="tema-acierto">${porcentaje}% acierto</span>` : ''}
-        <span class="tema-count">${count} pregunta${count === 1 ? '' : 's'} respondida${count === 1 ? '' : 's'}</span>
+      datosPorId.set(id, { count, porcentaje });
+    });
+
+    const { agruparTemasPorBloque } = await import("/assets/temas-numeracion.js");
+    const grupos = agruparTemasPorBloque(todosTemas)
+      .map((grupo) => ({ ...grupo, temas: grupo.temas.filter((t) => datosPorId.has(t.id)) }))
+      .filter((grupo) => grupo.temas.length > 0);
+
+    grupos.forEach((grupo) => {
+      const liBloque = document.createElement('li');
+      liBloque.className = 'tema-bloque-grupo';
+      liBloque.innerHTML = `
+        <div class="tema-bloque-header">Bloque ${grupo.numeroRomano}: ${grupo.titulo}</div>
+        <ul class="tema-bloque-lista">
+          ${grupo.temas.map((t) => {
+            const { count, porcentaje } = datosPorId.get(t.id);
+            return `
+              <li class="tema-item">
+                <span class="tema-numero">Tema ${t.numeroTema}</span>
+                <span class="tema-item-titulo">${t.titulo}</span>
+                ${porcentaje !== null ? `<span class="tema-acierto">${porcentaje}% acierto</span>` : ''}
+                <span class="tema-count">${count} pregunta${count === 1 ? '' : 's'} respondida${count === 1 ? '' : 's'}</span>
+              </li>
+            `;
+          }).join('')}
+        </ul>
       `;
-      listaTemas.appendChild(li);
+      listaTemas.appendChild(liBloque);
     });
   }
 
