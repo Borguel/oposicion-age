@@ -17,6 +17,10 @@ let ultimasEstadisticas = null;
 // Segundos ya transcurridos al reanudar un test guardado, para que el
 // contador siga sumando en vez de reiniciarse a 00:00.
 let tiempoTranscurridoBase = 0;
+let oposicionActual = "";
+let textosFavoritas = new Set();
+let botonFavoritaHTML = () => "";
+let activarBotonFavorita = () => {};
 
 function formatearMinSeg(segundos) {
   const m = String(Math.floor(segundos / 60)).padStart(2, '0');
@@ -69,7 +73,10 @@ function mostrarPregunta(i) {
   const p = preguntas[i];
   let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
   let html = `<form id="form-pregunta">
-    <div class="pregunta-en-negrita">${i + 1}. ${textoPregunta}</div>`;
+    <div class="pregunta-en-negrita">
+      <span>${i + 1}. ${textoPregunta}</span>
+      ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
+    </div>`;
 
   for (const letra in p.opciones) {
     const opcion = p.opciones[letra];
@@ -95,6 +102,7 @@ function mostrarPregunta(i) {
   </form>`;
 
   document.getElementById("contenedor-test").innerHTML = html;
+  activarBotonFavorita(document.getElementById("contenedor-test"), p, oposicionActual, textosFavoritas);
 
   document.getElementById("btn-desmarcar").addEventListener("click", () => {
     document.querySelectorAll('input[name="respuesta"]:checked').forEach(el => el.checked = false);
@@ -211,6 +219,12 @@ window.addEventListener("load", async () => {
       respuestasUsuario = Array.isArray(guardado.respuestas_usuario) && guardado.respuestas_usuario.length === preguntas.length
         ? guardado.respuestas_usuario
         : Array(preguntas.length).fill(null);
+      const { obtenerOposicionActual: obtenerOposicionResume } = await import("/assets/oposicion.js");
+      oposicionActual = guardado.oposicion || obtenerOposicionResume();
+      const favoritasApiResume = await import("/assets/favoritas.js");
+      botonFavoritaHTML = favoritasApiResume.botonFavoritaHTML;
+      activarBotonFavorita = favoritasApiResume.activarBotonFavorita;
+      textosFavoritas = await favoritasApiResume.cargarTextosFavoritas(oposicionActual);
       iniciarTemporizador(guardado.tiempo_transcurrido_segundos || 0);
       mostrarPregunta(guardado.indice_actual || 0);
       activarGuardadoAlSalir(() => ({
@@ -239,6 +253,11 @@ window.addEventListener("load", async () => {
       respuestasUsuario = Array(preguntas.length).fill(null);
       const { obtenerOposicionActual } = await import("/assets/oposicion.js");
       const oposicion = obtenerOposicionActual();
+      oposicionActual = oposicion;
+      const favoritasApiRepetir = await import("/assets/favoritas.js");
+      botonFavoritaHTML = favoritasApiRepetir.botonFavoritaHTML;
+      activarBotonFavorita = favoritasApiRepetir.activarBotonFavorita;
+      textosFavoritas = await favoritasApiRepetir.cargarTextosFavoritas(oposicion);
       generarTestId();
       guardarContenidoInicial({
         oposicion, tipo: "repetido", temas: [],
@@ -271,6 +290,11 @@ window.addEventListener("load", async () => {
 
     preguntas = datos.test;
     respuestasUsuario = Array(preguntas.length).fill(null);
+    oposicionActual = oposicion;
+    const favoritasApiUltimo = await import("/assets/favoritas.js");
+    botonFavoritaHTML = favoritasApiUltimo.botonFavoritaHTML;
+    activarBotonFavorita = favoritasApiUltimo.activarBotonFavorita;
+    textosFavoritas = await favoritasApiUltimo.cargarTextosFavoritas(oposicion);
     generarTestId();
     guardarContenidoInicial({
       oposicion, tipo: "repetido", temas: [],

@@ -32,7 +32,7 @@ async function obtenerAuthHeaders() {
     let listaTemasGlobal = [];
 
     function mostrarAviso(texto) {
-      const aviso = document.getElementById('aviso-falladas');
+      const aviso = document.getElementById('aviso-favoritas');
       aviso.innerText = texto;
       aviso.style.display = 'block';
     }
@@ -93,24 +93,24 @@ async function obtenerAuthHeaders() {
       document.getElementById("texto-progreso-preguntas").textContent = `${Math.round(porcentaje)}% (${vistas}/${preguntas.length})`;
     }
 
-    document.getElementById("form-falladas").addEventListener("submit", async function(e) {
+    document.getElementById("form-favoritas").addEventListener("submit", async function(e) {
       e.preventDefault();
       document.getElementById('contenedor-resultados').style.display = "none";
       const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
       const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
       document.getElementById('tarjeta-formulario').style.display = "none";
       document.getElementById('titulo-formulario').style.display = "none";
-      document.getElementById('aviso-falladas').style.display = "none";
+      document.getElementById('aviso-favoritas').style.display = "none";
 
       document.getElementById("contenedor-test").style.display = "block";
       document.getElementById("contenedor-test").innerHTML = `
         <div class="carga-generando">
-          <p id="mensaje-carga">Buscando tus preguntas falladas...</p>
+          <p id="mensaje-carga">Buscando tus preguntas favoritas...</p>
           <div class="barra-indeterminada"><div class="barra-indeterminada-fill"></div></div>
         </div>
       `;
 
-      const mensajes = ["Buscando tus preguntas falladas...", "Cargando contenido...", "Preparando el test..."];
+      const mensajes = ["Buscando tus preguntas favoritas...", "Cargando contenido...", "Preparando el test..."];
       let indiceMensaje = 0;
       const intervalCarga = setInterval(() => {
         indiceMensaje = (indiceMensaje + 1) % mensajes.length;
@@ -122,7 +122,7 @@ async function obtenerAuthHeaders() {
         const authHeaders = await obtenerAuthHeaders();
         if (!authHeaders) { clearInterval(intervalCarga); return; }
         const { obtenerOposicionActual } = await import("/assets/oposicion.js");
-        const res = await fetch("https://oposicion-age.onrender.com/generar-test-fallos", {
+        const res = await fetch("https://oposicion-age.onrender.com/generar-test-favoritas", {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
           body: JSON.stringify({ num_preguntas, temas, oposicion: obtenerOposicionActual() })
@@ -133,7 +133,7 @@ async function obtenerAuthHeaders() {
         preguntas = datos.test || [];
 
         if (preguntas.length === 0) {
-          mostrarAviso(datos.mensaje || "No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.");
+          mostrarAviso(datos.mensaje || "No tienes preguntas favoritas marcadas en tu cuenta. Marca la estrella ⭐ durante cualquier test para guardarlas aquí.");
           document.getElementById("contenedor-test").innerHTML = "";
           document.getElementById("contenedor-test").style.display = "none";
           document.getElementById('tarjeta-formulario').style.display = "";
@@ -161,11 +161,11 @@ async function obtenerAuthHeaders() {
         const { generarTestId, guardarContenidoInicial, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
         generarTestId();
         guardarContenidoInicial({
-          oposicion: obtenerOposicionActual(), tipo: "falladas", temas,
+          oposicion: obtenerOposicionActual(), tipo: "favoritas", temas,
           contenido: preguntas,
           respuestas_usuario: respuestasUsuario,
           indice_actual: indicePreguntaActual,
-          pagina_origen: "/preguntas-falladas/"
+          pagina_origen: "/preguntas-favoritas/"
         });
         activarGuardadoAlSalir(() => ({
           respuestas_usuario: respuestasUsuario,
@@ -181,7 +181,7 @@ async function obtenerAuthHeaders() {
         mostrarPregunta(indicePreguntaActual);
       } catch (error) {
         clearInterval(intervalCarga);
-        mostrarAviso("❌ Error buscando preguntas falladas. Intenta más tarde.");
+        mostrarAviso("❌ Error buscando preguntas favoritas. Intenta más tarde.");
         document.getElementById("contenedor-test").innerHTML = "";
         document.getElementById("contenedor-test").style.display = "none";
         document.getElementById('tarjeta-formulario').style.display = "";
@@ -244,11 +244,11 @@ async function obtenerAuthHeaders() {
       });
 
       document.getElementById("btn-finalizar").style.display = "block";
-      
+
       if (i > 0 && document.getElementById("btn-anterior")) {
         document.getElementById("btn-anterior").addEventListener("click", () => mostrarPregunta(i - 1));
       }
-      
+
       document.getElementById("form-pregunta").addEventListener("submit", function(e) {
         e.preventDefault();
         const seleccion = document.querySelector('input[name="respuesta"]:checked');
@@ -269,7 +269,7 @@ async function obtenerAuthHeaders() {
           let mensaje = sinContestar > 0
             ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
             : '¿Quieres finalizar el test y ver los resultados?';
-          
+
           Swal.fire({
             icon: 'question',
             title: '¿Deseas finalizar el test?',
@@ -286,10 +286,10 @@ async function obtenerAuthHeaders() {
       });
     }
 
-    async function guardarTestFalladasAutomaticamente() {
+    async function guardarTestFavoritasAutomaticamente() {
       const contenido = preguntas;
       const respuestas = respuestasUsuario;
-      const tipo = "falladas";
+      const tipo = "favoritas";
       const tiempo = tiempoTranscurridoActual();
       const metadatos = { tipo, tiempo };
       const { testIdEnCurso, limpiarSeguimiento } = await import("/assets/test-progreso.js");
@@ -311,7 +311,7 @@ async function obtenerAuthHeaders() {
           limpiarSeguimiento();
         }
       } catch (e) {
-        console.error("Error al guardar test falladas:", e);
+        console.error("Error al guardar test favoritas:", e);
       }
     }
 
@@ -341,19 +341,19 @@ async function obtenerAuthHeaders() {
 
       document.getElementById("btn-descargar-pdf").style.display = "block";
 
-      guardarTestFalladasAutomaticamente();
+      guardarTestFavoritasAutomaticamente();
     }
 
     document.addEventListener("DOMContentLoaded", function () {
       const btnFinalizar = document.getElementById("btn-finalizar");
       if (!btnFinalizar) return;
-      
+
       btnFinalizar.addEventListener("click", () => {
         const sinContestar = respuestasUsuario.filter(r => r === null).length;
         let mensaje = sinContestar > 0
           ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
           : '¿Quieres finalizar el test y ver los resultados?';
-        
+
         Swal.fire({
           icon: 'question',
           title: '¿Deseas finalizar el test?',
@@ -375,8 +375,8 @@ async function obtenerAuthHeaders() {
         preguntas,
         respuestasUsuario,
         stats: ultimasEstadisticas,
-        titulo: "Resultados: preguntas falladas",
-        nombreArchivo: "test_falladas.pdf"
+        titulo: "Resultados: preguntas favoritas",
+        nombreArchivo: "test_favoritas.pdf"
       });
     });
 

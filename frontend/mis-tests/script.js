@@ -7,6 +7,7 @@ const TIPO_INFO = {
   inteligente: { icono: "🤖", label: "Inteligente IA" },
   repetido: { icono: "🔁", label: "Repetido" },
   falladas: { icono: "❌", label: "Preguntas falladas" },
+  favoritas: { icono: "⭐", label: "Preguntas favoritas" },
 };
 
 const PAGINA_POR_TIPO = {
@@ -15,6 +16,7 @@ const PAGINA_POR_TIPO = {
   inteligente: "/test-generator/",
   repetido: "/repetir-test/",
   falladas: "/preguntas-falladas/",
+  favoritas: "/preguntas-favoritas/",
 };
 
 let tests = [];

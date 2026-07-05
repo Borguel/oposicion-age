@@ -25,6 +25,13 @@ async function obtenerAuthHeaders() {
     // (se suma al tiempo real transcurrido en esta sesión del navegador para
     // que el contador siga sumando en vez de reiniciarse a 00:00).
     let tiempoTranscurridoBase = 0;
+    // Textos de las preguntas ya marcadas como favoritas por el usuario en
+    // esta oposición, cargados una vez al empezar/reanudar el test para
+    // poder pintar la estrella ya activada sin una petición por pregunta.
+    let oposicionActual = "";
+    let textosFavoritas = new Set();
+    let botonFavoritaHTML = () => "";
+    let activarBotonFavorita = () => {};
 
     function tiempoTranscurridoActual() {
       if (tiempoLimite !== null) return tiempoTotalAsignado - tiempoLimite;
@@ -301,6 +308,11 @@ async function obtenerAuthHeaders() {
         });
         respuestasUsuario = Array(preguntas.length).fill(null);
         indicePreguntaActual = 0;
+        oposicionActual = oposicion;
+        const favoritasApi = await import("/assets/favoritas.js");
+        botonFavoritaHTML = favoritasApi.botonFavoritaHTML;
+        activarBotonFavorita = favoritasApi.activarBotonFavorita;
+        textosFavoritas = await favoritasApi.cargarTextosFavoritas(oposicion);
 
         const modoCronometrado = document.getElementById('modo_cronometrado').checked;
         const minutosCronometro = parseInt(document.getElementById('minutos_cronometro').value) || 60;
@@ -346,7 +358,10 @@ async function obtenerAuthHeaders() {
       const p = preguntas[i];
       let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
       let html = `<form id="form-pregunta">
-        <div class="pregunta-en-negrita">${i + 1}. ${textoPregunta}</div>`;
+        <div class="pregunta-en-negrita">
+          <span>${i + 1}. ${textoPregunta}</span>
+          ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
+        </div>`;
       for (const letra in p.opciones) {
         const opcion = p.opciones[letra];
         const checked = respuestasUsuario[i] === letra ? "checked" : "";
@@ -368,6 +383,7 @@ async function obtenerAuthHeaders() {
         </button>
       </form>`;
       document.getElementById("contenedor-test").innerHTML = html;
+      activarBotonFavorita(document.getElementById("contenedor-test"), p, oposicionActual, textosFavoritas);
       document.getElementById("btn-desmarcar").addEventListener("click", () => {
         const marcadas = document.querySelectorAll('input[name="respuesta"]:checked');
         marcadas.forEach(m => m.checked = false);
@@ -515,6 +531,12 @@ async function obtenerAuthHeaders() {
         : Array(preguntas.length).fill(null);
       indicePreguntaActual = guardado.indice_actual || 0;
       document.getElementById('tipo_test').value = guardado.tipo || "personalizado";
+      const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+      oposicionActual = guardado.oposicion || obtenerOposicionActual();
+      const favoritasApi = await import("/assets/favoritas.js");
+      botonFavoritaHTML = favoritasApi.botonFavoritaHTML;
+      activarBotonFavorita = favoritasApi.activarBotonFavorita;
+      textosFavoritas = await favoritasApi.cargarTextosFavoritas(oposicionActual);
 
       document.getElementById('tarjeta-formulario').style.display = "none";
       document.getElementById('titulo-formulario').style.display = "none";

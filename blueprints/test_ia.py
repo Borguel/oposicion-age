@@ -269,3 +269,32 @@ def generar_test_fallos():
         mensaje = None
 
     return jsonify({"test": seleccionadas, "mensaje": mensaje, "total_disponibles": total_disponibles})
+
+
+@bp.route("/generar-test-favoritas", methods=["POST"])
+@requiere_login(db)
+def generar_test_favoritas():
+    data = request.get_json()
+    num_preguntas = data.get("num_preguntas", 10)
+    temas_filtro = set(data.get("temas", []) or [])
+    oposicion = obtener_oposicion_solicitada()
+
+    docs = db.collection("usuarios").document(g.uid).collection("preguntas_favoritas") \
+        .where("oposicion", "==", oposicion).stream()
+    candidatas = [d.to_dict() for d in docs]
+    if temas_filtro:
+        candidatas = [p for p in candidatas if p.get("tema_id") in temas_filtro]
+
+    total_disponibles = len(candidatas)
+    random.shuffle(candidatas)
+    seleccionadas = candidatas[:num_preguntas]
+
+    if total_disponibles == 0:
+        mensaje = "No tienes preguntas marcadas como favoritas con estos filtros."
+    elif total_disponibles < num_preguntas:
+        plural = "s" if total_disponibles != 1 else ""
+        mensaje = f"Solo tienes {total_disponibles} pregunta{plural} favorita{plural} con estos filtros (pediste {num_preguntas})."
+    else:
+        mensaje = None
+
+    return jsonify({"test": seleccionadas, "mensaje": mensaje, "total_disponibles": total_disponibles})

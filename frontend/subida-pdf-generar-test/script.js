@@ -22,6 +22,10 @@ async function obtenerAuthHeaders() {
     // Segundos ya transcurridos al reanudar un test guardado, para que el
     // contador siga sumando en vez de reiniciarse a 00:00.
     let tiempoTranscurridoBase = 0;
+    let oposicionActual = "";
+    let textosFavoritas = new Set();
+    let botonFavoritaHTML = () => "";
+    let activarBotonFavorita = () => {};
 
     // === FUNCIONES AUXILIARES ===
     function formatearTiempo(segundos) {
@@ -263,10 +267,15 @@ async function obtenerAuthHeaders() {
       document.getElementById('contenedor-carga').style.display = 'none';
 
       const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+      oposicionActual = obtenerOposicionActual();
+      const favoritasApi = await import("/assets/favoritas.js");
+      botonFavoritaHTML = favoritasApi.botonFavoritaHTML;
+      activarBotonFavorita = favoritasApi.activarBotonFavorita;
+      textosFavoritas = await favoritasApi.cargarTextosFavoritas(oposicionActual);
       const { generarTestId, guardarContenidoInicial, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
       generarTestId();
       guardarContenidoInicial({
-        oposicion: obtenerOposicionActual(), tipo: "test_pdf", temas: [],
+        oposicion: oposicionActual, tipo: "test_pdf", temas: [],
         contenido: preguntas,
         respuestas_usuario: respuestasUsuario,
         indice_actual: indicePreguntaActual,
@@ -310,6 +319,12 @@ async function obtenerAuthHeaders() {
         ? guardado.respuestas_usuario
         : Array(preguntas.length).fill(null);
       indicePreguntaActual = guardado.indice_actual || 0;
+      const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+      oposicionActual = guardado.oposicion || obtenerOposicionActual();
+      const favoritasApi = await import("/assets/favoritas.js");
+      botonFavoritaHTML = favoritasApi.botonFavoritaHTML;
+      activarBotonFavorita = favoritasApi.activarBotonFavorita;
+      textosFavoritas = await favoritasApi.cargarTextosFavoritas(oposicionActual);
 
       document.getElementById('contenedor-carga').style.display = 'none';
       iniciarTemporizador(guardado.tiempo_transcurrido_segundos || 0);
@@ -390,7 +405,10 @@ async function obtenerAuthHeaders() {
       const p = preguntas[i];
       let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
       let html = `<form id="form-pregunta">
-        <div class="pregunta-en-negrita">${i + 1}. ${textoPregunta}</div>`;
+        <div class="pregunta-en-negrita">
+          <span>${i + 1}. ${textoPregunta}</span>
+          ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
+        </div>`;
 
       for (const letra in p.opciones) {
         const opcion = p.opciones[letra];
@@ -416,6 +434,7 @@ async function obtenerAuthHeaders() {
 
       document.getElementById("contenedor-test").innerHTML = html;
       document.getElementById("contenedor-test").style.display = "block";
+      activarBotonFavorita(document.getElementById("contenedor-test"), p, oposicionActual, textosFavoritas);
 
       document.getElementById("btn-desmarcar").addEventListener("click", () => {
         const marcadas = document.querySelectorAll('input[name="respuesta"]:checked');

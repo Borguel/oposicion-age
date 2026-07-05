@@ -10,6 +10,7 @@ from registro_progreso_usuario import (
     actualizar_estadisticas_pdf
 )
 from guardar_resultado import obtener_estadisticas_completas_usuario
+from banco_favoritas import marcar_favorita, desmarcar_favorita, listar_favoritas
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 import random
 
@@ -127,6 +128,32 @@ def registrar_rutas_progreso(app, db):
         else:
             ref.update({f"fechas_examen.{oposicion}": firestore.DELETE_FIELD})
         return jsonify({"mensaje": "Fecha de examen actualizada"})
+
+    @app.route("/marcar-favorita", methods=["POST"])
+    @requiere_login(db)
+    def marcar_favorita_route():
+        datos = request.get_json(silent=True) or {}
+        pregunta = datos.get("pregunta") or {}
+        if not pregunta.get("pregunta"):
+            return jsonify({"error": "Falta la pregunta a marcar"}), 400
+        marcar_favorita(db, g.uid, obtener_oposicion_solicitada(), pregunta)
+        return jsonify({"mensaje": "Pregunta marcada como favorita"})
+
+    @app.route("/desmarcar-favorita", methods=["POST"])
+    @requiere_login(db)
+    def desmarcar_favorita_route():
+        datos = request.get_json(silent=True) or {}
+        texto = (datos.get("pregunta") or "").strip()
+        if not texto:
+            return jsonify({"error": "Falta el texto de la pregunta"}), 400
+        desmarcar_favorita(db, g.uid, obtener_oposicion_solicitada(), texto)
+        return jsonify({"mensaje": "Pregunta desmarcada"})
+
+    @app.route("/preguntas-favoritas", methods=["GET"])
+    @requiere_login(db)
+    def preguntas_favoritas_route():
+        favoritas = listar_favoritas(db, g.uid, obtener_oposicion_solicitada())
+        return jsonify({"favoritas": favoritas})
 
     @app.route("/ultimo-test", methods=["GET"])
     @requiere_login(db)
