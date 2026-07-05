@@ -84,6 +84,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const totalTests = estadisticas.tests_realizados ?? 0;
     const totalAciertos = estadisticas.total_aciertos ?? 0;
     const totalFallos = estadisticas.total_fallos ?? 0;
+    const totalBlancos = estadisticas.total_blancos ?? 0;
     const historial = estadisticas.historial_tests ?? [];
     temasTest = estadisticas.temas_test ?? [];
     const rendimientoPorTema = estadisticas.rendimiento_por_tema ?? {};
@@ -105,11 +106,15 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     const porcentajeAprobados = totalTests > 0 ? Math.round((aprobados / totalTests) * 100) : 0;
     const porcentajeSuspendidos = totalTests > 0 ? Math.round((suspendidos / totalTests) * 100) : 0;
-    const porcentajeAciertos = (totalAciertos + totalFallos) > 0 
-      ? Math.round((totalAciertos / (totalAciertos + totalFallos)) * 100) 
+    const totalRespuestas = totalAciertos + totalFallos + totalBlancos;
+    const porcentajeAciertos = totalRespuestas > 0
+      ? Math.round((totalAciertos / totalRespuestas) * 100)
       : 0;
-    const porcentajeFallos = (totalAciertos + totalFallos) > 0 
-      ? Math.round((totalFallos / (totalAciertos + totalFallos)) * 100) 
+    const porcentajeFallos = totalRespuestas > 0
+      ? Math.round((totalFallos / totalRespuestas) * 100)
+      : 0;
+    const porcentajeBlancos = totalRespuestas > 0
+      ? Math.round((totalBlancos / totalRespuestas) * 100)
       : 0;
 
     // "Más estudiado" = tema con más preguntas realmente contestadas
@@ -141,6 +146,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("media").textContent = puntuacionMedia.toFixed(1);
     document.getElementById("aciertos").textContent = totalAciertos;
     document.getElementById("fallos").textContent = totalFallos;
+    document.getElementById("blancos").textContent = totalBlancos;
     document.getElementById("esquemas").textContent = esquemas;
     document.getElementById("tiempo").textContent = `${horas}h ${minutos}m`;
     document.getElementById("temas-nuevos").textContent = noEstudiados.length;
@@ -149,6 +155,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("suspendidos-porcentaje").textContent = porcentajeSuspendidos;
     document.getElementById("aciertos-porcentaje").textContent = porcentajeAciertos;
     document.getElementById("fallos-porcentaje").textContent = porcentajeFallos;
+    document.getElementById("blancos-porcentaje").textContent = porcentajeBlancos;
 
     document.getElementById("aprobados-progress").style.width = `${porcentajeAprobados}%`;
     document.getElementById("suspendidos-progress").style.width = `${porcentajeSuspendidos}%`;

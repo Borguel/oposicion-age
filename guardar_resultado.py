@@ -221,6 +221,23 @@ def actualizar_estadisticas_usuario(db, usuario_id, tipo):
     except Exception as e:
         logger.exception("Error actualizando estadísticas del usuario")
 
+def _total_blancos_usuario(user_ref, oposicion):
+    """Suma las preguntas dejadas en blanco en todos los tests finalizados de
+    esta oposición. Se recorre la subcolección "tests" en vez de mantener un
+    contador acumulado aparte (como total_aciertos/total_fallos) porque cada
+    documento de test ya guarda su propio campo "blancos" desde el principio,
+    así que sumar sobre lo ya existente da la cifra correcta también para
+    tests guardados antes de añadir esta estadística, sin necesitar una
+    migración de datos."""
+    total = 0
+    for doc in user_ref.collection("tests").where("oposicion", "==", oposicion).stream():
+        datos_test = doc.to_dict() or {}
+        if datos_test.get("estado", "finalizado") == "en_progreso":
+            continue
+        total += datos_test.get("blancos", 0) or 0
+    return total
+
+
 # Función auxiliar para obtener estadísticas completas del usuario
 def obtener_estadisticas_completas_usuario(db, usuario_id, oposicion=OPOSICION_POR_DEFECTO):
     """Obtener estadísticas completas del usuario para UNA OPOSICIÓN (test,
@@ -252,6 +269,7 @@ def obtener_estadisticas_completas_usuario(db, usuario_id, oposicion=OPOSICION_P
             "tests_suspendidos": stats.get("tests_suspendidos", 0),
             "total_aciertos": stats.get("total_aciertos", 0),
             "total_fallos": stats.get("total_fallos", 0),
+            "total_blancos": _total_blancos_usuario(user_ref, oposicion),
             "puntuacion_media_test": stats.get("puntuacion_media_test", 0),
             "esquemas_realizados": stats.get("esquemas_realizados", 0),
             "tiempo_total": stats.get("tiempo_total", 0),
