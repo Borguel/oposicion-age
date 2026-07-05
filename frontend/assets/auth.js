@@ -166,7 +166,8 @@ const NAV_LINKS = [
   { href: "/subida-pdf-pagina-principal/", label: "Herramientas IA", match: ["/subida-pdf-"] },
   { href: "/chat-ai/", label: "Chat IA", match: ["/chat-ai/"] },
   { href: "/asistente/", label: "Asistente", match: ["/asistente/"] },
-  { href: "/estadisticas/", label: "Estadísticas", match: ["/estadisticas/"] }
+  { href: "/estadisticas/", label: "Estadísticas", match: ["/estadisticas/"] },
+  { href: "/planes/", label: "Planes", match: ["/planes/"] }
 ];
 
 function esEnlaceActivo(match, ruta) {
@@ -353,6 +354,7 @@ function construirMenuCuenta(user) {
     acc.innerHTML = `
       <button type="button" class="age-account-btn" data-account-toggle>
         <span class="age-account-avatar">${inicial}</span>
+        <span class="age-account-nombre" id="age-account-nombre"></span>
         <span class="age-account-caret">▾</span>
       </button>
       <div class="age-account-menu">
@@ -372,6 +374,17 @@ function construirMenuCuenta(user) {
       window.location.href = "/";
     });
     document.addEventListener("click", () => acc.classList.remove("open"));
+
+    // El nombre solo se muestra (vía CSS) en pantallas no móviles, junto al
+    // avatar con la inicial; en móvil se deja solo la inicial para no comerse
+    // espacio. Se pide con obtenerPlan(), que ya cachea en sessionStorage, así
+    // que en la mayoría de páginas no supone una llamada nueva al backend.
+    import("/assets/plan.js").then(({ obtenerPlan }) => {
+      obtenerPlan().then(({ nombre }) => {
+        const nombreEl = document.getElementById("age-account-nombre");
+        if (nombreEl && nombre) nombreEl.textContent = nombre;
+      }).catch(() => {});
+    });
   } else {
     const destino = encodeURIComponent(window.location.pathname);
     acc.innerHTML = `<a class="age-btn age-btn-primary" style="padding:9px 18px;font-size:13.5px;" href="/login/?next=${destino}">Iniciar sesión</a>`;
@@ -423,7 +436,7 @@ function inyectarBannerVerificacion(user) {
 
 function inyectarNav(user) {
   construirEsqueletoNav();
-  inyectarSelectorOposicion();
+  inyectarSelectorOposicion(!!user);
   construirBusquedaGlobal(user);
   construirMenuCuenta(user);
   inyectarBannerVerificacion(user);

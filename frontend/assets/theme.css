@@ -117,7 +117,8 @@ body {
 .age-nav-links {
   display: flex;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  gap: 6px;
   flex: 1;
   overflow-x: auto;
   scrollbar-width: none;
@@ -327,6 +328,12 @@ body {
   flex-shrink: 0;
 }
 
+.age-account-nombre {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .age-account-caret {
   font-size: 10px;
   opacity: 0.7;
@@ -442,6 +449,10 @@ body {
 
   .age-nav-right {
     margin-left: auto;
+  }
+
+  .age-account-nombre {
+    display: none;
   }
 
   .age-nav select[data-nav-oposicion] {

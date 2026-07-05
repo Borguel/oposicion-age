@@ -2,6 +2,17 @@ import { idToken } from "/assets/auth.js";
 
 const BACKEND_URL = "https://oposicion-age.onrender.com";
 
+// Este hub de herramientas se podía ver entero sin haber iniciado sesión.
+// Ahora se exige login nada más cargar la página, como en el resto de
+// herramientas de IA.
+async function exigirLogin() {
+  const token = await idToken();
+  if (!token) {
+    window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
+  }
+}
+exigirLogin();
+
 async function cargarResumenDocumentos() {
   const token = await idToken();
   if (!token) return; // usuario no ha iniciado sesión: el banner se queda oculto

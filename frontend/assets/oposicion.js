@@ -23,10 +23,20 @@ export function establecerOposicionActual(id) {
 // Inserta (si no existe ya) un selector de oposición en la barra de
 // navegación compartida (dentro de #age-nav-right si existe, o en .age-nav
 // como fallback). Al cambiarlo se recarga la página para que temas/tests/
-// chat se actualicen con la oposición nueva.
-export function inyectarSelectorOposicion() {
+// chat se actualicen con la oposición nueva. Solo tiene sentido con sesión
+// iniciada (sin cuenta no hay temario/tests que cambiar de oposición), así
+// que si no hay usuario se quita si ya estuviera puesto.
+export function inyectarSelectorOposicion(haySesion) {
   const contenedor = document.getElementById("age-nav-right") || document.querySelector(".age-nav");
-  if (!contenedor || contenedor.querySelector("[data-nav-oposicion]")) return;
+  if (!contenedor) return;
+
+  if (!haySesion) {
+    const existente = contenedor.querySelector("[data-nav-oposicion]");
+    if (existente) existente.remove();
+    return;
+  }
+
+  if (contenedor.querySelector("[data-nav-oposicion]")) return;
 
   const select = document.createElement("select");
   select.setAttribute("data-nav-oposicion", "");

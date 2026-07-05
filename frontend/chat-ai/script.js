@@ -9,6 +9,11 @@ async function obtenerAuthHeaders() {
   return { "Authorization": "Bearer " + token };
 }
 
+// El chat en sí (historial, ajustes, mensajes) antes se podía ver y usar
+// entero sin haber iniciado sesión -- solo se pedía login al primer intento
+// de enviar un mensaje. Ahora se exige nada más cargar la página.
+obtenerAuthHeaders();
+
 // ===== FUNCIONES AUXILIARES =====
 function escapeHtml(text) {
   const map = { '&': '&amp;', '<': '<', '>': '>', '"': '&quot;', "'": '&#039;' };

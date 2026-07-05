@@ -8,6 +8,11 @@ async function obtenerAuthHeaders() {
     return { "Authorization": "Bearer " + token };
 }
 
+// El asistente antes se podía ver y usar entero sin haber iniciado sesión
+// -- solo se pedía login al primer intento de enviar un mensaje. Ahora se
+// exige nada más cargar la página.
+obtenerAuthHeaders();
+
 document.addEventListener("DOMContentLoaded", function() {
             // Elementos DOM
             const input = document.getElementById("chat-input");
