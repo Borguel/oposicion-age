@@ -2,9 +2,26 @@ import { idToken, esperarUsuario } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual } from "/assets/oposicion.js";
+import { icono } from "/assets/icons.js";
 
 const mensajeCheckout = document.getElementById("mensaje-checkout");
 const selectorOposicion = document.getElementById("selector-oposicion");
+
+const CONFIANZA = [
+  { icono: "candado", texto: "Pago cifrado y seguro" },
+  { icono: "actualizar", texto: "Cancela cuando quieras" },
+  { icono: "rayo", texto: "Acceso inmediato tras el pago" }
+];
+
+function renderizarConfianza() {
+  const contenedor = document.getElementById("planes-confianza");
+  contenedor.innerHTML = CONFIANZA.map((item) => `
+    <div class="planes-confianza-item">
+      <span class="planes-confianza-icono">${icono(item.icono, 18)}</span>
+      <span>${item.texto}</span>
+    </div>
+  `).join("");
+}
 
 function mostrarMensajeCheckout() {
   const params = new URLSearchParams(window.location.search);
@@ -74,7 +91,7 @@ document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
       return;
     }
     boton.disabled = true;
-    boton.textContent = "Redirigiendo a Stripe…";
+    boton.textContent = "Redirigiendo al pago seguro…";
     try {
       const token = await idToken();
       const res = await fetch(`${BACKEND_URL}/crear-sesion-checkout`, {
@@ -108,6 +125,7 @@ document.querySelectorAll("[data-faq-toggle]").forEach((boton) => {
   });
 });
 
+renderizarConfianza();
 inicializarSelectorOposicion();
 mostrarMensajeCheckout();
 marcarPlanActual();
