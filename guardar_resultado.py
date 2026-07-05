@@ -5,6 +5,7 @@ from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_e
 from oposiciones import OPOSICION_POR_DEFECTO
 from documentos_pdf import marcar_generado
 from banco_fallos import actualizar_banco_fallos
+from utils import calcular_resultado_test
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +29,9 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             else:
                 fallos += 1
 
-        puntuacion = round(aciertos - (fallos / 3), 2)
+        puntuacion, _nota_sobre_10, resultado = calcular_resultado_test(aciertos, fallos, blancos)
 
-        # Calcular resultado
         total_preguntas = aciertos + fallos
-        resultado = "aprobado" if total_preguntas > 0 and (aciertos / total_preguntas) >= 0.5 else "suspendido"
         porcentaje_acierto = round((aciertos / total_preguntas) * 100, 1) if total_preguntas else 0.0
 
         # Temas "efectivos" del test: los elegidos explícitamente en el
@@ -96,7 +95,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
         })
 
         # Actualizar resumen del usuario para esta oposición
-        actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas_efectivos, metadatos.get("tiempo", 0), tipo_test, puntuacion, rendimiento_temas)
+        actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas_efectivos, metadatos.get("tiempo", 0), tipo_test, puntuacion, rendimiento_temas, blancos)
 
     elif tipo == "esquema":
         esquema_ref = doc_user.collection("esquemas").document()

@@ -15,7 +15,7 @@ function calcularEstadisticas(preguntas, respuestasUsuario) {
   const sinResponder = respuestasUsuario.filter((r) => r === null || r === undefined).length;
   const fallos = preguntas.length - aciertos - sinResponder;
   const porcentaje = preguntas.length ? ((aciertos / preguntas.length) * 100).toFixed(1) : "0.0";
-  const nota = (aciertos * 1 - fallos * 0.33).toFixed(2);
+  const nota = (aciertos * 1 - fallos / 3).toFixed(2);
   const notaOficial100 = preguntas.length ? Math.max(0, (nota / preguntas.length) * 100).toFixed(1) : "0.0";
   const apto = parseFloat(notaOficial100) >= 50;
   return { aciertos, fallos, sinResponder, porcentaje, nota, notaOficial100, apto };
