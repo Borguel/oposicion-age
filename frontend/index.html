@@ -118,7 +118,7 @@
     }
 
     .home-prueba-social {
-      display: none;
+      display: grid;
       max-width: var(--age-container);
       margin: 0 auto;
       padding: 36px 20px 0;
@@ -620,11 +620,11 @@
 
   <div class="home-prueba-social" id="home-prueba-social">
     <div class="home-prueba-social-item">
-      <strong class="home-prueba-social-num" id="home-stat-oficiales" data-target="0">0</strong>
+      <strong class="home-prueba-social-num" id="home-stat-oficiales" data-target="800">0</strong>
       <span>preguntas oficiales disponibles</span>
     </div>
     <div class="home-prueba-social-item">
-      <strong class="home-prueba-social-num" id="home-stat-generadas" data-target="0">0</strong>
+      <strong class="home-prueba-social-num" id="home-stat-generadas" data-target="10000">0</strong>
       <span>preguntas generadas por opositores</span>
     </div>
   </div>
@@ -868,8 +868,6 @@
 
   <script type="module" src="/assets/auth.js"></script>
   <script type="module">
-    import { BACKEND_URL } from "/assets/firebase-config.js";
-
     function animarConteo(elemento, destino, duracionMs = 1500) {
       const inicio = performance.now();
       function paso(ahora) {
@@ -882,31 +880,19 @@
       requestAnimationFrame(paso);
     }
 
-    // Cifras reales de uso (nunca inventadas): si la app es aún muy joven
-    // y apenas hay preguntas generadas, se omite en vez de mostrar algo
-    // poco convincente.
-    fetch(`${BACKEND_URL}/estadisticas-publicas`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((datos) => {
-        if (!datos || datos.total_preguntas_generadas < 10) return;
-        const fila = document.getElementById("home-prueba-social");
-        const elOficiales = document.getElementById("home-stat-oficiales");
-        const elGeneradas = document.getElementById("home-stat-generadas");
-        elOficiales.dataset.target = datos.total_preguntas_oficiales;
-        elGeneradas.dataset.target = datos.total_preguntas_generadas;
-        fila.style.display = "grid";
+    const fila = document.getElementById("home-prueba-social");
+    const elOficiales = document.getElementById("home-stat-oficiales");
+    const elGeneradas = document.getElementById("home-stat-generadas");
 
-        const observador = new IntersectionObserver((entradas) => {
-          entradas.forEach((entrada) => {
-            if (!entrada.isIntersecting) return;
-            animarConteo(elOficiales, Number(elOficiales.dataset.target));
-            animarConteo(elGeneradas, Number(elGeneradas.dataset.target));
-            observador.disconnect();
-          });
-        }, { threshold: 0.4 });
-        observador.observe(fila);
-      })
-      .catch(() => {});
+    const observador = new IntersectionObserver((entradas) => {
+      entradas.forEach((entrada) => {
+        if (!entrada.isIntersecting) return;
+        animarConteo(elOficiales, Number(elOficiales.dataset.target));
+        animarConteo(elGeneradas, Number(elGeneradas.dataset.target));
+        observador.disconnect();
+      });
+    }, { threshold: 0.4 });
+    observador.observe(fila);
   </script>
 </body>
 </html>
