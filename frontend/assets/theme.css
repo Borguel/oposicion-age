@@ -760,10 +760,61 @@ body {
   margin-bottom: 24px;
 }
 
-.resultado-resumen-card h3 {
-  margin: 0 0 16px;
-  font-size: 1.1rem;
+.resultado-veredicto {
+  text-align: center;
+  padding: 16px;
+  border-radius: var(--age-radius-md);
+  margin-bottom: 20px;
+}
+
+.resultado-veredicto-texto {
+  font-size: 1.7rem;
   font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.resultado-veredicto.aprobado { background: var(--age-success-bg); color: var(--age-success); }
+.resultado-veredicto.suspendido { background: var(--age-danger-bg); color: var(--age-danger); }
+
+.resultado-notas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.resultado-nota-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  background: var(--age-bg);
+}
+
+.resultado-nota-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--age-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.resultado-nota-valor {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--age-ink);
+  white-space: nowrap;
+}
+
+.resultado-nota-valor small {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--age-ink-soft);
 }
 
 .resultado-resumen-grid {
@@ -774,12 +825,26 @@ body {
 }
 
 .resultado-resumen-tile {
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-radius: var(--age-radius-md);
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.resultado-resumen-tile .tile-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+}
+
+.resultado-resumen-tile .tile-valor {
+  font-size: 1.15rem;
+  font-weight: 800;
 }
 
 .resultado-resumen-tile.tile-acierto { background: var(--age-success-bg); color: var(--age-success); }
@@ -787,101 +852,114 @@ body {
 .resultado-resumen-tile.tile-blanco { background: var(--age-neutral-bg); color: var(--age-ink-soft); }
 .resultado-resumen-tile.tile-porcentaje { background: var(--age-primary-soft); color: var(--age-primary-dark); }
 
-.resultado-notas p {
-  margin: 0 0 8px;
-  font-size: 0.95rem;
-}
-
-.resultado-apto {
-  font-weight: 800;
-}
-
-.resultado-apto.apto { color: var(--age-success); }
-.resultado-apto.no-apto { color: var(--age-danger); }
-
-.resultado-barra-progreso {
-  background: var(--age-neutral-bg);
-  border-radius: var(--age-radius-pill);
-  overflow: hidden;
-  margin-top: 16px;
-  height: 22px;
-}
-
-.resultado-barra-progreso-relleno {
-  height: 100%;
-  background: linear-gradient(to right, var(--age-success), #81c784);
-  color: #fff;
-  font-weight: 700;
-  font-size: 12.5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.2em;
-}
-
 .resultado-temas-desplegable {
   margin-bottom: 20px;
 }
 
-.resultado-temas-toggle {
+.resultado-toggle-btn {
   cursor: pointer;
-  font-size: 1.05rem;
-  font-weight: 800;
   font-family: var(--age-font);
-  padding: 4px 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  border: none;
-  background: transparent;
+  gap: 10px;
+  border: 1.5px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  background: var(--age-card);
   color: var(--age-ink);
-  width: 100%;
+  transition: border-color 0.15s var(--age-ease), background 0.15s var(--age-ease);
+}
+
+.resultado-toggle-btn:hover {
+  border-color: var(--age-primary);
+}
+
+.resultado-toggle-btn.abierto {
+  border-color: var(--age-primary);
+  background: var(--age-primary-soft);
+}
+
+.resultado-toggle-icono {
+  font-size: 1.1em;
+}
+
+.resultado-toggle-texto {
+  flex: 1;
   text-align: left;
 }
 
-.resultado-temas-toggle::after {
-  content: "▸";
+.resultado-toggle-chevron {
   color: var(--age-ink-faint);
   font-size: 0.85em;
   transition: transform 0.15s var(--age-ease);
 }
 
-.resultado-temas-toggle.abierto::after {
-  transform: rotate(90deg);
+.resultado-toggle-btn.abierto .resultado-toggle-chevron {
+  transform: rotate(180deg);
+}
+
+.resultado-temas-toggle {
+  width: 100%;
 }
 
 .resultado-temas-panel {
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
-.resultado-filtros {
+.resultado-detalle-cabecera {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
-.resultado-filtro-chip {
-  padding: 8px 16px;
-  border-radius: var(--age-radius-pill);
-  border: 1.5px solid var(--age-border);
+.resultado-detalle-cabecera .resultado-detalle-titulo {
+  margin: 0;
+}
+
+.resultado-filtro-dropdown {
+  position: relative;
+}
+
+.resultado-filtro-btn {
+  white-space: nowrap;
+}
+
+.resultado-filtro-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
   background: var(--age-card);
-  color: var(--age-ink-soft);
-  font-family: var(--age-font);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  box-shadow: var(--age-shadow);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.resultado-filtro-opcion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13.5px;
-  font-weight: 700;
+  font-weight: 600;
+  color: var(--age-ink);
+  padding: 8px;
+  border-radius: var(--age-radius-sm);
   cursor: pointer;
-  transition: border-color 0.15s var(--age-ease), background 0.15s var(--age-ease), color 0.15s var(--age-ease);
+  white-space: nowrap;
 }
 
-.resultado-filtro-chip:hover {
-  border-color: var(--age-primary);
-}
-
-.resultado-filtro-chip.activo {
-  background: var(--age-primary);
-  border-color: var(--age-primary);
-  color: #1b1f2e;
+.resultado-filtro-opcion:hover {
+  background: var(--age-neutral-bg);
 }
 
 .resultado-detalle-titulo {
@@ -970,14 +1048,21 @@ body {
 }
 
 @media (max-width: 640px) {
-  .resultado-filtros {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .resultado-veredicto-texto {
+    font-size: 1.4rem;
   }
-  .resultado-filtro-chip {
-    text-align: center;
-    padding: 8px 6px;
-    font-size: 12.5px;
+  .resultado-nota-valor {
+    font-size: 1.5rem;
+  }
+  .resultado-detalle-cabecera {
+    align-items: stretch;
+  }
+  .resultado-filtro-dropdown {
+    width: 100%;
+  }
+  .resultado-filtro-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 

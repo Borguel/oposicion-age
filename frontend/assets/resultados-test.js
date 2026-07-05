@@ -16,9 +16,9 @@ function calcularEstadisticas(preguntas, respuestasUsuario) {
   const fallos = preguntas.length - aciertos - sinResponder;
   const porcentaje = preguntas.length ? ((aciertos / preguntas.length) * 100).toFixed(1) : "0.0";
   const nota = (aciertos * 1 - fallos * 0.33).toFixed(2);
-  const notaSobre10 = preguntas.length ? Math.max(0, (nota / preguntas.length) * 10).toFixed(2) : "0.00";
-  const apto = parseFloat(notaSobre10) >= 5;
-  return { aciertos, fallos, sinResponder, porcentaje, nota, notaSobre10, apto };
+  const notaOficial100 = preguntas.length ? Math.max(0, (nota / preguntas.length) * 100).toFixed(1) : "0.0";
+  const apto = parseFloat(notaOficial100) >= 50;
+  return { aciertos, fallos, sinResponder, porcentaje, nota, notaOficial100, apto };
 }
 
 function agruparPorTema(preguntas, respuestasUsuario, listaTemas) {
@@ -154,19 +154,38 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
 
   contenedor.innerHTML = `
     <div class="resultado-resumen-card">
-      <h3>📊 Resumen del Test</h3>
+      <div class="resultado-veredicto ${stats.apto ? "aprobado" : "suspendido"}">
+        <span class="resultado-veredicto-texto">${stats.apto ? "✅ Aprobado" : "❌ Suspendido"}</span>
+      </div>
+
+      <div class="resultado-notas-grid">
+        <div class="resultado-nota-box">
+          <span class="resultado-nota-label">Nota de este test</span>
+          <span class="resultado-nota-valor">${stats.nota}<small> / ${preguntas.length}</small></span>
+        </div>
+        <div class="resultado-nota-box">
+          <span class="resultado-nota-label">Nota examen oficial</span>
+          <span class="resultado-nota-valor">${stats.notaOficial100}<small> / 100</small></span>
+        </div>
+      </div>
+
       <div class="resultado-resumen-grid">
-        <div class="resultado-resumen-tile tile-acierto">✅ Aciertos: ${stats.aciertos}</div>
-        <div class="resultado-resumen-tile tile-fallo">❌ Fallos: ${stats.fallos}</div>
-        <div class="resultado-resumen-tile tile-blanco">⏸ En blanco: ${stats.sinResponder}</div>
-        <div class="resultado-resumen-tile tile-porcentaje">🎯 Porcentaje: ${stats.porcentaje}%</div>
-      </div>
-      <div class="resultado-notas">
-        <p><strong>📘 Nota de este test:</strong> ${stats.nota} / ${preguntas.length}</p>
-        <p><strong>📏 Nota estilo examen oficial:</strong> ${stats.notaSobre10} / 10 — <span class="resultado-apto ${stats.apto ? "apto" : "no-apto"}">${stats.apto ? "Apto" : "No apto"}</span></p>
-      </div>
-      <div class="resultado-barra-progreso">
-        <div class="resultado-barra-progreso-relleno" style="width:${stats.porcentaje}%;">${stats.porcentaje}%</div>
+        <div class="resultado-resumen-tile tile-acierto">
+          <span class="tile-info"><span class="tile-icono">✅</span>Aciertos</span>
+          <span class="tile-valor">${stats.aciertos}</span>
+        </div>
+        <div class="resultado-resumen-tile tile-fallo">
+          <span class="tile-info"><span class="tile-icono">❌</span>Fallos</span>
+          <span class="tile-valor">${stats.fallos}</span>
+        </div>
+        <div class="resultado-resumen-tile tile-blanco">
+          <span class="tile-info"><span class="tile-icono">⏸</span>En blanco</span>
+          <span class="tile-valor">${stats.sinResponder}</span>
+        </div>
+        <div class="resultado-resumen-tile tile-porcentaje">
+          <span class="tile-info"><span class="tile-icono">🎯</span>Acierto</span>
+          <span class="tile-valor">${stats.porcentaje}%</span>
+        </div>
       </div>
       ${rachaHTML}
     </div>
@@ -175,29 +194,30 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
       <div id="analisis-ia-resultado"></div>
     </div>
     <div class="resultado-temas-desplegable">
-      <button type="button" class="resultado-temas-toggle" id="btn-temas-toggle" aria-expanded="false">📈 Estadísticas por tema</button>
+      <button type="button" class="resultado-toggle-btn resultado-temas-toggle" id="btn-temas-toggle" aria-expanded="false">
+        <span class="resultado-toggle-icono">📈</span>
+        <span class="resultado-toggle-texto">Estadísticas por tema</span>
+        <span class="resultado-toggle-chevron">▾</span>
+      </button>
       <div class="resultado-temas-panel" id="panel-temas" style="display:none;">${tablaTemasHTML}</div>
     </div>
-    <div class="resultado-filtros">
-      <button type="button" class="resultado-filtro-chip activo" data-filtro="todos">🟡 Todos</button>
-      <button type="button" class="resultado-filtro-chip" data-filtro="acierto">✅ Aciertos</button>
-      <button type="button" class="resultado-filtro-chip" data-filtro="fallo">❌ Fallos</button>
-      <button type="button" class="resultado-filtro-chip" data-filtro="blanco">⏸ En blanco</button>
+    <div class="resultado-detalle-cabecera">
+      <h3 class="resultado-detalle-titulo">📝 Detalle de preguntas</h3>
+      <div class="resultado-filtro-dropdown" id="filtro-dropdown">
+        <button type="button" class="resultado-toggle-btn resultado-filtro-btn" id="btn-filtro-preguntas" aria-expanded="false">
+          <span class="resultado-toggle-icono">🔍</span>
+          <span class="resultado-toggle-texto" id="filtro-preguntas-label">Todas las preguntas</span>
+          <span class="resultado-toggle-chevron">▾</span>
+        </button>
+        <div class="resultado-filtro-panel" id="panel-filtro-preguntas" style="display:none;">
+          <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="acierto" checked> ✅ Aciertos</label>
+          <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="fallo" checked> ❌ Fallos</label>
+          <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="blanco" checked> ⏸ En blanco</label>
+        </div>
+      </div>
     </div>
-    <h3 class="resultado-detalle-titulo">📝 Detalle de preguntas</h3>
     <div class="lista-detalle-preguntas">${detalleHTML}</div>
   `;
-
-  // Filtros (delegado, sin onclick inline)
-  contenedor.querySelectorAll("[data-filtro]").forEach((boton) => {
-    boton.addEventListener("click", () => {
-      const filtro = boton.dataset.filtro;
-      contenedor.querySelectorAll("[data-filtro]").forEach((b) => b.classList.toggle("activo", b === boton));
-      contenedor.querySelectorAll(".lista-detalle-preguntas > div").forEach((item) => {
-        item.style.display = filtro === "todos" || item.classList.contains(filtro) ? "block" : "none";
-      });
-    });
-  });
 
   // Desplegable de estadísticas por tema (no se usa <details> nativo porque
   // en algunos navegadores móviles el summary con marcador personalizado no
@@ -210,6 +230,43 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
       panel.style.display = abierto ? "none" : "block";
       btnTemasToggle.setAttribute("aria-expanded", String(!abierto));
       btnTemasToggle.classList.toggle("abierto", !abierto);
+    });
+  }
+
+  // Filtro de preguntas: un único desplegable con checkboxes en vez de
+  // botones sueltos, para poder combinar varias categorías a la vez (p. ej.
+  // ver fallos y en blanco juntos) sin ocupar tanto espacio.
+  const dropdownFiltro = contenedor.querySelector("#filtro-dropdown");
+  const btnFiltro = contenedor.querySelector("#btn-filtro-preguntas");
+  const panelFiltro = contenedor.querySelector("#panel-filtro-preguntas");
+  const labelFiltro = contenedor.querySelector("#filtro-preguntas-label");
+  const checksFiltro = Array.from(contenedor.querySelectorAll("[data-filtro-valor]"));
+  const ETIQUETA_FILTRO = { acierto: "Aciertos", fallo: "Fallos", blanco: "En blanco" };
+
+  function aplicarFiltroPreguntas() {
+    const activos = checksFiltro.filter((c) => c.checked).map((c) => c.dataset.filtroValor);
+    const todas = activos.length === 0 || activos.length === checksFiltro.length;
+    labelFiltro.textContent = todas ? "Todas las preguntas" : activos.map((v) => ETIQUETA_FILTRO[v]).join(", ");
+    contenedor.querySelectorAll(".lista-detalle-preguntas > div").forEach((item) => {
+      item.style.display = todas || activos.some((v) => item.classList.contains(v)) ? "block" : "none";
+    });
+  }
+
+  if (btnFiltro) {
+    btnFiltro.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const abierto = panelFiltro.style.display !== "none";
+      panelFiltro.style.display = abierto ? "none" : "block";
+      btnFiltro.setAttribute("aria-expanded", String(!abierto));
+      btnFiltro.classList.toggle("abierto", !abierto);
+    });
+    checksFiltro.forEach((c) => c.addEventListener("change", aplicarFiltroPreguntas));
+    document.addEventListener("click", (e) => {
+      if (!dropdownFiltro.contains(e.target)) {
+        panelFiltro.style.display = "none";
+        btnFiltro.setAttribute("aria-expanded", "false");
+        btnFiltro.classList.remove("abierto");
+      }
     });
   }
 
@@ -332,7 +389,7 @@ export function descargarResultadosPDF({ preguntas, respuestasUsuario, stats, ti
   doc.text(resumen, pageWidth / 2, yPos, { align: "center" });
   yPos += 8;
   doc.setFont("helvetica", "normal");
-  doc.text(`Nota de este test: ${stats.nota} / ${preguntas.length}   ·   Nota estilo examen oficial: ${stats.notaSobre10} / 10 (${stats.apto ? "Apto" : "No apto"})`, pageWidth / 2, yPos, { align: "center" });
+  doc.text(`Nota de este test: ${stats.nota} / ${preguntas.length}   ·   Nota examen oficial: ${stats.notaOficial100} / 100 (${stats.apto ? "Aprobado" : "Suspendido"})`, pageWidth / 2, yPos, { align: "center" });
   yPos += 14;
   doc.setDrawColor(220);
   doc.line(margin, yPos, pageWidth - margin, yPos);
