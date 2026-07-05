@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_talisman import Talisman
@@ -89,7 +90,7 @@ def verificar_api_key():
         return
     if request.method == "OPTIONS":
         return
-    if request.path in ("/", "/health", "/webhook-stripe", "/tareas/recordatorios-racha"):
+    if request.path in ("/", "/health", "/estadisticas-publicas", "/webhook-stripe", "/tareas/recordatorios-racha"):
         return
     if request.headers.get("X-API-Key") != API_SECRET_KEY:
         return jsonify({"error": "No autorizado"}), 401
@@ -139,6 +140,32 @@ def estado_salud():
     except Exception:
         logger.exception("Fallo en /health comprobando Firestore")
         return jsonify({"estado": "error"}), 503
+
+
+_cache_estadisticas_publicas = None
+_CACHE_ESTADISTICAS_PUBLICAS_SEGUNDOS = 300
+
+
+@app.route("/estadisticas-publicas", methods=["GET"])
+def estadisticas_publicas():
+    """Cifras agregadas de uso real de toda la plataforma (nunca datos de
+    un usuario concreto), para una fila de "prueba social" en la home. Sin
+    autenticación a propósito -- es información pública y agregada.
+    Cacheada en memoria unos minutos para no lanzar dos aggregation
+    queries de Firestore en cada visita a la home."""
+    global _cache_estadisticas_publicas
+    ahora = time.time()
+    if _cache_estadisticas_publicas and ahora - _cache_estadisticas_publicas["momento"] < _CACHE_ESTADISTICAS_PUBLICAS_SEGUNDOS:
+        return jsonify(_cache_estadisticas_publicas["datos"])
+    try:
+        total_usuarios = db.collection("usuarios").count().get()[0][0].value
+        total_tests = db.collection_group("tests").count().get()[0][0].value
+        datos = {"total_usuarios": total_usuarios, "total_tests": total_tests}
+        _cache_estadisticas_publicas = {"momento": ahora, "datos": datos}
+        return jsonify(datos)
+    except Exception:
+        logger.exception("Fallo calculando estadísticas públicas")
+        return jsonify({"total_usuarios": 0, "total_tests": 0})
 
 
 if __name__ == "__main__":

@@ -42,6 +42,54 @@ async function cargarRacha() {
   }
 }
 
+// Adelanto de las insignias/nota media que se ven completas en
+// Estadísticas: mismos umbrales que INSIGNIAS en estadisticas/script.js,
+// reutilizando el mismo endpoint (no se crea uno nuevo).
+const INSIGNIAS_UMBRALES = [
+  (d) => d.testsRealizados >= 1,
+  (d) => d.rachaMaxima >= 3,
+  (d) => d.rachaMaxima >= 7,
+  (d) => d.rachaMaxima >= 30,
+  (d) => d.testsRealizados >= 10,
+  (d) => d.testsRealizados >= 50,
+  (d) => d.testsAprobados >= 10,
+  (d) => d.puntuacionMedia >= 8,
+  (d) => d.esquemas >= 5,
+  (d) => d.totalArchivos >= 3
+];
+
+async function cargarProgresoInsignias() {
+  try {
+    const token = await idToken();
+    const oposicion = obtenerOposicionActual();
+    const [resEstadisticas, resRacha] = await Promise.all([
+      fetch(`${BACKEND_URL}/estadisticas-completas?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${BACKEND_URL}/mi-racha`, { headers: { Authorization: `Bearer ${token}` } })
+    ]);
+    if (!resEstadisticas.ok) return;
+    const { estadisticas } = await resEstadisticas.json();
+    if (!estadisticas || estadisticas.error) return;
+    const racha = resRacha.ok ? await resRacha.json() : { racha_maxima: 0 };
+
+    const datos = {
+      testsRealizados: estadisticas.tests_realizados ?? 0,
+      testsAprobados: estadisticas.tests_aprobados ?? 0,
+      rachaMaxima: racha.racha_maxima ?? 0,
+      puntuacionMedia: estadisticas.puntuacion_media_test ?? 0,
+      esquemas: estadisticas.esquemas_realizados ?? 0,
+      totalArchivos: estadisticas.total_archivos_procesados ?? 0
+    };
+    if (datos.testsRealizados === 0) return; // nada que mostrar todavía
+
+    const conseguidas = INSIGNIAS_UMBRALES.filter((cumple) => cumple(datos)).length;
+    document.getElementById("zona-progreso-insignias").textContent = `${conseguidas}/${INSIGNIAS_UMBRALES.length}`;
+    document.getElementById("zona-progreso-nota").textContent = datos.puntuacionMedia.toFixed(1);
+    document.getElementById("zona-progreso").style.display = "";
+  } catch (e) {
+    console.error("Error cargando progreso de insignias:", e);
+  }
+}
+
 async function iniciarBotonNotificaciones() {
   const boton = document.getElementById("racha-notif-boton");
   const { pushDisponibleEnNavegador, pushConfiguradoEnServidor, notificacionesActivas, activarNotificaciones, desactivarNotificaciones } = await import("/assets/push.js");
@@ -310,11 +358,16 @@ async function iniciar() {
   document.getElementById("zona-nombre").textContent = (usuario.email || "").split("@")[0] || "opositor/a";
 
   cargarRacha();
+  cargarProgresoInsignias();
   iniciarBotonNotificaciones();
   cargarCuentaAtras();
   renderAviso();
   renderSwitcher();
   renderOnboarding();
+  document.getElementById("zona-reabrir-onboarding").addEventListener("click", () => {
+    localStorage.removeItem(CLAVE_ONBOARDING_CERRADO);
+    renderOnboarding();
+  });
 
   const { nombre, plan } = await obtenerPlan(true);
   if (nombre) document.getElementById("zona-nombre").textContent = nombre;

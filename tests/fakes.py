@@ -125,6 +125,51 @@ class FakeCollectionRef:
                     vistos += 1
                     yield FakeDocumentSnapshot(path[-1], datos, self._store, path)
 
+    def count(self):
+        return FakeAggregationQuery(self)
+
+
+class FakeAggregationResult:
+    """Imita el objeto que devuelve una aggregation query real de
+    Firestore (`query.count().get()` -> `[[AggregationResult]]`, con
+    `.value` como único atributo que usa este proyecto)."""
+
+    def __init__(self, value):
+        self.value = value
+
+
+class FakeAggregationQuery:
+    def __init__(self, origen):
+        self._origen = origen
+
+    def get(self):
+        total = sum(1 for _ in self._origen.stream())
+        return [[FakeAggregationResult(total)]]
+
+
+class FakeCollectionGroupRef:
+    """Simplificación de una collection_group query real: encuentra
+    documentos por el nombre de su colección sin importar bajo qué padre
+    estén, a diferencia de FakeCollectionRef (que exige un prefijo de ruta
+    exacto). Solo cubre lo que usa este proyecto: where + count/stream."""
+
+    def __init__(self, store, nombre, filtros=None):
+        self._store = store
+        self._nombre = nombre
+        self._filtros = filtros or []
+
+    def where(self, campo, operador, valor):
+        return FakeCollectionGroupRef(self._store, self._nombre, self._filtros + [(campo, operador, valor)])
+
+    def count(self):
+        return FakeAggregationQuery(self)
+
+    def stream(self):
+        for path, datos in list(self._store.items()):
+            if len(path) >= 2 and path[-2] == self._nombre:
+                if all(_cumple_filtro(datos, f) for f in self._filtros):
+                    yield FakeDocumentSnapshot(path[-1], datos, self._store, path)
+
 
 class FakeFirestore:
     """Sustituye a firestore.client(): db.collection("x") es el único punto
@@ -135,6 +180,9 @@ class FakeFirestore:
 
     def collection(self, nombre):
         return FakeCollectionRef(self._store, (nombre,))
+
+    def collection_group(self, nombre):
+        return FakeCollectionGroupRef(self._store, nombre)
 
     def reset(self):
         self._store.clear()

@@ -13,7 +13,25 @@
   <meta property="og:title" content="Oposición AGE - Plataforma de Estudio con IA" />
   <meta property="og:description" content="Prepara tu oposición al Cuerpo General Administrativo del Estado (AGE) o de Gestión (GACE): tests ilimitados, herramientas con IA y estadísticas de progreso." />
   <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta property="og:url" content="https://oposicion-age-1.onrender.com/" />
   <meta name="twitter:card" content="summary" />
+  <link rel="canonical" href="https://oposicion-age-1.onrender.com/" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Oposición AGE",
+    "url": "https://oposicion-age-1.onrender.com/",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web",
+    "description": "Prepara tu oposición al Cuerpo General Administrativo del Estado (AGE) o de Gestión (GACE): tests ilimitados sobre el temario oficial, herramientas con IA para tus propios apuntes y estadísticas de progreso.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EUR"
+    }
+  }
+  </script>
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
   <link rel="stylesheet" href="/assets/theme.css" />
   <style>
@@ -97,6 +115,36 @@
       max-width: var(--age-container);
       margin: 0 auto;
       padding: 64px 20px 20px;
+    }
+
+    .home-prueba-social {
+      display: none;
+      max-width: var(--age-container);
+      margin: 0 auto;
+      padding: 28px 20px 0;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .home-prueba-social-item {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-pill);
+      padding: 10px 20px;
+    }
+
+    .home-prueba-social-item strong {
+      font-size: 1.15rem;
+      color: var(--age-primary-dark);
+    }
+
+    .home-prueba-social-item span {
+      font-size: 0.88rem;
+      color: var(--age-ink-soft);
     }
 
     .home-section-titulo {
@@ -563,6 +611,17 @@
     </div>
   </section>
 
+  <div class="home-prueba-social" id="home-prueba-social">
+    <div class="home-prueba-social-item">
+      <strong id="home-stat-tests">—</strong>
+      <span>tests generados</span>
+    </div>
+    <div class="home-prueba-social-item">
+      <strong id="home-stat-usuarios">—</strong>
+      <span>opositores usando la plataforma</span>
+    </div>
+  </div>
+
   <section class="home-section">
     <div class="home-section-titulo">Todo lo que necesitas para aprobar tu oposición</div>
     <p class="home-section-sub">Herramientas pensadas para opositores que quieren estudiar de forma inteligente, no solo memorizar.</p>
@@ -801,5 +860,20 @@
   </section>
 
   <script type="module" src="/assets/auth.js"></script>
+  <script type="module">
+    import { BACKEND_URL } from "/assets/firebase-config.js";
+    // Cifras reales de uso (nunca inventadas): si la app es aún muy joven
+    // y el número de tests es bajo, se omite en vez de mostrar algo poco
+    // convincente como "+3 tests generados".
+    fetch(`${BACKEND_URL}/estadisticas-publicas`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((datos) => {
+        if (!datos || datos.total_tests < 10) return;
+        document.getElementById("home-stat-tests").textContent = `+${datos.total_tests}`;
+        document.getElementById("home-stat-usuarios").textContent = `+${datos.total_usuarios}`;
+        document.getElementById("home-prueba-social").style.display = "flex";
+      })
+      .catch(() => {});
+  </script>
 </body>
 </html>

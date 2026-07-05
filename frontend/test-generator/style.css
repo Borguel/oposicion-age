@@ -651,6 +651,19 @@ h1, h2, h3 {
   color: var(--age-ink-soft);
 }
 
+/* Las 3 tarjetas que son <a> (Repetir/Falladas/Favoritas) navegan fuera de
+   la página al primer click, a diferencia de las <div> (Personalizado/
+   Oficial/Inteligente) que solo seleccionan una opción in-place; esta
+   marca visual evita que parezcan la misma interacción. */
+a.test-type-card::after {
+  content: "↗";
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: 1.1rem;
+  color: var(--age-ink-faint);
+}
+
 .btn-primary,
 #form-pregunta button[type="submit"] {
   background: var(--age-primary);

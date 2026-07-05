@@ -5,23 +5,33 @@ import { idToken } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 
 export async function marcarFavorita(pregunta, oposicion) {
-  const token = await idToken();
-  if (!token) return;
-  await fetch(`${BACKEND_URL}/marcar-favorita?oposicion=${encodeURIComponent(oposicion)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ pregunta })
-  });
+  try {
+    const token = await idToken();
+    if (!token) return false;
+    const res = await fetch(`${BACKEND_URL}/marcar-favorita?oposicion=${encodeURIComponent(oposicion)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ pregunta })
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
 }
 
 export async function desmarcarFavorita(textoPregunta, oposicion) {
-  const token = await idToken();
-  if (!token) return;
-  await fetch(`${BACKEND_URL}/desmarcar-favorita?oposicion=${encodeURIComponent(oposicion)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ pregunta: textoPregunta })
-  });
+  try {
+    const token = await idToken();
+    if (!token) return false;
+    const res = await fetch(`${BACKEND_URL}/desmarcar-favorita?oposicion=${encodeURIComponent(oposicion)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ pregunta: textoPregunta })
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
 }
 
 export async function cargarTextosFavoritas(oposicion) {
@@ -51,17 +61,32 @@ export function activarBotonFavorita(contenedor, pregunta, oposicion, textosFavo
   boton.addEventListener("click", async () => {
     const marcada = boton.classList.contains("activa");
     boton.disabled = true;
-    if (marcada) {
-      await desmarcarFavorita(pregunta.pregunta, oposicion);
-      textosFavoritas.delete(pregunta.pregunta);
-      boton.classList.remove("activa");
-      boton.textContent = "☆";
-    } else {
-      await marcarFavorita(pregunta, oposicion);
-      textosFavoritas.add(pregunta.pregunta);
-      boton.classList.add("activa");
-      boton.textContent = "★";
+    try {
+      const ok = marcada
+        ? await desmarcarFavorita(pregunta.pregunta, oposicion)
+        : await marcarFavorita(pregunta, oposicion);
+      if (!ok) {
+        if (window.Swal) {
+          Swal.fire({
+            icon: "error",
+            title: "No se pudo guardar",
+            text: "Inténtalo de nuevo en unos segundos.",
+            confirmButtonText: "Entendido"
+          });
+        }
+        return;
+      }
+      if (marcada) {
+        textosFavoritas.delete(pregunta.pregunta);
+        boton.classList.remove("activa");
+        boton.textContent = "☆";
+      } else {
+        textosFavoritas.add(pregunta.pregunta);
+        boton.classList.add("activa");
+        boton.textContent = "★";
+      }
+    } finally {
+      boton.disabled = false;
     }
-    boton.disabled = false;
   });
 }
