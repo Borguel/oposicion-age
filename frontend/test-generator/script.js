@@ -111,7 +111,7 @@ async function obtenerAuthHeaders() {
             .split(",").map(t => t.trim()).filter(Boolean)
         );
         const { renderizarSelectorTemas } = await import("/assets/temas-selector.js");
-        renderizarSelectorTemas(contenedor, listaTemasGlobal, temasPreseleccionados);
+        await renderizarSelectorTemas(contenedor, listaTemasGlobal, temasPreseleccionados);
       } catch (err) {
         contenedor.innerHTML = `<p>Error al cargar temas: ${err.message}</p>`;
         console.error(err);

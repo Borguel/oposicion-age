@@ -2,23 +2,16 @@
 // preguntas-falladas: cada bloque tiene su propio checkbox para marcar
 // todos sus temas de golpe (con estado indeterminado si solo hay algunos
 // marcados) y se puede plegar/desplegar para no ocupar tanto espacio.
-export function renderizarSelectorTemas(contenedor, temas, preseleccionados = new Set()) {
-  const bloques = new Map();
-  temas.forEach((t) => {
-    const bloqueId = t.bloque_id || "sin_bloque";
-    const bloqueTitulo = t.bloque_titulo || "Otros temas";
-    if (!bloques.has(bloqueId)) bloques.set(bloqueId, { titulo: bloqueTitulo, temas: [] });
-    bloques.get(bloqueId).temas.push(t);
-  });
+export async function renderizarSelectorTemas(contenedor, temas, preseleccionados = new Set()) {
+  const { agruparTemasPorBloque } = await import("/assets/temas-numeracion.js");
+  const grupos = agruparTemasPorBloque(temas);
+  const bloqueIds = grupos.map((g) => g.bloqueId);
 
-  const bloqueIds = Array.from(bloques.keys()).sort();
-
-  contenedor.innerHTML = bloqueIds.map((bloqueId) => {
-    const { titulo, temas: temasBloque } = bloques.get(bloqueId);
+  contenedor.innerHTML = grupos.map(({ bloqueId, numeroRomano, titulo, temas: temasBloque }) => {
     const temasHTML = temasBloque.map((t) => `
       <label class="tema-check-label">
         <input type="checkbox" name="tema" value="${t.id}" data-bloque="${bloqueId}" ${preseleccionados.has(t.id) ? "checked" : ""}>
-        ${t.titulo}
+        ${t.numeroTema}. ${t.titulo}
       </label>
     `).join("");
     return `
@@ -26,7 +19,7 @@ export function renderizarSelectorTemas(contenedor, temas, preseleccionados = ne
         <div class="bloque-header">
           <label class="bloque-check-label">
             <input type="checkbox" data-bloque-check="${bloqueId}">
-            <strong>${titulo}</strong>
+            <strong>${numeroRomano}. ${titulo}</strong>
           </label>
           <button type="button" class="bloque-toggle" data-bloque-toggle="${bloqueId}" aria-label="Desplegar o plegar bloque">▾</button>
         </div>

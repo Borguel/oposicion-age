@@ -42,7 +42,7 @@ async function obtenerAuthHeaders() {
           return;
         }
         const { renderizarSelectorTemas } = await import("/assets/temas-selector.js");
-        renderizarSelectorTemas(contenedor, listaTemasGlobal);
+        await renderizarSelectorTemas(contenedor, listaTemasGlobal);
       } catch (err) {
         contenedor.innerHTML = `<p>Error al cargar temas: ${err.message}</p>`;
         console.error(err);

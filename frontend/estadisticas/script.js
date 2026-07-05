@@ -216,8 +216,12 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   function actualizarTemas(temasEntries, todosTemas, rendimientoPorTema) {
     const listaTemas = document.getElementById("lista-temas-top");
+    const valorTop = document.getElementById("temas-top-valor");
+    const detalleTop = document.getElementById("temas-top-detalle");
     listaTemas.innerHTML = '';
     if (temasEntries.length === 0) {
+      valorTop.textContent = '0';
+      detalleTop.textContent = 'Aún no has estudiado ningún tema';
       const li = document.createElement('li');
       li.textContent = 'No hay temas estudiados aún.';
       li.style.color = '#777';
@@ -225,6 +229,10 @@ document.addEventListener("DOMContentLoaded", async function () {
       listaTemas.appendChild(li);
       return;
     }
+    const [idTop, countTop] = temasEntries[0];
+    const temaTop = todosTemas.find(t => t.id === idTop);
+    valorTop.textContent = countTop;
+    detalleTop.textContent = `Preguntas en tu tema más estudiado: ${temaTop ? temaTop.titulo : `Tema ${idTop}`}`;
     temasEntries.forEach(([id, count]) => {
       const tema = todosTemas.find(t => t.id === id);
       const nombre = tema ? tema.titulo : `Tema ${id}`;
@@ -235,13 +243,13 @@ document.addEventListener("DOMContentLoaded", async function () {
       li.innerHTML = `
         <span class="tema-nombre">${nombre}</span>
         ${porcentaje !== null ? `<span class="tema-acierto">${porcentaje}% acierto</span>` : ''}
-        <span class="tema-count">${count}</span>
+        <span class="tema-count">${count} pregunta${count === 1 ? '' : 's'} respondida${count === 1 ? '' : 's'}</span>
       `;
       listaTemas.appendChild(li);
     });
   }
 
-  function mostrarTemasNoEstudiados(temasIds, todosTemas) {
+  async function mostrarTemasNoEstudiados(temasIds, todosTemas) {
     const listaTemas = document.getElementById("lista-temas-nuevos");
     listaTemas.innerHTML = '';
     if (temasIds.length === 0) {
@@ -253,28 +261,27 @@ document.addEventListener("DOMContentLoaded", async function () {
       listaTemas.appendChild(li);
       return;
     }
-    temasIds.forEach(id => {
-      const tema = todosTemas.find(t => t.id === id);
-      const nombre = tema ? tema.titulo : `Tema ${id}`;
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <div class="tema-info">
-          <div class="tema-titulo">${nombre}</div>
-          <span class="tema-id" data-id="${id}" title="Copiar ID">ID: ${id}</span>
-        </div>
+    const { agruparTemasPorBloque } = await import("/assets/temas-numeracion.js");
+    const idsPendientes = new Set(temasIds);
+    const grupos = agruparTemasPorBloque(todosTemas)
+      .map((grupo) => ({ ...grupo, temas: grupo.temas.filter((t) => idsPendientes.has(t.id)) }))
+      .filter((grupo) => grupo.temas.length > 0);
+
+    grupos.forEach((grupo) => {
+      const liBloque = document.createElement('li');
+      liBloque.className = 'tema-bloque-grupo';
+      liBloque.innerHTML = `
+        <div class="tema-bloque-header">Bloque ${grupo.numeroRomano}: ${grupo.titulo}</div>
+        <ul class="tema-bloque-lista">
+          ${grupo.temas.map((t) => `
+            <li class="tema-item">
+              <span class="tema-numero">Tema ${t.numeroTema}</span>
+              <span class="tema-item-titulo">${t.titulo}</span>
+            </li>
+          `).join('')}
+        </ul>
       `;
-      listaTemas.appendChild(li);
-      li.querySelector('.tema-id').addEventListener('click', function(e) {
-        e.stopPropagation();
-        navigator.clipboard.writeText(id).then(() => {
-          this.textContent = 'Copiado!';
-          setTimeout(() => {
-            this.textContent = `ID: ${id}`;
-          }, 1500);
-        }).catch(err => {
-          console.error('Error al copiar:', err);
-        });
-      });
+      listaTemas.appendChild(liBloque);
     });
   }
 

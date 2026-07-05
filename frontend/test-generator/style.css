@@ -578,13 +578,24 @@ body {
 #num_preguntas {
   display: block;
   width: 100%;
-  max-width: 160px;
-  padding: 10px 12px;
-  border-radius: var(--age-radius-sm);
-  border: 1px solid var(--age-border);
+  max-width: 150px;
+  padding: 14px 16px;
+  border-radius: var(--age-radius-md);
+  border: 2px solid var(--age-border);
   font-family: var(--age-font);
-  font-size: 15px;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--age-ink);
+  text-align: center;
+  background: var(--age-card);
   margin-bottom: 4px;
+  transition: border-color 0.15s var(--age-ease), box-shadow 0.15s var(--age-ease);
+}
+
+#num_preguntas:focus {
+  outline: none;
+  border-color: var(--age-primary);
+  box-shadow: 0 0 0 4px var(--age-primary-soft);
 }
 
 .card {
