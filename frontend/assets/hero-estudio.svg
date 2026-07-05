@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="none">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="42%" r="60%">
+      <stop offset="0%" stop-color="#ffa633" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#ffa633" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="chair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#323a54" />
+      <stop offset="100%" stop-color="#262c40" />
+    </linearGradient>
+  </defs>
+
+  <circle cx="320" cy="300" r="260" fill="url(#glow)" />
+
+  <!-- Sombra suave en el suelo -->
+  <ellipse cx="320" cy="560" rx="180" ry="22" fill="#000" opacity="0.18" />
+
+  <!-- Silla -->
+  <rect x="200" y="380" width="240" height="150" rx="26" fill="url(#chair)" />
+  <rect x="215" y="330" width="210" height="90" rx="24" fill="#323a54" />
+
+  <!-- Piernas cruzadas (forma simplificada) -->
+  <path d="M235 470 Q320 520 405 470 L405 500 Q320 545 235 500 Z" fill="#1b1f2e" />
+
+  <!-- Torso -->
+  <path d="M250 300 Q320 268 390 300 L400 420 Q320 452 240 420 Z" fill="#ffa633" />
+
+  <!-- Cuello -->
+  <rect x="300" y="230" width="40" height="46" rx="16" fill="#ffcf99" />
+
+  <!-- Cabeza -->
+  <circle cx="320" cy="200" r="54" fill="#ffd9ab" />
+
+  <!-- Pelo -->
+  <path d="M266 196 Q262 132 320 128 Q378 132 374 196 Q374 150 320 150 Q266 150 266 196 Z" fill="#3a2a1d" />
+
+  <!-- Brazos hacia la tablet -->
+  <path d="M258 320 Q220 360 224 404 L252 414 Q256 372 284 336 Z" fill="#ffcf99" />
+  <path d="M382 320 Q420 360 416 404 L388 414 Q384 372 356 336 Z" fill="#ffcf99" />
+
+  <!-- Tablet -->
+  <rect x="246" y="366" width="148" height="108" rx="14" fill="#0f1320" />
+  <rect x="258" y="378" width="124" height="84" rx="4" fill="#eef1f6" />
+
+  <!-- UI de test dentro de la tablet -->
+  <rect x="268" y="388" width="70" height="8" rx="4" fill="#c7cede" />
+  <circle cx="272" cy="412" r="6" fill="#2ecc71" />
+  <rect x="284" y="408" width="86" height="8" rx="4" fill="#d8dce6" />
+  <circle cx="272" cy="432" r="6" fill="none" stroke="#c7cede" stroke-width="2" />
+  <rect x="284" y="428" width="70" height="8" rx="4" fill="#d8dce6" />
+  <circle cx="272" cy="452" r="6" fill="none" stroke="#c7cede" stroke-width="2" />
+  <rect x="284" y="448" width="60" height="8" rx="4" fill="#d8dce6" />
+
+  <!-- Insignia flotante de acierto -->
+  <g transform="translate(430,320)">
+    <circle cx="0" cy="0" r="34" fill="#2ecc71" />
+    <path d="M-14 1 L-4 12 L16 -12" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  </g>
+
+  <!-- Chispas decorativas -->
+  <circle cx="150" cy="150" r="5" fill="#ffa633" opacity="0.7" />
+  <circle cx="500" cy="180" r="4" fill="#ffa633" opacity="0.5" />
+  <circle cx="120" cy="380" r="4" fill="#ffa633" opacity="0.5" />
+</svg>

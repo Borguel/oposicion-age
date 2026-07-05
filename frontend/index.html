@@ -21,11 +21,47 @@
       color: #fff;
       padding: 76px 20px 88px;
       text-align: center;
+      overflow: hidden;
     }
 
     .home-hero-inner {
       max-width: 720px;
       margin: 0 auto;
+    }
+
+    .home-hero-imagen {
+      display: none;
+    }
+
+    @media (min-width: 960px) {
+      .home-hero-inner {
+        max-width: 1120px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 40px;
+        text-align: left;
+      }
+
+      .home-hero-texto {
+        flex: 1 1 520px;
+        max-width: 560px;
+      }
+
+      .home-hero-ctas {
+        justify-content: flex-start;
+      }
+
+      .home-hero-imagen {
+        display: block;
+        flex: 0 0 380px;
+        width: 380px;
+        height: 380px;
+        background-image: url('/assets/hero-estudio.svg');
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: center;
+      }
     }
 
     .home-hero .age-pill-primary {
@@ -513,13 +549,16 @@
 
   <section class="home-hero">
     <div class="home-hero-inner">
-      <span class="age-pill age-pill-primary">🎯 Estudia con IA, a tu ritmo</span>
-      <h1>Prepara tu oposición sin perderte entre apuntes</h1>
-      <p>Tests ilimitados sobre el temario oficial de AGE y GACE, herramientas con inteligencia artificial avanzada para tus propios documentos, y estadísticas claras de tu progreso — todo en un solo sitio.</p>
-      <div class="home-hero-ctas">
-        <a href="/test-generator/" class="age-btn age-btn-primary">Empezar un test gratis</a>
-        <a href="/planes/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Ver planes</a>
+      <div class="home-hero-texto">
+        <span class="age-pill age-pill-primary">🎯 Estudia con IA, a tu ritmo</span>
+        <h1>Prepara tu oposición sin perderte entre apuntes</h1>
+        <p>Tests ilimitados sobre el temario oficial de AGE y GACE, herramientas con inteligencia artificial avanzada para tus propios documentos, y estadísticas claras de tu progreso — todo en un solo sitio.</p>
+        <div class="home-hero-ctas">
+          <a href="/test-generator/" class="age-btn age-btn-primary">Empezar un test gratis</a>
+          <a href="/planes/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Ver planes</a>
+        </div>
       </div>
+      <div class="home-hero-imagen" aria-hidden="true"></div>
     </div>
   </section>
 
