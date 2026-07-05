@@ -19,12 +19,19 @@ async function obtenerAuthHeaders() {
     let porcentaje = 0;
     let nombreArchivo = 'documento.pdf';
     let documentoIdActual = null;
+    // Segundos ya transcurridos al reanudar un test guardado, para que el
+    // contador siga sumando en vez de reiniciarse a 00:00.
+    let tiempoTranscurridoBase = 0;
 
     // === FUNCIONES AUXILIARES ===
     function formatearTiempo(segundos) {
       const m = String(Math.floor(segundos / 60)).padStart(2, '0');
       const s = String(segundos % 60).padStart(2, '0');
       return `${m}:${s}`;
+    }
+
+    function tiempoTranscurridoActual() {
+      return tiempoTranscurridoBase + Math.floor((Date.now() - tiempoInicio) / 1000);
     }
 
     function mostrarError(mensaje) {
@@ -39,7 +46,8 @@ async function obtenerAuthHeaders() {
     }
 
     // === TEMPORIZADOR ===
-    function iniciarTemporizador() {
+    function iniciarTemporizador(tiempoTranscurridoReanudado) {
+      tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
       tiempoInicio = Date.now();
       const temporizadorEl = document.getElementById("temporizador");
       temporizadorEl.style.display = "block";
@@ -52,10 +60,19 @@ async function obtenerAuthHeaders() {
       temporizadorEl.style.color = "#1c7ed6";
       temporizadorEl.style.borderRadius = "12px";
       temporizadorEl.style.boxShadow = "0 4px 10px rgba(0,0,0,0.1)";
-      temporizadorEl.textContent = `⏱ Tiempo: ${formatearTiempo(0)}`;
+      temporizadorEl.textContent = `⏱ Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
       intervaloTemporizador = setInterval(() => {
-        const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
+        const transcurrido = tiempoTranscurridoActual();
         temporizadorEl.textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
+        if (transcurrido % 10 === 0) {
+          import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+            autoguardarProgreso({
+              respuestas_usuario: respuestasUsuario,
+              indice_actual: indicePreguntaActual,
+              tiempo_transcurrido_segundos: transcurrido
+            });
+          });
+        }
       }, 1000);
     }
 
@@ -72,7 +89,7 @@ async function obtenerAuthHeaders() {
     async function guardarTestEnBackend() {
       const contenido = preguntas;
       const respuestas = respuestasUsuario;
-      const tiempo = Math.floor((Date.now() - tiempoInicio) / 1000);
+      const tiempo = tiempoTranscurridoActual();
 
       const metadatos = {
         tipo: "test_pdf",
@@ -258,7 +275,8 @@ async function obtenerAuthHeaders() {
       });
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
-        indice_actual: indicePreguntaActual
+        indice_actual: indicePreguntaActual,
+        tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
 
       iniciarTemporizador();
@@ -294,13 +312,14 @@ async function obtenerAuthHeaders() {
       indicePreguntaActual = guardado.indice_actual || 0;
 
       document.getElementById('contenedor-carga').style.display = 'none';
-      iniciarTemporizador();
+      iniciarTemporizador(guardado.tiempo_transcurrido_segundos || 0);
       actualizarBarraProgresoPreguntas();
       mostrarPregunta(indicePreguntaActual);
       document.getElementById('btn-finalizar').style.display = 'block';
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
-        indice_actual: indicePreguntaActual
+        indice_actual: indicePreguntaActual,
+        tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
     })();
 
@@ -411,7 +430,8 @@ async function obtenerAuthHeaders() {
         const { guardarProgresoInmediato } = await import("/assets/test-progreso.js");
         await guardarProgresoInmediato({
           respuestas_usuario: respuestasUsuario,
-          indice_actual: indicePreguntaActual
+          indice_actual: indicePreguntaActual,
+          tiempo_transcurrido_segundos: tiempoTranscurridoActual()
         });
         window.location.href = "/mis-tests/";
       });
@@ -429,7 +449,8 @@ async function obtenerAuthHeaders() {
         import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
           autoguardarProgreso({
             respuestas_usuario: respuestasUsuario,
-            indice_actual: i + 1 < preguntas.length ? i + 1 : i
+            indice_actual: i + 1 < preguntas.length ? i + 1 : i,
+            tiempo_transcurrido_segundos: tiempoTranscurridoActual()
           });
         });
         if (i + 1 < preguntas.length) {

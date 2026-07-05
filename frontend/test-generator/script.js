@@ -21,6 +21,15 @@ async function obtenerAuthHeaders() {
     let sinResponder = 0;
     let porcentaje = 0;
     let tiempoTotalAsignado = 0;
+    // Base de segundos ya transcurridos al reanudar un test SIN cronómetro
+    // (se suma al tiempo real transcurrido en esta sesión del navegador para
+    // que el contador siga sumando en vez de reiniciarse a 00:00).
+    let tiempoTranscurridoBase = 0;
+
+    function tiempoTranscurridoActual() {
+      if (tiempoLimite !== null) return tiempoTotalAsignado - tiempoLimite;
+      return tiempoTranscurridoBase + Math.floor((Date.now() - tiempoInicio) / 1000);
+    }
 
     document.addEventListener("DOMContentLoaded", function() {
       const cards = document.querySelectorAll('.test-type-card');
@@ -56,12 +65,7 @@ async function obtenerAuthHeaders() {
       const respuestas = respuestasUsuario;
       const tipo = document.getElementById('tipo_test').value;
       const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
-      let tiempo;
-      if (tiempoLimite !== null) {
-        tiempo = tiempoTotalAsignado - tiempoLimite;
-      } else {
-        tiempo = Math.floor((Date.now() - tiempoInicio) / 1000);
-      }
+      const tiempo = tiempoTranscurridoActual();
       const metadatos = { tipo, tiempo, temas };
       const { testIdEnCurso, limpiarSeguimiento } = await import("/assets/test-progreso.js");
       try {
@@ -118,12 +122,15 @@ async function obtenerAuthHeaders() {
       }
     }
 
-    // tiempoRestanteReanudado: si se pasa (al reanudar un test guardado), se
-    // usa como tiempoLimite inicial en vez de recalcularlo desde el campo
-    // "minutos_cronometro" del formulario (que al reanudar no tiene por qué
-    // reflejar lo que se eligió la vez anterior) -- así el cronómetro
-    // continúa en pausa desde donde se dejó, no se reinicia.
-    function iniciarTemporizador(tiempoRestanteReanudado) {
+    // tiempoRestanteReanudado: si se pasa (al reanudar un test cronometrado
+    // guardado), se usa como tiempoLimite inicial en vez de recalcularlo
+    // desde el campo "minutos_cronometro" del formulario (que al reanudar no
+    // tiene por qué reflejar lo que se eligió la vez anterior) -- así el
+    // cronómetro continúa en pausa desde donde se dejó, no se reinicia.
+    // tiempoTranscurridoReanudado: equivalente para un test SIN cronómetro,
+    // para que el contador de tiempo transcurrido siga sumando en vez de
+    // volver a 00:00 al reanudar.
+    function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudado) {
       tiempoInicio = Date.now();
       document.getElementById("temporizador").style.display = "block";
       if (document.getElementById('modo_cronometrado').checked) {
@@ -183,10 +190,20 @@ async function obtenerAuthHeaders() {
           }
         }, 1000);
       } else {
-        document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(0)}`;
+        tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
+        document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
         intervaloTemporizador = setInterval(() => {
-          const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
+          const transcurrido = tiempoTranscurridoActual();
           document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
+          if (transcurrido % 10 === 0) {
+            import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+              autoguardarProgreso({
+                respuestas_usuario: respuestasUsuario,
+                indice_actual: indicePreguntaActual,
+                tiempo_transcurrido_segundos: transcurrido
+              });
+            });
+          }
         }, 1000);
       }
     }
@@ -303,7 +320,8 @@ async function obtenerAuthHeaders() {
           respuestas_usuario: respuestasUsuario,
           indice_actual: indicePreguntaActual,
           modo_cronometrado: tiempoLimite !== null,
-          tiempo_restante_segundos: tiempoLimite
+          tiempo_restante_segundos: tiempoLimite,
+          tiempo_transcurrido_segundos: tiempoTranscurridoActual()
         }));
 
         iniciarTemporizador();
@@ -363,7 +381,8 @@ async function obtenerAuthHeaders() {
         await guardarProgresoInmediato({
           respuestas_usuario: respuestasUsuario,
           indice_actual: indicePreguntaActual,
-          tiempo_restante_segundos: tiempoLimite
+          tiempo_restante_segundos: tiempoLimite,
+          tiempo_transcurrido_segundos: tiempoTranscurridoActual()
         });
         window.location.href = "/mis-tests/";
       });
@@ -382,7 +401,8 @@ async function obtenerAuthHeaders() {
           autoguardarProgreso({
             respuestas_usuario: respuestasUsuario,
             indice_actual: i + 1 < preguntas.length ? i + 1 : i,
-            tiempo_restante_segundos: tiempoLimite
+            tiempo_restante_segundos: tiempoLimite,
+            tiempo_transcurrido_segundos: tiempoTranscurridoActual()
           });
         });
         if (i + 1 < preguntas.length) {
@@ -505,7 +525,7 @@ async function obtenerAuthHeaders() {
         tiempoTotalAsignado = guardado.tiempo_total_asignado_segundos || guardado.tiempo_restante_segundos || 0;
         iniciarTemporizador(guardado.tiempo_restante_segundos ?? tiempoTotalAsignado);
       } else {
-        iniciarTemporizador();
+        iniciarTemporizador(null, guardado.tiempo_transcurrido_segundos || 0);
       }
       document.getElementById("barra-progreso-preguntas").style.display = "block";
       actualizarBarraProgresoPreguntas();
@@ -514,7 +534,8 @@ async function obtenerAuthHeaders() {
         respuestas_usuario: respuestasUsuario,
         indice_actual: indicePreguntaActual,
         modo_cronometrado: tiempoLimite !== null,
-        tiempo_restante_segundos: tiempoLimite
+        tiempo_restante_segundos: tiempoLimite,
+        tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
     }
 

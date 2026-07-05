@@ -17,6 +17,13 @@ async function obtenerAuthHeaders() {
     let fallos = 0;
     let sinResponder = 0;
     let porcentaje = 0;
+    // Segundos ya transcurridos al reanudar un test guardado, para que el
+    // contador siga sumando en vez de reiniciarse a 00:00.
+    let tiempoTranscurridoBase = 0;
+
+    function tiempoTranscurridoActual() {
+      return tiempoTranscurridoBase + Math.floor((Date.now() - tiempoInicio) / 1000);
+    }
 
     let listaTemasGlobal = [];
 
@@ -49,13 +56,23 @@ async function obtenerAuthHeaders() {
       }
     }
 
-    function iniciarTemporizador() {
+    function iniciarTemporizador(tiempoTranscurridoReanudado) {
+      tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
       tiempoInicio = Date.now();
       document.getElementById("temporizador").style.display = "block";
-      document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(0)}`;
+      document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
       intervaloTemporizador = setInterval(() => {
-        const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
+        const transcurrido = tiempoTranscurridoActual();
         document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
+        if (transcurrido % 10 === 0) {
+          import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+            autoguardarProgreso({
+              respuestas_usuario: respuestasUsuario,
+              indice_actual: indicePreguntaActual,
+              tiempo_transcurrido_segundos: transcurrido
+            });
+          });
+        }
       }, 1000);
     }
 
@@ -143,7 +160,8 @@ async function obtenerAuthHeaders() {
         });
         activarGuardadoAlSalir(() => ({
           respuestas_usuario: respuestasUsuario,
-          indice_actual: indicePreguntaActual
+          indice_actual: indicePreguntaActual,
+          tiempo_transcurrido_segundos: tiempoTranscurridoActual()
         }));
 
         iniciarTemporizador();
@@ -206,7 +224,8 @@ async function obtenerAuthHeaders() {
         const { guardarProgresoInmediato } = await import("/assets/test-progreso.js");
         await guardarProgresoInmediato({
           respuestas_usuario: respuestasUsuario,
-          indice_actual: indicePreguntaActual
+          indice_actual: indicePreguntaActual,
+          tiempo_transcurrido_segundos: tiempoTranscurridoActual()
         });
         window.location.href = "/mis-tests/";
       });
@@ -225,7 +244,8 @@ async function obtenerAuthHeaders() {
         import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
           autoguardarProgreso({
             respuestas_usuario: respuestasUsuario,
-            indice_actual: i + 1 < preguntas.length ? i + 1 : i
+            indice_actual: i + 1 < preguntas.length ? i + 1 : i,
+            tiempo_transcurrido_segundos: tiempoTranscurridoActual()
           });
         });
 
@@ -257,7 +277,7 @@ async function obtenerAuthHeaders() {
       const contenido = preguntas;
       const respuestas = respuestasUsuario;
       const tipo = "falladas";
-      const tiempo = Math.floor((Date.now() - tiempoInicio) / 1000);
+      const tiempo = tiempoTranscurridoActual();
       const metadatos = { tipo, tiempo };
       const { testIdEnCurso, limpiarSeguimiento } = await import("/assets/test-progreso.js");
 
@@ -365,13 +385,14 @@ async function obtenerAuthHeaders() {
       document.getElementById('titulo-formulario').style.display = "none";
       document.getElementById("contenedor-test").style.display = "block";
 
-      iniciarTemporizador();
+      iniciarTemporizador(guardado.tiempo_transcurrido_segundos || 0);
       document.getElementById("barra-progreso-preguntas").style.display = "block";
       actualizarBarraProgresoPreguntas();
       mostrarPregunta(indicePreguntaActual);
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
-        indice_actual: indicePreguntaActual
+        indice_actual: indicePreguntaActual,
+        tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
     }
 

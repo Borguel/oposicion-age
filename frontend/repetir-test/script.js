@@ -14,16 +14,37 @@ let indicePreguntaActual = 0;
 let tiempoInicio;
 let intervaloTemporizador;
 let ultimasEstadisticas = null;
+// Segundos ya transcurridos al reanudar un test guardado, para que el
+// contador siga sumando en vez de reiniciarse a 00:00.
+let tiempoTranscurridoBase = 0;
 
-function iniciarTemporizador() {
+function formatearMinSeg(segundos) {
+  const m = String(Math.floor(segundos / 60)).padStart(2, '0');
+  const s = String(segundos % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function tiempoTranscurridoActual() {
+  return tiempoTranscurridoBase + Math.floor((Date.now() - tiempoInicio) / 1000);
+}
+
+function iniciarTemporizador(tiempoTranscurridoReanudado) {
+  tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
   tiempoInicio = Date.now();
   document.getElementById("temporizador").style.display = "block";
-  document.getElementById("temporizador").textContent = `⏱ Tiempo: 00:00`;
+  document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearMinSeg(tiempoTranscurridoBase)}`;
   intervaloTemporizador = setInterval(() => {
-    const transcurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
-    const m = String(Math.floor(transcurrido / 60)).padStart(2, '0');
-    const s = String(transcurrido % 60).padStart(2, '0');
-    document.getElementById("temporizador").textContent = `⏱ Tiempo: ${m}:${s}`;
+    const transcurrido = tiempoTranscurridoActual();
+    document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearMinSeg(transcurrido)}`;
+    if (transcurrido % 10 === 0) {
+      import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+        autoguardarProgreso({
+          respuestas_usuario: respuestasUsuario,
+          indice_actual: indicePreguntaActual,
+          tiempo_transcurrido_segundos: transcurrido
+        });
+      });
+    }
   }, 1000);
 }
 
@@ -87,7 +108,8 @@ function mostrarPregunta(i) {
     const { guardarProgresoInmediato } = await import("/assets/test-progreso.js");
     await guardarProgresoInmediato({
       respuestas_usuario: respuestasUsuario,
-      indice_actual: indicePreguntaActual
+      indice_actual: indicePreguntaActual,
+      tiempo_transcurrido_segundos: tiempoTranscurridoActual()
     });
     window.location.href = "/mis-tests/";
   });
@@ -105,7 +127,8 @@ function mostrarPregunta(i) {
     import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
       autoguardarProgreso({
         respuestas_usuario: respuestasUsuario,
-        indice_actual: i + 1 < preguntas.length ? i + 1 : i
+        indice_actual: i + 1 < preguntas.length ? i + 1 : i,
+        tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       });
     });
 
@@ -135,7 +158,7 @@ async function mostrarResultados() {
 
   document.getElementById("btn-descargar-pdf").style.display = "block";
 
-  const segundosTotales = Math.floor((Date.now() - tiempoInicio) / 1000);
+  const segundosTotales = tiempoTranscurridoActual();
   const { testIdEnCurso, limpiarSeguimiento } = await import("/assets/test-progreso.js");
   try {
     const authHeaders = await obtenerAuthHeaders();
@@ -188,11 +211,12 @@ window.addEventListener("load", async () => {
       respuestasUsuario = Array.isArray(guardado.respuestas_usuario) && guardado.respuestas_usuario.length === preguntas.length
         ? guardado.respuestas_usuario
         : Array(preguntas.length).fill(null);
-      iniciarTemporizador();
+      iniciarTemporizador(guardado.tiempo_transcurrido_segundos || 0);
       mostrarPregunta(guardado.indice_actual || 0);
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
-        indice_actual: indicePreguntaActual
+        indice_actual: indicePreguntaActual,
+        tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
       return;
     }
@@ -225,7 +249,8 @@ window.addEventListener("load", async () => {
       });
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
-        indice_actual: indicePreguntaActual
+        indice_actual: indicePreguntaActual,
+        tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
       iniciarTemporizador();
       mostrarPregunta(0);
@@ -256,7 +281,8 @@ window.addEventListener("load", async () => {
     });
     activarGuardadoAlSalir(() => ({
       respuestas_usuario: respuestasUsuario,
-      indice_actual: indicePreguntaActual
+      indice_actual: indicePreguntaActual,
+      tiempo_transcurrido_segundos: tiempoTranscurridoActual()
     }));
     iniciarTemporizador();
     mostrarPregunta(0);

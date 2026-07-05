@@ -144,6 +144,7 @@ def registrar_rutas_progreso(app, db):
             "indice_actual": datos.get("indice_actual", 0),
             "modo_cronometrado": bool(datos.get("modo_cronometrado", False)),
             "tiempo_restante_segundos": datos.get("tiempo_restante_segundos"),
+            "tiempo_transcurrido_segundos": datos.get("tiempo_transcurrido_segundos"),
             "fecha_actualizacion": ahora,
         }
 
