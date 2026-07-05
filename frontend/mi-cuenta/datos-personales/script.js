@@ -1,4 +1,4 @@
-import { idToken, esperarUsuario, cambiarEmail, tieneProveedorPassword, reautenticarConPassword } from "/assets/auth.js";
+import { idToken, esperarUsuario, cambiarEmail, cambiarContrasena, tieneProveedorPassword, reautenticarConPassword } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 
@@ -130,6 +130,52 @@ async function iniciar() {
       btn.textContent = "Guardar cambios";
     }
   });
+
+  const formContrasena = document.getElementById("form-contrasena");
+  if (!tieneProveedorPassword()) {
+    // Cuenta solo con Google: no hay contraseña propia que cambiar aquí.
+    formContrasena.style.display = "none";
+    document.getElementById("contrasena-nota-google").style.display = "block";
+  } else {
+    formContrasena.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      const btn = document.getElementById("btn-cambiar-contrasena");
+      const mensajeEl = document.getElementById("contrasena-mensaje");
+      const actual = document.getElementById("campo-password-actual").value;
+      const nueva = document.getElementById("campo-password-nueva").value;
+      const confirmar = document.getElementById("campo-password-confirmar").value;
+
+      if (nueva !== confirmar) {
+        mensajeEl.textContent = "Las dos contraseñas nuevas no coinciden.";
+        mensajeEl.className = "datos-mensaje error";
+        mensajeEl.style.display = "block";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Cambiando…";
+      try {
+        await reautenticarConPassword(actual);
+        await cambiarContrasena(nueva);
+        formContrasena.reset();
+        mensajeEl.textContent = "Contraseña cambiada correctamente.";
+        mensajeEl.className = "datos-mensaje ok";
+        mensajeEl.style.display = "block";
+      } catch (error) {
+        const texto = error.code === "auth/wrong-password" || error.code === "auth/invalid-credential"
+          ? "La contraseña actual no es correcta."
+          : error.code === "auth/weak-password"
+          ? "La contraseña nueva debe tener al menos 6 caracteres."
+          : "No se pudo cambiar la contraseña. Inténtalo de nuevo.";
+        mensajeEl.textContent = texto;
+        mensajeEl.className = "datos-mensaje error";
+        mensajeEl.style.display = "block";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Cambiar contraseña";
+      }
+    });
+  }
 }
 
 iniciar();

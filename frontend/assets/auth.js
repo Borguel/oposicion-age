@@ -16,6 +16,7 @@ import {
   verifyBeforeUpdateEmail,
   reauthenticateWithCredential,
   sendEmailVerification,
+  updatePassword,
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { firebaseConfig, BACKEND_URL } from "/assets/firebase-config.js";
@@ -98,6 +99,13 @@ export function reautenticarConPassword(password) {
 // sin acceso real a esa bandeja de entrada.
 export function cambiarEmail(nuevoEmail) {
   return verifyBeforeUpdateEmail(auth.currentUser, nuevoEmail);
+}
+
+// Cambia la contraseña directamente (a diferencia del correo, no hace falta
+// confirmación por email: Firebase ya exige haberse reautenticado hace poco
+// para poder llamar a esto, que es la propia prueba de que eres tú).
+export function cambiarContrasena(nuevaContrasena) {
+  return updatePassword(auth.currentUser, nuevaContrasena);
 }
 
 // Envía el correo de "restablecer contraseña" de Firebase. Firebase no dice

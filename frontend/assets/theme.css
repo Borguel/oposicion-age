@@ -764,6 +764,7 @@ body {
   text-align: center;
   padding: 16px;
   border-radius: var(--age-radius-md);
+  border: 2px solid transparent;
   margin-bottom: 20px;
 }
 
@@ -774,8 +775,8 @@ body {
   white-space: nowrap;
 }
 
-.resultado-veredicto.aprobado { background: var(--age-success-bg); color: var(--age-success); }
-.resultado-veredicto.suspendido { background: var(--age-danger-bg); color: var(--age-danger); }
+.resultado-veredicto.aprobado { background: var(--age-success-bg); border-color: var(--age-success); color: var(--age-success); }
+.resultado-veredicto.suspendido { background: var(--age-danger-bg); border-color: var(--age-danger); color: var(--age-danger); }
 
 .resultado-notas-grid {
   display: grid;

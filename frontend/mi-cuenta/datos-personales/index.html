@@ -61,6 +61,31 @@
         <button type="submit" class="age-btn age-btn-primary" id="btn-guardar">Guardar cambios</button>
       </form>
     </section>
+
+    <section class="age-card cuenta-section" id="seccion-contrasena">
+      <h2>Contraseña</h2>
+      <p class="cuenta-privacidad-texto" id="contrasena-nota-google" style="display:none;">
+        Inicias sesión con Google, así que no tienes una contraseña propia que cambiar aquí.
+      </p>
+      <form id="form-contrasena">
+        <div class="cuenta-form-grid">
+          <div class="cuenta-campo cuenta-campo-full">
+            <label for="campo-password-actual">Contraseña actual</label>
+            <input type="password" id="campo-password-actual" required autocomplete="current-password" minlength="6" />
+          </div>
+          <div class="cuenta-campo">
+            <label for="campo-password-nueva">Contraseña nueva</label>
+            <input type="password" id="campo-password-nueva" required autocomplete="new-password" minlength="6" />
+          </div>
+          <div class="cuenta-campo">
+            <label for="campo-password-confirmar">Confirma la contraseña nueva</label>
+            <input type="password" id="campo-password-confirmar" required autocomplete="new-password" minlength="6" />
+          </div>
+        </div>
+        <div id="contrasena-mensaje" class="datos-mensaje" style="display:none;"></div>
+        <button type="submit" class="age-btn age-btn-primary" id="btn-cambiar-contrasena">Cambiar contraseña</button>
+      </form>
+    </section>
   </div>
 
   <div class="dp-modal-overlay" id="modal-reautenticar" style="display:none;">
