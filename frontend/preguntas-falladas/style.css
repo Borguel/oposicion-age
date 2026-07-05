@@ -49,7 +49,7 @@ body {
 
 /* ========== TÍTULOS ========== */
 h1, h2, h3 {
-  color: #2c3e50;
+  color: var(--age-ink);
   margin-bottom: 20px;
   text-align: center;
 }
@@ -58,7 +58,7 @@ h1, h2, h3 {
   font-size: 2rem;
   text-align: center;
   margin-bottom: 30px;
-  color: #2c3e50;
+  color: var(--age-ink);
 }
 
 /* ========== TARJETAS DE TIPO DE TEST ========== */
@@ -572,4 +572,37 @@ body {
   .stats-container {
     grid-template-columns: 1fr;
   }
+}
+
+.test-type-card {
+  background: var(--age-card);
+}
+
+:root[data-theme="dark"] .progress-container {
+  background: var(--age-neutral-bg);
+}
+
+:root[data-theme="dark"] #temporizador {
+  background: var(--age-navy-soft);
+  color: var(--age-primary-light);
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] #lista-temas {
+  background: var(--age-neutral-bg);
+}
+
+:root[data-theme="dark"] #lista-temas label,
+:root[data-theme="dark"] .bloque-toggle {
+  background: var(--age-card);
+  border-color: var(--age-border);
+  color: var(--age-ink);
+}
+
+:root[data-theme="dark"] #lista-temas label:hover {
+  background: var(--age-primary-soft);
+}
+
+:root[data-theme="dark"] .test-type-card.selected {
+  background: var(--age-primary-soft);
 }

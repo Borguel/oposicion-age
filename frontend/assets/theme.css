@@ -44,6 +44,45 @@
   --age-container: 1160px;
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --age-primary: #ffa633;
+  --age-primary-dark: #ffbb5c;
+  --age-primary-light: #ffc266;
+  --age-primary-soft: rgba(255, 166, 51, 0.16);
+
+  --age-navy: #12151f;
+  --age-navy-soft: #1c2032;
+  --age-navy-ink: #aab0c6;
+
+  --age-ink: #e8eaf0;
+  --age-ink-soft: #a7acba;
+  --age-ink-faint: #7c8296;
+
+  --age-bg: #0f1117;
+  --age-card: #1a1d29;
+  --age-border: #2a2e3d;
+
+  --age-success: #3ecf8e;
+  --age-success-bg: rgba(62, 207, 142, 0.14);
+  --age-danger: #f0655f;
+  --age-danger-bg: rgba(240, 101, 95, 0.14);
+  --age-neutral-bg: #232734;
+
+  --age-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --age-shadow-hover: 0 16px 36px rgba(0, 0, 0, 0.45);
+  --age-shadow-nav: 0 2px 16px rgba(0, 0, 0, 0.4);
+
+  /* Variables heredadas de páginas más antiguas (test-generator,
+     preguntas-falladas, subida-pdf-chat-pdf) que aún no usan los
+     tokens --age-*; se oscurecen aquí para que el toggle también
+     las alcance sin reescribir esas hojas de estilo por completo. */
+  --color-text: var(--age-ink);
+  --color-bg: var(--age-bg);
+  --color-card: var(--age-card);
+  --color-border: var(--age-border);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -199,6 +238,25 @@ body {
 }
 
 .age-buscador-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.age-tema-btn {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s var(--age-ease);
+}
+
+.age-tema-btn:hover {
   background: rgba(255, 255, 255, 0.12);
 }
 

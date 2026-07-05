@@ -217,7 +217,7 @@
       border-bottom-right-radius: 4px;
     }
     .bot-message {
-      background: white;
+      background: var(--age-card);
       border: 1px solid #e1e1e1;
       margin-right: auto;
       border-bottom-left-radius: 4px;
@@ -232,7 +232,7 @@
     .input-container {
       display: flex;
       padding: 15px;
-      background: white;
+      background: var(--age-card);
       border: 1px solid #e1e1e1;
       border-radius: 0 0 12px 12px;
     }
@@ -341,7 +341,7 @@
     }
     .stat-item {
       padding: 10px;
-      background: white;
+      background: var(--age-card);
       border-radius: 8px;
       text-align: center;
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);

@@ -203,6 +203,29 @@ function construirEsqueletoNav() {
   right.className = "age-nav-right";
   right.id = "age-nav-right";
 
+  const temaBtn = document.createElement("button");
+  temaBtn.type = "button";
+  temaBtn.className = "age-tema-btn";
+  temaBtn.id = "age-tema-btn";
+  const actualizarIconoTema = () => {
+    const oscuro = document.documentElement.dataset.theme === "dark";
+    temaBtn.innerHTML = icono(oscuro ? "sol" : "luna", 18);
+    temaBtn.setAttribute("aria-label", oscuro ? "Activar modo claro" : "Activar modo oscuro");
+  };
+  actualizarIconoTema();
+  temaBtn.addEventListener("click", () => {
+    const oscuro = document.documentElement.dataset.theme === "dark";
+    if (oscuro) {
+      delete document.documentElement.dataset.theme;
+      localStorage.setItem("age-theme", "light");
+    } else {
+      document.documentElement.dataset.theme = "dark";
+      localStorage.setItem("age-theme", "dark");
+    }
+    actualizarIconoTema();
+  });
+  right.appendChild(temaBtn);
+
   const burger = document.createElement("button");
   burger.type = "button";
   burger.className = "age-nav-burger";

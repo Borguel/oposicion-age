@@ -70,7 +70,7 @@ h1, h2, h3 {
   text-align: center;
   cursor: pointer;
   transition: var(--transition);
-  background: white;
+  background: var(--age-card);
   position: relative;
   overflow: hidden;
 }
@@ -661,4 +661,36 @@ h1, h2, h3 {
 .btn-primary:hover,
 #form-pregunta button[type="submit"]:hover {
   background: var(--age-primary-dark);
+}
+
+:root[data-theme="dark"] .timer-settings {
+  background: var(--age-primary-soft);
+}
+
+:root[data-theme="dark"] #temporizador {
+  background: var(--age-navy-soft);
+  color: var(--age-primary-light);
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .progress-container {
+  background: var(--age-neutral-bg);
+}
+
+:root[data-theme="dark"] .chart-container {
+  background: var(--age-card);
+}
+
+:root[data-theme="dark"] #lista-temas {
+  background: var(--age-neutral-bg);
+}
+
+:root[data-theme="dark"] #lista-temas label {
+  background: var(--age-card);
+  border-color: var(--age-border);
+  color: var(--age-ink);
+}
+
+:root[data-theme="dark"] #lista-temas label:hover {
+  background: var(--age-primary-soft);
 }
