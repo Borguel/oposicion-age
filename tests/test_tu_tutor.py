@@ -99,6 +99,38 @@ def test_ruta_tu_tutor_requiere_premium_y_registra_uso(client, db):
         parche_auth.stop()
 
 
+def test_ruta_eliminar_conversacion_borra_de_firestore(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
+    })
+    with patch("chat_controller.call_deepseek_api", return_value="Hola"):
+        _texto, chat_id, _usar_rag = responder_tutor("Hola", db=db, usuario_id="u1")
+    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
+    parche_auth.start()
+    try:
+        resp = client.delete(f"/conversacion/{chat_id}", headers={"Authorization": "Bearer x"})
+        assert resp.status_code == 200
+        assert resp.get_json()["ok"] is True
+        assert db.leer(("conversaciones_IA", "u1", "conversaciones", chat_id)) is None
+    finally:
+        parche_auth.stop()
+
+
+def test_ruta_eliminar_conversacion_inexistente_da_404(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
+    })
+    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
+    parche_auth.start()
+    try:
+        resp = client.delete("/conversacion/no-existe", headers={"Authorization": "Bearer x"})
+        assert resp.status_code == 404
+    finally:
+        parche_auth.stop()
+
+
 def test_ruta_tu_tutor_bloqueada_para_plan_gratis(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",

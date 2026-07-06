@@ -84,15 +84,17 @@ document.addEventListener("DOMContentLoaded", function () {
   const input = document.getElementById("chat-input");
   const sendBtn = document.getElementById("chat-send");
   const chatMessages = document.getElementById("chat-messages");
+  const mensajeBienvenidaHTML = chatMessages.innerHTML;
   const toggleSidebar = document.getElementById("toggle-sidebar");
   const chatSidebar = document.getElementById("chat-sidebar");
   const chatHistory = document.getElementById("chat-history");
   const sidebarOverlay = document.getElementById("sidebar-overlay");
   const typingIndicator = document.getElementById("typing-indicator");
 
-  // Botón X móvil
+  // Cerrar chat (botón de la cabecera): siempre vuelve a Zona Opositor,
+  // no a la home genérica -- es de donde se accede a Tu Tutor.
   document.getElementById("cerrar-chat-total")?.addEventListener("click", () => {
-    window.location.href = "../";
+    window.location.href = "/zona-opositor/";
   });
 
   // SIDEBAR (historial)
@@ -272,24 +274,61 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function mostrarHistorialEnSidebar() {
     chatHistory.innerHTML = "";
-    const nueva = document.createElement("li");
-    nueva.textContent = "➕ Nueva conversación";
-    nueva.setAttribute("role", "button");
-    nueva.setAttribute("tabindex", "0");
-    nueva.onclick = iniciarNuevaConversacion;
-    nueva.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") iniciarNuevaConversacion(); };
-    chatHistory.appendChild(nueva);
+    if (conversaciones.length === 0) {
+      const vacio = document.createElement("li");
+      vacio.className = "chat-history-vacio";
+      vacio.textContent = "Aún no tienes conversaciones.";
+      chatHistory.appendChild(vacio);
+      return;
+    }
 
     conversaciones.forEach((conv) => {
       const li = document.createElement("li");
-      li.textContent = conv.titulo || "Conversación";
+      li.className = "chat-history-item";
       li.dataset.id = conv.id;
       li.setAttribute("role", "button");
       li.setAttribute("tabindex", "0");
-      li.onclick = () => cargarConversacion(conv.id);
-      li.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") cargarConversacion(conv.id); };
+      li.innerHTML = `
+        <span class="chat-history-titulo">${escapeHtml(conv.titulo || "Conversación")}</span>
+        <button type="button" class="btn-borrar-conversacion" aria-label="Borrar conversación" title="Borrar">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+        </button>
+      `;
+      li.addEventListener("click", () => cargarConversacion(conv.id));
+      li.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") cargarConversacion(conv.id); });
+      li.querySelector(".btn-borrar-conversacion").addEventListener("click", (e) => {
+        e.stopPropagation();
+        confirmarBorrarConversacion(conv.id);
+      });
       chatHistory.appendChild(li);
     });
+  }
+
+  async function confirmarBorrarConversacion(id) {
+    const resultado = await Swal.fire({
+      title: "¿Borrar esta conversación?",
+      text: "No podrás deshacer esta acción.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Borrar",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "var(--age-danger)"
+    });
+    if (!resultado.isConfirmed) return;
+
+    const authHeaders = await obtenerAuthHeaders();
+    if (!authHeaders) return;
+    try {
+      const res = await fetch(`https://oposicion-age.onrender.com/conversacion/${id}`, {
+        method: "DELETE",
+        headers: authHeaders
+      });
+      if (!res.ok) throw new Error("No se pudo borrar");
+      if (chatIdActual === id) iniciarNuevaConversacion();
+      await cargarHistorial();
+    } catch {
+      Swal.fire("Error", "No se pudo borrar la conversación. Inténtalo de nuevo.", "error");
+    }
   }
 
   async function cargarConversacion(id) {
@@ -321,10 +360,20 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function iniciarNuevaConversacion() {
-    chatMessages.innerHTML = "";
+    chatMessages.innerHTML = mensajeBienvenidaHTML;
+    reengancharPreguntasRapidas();
     chatIdActual = null;
     document.querySelectorAll("#chat-history li").forEach(li => li.classList.remove("active"));
     if (window.innerWidth <= 950) closeSidebar();
+  }
+
+  function reengancharPreguntasRapidas() {
+    chatMessages.querySelectorAll(".quick-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        input.value = btn.textContent;
+        enviarMensaje();
+      });
+    });
   }
 
   // EVENTOS
@@ -342,8 +391,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // SALIR
   document.getElementById("salir-del-chat-sidebar")?.addEventListener("click", () => {
-    window.location.href = "../";
+    window.location.href = "/zona-opositor/";
   });
+  document.getElementById("nueva-conversacion-btn")?.addEventListener("click", iniciarNuevaConversacion);
 
   // INICIO
   cargarHistorial();

@@ -68,3 +68,16 @@ def obtener_conversacion(conversacion_id):
     if not doc.exists:
         return jsonify({"error": "Conversación no encontrada"}), 404
     return jsonify(doc.to_dict())
+
+
+@bp.route("/conversacion/<conversacion_id>", methods=["DELETE"])
+@requiere_plan(db, "premium")
+def eliminar_conversacion(conversacion_id):
+    ref = db.collection("conversaciones_IA") \
+            .document(g.uid) \
+            .collection("conversaciones") \
+            .document(conversacion_id)
+    if not ref.get().exists:
+        return jsonify({"error": "Conversación no encontrada"}), 404
+    ref.delete()
+    return jsonify({"ok": True})
