@@ -133,16 +133,26 @@ TEMARIO = [
 ]
 
 MAX_TOKENS_SUBBLOQUE = 1800
-CACHE_PAGINAS = "cache_paginas_pdf.pkl"
 
 
 # ---------------------------------------------------------------------------
 # 2) Extracción del PDF (con caché en disco para no repetirlo cada vez)
 # ---------------------------------------------------------------------------
+def _ruta_cache_paginas(pdf_path):
+    # Un nombre de caché fijo (independiente del PDF) hacía que procesar un
+    # PDF distinto reutilizara en silencio la extracción de un PDF anterior
+    # (p. ej. GACE) sin ningún aviso -- se deriva del nombre y tamaño del
+    # propio PDF para que cada documento tenga su propia caché.
+    base = re.sub(r"[^A-Za-z0-9]+", "_", os.path.basename(pdf_path))[:60]
+    tamano = os.path.getsize(pdf_path) if os.path.exists(pdf_path) else 0
+    return f"cache_paginas_{base}_{tamano}.pkl"
+
+
 def extraer_paginas(pdf_path):
-    if os.path.exists(CACHE_PAGINAS):
-        print(f"📄 Usando texto ya extraído de {CACHE_PAGINAS} (bórralo si el PDF cambió)")
-        with open(CACHE_PAGINAS, "rb") as f:
+    cache_paginas = _ruta_cache_paginas(pdf_path)
+    if os.path.exists(cache_paginas):
+        print(f"📄 Usando texto ya extraído de {cache_paginas} (bórralo si el PDF cambió)")
+        with open(cache_paginas, "rb") as f:
             return pickle.load(f)
 
     print(f"📄 Extrayendo texto de {pdf_path} (puede tardar uno o dos minutos)...")
@@ -152,7 +162,7 @@ def extraer_paginas(pdf_path):
         paginas.append(pagina.extract_text() or "")
         if i % 500 == 0:
             print(f"   ...página {i}/{len(reader.pages)}")
-    with open(CACHE_PAGINAS, "wb") as f:
+    with open(cache_paginas, "wb") as f:
         pickle.dump(paginas, f)
     print(f"✅ {len(paginas)} páginas extraídas")
     return paginas
