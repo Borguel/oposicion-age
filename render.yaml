@@ -50,6 +50,14 @@ services:
     staticPublishPath: frontend
     buildCommand: ""
     routes:
+      # Chat IA y Asistente se fusionaron en Tu Tutor -- se conservan estas
+      # redirecciones para no romper enlaces o marcadores ya guardados.
+      - type: redirect
+        source: /chat-ai/*
+        destination: /tu-tutor/
+      - type: redirect
+        source: /asistente/*
+        destination: /tu-tutor/
       # Cualquier ruta que no corresponda a un fichero real (Render no
       # aplica esta regla si el path sí existe) sirve la página 404 propia
       # en vez del error genérico de Render.

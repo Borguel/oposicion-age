@@ -97,7 +97,7 @@ def verificar_api_key():
 # === Rutas: cada área de la app vive en su propio blueprint (blueprints/) ===
 from blueprints.temario import bp as temario_bp
 from blueprints.test_ia import bp as test_ia_bp
-from blueprints.chat_ia import bp as chat_ia_bp
+from blueprints.tu_tutor import bp as tu_tutor_bp
 from blueprints.pdf_ia import bp as pdf_ia_bp
 from blueprints.pagos import bp as pagos_bp
 from blueprints.ranking import bp as ranking_bp
@@ -105,7 +105,7 @@ from blueprints.tareas_programadas import bp as tareas_programadas_bp
 
 app.register_blueprint(temario_bp)
 app.register_blueprint(test_ia_bp)
-app.register_blueprint(chat_ia_bp)
+app.register_blueprint(tu_tutor_bp)
 app.register_blueprint(pdf_ia_bp)
 app.register_blueprint(pagos_bp)
 app.register_blueprint(ranking_bp)

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tu Tutor - Asistente AGE</title>
+  <meta name="description" content="Tu Tutor: resuelve dudas sobre el temario y el proceso selectivo de la oposición AGE con IA." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Tu Tutor - Asistente AGE" />
+  <meta property="og:description" content="Tu Tutor: resuelve dudas sobre el temario y el proceso selectivo de la oposición AGE con IA." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+
+  <link rel="stylesheet" href="/tu-tutor/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+<div class="tutor-container" id="tutor-container" role="application" aria-label="Chat con Tu Tutor">
+  <!-- Botón X salir (móvil) -->
+  <button id="cerrar-chat-total" class="btn-cerrar-chat-total" aria-label="Salir del chat" title="Salir del chat">&times;</button>
+
+  <!-- Sidebar (historial) -->
+  <div class="tutor-sidebar" id="chat-sidebar" role="region" aria-label="Historial de conversaciones">
+    <h3>💬 Conversaciones</h3>
+    <ul id="chat-history" role="list"></ul>
+    <div class="sidebar-bottom-actions">
+      <button id="salir-del-chat-sidebar" class="btn-salir-sidebar" aria-label="Salir del chat">Salir del chat</button>
+    </div>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="tutor-box">
+    <div class="tutor-header" role="banner">
+      <button id="toggle-sidebar" aria-label="Abrir historial" class="btn-menu-historial" title="Historial">☰</button>
+      <div class="avatar-bot">
+        <div class="premium-badge">PREMIUM</div>
+        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Tu Tutor" />
+        <span class="pulse" aria-hidden="true"></span>
+      </div>
+      <div class="header-info">
+        <div class="titulo-chat">Tu Tutor</div>
+        <div class="estado-enlinea">En línea</div>
+      </div>
+      <button id="settings-toggle" class="btn-settings" aria-label="Personalizar Tu Tutor" title="Personalizar">⚙️</button>
+    </div>
+
+    <div id="chat-messages" class="tutor-messages" role="log" aria-live="polite">
+      <div class="welcome-message">
+        <div class="avatar-bot-mini">
+          <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Tu Tutor" />
+        </div>
+        <div class="bubble-bot">
+          <h3>¡Hola! 👋 Soy Tu Tutor</h3>
+          <p>Pregúntame cualquier duda sobre el temario o el proceso selectivo. También puedo ayudarte con:</p>
+          <div class="quick-questions">
+            <button type="button" class="quick-btn">Estructura del examen</button>
+            <button type="button" class="quick-btn">Temario actualizado</button>
+            <button type="button" class="quick-btn">Consejos de estudio</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="typing-indicator" class="typing-indicator" style="display: none;">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+
+    <div class="input-area-pro" id="chat-input-container">
+      <textarea id="chat-input" placeholder="Escribe tu pregunta..." rows="1" aria-label="Escribe tu mensaje"></textarea>
+      <button id="chat-send" class="btn-enviar" aria-label="Enviar mensaje" title="Enviar">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <circle cx="13" cy="13" r="13" fill="black"/>
+          <path d="M13 8v8M13 8l-3 3M13 8l3 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Panel de personalización -->
+  <div id="settings-panel" class="settings-panel">
+    <div class="settings-header">
+      <h3>Personalizar Tu Tutor</h3>
+      <button id="close-settings" class="close-btn" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="settings-content">
+      <div class="theme-option">
+        <h4>Color de acento</h4>
+        <div class="theme-colors" role="group" aria-label="Color de acento">
+          <button type="button" class="color-option active" data-acento="naranja" style="background:#ffa633" aria-label="Naranja"></button>
+          <button type="button" class="color-option" data-acento="verde" style="background:#1a9c6e" aria-label="Verde"></button>
+          <button type="button" class="color-option" data-acento="morado" style="background:#8b5cf6" aria-label="Morado"></button>
+          <button type="button" class="color-option" data-acento="rojo" style="background:#e0473f" aria-label="Rojo"></button>
+        </div>
+      </div>
+      <div class="theme-option">
+        <div class="switch-container">
+          <h4>Modo oscuro</h4>
+          <label class="switch">
+            <input type="checkbox" id="dark-mode-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/tu-tutor/script.js"></script>
+  <script type="module" src="/assets/auth.js"></script>
+</body>
+</html>

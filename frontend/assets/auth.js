@@ -164,8 +164,7 @@ const NAV_LINKS = [
   { href: "/zona-opositor/", label: "Zona opositor", match: ["/zona-opositor/"] },
   { href: "/test-generator/", label: "Tests", match: ["/test-generator/", "/repetir-test/", "/preguntas-falladas/", "/mis-tests/"] },
   { href: "/subida-pdf-pagina-principal/", label: "Herramientas IA", match: ["/subida-pdf-"] },
-  { href: "/chat-ai/", label: "Chat IA", match: ["/chat-ai/"] },
-  { href: "/asistente/", label: "Asistente", match: ["/asistente/"] },
+  { href: "/tu-tutor/", label: "Tu Tutor", match: ["/tu-tutor/"] },
   { href: "/estadisticas/", label: "Estadísticas", match: ["/estadisticas/"] },
   { href: "/planes/", label: "Planes", match: ["/planes/"] }
 ];

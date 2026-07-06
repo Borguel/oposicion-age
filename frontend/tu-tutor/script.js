@@ -9,14 +9,14 @@ async function obtenerAuthHeaders() {
   return { "Authorization": "Bearer " + token };
 }
 
-// El chat en sí (historial, ajustes, mensajes) antes se podía ver y usar
-// entero sin haber iniciado sesión -- solo se pedía login al primer intento
-// de enviar un mensaje. Ahora se exige nada más cargar la página.
+// El chat en sí (historial, ajustes, mensajes) se podía ver y usar entero
+// sin haber iniciado sesión -- solo se pedía login al primer intento de
+// enviar un mensaje. Ahora se exige nada más cargar la página.
 obtenerAuthHeaders();
 
 // ===== FUNCIONES AUXILIARES =====
 function escapeHtml(text) {
-  const map = { '&': '&amp;', '<': '<', '>': '>', '"': '&quot;', "'": '&#039;' };
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
   return text.replace(/[&<>"']/g, m => map[m]);
 }
 
@@ -36,6 +36,7 @@ function copyToClipboard(text) {
 
 // ===== LÓGICA PRINCIPAL =====
 document.addEventListener("DOMContentLoaded", function () {
+  const contenedor = document.getElementById("tutor-container");
   const input = document.getElementById("chat-input");
   const sendBtn = document.getElementById("chat-send");
   const chatMessages = document.getElementById("chat-messages");
@@ -46,14 +47,11 @@ document.addEventListener("DOMContentLoaded", function () {
   const typingIndicator = document.getElementById("typing-indicator");
 
   // Botón X móvil
-  const cerrarChat = document.getElementById("cerrar-chat-total");
-  if (cerrarChat) {
-    cerrarChat.addEventListener("click", () => {
-      window.location.href = "../";
-    });
-  }
+  document.getElementById("cerrar-chat-total")?.addEventListener("click", () => {
+    window.location.href = "../";
+  });
 
-  // SIDEBAR
+  // SIDEBAR (historial)
   toggleSidebar.addEventListener("click", () => {
     chatSidebar.classList.toggle("visible");
     if (window.innerWidth <= 950) {
@@ -79,6 +77,53 @@ document.addEventListener("DOMContentLoaded", function () {
 
   sidebarOverlay?.addEventListener("click", closeSidebar);
 
+  // PANEL DE PERSONALIZACIÓN (color de acento + modo oscuro)
+  const settingsToggle = document.getElementById("settings-toggle");
+  const settingsPanel = document.getElementById("settings-panel");
+  const closeSettings = document.getElementById("close-settings");
+  const colorOptions = document.querySelectorAll(".color-option");
+  const darkModeToggle = document.getElementById("dark-mode-toggle");
+
+  settingsToggle.addEventListener("click", () => settingsPanel.classList.toggle("active"));
+  closeSettings.addEventListener("click", () => settingsPanel.classList.remove("active"));
+
+  const acentoGuardado = localStorage.getItem("tutorAcento");
+  if (acentoGuardado) {
+    contenedor.dataset.acento = acentoGuardado;
+    colorOptions.forEach(op => op.classList.toggle("active", op.dataset.acento === acentoGuardado));
+  }
+  colorOptions.forEach(op => {
+    op.addEventListener("click", () => {
+      const acento = op.dataset.acento;
+      contenedor.dataset.acento = acento;
+      localStorage.setItem("tutorAcento", acento);
+      colorOptions.forEach(o => o.classList.toggle("active", o === op));
+    });
+  });
+
+  // El modo oscuro es una preferencia global del sitio (misma variable que
+  // usa el botón de la barra de navegación, data-theme + "age-theme" en
+  // localStorage), no un ajuste propio de esta página -- así no quedan
+  // desincronizados el interruptor de aquí y el de la barra de navegación.
+  darkModeToggle.checked = document.documentElement.dataset.theme === "dark";
+  darkModeToggle.addEventListener("change", () => {
+    if (darkModeToggle.checked) {
+      document.documentElement.dataset.theme = "dark";
+      localStorage.setItem("age-theme", "dark");
+    } else {
+      delete document.documentElement.dataset.theme;
+      localStorage.setItem("age-theme", "light");
+    }
+  });
+
+  // PREGUNTAS RÁPIDAS
+  document.querySelectorAll(".quick-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      input.value = btn.textContent;
+      enviarMensaje();
+    });
+  });
+
   // GESTIÓN DE MENSAJES
   function agregarMensaje(tipo, texto) {
     const safeText = escapeHtml(texto);
@@ -90,7 +135,7 @@ document.addEventListener("DOMContentLoaded", function () {
       div.className = "mensaje-bot";
       div.innerHTML = `
         <div class="avatar-bot-mini">
-          <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Asistente IA" />
+          <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Tu Tutor" />
         </div>
         <div class="bubble-bot">
           ${safeText}
@@ -98,8 +143,7 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
       `;
       // addEventListener con "texto" capturado por closure, en vez de un
-      // onclick inline: no depende de 'unsafe-inline' en el CSP y evita
-      // tener que serializar el texto dentro de un atributo HTML.
+      // onclick inline: no depende de 'unsafe-inline' en el CSP.
       div.querySelector(".btn-copiar-mensaje").addEventListener("click", () => copyToClipboard(texto));
     }
     chatMessages.appendChild(div);
@@ -131,12 +175,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const { obtenerOposicionActual } = await import("/assets/oposicion.js");
     const oposicion = obtenerOposicionActual();
 
-    fetch("https://oposicion-age.onrender.com/chat", {
+    fetch("https://oposicion-age.onrender.com/tu-tutor", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders },
       body: JSON.stringify({
         mensaje: texto,
-        temas: [],
         chat_id: chatIdActual,
         oposicion
       }),
@@ -145,7 +188,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .then(async res => {
         mostrarTyping(false);
         if (res.status === 403) {
-          agregarMensaje("bot", "🔒 El chat con IA requiere el plan Premium. Ve a /planes/ para activarlo.");
+          agregarMensaje("bot", "🔒 Tu Tutor requiere el plan Premium. Ve a /planes/ para activarlo.");
           return null;
         }
         if (res.status === 429) {
@@ -167,7 +210,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-  // HISTORIAL
+  // HISTORIAL (persistido en Firestore, no en localStorage)
   let conversaciones = [];
   let chatIdActual = null;
 

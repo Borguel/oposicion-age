@@ -79,6 +79,43 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000, coleccion="Temario A
 
     return contexto_total.strip()
 
+# ✅ Catálogo (bloque + tema, con sus títulos) de una oposición, para poder
+# detectar si un mensaje del usuario menciona un tema concreto sin tener
+# que descargar el contenido completo del temario.
+def obtener_catalogo_temas(db, coleccion="Temario AGE") -> List[dict]:
+    catalogo = []
+    for bloque in db.collection(coleccion).stream():
+        bloque_titulo = (bloque.to_dict() or {}).get("titulo", bloque.id)
+        temas_ref = db.collection(coleccion).document(bloque.id).collection("temas").stream()
+        for tema in temas_ref:
+            titulo = (tema.to_dict() or {}).get("titulo", tema.id)
+            catalogo.append({"id": f"{bloque.id}-{tema.id}", "titulo": titulo, "bloque_titulo": bloque_titulo})
+    return catalogo
+
+# ✅ Contexto de temas identificados por su id combinado "bloque_id-tema_id"
+# (a diferencia de obtener_contexto_por_temas, que solo recibe el tema_id y
+# por tanto no distingue entre bloques distintos que reutilicen el mismo
+# tema_id). La usa el detector de temas mencionados de Tu Tutor.
+def obtener_contexto_por_temas_exactos(db, temas_combinados: List[str], token_limit=3000, coleccion="Temario AGE") -> str:
+    contexto_total = ""
+    for tema_completo in temas_combinados:
+        if "-" not in tema_completo:
+            continue
+        bloque_id, tema_id = tema_completo.split("-", 1)
+        subbloques = db.collection(coleccion).document(bloque_id).collection("temas") \
+                       .document(tema_id).collection("subbloques").stream()
+        for sub in subbloques:
+            datos = sub.to_dict() or {}
+            texto = datos.get("texto", "").strip()
+            titulo = datos.get("titulo", "")
+            fragmento = f"[{tema_completo}-{sub.id}]\n{titulo}\n{texto}\n"
+            if contar_tokens(contexto_total + fragmento) > token_limit:
+                return contexto_total.strip()
+            contexto_total += fragmento
+    return contexto_total.strip()
+
+    return contexto_total.strip()
+
 # ✅ NUEVA: Extrae todos los subbloques de todos los temas sin límite de tokens acumulados
 def obtener_subbloques_individuales(db, temas: List[str], coleccion="Temario AGE") -> List[dict]:
     subbloques_utilizados = []

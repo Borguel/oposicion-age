@@ -39,8 +39,8 @@ LIMITES = {
         "basico": ("mes", 60),
         "premium": ("dia", 40),
     },
-    # Chat conversacional sobre el temario -- /chat, /consultar-asistente-examen.
-    # Requieren plan premium (ver @requiere_plan de cada ruta).
+    # Chat conversacional "Tu Tutor" -- /tu-tutor.
+    # Requiere plan premium (ver @requiere_plan de la ruta).
     "chat_temario": {
         "gratis": ("mes", 0),
         "basico": ("mes", 0),
