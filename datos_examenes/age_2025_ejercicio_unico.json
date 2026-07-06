@@ -1,0 +1,977 @@
+[
+  {
+    "numero": 1,
+    "pregunta": "De acuerdo con el artículo 167 de la Constitución Española de 1978, los proyectos de reforma constitucional deberán ser aprobados:",
+    "opciones": {
+      "A": "Por mayoría de tres quintos del Congreso.",
+      "B": "Por mayoría absoluta del Congreso.",
+      "C": "Por mayoría absoluta de cada una de las Cámaras.",
+      "D": "Por mayoría de tres quintos de cada una de las Cámaras."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 2,
+    "pregunta": "Corresponde al Rey, conforme al artículo 62 de la Constitución Española de 1978:",
+    "opciones": {
+      "A": "Aprobar los Decretos Leyes.",
+      "B": "Aprobar los Reglamentos.",
+      "C": "Aprobar las Leyes.",
+      "D": "Sancionar y promulgar las leyes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 3,
+    "pregunta": "De acuerdo con el artículo 67 de la Constitución Española de 1978:",
+    "opciones": {
+      "A": "Nadie podrá ser miembro de las dos Cámaras simultáneamente.",
+      "B": "Nadie podrá ser miembro de las dos Cámaras simultáneamente, salvo el Presidente del Gobierno y los Ministros.",
+      "C": "Nadie podrá ser miembro de las dos Cámaras simultáneamente, salvo el Presidente del Gobierno.",
+      "D": "Nadie podrá ser miembro de las dos Cámaras simultáneamente, pero se podrá acumular el acta de una Asamblea de Comunidad Autónoma con la de Diputado al Congreso."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 4,
+    "pregunta": "¿Quién nombrará al Presidente del Tribunal Supremo de acuerdo con lo previsto en el artículo 123 de la Constitución Española de 1978?",
+    "opciones": {
+      "A": "El Rey, a propuesta del Presidente del Gobierno, en la forma que determine la ley.",
+      "B": "El Presidente del Gobierno, a propuesta del Rey, en la forma que determine la ley.",
+      "C": "El Consejo General del Poder Judicial, a propuesta del Rey, en la forma que determine la ley.",
+      "D": "El Rey, a propuesta del Consejo del Poder Judicial, en la forma que determine la ley."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 5,
+    "pregunta": "De acuerdo con el artículo 112 de la Constitución Española de 1978, la cuestión de confianza planteada por el Presidente de Gobierno se entenderá otorgada cuando vote a favor de la misma:",
+    "opciones": {
+      "A": "La mayoría simple del Congreso de los Diputados.",
+      "B": "La mayoría simple del Congreso de los Diputados y del Senado.",
+      "C": "La mayoría absoluta del Congreso de los Diputados.",
+      "D": "La mayoría absoluta del Congreso de los Diputados y del Senado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 6,
+    "pregunta": "¿Cuántos objetivos de desarrollo sostenible contiene la Agenda 2030?",
+    "opciones": {
+      "A": "Diecisiete objetivos.",
+      "B": "Dieciocho objetivos.",
+      "C": "Diecinueve objetivos.",
+      "D": "Veinte objetivos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 7,
+    "pregunta": "De acuerdo con el artículo 14 de la Ley 19/2013, de 9 de diciembre, de transparencia, acceso a la información pública y buen gobierno, el derecho de acceso a la información pública podrá ser limitado cuando acceder a la información suponga un perjuicio para:",
+    "opciones": {
+      "A": "La seguridad nacional.",
+      "B": "La seguridad e higiene en el trabajo.",
+      "C": "La protección del anonimato de los empleados públicos.",
+      "D": "La protección de datos de carácter profesional."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 8,
+    "pregunta": "Según la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, ¿a quién de los siguientes órganos le corresponde la competencia de desempeñar la jefatura superior de todo el personal del Departamento?",
+    "opciones": {
+      "A": "Los Secretarios de Estado.",
+      "B": "Los Subsecretarios.",
+      "C": "Los Directores Generales.",
+      "D": "Los Subdirectores Generales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 9,
+    "pregunta": "¿A quién le corresponde la representación ordinaria del Estado en la Comunidad Autónoma conforme a lo dispuesto en el artículo 152 de la Constitución Española de 1978?",
+    "opciones": {
+      "A": "Al Delegado del Gobierno.",
+      "B": "Al Presidente del Gobierno.",
+      "C": "Al Presidente de la Comunidad Autónoma.",
+      "D": "Al Ministro de Política Territorial y Memoria Democrática."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 10,
+    "pregunta": "De conformidad con el artículo 121 de la Ley 7/1985, de 2 de abril, Reguladora de las Bases del Régimen Local, ¿a qué municipios se les aplicará el régimen de organización de los municipios de gran población?",
+    "opciones": {
+      "A": "A los municipios cuya población supere los 100.000 habitantes.",
+      "B": "A los municipios capitales de provincia cuya población sea superior a los 75.000 habitantes.",
+      "C": "A los municipios que sean capitales de provincia, capitales autonómicas o sedes de las instituciones autonómicas cuando así lo decidan las Asambleas Legislativas correspondientes a iniciativa de los respectivos ayuntamientos.",
+      "D": "A los municipios cuya población sea inferior a los 75.000 habitantes, que presenten circunstancias económicas, sociales, históricas o culturales especiales cuando así lo decidan las Asambleas Legislativas correspondientes a iniciativa de los respectivos ayuntamientos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 11,
+    "pregunta": "De acuerdo con el artículo 16 del Tratado de la Unión Europea, señale la respuesta correcta respecto del Consejo de la Unión Europea:",
+    "opciones": {
+      "A": "Supervisará la aplicación del Derecho de la Unión bajo el control del Tribunal de Justicia de la Unión Europea.",
+      "B": "Es el órgano ejecutivo de la Unión Europea y tiene su sede en Bruselas.",
+      "C": "Ejerce conjuntamente con el Parlamento Europeo la función legislativa y la función presupuestaria.",
+      "D": "Ejerce conjuntamente con la Comisión Europea la función legislativa y la función presupuestaria."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 12,
+    "pregunta": "Las cartas de servicios, reguladas en el artículo 10.4 del Real Decreto 951/2005, de 29 de julio, por el que se establece el marco general para la mejora de la calidad en la Administración General del Estado, se actualizarán periódicamente en función de las circunstancias y, en cualquier caso, al menos:",
+    "opciones": {
+      "A": "Anualmente.",
+      "B": "Cada dos años.",
+      "C": "Cada tres años.",
+      "D": "Cada cuatro años."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 13,
+    "pregunta": "Según el artículo 16 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, señale la respuesta correcta en materia de registros:",
+    "opciones": {
+      "A": "Los Organismos públicos vinculados o dependientes de cada Administración deberán disponer de su propio registro electrónico plenamente interoperable e interconectado con el Registro Electrónico General de la Administración de la que depende.",
+      "B": "Cada Administración dispondrá de un Registro Electrónico General donde se deberá anotar la salida de los documentos oficiales provenientes de otros órganos o particulares.",
+      "C": "Las disposiciones de creación de registros electrónicos especificarán el órgano o unidad responsable de su gestión, así como la fecha y hora oficial y los días declarados como hábiles.",
+      "D": "Los Organismos públicos vinculados o dependientes de cada Administración podrán disponer de su propio registro electrónico plenamente interoperable e interconectado con el Registro Electrónico General de la Administración de la que depende."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 14,
+    "pregunta": "Según el artículo 40 de la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, las Administraciones Públicas, en relación con sus sistemas de identificación:",
+    "opciones": {
+      "A": "Podrán hacer pública la relación de certificados electrónicos utilizados, incluyendo las características de los sellos electrónicos y los prestadores que los expiden.",
+      "B": "Podrán identificarse mediante el uso de un certificado electrónico reconocido o cualificado.",
+      "C": "Deberán identificarse mediante el uso de un sello electrónico basado en una firma electrónica reconocida o cualificada que reúna los requisitos exigidos por la legislación de certificado electrónico.",
+      "D": "Podrán identificarse mediante el uso de un sello electrónico basado en un certificado electrónico reconocido o cualificado que reúna los requisitos exigidos por la legislación de firma electrónica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 15,
+    "pregunta": "Conforme al artículo 5 de la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales, ¿quiénes están sujetos al deber de confidencialidad?",
+    "opciones": {
+      "A": "Todos los ciudadanos.",
+      "B": "Los funcionarios públicos en ejercicio de sus funciones.",
+      "C": "Los delegados de prevención de riesgos laborales.",
+      "D": "Los responsables y encargados del tratamiento de datos, así como todas las personas que intervengan en cualquier fase de este."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 16,
+    "pregunta": "Señale la respuesta correcta en relación con el artículo 2 del Código Civil:",
+    "opciones": {
+      "A": "Las leyes entrarán en vigor a los quince días de su completa publicación en el Boletín Oficial del Estado, si en ellas no se dispone otra cosa.",
+      "B": "Las leyes entrarán en vigor a los veinte días de su completa publicación en el Boletín Oficial del Estado, si en ellas no se dispone otra cosa.",
+      "C": "Las leyes entrarán en vigor a los treinta días de su completa publicación en el Boletín Oficial del Estado, si en ellas no se dispone otra cosa.",
+      "D": "Las leyes entrarán en vigor al día siguiente de su completa publicación en el Boletín Oficial del Estado, si en ellas no se dispone otra cosa."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 17,
+    "pregunta": "Conforme al artículo 48 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, son anulables los actos de la Administración:",
+    "opciones": {
+      "A": "Contrarios al ordenamiento jurídico por los que se adquieren facultades o derechos cuando se carezca de los requisitos esenciales para su adquisición.",
+      "B": "Los dictados por órgano manifiestamente incompetente por razón de la materia o del territorio.",
+      "C": "Que incurran en cualquier infracción del ordenamiento jurídico, incluso la desviación de poder.",
+      "D": "Los dictados prescindiendo total y absolutamente del procedimiento legalmente establecido."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 18,
+    "pregunta": "Conforme al artículo 114 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, ponen fin a la vía administrativa:",
+    "opciones": {
+      "A": "Las resoluciones que acuerden la aplicación de medidas provisionales.",
+      "B": "Los actos emanados de los órganos directivos con nivel de Subdirector General, en relación con las competencias que tengan atribuidas en materia de personal.",
+      "C": "Las resoluciones de órganos administrativos, salvo que una disposición legal o reglamentaria disponga lo contrario.",
+      "D": "Los acuerdos, pactos, convenios o contratos que tengan la consideración de finalizadores del procedimiento."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 19,
+    "pregunta": "De acuerdo con el artículo 87 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, antes de dictar resolución, el órgano competente para resolver podrá decidir, mediante acuerdo motivado, la realización de actuaciones complementarias indispensables para resolver el procedimiento. Dichas actuaciones complementarias deberán practicarse en un plazo:",
+    "opciones": {
+      "A": "De siete días.",
+      "B": "De veinte días.",
+      "C": "No inferior a diez días ni superior a quince días.",
+      "D": "No superior a quince días."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 20,
+    "pregunta": "Según el artículo 102 de la Ley 9/2017, de 8 de noviembre, de Contratos del Sector Público en relación con la revisión de precios en los contratos celebrados con precios provisionales:",
+    "opciones": {
+      "A": "Podrá admitirse la revisión de precios siempre que el período de recuperación de la inversión sea inferior a cinco años.",
+      "B": "Podrá admitirse la revisión de precios siempre que el período de recuperación de la inversión sea igual o superior a cinco años.",
+      "C": "Podrá admitirse la revisión de precios cuando el contrato se hubiese ejecutado, al menos, en el 20 por ciento de su importe y hubiese transcurrido un año desde su formalización.",
+      "D": "No cabrá la revisión de precios."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 21,
+    "pregunta": "Según el artículo 2.4 de la Ley 38/2003, de 17 de noviembre, General de Subvenciones, no tienen carácter de subvenciones:",
+    "opciones": {
+      "A": "Las otorgadas como consecuencia de la Política Agrícola Común.",
+      "B": "Las que financien proyectos relacionados con la ciencia y la tecnología.",
+      "C": "Los beneficios fiscales y beneficios en la cotización a la Seguridad Social.",
+      "D": "Las destinadas a fomentar actividades de interés social."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 22,
+    "pregunta": "Conforme al artículo 32.8 de la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, ¿a quién le corresponde fijar el importe de las indemnizaciones que proceda abonar cuando el Tribunal Constitucional haya declarado, a instancia de parte interesada, la existencia de un funcionamiento anormal en la tramitación de los recursos de amparo o de las cuestiones de inconstitucionalidad?",
+    "opciones": {
+      "A": "Al Ministerio de Justicia.",
+      "B": "Al Consejo de Ministros.",
+      "C": "Al Consejo de Estado.",
+      "D": "Al Tribunal Constitucional."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 23,
+    "pregunta": "Según el artículo 5 de la Ley 4/2023, de 28 de febrero, para la igualdad real y efectiva de las personas trans y para la garantía de los derechos de las personas LGTBI, los poderes públicos:",
+    "opciones": {
+      "A": "Fomentarán el reconocimiento institucional y la participación en los actos conmemorativos de la lucha por la igualdad real y efectiva de las personas LGTBI.",
+      "B": "Podrán adoptar las medidas necesarias para limitar la diversidad en materia de orientación sexual de las personas LGTBI.",
+      "C": "Podrán adoptar las medidas necesarias para poner en valor la identidad cultural y religiosa de las personas LGTBI.",
+      "D": "Podrán adoptar las medidas necesarias para poner en valor la identidad racial y cultural de las personas LGTBI."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 24,
+    "pregunta": "En lo referente al personal laboral, ¿qué es preceptivo de anotación en el Registro Central de Personal conforme al Real Decreto 1405/1986, de 6 de junio, por el que se aprueban el Reglamento del Registro Central de Personal y las normas de coordinación con los de las restantes Administraciones Públicas?",
+    "opciones": {
+      "A": "Tomas de posesión del primer puesto de trabajo y de los sucesivos.",
+      "B": "Bajas temporales y definitivas.",
+      "C": "Adquisición del grado personal y sus modificaciones.",
+      "D": "Reconocimiento de trienios."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 25,
+    "pregunta": "De acuerdo con el artículo 56 del Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público, para poder participar en los procesos selectivos será necesario:",
+    "opciones": {
+      "A": "Poseer nacionalidad española en todo caso.",
+      "B": "Conocimiento de la lengua oficial y cooficial del territorio en el que se encuentre la Administración convocante.",
+      "C": "Tener cumplidos dieciséis años y no exceder, en su caso, de la edad máxima de jubilación forzosa.",
+      "D": "Tener cumplidos dieciocho años y no exceder, en su caso, de la edad máxima de jubilación forzosa."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 26,
+    "pregunta": "De acuerdo con el artículo 62 del Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público, la condición de funcionario de carrera se adquiere, además de por la superación del proceso selectivo, por el cumplimiento del siguiente requisito:",
+    "opciones": {
+      "A": "No se exige ningún requisito adicional.",
+      "B": "Superar un reconocimiento médico que excluya padecer una enfermedad infectocontagiosa.",
+      "C": "Presentar el certificado de penales.",
+      "D": "La toma de posesión dentro del plazo señalado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 27,
+    "pregunta": "De conformidad con el artículo 10 del Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público, se podrá nombrar personal funcionario interino cuando se dé alguna de las siguientes circunstancias:",
+    "opciones": {
+      "A": "La ejecución de programas de carácter temporal, que no podrán tener una duración superior a dos años, ampliable hasta doce meses más por las leyes de Función Pública que se dicten en desarrollo del EBEP.",
+      "B": "El exceso o acumulación de tareas por plazo máximo de doce meses, dentro de un periodo de dieciocho meses.",
+      "C": "La existencia de plazas vacantes, cuando no sea posible su cobertura por funcionarios de carrera, por un máximo de cuatro años.",
+      "D": "La sustitución transitoria de los titulares, durante el tiempo estrictamente necesario."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 28,
+    "pregunta": "De acuerdo con el artículo 3 del Real Decreto 365/1995, de 10 de marzo, por el que se aprueba el Reglamento de Situaciones Administrativas de los Funcionarios Civiles de la Administración General del Estado, los funcionarios de carrera se hallan en situación de servicio activo:",
+    "opciones": {
+      "A": "Cuando acceden a la condición de Diputado o Senador.",
+      "B": "Cuando se encuentren en comisión de servicios.",
+      "C": "Cuando sean transferidos a una comunidad autónoma.",
+      "D": "Cuando estén en expectativa de destino."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 29,
+    "pregunta": "De acuerdo con el artículo 122 del Real Decreto-ley 6/2023, de 19 de diciembre, por el que se aprueban medidas urgentes para la ejecución del Plan de Recuperación, Transformación y Resiliencia en materia de servicio público de justicia, función pública, régimen local y mecenazgo, la carrera profesional horizontal:",
+    "opciones": {
+      "A": "La carrera profesional horizontal tendrá carácter voluntario. En cada grupo o subgrupo de personal funcionario existirán cuatro tramos.",
+      "B": "La carrera profesional horizontal tendrá carácter voluntario. En cada grupo o subgrupo de personal funcionario existirán cinco tramos.",
+      "C": "La carrera profesional horizontal tendrá carácter obligatorio. En cada grupo o subgrupo de personal funcionario existirán cuatro tramos.",
+      "D": "La carrera profesional horizontal tendrá carácter obligatorio. En cada grupo o subgrupo de personal funcionario existirán cinco tramos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 30,
+    "pregunta": "¿Qué actividades están exceptuadas del régimen de incompatibilidades de la Ley 53/1984, de 26 de diciembre, de Incompatibilidades del personal al servicio de las Administraciones Públicas?",
+    "opciones": {
+      "A": "La participación en Tribunales calificadores de pruebas selectivas para ingreso en las Administraciones Públicas.",
+      "B": "El desempeño de un puesto de trabajo en la esfera docente como profesor universitario asociado en régimen de dedicación no superior a la de tiempo parcial.",
+      "C": "La participación superior al 10 por 100 en el capital de las empresas o sociedades.",
+      "D": "El desempeño de cargos de todo orden en empresas concesionarias del sector público, cualquiera que sea la configuración jurídica de aquellas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 31,
+    "pregunta": "De acuerdo con el artículo 5 del Real Decreto Legislativo 4/2000, de 23 de junio, por el que se aprueba el texto refundido de la Ley sobre Seguridad Social de los Funcionarios Civiles del Estado, la Mutualidad General de Funcionarios Civiles del Estado (MUFACE) se integra en el Sector Público Institucional Estatal como:",
+    "opciones": {
+      "A": "Sociedad Mercantil Estatal.",
+      "B": "Consorcio.",
+      "C": "Organismo público.",
+      "D": "Fundación del Sector Público."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 32,
+    "pregunta": "Conforme al artículo 2 del IV Convenio Único para el personal laboral de la Administración General del Estado, quedan excluidos del ámbito de aplicación del Convenio el personal laboral que preste servicios en:",
+    "opciones": {
+      "A": "La Agencia Española de Protección de Datos.",
+      "B": "El Museo Nacional Centro de Arte Reina Sofía.",
+      "C": "La Agencia de Información y Control Alimentarios.",
+      "D": "El personal laboral que presta servicios en el exterior."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 33,
+    "pregunta": "De acuerdo con lo dispuesto en el artículo 215 del Real Decreto Legislativo 8/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley General de la Seguridad Social, en el supuesto de jubilación parcial del personal laboral sujeto al IV Convenio único que tenga reconocida una discapacidad en grado igual o superior al 33 por ciento, ¿qué período de cotización mínimo se deberá acreditar para acceder a la prestación?",
+    "opciones": {
+      "A": "Treinta y tres años.",
+      "B": "Treinta años.",
+      "C": "Veinticinco años.",
+      "D": "Veinte años."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 34,
+    "pregunta": "Según el artículo 37 de la Ley 47/2003, de 26 de noviembre, General Presupuestaria, señale la respuesta correcta en relación con el proyecto de Ley de los Presupuestos Generales del Estado:",
+    "opciones": {
+      "A": "El Gobierno deberá presentar ante el Congreso de los Diputados los Presupuestos Generales del Estado al menos seis meses antes de la expiración de los del año anterior.",
+      "B": "Corresponderá al Ministro de la Presidencia elevar al acuerdo del Gobierno el anteproyecto de la Ley de Presupuestos Generales del Estado.",
+      "C": "Será remitido a las Cortes Generales antes del día 1 de octubre del año anterior al que se refiera.",
+      "D": "Corresponderá al Ministro de Hacienda aprobar el anteproyecto de la Ley de Presupuestos Generales del Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 35,
+    "pregunta": "De conformidad con el artículo 58 de la Ley 47/2003, de 26 de noviembre, General Presupuestaria, ¿mediante qué se financiarán las incorporaciones de crédito que afecten al presupuesto del Estado?",
+    "opciones": {
+      "A": "Baja en el Fondo de Contingencia o baja en otros créditos de operaciones no financieras.",
+      "B": "Baja en el Fondo de Contingencia o baja en otros créditos de operaciones no financieras o remanente de tesorería al fin del ejercicio anterior.",
+      "C": "Baja en el Fondo de Contingencia o remanente de tesorería al fin del ejercicio anterior, o con mayores ingresos sobre los previstos inicialmente.",
+      "D": "Baja en el Fondo de Contingencia, o con mayores ingresos sobre los previstos inicialmente."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 36,
+    "pregunta": "De conformidad con el artículo 2 de la Ley Orgánica 2/1982, de 12 de mayo, del Tribunal de Cuentas, ¿cuál de las siguientes funciones le corresponde al Tribunal de Cuentas?",
+    "opciones": {
+      "A": "El control financiero permanente.",
+      "B": "La fiscalización externa, permanente y consuntiva de la actividad económico-financiera del sector público.",
+      "C": "La función interventora.",
+      "D": "La auditoria pública."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 37,
+    "pregunta": "Según el artículo 23 de la Ley 30/1984, de 2 de agosto, de medidas para la reforma de la Función Pública, señale la respuesta correcta en relación con los conceptos retributivos:",
+    "opciones": {
+      "A": "En el caso de que un funcionario preste sus servicios sucesivamente en diferentes Cuerpos, Escalas, Clases o Categorías de distinto grupo de clasificación, tendrá derecho a seguir percibiendo los trienios devengados en los grupos anteriores.",
+      "B": "Las pagas extraordinarias, que serán de dos al año por un importe mínimo cada una de ellas de una mensualidad del sueldo, se devengarán los meses de junio y diciembre.",
+      "C": "Cuando un funcionario cambie de adscripción a grupo antes de completar un trienio, la fracción de tiempo transcurrido se considerará como tiempo de servicios prestados en el anterior grupo.",
+      "D": "El complemento específico está destinado a retribuir el especial rendimiento, la actividad extraordinaria y el interés o iniciativa con que el funcionario desempeñe su trabajo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 38,
+    "pregunta": "Según el artículo 10 del Real Decreto 640/1987, de 8 de mayo, sobre pagos librados «a justificar», ¿cuándo deberán justificar los Cajeros pagadores la aplicación de las cantidades recibidas?",
+    "opciones": {
+      "A": "Dentro del mes siguiente a la inversión de las mismas y en todo caso en el plazo de tres meses desde la percepción de los correspondientes fondos.",
+      "B": "Como mínimo en las primeras quincenas de los meses de enero, abril, julio y octubre.",
+      "C": "Dentro del mes siguiente a la inversión de las mismas y en todo caso en el plazo de seis meses desde la percepción de los correspondientes fondos.",
+      "D": "Dentro de los tres meses siguientes a la inversión de las mismas y en todo caso en el plazo de seis meses desde la percepción de los correspondientes fondos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 39,
+    "pregunta": "De acuerdo con la regla 42 de la Orden del Ministerio de Economía y Hacienda, de 1 de febrero de 1996, por la que se aprueba la Instrucción de operatoria contable a seguir en la ejecución del gasto del Estado, en la tramitación anticipada de expedientes de contratación:",
+    "opciones": {
+      "A": "El Servicio gestor competente para la tramitación del gasto expedirá un documento RC de \"ejercicio corriente\" y un RC de \"ejercicios posteriores\" detallando el importe que del gasto en cuestión corresponde a cada uno de los ejercicios posteriores afectados.",
+      "B": "El Servicio gestor competente para la tramitación del gasto expedirá un documento RC de \"ejercicios posteriores\" detallando el importe que del gasto en cuestión corresponde a cada uno de los ejercicios posteriores afectados.",
+      "C": "El Servicio gestor competente para la tramitación del gasto expedirá un documento RC de \"tramitación anticipada\" detallando el importe que del gasto en cuestión corresponde a cada uno de los ejercicios posteriores afectados.",
+      "D": "El Servicio gestor competente para la tramitación del gasto expedirá un documento RC de \"ejercicio corriente\" y un RC de \"tramitación anticipada\" detallando el importe que del gasto en cuestión corresponde a cada uno de los ejercicios posteriores afectados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 40,
+    "pregunta": "De acuerdo con el artículo 10 de la Ley 38/2003, de 17 de noviembre, General de Subvenciones, ¿quién tiene la competencia para la concesión de una subvención de cuantía de 10 millones de euros en un Organismo Autónomo?",
+    "opciones": {
+      "A": "El Presidente o Director del Organismo Autónomo, sin que esta competencia pueda ser objeto de desconcentración.",
+      "B": "El Presidente o Director del Organismo Autónomo previa autorización del Consejo de Ministros, sin que esta competencia pueda ser objeto de desconcentración.",
+      "C": "El Presidente o Director del Organismo Autónomo; esta competencia podrá ser objeto de desconcentración.",
+      "D": "El Presidente o Director del Organismo Autónomo previa autorización del Consejo de Ministros; esta competencia podrá ser objeto de desconcentración."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 41,
+    "pregunta": "¿Cuál de las siguientes definiciones corresponde a un procesador?",
+    "opciones": {
+      "A": "Unidad funcional de una computadora u otro dispositivo electrónico que se encarga de la búsqueda, interpretación y ejecución de instrucciones.",
+      "B": "Unidad de información compuesta generalmente de ocho bits.",
+      "C": "Conjunto unitario de instrucciones que permite a una computadora realizar funciones diversas, como el tratamiento de textos, el diseño de gráficos, la resolución de problemas matemáticos, el manejo de bancos de datos, etc.",
+      "D": "Dispositivo de memoria de gran capacidad integrado en la computadora o en otro dispositivo electrónico, o conectado a ellos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 42,
+    "pregunta": "¿Cuál de los siguientes sistemas de seguridad tiene como función específica detectar y eliminar software de tipo malware?",
+    "opciones": {
+      "A": "Gestor de contraseñas.",
+      "B": "Firewall.",
+      "C": "Antivirus.",
+      "D": "VPN (Red Privada Virtual)."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 43,
+    "pregunta": "¿Cuál de los siguientes elementos realiza la función de guardar de forma temporal todos los programas y sus procesos de ejecución?",
+    "opciones": {
+      "A": "Disipador.",
+      "B": "CPU.",
+      "C": "Tarjeta gráfica.",
+      "D": "Memoria RAM."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 44,
+    "pregunta": "Si un programa está utilizando 30 GB, ¿cuántos KB está utilizando?",
+    "opciones": {
+      "A": "300.000 KB.",
+      "B": "3.000 KB.",
+      "C": "3.000.000 KB.",
+      "D": "30.000.000 KB."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 45,
+    "pregunta": "¿Cuál de las siguientes opciones permite acceder a las notificaciones de Windows 11?",
+    "opciones": {
+      "A": "Las notificaciones están en la sección Accesibilidad de la Configuración, a la que se accede desde el menú de Inicio de Windows.",
+      "B": "Las notificaciones están en el Centro de actividades, al que se acceden haciendo clic en el icono del Área de calendario y notificación en la esquina inferior derecha de la barra de tareas.",
+      "C": "Las notificaciones están disponibles en el accesorio Noticias, al que se accede desde el menú de Inicio de Windows.",
+      "D": "Las notificaciones están en el Menú de Windows, al que se accede en el icono de la barra de tareas o mediante la tecla Windows."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 46,
+    "pregunta": "¿Cuál es la función principal de Microsoft 365 Copilot en el entorno laboral?",
+    "opciones": {
+      "A": "Funcionar como una herramienta con tecnología de inteligencia artificial que genera respuestas en tiempo real basadas en datos de la organización e Internet.",
+      "B": "Gestionar de forma autónoma la seguridad de la red sin intervención del administrador de tecnología de la información.",
+      "C": "Servir como un sistema de almacenamiento de archivos en la nube con funciones de autoguardado.",
+      "D": "Proveer un catálogo de aplicaciones centralizado que permite buscar, descargar e instalar aplicaciones, juegos, películas y extensiones de forma segura."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 47,
+    "pregunta": "Señale cuál de las siguientes afirmaciones referidas a la búsqueda de Windows 11 es correcta:",
+    "opciones": {
+      "A": "Windows Search busca en la web y los archivos, pero no busca en la configuración ni en aplicaciones y también puede incluir contenido de OneDrive, SharePoint, Outlook y Bing si se autoriza por el usuario.",
+      "B": "Windows Search busca en la web, las aplicaciones, la configuración y los archivos, pero no incluye OneDrive, SharePoint o Outlook.",
+      "C": "Windows Search busca en la web las aplicaciones, la configuración y los archivos y también puede incluir contenido de OneDrive, SharePoint, Outlook, Bing y otros servicios y aplicaciones si se autoriza por el usuario.",
+      "D": "Windows Search solo busca en la web y los archivos almacenados en el dispositivo, incluyendo los de OneDrive solo si están sincronizados y almacenados en local, pero no realiza ninguna búsqueda en localizaciones externas al dispositivo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 48,
+    "pregunta": "¿Cuál de los siguientes grupos de diseños de vista del Explorador de archivos de Windows 11 tiene todos los elementos correctos?",
+    "opciones": {
+      "A": "Iconos muy grandes – Contenido – Iconos muy pequeños.",
+      "B": "Lista – Detalles – Iconos medianos.",
+      "C": "Iconos muy pequeños – Extendido – Mosaico.",
+      "D": "Mosaico – Iconos medianos – Extendido."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 49,
+    "pregunta": "Hacemos un clic derecho de ratón sobre \"Este equipo\" en el Panel de navegación del Explorador de archivos de Windows 11 y seleccionamos la opción Propiedades. ¿Cuál de las siguientes opciones es la que se abre con esta acción?",
+    "opciones": {
+      "A": "La ventana Propiedades del disco local C:",
+      "B": "La Configuración de Windows en el apartado de Sistema.",
+      "C": "La ventana de Administración de equipos.",
+      "D": "El asistente para agregar una ubicación de red."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 50,
+    "pregunta": "¿Cuál es la funcionalidad del Accesorio de Windows 11 \"Asistencia rápida\"?",
+    "opciones": {
+      "A": "Abrir una incidencia en el servicio de Soporte Técnico de Microsoft.",
+      "B": "Acceder al sitio web que aloja la base de conocimientos (knowledge base) de Windows, con las preguntas y respuestas más habituales sobre el sistema operativo.",
+      "C": "Permitir el acceso remoto y toma de control de nuestro dispositivo a otra persona, así como solicitar a otra persona que comparta su pantalla con nosotros.",
+      "D": "Acceder a la configuración de la cuenta de Windows registrada en el sistema operativo, en la página de contraseñas guardadas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 51,
+    "pregunta": "En Word 365, a la siguiente línea de texto \"El río Ebro.\" se le han aplicado varios formatos. ¿Cuál de las siguientes respuestas indicadas recoge de forma correcta estos formatos aplicados?",
+    "opciones": {
+      "A": "Fuente en cursiva y con espaciado extendido.",
+      "B": "Fuente en cursiva y superíndice.",
+      "C": "Fuente doble tachado y con espaciado extendido.",
+      "D": "Fuente con espaciado comprimido y versalitas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 52,
+    "pregunta": "En Word 365, se han insertado notas al final en las siguientes palabras: Tajo y Duero. ¿Cuál de los siguientes es el comportamiento resultante de situar el ratón sobre los símbolos que referencian las notas junto a las palabras?",
+    "opciones": {
+      "A": "Dirige el cursor de texto a la posición donde está la nota.",
+      "B": "Aparece un cuadro emergente con el texto añadido a la nota.",
+      "C": "No ocurre nada, es necesario hacer clic con el ratón para disparar cualquier evento.",
+      "D": "Se sustituye temporalmente el texto de la palabra reseñada por el texto de la nota."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 53,
+    "pregunta": "Señale la respuesta correcta sobre la función Transcribir de Word 365:",
+    "opciones": {
+      "A": "Los usuarios con una suscripción a Microsoft 365 pueden transcribir un máximo de 600 minutos de audio cargado al mes.",
+      "B": "Las grabaciones se almacenarán en la carpeta Archivos transcritos en Google Drive.",
+      "C": "Se puede transcribir la voz grabando directamente en Word o cargando un archivo de audio.",
+      "D": "Convierte la voz en una transcripción de texto sin distinguir ni separar a los diferentes oradores."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 54,
+    "pregunta": "Se necesita imprimir un documento Word 365 pero sin incluir las marcas de revisión. ¿Qué ajuste se debe realizar para poder imprimir sin necesidad de aceptar todos los cambios?",
+    "opciones": {
+      "A": "Cambiar la orientación de la página de Vertical a Horizontal para que los comentarios se desplacen fuera del área de impresión.",
+      "B": "Cambiar la vista del documento a Modo de lectura antes imprimir.",
+      "C": "En la pestaña Revisar y seleccionar \"Aceptar todos los cambios\", ya que Word 365 siempre imprime las marcas de revisión.",
+      "D": "En el menú de Configuración de impresión, desmarcar la casilla \"Imprimir documento con revisiones\"."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 55,
+    "pregunta": "En una celda de Excel 365 tenemos la siguiente fórmula: =FILAS(Registros[Fecha]). Si el resultado que muestra es 5, indique cuál es el funcionamiento de la fórmula:",
+    "opciones": {
+      "A": "Establece para las filas seleccionadas de la tabla Registros el formato de fecha.",
+      "B": "Devuelve la diferencia de días en las fechas de la columna Registros.",
+      "C": "Establece un máximo de filas, en este caso 5, admisibles en la columna Fecha.",
+      "D": "Devuelve el número de filas de la columna Fecha en la tabla Registros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 56,
+    "pregunta": "En Excel 365, ¿cuál de los siguientes valores es correcto si aplicamos el siguiente formato de fecha a una celda: dd/mmm/aa?",
+    "opciones": {
+      "A": "11/agosto/24",
+      "B": "11/agosto/2024",
+      "C": "Once de agosto del año 2024",
+      "D": "11/ago/24"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 57,
+    "pregunta": "En Excel 365, al trabajar con rangos, ¿cuál de las siguientes opciones describe correctamente un rango discontinuo?",
+    "opciones": {
+      "A": "B2:B2",
+      "B": "$B$2:$C$4",
+      "C": "B2:C4",
+      "D": "B2:C2;B4:C4"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 58,
+    "pregunta": "¿Qué función de Excel 365 se encarga de invertir el valor lógico de su argumento?",
+    "opciones": {
+      "A": "NO",
+      "B": "CAMBIAR",
+      "C": "ESLOGICO",
+      "D": "MINVERSA"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 59,
+    "pregunta": "Vemos el siguiente número en un campo de Access 365: 2.345,68. ¿Cuál de los siguientes formatos de campo se ha utilizado?",
+    "opciones": {
+      "A": "Numero general.",
+      "B": "Moneda.",
+      "C": "Estándar.",
+      "D": "Porcentaje."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 60,
+    "pregunta": "En la vista de Diseño de consultas en Access 365 hemos seleccionado el campo llamado \"Fecha Alta\" e incluimos como criterio para el campo el texto: [Fecha de Alta], ¿cuál de las siguientes opciones describe correctamente el efecto que produce esta acción al ejecutar la consulta?",
+    "opciones": {
+      "A": "Filtra la consulta por los registros que tienen algún dato en el campo \"Fecha Alta\".",
+      "B": "En el resultado de la consulta sustituye el valor del campo \"Fecha Alta\" por el texto \"Fecha de Alta\" en todos los registros.",
+      "C": "Aparecerá la ventana \"Introduzca el valor del parámetro\", con el texto \"Fecha de Alta\", solicitando una fecha para filtrar el resultado de la consulta por el campo \"Fecha Alta\".",
+      "D": "No producirá ninguna acción ya que el nombre del campo y el texto incluido en el criterio son diferentes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 61,
+    "pregunta": "En el diseño del formulario de Access 365 podemos seleccionar el Orden automático para definir el orden de desplazamiento entre los campos. ¿Cuál será ese orden?",
+    "opciones": {
+      "A": "De derecha a izquierda y de arriba hacia abajo.",
+      "B": "De izquierda a derecha y de arriba hacia abajo.",
+      "C": "De derecha a izquierda y de abajo hacia arriba.",
+      "D": "De izquierda a derecha y de abajo hacia arriba."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 62,
+    "pregunta": "En Access 365, ¿cuál es el tamaño máximo que puede almacenar un campo de tipo \"Datos adjuntos\" en una tabla?",
+    "opciones": {
+      "A": "Hasta 2 GB.",
+      "B": "Solo lo limita el espacio disponible en el disco duro.",
+      "C": "255 caracteres.",
+      "D": "64 bytes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 63,
+    "pregunta": "¿Cuál de las siguientes afirmaciones es la correcta con respecto a los correos electrónicos?",
+    "opciones": {
+      "A": "No se pueden enviar mensajes de correo electrónico entre dos PCs sin la intervención de un servidor de correo.",
+      "B": "Una dirección de correo electrónico podría no hacer uso de la arroba (@).",
+      "C": "Es posible enviar correos electrónicos entre dos terminales de una computadora central, sin la participación de esta.",
+      "D": "El envío de un correo electrónico no requiere del uso de un protocolo de comunicaciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 64,
+    "pregunta": "Queremos dar permiso a otro usuario sobre una carpeta en particular de Outlook 365 clásico. ¿Qué nivel de permisos debemos darle si queremos que pueda crear nuevos elementos, pero no pueda leer ni editar los elementos ya creados en la carpeta?",
+    "opciones": {
+      "A": "Autor de publicación.",
+      "B": "Revisor.",
+      "C": "Colaborador.",
+      "D": "Editor."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 65,
+    "pregunta": "En Outlook 365, en la barra de búsqueda escribimos el texto: cc:\"Ana Muñoz\", ¿cuál de las siguientes opciones indica de forma correcta qué mensajes devolverá la búsqueda de Outlook?",
+    "opciones": {
+      "A": "Devolverá los elementos en los que la dirección de correo electrónico tenga como nombre anamunoz, (por ejemplo, anamunoz@outlook.com), en la línea cc (con copia).",
+      "B": "No devolverá ningún elemento ya que buscará aquellos que en la línea cc (con copia), tengan en la dirección de correo el texto Ana Muñoz, lo que no es correcto en una dirección de correo.",
+      "C": "Devolverá los elementos en los que Ana Muñoz está en la línea cc (con copia), solo si tenemos este nombre, con el correo electrónico, entre nuestros contactos de Outlook.",
+      "D": "Devolverá los elementos en los que el nombre Ana Muñoz esté en la línea cc (con copia)."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 66,
+    "pregunta": "En Outlook 365 creamos un grupo para un equipo de trabajo de varios integrantes, ¿cuál de las siguientes opciones es correcta con respecto a la recepción de mensajes de correo?",
+    "opciones": {
+      "A": "No se genera ninguna dirección de correo específica, pero todos los mensajes que se envíen a algún integrante del grupo serán reenviados al resto de los componentes.",
+      "B": "El correo del integrante que ha creado el grupo queda como correo del grupo. Esta persona posteriormente podrá aplicar reglas de reenvío a otros integrantes del grupo, según su criterio.",
+      "C": "Al crear el grupo se genera una dirección de correo del grupo, habilitado para recibir mensajes. No importa si el grupo es público o privado, cualquiera puede enviar mensajes al correo del grupo que serán distribuidos a todos sus integrantes.",
+      "D": "Al crear el grupo se genera una dirección de correo del grupo habilitado para recibir mensajes. Si el grupo es público, cualquiera puede enviar mensajes al correo del grupo, que serán distribuidos a todos sus integrantes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 67,
+    "pregunta": "¿Es posible anclar un sitio web al menú Inicio utilizando Microsoft Edge de Windows 11?",
+    "opciones": {
+      "A": "No es posible, ya que en el menú Inicio sólo se pueden anclar aplicaciones de productividad.",
+      "B": "No es posible, ya que los sitios web solo pueden guardarse como marcadores o favoritos en el navegador.",
+      "C": "Sí es posible, haciendo clic en Configuración y más, luego Favoritos, y por último Anclar a Inicio.",
+      "D": "Sí es posible, haciendo clic en Configuración y más, luego Más herramientas, y por último Anclar a Inicio."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 68,
+    "pregunta": "¿En cuál de los siguientes tipos de web se da por supuesto el uso de Inteligencia Artificial?",
+    "opciones": {
+      "A": "Página web dinámica.",
+      "B": "Página de Inicio.",
+      "C": "Web 4.0.",
+      "D": "World Wide Web."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 69,
+    "pregunta": "¿Cuál de los siguientes términos hace referencia a una práctica ilegal en la mayoría de los sistemas legales e implica enviar comunicaciones masivas no solicitadas por medios como correo electrónico, mensajes instantáneos, de texto (SMS), redes sociales o incluso mensajes de voz?",
+    "opciones": {
+      "A": "Dumping.",
+      "B": "Spamming.",
+      "C": "Streaming.",
+      "D": "Malware."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 70,
+    "pregunta": "Cuál de los siguientes términos corresponde a la siguiente descripción: \"Estación de trabajo existente en forma virtual que está separada de los dispositivos físicos que la utilizan. Se puede acceder, por ejemplo, a través de conexiones WiFi\".",
+    "opciones": {
+      "A": "Servicio web.",
+      "B": "Escritorio virtual.",
+      "C": "Sistema de detección de intrusiones.",
+      "D": "Web semántica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 71,
+    "pregunta": "De acuerdo con el anexo I de la Orden de 1 de febrero de 1996 por la que se aprueban los documentos contables a utilizar por la Administración General del Estado modificada por la Orden HAC/965/2024, en las subvenciones en régimen de concurrencia:",
+    "opciones": {
+      "A": "Una vez aprobado el acuerdo de concesión, se indicará como fecha de gasto la fecha en la que se tenga constancia documental de que el beneficiario ha cumplido las condiciones para el pago de la subvención.",
+      "B": "Una vez aprobado el acuerdo de concesión, se indicará como fecha de gasto la fecha en la que el beneficiario haya realizado la actividad subvencionable.",
+      "C": "Una vez aprobado el acuerdo de concesión, se indicará como fecha de gasto la fecha en la que el beneficiario haya realizado la actividad subvencionable o en la que se tenga constancia documental de dicha realización.",
+      "D": "Una vez aprobado el acuerdo de concesión, se indicará como fecha de gasto la fecha en la que el beneficiario haya iniciado la actividad subvencionable."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 72,
+    "pregunta": "En Access 365, en la vista Diseño tenemos una consulta con información de los empleados públicos de un Departamento Ministerial. Necesitamos identificar los funcionarios de carrera (campo Tipo_empleado_publico) que cumplan una de estas dos condiciones: aquellos cuya toma de posesión sea posterior al 01/01/2024 (campo Toma_posesion) o aquellos que su nivel de complemento de destino sea igual o superior a 28 (campo Nivel). ¿Cómo deben configurarse los criterios?",
+    "opciones": {
+      "A": "En la fila Criterios del campo Tipo_empleado_publico, escribimos \"Funcionario de carrera\" y en la fila Criterios del campo Toma_posesion, escribimos >#01/01/2024#. En la fila inferior (o:), repetimos \"Funcionario de carrera\" en la fila Criterios del campo Tipo_empleado_publico y, en Criterios del campo Nivel, escribimos >=28.",
+      "B": "En la fila Criterios del campo Tipo_empleado_publico, escribimos \"Funcionario de carrera\" y en el campo Toma_posesion, escribimos >#01/01/2024#. En la fila Criterios del campo Nivel, escribimos >=28.",
+      "C": "En la fila Criterios del campo Tipo_empleado_publico, escribimos \"Funcionario de carrera\" y en el campo Toma_posesion, escribimos >*01/01/2024*. En la fila inferior (o:), repetimos \"Funcionario de carrera\" en el campo Tipo_empleado_publico y, en el campo Nivel, escribimos <=28.",
+      "D": "En la fila Criterios del campo Tipo_empleado_publico, escribimos \"Funcionario de carrera\". En la fila inferior (o:), el campo Toma_posesion escribimos >#01/01/2024#, y en el campo Nivel, escribimos >=28."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 73,
+    "pregunta": "Según el artículo 3 del Tratado de Funcionamiento de la Unión Europea, ¿en qué ámbitos la Unión Europea dispondrá de competencia exclusiva?",
+    "opciones": {
+      "A": "Para la celebración de cualquier acuerdo internacional.",
+      "B": "En la conservación de los recursos biológicos marinos dentro de las políticas pesqueras de los Estados miembros.",
+      "C": "En la política comercial de los Estados miembros cuya moneda es el euro.",
+      "D": "En el establecimiento de las normas sobre competencia necesarias para el funcionamiento del mercado interior."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 74,
+    "pregunta": "Señale la respuesta correcta en relación con la práctica de las notificaciones electrónicas reguladas en el artículo 43 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas:",
+    "opciones": {
+      "A": "Las notificaciones por medios electrónicos se entenderán practicadas en el momento en que se produzca el acceso a su contenido.",
+      "B": "Cuando la notificación por medios electrónicos sea de carácter obligatorio o haya sido expresamente elegida por el interesado, se entenderá rechazada cuando hayan transcurrido cinco días naturales desde la puesta a disposición de la notificación sin que se acceda a su contenido.",
+      "C": "Los interesados deberán acceder a las notificaciones desde el Punto de Acceso General electrónico de la Administración, que funcionará como un portal de acceso.",
+      "D": "Las notificaciones por medios electrónicos se practicarán mediante notificación en la carpeta ciudadana."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 75,
+    "pregunta": "Conforme al artículo 107 de la Constitución Española, el supremo órgano consultivo del Gobierno es:",
+    "opciones": {
+      "A": "El Congreso de los Diputados.",
+      "B": "El Consejo Supremo Consultivo.",
+      "C": "El Consejo de Estado.",
+      "D": "La Comisión Consultiva del Gobierno."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  }
+]
