@@ -38,8 +38,11 @@
         Volver a Zona Opositor
       </button>
     </div>
-    <div id="sidebar-overlay" class="sidebar-overlay"></div>
   </div>
+  <!-- Hermano de .tutor-sidebar (no hijo): si estuviera anidado dentro,
+       al ser position:fixed a pantalla completa se pintaría encima de la
+       propia lista de conversaciones y bloquearía los clics sobre ella. -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
   <!-- Contenido principal -->
   <div class="tutor-box">
