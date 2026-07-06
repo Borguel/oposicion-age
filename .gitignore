@@ -197,7 +197,7 @@ cython_debug/
 clave-firebase.json
 
 # cargar_temario_boe.py generated artifacts
-cache_paginas_pdf.pkl
+cache_paginas_*.pkl
 preview_temario.json
 
 # Node / Playwright (tests-frontend)
