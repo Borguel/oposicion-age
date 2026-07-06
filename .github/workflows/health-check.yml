@@ -5,7 +5,12 @@ on:
     # Cada 10 minutos: además de servir de monitor de disponibilidad (si
     # este workflow falla, GitHub avisa por email automáticamente al dueño
     # del repositorio), mantiene "despierto" el backend en el plan gratuito
-    # de Render, que lo duerme tras un rato sin peticiones.
+    # de Render, que lo duerme tras un rato sin peticiones. En la práctica,
+    # GitHub retrasa bastante el disparo de "schedule" en repos con poca
+    # actividad (huecos reales de ~1h en vez de 10 min), así que Render
+    # puede llegar a dormirse entre comprobaciones -- por eso el timeout de
+    # abajo tiene que aguantar un arranque en frío completo, no solo un
+    # backend ya despierto.
     - cron: "*/10 * * * *"
   workflow_dispatch:
 
@@ -15,5 +20,5 @@ jobs:
     steps:
       - name: Llamar a /health
         run: |
-          curl -sS --max-time 20 --fail-with-body \
+          curl -sS --max-time 90 --fail-with-body \
             "${{ vars.BACKEND_URL || 'https://oposicion-age.onrender.com' }}/health"
