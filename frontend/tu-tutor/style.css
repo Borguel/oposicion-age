@@ -303,8 +303,13 @@ html { scroll-behavior: smooth; }
   word-break: break-word;
   border: 1px solid var(--age-border);
 }
-.bubble-bot h3 { margin: 0 0 8px; font-size: 16px; color: var(--age-ink); }
-.bubble-bot p { margin: 0 0 6px; }
+.bubble-bot h3 { margin: 10px 0 6px; font-size: 16px; color: var(--age-ink); }
+.bubble-bot h3:first-child { margin-top: 0; }
+.bubble-bot p { margin: 0 0 8px; }
+.bubble-bot p:last-child { margin-bottom: 0; }
+.bubble-bot ul { margin: 0 0 8px; padding-left: 20px; }
+.bubble-bot li { margin-bottom: 4px; }
+.bubble-bot strong { color: var(--age-ink); }
 .avatar-bot-mini img {
   width: 26px;
   height: 26px;

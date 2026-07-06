@@ -48,7 +48,7 @@ def test_pregunta_generica_sobre_el_proceso_selectivo_no_activa_rag(db):
     mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
     system_prompt = mensajes_enviados[0]["content"]
     user_prompt = mensajes_enviados[1]["content"]
-    assert "Asistente Premium de Oposición" in system_prompt
+    assert "Tu Tutor" in system_prompt
     assert user_prompt == "¿Qué consejos me das para no rendirme antes del examen?"
 
 

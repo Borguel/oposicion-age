@@ -20,6 +20,50 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m]);
 }
 
+// Markdown ligero para las respuestas de la IA: escapa todo el HTML primero
+// (nunca se inyecta HTML crudo del modelo) y luego traduce solo la sintaxis
+// básica que el modelo suele usar (encabezados, negrita, cursiva, listas) a
+// las mismas etiquetas que ya tiene estilizadas .bubble-bot en el CSS.
+function formatearMensajeBot(texto) {
+  const lineas = escapeHtml(texto).split("\n");
+  let html = "";
+  let dentroDeLista = false;
+  const cerrarLista = () => {
+    if (dentroDeLista) {
+      html += "</ul>";
+      dentroDeLista = false;
+    }
+  };
+  for (const lineaOriginal of lineas) {
+    const linea = lineaOriginal.trim();
+    const encabezado = linea.match(/^#{1,6}\s+(.*)$/);
+    const item = linea.match(/^[-*]\s+(.*)$/);
+    if (encabezado) {
+      cerrarLista();
+      html += `<h3>${aplicarEnfasis(encabezado[1])}</h3>`;
+    } else if (item) {
+      if (!dentroDeLista) {
+        html += "<ul>";
+        dentroDeLista = true;
+      }
+      html += `<li>${aplicarEnfasis(item[1])}</li>`;
+    } else if (linea === "") {
+      cerrarLista();
+    } else {
+      cerrarLista();
+      html += `<p>${aplicarEnfasis(linea)}</p>`;
+    }
+  }
+  cerrarLista();
+  return html;
+}
+
+function aplicarEnfasis(texto) {
+  return texto
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
 function copyToClipboard(text) {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).catch(console.error);
@@ -138,7 +182,7 @@ document.addEventListener("DOMContentLoaded", function () {
           <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Tu Tutor" />
         </div>
         <div class="bubble-bot">
-          ${safeText}
+          ${formatearMensajeBot(texto)}
           <div class="bubble-bot-actions"><button type="button" class="btn-copiar-mensaje" title="Copiar">📋</button></div>
         </div>
       `;
