@@ -111,11 +111,16 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   document.addEventListener("click", (e) => {
+    // toggleSidebar.contains(e.target) (no "!== toggleSidebar") porque el
+    // icono es un <svg> con <path> hijos: al tocarlo, e.target es ese
+    // <path>/<svg> interior, no el propio <button>, así que compararlo por
+    // igualdad estricta hacía que este mismo clic que abría la barra la
+    // volviera a cerrar en el acto.
     if (
       window.innerWidth <= 950 &&
       chatSidebar.classList.contains("visible") &&
       !chatSidebar.contains(e.target) &&
-      e.target !== toggleSidebar
+      !toggleSidebar.contains(e.target)
     ) {
       closeSidebar();
     }
