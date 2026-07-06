@@ -260,7 +260,10 @@ def extraer_texto_normas(paginas, sumario, offset):
     return textos
 
 
-def dividir_en_subbloques(texto, max_tokens=MAX_TOKENS_SUBBLOQUE):
+PATRON_ARTICULO = re.compile(r"Art[íi]culo\s+(\d+)\s*(?:bis|ter)?\.")
+
+
+def _trocear_por_parrafos_o_lineas(texto, max_tokens):
     # PyPDF2 extrae el texto línea a línea sin líneas en blanco entre
     # párrafos, así que re.split(r"\n\s*\n", ...) casi nunca encuentra un
     # corte y una norma entera (a veces cientos de miles de caracteres)
@@ -295,10 +298,69 @@ def dividir_en_subbloques(texto, max_tokens=MAX_TOKENS_SUBBLOQUE):
     return subbloques
 
 
+def dividir_en_subbloques(texto, max_tokens=MAX_TOKENS_SUBBLOQUE):
+    """Trocea el texto de una norma en subbloques cortando siempre en
+    límites de "Artículo N." completos -- nunca a mitad de un artículo --
+    agrupando artículos consecutivos hasta acercarse a max_tokens. Un
+    corte a mitad de artículo no solo se ve mal: hace que el fragmento
+    mezcle el final de un artículo (de un tema) con el principio del
+    siguiente (de otro), y la clasificación por IA solo puede elegir un
+    tema para todo el fragmento, perdiendo contenido real del tema que
+    "pierde" el reparto. Si la norma no tiene artículos numerados
+    detectables (leyes cortas u otro formato), se cae al troceado
+    anterior por párrafos/líneas. El texto posterior al último artículo
+    (Disposiciones adicionales/transitorias/finales) se anexa al último
+    subbloque en vez de perderse."""
+    coincidencias = list(PATRON_ARTICULO.finditer(texto))
+    if not coincidencias:
+        return [{"texto": sb, "rango_articulos": None} for sb in _trocear_por_parrafos_o_lineas(texto, max_tokens)]
+
+    unidades = []  # (numero_articulo_o_None, texto_unidad)
+    preambulo = texto[:coincidencias[0].start()].strip()
+    if preambulo:
+        unidades.append((None, preambulo))
+    for idx, m in enumerate(coincidencias):
+        numero = int(m.group(1))
+        fin = coincidencias[idx + 1].start() if idx + 1 < len(coincidencias) else len(texto)
+        unidades.append((numero, texto[m.start():fin].strip()))
+
+    subbloques = []
+    actual = []
+    tokens_actual = 0
+    articulos_actual = []
+
+    def cerrar_subbloque():
+        if actual:
+            numeros = [n for n in articulos_actual if n is not None]
+            rango = f"{numeros[0]}-{numeros[-1]}" if numeros else None
+            subbloques.append({"texto": "\n\n".join(actual), "rango_articulos": rango})
+
+    for numero, unidad_texto in unidades:
+        tokens_unidad = contar_tokens(unidad_texto)
+        if tokens_unidad > max_tokens:
+            # Un solo artículo más largo que max_tokens (rarísimo): se
+            # trocea por párrafo interno, no por caracteres a ciegas, para
+            # no reintroducir el mismo problema dentro del artículo.
+            cerrar_subbloque()
+            actual, tokens_actual, articulos_actual = [], 0, []
+            rango_unico = str(numero) if numero is not None else None
+            for sb in _trocear_por_parrafos_o_lineas(unidad_texto, max_tokens):
+                subbloques.append({"texto": sb, "rango_articulos": rango_unico})
+            continue
+        if tokens_actual + tokens_unidad > max_tokens and actual:
+            cerrar_subbloque()
+            actual, tokens_actual, articulos_actual = [], 0, []
+        actual.append(unidad_texto)
+        tokens_actual += tokens_unidad
+        articulos_actual.append(numero)
+    cerrar_subbloque()
+    return subbloques
+
+
 # ---------------------------------------------------------------------------
 # 6) Clasificación de cada subbloque bajo el tema del bloque al que pertenece
 # ---------------------------------------------------------------------------
-def clasificar_subbloque(texto_subbloque, bloque_num, norma_titulo=None):
+def clasificar_subbloque(texto_subbloque, bloque_num, norma_titulo=None, rango_articulos=None):
     temas = TEMARIO[bloque_num - 1]["temas"]
     lista_temas = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(temas))
     # Solo el primer subbloque de cada norma conserva el título de la ley en
@@ -306,6 +368,12 @@ def clasificar_subbloque(texto_subbloque, bloque_num, norma_titulo=None):
     # sin ninguna pista de qué ley son, así que se lo indicamos aparte para
     # que la IA no tenga que adivinarlo solo por el contenido.
     contexto_norma = f"Este fragmento pertenece a la norma: \"{norma_titulo}\".\n\n" if norma_titulo else ""
+    # El rango de artículos ayuda a la IA a situar el fragmento dentro de la
+    # norma (p. ej. para saber que "artículos 66-78" cae en el título de las
+    # Cortes Generales, no en el de la Corona) -- ahora que el troceado corta
+    # siempre en límites de artículo (dividir_en_subbloques), este rango
+    # siempre es exacto, nunca a mitad de un artículo.
+    contexto_articulos = f"Este fragmento corresponde a los artículos {rango_articulos} de la norma.\n\n" if rango_articulos else ""
     # No se ofrece la opción de "no encaja en ninguno": es texto legal oficial
     # del BOE y todo tiene que quedar clasificado en algún tema del bloque, aunque
     # sea el que más se le acerque (p. ej. una norma de detalle técnico se cuelga
@@ -315,6 +383,7 @@ def clasificar_subbloque(texto_subbloque, bloque_num, norma_titulo=None):
         f"oficial de una oposición. El bloque es \"{TEMARIO[bloque_num - 1]['bloque']}\", con estos temas:\n\n"
         f"{lista_temas}\n\n"
         f"{contexto_norma}"
+        f"{contexto_articulos}"
         f"Lee este fragmento de texto legal y responde ÚNICAMENTE con el número del tema (1-{len(temas)}) "
         f"con el que más relación tenga, aunque no sea un encaje perfecto. Todo fragmento pertenece a algún "
         f"tema del bloque, así que elige siempre el más cercano. Responde solo el número.\n\n"
@@ -341,7 +410,7 @@ def clasificar_subbloque(texto_subbloque, bloque_num, norma_titulo=None):
 def construir_subbloques_clasificados(paginas, sumario, offset, limite_chunks=None):
     textos_normas = extraer_texto_normas(paginas, sumario, offset)
 
-    tareas = []  # (bloque_num, norma_numero, indice_subbloque, texto)
+    tareas = []  # (bloque_num, norma_numero, norma_titulo, indice_subbloque, texto, rango_articulos)
     for entrada in sumario:
         bloque_num = seccion_a_bloque(entrada["seccion_romana"])
         if not bloque_num:
@@ -351,7 +420,7 @@ def construir_subbloques_clasificados(paginas, sumario, offset, limite_chunks=No
             continue
         subbloques = dividir_en_subbloques(texto_norma)
         for i, sb in enumerate(subbloques):
-            tareas.append((bloque_num, entrada["numero"], entrada["titulo"], i, sb))
+            tareas.append((bloque_num, entrada["numero"], entrada["titulo"], i, sb["texto"], sb["rango_articulos"]))
 
     if limite_chunks:
         tareas = tareas[:limite_chunks]
@@ -362,8 +431,8 @@ def construir_subbloques_clasificados(paginas, sumario, offset, limite_chunks=No
     resultados = []  # (bloque_num, tema_num, norma_titulo, texto)
     with ThreadPoolExecutor(max_workers=12) as executor:
         futuros = {
-            executor.submit(clasificar_subbloque, texto, bloque_num, norma_titulo): (bloque_num, norma_num, norma_titulo, i, texto)
-            for bloque_num, norma_num, norma_titulo, i, texto in tareas
+            executor.submit(clasificar_subbloque, texto, bloque_num, norma_titulo, rango): (bloque_num, norma_num, norma_titulo, i, texto)
+            for bloque_num, norma_num, norma_titulo, i, texto, rango in tareas
         }
         completados = 0
         for futuro in as_completed(futuros):
@@ -434,6 +503,24 @@ def subir_a_firestore(resultados, coleccion):
         for j, tema_titulo in enumerate(bloque["temas"], 1):
             tema_id = f"tema_{j:02d}"
             db.collection(coleccion).document(bloque_id).collection("temas").document(tema_id).set({"titulo": tema_titulo})
+
+    # Borrar los subbloques ya existentes de cada tema antes de subir los
+    # nuevos: el troceado cambia entre ejecuciones (más aún con este fix),
+    # así que una resubida puede generar menos o más subbloques por tema
+    # que la vez anterior -- sin este borrado quedarían documentos viejos
+    # sueltos mezclados con los nuevos bajo el mismo tema.
+    print("🗑️  Borrando subbloques existentes antes de subir los nuevos...")
+    borrados = 0
+    for i, bloque in enumerate(TEMARIO, 1):
+        bloque_id = f"bloque_{i:02d}"
+        for j in range(1, len(bloque["temas"]) + 1):
+            tema_id = f"tema_{j:02d}"
+            subbloques_ref = db.collection(coleccion).document(bloque_id).collection("temas") \
+                .document(tema_id).collection("subbloques")
+            for doc in subbloques_ref.stream():
+                doc.reference.delete()
+                borrados += 1
+    print(f"🗑️  {borrados} subbloques antiguos borrados.")
 
     # Contador de subbloques por (bloque, tema) para numerarlos
     contadores = {}
