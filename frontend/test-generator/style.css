@@ -374,10 +374,10 @@ h1, h2, h3 {
 
 /* ========== BOTONES DE NAVEGACIÓN (usan .age-btn del sistema compartido) ==========
    "Siguiente" es la acción principal: sólida, a la derecha. "Anterior" es
-   secundaria (contorno) a la izquierda. "Desmarcar" y "Marcar para
-   revisión" ya no compiten aquí -- ver .btn-desmarcar-link y
-   .btn-marcar-revision más abajo, colocados junto a las opciones/al
-   enunciado en vez de en esta fila. */
+   secundaria (contorno) a la izquierda. "Desmarcar" ya no es un botón
+   aparte: un segundo clic sobre la opción ya marcada la desmarca. "Marcar
+   para revisión" (ver .btn-marcar-revision más abajo) tampoco compite
+   aquí, va junto al enunciado. */
 .botones-navegacion-test {
   display: flex;
   flex-direction: row;
@@ -426,29 +426,6 @@ h1, h2, h3 {
 .btn-marcar-revision.activa {
   color: var(--age-warning);
   background: var(--age-warning-bg);
-}
-
-/* Enlace pequeño y discreto para quitar la respuesta marcada -- ya no es un
-   botón grande al mismo nivel que Anterior/Siguiente, para evitar borrar
-   una respuesta por error. Solo aparece si hay algo marcado. */
-.btn-desmarcar-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: var(--age-ink-soft);
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 6px 2px;
-  margin-top: 2px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.btn-desmarcar-link:hover {
-  color: var(--age-danger);
 }
 
 /* ========== Navegador de preguntas (mapa de progreso del examen) ==========

@@ -370,7 +370,6 @@ async function obtenerAuthHeaders() {
           </label>`;
       }
       html += `
-        ${respuestasUsuario[i] ? '<button type="button" id="btn-desmarcar" class="btn-desmarcar-link">✕ Desmarcar respuesta</button>' : ''}
         <div class="botones-navegacion-test">
           ${i > 0 ? '<button type="button" id="btn-anterior" class="age-btn age-btn-outline">← Anterior</button>' : ''}
           <button type="submit" class="age-btn age-btn-primary">
@@ -392,13 +391,20 @@ async function obtenerAuthHeaders() {
           });
         });
       });
-      const botonDesmarcar = document.getElementById("btn-desmarcar");
-      if (botonDesmarcar) {
-        botonDesmarcar.addEventListener("click", () => {
-          respuestasUsuario[i] = null;
-          mostrarPregunta(i);
+      document.querySelectorAll('input[name="respuesta"]').forEach((radio) => {
+        radio.addEventListener("click", function() {
+          // Si la opción pulsada ya era la marcada, un segundo clic la
+          // desmarca y deja la pregunta en blanco -- más intuitivo que un
+          // botón "Desmarcar" aparte para quien se equivoca al elegir.
+          if (respuestasUsuario[i] === this.value) {
+            this.checked = false;
+            respuestasUsuario[i] = null;
+          } else {
+            respuestasUsuario[i] = this.value;
+          }
+          actualizarNavegadorPreguntas();
         });
-      }
+      });
       const botonGuardarSalir = document.getElementById("btn-guardar-salir");
       botonGuardarSalir.style.display = "block";
       botonGuardarSalir.disabled = false;
