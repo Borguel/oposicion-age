@@ -1,0 +1,37 @@
+name: Subir datos de convocatoria a Firestore
+
+# Sube a Firestore los datos oficiales de una convocatoria (plazas,
+# estructura de los ejercicios, calificación...) ya transcritos en
+# datos_examenes/datos_convocatoria_<OPOSICION>.json, usando
+# cargar_datos_convocatoria.py. Se dispara a mano (sin credenciales en el
+# repo ni en el chat: la clave de Firebase vive solo en el secreto
+# FIREBASE_CREDENTIALS_JSON de este repositorio) para poder actualizar
+# estos datos cada convocatoria nueva sin necesitar un ordenador con
+# clave-firebase.json a mano.
+on:
+  workflow_dispatch:
+    inputs:
+      oposicion:
+        description: "Código de la oposición (debe existir datos_examenes/datos_convocatoria_<oposicion>.json)"
+        required: true
+        default: "GACE"
+
+jobs:
+  subir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Subir datos de la convocatoria
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: python cargar_datos_convocatoria.py "${{ github.event.inputs.oposicion }}"
