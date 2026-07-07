@@ -213,17 +213,9 @@ async function obtenerAuthHeaders() {
       return `${m}:${s}`;
     }
 
-    function actualizarBarraProgresoPreguntas() {
-      const vistas = indicePreguntaActual + 1;
-      const porcentaje = (vistas / preguntas.length) * 100;
-      document.getElementById("progreso-preguntas").style.width = `${porcentaje}%`;
-      document.getElementById("texto-progreso-preguntas").textContent = `${Math.round(porcentaje)}% (${vistas}/${preguntas.length})`;
-    }
-
     document.getElementById("form-generar-test").addEventListener("submit", async function(e) {
       e.preventDefault();
       document.getElementById("barra-progreso-tiempo").style.display = "none";
-      document.getElementById("barra-progreso-preguntas").style.display = "none";
       const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
       const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
       if (REQUIERE_TEMA && temas.length === 0) {
@@ -325,9 +317,7 @@ async function obtenerAuthHeaders() {
         }));
 
         iniciarTemporizador();
-        document.getElementById("barra-progreso-preguntas").style.display = "block";
         document.getElementById("navegador-preguntas").style.display = "flex";
-        actualizarBarraProgresoPreguntas();
         mostrarPregunta(indicePreguntaActual);
       } catch (error) {
         clearInterval(intervalCarga);
@@ -359,7 +349,6 @@ async function obtenerAuthHeaders() {
     function mostrarPregunta(i) {
       indicePreguntaActual = i;
       visitadas[i] = true;
-      actualizarBarraProgresoPreguntas();
       actualizarNavegadorPreguntas();
       const p = preguntas[i];
       let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
@@ -479,7 +468,6 @@ async function obtenerAuthHeaders() {
       if (tiempoLimite !== null) clearInterval(intervaloCronometro);
       document.getElementById("temporizador").style.display = "none";
       document.getElementById("barra-progreso-tiempo").style.display = "none";
-      document.getElementById("barra-progreso-preguntas").style.display = "none";
       document.getElementById("navegador-preguntas").style.display = "none";
       document.getElementById("contenedor-test").innerHTML = "";
       document.getElementById("contenedor-test").style.display = "none";
@@ -585,9 +573,7 @@ async function obtenerAuthHeaders() {
       } else {
         iniciarTemporizador(null, guardado.tiempo_transcurrido_segundos || 0);
       }
-      document.getElementById("barra-progreso-preguntas").style.display = "block";
       document.getElementById("navegador-preguntas").style.display = "flex";
-      actualizarBarraProgresoPreguntas();
       mostrarPregunta(indicePreguntaActual);
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,

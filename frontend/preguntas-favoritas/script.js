@@ -95,13 +95,6 @@ async function obtenerAuthHeaders() {
       return `${m}:${s}`;
     }
 
-    function actualizarBarraProgresoPreguntas() {
-      const vistas = indicePreguntaActual + 1;
-      const porcentaje = (vistas / preguntas.length) * 100;
-      document.getElementById("progreso-preguntas").style.width = `${porcentaje}%`;
-      document.getElementById("texto-progreso-preguntas").textContent = `${Math.round(porcentaje)}% (${vistas}/${preguntas.length})`;
-    }
-
     document.getElementById("form-favoritas").addEventListener("submit", async function(e) {
       e.preventDefault();
       document.getElementById('contenedor-resultados').style.display = "none";
@@ -186,9 +179,7 @@ async function obtenerAuthHeaders() {
 
         iniciarTemporizador();
 
-        document.getElementById("barra-progreso-preguntas").style.display = "block";
         document.getElementById("navegador-preguntas").style.display = "flex";
-        actualizarBarraProgresoPreguntas();
 
         mostrarPregunta(indicePreguntaActual);
       } catch (error) {
@@ -219,7 +210,6 @@ async function obtenerAuthHeaders() {
     function mostrarPregunta(i) {
       indicePreguntaActual = i;
       visitadas[i] = true;
-      actualizarBarraProgresoPreguntas();
       actualizarNavegadorPreguntas();
 
       const p = preguntas[i];
@@ -370,7 +360,6 @@ async function obtenerAuthHeaders() {
     async function mostrarResultados() {
       clearInterval(intervaloTemporizador);
       document.getElementById("temporizador").style.display = "none";
-      document.getElementById("barra-progreso-preguntas").style.display = "none";
       document.getElementById("navegador-preguntas").style.display = "none";
       document.getElementById("contenedor-test").innerHTML = "";
       document.getElementById("contenedor-test").style.display = "none";
@@ -464,9 +453,7 @@ async function obtenerAuthHeaders() {
       document.getElementById("contenedor-test").style.display = "block";
 
       iniciarTemporizador(guardado.tiempo_transcurrido_segundos || 0);
-      document.getElementById("barra-progreso-preguntas").style.display = "block";
       document.getElementById("navegador-preguntas").style.display = "flex";
-      actualizarBarraProgresoPreguntas();
       mostrarPregunta(indicePreguntaActual);
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
