@@ -40,7 +40,7 @@ test("la página de login muestra el formulario de email y contraseña", async (
   await expect(page.locator("#password")).toBeVisible();
 });
 
-test("el generador de test muestra el input de preguntas y el temario numerado", async ({ page }) => {
+test("test personalizado muestra el input de preguntas y el temario numerado", async ({ page }) => {
   await mockAuth(page);
   await mockOposicion(page);
   await page.route("**/temas-disponibles*", (route) =>
@@ -56,7 +56,10 @@ test("el generador de test muestra el input de preguntas y el temario numerado",
     })
   );
 
-  await page.goto("/test-generator/");
+  // El formulario con número de preguntas + selector de temas vive en
+  // /test-personalizado/ desde que /test-generator/ pasó a ser solo el
+  // menú de 6 tarjetas hacia las páginas dedicadas de cada tipo de test.
+  await page.goto("/test-personalizado/");
 
   const numPreguntas = page.locator("#num_preguntas");
   await expect(numPreguntas).toBeVisible();
