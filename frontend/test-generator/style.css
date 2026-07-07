@@ -232,9 +232,14 @@ h1, h2, h3 {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
-  max-height: 250px;
+  /* Antes un cajón fijo de 250-340px obligaba a hacer scroll casi desde
+     el primer tema; con una altura relativa al alto de pantalla (con un
+     tope en px para que no se dispare en monitores muy altos) se ve de
+     un vistazo muchos más temas y sigue adaptándose a cualquier
+     dispositivo sin necesitar breakpoints propios. */
+  max-height: min(58vh, 620px);
   overflow-y: auto;
-  padding: 10px;
+  padding: 14px;
   background: #f9f9f9;
   border: 1px solid var(--color-border);
   border-radius: 10px;
@@ -259,10 +264,6 @@ h1, h2, h3 {
 
 #lista-temas input[type="checkbox"] {
   margin-right: 10px;
-}
-
-#lista-temas {
-  max-height: 340px;
 }
 
 .bloque-grupo {
@@ -299,7 +300,10 @@ h1, h2, h3 {
 
 .bloque-temas {
   display: grid;
-  grid-template-columns: 1fr;
+  /* En pantallas anchas, varios temas caben uno junto a otro en vez de
+     apilarse en una sola columna larga -- se ven más temas a la vez sin
+     tener que hacer scroll. */
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 8px;
   margin: 8px 0 4px 30px;
 }
@@ -451,11 +455,7 @@ h1, h2, h3 {
   .stats-container {
     grid-template-columns: 1fr;
   }
-  
-  #lista-temas {
-    max-height: 200px;
-  }
-  
+
   .timer-settings {
     flex-direction: column;
     align-items: flex-start;
@@ -547,10 +547,6 @@ h1, h2, h3 {
   
   .test-type-card {
     padding: 25px;
-  }
-  
-  #lista-temas {
-    max-height: 300px;
   }
 }
 
@@ -649,6 +645,31 @@ h1, h2, h3 {
 
 .test-type-card .description {
   color: var(--age-ink-soft);
+}
+
+/* Tarjeta informativa de una sola opción (test-personalizado, test-oficial,
+   test-inteligente, preguntas-falladas, preguntas-favoritas): al no competir
+   visualmente con las otras 5 opciones como en el hub, se le da más
+   protagonismo al título y se centra todo el contenido para que se lea de
+   un vistazo qué test se va a hacer. */
+.test-type-container:not(.test-type-container-hub) .test-type-card {
+  text-align: center;
+  align-items: center;
+  padding: 32px 28px;
+}
+.test-type-container:not(.test-type-container-hub) .icon {
+  width: 64px;
+  height: 64px;
+  font-size: 1.9rem;
+  margin-bottom: 6px;
+}
+.test-type-container:not(.test-type-container-hub) .title {
+  font-size: 1.5rem;
+}
+.test-type-container:not(.test-type-container-hub) .description {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 46ch;
 }
 
 /* Hub de selección de test (/test-generator/): las 6 opciones ahora son
