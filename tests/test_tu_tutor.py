@@ -81,6 +81,25 @@ def test_pregunta_sobre_estructura_del_examen_usa_datos_oficiales_si_existen(db)
     assert "¿Cuántas preguntas tiene el primer ejercicio?" in user_prompt
 
 
+def test_pregunta_sobre_como_se_divide_el_temario_usa_datos_oficiales(db):
+    # Antes de añadir estas palabras clave, una pregunta genérica sobre la
+    # estructura del temario no activaba ni el RAG ni los datos de
+    # convocatoria, así que el modelo se inventaba bloques/temas que no
+    # existen de verdad en el catálogo real.
+    db.sembrar(("datos_convocatoria", "AGE"), {
+        "oposicion": "AGE", "anio": 2025, "fuente": "BOE 2025",
+        "texto": "TEMARIO: 6 bloques -- I. Organización del Estado (11 temas); VI. Informática (8 temas)."
+    })
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        _texto, _chat_id, usar_rag = responder_tutor(
+            "¿Cómo se divide el temario?", db=db, usuario_id="u1", oposicion="AGE"
+        )
+    assert usar_rag is False
+    user_prompt = mock_llamada.call_args.kwargs["messages"][1]["content"]
+    assert "datos OFICIALES" in user_prompt
+    assert "6 bloques" in user_prompt
+
+
 def test_pregunta_sobre_estructura_del_examen_sin_datos_cargados_no_falla(db):
     with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
         texto, _chat_id, usar_rag = responder_tutor(

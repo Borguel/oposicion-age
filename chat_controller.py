@@ -122,6 +122,9 @@ _PALABRAS_CONVOCATORIA = [
     "aprobar el examen", "aprobar la oposicion",
     "estructura del examen", "como es el examen", "partes tiene el examen",
     "fase de oposicion", "curso selectivo",
+    "divide el temario", "bloques tiene el temario", "cuantos temas tiene",
+    "cuantos bloques tiene", "estructura del temario", "organizado el temario",
+    "partes tiene el temario", "temas tiene la oposicion",
 ]
 
 
@@ -179,7 +182,7 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
             {"role": "user", "content": prompt_usuario}
         ],
         temperature=0.7,
-        max_tokens=800
+        max_tokens=1500
     )
     texto_respuesta = (respuesta or "No se pudo generar una respuesta. Inténtalo de nuevo.").strip()
 
