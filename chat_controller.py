@@ -3,7 +3,7 @@ import re
 import unicodedata
 from datetime import datetime
 from firebase_admin import firestore
-from utils import obtener_catalogo_temas, obtener_contexto_por_temas_exactos
+from utils import obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria
 from deepseek_utils import call_deepseek_api
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
@@ -104,6 +104,32 @@ def _necesita_rag(mensaje, temas_detectados):
     return any(patron.search(mensaje_norm) for patron in _PATRONES_TEMARIO)
 
 
+# ============================================================
+# Detección de preguntas sobre la ESTRUCTURA/logística del proceso
+# selectivo (nº de preguntas, tiempo, penalización, plazas, calificación...)
+# -- justo el tipo de dato concreto que antes el modelo tendía a inventar
+# con aparente seguridad. Si hay datos oficiales cargados para la
+# oposición (obtener_datos_convocatoria), se inyectan en el prompt en vez
+# de dejar que el modelo adivine.
+# ============================================================
+_PALABRAS_CONVOCATORIA = [
+    "cuantas preguntas", "numero de preguntas", "cuanto tiempo", "duracion del examen",
+    "cuanto dura el examen", "penaliza", "penalizacion", "descuenta", "resta por fallo",
+    "plazas convocadas", "cuantas plazas", "numero de plazas",
+    "primer ejercicio", "segundo ejercicio", "supuesto practico",
+    "nota minima", "nota de corte", "puntuacion minima",
+    "como se califica", "como puntua", "calificacion final",
+    "aprobar el examen", "aprobar la oposicion",
+    "estructura del examen", "como es el examen", "partes tiene el examen",
+    "fase de oposicion", "curso selectivo",
+]
+
+
+def _necesita_datos_convocatoria(mensaje):
+    mensaje_norm = _normalizar(mensaje)
+    return any(palabra in mensaje_norm for palabra in _PALABRAS_CONVOCATORIA)
+
+
 # 📌 Tu Tutor: chat unificado que decide, mensaje a mensaje, si busca
 # contexto real del temario (RAG) o responde como coach genérico del
 # proceso selectivo. Guarda siempre el historial en Firestore.
@@ -129,7 +155,18 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
         ) if contexto else mensaje
     else:
         system_prompt = _instrucciones_asistente_examen(oposicion)
-        prompt_usuario = mensaje
+        datos_convocatoria = obtener_datos_convocatoria(db, oposicion) if _necesita_datos_convocatoria(mensaje) else None
+        if datos_convocatoria:
+            prompt_usuario = (
+                "Estos son los datos OFICIALES de la convocatoria vigente de esta oposición "
+                "(transcritos de las normas específicas publicadas en el BOE) -- úsalos como "
+                "fuente principal si la pregunta trata sobre ellos, y menciona que vienen de la "
+                "convocatoria oficial en vez de inventar cifras:\n\n"
+                f"{datos_convocatoria}\n\n"
+                f"PREGUNTA DEL USUARIO:\n{mensaje}"
+            )
+        else:
+            prompt_usuario = mensaje
 
     respuesta = call_deepseek_api(
         messages=[

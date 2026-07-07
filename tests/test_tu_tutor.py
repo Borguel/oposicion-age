@@ -64,6 +64,35 @@ def test_mencionar_un_articulo_concreto_tambien_activa_rag(db):
     assert "CONTENIDO DEL TEMARIO" in mensajes_enviados[1]["content"]
 
 
+def test_pregunta_sobre_estructura_del_examen_usa_datos_oficiales_si_existen(db):
+    db.sembrar(("datos_convocatoria", "GACE"), {
+        "oposicion": "GACE", "anio": 2025, "fuente": "BOE 2025",
+        "texto": "El primer ejercicio tiene un máximo de 100 preguntas y dura 90 minutos."
+    })
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        _texto, _chat_id, usar_rag = responder_tutor(
+            "¿Cuántas preguntas tiene el primer ejercicio?", db=db, usuario_id="u1", oposicion="GACE"
+        )
+    assert usar_rag is False
+    mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
+    user_prompt = mensajes_enviados[1]["content"]
+    assert "datos OFICIALES" in user_prompt
+    assert "máximo de 100 preguntas" in user_prompt
+    assert "¿Cuántas preguntas tiene el primer ejercicio?" in user_prompt
+
+
+def test_pregunta_sobre_estructura_del_examen_sin_datos_cargados_no_falla(db):
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        texto, _chat_id, usar_rag = responder_tutor(
+            "¿Cuánto tiempo hay para el segundo ejercicio?", db=db, usuario_id="u1", oposicion="GACE"
+        )
+    assert usar_rag is False
+    assert texto == "ok"
+    mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
+    user_prompt = mensajes_enviados[1]["content"]
+    assert user_prompt == "¿Cuánto tiempo hay para el segundo ejercicio?"
+
+
 def test_historial_de_una_conversacion_persiste_y_se_amplia_en_firestore(db):
     with patch("chat_controller.call_deepseek_api", side_effect=["primera respuesta", "segunda respuesta"]):
         _texto1, chat_id, _usar_rag = responder_tutor("Hola, ¿cómo estás?", db=db, usuario_id="u1")

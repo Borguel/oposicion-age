@@ -92,6 +92,18 @@ def obtener_catalogo_temas(db, coleccion="Temario AGE") -> List[dict]:
             catalogo.append({"id": f"{bloque.id}-{tema.id}", "titulo": titulo, "bloque_titulo": bloque_titulo})
     return catalogo
 
+# ✅ Datos oficiales de la convocatoria vigente (plazas, estructura de los
+# ejercicios, tiempos, penalización, calificación), transcritos a mano de las
+# normas específicas publicadas en el BOE -- para que Tu Tutor no tenga que
+# adivinar estas cifras ni inventarlas. Un único documento por oposición en
+# la colección "datos_convocatoria", con un campo "texto" ya redactado para
+# inyectar tal cual en el prompt (ver cargar_datos_convocatoria.py).
+def obtener_datos_convocatoria(db, oposicion):
+    doc = db.collection("datos_convocatoria").document(oposicion).get()
+    if not doc.exists:
+        return None
+    return (doc.to_dict() or {}).get("texto")
+
 # ✅ Contexto de temas identificados por su id combinado "bloque_id-tema_id"
 # (a diferencia de obtener_contexto_por_temas, que solo recibe el tema_id y
 # por tanto no distingue entre bloques distintos que reutilicen el mismo
