@@ -158,10 +158,15 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
         datos_convocatoria = obtener_datos_convocatoria(db, oposicion) if _necesita_datos_convocatoria(mensaje) else None
         if datos_convocatoria:
             prompt_usuario = (
-                "Estos son los datos OFICIALES de la convocatoria vigente de esta oposición "
-                "(transcritos de las normas específicas publicadas en el BOE) -- úsalos como "
-                "fuente principal si la pregunta trata sobre ellos, y menciona que vienen de la "
-                "convocatoria oficial en vez de inventar cifras:\n\n"
+                "A continuación tienes datos OFICIALES de la convocatoria vigente de esta "
+                "oposición, transcritos de las normas específicas publicadas en el BOE. "
+                "OJO: el usuario NO te ha dado estos datos en su mensaje, son información de "
+                "referencia que ya tienes -- así que nunca digas cosas como \"según los datos "
+                "que me has facilitado/proporcionado\" ni le atribuyas al usuario esta "
+                "información. Cítalos como lo que son, datos públicos, con frases del tipo "
+                "\"según los datos oficiales de la convocatoria de 2025...\" o \"según las "
+                "normas específicas publicadas en el BOE...\". Úsalos como fuente principal si "
+                "la pregunta trata sobre ellos, en vez de inventar cifras:\n\n"
                 f"{datos_convocatoria}\n\n"
                 f"PREGUNTA DEL USUARIO:\n{mensaje}"
             )
