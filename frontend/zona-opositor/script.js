@@ -230,7 +230,7 @@ const AVISOS = [
     titulo: "Practica con exámenes oficiales reales",
     texto: "Ponte a prueba con convocatorias reales de tu oposición, tal y como caerán el día del examen.",
     cta: "Hacer un test oficial",
-    href: "/test-generator/"
+    href: "/test-oficial/"
   },
   {
     emoji: "🔥",

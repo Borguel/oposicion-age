@@ -6,11 +6,11 @@
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#ffa633" />
-  <title>Tests - Oposición AGE</title>
-  <meta name="description" content="Genera tests personalizados, oficiales o inteligentes sobre el temario de tu oposición." />
+  <title>Selecciona tu test - Oposición AGE</title>
+  <meta name="description" content="Elige cómo quieres practicar: test personalizado por temas, oficial con preguntas de otras convocatorias, generado con IA, o repasa lo que ya hiciste." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Tests - Oposición AGE" />
-  <meta property="og:description" content="Genera tests personalizados, oficiales o inteligentes sobre el temario de tu oposición." />
+  <meta property="og:title" content="Selecciona tu test - Oposición AGE" />
+  <meta property="og:description" content="Elige cómo quieres practicar: test personalizado por temas, oficial con preguntas de otras convocatorias, generado con IA, o repasa lo que ya hiciste." />
   <meta property="og:image" content="/assets/favicon-512.png" />
   <meta name="twitter:card" content="summary" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -22,81 +22,41 @@
 <nav class="age-nav"></nav>
 
   <div class="container">
-    <h1 id="titulo-formulario">Genera tu Test</h1>
-    <div class="card fade-in" id="tarjeta-formulario">
-      <form id="form-generar-test">
-        <label for="num_preguntas">Número de preguntas:</label>
-        <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="100" value="10" required>
-        <label style="margin-top: 20px;">¿Qué test quieres hacer?</label>
-        <div class="test-type-container">
-          <div class="test-type-card" data-tipo="personalizado">
-            <div class="icon">📝</div>
-            <div class="title">Personalizado</div>
-            <div class="description">Selecciona los temas que quieres practicar</div>
-          </div>
-          <div class="test-type-card" data-tipo="oficial">
-            <div class="icon">🏛️</div>
-            <div class="title">Oficial</div>
-            <div class="description">Simulacros de exámenes oficiales</div>
-          </div>
-          <div class="test-type-card" data-tipo="inteligente">
-            <div class="icon">🤖</div>
-            <div class="title">Inteligente IA</div>
-            <div class="description">Preguntas adaptadas a tu nivel</div>
-          </div>
-          <a class="test-type-card" href="/repetir-test/">
-            <div class="icon">🔁</div>
-            <div class="title">Repetir último test</div>
-            <div class="description">Vuelve sobre el test que ya hiciste</div>
-          </a>
-          <a class="test-type-card" href="/preguntas-falladas/">
-            <div class="icon">❌</div>
-            <div class="title">Preguntas falladas</div>
-            <div class="description">Repasa justo lo que más te cuesta</div>
-          </a>
-          <a class="test-type-card" href="/preguntas-favoritas/">
-            <div class="icon">⭐</div>
-            <div class="title">Preguntas favoritas</div>
-            <div class="description">Repasa las preguntas que has marcado para más tarde</div>
-          </a>
-        </div>
-        <input type="hidden" id="tipo_test" name="tipo_test" value="personalizado">
-        <div class="timer-settings">
-          <label>
-            <input type="checkbox" id="modo_cronometrado"> Activar modo examen cronometrado
-          </label>
-          <div id="tiempo_cronometro" style="display: none;">
-            <label for="minutos_cronometro">Tiempo (minutos):</label>
-            <input type="number" id="minutos_cronometro" min="1" value="60">
-          </div>
-        </div>
-        <label id="label-lista-temas">Selecciona uno o varios temas:</label>
-        <div id="lista-temas"></div>
-        <button type="submit" class="btn btn-primary btn-block">Generar Test</button>
-      </form>
+    <h1 id="titulo-formulario">Selecciona el test que quieres hacer</h1>
+    <div class="test-type-container test-type-container-hub">
+      <a class="test-type-card" href="/test-personalizado/">
+        <div class="icon">📝</div>
+        <div class="title">Personalizado</div>
+        <div class="description">Basado en el temario oficial del BOE. Elige los temas que quieres repasar y crea un test a tu medida.</div>
+      </a>
+      <a class="test-type-card" href="/test-oficial/">
+        <div class="icon">🏛️</div>
+        <div class="title">Oficial</div>
+        <div class="description">Preguntas reales de exámenes de convocatorias anteriores, tal como se hicieron el día del examen.</div>
+      </a>
+      <a class="test-type-card" href="/test-inteligente/">
+        <div class="icon">🤖</div>
+        <div class="title">Inteligente IA</div>
+        <div class="description">Preguntas nuevas generadas con IA, con el nivel y estilo de un examen oficial, sobre los temas que elijas.</div>
+      </a>
+      <a class="test-type-card" href="/repetir-test/">
+        <div class="icon">🔁</div>
+        <div class="title">Repetir último test</div>
+        <div class="description">Vuelve a hacer el último test que completaste, con las mismas preguntas.</div>
+      </a>
+      <a class="test-type-card" href="/preguntas-falladas/">
+        <div class="icon">❌</div>
+        <div class="title">Preguntas falladas</div>
+        <div class="description">Repasa las preguntas que más se te resisten, filtrando por tema si quieres.</div>
+      </a>
+      <a class="test-type-card" href="/preguntas-favoritas/">
+        <div class="icon">⭐</div>
+        <div class="title">Preguntas favoritas</div>
+        <div class="description">Repasa las preguntas que has guardado para más tarde.</div>
+      </a>
     </div>
-    <div id="temporizador" style="display:none;"></div>
-    <div id="barra-progreso-tiempo" class="progress-container" style="display: none;">
-      <div id="progreso-tiempo" class="progress-bar" style="background: linear-gradient(90deg, #4caf50, #66bb6a);"></div>
-      <div id="texto-progreso-tiempo" class="progress-text"></div>
-    </div>
-    <div id="barra-progreso-preguntas" class="progress-container" style="display: none; margin-top: 10px;">
-      <div id="progreso-preguntas" class="progress-bar" style="background: linear-gradient(90deg, #2196F3, #64b5f6);"></div>
-      <div id="texto-progreso-preguntas" class="progress-text"></div>
-    </div>
-    <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
-    <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
-    <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;">💾 Guardar y salir</button>
-    <button id="btn-finalizar" class="btn btn-danger btn-block" style="display:none;">Finalizar Test</button>
-    <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
   </div>
 
-  <!-- Librerías externas -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-
-  <script src="/test-generator/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
 </body>
 </html>

@@ -99,7 +99,6 @@ async function obtenerAuthHeaders() {
       const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
       const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
       document.getElementById('tarjeta-formulario').style.display = "none";
-      document.getElementById('titulo-formulario').style.display = "none";
       document.getElementById('aviso-falladas').style.display = "none";
 
       document.getElementById("contenedor-test").style.display = "block";
@@ -137,7 +136,6 @@ async function obtenerAuthHeaders() {
           document.getElementById("contenedor-test").innerHTML = "";
           document.getElementById("contenedor-test").style.display = "none";
           document.getElementById('tarjeta-formulario').style.display = "";
-          document.getElementById('titulo-formulario').style.display = "";
           return;
         }
 
@@ -185,7 +183,6 @@ async function obtenerAuthHeaders() {
         document.getElementById("contenedor-test").innerHTML = "";
         document.getElementById("contenedor-test").style.display = "none";
         document.getElementById('tarjeta-formulario').style.display = "";
-        document.getElementById('titulo-formulario').style.display = "";
         console.error(error);
       }
     });
@@ -405,7 +402,6 @@ async function obtenerAuthHeaders() {
       textosFavoritas = await favoritasApi.cargarTextosFavoritas(oposicionActual);
 
       document.getElementById('tarjeta-formulario').style.display = "none";
-      document.getElementById('titulo-formulario').style.display = "none";
       document.getElementById("contenedor-test").style.display = "block";
 
       iniciarTemporizador(guardado.tiempo_transcurrido_segundos || 0);

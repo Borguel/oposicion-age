@@ -11,9 +11,9 @@ const TIPO_INFO = {
 };
 
 const PAGINA_POR_TIPO = {
-  personalizado: "/test-generator/",
-  oficial: "/test-generator/",
-  inteligente: "/test-generator/",
+  personalizado: "/test-personalizado/",
+  oficial: "/test-oficial/",
+  inteligente: "/test-inteligente/",
   repetido: "/repetir-test/",
   falladas: "/preguntas-falladas/",
   favoritas: "/preguntas-favoritas/",

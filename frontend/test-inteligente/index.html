@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <title>Test Inteligente IA - Oposición AGE</title>
+  <meta name="description" content="Genera un test con preguntas nuevas creadas con IA, con el nivel y estilo de un examen oficial." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Test Inteligente IA - Oposición AGE" />
+  <meta property="og:description" content="Genera un test con preguntas nuevas creadas con IA, con el nivel y estilo de un examen oficial." />
+  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/test-generator/style.css" />
+  <link rel="stylesheet" href="/test-inteligente/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+  <div class="container">
+    <div class="test-type-container">
+      <div class="test-type-card selected">
+        <div class="icon">🤖</div>
+        <div class="title">Test Inteligente IA</div>
+        <div class="description">Preguntas nuevas generadas con IA, con el nivel y estilo de un examen oficial, sobre los temas que elijas.</div>
+      </div>
+    </div>
+    <div class="card fade-in" id="tarjeta-formulario">
+      <form id="form-generar-test">
+        <label for="num_preguntas">Número de preguntas:</label>
+        <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="100" value="10" required>
+        <div class="timer-settings">
+          <label>
+            <input type="checkbox" id="modo_cronometrado"> Activar modo examen cronometrado
+          </label>
+          <div id="tiempo_cronometro" style="display: none;">
+            <label for="minutos_cronometro">Tiempo (minutos):</label>
+            <input type="number" id="minutos_cronometro" min="1" value="60">
+          </div>
+        </div>
+        <label id="label-lista-temas">Selecciona uno o varios temas:</label>
+        <div id="lista-temas"></div>
+        <button type="submit" class="btn btn-primary btn-block">Generar test con IA</button>
+      </form>
+    </div>
+    <div id="temporizador" style="display:none;"></div>
+    <div id="barra-progreso-tiempo" class="progress-container" style="display: none;">
+      <div id="progreso-tiempo" class="progress-bar" style="background: linear-gradient(90deg, #4caf50, #66bb6a);"></div>
+      <div id="texto-progreso-tiempo" class="progress-text"></div>
+    </div>
+    <div id="barra-progreso-preguntas" class="progress-container" style="display: none; margin-top: 10px;">
+      <div id="progreso-preguntas" class="progress-bar" style="background: linear-gradient(90deg, #2196F3, #64b5f6);"></div>
+      <div id="texto-progreso-preguntas" class="progress-text"></div>
+    </div>
+    <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
+    <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
+    <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;">💾 Guardar y salir</button>
+    <button id="btn-finalizar" class="btn btn-danger btn-block" style="display:none;">Finalizar Test</button>
+    <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
+  </div>
+
+  <!-- Librerías externas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script src="/test-inteligente/script.js"></script>
+  <script type="module" src="/assets/auth.js"></script>
+</body>
+</html>

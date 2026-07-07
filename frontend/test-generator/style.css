@@ -651,17 +651,34 @@ h1, h2, h3 {
   color: var(--age-ink-soft);
 }
 
-/* Las 3 tarjetas que son <a> (Repetir/Falladas/Favoritas) navegan fuera de
-   la página al primer click, a diferencia de las <div> (Personalizado/
-   Oficial/Inteligente) que solo seleccionan una opción in-place; esta
-   marca visual evita que parezcan la misma interacción. */
-a.test-type-card::after {
-  content: "↗";
-  position: absolute;
-  top: 14px;
-  right: 16px;
-  font-size: 1.1rem;
-  color: var(--age-ink-faint);
+/* Hub de selección de test (/test-generator/): las 6 opciones ahora son
+   siempre un enlace que lleva a su propia página -- se les da más peso
+   visual (tarjetas más grandes, mismo alto entre todas) que cuando
+   convivían con el formulario de generación en la misma página. */
+.test-type-container-hub {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-top: 28px;
+}
+.test-type-container-hub .test-type-card {
+  min-height: 190px;
+  padding: 26px 24px;
+  justify-content: flex-start;
+}
+.test-type-container-hub .test-type-card:hover {
+  border-color: var(--tutor-accent, var(--age-primary));
+}
+.test-type-container-hub .icon {
+  width: 52px;
+  height: 52px;
+  font-size: 1.6rem;
+}
+.test-type-container-hub .title {
+  font-size: 1.15rem;
+}
+.test-type-container-hub .description {
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .btn-primary,

@@ -1,3 +1,13 @@
+// Test Oficial: preguntas reales de exámenes de convocatorias anteriores;
+// el tema es un filtro opcional (sin marcar ninguno = todos los temas).
+// Misma lógica de generación/toma de test/resultados que las demás
+// páginas de test (ver /test-generator/, /test-personalizado/,
+// /test-inteligente/), separada en su propia página para no mezclar el
+// selector de tipo de test con el propio formulario de generación.
+const TIPO_TEST = "oficial";
+const ENDPOINT_GENERAR = "/generar-test-oficial";
+const REQUIERE_TEMA = false;
+
 async function obtenerAuthHeaders() {
       const { idToken } = await import("/assets/auth.js");
       const token = await idToken();
@@ -39,29 +49,6 @@ async function obtenerAuthHeaders() {
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-      const cards = document.querySelectorAll('.test-type-card');
-      cards.forEach(card => {
-        card.addEventListener('click', function() {
-          cards.forEach(c => c.classList.remove('selected'));
-          this.classList.add('selected');
-          const tipo = this.dataset.tipo;
-          document.getElementById('tipo_test').value = tipo;
-          const listaTemas = document.getElementById("lista-temas");
-          const labelListaTemas = document.getElementById("label-lista-temas");
-          const tituloFormulario = document.getElementById("titulo-formulario");
-          listaTemas.style.display = "grid";
-          if (tipo === "oficial") {
-            labelListaTemas.textContent = "Filtra por tema (opcional, deja todo sin marcar para todos los temas):";
-            tituloFormulario.textContent = "Genera tu Test Oficial";
-          } else {
-            labelListaTemas.textContent = "Selecciona uno o varios temas:";
-            tituloFormulario.textContent = tipo === "personalizado"
-              ? "Genera tu Test Personalizado"
-              : "Genera tu Test Inteligente IA";
-          }
-        });
-      });
-      document.querySelector('.test-type-card[data-tipo="personalizado"]').click();
       document.getElementById('modo_cronometrado').addEventListener('change', function() {
         document.getElementById('tiempo_cronometro').style.display = this.checked ? 'flex' : 'none';
       });
@@ -70,10 +57,9 @@ async function obtenerAuthHeaders() {
     async function guardarTestAutomaticamente() {
       const contenido = preguntas;
       const respuestas = respuestasUsuario;
-      const tipo = document.getElementById('tipo_test').value;
       const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
       const tiempo = tiempoTranscurridoActual();
-      const metadatos = { tipo, tiempo, temas };
+      const metadatos = { tipo: TIPO_TEST, tiempo, temas };
       const { testIdEnCurso, limpiarSeguimiento } = await import("/assets/test-progreso.js");
       try {
         const authHeaders = await obtenerAuthHeaders();
@@ -152,8 +138,7 @@ async function obtenerAuthHeaders() {
         // En los tests oficiales se oculta la barra verde de tiempo (queda
         // solo la azul de progreso de preguntas); el cronómetro en sí y su
         // texto de cuenta atrás siguen funcionando igual.
-        const tipoActual = document.getElementById('tipo_test').value;
-        if (tipoActual !== "oficial") {
+        if (TIPO_TEST !== "oficial") {
           document.getElementById("barra-progreso-tiempo").style.display = "block";
         }
         document.getElementById("temporizador").innerHTML = `⏱ Tiempo restante: <span class="pulse">${formatearTiempo(tiempoLimite)}</span>`;
@@ -232,13 +217,9 @@ async function obtenerAuthHeaders() {
       e.preventDefault();
       document.getElementById("barra-progreso-tiempo").style.display = "none";
       document.getElementById("barra-progreso-preguntas").style.display = "none";
-      const tipo = document.getElementById('tipo_test').value;
       const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
-      // Para "oficial" el tema es un filtro opcional (sin marcar ninguno =
-      // todos los temas); para los demás tipos sigue siendo obligatorio
-      // elegir al menos uno.
       const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
-      if (tipo !== "oficial" && temas.length === 0) {
+      if (REQUIERE_TEMA && temas.length === 0) {
         Swal.fire({
           icon: "warning",
           title: "Selecciona un tema",
@@ -247,11 +228,7 @@ async function obtenerAuthHeaders() {
         });
         return;
       }
-      const endpoint = tipo === "oficial" ? "/generar-test-oficial" :
-                      tipo === "inteligente" ? "/generar-test-inteligente" :
-                      "/generar-test-avanzado";
       document.getElementById('tarjeta-formulario').style.display = "none";
-      document.getElementById('titulo-formulario').style.display = "none";
       document.getElementById("contenedor-test").style.display = "block";
       document.getElementById("contenedor-test").innerHTML = `
         <div class="carga-generando">
@@ -276,7 +253,7 @@ async function obtenerAuthHeaders() {
         if (!authHeaders) { clearInterval(intervalCarga); return; }
         const { obtenerOposicionActual } = await import("/assets/oposicion.js");
         const oposicion = obtenerOposicionActual();
-        const res = await fetch("https://oposicion-age.onrender.com" + endpoint, {
+        const res = await fetch("https://oposicion-age.onrender.com" + ENDPOINT_GENERAR, {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
           body: JSON.stringify({ temas, num_preguntas, oposicion })
@@ -319,14 +296,14 @@ async function obtenerAuthHeaders() {
         const { generarTestId, guardarContenidoInicial, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
         generarTestId();
         guardarContenidoInicial({
-          oposicion, tipo, temas,
+          oposicion, tipo: TIPO_TEST, temas,
           contenido: preguntas,
           respuestas_usuario: respuestasUsuario,
           indice_actual: indicePreguntaActual,
           modo_cronometrado: modoCronometrado,
           tiempo_restante_segundos: modoCronometrado ? minutosCronometro * 60 : null,
           tiempo_total_asignado_segundos: modoCronometrado ? minutosCronometro * 60 : null,
-          pagina_origen: "/test-generator/"
+          pagina_origen: "/test-oficial/"
         });
         activarGuardadoAlSalir(() => ({
           respuestas_usuario: respuestasUsuario,
@@ -534,7 +511,6 @@ async function obtenerAuthHeaders() {
         ? guardado.respuestas_usuario
         : Array(preguntas.length).fill(null);
       indicePreguntaActual = guardado.indice_actual || 0;
-      document.getElementById('tipo_test').value = guardado.tipo || "personalizado";
       const { obtenerOposicionActual } = await import("/assets/oposicion.js");
       oposicionActual = guardado.oposicion || obtenerOposicionActual();
       const favoritasApi = await import("/assets/favoritas.js");
@@ -543,7 +519,6 @@ async function obtenerAuthHeaders() {
       textosFavoritas = await favoritasApi.cargarTextosFavoritas(oposicionActual);
 
       document.getElementById('tarjeta-formulario').style.display = "none";
-      document.getElementById('titulo-formulario').style.display = "none";
       document.getElementById("contenedor-test").style.display = "block";
 
       if (guardado.modo_cronometrado) {

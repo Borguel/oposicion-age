@@ -11,6 +11,9 @@ Disallow: /mis-documentos/
 Disallow: /mis-tests/
 Disallow: /estadisticas/
 Disallow: /test-generator/
+Disallow: /test-personalizado/
+Disallow: /test-oficial/
+Disallow: /test-inteligente/
 Disallow: /repetir-test/
 Disallow: /preguntas-falladas/
 Disallow: /preguntas-favoritas/

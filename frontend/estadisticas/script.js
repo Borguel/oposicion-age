@@ -352,7 +352,7 @@ document.addEventListener("DOMContentLoaded", async function () {
           <span class="tema-flojo-nombre" title="${nombre}">${nombre}</span>
           <span class="tema-flojo-porcentaje">${t.porcentaje}% de acierto</span>
         </div>
-        <a class="btn-repasar-tema" href="/test-generator/?temas=${encodeURIComponent(t.id)}">Repasar</a>
+        <a class="btn-repasar-tema" href="/test-personalizado/?temas=${encodeURIComponent(t.id)}">Repasar</a>
       `;
       lista.appendChild(li);
     });

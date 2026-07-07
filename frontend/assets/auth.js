@@ -162,7 +162,7 @@ export async function idToken() {
 const NAV_LINKS = [
   { href: "/", label: "Inicio", match: ["/"] },
   { href: "/zona-opositor/", label: "Zona opositor", match: ["/zona-opositor/"] },
-  { href: "/test-generator/", label: "Tests", match: ["/test-generator/", "/repetir-test/", "/preguntas-falladas/", "/mis-tests/"] },
+  { href: "/test-generator/", label: "Tests", match: ["/test-generator/", "/test-personalizado/", "/test-oficial/", "/test-inteligente/", "/repetir-test/", "/preguntas-falladas/", "/preguntas-favoritas/", "/mis-tests/"] },
   { href: "/subida-pdf-pagina-principal/", label: "Herramientas IA", match: ["/subida-pdf-"] },
   { href: "/tu-tutor/", label: "Tu Tutor", match: ["/tu-tutor/"] },
   { href: "/estadisticas/", label: "Estadísticas", match: ["/estadisticas/"] },
@@ -300,7 +300,7 @@ function renderizarResultadosBusqueda(contenedor, query) {
     bloques.push(`
       <div class="age-buscador-grupo">
         <p class="age-buscador-grupo-titulo">Temas</p>
-        ${temasCoinciden.map((t) => `<a class="age-buscador-item" href="/test-generator/?temas=${encodeURIComponent(t.id)}"><span class="age-buscador-item-tag">Tema</span>${escapeHtmlBuscador(t.titulo)}</a>`).join("")}
+        ${temasCoinciden.map((t) => `<a class="age-buscador-item" href="/test-personalizado/?temas=${encodeURIComponent(t.id)}"><span class="age-buscador-item-tag">Tema</span>${escapeHtmlBuscador(t.titulo)}</a>`).join("")}
       </div>
     `);
   }
