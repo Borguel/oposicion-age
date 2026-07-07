@@ -100,12 +100,12 @@ function tarjetaTest(t) {
 
 function renderizar() {
   const tipoFiltro = document.getElementById("filtro-tipo").value;
-  const temaFiltro = document.getElementById("filtro-tema").value;
+  const resultadoFiltro = document.getElementById("filtro-resultado").value;
 
   const filtrados = tests.filter((t) => {
     if (filtroEstado && (t.estado || "finalizado") !== filtroEstado) return false;
     if (tipoFiltro && t.tipo !== tipoFiltro) return false;
-    if (temaFiltro && !(t.temas || []).includes(temaFiltro)) return false;
+    if (resultadoFiltro && t.resultado !== resultadoFiltro) return false;
     return true;
   });
 
@@ -128,14 +128,15 @@ function renderizar() {
   });
 }
 
+// Solo se usa para pintar el título de cada tema en las pills de las
+// tarjetas (pillsTemas) -- el filtro por tema se quitó de esta página, se
+// filtra por tipo y resultado en su lugar.
 async function cargarTemas(oposicion, token) {
   try {
     const res = await fetch(`${BACKEND_URL}/temas-disponibles?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } });
     const datos = await res.json();
     const temas = datos.temas || [];
     temasPorId = new Map(temas.map((t) => [t.id, t.titulo]));
-    const select = document.getElementById("filtro-tema");
-    select.innerHTML = `<option value="">Todos</option>` + temas.map((t) => `<option value="${t.id}">${acortarTitulo(t.titulo, 60)}</option>`).join("");
   } catch (e) {
     console.error("No se pudieron cargar los temas:", e);
   }
@@ -178,7 +179,7 @@ async function inicializar() {
       });
     });
     document.getElementById("filtro-tipo").addEventListener("change", renderizar);
-    document.getElementById("filtro-tema").addEventListener("change", renderizar);
+    document.getElementById("filtro-resultado").addEventListener("change", renderizar);
 
     renderizar();
   } catch (e) {

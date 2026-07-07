@@ -24,7 +24,7 @@
 <div class="tests-header">
   <div class="age-container">
     <h1>🧪 Mis tests</h1>
-    <p>Todos los tests que has empezado o terminado: continúa donde lo dejaste, repite uno ya finalizado o filtra por tema y tipo.</p>
+    <p>Todos los tests que has empezado o terminado: continúa donde lo dejaste, repite uno ya finalizado o filtra por tipo y resultado.</p>
   </div>
 </div>
 
@@ -46,20 +46,26 @@
         <button type="button" class="tests-tab" data-estado="finalizado">Finalizados</button>
       </div>
       <div class="tests-filtros">
-        <label for="filtro-tipo">Tipo</label>
-        <select id="filtro-tipo">
-          <option value="">Todos</option>
-          <option value="personalizado">Personalizado</option>
-          <option value="oficial">Oficial</option>
-          <option value="inteligente">Inteligente IA</option>
-          <option value="repetido">Repetido</option>
-          <option value="falladas">Preguntas falladas</option>
-          <option value="favoritas">Preguntas favoritas</option>
-        </select>
-        <label for="filtro-tema">Tema</label>
-        <select id="filtro-tema">
-          <option value="">Todos</option>
-        </select>
+        <div class="tests-filtro-grupo">
+          <label for="filtro-tipo">Tipo</label>
+          <select id="filtro-tipo">
+            <option value="">Todos</option>
+            <option value="personalizado">Personalizado</option>
+            <option value="oficial">Oficial</option>
+            <option value="inteligente">Inteligente IA</option>
+            <option value="repetido">Repetido</option>
+            <option value="falladas">Preguntas falladas</option>
+            <option value="favoritas">Preguntas favoritas</option>
+          </select>
+        </div>
+        <div class="tests-filtro-grupo">
+          <label for="filtro-resultado">Resultado</label>
+          <select id="filtro-resultado">
+            <option value="">Todos</option>
+            <option value="aprobado">Aprobado</option>
+            <option value="suspendido">Suspendido</option>
+          </select>
+        </div>
       </div>
     </div>
     <div id="tests-lista"></div>

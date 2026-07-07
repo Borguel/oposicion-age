@@ -100,14 +100,27 @@ body {
 .tests-filtros {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
   flex-wrap: wrap;
+}
+
+/* Cada etiqueta+select viaja junta como un solo bloque flex -- antes
+   podían separarse al ajustar línea (la etiqueta se quedaba pegada al
+   select anterior y el select siguiente caía suelto en la línea de
+   abajo), rompiendo la alineación en pantallas estrechas. */
+.tests-filtro-grupo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .tests-filtros label {
   font-weight: 700;
   font-size: 0.9rem;
   color: var(--age-ink-soft);
+  white-space: nowrap;
 }
 
 .tests-filtros select {
@@ -118,6 +131,8 @@ body {
   color: var(--age-ink);
   font-family: var(--age-font);
   font-size: 0.9rem;
+  flex: 1 1 auto;
+  min-width: 0;
   max-width: 220px;
 }
 
@@ -235,5 +250,16 @@ body {
   }
   .tests-estado-tabs {
     justify-content: space-between;
+  }
+  .tests-filtros {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .tests-filtro-grupo {
+    justify-content: space-between;
+  }
+  .tests-filtros select {
+    max-width: none;
   }
 }
