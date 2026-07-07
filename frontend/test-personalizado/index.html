@@ -48,7 +48,10 @@
         <button type="submit" class="btn btn-primary btn-block">Generar test personalizado</button>
       </form>
     </div>
-    <div id="temporizador" style="display:none;"></div>
+    <div id="temporizador" style="display:none;">
+      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador">👁️</button>
+      <span id="temporizador-texto"></span>
+    </div>
     <div id="barra-progreso-tiempo" class="progress-container" style="display: none;">
       <div id="progreso-tiempo" class="progress-bar" style="background: linear-gradient(90deg, #4caf50, #66bb6a);"></div>
       <div id="texto-progreso-tiempo" class="progress-text"></div>
@@ -57,10 +60,13 @@
       <div id="progreso-preguntas" class="progress-bar" style="background: linear-gradient(90deg, #2196F3, #64b5f6);"></div>
       <div id="texto-progreso-preguntas" class="progress-text"></div>
     </div>
+    <div id="navegador-preguntas" class="navegador-preguntas" style="display:none;"></div>
     <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
     <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
-    <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;">💾 Guardar y salir</button>
-    <button id="btn-finalizar" class="btn btn-danger btn-block" style="display:none;">Finalizar Test</button>
+    <div class="acciones-test-footer">
+      <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;">💾 Guardar y salir</button>
+      <button id="btn-finalizar" class="age-btn age-btn-danger-outline age-btn-block" style="display:none;">Finalizar Test</button>
+    </div>
     <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
   </div>
 

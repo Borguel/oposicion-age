@@ -10,6 +10,11 @@ async function obtenerAuthHeaders() {
 
 let preguntas = [];
 let respuestasUsuario = [];
+// Preguntas marcadas con la banderita "revisar más tarde" y preguntas ya
+// visitadas en esta sesión (para distinguir en el navegador el gris de "no
+// visitada" del rojo de "visitada pero sin responder").
+let marcadasRevision = [];
+let visitadas = [];
 let indicePreguntaActual = 0;
 let tiempoInicio;
 let intervaloTemporizador;
@@ -35,15 +40,19 @@ function tiempoTranscurridoActual() {
 function iniciarTemporizador(tiempoTranscurridoReanudado) {
   tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
   tiempoInicio = Date.now();
-  document.getElementById("temporizador").style.display = "block";
-  document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearMinSeg(tiempoTranscurridoBase)}`;
+  const elTemporizador = document.getElementById("temporizador");
+  const elTexto = document.getElementById("temporizador-texto");
+  elTemporizador.style.display = "flex";
+  elTexto.textContent = `⏱ Tiempo: ${formatearMinSeg(tiempoTranscurridoBase)}`;
+  document.getElementById("btn-toggle-temporizador").onclick = () => elTemporizador.classList.toggle("temporizador-oculto");
   intervaloTemporizador = setInterval(() => {
     const transcurrido = tiempoTranscurridoActual();
-    document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearMinSeg(transcurrido)}`;
+    elTexto.textContent = `⏱ Tiempo: ${formatearMinSeg(transcurrido)}`;
     if (transcurrido % 10 === 0) {
       import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
         autoguardarProgreso({
           respuestas_usuario: respuestasUsuario,
+          marcadas_revision: marcadasRevision,
           indice_actual: indicePreguntaActual,
           tiempo_transcurrido_segundos: transcurrido
         });
@@ -68,14 +77,34 @@ function confirmarFinalizar() {
   });
 }
 
+function actualizarNavegadorPreguntas() {
+  const contenedor = document.getElementById("navegador-preguntas");
+  if (!contenedor) return;
+  import("/assets/navegador-preguntas.js").then(({ renderizarNavegadorPreguntas }) => {
+    renderizarNavegadorPreguntas(contenedor, {
+      total: preguntas.length,
+      respuestasUsuario,
+      visitadas,
+      marcadasRevision,
+      indiceActual: indicePreguntaActual,
+      onSaltar: (idx) => mostrarPregunta(idx)
+    });
+  });
+}
+
 function mostrarPregunta(i) {
   indicePreguntaActual = i;
+  visitadas[i] = true;
+  actualizarNavegadorPreguntas();
   const p = preguntas[i];
   let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
   let html = `<form id="form-pregunta">
     <div class="pregunta-en-negrita">
       <span>${i + 1}. ${textoPregunta}</span>
-      ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
+      <div class="pregunta-acciones-header">
+        ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
+        <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""}" aria-label="Marcar para revisión" title="Marcar para revisar más tarde">🔖</button>
+      </div>
     </div>`;
 
   for (const letra in p.opciones) {
@@ -90,43 +119,67 @@ function mostrarPregunta(i) {
   }
 
   html += `
+    ${respuestasUsuario[i] ? '<button type="button" id="btn-desmarcar" class="btn-desmarcar-link">✕ Desmarcar respuesta</button>' : ''}
     <div class="botones-navegacion-test">
       ${i > 0 ? '<button type="button" id="btn-anterior" class="age-btn age-btn-outline">← Anterior</button>' : ''}
-      <button type="button" id="btn-desmarcar" class="age-btn age-btn-outline">Desmarcar</button>
+      <button type="submit" class="age-btn age-btn-primary">
+        ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
+      </button>
     </div>
-    <button type="submit" class="age-btn age-btn-primary age-btn-block" style="margin-top:12px;">
-      ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
-    </button>
-    <button type="button" id="btn-guardar-salir" class="btn-guardar-salir-estatico">💾 Guardar y salir</button>
-    <button type="button" id="btn-finalizar" class="btn btn-danger btn-block" style="margin-top:10px;">Finalizar Test</button>
   </form>`;
 
   document.getElementById("contenedor-test").innerHTML = html;
   activarBotonFavorita(document.getElementById("contenedor-test"), p, oposicionActual, textosFavoritas);
 
-  document.getElementById("btn-desmarcar").addEventListener("click", () => {
-    document.querySelectorAll('input[name="respuesta"]:checked').forEach(el => el.checked = false);
-    respuestasUsuario[i] = null;
+  document.getElementById("btn-marcar-revision").addEventListener("click", function () {
+    marcadasRevision[i] = !marcadasRevision[i];
+    this.classList.toggle("activa", marcadasRevision[i]);
+    actualizarNavegadorPreguntas();
+    import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+      autoguardarProgreso({
+        respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
+        indice_actual: i
+      });
+    });
   });
 
-  document.getElementById("btn-guardar-salir").addEventListener("click", async function () {
+  const botonDesmarcar = document.getElementById("btn-desmarcar");
+  if (botonDesmarcar) {
+    botonDesmarcar.addEventListener("click", () => {
+      respuestasUsuario[i] = null;
+      mostrarPregunta(i);
+    });
+  }
+
+  // Guardar y salir / Finalizar son botones estáticos de la página (fuera de
+  // #contenedor-test), así que se reasigna .onclick en vez de
+  // addEventListener para no acumular listeners duplicados en cada pregunta.
+  const botonGuardarSalir = document.getElementById("btn-guardar-salir");
+  botonGuardarSalir.style.display = "block";
+  botonGuardarSalir.disabled = false;
+  botonGuardarSalir.textContent = "💾 Guardar y salir";
+  botonGuardarSalir.onclick = async function () {
     const boton = this;
     boton.disabled = true;
     boton.textContent = "Guardando…";
     const { guardarProgresoInmediato } = await import("/assets/test-progreso.js");
     await guardarProgresoInmediato({
       respuestas_usuario: respuestasUsuario,
+      marcadas_revision: marcadasRevision,
       indice_actual: indicePreguntaActual,
       tiempo_transcurrido_segundos: tiempoTranscurridoActual()
     });
     window.location.href = "/mis-tests/";
-  });
+  };
+
+  const botonFinalizar = document.getElementById("btn-finalizar");
+  botonFinalizar.style.display = "block";
+  botonFinalizar.onclick = confirmarFinalizar;
 
   if (i > 0) {
     document.getElementById("btn-anterior").addEventListener("click", () => mostrarPregunta(i - 1));
   }
-
-  document.getElementById("btn-finalizar").addEventListener("click", confirmarFinalizar);
 
   document.getElementById("form-pregunta").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -135,6 +188,7 @@ function mostrarPregunta(i) {
     import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
       autoguardarProgreso({
         respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
         indice_actual: i + 1 < preguntas.length ? i + 1 : i,
         tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       });
@@ -151,8 +205,11 @@ function mostrarPregunta(i) {
 async function mostrarResultados() {
   clearInterval(intervaloTemporizador);
   document.getElementById("temporizador").style.display = "none";
+  document.getElementById("navegador-preguntas").style.display = "none";
   document.getElementById("contenedor-test").innerHTML = "";
   document.getElementById("contenedor-test").style.display = "none";
+  document.getElementById("btn-guardar-salir").style.display = "none";
+  document.getElementById("btn-finalizar").style.display = "none";
   const cont = document.getElementById("contenedor-resultados");
   cont.style.display = "block";
 
@@ -219,6 +276,14 @@ window.addEventListener("load", async () => {
       respuestasUsuario = Array.isArray(guardado.respuestas_usuario) && guardado.respuestas_usuario.length === preguntas.length
         ? guardado.respuestas_usuario
         : Array(preguntas.length).fill(null);
+      marcadasRevision = Array.isArray(guardado.marcadas_revision) && guardado.marcadas_revision.length === preguntas.length
+        ? guardado.marcadas_revision
+        : Array(preguntas.length).fill(false);
+      indicePreguntaActual = guardado.indice_actual || 0;
+      // No se guarda un historial de "visitadas" -- se asume que se llegó
+      // hasta indice_actual avanzando en orden.
+      visitadas = Array(preguntas.length).fill(false);
+      for (let k = 0; k <= indicePreguntaActual && k < visitadas.length; k++) visitadas[k] = true;
       const { obtenerOposicionActual: obtenerOposicionResume } = await import("/assets/oposicion.js");
       oposicionActual = guardado.oposicion || obtenerOposicionResume();
       const favoritasApiResume = await import("/assets/favoritas.js");
@@ -226,9 +291,11 @@ window.addEventListener("load", async () => {
       activarBotonFavorita = favoritasApiResume.activarBotonFavorita;
       textosFavoritas = await favoritasApiResume.cargarTextosFavoritas(oposicionActual);
       iniciarTemporizador(guardado.tiempo_transcurrido_segundos || 0);
-      mostrarPregunta(guardado.indice_actual || 0);
+      document.getElementById("navegador-preguntas").style.display = "flex";
+      mostrarPregunta(indicePreguntaActual);
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
         indice_actual: indicePreguntaActual,
         tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
@@ -251,6 +318,8 @@ window.addEventListener("load", async () => {
       }
       preguntas = preguntasRepetir;
       respuestasUsuario = Array(preguntas.length).fill(null);
+      marcadasRevision = Array(preguntas.length).fill(false);
+      visitadas = Array(preguntas.length).fill(false);
       const { obtenerOposicionActual } = await import("/assets/oposicion.js");
       const oposicion = obtenerOposicionActual();
       oposicionActual = oposicion;
@@ -263,15 +332,18 @@ window.addEventListener("load", async () => {
         oposicion, tipo: "repetido", temas: [],
         contenido: preguntas,
         respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
         indice_actual: 0,
         pagina_origen: "/repetir-test/"
       });
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
         indice_actual: indicePreguntaActual,
         tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
       iniciarTemporizador();
+      document.getElementById("navegador-preguntas").style.display = "flex";
       mostrarPregunta(0);
       return;
     }
@@ -290,6 +362,8 @@ window.addEventListener("load", async () => {
 
     preguntas = datos.test;
     respuestasUsuario = Array(preguntas.length).fill(null);
+    marcadasRevision = Array(preguntas.length).fill(false);
+    visitadas = Array(preguntas.length).fill(false);
     oposicionActual = oposicion;
     const favoritasApiUltimo = await import("/assets/favoritas.js");
     botonFavoritaHTML = favoritasApiUltimo.botonFavoritaHTML;
@@ -300,15 +374,18 @@ window.addEventListener("load", async () => {
       oposicion, tipo: "repetido", temas: [],
       contenido: preguntas,
       respuestas_usuario: respuestasUsuario,
+      marcadas_revision: marcadasRevision,
       indice_actual: 0,
       pagina_origen: "/repetir-test/"
     });
     activarGuardadoAlSalir(() => ({
       respuestas_usuario: respuestasUsuario,
+      marcadas_revision: marcadasRevision,
       indice_actual: indicePreguntaActual,
       tiempo_transcurrido_segundos: tiempoTranscurridoActual()
     }));
     iniciarTemporizador();
+    document.getElementById("navegador-preguntas").style.display = "flex";
     mostrarPregunta(0);
   } catch (err) {
     console.error("Error:", err);

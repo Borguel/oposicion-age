@@ -14,6 +14,11 @@ export async function renderizarSelectorTemas(contenedor, temas, preseleccionado
         ${t.numeroTema}. ${t.titulo}
       </label>
     `).join("");
+    // Los bloques empiezan plegados para que la lista se vea limpia de
+    // entrada; solo se abre automáticamente el bloque que ya trae algún
+    // tema preseleccionado (p. ej. al llegar desde un enlace de "Repasar"),
+    // para que el usuario vea de inmediato qué quedó marcado.
+    const abierto = temasBloque.some((t) => preseleccionados.has(t.id));
     return `
       <div class="bloque-grupo">
         <div class="bloque-header">
@@ -21,9 +26,9 @@ export async function renderizarSelectorTemas(contenedor, temas, preseleccionado
             <input type="checkbox" data-bloque-check="${bloqueId}">
             <strong>${numeroRomano}. ${titulo}</strong>
           </label>
-          <button type="button" class="bloque-toggle" data-bloque-toggle="${bloqueId}" aria-label="Desplegar o plegar bloque">▾</button>
+          <button type="button" class="bloque-toggle${abierto ? "" : " bloque-toggle-cerrado"}" data-bloque-toggle="${bloqueId}" aria-label="Desplegar o plegar bloque">▾</button>
         </div>
-        <div class="bloque-temas" id="bloque-temas-${bloqueId}">${temasHTML}</div>
+        <div class="bloque-temas${abierto ? "" : " bloque-temas-cerrado"}" id="bloque-temas-${bloqueId}">${temasHTML}</div>
       </div>
     `;
   }).join("");

@@ -132,6 +132,10 @@ h1, h2, h3 {
 }
 
 #temporizador {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   font-size: 1.8rem;
   font-weight: bold;
@@ -141,6 +145,51 @@ h1, h2, h3 {
   color: #1c7ed6;
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Últimos 5 minutos de un test cronometrado: sustituye el color azul de
+   reposo por rojo con un parpadeo suave, para que la urgencia se note sin
+   sobresaltar. Se aplica/quita con classList desde JS -- por eso el color
+   ya no se toca con estilos inline como antes. */
+#temporizador.temporizador-urgente {
+  background: var(--age-danger-bg);
+  color: var(--age-danger);
+  animation: temporizador-parpadeo 1.6s ease-in-out infinite;
+}
+
+@keyframes temporizador-parpadeo {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Botón para ocultar visualmente la cuenta (reduce la ansiedad en modo
+   estudio) sin parar el cronómetro real, que sigue corriendo detrás. */
+.btn-toggle-temporizador {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: rgba(0, 0, 0, 0.08);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.75;
+  transition: opacity 0.2s ease;
+}
+
+.btn-toggle-temporizador:hover {
+  opacity: 1;
+}
+
+#temporizador.temporizador-oculto #temporizador-texto {
+  filter: blur(7px);
+  user-select: none;
 }
 
 .timer-settings {
@@ -323,23 +372,165 @@ h1, h2, h3 {
   border-radius: 10px;
 }
 
-/* ========== BOTONES DE NAVEGACIÓN (usan .age-btn del sistema compartido) ========== */
+/* ========== BOTONES DE NAVEGACIÓN (usan .age-btn del sistema compartido) ==========
+   "Siguiente" es la acción principal: sólida, a la derecha. "Anterior" es
+   secundaria (contorno) a la izquierda. "Desmarcar" y "Marcar para
+   revisión" ya no compiten aquí -- ver .btn-desmarcar-link y
+   .btn-marcar-revision más abajo, colocados junto a las opciones/al
+   enunciado en vez de en esta fila. */
 .botones-navegacion-test {
   display: flex;
   flex-direction: row;
+  justify-content: space-between;
   gap: 12px;
   margin-top: 24px;
   margin-bottom: 4px;
 }
 
-.botones-navegacion-test .age-btn {
-  flex: 1 1 0;
+.botones-navegacion-test .age-btn-outline {
+  flex: 0 0 auto;
+  min-width: 130px;
 }
 
-/* Botón FINALIZAR TEST (fuera del flujo de preguntas, sigue usando .btn-danger) */
+.botones-navegacion-test .age-btn-primary {
+  flex: 0 0 auto;
+  min-width: 170px;
+  margin-left: auto;
+  padding: 14px 30px;
+}
+
+/* Grupo de iconos junto al enunciado: favorita + marcar para revisión. */
+.pregunta-acciones-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.btn-marcar-revision {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--age-ink-faint);
+  padding: 2px 4px;
+  border-radius: var(--age-radius-sm);
+  transition: transform 0.15s var(--age-ease), color 0.15s var(--age-ease), background 0.15s var(--age-ease);
+}
+
+.btn-marcar-revision:hover {
+  transform: scale(1.1);
+}
+
+.btn-marcar-revision.activa {
+  color: var(--age-warning);
+  background: var(--age-warning-bg);
+}
+
+/* Enlace pequeño y discreto para quitar la respuesta marcada -- ya no es un
+   botón grande al mismo nivel que Anterior/Siguiente, para evitar borrar
+   una respuesta por error. Solo aparece si hay algo marcado. */
+.btn-desmarcar-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--age-ink-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 2px;
+  margin-top: 2px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn-desmarcar-link:hover {
+  color: var(--age-danger);
+}
+
+/* ========== Navegador de preguntas (mapa de progreso del examen) ==========
+   Un cuadradito por pregunta, coloreado según su estado, para ver de un
+   vistazo cuánto queda y saltar directamente a cualquiera sin tener que
+   hacer scroll ni ir pregunta a pregunta. */
+.navegador-preguntas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 14px;
+  background: var(--age-bg);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+}
+
+.nav-preg {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--age-radius-sm);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink-soft);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.15s var(--age-ease), box-shadow 0.15s var(--age-ease);
+}
+
+.nav-preg:hover {
+  transform: translateY(-2px);
+}
+
+.nav-preg.np-respondida {
+  background: var(--age-success-bg);
+  border-color: var(--age-success);
+  color: var(--age-success);
+}
+
+.nav-preg.np-marcada {
+  background: var(--age-warning-bg);
+  border-color: var(--age-warning);
+  color: var(--age-warning);
+}
+
+.nav-preg.np-visitada {
+  background: var(--age-danger-bg);
+  border-color: var(--age-danger);
+  color: var(--age-danger);
+}
+
+.nav-preg.np-actual {
+  box-shadow: 0 0 0 3px var(--age-primary-soft);
+  border-color: var(--age-primary);
+}
+
+/* ========== Footer de acciones: Guardar y salir / Finalizar ==========
+   Antes "Finalizar Test" era un bloque rojo sólido a todo lo ancho, al
+   mismo nivel visual que "Guardar y salir" -- ahora es un contorno (llama
+   la atención sin agobiar) y "Guardar y salir" queda como acción neutra de
+   menor peso, coherentes ambos con el resto del sistema .age-btn. */
+.acciones-test-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.age-btn-danger-outline {
+  background: transparent;
+  color: var(--age-danger);
+  border: 1.5px solid var(--age-danger);
+}
+
+.age-btn-danger-outline:hover {
+  background: var(--age-danger-bg);
+}
+
 #btn-finalizar {
   text-transform: none;
-  border-radius: var(--age-radius-sm);
 }
 
 /* ========== Opciones de respuesta con letra en círculo ========== */
@@ -485,9 +676,23 @@ h1, h2, h3 {
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .botones-navegacion-test button {
     width: 100%;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  /* En móvil, apilados, la acción principal (Siguiente/Finalizar) va
+     arriba -- es la que se espera pulsar primero. */
+  .botones-navegacion-test .age-btn-primary {
+    order: -1;
+  }
+
+  .nav-preg {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
   }
 }
 
@@ -722,6 +927,15 @@ h1, h2, h3 {
   background: var(--age-navy-soft);
   color: var(--age-primary-light);
   box-shadow: none;
+}
+
+:root[data-theme="dark"] #temporizador.temporizador-urgente {
+  background: var(--age-danger-bg);
+  color: var(--age-danger);
+}
+
+:root[data-theme="dark"] .btn-toggle-temporizador {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 :root[data-theme="dark"] .progress-container {

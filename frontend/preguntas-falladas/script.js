@@ -11,6 +11,11 @@ async function obtenerAuthHeaders() {
     let preguntas = [];
     let indicePreguntaActual = 0;
     let respuestasUsuario = [];
+    // Preguntas marcadas con la banderita "revisar más tarde" y preguntas ya
+    // visitadas en esta sesión (para distinguir en el navegador el gris de
+    // "no visitada" del rojo de "visitada pero sin responder").
+    let marcadasRevision = [];
+    let visitadas = [];
     let tiempoInicio;
     let intervaloTemporizador;
     let aciertos = 0;
@@ -63,15 +68,19 @@ async function obtenerAuthHeaders() {
     function iniciarTemporizador(tiempoTranscurridoReanudado) {
       tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
       tiempoInicio = Date.now();
-      document.getElementById("temporizador").style.display = "block";
-      document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
+      const elTemporizador = document.getElementById("temporizador");
+      const elTexto = document.getElementById("temporizador-texto");
+      elTemporizador.style.display = "flex";
+      elTexto.textContent = `⏱ Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
+      document.getElementById("btn-toggle-temporizador").onclick = () => elTemporizador.classList.toggle("temporizador-oculto");
       intervaloTemporizador = setInterval(() => {
         const transcurrido = tiempoTranscurridoActual();
-        document.getElementById("temporizador").textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
+        elTexto.textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
         if (transcurrido % 10 === 0) {
           import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
             autoguardarProgreso({
               respuestas_usuario: respuestasUsuario,
+              marcadas_revision: marcadasRevision,
               indice_actual: indicePreguntaActual,
               tiempo_transcurrido_segundos: transcurrido
             });
@@ -149,6 +158,8 @@ async function obtenerAuthHeaders() {
         }
 
         respuestasUsuario = Array(preguntas.length).fill(null);
+        marcadasRevision = Array(preguntas.length).fill(false);
+        visitadas = Array(preguntas.length).fill(false);
         indicePreguntaActual = 0;
         oposicionActual = obtenerOposicionActual();
         const favoritasApi = await import("/assets/favoritas.js");
@@ -162,11 +173,13 @@ async function obtenerAuthHeaders() {
           oposicion: obtenerOposicionActual(), tipo: "falladas", temas,
           contenido: preguntas,
           respuestas_usuario: respuestasUsuario,
+          marcadas_revision: marcadasRevision,
           indice_actual: indicePreguntaActual,
           pagina_origen: "/preguntas-falladas/"
         });
         activarGuardadoAlSalir(() => ({
           respuestas_usuario: respuestasUsuario,
+          marcadas_revision: marcadasRevision,
           indice_actual: indicePreguntaActual,
           tiempo_transcurrido_segundos: tiempoTranscurridoActual()
         }));
@@ -174,6 +187,7 @@ async function obtenerAuthHeaders() {
         iniciarTemporizador();
 
         document.getElementById("barra-progreso-preguntas").style.display = "block";
+        document.getElementById("navegador-preguntas").style.display = "flex";
         actualizarBarraProgresoPreguntas();
 
         mostrarPregunta(indicePreguntaActual);
@@ -187,15 +201,35 @@ async function obtenerAuthHeaders() {
       }
     });
 
+    function actualizarNavegadorPreguntas() {
+      const contenedor = document.getElementById("navegador-preguntas");
+      if (!contenedor) return;
+      import("/assets/navegador-preguntas.js").then(({ renderizarNavegadorPreguntas }) => {
+        renderizarNavegadorPreguntas(contenedor, {
+          total: preguntas.length,
+          respuestasUsuario,
+          visitadas,
+          marcadasRevision,
+          indiceActual: indicePreguntaActual,
+          onSaltar: (idx) => mostrarPregunta(idx)
+        });
+      });
+    }
+
     function mostrarPregunta(i) {
       indicePreguntaActual = i;
+      visitadas[i] = true;
       actualizarBarraProgresoPreguntas();
+      actualizarNavegadorPreguntas();
 
       const p = preguntas[i];
       let html = `<form id="form-pregunta">
         <div class="pregunta-en-negrita">
           <span>${i + 1}. ${p.pregunta}</span>
-          ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
+          <div class="pregunta-acciones-header">
+            ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
+            <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""}" aria-label="Marcar para revisión" title="Marcar para revisar más tarde">🔖</button>
+          </div>
         </div>`;
 
       for (const letra in p.opciones) {
@@ -210,22 +244,36 @@ async function obtenerAuthHeaders() {
       }
 
       html += `
+        ${respuestasUsuario[i] ? '<button type="button" id="btn-desmarcar" class="btn-desmarcar-link">✕ Desmarcar respuesta</button>' : ''}
         <div class="botones-navegacion-test">
           ${i > 0 ? '<button type="button" id="btn-anterior" class="age-btn age-btn-outline">← Anterior</button>' : ''}
-          <button type="button" id="btn-desmarcar" class="age-btn age-btn-outline">Desmarcar</button>
+          <button type="submit" class="age-btn age-btn-primary">
+            ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
+          </button>
         </div>
-        <button type="submit" class="age-btn age-btn-primary age-btn-block" style="margin-top:12px;">
-          ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
-        </button>
       </form>`;
 
       document.getElementById("contenedor-test").innerHTML = html;
       activarBotonFavorita(document.getElementById("contenedor-test"), p, oposicionActual, textosFavoritas);
-      document.getElementById("btn-desmarcar").addEventListener("click", () => {
-        const marcadas = document.querySelectorAll('input[name="respuesta"]:checked');
-        marcadas.forEach(m => m.checked = false);
-        respuestasUsuario[i] = null;
+      document.getElementById("btn-marcar-revision").addEventListener("click", function() {
+        marcadasRevision[i] = !marcadasRevision[i];
+        this.classList.toggle("activa", marcadasRevision[i]);
+        actualizarNavegadorPreguntas();
+        import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+          autoguardarProgreso({
+            respuestas_usuario: respuestasUsuario,
+            marcadas_revision: marcadasRevision,
+            indice_actual: i
+          });
+        });
       });
+      const botonDesmarcar = document.getElementById("btn-desmarcar");
+      if (botonDesmarcar) {
+        botonDesmarcar.addEventListener("click", () => {
+          respuestasUsuario[i] = null;
+          mostrarPregunta(i);
+        });
+      }
       const botonGuardarSalir = document.getElementById("btn-guardar-salir");
       botonGuardarSalir.style.display = "block";
       botonGuardarSalir.disabled = false;
@@ -237,6 +285,7 @@ async function obtenerAuthHeaders() {
         const { guardarProgresoInmediato } = await import("/assets/test-progreso.js");
         await guardarProgresoInmediato({
           respuestas_usuario: respuestasUsuario,
+          marcadas_revision: marcadasRevision,
           indice_actual: indicePreguntaActual,
           tiempo_transcurrido_segundos: tiempoTranscurridoActual()
         });
@@ -244,11 +293,11 @@ async function obtenerAuthHeaders() {
       };
 
       document.getElementById("btn-finalizar").style.display = "block";
-      
+
       if (i > 0 && document.getElementById("btn-anterior")) {
         document.getElementById("btn-anterior").addEventListener("click", () => mostrarPregunta(i - 1));
       }
-      
+
       document.getElementById("form-pregunta").addEventListener("submit", function(e) {
         e.preventDefault();
         const seleccion = document.querySelector('input[name="respuesta"]:checked');
@@ -257,6 +306,7 @@ async function obtenerAuthHeaders() {
         import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
           autoguardarProgreso({
             respuestas_usuario: respuestasUsuario,
+            marcadas_revision: marcadasRevision,
             indice_actual: i + 1 < preguntas.length ? i + 1 : i,
             tiempo_transcurrido_segundos: tiempoTranscurridoActual()
           });
@@ -321,6 +371,7 @@ async function obtenerAuthHeaders() {
       clearInterval(intervaloTemporizador);
       document.getElementById("temporizador").style.display = "none";
       document.getElementById("barra-progreso-preguntas").style.display = "none";
+      document.getElementById("navegador-preguntas").style.display = "none";
       document.getElementById("contenedor-test").innerHTML = "";
       document.getElementById("contenedor-test").style.display = "none";
       document.getElementById("btn-finalizar").style.display = "none";
@@ -393,7 +444,15 @@ async function obtenerAuthHeaders() {
       respuestasUsuario = Array.isArray(guardado.respuestas_usuario) && guardado.respuestas_usuario.length === preguntas.length
         ? guardado.respuestas_usuario
         : Array(preguntas.length).fill(null);
+      marcadasRevision = Array.isArray(guardado.marcadas_revision) && guardado.marcadas_revision.length === preguntas.length
+        ? guardado.marcadas_revision
+        : Array(preguntas.length).fill(false);
       indicePreguntaActual = guardado.indice_actual || 0;
+      // No se guarda un historial de "visitadas" -- se asume que se llegó
+      // hasta indice_actual avanzando en orden, así que se marcan como
+      // visitadas todas las preguntas hasta ahí.
+      visitadas = Array(preguntas.length).fill(false);
+      for (let k = 0; k <= indicePreguntaActual && k < visitadas.length; k++) visitadas[k] = true;
       const { obtenerOposicionActual } = await import("/assets/oposicion.js");
       oposicionActual = guardado.oposicion || obtenerOposicionActual();
       const favoritasApi = await import("/assets/favoritas.js");
@@ -406,10 +465,12 @@ async function obtenerAuthHeaders() {
 
       iniciarTemporizador(guardado.tiempo_transcurrido_segundos || 0);
       document.getElementById("barra-progreso-preguntas").style.display = "block";
+      document.getElementById("navegador-preguntas").style.display = "flex";
       actualizarBarraProgresoPreguntas();
       mostrarPregunta(indicePreguntaActual);
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
         indice_actual: indicePreguntaActual,
         tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));

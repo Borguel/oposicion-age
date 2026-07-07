@@ -24,6 +24,8 @@
 
   --age-success: #1e9e63;
   --age-success-bg: #e7f7ee;
+  --age-warning: #b8790a;
+  --age-warning-bg: #fff3d6;
   --age-danger: #e0473f;
   --age-danger-bg: #fdeceb;
   --age-neutral-bg: #eef0f3;
@@ -65,6 +67,8 @@
 
   --age-success: #3ecf8e;
   --age-success-bg: rgba(62, 207, 142, 0.14);
+  --age-warning: #f0b93d;
+  --age-warning-bg: rgba(240, 185, 61, 0.16);
   --age-danger: #f0655f;
   --age-danger-bg: rgba(240, 101, 95, 0.14);
   --age-neutral-bg: #232734;

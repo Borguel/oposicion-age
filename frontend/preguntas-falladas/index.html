@@ -16,6 +16,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
   <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/test-generator/style.css" />
   <link rel="stylesheet" href="/preguntas-falladas/style.css" />
 </head>
 <body>
@@ -50,18 +51,24 @@
       No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.
     </div>
 
-    <div id="temporizador" style="display:none;"></div>
+    <div id="temporizador" style="display:none;">
+      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador">👁️</button>
+      <span id="temporizador-texto"></span>
+    </div>
 
     <div id="barra-progreso-preguntas" class="progress-container" style="display: none;">
       <div id="progreso-preguntas" class="progress-bar" style="background: linear-gradient(90deg, #2196F3, #64b5f6);"></div>
       <div id="texto-progreso-preguntas" class="progress-text"></div>
     </div>
 
+    <div id="navegador-preguntas" class="navegador-preguntas" style="display:none;"></div>
     <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
     <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
 
-    <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;">💾 Guardar y salir</button>
-    <button id="btn-finalizar" class="btn btn-danger btn-block" style="display:none;">Finalizar Test</button>
+    <div class="acciones-test-footer">
+      <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;">💾 Guardar y salir</button>
+      <button id="btn-finalizar" class="age-btn age-btn-danger-outline age-btn-block" style="display:none;">Finalizar Test</button>
+    </div>
     <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
   </div>
 
