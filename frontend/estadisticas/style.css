@@ -767,23 +767,42 @@
       cursor: default;
     }
 
+    /* El mes/año mostrado y el selector nativo son el MISMO control: el
+       <input type="month"> se superpone invisible encima del texto, así
+       que al pulsar la fecha se abre directamente el selector en vez de
+       repetir la fecha dos veces (una como texto y otra dentro del
+       input) como pasaba antes. */
+    .calendario-mes-selector {
+      position: relative;
+      display: inline-flex;
+      cursor: pointer;
+    }
+
     .calendario-mes-actual {
       font-weight: 700;
       font-size: 0.95rem;
       color: var(--age-ink);
-      min-width: 130px;
+      min-width: 140px;
       text-align: center;
       text-transform: capitalize;
+      padding: 4px 0;
+      border-bottom: 1.5px dashed var(--age-border);
+    }
+
+    .calendario-mes-selector:hover .calendario-mes-actual {
+      border-color: var(--age-primary);
+      color: var(--age-primary-dark);
     }
 
     .calendario-mes-input {
-      font-family: var(--age-font, var(--font-main));
-      font-size: 0.82rem;
-      color: var(--age-ink-soft);
-      background: var(--age-card);
-      border: 1px solid var(--age-border);
-      border-radius: var(--age-radius-sm);
-      padding: 4px 8px;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      border: none;
+      padding: 0;
     }
 
     .calendario-dias-semana {
@@ -797,7 +816,7 @@
          días de abajo tiene un ancho distinto, y las 7 columnas de cada
          una acaban en posiciones distintas (las letras L M X... no
          quedan encima de su columna de números). */
-      max-width: 280px;
+      max-width: 340px;
     }
 
     .calendario-dias-semana span {
@@ -809,20 +828,20 @@
     .calendario-grafica {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 5px;
+      gap: 6px;
       margin: 6px auto 0;
-      max-width: 280px;
+      max-width: 340px;
     }
 
     .calendario-celda {
       width: 100%;
       aspect-ratio: 1;
-      border-radius: 5px;
+      border-radius: 6px;
       background: var(--age-neutral-bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: 13px;
       color: var(--age-ink-faint);
     }
 

@@ -102,9 +102,11 @@
     </div>
     <div class="calendario-nav">
       <button type="button" class="calendario-nav-boton" id="calendario-mes-anterior" aria-label="Mes anterior">‹</button>
-      <span class="calendario-mes-actual" id="calendario-mes-actual">—</span>
+      <div class="calendario-mes-selector" title="Pulsa para ir a un mes y año concretos">
+        <span class="calendario-mes-actual" id="calendario-mes-actual">—</span>
+        <input type="month" class="calendario-mes-input" id="calendario-mes-input" aria-label="Ir a un mes y año concretos">
+      </div>
       <button type="button" class="calendario-nav-boton" id="calendario-mes-siguiente" aria-label="Mes siguiente">›</button>
-      <input type="month" class="calendario-mes-input" id="calendario-mes-input" aria-label="Ir a un mes y año concretos">
     </div>
     <div class="calendario-dias-semana">
       <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
