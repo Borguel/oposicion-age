@@ -200,6 +200,13 @@ async function obtenerAuthHeaders() {
       yPos += 14;
       pintarPie();
 
+      // Mismos colores de marca que la versión en pantalla (theme.css):
+      // --age-primary #ffa633 para el acento de los "h2" y --age-primary-dark
+      // #e8860f para el texto de los "h3" -- antes el PDF se generaba
+      // siempre en negro, perdiendo el naranja que hace la web más visual.
+      const NARANJA_PRIMARIO = [255, 166, 51];
+      const NARANJA_OSCURO = [232, 134, 15];
+
       const bloques = parsearResumenABloques(resumen);
       bloques.forEach((b) => {
         let fontSize = 11;
@@ -207,10 +214,12 @@ async function obtenerAuthHeaders() {
         let prefijo = "";
         let indent = 0;
         let extraArriba = 0;
+        let color = [0, 0, 0];
         const esDefinicion = b.tipo === "definicion";
+        const esH2 = b.tipo === "h2";
 
-        if (b.tipo === "h2") { fontSize = 15; fontStyle = "bold"; extraArriba = 6; }
-        else if (b.tipo === "h3") { fontSize = 12.5; fontStyle = "bold"; extraArriba = 4; }
+        if (esH2) { fontSize = 15; fontStyle = "bold"; extraArriba = 6; indent = 4; }
+        else if (b.tipo === "h3") { fontSize = 12.5; fontStyle = "bold"; extraArriba = 4; color = NARANJA_OSCURO; }
         else if (b.tipo === "bullet") { prefijo = "• "; indent = 5; }
         else if (b.tipo === "numero") { prefijo = `${b.numero}. `; indent = 5; }
         else if (esDefinicion) { fontStyle = "italic"; indent = 4; }
@@ -227,16 +236,22 @@ async function obtenerAuthHeaders() {
 
         if (esDefinicion) {
           doc.setFillColor(255, 241, 222);
-          doc.setDrawColor(255, 166, 51);
+          doc.setDrawColor(...NARANJA_PRIMARIO);
           doc.roundedRect(margin, yPos - altoLinea * 0.75, anchoTexto, lineas.length * altoLinea + 4, 2, 2, "FD");
           yPos += 3;
+        } else if (esH2) {
+          // Barra de acento naranja a la izquierda, igual que el
+          // "border-left: 4px solid var(--age-primary)" del h2 en pantalla.
+          doc.setFillColor(...NARANJA_PRIMARIO);
+          doc.rect(margin, yPos - altoLinea * 0.78, 1.3, lineas.length * altoLinea, "F");
         }
 
-        doc.setTextColor(0);
+        doc.setTextColor(...color);
         lineas.forEach((linea) => {
           doc.text(linea, margin + indent + (esDefinicion ? 2 : 0), yPos);
           yPos += altoLinea;
         });
+        doc.setTextColor(0);
         yPos += esDefinicion ? 4 : 2;
       });
 
