@@ -1204,6 +1204,21 @@ body {
   color: var(--age-ink-soft);
 }
 
+.explicacion-estructurada {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.explicacion-linea {
+  margin: 0;
+}
+
+.explicacion-texto {
+  margin: 8px 0 0;
+}
+
 @media (max-width: 640px) {
   .resultado-veredicto-texto {
     font-size: 1.4rem;

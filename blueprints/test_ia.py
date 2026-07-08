@@ -215,7 +215,7 @@ Sigue estrictamente estas normas:
 4. Las cuatro opciones deben ser plausibles, basadas en confusiones habituales entre conceptos, plazos, órganos o competencias similares -- evita opciones absurdas o claramente descartables.
 5. Evita preguntas triviales o de cultura general: cada pregunta debe exigir conocimiento normativo o técnico específico del tema.
 6. Prioriza variedad temática entre los temas seleccionados.
-7. La explicación debe justificar brevemente (2-3 frases) por qué la respuesta es correcta, citando la base normativa si procede.
+7. La explicación debe repasar TODAS las opciones, una por línea y en orden, con este formato exacto (una frase breve por opción, citando la base normativa si procede): "A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) ...".
 
 Devuelve SOLO un array JSON con este formato exacto, sin texto adicional ni bloques de código:
 [

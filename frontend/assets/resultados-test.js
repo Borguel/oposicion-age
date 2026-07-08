@@ -59,6 +59,29 @@ function escaparHtml(texto) {
 }
 
 /**
+ * Si la explicación viene con el patrón "A) ... B) ... C) ... D) ..." (el
+ * formato que ahora se le pide a la IA), la separa en una línea por opción
+ * para que se lea con orden en vez de como un único párrafo corrido.
+ * Devuelve null si el texto no sigue ese patrón (explicaciones antiguas ya
+ * guardadas antes de este cambio), y entonces se muestra tal cual.
+ */
+function separarExplicacionPorOpcion(texto) {
+  const limpio = (texto || "").trim();
+  if (!/^[A-D]\)\s/.test(limpio)) return null;
+  const partes = limpio.split(/\s(?=[A-D]\)\s)/).map((s) => s.trim()).filter(Boolean);
+  return partes.length >= 2 ? partes : null;
+}
+
+function formatearExplicacionHTML(texto) {
+  const partes = separarExplicacionPorOpcion(texto);
+  if (!partes) return `<p class="explicacion-texto">${escaparHtml(texto)}</p>`;
+  const lineas = partes
+    .map((p) => `<p class="explicacion-linea">${escaparHtml(p).replace(/^([A-D]\))/, "<strong>$1</strong>")}</p>`)
+    .join("");
+  return `<div class="explicacion-estructurada">${lineas}</div>`;
+}
+
+/**
  * Racha de aciertos más larga dentro de este test (rachas de "en blanco"
  * cortan la racha igual que un fallo, solo cuenta consecutivos correctos).
  * Sirve para el mensaje motivacional -- un simple "llevas X aciertos
@@ -122,7 +145,7 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     }
     const idExp = `exp-${i}-${Math.random().toString(36).slice(2, 6)}`;
     detalleHTML += `<button type="button" class="detalle-explicacion-btn" data-toggle-target="${idExp}">📘 Mostrar/Ocultar Explicación</button>`;
-    detalleHTML += `<div id="${idExp}" class="detalle-explicacion-panel" style="display:none;"><strong>Explicación:</strong> ${escaparHtml(explicacion)}</div></div>`;
+    detalleHTML += `<div id="${idExp}" class="detalle-explicacion-panel" style="display:none;"><strong>Explicación:</strong>${formatearExplicacionHTML(explicacion)}</div></div>`;
   });
 
   const filasTema = Object.values(statsPorTema).map((t) => {
@@ -419,7 +442,9 @@ export function descargarResultadosPDF({ preguntas, respuestasUsuario, stats, ti
       return { lineas: doc.splitTextToSize(texto, anchoTexto), color };
     });
     const explicacion = limpiarTextoPDF(p.explicacion || "Sin explicación disponible.");
-    const lineasExplicacion = doc.splitTextToSize(explicacion, anchoTexto);
+    const partesExplicacion = separarExplicacionPorOpcion(explicacion) || [explicacion];
+    const lineasPorParteExplicacion = partesExplicacion.map((parte) => doc.splitTextToSize(parte, anchoTexto));
+    const lineasExplicacion = lineasPorParteExplicacion.flat();
 
     // Alto total estimado del bloque (pregunta + opciones + "Explicación:" + texto + margen)
     const totalLineas =
@@ -453,7 +478,10 @@ export function descargarResultadosPDF({ preguntas, respuestasUsuario, stats, ti
     doc.text("Explicación:", margin, yPos);
     yPos += 6;
     doc.setFont("helvetica", "normal");
-    escribirLineas(lineasExplicacion);
+    lineasPorParteExplicacion.forEach((lineas) => {
+      escribirLineas(lineas);
+      if (partesExplicacion.length > 1) yPos += 1.5;
+    });
 
     yPos += 6;
     asegurarEspacio(4);
