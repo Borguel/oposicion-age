@@ -291,6 +291,7 @@ def obtener_estadisticas_completas_usuario(db, usuario_id, oposicion=OPOSICION_P
             "temas_esquemas": stats.get("temas_esquemas", []),
             "rendimiento_por_tema": stats.get("rendimiento_por_tema", {}),
             "ultimo_test": stats.get("ultimo_test", {}),
+            "historial_tests": stats.get("historial_tests", []),
             "ultima_actividad": datos.get("ultima_actividad"),
             "fecha_creacion": datos.get("fecha_creacion")
         }

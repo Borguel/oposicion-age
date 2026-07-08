@@ -627,10 +627,62 @@
       stroke-dasharray: 4 4;
     }
 
+    .evolucion-eje-texto {
+      font-size: 9px;
+      fill: var(--age-ink-faint);
+      font-family: var(--age-font, var(--font-main));
+    }
+
+    .evolucion-punto-extremo {
+      stroke: var(--age-card);
+      stroke-width: 2;
+    }
+
     .evolucion-vacio {
       color: var(--theme-text);
       font-size: 0.92rem;
       margin: 8px 0 0;
+    }
+
+    .evolucion-caption {
+      color: var(--age-ink-soft);
+      font-size: 0.85rem;
+      margin: 10px 0 0;
+    }
+
+    /* Calendario de racha: mapa de calor de ~12 semanas, cada columna una
+       semana y cada celda un día (relleno según haya o no actividad). */
+    .tarjeta-calendario {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    .calendario-grafica {
+      display: grid;
+      grid-template-rows: repeat(7, 1fr);
+      grid-auto-flow: column;
+      gap: 3px;
+      margin-top: 10px;
+      overflow-x: auto;
+    }
+
+    .calendario-celda {
+      width: 13px;
+      height: 13px;
+      border-radius: 3px;
+      background: var(--age-neutral-bg);
+    }
+
+    .calendario-celda.con-actividad {
+      background: var(--age-success);
+    }
+
+    .calendario-caption {
+      color: var(--age-ink-faint);
+      font-size: 0.8rem;
+      margin: 10px 0 0;
     }
 
     .tema-acierto {
@@ -656,6 +708,132 @@
 
     .btn-ver-temas:hover {
       background: var(--primary-dark);
+    }
+
+    /* Cobertura del temario: barra fina a todo lo ancho, mismo patrón que
+       Tiempo dedicado/Respuestas, contexto para las tarjetas de abajo. */
+    .tarjeta-cobertura {
+      grid-column: 1 / -1;
+      text-align: left;
+    }
+
+    .cobertura-cabecera {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.92rem;
+      color: var(--age-ink);
+      margin-bottom: 8px;
+    }
+
+    .cobertura-cabecera strong {
+      color: var(--age-primary-dark);
+      font-size: 1.1rem;
+    }
+
+    .cobertura-barra {
+      height: 8px;
+      background: var(--age-neutral-bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .cobertura-fill {
+      height: 100%;
+      background: var(--age-primary);
+      transition: width 0.5s ease;
+    }
+
+    /* Peor rendimiento: mini-ranking siempre visible de los temas con
+       menor % de acierto, con enlace directo a repasar cada uno. */
+    .mini-ranking {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+    }
+
+    .mini-ranking li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .mini-ranking-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .mini-ranking-nombre {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      font-weight: 700;
+      font-size: 0.85rem;
+      line-height: 1.25;
+      color: var(--age-ink);
+      margin-bottom: 2px;
+    }
+
+    .mini-ranking-porcentaje {
+      font-size: 0.78rem;
+      color: var(--age-danger);
+      font-weight: 600;
+    }
+
+    .mini-ranking-repasar {
+      flex-shrink: 0;
+      background: var(--age-primary);
+      color: #1b1f2e;
+      border-radius: var(--age-radius-sm);
+      padding: 6px 12px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .mini-ranking-repasar:hover {
+      background: var(--age-primary-dark);
+    }
+
+    .mini-ranking-vacio {
+      color: var(--age-ink-faint);
+      font-size: 0.88rem;
+      text-align: left;
+      margin: 0;
+    }
+
+    /* Próxima insignia: destaca la más cercana a conseguirse justo encima
+       de la rejilla, para dar un objetivo inmediato al entrar. */
+    .insignia-siguiente {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--age-primary-soft);
+      border: 1.5px solid var(--age-primary);
+      border-radius: var(--age-radius-md);
+      padding: 14px 18px;
+      margin-bottom: 16px;
+    }
+
+    .insignia-siguiente-icono {
+      font-size: 1.6rem;
+      flex-shrink: 0;
+    }
+
+    .insignia-siguiente-texto {
+      font-size: 0.92rem;
+      color: var(--age-ink);
+    }
+
+    .insignia-siguiente-texto strong {
+      color: var(--age-primary-dark);
     }
 
     .modal-temas {

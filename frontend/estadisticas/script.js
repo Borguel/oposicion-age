@@ -187,7 +187,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     todosLosTemas = todosTemas;
     mostrarTemasNoEstudiados(noEstudiados, todosTemas);
     mostrarTemasFlojos(rendimientoPorTema, todosTemas);
+    renderizarCoberturaTemario(temasTocados.size, todosLosTemasIds.length);
+    renderizarPeorRendimiento(rendimientoPorTema, todosTemas);
     renderizarEvolucion(historial);
+    renderizarCalendarioRacha(historial);
     const insigniasConseguidas = renderizarInsignias({
       testsRealizados: totalTests,
       testsAprobados: aprobados,
@@ -239,25 +242,30 @@ document.addEventListener("DOMContentLoaded", async function () {
   // tiene un umbral simple; si no está conseguida se muestra en gris con
   // el progreso actual para animar a seguir usando la web.
   const INSIGNIAS = [
-    { icono: "🎯", titulo: "Primer test", descripcion: "Completa tu primer test", valor: (d) => d.testsRealizados, umbral: 1 },
-    { icono: "🔥", titulo: "Racha de 3 días", descripcion: "Estudia 3 días seguidos", valor: (d) => d.rachaMaxima, umbral: 3 },
-    { icono: "🔥", titulo: "Racha de 7 días", descripcion: "Estudia 7 días seguidos", valor: (d) => d.rachaMaxima, umbral: 7 },
-    { icono: "🔥", titulo: "Racha de 30 días", descripcion: "Estudia 30 días seguidos", valor: (d) => d.rachaMaxima, umbral: 30 },
-    { icono: "📚", titulo: "10 tests", descripcion: "Completa 10 tests", valor: (d) => d.testsRealizados, umbral: 10 },
-    { icono: "🎓", titulo: "50 tests", descripcion: "Completa 50 tests", valor: (d) => d.testsRealizados, umbral: 50 },
-    { icono: "✅", titulo: "10 aprobados", descripcion: "Aprueba 10 tests", valor: (d) => d.testsAprobados, umbral: 10 },
-    { icono: "🏆", titulo: "Excelencia", descripcion: "Nota media de 8 o más", valor: (d) => d.puntuacionMedia, umbral: 8 },
-    { icono: "🗂️", titulo: "Esquematizador", descripcion: "Genera 5 esquemas", valor: (d) => d.esquemas, umbral: 5 },
-    { icono: "📄", titulo: "Documentalista", descripcion: "Sube 3 documentos PDF", valor: (d) => d.totalArchivos, umbral: 3 }
+    { icono: "🎯", titulo: "Primer test", descripcion: "Completa tu primer test", valor: (d) => d.testsRealizados, umbral: 1, unidad: "test" },
+    { icono: "🔥", titulo: "Racha de 3 días", descripcion: "Estudia 3 días seguidos", valor: (d) => d.rachaMaxima, umbral: 3, unidad: "días" },
+    { icono: "🔥", titulo: "Racha de 7 días", descripcion: "Estudia 7 días seguidos", valor: (d) => d.rachaMaxima, umbral: 7, unidad: "días" },
+    { icono: "🔥", titulo: "Racha de 30 días", descripcion: "Estudia 30 días seguidos", valor: (d) => d.rachaMaxima, umbral: 30, unidad: "días" },
+    { icono: "📚", titulo: "10 tests", descripcion: "Completa 10 tests", valor: (d) => d.testsRealizados, umbral: 10, unidad: "tests" },
+    { icono: "🎓", titulo: "50 tests", descripcion: "Completa 50 tests", valor: (d) => d.testsRealizados, umbral: 50, unidad: "tests" },
+    { icono: "✅", titulo: "10 aprobados", descripcion: "Aprueba 10 tests", valor: (d) => d.testsAprobados, umbral: 10, unidad: "aprobados" },
+    { icono: "🏆", titulo: "Excelencia", descripcion: "Nota media de 8 o más", valor: (d) => d.puntuacionMedia, umbral: 8, unidad: "puntos" },
+    { icono: "🗂️", titulo: "Esquematizador", descripcion: "Genera 5 esquemas", valor: (d) => d.esquemas, umbral: 5, unidad: "esquemas" },
+    { icono: "📄", titulo: "Documentalista", descripcion: "Sube 3 documentos PDF", valor: (d) => d.totalArchivos, umbral: 3, unidad: "documentos" }
   ];
 
   function renderizarInsignias(datos) {
     const contenedor = document.getElementById("insignias-grid");
     const conseguidas = [];
+    const pendientes = [];
     contenedor.innerHTML = INSIGNIAS.map((insignia) => {
       const actual = insignia.valor(datos) || 0;
       const conseguida = actual >= insignia.umbral;
-      if (conseguida) conseguidas.push(`${insignia.icono} ${insignia.titulo}`);
+      if (conseguida) {
+        conseguidas.push(`${insignia.icono} ${insignia.titulo}`);
+      } else {
+        pendientes.push({ insignia, actual, progreso: actual / insignia.umbral });
+      }
       const actualMostrado = Number.isInteger(insignia.umbral) ? Math.floor(Math.min(actual, insignia.umbral)) : Math.min(actual, insignia.umbral).toFixed(1);
       return `
         <div class="insignia${conseguida ? " conseguida" : ""}" title="${insignia.descripcion}">
@@ -267,7 +275,31 @@ document.addEventListener("DOMContentLoaded", async function () {
         </div>
       `;
     }).join("");
+
+    renderizarInsigniaSiguiente(pendientes);
     return conseguidas;
+  }
+
+  function renderizarInsigniaSiguiente(pendientes) {
+    const contenedor = document.getElementById("insignia-siguiente");
+    // La "más cercana" es la de mayor progreso relativo (actual/umbral), y
+    // solo se muestra si hay algo de progreso real -- si el usuario aún no
+    // ha hecho nada, sugerir "te faltan 8 puntos de nota" no tiene sentido.
+    const candidatas = pendientes.filter(p => p.progreso > 0);
+    if (candidatas.length === 0) {
+      contenedor.style.display = "none";
+      return;
+    }
+    const mejor = candidatas.reduce((a, b) => (b.progreso > a.progreso ? b : a));
+    const { insignia, actual } = mejor;
+    const restante = insignia.umbral - actual;
+    const restanteTexto = Number.isInteger(insignia.umbral) ? Math.ceil(restante) : restante.toFixed(1);
+
+    contenedor.innerHTML = `
+      <span class="insignia-siguiente-icono">${insignia.icono}</span>
+      <span class="insignia-siguiente-texto">Te falta poco para <strong>${insignia.titulo}</strong>: ${restanteTexto} ${insignia.unidad} más y la consigues.</span>
+    `;
+    contenedor.style.display = "flex";
   }
 
   // Gráfica de evolución de la nota: una línea sencilla en SVG (sin
@@ -279,11 +311,13 @@ document.addEventListener("DOMContentLoaded", async function () {
   function renderizarEvolucion(historial) {
     const contenedor = document.getElementById("evolucion-grafica");
     const vacio = document.getElementById("evolucion-vacio");
+    const caption = document.getElementById("evolucion-caption");
     const tarjeta = document.getElementById("tarjeta-evolucion");
     const recientes = historial.slice(-MAX_TESTS_EVOLUCION);
 
     if (recientes.length < 2) {
       contenedor.style.display = "none";
+      caption.style.display = "none";
       vacio.style.display = "block";
       return;
     }
@@ -301,23 +335,43 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     const puntos = notas.map((nota, i) => `${coordX(i)},${coordY(nota)}`).join(" ");
 
+    // Se marca con un círculo más grande el mejor y el peor test del
+    // periodo mostrado, para que salten a la vista sin tener que pasar el
+    // ratón por cada punto.
+    const mejorIdx = notas.indexOf(Math.max(...notas));
+    const peorIdx = notas.indexOf(Math.min(...notas));
+
     const circulos = recientes.map((t, i) => {
       const nota = notas[i];
+      const esExtremo = i === mejorIdx || i === peorIdx;
       const color = t.resultado === "aprobado" ? "var(--age-success)" : "var(--age-danger)";
       const fecha = t.fecha ? new Date(t.fecha).toLocaleDateString("es-ES") : "";
-      return `<circle cx="${coordX(i)}" cy="${coordY(nota)}" r="4" fill="${color}"><title>${fecha}: ${nota.toFixed(1)}/10</title></circle>`;
+      const claseExtra = esExtremo ? " evolucion-punto-extremo" : "";
+      return `<circle cx="${coordX(i)}" cy="${coordY(nota)}" r="${esExtremo ? 6 : 4}" fill="${color}" class="${claseExtra}"><title>${fecha}: ${nota.toFixed(1)}/10</title></circle>`;
     }).join("");
 
     const lineaAprobado = coordY(5);
+    const ejeX = margen - 4;
+    const ejeLabels = `
+      <text x="${ejeX}" y="${coordY(10) + 3}" text-anchor="end" class="evolucion-eje-texto">10</text>
+      <text x="${ejeX}" y="${coordY(5) + 3}" text-anchor="end" class="evolucion-eje-texto">5</text>
+      <text x="${ejeX}" y="${coordY(0) + 3}" text-anchor="end" class="evolucion-eje-texto">0</text>
+    `;
 
     contenedor.innerHTML = `
       <svg viewBox="0 0 ${ancho} ${alto}" preserveAspectRatio="none" class="evolucion-svg">
         <line x1="${margen}" y1="${lineaAprobado}" x2="${ancho - margen}" y2="${lineaAprobado}" class="evolucion-linea-aprobado" />
+        ${ejeLabels}
         <polyline points="${puntos}" fill="none" class="evolucion-linea" />
         ${circulos}
       </svg>
     `;
     tarjeta.style.display = "flex";
+
+    const fechaMejor = recientes[mejorIdx].fecha ? new Date(recientes[mejorIdx].fecha).toLocaleDateString("es-ES") : "";
+    const fechaPeor = recientes[peorIdx].fecha ? new Date(recientes[peorIdx].fecha).toLocaleDateString("es-ES") : "";
+    caption.textContent = `Mejor: ${notas[mejorIdx].toFixed(1)} (${fechaMejor}) · Peor: ${notas[peorIdx].toFixed(1)} (${fechaPeor})`;
+    caption.style.display = "block";
   }
 
   // "Tema flojo" = ha respondido al menos 3 preguntas de ese tema (para que
@@ -359,6 +413,89 @@ document.addEventListener("DOMContentLoaded", async function () {
       `;
       lista.appendChild(li);
     });
+    tarjeta.style.display = "flex";
+  }
+
+  function renderizarCoberturaTemario(totalTocados, totalTemas) {
+    const porcentaje = totalTemas > 0 ? Math.round((totalTocados / totalTemas) * 100) : 0;
+    document.getElementById("cobertura-texto").textContent = `${totalTocados} de ${totalTemas} temas trabajados`;
+    document.getElementById("cobertura-porcentaje").textContent = `${porcentaje}%`;
+    document.getElementById("cobertura-fill").style.width = `${porcentaje}%`;
+  }
+
+  // "Peor rendimiento": a diferencia de "temas flojos" (que solo avisa si
+  // hay temas por debajo de un umbral de alarma), este ranking se muestra
+  // siempre que haya al menos un tema con alguna pregunta respondida, para
+  // que el usuario vea en todo momento dónde está su margen de mejora.
+  const MINIMO_PREGUNTAS_RANKING = 1;
+
+  function renderizarPeorRendimiento(rendimientoPorTema, todosTemas) {
+    const lista = document.getElementById("lista-peor-rendimiento");
+    const vacio = document.getElementById("peor-rendimiento-vacio");
+
+    const peores = Object.entries(rendimientoPorTema || {})
+      .map(([id, r]) => {
+        const respondidas = (r.aciertos || 0) + (r.fallos || 0);
+        const porcentaje = respondidas > 0 ? Math.round((r.aciertos / respondidas) * 100) : null;
+        return { id, respondidas, porcentaje };
+      })
+      .filter(t => t.respondidas >= MINIMO_PREGUNTAS_RANKING && t.porcentaje !== null)
+      .sort((a, b) => a.porcentaje - b.porcentaje)
+      .slice(0, 3);
+
+    if (peores.length === 0) {
+      lista.innerHTML = "";
+      vacio.style.display = "block";
+      return;
+    }
+    vacio.style.display = "none";
+
+    lista.innerHTML = peores.map(t => {
+      const tema = todosTemas.find(x => x.id === t.id);
+      const nombre = tema ? tema.titulo : `Tema ${t.id}`;
+      return `
+        <li>
+          <div class="mini-ranking-info">
+            <span class="mini-ranking-nombre" title="${nombre}">${nombre}</span>
+            <span class="mini-ranking-porcentaje">${t.porcentaje}% de acierto</span>
+          </div>
+          <a class="mini-ranking-repasar" href="/test-personalizado/?temas=${encodeURIComponent(t.id)}">Repasar</a>
+        </li>
+      `;
+    }).join("");
+  }
+
+  // Calendario de racha: mapa de calor de los últimos ~12 semanas a partir
+  // de las fechas de "historial_tests" (única fuente real disponible hoy;
+  // no hay un registro diario de actividad general, solo de tests).
+  const SEMANAS_CALENDARIO = 12;
+
+  function renderizarCalendarioRacha(historial) {
+    const tarjeta = document.getElementById("tarjeta-calendario");
+    const contenedor = document.getElementById("calendario-grafica");
+    if (!historial || historial.length === 0) {
+      tarjeta.style.display = "none";
+      return;
+    }
+
+    const diasConActividad = new Set(
+      historial.map(t => (t.fecha || "").slice(0, 10)).filter(Boolean)
+    );
+
+    const totalDias = SEMANAS_CALENDARIO * 7;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const celdas = [];
+    for (let i = totalDias - 1; i >= 0; i--) {
+      const fecha = new Date(hoy);
+      fecha.setDate(fecha.getDate() - i);
+      const clave = fecha.toISOString().slice(0, 10);
+      const activo = diasConActividad.has(clave);
+      const etiqueta = fecha.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+      celdas.push(`<div class="calendario-celda${activo ? " con-actividad" : ""}" title="${etiqueta}${activo ? ": estudiaste" : ""}"></div>`);
+    }
+    contenedor.innerHTML = celdas.join("");
     tarjeta.style.display = "flex";
   }
 

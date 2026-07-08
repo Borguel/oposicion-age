@@ -23,3 +23,15 @@ def test_total_blancos_cero_sin_tests(db):
     estadisticas = obtener_estadisticas_completas_usuario(db, "u1", oposicion="age")
 
     assert estadisticas["total_blancos"] == 0
+
+
+def test_incluye_historial_tests_para_la_grafica_de_evolucion(db):
+    # Bug: la ruta usada por la página de Estadísticas no devolvía
+    # "historial_tests" aunque sí estuviera guardado, así que la gráfica de
+    # "Evolución de tu nota" nunca tenía datos que pintar.
+    historial = [{"fecha": "2026-01-01T00:00:00", "puntuacion_final": 7.5, "resultado": "aprobado"}]
+    db.sembrar(("usuarios", "u1"), {"estadisticas": {"age": {"historial_tests": historial}}})
+
+    estadisticas = obtener_estadisticas_completas_usuario(db, "u1", oposicion="age")
+
+    assert estadisticas["historial_tests"] == historial

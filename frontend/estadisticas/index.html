@@ -83,11 +83,27 @@
       <h4>Evolución de tu nota</h4>
     </div>
     <div class="evolucion-grafica" id="evolucion-grafica"></div>
+    <p class="evolucion-caption" id="evolucion-caption" style="display:none;"></p>
     <p class="evolucion-vacio" id="evolucion-vacio" style="display:none;">Haz algunos tests para ver aquí tu evolución.</p>
+  </div>
+
+  <!-- Calendario de racha: mapa de calor de los días con actividad en las
+       últimas ~12 semanas (a partir de las fechas de tus últimos tests),
+       igual de visual que la evolución de la nota. -->
+  <div class="tarjeta-estadistica neutra tarjeta-calendario" id="tarjeta-calendario" style="display:none;">
+    <div class="header">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <h4>Calendario de estudio</h4>
+    </div>
+    <div class="calendario-grafica" id="calendario-grafica"></div>
+    <p class="calendario-caption">Basado en las fechas de tus últimos tests</p>
   </div>
 
   <section class="insignias-seccion">
     <h3>🏅 Insignias</h3>
+    <div class="insignia-siguiente" id="insignia-siguiente" style="display:none;"></div>
     <div class="insignias-grid" id="insignias-grid"></div>
   </section>
 
@@ -148,6 +164,17 @@
     <div class="seccion-separador">
       <h3>📚 Tus temas</h3>
     </div>
+    <!-- Cobertura del temario: cuántos temas se han trabajado ya en total,
+         para dar contexto a los números sueltos de las tarjetas de abajo. -->
+    <div class="tarjeta-estadistica tarjeta-cobertura">
+      <div class="cobertura-cabecera">
+        <span id="cobertura-texto">— de — temas trabajados</span>
+        <strong id="cobertura-porcentaje">—%</strong>
+      </div>
+      <div class="cobertura-barra">
+        <div class="cobertura-fill" id="cobertura-fill" style="width:0%"></div>
+      </div>
+    </div>
     <!-- Temas Más Estudiados -->
     <div class="tarjeta-estadistica tarjeta-temas" id="temas-top-container">
       <div class="header">
@@ -171,6 +198,19 @@
       <div class="valor" id="temas-nuevos">—</div>
       <div class="detalle">Temas pendientes por estudiar</div>
       <button class="btn-ver-temas" id="btn-ver-nuevos" type="button">Ver lista completa</button>
+    </div>
+    <!-- Peor rendimiento: ranking de los 3 temas con menor % de acierto,
+         siempre visible (a diferencia del aviso de "temas flojos" de
+         arriba, que solo aparece si superan el umbral de alarma). -->
+    <div class="tarjeta-estadistica tarjeta-peor-rendimiento" id="peor-rendimiento-container">
+      <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2 15 9l7 1-5 5 1.5 7L12 18.5 5.5 22 7 15 2 10l7-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="none"/>
+        </svg>
+        <h4>Peor rendimiento</h4>
+      </div>
+      <ul class="mini-ranking" id="lista-peor-rendimiento"></ul>
+      <p class="mini-ranking-vacio" id="peor-rendimiento-vacio" style="display:none;">Aún no hay suficientes datos por tema.</p>
     </div>
 
     <div class="seccion-separador">
