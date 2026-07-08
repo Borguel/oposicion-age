@@ -330,6 +330,8 @@ def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
     rendimiento_por_tema = ((datos.get("estadisticas") or {}).get(oposicion) or {}).get("rendimiento_por_tema", {})
     temas_flojos = _temas_flojos(rendimiento_por_tema, catalogo)
 
+    memoria_cruzada = (datos.get("memoria_tutor") or {}).get("resumen")
+
     lineas = []
     if nombre:
         lineas.append(f"Se llama {nombre}.")
@@ -339,6 +341,8 @@ def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
         lineas.append(f"Tiene marcada la fecha de su examen para el {fecha_examen}.")
     if temas_flojos:
         lineas.append("Los temas donde más está fallando últimamente son: " + ", ".join(temas_flojos) + ".")
+    if memoria_cruzada:
+        lineas.append("De conversaciones anteriores (con otro chat) recuerdas esto sobre él/ella: " + memoria_cruzada)
 
     return " ".join(lineas) if lineas else None
 
@@ -438,12 +442,68 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
     return mensajes, usar_rag
 
 
+# ============================================================
+# Memoria persistente ENTRE conversaciones distintas (a diferencia del
+# resumen de _actualizar_resumen_si_hace_falta, que vive dentro de una sola
+# conversación) -- para que si en un chat de la semana pasada el usuario
+# contó que estaba agobiado o algo puntual relevante, Tu Tutor lo recuerde
+# al abrir un chat nuevo, no solo dentro del mismo hilo. Igual que el
+# resumen dentro de conversación, se actualiza por lotes (no en cada turno)
+# para no llamar al modelo de más.
+# ============================================================
+_LOTE_MEMORIA_CRUZADA = 6
+
+
+def _resumir_memoria_cruzada(resumen_previo, mensajes_recientes):
+    system_prompt = (
+        "Mantienes una memoria persistente y muy breve sobre un usuario de una plataforma de "
+        "oposiciones, a partir de fragmentos de sus conversaciones con un tutor de IA. Quédate "
+        "solo con lo que merezca la pena recordar en una conversación FUTURA y DISTINTA a esta: "
+        "cómo lleva el ánimo respecto al examen, dificultades o preocupaciones puntuales que haya "
+        "mencionado, preferencias de estudio. No repitas datos que ya se guardan aparte (nombre, "
+        "racha, fecha de examen, temas flojos). Un par de frases como mucho, nunca una lista larga."
+    )
+    texto_mensajes = "\n".join(f"{m['role']}: {m['content']}" for m in mensajes_recientes)
+    if resumen_previo:
+        prompt_usuario = (
+            f"Memoria actual sobre este usuario:\n{resumen_previo}\n\n"
+            "Fragmento nuevo de conversación a incorporar (fusiona todo en una única memoria "
+            f"actualizada, sin alargarla innecesariamente):\n{texto_mensajes}"
+        )
+    else:
+        prompt_usuario = f"Fragmento de conversación:\n{texto_mensajes}"
+    resumen = call_deepseek_api(
+        messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt_usuario}],
+        temperature=0.3,
+        max_tokens=200
+    )
+    return (resumen or resumen_previo or "").strip() or None
+
+
+def _actualizar_memoria_cruzada(db, usuario_id, chat_id):
+    ref_usuario = db.collection("usuarios").document(usuario_id)
+    memoria = (ref_usuario.get().to_dict() or {}).get("memoria_tutor") or {}
+    turnos_pendientes = memoria.get("turnos_pendientes", 0) + 1
+
+    if turnos_pendientes < _LOTE_MEMORIA_CRUZADA:
+        ref_usuario.set({"memoria_tutor": {"turnos_pendientes": turnos_pendientes}}, merge=True)
+        return
+
+    conversacion_snap = db.collection("conversaciones_IA").document(usuario_id) \
+                          .collection("conversaciones").document(chat_id).get()
+    mensajes_recientes = (conversacion_snap.to_dict() or {}).get("mensajes", [])[-_LOTE_MEMORIA_CRUZADA:]
+    nuevo_resumen = _resumir_memoria_cruzada(memoria.get("resumen"), mensajes_recientes)
+    ref_usuario.set({"memoria_tutor": {"resumen": nuevo_resumen, "turnos_pendientes": 0}}, merge=True)
+
+
 def _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta):
     if chat_id:
         agregar_mensaje_a_conversacion(db, usuario_id, chat_id, "user", mensaje)
         agregar_mensaje_a_conversacion(db, usuario_id, chat_id, "assistant", texto_respuesta)
-        return chat_id
-    return crear_conversacion(db, usuario_id, mensaje, texto_respuesta)
+    else:
+        chat_id = crear_conversacion(db, usuario_id, mensaje, texto_respuesta)
+    _actualizar_memoria_cruzada(db, usuario_id, chat_id)
+    return chat_id
 
 
 # 📌 Tu Tutor: chat unificado que decide, mensaje a mensaje, si busca

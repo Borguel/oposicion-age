@@ -266,6 +266,45 @@ def test_tema_con_pocos_intentos_no_cuenta_como_flojo_ni_se_menciona(db):
     assert mensajes_enviados[1]["role"] == "user"
 
 
+def test_memoria_cruzada_se_actualiza_al_completar_un_lote_de_turnos(db):
+    chat_id = None
+    with patch("chat_controller.call_deepseek_api", return_value="respuesta") as mock_llamada:
+        for i in range(5):
+            _texto, chat_id, _usar_rag = responder_tutor(f"mensaje {i}", db=db, usuario_id="u1", chat_id=chat_id)
+
+    # 5 turnos, por debajo del lote de 6 -- de momento solo se cuenta,
+    # ninguna llamada de más al modelo aparte de la respuesta normal.
+    assert mock_llamada.call_count == 5
+    datos_usuario = db.leer(("usuarios", "u1"))
+    assert datos_usuario["memoria_tutor"]["turnos_pendientes"] == 5
+    assert "resumen" not in datos_usuario["memoria_tutor"]
+
+    with patch("chat_controller.call_deepseek_api", side_effect=["respuesta 6", "Le preocupa el bloque de informática"]) as mock_llamada2:
+        responder_tutor("mensaje 5", db=db, usuario_id="u1", chat_id=chat_id)
+
+    # Al completar el 6º turno: la respuesta normal + una llamada extra
+    # para actualizar la memoria persistente entre conversaciones.
+    assert mock_llamada2.call_count == 2
+    datos_usuario = db.leer(("usuarios", "u1"))
+    assert datos_usuario["memoria_tutor"]["resumen"] == "Le preocupa el bloque de informática"
+    assert datos_usuario["memoria_tutor"]["turnos_pendientes"] == 0
+
+
+def test_memoria_cruzada_se_usa_en_una_conversacion_nueva_distinta(db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "memoria_tutor": {"resumen": "Le preocupa mucho el bloque de informática.", "turnos_pendientes": 0}
+    })
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor("Hola de nuevo", db=db, usuario_id="u1", oposicion="AGE")
+
+    # chat_id=None -> conversación nueva, sin relación con la anterior; aun
+    # así debe usarse lo que se recuerda de conversaciones pasadas.
+    mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
+    assert mensajes_enviados[1]["role"] == "system"
+    assert "Le preocupa mucho el bloque de informática." in mensajes_enviados[1]["content"]
+
+
 def test_pregunta_sobre_estructura_del_examen_sin_datos_cargados_no_falla(db):
     with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
         texto, _chat_id, usar_rag = responder_tutor(
