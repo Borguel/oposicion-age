@@ -125,8 +125,15 @@
 }
 
 .pdfherr-body .file-upload-area .upload-icon {
-  font-size: 2.1rem;
-  margin-bottom: 10px;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--age-primary-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.7rem;
 }
 
 .pdfherr-body .file-upload-area h3 {
@@ -198,7 +205,10 @@
   background: var(--age-primary);
   color: #1b1f2e;
 }
-.pdfherr-body .btn-primary:hover { background: var(--age-primary-dark); }
+.pdfherr-body .btn-primary:hover {
+  background: var(--age-primary-dark);
+  box-shadow: 0 8px 20px rgba(255, 166, 51, 0.35);
+}
 
 .pdfherr-body .btn-secondary,
 .pdfherr-body .btn-accent {

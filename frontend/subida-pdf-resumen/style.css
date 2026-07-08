@@ -61,14 +61,19 @@
   margin: 24px 0 12px;
   color: var(--age-ink);
   font-weight: 800;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--age-border);
+  padding: 4px 0 4px 14px;
+  border-left: 4px solid var(--age-primary);
+}
+.resumen-contenido h2:first-child {
+  margin-top: 0;
 }
 .resumen-contenido h3 {
   font-size: 1.1rem;
   margin: 18px 0 10px;
   color: var(--age-primary-dark);
   font-weight: 700;
+  padding: 2px 0 2px 12px;
+  border-left: 3px solid var(--age-border);
 }
 .resumen-contenido ul, .resumen-contenido ol {
   padding-left: 22px;
@@ -76,6 +81,15 @@
 }
 .resumen-contenido li {
   margin-bottom: 8px;
+}
+.resumen-contenido .resumen-definicion {
+  background: var(--age-primary-soft);
+  border-left: 4px solid var(--age-primary);
+  border-radius: var(--age-radius-sm);
+  padding: 12px 16px;
+  margin: 14px 0;
+  font-style: italic;
+  color: var(--age-ink);
 }
 .resumen-actions {
   display: flex;

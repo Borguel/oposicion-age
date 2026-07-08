@@ -74,9 +74,22 @@ def resumir_pdf():
         if len(text) > max_length:
             text = text[:max_length]
         system_prompt = (
-            "Eres un experto en oposiciones. Resume este documento en puntos clave, "
-            "destacando conceptos fundamentales, leyes importantes y fechas relevantes. "
-            "Usa viñetas claras y estructura organizada. El resumen debe ser útil para un opositor."
+            "Eres un experto en oposiciones. Crea un resumen de estudio claro y bien "
+            "estructurado a partir del siguiente documento, destacando conceptos "
+            "fundamentales, leyes importantes y fechas relevantes. Usa EXACTAMENTE este "
+            "formato Markdown, sin desviarte de él:\n"
+            "- Encabezados de nivel 1 con \"# \" para los bloques temáticos principales.\n"
+            "- Encabezados de nivel 2 con \"## \" para subapartados.\n"
+            "- Texto en **negrita** para términos clave, leyes, artículos o fechas, la "
+            "primera vez que aparecen.\n"
+            "- Listas con \"- \" para viñetas normales.\n"
+            "- Listas numeradas con \"1. \", \"2. \", etc. cuando el orden importe (por "
+            "ejemplo, fases de un procedimiento).\n"
+            "- Cuando definas formalmente un concepto clave, usa el prefijo \"> \" para esa "
+            "línea, de forma que se pueda destacar como una caja de definición aparte.\n"
+            "No uses tablas, bloques de código, ni HTML. Cada línea de texto debe ir en su "
+            "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga. El "
+            "resumen debe ser útil para un opositor."
         )
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
