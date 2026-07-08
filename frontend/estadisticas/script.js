@@ -1,3 +1,21 @@
+// "puntuacion_final" guardado en historial_tests es la puntuación en
+// bruto (aciertos - fallos/3, sin normalizar -- puede ser cualquier rango
+// según el nº de preguntas del test), NO la nota sobre 10. Se recalcula
+// aquí la nota sobre 10 a partir de aciertos/fallos/blancos (siempre
+// presentes en cada entrada del historial), con la misma fórmula que
+// calcular_resultado_test en utils.py, en vez de usar directamente ese
+// campo -- usarlo tal cual producía notas absurdas (p.ej. 36.7) en la
+// gráfica de evolución.
+function notaSobre10(t) {
+  const aciertos = t.aciertos || 0;
+  const fallos = t.fallos || 0;
+  const blancos = t.blancos || 0;
+  const total = aciertos + fallos + blancos;
+  if (!total) return 0;
+  const puntuacion = aciertos - fallos / 3;
+  return Math.round((puntuacion / total) * 1000) / 100;
+}
+
 async function obtenerAuthHeaders() {
   const { idToken } = await import("/assets/auth.js");
   const token = await idToken();
@@ -188,7 +206,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     mostrarTemasNoEstudiados(noEstudiados, todosTemas);
     mostrarTemasFlojos(rendimientoPorTema, todosTemas);
     renderizarCoberturaTemario(temasTocados.size, todosLosTemasIds.length);
-    renderizarPeorRendimiento(rendimientoPorTema, todosTemas);
     renderizarEvolucion(historial);
     renderizarCalendarioRacha(historial);
     const insigniasConseguidas = renderizarInsignias({
@@ -230,7 +247,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       insigniasConseguidas,
       historialReciente: historial.slice(-10).map(t => ({
         fecha: t.fecha,
-        nota: Math.round((t.puntuacion_final ?? 0) * 100) / 10,
+        nota: notaSobre10(t),
         resultado: t.resultado
       })),
       nombreArchivo: "resumen-progreso.pdf"
@@ -327,11 +344,15 @@ document.addEventListener("DOMContentLoaded", async function () {
     const ancho = 600;
     const alto = 160;
     const margen = 20;
-    const notas = recientes.map(t => Math.round((t.puntuacion_final ?? 0) * 100) / 10);
+    const notas = recientes.map(notaSobre10);
     const paso = (ancho - margen * 2) / (recientes.length - 1);
 
     const coordX = (i) => margen + i * paso;
-    const coordY = (nota) => alto - margen - (nota / 10) * (alto - margen * 2);
+    // Se acota la nota a [0, 10] solo para calcular la posición en el
+    // gráfico (un test muy malo con muchos fallos puede dar una nota
+    // negativa según la fórmula oficial) -- así un caso extremo se queda
+    // pegado al borde en vez de disparar la línea fuera del recuadro.
+    const coordY = (nota) => alto - margen - (Math.max(0, Math.min(10, nota)) / 10) * (alto - margen * 2);
 
     const puntos = notas.map((nota, i) => `${coordX(i)},${coordY(nota)}`).join(" ");
 
@@ -374,33 +395,45 @@ document.addEventListener("DOMContentLoaded", async function () {
     caption.style.display = "block";
   }
 
-  // "Tema flojo" = ha respondido al menos 3 preguntas de ese tema (para que
-  // no sea ruido de una sola pregunta con mala suerte) y acierta menos del
-  // 60%. Se muestran como mucho los 3 peores, de menor a mayor acierto.
+  // Se muestran siempre los 3 temas con peor % de acierto que tengan al
+  // menos una pregunta respondida (antes esta tarjeta y la de "Peor
+  // rendimiento" de la sección "Tus temas" mostraban prácticamente la
+  // misma lista por separado -- ahora es un único sitio). El tono del
+  // mensaje sí cambia: solo se pone en plan de alarma si de verdad hay
+  // algún tema por debajo del umbral de "flojo" (>= 3 preguntas y < 60%
+  // de acierto, para que no sea ruido de una sola pregunta con mala
+  // suerte); si no, es simplemente informativo.
   const UMBRAL_ACIERTO_FLOJO = 60;
   const MINIMO_PREGUNTAS_FLOJO = 3;
+  const MINIMO_PREGUNTAS_RANKING = 1;
 
   function mostrarTemasFlojos(rendimientoPorTema, todosTemas) {
     const tarjeta = document.getElementById("tarjeta-temas-flojos");
     const lista = document.getElementById("lista-temas-flojos");
+    const descripcion = document.getElementById("recomendacion-descripcion");
 
-    const temasFlojos = Object.entries(rendimientoPorTema || {})
+    const temasConDatos = Object.entries(rendimientoPorTema || {})
       .map(([id, r]) => {
         const respondidas = (r.aciertos || 0) + (r.fallos || 0);
         const porcentaje = respondidas > 0 ? Math.round((r.aciertos / respondidas) * 100) : null;
         return { id, respondidas, porcentaje };
       })
-      .filter(t => t.respondidas >= MINIMO_PREGUNTAS_FLOJO && t.porcentaje !== null && t.porcentaje < UMBRAL_ACIERTO_FLOJO)
+      .filter(t => t.respondidas >= MINIMO_PREGUNTAS_RANKING && t.porcentaje !== null)
       .sort((a, b) => a.porcentaje - b.porcentaje)
       .slice(0, 3);
 
-    if (temasFlojos.length === 0) {
+    if (temasConDatos.length === 0) {
       tarjeta.style.display = "none";
       return;
     }
 
+    const hayAlarma = temasConDatos.some(t => t.respondidas >= MINIMO_PREGUNTAS_FLOJO && t.porcentaje < UMBRAL_ACIERTO_FLOJO);
+    descripcion.textContent = hayAlarma
+      ? "Estos son los temas donde menos aciertas. Un repaso rápido ahora mismo puede subirte mucho la nota."
+      : "Todavía no tienes ningún tema por debajo del 60% de acierto -- aquí tienes los que más margen de mejora tienen.";
+
     lista.innerHTML = "";
-    temasFlojos.forEach(t => {
+    temasConDatos.forEach(t => {
       const tema = todosTemas.find(x => x.id === t.id);
       const nombre = tema ? tema.titulo : `Tema ${t.id}`;
       const li = document.createElement("li");
@@ -421,48 +454,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("cobertura-texto").textContent = `${totalTocados} de ${totalTemas} temas trabajados`;
     document.getElementById("cobertura-porcentaje").textContent = `${porcentaje}%`;
     document.getElementById("cobertura-fill").style.width = `${porcentaje}%`;
-  }
-
-  // "Peor rendimiento": a diferencia de "temas flojos" (que solo avisa si
-  // hay temas por debajo de un umbral de alarma), este ranking se muestra
-  // siempre que haya al menos un tema con alguna pregunta respondida, para
-  // que el usuario vea en todo momento dónde está su margen de mejora.
-  const MINIMO_PREGUNTAS_RANKING = 1;
-
-  function renderizarPeorRendimiento(rendimientoPorTema, todosTemas) {
-    const lista = document.getElementById("lista-peor-rendimiento");
-    const vacio = document.getElementById("peor-rendimiento-vacio");
-
-    const peores = Object.entries(rendimientoPorTema || {})
-      .map(([id, r]) => {
-        const respondidas = (r.aciertos || 0) + (r.fallos || 0);
-        const porcentaje = respondidas > 0 ? Math.round((r.aciertos / respondidas) * 100) : null;
-        return { id, respondidas, porcentaje };
-      })
-      .filter(t => t.respondidas >= MINIMO_PREGUNTAS_RANKING && t.porcentaje !== null)
-      .sort((a, b) => a.porcentaje - b.porcentaje)
-      .slice(0, 3);
-
-    if (peores.length === 0) {
-      lista.innerHTML = "";
-      vacio.style.display = "block";
-      return;
-    }
-    vacio.style.display = "none";
-
-    lista.innerHTML = peores.map(t => {
-      const tema = todosTemas.find(x => x.id === t.id);
-      const nombre = tema ? tema.titulo : `Tema ${t.id}`;
-      return `
-        <li>
-          <div class="mini-ranking-info">
-            <span class="mini-ranking-nombre" title="${nombre}">${nombre}</span>
-            <span class="mini-ranking-porcentaje">${t.porcentaje}% de acierto</span>
-          </div>
-          <a class="mini-ranking-repasar" href="/test-personalizado/?temas=${encodeURIComponent(t.id)}">Repasar</a>
-        </li>
-      `;
-    }).join("");
   }
 
   // Calendario de racha: mapa de calor de los últimos ~12 semanas a partir

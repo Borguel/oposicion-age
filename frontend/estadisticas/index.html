@@ -37,7 +37,7 @@
   <div class="tarjeta-recomendacion" id="tarjeta-temas-flojos" style="display:none;">
     <div class="recomendacion-icono">💡</div>
     <div class="recomendacion-texto">
-      <h4>Repasa tus temas flojos</h4>
+      <h4>Tus temas con más margen de mejora</h4>
       <p id="recomendacion-descripcion">Estos son los temas donde menos aciertas. Un repaso rápido ahora mismo puede subirte mucho la nota.</p>
       <ul id="lista-temas-flojos"></ul>
     </div>
@@ -199,20 +199,6 @@
       <div class="detalle">Temas pendientes por estudiar</div>
       <button class="btn-ver-temas" id="btn-ver-nuevos" type="button">Ver lista completa</button>
     </div>
-    <!-- Peor rendimiento: ranking de los 3 temas con menor % de acierto,
-         siempre visible (a diferencia del aviso de "temas flojos" de
-         arriba, que solo aparece si superan el umbral de alarma). -->
-    <div class="tarjeta-estadistica tarjeta-peor-rendimiento" id="peor-rendimiento-container">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2 15 9l7 1-5 5 1.5 7L12 18.5 5.5 22 7 15 2 10l7-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="none"/>
-        </svg>
-        <h4>Peor rendimiento</h4>
-      </div>
-      <ul class="mini-ranking" id="lista-peor-rendimiento"></ul>
-      <p class="mini-ranking-vacio" id="peor-rendimiento-vacio" style="display:none;">Aún no hay suficientes datos por tema.</p>
-    </div>
-
     <div class="seccion-separador">
       <h3>🕒 Otra actividad</h3>
     </div>
