@@ -38,6 +38,7 @@
       <form id="form-subir-pdf">
         <div class="form-group">
           <label for="archivo-pdf">📄 Selecciona tu archivo PDF (máx. 10 MB)</label>
+          <p class="limite-paginas-nota hidden" id="limite-paginas-nota"></p>
           <div class="file-upload-area" id="upload-area">
             <div class="upload-icon">⬆️</div>
             <div class="upload-text">
@@ -99,6 +100,7 @@
       </div>
       <div class="filters" style="margin-top: 2rem;">
         <button id="btn-lista-tarjetas" class="btn btn-secondary">📋 Ver Lista de Tarjetas</button>
+        <button id="btn-descargar-pdf" class="btn btn-outline">📄 Descargar PDF</button>
         <button id="btn-cerrar" class="btn btn-primary">✖️ Cerrar</button>
       </div>
     </div>
@@ -110,15 +112,21 @@
       </div>
       <div class="filters">
         <button id="btn-volver-estudio" class="btn btn-primary">← Volver al Modo Estudio</button>
+        <button id="btn-descargar-pdf-lista" class="btn btn-outline">📄 Descargar PDF</button>
       </div>
       <div id="contenedor-lista-tarjetas" class="lista-tarjetas"></div>
     </div>
   </div>
   <!-- Indicador de Auto-guardado -->
   <div id="auto-save-indicator" class="auto-save-indicator">💾 Guardado automáticamente</div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  
+
   <script src="/subida-pdf-tarjetas/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
+  <script type="module">
+    import { mostrarLimitePaginas } from "/assets/limite-paginas.js";
+    mostrarLimitePaginas();
+  </script>
 </body>
 </html>

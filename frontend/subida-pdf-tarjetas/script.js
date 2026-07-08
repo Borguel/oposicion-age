@@ -144,6 +144,109 @@ async function obtenerAuthHeaders() {
       listaTarjetas.classList.add('hidden');
       formularioCard.classList.remove('hidden');
     }
+    function formatearFecha(fecha) {
+      return new Intl.DateTimeFormat('es-ES', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      }).format(fecha);
+    }
+    // === Descarga en PDF ===
+    // Cada tarjeta (número + pregunta + respuesta) se mide como un único
+    // bloque y se pagina entera de una vez -- igual que en
+    // subida-pdf-resumen/esquemas -- para que una tarjeta nunca quede
+    // partida a la mitad entre dos páginas.
+    function descargarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+      const margin = 18;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const anchoTexto = pageWidth - margin * 2 - 4;
+      const limiteInferior = pageHeight - 22;
+      let yPos = 0;
+      let pagina = 0;
+
+      function pintarPie() {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(150);
+        doc.text(`Página ${pagina + 1}`, pageWidth - margin, pageHeight - 10, { align: "right" });
+        doc.text("Oposición AGE", margin, pageHeight - 10);
+        doc.setTextColor(0);
+      }
+      function nuevaPagina() {
+        doc.addPage();
+        pagina++;
+        yPos = 24;
+        pintarPie();
+      }
+      function asegurarEspacio(altura) {
+        if (yPos + altura > limiteInferior) nuevaPagina();
+      }
+
+      // Portada
+      yPos = 26;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text(`Tarjetas de ${nombreArchivo}`, pageWidth / 2, yPos, { align: "center" });
+      yPos += 10;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(110);
+      doc.text(formatearFecha(new Date()), pageWidth / 2, yPos, { align: "center" });
+      doc.setTextColor(0);
+      yPos += 14;
+      pintarPie();
+
+      // Mismos colores de marca que la versión en pantalla (theme.css).
+      const NARANJA_OSCURO = [232, 134, 15];
+      const ALTO_LINEA_NUMERO = 12.5 * 0.42;
+      const ALTO_LINEA_TEXTO = 11 * 0.42;
+
+      function medirTarjeta(t, i) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12.5);
+        const lineasNumero = doc.splitTextToSize(`Tarjeta ${i + 1}`, anchoTexto);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11.5);
+        const lineasPregunta = doc.splitTextToSize(t.pregunta || "Sin pregunta", anchoTexto);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        const lineasRespuesta = doc.splitTextToSize(t.respuesta || "Sin respuesta", anchoTexto);
+        const altura = 6
+          + lineasNumero.length * ALTO_LINEA_NUMERO + 3
+          + lineasPregunta.length * (11.5 * 0.42) + 4
+          + lineasRespuesta.length * ALTO_LINEA_TEXTO + 8;
+        return { lineasNumero, lineasPregunta, lineasRespuesta, altura };
+      }
+
+      tarjetas.map(medirTarjeta).forEach((m) => {
+        asegurarEspacio(m.altura);
+        yPos += 6;
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12.5);
+        doc.setTextColor(...NARANJA_OSCURO);
+        m.lineasNumero.forEach((linea) => { doc.text(linea, margin, yPos); yPos += ALTO_LINEA_NUMERO; });
+        doc.setTextColor(0);
+        yPos += 3;
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11.5);
+        m.lineasPregunta.forEach((linea) => { doc.text(linea, margin, yPos); yPos += 11.5 * 0.42; });
+        yPos += 4;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        m.lineasRespuesta.forEach((linea) => { doc.text(linea, margin, yPos); yPos += ALTO_LINEA_TEXTO; });
+        yPos += 6;
+
+        doc.setDrawColor(225);
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 8;
+      });
+
+      doc.save(`tarjetas_${nombreArchivo.replace('.pdf', '')}.pdf`);
+    }
     function shuffleArray(array) {
       const arr = [...array];
       for (let i = arr.length - 1; i > 0; i--) {
@@ -294,6 +397,8 @@ async function obtenerAuthHeaders() {
       listaTarjetas.classList.add('hidden');
       modoEstudio.classList.remove('hidden');
     });
+    document.getElementById('btn-descargar-pdf').addEventListener('click', descargarPDF);
+    document.getElementById('btn-descargar-pdf-lista').addEventListener('click', descargarPDF);
     // "Cerrar" reúne lo que antes hacían por separado "Nuevo PDF" y
     // "Finalizar" (los dos volvían al formulario para adjuntar otro
     // documento): un único botón, sin diálogo de confirmación previo.

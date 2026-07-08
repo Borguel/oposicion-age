@@ -94,6 +94,14 @@
   margin-bottom: 8px;
 }
 
+/* Aviso del límite de páginas del plan actual, antes de subir el PDF (ver
+   /assets/limite-paginas.js) */
+.pdfherr-body .limite-paginas-nota {
+  margin: -4px 0 10px;
+  font-size: 0.82rem;
+  color: var(--age-ink-soft);
+}
+
 .pdfherr-body input[type="number"],
 .pdfherr-body input[type="text"],
 .pdfherr-body select.form-control {

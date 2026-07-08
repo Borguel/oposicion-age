@@ -40,6 +40,7 @@
       <form id="form-subir-pdf">
         <div class="form-group">
           <label for="archivo-pdf">📄 Sube tu documento PDF (máx. 10 MB)</label>
+          <p class="limite-paginas-nota hidden" id="limite-paginas-nota"></p>
           <div class="file-upload-area" id="upload-area">
             <div class="upload-icon">⬆️</div>
             <div class="upload-text">
@@ -92,5 +93,9 @@
 
   <script src="/subida-pdf-generar-test/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
+  <script type="module">
+    import { mostrarLimitePaginas } from "/assets/limite-paginas.js";
+    mostrarLimitePaginas();
+  </script>
 </body>
 </html>
