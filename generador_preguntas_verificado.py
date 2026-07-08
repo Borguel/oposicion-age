@@ -29,7 +29,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from deepseek_utils import call_deepseek_api
-from utils import obtener_subbloques_individuales, repartir_cupos_por_tema
+from utils import obtener_subbloques_individuales, repartir_cupos_por_tema, barajar_opciones_pregunta
 from validador_preguntas import validar_pregunta
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
@@ -263,7 +263,7 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             preguntas_ya_aceptadas.add(clave_dedup)
         pregunta_candidata["tema_id"] = tema_id
         pregunta_candidata.setdefault("tipo_pregunta", tipo_pregunta)
-        return pregunta_candidata
+        return barajar_opciones_pregunta(pregunta_candidata)
 
     return None
 

@@ -11,7 +11,7 @@ from firebase_setup import db
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 from limites_uso import verificar_limite_uso, registrar_uso
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales
-from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales
+from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, barajar_opciones_pregunta
 from test_generator import generar_preguntas_ia_en_lotes
 from generador_preguntas_verificado import generar_test_verificado
 from esquema_generator import generar_esquema
@@ -231,6 +231,7 @@ Devuelve SOLO un array JSON con este formato exacto, sin texto adicional ni bloq
         preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas)
         if not preguntas:
             return jsonify({"error": "Sin respuesta de DeepSeek"}), 500
+        preguntas = [barajar_opciones_pregunta(p) for p in preguntas]
         resultado = {"test": preguntas}
         if len(preguntas) < num_preguntas:
             resultado["advertencia"] = f"Solo se generaron {len(preguntas)} de {num_preguntas} preguntas."

@@ -21,6 +21,7 @@ from documentos_pdf import (
 )
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import generar_preguntas_ia_en_lotes
+from utils import barajar_opciones_pregunta
 
 logger = logging.getLogger(__name__)
 
@@ -232,7 +233,7 @@ def generar_test_desde_pdf():
                 for key in list(p["opciones"].keys()):
                     p["opciones"][key] = str(p["opciones"][key]).strip() if p["opciones"][key] else "Opción no disponible"
                 p["respuesta_correcta"] = str(p["respuesta_correcta"]).upper() if p["respuesta_correcta"] else "A"
-                preguntas_validadas.append(p)
+                preguntas_validadas.append(barajar_opciones_pregunta(p))
         if not preguntas_validadas:
             return jsonify({
                 "error": "La IA generó preguntas vacías o inválidas."

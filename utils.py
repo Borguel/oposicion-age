@@ -1,4 +1,5 @@
 import random
+import re
 import tiktoken
 from typing import List, Dict
 
@@ -281,4 +282,55 @@ def obtener_titulos_temas_reales(db, coleccion, lista_codigos):
         doc = db.collection(coleccion).document(bloque_id).collection("temas").document(tema_id).get()
         titulos.append(doc.to_dict().get("titulo", codigo) if doc.exists else codigo)
     return titulos
+
+
+_LETRAS_OPCION = ["A", "B", "C", "D"]
+
+
+def _remapear_explicacion_por_letra(explicacion, mapa_original_a_nueva):
+    """La explicación de una pregunta de test se pide con el patrón
+    "A) ... B) ... C) ... D) ...", una línea por opción en el orden
+    ORIGINAL que decidió la IA. Al barajar las opciones hay que reescribir
+    esos prefijos de letra para que sigan señalando a la opción correcta --
+    si no, tras barajar, la explicación podría decir "B) es correcta" sobre
+    una opción que ahora es la C."""
+    texto = (explicacion or "").strip()
+    if not re.match(r"^[A-D]\)\s", texto):
+        return explicacion  # no sigue el formato esperado: se deja tal cual
+    partes = re.split(r"\s(?=[A-D]\)\s)", texto)
+    segmentos = {}
+    for parte in partes:
+        m = re.match(r"^([A-D])\)\s*(.*)$", parte, re.DOTALL)
+        if not m:
+            return explicacion  # forma inesperada: no arriesgar a corromper el texto
+        segmentos[m.group(1)] = m.group(2)
+    if set(segmentos) != set(_LETRAS_OPCION):
+        return explicacion
+    inversa = {nueva: original for original, nueva in mapa_original_a_nueva.items()}
+    return " ".join(f"{letra}) {segmentos[inversa[letra]]}" for letra in _LETRAS_OPCION)
+
+
+def barajar_opciones_pregunta(pregunta):
+    """Los LLM tienden a poner la respuesta correcta en la opción A con
+    mucha más frecuencia de la que correspondería al azar (sesgo de
+    posición ya documentado en generación con IA) -- sin este barajado, un
+    usuario que haga suficientes tests de una herramienta con IA podría
+    acabar detectando el patrón y aprobando sin saberse el temario. Se
+    baraja la posición de las 4 opciones con random.shuffle (nunca decidido
+    por la IA) y se remapean tanto "respuesta_correcta" como la explicación
+    para que sigan señalando a la opción que corresponde. Usada por los tres
+    generadores de test con IA (temario oficial, PDF subido, test
+    "inteligente")."""
+    opciones = pregunta.get("opciones")
+    if not isinstance(opciones, dict) or set(opciones.keys()) != set(_LETRAS_OPCION):
+        return pregunta  # forma inesperada: no arriesgar a corromper la pregunta
+    correcta_original = pregunta.get("respuesta_correcta")
+    permutacion = list(_LETRAS_OPCION)
+    random.shuffle(permutacion)
+    mapa_original_a_nueva = {permutacion[i]: _LETRAS_OPCION[i] for i in range(4)}
+    pregunta["opciones"] = {_LETRAS_OPCION[i]: opciones[permutacion[i]] for i in range(4)}
+    if correcta_original in mapa_original_a_nueva:
+        pregunta["respuesta_correcta"] = mapa_original_a_nueva[correcta_original]
+    pregunta["explicacion"] = _remapear_explicacion_por_letra(pregunta.get("explicacion"), mapa_original_a_nueva)
+    return pregunta
 
