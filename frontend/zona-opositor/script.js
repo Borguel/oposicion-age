@@ -62,14 +62,16 @@ async function cargarProgresoInsignias() {
   try {
     const token = await idToken();
     const oposicion = obtenerOposicionActual();
-    const [resEstadisticas, resRacha] = await Promise.all([
+    const [resEstadisticas, resRacha, resTemas] = await Promise.all([
       fetch(`${BACKEND_URL}/estadisticas-completas?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } }),
-      fetch(`${BACKEND_URL}/mi-racha`, { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${BACKEND_URL}/mi-racha`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${BACKEND_URL}/temas-disponibles?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } })
     ]);
     if (!resEstadisticas.ok) return;
     const { estadisticas } = await resEstadisticas.json();
     if (!estadisticas || estadisticas.error) return;
     const racha = resRacha.ok ? await resRacha.json() : { racha_maxima: 0 };
+    const temas = resTemas.ok ? (await resTemas.json()).temas || [] : [];
 
     const datos = {
       testsRealizados: estadisticas.tests_realizados ?? 0,
@@ -85,9 +87,48 @@ async function cargarProgresoInsignias() {
     document.getElementById("zona-progreso-insignias").textContent = `${conseguidas}/${INSIGNIAS_UMBRALES.length}`;
     document.getElementById("zona-progreso-nota").textContent = datos.puntuacionMedia.toFixed(1);
     document.getElementById("zona-progreso").style.display = "";
+    renderTemaFlojo(estadisticas.rendimiento_por_tema ?? {}, temas);
   } catch (e) {
     console.error("Error cargando progreso de insignias:", e);
   }
+}
+
+// Mismo criterio de "tema flojo" que en Estadísticas: al menos 3 preguntas
+// respondidas de ese tema y menos del 60% de acierto. Aquí solo se muestra
+// el peor de todos, como aviso directo en el propio panel principal.
+const UMBRAL_ACIERTO_FLOJO = 60;
+const MINIMO_PREGUNTAS_FLOJO = 3;
+
+function renderTemaFlojo(rendimientoPorTema, todosTemas) {
+  const contenedor = document.getElementById("zona-tema-flojo");
+  const peor = Object.entries(rendimientoPorTema || {})
+    .map(([id, r]) => {
+      const respondidas = (r.aciertos || 0) + (r.fallos || 0);
+      const porcentaje = respondidas > 0 ? Math.round((r.aciertos / respondidas) * 100) : null;
+      return { id, respondidas, porcentaje };
+    })
+    .filter((t) => t.respondidas >= MINIMO_PREGUNTAS_FLOJO && t.porcentaje !== null && t.porcentaje < UMBRAL_ACIERTO_FLOJO)
+    .sort((a, b) => a.porcentaje - b.porcentaje)[0];
+
+  if (!peor) {
+    contenedor.style.display = "none";
+    return;
+  }
+
+  const tema = todosTemas.find((t) => t.id === peor.id);
+  const nombre = tema ? tema.titulo : `Tema ${peor.id}`;
+  contenedor.innerHTML = `
+    <div class="zona-mis-cosas-divisor"></div>
+    <a class="zona-mis-cosas-item" href="/test-personalizado/?temas=${encodeURIComponent(peor.id)}">
+      <span class="zona-mis-cosas-icono">${icono("diana", 26)}</span>
+      <span class="zona-mis-cosas-texto">
+        <strong>Tu tema más flojo: <span title="${nombre}">${nombre}</span></strong>
+        <small>${peor.porcentaje}% de acierto · repásalo ahora</small>
+      </span>
+      <span class="zona-mis-cosas-flecha">→</span>
+    </a>
+  `;
+  contenedor.style.display = "";
 }
 
 async function iniciarBotonNotificaciones() {
@@ -205,6 +246,38 @@ async function cargarCuentaAtras() {
       console.error("Error quitando fecha de examen:", e);
     }
   });
+}
+
+const PAGINA_POR_TIPO_TEST = {
+  personalizado: "/test-personalizado/",
+  oficial: "/test-oficial/",
+  inteligente: "/test-inteligente/",
+  repetido: "/repetir-test/",
+  falladas: "/preguntas-falladas/",
+  favoritas: "/preguntas-favoritas/"
+};
+
+async function cargarTestEnProgreso() {
+  try {
+    const token = await idToken();
+    const oposicion = obtenerOposicionActual();
+    const res = await fetch(`${BACKEND_URL}/mis-tests?oposicion=${encodeURIComponent(oposicion)}&estado=en_progreso`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const { tests } = await res.json();
+    if (!Array.isArray(tests) || tests.length === 0) return;
+
+    const test = tests[0]; // ya viene ordenado por fecha descendente
+    const pagina = PAGINA_POR_TIPO_TEST[test.tipo] || "/test-generator/";
+    const vista = (test.indice_actual || 0) + 1;
+    document.getElementById("zona-continuar-detalle").textContent =
+      `Ibas por la pregunta ${vista} de ${test.num_preguntas || "?"}. Retómalo donde lo dejaste.`;
+    document.getElementById("zona-continuar-boton").href = `${pagina}?resume=${test.id}`;
+    document.getElementById("zona-continuar").style.display = "";
+  } catch (e) {
+    console.error("Error cargando test en progreso:", e);
+  }
 }
 
 // Avisos rotativos con recomendaciones de uso, inspirados en el panel de
@@ -359,6 +432,7 @@ async function iniciar() {
 
   cargarRacha();
   cargarProgresoInsignias();
+  cargarTestEnProgreso();
   iniciarBotonNotificaciones();
   cargarCuentaAtras();
   renderAviso();

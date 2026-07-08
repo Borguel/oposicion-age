@@ -167,6 +167,52 @@ body {
   }
 }
 
+.zona-continuar-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 26px;
+  border: 1px solid var(--age-orange, #ffa633);
+}
+
+.zona-continuar-icono {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.zona-continuar-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.zona-continuar-titulo {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.zona-continuar-detalle {
+  color: var(--age-ink-soft);
+  font-size: 0.92rem;
+}
+
+.zona-continuar-boton {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .zona-continuar-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .zona-continuar-boton {
+    width: 100%;
+  }
+}
+
 .zona-cuenta-atras-card {
   display: flex;
   align-items: center;
