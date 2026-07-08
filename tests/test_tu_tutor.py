@@ -173,6 +173,31 @@ def test_pregunta_sobre_como_se_divide_el_temario_usa_el_catalogo_real(db):
     assert "Bloque II. Derecho administrativo (1 temas)" in user_prompt
 
 
+def test_variaciones_de_orden_de_la_pregunta_tambien_usan_el_catalogo_real(db):
+    # Bug real reportado: "¿qué estructura tiene el temario?" no activaba
+    # nada porque la detección comparaba frases EXACTAS ("estructura del
+    # temario") y esta pregunta trae las mismas palabras en otro orden, así
+    # que el modelo acababa inventando una estructura de 2 bloques que no
+    # existe. La detección ahora es por palabras sueltas, sin importar el
+    # orden.
+    db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Organización del Estado"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "La Constitución Española de 1978"})
+    preguntas = [
+        "¿Qué estructura tiene el temario?",
+        "¿Cómo está organizado el temario?",
+        "¿De qué se compone el temario?",
+        "¿Cuántos bloques tiene la oposición?",
+    ]
+    for pregunta in preguntas:
+        with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+            _texto, _chat_id, usar_rag = responder_tutor(
+                pregunta, db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE"
+            )
+        assert usar_rag is False
+        user_prompt = mock_llamada.call_args.kwargs["messages"][1]["content"]
+        assert "ESTRUCTURA REAL DEL TEMARIO" in user_prompt, f"no se detectó para: {pregunta!r}"
+
+
 def test_pregunta_sobre_el_temario_sin_catalogo_cargado_no_falla(db):
     with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
         texto, _chat_id, usar_rag = responder_tutor(

@@ -164,6 +164,14 @@ def _normalizar(texto):
     return "".join(c for c in descompuesto if unicodedata.category(c) != "Mn")
 
 
+def _tokens(texto):
+    # split() a secas deja signos de puntuación pegados a la palabra
+    # ("temario?", "¿como") -- \w+ los separa, para que las comparaciones
+    # por palabra suelta (_necesita_resumen_temario) no fallen solo porque
+    # la pregunta termine en "?" o empiece por "¿".
+    return set(re.findall(r"\w+", _normalizar(texto)))
+
+
 def _palabras_significativas(titulo, minimo=5):
     return [p for p in _normalizar(titulo).split() if len(p) >= minimo]
 
@@ -245,17 +253,37 @@ def _necesita_datos_convocatoria(mensaje):
 # Firestore (obtener_resumen_temario), para que Tu Tutor nunca invente
 # bloques/temas que no existen de verdad.
 # ============================================================
-_PALABRAS_TEMARIO_ESTRUCTURA = [
-    "divide el temario", "bloques tiene el temario", "cuantos temas tiene",
-    "cuantos bloques tiene", "estructura del temario", "organizado el temario",
-    "partes tiene el temario", "temas tiene la oposicion", "que temas hay",
-    "que bloques hay", "lista de temas", "temario completo", "todos los temas",
-]
+# Antes esto comparaba frases completas exactas ("estructura del temario",
+# "divide el temario"...) contra el mensaje -- se rompía con cualquier
+# reordenación de las mismas palabras (p. ej. "¿Qué estructura tiene el
+# temario?" o "¿Cómo está organizado el temario?" no contienen esas frases
+# tal cual, así que no activaban nada y el modelo acababa inventando la
+# estructura). Ahora se comprueba por palabras sueltas, sin importar el
+# orden: basta con que aparezca una palabra "ancla" (temario/oposición) y
+# una palabra que indique que se pregunta por su estructura.
+_TEMARIO_ANCLAS = {"temario", "oposicion"}
+_TEMARIO_INDICADORES_ESTRUCTURA = {
+    "estructura", "divide", "dividen", "dividido", "organiza", "organizado",
+    "organizada", "partes", "compone", "compuesto", "consta", "completo",
+    "lista", "listado", "bloques",
+}
 
 
 def _necesita_resumen_temario(mensaje):
-    mensaje_norm = _normalizar(mensaje)
-    return any(palabra in mensaje_norm for palabra in _PALABRAS_TEMARIO_ESTRUCTURA)
+    palabras = _tokens(mensaje)
+    if palabras & _TEMARIO_ANCLAS and palabras & _TEMARIO_INDICADORES_ESTRUCTURA:
+        return True
+    # "cuántos temas/bloques tiene..." -- "cuantos"/"cuantas" solos son
+    # demasiado genéricos (chocarían con preguntas de plazas o del número
+    # de preguntas del examen), pero junto a "temas"/"bloques" no dejan
+    # lugar a dudas de que la pregunta es sobre el temario.
+    if {"cuantos", "cuantas"} & palabras and {"temas", "bloques"} & palabras:
+        return True
+    # "dame la lista/listado de todos los temas" -- sin la palabra
+    # "temario" ni "oposición" delante.
+    if {"lista", "listado", "todos"} & palabras and "temas" in palabras:
+        return True
+    return False
 
 
 # 📌 Construye todo lo necesario para llamar al modelo (system prompt,
