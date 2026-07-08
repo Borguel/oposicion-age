@@ -231,9 +231,29 @@ body {
 .test-card-acciones {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
   padding-top: 12px;
   border-top: 1px solid var(--age-border);
+}
+
+/* Los botones siempre en una sola fila, repartiéndose el ancho a partes
+   iguales -- antes tenían padding/tamaño fijos y en móvil (donde hay que
+   mostrar 3 botones: Repetir/Ver resultados/Eliminar) el tercero se caía a
+   una línea aparte por falta de espacio. */
+.test-card-acciones .age-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 11px 10px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 400px) {
+  .test-card-acciones .age-btn {
+    padding: 10px 4px;
+    font-size: 0.76rem;
+  }
 }
 
 .test-card-resultados {
