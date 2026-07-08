@@ -44,20 +44,83 @@ def agregar_mensaje_a_conversacion(db, usuario_id, conversacion_id, role, conten
 # dejar crecer el prompt sin límite en conversaciones muy largas.
 _HISTORIAL_MAXIMO_MENSAJES = 30
 
+# En vez de perder de golpe TODO el contexto anterior al pasar de
+# _HISTORIAL_MAXIMO_MENSAJES (el mensaje 31 se quedaría sin ningún rastro de
+# los 30 primeros), los mensajes que caen fuera de la ventana se comprimen
+# en un resumen que se antepone al historial reciente. Para no llamar al
+# modelo a resumir en cada turno (coste/latencia), el resumen solo se
+# regenera cuando se acumula un lote nuevo de mensajes fuera de ventana, no
+# mensaje a mensaje -- mientras tanto se reutiliza el resumen ya guardado
+# (los pocos mensajes más recientes que aún no entran en él se pierden
+# temporalmente, hasta el siguiente lote).
+_LOTE_RESUMEN_HISTORIAL = 10
+
+
+def _resumir_mensajes_antiguos(resumen_previo, mensajes_a_resumir):
+    system_prompt = (
+        "Resumes conversaciones de un chat de tutoría para oposiciones. Quédate solo con lo que "
+        "pueda hacer falta más adelante: temas tratados, dudas ya resueltas, dificultades o "
+        "preferencias que haya mencionado el usuario. Sé breve, unas pocas frases, sin adornos."
+    )
+    texto_mensajes = "\n".join(f"{m['role']}: {m['content']}" for m in mensajes_a_resumir)
+    if resumen_previo:
+        prompt_usuario = (
+            f"Resumen de la conversación hasta ahora:\n{resumen_previo}\n\n"
+            f"Nuevos mensajes a incorporar (fusiona todo en un único resumen actualizado, sin "
+            f"separarlo en partes):\n{texto_mensajes}"
+        )
+    else:
+        prompt_usuario = f"Mensajes a resumir:\n{texto_mensajes}"
+    resumen = call_deepseek_api(
+        messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt_usuario}],
+        temperature=0.3,
+        max_tokens=300
+    )
+    return (resumen or resumen_previo or "").strip() or None
+
+
+def _actualizar_resumen_si_hace_falta(db, usuario_id, chat_id, conversacion):
+    mensajes = conversacion.get("mensajes", [])
+    if len(mensajes) <= _HISTORIAL_MAXIMO_MENSAJES:
+        return None
+
+    mensajes_fuera_de_ventana = mensajes[:-_HISTORIAL_MAXIMO_MENSAJES]
+    ya_cubiertos = conversacion.get("resumen_cubre_mensajes", 0)
+    pendientes = mensajes_fuera_de_ventana[ya_cubiertos:]
+    resumen_previo = conversacion.get("resumen_antiguo")
+    if len(pendientes) < _LOTE_RESUMEN_HISTORIAL:
+        return resumen_previo
+
+    nuevo_resumen = _resumir_mensajes_antiguos(resumen_previo, pendientes)
+    db.collection("conversaciones_IA").document(usuario_id).collection("conversaciones").document(chat_id).update({
+        "resumen_antiguo": nuevo_resumen,
+        "resumen_cubre_mensajes": len(mensajes_fuera_de_ventana),
+    })
+    return nuevo_resumen
+
 
 def _historial_previo(db, usuario_id, chat_id):
     if not chat_id:
         return []
-    conversacion = db.collection("conversaciones_IA") \
-                      .document(usuario_id) \
-                      .collection("conversaciones") \
-                      .document(chat_id) \
-                      .get()
-    if not conversacion.exists:
+    conversacion_snap = db.collection("conversaciones_IA") \
+                           .document(usuario_id) \
+                           .collection("conversaciones") \
+                           .document(chat_id) \
+                           .get()
+    if not conversacion_snap.exists:
         return []
-    mensajes = (conversacion.to_dict() or {}).get("mensajes", [])
-    mensajes = mensajes[-_HISTORIAL_MAXIMO_MENSAJES:]
-    return [{"role": m["role"], "content": m["content"]} for m in mensajes]
+    conversacion = conversacion_snap.to_dict() or {}
+    mensajes = conversacion.get("mensajes", [])
+    resumen = _actualizar_resumen_si_hace_falta(db, usuario_id, chat_id, conversacion)
+    mensajes_recientes = mensajes[-_HISTORIAL_MAXIMO_MENSAJES:]
+    historial = [{"role": m["role"], "content": m["content"]} for m in mensajes_recientes]
+    if resumen:
+        historial.insert(0, {
+            "role": "system",
+            "content": "Resumen de la parte anterior de esta conversación (esos mensajes ya no "
+                       f"están disponibles palabra por palabra): {resumen}"
+        })
+    return historial
 
 # ✅ Asistente premium especializado en el examen, adaptado a la oposición
 # concreta que esté estudiando el usuario (mismo asistente, distinto "traje").
@@ -126,6 +189,11 @@ def _temas_mencionados(mensaje, catalogo):
 # intercambio (usuario + asistente) para no seguir arrastrando el mismo tema
 # mucho después de que la conversación haya cambiado de asunto.
 _MENSAJES_CONTEXTO_TEMAS = 2
+
+
+def _titulos_legibles(ids_temas, catalogo):
+    catalogo_por_id = {tema["id"]: tema["titulo"] for tema in catalogo}
+    return [catalogo_por_id[id_tema] for id_tema in ids_temas if id_tema in catalogo_por_id]
 
 
 def _temas_mencionados_en_la_conversacion(mensaje, historial, catalogo):
@@ -209,13 +277,32 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
         # ninguno cuando ya se decidió que hace falta RAG.
         temas_para_buscar = temas_detectados or [tema["id"] for tema in catalogo]
         contexto = obtener_contexto_por_temas_exactos(db, temas_para_buscar, coleccion=coleccion)
-        system_prompt = "Eres un asistente experto en oposiciones."
-        prompt_usuario = (
-            f"Eres un asistente experto en oposiciones. Utiliza el siguiente contenido del temario "
-            f"para responder con claridad y precisión a la pregunta del usuario.\n\n"
-            f"CONTENIDO DEL TEMARIO:\n{contexto}\n\n"
-            f"PREGUNTA DEL USUARIO:\n{mensaje}"
-        ) if contexto else mensaje
+        # Mismo system prompt que el resto de respuestas (persona, tono y
+        # reglas de honestidad de Tu Tutor) -- antes esta rama usaba uno
+        # genérico aparte y perdía todo eso justo cuando respondía con
+        # contenido real del temario.
+        system_prompt = _instrucciones_asistente_examen(oposicion)
+        if contexto:
+            titulos_temas = _titulos_legibles(temas_detectados, catalogo)
+            if titulos_temas:
+                nota_fuente = (
+                    "Indica de forma natural en tu respuesta de qué tema del temario procede el "
+                    "contenido (p. ej. \"según el tema de " + titulos_temas[0] + "...\"), citando el "
+                    "título exacto: " + "; ".join(titulos_temas) + "."
+                )
+            else:
+                nota_fuente = (
+                    "Deja claro que la respuesta se basa en el contenido oficial del temario de la "
+                    "plataforma, no en tu conocimiento general."
+                )
+            prompt_usuario = (
+                "Utiliza el siguiente contenido del temario oficial para responder con claridad y "
+                f"precisión a la pregunta del usuario. {nota_fuente}\n\n"
+                f"CONTENIDO DEL TEMARIO:\n{contexto}\n\n"
+                f"PREGUNTA DEL USUARIO:\n{mensaje}"
+            )
+        else:
+            prompt_usuario = mensaje
     else:
         system_prompt = _instrucciones_asistente_examen(oposicion)
         datos_convocatoria = obtener_datos_convocatoria(db, oposicion) if _necesita_datos_convocatoria(mensaje) else None

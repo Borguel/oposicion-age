@@ -30,9 +30,15 @@ def test_pregunta_sobre_un_tema_del_temario_activa_rag(db):
     mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
     system_prompt = mensajes_enviados[0]["content"]
     user_prompt = mensajes_enviados[1]["content"]
-    assert system_prompt == "Eres un asistente experto en oposiciones."
+    # Mismo system prompt (persona/tono/reglas de honestidad de Tu Tutor)
+    # que el resto de respuestas -- antes la rama RAG usaba uno genérico
+    # aparte y perdía todo eso justo al responder con contenido real.
+    assert "Tu Tutor" in system_prompt
     assert "CONTENIDO DEL TEMARIO" in user_prompt
     assert "preámbulo" in user_prompt
+    # Debe citar de qué tema procede el contenido, para que el usuario
+    # pueda verificarlo (no una simple afirmación sin fuente).
+    assert "La Constitución Española de 1978" in user_prompt
     # Historial persistido en Firestore (no en localStorage).
     conversacion = db.leer(("conversaciones_IA", "u1", "conversaciones", chat_id))
     assert conversacion["mensajes"][0]["content"] == "Explícame la Constitución Española"
@@ -223,9 +229,56 @@ def test_historial_se_limita_a_los_ultimos_mensajes_en_conversaciones_muy_largas
 
     mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
     historial_enviado = mensajes_enviados[1:-1]
-    assert len(historial_enviado) == 30
-    assert historial_enviado[0]["content"] == "mensaje 20"
+    # Los 20 mensajes que caen fuera de la ventana de los últimos 30 no se
+    # pierden sin más: se comprimen en un resumen que se antepone al
+    # historial reciente (por eso hay 31 elementos, no 30).
+    assert len(historial_enviado) == 31
+    assert historial_enviado[0]["role"] == "system"
+    assert "Resumen" in historial_enviado[0]["content"]
+    assert historial_enviado[1]["content"] == "mensaje 20"
     assert historial_enviado[-1]["content"] == "mensaje 49"
+
+
+def test_resumen_de_mensajes_antiguos_se_guarda_y_se_reutiliza(db):
+    mensajes_previos = [
+        {"role": "user" if i % 2 == 0 else "assistant", "content": f"mensaje {i}"}
+        for i in range(40)  # 40 - 30 = 10 mensajes fuera de ventana (justo un lote)
+    ]
+    db.sembrar(("conversaciones_IA", "u1", "conversaciones", "conv1"), {
+        "usuario_id": "u1", "titulo": "conv larga", "mensajes": mensajes_previos
+    })
+    with patch("chat_controller.call_deepseek_api", side_effect=["Resumen de lo hablado", "respuesta final"]) as mock_llamada:
+        responder_tutor("Pregunta nueva", db=db, usuario_id="u1", chat_id="conv1")
+
+    primera_llamada_mensajes = mock_llamada.call_args_list[0].kwargs["messages"]
+    assert "mensaje 0" in primera_llamada_mensajes[-1]["content"]
+
+    conversacion = db.leer(("conversaciones_IA", "u1", "conversaciones", "conv1"))
+    assert conversacion["resumen_antiguo"] == "Resumen de lo hablado"
+    assert conversacion["resumen_cubre_mensajes"] == 10
+
+    segunda_llamada_mensajes = mock_llamada.call_args_list[1].kwargs["messages"]
+    assert segunda_llamada_mensajes[1]["role"] == "system"
+    assert "Resumen de lo hablado" in segunda_llamada_mensajes[1]["content"]
+
+
+def test_resumen_no_se_regenera_hasta_completar_un_lote_de_mensajes_nuevos(db):
+    mensajes_previos = [
+        {"role": "user" if i % 2 == 0 else "assistant", "content": f"mensaje {i}"}
+        for i in range(35)  # solo 5 mensajes fuera de ventana, por debajo del lote de 10
+    ]
+    db.sembrar(("conversaciones_IA", "u1", "conversaciones", "conv1"), {
+        "usuario_id": "u1", "titulo": "conv larga", "mensajes": mensajes_previos,
+        "resumen_antiguo": "Resumen ya guardado", "resumen_cubre_mensajes": 0
+    })
+    with patch("chat_controller.call_deepseek_api", return_value="respuesta") as mock_llamada:
+        responder_tutor("Pregunta nueva", db=db, usuario_id="u1", chat_id="conv1")
+
+    # Solo debe haberse llamado una vez (la respuesta), no para volver a
+    # resumir -- el lote de mensajes nuevos fuera de ventana aún es pequeño.
+    assert mock_llamada.call_count == 1
+    mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
+    assert "Resumen ya guardado" in mensajes_enviados[1]["content"]
 
 
 def test_historial_de_una_conversacion_persiste_y_se_amplia_en_firestore(db):
