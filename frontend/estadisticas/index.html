@@ -43,6 +43,49 @@
     </div>
   </div>
 
+  <!-- De un vistazo: lo primero que se ve, sin scroll, con los 4 números
+       que de verdad importan al entrar (antes eran 4 tarjetas grandes
+       repartidas por "Resumen general"). -->
+  <section class="resumen-vistazo" id="resumen-vistazo">
+    <div class="vistazo-tile">
+      <div class="vistazo-icono">📈</div>
+      <div class="valor vistazo-valor" id="vistazo-media">—</div>
+      <div class="vistazo-label">Nota media</div>
+      <div class="tendencia" id="tendencia-media"><span>...</span></div>
+    </div>
+    <div class="vistazo-tile vistazo-resultado">
+      <div class="vistazo-icono">✅</div>
+      <div class="valor vistazo-valor" id="vistazo-aprobados-pct">—</div>
+      <div class="vistazo-label">Aprobados</div>
+      <div class="vistazo-detalle" id="vistazo-aprobados-detalle">— aprobados · — suspendidos</div>
+      <div class="vistazo-mini-barra"><div class="vistazo-mini-fill" id="vistazo-aprobados-fill" style="width:0%"></div></div>
+    </div>
+    <div class="vistazo-tile">
+      <div class="vistazo-icono">📝</div>
+      <div class="valor vistazo-valor" id="vistazo-tests">—</div>
+      <div class="vistazo-label">Tests realizados</div>
+    </div>
+    <div class="vistazo-tile">
+      <div class="vistazo-icono">🔥</div>
+      <div class="valor vistazo-valor" id="vistazo-racha">—</div>
+      <div class="vistazo-label">Racha actual</div>
+    </div>
+  </section>
+
+  <!-- Evolución de la nota: gráfica de línea de los últimos tests. Es lo
+       más visual de la página, por eso va justo debajo del vistazo y
+       antes de las insignias, no enterrada a media página. -->
+  <div class="tarjeta-estadistica neutra tarjeta-evolucion" id="tarjeta-evolucion">
+    <div class="header">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 20V10M10 20V4M16 20v-7M22 20V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <h4>Evolución de tu nota</h4>
+    </div>
+    <div class="evolucion-grafica" id="evolucion-grafica"></div>
+    <p class="evolucion-vacio" id="evolucion-vacio" style="display:none;">Haz algunos tests para ver aquí tu evolución.</p>
+  </div>
+
   <section class="insignias-seccion">
     <h3>🏅 Insignias</h3>
     <div class="insignias-grid" id="insignias-grid"></div>
@@ -50,62 +93,8 @@
 
   <div id="estadisticas-usuario">
     <div class="seccion-separador seccion-separador-primera">
-      <h3>📊 Resumen general</h3>
+      <h3>🎯 Aciertos y fallos</h3>
     </div>
-    <!-- Tests Realizados -->
-    <div class="tarjeta-estadistica destacada">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V5C19 3.89543 18.1046 3 17 3ZM16 17H8V15H16V17ZM16 13H8V11H16V13ZM16 9H8V7H16V9Z" fill="currentColor"/>
-        </svg>
-        <h4>Tests realizados</h4>
-      </div>
-      <div class="valor" id="tests">—</div>
-      <div class="detalle">Total de exámenes completados</div>
-    </div>
-    <!-- Tests Aprobados -->
-    <div class="tarjeta-estadistica positiva test-progress">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z" fill="currentColor"/>
-        </svg>
-        <h4>Tests aprobados</h4>
-      </div>
-      <div class="valor" id="aprobados">—</div>
-      <div class="detalle"><span id="aprobados-porcentaje">—</span>% de éxito</div>
-      <div class="progress-bar">
-        <div class="progress-fill" id="aprobados-progress" style="width: 0%"></div>
-      </div>
-    </div>
-    <!-- Tests Suspendidos -->
-    <div class="tarjeta-estadistica negativa test-progress">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
-        </svg>
-        <h4>Tests suspendidos</h4>
-      </div>
-      <div class="valor" id="suspendidos">—</div>
-      <div class="detalle"><span id="suspendidos-porcentaje">—</span>% de intentos</div>
-      <div class="progress-bar">
-        <div class="progress-fill" id="suspendidos-progress" style="width: 0%"></div>
-      </div>
-    </div>
-    <!-- Puntuación Media -->
-    <div class="tarjeta-estadistica neutra">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" fill="currentColor"/>
-        </svg>
-        <h4>Puntuación media</h4>
-      </div>
-      <div class="valor" id="media">—</div>
-      <div class="detalle">Sobre 10 puntos</div>
-      <div class="tendencia" id="tendencia-media">
-        <span>...</span>
-      </div>
-    </div>
-
     <!-- Tiempo dedicado a hacer test: barra de ancho completo -->
     <div class="tarjeta-estadistica neutra tarjeta-tiempo-total">
       <div class="header">
@@ -120,53 +109,40 @@
       </div>
     </div>
 
-    <!-- Evolución de la nota: gráfica de línea de los últimos tests -->
-    <div class="tarjeta-estadistica neutra tarjeta-evolucion" id="tarjeta-evolucion">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 20V10M10 20V4M16 20v-7M22 20V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <h4>Evolución de tu nota</h4>
-      </div>
-      <div class="evolucion-grafica" id="evolucion-grafica"></div>
-      <p class="evolucion-vacio" id="evolucion-vacio" style="display:none;">Haz algunos tests para ver aquí tu evolución.</p>
-    </div>
-
-    <div class="seccion-separador">
-      <h3>🎯 Aciertos y fallos</h3>
-    </div>
-    <!-- Aciertos Totales -->
-    <div class="tarjeta-estadistica positiva">
+    <!-- Aciertos/fallos/blancos: antes 3 tarjetas casi idénticas, ahora una
+         sola barra apilada + leyenda -- mismo dato, un solo vistazo. -->
+    <div class="tarjeta-estadistica tarjeta-respuestas">
       <div class="header">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.06 14.53l-4.24-4.24 1.41-1.41 2.83 2.83 6.36-6.36 1.41 1.41-7.77 7.77z" fill="currentColor"/>
         </svg>
-        <h4>Aciertos totales</h4>
+        <h4>Respuestas</h4>
       </div>
-      <div class="valor" id="aciertos">—</div>
-      <div class="detalle"><span id="aciertos-porcentaje">—</span>% de respuestas</div>
-    </div>
-    <!-- Fallos Totales -->
-    <div class="tarjeta-estadistica negativa">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z" fill="currentColor"/>
-        </svg>
-        <h4>Fallos totales</h4>
+      <div class="respuestas-barra">
+        <div class="respuestas-segmento respuestas-acierto" id="barra-aciertos" style="width:0%"></div>
+        <div class="respuestas-segmento respuestas-fallo" id="barra-fallos" style="width:0%"></div>
+        <div class="respuestas-segmento respuestas-blanco" id="barra-blancos" style="width:0%"></div>
       </div>
-      <div class="valor" id="fallos">—</div>
-      <div class="detalle"><span id="fallos-porcentaje">—</span>% de respuestas</div>
-    </div>
-    <!-- En Blanco -->
-    <div class="tarjeta-estadistica neutra">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
-        </svg>
-        <h4>En blanco</h4>
+      <div class="respuestas-leyenda">
+        <div class="respuestas-item">
+          <span class="respuestas-dot respuestas-dot-acierto"></span>
+          <span>Aciertos</span>
+          <strong class="valor" id="aciertos">—</strong>
+          <span class="respuestas-pct"><span id="aciertos-porcentaje">—</span>%</span>
+        </div>
+        <div class="respuestas-item">
+          <span class="respuestas-dot respuestas-dot-fallo"></span>
+          <span>Fallos</span>
+          <strong class="valor" id="fallos">—</strong>
+          <span class="respuestas-pct"><span id="fallos-porcentaje">—</span>%</span>
+        </div>
+        <div class="respuestas-item">
+          <span class="respuestas-dot respuestas-dot-blanco"></span>
+          <span>En blanco</span>
+          <strong class="valor" id="blancos">—</strong>
+          <span class="respuestas-pct"><span id="blancos-porcentaje">—</span>%</span>
+        </div>
       </div>
-      <div class="valor" id="blancos">—</div>
-      <div class="detalle"><span id="blancos-porcentaje">—</span>% de respuestas</div>
     </div>
 
     <div class="seccion-separador">
@@ -200,71 +176,35 @@
     <div class="seccion-separador">
       <h3>🕒 Otra actividad</h3>
     </div>
-    <!-- Esquemas Generados -->
-    <div class="tarjeta-estadistica neutra">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
-        </svg>
-        <h4>Esquemas generados</h4>
+    <!-- Antes eran 6 tarjetas grandes casi vacías (la mayoría de usuarios
+         tiene 0 en varias); ahora un solo bloque con mini-números. -->
+    <div class="tarjeta-estadistica tarjeta-actividad-extra">
+      <div class="actividad-extra-grid">
+        <div class="actividad-extra-item">
+          <span class="actividad-extra-valor valor" id="esquemas">—</span>
+          <span class="actividad-extra-label">Esquemas generados</span>
+        </div>
+        <div class="actividad-extra-item">
+          <span class="actividad-extra-valor valor" id="total-archivos">—</span>
+          <span class="actividad-extra-label">Documentos subidos</span>
+        </div>
+        <div class="actividad-extra-item">
+          <span class="actividad-extra-valor valor" id="total-tests-pdf">—</span>
+          <span class="actividad-extra-label">Tests desde PDF</span>
+        </div>
+        <div class="actividad-extra-item">
+          <span class="actividad-extra-valor valor" id="total-resumenes-pdf">—</span>
+          <span class="actividad-extra-label">Resúmenes PDF</span>
+        </div>
+        <div class="actividad-extra-item">
+          <span class="actividad-extra-valor valor" id="total-esquemas-pdf">—</span>
+          <span class="actividad-extra-label">Esquemas PDF</span>
+        </div>
+        <div class="actividad-extra-item">
+          <span class="actividad-extra-valor valor" id="total-tarjetas-pdf">—</span>
+          <span class="actividad-extra-label">Tarjetas PDF</span>
+        </div>
       </div>
-      <div class="valor" id="esquemas">—</div>
-      <div class="detalle">Resúmenes creados</div>
-    </div>
-    <!-- Documentos subidos -->
-    <div class="tarjeta-estadistica neutra">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" fill="currentColor"/>
-        </svg>
-        <h4>Documentos subidos</h4>
-      </div>
-      <div class="valor" id="total-archivos">—</div>
-      <div class="detalle">Procesados desde PDF</div>
-    </div>
-    <!-- Tests desde PDF -->
-    <div class="tarjeta-estadistica neutra">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V5C19 3.89543 18.1046 3 17 3ZM16 17H8V15H16V17ZM16 13H8V11H16V13ZM16 9H8V7H16V9Z" fill="currentColor"/>
-        </svg>
-        <h4>Tests desde PDF</h4>
-      </div>
-      <div class="valor" id="total-tests-pdf">—</div>
-      <div class="detalle">Generados desde tus documentos</div>
-    </div>
-    <!-- Resúmenes desde PDF -->
-    <div class="tarjeta-estadistica neutra">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" fill="currentColor"/>
-        </svg>
-        <h4>Resúmenes</h4>
-      </div>
-      <div class="valor" id="total-resumenes-pdf">—</div>
-      <div class="detalle">Generados desde PDF</div>
-    </div>
-    <!-- Esquemas desde PDF -->
-    <div class="tarjeta-estadistica neutra">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
-        </svg>
-        <h4>Esquemas desde PDF</h4>
-      </div>
-      <div class="valor" id="total-esquemas-pdf">—</div>
-      <div class="detalle">Generados desde PDF</div>
-    </div>
-    <!-- Tarjetas desde PDF -->
-    <div class="tarjeta-estadistica neutra">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" fill="currentColor"/>
-        </svg>
-        <h4>Tarjetas</h4>
-      </div>
-      <div class="valor" id="total-tarjetas-pdf">—</div>
-      <div class="detalle">Generadas desde PDF</div>
     </div>
   </div>
 </div>

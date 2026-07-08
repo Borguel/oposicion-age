@@ -37,8 +37,9 @@ document.addEventListener("DOMContentLoaded", async function () {
           el.textContent = '...';
         }
       });
-      document.querySelectorAll('.progress-fill').forEach(el => el.style.width = '0%');
+      document.querySelectorAll('.vistazo-mini-fill, .respuestas-segmento').forEach(el => el.style.width = '0%');
       document.getElementById("tendencia-media").innerHTML = '<span>...</span>';
+      document.getElementById("vistazo-aprobados-detalle").textContent = '— aprobados · — suspendidos';
       // Resetear valores PDF
       document.getElementById("total-archivos").textContent = '...';
       document.getElementById("total-tests-pdf").textContent = '...';
@@ -144,10 +145,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     const noEstudiados = todosLosTemasIds.filter(t => !temasTocados.has(t));
 
     // Actualizar estadísticas principales
-    document.getElementById("tests").textContent = totalTests;
-    document.getElementById("aprobados").textContent = aprobados;
-    document.getElementById("suspendidos").textContent = suspendidos;
-    document.getElementById("media").textContent = puntuacionMedia.toFixed(1);
+    document.getElementById("vistazo-tests").textContent = totalTests;
+    document.getElementById("vistazo-media").textContent = puntuacionMedia.toFixed(1);
+    document.getElementById("vistazo-racha").textContent = racha.racha_actual ?? 0;
+    document.getElementById("vistazo-aprobados-pct").textContent = `${porcentajeAprobados}%`;
+    document.getElementById("vistazo-aprobados-detalle").textContent = `${aprobados} aprobados · ${suspendidos} suspendidos`;
+    document.getElementById("vistazo-aprobados-fill").style.width = `${porcentajeAprobados}%`;
+
     document.getElementById("aciertos").textContent = totalAciertos;
     document.getElementById("fallos").textContent = totalFallos;
     document.getElementById("blancos").textContent = totalBlancos;
@@ -155,14 +159,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("tiempo").textContent = `${horas}h ${minutos}m`;
     document.getElementById("temas-nuevos").textContent = noEstudiados.length;
 
-    document.getElementById("aprobados-porcentaje").textContent = porcentajeAprobados;
-    document.getElementById("suspendidos-porcentaje").textContent = porcentajeSuspendidos;
     document.getElementById("aciertos-porcentaje").textContent = porcentajeAciertos;
     document.getElementById("fallos-porcentaje").textContent = porcentajeFallos;
     document.getElementById("blancos-porcentaje").textContent = porcentajeBlancos;
 
-    document.getElementById("aprobados-progress").style.width = `${porcentajeAprobados}%`;
-    document.getElementById("suspendidos-progress").style.width = `${porcentajeSuspendidos}%`;
+    document.getElementById("barra-aciertos").style.width = `${porcentajeAciertos}%`;
+    document.getElementById("barra-fallos").style.width = `${porcentajeFallos}%`;
+    document.getElementById("barra-blancos").style.width = `${porcentajeBlancos}%`;
 
     let tendenciaHTML = '<span class="tendencia-neutral">→ Estable</span>';
     if (puntuacionMedia > 5) {

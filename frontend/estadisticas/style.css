@@ -140,9 +140,168 @@
 
     #estadisticas-usuario {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
       margin-bottom: 40px;
+    }
+
+    /* "De un vistazo": lo primero que se ve al entrar, antes de bajar nada. */
+    .resumen-vistazo {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .vistazo-tile {
+      background: var(--age-card);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-lg);
+      box-shadow: var(--age-shadow);
+      padding: 18px 14px;
+      text-align: center;
+    }
+
+    .vistazo-icono {
+      font-size: 1.5rem;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .vistazo-valor {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--age-primary-dark);
+      margin: 0;
+    }
+
+    .vistazo-label {
+      font-size: 0.82rem;
+      color: var(--age-ink-soft);
+      margin-top: 2px;
+    }
+
+    .vistazo-resultado .vistazo-valor {
+      color: var(--age-success);
+    }
+
+    .vistazo-detalle {
+      font-size: 0.72rem;
+      color: var(--age-ink-faint);
+      margin-top: 4px;
+    }
+
+    .vistazo-mini-barra {
+      height: 5px;
+      background: var(--age-danger-bg);
+      border-radius: 3px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .vistazo-mini-fill {
+      height: 100%;
+      background: var(--age-success);
+      transition: width 0.5s ease;
+    }
+
+    @media (max-width: 640px) {
+      .resumen-vistazo {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Respuestas: barra apilada + leyenda en vez de 3 tarjetas sueltas.
+       A todo lo ancho, como Tiempo dedicado, para que la barra y la
+       leyenda respiren en una sola fila en vez de apretarse en una
+       columna estrecha de la rejilla. (El override de ".header" a fila
+       vive más abajo, junto a ".tarjeta-tiempo-total", para ganar en la
+       cascada a la regla genérica ".tarjeta-estadistica .header".) */
+    .tarjeta-respuestas {
+      grid-column: 1 / -1;
+      text-align: left;
+    }
+
+    .respuestas-barra {
+      display: flex;
+      height: 14px;
+      border-radius: 7px;
+      overflow: hidden;
+      background: var(--age-neutral-bg);
+      margin: 16px 0 18px;
+    }
+
+    .respuestas-segmento {
+      height: 100%;
+      transition: width 0.5s ease;
+    }
+
+    .respuestas-acierto { background: var(--age-success); }
+    .respuestas-fallo { background: var(--age-danger); }
+    .respuestas-blanco { background: var(--age-ink-faint); }
+
+    .respuestas-leyenda {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 32px;
+    }
+
+    .respuestas-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.88rem;
+      color: var(--age-ink);
+    }
+
+    .respuestas-item .valor {
+      font-size: 1rem;
+      margin: 0;
+    }
+
+    .respuestas-pct {
+      color: var(--age-ink-soft);
+      font-size: 0.82rem;
+    }
+
+    .respuestas-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .respuestas-dot-acierto { background: var(--age-success); }
+    .respuestas-dot-fallo { background: var(--age-danger); }
+    .respuestas-dot-blanco { background: var(--age-ink-faint); }
+
+    /* Otra actividad: antes 6 tarjetas grandes, ahora una sola con mini-grid. */
+    .tarjeta-actividad-extra {
+      grid-column: 1 / -1;
+      text-align: left;
+    }
+
+    .actividad-extra-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 16px;
+    }
+
+    .actividad-extra-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .actividad-extra-valor {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--age-primary-dark);
+    }
+
+    .actividad-extra-label {
+      font-size: 0.8rem;
+      color: var(--age-ink-soft);
     }
 
     .tarjeta-recomendacion {
@@ -308,7 +467,7 @@
       background: var(--age-card);
       border: 1px solid var(--age-border);
       border-radius: var(--age-radius-lg);
-      padding: 24px;
+      padding: 20px;
       box-shadow: var(--age-shadow);
       transition: transform 0.2s var(--age-ease), box-shadow 0.2s var(--age-ease);
       text-align: center;
@@ -321,34 +480,8 @@
       box-shadow: var(--age-shadow-hover);
     }
 
-    .tarjeta-estadistica.destacada {
-      background: linear-gradient(135deg, var(--age-primary), var(--age-primary-dark));
-      color: white;
-    }
-
-    .tarjeta-estadistica.positiva {
-      border-left: 4px solid var(--age-success);
-    }
-
-    .tarjeta-estadistica.negativa {
-      border-left: 4px solid var(--age-danger);
-    }
-
     .tarjeta-estadistica.neutra {
       border-left: 4px solid var(--age-primary);
-    }
-
-    .tarjeta-estadistica.pdf {
-      background: var(--theme-content-alt-bg);
-      border-left: 4px solid var(--theme-primary);
-    }
-
-    .tarjeta-estadistica.pdf .header svg {
-      fill: var(--theme-primary);
-    }
-
-    .tarjeta-estadistica.pdf .valor {
-      color: var(--theme-heading);
     }
 
     .tarjeta-estadistica .header {
@@ -359,55 +492,28 @@
     }
 
     .tarjeta-estadistica .header svg {
-      width: 32px;
-      height: 32px;
-      margin-bottom: 10px;
+      width: 26px;
+      height: 26px;
+      margin-bottom: 8px;
       fill: currentColor;
     }
 
     .tarjeta-estadistica h4 {
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 600;
       color: var(--age-ink);
     }
 
     .tarjeta-estadistica .valor {
-      font-size: 2rem;
+      font-size: 1.7rem;
       font-weight: 800;
-      margin: 12px 0;
+      margin: 10px 0;
       color: var(--age-primary-dark);
-    }
-
-    .tarjeta-estadistica.destacada .valor,
-    .tarjeta-estadistica.pdf .valor {
-      color: white;
     }
 
     .tarjeta-estadistica .detalle {
       font-size: 0.9rem;
       color: var(--age-ink-soft);
-    }
-
-    .tarjeta-estadistica.destacada .detalle {
-      color: rgba(255,255,255,0.8);
-    }
-
-    .progress-bar {
-      height: 6px;
-      background: var(--age-neutral-bg);
-      border-radius: 3px;
-      margin-top: 12px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: var(--age-success);
-      transition: width 0.5s ease;
-    }
-
-    .tarjeta-estadistica.negativa .progress-fill {
-      background: var(--age-danger);
     }
 
     .tendencia-up { color: var(--age-success); font-weight: bold; }
@@ -454,6 +560,16 @@
     }
 
     .tarjeta-tiempo-total .header svg {
+      margin-bottom: 0;
+      margin-right: 12px;
+    }
+
+    .tarjeta-respuestas .header {
+      flex-direction: row;
+      margin-bottom: 0;
+    }
+
+    .tarjeta-respuestas .header svg {
       margin-bottom: 0;
       margin-right: 12px;
     }
@@ -771,6 +887,13 @@
         flex-direction: column;
       }
       .tarjeta-tiempo-total .header svg {
+        margin-right: 0;
+        margin-bottom: 10px;
+      }
+      .tarjeta-respuestas .header {
+        flex-direction: column;
+      }
+      .tarjeta-respuestas .header svg {
         margin-right: 0;
         margin-bottom: 10px;
       }
