@@ -3,16 +3,23 @@ separadas -- Chat IA, con RAG real sobre el temario, y Asistente Premium,
 sin RAG -- fusionadas en una sola ruta que decide por mensaje qué hace
 falta, ver chat_controller.responder_tutor) y el historial de esas
 conversaciones."""
-from flask import Blueprint, g, jsonify, request
+import json
+
+from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 from firebase_admin import firestore
 
 from firebase_setup import db
 from auth_utils import requiere_plan
 from limites_uso import verificar_limite_uso, registrar_uso
 from oposiciones import coleccion_temario
-from chat_controller import responder_tutor
+from chat_controller import responder_tutor, responder_tutor_stream
 
 bp = Blueprint("tu_tutor", __name__)
+
+_ERROR_DEEPSEEK = (
+    "El tutor ha tenido un problema técnico al generar la respuesta. "
+    "Vuelve a intentarlo en unos segundos."
+)
 
 
 @bp.route("/tu-tutor", methods=["POST"])
@@ -34,8 +41,56 @@ def tu_tutor_route():
         coleccion=coleccion_temario(g.oposicion),
         oposicion=g.oposicion
     )
+    if respuesta is None:
+        # No se registra uso: un fallo técnico de DeepSeek no debe consumir
+        # el cupo de mensajes del usuario.
+        return jsonify({"error": _ERROR_DEEPSEEK}), 502
     registrar_uso(db, g.uid, "chat_temario", g.plan_actual)
     return jsonify({"respuesta": respuesta, "chat_id": chat_id})
+
+
+# Misma ruta que /tu-tutor pero en streaming (Server-Sent Events): cada
+# fragmento de la respuesta se manda al frontend según va llegando de
+# DeepSeek, para un efecto de "escritura" en vez de esperar a la respuesta
+# completa. Los permisos/límites se comprueban ANTES de abrir el stream
+# (igual que en la ruta normal); registrar_uso y el guardado en Firestore
+# ocurren dentro del propio generador, solo si se completa con éxito.
+@bp.route("/tu-tutor/stream", methods=["POST"])
+@requiere_plan(db, "premium")
+def tu_tutor_stream_route():
+    data = request.get_json()
+    mensaje = data.get("mensaje")
+    if not mensaje:
+        return jsonify({"error": "Falta el mensaje"}), 400
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_temario")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
+    chat_id = data.get("chat_id")
+    uid = g.uid
+    plan_actual = g.plan_actual
+    oposicion = g.oposicion
+
+    def generar():
+        exito = False
+        for evento in responder_tutor_stream(
+            mensaje=mensaje,
+            db=db,
+            usuario_id=uid,
+            chat_id=chat_id,
+            coleccion=coleccion_temario(oposicion),
+            oposicion=oposicion
+        ):
+            if evento["tipo"] == "fin":
+                exito = True
+            yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
+        if exito:
+            registrar_uso(db, uid, "chat_temario", plan_actual)
+
+    return Response(
+        stream_with_context(generar()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
 
 
 @bp.route("/conversaciones", methods=["GET"])

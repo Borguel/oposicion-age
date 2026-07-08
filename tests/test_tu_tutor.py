@@ -3,9 +3,10 @@ el chat unificado que sustituye a los antiguos Chat IA y Asistente Premium.
 Cubre lo más importante de fusionarlos en uno solo: que la detección de si
 hace falta RAG (buscar contenido real del temario) o no se dispare en el
 caso correcto, y que el historial siga persistiendo en Firestore."""
+import json
 from unittest.mock import patch
 
-from chat_controller import responder_tutor
+from chat_controller import responder_tutor, responder_tutor_stream
 
 
 def _sembrar_tema(db, coleccion="Temario AGE"):
@@ -62,6 +63,69 @@ def test_mencionar_un_articulo_concreto_tambien_activa_rag(db):
     assert usar_rag is True
     mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
     assert "CONTENIDO DEL TEMARIO" in mensajes_enviados[1]["content"]
+
+
+def test_pregunta_de_seguimiento_sin_repetir_el_tema_tambien_activa_rag(db):
+    # Antes de esto, solo se miraba el mensaje actual para decidir si hacía
+    # falta RAG -- una pregunta de seguimiento que no repite el nombre del
+    # tema ("¿y cuántos artículos tiene?") se contestaba sin contenido real,
+    # aunque el turno anterior fuera justo sobre ese tema.
+    _sembrar_tema(db)
+    with patch("chat_controller.call_deepseek_api", side_effect=["Respuesta sobre la Constitución Española", "ok"]) as mock_llamada, \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        _texto1, chat_id, usar_rag1 = responder_tutor(
+            "Explícame la Constitución Española", db=db, usuario_id="u1"
+        )
+        _texto2, _chat_id2, usar_rag2 = responder_tutor(
+            "¿Y cuántas disposiciones adicionales tiene?", db=db, usuario_id="u1", chat_id=chat_id
+        )
+    assert usar_rag1 is True
+    assert usar_rag2 is True
+    segunda_llamada_mensajes = mock_llamada.call_args_list[1].kwargs["messages"]
+    assert "CONTENIDO DEL TEMARIO" in segunda_llamada_mensajes[-1]["content"]
+
+
+def test_pregunta_sin_relacion_con_el_turno_anterior_no_fuerza_rag(db):
+    _sembrar_tema(db)
+    with patch("chat_controller.call_deepseek_api", side_effect=["Ánimo, tú puedes", "ok"]) as mock_llamada:
+        _texto1, chat_id, usar_rag1 = responder_tutor(
+            "Estoy agobiado, ¿algún consejo para gestionar el estrés?", db=db, usuario_id="u1"
+        )
+        _texto2, _chat_id2, usar_rag2 = responder_tutor(
+            "¿Cuántas plazas hay convocadas?", db=db, usuario_id="u1", chat_id=chat_id
+        )
+    assert usar_rag1 is False
+    assert usar_rag2 is False
+
+
+def test_si_deepseek_falla_no_guarda_nada_y_devuelve_none(db):
+    with patch("chat_controller.call_deepseek_api", return_value=None), \
+         patch("chat_controller.crear_conversacion") as mock_crear, \
+         patch("chat_controller.agregar_mensaje_a_conversacion") as mock_agregar:
+        texto, chat_id, _usar_rag = responder_tutor("Hola", db=db, usuario_id="u1")
+    assert texto is None
+    assert chat_id is None
+    mock_crear.assert_not_called()
+    mock_agregar.assert_not_called()
+
+
+def test_responder_tutor_stream_emite_deltas_y_guarda_al_final(db):
+    with patch("chat_controller.call_deepseek_api_stream", return_value=iter(["Hola", " que tal"])):
+        eventos = list(responder_tutor_stream("Dame consejos para estudiar", db=db, usuario_id="u1"))
+    assert [e["tipo"] for e in eventos] == ["delta", "delta", "fin"]
+    assert eventos[0]["texto"] == "Hola"
+    assert eventos[1]["texto"] == " que tal"
+    chat_id = eventos[-1]["chat_id"]
+    conversacion = db.leer(("conversaciones_IA", "u1", "conversaciones", chat_id))
+    assert conversacion["mensajes"][1]["content"] == "Hola que tal"
+
+
+def test_responder_tutor_stream_emite_error_si_deepseek_no_devuelve_nada(db):
+    with patch("chat_controller.call_deepseek_api_stream", return_value=iter([])), \
+         patch("chat_controller.crear_conversacion") as mock_crear:
+        eventos = list(responder_tutor_stream("Hola", db=db, usuario_id="u1"))
+    assert eventos == [{"tipo": "error"}]
+    mock_crear.assert_not_called()
 
 
 def test_pregunta_sobre_estructura_del_examen_usa_datos_oficiales_si_existen(db):
@@ -195,6 +259,85 @@ def test_ruta_tu_tutor_requiere_premium_y_registra_uso(client, db):
         assert resp.get_json()["respuesta"] == "Hola desde Tu Tutor"
         datos_usuario = db.leer(("usuarios", "u1"))
         assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 1
+    finally:
+        parche_auth.stop()
+
+
+def test_ruta_tu_tutor_devuelve_502_si_deepseek_falla_y_no_gasta_cupo(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
+    })
+    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
+    parche_auth.start()
+    try:
+        with patch("chat_controller.call_deepseek_api", return_value=None):
+            resp = client.post(
+                "/tu-tutor",
+                json={"mensaje": "Hola", "oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"}
+            )
+        assert resp.status_code == 502
+        assert "error" in resp.get_json()
+        datos_usuario = db.leer(("usuarios", "u1"))
+        assert (datos_usuario.get("limites_uso") or {}).get("chat_temario") is None
+    finally:
+        parche_auth.stop()
+
+
+def _eventos_sse(cuerpo_respuesta):
+    return [
+        json.loads(linea[len("data: "):])
+        for linea in cuerpo_respuesta.split("\n\n")
+        if linea.startswith("data: ")
+    ]
+
+
+def test_ruta_tu_tutor_stream_emite_eventos_y_registra_uso(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
+    })
+    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
+    parche_auth.start()
+    try:
+        with patch("chat_controller.call_deepseek_api_stream", return_value=iter(["Hola ", "Mundo"])):
+            resp = client.post(
+                "/tu-tutor/stream",
+                json={"mensaje": "Hola", "oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"}
+            )
+        assert resp.status_code == 200
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert [e["tipo"] for e in eventos] == ["delta", "delta", "fin"]
+        assert eventos[0]["texto"] == "Hola "
+        assert eventos[1]["texto"] == "Mundo"
+        assert eventos[2]["chat_id"]
+        datos_usuario = db.leer(("usuarios", "u1"))
+        assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 1
+    finally:
+        parche_auth.stop()
+
+
+def test_ruta_tu_tutor_stream_no_registra_uso_si_deepseek_falla(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
+    })
+    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
+    parche_auth.start()
+    try:
+        with patch("chat_controller.call_deepseek_api_stream", return_value=iter([])):
+            resp = client.post(
+                "/tu-tutor/stream",
+                json={"mensaje": "Hola", "oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"}
+            )
+        assert resp.status_code == 200
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos == [{"tipo": "error"}]
+        datos_usuario = db.leer(("usuarios", "u1"))
+        assert (datos_usuario.get("limites_uso") or {}).get("chat_temario") is None
     finally:
         parche_auth.stop()
 

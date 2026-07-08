@@ -75,6 +75,63 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7):
         print(f"❌ Error inesperado en DeepSeek API: {str(e)}")
         return None
 
+# Versión en streaming de call_deepseek_api: en vez de devolver el texto
+# completo de una vez, va cediendo (yield) cada fragmento tal y como lo manda
+# DeepSeek (protocolo SSE, "data: {...}" por línea, terminado en "data:
+# [DONE]"), para poder mostrarlo en el frontend con efecto de escritura en
+# vez de esperar a que termine toda la respuesta.
+def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7):
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+
+    if not api_key:
+        print("❌ Error: No hay API key de DeepSeek configurada")
+        return
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "deepseek-chat",
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "stream": True
+    }
+
+    try:
+        with requests.post(
+            "https://api.deepseek.com/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=60,
+            stream=True
+        ) as response:
+            response.raise_for_status()
+            for linea in response.iter_lines(decode_unicode=True):
+                if not linea or not linea.startswith("data: "):
+                    continue
+                contenido_linea = linea[len("data: "):].strip()
+                if contenido_linea == "[DONE]":
+                    break
+                try:
+                    data = json.loads(contenido_linea)
+                except json.JSONDecodeError:
+                    continue
+                choices = data.get("choices") or []
+                if not choices:
+                    continue
+                fragmento = (choices[0].get("delta") or {}).get("content")
+                if fragmento:
+                    yield fragmento
+    except requests.exceptions.Timeout:
+        print("❌ Timeout: La API de DeepSeek no respondió a tiempo (streaming)")
+    except requests.exceptions.ConnectionError:
+        print("❌ Error de conexión: No se pudo conectar a DeepSeek API (streaming)")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error en streaming de DeepSeek: {e}")
+
 # Función adicional para generar contenido específico
 def generar_contenido_desde_texto(texto, tipo_contenido, num_items=10):
     """

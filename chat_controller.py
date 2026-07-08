@@ -4,7 +4,7 @@ import unicodedata
 from datetime import datetime
 from firebase_admin import firestore
 from utils import obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
-from deepseek_utils import call_deepseek_api
+from deepseek_utils import call_deepseek_api, call_deepseek_api_stream
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
 # ✅ Crear conversación con título y mensajes en subcolección por usuario
@@ -119,6 +119,23 @@ def _temas_mencionados(mensaje, catalogo):
     return encontrados
 
 
+# Nº de mensajes del historial (inmediatamente anteriores al actual) que se
+# reutilizan para detectar de qué tema va la conversación cuando el mensaje
+# nuevo no lo menciona explícitamente -- p. ej. "¿y las causas de disolución?"
+# justo después de haber preguntado por un tema concreto. Se limita al último
+# intercambio (usuario + asistente) para no seguir arrastrando el mismo tema
+# mucho después de que la conversación haya cambiado de asunto.
+_MENSAJES_CONTEXTO_TEMAS = 2
+
+
+def _temas_mencionados_en_la_conversacion(mensaje, historial, catalogo):
+    temas_detectados = _temas_mencionados(mensaje, catalogo)
+    if temas_detectados or not historial:
+        return temas_detectados
+    contexto_reciente = " ".join(m["content"] for m in historial[-_MENSAJES_CONTEXTO_TEMAS:])
+    return _temas_mencionados(contexto_reciente, catalogo)
+
+
 def _necesita_rag(mensaje, temas_detectados):
     if temas_detectados:
         return True
@@ -173,12 +190,15 @@ def _necesita_resumen_temario(mensaje):
     return any(palabra in mensaje_norm for palabra in _PALABRAS_TEMARIO_ESTRUCTURA)
 
 
-# 📌 Tu Tutor: chat unificado que decide, mensaje a mensaje, si busca
-# contexto real del temario (RAG) o responde como coach genérico del
-# proceso selectivo. Guarda siempre el historial en Firestore.
-def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO):
+# 📌 Construye todo lo necesario para llamar al modelo (system prompt,
+# prompt de usuario ya enriquecido con RAG/datos oficiales si toca, e
+# historial previo) sin llamar todavía a DeepSeek -- lo comparten
+# responder_tutor (respuesta de una vez) y responder_tutor_stream
+# (respuesta en streaming), para no duplicar la lógica de detección.
+def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
+    historial = _historial_previo(db, usuario_id, chat_id)
     catalogo = obtener_catalogo_temas(db, coleccion)
-    temas_detectados = _temas_mencionados(mensaje, catalogo)
+    temas_detectados = _temas_mencionados_en_la_conversacion(mensaje, historial, catalogo)
     usar_rag = _necesita_rag(mensaje, temas_detectados)
 
     if usar_rag:
@@ -230,22 +250,58 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
         else:
             prompt_usuario = mensaje
 
-    historial = _historial_previo(db, usuario_id, chat_id)
-    respuesta = call_deepseek_api(
-        messages=[
-            {"role": "system", "content": system_prompt},
-            *historial,
-            {"role": "user", "content": prompt_usuario}
-        ],
-        temperature=0.7,
-        max_tokens=1500
-    )
-    texto_respuesta = (respuesta or "No se pudo generar una respuesta. Inténtalo de nuevo.").strip()
+    mensajes = [{"role": "system", "content": system_prompt}, *historial, {"role": "user", "content": prompt_usuario}]
+    return mensajes, usar_rag
 
+
+def _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta):
     if chat_id:
         agregar_mensaje_a_conversacion(db, usuario_id, chat_id, "user", mensaje)
         agregar_mensaje_a_conversacion(db, usuario_id, chat_id, "assistant", texto_respuesta)
-    else:
-        chat_id = crear_conversacion(db, usuario_id, mensaje, texto_respuesta)
+        return chat_id
+    return crear_conversacion(db, usuario_id, mensaje, texto_respuesta)
 
+
+# 📌 Tu Tutor: chat unificado que decide, mensaje a mensaje, si busca
+# contexto real del temario (RAG) o responde como coach genérico del
+# proceso selectivo. Guarda siempre el historial en Firestore.
+#
+# Si DeepSeek falla (timeout, rate limit, error del servidor...) se
+# devuelve None como respuesta -- a propósito, para no guardar en Firestore
+# ni reenviar al modelo en el siguiente turno un mensaje de error genérico
+# como si fuera una respuesta real del asistente. El llamador (la ruta
+# /tu-tutor) es quien decide qué mostrarle al usuario en ese caso.
+def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO):
+    mensajes, usar_rag = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion)
+    respuesta = call_deepseek_api(messages=mensajes, temperature=0.7, max_tokens=1500)
+    if not respuesta:
+        return None, chat_id, usar_rag
+
+    texto_respuesta = respuesta.strip()
+    chat_id = _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta)
     return texto_respuesta, chat_id, usar_rag
+
+
+# 📌 Misma lógica que responder_tutor, pero en streaming: genera diccionarios
+# {"tipo": "delta", "texto": ...} a medida que van llegando fragmentos de
+# DeepSeek (para el efecto de "escritura" en el frontend) y termina con
+# {"tipo": "fin", "chat_id": ..., "usar_rag": ...} una vez guardado en
+# Firestore, o {"tipo": "error"} si DeepSeek falla o no llega ningún
+# fragmento (mismo criterio que responder_tutor: nada se guarda en ese caso).
+def responder_tutor_stream(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO):
+    mensajes, usar_rag = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion)
+
+    fragmentos = []
+    for fragmento in call_deepseek_api_stream(messages=mensajes, temperature=0.7, max_tokens=1500):
+        if not fragmento:
+            continue
+        fragmentos.append(fragmento)
+        yield {"tipo": "delta", "texto": fragmento}
+
+    texto_respuesta = "".join(fragmentos).strip()
+    if not texto_respuesta:
+        yield {"tipo": "error"}
+        return
+
+    chat_id = _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta)
+    yield {"tipo": "fin", "chat_id": chat_id, "usar_rag": usar_rag}

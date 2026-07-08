@@ -182,22 +182,44 @@ document.addEventListener("DOMContentLoaded", function () {
     if (tipo === "user") {
       div.className = "mensaje-user";
       div.innerHTML = `<div class="bubble-user">${safeText}</div>`;
-    } else {
-      div.className = "mensaje-bot";
-      div.innerHTML = `
-        <div class="avatar-bot-mini">
-          <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Tu Tutor" />
-        </div>
-        <div class="bubble-bot">
-          ${formatearMensajeBot(texto)}
-          <div class="bubble-bot-actions"><button type="button" class="btn-copiar-mensaje" title="Copiar">📋</button></div>
-        </div>
-      `;
-      // addEventListener con "texto" capturado por closure, en vez de un
-      // onclick inline: no depende de 'unsafe-inline' en el CSP.
-      div.querySelector(".btn-copiar-mensaje").addEventListener("click", () => copyToClipboard(texto));
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return null;
     }
+    const burbuja = crearBurbujaBot();
+    actualizarBurbujaBot(burbuja, texto);
+    return burbuja;
+  }
+
+  // Burbuja de respuesta del tutor que empieza vacía y se va rellenando a
+  // medida que llegan fragmentos del streaming (efecto de "escritura"), en
+  // vez de aparecer de golpe cuando termina toda la respuesta.
+  function crearBurbujaBot() {
+    const div = document.createElement("div");
+    div.className = "mensaje-bot";
+    div.innerHTML = `
+      <div class="avatar-bot-mini">
+        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Tu Tutor" />
+      </div>
+      <div class="bubble-bot">
+        <div class="bubble-bot-contenido"></div>
+        <div class="bubble-bot-actions"><button type="button" class="btn-copiar-mensaje" title="Copiar">📋</button></div>
+      </div>
+    `;
     chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    const estado = { texto: "" };
+    // addEventListener con "estado" capturado por closure, en vez de un
+    // onclick inline: no depende de 'unsafe-inline' en el CSP. Lee
+    // estado.texto en el momento del click (no el texto en el momento de
+    // crear la burbuja), para copiar siempre la versión final.
+    div.querySelector(".btn-copiar-mensaje").addEventListener("click", () => copyToClipboard(estado.texto));
+    return { div, contenido: div.querySelector(".bubble-bot-contenido"), estado };
+  }
+
+  function actualizarBurbujaBot(burbuja, texto) {
+    burbuja.estado.texto = texto;
+    burbuja.contenido.innerHTML = formatearMensajeBot(texto);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
@@ -208,7 +230,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // ENVÍO
+  const ERROR_TECNICO_TUTOR = "⚠️ El tutor ha tenido un problema técnico al generar la respuesta. Vuelve a intentarlo en unos segundos.";
+
+  // ENVÍO. Usa /tu-tutor/stream (Server-Sent Events) para mostrar la
+  // respuesta con efecto de escritura en vez de esperar a que DeepSeek
+  // termine de generarla entera -- se percibe mucho más rápido aunque el
+  // backend tarde lo mismo.
   async function enviarMensaje() {
     const texto = input.value.trim();
     if (!texto) return;
@@ -226,39 +253,79 @@ document.addEventListener("DOMContentLoaded", function () {
     const { obtenerOposicionActual } = await import("/assets/oposicion.js");
     const oposicion = obtenerOposicionActual();
 
-    fetch("https://oposicion-age.onrender.com/tu-tutor", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders },
-      body: JSON.stringify({
-        mensaje: texto,
-        chat_id: chatIdActual,
-        oposicion
-      }),
-      signal: AbortSignal.timeout(30000)
-    })
-      .then(async res => {
-        mostrarTyping(false);
-        if (res.status === 403) {
-          agregarMensaje("bot", "🔒 Tu Tutor requiere el plan Premium. Ve a /planes/ para activarlo.");
-          return null;
-        }
-        if (res.status === 429) {
-          const datosError = await res.json();
-          agregarMensaje("bot", `⏳ ${datosError.error || "Has alcanzado el límite de uso del chat por ahora."}`);
-          return null;
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (!data) return;
-        agregarMensaje("bot", data.respuesta || "Sin respuesta.");
-        chatIdActual = data.chat_id;
-        cargarHistorial();
-      })
-      .catch(() => {
-        mostrarTyping(false);
-        agregarMensaje("bot", "❌ Error al conectar con el servidor.");
+    let respuesta;
+    try {
+      respuesta = await fetch("https://oposicion-age.onrender.com/tu-tutor/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ mensaje: texto, chat_id: chatIdActual, oposicion }),
+        signal: AbortSignal.timeout(60000)
       });
+    } catch {
+      mostrarTyping(false);
+      agregarMensaje("bot", "❌ Error al conectar con el servidor.");
+      return;
+    }
+
+    mostrarTyping(false);
+
+    if (respuesta.status === 403) {
+      agregarMensaje("bot", "🔒 Tu Tutor requiere el plan Premium. Ve a /planes/ para activarlo.");
+      return;
+    }
+    if (respuesta.status === 429) {
+      const datosError = await respuesta.json().catch(() => ({}));
+      agregarMensaje("bot", `⏳ ${datosError.error || "Has alcanzado el límite de uso del chat por ahora."}`);
+      return;
+    }
+    if (!respuesta.ok || !respuesta.body) {
+      agregarMensaje("bot", ERROR_TECNICO_TUTOR);
+      return;
+    }
+
+    const burbuja = crearBurbujaBot();
+    const lector = respuesta.body.getReader();
+    const decodificador = new TextDecoder();
+    let buffer = "";
+    let textoAcumulado = "";
+    let huboError = false;
+
+    try {
+      while (true) {
+        const { done, value } = await lector.read();
+        if (done) break;
+        buffer += decodificador.decode(value, { stream: true });
+        const bloques = buffer.split("\n\n");
+        buffer = bloques.pop(); // el último trozo puede venir incompleto
+        for (const bloque of bloques) {
+          const linea = bloque.trim();
+          if (!linea.startsWith("data: ")) continue;
+          let evento;
+          try {
+            evento = JSON.parse(linea.slice(6));
+          } catch {
+            continue;
+          }
+          if (evento.tipo === "delta") {
+            textoAcumulado += evento.texto;
+            actualizarBurbujaBot(burbuja, textoAcumulado);
+          } else if (evento.tipo === "fin") {
+            chatIdActual = evento.chat_id;
+          } else if (evento.tipo === "error") {
+            huboError = true;
+          }
+        }
+      }
+    } catch {
+      huboError = true;
+    }
+
+    if (huboError && !textoAcumulado) {
+      burbuja.div.remove();
+      agregarMensaje("bot", ERROR_TECNICO_TUTOR);
+      return;
+    }
+    cargarHistorial();
   }
 
   // HISTORIAL (persistido en Firestore, no en localStorage)
