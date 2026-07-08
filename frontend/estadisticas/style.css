@@ -738,6 +738,12 @@
       gap: 3px;
       margin-top: 14px;
       text-align: center;
+      /* Mismo max-width que .calendario-grafica -- si no, esta fila ocupa
+         todo el ancho de la tarjeta mientras que la rejilla de días de
+         abajo está limitada a 220px, y las 7 columnas de cada una acaban
+         en posiciones distintas (las letras L M X... no quedan encima de
+         su columna de números). */
+      max-width: 220px;
     }
 
     .calendario-dias-semana span {
