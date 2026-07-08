@@ -94,12 +94,14 @@ async function obtenerAuthHeaders() {
       for (const lineaOriginal of lineas) {
         const linea = lineaOriginal.trim();
         if (!linea) continue;
-        if (linea.startsWith("## ")) {
-          bloques.push({ tipo: "h3", texto: linea.slice(3).trim() });
-          continue;
-        }
-        if (linea.startsWith("# ")) {
-          bloques.push({ tipo: "h2", texto: linea.slice(2).trim() });
+        // Acepta cualquier nivel de encabezado ("#", "##", "###"...): la IA
+        // no siempre se ciñe a los dos niveles pedidos en el prompt, y antes
+        // un "###" (u otro nivel no contemplado) no se reconocía como
+        // encabezado y se colaba tal cual, almohadillas incluidas, como texto
+        // plano. A partir de nivel 2 se trata igual que "##" (mismo estilo).
+        const matchEncabezado = linea.match(/^(#{1,6})\s+(.*)$/);
+        if (matchEncabezado) {
+          bloques.push({ tipo: matchEncabezado[1].length === 1 ? "h2" : "h3", texto: matchEncabezado[2].trim() });
           continue;
         }
         if (linea.startsWith("> ")) {
