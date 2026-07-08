@@ -602,6 +602,16 @@ body {
   background: var(--age-bg);
 }
 
+.age-btn-danger {
+  background: transparent;
+  color: var(--age-danger);
+  border: 1.5px solid var(--age-danger);
+}
+
+.age-btn-danger:hover {
+  background: var(--age-danger-bg);
+}
+
 .age-btn:disabled {
   opacity: 0.55;
   cursor: default;

@@ -69,7 +69,10 @@ function tarjetaTest(t) {
   if (t.estado === "en_progreso") {
     const vistas = (t.indice_actual || 0) + 1;
     bloqueEstado = `<span class="age-pill age-pill-primary">🕐 En progreso — pregunta ${vistas}/${t.num_preguntas || "?"}</span>`;
-    acciones = `<a class="age-btn age-btn-primary" href="${pagina}?resume=${t.id}">Continuar</a>`;
+    acciones = `
+      <a class="age-btn age-btn-primary" href="${pagina}?resume=${t.id}">Continuar</a>
+      <button type="button" class="age-btn age-btn-danger" data-borrar-test="${t.id}">Eliminar</button>
+    `;
   } else {
     const aprobado = t.resultado === "aprobado";
     bloqueEstado = `
@@ -79,6 +82,7 @@ function tarjetaTest(t) {
     acciones = `
       <a class="age-btn age-btn-outline" href="/repetir-test/?repetir=${t.id}">Repetir</a>
       <a class="age-btn age-btn-primary" href="/mis-tests/resultado/?id=${t.id}">Ver resultados</a>
+      <button type="button" class="age-btn age-btn-danger" data-borrar-test="${t.id}">Eliminar</button>
     `;
   }
 
@@ -126,6 +130,38 @@ function renderizar() {
       boton.classList.toggle("open", !contenedor.classList.contains("hidden"));
     });
   });
+
+  lista.querySelectorAll("[data-borrar-test]").forEach((boton) => {
+    boton.addEventListener("click", () => borrarTest(boton.dataset.borrarTest, boton));
+  });
+}
+
+async function borrarTest(testId, boton) {
+  const test = tests.find((t) => t.id === testId);
+  const mensaje = test && test.estado === "en_progreso"
+    ? "¿Seguro que quieres eliminar este test a medias? No podrás recuperarlo."
+    : "¿Seguro que quieres eliminar este test y su resultado? No podrás recuperarlo.";
+  if (!window.confirm(mensaje)) return;
+
+  boton.disabled = true;
+  try {
+    const token = await idToken();
+    const res = await fetch(`${BACKEND_URL}/mi-test/${encodeURIComponent(testId)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error("No se pudo eliminar el test.");
+    tests = tests.filter((t) => t.id !== testId);
+    if (tests.length === 0) {
+      document.getElementById("tests-contenido").classList.add("hidden");
+      document.getElementById("tests-vacio").classList.remove("hidden");
+      return;
+    }
+    renderizar();
+  } catch (e) {
+    alert(e.message || "No se pudo eliminar el test.");
+    boton.disabled = false;
+  }
 }
 
 // Solo se usa para pintar el título de cada tema en las pills de las
