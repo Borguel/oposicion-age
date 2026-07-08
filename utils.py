@@ -213,8 +213,9 @@ def repartir_cupos_por_tema(temas_ids, cantidad):
     """Reparte 'cantidad' unidades lo más equitativamente posible entre
     temas_ids (división entera + resto). Se baraja el orden antes de asignar
     el resto para que este no recaiga siempre sobre los mismos temas.
-    Compartido por la generación del test personalizado (test_generator.py)
-    y la selección de preguntas oficiales por tema (ver
+    Compartido por la generación del test personalizado
+    (generador_preguntas_verificado.py) y la selección de preguntas
+    oficiales por tema (ver
     seleccionar_preguntas_con_cuota más abajo), para que elegir varios temas
     reparta el test entre ellos en vez de dejar que gane el que más
     contenido tenga cargado."""

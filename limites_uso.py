@@ -29,15 +29,26 @@ LIMITES = {
         "basico": ("mes", 30),
         "premium": ("dia", 40),
     },
-    # Generación de tests/esquemas/análisis a partir del TEMARIO (no de un
-    # PDF subido) -- /generar-test-avanzado, /generar-esquema,
-    # /generar-test-inteligente, /analisis-rendimiento. Requieren plan
-    # básico como mínimo (ver @requiere_plan de cada ruta), así que gratis
-    # queda en 0 solo por coherencia con ese requisito.
+    # Generación de esquemas/análisis a partir del TEMARIO (no de un PDF
+    # subido) -- /generar-esquema, /generar-test-inteligente (hoy
+    # desactivado en la web, pero la ruta sigue existiendo),
+    # /analisis-rendimiento. Requieren plan básico como mínimo (ver
+    # @requiere_plan de cada ruta), así que gratis queda en 0 solo por
+    # coherencia con ese requisito.
     "generacion_ia": {
         "gratis": ("mes", 0),
         "basico": ("mes", 60),
         "premium": ("dia", 40),
+    },
+    # Test Personalizado con verificación jurídica (/generar-test-avanzado):
+    # cada pregunta cuesta entre 2 y 8 llamadas a DeepSeek (generar +
+    # verificar, con reintentos si no supera la verificación), muy por
+    # encima del coste de una generación normal -- de ahí un cupo propio y
+    # más ajustado en vez de compartir el genérico "generacion_ia".
+    "test_avanzado_verificado": {
+        "gratis": ("mes", 0),
+        "basico": ("mes", 8),
+        "premium": ("dia", 5),
     },
     # Chat conversacional "Tu Tutor" -- /tu-tutor.
     # Requiere plan premium (ver @requiere_plan de la ruta).

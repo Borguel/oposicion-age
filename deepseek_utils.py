@@ -1,22 +1,38 @@
 import os
+import time
 import requests
 import json
 
-def call_deepseek_api(messages, max_tokens=1500, temperature=0.7):
+# Backoff entre reintentos ante fallos TRANSITORIOS (timeout/conexión/5xx) --
+# nunca ante errores 4xx (API key inválida, payload mal formado), que no se
+# arreglan reintentando. Deliberadamente corto: estos reintentos protegen un
+# simple parpadeo de red, no sustituyen a la lógica de negocio que decide si
+# hay que reintentar por otros motivos (p. ej. una pregunta que no supera la
+# verificación jurídica en generador_preguntas_verificado.py).
+_REINTENTOS_TRANSITORIOS = 2
+_ESPERA_ENTRE_REINTENTOS_SEGUNDOS = 1.5
+
+
+def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False):
     """
-    Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores
+    Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.
+
+    response_format_json=True activa el modo JSON nativo de la API
+    (`response_format: {"type": "json_object"}`, soportado por DeepSeek pero
+    no usado hasta ahora) -- reduce fallos de parseo cuando se espera JSON,
+    frente a depender solo de instrucciones en el prompt.
     """
     api_key = os.getenv("DEEPSEEK_API_KEY")
-    
+
     if not api_key:
         print("❌ Error: No hay API key de DeepSeek configurada")
         return None
-        
+
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
-    
+
     payload = {
         "model": "deepseek-chat",
         "messages": messages,
@@ -24,55 +40,66 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7):
         "max_tokens": max_tokens,
         "stream": False
     }
-    
-    try:
-        response = requests.post(
-            "https://api.deepseek.com/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=30  # 30 segundos de timeout
-        )
-        
-        response.raise_for_status()  # Lanza excepción para códigos HTTP 4xx/5xx
-        
-        data = response.json()
-        
-        # Verificar que la respuesta tiene la estructura esperada
-        if 'choices' in data and len(data['choices']) > 0:
-            return data['choices'][0]['message']['content']
-        else:
-            print(f"❌ Respuesta inesperada de DeepSeek API: {data}")
+    if response_format_json:
+        payload["response_format"] = {"type": "json_object"}
+
+    intentos_restantes = _REINTENTOS_TRANSITORIOS
+    while True:
+        transitorio = False
+        try:
+            response = requests.post(
+                "https://api.deepseek.com/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=30  # 30 segundos de timeout
+            )
+
+            response.raise_for_status()  # Lanza excepción para códigos HTTP 4xx/5xx
+
+            data = response.json()
+
+            # Verificar que la respuesta tiene la estructura esperada
+            if 'choices' in data and len(data['choices']) > 0:
+                return data['choices'][0]['message']['content']
+            else:
+                print(f"❌ Respuesta inesperada de DeepSeek API: {data}")
+                return None
+
+        except requests.exceptions.Timeout:
+            print("❌ Timeout: La API de DeepSeek no respondió en 30 segundos")
+            transitorio = True
+
+        except requests.exceptions.ConnectionError:
+            print("❌ Error de conexión: No se pudo conectar a DeepSeek API")
+            transitorio = True
+
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response is not None else None
+            print(f"❌ Error HTTP {status}: {e}")
+            if status == 401:
+                print("   → Verifica que tu API key de DeepSeek sea válida")
+            elif status == 429:
+                print("   → Límite de tasa excedido, espera un momento")
+            elif status is not None and status >= 500:
+                print("   → Error del servidor de DeepSeek, intenta más tarde")
+            transitorio = status is not None and status >= 500
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error en la petición a DeepSeek: {str(e)}")
+            transitorio = True
+
+        except KeyError as e:
+            print(f"❌ Error en la estructura de la respuesta: {e}")
             return None
-            
-    except requests.exceptions.Timeout:
-        print("❌ Timeout: La API de DeepSeek no respondió en 30 segundos")
-        return None
-        
-    except requests.exceptions.ConnectionError:
-        print("❌ Error de conexión: No se pudo conectar a DeepSeek API")
-        return None
-        
-    except requests.exceptions.HTTPError as e:
-        print(f"❌ Error HTTP {response.status_code}: {e}")
-        if response.status_code == 401:
-            print("   → Verifica que tu API key de DeepSeek sea válida")
-        elif response.status_code == 429:
-            print("   → Límite de tasa excedido, espera un momento")
-        elif response.status_code >= 500:
-            print("   → Error del servidor de DeepSeek, intenta más tarde")
-        return None
-        
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error en la petición a DeepSeek: {str(e)}")
-        return None
-        
-    except KeyError as e:
-        print(f"❌ Error en la estructura de la respuesta: {e}")
-        print(f"   Respuesta completa: {data}")
-        return None
-        
-    except Exception as e:
-        print(f"❌ Error inesperado en DeepSeek API: {str(e)}")
+
+        except Exception as e:
+            print(f"❌ Error inesperado en DeepSeek API: {str(e)}")
+            return None
+
+        if transitorio and intentos_restantes > 0:
+            intentos_restantes -= 1
+            time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
+            continue
         return None
 
 # Versión en streaming de call_deepseek_api: en vez de devolver el texto

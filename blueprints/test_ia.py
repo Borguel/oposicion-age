@@ -1,15 +1,19 @@
 """Generación de tests/esquemas/análisis a partir del TEMARIO oficial (no
 de un PDF subido por el usuario -- eso vive en blueprints/pdf_ia.py)."""
+import json
 import logging
+import queue
+import threading
 
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
 from firebase_setup import db
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 from limites_uso import verificar_limite_uso, registrar_uso
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales
 from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales
-from test_generator import generar_test_avanzado, generar_preguntas_ia_en_lotes
+from test_generator import generar_preguntas_ia_en_lotes
+from generador_preguntas_verificado import generar_test_verificado
 from esquema_generator import generar_esquema
 from deepseek_utils import call_deepseek_api
 from registro_progreso_usuario import obtener_resumen_progreso
@@ -21,12 +25,19 @@ logger = logging.getLogger(__name__)
 bp = Blueprint("test_ia", __name__)
 
 
+# Test Personalizado en streaming (Server-Sent Events): cada pregunta ancla
+# a un artículo real del temario y se verifica con una segunda llamada
+# independiente antes de aceptarla (ver generador_preguntas_verificado.py),
+# así que generar un test completo tarda bastante más que antes -- SSE deja
+# la conexión abierta con progreso REAL ("pregunta 4 de 20") en vez de un
+# único fetch bloqueante sin ninguna señal de que sigue en marcha. Mismo
+# patrón que ya se usa en /tu-tutor/stream, adaptado aquí con una cola
+# porque generar_test_verificado reporta el progreso vía callback (se
+# ejecuta en paralelo con un ThreadPoolExecutor) en vez de ser un
+# generador Python en sí.
 @bp.route("/generar-test-avanzado", methods=["POST"])
 @requiere_plan(db, "basico")
 def generar_test_avanzado_route():
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "generacion_ia")
-    if not permitido:
-        return jsonify({"error": mensaje_error}), 429
     data = request.get_json()
     logger.info("Petición recibida en /generar-test-avanzado: %s", data)
     temas = data.get("temas", [])
@@ -34,12 +45,52 @@ def generar_test_avanzado_route():
         num_preguntas = max(1, min(100, int(data.get("num_preguntas", 5))))
     except (TypeError, ValueError):
         num_preguntas = 5
-    logger.info("Temas extraídos: %s", temas)
-    logger.info("Número de preguntas solicitadas: %s", num_preguntas)
-    resultado = generar_test_avanzado(temas=temas, db=db, num_preguntas=num_preguntas, coleccion=coleccion_temario(g.oposicion), oposicion=g.oposicion)
-    logger.info("Resultado del test: %s", resultado)
-    registrar_uso(db, g.uid, "generacion_ia", g.plan_actual)
-    return jsonify(resultado)
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(
+        db, g.uid, g.plan_actual, "test_avanzado_verificado"
+    )
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
+
+    coleccion = coleccion_temario(g.oposicion)
+    oposicion = g.oposicion
+    uid = g.uid
+    plan_actual = g.plan_actual
+
+    def generar():
+        eventos = queue.Queue()
+
+        def _en_hilo_de_fondo():
+            def on_progreso(evento_progreso):
+                eventos.put({"tipo": "progreso", **evento_progreso})
+            try:
+                resultado = generar_test_verificado(
+                    db, temas=temas, num_preguntas=num_preguntas,
+                    coleccion=coleccion, oposicion=oposicion, on_progreso=on_progreso
+                )
+            except Exception:
+                logger.exception("Error al generar el test personalizado verificado")
+                resultado = {"test": [], "error": "Error inesperado al generar el test"}
+            eventos.put({"tipo": "fin", **resultado})
+
+        hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
+        hilo.start()
+
+        exito = False
+        while True:
+            evento = eventos.get()
+            yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
+            if evento["tipo"] == "fin":
+                exito = bool(evento.get("test"))
+                break
+
+        if exito:
+            registrar_uso(db, uid, "test_avanzado_verificado", plan_actual)
+
+    return Response(
+        stream_with_context(generar()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
 
 
 @bp.route("/generar-esquema", methods=["POST"])

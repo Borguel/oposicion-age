@@ -230,33 +230,29 @@ async function obtenerAuthHeaders() {
       document.getElementById("contenedor-test").style.display = "block";
       document.getElementById("contenedor-test").innerHTML = `
         <div class="carga-generando">
-          <p id="mensaje-carga">Obteniendo preguntas...</p>
-          <div class="barra-indeterminada"><div class="barra-indeterminada-fill"></div></div>
+          <p id="mensaje-carga">Preparando la generación...</p>
+          <div class="progress-container">
+            <div id="progreso-generacion" class="progress-bar" style="background: linear-gradient(90deg, var(--age-primary), var(--age-primary-dark, var(--age-primary)));"></div>
+            <div id="texto-progreso-generacion" class="progress-text">0%</div>
+          </div>
         </div>
       `;
-      const mensajes = [
-        "Obteniendo preguntas...",
-        "Generando opciones...",
-        "Validando contenido...",
-        "Preparando tu test..."
-      ];
-      let indiceMensaje = 0;
-      const intervalCarga = setInterval(() => {
-        indiceMensaje = (indiceMensaje + 1) % mensajes.length;
-        const elMensaje = document.getElementById("mensaje-carga");
-        if (elMensaje) elMensaje.textContent = mensajes[indiceMensaje];
-      }, 2200);
       try {
         const authHeaders = await obtenerAuthHeaders();
-        if (!authHeaders) { clearInterval(intervalCarga); return; }
+        if (!authHeaders) return;
         const { obtenerOposicionActual } = await import("/assets/oposicion.js");
         const oposicion = obtenerOposicionActual();
+        // Cada pregunta se ancla a un artículo real del temario y se
+        // verifica con una segunda llamada independiente antes de
+        // aceptarla (nunca se corrige una que falla, se descarta y se
+        // reintenta desde cero) -- tarda bastante más que antes, así que
+        // el backend va retransmitiendo el progreso real por streaming
+        // (Server-Sent Events) en vez de una única respuesta de golpe.
         const res = await fetch("https://oposicion-age.onrender.com" + ENDPOINT_GENERAR, {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
           body: JSON.stringify({ temas, num_preguntas, oposicion })
         });
-        clearInterval(intervalCarga);
         if (res.status === 403) {
           const datosError = await res.json();
           document.getElementById('contenedor-test').innerHTML = `
@@ -270,10 +266,59 @@ async function obtenerAuthHeaders() {
           document.getElementById('contenedor-test').innerHTML = `<p>⏳ ${datosError.error || "Has alcanzado el límite de uso de esta herramienta por ahora."}</p>`;
           return;
         }
-        const datos = await res.json();
+        if (!res.ok || !res.body) {
+          document.getElementById('contenedor-test').innerHTML = `
+            <p>Error al generar el test. Vuelve a intentarlo en unos segundos.</p>
+            <button type="button" class="btn btn-primary" id="btn-volver-a-intentar">Volver a intentar</button>
+          `;
+          document.getElementById('btn-volver-a-intentar').addEventListener('click', () => location.reload());
+          return;
+        }
+
+        const elMensajeCarga = document.getElementById("mensaje-carga");
+        const elBarra = document.getElementById("progreso-generacion");
+        const elTextoBarra = document.getElementById("texto-progreso-generacion");
+        const lector = res.body.getReader();
+        const decodificador = new TextDecoder();
+        let buffer = "";
+        let datosFinales = null;
+
+        while (true) {
+          const { done, value } = await lector.read();
+          if (done) break;
+          buffer += decodificador.decode(value, { stream: true });
+          const bloques = buffer.split("\n\n");
+          buffer = bloques.pop(); // el último trozo puede venir incompleto
+          for (const bloque of bloques) {
+            const linea = bloque.trim();
+            if (!linea.startsWith("data: ")) continue;
+            let evento;
+            try {
+              evento = JSON.parse(linea.slice(6));
+            } catch {
+              continue;
+            }
+            if (evento.tipo === "progreso" && elBarra) {
+              const porcentaje = evento.total ? Math.round((evento.completadas / evento.total) * 100) : 0;
+              elBarra.style.width = `${porcentaje}%`;
+              elTextoBarra.textContent = `${porcentaje}%`;
+              if (elMensajeCarga) {
+                elMensajeCarga.textContent = `Generando y verificando pregunta ${evento.completadas} de ${evento.total}...`;
+              }
+            } else if (evento.tipo === "fin") {
+              datosFinales = evento;
+            }
+          }
+        }
+
+        if (!datosFinales) {
+          document.getElementById('contenedor-test').innerHTML = "<p>Error al generar el test. Vuelve a intentarlo.</p>";
+          return;
+        }
+        const datos = datosFinales;
         preguntas = datos.test || [];
         if (preguntas.length === 0) {
-          document.getElementById('contenedor-test').innerHTML = "<p>No se han recibido preguntas.</p>";
+          document.getElementById('contenedor-test').innerHTML = `<p>${datos.advertencia || datos.error || "No se han recibido preguntas."}</p>`;
           return;
         }
         preguntas.forEach(p => {
@@ -319,7 +364,6 @@ async function obtenerAuthHeaders() {
         document.getElementById("navegador-preguntas").style.display = "flex";
         mostrarPregunta(indicePreguntaActual);
       } catch (error) {
-        clearInterval(intervalCarga);
         const contenedorTest = document.getElementById('contenedor-test');
         contenedorTest.innerHTML = `
           <p>Error al generar el test: ${error.message}</p>
