@@ -102,6 +102,57 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
             continue
         return None
 
+def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, temperature=0.3, max_continuaciones=2):
+    """Genera texto largo (resúmenes/esquemas a partir de un PDF) sin
+    arriesgarse a que se corte a mitad de frase -- o directamente a mitad
+    del documento -- si el texto de origen es largo. Si DeepSeek corta la
+    respuesta por haber alcanzado max_tokens (finish_reason == "length"), se
+    le pide que continúe EXACTAMENTE donde lo dejó, hasta max_continuaciones
+    veces, y se concatena todo. Antes se pedía una única llamada con
+    max_tokens=2000 y, si el documento era largo, el resumen simplemente se
+    quedaba a medias (p. ej. cortado en mitad del índice de artículos) sin
+    ningún aviso.
+
+    Devuelve el texto completo, o None si la primera llamada falla."""
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    if not api_key:
+        return None
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": mensaje_usuario},
+    ]
+    texto_completo = ""
+    for _ in range(max_continuaciones + 1):
+        payload = {
+            "model": "deepseek-chat",
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        try:
+            response = requests.post(
+                "https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60
+            )
+        except requests.exceptions.RequestException:
+            break
+        if response.status_code != 200:
+            break
+        choices = (response.json() or {}).get("choices") or []
+        if not choices:
+            break
+        fragmento = choices[0].get("message", {}).get("content") or ""
+        texto_completo += fragmento
+        if choices[0].get("finish_reason") != "length":
+            break
+        messages.append({"role": "assistant", "content": fragmento})
+        messages.append({
+            "role": "user",
+            "content": "Continúa exactamente donde lo dejaste, sin repetir nada de lo ya escrito y sin añadir ninguna introducción ni recordatorio de lo anterior."
+        })
+    return texto_completo or None
+
+
 # Versión en streaming de call_deepseek_api: en vez de devolver el texto
 # completo de una vez, va cediendo (yield) cada fragmento tal y como lo manda
 # DeepSeek (protocolo SSE, "data: {...}" por línea, terminado en "data:

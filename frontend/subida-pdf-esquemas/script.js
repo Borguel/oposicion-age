@@ -218,16 +218,15 @@ async function obtenerAuthHeaders() {
       const NARANJA_PRIMARIO = [255, 166, 51];
       const NARANJA_OSCURO = [232, 134, 15];
 
-      const bloques = parsearEsquemaABloques(esquema);
-      bloques.forEach((b) => {
-        let fontSize = 11;
-        let fontStyle = "normal";
-        let prefijo = "";
-        let indent = 0;
-        let extraArriba = 0;
-        let color = [0, 0, 0];
+      // Mide un bloque (tipo de letra, líneas ya envueltas al ancho de
+      // página, alto total) SIN dibujar nada -- se usa en una primera pasada
+      // para poder mirar "hacia adelante" al bloque siguiente antes de
+      // decidir si hay que saltar de página.
+      function medirBloque(b) {
+        let fontSize = 11, fontStyle = "normal", prefijo = "", indent = 0, extraArriba = 0, color = [0, 0, 0];
         const esDefinicion = b.tipo === "definicion";
         const esH2 = b.tipo === "h2";
+        const esEncabezado = esH2 || b.tipo === "h3";
 
         if (esH2) { fontSize = 15; fontStyle = "bold"; extraArriba = 6; indent = 4; }
         else if (b.tipo === "h3") { fontSize = 12.5; fontStyle = "bold"; extraArriba = 4; color = NARANJA_OSCURO; }
@@ -241,29 +240,45 @@ async function obtenerAuthHeaders() {
         const lineas = doc.splitTextToSize(prefijo + texto, anchoTexto - indent - (esDefinicion ? 4 : 0));
         const altoLinea = fontSize * 0.42;
         const alturaBloque = extraArriba + lineas.length * altoLinea + (esDefinicion ? 4 : 2);
+        return { esDefinicion, esH2, esEncabezado, fontSize, fontStyle, indent, extraArriba, color, lineas, altoLinea, alturaBloque };
+      }
 
-        asegurarEspacio(alturaBloque);
-        yPos += extraArriba;
+      const medidos = parsearEsquemaABloques(esquema).map(medirBloque);
+      medidos.forEach((m, i) => {
+        // Evita que un encabezado se quede "huérfano" solo al final de una
+        // página con su contenido empujado a la siguiente (lo que se veía
+        // como un corte a medias): si es un encabezado, se exige que quepa
+        // TAMBIÉN el bloque siguiente antes de dibujarlo -- si no cabe
+        // ninguno de los dos, ambos pasan juntos a la página nueva.
+        let alturaNecesaria = m.alturaBloque;
+        if (m.esEncabezado && i + 1 < medidos.length) alturaNecesaria += medidos[i + 1].alturaBloque;
+        asegurarEspacio(alturaNecesaria);
+        yPos += m.extraArriba;
 
-        if (esDefinicion) {
+        // Reaplicar tipo de letra: la medición de bloques posteriores ya
+        // dejó el estado de "doc" cambiado.
+        doc.setFont("helvetica", m.fontStyle);
+        doc.setFontSize(m.fontSize);
+
+        if (m.esDefinicion) {
           doc.setFillColor(255, 241, 222);
           doc.setDrawColor(...NARANJA_PRIMARIO);
-          doc.roundedRect(margin, yPos - altoLinea * 0.75, anchoTexto, lineas.length * altoLinea + 4, 2, 2, "FD");
+          doc.roundedRect(margin, yPos - m.altoLinea * 0.75, anchoTexto, m.lineas.length * m.altoLinea + 4, 2, 2, "FD");
           yPos += 3;
-        } else if (esH2) {
+        } else if (m.esH2) {
           // Barra de acento naranja a la izquierda, igual que el
           // "border-left: 4px solid var(--age-primary)" del h2 en pantalla.
           doc.setFillColor(...NARANJA_PRIMARIO);
-          doc.rect(margin, yPos - altoLinea * 0.78, 1.3, lineas.length * altoLinea, "F");
+          doc.rect(margin, yPos - m.altoLinea * 0.78, 1.3, m.lineas.length * m.altoLinea, "F");
         }
 
-        doc.setTextColor(...color);
-        lineas.forEach((linea) => {
-          doc.text(linea, margin + indent + (esDefinicion ? 2 : 0), yPos);
-          yPos += altoLinea;
+        doc.setTextColor(...m.color);
+        m.lineas.forEach((linea) => {
+          doc.text(linea, margin + m.indent + (m.esDefinicion ? 2 : 0), yPos);
+          yPos += m.altoLinea;
         });
         doc.setTextColor(0);
-        yPos += esDefinicion ? 4 : 2;
+        yPos += m.esDefinicion ? 4 : 2;
       });
 
       doc.save(`esquema_${nombreArchivo.replace('.pdf', '')}.pdf`);

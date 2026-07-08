@@ -83,3 +83,63 @@ def test_reintenta_ante_error_5xx(monkeypatch):
         resultado = deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
     assert resultado == "recuperado"
     assert mock_post.call_count == 2
+
+
+def _respuesta_con_status(contenido, finish_reason, status_code=200):
+    mock = MagicMock()
+    mock.status_code = status_code
+    mock.json.return_value = {
+        "choices": [{"message": {"content": contenido}, "finish_reason": finish_reason}]
+    }
+    return mock
+
+
+class TestGenerarConContinuacion:
+    """generar_con_continuacion: usada por /resumir-documento y
+    /generar-esquema-desde-pdf para que un documento largo no se quede a
+    medias -- antes una única llamada con tope fijo de tokens simplemente
+    cortaba el resumen sin ningún aviso ni reintento."""
+
+    def test_una_sola_llamada_si_no_se_corta(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post",
+                   return_value=_respuesta_con_status("Resumen completo.", "stop")) as mock_post:
+            resultado = deepseek_utils.generar_con_continuacion("system", "user")
+        assert resultado == "Resumen completo."
+        assert mock_post.call_count == 1
+
+    def test_pide_continuacion_si_se_corta_por_longitud(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", side_effect=[
+            _respuesta_con_status("Parte 1 del resumen... ", "length"),
+            _respuesta_con_status("parte 2 y final.", "stop"),
+        ]) as mock_post:
+            resultado = deepseek_utils.generar_con_continuacion("system", "user")
+        assert resultado == "Parte 1 del resumen... parte 2 y final."
+        assert mock_post.call_count == 2
+        # La segunda llamada debe pedir explícitamente que continúe, no repetir el prompt original.
+        segunda_llamada_mensajes = mock_post.call_args_list[1].kwargs["json"]["messages"]
+        assert segunda_llamada_mensajes[-1]["role"] == "user"
+        assert "continúa" in segunda_llamada_mensajes[-1]["content"].lower()
+
+    def test_nunca_pide_mas_de_max_continuaciones(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        # Se corta SIEMPRE por longitud -- no debe reintentar indefinidamente.
+        with patch("deepseek_utils.requests.post",
+                   return_value=_respuesta_con_status("trozo ", "length")) as mock_post:
+            resultado = deepseek_utils.generar_con_continuacion("system", "user", max_continuaciones=2)
+        assert mock_post.call_count == 3  # 1 inicial + 2 continuaciones, nunca más
+        assert resultado == "trozo trozo trozo "
+
+    def test_devuelve_none_si_falla_la_primera_llamada(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_con_status("", "stop", status_code=500)):
+            resultado = deepseek_utils.generar_con_continuacion("system", "user")
+        assert resultado is None
+
+    def test_sin_api_key_devuelve_none_sin_llamar(self, monkeypatch):
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        with patch("deepseek_utils.requests.post") as mock_post:
+            resultado = deepseek_utils.generar_con_continuacion("system", "user")
+        assert resultado is None
+        mock_post.assert_not_called()

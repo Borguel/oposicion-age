@@ -207,16 +207,15 @@ async function obtenerAuthHeaders() {
       const NARANJA_PRIMARIO = [255, 166, 51];
       const NARANJA_OSCURO = [232, 134, 15];
 
-      const bloques = parsearResumenABloques(resumen);
-      bloques.forEach((b) => {
-        let fontSize = 11;
-        let fontStyle = "normal";
-        let prefijo = "";
-        let indent = 0;
-        let extraArriba = 0;
-        let color = [0, 0, 0];
+      // Mide un bloque (tipo de letra, líneas ya envueltas al ancho de
+      // página, alto total) SIN dibujar nada -- se usa en una primera pasada
+      // para poder mirar "hacia adelante" al bloque siguiente antes de
+      // decidir si hay que saltar de página.
+      function medirBloque(b) {
+        let fontSize = 11, fontStyle = "normal", prefijo = "", indent = 0, extraArriba = 0, color = [0, 0, 0];
         const esDefinicion = b.tipo === "definicion";
         const esH2 = b.tipo === "h2";
+        const esEncabezado = esH2 || b.tipo === "h3";
 
         if (esH2) { fontSize = 15; fontStyle = "bold"; extraArriba = 6; indent = 4; }
         else if (b.tipo === "h3") { fontSize = 12.5; fontStyle = "bold"; extraArriba = 4; color = NARANJA_OSCURO; }
@@ -230,29 +229,45 @@ async function obtenerAuthHeaders() {
         const lineas = doc.splitTextToSize(prefijo + texto, anchoTexto - indent - (esDefinicion ? 4 : 0));
         const altoLinea = fontSize * 0.42;
         const alturaBloque = extraArriba + lineas.length * altoLinea + (esDefinicion ? 4 : 2);
+        return { esDefinicion, esH2, esEncabezado, fontSize, fontStyle, indent, extraArriba, color, lineas, altoLinea, alturaBloque };
+      }
 
-        asegurarEspacio(alturaBloque);
-        yPos += extraArriba;
+      const medidos = parsearResumenABloques(resumen).map(medirBloque);
+      medidos.forEach((m, i) => {
+        // Evita que un encabezado se quede "huérfano" solo al final de una
+        // página con su contenido empujado a la siguiente (lo que se veía
+        // como un corte a medias): si es un encabezado, se exige que quepa
+        // TAMBIÉN el bloque siguiente antes de dibujarlo -- si no cabe
+        // ninguno de los dos, ambos pasan juntos a la página nueva.
+        let alturaNecesaria = m.alturaBloque;
+        if (m.esEncabezado && i + 1 < medidos.length) alturaNecesaria += medidos[i + 1].alturaBloque;
+        asegurarEspacio(alturaNecesaria);
+        yPos += m.extraArriba;
 
-        if (esDefinicion) {
+        // Reaplicar tipo de letra: la medición de bloques posteriores ya
+        // dejó el estado de "doc" cambiado.
+        doc.setFont("helvetica", m.fontStyle);
+        doc.setFontSize(m.fontSize);
+
+        if (m.esDefinicion) {
           doc.setFillColor(255, 241, 222);
           doc.setDrawColor(...NARANJA_PRIMARIO);
-          doc.roundedRect(margin, yPos - altoLinea * 0.75, anchoTexto, lineas.length * altoLinea + 4, 2, 2, "FD");
+          doc.roundedRect(margin, yPos - m.altoLinea * 0.75, anchoTexto, m.lineas.length * m.altoLinea + 4, 2, 2, "FD");
           yPos += 3;
-        } else if (esH2) {
+        } else if (m.esH2) {
           // Barra de acento naranja a la izquierda, igual que el
           // "border-left: 4px solid var(--age-primary)" del h2 en pantalla.
           doc.setFillColor(...NARANJA_PRIMARIO);
-          doc.rect(margin, yPos - altoLinea * 0.78, 1.3, lineas.length * altoLinea, "F");
+          doc.rect(margin, yPos - m.altoLinea * 0.78, 1.3, m.lineas.length * m.altoLinea, "F");
         }
 
-        doc.setTextColor(...color);
-        lineas.forEach((linea) => {
-          doc.text(linea, margin + indent + (esDefinicion ? 2 : 0), yPos);
-          yPos += altoLinea;
+        doc.setTextColor(...m.color);
+        m.lineas.forEach((linea) => {
+          doc.text(linea, margin + m.indent + (m.esDefinicion ? 2 : 0), yPos);
+          yPos += m.altoLinea;
         });
         doc.setTextColor(0);
-        yPos += esDefinicion ? 4 : 2;
+        yPos += m.esDefinicion ? 4 : 2;
       });
 
       doc.save(`resumen_${nombreArchivo.replace('.pdf', '')}.pdf`);
@@ -405,12 +420,47 @@ async function obtenerAuthHeaders() {
       return div.innerHTML;
     }
 
+    // Con un documento largo, el resumen completo en pantalla se hace
+    // kilométrico. Se muestra solo un primer tramo y, si hay más, un botón
+    // "Ver resumen completo" para desplegar el resto sin perder nada --
+    // quien prefiera no desplazarse por una pantalla larguísima puede
+    // simplemente descargar el PDF (los botones ya están justo debajo) y
+    // estudiarlo desde ahí. Umbral en bloques (encabezados/párrafos/viñetas
+    // ya parseados), no en caracteres, para no cortar nunca a mitad de uno.
+    const BLOQUES_PREVIEW_RESUMEN = 14;
+
     function mostrarResumenResultado(textoResumen, guardar) {
       resumen = textoResumen || "No se pudo generar el resumen.";
       const fecha = new Date();
       fechaResumen.textContent = formatearFecha(fecha);
       resumenTitulo.textContent = `Resumen de ${nombreArchivo}`;
-      contenidoResumen.innerHTML = bloquesAHtml(parsearResumenABloques(resumen));
+      // Por si se muestra un resumen tras otro sin recargar la página (p.
+      // ej. al cerrar y generar uno nuevo), se quita cualquier botón "ver
+      // más" que quedara de la vez anterior antes de crear el nuevo.
+      const verMasAnterior = document.getElementById('resumen-ver-mas-bloque');
+      if (verMasAnterior) verMasAnterior.remove();
+
+      const bloques = parsearResumenABloques(resumen);
+      if (bloques.length > BLOQUES_PREVIEW_RESUMEN + 4) {
+        contenidoResumen.innerHTML = bloquesAHtml(bloques.slice(0, BLOQUES_PREVIEW_RESUMEN));
+        contenidoResumen.insertAdjacentHTML(
+          'beforeend',
+          `<div id="resumen-resto" class="hidden">${bloquesAHtml(bloques.slice(BLOQUES_PREVIEW_RESUMEN))}</div>`
+        );
+        contenidoResumen.insertAdjacentHTML('afterend', `
+          <div class="resumen-ver-mas-bloque" id="resumen-ver-mas-bloque">
+            <button type="button" class="btn btn-outline" id="btn-ver-mas-resumen">Ver resumen completo ↓</button>
+            <p class="resumen-ver-mas-nota">O descárgalo en PDF para estudiarlo con más comodidad.</p>
+          </div>
+        `);
+        document.getElementById('btn-ver-mas-resumen').addEventListener('click', () => {
+          document.getElementById('resumen-resto').classList.remove('hidden');
+          document.getElementById('resumen-ver-mas-bloque').remove();
+        });
+      } else {
+        contenidoResumen.innerHTML = bloquesAHtml(bloques);
+      }
+
       contenedorCarga.classList.add('hidden');
       resultadoResumen.classList.remove('hidden');
       // ✅ Guardar en Firebase (solo si es contenido recién generado, no al

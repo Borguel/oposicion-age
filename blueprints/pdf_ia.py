@@ -22,6 +22,7 @@ from documentos_pdf import (
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import generar_preguntas_ia_en_lotes
 from utils import barajar_opciones_pregunta
+from deepseek_utils import generar_con_continuacion
 
 logger = logging.getLogger(__name__)
 
@@ -92,25 +93,12 @@ def resumir_pdf():
             "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga. El "
             "resumen debe ser útil para un opositor."
         )
-        api_key = os.getenv("DEEPSEEK_API_KEY")
-        if not api_key:
+        if not os.getenv("DEEPSEEK_API_KEY"):
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        payload = {
-            "model": "deepseek-chat",
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Documento para resumir:\n{text}"}
-            ],
-            "temperature": 0.3,
-            "max_tokens": 2000
-        }
-        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
-        if response.status_code != 200:
-            return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
+        resumen = generar_con_continuacion(system_prompt, f"Documento para resumir:\n{text}")
+        if not resumen:
+            return jsonify({"error": "Error en DeepSeek API"}), 500
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
-        data = response.json()
-        resumen = data['choices'][0]['message']['content']
         return jsonify({"resumen": resumen, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
@@ -153,25 +141,12 @@ def generar_esquema_desde_pdf():
             "Cada línea de texto debe ir en su propio párrafo o viñeta, sin mezclar varias "
             "ideas en una misma línea larga."
         )
-        api_key = os.getenv("DEEPSEEK_API_KEY")
-        if not api_key:
+        if not os.getenv("DEEPSEEK_API_KEY"):
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        payload = {
-            "model": "deepseek-chat",
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Documento para crear esquema:\n{text}"}
-            ],
-            "temperature": 0.3,
-            "max_tokens": 2000
-        }
-        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
-        if response.status_code != 200:
-            return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
+        esquema = generar_con_continuacion(system_prompt, f"Documento para crear esquema:\n{text}")
+        if not esquema:
+            return jsonify({"error": "Error en DeepSeek API"}), 500
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
-        data = response.json()
-        esquema = data['choices'][0]['message']['content']
         return jsonify({"esquema": esquema, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
     except Exception as e:
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500

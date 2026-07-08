@@ -99,6 +99,18 @@
   justify-content: center;
 }
 
+.resumen-ver-mas-bloque {
+  text-align: center;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--age-border);
+}
+.resumen-ver-mas-nota {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--age-ink-soft);
+}
+
 @media (max-width: 768px) {
   .resumen-titulo { font-size: 1.3rem; }
   .resumen-actions { flex-direction: column; }
