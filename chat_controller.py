@@ -37,6 +37,28 @@ def agregar_mensaje_a_conversacion(db, usuario_id, conversacion_id, role, conten
           "mensajes": firestore.ArrayUnion([{"role": role, "content": content}])
       })
 
+# ✅ Historial previo de una conversación ya existente, para que el modelo
+# tenga memoria real de lo hablado (antes de esto, cada mensaje se mandaba
+# aislado y el modelo no tenía forma de saber a qué se refería un "cuéntame
+# más" o un "¿y el segundo?"). Se limita a los últimos N mensajes para no
+# dejar crecer el prompt sin límite en conversaciones muy largas.
+_HISTORIAL_MAXIMO_MENSAJES = 30
+
+
+def _historial_previo(db, usuario_id, chat_id):
+    if not chat_id:
+        return []
+    conversacion = db.collection("conversaciones_IA") \
+                      .document(usuario_id) \
+                      .collection("conversaciones") \
+                      .document(chat_id) \
+                      .get()
+    if not conversacion.exists:
+        return []
+    mensajes = (conversacion.to_dict() or {}).get("mensajes", [])
+    mensajes = mensajes[-_HISTORIAL_MAXIMO_MENSAJES:]
+    return [{"role": m["role"], "content": m["content"]} for m in mensajes]
+
 # ✅ Asistente premium especializado en el examen, adaptado a la oposición
 # concreta que esté estudiando el usuario (mismo asistente, distinto "traje").
 def _instrucciones_asistente_examen(oposicion):
@@ -208,9 +230,11 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
         else:
             prompt_usuario = mensaje
 
+    historial = _historial_previo(db, usuario_id, chat_id)
     respuesta = call_deepseek_api(
         messages=[
             {"role": "system", "content": system_prompt},
+            *historial,
             {"role": "user", "content": prompt_usuario}
         ],
         temperature=0.7,

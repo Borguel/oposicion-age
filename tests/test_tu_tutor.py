@@ -126,6 +126,44 @@ def test_pregunta_sobre_estructura_del_examen_sin_datos_cargados_no_falla(db):
     assert user_prompt == "¿Cuánto tiempo hay para el segundo ejercicio?"
 
 
+def test_segundo_mensaje_de_una_conversacion_incluye_el_historial_previo(db):
+    # Antes de esto, cada mensaje se mandaba aislado al modelo (solo system
+    # prompt + mensaje actual), así que un "cuéntame más" no tenía forma de
+    # saber a qué se refería -- el historial se guardaba en Firestore pero
+    # nunca se reenviaba de vuelta al modelo.
+    with patch("chat_controller.call_deepseek_api", side_effect=["Encantado de ayudarte", "Claro, te explico más"]) as mock_llamada:
+        _texto1, chat_id, _usar_rag = responder_tutor("Hola, ¿cómo estás?", db=db, usuario_id="u1")
+        _texto2, _chat_id_2, _usar_rag2 = responder_tutor(
+            "Cuéntame más", db=db, usuario_id="u1", chat_id=chat_id
+        )
+
+    primera_llamada_mensajes = mock_llamada.call_args_list[0].kwargs["messages"]
+    assert len(primera_llamada_mensajes) == 2  # sin historial: primer mensaje de la conversación
+
+    segunda_llamada_mensajes = mock_llamada.call_args_list[1].kwargs["messages"]
+    assert segunda_llamada_mensajes[1] == {"role": "user", "content": "Hola, ¿cómo estás?"}
+    assert segunda_llamada_mensajes[2] == {"role": "assistant", "content": "Encantado de ayudarte"}
+    assert segunda_llamada_mensajes[3] == {"role": "user", "content": "Cuéntame más"}
+
+
+def test_historial_se_limita_a_los_ultimos_mensajes_en_conversaciones_muy_largas(db):
+    mensajes_previos = [
+        {"role": "user" if i % 2 == 0 else "assistant", "content": f"mensaje {i}"}
+        for i in range(50)
+    ]
+    db.sembrar(("conversaciones_IA", "u1", "conversaciones", "conv1"), {
+        "usuario_id": "u1", "titulo": "conv larga", "mensajes": mensajes_previos
+    })
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor("Pregunta nueva", db=db, usuario_id="u1", chat_id="conv1")
+
+    mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
+    historial_enviado = mensajes_enviados[1:-1]
+    assert len(historial_enviado) == 30
+    assert historial_enviado[0]["content"] == "mensaje 20"
+    assert historial_enviado[-1]["content"] == "mensaje 49"
+
+
 def test_historial_de_una_conversacion_persiste_y_se_amplia_en_firestore(db):
     with patch("chat_controller.call_deepseek_api", side_effect=["primera respuesta", "segunda respuesta"]):
         _texto1, chat_id, _usar_rag = responder_tutor("Hola, ¿cómo estás?", db=db, usuario_id="u1")
