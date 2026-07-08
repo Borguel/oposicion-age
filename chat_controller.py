@@ -3,7 +3,7 @@ import re
 import unicodedata
 from datetime import datetime
 from firebase_admin import firestore
-from utils import obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria
+from utils import obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
 from deepseek_utils import call_deepseek_api
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
@@ -122,15 +122,33 @@ _PALABRAS_CONVOCATORIA = [
     "aprobar el examen", "aprobar la oposicion",
     "estructura del examen", "como es el examen", "partes tiene el examen",
     "fase de oposicion", "curso selectivo",
-    "divide el temario", "bloques tiene el temario", "cuantos temas tiene",
-    "cuantos bloques tiene", "estructura del temario", "organizado el temario",
-    "partes tiene el temario", "temas tiene la oposicion",
 ]
 
 
 def _necesita_datos_convocatoria(mensaje):
     mensaje_norm = _normalizar(mensaje)
     return any(palabra in mensaje_norm for palabra in _PALABRAS_CONVOCATORIA)
+
+
+# ============================================================
+# Detección de preguntas sobre la ESTRUCTURA DEL TEMARIO en sí (bloques,
+# temas, cuántos hay, cómo se organizan) -- a diferencia de
+# _necesita_datos_convocatoria (logística del examen), aquí la fuente de
+# verdad no es un texto escrito a mano sino el catálogo real ya cargado en
+# Firestore (obtener_resumen_temario), para que Tu Tutor nunca invente
+# bloques/temas que no existen de verdad.
+# ============================================================
+_PALABRAS_TEMARIO_ESTRUCTURA = [
+    "divide el temario", "bloques tiene el temario", "cuantos temas tiene",
+    "cuantos bloques tiene", "estructura del temario", "organizado el temario",
+    "partes tiene el temario", "temas tiene la oposicion", "que temas hay",
+    "que bloques hay", "lista de temas", "temario completo", "todos los temas",
+]
+
+
+def _necesita_resumen_temario(mensaje):
+    mensaje_norm = _normalizar(mensaje)
+    return any(palabra in mensaje_norm for palabra in _PALABRAS_TEMARIO_ESTRUCTURA)
 
 
 # 📌 Tu Tutor: chat unificado que decide, mensaje a mensaje, si busca
@@ -159,19 +177,33 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
     else:
         system_prompt = _instrucciones_asistente_examen(oposicion)
         datos_convocatoria = obtener_datos_convocatoria(db, oposicion) if _necesita_datos_convocatoria(mensaje) else None
+        resumen_temario = obtener_resumen_temario(db, coleccion) if _necesita_resumen_temario(mensaje) else None
+
+        bloques_contexto = []
+        if resumen_temario:
+            bloques_contexto.append(
+                "ESTRUCTURA REAL DEL TEMARIO (bloques y temas tal y como están cargados "
+                "en la plataforma, en este orden exacto):\n" + resumen_temario
+            )
         if datos_convocatoria:
+            bloques_contexto.append(
+                "DATOS OFICIALES de la convocatoria vigente de esta oposición, transcritos "
+                "de las normas específicas publicadas en el BOE:\n" + datos_convocatoria
+            )
+
+        if bloques_contexto:
             prompt_usuario = (
-                "A continuación tienes datos OFICIALES de la convocatoria vigente de esta "
-                "oposición, transcritos de las normas específicas publicadas en el BOE. "
-                "OJO: el usuario NO te ha dado estos datos en su mensaje, son información de "
-                "referencia que ya tienes -- así que nunca digas cosas como \"según los datos "
-                "que me has facilitado/proporcionado\" ni le atribuyas al usuario esta "
-                "información. Cítalos como lo que son, datos públicos, con frases del tipo "
-                "\"según los datos oficiales de la convocatoria de 2025...\" o \"según las "
-                "normas específicas publicadas en el BOE...\". Úsalos como fuente principal si "
-                "la pregunta trata sobre ellos, en vez de inventar cifras:\n\n"
-                f"{datos_convocatoria}\n\n"
-                f"PREGUNTA DEL USUARIO:\n{mensaje}"
+                "A continuación tienes información de referencia que ya tienes disponible. "
+                "OJO: el usuario NO te ha dado estos datos en su mensaje -- así que nunca digas "
+                "cosas como \"según los datos que me has facilitado/proporcionado\" ni le "
+                "atribuyas al usuario esta información. Cítalos como lo que son, datos "
+                "públicos, con frases del tipo \"según el temario de la plataforma...\" o "
+                "\"según los datos oficiales de la convocatoria de 2025...\". Si hay una lista "
+                "de bloques y temas, respétala tal cual (no la resumas de forma distinta ni "
+                "inventes bloques/temas que no aparezcan en ella). Úsalos como fuente principal "
+                "si la pregunta trata sobre ellos, en vez de inventar datos:\n\n"
+                + "\n\n".join(bloques_contexto)
+                + f"\n\nPREGUNTA DEL USUARIO:\n{mensaje}"
             )
         else:
             prompt_usuario = mensaje

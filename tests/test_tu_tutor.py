@@ -76,28 +76,42 @@ def test_pregunta_sobre_estructura_del_examen_usa_datos_oficiales_si_existen(db)
     assert usar_rag is False
     mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
     user_prompt = mensajes_enviados[1]["content"]
-    assert "datos OFICIALES" in user_prompt
+    assert "DATOS OFICIALES" in user_prompt
     assert "máximo de 100 preguntas" in user_prompt
     assert "¿Cuántas preguntas tiene el primer ejercicio?" in user_prompt
 
 
-def test_pregunta_sobre_como_se_divide_el_temario_usa_datos_oficiales(db):
-    # Antes de añadir estas palabras clave, una pregunta genérica sobre la
-    # estructura del temario no activaba ni el RAG ni los datos de
-    # convocatoria, así que el modelo se inventaba bloques/temas que no
-    # existen de verdad en el catálogo real.
-    db.sembrar(("datos_convocatoria", "AGE"), {
-        "oposicion": "AGE", "anio": 2025, "fuente": "BOE 2025",
-        "texto": "TEMARIO: 6 bloques -- I. Organización del Estado (11 temas); VI. Informática (8 temas)."
-    })
+def test_pregunta_sobre_como_se_divide_el_temario_usa_el_catalogo_real(db):
+    # Antes de esto, una pregunta genérica sobre la estructura del temario
+    # no activaba ni el RAG ni ningún contexto real, así que el modelo se
+    # inventaba bloques/temas que no existen de verdad en el catálogo.
+    db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Organización del Estado"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "La Constitución Española de 1978"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_02"), {"titulo": "La Corona"})
+    db.sembrar(("Temario AGE", "bloque_02"), {"titulo": "Derecho administrativo"})
+    db.sembrar(("Temario AGE", "bloque_02", "temas", "tema_01"), {"titulo": "El acto administrativo"})
     with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
         _texto, _chat_id, usar_rag = responder_tutor(
-            "¿Cómo se divide el temario?", db=db, usuario_id="u1", oposicion="AGE"
+            "¿Cómo se divide el temario?", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE"
         )
     assert usar_rag is False
     user_prompt = mock_llamada.call_args.kwargs["messages"][1]["content"]
-    assert "datos OFICIALES" in user_prompt
-    assert "6 bloques" in user_prompt
+    assert "ESTRUCTURA REAL DEL TEMARIO" in user_prompt
+    assert "Bloque I. Organización del Estado (2 temas)" in user_prompt
+    assert "1. La Constitución Española de 1978" in user_prompt
+    assert "2. La Corona" in user_prompt
+    assert "Bloque II. Derecho administrativo (1 temas)" in user_prompt
+
+
+def test_pregunta_sobre_el_temario_sin_catalogo_cargado_no_falla(db):
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        texto, _chat_id, usar_rag = responder_tutor(
+            "¿Cuántos bloques tiene el temario?", db=db, usuario_id="u1", oposicion="AGE"
+        )
+    assert usar_rag is False
+    assert texto == "ok"
+    user_prompt = mock_llamada.call_args.kwargs["messages"][1]["content"]
+    assert user_prompt == "¿Cuántos bloques tiene el temario?"
 
 
 def test_pregunta_sobre_estructura_del_examen_sin_datos_cargados_no_falla(db):

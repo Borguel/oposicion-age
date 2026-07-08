@@ -104,6 +104,39 @@ def obtener_datos_convocatoria(db, oposicion):
         return None
     return (doc.to_dict() or {}).get("texto")
 
+_NUMEROS_ROMANOS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
+
+# ✅ Estructura REAL del temario (bloques y temas tal y como están cargados en
+# Firestore), en texto listo para inyectar en el prompt de Tu Tutor -- para
+# que describa el temario a partir de los datos reales en vez de un resumen
+# escrito a mano que puede quedar desactualizado. Se agrupa por bloque y se
+# ordena por el id del documento (bloque_01, bloque_02... / tema_01, tema_02...)
+# ya que stream() no garantiza ningún orden.
+def obtener_resumen_temario(db, coleccion="Temario AGE"):
+    bloques = {}
+    for bloque in db.collection(coleccion).stream():
+        bloque_titulo = (bloque.to_dict() or {}).get("titulo", bloque.id)
+        temas = []
+        for tema in db.collection(coleccion).document(bloque.id).collection("temas").stream():
+            titulo = (tema.to_dict() or {}).get("titulo", tema.id)
+            temas.append((tema.id, titulo))
+        if not temas:
+            continue
+        temas.sort(key=lambda t: t[0])
+        bloques[bloque.id] = (bloque_titulo, temas)
+
+    if not bloques:
+        return None
+
+    lineas = []
+    for indice, bloque_id in enumerate(sorted(bloques.keys())):
+        bloque_titulo, temas = bloques[bloque_id]
+        numero_romano = _NUMEROS_ROMANOS[indice] if indice < len(_NUMEROS_ROMANOS) else str(indice + 1)
+        lineas.append(f"Bloque {numero_romano}. {bloque_titulo} ({len(temas)} temas)")
+        for numero, (_tema_id, titulo) in enumerate(temas, start=1):
+            lineas.append(f"  {numero}. {titulo}")
+    return "\n".join(lineas)
+
 # ✅ Contexto de temas identificados por su id combinado "bloque_id-tema_id"
 # (a diferencia de obtener_contexto_por_temas, que solo recibe el tema_id y
 # por tanto no distingue entre bloques distintos que reutilicen el mismo
