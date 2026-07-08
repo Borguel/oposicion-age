@@ -166,9 +166,20 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("vistazo-tests").textContent = totalTests;
     document.getElementById("vistazo-media").textContent = puntuacionMedia.toFixed(1);
     document.getElementById("vistazo-racha").textContent = racha.racha_actual ?? 0;
-    document.getElementById("vistazo-aprobados-pct").textContent = `${porcentajeAprobados}%`;
+    // Por debajo del 25% es una mala señal (rojo), de 25% a 50% aviso
+    // (ámbar), y solo a partir del 50% es un dato realmente positivo
+    // (verde) -- antes salía siempre en verde, dando la sensación de que
+    // iba bien aunque el % de aprobados fuera muy bajo.
+    const nivelAprobados = porcentajeAprobados < 25 ? "nivel-bajo" : porcentajeAprobados < 50 ? "nivel-medio" : "nivel-alto";
+    const pctEl = document.getElementById("vistazo-aprobados-pct");
+    const fillEl = document.getElementById("vistazo-aprobados-fill");
+    pctEl.textContent = `${porcentajeAprobados}%`;
+    pctEl.classList.remove("nivel-bajo", "nivel-medio", "nivel-alto");
+    pctEl.classList.add(nivelAprobados);
+    fillEl.classList.remove("nivel-bajo", "nivel-medio", "nivel-alto");
+    fillEl.classList.add(nivelAprobados);
     document.getElementById("vistazo-aprobados-detalle").textContent = `${aprobados} aprobados · ${suspendidos} suspendidos`;
-    document.getElementById("vistazo-aprobados-fill").style.width = `${porcentajeAprobados}%`;
+    fillEl.style.width = `${porcentajeAprobados}%`;
 
     document.getElementById("aciertos").textContent = totalAciertos;
     document.getElementById("fallos").textContent = totalFallos;
@@ -696,6 +707,15 @@ document.addEventListener("DOMContentLoaded", async function () {
   });
 
   busquedaInput.addEventListener('input', filtrarTemas);
+
+  // Cierre sin persistencia: si el usuario se va a otra página y vuelve
+  // (o simplemente recarga), el aviso vuelve a aparecer si sigue habiendo
+  // temas con margen de mejora -- a diferencia del onboarding, aquí no
+  // interesa que se quede oculto para siempre, porque los temas flojos
+  // cambian con el tiempo y es información que conviene seguir viendo.
+  document.getElementById("recomendacion-cerrar").addEventListener("click", () => {
+    document.getElementById("tarjeta-temas-flojos").style.display = "none";
+  });
 
   document.getElementById("calendario-mes-anterior").addEventListener("click", () => {
     mesCalendarioActual.setMonth(mesCalendarioActual.getMonth() - 1);

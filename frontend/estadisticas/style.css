@@ -89,16 +89,23 @@
       background: var(--theme-primary);
       color: white;
       border: none;
-      padding: 10px 24px;
-      border-radius: var(--btn-radius);
-      font-weight: 600;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border-radius: 50%;
       cursor: pointer;
       transition: all 0.3s;
       box-shadow: 0 4px 10px rgba(255, 166, 51, 0.3);
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
       position: relative;
+      flex-shrink: 0;
+    }
+
+    #estadisticas-refresh .icono-actualizar {
+      width: 20px;
+      height: 20px;
     }
 
     #estadisticas-refresh:hover:not(:disabled) {
@@ -122,14 +129,16 @@
       animation: spin 1s linear infinite;
       display: none;
       position: absolute;
-      right: 10px;
+      top: 50%;
+      left: 50%;
+      margin: -8px 0 0 -8px;
     }
 
     #estadisticas-refresh.loading .spinner {
       display: block;
     }
 
-    #estadisticas-refresh.loading span {
+    #estadisticas-refresh.loading .icono-actualizar {
       opacity: 0;
     }
 
@@ -181,7 +190,19 @@
       margin-top: 2px;
     }
 
-    .vistazo-resultado .vistazo-valor {
+    /* Color según el % de aprobados: por debajo del 25% es una señal de
+       alarma real (rojo), entre 25% y 50% aviso (ámbar), y solo a partir
+       del 50% es un dato positivo (verde) -- antes siempre salía en
+       verde, dando la impresión de ir bien aunque el % fuera bajo. */
+    .vistazo-resultado .vistazo-valor.nivel-bajo {
+      color: var(--age-danger);
+    }
+
+    .vistazo-resultado .vistazo-valor.nivel-medio {
+      color: var(--age-warning);
+    }
+
+    .vistazo-resultado .vistazo-valor.nivel-alto {
       color: var(--age-success);
     }
 
@@ -203,6 +224,14 @@
       height: 100%;
       background: var(--age-success);
       transition: width 0.5s ease;
+    }
+
+    .vistazo-mini-fill.nivel-bajo {
+      background: var(--age-danger);
+    }
+
+    .vistazo-mini-fill.nivel-medio {
+      background: var(--age-warning);
     }
 
     @media (max-width: 640px) {
@@ -312,6 +341,30 @@
       border-radius: var(--age-radius-lg);
       padding: 24px 26px;
       margin-bottom: 28px;
+      position: relative;
+    }
+
+    .recomendacion-cerrar {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--age-ink-soft);
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s var(--age-ease), color 0.15s var(--age-ease);
+    }
+
+    .recomendacion-cerrar:hover {
+      background: rgba(0, 0, 0, 0.08);
+      color: var(--age-ink);
     }
 
     .tarjeta-recomendacion .recomendacion-icono {
@@ -323,6 +376,7 @@
     .tarjeta-recomendacion .recomendacion-texto {
       min-width: 0;
       flex: 1;
+      padding-right: 24px;
     }
 
     .tarjeta-recomendacion h4 {
@@ -735,19 +789,19 @@
     .calendario-dias-semana {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 3px;
-      margin-top: 14px;
+      gap: 5px;
+      margin: 14px auto 0;
       text-align: center;
-      /* Mismo max-width que .calendario-grafica -- si no, esta fila ocupa
-         todo el ancho de la tarjeta mientras que la rejilla de días de
-         abajo está limitada a 220px, y las 7 columnas de cada una acaban
-         en posiciones distintas (las letras L M X... no quedan encima de
-         su columna de números). */
-      max-width: 220px;
+      /* Mismo max-width y márgenes que .calendario-grafica -- si no, esta
+         fila ocupa todo el ancho de la tarjeta mientras que la rejilla de
+         días de abajo tiene un ancho distinto, y las 7 columnas de cada
+         una acaban en posiciones distintas (las letras L M X... no
+         quedan encima de su columna de números). */
+      max-width: 280px;
     }
 
     .calendario-dias-semana span {
-      font-size: 0.72rem;
+      font-size: 0.78rem;
       font-weight: 700;
       color: var(--age-ink-faint);
     }
@@ -755,20 +809,20 @@
     .calendario-grafica {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 3px;
-      margin-top: 6px;
-      max-width: 220px;
+      gap: 5px;
+      margin: 6px auto 0;
+      max-width: 280px;
     }
 
     .calendario-celda {
       width: 100%;
       aspect-ratio: 1;
-      border-radius: 4px;
+      border-radius: 5px;
       background: var(--age-neutral-bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 9px;
+      font-size: 11px;
       color: var(--age-ink-faint);
     }
 
@@ -790,6 +844,7 @@
       color: var(--age-ink-faint);
       font-size: 0.8rem;
       margin: 10px 0 0;
+      text-align: center;
     }
 
     .tema-acierto {

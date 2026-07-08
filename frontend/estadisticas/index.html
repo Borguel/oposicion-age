@@ -27,14 +27,17 @@
   <div id="estadisticas-header">
     <h3>Estadísticas de tu estudio</h3>
     <div class="estadisticas-header-botones">
-      <button id="estadisticas-exportar-pdf" type="button" class="age-btn age-btn-outline">📄 Exportar PDF</button>
-      <button id="estadisticas-refresh" type="button">
-        <span>Actualizar</span>
+      <button id="estadisticas-refresh" type="button" aria-label="Actualizar" title="Actualizar">
+        <svg class="icono-actualizar" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 4v5h5M20 20v-5h-5M4.5 9a8 8 0 0 1 14-4.5L20 9M19.5 15a8 8 0 0 1-14 4.5L4 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
         <div class="spinner"></div>
       </button>
+      <button id="estadisticas-exportar-pdf" type="button" class="age-btn age-btn-outline">📄 Exportar PDF</button>
     </div>
   </div>
   <div class="tarjeta-recomendacion" id="tarjeta-temas-flojos" style="display:none;">
+    <button type="button" class="recomendacion-cerrar" id="recomendacion-cerrar" aria-label="Cerrar">✕</button>
     <div class="recomendacion-icono">💡</div>
     <div class="recomendacion-texto">
       <h4>Tus temas con más margen de mejora</h4>
