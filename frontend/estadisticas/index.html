@@ -87,15 +87,24 @@
     <p class="evolucion-vacio" id="evolucion-vacio" style="display:none;">Haz algunos tests para ver aquí tu evolución.</p>
   </div>
 
-  <!-- Calendario de racha: mapa de calor de los días con actividad en las
-       últimas ~12 semanas (a partir de las fechas de tus últimos tests),
-       igual de visual que la evolución de la nota. -->
+  <!-- Calendario de racha: vista mensual con los días que hubo actividad
+       (a partir de las fechas de tus últimos tests), navegable mes a mes
+       o saltando directamente a un mes/año concreto. -->
   <div class="tarjeta-estadistica neutra tarjeta-calendario" id="tarjeta-calendario" style="display:none;">
     <div class="header">
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
       </svg>
       <h4>Calendario de estudio</h4>
+    </div>
+    <div class="calendario-nav">
+      <button type="button" class="calendario-nav-boton" id="calendario-mes-anterior" aria-label="Mes anterior">‹</button>
+      <span class="calendario-mes-actual" id="calendario-mes-actual">—</span>
+      <button type="button" class="calendario-nav-boton" id="calendario-mes-siguiente" aria-label="Mes siguiente">›</button>
+      <input type="month" class="calendario-mes-input" id="calendario-mes-input" aria-label="Ir a un mes y año concretos">
+    </div>
+    <div class="calendario-dias-semana">
+      <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
     </div>
     <div class="calendario-grafica" id="calendario-grafica"></div>
     <p class="calendario-caption">Basado en las fechas de tus últimos tests</p>

@@ -341,18 +341,30 @@ document.addEventListener("DOMContentLoaded", async function () {
     contenedor.style.display = "block";
     vacio.style.display = "none";
 
-    const ancho = 600;
-    const alto = 160;
-    const margen = 20;
+    // El viewBox usa el ancho REAL en px del contenedor (no un ancho fijo
+    // arbitrario) y una altura fija -- así el mapeo es 1:1 en vez de
+    // depender de que el navegador reescale el SVG de forma uniforme o no
+    // uniforme, que antes dejaba el texto (fechas, eje 0/5/10) aplastado
+    // en pantallas estrechas o diminuto si se corregía solo con
+    // aspect-ratio.
+    const ancho = Math.max(280, Math.round(contenedor.getBoundingClientRect().width));
+    const alto = 190;
+    const margenIzq = 20;
+    const margenDer = 20;
+    const margenSup = 20;
+    // Margen inferior más grande que el resto -- deja hueco para las
+    // fechas del eje X (antes no había ninguna referencia de fecha visible
+    // en la propia gráfica, solo en el texto de mejor/peor debajo).
+    const margenInf = 40;
     const notas = recientes.map(notaSobre10);
-    const paso = (ancho - margen * 2) / (recientes.length - 1);
+    const paso = (ancho - margenIzq - margenDer) / (recientes.length - 1);
 
-    const coordX = (i) => margen + i * paso;
+    const coordX = (i) => margenIzq + i * paso;
     // Se acota la nota a [0, 10] solo para calcular la posición en el
     // gráfico (un test muy malo con muchos fallos puede dar una nota
     // negativa según la fórmula oficial) -- así un caso extremo se queda
     // pegado al borde en vez de disparar la línea fuera del recuadro.
-    const coordY = (nota) => alto - margen - (Math.max(0, Math.min(10, nota)) / 10) * (alto - margen * 2);
+    const coordY = (nota) => alto - margenInf - (Math.max(0, Math.min(10, nota)) / 10) * (alto - margenSup - margenInf);
 
     const puntos = notas.map((nota, i) => `${coordX(i)},${coordY(nota)}`).join(" ");
 
@@ -372,17 +384,36 @@ document.addEventListener("DOMContentLoaded", async function () {
     }).join("");
 
     const lineaAprobado = coordY(5);
-    const ejeX = margen - 4;
+    const ejeX = margenIzq - 4;
     const ejeLabels = `
       <text x="${ejeX}" y="${coordY(10) + 3}" text-anchor="end" class="evolucion-eje-texto">10</text>
       <text x="${ejeX}" y="${coordY(5) + 3}" text-anchor="end" class="evolucion-eje-texto">5</text>
       <text x="${ejeX}" y="${coordY(0) + 3}" text-anchor="end" class="evolucion-eje-texto">0</text>
     `;
 
+    // Fechas bajo el eje X: no se etiqueta cada punto (con 15 tests se
+    // amontonarían), se reparten como mucho ~6 etiquetas incluyendo
+    // siempre el primero y el último.
+    const MAX_ETIQUETAS_FECHA = 6;
+    const salto = Math.max(1, Math.ceil(recientes.length / MAX_ETIQUETAS_FECHA));
+    const indicesEtiquetas = [];
+    for (let i = 0; i < recientes.length; i += salto) indicesEtiquetas.push(i);
+    if (indicesEtiquetas[indicesEtiquetas.length - 1] !== recientes.length - 1) {
+      indicesEtiquetas.push(recientes.length - 1);
+    }
+    const yEtiquetaFecha = alto - margenInf + 16;
+    const etiquetasFecha = indicesEtiquetas.map((i) => {
+      const t = recientes[i];
+      if (!t.fecha) return "";
+      const fechaCorta = new Date(t.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "numeric" });
+      return `<text x="${coordX(i)}" y="${yEtiquetaFecha}" text-anchor="middle" class="evolucion-eje-texto">${fechaCorta}</text>`;
+    }).join("");
+
     contenedor.innerHTML = `
-      <svg viewBox="0 0 ${ancho} ${alto}" preserveAspectRatio="none" class="evolucion-svg">
-        <line x1="${margen}" y1="${lineaAprobado}" x2="${ancho - margen}" y2="${lineaAprobado}" class="evolucion-linea-aprobado" />
+      <svg viewBox="0 0 ${ancho} ${alto}" class="evolucion-svg">
+        <line x1="${margenIzq}" y1="${lineaAprobado}" x2="${ancho - margenDer}" y2="${lineaAprobado}" class="evolucion-linea-aprobado" />
         ${ejeLabels}
+        ${etiquetasFecha}
         <polyline points="${puntos}" fill="none" class="evolucion-linea" />
         ${circulos}
       </svg>
@@ -456,38 +487,67 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("cobertura-fill").style.width = `${porcentaje}%`;
   }
 
-  // Calendario de racha: mapa de calor de los últimos ~12 semanas a partir
-  // de las fechas de "historial_tests" (única fuente real disponible hoy;
-  // no hay un registro diario de actividad general, solo de tests).
-  const SEMANAS_CALENDARIO = 12;
+  // Calendario de estudio: vista de mes real (no un mapa de calor de
+  // semanas), navegable hacia atrás/adelante o saltando a un mes/año
+  // concreto. Los días con actividad salen de las fechas de
+  // "historial_tests" (única fuente real disponible hoy; no hay un
+  // registro diario de actividad general, solo de tests).
+  let historialCalendario = [];
+  let mesCalendarioActual = null; // Date con día 1 del mes mostrado
 
   function renderizarCalendarioRacha(historial) {
+    historialCalendario = historial || [];
     const tarjeta = document.getElementById("tarjeta-calendario");
-    const contenedor = document.getElementById("calendario-grafica");
-    if (!historial || historial.length === 0) {
+    if (historialCalendario.length === 0) {
       tarjeta.style.display = "none";
       return;
     }
+    if (!mesCalendarioActual) {
+      const hoy = new Date();
+      mesCalendarioActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    }
+    tarjeta.style.display = "flex";
+    pintarCalendarioMes();
+  }
+
+  function pintarCalendarioMes() {
+    const contenedor = document.getElementById("calendario-grafica");
+    const etiquetaMes = document.getElementById("calendario-mes-actual");
+    const inputMes = document.getElementById("calendario-mes-input");
+    const botonSiguiente = document.getElementById("calendario-mes-siguiente");
+
+    const anio = mesCalendarioActual.getFullYear();
+    const mes = mesCalendarioActual.getMonth();
 
     const diasConActividad = new Set(
-      historial.map(t => (t.fecha || "").slice(0, 10)).filter(Boolean)
+      historialCalendario.map(t => (t.fecha || "").slice(0, 10)).filter(Boolean)
     );
 
-    const totalDias = SEMANAS_CALENDARIO * 7;
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
+    const esMesActual = anio === hoy.getFullYear() && mes === hoy.getMonth();
+
+    etiquetaMes.textContent = mesCalendarioActual.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+    inputMes.value = `${anio}-${String(mes + 1).padStart(2, "0")}`;
+    // No tiene sentido navegar a meses futuros (no puede haber tests ahí).
+    botonSiguiente.disabled = esMesActual;
+
+    // Lunes = 0 ... domingo = 6, para que la rejilla empiece en lunes.
+    const primerDiaSemana = (new Date(anio, mes, 1).getDay() + 6) % 7;
+    const diasEnMes = new Date(anio, mes + 1, 0).getDate();
 
     const celdas = [];
-    for (let i = totalDias - 1; i >= 0; i--) {
-      const fecha = new Date(hoy);
-      fecha.setDate(fecha.getDate() - i);
-      const clave = fecha.toISOString().slice(0, 10);
+    for (let i = 0; i < primerDiaSemana; i++) {
+      celdas.push(`<div class="calendario-celda vacia"></div>`);
+    }
+    for (let dia = 1; dia <= diasEnMes; dia++) {
+      const clave = `${anio}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
       const activo = diasConActividad.has(clave);
-      const etiqueta = fecha.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
-      celdas.push(`<div class="calendario-celda${activo ? " con-actividad" : ""}" title="${etiqueta}${activo ? ": estudiaste" : ""}"></div>`);
+      const esHoy = esMesActual && dia === hoy.getDate();
+      const clases = ["calendario-celda", activo ? "con-actividad" : "", esHoy ? "hoy" : ""].filter(Boolean).join(" ");
+      celdas.push(`<div class="${clases}" title="${dia}${activo ? ": estudiaste" : ""}">${dia}</div>`);
     }
     contenedor.innerHTML = celdas.join("");
-    tarjeta.style.display = "flex";
   }
 
   async function actualizarTemas(temasEntries, todosTemas, rendimientoPorTema) {
@@ -636,6 +696,21 @@ document.addEventListener("DOMContentLoaded", async function () {
   });
 
   busquedaInput.addEventListener('input', filtrarTemas);
+
+  document.getElementById("calendario-mes-anterior").addEventListener("click", () => {
+    mesCalendarioActual.setMonth(mesCalendarioActual.getMonth() - 1);
+    pintarCalendarioMes();
+  });
+  document.getElementById("calendario-mes-siguiente").addEventListener("click", () => {
+    mesCalendarioActual.setMonth(mesCalendarioActual.getMonth() + 1);
+    pintarCalendarioMes();
+  });
+  document.getElementById("calendario-mes-input").addEventListener("change", (evento) => {
+    const [anio, mes] = evento.target.value.split("-").map(Number);
+    if (!anio || !mes) return;
+    mesCalendarioActual = new Date(anio, mes - 1, 1);
+    pintarCalendarioMes();
+  });
 
   refreshBtn.addEventListener('click', cargarDatos);
 
