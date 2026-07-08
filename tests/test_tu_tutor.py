@@ -209,6 +209,63 @@ def test_pregunta_sobre_el_temario_sin_catalogo_cargado_no_falla(db):
     assert user_prompt == "¿Cuántos bloques tiene el temario?"
 
 
+def test_contexto_personal_del_usuario_se_incluye_en_el_prompt(db):
+    db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Organización del Estado"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "La Constitución Española de 1978"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_02"), {"titulo": "La Corona"})
+    db.sembrar(("Temario AGE", "bloque_02"), {"titulo": "Derecho administrativo"})
+    db.sembrar(("Temario AGE", "bloque_02", "temas", "tema_01"), {"titulo": "El acto administrativo"})
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "nombre": "María",
+        "racha": {"racha_actual": 6},
+        "fechas_examen": {"AGE": "2026-10-15"},
+        "estadisticas": {
+            "AGE": {
+                "rendimiento_por_tema": {
+                    "bloque_01-tema_01": {"aciertos": 9, "fallos": 1, "blancos": 0},  # va bien
+                    "bloque_01-tema_02": {"aciertos": 1, "fallos": 5, "blancos": 0},  # muy flojo
+                    "bloque_02-tema_01": {"aciertos": 2, "fallos": 4, "blancos": 0},  # flojo
+                }
+            }
+        }
+    })
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor(
+            "¿Qué consejos me das para el examen?", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE"
+        )
+
+    mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
+    assert mensajes_enviados[1]["role"] == "system"
+    contexto_personal = mensajes_enviados[1]["content"]
+    assert "María" in contexto_personal
+    assert "6 días" in contexto_personal
+    assert "2026-10-15" in contexto_personal
+    # Los 2 temas con peor ratio de aciertos, no el que va bien (solo se
+    # avisa de un máximo de 2 para no abrumar).
+    assert "La Corona" in contexto_personal
+    assert "El acto administrativo" in contexto_personal
+    assert "La Constitución Española de 1978" not in contexto_personal
+
+
+def test_tema_con_pocos_intentos_no_cuenta_como_flojo_ni_se_menciona(db):
+    db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Organización del Estado"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "La Constitución Española de 1978"})
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "estadisticas": {"AGE": {"rendimiento_por_tema": {"bloque_01-tema_01": {"aciertos": 0, "fallos": 1, "blancos": 0}}}}
+    })
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor("Hola", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+
+    mensajes_enviados = mock_llamada.call_args.kwargs["messages"]
+    # Sin nombre/racha/fecha, y con un único tema que solo tiene 1 intento
+    # (por debajo del mínimo para considerarlo "flojo"), no hay nada que
+    # contar todavía -- no debe insertarse ningún mensaje de contexto
+    # personal de más.
+    assert mensajes_enviados[1]["role"] == "user"
+
+
 def test_pregunta_sobre_estructura_del_examen_sin_datos_cargados_no_falla(db):
     with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
         texto, _chat_id, usar_rag = responder_tutor(

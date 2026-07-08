@@ -143,7 +143,16 @@ def _instrucciones_asistente_examen(oposicion):
         "Sobre el formato: estructura la respuesta con markdown ligero (## para algún encabezado "
         "si hay varias secciones claras, **negrita** para lo importante, listas con - cuando ayude "
         "a leer mejor), pero sin abusar -- para preguntas sencillas basta con un párrafo o dos bien "
-        "redactados, sin encabezados innecesarios."
+        "redactados, sin encabezados innecesarios.\n\n"
+        "Sobre sonar a una persona real y no a una IA genérica: varía cómo empiezas cada respuesta "
+        "-- no abras siempre con \"¡Claro!\" o \"¡Por supuesto!\", a veces basta con ir directo al "
+        "grano o reaccionar a lo que ha dicho el usuario. Evita coletillas típicas de IA como "
+        "\"es importante destacar que\", \"cabe mencionar que\", \"recuerda que\" al final a modo de "
+        "moraleja, o resumir con \"en definitiva\" cada vez. Escribe como alguien que conoce la "
+        "materia y le importa que a esa persona en concreto le vaya bien, no como un manual. Cuando "
+        "tenga sentido, termina con una pregunta breve que invite a seguir la conversación (qué tal "
+        "lleva ese tema, si quiere que le tome unas preguntas, etc.) en vez de dejarlo en un punto "
+        "final seco -- pero no lo fuerces en respuestas muy cortas donde no pinte nada."
     )
 
 # ============================================================
@@ -286,6 +295,54 @@ def _necesita_resumen_temario(mensaje):
     return False
 
 
+# ============================================================
+# Datos reales del propio usuario (nombre, racha de estudio, fecha de
+# examen, temas donde más falla) para que Tu Tutor hable como alguien que
+# conoce a esa persona en concreto, en vez de dar una respuesta genérica
+# que serviría para cualquiera.
+# ============================================================
+_MINIMO_INTENTOS_TEMA_FLOJO = 3
+_MAX_TEMAS_FLOJOS = 2
+
+
+def _temas_flojos(rendimiento_por_tema, catalogo):
+    catalogo_por_id = {tema["id"]: tema["titulo"] for tema in catalogo}
+    candidatos = []
+    for tema_id, datos in (rendimiento_por_tema or {}).items():
+        intentos = datos.get("aciertos", 0) + datos.get("fallos", 0)
+        titulo = catalogo_por_id.get(tema_id)
+        if intentos < _MINIMO_INTENTOS_TEMA_FLOJO or not titulo:
+            continue
+        ratio_acierto = datos.get("aciertos", 0) / intentos
+        candidatos.append((ratio_acierto, titulo))
+    candidatos.sort(key=lambda candidato: candidato[0])
+    return [titulo for _ratio, titulo in candidatos[:_MAX_TEMAS_FLOJOS]]
+
+
+def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
+    doc = db.collection("usuarios").document(usuario_id).get()
+    if not doc.exists:
+        return None
+    datos = doc.to_dict() or {}
+    nombre = (datos.get("nombre") or "").strip()
+    racha_actual = (datos.get("racha") or {}).get("racha_actual", 0)
+    fecha_examen = (datos.get("fechas_examen") or {}).get(oposicion)
+    rendimiento_por_tema = ((datos.get("estadisticas") or {}).get(oposicion) or {}).get("rendimiento_por_tema", {})
+    temas_flojos = _temas_flojos(rendimiento_por_tema, catalogo)
+
+    lineas = []
+    if nombre:
+        lineas.append(f"Se llama {nombre}.")
+    if racha_actual and racha_actual >= 2:
+        lineas.append(f"Lleva {racha_actual} días seguidos estudiando (racha activa).")
+    if fecha_examen:
+        lineas.append(f"Tiene marcada la fecha de su examen para el {fecha_examen}.")
+    if temas_flojos:
+        lineas.append("Los temas donde más está fallando últimamente son: " + ", ".join(temas_flojos) + ".")
+
+    return " ".join(lineas) if lineas else None
+
+
 # 📌 Construye todo lo necesario para llamar al modelo (system prompt,
 # prompt de usuario ya enriquecido con RAG/datos oficiales si toca, e
 # historial previo) sin llamar todavía a DeepSeek -- lo comparten
@@ -365,7 +422,19 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
         else:
             prompt_usuario = mensaje
 
-    mensajes = [{"role": "system", "content": system_prompt}, *historial, {"role": "user", "content": prompt_usuario}]
+    mensajes = [{"role": "system", "content": system_prompt}]
+    contexto_personal = _contexto_personal_usuario(db, usuario_id, oposicion, catalogo)
+    if contexto_personal:
+        mensajes.append({
+            "role": "system",
+            "content": (
+                "Datos de la persona con la que hablas ahora mismo, para que la respuesta se sienta "
+                "cercana y personal: " + contexto_personal + " Menciónalos solo cuando venga a cuento "
+                "y con naturalidad -- nunca los enumeres todos de golpe ni suenes a ficha de cliente."
+            )
+        })
+    mensajes.extend(historial)
+    mensajes.append({"role": "user", "content": prompt_usuario})
     return mensajes, usar_rag
 
 
