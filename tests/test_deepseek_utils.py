@@ -143,3 +143,80 @@ class TestGenerarConContinuacion:
             resultado = deepseek_utils.generar_con_continuacion("system", "user")
         assert resultado is None
         mock_post.assert_not_called()
+
+
+class TestTrocearEnParrafos:
+    """_trocear_en_parrafos: nunca debe partir un párrafo a la mitad, y debe
+    agrupar párrafos consecutivos mientras quepan en el tamaño pedido."""
+
+    def test_texto_corto_no_se_trocea(self):
+        assert deepseek_utils._trocear_en_parrafos("Texto corto.", tamano=100) == ["Texto corto."]
+
+    def test_agrupa_parrafos_sin_superar_el_tamano(self):
+        parrafos = ["a" * 30, "b" * 30, "c" * 30]
+        texto = "\n\n".join(parrafos)
+        fragmentos = deepseek_utils._trocear_en_parrafos(texto, tamano=65)
+        # Cada fragmento agrupa como mucho 2 párrafos de 30 (30+2+30=62 <= 65);
+        # el tercero no cabe con los dos primeros y pasa a su propio fragmento.
+        assert len(fragmentos) == 2
+        assert "a" * 30 in fragmentos[0] and "b" * 30 in fragmentos[0]
+        assert "c" * 30 in fragmentos[1]
+
+    def test_nunca_parte_un_parrafo_a_la_mitad(self):
+        parrafos = ["x" * 40, "y" * 40, "z" * 40]
+        texto = "\n\n".join(parrafos)
+        fragmentos = deepseek_utils._trocear_en_parrafos(texto, tamano=50)
+        texto_reconstruido = "\n\n".join(fragmentos)
+        for parrafo in parrafos:
+            assert parrafo in texto_reconstruido
+            # Cada párrafo debe aparecer ENTERO dentro de un único fragmento.
+            assert any(parrafo in f for f in fragmentos)
+
+
+class TestGenerarDocumentoLargoPorPartes:
+    """generar_documento_largo_por_partes: documentos que ya caben en un
+    único prompt se comportan igual que antes (una sola llamada);
+    documentos largos se trocean (map), se resumen por partes en paralelo, y
+    se funden en un único resultado coherente (reduce)."""
+
+    def test_documento_corto_una_sola_llamada(self):
+        with patch("deepseek_utils.generar_con_continuacion", return_value="resumen completo") as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", "texto corto")
+        assert resultado == "resumen completo"
+        assert mock_gen.call_count == 1
+
+    def test_documento_largo_trocea_resume_por_partes_y_funde(self):
+        # Dos párrafos de ~10.000 caracteres cada uno: por separado caben en
+        # un fragmento (tamaño 15.000), pero juntos no, así que se trocean en
+        # exactamente 2 fragmentos.
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        assert len(deepseek_utils._trocear_en_parrafos(texto_largo)) == 2
+
+        respuestas = ["parcial 1", "parcial 2", "fusión final"]
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+
+        assert resultado == "fusión final"
+        # Al menos una llamada de "map" por fragmento + 1 de fusión al final.
+        assert mock_gen.call_count == len(respuestas)
+        ultima_llamada = mock_gen.call_args_list[-1]
+        assert "parcial 1" in ultima_llamada.args[1]
+        assert "parcial 2" in ultima_llamada.args[1]
+
+    def test_documento_largo_donde_todos_los_fragmentos_fallan_devuelve_none(self):
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        with patch("deepseek_utils.generar_con_continuacion", return_value=None):
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+        assert resultado is None
+
+    def test_documento_largo_con_un_solo_fragmento_valido_no_funde(self):
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        with patch("deepseek_utils.generar_con_continuacion",
+                   side_effect=[None, "único parcial válido"]) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+        assert resultado == "único parcial válido"
+        # No hay llamada extra de fusión cuando solo sobrevive un fragmento.
+        assert mock_gen.call_count == 2

@@ -429,6 +429,14 @@ async function obtenerAuthHeaders() {
       resultadoEsquema.classList.remove('hidden');
       // ✅ Guardar en Firebase (solo si es contenido recién generado)
       if (guardar) guardarEsquemaAutomaticamente();
+
+      import('/assets/otras-herramientas-pdf.js').then(({ pintarAccesosOtrasHerramientas }) => {
+        pintarAccesosOtrasHerramientas({
+          contenedor: document.getElementById('otras-herramientas-bloque'),
+          documentoId: documentoIdActual,
+          herramientaActual: 'subida-pdf-esquemas',
+        });
+      });
     }
 
     // === Llegar desde "Mis documentos" ===

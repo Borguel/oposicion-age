@@ -22,7 +22,7 @@ from documentos_pdf import (
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import generar_preguntas_ia_en_lotes
 from utils import barajar_opciones_pregunta
-from deepseek_utils import generar_con_continuacion
+from deepseek_utils import generar_documento_largo_por_partes
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ def resumir_pdf():
         )
         if not os.getenv("DEEPSEEK_API_KEY"):
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
-        resumen = generar_con_continuacion(system_prompt, f"Documento para resumir:\n{text}")
+        resumen = generar_documento_largo_por_partes(system_prompt, text, etiqueta_documento="Documento para resumir")
         if not resumen:
             return jsonify({"error": "Error en DeepSeek API"}), 500
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
@@ -143,7 +143,7 @@ def generar_esquema_desde_pdf():
         )
         if not os.getenv("DEEPSEEK_API_KEY"):
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
-        esquema = generar_con_continuacion(system_prompt, f"Documento para crear esquema:\n{text}")
+        esquema = generar_documento_largo_por_partes(system_prompt, text, etiqueta_documento="Documento para crear esquema")
         if not esquema:
             return jsonify({"error": "Error en DeepSeek API"}), 500
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)

@@ -522,6 +522,14 @@ async function obtenerAuthHeaders() {
       // ✅ Guardar en Firebase (solo si es contenido recién generado, no al
       // solo repasar tarjetas ya guardadas)
       if (guardar) guardarTarjetasAutomaticamente();
+
+      import('/assets/otras-herramientas-pdf.js').then(({ pintarAccesosOtrasHerramientas }) => {
+        pintarAccesosOtrasHerramientas({
+          contenedor: document.getElementById('otras-herramientas-bloque'),
+          documentoId: documentoIdActual,
+          herramientaActual: 'subida-pdf-tarjetas',
+        });
+      });
     }
 
     // === Llegar desde "Mis documentos" ===

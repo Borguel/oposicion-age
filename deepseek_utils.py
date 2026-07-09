@@ -2,6 +2,7 @@ import os
 import time
 import requests
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 # Backoff entre reintentos ante fallos TRANSITORIOS (timeout/conexión/5xx) --
 # nunca ante errores 4xx (API key inválida, payload mal formado), que no se
@@ -151,6 +152,83 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
             "content": "Continúa exactamente donde lo dejaste, sin repetir nada de lo ya escrito y sin añadir ninguna introducción ni recordatorio de lo anterior."
         })
     return texto_completo or None
+
+
+TAMANO_CHUNK_CARACTERES = 15000
+
+
+def _trocear_en_parrafos(texto, tamano=TAMANO_CHUNK_CARACTERES):
+    """Trocea el texto en fragmentos de como mucho 'tamano' caracteres,
+    cortando siempre en un salto de párrafo (nunca a mitad de frase) para no
+    partir una idea entre dos fragmentos si se puede evitar. Si un único
+    párrafo ya supera 'tamano' se deja tal cual como su propio fragmento en
+    vez de partirlo a la fuerza -- generar_con_continuacion ya sabe pedir
+    continuaciones si un fragmento resulta más largo de lo esperado."""
+    if len(texto) <= tamano:
+        return [texto]
+    parrafos = texto.split("\n\n")
+    fragmentos = []
+    actual = ""
+    for parrafo in parrafos:
+        if actual and len(actual) + len(parrafo) + 2 > tamano:
+            fragmentos.append(actual)
+            actual = parrafo
+        else:
+            actual = f"{actual}\n\n{parrafo}" if actual else parrafo
+    if actual:
+        fragmentos.append(actual)
+    return fragmentos
+
+
+def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096):
+    """Para documentos largos, en vez de meter todo el texto de golpe en un
+    único prompt (peor calidad: el modelo tiene que abarcar decenas de
+    miles de palabras a la vez, y es más fácil que se pierda o mezcle
+    secciones), se resume/esquematiza por partes:
+
+    1. MAP: el texto se trocea en fragmentos (ver _trocear_en_parrafos) y
+       cada uno se resume/esquematiza por separado, en paralelo, con el
+       mismo formato pedido en system_prompt.
+    2. REDUCE: los resultados parciales se funden en una llamada final en
+       un único documento coherente, sin secciones duplicadas ni solapadas
+       entre fragmentos.
+
+    Con un documento que ya cabe en un único prompt (la inmensa mayoría),
+    se comporta exactamente igual que antes: una sola llamada a
+    generar_con_continuacion, sin trocear ni fusionar nada.
+    """
+    fragmentos = _trocear_en_parrafos(texto)
+    if len(fragmentos) == 1:
+        return generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens)
+
+    def _generar_parcial(indice_fragmento):
+        indice, fragmento = indice_fragmento
+        mensaje = (
+            f"Este es el FRAGMENTO {indice + 1} de {len(fragmentos)} de un documento más largo -- "
+            "NO es el documento completo, así que no asumas que faltan secciones anteriores o "
+            "posteriores ni lo indiques en tu respuesta. Aplica el formato pedido solo al "
+            f"contenido de este fragmento.\n\n{etiqueta_documento} (fragmento {indice + 1}/{len(fragmentos)}):\n{fragmento}"
+        )
+        return generar_con_continuacion(system_prompt, mensaje, max_tokens=max_tokens)
+
+    with ThreadPoolExecutor(max_workers=min(4, len(fragmentos))) as executor:
+        parciales = list(executor.map(_generar_parcial, enumerate(fragmentos)))
+    parciales = [p for p in parciales if p]
+    if not parciales:
+        return None
+    if len(parciales) == 1:
+        return parciales[0]
+
+    prompt_fusion = (
+        f"{system_prompt}\n\n"
+        "A continuación tienes varios resultados YA generados a partir de distintos fragmentos "
+        "consecutivos del MISMO documento (separados por '---'). Fusiónalos en un único resultado "
+        "coherente, sin secciones duplicadas ni solapadas, respetando el orden original y el mismo "
+        "formato indicado arriba. No añadas ningún comentario sobre la fusión en sí ni menciones "
+        "que procede de varios fragmentos."
+    )
+    bloque_parciales = "\n\n---\n\n".join(parciales)
+    return generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens)
 
 
 # Versión en streaming de call_deepseek_api: en vez de devolver el texto

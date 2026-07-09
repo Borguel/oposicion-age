@@ -466,6 +466,14 @@ async function obtenerAuthHeaders() {
       // ✅ Guardar en Firebase (solo si es contenido recién generado, no al
       // solo visualizar un resumen que ya estaba guardado)
       if (guardar) guardarResumenAutomaticamente();
+
+      import('/assets/otras-herramientas-pdf.js').then(({ pintarAccesosOtrasHerramientas }) => {
+        pintarAccesosOtrasHerramientas({
+          contenedor: document.getElementById('otras-herramientas-bloque'),
+          documentoId: documentoIdActual,
+          herramientaActual: 'subida-pdf-resumen',
+        });
+      });
     }
 
     // === Llegar desde "Mis documentos" (biblioteca de la página Herramientas

@@ -527,6 +527,14 @@ async function obtenerAuthHeaders() {
 
       document.getElementById("btn-descargar-pdf").style.display = "block";
 
+      import('/assets/otras-herramientas-pdf.js').then(({ pintarAccesosOtrasHerramientas }) => {
+        pintarAccesosOtrasHerramientas({
+          contenedor: document.getElementById('otras-herramientas-bloque'),
+          documentoId: documentoIdActual,
+          herramientaActual: 'subida-pdf-generar-test',
+        });
+      });
+
       guardarTestEnBackend();
     }
 
