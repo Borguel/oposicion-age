@@ -196,9 +196,10 @@ cython_debug/
 # Firebase credentials
 clave-firebase.json
 
-# cargar_temario_boe.py generated artifacts
+# cargar_temario_boe.py / completar_*.py generated artifacts
 cache_paginas_*.pkl
 preview_temario.json
+preview_tema_gace_09.json
 
 # Node / Playwright (tests-frontend)
 node_modules/
