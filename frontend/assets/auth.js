@@ -22,6 +22,7 @@ import {
 import { firebaseConfig, BACKEND_URL } from "/assets/firebase-config.js";
 import { inyectarSelectorOposicion, obtenerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
+import { iniciarAnalitica, CLAVE_COOKIES_ACEPTADAS } from "/assets/analytics.js";
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
@@ -482,8 +483,6 @@ function inyectarFooter() {
   document.body.appendChild(footer);
 }
 
-const CLAVE_COOKIES_ACEPTADAS = "age_cookies_aceptadas";
-
 function inyectarBannerCookies() {
   if (localStorage.getItem(CLAVE_COOKIES_ACEPTADAS) === "1") return;
   if (document.querySelector(".age-cookies-banner")) return;
@@ -493,8 +492,9 @@ function inyectarBannerCookies() {
   banner.innerHTML = `
     <p>
       Usamos almacenamiento técnico necesario para que puedas iniciar sesión y usar la web
-      (por ejemplo, para recordar tu sesión y la oposición que estás estudiando). No usamos cookies
-      de publicidad. Más información en nuestra <a href="/cookies/">Política de Cookies</a>.
+      (por ejemplo, para recordar tu sesión y la oposición que estás estudiando), y analítica
+      propia para entender el uso de la web y mejorarla. No usamos cookies de publicidad.
+      Más información en nuestra <a href="/cookies/">Política de Cookies</a>.
     </p>
     <button type="button" class="age-btn age-btn-primary" id="age-cookies-aceptar">Aceptar</button>
   `;
@@ -521,12 +521,14 @@ function inyectarBannerCookies() {
     document.body.style.paddingBottom = "";
     document.documentElement.style.setProperty("--age-cookie-banner-height", "0px");
     window.removeEventListener("resize", ajustarEspacio);
+    window.dispatchEvent(new Event("age-cookies-aceptadas"));
   });
 }
 
 onAuthStateChanged(auth, inyectarNav);
 inyectarFooter();
 inyectarBannerCookies();
+iniciarAnalitica(auth);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
