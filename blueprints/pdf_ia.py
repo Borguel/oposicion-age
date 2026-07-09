@@ -125,25 +125,64 @@ def generar_esquema_desde_pdf():
         if len(text) > max_length:
             text = text[:max_length]
         system_prompt = (
-            "Eres un experto en oposiciones. Crea un esquema de estudio estructurado y "
-            "visual a partir del siguiente documento, útil para repasar. Usa EXACTAMENTE "
-            "este formato Markdown, sin desviarte de él:\n"
-            "- Encabezados de nivel 1 con \"# \" para las secciones principales del temario.\n"
-            "- Encabezados de nivel 2 con \"## \" para subsecciones.\n"
+            "Eres un experto en oposiciones. Crea un ESQUEMA de estudio: no es un resumen "
+            "en prosa, es un árbol jerárquico de epígrafes y sub-epígrafes que refleje la "
+            "estructura real del documento (título > capítulo > artículo > apartado, o el "
+            "equivalente en el documento dado), pensado para repasar de un vistazo. Usa "
+            "EXACTAMENTE este formato Markdown, sin desviarte de él:\n"
+            "- Encabezados de nivel 1 con \"# \" para las secciones principales del temario "
+            "(p. ej. cada título o bloque grande).\n"
+            "- Encabezados de nivel 2 con \"## \" para subsecciones dentro de cada sección "
+            "(p. ej. cada capítulo o epígrafe).\n"
+            "- Encabezados de nivel 3 con \"### \" cuando dentro de una subsección haya que "
+            "bajar un nivel más (p. ej. cada artículo o punto concreto dentro de un "
+            "capítulo). Usa este tercer nivel siempre que el documento tenga esa "
+            "profundidad real: NO lo omitas ni lo aplanes al nivel 2 de forma artificial.\n"
             "- Texto en **negrita** para términos clave, nombres de leyes o artículos, la "
             "primera vez que aparecen.\n"
-            "- Listas con \"- \" para viñetas normales.\n"
+            "- Listas con \"- \" para viñetas normales. IMPORTANTE: anida las viñetas todo lo "
+            "que haga falta para reflejar la jerarquía real (una idea que detalla o depende "
+            "de la viñeta anterior va debajo de ella, indentada con 2 espacios más por cada "
+            "nivel de profundidad, exactamente igual que una lista anidada de Markdown). Un "
+            "esquema con viñetas anidadas es MEJOR que uno plano: no limites la profundidad "
+            "de anidación.\n"
             "- Listas numeradas con \"1. \", \"2. \", etc. cuando el orden importe (por "
-            "ejemplo, pasos de un procedimiento o fases de un proceso).\n"
+            "ejemplo, pasos de un procedimiento o fases de un proceso). También pueden "
+            "anidarse igual que las viñetas.\n"
             "- Cuando definas formalmente un concepto, usa el prefijo \"> \" para esa línea, "
             "de forma que se pueda destacar como una caja de definición aparte.\n"
-            "No uses tablas, bloques de código, ni HTML. No anides más de un nivel de viñetas. "
-            "Cada línea de texto debe ir en su propio párrafo o viñeta, sin mezclar varias "
-            "ideas en una misma línea larga."
+            "REGLA CLAVE contra la duplicación: cada tema o epígrafe del documento debe "
+            "aparecer UNA SOLA VEZ en el esquema, en el nivel de profundidad que le "
+            "corresponda. Si el documento vuelve a tratar el mismo epígrafe más adelante con "
+            "más detalle (por ejemplo, un índice o resumen inicial y luego un desarrollo "
+            "artículo por artículo del mismo título), NO crees una segunda sección "
+            "independiente para ese mismo epígrafe: integra ese detalle como sub-viñetas "
+            "anidadas bajo el encabezado ya existente de ese epígrafe. Todas las secciones "
+            "del esquema deben acabar con un nivel de detalle similar entre sí -- evita que "
+            "una sección quede muy desarrollada y las demás apenas esbozadas.\n"
+            "No uses tablas, bloques de código, ni HTML. Cada línea de texto debe ir en su "
+            "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga."
         )
         if not os.getenv("DEEPSEEK_API_KEY"):
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
-        esquema = generar_documento_largo_por_partes(system_prompt, text, etiqueta_documento="Documento para crear esquema")
+        instrucciones_fusion_esquema = (
+            "Al fusionar los fragmentos, presta especial atención a que un mismo epígrafe o "
+            "sección del documento no aparezca dos veces a distinta profundidad (por "
+            "ejemplo, una versión breve tipo índice en un fragmento y luego un desarrollo "
+            "mucho más detallado del MISMO epígrafe en otro fragmento): en ese caso, fusiona "
+            "ambas versiones en una única sección, usando la más detallada como base y "
+            "anidando el resto como sub-viñetas, en vez de dejar las dos como secciones "
+            "independientes. Vigila también que la profundidad de detalle quede equilibrada "
+            "entre secciones -- si una sección terminó mucho más desarrollada que el resto "
+            "por venir de un fragmento distinto, resúmela ligeramente para igualar el nivel "
+            "de detalle general del esquema."
+        )
+        esquema = generar_documento_largo_por_partes(
+            system_prompt,
+            text,
+            etiqueta_documento="Documento para crear esquema",
+            instrucciones_fusion_extra=instrucciones_fusion_esquema,
+        )
         if not esquema:
             return jsonify({"error": "Error en DeepSeek API"}), 500
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)

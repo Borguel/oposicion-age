@@ -52,41 +52,131 @@
   color: var(--age-ink-soft);
   font-size: 0.92rem;
 }
+/* El esquema es un ÁRBOL jerárquico, no una lista plana como el resumen:
+   por eso usa numeración automática tipo "esquema clásico" (I. / I.1 /
+   1.a) vía contadores CSS, insignias circulares para las secciones
+   principales y líneas de conexión en las viñetas anidadas, en vez de
+   compartir el mismo look de encabezados con borde izquierdo del resumen. */
 .esquema-contenido {
   font-size: 1.05rem;
   color: var(--age-ink);
+  counter-reset: esquema-h2;
 }
 .esquema-contenido h2 {
-  font-size: 1.25rem;
-  margin: 24px 0 12px;
+  counter-increment: esquema-h2;
+  counter-reset: esquema-h3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.18rem;
+  margin: 28px 0 14px;
   color: var(--age-ink);
   font-weight: 800;
-  padding: 4px 0 4px 14px;
-  border-left: 4px solid var(--age-primary);
+  padding: 10px 16px;
+  background: var(--age-primary-soft);
+  border-radius: var(--age-radius-sm);
+}
+.esquema-contenido h2:first-child { margin-top: 0; }
+.esquema-contenido h2::before {
+  content: counter(esquema-h2, upper-roman);
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 4px;
+  border-radius: 50%;
+  background: var(--age-primary);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 .esquema-contenido h3 {
-  font-size: 1.1rem;
-  margin: 18px 0 10px;
+  counter-increment: esquema-h3;
+  counter-reset: esquema-h4;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 1.05rem;
+  margin: 18px 0 10px 16px;
   color: var(--age-primary-dark);
   font-weight: 700;
-  padding: 2px 0 2px 12px;
-  border-left: 3px solid var(--age-border);
+  padding-left: 14px;
+  border-left: 2px solid var(--age-primary);
+}
+.esquema-contenido h3::before {
+  content: counter(esquema-h2, upper-roman) "." counter(esquema-h3, decimal);
+  flex: 0 0 auto;
+  color: var(--age-ink-soft);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.esquema-contenido h4 {
+  counter-increment: esquema-h4;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.95rem;
+  margin: 12px 0 8px 32px;
+  color: var(--age-ink);
+  font-weight: 700;
+  padding-left: 10px;
+  border-left: 2px dashed var(--age-border);
+}
+.esquema-contenido h4::before {
+  content: counter(esquema-h3, decimal) "." counter(esquema-h4, lower-alpha);
+  flex: 0 0 auto;
+  color: var(--age-ink-soft);
+  font-weight: 700;
+  font-size: 0.8rem;
 }
 .esquema-contenido ul, .esquema-contenido ol {
-  padding-left: 22px;
-  margin: 14px 0;
+  padding-left: 20px;
+  margin: 10px 0 10px 6px;
+  border-left: 2px solid var(--age-border);
 }
 .esquema-contenido li {
   margin-bottom: 8px;
+  padding-left: 4px;
+}
+/* Viñetas anidadas: línea de conexión más discreta (guiones) y un glifo
+   distinto por profundidad, para que un vistazo rápido ya distinga una
+   sub-viñeta de una viñeta de primer nivel sin tener que leer el texto. */
+.esquema-contenido ul { list-style-type: "▸  "; }
+.esquema-contenido ul ul,
+.esquema-contenido ul ol,
+.esquema-contenido ol ul,
+.esquema-contenido ol ol {
+  margin: 8px 0 8px 4px;
+  border-left-style: dashed;
+  list-style-type: "–  ";
+}
+.esquema-contenido ul ul ul,
+.esquema-contenido ul ul ol,
+.esquema-contenido ul ol ul,
+.esquema-contenido ol ul ul {
+  list-style-type: "·  ";
 }
 .esquema-contenido .esquema-definicion {
   background: var(--age-primary-soft);
   border-left: 4px solid var(--age-primary);
   border-radius: var(--age-radius-sm);
-  padding: 12px 16px;
-  margin: 14px 0;
+  padding: 14px 16px 12px;
+  margin: 16px 0 16px 14px;
   font-style: italic;
   color: var(--age-ink);
+}
+.esquema-contenido .esquema-definicion::before {
+  content: "Concepto clave";
+  display: block;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--age-primary-dark);
+  margin-bottom: 4px;
 }
 .esquema-actions {
   display: flex;

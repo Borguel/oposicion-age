@@ -88,16 +88,24 @@ async function obtenerAuthHeaders() {
       const lineas = (texto || "").split("\n");
       const bloques = [];
       for (const lineaOriginal of lineas) {
-        const linea = lineaOriginal.trim();
-        if (!linea) continue;
-        // Acepta cualquier nivel de encabezado ("#", "##", "###"...): la IA
-        // no siempre se ciñe a los dos niveles pedidos en el prompt, y antes
-        // un "###" (u otro nivel no contemplado) no se reconocía como
-        // encabezado y se colaba tal cual, almohadillas incluidas, como texto
-        // plano. A partir de nivel 2 se trata igual que "##" (mismo estilo).
+        if (!lineaOriginal.trim()) continue;
+        // A diferencia del resumen, aquí SÍ importa la sangría original:
+        // es lo único que permite reconstruir un árbol de viñetas anidadas
+        // en vez de una lista plana. Se cuenta antes de recortarla.
+        const sinSaltoFinal = lineaOriginal.replace(/\s+$/, "");
+        const espaciosIniciales = (sinSaltoFinal.match(/^ */) || [""])[0].length;
+        const nivel = Math.min(4, Math.floor(espaciosIniciales / 2));
+        const linea = sinSaltoFinal.trim();
+        // Acepta cualquier nivel de encabezado ("#" a "######"): la IA no
+        // siempre se ciñe exactamente a los niveles pedidos en el prompt.
+        // "#" -> h2 (sección principal), "##" -> h3 (subsección), 3 o más
+        // almohadillas -> h4 (el nivel más profundo del árbol, p. ej. un
+        // artículo concreto dentro de un capítulo).
         const matchEncabezado = linea.match(/^(#{1,6})\s+(.*)$/);
         if (matchEncabezado) {
-          bloques.push({ tipo: matchEncabezado[1].length === 1 ? "h2" : "h3", texto: matchEncabezado[2].trim() });
+          const profundidad = matchEncabezado[1].length;
+          const tipo = profundidad === 1 ? "h2" : profundidad === 2 ? "h3" : "h4";
+          bloques.push({ tipo, texto: matchEncabezado[2].trim() });
           continue;
         }
         if (linea.startsWith("> ")) {
@@ -106,11 +114,11 @@ async function obtenerAuthHeaders() {
         }
         const matchNumerado = linea.match(/^(\d+)\.\s+(.*)$/);
         if (matchNumerado) {
-          bloques.push({ tipo: "numero", numero: matchNumerado[1], texto: matchNumerado[2].trim() });
+          bloques.push({ tipo: "numero", numero: matchNumerado[1], texto: matchNumerado[2].trim(), nivel });
           continue;
         }
         if (linea.startsWith("- ") || linea.startsWith("* ")) {
-          bloques.push({ tipo: "bullet", texto: linea.slice(2).trim() });
+          bloques.push({ tipo: "bullet", texto: linea.slice(2).trim(), nivel });
           continue;
         }
         // Cualquier línea que no encaje en un marcador conocido se trata
@@ -119,6 +127,24 @@ async function obtenerAuthHeaders() {
         bloques.push({ tipo: "parrafo", texto: linea });
       }
       return bloques;
+    }
+    // Reconstruye el árbol de viñetas a partir de una racha plana de bloques
+    // "bullet"/"numero" consecutivos con su nivel de sangría, usando una pila
+    // (algoritmo estándar para convertir una lista plana con profundidad en
+    // un árbol): cada nuevo ítem cuelga del último ítem de nivel inferior
+    // todavía abierto en la pila.
+    function construirArbolLista(items) {
+      const raiz = { hijos: [] };
+      const pila = [{ nodo: raiz, nivel: -1 }];
+      items.forEach((item) => {
+        const nodo = { ...item, hijos: [] };
+        while (pila.length > 1 && pila[pila.length - 1].nivel >= item.nivel) {
+          pila.pop();
+        }
+        pila[pila.length - 1].nodo.hijos.push(nodo);
+        pila.push({ nodo, nivel: item.nivel });
+      });
+      return raiz.hijos;
     }
     // El esquema lo genera la IA a partir de un PDF subido por el usuario:
     // se escapa antes de aplicar el marcado de negrita para que un documento
@@ -134,30 +160,50 @@ async function obtenerAuthHeaders() {
     function quitarMarcadoresNegrita(texto) {
       return texto.replace(/\*\*(.*?)\*\*/g, '$1');
     }
+    // Renderiza un árbol de viñetas (ver construirArbolLista) a HTML anidado
+    // de verdad: cada <ul>/<ol> hijo va DENTRO del <li> de su padre, no como
+    // hermano suelto -- así el CSS puede dibujar líneas de conexión y
+    // viñetas distintas por profundidad real, no solo por color.
+    function renderizarListaHtml(nodos) {
+      const partes = [];
+      let i = 0;
+      while (i < nodos.length) {
+        const tipoActual = nodos[i].tipo;
+        const grupo = [];
+        while (i < nodos.length && nodos[i].tipo === tipoActual) {
+          grupo.push(nodos[i]);
+          i++;
+        }
+        const etiqueta = tipoActual === "numero" ? "ol" : "ul";
+        const items = grupo.map((n) => {
+          const hijosHtml = n.hijos.length ? renderizarListaHtml(n.hijos) : "";
+          return `<li>${negritaInlineHtml(n.texto)}${hijosHtml}</li>`;
+        }).join("");
+        partes.push(`<${etiqueta}>${items}</${etiqueta}>`);
+      }
+      return partes.join("");
+    }
     function bloquesAHtml(bloques) {
       const html = [];
-      let listaAbierta = null;
-      function cerrarLista() {
-        if (listaAbierta) { html.push(`</${listaAbierta}>`); listaAbierta = null; }
-      }
-      bloques.forEach((b) => {
-        if (b.tipo === "h2") { cerrarLista(); html.push(`<h2>${negritaInlineHtml(b.texto)}</h2>`); return; }
-        if (b.tipo === "h3") { cerrarLista(); html.push(`<h3>${negritaInlineHtml(b.texto)}</h3>`); return; }
-        if (b.tipo === "definicion") { cerrarLista(); html.push(`<div class="esquema-definicion">${negritaInlineHtml(b.texto)}</div>`); return; }
-        if (b.tipo === "numero") {
-          if (listaAbierta !== "ol") { cerrarLista(); html.push("<ol>"); listaAbierta = "ol"; }
-          html.push(`<li>${negritaInlineHtml(b.texto)}</li>`);
-          return;
+      let i = 0;
+      while (i < bloques.length) {
+        const b = bloques[i];
+        if (b.tipo === "bullet" || b.tipo === "numero") {
+          const grupo = [];
+          while (i < bloques.length && (bloques[i].tipo === "bullet" || bloques[i].tipo === "numero")) {
+            grupo.push(bloques[i]);
+            i++;
+          }
+          html.push(renderizarListaHtml(construirArbolLista(grupo)));
+          continue;
         }
-        if (b.tipo === "bullet") {
-          if (listaAbierta !== "ul") { cerrarLista(); html.push("<ul>"); listaAbierta = "ul"; }
-          html.push(`<li>${negritaInlineHtml(b.texto)}</li>`);
-          return;
-        }
-        cerrarLista();
+        if (b.tipo === "h2") { html.push(`<h2>${negritaInlineHtml(b.texto)}</h2>`); i++; continue; }
+        if (b.tipo === "h3") { html.push(`<h3>${negritaInlineHtml(b.texto)}</h3>`); i++; continue; }
+        if (b.tipo === "h4") { html.push(`<h4>${negritaInlineHtml(b.texto)}</h4>`); i++; continue; }
+        if (b.tipo === "definicion") { html.push(`<div class="esquema-definicion">${negritaInlineHtml(b.texto)}</div>`); i++; continue; }
         html.push(`<p>${negritaInlineHtml(b.texto)}</p>`);
-      });
-      cerrarLista();
+        i++;
+      }
       return html.join("\n");
     }
 
@@ -218,6 +264,30 @@ async function obtenerAuthHeaders() {
       const NARANJA_PRIMARIO = [255, 166, 51];
       const NARANJA_OSCURO = [232, 134, 15];
 
+      // Numeración jerárquica tipo "esquema clásico" (I. / I.1 / I.1.a), igual
+      // que la que se ve en pantalla vía contadores CSS -- así el PDF y la
+      // pantalla transmiten la misma sensación de árbol, no de lista plana.
+      function aRomano(numero) {
+        const valores = [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+        let resto = numero, resultado = "";
+        for (const [valor, letra] of valores) {
+          while (resto >= valor) { resultado += letra; resto -= valor; }
+        }
+        return resultado;
+      }
+      function aLetra(numero) {
+        return String.fromCharCode(96 + numero); // 1 -> 'a', 2 -> 'b'...
+      }
+      let contadorH2 = 0, contadorH3 = 0, contadorH4 = 0;
+
+      // Glifo de viñeta distinto por nivel de anidación, igual que el
+      // list-style-type por profundidad en pantalla -- así una sub-viñeta se
+      // distingue a simple vista de una viñeta de primer nivel. Limitado a
+      // caracteres de WinAnsiEncoding (la fuente helvetica estándar de
+      // jsPDF no sabe dibujar fuera de ese juego, p. ej. "‣" salía
+      // completamente descuadrado, con las letras separadas).
+      const GLIFOS_VIÑETA = ["•", "–", "»", "·", "•"];
+
       // Mide un bloque (tipo de letra, líneas ya envueltas al ancho de
       // página, alto total) SIN dibujar nada -- se usa en una primera pasada
       // para poder mirar "hacia adelante" al bloque siguiente antes de
@@ -226,13 +296,28 @@ async function obtenerAuthHeaders() {
         let fontSize = 11, fontStyle = "normal", prefijo = "", indent = 0, extraArriba = 0, color = [0, 0, 0];
         const esDefinicion = b.tipo === "definicion";
         const esH2 = b.tipo === "h2";
-        const esEncabezado = esH2 || b.tipo === "h3";
+        const esEncabezado = esH2 || b.tipo === "h3" || b.tipo === "h4";
+        const nivel = b.nivel || 0;
 
-        if (esH2) { fontSize = 15; fontStyle = "bold"; extraArriba = 6; indent = 4; }
-        else if (b.tipo === "h3") { fontSize = 12.5; fontStyle = "bold"; extraArriba = 4; color = NARANJA_OSCURO; }
-        else if (b.tipo === "bullet") { prefijo = "• "; indent = 5; }
-        else if (b.tipo === "numero") { prefijo = `${b.numero}. `; indent = 5; }
-        else if (esDefinicion) { fontStyle = "italic"; indent = 4; }
+        if (esH2) {
+          contadorH2++; contadorH3 = 0; contadorH4 = 0;
+          fontSize = 15; fontStyle = "bold"; extraArriba = 6; indent = 4;
+          prefijo = `${aRomano(contadorH2)}. `;
+        } else if (b.tipo === "h3") {
+          contadorH3++; contadorH4 = 0;
+          fontSize = 12.5; fontStyle = "bold"; extraArriba = 4; indent = 4; color = NARANJA_OSCURO;
+          prefijo = `${aRomano(contadorH2)}.${contadorH3} `;
+        } else if (b.tipo === "h4") {
+          contadorH4++;
+          fontSize = 11; fontStyle = "bold"; extraArriba = 3; indent = 8; color = [90, 90, 90];
+          prefijo = `${contadorH3}.${aLetra(contadorH4)} `;
+        } else if (b.tipo === "bullet") {
+          prefijo = `${GLIFOS_VIÑETA[Math.min(nivel, GLIFOS_VIÑETA.length - 1)]} `;
+          indent = 5 + nivel * 5;
+        } else if (b.tipo === "numero") {
+          prefijo = `${b.numero}. `;
+          indent = 5 + nivel * 5;
+        } else if (esDefinicion) { fontStyle = "italic"; indent = 4; }
 
         const texto = quitarMarcadoresNegrita(b.texto);
         doc.setFont("helvetica", fontStyle);

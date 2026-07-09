@@ -180,7 +180,7 @@ def _trocear_en_parrafos(texto, tamano=TAMANO_CHUNK_CARACTERES):
     return fragmentos
 
 
-def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096):
+def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096, instrucciones_fusion_extra=None):
     """Para documentos largos, en vez de meter todo el texto de golpe en un
     único prompt (peor calidad: el modelo tiene que abarcar decenas de
     miles de palabras a la vez, y es más fácil que se pierda o mezcle
@@ -196,7 +196,13 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
     Con un documento que ya cabe en un único prompt (la inmensa mayoría),
     se comporta exactamente igual que antes: una sola llamada a
     generar_con_continuacion, sin trocear ni fusionar nada.
-    """
+
+    instrucciones_fusion_extra permite añadir, solo al paso de fusión, un
+    aviso adicional específico del tipo de documento (p. ej. el esquema
+    necesita que se detecte y fusione un mismo epígrafe tratado a distinta
+    profundidad en fragmentos distintos, algo que la instrucción genérica de
+    "sin secciones duplicadas" no cubre por sí sola porque el texto de esas
+    dos versiones no es literalmente idéntico)."""
     fragmentos = _trocear_en_parrafos(texto)
     if len(fragmentos) == 1:
         return generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens)
@@ -226,6 +232,7 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
         "coherente, sin secciones duplicadas ni solapadas, respetando el orden original y el mismo "
         "formato indicado arriba. No añadas ningún comentario sobre la fusión en sí ni menciones "
         "que procede de varios fragmentos."
+        + (f"\n\n{instrucciones_fusion_extra}" if instrucciones_fusion_extra else "")
     )
     bloque_parciales = "\n\n---\n\n".join(parciales)
     return generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens)
