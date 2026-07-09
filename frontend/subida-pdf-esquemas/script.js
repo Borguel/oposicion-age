@@ -263,6 +263,9 @@ async function obtenerAuthHeaders() {
       // siempre en negro, perdiendo el naranja que hace la web más visual.
       const NARANJA_PRIMARIO = [255, 166, 51];
       const NARANJA_OSCURO = [232, 134, 15];
+      // Gris de las líneas de estructura (mismo tono que --age-border en
+      // pantalla, algo más marcado para que se distinga bien impreso).
+      const GRIS_LINEA = [200, 203, 210];
 
       // Numeración jerárquica tipo "esquema clásico" (I. / I.1 / I.1.a), igual
       // que la que se ve en pantalla vía contadores CSS -- así el PDF y la
@@ -325,18 +328,37 @@ async function obtenerAuthHeaders() {
         const lineas = doc.splitTextToSize(prefijo + texto, anchoTexto - indent - (esDefinicion ? 4 : 0));
         const altoLinea = fontSize * 0.42;
         const alturaBloque = extraArriba + lineas.length * altoLinea + (esDefinicion ? 4 : 2);
-        return { esDefinicion, esH2, esEncabezado, fontSize, fontStyle, indent, extraArriba, color, lineas, altoLinea, alturaBloque };
+        return { tipo: b.tipo, nivel, esDefinicion, esH2, esEncabezado, fontSize, fontStyle, indent, extraArriba, color, lineas, altoLinea, alturaBloque };
+      }
+
+      // Dibuja una línea vertical de estructura (el equivalente en PDF del
+      // "border-left" de h2/h3/h4 y de las listas anidadas en pantalla):
+      // sin esto, el PDF perdía por completo las guías que dejan ver de un
+      // vistazo qué cuelga de qué.
+      function dibujarLineaEstructura(m, x, color, punteada) {
+        doc.setDrawColor(...color);
+        doc.setLineWidth(punteada ? 0.25 : 0.35);
+        if (punteada) doc.setLineDashPattern([0.8, 0.8], 0);
+        const yInicio = yPos - m.altoLinea * 0.78;
+        doc.line(x, yInicio, x, yInicio + m.lineas.length * m.altoLinea);
+        if (punteada) doc.setLineDashPattern([], 0);
+        doc.setDrawColor(0);
+        doc.setLineWidth(0.2);
       }
 
       const medidos = parsearEsquemaABloques(esquema).map(medirBloque);
       medidos.forEach((m, i) => {
-        // Evita que un encabezado se quede "huérfano" solo al final de una
-        // página con su contenido empujado a la siguiente (lo que se veía
-        // como un corte a medias): si es un encabezado, se exige que quepa
+        // Evita que un bloque se quede "huérfano" solo al final de una
+        // página con lo que cuelga de él empujado a la siguiente (lo que se
+        // veía como un corte a medias): si es un encabezado, o una viñeta
+        // que va a tener sub-viñetas justo debajo, se exige que quepa
         // TAMBIÉN el bloque siguiente antes de dibujarlo -- si no cabe
         // ninguno de los dos, ambos pasan juntos a la página nueva.
+        const siguiente = medidos[i + 1];
+        const esPadreDeSubViñeta = (m.tipo === "bullet" || m.tipo === "numero") && siguiente &&
+          (siguiente.tipo === "bullet" || siguiente.tipo === "numero") && siguiente.nivel > m.nivel;
         let alturaNecesaria = m.alturaBloque;
-        if (m.esEncabezado && i + 1 < medidos.length) alturaNecesaria += medidos[i + 1].alturaBloque;
+        if ((m.esEncabezado || esPadreDeSubViñeta) && siguiente) alturaNecesaria += siguiente.alturaBloque;
         asegurarEspacio(alturaNecesaria);
         yPos += m.extraArriba;
 
@@ -355,6 +377,16 @@ async function obtenerAuthHeaders() {
           // "border-left: 4px solid var(--age-primary)" del h2 en pantalla.
           doc.setFillColor(...NARANJA_PRIMARIO);
           doc.rect(margin, yPos - m.altoLinea * 0.78, 1.3, m.lineas.length * m.altoLinea, "F");
+        } else if (m.tipo === "h3") {
+          dibujarLineaEstructura(m, margin + 1.5, NARANJA_PRIMARIO, false);
+        } else if (m.tipo === "h4") {
+          dibujarLineaEstructura(m, margin + 3, GRIS_LINEA, true);
+        } else if (m.tipo === "bullet" || m.tipo === "numero") {
+          // Misma línea gris que el "border-left" del <ul>/<ol> en pantalla:
+          // sólida en el primer nivel, punteada a partir del segundo, para
+          // que las sub-viñetas se distingan de un vistazo del tronco
+          // principal de la lista.
+          dibujarLineaEstructura(m, margin + 2 + m.nivel * 5, GRIS_LINEA, m.nivel > 0);
         }
 
         doc.setTextColor(...m.color);
@@ -503,13 +535,59 @@ async function obtenerAuthHeaders() {
       mostrarEsquemaResultado(datosIA.esquema, true);
     });
 
+    // Con un documento largo, el esquema completo en pantalla se hace
+    // kilométrico. Se muestra solo un primer tramo y, si hay más, un botón
+    // "Ver esquema completo" para desplegar el resto sin perder nada --
+    // quien prefiera no desplazarse por una pantalla larguísima puede
+    // simplemente descargar el PDF (los botones ya están justo debajo) y
+    // estudiarlo desde ahí. Igual que en el resumen, pero aquí el corte
+    // debe caer en un punto "seguro": justo antes de un encabezado o de una
+    // viñeta de primer nivel, nunca en mitad de un grupo de sub-viñetas --
+    // cortar ahí partiría en dos un mismo árbol de viñetas anidadas.
+    const BLOQUES_PREVIEW_ESQUEMA = 18;
+    function calcularCorteSeguro(bloques, objetivo) {
+      for (let i = objetivo; i < bloques.length; i++) {
+        const b = bloques[i];
+        if (b.tipo === "h2" || b.tipo === "h3" || b.tipo === "h4") return i;
+        if ((b.tipo === "bullet" || b.tipo === "numero") && (b.nivel || 0) === 0) return i;
+      }
+      return bloques.length;
+    }
+
     function mostrarEsquemaResultado(textoEsquema, guardar) {
       esquema = textoEsquema || "No se pudo generar el esquema.";
       const fecha = new Date();
       fechaEsquema.textContent = formatearFecha(fecha);
       esquemaTitulo.textContent = `Esquema de ${nombreArchivo}`;
+      // Por si se muestra un esquema tras otro sin recargar la página, se
+      // quita cualquier botón "ver más" que quedara de la vez anterior.
+      const verMasAnterior = document.getElementById('esquema-ver-mas-bloque');
+      if (verMasAnterior) verMasAnterior.remove();
+
       // Procesar y mostrar con formato (mismo parser que usa la descarga en PDF)
-      contenidoEsquema.innerHTML = bloquesAHtml(parsearEsquemaABloques(esquema));
+      const bloques = parsearEsquemaABloques(esquema);
+      const corte = bloques.length > BLOQUES_PREVIEW_ESQUEMA + 4
+        ? calcularCorteSeguro(bloques, BLOQUES_PREVIEW_ESQUEMA)
+        : bloques.length;
+      if (corte < bloques.length) {
+        contenidoEsquema.innerHTML = bloquesAHtml(bloques.slice(0, corte));
+        contenidoEsquema.insertAdjacentHTML(
+          'beforeend',
+          `<div id="esquema-resto" class="hidden">${bloquesAHtml(bloques.slice(corte))}</div>`
+        );
+        contenidoEsquema.insertAdjacentHTML('afterend', `
+          <div class="esquema-ver-mas-bloque" id="esquema-ver-mas-bloque">
+            <button type="button" class="btn btn-outline" id="btn-ver-mas-esquema">Ver esquema completo ↓</button>
+            <p class="esquema-ver-mas-nota">O descárgalo en PDF para estudiarlo con más comodidad.</p>
+          </div>
+        `);
+        document.getElementById('btn-ver-mas-esquema').addEventListener('click', () => {
+          document.getElementById('esquema-resto').classList.remove('hidden');
+          document.getElementById('esquema-ver-mas-bloque').remove();
+        });
+      } else {
+        contenidoEsquema.innerHTML = bloquesAHtml(bloques);
+      }
       contenedorCarga.classList.add('hidden');
       resultadoEsquema.classList.remove('hidden');
       // ✅ Guardar en Firebase (solo si es contenido recién generado)

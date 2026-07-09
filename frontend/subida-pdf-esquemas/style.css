@@ -186,6 +186,18 @@
   justify-content: center;
 }
 
+.esquema-ver-mas-bloque {
+  text-align: center;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--age-border);
+}
+.esquema-ver-mas-nota {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--age-ink-soft);
+}
+
 @media (max-width: 768px) {
   .esquema-titulo { font-size: 1.3rem; }
   .esquema-actions { flex-direction: column; }
