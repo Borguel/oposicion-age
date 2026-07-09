@@ -1,0 +1,977 @@
+[
+  {
+    "numero": 1,
+    "pregunta": "La suspensión de los derechos y libertades se encuentra regulada en la Constitución en:",
+    "opciones": {
+      "A": "En el Capítulo III del Título I.",
+      "B": "En sus artículos 52 y 53.",
+      "C": "En el artículo 58.",
+      "D": "En el Capítulo V del Título I."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 2,
+    "pregunta": "Según el artículo 144 de la Constitución Española, las Cortes Generales, mediante ley orgánica, podrán autorizar o acordar, en su caso, un Estatuto de autonomía para territorios que no estén integrados en la organización provincial, por motivos de:",
+    "opciones": {
+      "A": "Interés general.",
+      "B": "Interés nacional.",
+      "C": "Interés social.",
+      "D": "Interés público."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 3,
+    "pregunta": "La Oferta de Empleo Público de la Administración General del Estado se aprueba:",
+    "opciones": {
+      "A": "Por Ley.",
+      "B": "Por Real Decreto.",
+      "C": "Por Orden ministerial del Ministerio de Hacienda y Función Pública.",
+      "D": "Por Decreto del Ministerio que tenga las competencias en materia de Función Pública."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 4,
+    "pregunta": "Señale la respuesta FALSA en relación a las competencias de la Comisión Europea conforme a lo establecido en el Tratado de la Unión Europea:",
+    "opciones": {
+      "A": "La Comisión Europea promoverá el interés general de la Unión y tomará las iniciativas adecuadas con este fin.",
+      "B": "La Comisión Europea dará a la Unión los impulsos necesarios para su desarrollo y definirá sus orientaciones y prioridades políticas generales.",
+      "C": "La Comisión Europea velará por que se apliquen los Tratados y las medidas adoptadas por las instituciones en virtud de éstos.",
+      "D": "La Comisión Europea asumirá la representación exterior de la Unión, con excepción de la política exterior y de seguridad común y de los demás casos previstos por los Tratados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 5,
+    "pregunta": "Según el artículo 35 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, uno de los siguientes actos administrativos NO tiene que ser obligatoriamente motivado:",
+    "opciones": {
+      "A": "Los actos que confirmen el criterio seguido en actuaciones precedentes.",
+      "B": "Los actos que rechacen pruebas propuestas por los interesados.",
+      "C": "Los acuerdos de aplicación de la tramitación de urgencia, de ampliación de plazos y de realización de actuaciones complementarias.",
+      "D": "Las propuestas de resolución en los procedimientos de carácter sancionador, así como los actos que resuelvan procedimientos de carácter sancionador o de responsabilidad patrimonial."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 6,
+    "pregunta": "Señale la respuesta INCORRECTA respecto a los requisitos que se deben cumplir, según el artículo 62 del Estatuto Básico del Empleado Público, para adquirir la condición de funcionario de carrera.",
+    "opciones": {
+      "A": "Toma de posesión dentro del plazo que se establezca.",
+      "B": "Acto de acatamiento de la Constitución y de los Estatutos de Autonomía.",
+      "C": "Superación del proceso selectivo.",
+      "D": "Nombramiento por el órgano o autoridad competente, que será publicado en el Diario Oficial correspondiente."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 7,
+    "pregunta": "Según lo dispuesto en el Tratado de Funcionamiento de la Unión Europea señala la afirmación CORRECTA en relación con el Parlamento Europeo:",
+    "opciones": {
+      "A": "Se reunirá sin necesidad previa de convocatoria el segundo martes de marzo.",
+      "B": "En caso de que se le someta una moción de censura sobre la gestión de la Comisión, no podrá ser votada hasta que transcurran cinco días como mínimo desde su presentación.",
+      "C": "Salvo disposición en contrario de los Tratados, decidirá por mayoría abosluta de los votos emitidos",
+      "D": "En caso de que se le someta una moción de censura sobre la gestión de la Comisión, no podrá ser votada hasta que transcurran quince días como mínimo desde su presentación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 8,
+    "pregunta": "Según la Constitución Española, señale la respuesta CORRECTA en relación con la elaboración de las leyes:",
+    "opciones": {
+      "A": "La aprobación, modificación o derogación de las leyes orgánicas exigirá mayoría absoluta de las Cortes, en una votación final sobre el conjunto del proyecto.",
+      "B": "La iniciativa legislativa corresponde al Gobierno y al Congreso, de acuerdo con la Constitución y el Reglamento de dicha Cámara.",
+      "C": "La delegación legislativa podrá otorgarse al Gobierno de forma expresa para materia concreta correspondiendo al Consejo de Ministros la fijación del plazo para su ejercicio.",
+      "D": "Las Cortes Generales podrán delegar en el Gobierno la potestad de dictar normas con rango de ley sobre materias determinadas, excepto las relativas al desarrollo de los derechos fundamentales y de las libertades públicas, las que aprueben los Estatutos de Autonomía y el régimen electoral general y las demás previstas en la Constitución."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 9,
+    "pregunta": "Según el Real Decreto Legislativo 8/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley General de la Seguridad Social, ¿qué trabajadores estarán comprendidos en la protección por desempleo siempre que tengan previsto cotizar por esta contingencia?",
+    "opciones": {
+      "A": "Los funcionarios interinos, el personal eventual y el personal laboral fijo.",
+      "B": "Los funcionarios interinos, el personal eventual, así como el personal contratado en régimen de derecho laboral.",
+      "C": "Los funcionarios interinos, los funcionarios en prácticas, el personal eventual, así como el personal contratado en su momento en régimen de derecho administrativo al servicio de las administraciones públicas.",
+      "D": "Los funcionarios interinos, el personal eventual, así como el personal contratado en su momento en régimen de derecho administrativo al servicio de las administraciones públicas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 10,
+    "pregunta": "De acuerdo con el artículo 62 de la Constitución, ¿cuál de las siguientes NO es una función que le corresponda al Rey?:",
+    "opciones": {
+      "A": "Aprobar y refrendar las leyes.",
+      "B": "Convocar a referéndum en los casos previstos en la Constitución.",
+      "C": "Nombrar y separar a los miembros del Gobierno, a propuesta de su Presidente.",
+      "D": "Proponer el candidato a Presidente del Gobierno y, en su caso, nombrarlo, así como poner fin a sus funciones en los términos previstos en la Constitución."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 11,
+    "pregunta": "De acuerdo con Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, los interesados en un procedimiento podrán promover la recusación de las autoridades y el personal al servicio de las Administraciones que intervengan en él:",
+    "opciones": {
+      "A": "En cualquier momento de la tramitación del procedimiento.",
+      "B": "Sólo al iniciarse las actuaciones.",
+      "C": "Sólo en el trámite de audiencia.",
+      "D": "En cualquier momento de la tramitación del procedimiento previo al trámite de audiencia."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 12,
+    "pregunta": "Según la Ley 47/2003, de 26 de noviembre, General Presupuestaria, señale la respuesta correcta en relación con el proyecto de Ley de los Presupuestos Generales del Estado:",
+    "opciones": {
+      "A": "El Gobierno deberá presentar ante el Congreso de los Diputados los Presupuestos Generales del Estado al menos tres meses antes de la expiración de los del año anterior.",
+      "B": "Corresponderá al Presidente del Gobierno elevar al acuerdo del Gobierno el anteproyecto de la Ley de Presupuestos Generales del Estado.",
+      "C": "Será remitido a las Cortes Generales antes del día 1 de octubre del año anterior al que se refiera.",
+      "D": "Corresponderá a la Ministra de Hacienda y Función Pública aprobar el anteproyecto de la Ley de Presupuestos Generales del Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 13,
+    "pregunta": "De conformidad con el Título II de la Constitución Española de 1978, señala la respuesta CORRECTA:",
+    "opciones": {
+      "A": "Corresponde al Rey declarar la guerra y hacer la paz, previa autorización del Congreso de los Diputados.",
+      "B": "El Rey ejerce el derecho de gracia con arreglo a la ley, que podrá autorizar indultos generales.",
+      "C": "El Rey recibe de los Presupuestos del Estado una cantidad global para el sostenimiento de su Familia y Casa, y distribuye libremente la misma.",
+      "D": "El Rey presta el consentimiento del Estado para obligarse por medio de tratados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 14,
+    "pregunta": "De conformidad con el artículo 47 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, cuáles de los siguientes actos NO son actos nulos de pleno derecho:",
+    "opciones": {
+      "A": "Los actos que incurran en desviación de poder.",
+      "B": "Los dictados por órgano manifiestamente incompetente por razón de la materia o del territorio.",
+      "C": "Los que sean constitutivos de infracción penal o se dicten como consecuencia de ésta.",
+      "D": "Los actos expresos o presuntos contrarios al ordenamiento jurídico por los que se adquieren facultades o derechos cuando se carezca de los requisitos esenciales para su adquisición."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 15,
+    "pregunta": "¿Cuál de los siguientes complementos es una novedad en el IV Convenio Único para el personal laboral de la Administración General del Estado?",
+    "opciones": {
+      "A": "El complemento de obra.",
+      "B": "El complemento de jornada partida.",
+      "C": "El complemento personal de encuadramiento.",
+      "D": "El complemento personal de unificación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 16,
+    "pregunta": "De acuerdo con el artículo 78 de la Constitución, expirado el mandato de las Cortes Generales o en caso de disolución de las mismas, las Diputaciones Permanentes seguirán ejerciendo sus funciones hasta:",
+    "opciones": {
+      "A": "La celebración de las elecciones.",
+      "B": "La proclamación de los resultados electorales definitivos.",
+      "C": "La elección de los nuevos presidentes de cada una de las Cámaras de las Cortes Generales.",
+      "D": "La constitución de las nuevas Cortes Generales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 17,
+    "pregunta": "Según la Orden HFP/535/2022, de 9 de junio, por la que se dictan las normas para la elaboración de los Presupuestos Generales del Estado para 2023, señale la respuesta CORRECTA:",
+    "opciones": {
+      "A": "Los programas finalistas son aquellos a los que se pueden asignar objetivos cuantificables e indicadores de ejecución mensurables.",
+      "B": "El programa 456C es un programa instrumental.",
+      "C": "Los programas finalistas son los que tienen por objeto el apoyo a un programa instrumental.",
+      "D": "El programa 423N es un programa finalista."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 18,
+    "pregunta": "Según la Orden de 1 de febrero de 1996 por la que se aprueba la Instrucción de operatoria contable a seguir en la ejecución del gasto del Estado, se expedirá un documento mixto AD cuando:",
+    "opciones": {
+      "A": "En un mismo acto se acumulen la autorización del gasto y la ordenación del pago.",
+      "B": "La autorización del gasto y el compromiso de gasto se acuerden en un acto único.",
+      "C": "En un mismo acto se acumulen la ordenación del pago y el pago material.",
+      "D": "La autorización del gasto y el reconocimiento de la obligación se acuerden en un acto único."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 19,
+    "pregunta": "En relación al funcionamiento de las Cortes Generales recogido en el Título III de la Constitución, señala la respuesta CORRECTA:",
+    "opciones": {
+      "A": "En cada Cámara habrá una Diputación Permanente compuesta por un mínimo de veinticinco miembros.",
+      "B": "El voto de Senadores y Diputados es personal e indelegable.",
+      "C": "Las Cámaras funcionarán en Pleno, Comisiones y Salas.",
+      "D": "Las Cámaras podrán reunirse en sesiones extraordinarias a petición del Gobierno, de la Diputación Permanente o por mayoría de tres quintos de cualquiera de las Cámaras."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 20,
+    "pregunta": "Conforme establece el artículo 99 de la Ley 9/2017, de 8 de noviembre, de Contratos del Sector Público, el objeto de los contratos del sector público deberá ser:",
+    "opciones": {
+      "A": "Oneroso.",
+      "B": "Definido.",
+      "C": "De interés público.",
+      "D": "Determinado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 21,
+    "pregunta": "Los anticipos de caja fija se pueden utilizar para la atención inmediata de los gastos:",
+    "opciones": {
+      "A": "Todos aquellos que sean periódicos o repetitivos.",
+      "B": "De personal.",
+      "C": "Corrientes en bienes y servicios.",
+      "D": "Todos los inferiores a 12.000 euros en el año natural."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 22,
+    "pregunta": "¿Desde qué año España forma parte del Comité Directivo de la Alianza para el Gobierno Abierto (Open Government Partnership, OGP)?",
+    "opciones": {
+      "A": "Desde el año 2011.",
+      "B": "Desde el año 2020.",
+      "C": "Desde el año 2023.",
+      "D": "España es miembro de la Alianza del Gobierno Abierto pero no forma parte de su Comité Directivo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 23,
+    "pregunta": "Conforme a la Ley 9/2017, de 8 de noviembre, de Contratos del Sector Público, tienen la consideración de contratos menores, sin perjuicio de lo dispuesto en el artículo 229:",
+    "opciones": {
+      "A": "Los que tienen un valor estimado inferior a 60.000 euros, cuando se trate de contratos de obras, o a 30.000 euros, cuando se trate de contratos de suministro o de servicios.",
+      "B": "Los que tienen un valor estimado inferior a 40.000 euros, cuando se trate de contratos de obras, o a 15.000 euros, cuando se trate de contratos de suministro o de servicios.",
+      "C": "Los que tienen un valor estimado inferior a 50.000 euros.",
+      "D": "Los que tienen un valor estimado igual o inferior a 60.000 euros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 24,
+    "pregunta": "¿Cuándo podrán tramitarse propuestas de pagos presupuestarios y librarse fondos con el carácter de a justificar?:",
+    "opciones": {
+      "A": "Cuando se trate del abono de atrasos de nómina.",
+      "B": "Cuando se trate de gastos relacionados con las cotizaciones sociales.",
+      "C": "Cuando se refieran a servicios y prestaciones que hayan tenido lugar en el extranjero.",
+      "D": "Cuando se refieran a pagos urgentes e inaplazables y no exista suficiente remanente en el concepto presupuestario correspondiente."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 25,
+    "pregunta": "El Presidente del Tribunal Supremo será nombrado por:",
+    "opciones": {
+      "A": "El Presidente del Gobierno a propuesta del Congreso.",
+      "B": "El Rey a propuesta del Consejo General del Poder Judicial, en la forma que determine la Ley.",
+      "C": "El Presidente del Gobierno a propuesta del Gobierno.",
+      "D": "El Presidente del Tribunal Constitucional a propuesta del Consejo General del Poder Judicial."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 26,
+    "pregunta": "Según la Ley 47/2003, de 26 de noviembre, General Presupuestaria, señale la respuesta INCORRECTA en relación con la programación presupuestaria:",
+    "opciones": {
+      "A": "Los escenarios presupuestarios plurianuales constituyen la programación de la actividad del sector público estatal con presupuesto limitativo.",
+      "B": "Los escenarios presupuestarios plurianuales estarán integrados por un escenario de ingresos y un escenario de gastos.",
+      "C": "Los escenarios presupuestarios plurianuales se ajustarán al objetivo de estabilidad presupuestaria correspondiente al Estado y a la Seguridad Social.",
+      "D": "Los escenarios presupuestarios plurianuales serán confeccionados por el Consejo de Ministros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 27,
+    "pregunta": "Según la Orden de 1 de febrero de 1996 por la que se aprueba la Instrucción de operatoria contable a seguir en la ejecución del gasto del Estado, en relación con la tramitación de subvenciones no nominativas con convocatoria previa:",
+    "opciones": {
+      "A": "Se expedirá por el Servicio gestor un documento A, una vez aprobado el expediente de gasto, aprobación que será posterior a la publicación de la convocatoria.",
+      "B": "Se expedirá por el Servicio gestor un documento D, una vez aprobado el expediente de gasto, que será previo a la concesión de las subvenciones.",
+      "C": "Se expedirá por el Servicio gestor un documento A, una vez aprobado el expediente de gasto, aprobación que será previa a la publicación de la convocatoria.",
+      "D": "Se expedirá por el Servicio gestor un documento A, una vez aprobado el expediente de gasto, aprobación que será posterior a la concesión de las subvenciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 28,
+    "pregunta": "Según el artículo 63 de la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, los Subsecretarios son nombrados y separados por:",
+    "opciones": {
+      "A": "El Secretario de Estado de quien depende.",
+      "B": "El Ministro de Presidencia.",
+      "C": "Real Decreto del Consejo de Ministros a propuesta del titular del Ministerio.",
+      "D": "Real Decreto del Presidente del Gobierno."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 29,
+    "pregunta": "De acuerdo con lo establecido en la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, los procedimientos sancionadores se pueden iniciar:",
+    "opciones": {
+      "A": "De oficio, a petición de parte interesada, o por denuncia.",
+      "B": "Siempre de oficio, por acuerdo del órgano competente.",
+      "C": "Por denuncia o de oficio, por acuerdo del órgano competente.",
+      "D": "Únicamente por denuncia."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 30,
+    "pregunta": "La adjudicación de los contratos del sector público se realizará:",
+    "opciones": {
+      "A": "Ordinariamente utilizando una pluralidad de criterios de adjudicación basados en el principio de menor precio.",
+      "B": "Ordinariamente utilizando no menos de dos ni más de cinco criterios de adjudicación basados en el principio de mejor relación calidad-precio.",
+      "C": "Ordinariamente utilizando una pluralidad de criterios de adjudicación basados en el principio de mejor relación calidad-precio.",
+      "D": "Ordinariamente utilizando no menos de dos ni más de cinco criterios de adjudicación basados en el principio de menor precio."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 31,
+    "pregunta": "Según el artículo 55 de la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, los Delegados del Gobierno en las Comunidades Autónomas se consideran:",
+    "opciones": {
+      "A": "Órganos directivos en la organización territorial de la Administración General del Estado.",
+      "B": "Órganos superiores en la organización territorial de la Administración General del Estado.",
+      "C": "Órganos de representación institucional en todo el ámbito de la Administración General.",
+      "D": "Órganos de representación institucional en todo el ámbito de la Administración General salvo en el Exterior."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 32,
+    "pregunta": "La Ley 9/2017, de 8 de noviembre, de Contratos del Sector Público indica en su artículo 101 que, a todos los efectos previstos en la Ley, en el caso de los contratos de obras, suministros y servicios, el valor estimado de los contratos:",
+    "opciones": {
+      "A": "Incluirá el Impuesto sobre el Valor Añadido, excepto en los de suministros y servicios inferiores a 8.000 euros.",
+      "B": "No incluirá el Impuesto sobre el Valor Añadido, excepto en los de obras superiores a 120.000 euros, en los que se deberá incluir.",
+      "C": "Incluirá el Impuesto sobre el Valor Añadido en todos los casos.",
+      "D": "No incluirá el Impuesto sobre el Valor Añadido en ningún caso."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 33,
+    "pregunta": "Según el IV Convenio colectivo único para el personal laboral, ¿en qué casos la Administración complementará la prestación económica reglamentaria de la Seguridad Social hasta alcanzar el 100 % del salario establecido?",
+    "opciones": {
+      "A": "En los casos de licencia por maternidad, riesgo durante el embarazo o baja por incapacidad temporal legalmente declarada, durante los primeros 3 meses.",
+      "B": "En los casos de licencia por maternidad o riesgo durante el embarazo, durante 9 meses.",
+      "C": "En los casos de licencia por maternidad, riesgo durante el embarazo o baja por incapacidad temporal legalmente declarada, durante todo el tiempo de permanencia de dicha situación.",
+      "D": "En los casos de licencia por maternidad, riesgo durante el embarazo o baja por incapacidad temporal, durante 18 meses."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 34,
+    "pregunta": "De acuerdo con el artículo 66 de la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, señale que afirmación es FALSA en relación a los Directores Generales:",
+    "opciones": {
+      "A": "Serán nombrados por Real Decreto del Consejo de Ministros.",
+      "B": "Serán cesados por el Ministro, Secretario de Estado o Subsecretario del que dependan.",
+      "C": "En todo caso, habrán de reunir los requisitos de idoneidad establecidos en la Ley 3/2015, de 30 de marzo, reguladora del ejercicio del alto cargo de la Administración General del Estado.",
+      "D": "Son los titulares de los órganos directivos encargados de la gestión de una o varias áreas funcionalmente homogéneas del Ministerio."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 35,
+    "pregunta": "Según el artículo 7 del Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público, ¿sobre qué materia está previsto que el personal laboral al servicio de las Administraciones públicas se regirá por lo previsto en el presente Estatuto, no siendo de aplicación a este personal, por tanto, las previsiones del texto refundido de la Ley del Estatuto de los Trabajadores?",
+    "opciones": {
+      "A": "Materia de permisos de nacimiento, adopción, del progenitor diferente de la madre biológica y lactancia.",
+      "B": "Materia de representación sindical.",
+      "C": "Materia de extinción del contrato.",
+      "D": "Materia de infracciones y sanciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 36,
+    "pregunta": "Dentro del IV Convenio Único para el personal laboral de la Administración General del Estado se regula la posibilidad de acogerse a una nueva modalidad de jubilación a partir del 1 de enero de 2021, ¿de cuál se trata?",
+    "opciones": {
+      "A": "Jubilación forzosa.",
+      "B": "Jubilación parcial.",
+      "C": "Jubilación reforzada.",
+      "D": "Jubilación voluntaria."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 37,
+    "pregunta": "Según el artículo 57.1 de la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, ¿cómo se organiza la Administración General del Estado?",
+    "opciones": {
+      "A": "En Presidencia del Gobierno y en Ministerios.",
+      "B": "En unidades administrativas dependientes entre ellas.",
+      "C": "En Direcciones generales.",
+      "D": "En Ministerios, Secretarías de Estado y Organismos Autónomos Dependientes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 38,
+    "pregunta": "Señale la respuesta INCORRECTA en relación con el ámbito de aplicación del Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público:",
+    "opciones": {
+      "A": "Tiene carácter supletorio para todo el personal de las Administraciones Públicas no incluido en su ámbito de aplicación.",
+      "B": "Se aplica al personal funcionario y en lo que proceda al personal laboral al servicio de las Universidades Públicas.",
+      "C": "Tiene carácter obligatorio para todo el personal de las Administraciones Públicas incluido en su ámbito de aplicación.",
+      "D": "Se aplica sólo al personal funcionario al servicio de las Administraciones de las entidades locales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 39,
+    "pregunta": "Conforme el artículo 19 de la Ley 7/1985, de 2 de abril, Reguladora de las Bases del Régimen Local, los Alcaldes son elegidos:",
+    "opciones": {
+      "A": "Siempre por los vecinos mediante sufragio universal, igual, libre, directo y secreto.",
+      "B": "Por los Concejales o por los vecinos.",
+      "C": "Por los Concejales y por los vecinos.",
+      "D": "Siempre por los concejales por mayoría absoluta en primera votación o por mayoría simple en la segunda."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 40,
+    "pregunta": "Según el Real Decreto 951/2005, de 29 de julio, por el que se establece el marco general para la mejora de la calidad en la Administración General del Estado, las quejas formuladas conforme al mismo:",
+    "opciones": {
+      "A": "No tendrán, en ningún caso, la calificación de recurso administrativo ni su presentación interrumpirá los plazos establecidos en la normativa vigente.",
+      "B": "Podrán tener la calificación de recurso administrativo.",
+      "C": "Tendrán la calificación de recurso administrativo.",
+      "D": "Podrán tener la calificación de recurso administrativo y su presentación no interrumpirá los plazos establecidos en la normativa vigente."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 41,
+    "pregunta": "¿Qué significa \"plug and play\"?",
+    "opciones": {
+      "A": "Que sólo es necesario conectar el dispositivo para que funcione",
+      "B": "Que es un dispositivo de juego",
+      "C": "Que el dispositivo usa bluetooth",
+      "D": "Que necesita ser enchufado a un puerto físico del pc"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 42,
+    "pregunta": "¿Cuál es la función principal de la BIOS?",
+    "opciones": {
+      "A": "Escanear y reparar la integridad de los discos",
+      "B": "Inicializar y testear el hardware y cargar el sistema operativo",
+      "C": "Administrar el uso de la RAM",
+      "D": "Gestionar la entrada y salida de operaciones del microprocesador"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 43,
+    "pregunta": "Señale la afirmación correcta sobre un bit:",
+    "opciones": {
+      "A": "Es el equivalente a 8 bytes",
+      "B": "Es el equivalente a 1024Kb",
+      "C": "Es el equivalente a 1024Mb",
+      "D": "Es un cero o un uno en binario"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 44,
+    "pregunta": "En la Administración electrónica, las siglas CA identifican a:",
+    "opciones": {
+      "A": "Un certificado de autoridad",
+      "B": "Un certificado de autenticación",
+      "C": "Una autoridad de certificación",
+      "D": "Una certificación automática"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 45,
+    "pregunta": "En Windows 10, cuando utilizamos escritorios virtuales veremos, por defecto, en la barra de tareas que solo nos aparecerán los iconos de las ventanas abiertas del escritorio virtual que estemos usando en ese momento. ¿Se puede cambiar este comportamiento?",
+    "opciones": {
+      "A": "No es una opción configurable.",
+      "B": "Sí, en configuración de Multitarea, \"Escritorio virtuales\" donde dice \"En la barra de tareas, mostrar las ventanas que están abiertas en\", cambiar el valor por \"Todos los escritorios\".",
+      "C": "Sí, al crear el escritorio virtual, accediendo al menú de opciones de ese escritorio virtual con el menú derecho del ratón.",
+      "D": "Sí, en la configuración de la barra de tareas, \"Varias pantallas\" donde dice \"En la barra de tareas, mostrar las ventanas que están abiertas en\", cambiar el valor por \"Todos los escritorios\"."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 46,
+    "pregunta": "¿Cuál de los siguientes NO es un sistema de archivos utilizado por el sistema operativo Windows?",
+    "opciones": {
+      "A": "NTFS",
+      "B": "FAT",
+      "C": "FAT32",
+      "D": "FPS"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 47,
+    "pregunta": "¿Con que combinación de teclas de las siguientes opciones puedo en Windows 10 quiero abrir Inicio?",
+    "opciones": {
+      "A": "Alt + I",
+      "B": "CTRL + Barra espaciadora",
+      "C": "CTRL + I",
+      "D": "CTRL + ESC"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 48,
+    "pregunta": "¿Pulsando qué teclas se hace aparecer la lupa en Windows 10?",
+    "opciones": {
+      "A": "Tecla Windows + F3",
+      "B": "Tecla Windows + F11",
+      "C": "Tecla Windows y +",
+      "D": "Tecla Windows + E"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 49,
+    "pregunta": "Señale la respuesta correcta sobre el explorador de Windows:",
+    "opciones": {
+      "A": "Siempre muestra todos los archivos de la carpeta actual",
+      "B": "Siempre muestra las extensiones de los archivos",
+      "C": "Muestra siempre todas las carpetas dentro de la carpeta actual",
+      "D": "Muestra opciones de configuración para permitir ver extensiones, carpetas o ficheros ocultos"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 50,
+    "pregunta": "¿Qué es un acceso directo?",
+    "opciones": {
+      "A": "Es un atajo de teclado",
+      "B": "Es un tipo de fichero que incluye credenciales y permite autentificarse directamente en un sistema",
+      "C": "Es un elemento que permite abrir de forma inmediata un archivo o carpeta al que está vinculado/a",
+      "D": "Es un segmento de red"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 51,
+    "pregunta": "¿Cuál es el sistema de archivos predeterminado utilizado por Windows 10?",
+    "opciones": {
+      "A": "FAT32",
+      "B": "exFAT",
+      "C": "NTFS",
+      "D": "ReFS"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 52,
+    "pregunta": "¿Cuál de las siguientes opciones permite introducir un nuevo comentario en Word 2019?:",
+    "opciones": {
+      "A": "Insertar, Nuevo comentario.",
+      "B": "Vista, Nuevo comentario.",
+      "C": "Inicio, Nuevo comentario.",
+      "D": "Vista, Nuevo comentario."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 53,
+    "pregunta": "¿Cuál de las siguientes características se encuentra en Microsoft Word 2019?:",
+    "opciones": {
+      "A": "Grabador de vídeo",
+      "B": "Monitor de la batería",
+      "C": "Línea de comandos",
+      "D": "Leer en voz alta"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 54,
+    "pregunta": "En la barra superior de Word 2019, ¿dónde se encuentra una opción para traducir texto?",
+    "opciones": {
+      "A": "Ayuda, Traducir",
+      "B": "Revisar, Traducir",
+      "C": "Referencias, Traducir",
+      "D": "Correspondencia, Traducir"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 55,
+    "pregunta": "En Microsoft Word 2019, si teniendo seleccionado un texto en minúsculas queremos alternar entre las opciones de poner todas las palabras con la primera letra en mayúsculas, poner todas las palabras en mayúsculas y poner todas las palabras en minúsculas. ¿",
+    "opciones": {
+      "A": "Shift + F3",
+      "B": "Shift + F1",
+      "C": "Shift + F2",
+      "D": "Shift + F4"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 56,
+    "pregunta": "La opción \"contar palabras\", ¿qué estadísticas muestra?",
+    "opciones": {
+      "A": "Páginas, palabras, párrafos y líneas",
+      "B": "Páginas, palabras, caracteres con y sin espacios y líneas",
+      "C": "Páginas, palabras, caracteres con y sin espacios, párrafos y líneas",
+      "D": "Páginas, palabras, caracteres con y sin espacios, caracteres especiales, fórmulas, párrafos y líneas"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 57,
+    "pregunta": "Si en Excel 2019 queremos tener una celda que sólo admita introducir valores de un conjunto predeterminado:",
+    "opciones": {
+      "A": "Debemos marca la celda de sólo lectura",
+      "B": "Debemos aplicar una fórmula",
+      "C": "Debemos crear una lista desplegable",
+      "D": "Debemos crear una tabla aparte"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 58,
+    "pregunta": "En una hoja Excel existe una celda que contiene la siguiente fórmula (sin comillas): \"=Presupuesto_1!A2-Presupuesto_2!C3\". ¿Cuál es el resultado de la fórmula si las celdas referenciadas son numéricas?",
+    "opciones": {
+      "A": "El valor de la celda A2 de la hoja \"Presupuesto_1\" menos el valor de la celda C3 de la hoja \"Presupuesto_2\". Las hojas están en libros diferentes",
+      "B": "El valor de la celda A2 de la hoja \"Presupuesto_1\" menos el valor de la celda C3 de la hoja \"Presupuesto_2\". Es necesario que la fórmula se encuentre en una de las dos hojas referenciadas",
+      "C": "El valor de la celda A2 de la hoja \"Presupuesto_1\" menos el valor de la celda C3 de la hoja \"Presupuesto_2\". Ambas hojas están el mismo libro donde se encuentra la fórmula",
+      "D": "#¡VALOR!, pues no es posible hacer cálculos con valores situados en celdas que están en hojas diferentes"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 59,
+    "pregunta": "En una hoja Excel existe una celda que contiene la siguiente fórmula (sin comillas): \"=ESLOGICO(FALSO)\". ¿Cuál es el resultado?",
+    "opciones": {
+      "A": "Verdadero",
+      "B": "Falso",
+      "C": "#¡VALOR!",
+      "D": "#¿NOMBRE?"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 60,
+    "pregunta": "Si estamos trabajando con Excel 2019 , ¿qué resultado se obtendrá con la siguiente fórmula \"=MAX(77,12,81,23)\"?",
+    "opciones": {
+      "A": "77",
+      "B": "Error",
+      "C": "81",
+      "D": "23"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 61,
+    "pregunta": "¿Para qué sirven las relaciones entre tablas en Access 2019?",
+    "opciones": {
+      "A": "Para acelerar las consultas.",
+      "B": "Para documentar la base de datos.",
+      "C": "Para crear índices.",
+      "D": "Para mantener una integridad en los datos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 62,
+    "pregunta": "En Access 2019, ¿cómo podemos prevenir y corregir problemas con los archivos de base de datos?:",
+    "opciones": {
+      "A": "En Herramientas de base de datos, Compactar y reparar base de datos.",
+      "B": "En Edición, Corregir.",
+      "C": "En Archivo, Compactar y reparar.",
+      "D": "En Edición, Compactar y reparar."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 63,
+    "pregunta": "En Access 2019, si elegimos la opción Herramientas de base de datos y pulsamos el botón \"Base de Datos de Access\", la herramienta nos permite en el formulario presentado:",
+    "opciones": {
+      "A": "Cambiar las propiedades del archivo.",
+      "B": "Dividir la base de datos Access.",
+      "C": "Compactar la base de datos.",
+      "D": "Cambiar la página de caracteres de la base de datos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 64,
+    "pregunta": "¿Cuál de los siguientes bloques de direcciones TCP/IP está reservado para redes privadas?",
+    "opciones": {
+      "A": "172.16.0.0 – 172.31.255.255",
+      "B": "11.0.0.0 – 11.255.255.255",
+      "C": "195.166.0.0 – 195.166.255.255",
+      "D": "175.16.0.0 – 175.16.255.255"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 65,
+    "pregunta": "En Outlook 2019 para buscar mensajes que contengan la frase exacta debería poner en el cuadro de búsqueda:",
+    "opciones": {
+      "A": "La frase a buscar entrecomillada con dobles comillas.",
+      "B": "La frase a buscar entrecomillada con comillas simples.",
+      "C": "Utilizar el operador exact y a continuación la frase que quiere buscar.",
+      "D": "Basta con escribir la frase a buscar, no hace falta entrecomillarla ni utilizar ningún operador o palabra clave."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 66,
+    "pregunta": "¿Cuál de los siguientes es un servicio de identidad digital y firma electrónica?",
+    "opciones": {
+      "A": "Cl@ve.",
+      "B": "Notifica.",
+      "C": "SIR.",
+      "D": "GEISER."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 67,
+    "pregunta": "¿Cuál es la principal diferencia entre los protocolos POP3 y IMAP?:",
+    "opciones": {
+      "A": "El modo de acceso al correo: IMAP solo permite acceder desde el dispositivo principal, mientras que POP3 puede acceder desde cualquier dispositivo conectado a Internet.",
+      "B": "La capacidad de búsqueda: POP3 permite crear carpetas en el servidor, lo que agiliza la búsqueda de correos e IMAP.",
+      "C": "El lugar donde se almacenan los mensajes de correo; POP3 descarga los correos electrónicos del servidor y los almacena en nuestro dispositivo, mientras que IMAP los deja en el servidor.",
+      "D": "Todas son correctas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 68,
+    "pregunta": "¿Cuál es la opción para guardar un mensaje en el propio Outlook, sin borrarlo, para consultarlo más adelante?:",
+    "opciones": {
+      "A": "Eliminar temporalmente",
+      "B": "Guardar",
+      "C": "Confirmar lectura posterior",
+      "D": "Archivar"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 69,
+    "pregunta": "Según el modelo TCP/IP, el protocolo telnet pertenece a la capa de:",
+    "opciones": {
+      "A": "Aplicación",
+      "B": "Transporte",
+      "C": "Internet",
+      "D": "Sesión"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 70,
+    "pregunta": "¿Cuál de los siguientes lenguajes de programación pueden interpretar los navegadores web de forma nativa para mejorar las funcionalidades y dinamismo de las páginas web?",
+    "opciones": {
+      "A": "Basic.",
+      "B": "C#",
+      "C": "Python.",
+      "D": "JavaScript."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 71,
+    "pregunta": "¿Según el artículo dos del Real Decreto 1708/2011, de 18 de noviembre, por el que se establece el Sistema Español de Archivos y se regula el Sistema de Archivos de la Administración General del Estado y de sus Organismos Públicos y su régimen de acceso, un ejemplar en cualquier tipo de soporte, testimonio de las actividades y funciones de las personas físicas y jurídicas, públicas o privadas, es la definición de:",
+    "opciones": {
+      "A": "Balduque.",
+      "B": "Metadato.",
+      "C": "Documento.",
+      "D": "Legajo."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 72,
+    "pregunta": "Según el artículo 48 de la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales, los actos y disposiciones dictados por la Presidencia de la Agencia Española de Protección de datos son recurribles ante:",
+    "opciones": {
+      "A": "Tribunal Supremo.",
+      "B": "Tribunal Constitucional.",
+      "C": "Audiencia Nacional.",
+      "D": "Juzgado de lo contencioso-administrativo."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 73,
+    "pregunta": "Iniciado el procedimiento de revisión de oficio al que se refieren los artículos 106 y 107 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, el órgano competente para declarar la nulidad o lesividad, podrá suspender la ejecución del acto:",
+    "opciones": {
+      "A": "Cuando resulte contrario al derecho de los particulares o a las leyes.",
+      "B": "Cuando ésta pudiera causar perjuicios de imposible o difícil reparación.",
+      "C": "Cuando así lo acuerden todas las partes personadas en la ejecución.",
+      "D": "En los casos en que la Ley lo ordene de modo expreso."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 74,
+    "pregunta": "En relación con los principios que rigen el procedimiento de responsabilidad patrimonial de las Administraciones Públicas, señale la respuesta FALSA:",
+    "opciones": {
+      "A": "Los particulares tendrán derecho a ser indemnizados por las Administraciones Públicas correspondientes, de toda lesión que sufran en cualquiera de sus bienes y derechos, siempre que la lesión sea consecuencia del funcionamiento normal o anormal de los servicios públicos.",
+      "B": "Sólo serán indemnizables las lesiones producidas al particular provenientes de daños que éste no tenga el deber jurídico de soportar de acuerdo con la Ley.",
+      "C": "El daño alegado habrá de ser efectivo, evaluable económicamente e individualizado con relación a una persona o grupo de personas.",
+      "D": "No serán indemnizables los daños que se deriven de hechos o circunstancias que no se hubiesen podido prever o evitar según el estado de los conocimientos de la ciencia o de la técnica existentes en el momento de producción de aquéllos."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 75,
+    "pregunta": "Conforme el artículo 65 de la Ley 9/2017, de 8 de noviembre, de Contratos del Sector Público, solo podrán contratar con el sector público las personas naturales o jurídicas:",
+    "opciones": {
+      "A": "Españolas o extranjeras.",
+      "B": "Españolas o de Estados miembros de la Unión Europea.",
+      "C": "Españolas o con residencia legal en España.",
+      "D": "Ninguna de las respuestas anteriores es correcta."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  }
+]
