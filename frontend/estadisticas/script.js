@@ -16,6 +16,28 @@ function notaSobre10(t) {
   return Math.round((puntuacion / total) * 1000) / 100;
 }
 
+// El backend guarda "fecha" con datetime.utcnow().isoformat(), que no lleva
+// sufijo "Z" ni offset -- sin él, `new Date(...)` interpreta esos números
+// como hora LOCAL en vez de UTC (así lo dice el propio estándar ECMA-262
+// para cadenas de fecha-hora sin zona horaria). El resultado: un test hecho
+// de madrugada en España (p. ej. 00:30, ya "hoy" en local pero todavía
+// "ayer" en UTC con el huso de verano) podía aparecer bajo el día
+// equivocado tanto en el calendario de estudio como en la gráfica de
+// evolución. Forzando la "Z" se interpreta de verdad como UTC y luego se
+// lee ya convertido a la hora local del navegador.
+function parsearFechaUTC(fechaIso) {
+  if (!fechaIso) return null;
+  const iso = /Z|[+-]\d{2}:\d{2}$/.test(fechaIso) ? fechaIso : `${fechaIso}Z`;
+  const d = new Date(iso);
+  return isNaN(d) ? null : d;
+}
+
+function fechaLocalYMD(fechaIso) {
+  const d = parsearFechaUTC(fechaIso);
+  if (!d) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 async function obtenerAuthHeaders() {
   const { idToken } = await import("/assets/auth.js");
   const token = await idToken();
@@ -388,7 +410,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       const nota = notas[i];
       const esExtremo = i === mejorIdx || i === peorIdx;
       const color = t.resultado === "aprobado" ? "var(--age-success)" : "var(--age-danger)";
-      const fecha = t.fecha ? new Date(t.fecha).toLocaleDateString("es-ES") : "";
+      const fecha = parsearFechaUTC(t.fecha)?.toLocaleDateString("es-ES") ?? "";
       const claseExtra = esExtremo ? " evolucion-punto-extremo" : "";
       return `<circle cx="${coordX(i)}" cy="${coordY(nota)}" r="${esExtremo ? 6 : 4}" fill="${color}" class="${claseExtra}"><title>${fecha}: ${nota.toFixed(1)}/10</title></circle>`;
     }).join("");
@@ -415,7 +437,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const etiquetasFecha = indicesEtiquetas.map((i) => {
       const t = recientes[i];
       if (!t.fecha) return "";
-      const fechaCorta = new Date(t.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "numeric" });
+      const fechaCorta = parsearFechaUTC(t.fecha)?.toLocaleDateString("es-ES", { day: "numeric", month: "numeric" }) ?? "";
       return `<text x="${coordX(i)}" y="${yEtiquetaFecha}" text-anchor="middle" class="evolucion-eje-texto">${fechaCorta}</text>`;
     }).join("");
 
@@ -430,8 +452,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     `;
     tarjeta.style.display = "flex";
 
-    const fechaMejor = recientes[mejorIdx].fecha ? new Date(recientes[mejorIdx].fecha).toLocaleDateString("es-ES") : "";
-    const fechaPeor = recientes[peorIdx].fecha ? new Date(recientes[peorIdx].fecha).toLocaleDateString("es-ES") : "";
+    const fechaMejor = parsearFechaUTC(recientes[mejorIdx].fecha)?.toLocaleDateString("es-ES") ?? "";
+    const fechaPeor = parsearFechaUTC(recientes[peorIdx].fecha)?.toLocaleDateString("es-ES") ?? "";
     caption.textContent = `Mejor: ${notas[mejorIdx].toFixed(1)} (${fechaMejor}) · Peor: ${notas[peorIdx].toFixed(1)} (${fechaPeor})`;
     caption.style.display = "block";
   }
@@ -530,7 +552,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const mes = mesCalendarioActual.getMonth();
 
     const diasConActividad = new Set(
-      historialCalendario.map(t => (t.fecha || "").slice(0, 10)).filter(Boolean)
+      historialCalendario.map(t => fechaLocalYMD(t.fecha)).filter(Boolean)
     );
 
     const hoy = new Date();
