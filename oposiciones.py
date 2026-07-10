@@ -15,6 +15,10 @@ OPOSICIONES = {
         "nombre": "Cuerpo de Gestión de la Administración Civil del Estado (GACE, A2)",
         "coleccion_temario": "Temario GACE",
     },
+    "AUXILIAR": {
+        "nombre": "Cuerpo General Auxiliar de la Administración del Estado (Auxiliar, C2)",
+        "coleccion_temario": "Temario Auxiliar",
+    },
 }
 
 OPOSICION_POR_DEFECTO = "AGE"

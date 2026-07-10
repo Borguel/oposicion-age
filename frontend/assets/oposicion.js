@@ -5,7 +5,8 @@
 // de qué oposiciones tenga contratadas -- eso lo dice /mi-perfil.
 export const OPOSICIONES = [
   { id: "AGE", nombre: "Cuerpo General Administrativo (AGE)", siglas: "AGE" },
-  { id: "GACE", nombre: "Cuerpo de Gestión (GACE)", siglas: "GACE" }
+  { id: "GACE", nombre: "Cuerpo de Gestión (GACE)", siglas: "GACE" },
+  { id: "AUXILIAR", nombre: "Cuerpo General Auxiliar (Auxiliar)", siglas: "Auxiliar" }
 ];
 
 const CLAVE = "age_oposicion_actual";
