@@ -1,13 +1,20 @@
 """Pruebas del webhook de Stripe: la ruta que decide si alguien pasa a
 tener una suscripción de pago. Se cubre el rechazo de firmas inválidas
-(cualquiera podría intentar simular un pago sin esto) y que un mismo
-evento no se procese dos veces si Stripe lo reintenta."""
+(cualquiera podría intentar simular un pago sin esto), que un mismo
+evento no se procese dos veces si Stripe lo reintenta, y los 3 eventos
+que de verdad conceden/cambian/degradan el acceso de pago:
+checkout.session.completed, customer.subscription.updated (subida y
+bajada de plan) e invoice.payment_failed."""
 import hashlib
 import hmac
 import json
 import time
+from unittest.mock import patch
 
 STRIPE_WEBHOOK_SECRET = "whsec_test_dummy"  # coincide con conftest.py
+# Coinciden con STRIPE_PRICE_ID_BASICO / STRIPE_PRICE_ID_PREMIUM en conftest.py
+PRICE_BASICO = "price_basico_test"
+PRICE_PREMIUM = "price_premium_test"
 
 
 def _firmar(payload_bytes, secreto=STRIPE_WEBHOOK_SECRET, timestamp=None):
@@ -77,3 +84,100 @@ def test_webhook_con_firma_de_otro_timestamp_muy_antiguo_se_rechaza(client):
         headers={"Stripe-Signature": firma_antigua, "Content-Type": "application/json"},
     )
     assert resp.status_code == 400
+
+
+def _post_evento(client, evento):
+    payload = json.dumps(evento).encode()
+    return client.post(
+        "/webhook-stripe",
+        data=payload,
+        headers={"Stripe-Signature": _firmar(payload), "Content-Type": "application/json"},
+    )
+
+
+def test_webhook_checkout_completado_activa_suscripcion(client, db):
+    # checkout.session.completed no trae el plan/estado definitivos en el
+    # propio evento -- el handler vuelve a consultar la Subscription real a
+    # la API de Stripe para no fiarse de nada que venga solo del evento.
+    evento = {
+        "id": "evt_checkout_1",
+        "object": "event",
+        "type": "checkout.session.completed",
+        "data": {"object": {
+            "object": "checkout.session",
+            "client_reference_id": "u1",
+            "customer": "cus_test_1",
+            "subscription": "sub_test_1",
+            "metadata": {"uid": "u1", "plan": "basico", "oposicion": "AGE"},
+        }},
+    }
+    mock_subscription = {
+        "status": "active",
+        "items": {"data": [{"price": {"id": PRICE_BASICO}}]},
+        "current_period_end": 1893456000,
+    }
+    with patch("blueprints.pagos.stripe.Subscription.retrieve", return_value=mock_subscription):
+        resp = _post_evento(client, evento)
+
+    assert resp.status_code == 200
+    suscripcion = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+    assert suscripcion["plan"] == "basico"
+    assert suscripcion["subscription_status"] == "active"
+
+
+def test_webhook_subscription_updated_sube_y_luego_baja_de_plan(client, db):
+    # customer.subscription.updated SÍ trae directamente el price_id en el
+    # propio evento -- no hace falta volver a consultar Stripe. Se busca al
+    # usuario por stripe_customer_id (no por uid, que aquí no viaja).
+    db.sembrar(("usuarios", "u2"), {
+        "stripe_customer_id": "cus_test_2",
+        "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
+    })
+
+    def _evento_updated(evt_id, price_id):
+        return {
+            "id": evt_id,
+            "object": "event",
+            "type": "customer.subscription.updated",
+            "data": {"object": {
+                "object": "subscription",
+                "id": "sub_test_2",
+                "customer": "cus_test_2",
+                "status": "active",
+                "items": {"data": [{"price": {"id": price_id}}]},
+                "metadata": {"oposicion": "AGE"},
+            }},
+        }
+
+    resp_subida = _post_evento(client, _evento_updated("evt_sub_upd_1", PRICE_PREMIUM))
+    assert resp_subida.status_code == 200
+    assert db.leer(("usuarios", "u2"))["suscripciones"]["AGE"]["plan"] == "premium"
+
+    resp_bajada = _post_evento(client, _evento_updated("evt_sub_upd_2", PRICE_BASICO))
+    assert resp_bajada.status_code == 200
+    assert db.leer(("usuarios", "u2"))["suscripciones"]["AGE"]["plan"] == "basico"
+
+
+def test_webhook_payment_failed_marca_past_due_sin_tocar_el_plan(client, db):
+    db.sembrar(("usuarios", "u3"), {
+        "stripe_customer_id": "cus_test_3",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}},
+    })
+    evento = {
+        "id": "evt_payment_failed_1",
+        "object": "event",
+        "type": "invoice.payment_failed",
+        "data": {"object": {
+            "object": "invoice",
+            "customer": "cus_test_3",
+            "subscription": "sub_test_3",
+        }},
+    }
+    mock_subscription = {"metadata": {"oposicion": "AGE"}}
+    with patch("blueprints.pagos.stripe.Subscription.retrieve", return_value=mock_subscription):
+        resp = _post_evento(client, evento)
+
+    assert resp.status_code == 200
+    suscripcion = db.leer(("usuarios", "u3"))["suscripciones"]["AGE"]
+    assert suscripcion["subscription_status"] == "past_due"
+    assert suscripcion["plan"] == "premium"
