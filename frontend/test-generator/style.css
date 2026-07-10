@@ -37,7 +37,8 @@ body {
 
 .card {
   background: var(--color-card);
-  border-radius: 16px;
+  border-radius: var(--age-radius-lg);
+  border: 1px solid var(--age-border);
   box-shadow: var(--shadow);
   padding: 30px;
   margin-bottom: 30px;
@@ -45,7 +46,7 @@ body {
 }
 
 h1, h2, h3 {
-  color: #2c3e50;
+  color: var(--age-ink);
   margin-bottom: 20px;
 }
 
@@ -768,15 +769,6 @@ body {
   outline: none;
   border-color: var(--age-primary);
   box-shadow: 0 0 0 4px var(--age-primary-soft);
-}
-
-.card {
-  border-radius: var(--age-radius-lg);
-  border: 1px solid var(--age-border);
-}
-
-h1, h2, h3 {
-  color: var(--age-ink);
 }
 
 /* ========== Hub de tests (/test-generator/): cabecera + grupos ========== */

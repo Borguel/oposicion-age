@@ -2,6 +2,8 @@ import { auth, idToken, esperarUsuario, signOut } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { OPOSICIONES } from "/assets/oposicion.js";
+import { mostrarErrorGlobal } from "/assets/notificaciones.js";
+import { fijarTexto } from "/assets/dom.js";
 
 const ESTADOS_LEGIBLES = {
   active: "activa",
@@ -20,8 +22,8 @@ async function iniciar() {
     return;
   }
 
-  document.getElementById("cuenta-email").textContent = usuario.email || "";
-  document.getElementById("cuenta-avatar").textContent = (usuario.email || "?").trim().charAt(0).toUpperCase();
+  fijarTexto("cuenta-email", usuario.email || "");
+  fijarTexto("cuenta-avatar", (usuario.email || "?").trim().charAt(0).toUpperCase());
 
   const { nombre, apellidos, telefono, direccion, suscripciones } = await obtenerPlan(true);
 
@@ -47,11 +49,11 @@ async function iniciar() {
     contenedorOposiciones.appendChild(fila);
   });
 
-  document.getElementById("resumen-nombre").textContent = nombre || "—";
-  document.getElementById("resumen-apellidos").textContent = apellidos || "—";
-  document.getElementById("resumen-telefono").textContent = telefono || "—";
-  document.getElementById("resumen-email").textContent = usuario.email || "—";
-  document.getElementById("resumen-direccion").textContent = direccion || "—";
+  fijarTexto("resumen-nombre", nombre || "—");
+  fijarTexto("resumen-apellidos", apellidos || "—");
+  fijarTexto("resumen-telefono", telefono || "—");
+  fijarTexto("resumen-email", usuario.email || "—");
+  fijarTexto("resumen-direccion", direccion || "—");
 
   const btnPortal = document.getElementById("btn-portal");
   if (!algunaDePago) {
@@ -73,7 +75,7 @@ async function iniciar() {
       }
       window.location.href = datos.url;
     } catch (error) {
-      alert(error.message);
+      mostrarErrorGlobal(error.message);
       btnPortal.disabled = false;
       btnPortal.textContent = "Gestionar suscripción";
     }
@@ -102,7 +104,7 @@ document.getElementById("btn-exportar-datos").addEventListener("click", async (e
     enlace.click();
     URL.revokeObjectURL(url);
   } catch (error) {
-    alert(error.message || "No se pudieron exportar tus datos.");
+    mostrarErrorGlobal(error.message || "No se pudieron exportar tus datos.");
   } finally {
     boton.disabled = false;
     boton.textContent = "⬇️ Descargar mis datos";

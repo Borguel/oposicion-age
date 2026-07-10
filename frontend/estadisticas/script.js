@@ -66,6 +66,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   // Función para cargar datos
   async function cargarDatos() {
     try {
+      const { fijarTexto, fijarHTML } = await import("/assets/dom.js");
       // Resetear valores
       document.querySelectorAll('.valor').forEach(el => {
         if (!el.id.startsWith('tendencia')) {
@@ -73,14 +74,14 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
       });
       document.querySelectorAll('.vistazo-mini-fill, .respuestas-segmento').forEach(el => el.style.width = '0%');
-      document.getElementById("tendencia-media").innerHTML = '<span>...</span>';
-      document.getElementById("vistazo-aprobados-detalle").textContent = '— aprobados · — suspendidos';
+      fijarHTML("tendencia-media", '<span>...</span>');
+      fijarTexto("vistazo-aprobados-detalle", '— aprobados · — suspendidos');
       // Resetear valores PDF
-      document.getElementById("total-archivos").textContent = '...';
-      document.getElementById("total-tests-pdf").textContent = '...';
-      document.getElementById("total-resumenes-pdf").textContent = '...';
-      document.getElementById("total-esquemas-pdf").textContent = '...';
-      document.getElementById("total-tarjetas-pdf").textContent = '...';
+      fijarTexto("total-archivos", '...');
+      fijarTexto("total-tests-pdf", '...');
+      fijarTexto("total-resumenes-pdf", '...');
+      fijarTexto("total-esquemas-pdf", '...');
+      fijarTexto("total-tarjetas-pdf", '...');
       refreshBtn.classList.add('loading');
       refreshBtn.disabled = true;
 
@@ -113,7 +114,8 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
     } catch (err) {
       console.error("Error cargando estadísticas:", err);
-      alert("Hubo un problema al cargar tus estadísticas: " + err.message);
+      const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+      mostrarErrorGlobal("Hubo un problema al cargar tus estadísticas: " + err.message);
     } finally {
       refreshBtn.classList.remove('loading');
       refreshBtn.disabled = false;
@@ -760,7 +762,8 @@ document.addEventListener("DOMContentLoaded", async function () {
       descargarResumenProgresoPDF(datosParaExportarPDF);
     } catch (e) {
       console.error("Error exportando el PDF de progreso:", e);
-      alert("No se pudo generar el PDF. Inténtalo de nuevo.");
+      const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+      mostrarErrorGlobal("No se pudo generar el PDF. Inténtalo de nuevo.");
     } finally {
       exportarPdfBtn.disabled = false;
       exportarPdfBtn.textContent = textoOriginal;

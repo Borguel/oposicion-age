@@ -168,7 +168,8 @@ async function obtenerAuthHeaders() {
           elTemporizador.classList.toggle("temporizador-urgente", tiempoLimite <= 300);
           const porcentajeTiempo = ((tiempoTotalAsignado - tiempoLimite) / tiempoTotalAsignado) * 100;
           document.getElementById("progreso-tiempo").style.width = `${porcentajeTiempo}%`;
-          document.getElementById("texto-progreso-tiempo").textContent = `${Math.round(porcentajeTiempo)}%`;
+          const elTextoProgresoTiempo = document.getElementById("texto-progreso-tiempo");
+          if (elTextoProgresoTiempo) elTextoProgresoTiempo.textContent = `${Math.round(porcentajeTiempo)}%`;
           // Autoguardado de progreso cada ~10s reales de cronómetro (no en
           // cada tick, para no saturar el backend).
           if (tiempoLimite % 10 === 0) {

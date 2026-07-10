@@ -3,6 +3,8 @@ import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
+import { fijarTexto } from "/assets/dom.js";
+import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 
 const MENSAJES_RACHA = [
   { minimo: 0, texto: "Empieza hoy tu racha: haz un test o repasa algo para arrancar." },
@@ -28,14 +30,14 @@ async function cargarRacha() {
     const res = await fetch(`${BACKEND_URL}/mi-racha`, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) return;
     const { racha_actual, racha_maxima } = await res.json();
-    document.getElementById("racha-numero").textContent = racha_actual;
-    document.getElementById("racha-plural").textContent = racha_actual === 1 ? "" : "s";
-    document.getElementById("racha-mensaje").textContent = mensajeParaRacha(racha_actual);
-    document.getElementById("racha-icono").textContent = racha_actual > 0 ? "🔥" : "💤";
+    fijarTexto("racha-numero", racha_actual);
+    fijarTexto("racha-plural", racha_actual === 1 ? "" : "s");
+    fijarTexto("racha-mensaje", mensajeParaRacha(racha_actual));
+    fijarTexto("racha-icono", racha_actual > 0 ? "🔥" : "💤");
     if (racha_maxima > racha_actual) {
+      fijarTexto("racha-maxima", `Tu mejor racha: ${racha_maxima} día${racha_maxima === 1 ? "" : "s"}`);
       const elMaxima = document.getElementById("racha-maxima");
-      elMaxima.textContent = `Tu mejor racha: ${racha_maxima} día${racha_maxima === 1 ? "" : "s"}`;
-      elMaxima.style.display = "block";
+      if (elMaxima) elMaxima.style.display = "block";
     }
   } catch (e) {
     console.error("Error cargando racha:", e);
@@ -84,9 +86,10 @@ async function cargarProgresoInsignias() {
     if (datos.testsRealizados === 0) return; // nada que mostrar todavía
 
     const conseguidas = INSIGNIAS_UMBRALES.filter((cumple) => cumple(datos)).length;
-    document.getElementById("zona-progreso-insignias").textContent = `${conseguidas}/${INSIGNIAS_UMBRALES.length}`;
-    document.getElementById("zona-progreso-nota").textContent = datos.puntuacionMedia.toFixed(1);
-    document.getElementById("zona-progreso").style.display = "";
+    fijarTexto("zona-progreso-insignias", `${conseguidas}/${INSIGNIAS_UMBRALES.length}`);
+    fijarTexto("zona-progreso-nota", datos.puntuacionMedia.toFixed(1));
+    const elProgreso = document.getElementById("zona-progreso");
+    if (elProgreso) elProgreso.style.display = "";
     renderTemaFlojo(estadisticas.rendimiento_por_tema ?? {}, temas);
   } catch (e) {
     console.error("Error cargando progreso de insignias:", e);
@@ -154,7 +157,7 @@ async function iniciarBotonNotificaciones() {
         pintar(true);
       }
     } catch (e) {
-      alert(e.message || "No se pudieron activar las notificaciones.");
+      mostrarErrorGlobal(e.message || "No se pudieron activar las notificaciones.");
     } finally {
       boton.disabled = false;
     }
@@ -229,6 +232,7 @@ async function cargarCuentaAtras() {
       form.style.display = "none";
     } catch (e) {
       console.error("Error guardando fecha de examen:", e);
+      mostrarErrorGlobal("No se pudo guardar la fecha del examen. Inténtalo de nuevo.");
     }
   });
 
@@ -244,6 +248,7 @@ async function cargarCuentaAtras() {
       form.style.display = "none";
     } catch (e) {
       console.error("Error quitando fecha de examen:", e);
+      mostrarErrorGlobal("No se pudo quitar la fecha del examen. Inténtalo de nuevo.");
     }
   });
 }
@@ -271,10 +276,11 @@ async function cargarTestEnProgreso() {
     const test = tests[0]; // ya viene ordenado por fecha descendente
     const pagina = PAGINA_POR_TIPO_TEST[test.tipo] || "/test-generator/";
     const vista = (test.indice_actual || 0) + 1;
-    document.getElementById("zona-continuar-detalle").textContent =
-      `Ibas por la pregunta ${vista} de ${test.num_preguntas || "?"}. Retómalo donde lo dejaste.`;
-    document.getElementById("zona-continuar-boton").href = `${pagina}?resume=${test.id}`;
-    document.getElementById("zona-continuar").style.display = "";
+    fijarTexto("zona-continuar-detalle", `Ibas por la pregunta ${vista} de ${test.num_preguntas || "?"}. Retómalo donde lo dejaste.`);
+    const elBoton = document.getElementById("zona-continuar-boton");
+    if (elBoton) elBoton.href = `${pagina}?resume=${test.id}`;
+    const elContinuar = document.getElementById("zona-continuar");
+    if (elContinuar) elContinuar.style.display = "";
   } catch (e) {
     console.error("Error cargando test en progreso:", e);
   }

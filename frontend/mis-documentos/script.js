@@ -1,4 +1,5 @@
 import { idToken } from "/assets/auth.js";
+import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 
 const BACKEND_URL = "https://oposicion-age.onrender.com";
 const NUEVA_CARPETA = "__nueva__";
@@ -264,7 +265,7 @@ async function onMoverDesdeSinCarpeta(evento) {
     try {
       nuevaCarpeta = await crearCarpetaEnBackend(nombre.trim());
     } catch (e) {
-      alert(e.message || "No se pudo crear la carpeta.");
+      mostrarErrorGlobal(e.message || "No se pudo crear la carpeta.");
       renderizarDocumentosDeCarpeta();
       return;
     }
@@ -318,7 +319,7 @@ function inicializarEventos() {
       await crearCarpetaEnBackend(nombre.trim());
       renderizarCarpetas();
     } catch (e) {
-      alert(e.message || "No se pudo crear la carpeta.");
+      mostrarErrorGlobal(e.message || "No se pudo crear la carpeta.");
     }
   });
 

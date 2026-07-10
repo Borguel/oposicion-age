@@ -198,7 +198,7 @@ document.addEventListener("DOMContentLoaded", function () {
       </div>
       <div class="bubble-bot">
         <div class="bubble-bot-contenido"></div>
-        <div class="bubble-bot-actions"><button type="button" class="btn-copiar-mensaje" title="Copiar">📋</button></div>
+        <div class="bubble-bot-actions"><button type="button" class="btn-copiar-mensaje" aria-label="Copiar mensaje" title="Copiar">📋</button></div>
       </div>
     `;
     chatMessages.appendChild(div);

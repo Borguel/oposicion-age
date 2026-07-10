@@ -1,5 +1,6 @@
 import { idToken } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
+import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 
 const TIPO_INFO = {
   personalizado: { icono: "📝", label: "Personalizado" },
@@ -159,7 +160,7 @@ async function borrarTest(testId, boton) {
     }
     renderizar();
   } catch (e) {
-    alert(e.message || "No se pudo eliminar el test.");
+    mostrarErrorGlobal(e.message || "No se pudo eliminar el test.");
     boton.disabled = false;
   }
 }

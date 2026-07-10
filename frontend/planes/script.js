@@ -3,6 +3,7 @@ import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
+import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 
 const mensajeCheckout = document.getElementById("mensaje-checkout");
 const selectorOposicion = document.getElementById("selector-oposicion");
@@ -108,7 +109,7 @@ document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
       }
       window.location.href = datos.url;
     } catch (error) {
-      alert(error.message || "No se pudo iniciar el pago. Inténtalo de nuevo.");
+      mostrarErrorGlobal(error.message || "No se pudo iniciar el pago. Inténtalo de nuevo.");
       boton.disabled = false;
       boton.textContent = plan === "basico" ? "Elegir Básico" : "Elegir Premium";
     }
