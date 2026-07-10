@@ -156,6 +156,20 @@ export async function idToken() {
   return conLimiteDeTiempo(user.getIdToken(), 8000, null);
 }
 
+// Cabecera lista para usar en cualquier fetch() a una ruta protegida del
+// backend -- si no hay sesión, redirige a /login/ (con "next" de vuelta a
+// la página actual) y devuelve null, para que quien llama solo tenga que
+// comprobar "if (!authHeaders) return;". Antes esta misma función estaba
+// copiada y pegada en 13 páginas distintas.
+export async function obtenerAuthHeaders() {
+  const token = await idToken();
+  if (!token) {
+    window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
+    return null;
+  }
+  return { "Authorization": "Bearer " + token };
+}
+
 // ============================================================
 // Barra de navegación: se construye entera desde aquí (una sola
 // fuente de verdad) en vez de repetir <a> sueltos en cada página.

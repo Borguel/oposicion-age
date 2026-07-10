@@ -39,13 +39,8 @@ function fechaLocalYMD(fechaIso) {
 }
 
 async function obtenerAuthHeaders() {
-  const { idToken } = await import("/assets/auth.js");
-  const token = await idToken();
-  if (!token) {
-    window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
-    return null;
-  }
-  return { "Authorization": "Bearer " + token };
+  const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");
+  return fn();
 }
 
 document.addEventListener("DOMContentLoaded", async function () {

@@ -1,4 +1,4 @@
-import { idToken } from "/assets/auth.js";
+import { obtenerAuthHeaders } from "/assets/auth.js";
 
 const BACKEND_URL = "https://oposicion-age.onrender.com";
 
@@ -16,15 +16,6 @@ const pdfChatBox = document.getElementById('pdf-chat-box');
 const pdfUserInput = document.getElementById('pdf-user-input');
 const pdfSendBtn = document.getElementById('pdf-send-btn');
 const sessionInfo = document.getElementById('session-info');
-
-async function obtenerAuthHeaders() {
-  const token = await idToken();
-  if (!token) {
-    window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
-    return null;
-  }
-  return { "Authorization": "Bearer " + token };
-}
 
 selectPdfBtn.addEventListener('click', () => pdfFileInput.click());
 pdfFileInput.addEventListener('change', handlePdfUpload);
