@@ -461,12 +461,45 @@ function inyectarBannerVerificacion(user) {
   });
 }
 
+// Páginas a las que solo se llega pinchando algo dentro de Zona Opositor
+// (generar test, herramientas IA, mis tests...) -- en todas ellas se ofrece
+// un enlace directo de vuelta, para no depender de la navegación principal
+// (colapsada tras el menú hamburguesa en móvil).
+const PAGINAS_CON_VOLVER_ZONA_OPOSITOR = [
+  "/test-generator/", "/test-personalizado/", "/test-oficial/", "/test-inteligente/",
+  "/repetir-test/", "/preguntas-falladas/", "/preguntas-favoritas/",
+  "/mis-tests/", "/mis-documentos/",
+  "/subida-pdf-",
+  "/tu-tutor/",
+  "/estadisticas/",
+  "/ranking/",
+  "/mi-cuenta/"
+];
+
+function inyectarVolverZonaOpositor(user) {
+  const existente = document.querySelector(".age-volver-zona-wrap");
+  if (existente) existente.remove();
+  if (!user) return;
+
+  const ruta = window.location.pathname;
+  if (!PAGINAS_CON_VOLVER_ZONA_OPOSITOR.some((prefijo) => ruta.startsWith(prefijo))) return;
+
+  const nav = document.querySelector(".age-nav");
+  if (!nav) return;
+
+  const wrap = document.createElement("div");
+  wrap.className = "age-volver-zona-wrap";
+  wrap.innerHTML = `<a class="age-volver-zona" href="/zona-opositor/">${icono("atras", 16)} Zona opositor</a>`;
+  nav.insertAdjacentElement("afterend", wrap);
+}
+
 function inyectarNav(user) {
   construirEsqueletoNav();
   inyectarSelectorOposicion(!!user);
   construirBusquedaGlobal(user);
   construirMenuCuenta(user);
   inyectarBannerVerificacion(user);
+  inyectarVolverZonaOpositor(user);
 }
 
 function inyectarFooter() {

@@ -25,7 +25,8 @@ const PATHS = {
   luna: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
   candado: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   actualizar: '<path d="M20 11a8 8 0 0 0-14.6-4.6M4 13a8 8 0 0 0 14.6 4.6"/><path d="M5 3v4h4"/><path d="M19 21v-4h-4"/>',
-  rayo: '<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/>'
+  rayo: '<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/>',
+  atras: '<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>'
 };
 
 // tamano en px; el resto de atributos vienen ya fijados por el estilo
