@@ -5,11 +5,18 @@ iguales que divergían para un usuario que aún no existe en Firestore: la
 copia local creaba un documento mínimo (solo contadores PDF) y no pasaba
 por el inicializador compartido ni mandaba el email de bienvenida.
 
-Esa divergencia solo era observable llamando a la función de actualización
-de estadísticas SIN haber pasado antes por registrar_actividad_racha (que
-sí crea un documento mínimo con "racha" para CUALQUIER tipo de actividad,
-no solo PDF) -- es justo lo que hace /actualizar-progreso-pdf
-(rutas_progreso.py), que llama a actualizar_estadisticas_pdf directamente."""
+En producción real esa divergencia NUNCA era observable: todas las rutas
+que acaban llamando a actualizar_estadisticas_pdf/guardar_resultado_en_firestore
+(los 4 sitios de blueprints/pdf_ia.py, los 2 de save_controller.py y
+/actualizar-progreso-pdf en rutas_progreso.py) están detrás de
+@requiere_login o @requiere_plan (que envuelve a requiere_login), y ese
+decorador ya llama a inicializar_estadisticas_usuario -- con lo que manda
+el email de bienvenida y crea "estadisticas"/"suscripciones" -- en la
+primera petición autenticada del usuario, mucho antes de que pudiera
+llegar a guardar ningún PDF. El test de abajo llama a
+actualizar_estadisticas_pdf sin pasar por ese decorador a propósito, para
+ejercer la rama "usuario nuevo" como red de seguridad -- no porque ese
+camino exista tal cual en producción."""
 from unittest.mock import patch
 
 from guardar_resultado import guardar_resultado_en_firestore
@@ -17,10 +24,11 @@ from registro_progreso_usuario import actualizar_estadisticas_pdf
 
 
 def test_primer_pdf_de_un_usuario_nuevo_inicializa_estadisticas_y_manda_bienvenida(db):
-    # Llamada directa (como hace /actualizar-progreso-pdf), sin
-    # registrar_actividad_racha antes -- así el usuario todavía no existe
-    # en absoluto en Firestore y se ejerce de verdad la rama "usuario
-    # nuevo" que antes divergía entre las dos implementaciones.
+    # Llamada directa a actualizar_estadisticas_pdf, sin pasar por
+    # requiere_login/requiere_plan (que en producción real siempre se
+    # ejecuta antes y ya deja al usuario inicializado) -- así se ejerce de
+    # verdad la rama "usuario nuevo" de la función, como cobertura
+    # defensiva de un caso límite que hoy no se da en ningún camino real.
     with patch("registro_progreso_usuario.enviar_email_bienvenida") as mock_bienvenida:
         actualizar_estadisticas_pdf(db, "u_nuevo", "resumen_pdf")
 
