@@ -463,11 +463,19 @@ body {
 
 .zona-mis-cosas-card {
   display: flex;
+  flex-wrap: wrap;
   margin-bottom: 8px;
 }
 
 .zona-mis-cosas-item {
-  flex: 1;
+  /* Base de 260px (no 0): con contenido de longitud muy distinta entre
+     tarjetas (p. ej. "4/10 insignias" frente al título de un tema), forzar
+     el mismo ancho a las tres a partir de una base 0 las deja a todas
+     demasiado estrechas -- incluso en escritorio ancho -- porque el texto
+     largo de una empuja a las demás. Con una base real, cada una pide su
+     ancho natural y las que sobran envuelven a la fila siguiente en vez de
+     aplastarse todas. */
+  flex: 1 1 260px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -523,9 +531,15 @@ body {
   flex-shrink: 0;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .zona-mis-cosas-card {
     flex-direction: column;
+  }
+  .zona-mis-cosas-item {
+    /* En columna el eje principal pasa a ser el vertical: la base de
+       260px (pensada para el ancho en fila) se leería como alto mínimo y
+       dejaría un hueco enorme bajo cada fila. */
+    flex-basis: auto;
   }
   .zona-mis-cosas-divisor {
     width: auto;
