@@ -221,39 +221,29 @@ body {
   color: var(--age-ink);
 }
 
-/* ---------- Enlace "Zona opositor" en páginas alcanzadas desde ahí ---------- */
-.age-volver-zona-wrap {
-  max-width: var(--age-container);
-  margin: 14px auto 0;
-  padding: 0 20px;
-}
-
-.age-volver-zona {
+/* ---------- Botón "Zona opositor" en páginas alcanzadas desde ahí ----------
+   Vive dentro de .age-nav-right, con el mismo tratamiento circular y
+   discreto que el botón de modo oscuro de al lado -- un icono suelto en
+   tono claro sobre el navy de la cabecera, en vez de una tarjeta blanca
+   flotando debajo del todo. Siempre visible (a diferencia de los enlaces
+   de .age-nav-links, que en móvil quedan ocultos tras el menú hamburguesa). */
+.age-volver-zona-btn {
+  width: 38px;
+  height: 38px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px 8px 12px;
-  border-radius: var(--age-radius-pill);
-  background: var(--age-card);
-  border: 1px solid var(--age-border);
-  color: var(--age-ink-soft);
-  font-size: 13.5px;
-  font-weight: 600;
-  text-decoration: none;
-  box-shadow: var(--age-shadow);
-  transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease), transform 0.2s var(--age-ease);
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--age-primary-light);
+  flex-shrink: 0;
+  transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease);
 }
 
-.age-volver-zona:hover {
-  background: var(--age-primary-soft);
-  color: var(--age-primary-dark);
-  transform: translateX(-2px);
-}
-
-@media (max-width: 480px) {
-  .age-volver-zona-wrap {
-    padding: 0 14px;
-  }
+.age-volver-zona-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 /* ---------- Buscador global (temas + documentos) ---------- */

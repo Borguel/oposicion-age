@@ -477,20 +477,22 @@ const PAGINAS_CON_VOLVER_ZONA_OPOSITOR = [
 ];
 
 function inyectarVolverZonaOpositor(user) {
-  const existente = document.querySelector(".age-volver-zona-wrap");
+  const right = document.getElementById("age-nav-right");
+  if (!right) return;
+  const existente = right.querySelector(".age-volver-zona-btn");
   if (existente) existente.remove();
   if (!user) return;
 
   const ruta = window.location.pathname;
   if (!PAGINAS_CON_VOLVER_ZONA_OPOSITOR.some((prefijo) => ruta.startsWith(prefijo))) return;
 
-  const nav = document.querySelector(".age-nav");
-  if (!nav) return;
-
-  const wrap = document.createElement("div");
-  wrap.className = "age-volver-zona-wrap";
-  wrap.innerHTML = `<a class="age-volver-zona" href="/zona-opositor/">${icono("atras", 16)} Zona opositor</a>`;
-  nav.insertAdjacentElement("afterend", wrap);
+  const enlace = document.createElement("a");
+  enlace.className = "age-volver-zona-btn";
+  enlace.href = "/zona-opositor/";
+  enlace.setAttribute("aria-label", "Volver a Zona opositor");
+  enlace.title = "Volver a Zona opositor";
+  enlace.innerHTML = icono("atras", 18);
+  right.insertBefore(enlace, right.firstChild);
 }
 
 function inyectarNav(user) {
