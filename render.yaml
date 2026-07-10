@@ -80,13 +80,17 @@ services:
       - path: /*
         name: Strict-Transport-Security
         value: "max-age=31536000; includeSubDomains"
-      # Los ficheros de /assets/ no llevan hash en el nombre, así que se usa
-      # un TTL corto con revalidación en vez de un max-age largo: evita que
-      # un despliegue nuevo deje a los navegadores sirviendo JS/CSS viejo.
-      # 60s (no más) mientras el sitio recibe despliegues frecuentes -- un
-      # max-age más largo hizo que cambios ya desplegados tardaran hasta una
-      # hora en verse reflejados en el navegador de un usuario real.
-      - path: /assets/*
+      # Ningún fichero estático (CSS/JS de /assets/ ni el propio de cada
+      # página, como /estadisticas/style.css) lleva hash en el nombre, así
+      # que se usa un TTL corto con revalidación en vez de un max-age largo
+      # en TODA la web: evita que un despliegue nuevo deje a los navegadores
+      # sirviendo JS/CSS viejo. Antes solo cubría /assets/*, así que los
+      # cambios en el CSS/JS propio de una página tardaban en verse
+      # reflejados aunque /assets/ sí se actualizara al momento. 60s (no
+      # más) mientras el sitio recibe despliegues frecuentes -- un max-age
+      # más largo hizo que cambios ya desplegados tardaran hasta una hora en
+      # verse reflejados en el navegador de un usuario real.
+      - path: /*
         name: Cache-Control
         value: "public, max-age=60, must-revalidate"
       # Sin 'unsafe-inline' en script-src: todo el JS del sitio vive en
