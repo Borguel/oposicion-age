@@ -16,10 +16,12 @@ os.environ.setdefault("SENDGRID_API_KEY", "dummy")
 os.environ.setdefault("SENDGRID_FROM_EMAIL", "test@example.com")
 os.environ.setdefault("FRONTEND_URL", "http://localhost:8080")
 os.environ.setdefault("API_SECRET_KEY", "")
+os.environ.setdefault("RATELIMIT_ENABLED", "false")
 
 import pytest
 
 from tests.fakes import FakeFirestore
+from utils import _limpiar_cache_temario
 
 fake_db = FakeFirestore()
 
@@ -32,6 +34,7 @@ with patch("firebase_admin.credentials.Certificate", return_value=MagicMock()), 
 @pytest.fixture(autouse=True)
 def _limpiar_fake_db():
     fake_db.reset()
+    _limpiar_cache_temario()
     yield
 
 

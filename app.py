@@ -3,6 +3,8 @@ import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_talisman import Talisman
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
 # Logging estructurado (con nivel y hora) en vez de print(): así se puede
@@ -61,6 +63,24 @@ Talisman(
     content_security_policy={"default-src": "'none'"},
     referrer_policy="strict-origin-when-cross-origin",
     frame_options="DENY",
+)
+
+# Límite de peticiones por IP para tráfico que no pasa por el control de
+# cuota de IA de limites_uso.py (que solo cubre a usuarios ya logueados):
+# sobre todo /health, que no exige autenticación y hace una lectura real a
+# Firestore en cada llamada. storage_uri="memory://" porque Render (plan
+# gratuito) corre un único proceso -- no hace falta un backend compartido
+# como Redis para que el límite sea efectivo.
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["200 per hour"],
+    storage_uri="memory://",
+    # Desactivado en tests (ver conftest.py): con cientos de peticiones de
+    # test client en una misma sesión de pytest, todas "desde la misma IP",
+    # se dispararía el límite real y los tests empezarían a fallar por un
+    # 429 que no tiene nada que ver con lo que cada test comprueba.
+    enabled=os.getenv("RATELIMIT_ENABLED", "true").lower() != "false",
 )
 
 # Tamaño máximo de subida (20 MB): un PDF de exámenes normal pesa unos pocos
@@ -128,6 +148,7 @@ def listar_rutas():
 
 
 @app.route("/health", methods=["GET"])
+@limiter.limit("30 per minute")
 def estado_salud():
     """Sin autenticación a propósito: la usa el monitor externo (GitHub
     Actions, o el que sea) para comprobar que el backend responde, y de

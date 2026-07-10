@@ -61,6 +61,10 @@ class FakeDocumentRef:
     def id(self):
         return self._path[-1]
 
+    @property
+    def path(self):
+        return "/".join(self._path)
+
     def get(self, transaction=None):
         # transaction se acepta (y se ignora) solo para que la misma
         # llamada `ref.get(transaction=transaction)` del código de
@@ -218,6 +222,16 @@ class FakeFirestore:
 
     def collection_group(self, nombre):
         return FakeCollectionGroupRef(self._store, nombre)
+
+    def get_all(self, refs):
+        # A diferencia del cliente real (que no garantiza que el orden de
+        # las instantáneas devueltas coincida con el de "refs" -- hay que
+        # emparejarlas por su .path/.reference, no por posición), este
+        # fake sí puede devolverlas en el mismo orden sin que eso oculte
+        # ningún bug: es un detalle de red del servidor real que aquí no
+        # existe, y el código de producción que llama a get_all ya empareja
+        # por referencia, así que da igual el orden que se use aquí.
+        return [ref.get() for ref in refs]
 
     def transaction(self):
         return FakeTransaction()

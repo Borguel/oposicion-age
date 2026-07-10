@@ -13,6 +13,7 @@ distro==1.9.0
 firebase-admin==6.9.0
 Flask==3.1.1
 flask-cors==6.0.1
+Flask-Limiter==4.1.1
 flask-talisman==1.1.0
 google-api-core==2.25.0
 google-api-python-client==2.172.0

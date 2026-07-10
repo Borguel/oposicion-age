@@ -213,11 +213,13 @@ def obtener_estadisticas_completas_usuario(db, usuario_id, oposicion=OPOSICION_P
         datos = user_doc.to_dict()
         stats = (datos.get("estadisticas", {}) or {}).get(oposicion, {}) or {}
 
-        # Contar elementos en cada subcolección
-        tests_pdf_count = len(list(user_ref.collection("tests_pdf").stream()))
-        resumenes_pdf_count = len(list(user_ref.collection("resumenes_pdf").stream()))
-        esquemas_pdf_count = len(list(user_ref.collection("esquemas_pdf").stream()))
-        tarjetas_pdf_count = len(list(user_ref.collection("tarjetas_pdf").stream()))
+        # Contar elementos en cada subcolección con una consulta de
+        # agregación (.count()) en vez de traer todos los documentos
+        # completos solo para contarlos con len(list(...)).
+        tests_pdf_count = user_ref.collection("tests_pdf").count().get()[0][0].value
+        resumenes_pdf_count = user_ref.collection("resumenes_pdf").count().get()[0][0].value
+        esquemas_pdf_count = user_ref.collection("esquemas_pdf").count().get()[0][0].value
+        tarjetas_pdf_count = user_ref.collection("tarjetas_pdf").count().get()[0][0].value
 
         estadisticas = {
             "oposicion": oposicion,

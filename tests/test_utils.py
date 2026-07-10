@@ -3,7 +3,12 @@ respuesta correcta en la opción A con mucha más frecuencia de la que
 correspondería al azar, así que hay que barajar la posición de las 4
 opciones tras generarlas (y remapear "respuesta_correcta" y la explicación
 para que sigan señalando a la opción correcta)."""
-from utils import barajar_opciones_pregunta
+from utils import (
+    barajar_opciones_pregunta,
+    obtener_catalogo_temas,
+    obtener_titulos_temas_reales,
+    _limpiar_cache_temario,
+)
 
 
 def _pregunta_base():
@@ -73,3 +78,39 @@ def test_no_toca_explicacion_que_no_sigue_el_formato_por_letra():
     original["explicacion"] = "La respuesta correcta es la A porque así lo dice la ley."
     resultado = barajar_opciones_pregunta(dict(original, opciones=dict(original["opciones"])))
     assert resultado["explicacion"] == "La respuesta correcta es la A porque así lo dice la ley."
+
+
+def test_obtener_catalogo_temas_usa_cache_hasta_que_se_limpia(db):
+    db.collection("Test").document("bloque_01").set({"titulo": "Bloque uno"})
+    db.collection("Test").document("bloque_01").collection("temas").document("tema_01").set({"titulo": "Tema uno"})
+
+    primera_llamada = obtener_catalogo_temas(db, "Test")
+    assert len(primera_llamada) == 1
+
+    # Se añade un tema nuevo directamente en Firestore, SIN pasar por la
+    # caché -- la siguiente llamada debe seguir viendo el resultado
+    # cacheado (1 tema), no el dato fresco (2 temas), porque el TTL
+    # todavía no ha vencido.
+    db.collection("Test").document("bloque_01").collection("temas").document("tema_02").set({"titulo": "Tema dos"})
+    segunda_llamada = obtener_catalogo_temas(db, "Test")
+    assert len(segunda_llamada) == 1
+
+    # Al limpiar la caché (lo que hace el fixture autouse entre tests),
+    # la siguiente llamada sí debe recalcular y ver el dato fresco.
+    _limpiar_cache_temario()
+    tercera_llamada = obtener_catalogo_temas(db, "Test")
+    assert len(tercera_llamada) == 2
+
+
+def test_obtener_titulos_temas_reales_traduce_codigos_via_get_all(db):
+    db.collection("Test").document("bloque_01").collection("temas").document("tema_01").set({"titulo": "Constitución"})
+    db.collection("Test").document("bloque_02").collection("temas").document("tema_01").set({"titulo": "Poder Judicial"})
+
+    resultado = obtener_titulos_temas_reales(db, "Test", [
+        "bloque_01-tema_01",
+        "bloque_02-tema_01",
+        "bloque_09-tema_09",  # no existe en Firestore -> se conserva el código
+        "sin_guion_medio",     # formato inesperado -> se conserva tal cual
+    ])
+
+    assert resultado == ["Constitución", "Poder Judicial", "bloque_09-tema_09", "sin_guion_medio"]

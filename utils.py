@@ -1,5 +1,6 @@
 import random
 import re
+import time
 import tiktoken
 from typing import List, Dict
 from google.cloud import firestore
@@ -104,18 +105,49 @@ def obtener_contexto_por_temas(db, temas, token_limit=3000, coleccion="Temario A
 
     return contexto_total.strip()
 
+# El temario apenas cambia (solo cuando se recarga a mano desde un script),
+# así que catálogo y resumen se cachean en memoria un rato en vez de
+# recorrer TODO el temario en cada mensaje de Tu Tutor o cada llamada a
+# /temas-disponibles.
+_CACHE_TEMARIO = {}
+_TTL_CACHE_TEMARIO_SEGUNDOS = 300
+
+
+def _limpiar_cache_temario():
+    """Vacía la caché en memoria del catálogo/resumen de temario. Se
+    engancha al fixture autouse de tests (ver conftest.py) para que cada
+    test siga viendo datos frescos del FakeFirestore, que sí se resetea
+    por test -- sin esto, el primer test que llenase la caché dejaría
+    datos obsoletos para los siguientes."""
+    _CACHE_TEMARIO.clear()
+
+
+def _desde_cache_o_calcular(clave, calcular):
+    ahora = time.time()
+    en_cache = _CACHE_TEMARIO.get(clave)
+    if en_cache is not None:
+        timestamp, valor = en_cache
+        if ahora - timestamp < _TTL_CACHE_TEMARIO_SEGUNDOS:
+            return valor
+    valor = calcular()
+    _CACHE_TEMARIO[clave] = (ahora, valor)
+    return valor
+
+
 # ✅ Catálogo (bloque + tema, con sus títulos) de una oposición, para poder
 # detectar si un mensaje del usuario menciona un tema concreto sin tener
 # que descargar el contenido completo del temario.
 def obtener_catalogo_temas(db, coleccion="Temario AGE") -> List[dict]:
-    catalogo = []
-    for bloque in db.collection(coleccion).stream():
-        bloque_titulo = (bloque.to_dict() or {}).get("titulo", bloque.id)
-        temas_ref = db.collection(coleccion).document(bloque.id).collection("temas").stream()
-        for tema in temas_ref:
-            titulo = (tema.to_dict() or {}).get("titulo", tema.id)
-            catalogo.append({"id": f"{bloque.id}-{tema.id}", "titulo": titulo, "bloque_titulo": bloque_titulo})
-    return catalogo
+    def _calcular():
+        catalogo = []
+        for bloque in db.collection(coleccion).stream():
+            bloque_titulo = (bloque.to_dict() or {}).get("titulo", bloque.id)
+            temas_ref = db.collection(coleccion).document(bloque.id).collection("temas").stream()
+            for tema in temas_ref:
+                titulo = (tema.to_dict() or {}).get("titulo", tema.id)
+                catalogo.append({"id": f"{bloque.id}-{tema.id}", "titulo": titulo, "bloque_titulo": bloque_titulo})
+        return catalogo
+    return _desde_cache_o_calcular(("catalogo", coleccion), _calcular)
 
 # ✅ Datos oficiales de la convocatoria vigente (plazas, estructura de los
 # ejercicios, tiempos, penalización, calificación), transcritos a mano de las
@@ -138,29 +170,31 @@ _NUMEROS_ROMANOS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
 # ordena por el id del documento (bloque_01, bloque_02... / tema_01, tema_02...)
 # ya que stream() no garantiza ningún orden.
 def obtener_resumen_temario(db, coleccion="Temario AGE"):
-    bloques = {}
-    for bloque in db.collection(coleccion).stream():
-        bloque_titulo = (bloque.to_dict() or {}).get("titulo", bloque.id)
-        temas = []
-        for tema in db.collection(coleccion).document(bloque.id).collection("temas").stream():
-            titulo = (tema.to_dict() or {}).get("titulo", tema.id)
-            temas.append((tema.id, titulo))
-        if not temas:
-            continue
-        temas.sort(key=lambda t: t[0])
-        bloques[bloque.id] = (bloque_titulo, temas)
+    def _calcular():
+        bloques = {}
+        for bloque in db.collection(coleccion).stream():
+            bloque_titulo = (bloque.to_dict() or {}).get("titulo", bloque.id)
+            temas = []
+            for tema in db.collection(coleccion).document(bloque.id).collection("temas").stream():
+                titulo = (tema.to_dict() or {}).get("titulo", tema.id)
+                temas.append((tema.id, titulo))
+            if not temas:
+                continue
+            temas.sort(key=lambda t: t[0])
+            bloques[bloque.id] = (bloque_titulo, temas)
 
-    if not bloques:
-        return None
+        if not bloques:
+            return None
 
-    lineas = []
-    for indice, bloque_id in enumerate(sorted(bloques.keys())):
-        bloque_titulo, temas = bloques[bloque_id]
-        numero_romano = _NUMEROS_ROMANOS[indice] if indice < len(_NUMEROS_ROMANOS) else str(indice + 1)
-        lineas.append(f"Bloque {numero_romano}. {bloque_titulo} ({len(temas)} temas)")
-        for numero, (_tema_id, titulo) in enumerate(temas, start=1):
-            lineas.append(f"  {numero}. {titulo}")
-    return "\n".join(lineas)
+        lineas = []
+        for indice, bloque_id in enumerate(sorted(bloques.keys())):
+            bloque_titulo, temas = bloques[bloque_id]
+            numero_romano = _NUMEROS_ROMANOS[indice] if indice < len(_NUMEROS_ROMANOS) else str(indice + 1)
+            lineas.append(f"Bloque {numero_romano}. {bloque_titulo} ({len(temas)} temas)")
+            for numero, (_tema_id, titulo) in enumerate(temas, start=1):
+                lineas.append(f"  {numero}. {titulo}")
+        return "\n".join(lineas)
+    return _desde_cache_o_calcular(("resumen", coleccion), _calcular)
 
 # ✅ Contexto de temas identificados por su id combinado "bloque_id-tema_id"
 # (a diferencia de obtener_contexto_por_temas, que solo recibe el tema_id y
@@ -290,16 +324,31 @@ def obtener_titulos_temas_reales(db, coleccion, lista_codigos):
     """Traduce códigos "bloque-tema" (p. ej. "bloque_01-tema_02") a sus
     títulos reales guardados en Firestore -- la misma fuente que usa
     /temas-disponibles -- en vez de una lista fija en el código que solo
-    cubría los temas de AGE y no servía para el resto de oposiciones."""
-    titulos = []
-    for codigo in lista_codigos:
+    cubría los temas de AGE y no servía para el resto de oposiciones.
+
+    Antes hacía un .get() por código en un bucle (N peticiones a
+    Firestore para N códigos); ahora se piden todos de una vez con
+    get_all(), una sola llamada. get_all() no garantiza que el orden de
+    las instantáneas devueltas coincida con el de las referencias
+    pedidas, así que se emparejan por el "path" de cada referencia, no
+    por posición."""
+    titulos = [None] * len(lista_codigos)
+    refs = []
+    por_path = {}
+    for indice, codigo in enumerate(lista_codigos):
         partes = codigo.split("-", 1)
         if len(partes) < 2:
-            titulos.append(codigo)
+            titulos[indice] = codigo
             continue
         bloque_id, tema_id = partes
-        doc = db.collection(coleccion).document(bloque_id).collection("temas").document(tema_id).get()
-        titulos.append(doc.to_dict().get("titulo", codigo) if doc.exists else codigo)
+        ref = db.collection(coleccion).document(bloque_id).collection("temas").document(tema_id)
+        refs.append(ref)
+        por_path[ref.path] = (indice, codigo)
+
+    for doc in db.get_all(refs):
+        indice, codigo = por_path[doc.reference.path]
+        titulos[indice] = doc.to_dict().get("titulo", codigo) if doc.exists else codigo
+
     return titulos
 
 
