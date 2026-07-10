@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
-from firebase_admin import firestore
-from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_estadisticas_esquema, registrar_actividad_racha
+from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_estadisticas_esquema, actualizar_estadisticas_pdf, registrar_actividad_racha
 from oposiciones import OPOSICION_POR_DEFECTO
 from documentos_pdf import marcar_generado
 from banco_fallos import actualizar_banco_fallos
@@ -125,7 +124,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             "tipo": "test_pdf",
             "metadatos": metadatos
         })
-        actualizar_estadisticas_usuario(db, usuario_id, "test_pdf")
+        actualizar_estadisticas_pdf(db, usuario_id, "test_pdf")
         if documento_id:
             marcar_generado(db, usuario_id, documento_id, "test_pdf")
 
@@ -142,7 +141,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             "tipo": "resumen_pdf",
             "metadatos": metadatos
         })
-        actualizar_estadisticas_usuario(db, usuario_id, "resumen_pdf")
+        actualizar_estadisticas_pdf(db, usuario_id, "resumen_pdf")
         if documento_id:
             marcar_generado(db, usuario_id, documento_id, "resumen_pdf")
 
@@ -159,7 +158,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             "tipo": "esquema_pdf",
             "metadatos": metadatos
         })
-        actualizar_estadisticas_usuario(db, usuario_id, "esquema_pdf")
+        actualizar_estadisticas_pdf(db, usuario_id, "esquema_pdf")
         if documento_id:
             marcar_generado(db, usuario_id, documento_id, "esquema_pdf")
 
@@ -176,49 +175,9 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             "tipo": "tarjetas_pdf",
             "metadatos": metadatos
         })
-        actualizar_estadisticas_usuario(db, usuario_id, "tarjetas_pdf")
+        actualizar_estadisticas_pdf(db, usuario_id, "tarjetas_pdf")
         if documento_id:
             marcar_generado(db, usuario_id, documento_id, "tarjetas_pdf", num_tarjetas_nuevas=len(contenido))
-
-def actualizar_estadisticas_usuario(db, usuario_id, tipo):
-    """Actualizar estadísticas del usuario cuando guarda contenido desde PDF (NUEVO)"""
-    try:
-        user_ref = db.collection("usuarios").document(usuario_id)
-        user_doc = user_ref.get()
-        
-        if not user_doc.exists:
-            # Crear documento de usuario si no existe
-            user_ref.set({
-                "fecha_creacion": datetime.utcnow().isoformat(),
-                "tests_pdf_realizados": 0,
-                "resumenes_pdf_realizados": 0,
-                "esquemas_pdf_realizados": 0,
-                "tarjetas_pdf_realizados": 0,
-                "total_archivos_procesados": 0,
-                "ultima_actividad": datetime.utcnow().isoformat()
-            })
-            return
-        
-        # Actualizar contadores según el tipo
-        field_updates = {
-            "ultima_actividad": datetime.utcnow().isoformat()
-        }
-        
-        if tipo == "test_pdf":
-            field_updates["tests_pdf_realizados"] = firestore.Increment(1)
-        elif tipo == "resumen_pdf":
-            field_updates["resumenes_pdf_realizados"] = firestore.Increment(1)
-        elif tipo == "esquema_pdf":
-            field_updates["esquemas_pdf_realizados"] = firestore.Increment(1)
-        elif tipo == "tarjetas_pdf":
-            field_updates["tarjetas_pdf_realizados"] = firestore.Increment(1)
-        
-        field_updates["total_archivos_procesados"] = firestore.Increment(1)
-        
-        user_ref.update(field_updates)
-        
-    except Exception as e:
-        logger.exception("Error actualizando estadísticas del usuario")
 
 def _total_blancos_usuario(user_ref, oposicion):
     """Suma las preguntas dejadas en blanco en todos los tests finalizados de

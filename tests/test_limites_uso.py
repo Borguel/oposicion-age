@@ -64,3 +64,27 @@ def test_plan_premium_tiene_cuota_diaria_no_mensual(db):
 
 def test_max_paginas_por_plan_tiene_valor_por_defecto_para_plan_desconocido():
     assert max_paginas_para_plan("plan-inexistente") == max_paginas_para_plan("gratis")
+
+
+def test_registrar_uso_pasa_de_verdad_por_una_transaccion(db):
+    # No es practicable simular con hilos una condición de carrera real en
+    # este harness síncrono -- esta prueba comprueba en su lugar que
+    # registrar_uso pasa de verdad por db.transaction() (la vía que la
+    # hace atómica frente a otra petición concurrente en producción, con
+    # @firestore.transactional) en vez de seguir haciendo un get()+update()
+    # suelto como antes.
+    llamadas = []
+    transaction_original = db.transaction
+
+    def transaction_espia():
+        llamadas.append(1)
+        return transaction_original()
+
+    db.transaction = transaction_espia
+    try:
+        registrar_uso(db, "u1", "pdf_ia", "basico")
+    finally:
+        db.transaction = transaction_original
+
+    assert len(llamadas) == 1
+    assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1

@@ -15,6 +15,8 @@ Dos capas de protección:
 """
 from datetime import date
 
+from utils import ejecutar_en_transaccion
+
 MAX_PAGINAS_POR_PLAN = {"gratis": 40, "basico": 200, "premium": 200}
 
 # Cada entrada es (periodo, límite). periodo: "dia" o "mes".
@@ -97,15 +99,25 @@ def verificar_limite_uso(db, uid, plan, tipo):
 def registrar_uso(db, uid, tipo, plan):
     """Suma 1 al contador del periodo actual. Se llama solo cuando la
     llamada a la IA se ha realizado de verdad (para no penalizar intentos
-    que fallan antes, p. ej. un PDF sin texto extraíble)."""
+    que fallan antes, p. ej. un PDF sin texto extraíble).
+
+    Lectura (contador actual, con su posible reinicio de periodo) y
+    escritura (contador+1) van dentro de la misma transacción de Firestore
+    -- sin esto, dos peticiones concurrentes del mismo usuario (dos
+    pestañas, un reintento del frontend) podían leer el mismo contador y
+    perder un incremento, dejando que se superase la cuota."""
     config = LIMITES.get(tipo, {}).get(plan)
     if not config:
         return
     periodo, _limite = config
     clave = _clave_periodo(periodo)
     ref = db.collection("usuarios").document(uid)
-    doc = ref.get()
-    datos = doc.to_dict() or {}
-    uso = ((datos.get("limites_uso") or {}).get(tipo)) or {}
-    usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
-    ref.update({f"limites_uso.{tipo}": {"periodo": clave, "contador": usados + 1}})
+
+    def _incrementar(transaction):
+        doc = ref.get(transaction=transaction)
+        datos = doc.to_dict() or {}
+        uso = ((datos.get("limites_uso") or {}).get(tipo)) or {}
+        usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
+        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": usados + 1}})
+
+    ejecutar_en_transaccion(db, _incrementar)

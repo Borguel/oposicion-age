@@ -61,7 +61,11 @@ class FakeDocumentRef:
     def id(self):
         return self._path[-1]
 
-    def get(self):
+    def get(self, transaction=None):
+        # transaction se acepta (y se ignora) solo para que la misma
+        # llamada `ref.get(transaction=transaction)` del código de
+        # producción funcione igual contra este fake que contra el
+        # cliente real -- ver FakeTransaction más abajo.
         return FakeDocumentSnapshot(self._path[-1], self._store.get(self._path), self._store, self._path)
 
     def set(self, datos, merge=False):
@@ -171,6 +175,37 @@ class FakeCollectionGroupRef:
                     yield FakeDocumentSnapshot(path[-1], datos, self._store, path)
 
 
+class FakeTransaction:
+    """Transacción simulada. El SDK real de Firestore usa
+    @firestore.transactional (que exige métodos internos como _begin/
+    _commit/_rollback de un google.cloud.firestore_v1.transaction.Transaction
+    de verdad) para dar atomicidad frente a otra petición concurrente --
+    algo que no existe en este fake de un solo hilo, donde los tests se
+    ejecutan siempre en secuencia, nunca en paralelo. Por eso el código de
+    producción que necesite una transacción real pasa por
+    utils.ejecutar_en_transaccion, que con el cliente real delega en
+    @firestore.transactional y con este fake simplemente llama a la
+    función directamente: no hace falta simular aislamiento/rollback para
+    que el resultado sea correcto en un test secuencial, esa garantía
+    frente a concurrencia real la da el servidor de Firestore, no el
+    fake. Aun así, expone la misma superficie mínima (get/set/update/
+    delete) que una Transaction real, delegando en el propio
+    FakeDocumentRef, para que el código de producción no tenga que
+    distinguir entre una y otra."""
+
+    def get(self, ref):
+        return ref.get()
+
+    def set(self, ref, datos, merge=False):
+        ref.set(datos, merge=merge)
+
+    def update(self, ref, datos):
+        ref.update(datos)
+
+    def delete(self, ref):
+        ref.delete()
+
+
 class FakeFirestore:
     """Sustituye a firestore.client(): db.collection("x") es el único punto
     de entrada real que usa el resto del código."""
@@ -183,6 +218,9 @@ class FakeFirestore:
 
     def collection_group(self, nombre):
         return FakeCollectionGroupRef(self._store, nombre)
+
+    def transaction(self):
+        return FakeTransaction()
 
     def reset(self):
         self._store.clear()

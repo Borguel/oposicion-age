@@ -121,3 +121,34 @@ def test_actualizar_estadisticas_test_usa_formula_oficial(db):
     assert stats["tests_aprobados"] == 0
     assert stats["tests_suspendidos"] == 1
     assert stats["historial_tests"][-1]["resultado"] == "suspendido"
+
+
+def test_actualizar_estadisticas_test_acumula_en_llamadas_sucesivas_y_usa_transaccion(db):
+    # No es practicable simular con hilos una condición de carrera real en
+    # este harness síncrono -- esta prueba comprueba (a) que la función
+    # pasa de verdad por db.transaction() y (b) que dos llamadas sucesivas
+    # siguen acumulando el mismo total que antes de hacerla transaccional
+    # (regresión de comportamiento).
+    db.sembrar(("usuarios", "u1"), {})
+    llamadas = []
+    transaction_original = db.transaction
+
+    def transaction_espia():
+        llamadas.append(1)
+        return transaction_original()
+
+    db.transaction = transaction_espia
+    try:
+        actualizar_estadisticas_test(db, "u1", "AGE", aciertos=8, fallos=2, temas=["tema_01"], tiempo_en_segundos=60, blancos=0)
+        actualizar_estadisticas_test(db, "u1", "AGE", aciertos=5, fallos=5, temas=["tema_02"], tiempo_en_segundos=30, blancos=0)
+    finally:
+        db.transaction = transaction_original
+
+    assert len(llamadas) == 2
+    stats = db.leer(("usuarios", "u1"))["estadisticas"]["AGE"]
+    assert stats["tests_realizados"] == 2
+    assert stats["total_aciertos"] == 13
+    assert stats["total_fallos"] == 7
+    assert stats["tiempo_total"] == 90
+    assert set(stats["temas_test"]) == {"tema_01", "tema_02"}
+    assert len(stats["historial_tests"]) == 2

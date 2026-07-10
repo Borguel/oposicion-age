@@ -2,6 +2,7 @@ import random
 import re
 import tiktoken
 from typing import List, Dict
+from google.cloud import firestore
 
 # ✅ Cuenta los tokens de un texto
 def contar_tokens(texto: str, modelo="gpt-3.5-turbo") -> int:
@@ -10,6 +11,29 @@ def contar_tokens(texto: str, modelo="gpt-3.5-turbo") -> int:
     except KeyError:
         encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(texto))
+
+
+def ejecutar_en_transaccion(db, fn):
+    """Ejecuta fn(transaction) dentro de una transacción de Firestore, para
+    que una lectura seguida de una escritura (p. ej. "lee el contador,
+    súmale 1, escribe") sea atómica frente a otra petición concurrente del
+    mismo usuario (dos pestañas, un reintento del frontend) -- sin esto,
+    dos peticiones podían leer el mismo valor y perder un incremento.
+
+    Con el cliente real de Firestore, delega en @firestore.transactional
+    (reintentos automáticos ante conflictos incluidos). El FakeFirestore
+    de los tests no tiene esa maquinaria (exigiría replicar métodos
+    internos de la Transaction real solo para simular una concurrencia que
+    no existe en un test secuencial de un solo hilo), así que ahí se
+    detecta por duck typing (ver FakeTransaction en tests/fakes.py) y se
+    llama a fn directamente."""
+    transaction = db.transaction()
+    if hasattr(transaction, "_begin"):
+        @firestore.transactional
+        def _en_transaccion_real(transaction):
+            return fn(transaction)
+        return _en_transaccion_real(transaction)
+    return fn(transaction)
 
 # ✅ Agrupa subbloques por tema para prompts largos (estructura anterior, por si la usas aún)
 def agrupar_subbloques_por_tema(db, temas: List[str], limite_tokens=3000, coleccion="Temario AGE") -> Dict[str, List[List[dict]]]:
