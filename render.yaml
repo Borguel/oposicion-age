@@ -3,7 +3,13 @@ services:
     name: oposicion-age
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    # Corre la suite de tests como parte del propio build: si algo falla,
+    # el build falla y Render mantiene desplegada la versión anterior en
+    # vez de sustituirla por una rota (antes, Render redesplegaba en cada
+    # push sin que el resultado de los tests tuviera ninguna influencia).
+    # requirements-dev.txt ya incluye "-r requirements.txt", así que
+    # instala todo lo necesario en un solo paso.
+    buildCommand: pip install -r requirements-dev.txt && python -m pytest -q
     startCommand: python app.py
     envVars:
       - key: PYTHON_VERSION

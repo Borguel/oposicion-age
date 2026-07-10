@@ -1,0 +1,46 @@
+name: Backup de Firestore
+
+# No hay ninguna estrategia de backup/recuperación de Firestore hoy: toda
+# la recuperación depende de la durabilidad nativa de Firestore, sin red
+# de seguridad frente a un borrado masivo por error (el propio patrón
+# "borra y recrea todos los subbloques" que ya usan los scripts de carga
+# de temario). Este workflow exporta toda la base de datos a un bucket de
+# Google Cloud Storage semanalmente.
+#
+# Para que funcione hace falta configurar, una sola vez, en este
+# repositorio (Settings -> Secrets and variables -> Actions):
+#   - Variable GCP_PROJECT_ID: el id del proyecto de Firebase/GCP.
+#   - Variable GCP_BACKUP_BUCKET: nombre del bucket de GCS donde se
+#     guardan los backups (créalo antes, en la misma región que Firestore
+#     para evitar coste de transferencia entre regiones).
+#   - Secret GCP_SERVICE_ACCOUNT_KEY: clave JSON de una cuenta de
+#     servicio de GCP con el rol "Cloud Datastore Import Export Admin"
+#     (roles/datastore.importExportAdmin) sobre ese proyecto, y permiso de
+#     escritura sobre el bucket (roles/storage.objectAdmin en el bucket).
+# Sin esto configurado, el workflow falla en el paso de autenticación --
+# no hace nada silenciosamente.
+on:
+  schedule:
+    # Domingos a las 03:00 UTC: fuera de horario de uso normal.
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+jobs:
+  exportar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Autenticar con Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Configurar gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Exportar Firestore al bucket de backup
+        run: |
+          fecha=$(date -u +%Y-%m-%dT%H-%M-%SZ)
+          gcloud firestore export "gs://${{ vars.GCP_BACKUP_BUCKET }}/backups/$fecha" \
+            --project="${{ vars.GCP_PROJECT_ID }}"

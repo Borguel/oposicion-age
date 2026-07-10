@@ -147,19 +147,37 @@ def listar_rutas():
     return jsonify({"rutas_disponibles": rutas})
 
 
+_VARIABLES_CRITICAS = [
+    "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
+    "DEEPSEEK_API_KEY", "SENDGRID_API_KEY",
+]
+
+
 @app.route("/health", methods=["GET"])
 @limiter.limit("30 per minute")
 def estado_salud():
     """Sin autenticación a propósito: la usa el monitor externo (GitHub
     Actions, o el que sea) para comprobar que el backend responde, y de
     paso sirve de "keep-alive" en el plan gratuito de Render, que duerme
-    el servicio tras un rato de inactividad."""
+    el servicio tras un rato de inactividad.
+
+    Además de comprobar Firestore con una lectura real, comprueba que las
+    variables de entorno de Stripe/DeepSeek/SendGrid están configuradas
+    -- SIN hacer ninguna llamada de red real a esos servicios (más lento,
+    más caro en cada ping, y un fallo transitorio ajeno marcaría el
+    backend entero como "unhealthy" sin que lo esté). El caso real que
+    esto detecta es una variable de entorno que se quedó sin rellenar
+    tras un redeploy, no una caída puntual de un proveedor externo."""
+    faltantes = [var for var in _VARIABLES_CRITICAS if not os.getenv(var)]
     try:
         next(db.collection("usuarios").limit(1).stream(), None)
-        return jsonify({"estado": "ok"})
     except Exception:
         logger.exception("Fallo en /health comprobando Firestore")
-        return jsonify({"estado": "error"}), 503
+        return jsonify({"estado": "error", "firestore": "error", "variables_faltantes": faltantes}), 503
+    if faltantes:
+        logger.warning("/health: variables de entorno sin configurar: %s", faltantes)
+        return jsonify({"estado": "error", "firestore": "ok", "variables_faltantes": faltantes}), 503
+    return jsonify({"estado": "ok"})
 
 
 if __name__ == "__main__":

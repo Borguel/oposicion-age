@@ -24,7 +24,21 @@ def test_health_devuelve_503_si_firestore_falla(client):
     with patch("app.db.collection", side_effect=RuntimeError("caído")):
         resp = client.get("/health")
         assert resp.status_code == 503
-        assert resp.get_json() == {"estado": "error"}
+        datos = resp.get_json()
+        assert datos["estado"] == "error"
+        assert datos["firestore"] == "error"
+
+
+def test_health_devuelve_503_si_falta_una_variable_critica(client, monkeypatch):
+    # Firestore sigue respondiendo bien -- el fallo es solo de
+    # configuración (p. ej. una variable que se quedó sin rellenar tras
+    # un redeploy), sin llamar de verdad a Stripe/DeepSeek/SendGrid.
+    monkeypatch.delenv("STRIPE_SECRET_KEY", raising=False)
+    resp = client.get("/health")
+    assert resp.status_code == 503
+    datos = resp.get_json()
+    assert datos["firestore"] == "ok"
+    assert "STRIPE_SECRET_KEY" in datos["variables_faltantes"]
 
 
 def test_limiter_corta_pasado_el_limite_por_ip():
