@@ -10,11 +10,11 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/f
 // Solo empieza a capturar si el usuario ya aceptó el aviso de cookies
 // (misma clave que usa el banner de auth.js) -- nunca antes.
 //
-// Para activarla de verdad: rellena POSTHOG_API_KEY y POSTHOG_HOST con los
-// datos del proyecto de PostHog (Project Settings -> Project API Key).
-// Mientras POSTHOG_API_KEY esté vacío, este módulo no hace nada.
-const POSTHOG_API_KEY = "";
-const POSTHOG_HOST = "https://eu.i.posthog.com";
+// Proyecto en US Cloud (PostHog no permite migrar de región un proyecto ya
+// creado en US a EU; ver frontend/cookies/index.html para el aviso legal
+// correspondiente a esta región).
+const POSTHOG_API_KEY = "phc_zyxhPxbzZ5n9FEdDvTPuS6UF2DK9HCGhRHwHvnciyyAC";
+const POSTHOG_HOST = "https://us.i.posthog.com";
 
 export const CLAVE_COOKIES_ACEPTADAS = "age_cookies_aceptadas";
 const EVENTO_COOKIES_ACEPTADAS = "age-cookies-aceptadas";
