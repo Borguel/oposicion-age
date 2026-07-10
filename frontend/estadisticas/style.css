@@ -808,19 +808,22 @@
     .calendario-dias-semana {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 5px;
+      gap: 8px;
       margin: 14px auto 0;
       text-align: center;
       /* Mismo max-width y márgenes que .calendario-grafica -- si no, esta
          fila ocupa todo el ancho de la tarjeta mientras que la rejilla de
          días de abajo tiene un ancho distinto, y las 7 columnas de cada
          una acaban en posiciones distintas (las letras L M X... no
-         quedan encima de su columna de números). */
-      max-width: 340px;
+         quedan encima de su columna de números). Este tamaño de base es
+         para tablet/escritorio -- la tarjeta ocupa toda la fila del grid
+         (grid-column: 1/-1) y a 340px fijos quedaba minúscula rodeada de
+         hueco vacío; en móvil se reduce de vuelta más abajo. */
+      max-width: 520px;
     }
 
     .calendario-dias-semana span {
-      font-size: 0.78rem;
+      font-size: 0.85rem;
       font-weight: 700;
       color: var(--age-ink-faint);
     }
@@ -828,21 +831,38 @@
     .calendario-grafica {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
+      gap: 8px;
       margin: 6px auto 0;
-      max-width: 340px;
+      max-width: 520px;
     }
 
     .calendario-celda {
       width: 100%;
       aspect-ratio: 1;
-      border-radius: 6px;
+      border-radius: 8px;
       background: var(--age-neutral-bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 13px;
+      font-size: 15px;
       color: var(--age-ink-faint);
+    }
+
+    @media (max-width: 640px) {
+      .calendario-dias-semana,
+      .calendario-grafica {
+        max-width: 340px;
+        gap: 5px;
+      }
+
+      .calendario-dias-semana span {
+        font-size: 0.78rem;
+      }
+
+      .calendario-celda {
+        border-radius: 6px;
+        font-size: 13px;
+      }
     }
 
     .calendario-celda.vacia {

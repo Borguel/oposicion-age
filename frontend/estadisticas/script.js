@@ -184,7 +184,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("aciertos").textContent = totalAciertos;
     document.getElementById("fallos").textContent = totalFallos;
     document.getElementById("blancos").textContent = totalBlancos;
-    document.getElementById("esquemas").textContent = esquemas;
     document.getElementById("tiempo").textContent = `${horas}h ${minutos}m`;
     document.getElementById("temas-nuevos").textContent = noEstudiados.length;
 
