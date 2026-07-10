@@ -1,0 +1,100 @@
+"""Pruebas de blueprints/temario.py: catálogo de oposiciones y su
+temario -- sin ningún test dedicado hasta ahora pese a ser la fuente que
+usan Tu Tutor y el selector de temas del resto de la web."""
+from unittest.mock import patch
+
+
+def _con_sesion(cliente, uid="u1", email="u1@example.com"):
+    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
+    parche.start()
+    return parche
+
+
+def test_oposiciones_disponibles_no_requiere_login(client):
+    resp = client.get("/oposiciones-disponibles")
+    assert resp.status_code == 200
+    ids = [o["id"] for o in resp.get_json()["oposiciones"]]
+    assert "AGE" in ids
+    assert "GACE" in ids
+
+
+def test_temas_disponibles_requiere_login(client):
+    resp = client.get("/temas-disponibles")
+    assert resp.status_code == 401
+
+
+def test_temas_disponibles_devuelve_bloque_y_tema(client, db):
+    db.collection("Temario AGE").document("bloque_01").set({"titulo": "Derecho constitucional"})
+    db.collection("Temario AGE").document("bloque_01").collection("temas").document("tema_01").set({"titulo": "La Constitución"})
+
+    parche = _con_sesion(client)
+    try:
+        resp = client.get("/temas-disponibles?oposicion=AGE", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+
+    assert resp.status_code == 200
+    datos = resp.get_json()
+    assert datos["oposicion"] == "AGE"
+    assert datos["temas"] == [{
+        "id": "bloque_01-tema_01",
+        "titulo": "La Constitución",
+        "bloque_id": "bloque_01",
+        "bloque_titulo": "Derecho constitucional",
+    }]
+
+
+def test_temas_disponibles_usa_la_coleccion_de_la_oposicion_pedida(client, db):
+    db.collection("Temario GACE").document("bloque_01").set({"titulo": "Bloque GACE"})
+    db.collection("Temario GACE").document("bloque_01").collection("temas").document("tema_01").set({"titulo": "Tema GACE"})
+    # AGE queda vacío a propósito -- si la ruta ignorase ?oposicion=GACE y
+    # mirase siempre "Temario AGE", esto devolvería una lista vacía.
+
+    parche = _con_sesion(client)
+    try:
+        resp = client.get("/temas-disponibles?oposicion=GACE", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+
+    assert len(resp.get_json()["temas"]) == 1
+
+
+def test_progreso_usuario_requiere_login(client):
+    resp = client.get("/progreso-usuario")
+    assert resp.status_code == 401
+
+
+def test_progreso_usuario_404_si_no_existe(client, db):
+    parche = _con_sesion(client, uid="fantasma")
+    try:
+        resp = client.get("/progreso-usuario", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+    # requiere_login ya crea al usuario en su primera petición autenticada,
+    # así que en la práctica nunca da 404 -- pero si algún día esa garantía
+    # cambiase, la ruta debe seguir respondiendo con un 404 explícito y no
+    # con un error 500 al leer campos de un documento inexistente.
+    assert resp.status_code in (200, 404)
+
+
+def test_progreso_usuario_devuelve_los_campos_esperados(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "tests_realizados": 3,
+        "puntuacion_media_test": 7.5,
+        "ultimo_test": {"aciertos": 8},
+        "total_aciertos": 20,
+        "esquemas_generados": 2,
+    })
+    parche = _con_sesion(client)
+    try:
+        resp = client.get("/progreso-usuario", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+    assert resp.status_code == 200
+    assert resp.get_json() == {
+        "tests_realizados": 3,
+        "puntuacion_media_test": 7.5,
+        "ultimo_test": {"aciertos": 8},
+        "total_aciertos": 20,
+        "esquemas_generados": 2,
+    }

@@ -17,6 +17,25 @@ _REINTENTOS_TRANSITORIOS = 2
 _ESPERA_ENTRE_REINTENTOS_SEGUNDOS = 1.5
 
 
+def _es_error_transitorio(exc):
+    """Decide si un fallo llamando a DeepSeek merece un reintento
+    automático: timeouts y errores de conexión (un simple parpadeo de
+    red) y errores 5xx del propio servidor de DeepSeek -- nunca 4xx (API
+    key inválida, payload mal formado), que no se arreglan reintentando.
+    Se comparte entre call_deepseek_api, generar_con_continuacion y
+    call_deepseek_api_stream para no repetir este criterio tres veces."""
+    if isinstance(exc, requests.exceptions.Timeout):
+        return True
+    if isinstance(exc, requests.exceptions.ConnectionError):
+        return True
+    if isinstance(exc, requests.exceptions.HTTPError):
+        status = exc.response.status_code if exc.response is not None else None
+        return status is not None and status >= 500
+    if isinstance(exc, requests.exceptions.RequestException):
+        return True
+    return False
+
+
 def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False):
     """
     Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.
@@ -49,7 +68,6 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
 
     intentos_restantes = _REINTENTOS_TRANSITORIOS
     while True:
-        transitorio = False
         try:
             response = requests.post(
                 "https://api.deepseek.com/chat/completions",
@@ -87,11 +105,11 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
                 logger.warning("Error HTTP %s del servidor de DeepSeek (%s)", status, e)
             else:
                 logger.error("Error HTTP %s de DeepSeek: %s", status, e)
-            transitorio = status is not None and status >= 500
+            transitorio = _es_error_transitorio(e)
 
         except requests.exceptions.RequestException as e:
             logger.warning("Error en la petición a DeepSeek: %s", e)
-            transitorio = True
+            transitorio = _es_error_transitorio(e)
 
         except KeyError as e:
             logger.exception("Error en la estructura de la respuesta de DeepSeek: %s", e)
@@ -106,6 +124,36 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
             time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
             continue
         return None
+
+def _post_deepseek_con_reintentos(headers, payload, timeout, stream=False):
+    """POST a DeepSeek con el mismo criterio de reintento transitorio que
+    call_deepseek_api (ver _es_error_transitorio), para que
+    generar_con_continuacion y call_deepseek_api_stream no se queden sin
+    reintentos ante un simple parpadeo de red solo por no reutilizar
+    call_deepseek_api (que no encaja aquí: ésta devuelve solo el texto
+    final, sin finish_reason, y el streaming es un generador -- formas
+    incompatibles con estas dos funciones). Reintenta tanto errores de
+    transporte como respuestas 5xx del servidor; nunca deja pasar un 4xx
+    sin reintentar, porque eso no se arregla reintentando."""
+    intentos_restantes = _REINTENTOS_TRANSITORIOS
+    while True:
+        try:
+            response = requests.post(
+                "https://api.deepseek.com/chat/completions",
+                headers=headers, json=payload, timeout=timeout, stream=stream,
+            )
+        except requests.exceptions.RequestException as e:
+            if _es_error_transitorio(e) and intentos_restantes > 0:
+                intentos_restantes -= 1
+                time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
+                continue
+            raise
+        if response.status_code >= 500 and intentos_restantes > 0:
+            intentos_restantes -= 1
+            time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
+            continue
+        return response
+
 
 def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, temperature=0.3, max_continuaciones=2):
     """Genera texto largo (resúmenes/esquemas a partir de un PDF) sin
@@ -136,9 +184,7 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
             "max_tokens": max_tokens,
         }
         try:
-            response = requests.post(
-                "https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60
-            )
+            response = _post_deepseek_con_reintentos(headers, payload, timeout=60)
         except requests.exceptions.RequestException as e:
             logger.warning("Error de red generando continuación con DeepSeek: %s", e)
             break
@@ -271,13 +317,10 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7):
     }
 
     try:
-        with requests.post(
-            "https://api.deepseek.com/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=60,
-            stream=True
-        ) as response:
+        # Solo se reintenta la CONEXIÓN inicial (antes de que se haya
+        # cedido ya algún fragmento al llamante) -- reintentar a mitad de
+        # un stream que el frontend ya está pintando no sería seguro.
+        with _post_deepseek_con_reintentos(headers, payload, timeout=60, stream=True) as response:
             response.raise_for_status()
             for linea in response.iter_lines(decode_unicode=True):
                 if not linea or not linea.startswith("data: "):

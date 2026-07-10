@@ -62,6 +62,28 @@ def _resolver_texto_documento(plan_actual):
     return text, documento_id, pdf_file.filename, None
 
 
+def _extraer_json_array(texto):
+    """Extrae y parsea el array JSON que debería devolver la IA, tolerando
+    que venga envuelto en texto explicativo alrededor (el LLM a veces
+    añade una frase antes o después pese a que el prompt le pide "SOLO el
+    JSON") y que use comillas simples en vez de dobles (JSON inválido
+    estricto, pero un fallo común de generación). Lanza ValueError si no
+    se puede recuperar un array JSON válido de ninguna de las dos formas."""
+    start_index = texto.find("[")
+    end_index = texto.rfind("]") + 1
+    if start_index == -1 or end_index <= start_index:
+        raise ValueError("No se encontró un array JSON en la respuesta.")
+    json_str = texto[start_index:end_index]
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        pass
+    try:
+        return json.loads(json_str.replace("'", '"'))
+    except json.JSONDecodeError as e:
+        raise ValueError("El texto entre corchetes no es un JSON válido.") from e
+
+
 @bp.route('/resumir-pdf', methods=['POST'])
 @requiere_plan(db, "gratis", global_check=True)
 def resumir_pdf():
@@ -324,22 +346,13 @@ def generar_tarjetas_desde_pdf():
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
         data = response.json()
         respuesta = data['choices'][0]['message']['content']
-        start_index = respuesta.find("[")
-        end_index = respuesta.rfind("]") + 1
-        if start_index == -1 or end_index <= start_index:
-            raise ValueError("No se encontró un array JSON en la respuesta.")
-        json_str = respuesta[start_index:end_index]
         try:
-            tarjetas = json.loads(json_str)
-        except json.JSONDecodeError:
-            json_str_fixed = json_str.replace("'", '"')
-            try:
-                tarjetas = json.loads(json_str_fixed)
-            except json.JSONDecodeError:
-                return jsonify({
-                    "error": "La IA no devolvió un JSON válido. Error técnico.",
-                    "respuesta_cruda": respuesta[:500]
-                }), 500
+            tarjetas = _extraer_json_array(respuesta)
+        except ValueError:
+            return jsonify({
+                "error": "La IA no devolvió un JSON válido. Error técnico.",
+                "respuesta_cruda": respuesta[:500]
+            }), 500
         tarjetas_validadas = []
         for t in tarjetas:
             if isinstance(t, dict) and "pregunta" in t and "respuesta" in t:

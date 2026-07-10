@@ -144,6 +144,70 @@ class TestGenerarConContinuacion:
         assert resultado is None
         mock_post.assert_not_called()
 
+    def test_reintenta_ante_fallo_transitorio_y_acaba_devolviendo_el_resultado(self, monkeypatch):
+        # generar_con_continuacion hace su propia llamada a DeepSeek (no
+        # reutiliza call_deepseek_api, que devuelve solo el texto sin
+        # finish_reason) -- pero comparte el mismo criterio de reintento
+        # ante fallos transitorios vía _post_deepseek_con_reintentos.
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", side_effect=[
+            requests.exceptions.ConnectionError(),
+            _respuesta_con_status("Resumen recuperado.", "stop"),
+        ]) as mock_post, patch("deepseek_utils.time.sleep"):
+            resultado = deepseek_utils.generar_con_continuacion("system", "user")
+        assert resultado == "Resumen recuperado."
+        assert mock_post.call_count == 2
+
+    def test_reintenta_ante_5xx_antes_de_pedir_continuacion(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", side_effect=[
+            _respuesta_con_status("", "stop", status_code=503),
+            _respuesta_con_status("Resumen recuperado.", "stop"),
+        ]) as mock_post, patch("deepseek_utils.time.sleep"):
+            resultado = deepseek_utils.generar_con_continuacion("system", "user")
+        assert resultado == "Resumen recuperado."
+        assert mock_post.call_count == 2
+
+
+def _respuesta_stream(status_code, lineas_sse=None):
+    mock = MagicMock()
+    mock.status_code = status_code
+    if status_code >= 400:
+        mock.raise_for_status.side_effect = requests.exceptions.HTTPError(response=mock)
+    else:
+        mock.raise_for_status.return_value = None
+    mock.iter_lines.return_value = iter(lineas_sse or [])
+    mock.__enter__.return_value = mock
+    mock.__exit__.return_value = False
+    return mock
+
+
+class TestCallDeepseekApiStream:
+    """call_deepseek_api_stream: solo se reintenta la CONEXIÓN inicial
+    (antes de ceder ningún fragmento) ante un fallo transitorio -- nunca a
+    mitad de un stream que el frontend ya está pintando con efecto de
+    escritura."""
+
+    def test_reintenta_la_conexion_inicial_ante_fallo_transitorio(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        lineas = ['data: {"choices": [{"delta": {"content": "Hola"}}]}', "data: [DONE]"]
+        with patch("deepseek_utils.requests.post", side_effect=[
+            requests.exceptions.ConnectionError(),
+            _respuesta_stream(200, lineas),
+        ]) as mock_post, patch("deepseek_utils.time.sleep"):
+            fragmentos = list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}]))
+        assert fragmentos == ["Hola"]
+        assert mock_post.call_count == 2
+
+    def test_no_reintenta_si_el_stream_falla_ya_iniciado(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        mock_response = _respuesta_stream(200)
+        mock_response.iter_lines.side_effect = requests.exceptions.ConnectionError()
+        with patch("deepseek_utils.requests.post", return_value=mock_response) as mock_post:
+            fragmentos = list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}]))
+        assert fragmentos == []
+        assert mock_post.call_count == 1
+
 
 class TestTrocearEnParrafos:
     """_trocear_en_parrafos: nunca debe partir un párrafo a la mitad, y debe
