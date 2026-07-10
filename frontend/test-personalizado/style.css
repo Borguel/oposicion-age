@@ -3,3 +3,26 @@
    que se vea exactamente igual que el resto de páginas de test. Este
    fichero queda para overrides específicos de esta página si hicieran
    falta más adelante. */
+
+/* Indicador persistente de "generando N restantes en segundo plano" que
+   aparece cuando el usuario ya ha empezado a responder un test de más de
+   10 preguntas mientras el resto se sigue generando (ver script.js,
+   entrarEnModoTest/agregarPreguntaEnCurso) -- vive fuera de #contenedor-test
+   (justo después del navegador de preguntas) para no perderse en cada
+   repintado de mostrarPregunta(). */
+.indicador-generando-fondo {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  background: var(--age-primary-soft, var(--age-bg));
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  font-size: 0.9rem;
+  color: var(--age-ink-soft);
+  text-align: center;
+}
+
+.indicador-generando-fondo-aviso {
+  background: var(--age-warning-bg);
+  border-color: var(--age-warning);
+  color: var(--age-warning);
+}

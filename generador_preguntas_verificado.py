@@ -277,8 +277,11 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
 
     on_progreso(evento), si se pasa, se llama cada vez que un hueco de
     pregunta termina (con éxito o descartado), con
-    {"completadas": i, "total": n, "aceptadas": len(preguntas_hasta_ahora)}
-    -- pensado para retransmitir progreso real (no cosmético) por SSE.
+    {"completadas": i, "total": n, "aceptadas": len(preguntas_hasta_ahora),
+    "pregunta": <dict de la pregunta aceptada, o None si se descartó>}
+    -- pensado para retransmitir progreso real (no cosmético) por SSE, y
+    para que el llamante pueda ir entregando preguntas ya aceptadas antes
+    de que termine todo el test (ver /generar-test-avanzado).
     """
     temas_unicos = list(dict.fromkeys(t for t in temas if t))
     if not temas_unicos:
@@ -298,6 +301,12 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     total = len(huecos)
     if total == 0:
         return {"test": [], "descartadas": 0}
+    # Se baraja el orden de ENVÍO (no el resultado final) para que las
+    # preguntas que van llegando primero por el streaming ya salgan
+    # mezcladas por tema, en vez de agrupadas -- así el frontend puede
+    # empezar el test con las primeras que lleguen sin tener que esperar
+    # a barajar el conjunto completo al final.
+    random.shuffle(huecos)
 
     subbloques_ya_usados = set()
     preguntas_ya_aceptadas = set()
@@ -322,9 +331,11 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
             else:
                 descartadas += 1
             if on_progreso:
-                on_progreso({"completadas": completadas, "total": total, "aceptadas": len(preguntas)})
+                on_progreso({
+                    "completadas": completadas, "total": total, "aceptadas": len(preguntas),
+                    "pregunta": resultado,
+                })
 
-    random.shuffle(preguntas)
     resultado_final = {"test": preguntas, "descartadas": descartadas}
     if len(preguntas) < num_preguntas:
         resultado_final["advertencia"] = (

@@ -479,6 +479,54 @@ h1, h2, h3 {
   border-color: var(--age-primary);
 }
 
+/* Tests largos (>20 preguntas): la rejilla se pliega detrás de un
+   botón-cabecera con un resumen (mismo patrón que "N temas ▾" en las
+   tarjetas de Mis Tests, ver mis-tests/style.css .test-card-temas-toggle)
+   en vez de ocupar toda la pantalla con cuadraditos, especialmente en
+   móvil. */
+.navegador-preguntas.navegador-preguntas-plegable {
+  display: block;
+}
+
+.navegador-preguntas-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: var(--age-ink-soft);
+  font-family: var(--age-font);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.navegador-preguntas-toggle:hover {
+  color: var(--age-ink);
+}
+
+.navegador-preguntas-caret {
+  transition: transform 0.15s var(--age-ease);
+}
+
+.navegador-preguntas-toggle.open .navegador-preguntas-caret {
+  transform: rotate(180deg);
+}
+
+.navegador-preguntas-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.navegador-preguntas-grid.hidden {
+  display: none;
+}
+
 /* ========== Footer de acciones: Guardar y salir / Finalizar ==========
    Antes "Finalizar Test" era un bloque rojo sólido a todo lo ancho, al
    mismo nivel visual que "Guardar y salir" -- ahora es un contorno (llama

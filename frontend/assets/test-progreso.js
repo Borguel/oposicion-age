@@ -9,6 +9,7 @@ import { BACKEND_URL } from "/assets/firebase-config.js";
 
 let testIdActual = null;
 let temporizadorDebounce = null;
+let temporizadorDebounceContenido = null;
 
 // Nuevo test: genera un id de sesión (UUID) que se usará como nombre de
 // documento en Firestore durante todo el test, tanto para los autoguardados
@@ -31,6 +32,7 @@ export function testIdEnCurso() {
 
 export function limpiarSeguimiento() {
   clearTimeout(temporizadorDebounce);
+  clearTimeout(temporizadorDebounceContenido);
   testIdActual = null;
 }
 
@@ -58,6 +60,26 @@ async function enviarAutosave(payload, keepalive) {
 export function guardarContenidoInicial(datos) {
   if (!testIdActual) return Promise.resolve();
   return enviarAutosave({ test_id: testIdActual, ...datos }, false);
+}
+
+// Igual que guardarContenidoInicial (manda el snapshot completo, incluido
+// "contenido"), pero para cuando el test personalizado empieza a jugarse
+// con las primeras preguntas mientras el resto se sigue generando en
+// segundo plano (test-personalizado, N>10): cada pregunta nueva que llega
+// llama a esto para que el documento de reanudación crezca con ellas. Va
+// con su propio debounce (variable de timer separada de
+// autoguardarProgreso) para que una ráfaga de preguntas casi simultáneas
+// colapse en un único guardado sin pisar el debounce de las respuestas del
+// usuario. El backend (/autosave-test) sobrescribe el documento entero
+// cuando "contenido" viene informado, así que el llamante debe mandar
+// siempre el snapshot COMPLETO (metadatos fijos + estado variable), nunca
+// solo el array de preguntas.
+export function actualizarContenidoEnCurso(datosCompletos) {
+  if (!testIdActual) return;
+  clearTimeout(temporizadorDebounceContenido);
+  temporizadorDebounceContenido = setTimeout(() => {
+    enviarAutosave({ test_id: testIdActual, ...datosCompletos }, false);
+  }, 2000);
 }
 
 // Progreso posterior (respuesta marcada, navegación entre preguntas, tick

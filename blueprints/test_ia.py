@@ -61,7 +61,18 @@ def generar_test_avanzado_route():
 
         def _en_hilo_de_fondo():
             def on_progreso(evento_progreso):
+                # "pregunta" se manda como evento aparte (no como parte de
+                # "progreso") para no romper al consumidor actual del
+                # evento "progreso", que solo espera completadas/total --
+                # así el frontend puede ignorar "pregunta" sin cambios si
+                # no le interesa (p.ej. tests con pocas preguntas).
+                pregunta = evento_progreso.pop("pregunta", None)
                 eventos.put({"tipo": "progreso", **evento_progreso})
+                if pregunta:
+                    eventos.put({
+                        "tipo": "pregunta", "pregunta": pregunta,
+                        "completadas": evento_progreso["completadas"], "total": evento_progreso["total"],
+                    })
             try:
                 resultado = generar_test_verificado(
                     db, temas=temas, num_preguntas=num_preguntas,

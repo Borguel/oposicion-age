@@ -159,6 +159,10 @@ def test_generar_test_verificado_reparte_cupo_y_reporta_progreso(db):
     assert len(eventos_progreso) == 4
     assert [e["completadas"] for e in eventos_progreso] == [1, 2, 3, 4]
     assert eventos_progreso[-1]["total"] == 4
+    # Cada evento de progreso lleva también la pregunta recién aceptada
+    # (para que el llamante pueda ir entregándola sin esperar al final).
+    assert all(e["pregunta"] is not None for e in eventos_progreso)
+    assert {e["pregunta"]["pregunta"] for e in eventos_progreso} == {p["pregunta"] for p in resultado["test"]}
     # Cada pregunta generada sabe de qué tema salió de verdad.
     temas_de_las_preguntas = {p["tema_id"] for p in resultado["test"]}
     assert temas_de_las_preguntas == {"bloque_01-tema_01", "bloque_02-tema_01"}
@@ -227,6 +231,14 @@ def test_ruta_generar_test_avanzado_emite_eventos_y_registra_uso(client, db):
         # También se han retransmitido eventos de progreso reales por el
         # camino, no solo el resultado final de golpe.
         assert any(e["tipo"] == "progreso" for e in eventos)
+        # Y las preguntas aceptadas se retransmiten individualmente en
+        # cuanto están listas, en un evento aparte -- para que el frontend
+        # pueda empezar el test antes de que termine todo el streaming.
+        eventos_pregunta = [e for e in eventos if e["tipo"] == "pregunta"]
+        assert len(eventos_pregunta) == 2
+        assert all("pregunta" in e and "opciones" in e["pregunta"] for e in eventos_pregunta)
+        # El evento "progreso" no debe llevar la pregunta duplicada dentro.
+        assert all("pregunta" not in e for e in eventos if e["tipo"] == "progreso")
         datos_usuario = db.leer(("usuarios", "u1"))
         assert datos_usuario["limites_uso"]["test_avanzado_verificado"]["contador"] == 1
     finally:
