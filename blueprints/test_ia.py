@@ -185,6 +185,10 @@ def guardar_test_oficial():
 @bp.route("/generar-test-inteligente", methods=["POST"])
 @requiere_plan(db, "basico")
 def generar_test_inteligente():
+    """Decisión intencional: esta ruta está oculta en el frontend (ver
+    limites_uso.py, "hoy desactivado en la web") pero se mantiene aquí a
+    propósito -- no se ha borrado el endpoint de la API por si algún
+    consumidor externo todavía lo usa."""
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "No se ha recibido un cuerpo JSON válido"}), 400

@@ -20,7 +20,7 @@ def obtener_uid_desde_token(req):
     if not token:
         return None
     try:
-        decoded = firebase_auth.verify_id_token(token)
+        decoded = firebase_auth.verify_id_token(token, check_revoked=True)
     except Exception:
         return None
     return decoded.get("uid"), decoded.get("email")

@@ -7,6 +7,8 @@ from unittest.mock import patch
 import pytest
 from flask import Flask, g, jsonify
 
+from firebase_admin import auth as firebase_auth
+
 from auth_utils import obtener_uid_desde_token, requiere_login, requiere_plan, _mejor_plan
 
 
@@ -35,6 +37,21 @@ def test_obtener_uid_con_token_invalido():
 def test_obtener_uid_con_token_valido():
     with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "a@b.com"}):
         assert obtener_uid_desde_token(FakeRequest({"Authorization": "Bearer x"})) == ("u1", "a@b.com")
+
+
+def test_obtener_uid_verifica_pasando_check_revoked():
+    # Una cuenta desactivada/borrada en Firebase debe dejar de poder usar
+    # la API de inmediato, no solo cuando el token expire por sí solo
+    # (hasta 1h después) -- eso exige pedirle al SDK que compruebe la
+    # revocación en cada verificación.
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "a@b.com"}) as mock_verify:
+        obtener_uid_desde_token(FakeRequest({"Authorization": "Bearer x"}))
+    mock_verify.assert_called_once_with("x", check_revoked=True)
+
+
+def test_obtener_uid_con_token_revocado():
+    with patch("auth_utils.firebase_auth.verify_id_token", side_effect=firebase_auth.RevokedIdTokenError("revocado")):
+        assert obtener_uid_desde_token(FakeRequest({"Authorization": "Bearer x"})) is None
 
 
 @pytest.fixture

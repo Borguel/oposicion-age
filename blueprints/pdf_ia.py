@@ -101,6 +101,7 @@ def resumir_pdf():
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
         return jsonify({"resumen": resumen, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
     except Exception as e:
+        logger.exception("Error en /resumir-pdf")
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 
 
@@ -188,6 +189,7 @@ def generar_esquema_desde_pdf():
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
         return jsonify({"esquema": esquema, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
     except Exception as e:
+        logger.exception("Error en /generar-esquema-desde-pdf")
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 
 
@@ -257,6 +259,7 @@ def generar_test_desde_pdf():
             resultado["advertencia"] = f"Solo se generaron {len(preguntas_validadas)} de {num_preguntas} preguntas."
         return jsonify(resultado)
     except Exception as e:
+        logger.exception("Error en /generar-test-desde-pdf")
         return jsonify({
             "error": f"Error al procesar el PDF o generar preguntas: {str(e)}"
         }), 500
@@ -350,6 +353,7 @@ def generar_tarjetas_desde_pdf():
             }), 500
         return jsonify({"tarjetas": tarjetas_validadas, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
     except Exception as e:
+        logger.exception("Error en /generar-tarjetas-desde-pdf")
         return jsonify({
             "error": f"Error al procesar el PDF o generar tarjetas: {str(e)}",
             "respuesta_cruda": respuesta[:500] if respuesta is not None else "N/A"
@@ -396,6 +400,7 @@ def subir_pdf_chat():
             "paginas": len(pdf_reader.pages)
         })
     except Exception as e:
+        logger.exception("Error en /subir-pdf-chat")
         return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
 
 
@@ -455,6 +460,7 @@ def chat_pdf_mensaje():
         respuesta = data_resp['choices'][0]['message']['content']
         return jsonify({"respuesta": respuesta})
     except Exception as e:
+        logger.exception("Error en /chat-pdf-mensaje")
         return jsonify({"error": f"Error en el chat: {str(e)}"}), 500
 
 
@@ -490,6 +496,7 @@ def chat_deepseek():
         respuesta = data['choices'][0]['message']['content']
         return jsonify({"respuesta": respuesta})
     except Exception as e:
+        logger.exception("Error en /chat-deepseek")
         return jsonify({"error": f"Error en el servicio de chat: {str(e)}"}), 500
 
 
@@ -528,6 +535,7 @@ def guardar_test_pdf():
                 logger.warning("No se pudo borrar el borrador de test en progreso %s: %s", test_id, e)
         return jsonify({'mensaje': 'Test desde PDF guardado correctamente'})
     except Exception as e:
+        logger.exception("Error en /guardar-test-pdf")
         return jsonify({'error': str(e)}), 500
 
 
@@ -552,6 +560,7 @@ def guardar_resumen_pdf():
         )
         return jsonify({'mensaje': 'Resumen desde PDF guardado correctamente'})
     except Exception as e:
+        logger.exception("Error en /guardar-resumen-pdf")
         return jsonify({'error': str(e)}), 500
 
 
@@ -576,6 +585,7 @@ def guardar_esquema_pdf():
         )
         return jsonify({'mensaje': 'Esquema desde PDF guardado correctamente'})
     except Exception as e:
+        logger.exception("Error en /guardar-esquema-pdf")
         return jsonify({'error': str(e)}), 500
 
 
@@ -600,6 +610,7 @@ def guardar_tarjetas_pdf():
         )
         return jsonify({'mensaje': 'Tarjetas desde PDF guardadas correctamente'})
     except Exception as e:
+        logger.exception("Error en /guardar-tarjetas-pdf")
         return jsonify({'error': str(e)}), 500
 
 
