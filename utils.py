@@ -160,8 +160,6 @@ def obtener_contexto_por_temas_exactos(db, temas_combinados: List[str], token_li
             contexto_total += fragmento
     return contexto_total.strip()
 
-    return contexto_total.strip()
-
 # ✅ NUEVA: Extrae todos los subbloques de todos los temas sin límite de tokens acumulados
 def obtener_subbloques_individuales(db, temas: List[str], coleccion="Temario AGE") -> List[dict]:
     subbloques_utilizados = []
@@ -191,9 +189,6 @@ def obtener_subbloques_individuales(db, temas: List[str], coleccion="Temario AGE
             })
 
     return subbloques_utilizados
-
-
-    return contexto_total.strip()
 
 
 def calcular_resultado_test(aciertos, fallos, blancos):

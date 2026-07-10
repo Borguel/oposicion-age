@@ -315,7 +315,7 @@ def generar_tarjetas_desde_pdf():
             # bastantes tarjetas y provocaba un JSON incompleto).
             "max_tokens": min(8000, 200 + num_tarjetas * 220)
         }
-        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
+        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
@@ -482,7 +482,7 @@ def chat_deepseek():
             "temperature": 0.7,
             "max_tokens": 1000
         }
-        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
+        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
         if response.status_code != 200:
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
         registrar_uso(db, g.uid, "chat_pdf", g.plan_actual)

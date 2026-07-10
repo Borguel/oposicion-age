@@ -1,8 +1,11 @@
 import os
 import time
+import logging
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
+
+logger = logging.getLogger(__name__)
 
 # Backoff entre reintentos ante fallos TRANSITORIOS (timeout/conexión/5xx) --
 # nunca ante errores 4xx (API key inválida, payload mal formado), que no se
@@ -26,7 +29,7 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
     if not api_key:
-        print("❌ Error: No hay API key de DeepSeek configurada")
+        logger.error("No hay API key de DeepSeek configurada")
         return None
 
     headers = {
@@ -63,38 +66,39 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
             if 'choices' in data and len(data['choices']) > 0:
                 return data['choices'][0]['message']['content']
             else:
-                print(f"❌ Respuesta inesperada de DeepSeek API: {data}")
+                logger.error("Respuesta inesperada de DeepSeek API: %s", data)
                 return None
 
         except requests.exceptions.Timeout:
-            print("❌ Timeout: La API de DeepSeek no respondió en 30 segundos")
+            logger.warning("Timeout: la API de DeepSeek no respondió en 30 segundos")
             transitorio = True
 
         except requests.exceptions.ConnectionError:
-            print("❌ Error de conexión: No se pudo conectar a DeepSeek API")
+            logger.warning("Error de conexión: no se pudo conectar a DeepSeek API")
             transitorio = True
 
         except requests.exceptions.HTTPError as e:
             status = e.response.status_code if e.response is not None else None
-            print(f"❌ Error HTTP {status}: {e}")
             if status == 401:
-                print("   → Verifica que tu API key de DeepSeek sea válida")
+                logger.error("Error HTTP 401 de DeepSeek: verifica que la API key sea válida (%s)", e)
             elif status == 429:
-                print("   → Límite de tasa excedido, espera un momento")
+                logger.warning("Error HTTP 429 de DeepSeek: límite de tasa excedido (%s)", e)
             elif status is not None and status >= 500:
-                print("   → Error del servidor de DeepSeek, intenta más tarde")
+                logger.warning("Error HTTP %s del servidor de DeepSeek (%s)", status, e)
+            else:
+                logger.error("Error HTTP %s de DeepSeek: %s", status, e)
             transitorio = status is not None and status >= 500
 
         except requests.exceptions.RequestException as e:
-            print(f"❌ Error en la petición a DeepSeek: {str(e)}")
+            logger.warning("Error en la petición a DeepSeek: %s", e)
             transitorio = True
 
         except KeyError as e:
-            print(f"❌ Error en la estructura de la respuesta: {e}")
+            logger.exception("Error en la estructura de la respuesta de DeepSeek: %s", e)
             return None
 
-        except Exception as e:
-            print(f"❌ Error inesperado en DeepSeek API: {str(e)}")
+        except Exception:
+            logger.exception("Error inesperado en DeepSeek API")
             return None
 
         if transitorio and intentos_restantes > 0:
@@ -135,12 +139,15 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
             response = requests.post(
                 "https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60
             )
-        except requests.exceptions.RequestException:
+        except requests.exceptions.RequestException as e:
+            logger.warning("Error de red generando continuación con DeepSeek: %s", e)
             break
         if response.status_code != 200:
+            logger.warning("DeepSeek devolvió %s generando continuación", response.status_code)
             break
         choices = (response.json() or {}).get("choices") or []
         if not choices:
+            logger.warning("DeepSeek no devolvió 'choices' generando continuación")
             break
         fragmento = choices[0].get("message", {}).get("content") or ""
         texto_completo += fragmento
@@ -247,7 +254,7 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7):
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
     if not api_key:
-        print("❌ Error: No hay API key de DeepSeek configurada")
+        logger.error("No hay API key de DeepSeek configurada")
         return
 
     headers = {
@@ -289,11 +296,11 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7):
                 if fragmento:
                     yield fragmento
     except requests.exceptions.Timeout:
-        print("❌ Timeout: La API de DeepSeek no respondió a tiempo (streaming)")
+        logger.warning("Timeout: la API de DeepSeek no respondió a tiempo (streaming)")
     except requests.exceptions.ConnectionError:
-        print("❌ Error de conexión: No se pudo conectar a DeepSeek API (streaming)")
+        logger.warning("Error de conexión: no se pudo conectar a DeepSeek API (streaming)")
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error en streaming de DeepSeek: {e}")
+        logger.warning("Error en streaming de DeepSeek: %s", e)
 
 # Función adicional para generar contenido específico
 def generar_contenido_desde_texto(texto, tipo_contenido, num_items=10):
@@ -308,7 +315,7 @@ def generar_contenido_desde_texto(texto, tipo_contenido, num_items=10):
     }
     
     if tipo_contenido not in prompts:
-        print(f"❌ Tipo de contenido no soportado: {tipo_contenido}")
+        logger.error("Tipo de contenido no soportado: %s", tipo_contenido)
         return None
     
     system_prompt = prompts[tipo_contenido]
@@ -337,7 +344,7 @@ def generar_contenido_desde_texto(texto, tipo_contenido, num_items=10):
             # Intentar parsear JSON para tests y tarjetas
             return json.loads(respuesta)
         except json.JSONDecodeError:
-            print("❌ La IA no devolvió un JSON válido")
+            logger.warning("La IA no devolvió un JSON válido para tipo_contenido=%s", tipo_contenido)
             return respuesta  # Devolver respuesta cruda como fallback
     
     return respuesta
