@@ -49,12 +49,6 @@ h1, h2, h3 {
   margin-bottom: 20px;
 }
 
-#titulo-formulario {
-  font-size: 2rem;
-  text-align: center;
-  margin-bottom: 30px;
-  color: #2c3e50;
-}
 
 .test-type-container {
   display: grid;
@@ -781,14 +775,115 @@ body {
   border: 1px solid var(--age-border);
 }
 
-#titulo-formulario {
-  color: var(--age-ink);
-  font-weight: 800;
-  letter-spacing: -0.01em;
-}
-
 h1, h2, h3 {
   color: var(--age-ink);
+}
+
+/* ========== Hub de tests (/test-generator/): cabecera + grupos ========== */
+.tg-hero {
+  background: linear-gradient(160deg, var(--age-navy), var(--age-navy-soft));
+  color: #fff;
+  padding: 40px 20px 60px;
+  text-align: center;
+}
+
+.tg-hero-inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.tg-hero-eyebrow {
+  display: inline-block;
+  color: var(--age-primary-light);
+  font-weight: 800;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin: 0 0 10px;
+}
+
+.tg-hero-inner h1 {
+  font-size: clamp(1.6rem, 3.6vw, 2.3rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+  color: #fff;
+}
+
+.tg-hero-frase {
+  color: var(--age-navy-ink);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tg-grupo {
+  margin-top: -34px;
+}
+
+.tg-grupo-repaso {
+  margin-top: 40px;
+}
+
+.tg-grupo-titulo {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--age-ink);
+  /* El grupo entero sube 34px para que las tarjetas se solapen con el
+     borde inferior de la cabecera navy -- este margen compensa esa subida
+     solo para el título, que debe quedarse donde estaría sin el solape. */
+  margin: 34px 0 14px;
+  padding-left: 2px;
+}
+
+.tg-grupo-repaso .tg-grupo-titulo {
+  margin-top: 0;
+}
+
+.tg-grupo-practica .test-type-card {
+  border-top: 3px solid var(--age-primary);
+}
+
+.tg-grupo-repasa .test-type-card {
+  border-top: 3px solid var(--age-border);
+}
+
+.test-type-card-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--age-primary);
+  color: #1b1f2e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: var(--age-radius-pill);
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 640px) {
+  .tg-hero {
+    padding: 32px 18px 48px;
+  }
+
+  .tg-grupo {
+    margin-top: -26px;
+  }
+
+  .tg-grupo-titulo {
+    margin-top: 26px;
+  }
+
+  .tg-grupo-repaso .tg-grupo-titulo {
+    margin-top: 0;
+  }
+
+  .test-type-card-badge {
+    top: 12px;
+    right: 12px;
+    font-size: 0.68rem;
+    padding: 3px 8px;
+  }
 }
 
 .test-type-card {

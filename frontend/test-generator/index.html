@@ -21,35 +21,52 @@
 <body>
 <nav class="age-nav"></nav>
 
-  <div class="container">
-    <h1 id="titulo-formulario">Selecciona el test que quieres hacer</h1>
-    <div class="test-type-container test-type-container-hub">
-      <a class="test-type-card" href="/test-personalizado/">
-        <div class="icon">📝</div>
-        <div class="title">Personalizado</div>
-        <div class="description">Basado en el temario oficial del BOE. Elige los temas que quieres repasar y crea un test a tu medida.</div>
-      </a>
-      <a class="test-type-card" href="/test-oficial/">
-        <div class="icon">🏛️</div>
-        <div class="title">Oficial</div>
-        <div class="description">Preguntas reales de exámenes de convocatorias anteriores, tal como se hicieron el día del examen.</div>
-      </a>
-      <a class="test-type-card" href="/repetir-test/">
-        <div class="icon">🔁</div>
-        <div class="title">Repetir último test</div>
-        <div class="description">Vuelve a hacer el último test que completaste, con las mismas preguntas.</div>
-      </a>
-      <a class="test-type-card" href="/preguntas-falladas/">
-        <div class="icon">❌</div>
-        <div class="title">Preguntas falladas</div>
-        <div class="description">Repasa las preguntas que más se te resisten, filtrando por tema si quieres.</div>
-      </a>
-      <a class="test-type-card" href="/preguntas-favoritas/">
-        <div class="icon">⭐</div>
-        <div class="title">Preguntas favoritas</div>
-        <div class="description">Repasa las preguntas que has guardado para más tarde.</div>
-      </a>
+  <header class="tg-hero">
+    <div class="tg-hero-inner">
+      <p class="tg-hero-eyebrow">Zona de tests</p>
+      <h1 id="titulo-formulario">Elige cómo quieres practicar hoy</h1>
+      <p class="tg-hero-frase">Desde un test a tu medida por temas hasta exámenes oficiales de convocatorias reales, o un repaso rápido de lo que más se te resiste. Todo tu entrenamiento en un solo sitio.</p>
     </div>
+  </header>
+
+  <div class="container">
+    <section class="tg-grupo">
+      <h2 class="tg-grupo-titulo">Practica</h2>
+      <div class="test-type-container test-type-container-hub tg-grupo-practica">
+        <a class="test-type-card" href="/test-personalizado/">
+          <span class="test-type-card-badge">Recomendado</span>
+          <div class="icon">📝</div>
+          <div class="title">Personalizado</div>
+          <div class="description">Basado en el temario oficial del BOE. Elige los temas que quieres repasar y crea un test a tu medida.</div>
+        </a>
+        <a class="test-type-card" href="/test-oficial/">
+          <div class="icon">🏛️</div>
+          <div class="title">Oficial</div>
+          <div class="description">Preguntas reales de exámenes de convocatorias anteriores, tal como se hicieron el día del examen.</div>
+        </a>
+      </div>
+    </section>
+
+    <section class="tg-grupo tg-grupo-repaso">
+      <h2 class="tg-grupo-titulo">Repasa lo que ya has hecho</h2>
+      <div class="test-type-container test-type-container-hub tg-grupo-repasa">
+        <a class="test-type-card" href="/repetir-test/">
+          <div class="icon">🔁</div>
+          <div class="title">Repetir último test</div>
+          <div class="description">Vuelve a hacer el último test que completaste, con las mismas preguntas.</div>
+        </a>
+        <a class="test-type-card" href="/preguntas-falladas/">
+          <div class="icon">❌</div>
+          <div class="title">Preguntas falladas</div>
+          <div class="description">Repasa las preguntas que más se te resisten, filtrando por tema si quieres.</div>
+        </a>
+        <a class="test-type-card" href="/preguntas-favoritas/">
+          <div class="icon">⭐</div>
+          <div class="title">Preguntas favoritas</div>
+          <div class="description">Repasa las preguntas que has guardado para más tarde.</div>
+        </a>
+      </div>
+    </section>
   </div>
 
   <script type="module" src="/assets/auth.js"></script>
