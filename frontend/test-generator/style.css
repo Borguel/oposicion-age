@@ -854,6 +854,32 @@ h1, h2, h3 {
   max-width: 46ch;
 }
 
+/* Modo compacto: una vez arrancado el test ya no hace falta recordarle al
+   usuario en qué consiste ("descripción"), solo qué está haciendo -- se
+   aplica con JS justo cuando se oculta el formulario y aparece la primera
+   pregunta, para recuperar esa mitad de alto en pantalla mientras dura el
+   test. */
+.test-type-container.test-type-compacto .test-type-card {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 30px 20px;
+}
+.test-type-container.test-type-compacto .icon {
+  width: 44px;
+  height: 44px;
+  font-size: 1.4rem;
+  margin-bottom: 0;
+}
+.test-type-container.test-type-compacto .title {
+  font-size: 1.25rem;
+  margin-bottom: 0;
+}
+.test-type-container.test-type-compacto .description {
+  display: none;
+}
+
 /* Hub de selección de test (/test-generator/): las 6 opciones ahora son
    siempre un enlace que lleva a su propia página -- se les da más peso
    visual (tarjetas más grandes, mismo alto entre todas) que cuando

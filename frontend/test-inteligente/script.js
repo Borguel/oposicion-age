@@ -228,6 +228,7 @@ async function obtenerAuthHeaders() {
         return;
       }
       document.getElementById('tarjeta-formulario').style.display = "none";
+      document.querySelector('.test-type-container')?.classList.add('test-type-compacto');
       document.getElementById("contenedor-test").style.display = "block";
       document.getElementById("contenedor-test").innerHTML = `
         <div class="carga-generando">
@@ -570,6 +571,7 @@ async function obtenerAuthHeaders() {
       textosFavoritas = await favoritasApi.cargarTextosFavoritas(oposicionActual);
 
       document.getElementById('tarjeta-formulario').style.display = "none";
+      document.querySelector('.test-type-container')?.classList.add('test-type-compacto');
       document.getElementById("contenedor-test").style.display = "block";
 
       if (guardado.modo_cronometrado) {
