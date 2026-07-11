@@ -158,15 +158,10 @@ body {
 }
 
 .age-nav-brand .age-nav-brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   width: 28px;
   height: 28px;
-  border-radius: 9px;
-  background: var(--age-primary);
-  color: #1b1f2e;
-  font-size: 15px;
+  flex-shrink: 0;
 }
 
 .age-nav-links {

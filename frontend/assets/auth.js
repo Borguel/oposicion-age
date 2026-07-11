@@ -200,7 +200,7 @@ function construirEsqueletoNav() {
   const brand = document.createElement("a");
   brand.className = "age-nav-brand";
   brand.href = "/";
-  brand.innerHTML = `<span class="age-nav-brand-mark">✓</span><span class="age-nav-brand-text">Domina tu Opo</span>`;
+  brand.innerHTML = `<img class="age-nav-brand-mark" src="/assets/favicon.svg" alt="" width="28" height="28"><span class="age-nav-brand-text">Domina tu Opo</span>`;
 
   const links = document.createElement("div");
   links.className = "age-nav-links";
