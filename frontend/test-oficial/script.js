@@ -115,6 +115,15 @@ async function obtenerAuthHeaders() {
       }
     }
 
+    // true en cuanto el test ha arrancado (formulario, simulacro o
+    // reanudación) -- los tres inicializadores de abajo (simulacro, reparto
+    // realista, psicotécnicas) hacen un fetch a /oposiciones-disponibles que
+    // puede tardar (el backend en Render tiene arranque en frío), así que si
+    // el usuario ya empezó el test con el formulario a medida ANTES de que
+    // esa respuesta llegue, no deben mostrar sus tarjetas/notas a destiempo
+    // por encima del test ya en marcha.
+    let testYaIniciado = false;
+
     // Oculta todo el bloque de selección previo (tarjeta de simulacro,
     // separador "o bien", filtro de psicotécnicas y formulario a medida) al
     // arrancar un test, sea por el botón de simulacro, por el formulario a
@@ -123,6 +132,7 @@ async function obtenerAuthHeaders() {
     // camino) el resto de tarjetas se quedaban visibles encima del test ya
     // en marcha.
     function ocultarSelectorTestOficial() {
+      testYaIniciado = true;
       document.getElementById('tarjeta-formulario').style.display = "none";
       const tarjetaSimulacro = document.getElementById('tarjeta-simulacro');
       if (tarjetaSimulacro) tarjetaSimulacro.style.display = "none";
@@ -153,6 +163,7 @@ async function obtenerAuthHeaders() {
         const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
         const simulacro = infoOposicion && infoOposicion.simulacro_oficial;
         if (!simulacro) return; // sin datos verificados para esta oposición -- no se ofrece
+        if (testYaIniciado) return; // el usuario ya empezó el test por otro camino mientras se esperaba esta respuesta
         if (descripcion) {
           descripcion.textContent = simulacro.minutos
             ? `Genera un examen con el mismo formato del examen real: ${simulacro.num_preguntas} preguntas en ${simulacro.minutos} minutos.`
@@ -187,6 +198,7 @@ async function obtenerAuthHeaders() {
         const oposicionActualId = obtenerOposicionActual();
         const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
         if (infoOposicion && infoOposicion.tiene_pesos_reales) return;
+        if (testYaIniciado) return; // el usuario ya empezó el test por otro camino mientras se esperaba esta respuesta
 
         const radioRealista = document.getElementById("opcion-reparto-realista");
         if (!radioRealista) return;
@@ -210,6 +222,7 @@ async function obtenerAuthHeaders() {
         const { obtenerOposicionActual } = await import("/assets/oposicion.js");
         const oposicionActualId = obtenerOposicionActual();
         const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
+        if (testYaIniciado) return; // el usuario ya empezó el test por otro camino mientras se esperaba esta respuesta
         const bloque = document.getElementById("filtro-psicotecnicas");
         if (bloque && infoOposicion && infoOposicion.tiene_psicotecnicas) {
           bloque.style.display = "block";
