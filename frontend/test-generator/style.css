@@ -343,11 +343,12 @@ h1, h2, h3 {
 }
 
 .bloque-temas {
-  display: grid;
-  /* En pantallas anchas, varios temas caben uno junto a otro en vez de
-     apilarse en una sola columna larga -- se ven más temas a la vez sin
-     tener que hacer scroll. */
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  /* Un tema debajo de otro, siempre en una sola columna -- con varias
+     columnas (como se probó antes) el ojo salta de una a otra al leer y
+     en tablet queda especialmente confuso al no coincidir con el ancho
+     real del bloque. */
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   margin: 8px 0 4px 30px;
 }
