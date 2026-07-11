@@ -5,6 +5,8 @@ import tiktoken
 from typing import List, Dict
 from google.cloud import firestore
 
+from oposiciones import coleccion_examenes_oficiales
+
 # ✅ Cuenta los tokens de un texto
 def contar_tokens(texto: str, modelo="gpt-3.5-turbo") -> int:
     try:
@@ -281,13 +283,104 @@ def repartir_cupos_por_tema(temas_ids, cantidad):
     return {tid: base + (1 if i < resto else 0) for i, tid in enumerate(ids)}
 
 
-def seleccionar_preguntas_con_cuota(preguntas, num_preguntas, temas_filtro=None):
+def calcular_pesos_reales_por_bloque(db, oposicion):
+    """Peso relativo (0-1) de cada bloque según cuántas preguntas de
+    exámenes oficiales YA CARGADOS (examenes_oficiales_<oposicion>,
+    etiquetadas con tema_id "bloque_XX-tema_YY") pertenecen a cada uno --
+    la mejor aproximación disponible al peso real de cada bloque en el
+    examen. Para AGE esta cuenta empírica ya coincide de hecho con el peso
+    oficial publicado en el BOE (ver datos_convocatoria_AGE.json): el
+    bloque de informática concentra ~40% de las preguntas históricas
+    cargadas, muy cerca del 30/70≈43% documentado. Para GACE el BOE no
+    publica ningún desglose por bloque, así que esta cuenta empírica es la
+    única fuente disponible. Si la oposición todavía no tiene ningún
+    examen oficial cargado (p. ej. Auxiliar), devuelve {} y quien la use
+    debe caer de vuelta a un reparto equitativo.
+
+    Se cachea con el mismo TTL que el resto del temario (ver
+    _desde_cache_o_calcular) porque los exámenes oficiales solo cambian al
+    cargar una convocatoria nueva a mano."""
+    def _calcular():
+        coleccion = coleccion_examenes_oficiales(oposicion)
+        contador = {}
+        for doc in db.collection(coleccion).stream():
+            d = doc.to_dict() or {}
+            if d.get("tipo") != "pregunta":
+                continue
+            tema_id = d.get("tema_id") or ""
+            if "-" not in tema_id:
+                continue
+            bloque_id = tema_id.split("-")[0]
+            contador[bloque_id] = contador.get(bloque_id, 0) + 1
+        total = sum(contador.values())
+        if not total:
+            return {}
+        return {b: c / total for b, c in contador.items()}
+    return _desde_cache_o_calcular(("pesos_bloque", oposicion), _calcular)
+
+
+def _repartir_por_peso(ids, cantidad, pesos_norm):
+    """Reparto proporcional de 'cantidad' unidades ENTERAS entre ids según
+    pesos_norm (método del resto mayor / Hamilton): cada id recibe
+    primero la parte entera de cantidad*peso, y las unidades que faltan
+    por el redondeo se asignan a quienes tuvieran el resto decimal más
+    alto -- así la suma final cuadra siempre con 'cantidad' exacto, en vez
+    de perder o sobrar unidades al redondear cada peso por separado."""
+    crudo = {i: cantidad * pesos_norm.get(i, 0) for i in ids}
+    base = {i: int(v) for i, v in crudo.items()}
+    restante = cantidad - sum(base.values())
+    orden_restos = sorted(ids, key=lambda i: crudo[i] - base[i], reverse=True)
+    for i in orden_restos[:restante]:
+        base[i] += 1
+    return base
+
+
+def repartir_cupos_por_tema_realista(temas_ids, cantidad, pesos_por_bloque):
+    """Alternativa a repartir_cupos_por_tema que, en vez de repartir
+    'cantidad' a partes iguales entre TEMAS, reparte primero entre los
+    BLOQUES representados en temas_ids según su peso real
+    (pesos_por_bloque, ver calcular_pesos_reales_por_bloque) y solo
+    entonces reparte el cupo de cada bloque a partes iguales entre sus
+    temas seleccionados -- no existe ninguna fuente fiable de peso más
+    fina que a nivel de bloque (el BOE tampoco la publica). Un bloque sin
+    datos históricos (o si pesos_por_bloque está vacío del todo, p. ej.
+    Auxiliar) recibe el peso medio de los demás bloques seleccionados, en
+    vez de quedarse sin preguntas."""
+    ids = list(temas_ids)
+    if not ids:
+        return {}
+    temas_por_bloque = {}
+    for tid in ids:
+        bloque_id = tid.split("-")[0] if "-" in tid else tid
+        temas_por_bloque.setdefault(bloque_id, []).append(tid)
+
+    bloques = list(temas_por_bloque.keys())
+    pesos_conocidos = [pesos_por_bloque[b] for b in bloques if pesos_por_bloque.get(b)]
+    peso_medio = (sum(pesos_conocidos) / len(pesos_conocidos)) if pesos_conocidos else (1 / len(bloques))
+    pesos = {b: pesos_por_bloque.get(b) or peso_medio for b in bloques}
+    total_peso = sum(pesos.values()) or 1
+    pesos_norm = {b: p / total_peso for b, p in pesos.items()}
+
+    cupos_bloque = _repartir_por_peso(bloques, cantidad, pesos_norm)
+
+    cupos = {}
+    for bloque_id, cupo_bloque in cupos_bloque.items():
+        cupos.update(repartir_cupos_por_tema(temas_por_bloque[bloque_id], cupo_bloque))
+    return cupos
+
+
+def seleccionar_preguntas_con_cuota(preguntas, num_preguntas, temas_filtro=None, modo_reparto="equitativo", pesos_por_bloque=None):
     """Selecciona num_preguntas de una lista ya completa de preguntas (cada
-    una con su propio campo 'tema_id'), repartiendo en cuotas equitativas
-    entre los temas de temas_filtro que sí tengan preguntas disponibles. Si
-    temas_filtro es None/vacío, se comporta como el muestreo aleatorio simple
-    de siempre (sin tema elegido = sin filtrar). Usado por
-    /generar-test-oficial."""
+    una con su propio campo 'tema_id'), repartiendo entre los temas de
+    temas_filtro que sí tengan preguntas disponibles. Si temas_filtro es
+    None/vacío, se comporta como el muestreo aleatorio simple de siempre
+    (sin tema elegido = sin filtrar; con exámenes reales completos
+    cargados esto ya sale ponderado por sí solo, al venir de la
+    distribución real de las convocatorias). Con temas_filtro, modo_reparto
+    decide si el cupo se reparte a partes iguales entre temas
+    ("equitativo", por defecto) o según el peso real de cada bloque
+    ("realista", requiere pesos_por_bloque -- ver
+    calcular_pesos_reales_por_bloque). Usado por /generar-test-oficial."""
     if not temas_filtro:
         return random.sample(preguntas, min(num_preguntas, len(preguntas)))
 
@@ -304,7 +397,10 @@ def seleccionar_preguntas_con_cuota(preguntas, num_preguntas, temas_filtro=None)
     candidatos = list(pendientes_por_tema.keys())
     restante = num_preguntas
     while restante > 0 and candidatos:
-        cupos = repartir_cupos_por_tema(candidatos, restante)
+        if modo_reparto == "realista":
+            cupos = repartir_cupos_por_tema_realista(candidatos, restante, pesos_por_bloque or {})
+        else:
+            cupos = repartir_cupos_por_tema(candidatos, restante)
         avance = 0
         for tid, cupo in cupos.items():
             tomadas = pendientes_por_tema[tid][:cupo]

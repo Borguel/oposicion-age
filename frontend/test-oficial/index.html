@@ -46,6 +46,18 @@
         </div>
         <label id="label-lista-temas">Filtra por tema (opcional, deja todo sin marcar para todos los temas):</label>
         <div id="lista-temas"></div>
+        <div class="reparto-preguntas" id="reparto-preguntas">
+          <span class="reparto-preguntas-titulo">Reparto de preguntas entre los temas elegidos:</span>
+          <label class="reparto-opcion">
+            <input type="radio" name="modo_reparto" value="equitativo" checked>
+            <span><strong>Equitativo</strong> — mismo número de preguntas por cada tema, sin importar su peso real en el examen.</span>
+          </label>
+          <label class="reparto-opcion">
+            <input type="radio" name="modo_reparto" value="realista" id="opcion-reparto-realista">
+            <span><strong>Según el examen real</strong> — más preguntas de los bloques que históricamente más caen, menos de los que casi no aparecen.</span>
+          </label>
+          <p class="reparto-opcion-nota" id="reparto-nota-sin-datos" style="display:none;">No disponible: esta oposición todavía no tiene exámenes oficiales cargados para calcularlo.</p>
+        </div>
         <button type="submit" class="btn btn-primary btn-block">Generar test oficial</button>
       </form>
     </div>

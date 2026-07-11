@@ -11,7 +11,7 @@ from firebase_setup import db
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 from limites_uso import verificar_limite_uso, registrar_uso
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales
-from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, barajar_opciones_pregunta
+from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, barajar_opciones_pregunta, calcular_pesos_reales_por_bloque
 from test_generator import generar_preguntas_ia_en_lotes
 from generador_preguntas_verificado import generar_test_verificado
 from esquema_generator import generar_esquema
@@ -45,6 +45,13 @@ def generar_test_avanzado_route():
         num_preguntas = max(1, min(100, int(data.get("num_preguntas", 5))))
     except (TypeError, ValueError):
         num_preguntas = 5
+    # "equitativo" (por defecto, cuota igual entre temas) o "realista" (más
+    # preguntas de los bloques que más pesan en los exámenes oficiales ya
+    # cargados) -- ver utils.repartir_cupos_por_tema_realista. Cualquier
+    # valor no reconocido se trata como "equitativo" (el de siempre).
+    modo_reparto = data.get("modo_reparto", "equitativo")
+    if modo_reparto not in ("equitativo", "realista"):
+        modo_reparto = "equitativo"
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(
         db, g.uid, g.plan_actual, "test_avanzado_verificado"
     )
@@ -76,7 +83,8 @@ def generar_test_avanzado_route():
             try:
                 resultado = generar_test_verificado(
                     db, temas=temas, num_preguntas=num_preguntas,
-                    coleccion=coleccion, oposicion=oposicion, on_progreso=on_progreso
+                    coleccion=coleccion, oposicion=oposicion, on_progreso=on_progreso,
+                    modo_reparto=modo_reparto
                 )
             except Exception:
                 logger.exception("Error al generar el test personalizado verificado")
@@ -134,6 +142,9 @@ def generar_test_oficial():
         num_preguntas = 10
     examenes_filtrados = data.get("examenes", [])
     temas_filtrados = data.get("temas", [])
+    modo_reparto = data.get("modo_reparto", "equitativo")
+    if modo_reparto not in ("equitativo", "realista"):
+        modo_reparto = "equitativo"
     logger.info("Número de preguntas solicitado: %s, exámenes filtrados: %s, temas filtrados: %s", num_preguntas, examenes_filtrados, temas_filtrados)
     coleccion = coleccion_examenes_oficiales(g.oposicion)
     try:
@@ -163,7 +174,8 @@ def generar_test_oficial():
     logger.info("Preguntas encontradas tras filtro en %s: %d", coleccion, len(preguntas))
     if not preguntas:
         return jsonify({"test": [], "mensaje": "Todavía no hay preguntas oficiales cargadas para esta oposición"}), 404
-    seleccionadas = seleccionar_preguntas_con_cuota(preguntas, num_preguntas, temas_filtrados)
+    pesos_por_bloque = calcular_pesos_reales_por_bloque(db, g.oposicion) if modo_reparto == "realista" else None
+    seleccionadas = seleccionar_preguntas_con_cuota(preguntas, num_preguntas, temas_filtrados, modo_reparto=modo_reparto, pesos_por_bloque=pesos_por_bloque)
     logger.info("Preguntas seleccionadas: %d", len(seleccionadas))
     return jsonify({"test": seleccionadas})
 

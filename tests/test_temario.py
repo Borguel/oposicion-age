@@ -24,6 +24,19 @@ def test_oposiciones_disponibles_no_requiere_login(client):
     assert por_id["AGE"]["simulacro_oficial"] == {"num_preguntas": 70, "minutos": None}
     assert por_id["GACE"]["simulacro_oficial"] == {"num_preguntas": 100, "minutos": 90}
     assert por_id["AUXILIAR"]["simulacro_oficial"] is None
+    # Sin ningún examen oficial sembrado en el FakeFirestore de test, ninguna
+    # oposición tiene datos para el reparto "realista" todavía.
+    assert por_id["AGE"]["tiene_pesos_reales"] is False
+    assert por_id["GACE"]["tiene_pesos_reales"] is False
+    assert por_id["AUXILIAR"]["tiene_pesos_reales"] is False
+
+
+def test_oposiciones_disponibles_marca_tiene_pesos_reales_si_hay_examenes(client, db):
+    db.sembrar(("examenes_oficiales_AGE", "p1"), {"tipo": "pregunta", "tema_id": "bloque_01-tema_01"})
+    resp = client.get("/oposiciones-disponibles")
+    por_id = {o["id"]: o for o in resp.get_json()["oposiciones"]}
+    assert por_id["AGE"]["tiene_pesos_reales"] is True
+    assert por_id["GACE"]["tiene_pesos_reales"] is False
 
 
 def test_temas_disponibles_requiere_login(client):

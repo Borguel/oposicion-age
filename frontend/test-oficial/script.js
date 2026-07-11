@@ -150,6 +150,31 @@ async function obtenerAuthHeaders() {
       }
     }
 
+    // Si la oposición actual todavía no tiene ningún examen oficial cargado
+    // (ver utils.calcular_pesos_reales_por_bloque), el reparto "realista" no
+    // tiene con qué calcularse -- se deshabilita la opción con una nota
+    // explicando por qué, en vez de dejar que el usuario la elija y no
+    // note ninguna diferencia.
+    async function iniciarSelectorRepartoRealista() {
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
+        const datos = await res.json();
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const oposicionActualId = obtenerOposicionActual();
+        const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
+        if (infoOposicion && infoOposicion.tiene_pesos_reales) return;
+
+        const radioRealista = document.getElementById("opcion-reparto-realista");
+        if (!radioRealista) return;
+        radioRealista.disabled = true;
+        radioRealista.closest(".reparto-opcion")?.classList.add("reparto-opcion-deshabilitada");
+        const nota = document.getElementById("reparto-nota-sin-datos");
+        if (nota) nota.style.display = "block";
+      } catch (e) {
+        console.error("No se pudo comprobar si hay datos para el reparto realista:", e);
+      }
+    }
+
     // tiempoRestanteReanudado: si se pasa (al reanudar un test cronometrado
     // guardado), se usa como tiempoLimite inicial en vez de recalcularlo
     // desde el campo "minutos_cronometro" del formulario (que al reanudar no
@@ -249,6 +274,7 @@ async function obtenerAuthHeaders() {
       document.getElementById("barra-progreso-tiempo").style.display = "none";
       const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
       const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
+      const modoRepartoElegido = document.querySelector('input[name="modo_reparto"]:checked')?.value || "equitativo";
       if (REQUIERE_TEMA && temas.length === 0) {
         Swal.fire({
           icon: "warning",
@@ -287,7 +313,7 @@ async function obtenerAuthHeaders() {
         const res = await fetch("https://oposicion-age.onrender.com" + ENDPOINT_GENERAR, {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
-          body: JSON.stringify({ temas, num_preguntas, oposicion })
+          body: JSON.stringify({ temas, num_preguntas, oposicion, modo_reparto: modoRepartoElegido })
         });
         clearInterval(intervalCarga);
         if (res.status === 403) {
@@ -631,6 +657,7 @@ async function obtenerAuthHeaders() {
     window.addEventListener("load", async () => {
       await cargarTemas();
       iniciarBotonSimulacroOficial();
+      iniciarSelectorRepartoRealista();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
       if (resumeId) {

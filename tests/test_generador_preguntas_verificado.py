@@ -168,6 +168,37 @@ def test_generar_test_verificado_reparte_cupo_y_reporta_progreso(db):
     assert temas_de_las_preguntas == {"bloque_01-tema_01", "bloque_02-tema_01"}
 
 
+def test_generar_test_verificado_modo_realista_pondera_por_bloque(db):
+    relleno = " ".join(["palabra"] * 30)
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del bloque 1. {relleno}"
+    })
+    db.sembrar(("Temario AGE", "bloque_06", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 40/2015", "texto": f"Artículo 5. Contenido del bloque 6. {relleno}"
+    })
+    # bloque_06 concentra el 90% de las preguntas históricas de examenes
+    # oficiales -> con modo_reparto="realista" debe llevarse la mayoría del
+    # cupo del test personalizado, no la mitad como haría "equitativo".
+    db.sembrar(("examenes_oficiales_AGE", "b1-0"), {"tipo": "pregunta", "tema_id": "bloque_01-tema_01"})
+    for i in range(9):
+        db.sembrar(("examenes_oficiales_AGE", f"b6-{i}"), {"tipo": "pregunta", "tema_id": "bloque_06-tema_01"})
+
+    contador = itertools.count()
+    lock_contador = threading.Lock()
+    with patch("generador_preguntas_verificado.call_deepseek_api",
+               side_effect=_mock_deepseek_siempre_valido(contador, lock_contador)), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        resultado = generar_test_verificado(
+            db, temas=["bloque_01-tema_01", "bloque_06-tema_01"], num_preguntas=10,
+            coleccion="Temario AGE", oposicion="AGE", modo_reparto="realista"
+        )
+
+    assert len(resultado["test"]) == 10
+    temas_de_las_preguntas = [p["tema_id"] for p in resultado["test"]]
+    assert temas_de_las_preguntas.count("bloque_06-tema_01") == 9
+    assert temas_de_las_preguntas.count("bloque_01-tema_01") == 1
+
+
 def test_generar_test_verificado_sin_temas_no_falla(db):
     resultado = generar_test_verificado(db, temas=[], num_preguntas=5, coleccion="Temario AGE", oposicion="AGE")
     assert resultado["test"] == []
