@@ -30,8 +30,20 @@
         <div class="description">Preguntas reales de exámenes de convocatorias anteriores, tal como se hicieron el día del examen.</div>
       </div>
     </div>
+    <div class="card fade-in simulacro-card" id="tarjeta-simulacro" style="display:none;">
+      <div class="simulacro-icono">🏛️</div>
+      <div class="simulacro-info">
+        <div class="simulacro-titulo">Simulacro oficial</div>
+        <div class="simulacro-descripcion" id="simulacro-descripcion">Genera un examen con el mismo formato exacto de la convocatoria real.</div>
+      </div>
+      <button type="button" id="btn-simulacro-oficial" class="age-btn age-btn-primary">Empezar simulacro</button>
+    </div>
+
+    <div class="separador-o" id="separador-o" style="display:none;"><span>o bien</span></div>
+
     <div class="card fade-in" id="tarjeta-formulario">
-      <button type="button" id="btn-simulacro-oficial" class="age-btn age-btn-outline age-btn-block" style="display:none; margin-bottom: 16px;"></button>
+      <h3 class="tarjeta-formulario-titulo">Configura tu propio test</h3>
+      <p class="tarjeta-formulario-subtitulo">Elige tú cuántas preguntas quieres y de qué temas, en vez del formato oficial completo.</p>
       <form id="form-generar-test">
         <label for="num_preguntas">Número de preguntas:</label>
         <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="100" value="10" required>

@@ -3,3 +3,81 @@
    que se vea exactamente igual que el resto de páginas de test. Este
    fichero queda para overrides específicos de esta página si hicieran
    falta más adelante. */
+
+/* Separada de "Configura tu propio test" a propósito -- antes el botón de
+   simulacro vivía dentro de la misma tarjeta que el número de preguntas y
+   confundía sobre qué hacía cada cosa. Aquí queda claro que es una acción
+   directa (un clic = examen con el formato oficial), no un valor más a
+   rellenar en el formulario de abajo. */
+.simulacro-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid var(--age-primary);
+}
+
+.simulacro-icono {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.simulacro-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.simulacro-titulo {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.simulacro-descripcion {
+  color: var(--age-ink-soft);
+  font-size: 0.92rem;
+}
+
+#btn-simulacro-oficial {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.separador-o {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--age-ink-faint);
+  font-size: 0.85rem;
+}
+
+.separador-o::before,
+.separador-o::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--age-border);
+}
+
+.tarjeta-formulario-titulo {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.tarjeta-formulario-subtitulo {
+  margin: 0 0 16px;
+  color: var(--age-ink-soft);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+  .simulacro-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  #btn-simulacro-oficial {
+    width: 100%;
+  }
+}

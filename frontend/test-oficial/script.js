@@ -122,8 +122,11 @@ async function obtenerAuthHeaders() {
     // tenga que teclear a mano cuántas preguntas y cuánto tiempo simula un
     // examen real.
     async function iniciarBotonSimulacroOficial() {
+      const tarjeta = document.getElementById("tarjeta-simulacro");
       const boton = document.getElementById("btn-simulacro-oficial");
-      if (!boton) return;
+      const descripcion = document.getElementById("simulacro-descripcion");
+      const separador = document.getElementById("separador-o");
+      if (!tarjeta || !boton) return;
       try {
         const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
         const datos = await res.json();
@@ -132,10 +135,13 @@ async function obtenerAuthHeaders() {
         const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
         const simulacro = infoOposicion && infoOposicion.simulacro_oficial;
         if (!simulacro) return; // sin datos verificados para esta oposición -- no se ofrece
-        boton.textContent = simulacro.minutos
-          ? `🏛️ Simulacro oficial (${simulacro.num_preguntas} preguntas, ${simulacro.minutos} min)`
-          : `🏛️ Simulacro oficial (${simulacro.num_preguntas} preguntas)`;
-        boton.style.display = "block";
+        if (descripcion) {
+          descripcion.textContent = simulacro.minutos
+            ? `Genera un examen con el mismo formato del examen real: ${simulacro.num_preguntas} preguntas en ${simulacro.minutos} minutos.`
+            : `Genera un examen con el mismo número de preguntas del examen real: ${simulacro.num_preguntas} preguntas.`;
+        }
+        tarjeta.style.display = "flex";
+        if (separador) separador.style.display = "flex";
         boton.addEventListener("click", () => {
           document.getElementById("num_preguntas").value = simulacro.num_preguntas;
           if (simulacro.minutos) {
