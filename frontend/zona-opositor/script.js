@@ -65,16 +65,20 @@ async function cargarProgresoInsignias() {
   try {
     const token = await idToken();
     const oposicion = obtenerOposicionActual();
-    const [resEstadisticas, resRacha, resTemas] = await Promise.all([
+    const [resEstadisticas, resRacha, resTemas, resFecha] = await Promise.all([
       fetch(`${BACKEND_URL}/estadisticas-completas?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${BACKEND_URL}/mi-racha`, { headers: { Authorization: `Bearer ${token}` } }),
-      fetch(`${BACKEND_URL}/temas-disponibles?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${BACKEND_URL}/temas-disponibles?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${BACKEND_URL}/fecha-examen?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } })
     ]);
     if (!resEstadisticas.ok) return;
     const { estadisticas } = await resEstadisticas.json();
     if (!estadisticas || estadisticas.error) return;
     const racha = resRacha.ok ? await resRacha.json() : { racha_maxima: 0 };
     const temas = resTemas.ok ? (await resTemas.json()).temas || [] : [];
+    const fechaExamen = resFecha.ok ? (await resFecha.json()).fecha_examen : null;
+
+    renderPlanEstudio(estadisticas.rendimiento_por_tema ?? {}, temas, fechaExamen);
 
     const datos = {
       testsRealizados: estadisticas.tests_realizados ?? 0,
@@ -103,9 +107,8 @@ async function cargarProgresoInsignias() {
 const UMBRAL_ACIERTO_FLOJO = 60;
 const MINIMO_PREGUNTAS_FLOJO = 3;
 
-function renderTemaFlojo(rendimientoPorTema, todosTemas) {
-  const contenedor = document.getElementById("zona-tema-flojo");
-  const peor = Object.entries(rendimientoPorTema || {})
+function peorTemaFlojo(rendimientoPorTema) {
+  return Object.entries(rendimientoPorTema || {})
     .map(([id, r]) => {
       const respondidas = (r.aciertos || 0) + (r.fallos || 0);
       const porcentaje = respondidas > 0 ? Math.round((r.aciertos / respondidas) * 100) : null;
@@ -113,6 +116,11 @@ function renderTemaFlojo(rendimientoPorTema, todosTemas) {
     })
     .filter((t) => t.respondidas >= MINIMO_PREGUNTAS_FLOJO && t.porcentaje !== null && t.porcentaje < UMBRAL_ACIERTO_FLOJO)
     .sort((a, b) => a.porcentaje - b.porcentaje)[0];
+}
+
+function renderTemaFlojo(rendimientoPorTema, todosTemas) {
+  const contenedor = document.getElementById("zona-tema-flojo");
+  const peor = peorTemaFlojo(rendimientoPorTema);
 
   if (!peor) {
     contenedor.style.display = "none";
@@ -133,6 +141,74 @@ function renderTemaFlojo(rendimientoPorTema, todosTemas) {
     </a>
   `;
   contenedor.style.display = "";
+}
+
+// Planificador de estudio: combina la fecha de examen configurada (ver
+// cuenta-atras.js/GET /fecha-examen) con qué temas quedan por tocar
+// todavía, para sugerir un ritmo aproximado y un "tema de hoy" concreto en
+// vez de dejar al usuario adivinar por dónde seguir. "Tocado" usa el mismo
+// criterio simple que ya tenía disponible esta página (aparece en
+// rendimiento_por_tema), sin traer todo el historial de tests solo para
+// esto -- si se necesitase la definición exacta de Estadísticas
+// (temas.some) habría que traer también /mis-tests aquí.
+function renderPlanEstudio(rendimientoPorTema, todosTemas, fechaExamenISO) {
+  const seccion = document.getElementById("zona-plan-estudio");
+  if (!todosTemas.length) {
+    seccion.style.display = "none";
+    return;
+  }
+
+  const temasTocados = new Set(Object.keys(rendimientoPorTema || {}));
+  const pendientes = todosTemas.filter((t) => !temasTocados.has(t.id));
+
+  let ritmo;
+  if (!fechaExamenISO) {
+    ritmo = pendientes.length > 0
+      ? `Te quedan ${pendientes.length} de ${todosTemas.length} temas por tocar. Configura la fecha de tu examen (arriba) para ver un ritmo sugerido.`
+      : "Ya has tocado todos los temas al menos una vez. ¡Sigue repasando para consolidarlos!";
+  } else {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const diasRestantes = Math.round((new Date(`${fechaExamenISO}T00:00:00`) - hoy) / 86400000);
+    if (diasRestantes <= 0) {
+      ritmo = pendientes.length > 0 ? `Quedan ${pendientes.length} temas sin tocar y tu examen ya está aquí: repásalos como puedas.` : "Has tocado todos los temas. ¡A por el examen!";
+    } else if (pendientes.length === 0) {
+      ritmo = `Ya has tocado los ${todosTemas.length} temas. Quedan ${diasRestantes} días: aprovéchalos para repasar y afianzar.`;
+    } else {
+      const ritmoDias = Math.max(1, Math.floor(diasRestantes / pendientes.length));
+      ritmo = `Te quedan ${pendientes.length} temas nuevos y ${diasRestantes} días hasta el examen: te toca ver un tema nuevo aprox. cada ${ritmoDias} día${ritmoDias !== 1 ? "s" : ""} para llegar a verlos todos.`;
+    }
+  }
+  fijarTexto("zona-plan-ritmo", ritmo);
+
+  const contenedorHoy = document.getElementById("zona-plan-hoy");
+  const siguienteNuevo = pendientes[0];
+  const peorFlojo = peorTemaFlojo(rendimientoPorTema);
+  let sugerido = null;
+  let motivo = "";
+  if (siguienteNuevo) {
+    sugerido = siguienteNuevo;
+    motivo = "aún no lo has tocado";
+  } else if (peorFlojo) {
+    sugerido = todosTemas.find((t) => t.id === peorFlojo.id);
+    motivo = `${peorFlojo.porcentaje}% de acierto todavía`;
+  }
+
+  if (!sugerido) {
+    contenedorHoy.innerHTML = "";
+  } else {
+    contenedorHoy.innerHTML = `
+      <a class="zona-mis-cosas-item" href="/test-personalizado/?temas=${encodeURIComponent(sugerido.id)}">
+        <span class="zona-mis-cosas-icono">${icono("diana", 26)}</span>
+        <span class="zona-mis-cosas-texto">
+          <strong>Tema de hoy: <span title="${sugerido.titulo}">${sugerido.titulo}</span></strong>
+          <small>${motivo}</small>
+        </span>
+        <span class="zona-mis-cosas-flecha">→</span>
+      </a>
+    `;
+  }
+  seccion.style.display = "";
 }
 
 async function iniciarBotonNotificaciones() {

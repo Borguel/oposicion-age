@@ -289,6 +289,25 @@ body {
   }
 }
 
+.zona-plan-card {
+  padding: 22px 26px;
+}
+
+.zona-plan-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+.zona-plan-ritmo {
+  color: var(--age-ink-soft);
+  font-size: 0.92rem;
+  margin: 0 0 8px;
+}
+
+.zona-plan-hoy .zona-mis-cosas-item {
+  padding: 14px 0 0;
+}
+
 .zona-onboarding-card {
   padding: 22px 26px;
 }
