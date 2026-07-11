@@ -59,17 +59,32 @@ function aplicarEnfasis(texto) {
     .replace(/\*(.+?)\*/g, "<em>$1</em>");
 }
 
-function copyToClipboard(text) {
+// Devuelve una promesa que se resuelve con true/false según si la copia
+// tuvo éxito, para que quien llame pueda dar alguna señal visual -- antes
+// un fallo de navigator.clipboard.writeText (p. ej. permiso denegado) no
+// se notaba de ninguna forma, el botón "copiar" simplemente no hacía nada.
+async function copyToClipboard(text) {
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).catch(console.error);
-  } else {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      console.error("No se pudo copiar al portapapeles:", e);
+      return false;
+    }
+  }
+  try {
     const textarea = document.createElement('textarea');
     textarea.value = text;
     textarea.style.position = 'fixed';
     document.body.appendChild(textarea);
     textarea.select();
-    document.execCommand('copy');
+    const exito = document.execCommand('copy');
     document.body.removeChild(textarea);
+    return exito;
+  } catch (e) {
+    console.error("No se pudo copiar al portapapeles:", e);
+    return false;
   }
 }
 
@@ -208,7 +223,17 @@ document.addEventListener("DOMContentLoaded", function () {
     // onclick inline: no depende de 'unsafe-inline' en el CSP. Lee
     // estado.texto en el momento del click (no el texto en el momento de
     // crear la burbuja), para copiar siempre la versión final.
-    div.querySelector(".btn-copiar-mensaje").addEventListener("click", () => copyToClipboard(estado.texto));
+    const botonCopiar = div.querySelector(".btn-copiar-mensaje");
+    botonCopiar.addEventListener("click", async () => {
+      const exito = await copyToClipboard(estado.texto);
+      const iconoOriginal = botonCopiar.textContent;
+      botonCopiar.textContent = exito ? "✅" : "⚠️";
+      botonCopiar.title = exito ? "Copiado" : "No se pudo copiar";
+      setTimeout(() => {
+        botonCopiar.textContent = iconoOriginal;
+        botonCopiar.title = "Copiar";
+      }, 1500);
+    });
     return { div, contenido: div.querySelector(".bubble-bot-contenido"), estado };
   }
 
@@ -240,6 +265,13 @@ document.addEventListener("DOMContentLoaded", function () {
     input.style.height = "auto";
     input.style.height = Math.min(input.scrollHeight, 110) + "px";
 
+    await pedirRespuestaTutor(texto);
+  }
+
+  // Extraído de enviarMensaje() para poder reutilizarlo al regenerar una
+  // respuesta que se cortó a medias (ver botón "Regenerar" más abajo) sin
+  // volver a añadir el mensaje del usuario, que ya está en el historial.
+  async function pedirRespuestaTutor(texto) {
     const authHeaders = await obtenerAuthHeaders();
     if (!authHeaders) return;
 
@@ -320,7 +352,41 @@ document.addEventListener("DOMContentLoaded", function () {
       agregarMensaje("bot", ERROR_TECNICO_TUTOR);
       return;
     }
+
+    // El streaming se cortó a medias (error de red/servidor tras haber
+    // empezado a escribir) -- a diferencia del caso anterior, aquí SÍ hay
+    // texto que enseñar, así que se deja tal cual en vez de descartarlo,
+    // pero se avisa de que está incompleto y se ofrece regenerarla en vez
+    // de dejar una respuesta cortada sin ningún indicio.
+    if (huboError && textoAcumulado) {
+      mostrarBurbujaCortada(burbuja, texto);
+      return;
+    }
+
     cargarHistorial();
+  }
+
+  // A diferencia de .bubble-bot-actions (el icono de copiar, oculto salvo
+  // hover -- pensado como una acción secundaria), este aviso va siempre
+  // visible: es precisamente el momento en que el usuario necesita verlo
+  // sin tener que pasar el ratón por encima.
+  function mostrarBurbujaCortada(burbuja, textoOriginal) {
+    const bloque = document.createElement("div");
+    bloque.className = "bubble-bot-cortada";
+    const aviso = document.createElement("span");
+    aviso.textContent = "⚠️ Respuesta incompleta";
+    const botonRegenerar = document.createElement("button");
+    botonRegenerar.type = "button";
+    botonRegenerar.className = "btn-regenerar-mensaje";
+    botonRegenerar.textContent = "🔄 Regenerar";
+    botonRegenerar.addEventListener("click", async () => {
+      botonRegenerar.disabled = true;
+      botonRegenerar.textContent = "Regenerando…";
+      burbuja.div.remove();
+      await pedirRespuestaTutor(textoOriginal);
+    });
+    bloque.append(aviso, botonRegenerar);
+    burbuja.div.querySelector(".bubble-bot").appendChild(bloque);
   }
 
   // HISTORIAL (persistido en Firestore, no en localStorage)

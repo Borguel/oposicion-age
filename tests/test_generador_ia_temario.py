@@ -70,6 +70,20 @@ def test_lote_con_json_invalido_no_bloquea_los_demas():
     assert len(errores) == 1
 
 
+def test_on_progreso_se_llama_una_vez_por_lote():
+    eventos_progreso = []
+    with patch("test_generator.call_deepseek_api", side_effect=lambda **kw: _pregunta_json("¿P?")):
+        generar_preguntas_ia_en_lotes(
+            lambda n: "prompt", 22, tamano_lote=15,
+            on_progreso=lambda evento: eventos_progreso.append(evento)
+        )
+
+    # 22 preguntas con tamano_lote=15 -> 2 lotes (15 + 7), un evento por lote.
+    assert len(eventos_progreso) == 2
+    assert {e["total"] for e in eventos_progreso} == {2}
+    assert sorted(e["completadas"] for e in eventos_progreso) == [1, 2]
+
+
 def test_lote_sin_respuesta_de_deepseek_se_reporta_como_error():
     with patch("test_generator.call_deepseek_api", return_value=None):
         preguntas, errores = generar_preguntas_ia_en_lotes(lambda n: "prompt", 3, tamano_lote=3)

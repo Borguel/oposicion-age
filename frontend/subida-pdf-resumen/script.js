@@ -46,6 +46,8 @@ async function obtenerAuthHeaders() {
         const datos = await res.json();
         if (!res.ok) {
           console.error("❌ Error al guardar resumen en Firebase:", datos.error);
+          const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+          mostrarErrorGlobal("No se pudo guardar el resumen en tu cuenta. El texto sigue visible en pantalla, pero no ha quedado guardado.");
         } else {
           console.log("✅ Resumen guardado automáticamente en Firebase");
           // Mostrar indicador
@@ -56,6 +58,8 @@ async function obtenerAuthHeaders() {
         }
       } catch (e) {
         console.error("⚠️ Error al guardar resumen en Firebase:", e);
+        const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+        mostrarErrorGlobal("No se pudo guardar el resumen en tu cuenta. El texto sigue visible en pantalla, pero no ha quedado guardado.");
       }
     }
     // === Funciones auxiliares ===

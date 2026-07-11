@@ -5,6 +5,7 @@ import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual } from "
 import { icono } from "/assets/icons.js";
 import { fijarTexto } from "/assets/dom.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
+import { inicializarCuentaAtras } from "/assets/cuenta-atras.js";
 
 const MENSAJES_RACHA = [
   { minimo: 0, texto: "Empieza hoy tu racha: haz un test o repasa algo para arrancar." },
@@ -160,95 +161,6 @@ async function iniciarBotonNotificaciones() {
       mostrarErrorGlobal(e.message || "No se pudieron activar las notificaciones.");
     } finally {
       boton.disabled = false;
-    }
-  });
-}
-
-function formatearCuentaAtras(fechaISO) {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const fechaExamen = new Date(`${fechaISO}T00:00:00`);
-  const dias = Math.round((fechaExamen - hoy) / 86400000);
-  if (dias > 1) return { numero: `${dias} días`, mensaje: "para tu examen" };
-  if (dias === 1) return { numero: "Mañana", mensaje: "es tu examen. ¡Mucho ánimo!" };
-  if (dias === 0) return { numero: "¡Hoy!", mensaje: "es el día de tu examen. ¡A por ello!" };
-  return { numero: "Ya pasó", mensaje: "la fecha que configuraste" };
-}
-
-async function cargarCuentaAtras() {
-  const numeroEl = document.getElementById("cuenta-atras-numero");
-  const mensajeEl = document.getElementById("cuenta-atras-mensaje");
-  const boton = document.getElementById("cuenta-atras-boton");
-  const form = document.getElementById("cuenta-atras-form");
-  const input = document.getElementById("cuenta-atras-input");
-  const quitar = document.getElementById("cuenta-atras-quitar");
-  const token = await idToken();
-  const oposicion = obtenerOposicionActual();
-
-  const pintar = (fecha) => {
-    if (fecha) {
-      const { numero, mensaje } = formatearCuentaAtras(fecha);
-      numeroEl.textContent = numero;
-      mensajeEl.textContent = mensaje;
-      boton.textContent = "Cambiar fecha";
-      quitar.style.display = "";
-    } else {
-      numeroEl.textContent = "—";
-      mensajeEl.textContent = "Configura la fecha de tu examen para ver la cuenta atrás.";
-      boton.textContent = "Configurar";
-      quitar.style.display = "none";
-    }
-  };
-
-  let fechaActual = null;
-  try {
-    const res = await fetch(`${BACKEND_URL}/fecha-examen?oposicion=${encodeURIComponent(oposicion)}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (res.ok) {
-      const datos = await res.json();
-      fechaActual = datos.fecha_examen || null;
-    }
-  } catch (e) {
-    console.error("Error cargando fecha de examen:", e);
-  }
-  pintar(fechaActual);
-
-  boton.addEventListener("click", () => {
-    input.value = fechaActual || "";
-    form.style.display = form.style.display === "none" ? "flex" : "none";
-  });
-
-  form.addEventListener("submit", async (evento) => {
-    evento.preventDefault();
-    try {
-      await fetch(`${BACKEND_URL}/fecha-examen?oposicion=${encodeURIComponent(oposicion)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ fecha_examen: input.value })
-      });
-      fechaActual = input.value;
-      pintar(fechaActual);
-      form.style.display = "none";
-    } catch (e) {
-      console.error("Error guardando fecha de examen:", e);
-      mostrarErrorGlobal("No se pudo guardar la fecha del examen. Inténtalo de nuevo.");
-    }
-  });
-
-  quitar.addEventListener("click", async () => {
-    try {
-      await fetch(`${BACKEND_URL}/fecha-examen?oposicion=${encodeURIComponent(oposicion)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ fecha_examen: "" })
-      });
-      fechaActual = null;
-      pintar(fechaActual);
-      form.style.display = "none";
-    } catch (e) {
-      console.error("Error quitando fecha de examen:", e);
-      mostrarErrorGlobal("No se pudo quitar la fecha del examen. Inténtalo de nuevo.");
     }
   });
 }
@@ -440,7 +352,7 @@ async function iniciar() {
   cargarProgresoInsignias();
   cargarTestEnProgreso();
   iniciarBotonNotificaciones();
-  cargarCuentaAtras();
+  inicializarCuentaAtras();
   renderAviso();
   renderSwitcher();
   renderOnboarding();

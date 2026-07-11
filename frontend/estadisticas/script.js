@@ -776,5 +776,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     filtrarTemas();
   }
 
+  import("/assets/cuenta-atras.js").then(({ inicializarCuentaAtras }) => inicializarCuentaAtras());
+
   cargarDatos();
 });

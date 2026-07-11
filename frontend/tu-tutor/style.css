@@ -398,6 +398,33 @@ html { scroll-behavior: smooth; }
 }
 .bubble-bot-actions button:hover { background: var(--age-primary-soft); }
 
+/* Aviso de respuesta cortada a medias (fallo de red/servidor mientras se
+   escribía) -- a propósito siempre visible (no como .bubble-bot-actions,
+   que solo aparece al pasar el ratón), justo debajo del texto parcial. */
+.bubble-bot-cortada {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--age-border);
+  font-size: 0.82rem;
+  color: var(--age-warning, var(--age-ink-soft));
+  flex-wrap: wrap;
+}
+.btn-regenerar-mensaje {
+  border: 1px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-size: 0.82rem;
+  font-family: var(--age-font);
+  padding: 4px 10px;
+  border-radius: var(--age-radius-pill, 999px);
+  cursor: pointer;
+}
+.btn-regenerar-mensaje:hover { background: var(--age-primary-soft); }
+.btn-regenerar-mensaje:disabled { opacity: 0.6; cursor: default; }
+
 .quick-questions {
   display: flex;
   flex-wrap: wrap;

@@ -75,6 +75,24 @@
     </div>
   </section>
 
+  <!-- Cuenta atrás al examen: mismo widget y misma lógica que Zona
+       Opositor (ver assets/cuenta-atras.js) -- aquí, justo al lado de los
+       temas flojos/cobertura del temario, es donde tiene más sentido el
+       "¿estoy listo?" con los días que quedan. -->
+  <section class="age-card zona-cuenta-atras-card" id="zona-cuenta-atras">
+    <div class="zona-cuenta-atras-icono">📅</div>
+    <div class="zona-cuenta-atras-info">
+      <div class="zona-cuenta-atras-numero" id="cuenta-atras-numero">—</div>
+      <div class="zona-cuenta-atras-mensaje" id="cuenta-atras-mensaje">Cargando…</div>
+    </div>
+    <button type="button" class="age-btn age-btn-outline zona-cuenta-atras-boton" id="cuenta-atras-boton">Configurar</button>
+    <form class="zona-cuenta-atras-form" id="cuenta-atras-form" style="display:none;">
+      <input type="date" id="cuenta-atras-input" required />
+      <button type="submit" class="age-btn age-btn-primary">Guardar</button>
+      <button type="button" class="zona-cuenta-atras-quitar" id="cuenta-atras-quitar" style="display:none;">Quitar fecha</button>
+    </form>
+  </section>
+
   <!-- Evolución de la nota: gráfica de línea de los últimos tests. Es lo
        más visual de la página, por eso va justo debajo del vistazo y
        antes de las insignias, no enterrada a media página. -->

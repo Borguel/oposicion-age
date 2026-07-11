@@ -4,6 +4,7 @@ más críticas -- las 4 de /guardar-*-pdf (persisten contenido y actualizan
 estadísticas) y un test de humo de /resumir-pdf y /generar-test-desde-pdf
 con DeepSeek mockeado. El resto de las ~20 rutas de este blueprint queda
 fuera de esta tanda (desproporcionado para el alcance aprobado)."""
+import json
 import pytest
 from unittest.mock import patch
 
@@ -14,6 +15,14 @@ def _con_sesion(cliente, uid="u1", email="u1@example.com"):
     parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
     parche.start()
     return parche
+
+
+def _eventos_sse(cuerpo_respuesta):
+    return [
+        json.loads(linea[len("data: "):])
+        for linea in cuerpo_respuesta.split("\n\n")
+        if linea.startswith("data: ")
+    ]
 
 
 class TestExtraerJsonArray:
@@ -139,7 +148,10 @@ class TestResumirPdfYGenerarTestDesdePdf:
             parche.stop()
         assert resp.status_code == 500
 
-    def test_generar_test_desde_pdf(self, client, documento_sembrado):
+    def test_generar_test_desde_pdf(self, client, db, documento_sembrado):
+        # En streaming (SSE, mismo patrón que /generar-test-avanzado): el
+        # resultado llega en el evento "fin" del cuerpo, no como JSON directo
+        # -- el status HTTP es 200 tanto en éxito como en fallo de generación.
         preguntas_generadas = [{
             "pregunta": "¿Pregunta?",
             "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
@@ -155,9 +167,13 @@ class TestResumirPdfYGenerarTestDesdePdf:
         finally:
             parche.stop()
         assert resp.status_code == 200
-        assert len(resp.get_json()["test"]) == 1
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo"] == "fin"
+        assert len(eventos[-1]["test"]) == 1
+        # También se factura el uso solo cuando la generación tuvo éxito.
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
 
-    def test_generar_test_desde_pdf_sin_preguntas_da_error_500(self, client, documento_sembrado):
+    def test_generar_test_desde_pdf_sin_preguntas_no_factura_uso(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.generar_preguntas_ia_en_lotes", return_value=([], ["fallo de la IA"])):
@@ -165,4 +181,10 @@ class TestResumirPdfYGenerarTestDesdePdf:
                                     headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
-        assert resp.status_code == 500
+        assert resp.status_code == 200
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo"] == "fin"
+        assert eventos[-1]["test"] == []
+        assert "error" in eventos[-1]
+        # Si no se generó ni una sola pregunta, no debe consumirse cuota.
+        assert "pdf_ia" not in db.leer(("usuarios", "u1")).get("limites_uso", {})

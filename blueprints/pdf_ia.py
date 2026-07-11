@@ -4,12 +4,14 @@ esquema, test, tarjetas y chat sobre el documento, más "Mis documentos"
 import json
 import logging
 import os
+import queue
 import random
+import threading
 from datetime import datetime
 from io import BytesIO
 
 import requests
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 from PyPDF2 import PdfReader
 
 from firebase_setup import db
@@ -218,6 +220,11 @@ def generar_esquema_desde_pdf():
 @bp.route('/generar-test-desde-pdf', methods=['POST'])
 @requiere_plan(db, "gratis", global_check=True)
 def generar_test_desde_pdf():
+    # En streaming (SSE, mismo patrón que /generar-test-avanzado en
+    # blueprints/test_ia.py) para poder retransmitir progreso real por lote
+    # en vez de los mensajes rotativos cosméticos que tenía antes -- generar
+    # varios lotes en paralelo con IA tarda bastante más que una respuesta
+    # instantánea, sobre todo con num_preguntas alto.
     try:
         num_preguntas = int(request.form.get("num_preguntas", 10))
         if num_preguntas < 1 or num_preguntas > 100:
@@ -230,61 +237,89 @@ def generar_test_desde_pdf():
     text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
     if error:
         return error
-    try:
-        max_length = 150000
-        if len(text) > max_length:
-            text = text[:max_length]
 
-        def construir_prompt(n):
-            system_prompt = (
-                f"Eres un experto en la elaboración de preguntas tipo test para oposiciones oficiales en España. "
-                f"Tu tarea es generar EXACTAMENTE {n} preguntas de opción múltiple de alta calidad, "
-                f"basadas únicamente en el documento proporcionado. Cada pregunta debe cumplir lo siguiente:\n"
-                f"1. **Formato**: pregunta clara y directa, seguida de cuatro opciones (A, B, C, D).\n"
-                f"2. **Precisión**: si el documento menciona leyes, artículos, plazos, funciones, definiciones, principios o procedimientos, la pregunta debe reflejarlos con exactitud.\n"
-                f"3. **Respuesta correcta**: debe ser inequívoca y extraída directamente del texto.\n"
-                f"4. **Distractores**: deben ser técnicamente plausibles, basados en confusiones comunes, errores típicos o elementos similares del propio documento.\n"
-                f"5. **Neutralidad**: evita lenguaje coloquial, ambigüedades, opiniones o preguntas triviales.\n"
-                f"6. **Explicación**: repasa TODAS las opciones, una por línea y en orden, con este formato exacto: \"A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) ...\", citando o basándote en el contenido del documento.\n"
-                f"Devuelve SOLO un array JSON válido con este formato exacto:\n"
-                f"[{{\"pregunta\": \"...\", \"opciones\": {{\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}}]\n"
-                f"NO añadas texto adicional antes ni después del array JSON."
-            )
-            return f"{system_prompt}\n\nDocumento para crear preguntas test:\n{text}"
+    max_length = 150000
+    if len(text) > max_length:
+        text = text[:max_length]
 
-        preguntas, errores_lotes = generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas)
-        registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
-        if not preguntas:
-            return jsonify({
-                "error": "La IA no devolvió un JSON válido para las preguntas. Error técnico.",
-                "respuesta_cruda": "; ".join(errores_lotes)[:500]
-            }), 500
-        preguntas_validadas = []
-        for p in preguntas:
-            if all(k in p for k in ["pregunta", "opciones", "respuesta_correcta"]):
-                if "explicacion" not in p:
-                    p["explicacion"] = "Explicación no disponible."
-                p["pregunta"] = str(p["pregunta"]).strip() if p["pregunta"] else "Pregunta no disponible"
-                p["explicacion"] = str(p["explicacion"]).strip() if p["explicacion"] else "Explicación no disponible"
-                if not isinstance(p["opciones"], dict):
-                    p["opciones"] = {}
-                for key in list(p["opciones"].keys()):
-                    p["opciones"][key] = str(p["opciones"][key]).strip() if p["opciones"][key] else "Opción no disponible"
-                p["respuesta_correcta"] = str(p["respuesta_correcta"]).upper() if p["respuesta_correcta"] else "A"
-                preguntas_validadas.append(barajar_opciones_pregunta(p))
-        if not preguntas_validadas:
-            return jsonify({
-                "error": "La IA generó preguntas vacías o inválidas."
-            }), 500
-        resultado = {"test": preguntas_validadas, "documento_id": documento_id, "nombre_archivo": nombre_archivo}
-        if len(preguntas_validadas) < num_preguntas:
-            resultado["advertencia"] = f"Solo se generaron {len(preguntas_validadas)} de {num_preguntas} preguntas."
-        return jsonify(resultado)
-    except Exception as e:
-        logger.exception("Error en /generar-test-desde-pdf")
-        return jsonify({
-            "error": f"Error al procesar el PDF o generar preguntas: {str(e)}"
-        }), 500
+    def construir_prompt(n):
+        system_prompt = (
+            f"Eres un experto en la elaboración de preguntas tipo test para oposiciones oficiales en España. "
+            f"Tu tarea es generar EXACTAMENTE {n} preguntas de opción múltiple de alta calidad, "
+            f"basadas únicamente en el documento proporcionado. Cada pregunta debe cumplir lo siguiente:\n"
+            f"1. **Formato**: pregunta clara y directa, seguida de cuatro opciones (A, B, C, D).\n"
+            f"2. **Precisión**: si el documento menciona leyes, artículos, plazos, funciones, definiciones, principios o procedimientos, la pregunta debe reflejarlos con exactitud.\n"
+            f"3. **Respuesta correcta**: debe ser inequívoca y extraída directamente del texto.\n"
+            f"4. **Distractores**: deben ser técnicamente plausibles, basados en confusiones comunes, errores típicos o elementos similares del propio documento.\n"
+            f"5. **Neutralidad**: evita lenguaje coloquial, ambigüedades, opiniones o preguntas triviales.\n"
+            f"6. **Explicación**: repasa TODAS las opciones, una por línea y en orden, con este formato exacto: \"A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) ...\", citando o basándote en el contenido del documento.\n"
+            f"Devuelve SOLO un array JSON válido con este formato exacto:\n"
+            f"[{{\"pregunta\": \"...\", \"opciones\": {{\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}}]\n"
+            f"NO añadas texto adicional antes ni después del array JSON."
+        )
+        return f"{system_prompt}\n\nDocumento para crear preguntas test:\n{text}"
+
+    uid = g.uid
+    plan_actual = g.plan_actual
+
+    def generar():
+        eventos = queue.Queue()
+
+        def _en_hilo_de_fondo():
+            def on_progreso(evento_progreso):
+                eventos.put({"tipo": "progreso", **evento_progreso})
+            try:
+                preguntas, errores_lotes = generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, on_progreso=on_progreso)
+                if not preguntas:
+                    resultado = {
+                        "test": [],
+                        "error": "La IA no devolvió un JSON válido para las preguntas. Error técnico.",
+                        "respuesta_cruda": "; ".join(errores_lotes)[:500]
+                    }
+                else:
+                    preguntas_validadas = []
+                    for p in preguntas:
+                        if all(k in p for k in ["pregunta", "opciones", "respuesta_correcta"]):
+                            if "explicacion" not in p:
+                                p["explicacion"] = "Explicación no disponible."
+                            p["pregunta"] = str(p["pregunta"]).strip() if p["pregunta"] else "Pregunta no disponible"
+                            p["explicacion"] = str(p["explicacion"]).strip() if p["explicacion"] else "Explicación no disponible"
+                            if not isinstance(p["opciones"], dict):
+                                p["opciones"] = {}
+                            for key in list(p["opciones"].keys()):
+                                p["opciones"][key] = str(p["opciones"][key]).strip() if p["opciones"][key] else "Opción no disponible"
+                            p["respuesta_correcta"] = str(p["respuesta_correcta"]).upper() if p["respuesta_correcta"] else "A"
+                            preguntas_validadas.append(barajar_opciones_pregunta(p))
+                    if not preguntas_validadas:
+                        resultado = {"test": [], "error": "La IA generó preguntas vacías o inválidas."}
+                    else:
+                        resultado = {"test": preguntas_validadas, "documento_id": documento_id, "nombre_archivo": nombre_archivo}
+                        if len(preguntas_validadas) < num_preguntas:
+                            resultado["advertencia"] = f"Solo se generaron {len(preguntas_validadas)} de {num_preguntas} preguntas."
+            except Exception:
+                logger.exception("Error en /generar-test-desde-pdf")
+                resultado = {"test": [], "error": "Error al procesar el PDF o generar preguntas."}
+            eventos.put({"tipo": "fin", **resultado})
+
+        hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
+        hilo.start()
+
+        exito = False
+        while True:
+            evento = eventos.get()
+            yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
+            if evento["tipo"] == "fin":
+                exito = bool(evento.get("test"))
+                break
+
+        if exito:
+            registrar_uso(db, uid, "pdf_ia", plan_actual)
+
+    return Response(
+        stream_with_context(generar()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
 
 
 @bp.route('/generar-tarjetas-desde-pdf', methods=['POST'])
