@@ -172,7 +172,7 @@ async function obtenerAuthHeaders() {
         doc.setFontSize(9);
         doc.setTextColor(150);
         doc.text(`Página ${pagina + 1}`, pageWidth - margin, pageHeight - 10, { align: "right" });
-        doc.text("Oposición AGE", margin, pageHeight - 10);
+        doc.text("Domina tu Opo", margin, pageHeight - 10);
         doc.setTextColor(0);
       }
       function nuevaPagina() {

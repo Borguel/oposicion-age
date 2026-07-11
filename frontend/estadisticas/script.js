@@ -258,7 +258,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       .slice(0, 3);
 
     datosParaExportarPDF = {
-      nombreOposicion: (OPOSICIONES.find(o => o.id === oposicion) || {}).nombre || "Oposición AGE",
+      nombreOposicion: (OPOSICIONES.find(o => o.id === oposicion) || {}).nombre || "Domina tu Opo",
       testsRealizados: totalTests,
       testsAprobados: aprobados,
       testsSuspendidos: suspendidos,

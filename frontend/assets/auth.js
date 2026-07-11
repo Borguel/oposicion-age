@@ -200,7 +200,7 @@ function construirEsqueletoNav() {
   const brand = document.createElement("a");
   brand.className = "age-nav-brand";
   brand.href = "/";
-  brand.innerHTML = `<span class="age-nav-brand-mark">✓</span><span class="age-nav-brand-text">Oposición AGE</span>`;
+  brand.innerHTML = `<span class="age-nav-brand-mark">✓</span><span class="age-nav-brand-text">Domina tu Opo</span>`;
 
   const links = document.createElement("div");
   links.className = "age-nav-links";
@@ -524,7 +524,7 @@ function inyectarFooter() {
   footer.className = "age-footer";
   const anio = new Date().getFullYear();
   footer.innerHTML = `
-    <span>© ${anio} Oposición AGE</span>
+    <span>© ${anio} Domina tu Opo</span>
     <a href="/terminos/">Términos y condiciones</a>
     <a href="/privacidad/">Privacidad</a>
     <a href="/cookies/">Cookies</a>
