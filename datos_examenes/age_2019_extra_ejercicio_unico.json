@@ -1,0 +1,977 @@
+[
+  {
+    "numero": 1,
+    "pregunta": "Señale la respuesta correcta de acuerdo con el artículo 13 de la Constitución Española (en adelante CE):",
+    "opciones": {
+      "A": "Solamente los españoles serán titulares de los derechos reconocidos en el artículo 23, salvo lo que, atendiendo a criterios de reciprocidad, pueda establecerse por tratado o ley para el derecho de sufragio activo y pasivo en las elecciones municipales.",
+      "B": "Solamente los españoles serán titulares de los derechos de sufragio activo y pasivo.",
+      "C": "Solamente los españoles son titulares de los derechos reconocidos en el artículo 23, salvo lo que, atendiendo a criterios de reciprocidad, pueda establecerse por tratado o ley para el derecho de sufragio activo y pasivo en las elecciones municipales y nacionales.",
+      "D": "Solamente los españoles son titulares de los derechos reconocidos en el artículo 23, salvo lo que, atendiendo a criterios de reciprocidad, pueda establecerse por tratado o ley para el derecho de sufragio activo y pasivo en las elecciones autonómicas y municipales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 2,
+    "pregunta": "Señale la respuesta correcta en relación con la Regencia:",
+    "opciones": {
+      "A": "Será tutor del Rey menor la persona que en su testamento hubiese nombrado el Rey difunto, siempre que sea mayor de edad y español de nacimiento, acumulando los cargos de Regente y tutor.",
+      "B": "Si no hubiere ninguna persona a quien corresponda la Regencia, ésta será nombrada por el Senado, y se compondrá de tres o cinco personas.",
+      "C": "La Reina consorte o el consorte de la Reina no podrán asumir funciones constitucionales, salvo lo dispuesto para la Regencia.",
+      "D": "Para ejercer la Regencia es preciso ser español y mayor de veintiún años."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 3,
+    "pregunta": "Según la CE, ¿de quién emana la Justicia?",
+    "opciones": {
+      "A": "De los Jueces y Magistrados.",
+      "B": "De las Cortes Generales.",
+      "C": "Del Consejo General del Poder Judicial.",
+      "D": "Del pueblo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 4,
+    "pregunta": "Según la CE, el Consejo General del Poder Judicial está integrado:",
+    "opciones": {
+      "A": "Por el Presidente del Tribunal Constitucional y veintiún miembros designados por el Rey por un período de 4 años.",
+      "B": "Por el Presidente del Consejo de Estado y veinte miembros designados por el Rey por un período de 3 años.",
+      "C": "Por el Presidente del Tribunal Superior de Justicia y veintiún miembros designados por el Rey por un período de 6 años.",
+      "D": "Por el Presidente del Tribunal Supremo y veinte miembros designados por el Rey por un período de 5 años."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 5,
+    "pregunta": "De acuerdo con el artículo 11 de la Ley 19/2013, de 9 de diciembre, de transparencia, acceso a la información pública y buen gobierno, el Portal de la Transparencia contendrá información publicada de acuerdo con las prescripciones técnicas que se establezcan reglamentariamente que deberán adecuarse a los principios de:",
+    "opciones": {
+      "A": "Accesibilidad, Interoperabilidad y Reutilización.",
+      "B": "Accesibilidad, Interoperabilidad, Seguridad y Transparencia.",
+      "C": "Accesibilidad, Interoperabilidad, Seguridad y Reutilización.",
+      "D": "Accesibilidad, Reutilización, Transparencia, Interoperabilidad y Seguridad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 6,
+    "pregunta": "De acuerdo con el artículo 36 de la Ley 19/2013, ¿cuál de los siguientes NO se incluye como miembro de la Comisión de Transparencia y Buen Gobierno?",
+    "opciones": {
+      "A": "Un representante del Tribunal de Cuentas.",
+      "B": "Un representante de la Agencia Española de Protección de Datos.",
+      "C": "Un representante de la Secretaría de Estado de Presupuestos y Gastos.",
+      "D": "Un representante de la Autoridad Independiente de Responsabilidad Fiscal."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 7,
+    "pregunta": "Según la Ley 19/2013, cuando una solicitud de acceso a la información pública se refiere a información que no obre en poder del sujeto al que se dirige, este:",
+    "opciones": {
+      "A": "La inadmitirá a trámite.",
+      "B": "Suspenderá el plazo para resolver.",
+      "C": "Dictará una resolución declarando caducado el procedimiento.",
+      "D": "La remitirá al competente, si lo conociera, e informará de esta circunstancia al solicitante."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 8,
+    "pregunta": "El artículo 14.1 de la Ley 19/2013 establece que el derecho de acceso podrá ser limitado cuando acceder a la información suponga un perjuicio para:",
+    "opciones": {
+      "A": "El Mercado Común.",
+      "B": "La protección del medio ambiente.",
+      "C": "La libertad de empresa.",
+      "D": "El interés público."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 9,
+    "pregunta": "De acuerdo con el artículo 63 de la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, la jefatura superior de todo el personal de un Ministerio será desempeñada por:",
+    "opciones": {
+      "A": "El Ministro.",
+      "B": "El Subsecretario.",
+      "C": "El Secretario de Estado.",
+      "D": "El Secretario General Técnico."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 10,
+    "pregunta": "El art. 12.2 de la Ley 50/1997, de 27 de noviembre, del Gobierno, dispone que los Ministros son nombrados y separados por:",
+    "opciones": {
+      "A": "El Rey, a propuesta del Presidente del Gobierno.",
+      "B": "El Congreso de los Diputados, a propuesta del Presidente del Gobierno.",
+      "C": "El Presidente del Gobierno, a propuesta de las Cortes Generales.",
+      "D": "El Presidente del Gobierno, a propuesta del Rey."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 11,
+    "pregunta": "¿Cuál de las siguientes afirmaciones es INCORRECTA conforme al régimen territorial del Estado establecido en la CE?",
+    "opciones": {
+      "A": "Las Corporaciones locales podrán establecer y exigir tributos, de acuerdo con la Constitución y las leyes.",
+      "B": "Una vez sancionados y promulgados los respectivos Estatutos, solamente podrán ser modificados con referéndum.",
+      "C": "Todas las Comunidades Autónomas que se constituyan deberán contar con una Asamblea Legislativa.",
+      "D": "El control del ejercicio de funciones delegadas por parte de las Comunidades Autónomas a que se refiere el artículo 150.2 de la CE se ejercerá por el Gobierno."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 12,
+    "pregunta": "Según el Tratado de Funcionamiento de la Unión Europea, ¿qué Institución europea nombra a sus miembros de común acuerdo por los Gobiernos de los Estados miembros para un período de seis años?",
+    "opciones": {
+      "A": "El Consejo Europeo.",
+      "B": "El Tribunal de Justicia de la Unión Europea.",
+      "C": "El Parlamento Europeo.",
+      "D": "La Comisión Europea."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 13,
+    "pregunta": "¿Cuál de estas funciones corresponde al Consejo Europeo?",
+    "opciones": {
+      "A": "Coordinar las políticas de los Estados miembros.",
+      "B": "Definir las orientaciones y prioridades políticas generales de la Unión Europea.",
+      "C": "Decidir sobre acuerdos internacionales.",
+      "D": "Gestionar las políticas europeas y asignar fondos de la Unión Europea."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 14,
+    "pregunta": "En relación con la organización institucional de la Unión Europea, señale la respuesta correcta:",
+    "opciones": {
+      "A": "El presidente del Consejo Europeo, elegido por el propio Consejo, lo es por un mandato de 4 años renovable una vez.",
+      "B": "Los diputados al Parlamento Europeo, elegidos directamente, tienen un mandato de 6 años.",
+      "C": "La Comisión Europea, cuyos miembros son nombrados por los gobiernos nacionales, promueve los intereses de la Unión Europea en su conjunto.",
+      "D": "Todos los países miembros de la Unión Europea tienen el mismo número de diputados en el Parlamento Europeo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 15,
+    "pregunta": "Señale la respuesta correcta de acuerdo con el artículo 19 del Real Decreto 951/2005, de 29 de julio, por el que se establece el marco general para la mejora de la calidad en la Administración General del Estado en relación con los efectos de las quejas formuladas por los interesados:",
+    "opciones": {
+      "A": "Las quejas formuladas tendrán la calificación de recurso administrativo y su presentación interrumpirá los plazos establecidos en la normativa vigente.",
+      "B": "Las quejas formuladas tendrán la calificación de recurso administrativo pero su presentación no interrumpirá los plazos establecidos en la normativa vigente.",
+      "C": "Las quejas formuladas no tendrán, en ningún caso, la calificación de recurso administrativo pero su presentación interrumpirá los plazos establecidos en la normativa vigente.",
+      "D": "Las quejas formuladas no tendrán, en ningún caso, la calificación de recurso administrativo ni su presentación interrumpirá los plazos establecidos en la normativa vigente."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 16,
+    "pregunta": "Según el artículo 10 del Real Decreto 208/1996, de 9 de febrero, por el que se regulan los servicios de información administrativa y atención al ciudadano, las Administraciones públicas pueden colaborar para ofrecer desde las oficinas de información y atención, a los ciudadanos, información administrativa de las otras Administraciones, y esta colaboración se acordará mediante:",
+    "opciones": {
+      "A": "Convenio de colaboración.",
+      "B": "Contrato.",
+      "C": "Contrato programa.",
+      "D": "Contrato de colaboración."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 17,
+    "pregunta": "Señale la respuesta correcta de acuerdo con el Real Decreto 366/2007, de 16 de marzo, por el que se establecen las condiciones de accesibilidad y no discriminación de las personas con discapacidad en sus relaciones con la Administración General del Estado:",
+    "opciones": {
+      "A": "El contenido de la información en la señalización interior deberá ser lo más amplio posible proporcionando toda la información disponible.",
+      "B": "Los documentos básicos de información de uso más habitual deberán contar con versiones simplificadas para personas con discapacidades intelectuales.",
+      "C": "En los impresos destinados a cumplimentación por los ciudadanos se utilizarán preferentemente fondos con dibujos y tintas.",
+      "D": "No se prevén medidas específicas para las personas con discapacidades intelectuales, sino de forma genérica para todas las personas con discapacidades."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 18,
+    "pregunta": "De acuerdo con el Real Decreto 208/1996, si un ciudadano solicita información referida a datos de carácter personal que afecten a la intimidad o privacidad de las personas físicas, esta información ¿es de carácter general o particular?",
+    "opciones": {
+      "A": "Es particular si el demandante de la información es el único que tiene la condición de interesado a los efectos de la Ley 39/2015; y es general si en ese procedimiento hay más de una persona que tenga la condición de interesado.",
+      "B": "Los datos de carácter personal gozan de especial protección de acuerdo con la legislación vigente en materia de protección de datos y de acceso a la información pública y no pueden ser objeto de información administrativa.",
+      "C": "Es información general.",
+      "D": "Es información particular."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 19,
+    "pregunta": "Según el artículo 2 del Real Decreto 208/1996, la información general:",
+    "opciones": {
+      "A": "Es la concerniente al estado o contenido de los procedimientos en tramitación.",
+      "B": "Se facilitará obligatoriamente a los ciudadanos, sin exigir para ello la acreditación de legitimación alguna.",
+      "C": "Sólo podrá ser facilitada a las personas que tengan la condición de interesados en cada procedimiento.",
+      "D": "Podrá referirse a los datos de carácter personal que afecten de alguna forma a la intimidad o privacidad de las personas físicas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 20,
+    "pregunta": "Según el artículo 1 del Real Decreto 366/2007, señale de los siguientes, cuáles se consideran un medio preferente de relación con los ciudadanos que deben cumplir las condiciones de accesibilidad establecidas en dicho Real Decreto:",
+    "opciones": {
+      "A": "La sede electrónica.",
+      "B": "Los modelos normalizados.",
+      "C": "Los Ministerios y Organismos.",
+      "D": "El registro electrónico."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 21,
+    "pregunta": "Conforme con el Real Decreto 1708/2011, de 18 de noviembre, por el que se establece el Sistema Español de Archivos y se regula el Sistema de Archivos de la Administración General del Estado y de sus Organismos Públicos y su régimen de acceso, ¿cuál de los siguientes archivos es el responsable de la custodia de los documentos generados y reunidos por los diferentes Departamentos ministeriales y sus organismos públicos, una vez finalizada su fase activa conforme a lo establecido en los calendarios de conservación?",
+    "opciones": {
+      "A": "Archivos de oficina o de gestión.",
+      "B": "Archivos generales o centrales de los Ministerios.",
+      "C": "Archivo intermedio.",
+      "D": "Archivo Histórico Nacional."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 22,
+    "pregunta": "Señale la respuesta INCORRECTA en relación con el Punto de Acceso General electrónico de la Administración (P.A.G.), de acuerdo con la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas:",
+    "opciones": {
+      "A": "Las personas físicas con capacidad de obrar ante las Administraciones Públicas tienen la obligación de comunicarse con éstas a través de un P.A.G.",
+      "B": "La obligación de la Administración de facilitar copias de los documentos contenidos en los procedimientos se entiende cumplida con la puesta a disposición de las mismas en el P.A.G.",
+      "C": "Los interesados pueden acceder a las notificaciones por medios electrónicos desde el P.A.G.",
+      "D": "Los interesados de los procedimientos tienen derecho a consultar la información y documentos relativos al procedimiento en el P.A.G."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 23,
+    "pregunta": "Según el Reglamento (UE) 2016/679, de 27 de abril, relativo a la protección de las personas físicas en lo que respecta al tratamiento de datos personales y a la libre circulación de estos datos, la actuación como punto de contacto de la autoridad de control para cuestiones relativas al tratamiento, y realizar consultas, en su caso, sobre cualquier otro asunto, corresponde al:",
+    "opciones": {
+      "A": "Responsable del tratamiento de datos.",
+      "B": "Encargado del tratamiento de datos.",
+      "C": "Encargado de protección de datos.",
+      "D": "Delegado de protección de datos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 24,
+    "pregunta": "Señale la afirmación correcta en relación con la Agencia Española de Protección de Datos, de acuerdo con lo establecido en la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales:",
+    "opciones": {
+      "A": "Su denominación oficial es la de \"Agencia Española de Protección de Datos - Autoridad Nacional de Protección de Datos del Reino de España\".",
+      "B": "Se relaciona con el Gobierno a través del Ministerio de la Presidencia, Relaciones con las Cortes y Memoria Democrática.",
+      "C": "Es una autoridad administrativa independiente de ámbito estatal de las previstas en la Ley 40/2015.",
+      "D": "Es un organismo autónomo estatal de derecho público de los previstos en la Ley 40/2015."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 25,
+    "pregunta": "De acuerdo con la Ley 40/2015, cuando de la gestión dimanante de fórmulas conjuntas de actuación entre varias Administraciones Públicas se derive responsabilidad en los términos previstos en dicha ley, las Administraciones intervinientes responderán frente al particular, en todo caso:",
+    "opciones": {
+      "A": "De forma mancomunada.",
+      "B": "De forma solidaria.",
+      "C": "Responderá la Administración a la que se dirija el interesado.",
+      "D": "De forma subsidiaria."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 26,
+    "pregunta": "Conforme al artículo 21.2 de la Ley 39/2015, cuando las normas reguladoras de los procedimientos NO fijen el plazo máximo en el que deben notificarse las resoluciones expresas, este será de:",
+    "opciones": {
+      "A": "Dos meses.",
+      "B": "Doce meses.",
+      "C": "Seis meses.",
+      "D": "Tres meses."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 27,
+    "pregunta": "De conformidad con el artículo 159 de la Ley 9/2017, de 8 de noviembre, de Contratos del Sector Público (en adelante LCSP), los órganos de contratación podrán utilizar el procedimiento abierto simplificado en los contratos de obras siempre que:",
+    "opciones": {
+      "A": "Su valor estimado sea igual o inferior a 2.000.000 de euros (€) y que entre los criterios de adjudicación previstos en el pliego no haya ninguno evaluable mediante juicio de valor, o de haberlos, su ponderación no supere el 25% del total.",
+      "B": "Su precio de licitación sea igual o inferior a 2.000.000 € y que entre los criterios de adjudicación previstos en el pliego no haya ninguno evaluable mediante juicio de valor, o de haberlos, su ponderación no supere el 50% del total.",
+      "C": "Su valor estimado supere los 2.000.000 € y su plazo de ejecución sea inferior a un año.",
+      "D": "Su valor estimado sea igual o inferior a 2.000.000 €, con independencia de cualquier otro criterio."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 28,
+    "pregunta": "De conformidad con la LCSP, en el supuesto de demora en el plazo total de ejecución del contrato:",
+    "opciones": {
+      "A": "La Administración procederá a la resolución del contrato, que implicará la imposición de penalidades diarias en la proporción de 0,60 euros por cada 1.000 euros del precio del contrato, IVA excluido, siempre y cuando la demora se haya producido por causas imputables al contratista.",
+      "B": "La Administración podrá optar entre la resolución del contrato o la imposición de penalidades, siempre y cuando la demora se haya producido por causas imputables al contratista.",
+      "C": "La Administración procederá, previa y necesaria intimación al contratista, a la resolución del contrato, que implicará la imposición de penalidades diarias en la proporción de 0,60 € por cada 1.000 € del precio del contrato, IVA excluido, siempre y cuando la demora se haya producido por causas imputables al contratista.",
+      "D": "La Administración podrá optar entre la resolución del contrato o la imposición de penalidades, independientemente de que la demora sea o no imputable al contratista."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 29,
+    "pregunta": "De acuerdo con la LCSP, una vez adjudicado un contrato de obras y antes de comenzar su ejecución, ¿qué trámite debe realizarse?",
+    "opciones": {
+      "A": "La supervisión del proyecto.",
+      "B": "El replanteo del proyecto.",
+      "C": "La comprobación del replanteo.",
+      "D": "La aprobación del presupuesto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 30,
+    "pregunta": "De acuerdo con el Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público (en adelante TREBEP), ¿a través de qué instrumento se establecerán los contenidos mínimos comunes de los Registros de personal y los criterios que permitan el intercambio homogéneo de la información entre Administraciones, con respeto a lo establecido en la legislación de datos de carácter personal?",
+    "opciones": {
+      "A": "Mediante Acuerdo de Consejo de Ministros.",
+      "B": "Mediante Convenio de Conferencia Sectorial.",
+      "C": "Mediante Acuerdo de la Mesa General de Negociación de las Administraciones Públicas.",
+      "D": "Mediante Convenio de colaboración de las Administraciones Públicas firmantes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 31,
+    "pregunta": "La Oferta de empleo público de la Administración General del Estado se aprueba:",
+    "opciones": {
+      "A": "Por Real Decreto del Consejo de Ministros, a propuesta del titular del Ministerio de Hacienda y Función Pública.",
+      "B": "Por Real Decreto del Consejo de Ministros, a propuesta conjunta del Ministerio de Hacienda y Función Pública y del Ministerio de Economía.",
+      "C": "Por Orden del Ministerio de Hacienda y Función Pública.",
+      "D": "Por Real Decreto del Consejo de Ministros, a propuesta del Presidente del Gobierno."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 32,
+    "pregunta": "La situación administrativa de excedencia voluntaria incentivada a la que se pase a un funcionario por estar afectado por un proceso de reasignación de efectivos tendrá una duración de:",
+    "opciones": {
+      "A": "Dos años.",
+      "B": "Cinco años.",
+      "C": "Un año.",
+      "D": "Tres años."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 33,
+    "pregunta": "Los funcionarios en prácticas:",
+    "opciones": {
+      "A": "Percibirán una retribución equivalente al sueldo y pagas extraordinarias correspondientes al grupo de clasificación del cuerpo o escala al que aspiren a ingresar.",
+      "B": "Percibirán una retribución equivalente al sueldo, pagas extraordinarias y complemento de destino correspondiente al cuerpo o escala al que aspiren a ingresar.",
+      "C": "Percibirán las retribuciones básicas y complementarias correspondientes al grupo de clasificación del cuerpo o escala al que aspiren a ingresar.",
+      "D": "Percibirán las retribuciones que a tal efecto se les asignen por el titular de la Dirección General de la Función Pública."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 34,
+    "pregunta": "De acuerdo con el artículo 11 del TREBEP, el personal laboral puede ser:",
+    "opciones": {
+      "A": "Fijo, por tiempo indefinido o temporal.",
+      "B": "Interino o fijo.",
+      "C": "Eventual, fijo o temporal.",
+      "D": "De carrera, indefinido o temporal."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 35,
+    "pregunta": "En el ámbito de la Administración Pública, ¿cuál de las siguientes funciones o actividades corresponden al personal funcionario o cuyo desempeño NO es requerido por la organización en el ámbito del IV Convenio colectivo único para el personal laboral de la Administración General del Estado?",
+    "opciones": {
+      "A": "Vigilancia del Dominio público.",
+      "B": "Gestión de Recursos Humanos.",
+      "C": "Peritación y valoración de bienes.",
+      "D": "Sistemas electrotécnicos y automatizados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 36,
+    "pregunta": "Según el artículo 43 de la Ley 47/2003, de 26 de noviembre, General Presupuestaria (en adelante LGP), en el Presupuesto de Gastos del Estado, los gastos de personal se especificarán:",
+    "opciones": {
+      "A": "A nivel de Concepto.",
+      "B": "A nivel de Artículo.",
+      "C": "A nivel de Capítulo.",
+      "D": "Al nivel que corresponda conforme a su concreta clasificación económica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 37,
+    "pregunta": "Según el artículo 27 de la LGP, señale la afirmación correcta en relación con los principios y reglas de gestión presupuestaria:",
+    "opciones": {
+      "A": "La gestión del sector público estatal está sometida al régimen de presupuesto anual aprobado por las Cortes Generales y enmarcado en los límites de un escenario plurianual.",
+      "B": "El nivel de vinculación de los créditos presupuestarios será el correspondiente al nivel de gasto autorizado para cada programa.",
+      "C": "Los recursos del Estado se destinarán a satisfacer el conjunto de sus obligaciones, sin que por ley se pueda establecer su afectación a fines determinados.",
+      "D": "Pueden atenderse obligaciones mediante minoración de los derechos a liquidar o ya ingresados, aunque la ley no lo autorice de modo expreso."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 38,
+    "pregunta": "De acuerdo con la Ley 30/1984, de 2 de agosto, de medidas para la reforma de la Función Pública, las retribuciones de los funcionarios son:",
+    "opciones": {
+      "A": "Básicas y complementarias.",
+      "B": "Básicas, complementarias y extraordinarias.",
+      "C": "Básicas, complementarias, extraordinarias y gratificaciones.",
+      "D": "Básicas, complementarias y especiales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 39,
+    "pregunta": "De acuerdo con la Ley 38/2003, de 17 de noviembre, General de Subvenciones, ¿cómo se tramitará el procedimiento ordinario de concesión de subvenciones?",
+    "opciones": {
+      "A": "Mediante la concesión directa a través de Real Decreto.",
+      "B": "Mediante la concesión nominativa a través de Real Decreto.",
+      "C": "En régimen de concurrencia competitiva.",
+      "D": "Mediante la concesión nominativa en los Presupuestos Generales del Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 40,
+    "pregunta": "¿Cuál es la Institución de la Unión Europea que reúne a los Jefes de Estado o de Gobierno de los Estados miembros?",
+    "opciones": {
+      "A": "La Comisión Europea.",
+      "B": "El Consejo Europeo.",
+      "C": "El Consejo de la Unión Europea.",
+      "D": "El Parlamento Europeo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 41,
+    "pregunta": "¿Cuál de los siguientes es un sistema gestor de base de datos (SGBD)?",
+    "opciones": {
+      "A": "Android.",
+      "B": "PowerShell.",
+      "C": "Windows.",
+      "D": "Microsoft SQL Server."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 42,
+    "pregunta": "¿Cuál de las siguientes opciones NO forma parte de las funciones básicas de un sistema operativo?",
+    "opciones": {
+      "A": "Edición de vídeo.",
+      "B": "Sistema de archivos.",
+      "C": "Controlador de dispositivos.",
+      "D": "Sistema de comunicaciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 43,
+    "pregunta": "¿Cuál de los siguientes es el propósito de la Minería de Datos?",
+    "opciones": {
+      "A": "Almacenar datos de uso de las aplicaciones para dispositivos móviles.",
+      "B": "Guardar y recuperar las copias de seguridad de los datos.",
+      "C": "Descubrir patrones dentro de grandes volúmenes de conjuntos de datos.",
+      "D": "Compartir datos en la nube mediante repositorios compartidos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 44,
+    "pregunta": "¿Qué es un acceso directo en Windows 10?",
+    "opciones": {
+      "A": "Es un perfil de permisos para acceder a Windows 10, similar al del Administrador.",
+      "B": "Es un fichero simbólico que podemos crear y que permite acceder a un determinado programa o archivo.",
+      "C": "Es una opción de acceso a la cuenta de otro usuario, que nos permite cambiar su contraseña sin ser Administrador.",
+      "D": "Es una sección del Explorador de archivos en la que encontramos los últimos archivos eliminados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 45,
+    "pregunta": "Entre los accesorios de Windows 10 hay dos editores de texto: Bloc de notas y WordPad. ¿Cuál de las siguientes características sólo está disponible en WordPad?",
+    "opciones": {
+      "A": "Permite insertar imágenes en un documento.",
+      "B": "Permite imprimir el documento.",
+      "C": "Permite incluir un pie de página.",
+      "D": "Permite abrir ficheros de texto con extensión .txt"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 46,
+    "pregunta": "¿Qué es el Asistente de concentración de Windows 10?",
+    "opciones": {
+      "A": "Es un asistente que permite configurar qué notificaciones se muestran.",
+      "B": "Es una guía incluida en Windows con una serie de consejos para la concentración.",
+      "C": "Es un asistente para graduar el brillo y contraste de la pantalla.",
+      "D": "Es una aplicación de Windows de gestión de tareas y calendario."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 47,
+    "pregunta": "Indique la herramienta de Windows a la que corresponde la siguiente descripción \"editor de texto incluido en el sistema operativo de funcionalidades muy simples\":",
+    "opciones": {
+      "A": "Herramienta Recortes.",
+      "B": "Bloc de notas.",
+      "C": "Windows Media Player.",
+      "D": "Escritorio remoto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 48,
+    "pregunta": "Con la combinación por defecto de las teclas Windows + E, ¿qué herramienta de Windows se abre?",
+    "opciones": {
+      "A": "Configuración.",
+      "B": "Explorador de archivos.",
+      "C": "Administrador de tareas.",
+      "D": "Centro de movilidad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 49,
+    "pregunta": "¿Cuál de las siguientes formas de abrir el Explorador de archivos de Windows NO es válida?",
+    "opciones": {
+      "A": "Clic con el botón derecho del ratón en Inicio > Explorador de archivos.",
+      "B": "Clic izquierdo de ratón en Inicio y escribir Explorador de archivos.",
+      "C": "Combinación de teclas Windows + E.",
+      "D": "Ir a Inicio > Configuración de Windows > Sistema > Explorador de archivos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 50,
+    "pregunta": "Si Windows 10 está en español, ¿cuál es el método abreviado de teclado del Explorador de archivos para seleccionar la barra de direcciones?",
+    "opciones": {
+      "A": "Ctrl + B.",
+      "B": "Alt + D.",
+      "C": "Ctrl + W.",
+      "D": "Alt + P."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 51,
+    "pregunta": "¿Cuál de las siguientes opciones es verdadera con respecto al funcionamiento del bloc de notas de Windows 10?",
+    "opciones": {
+      "A": "No se pueden configurar ni encabezados ni pies de página.",
+      "B": "Es posible configurar la alineación de los encabezados y pies de página, así como incluir la fecha actual, la hora actual, el nombre del documento y el número de página.",
+      "C": "Es posible incluir un texto de encabezado y otro de pie de página, pero no es posible ningún tipo de configuración del formato para estos textos.",
+      "D": "Es posible configurar los encabezados y pies de página, pero sólo es posible añadir los campos de fecha y hora actual, y no la alineación del texto ni el nombre del documento o el número de página."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 52,
+    "pregunta": "En el menú Inicio de Word, grupo Edición, uno de los elementos es Seleccionar, que despliega cuatro opciones. ¿Cuál de las siguientes opciones NO aparece en este menú?",
+    "opciones": {
+      "A": "Seleccionar todo.",
+      "B": "Seleccionar tabla.",
+      "C": "Seleccionar todo el texto con formato similar (sin datos).",
+      "D": "Seleccionar objetos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 53,
+    "pregunta": "¿En qué pestaña de la cinta de opciones de Word tenemos las opciones de \"Ver macros\" y \"Grabar macros\", aparte de la pestaña Programador?",
+    "opciones": {
+      "A": "Insertar.",
+      "B": "Disposición.",
+      "C": "Vista.",
+      "D": "Referencias."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 54,
+    "pregunta": "En Word, ¿qué función tiene la opción \"Presentar en línea\" del menú Archivo > Compartir?",
+    "opciones": {
+      "A": "Guardar el documento en formato de PowerPoint.",
+      "B": "Presentar el documento a usuarios que pueden visualizarlo en un explorador web.",
+      "C": "Compartir mediante correo electrónico el documento.",
+      "D": "Publicar el documento en un servidor FTP para su posterior descarga."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 55,
+    "pregunta": "Al hacer clic en el botón \"Buscar\" de la pestaña \"Inicio\" de Word, ¿cuál de los siguientes comportamientos es el correcto?",
+    "opciones": {
+      "A": "Se abre la ventana \"Navegación\" con el campo para escribir la búsqueda, y tres pestañas: Títulos, Páginas y Resultados.",
+      "B": "Se abre la ventana emergente \"Encontrar\" sólo con el campo para escribir la búsqueda.",
+      "C": "Se abre la ventana \"Búsqueda\" sólo con el campo para escribir la búsqueda.",
+      "D": "Se abre la ventana \"Buscar y Reemplazar\" con dos pestañas: Buscar y Reemplazar."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 56,
+    "pregunta": "En una hoja de Excel queremos extraer la fórmula de la celda A1 y mostrarla, en otra celda, como una cadena de texto. ¿Cuál de las siguientes funciones utilizaremos?",
+    "opciones": {
+      "A": "=BUSCARH(A1)",
+      "B": "=COLUMNA(A1)",
+      "C": "=FIELDVALUE(A1)",
+      "D": "=FORMULATEXTO(A1)"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 57,
+    "pregunta": "En una hoja Excel introducimos el siguiente dato (sin las comillas) en una celda: \"01/01/2021\". A continuación, aplicamos el siguiente formato personalizado (sin las comillas) a la celda: \"mmm-aa\". ¿Qué se visualizará en la celda?",
+    "opciones": {
+      "A": "ene-21",
+      "B": "01/01/2021",
+      "C": "44197",
+      "D": "01-ene-21"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 58,
+    "pregunta": "En una tabla de Access tenemos un campo de texto corto llamado Texto01. En la Hoja de propiedades de la tabla incluimos la siguiente Regla de validación: Longitud([Texto01])<10 ¿Cuál será el efecto de la regla?",
+    "opciones": {
+      "A": "No tendrá ningún efecto porque está en las propiedades de la tabla y no en las del propio campo.",
+      "B": "Todos los campos de texto de la tabla tendrán una longitud máxima de 9 caracteres.",
+      "C": "El campo Texto01 deberá recibir un valor numérico menor de 10.",
+      "D": "La regla impide que se introduzcan más de 9 caracteres en el campo Texto01."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 59,
+    "pregunta": "¿Cuál de las siguientes opciones es correcta con respecto a la función \"Divisor de bases de datos\" en Access 2019?",
+    "opciones": {
+      "A": "Es un asistente para mover las tablas desde la base de datos actual a una nueva base de datos back-end.",
+      "B": "Es un asistente que permite encontrar errores de programación en los módulos de la base de datos actual.",
+      "C": "Es un asistente de compresión de la base de datos que permite seleccionar el rango de compresión. A mayor compresión ocupa menos espacio, pero es más lenta la recuperación de datos.",
+      "D": "Es un asistente para dividir las tablas muy grandes en dos, una operativa y otra de archivo. En base a ciertos criterios (fecha, longitud, etc.) las filas de la tabla pasarán a una u otra tabla."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 60,
+    "pregunta": "Al diseñar una tabla de Access, ¿qué propiedad nos permite limitar los valores que se pueden introducir en un campo?",
+    "opciones": {
+      "A": "Alineación del texto.",
+      "B": "Valor predeterminado.",
+      "C": "Regla de validación.",
+      "D": "Campo calculado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 61,
+    "pregunta": "¿Cuál de los siguientes procedimientos permite cambiar el nivel de protección contra correo electrónico no deseado en Outlook 2019?",
+    "opciones": {
+      "A": "Hacer clic en Inicio > Enviar y recibir > Opciones > Opciones de correo no deseado.",
+      "B": "Hacer clic en Inicio > Correo no deseado > Opciones para el correo electrónico no deseado.",
+      "C": "Hacer clic en Inicio > Enviar y recibir > Correo no deseado > Opciones de correo no deseado.",
+      "D": "Hacer clic en Inicio > Eliminar > Limpiar > Limpiar carpeta y subcarpetas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 62,
+    "pregunta": "¿Cuál de los siguientes es un procedimiento correcto para crear una firma de correo electrónico en Outlook?",
+    "opciones": {
+      "A": "No se puede crear una firma de texto para mensajes salientes sin un certificado de firma digital.",
+      "B": "Pestaña Inicio > \"Nuevo correo electrónico\". En el grupo Nombres de la pestaña Mensaje, elegir \"Libreta de direcciones\". Buscamos y seleccionamos nuestro usuario. Doble clic sobre el usuario y se insertará la tarjeta de visita en el cuerpo del mensaje.",
+      "C": "Pestaña Inicio > \"Nuevo correo electrónico\". En el grupo Firmar de la pestaña Opciones, elegir \"Añadir datos de contacto\" > \"Firma de remitente\".",
+      "D": "Pestaña Inicio > \"Nuevo correo electrónico\". En el grupo Incluir de la pestaña Mensaje, elegir Firma > Firmas, que abre la pantalla \"Firmas y plantilla\". Clic en el botón Nueva, y utilizamos la sección \"Editar firma\" para crearla."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 63,
+    "pregunta": "¿Cuál es el método abreviado por defecto en Outlook para crear una carpeta de búsqueda?",
+    "opciones": {
+      "A": "Alt + Q abre la ventana \"Nueva carpeta de búsqueda\".",
+      "B": "Alt + P abre la ventana \"Personalizar carpeta de búsqueda\".",
+      "C": "Ctrl+Mayús+P abre la ventana \"Nueva carpeta de búsqueda\".",
+      "D": "Ctrl+Mayús+Q abre la ventana \"Personalizar carpeta de búsqueda\"."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 64,
+    "pregunta": "¿Cuál de las siguientes opciones es verdadera con respecto al uso de gráficos de Excel en los mensajes de Outlook?",
+    "opciones": {
+      "A": "Es posible insertar gráficos en el correo que ya estén hechos en Excel, pero no crearlos desde el editor de mensajes de Outlook, por lo que será necesario primero copiar el gráfico en Excel, luego abrir el mensaje y copiar el gráfico en el cuerpo del mensaje.",
+      "B": "Podemos crear un gráfico Excel directamente en un mensaje de Outlook. En el menú Insertar de la ventana del mensaje, en el grupo Ilustraciones, elegir Gráfico. Elegir el tipo de gráfico y hacer clic en Aceptar. En la hoja de cálculo de Excel que aparece escribir los datos del gráfico, y cerrar la hoja.",
+      "C": "No es posible insertar gráficos de Excel en un correo de Outlook.",
+      "D": "Es posible insertar gráficos en el correo que ya estén hechos en Excel. Es necesario abrir el mensaje en una nueva ventana. A continuación, en el menú Opciones, en el grupo Excel, elegir Gráfico. En la ventana \"Insertar gráfico\", seleccionamos la hoja de Excel donde está el gráfico."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 65,
+    "pregunta": "Queremos que las respuestas a un correo electrónico que enviamos desde Outlook vayan dirigidas a otra cuenta diferente de la que envía el mensaje. ¿Cuál sería el procedimiento para configurar esta opción?",
+    "opciones": {
+      "A": "En el nuevo mensaje, en la pestaña Opciones, seleccionamos \"Dirigir respuestas a\". En la venta Propiedades que se abre, marcamos la opción \"Enviar las respuestas a\", e incluimos la dirección de correo.",
+      "B": "No hay ningún mecanismo previsto como opción del envío del correo, por lo que será necesario crear una regla para que los correos que recibamos con el Asunto del mensaje enviado, se reenvíen a la otra cuenta de correo.",
+      "C": "No hay ningún mecanismo previsto como opción del envío del correo, por lo que será necesario crear un formulario de respuesta con Visual Basic.",
+      "D": "En el nuevo mensaje, es necesario tener activado el campo CCO (con copia oculta) de la pestaña Opciones. Incluimos en el campo CCO la dirección de correo a la que queremos que se responda al mensaje."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 66,
+    "pregunta": "¿Cuál es la utilidad de la opción \"Limpiar carpeta\" de la pestaña Inicio de la cinta de opciones de Outlook?",
+    "opciones": {
+      "A": "Evalúa la carpeta seleccionada para hallar correo no deseado y obtener los remitentes no deseados.",
+      "B": "Elimina todos los mensajes de correo de la carpeta seleccionada con información no legible o corrupta.",
+      "C": "Evalúa si un remitente no deseado establecido tiene mensajes en la carpeta actual.",
+      "D": "Quita los mensajes redundantes de todas las conversaciones de la carpeta seleccionada."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 67,
+    "pregunta": "En Outlook 2019 podemos hacer a alguien delegado para el acceso a nuestra cuenta. ¿Cuál de las siguientes sentencias es correcta con respecto a un delegado con nivel de permiso de Editor para Calendario y Bandeja de entrada?",
+    "opciones": {
+      "A": "Pueden enviar elementos en nombre del propietario de la cuenta y crear y responder a convocatorias de reunión.",
+      "B": "Pueden enviar elementos en nombre del propietario de la cuenta, pero no crear y responder a convocatorias de reunión.",
+      "C": "No pueden enviar elementos en nombre del propietario de la cuenta, solo responder a convocatorias de reunión.",
+      "D": "No pueden enviar elementos en nombre del propietario de la cuenta y sí crear y responder a convocatorias de reunión."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 68,
+    "pregunta": "En un nuevo correo electrónico de Outlook 2019, ¿cuál es la utilidad de la opción Formato de texto > Edición > Buscar?",
+    "opciones": {
+      "A": "Buscar contactos de Outlook para incluirlos como destinatarios del correo.",
+      "B": "Buscar otros mensajes relacionados por el destinatario del correo.",
+      "C": "Buscar texto en el correo electrónico que estamos editando.",
+      "D": "Buscar en el Asistente para programación tiempo libre del destinatario para una reunión."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 69,
+    "pregunta": "¿Cuál es el lenguaje de marcado estándar para la elaboración de páginas web?",
+    "opciones": {
+      "A": "Typescript.",
+      "B": "HTML.",
+      "C": "CSS.",
+      "D": "Pascal."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 70,
+    "pregunta": "Algunas páginas web utilizan preguntas de tipo CAPTCHA. ¿Cuál es su propósito?",
+    "opciones": {
+      "A": "Son un sistema de autenticación que puede sustituir a un certificado electrónico a la hora de verificar la identidad del usuario.",
+      "B": "Sirven para cambiar el código de la página web, cambiando su presentación y formato.",
+      "C": "Se utilizan para distinguir cuándo el usuario es un humano o un programa automático (bot).",
+      "D": "Son juegos sencillos con imágenes y textos, con una función exclusivamente lúdica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 71,
+    "pregunta": "Con respecto a la definición de Grupos de envío o recepción en Outlook, ¿cuál de los siguientes enunciados es INCORRECTO?",
+    "opciones": {
+      "A": "Es posible programarlo para que haga un envío o recepción automático cada 30 minutos.",
+      "B": "No se puede crear un grupo de envío o recepción con una sola cuenta.",
+      "C": "Es posible programarlo para que haga un envío o recepción al salir de la aplicación.",
+      "D": "El grupo se crea de forma predeterminada es \"Todas las cuentas\"."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 72,
+    "pregunta": "De conformidad con el artículo 89 de la Ley 40/2015, ¿cuál de estas potestades NO se encuentra dentro de la esfera de competencia de los Organismos Públicos?",
+    "opciones": {
+      "A": "Normativa.",
+      "B": "Expropiatoria.",
+      "C": "Tributaria.",
+      "D": "Organizativa."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 73,
+    "pregunta": "En relación con la negociación colectiva de los funcionarios públicos, el artículo 34 del TREBEP establece que, dependiendo de las Mesas Generales de Negociación y por acuerdo de las mismas, podrán constituirse:",
+    "opciones": {
+      "A": "Mesas Especiales.",
+      "B": "Mesas Sectoriales.",
+      "C": "Mesas Especializadas.",
+      "D": "Mesas Delegadas."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 74,
+    "pregunta": "¿A quién atribuye el artículo 75 de la LGP la función de Ordenador General de pagos del Estado?",
+    "opciones": {
+      "A": "Al Presidente del Banco de España.",
+      "B": "A la personal titular del Ministerio de Hacienda y Función Pública.",
+      "C": "A la persona titular de la Dirección General del Tesoro y Política Financiera.",
+      "D": "Al Consejo de Ministros."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 75,
+    "pregunta": "Conforme a la LCSP, en cuanto al objeto del contrato, se ha de motivar:",
+    "opciones": {
+      "A": "La elección del procedimiento de adjudicación.",
+      "B": "La exigencia de requisitos de solvencia técnica.",
+      "C": "La no división en lotes.",
+      "D": "El límite máximo del presupuesto estimado."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  }
+]
