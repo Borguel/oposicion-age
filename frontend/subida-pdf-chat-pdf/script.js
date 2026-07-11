@@ -48,6 +48,12 @@ async function handlePdfUpload() {
     return;
   }
 
+  if (file.size > 10 * 1024 * 1024) {
+    addMessageToPdfChat('El archivo supera los 10 MB. Por favor, sube un PDF más ligero.', 'bot');
+    pdfFileInput.value = '';
+    return;
+  }
+
   pdfFilename.textContent = file.name;
   pdfInfo.classList.remove('hidden');
   pdfPreviewText.textContent = "Analizando documento...";

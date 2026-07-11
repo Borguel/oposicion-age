@@ -21,6 +21,16 @@ let oposicionActual = "";
 let textosFavoritas = new Set();
 let botonFavoritaHTML = () => "";
 let activarBotonFavorita = () => {};
+let listaTemasGlobal = [];
+// Repetir-test no tiene un formulario propio (arranca directo al cargar la
+// página), así que el modo cronometrado no viene de un checkbox en el DOM
+// como en test-personalizado -- se pregunta con un diálogo antes de
+// empezar un intento NUEVO (ver preguntarModoCronometrado) y se guarda aquí
+// para que iniciarTemporizador() sepa qué modo usar.
+let modoCronometradoElegido = false;
+let minutosElegidos = 60;
+let tiempoLimite = null;
+let tiempoTotalAsignado = 0;
 
 function formatearMinSeg(segundos) {
   const m = String(Math.floor(segundos / 60)).padStart(2, '0');
@@ -29,31 +39,103 @@ function formatearMinSeg(segundos) {
 }
 
 function tiempoTranscurridoActual() {
+  if (tiempoLimite !== null) return tiempoTotalAsignado - tiempoLimite;
   return tiempoTranscurridoBase + Math.floor((Date.now() - tiempoInicio) / 1000);
 }
 
-function iniciarTemporizador(tiempoTranscurridoReanudado) {
-  tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
+// Antes de empezar un intento NUEVO (no al reanudar uno ya guardado), deja
+// elegir si este repaso se hace contrarreloj -- mismo caso de uso real que
+// los demás tipos de test: simular otra vez condiciones de examen.
+async function preguntarModoCronometrado() {
+  const confirmacion = await Swal.fire({
+    icon: 'question',
+    title: '¿Cronometrar este intento?',
+    text: 'Puedes repetir el test con un límite de tiempo, igual que en un examen real.',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, cronometrar',
+    cancelButtonText: 'No, sin límite de tiempo'
+  });
+  if (!confirmacion.isConfirmed) return { cronometrado: false, minutos: 60 };
+  const { value: minutos } = await Swal.fire({
+    title: 'Tiempo disponible',
+    input: 'number',
+    inputLabel: 'Minutos para completar el test',
+    inputValue: 60,
+    inputAttributes: { min: 1 },
+    confirmButtonText: 'Empezar',
+    inputValidator: (valor) => (!valor || valor <= 0) ? 'Introduce un número de minutos válido' : undefined
+  });
+  return { cronometrado: true, minutos: parseInt(minutos) || 60 };
+}
+
+// tiempoRestanteReanudado/tiempoTranscurridoReanudado: al reanudar un test
+// guardado (mismo patrón que test-personalizado) para que el cronómetro/
+// contador siga desde donde se dejó en vez de reiniciarse.
+function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudado) {
   tiempoInicio = Date.now();
   const elTemporizador = document.getElementById("temporizador");
   const elTexto = document.getElementById("temporizador-texto");
   elTemporizador.style.display = "flex";
-  elTexto.textContent = `⏱ Tiempo: ${formatearMinSeg(tiempoTranscurridoBase)}`;
   document.getElementById("btn-toggle-temporizador").onclick = () => elTemporizador.classList.toggle("temporizador-oculto");
-  intervaloTemporizador = setInterval(() => {
-    const transcurrido = tiempoTranscurridoActual();
-    elTexto.textContent = `⏱ Tiempo: ${formatearMinSeg(transcurrido)}`;
-    if (transcurrido % 10 === 0) {
-      import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
-        autoguardarProgreso({
-          respuestas_usuario: respuestasUsuario,
-          marcadas_revision: marcadasRevision,
-          indice_actual: indicePreguntaActual,
-          tiempo_transcurrido_segundos: transcurrido
-        });
-      });
+
+  if (modoCronometradoElegido) {
+    if (tiempoRestanteReanudado == null) {
+      tiempoLimite = minutosElegidos * 60;
+      tiempoTotalAsignado = tiempoLimite;
+    } else {
+      tiempoLimite = tiempoRestanteReanudado;
+      // tiempoTotalAsignado ya lo fija quien llama (restaurado del guardado)
     }
-  }, 1000);
+    document.getElementById("barra-progreso-tiempo").style.display = "block";
+    elTexto.innerHTML = `⏱ Tiempo restante: <span class="pulse">${formatearMinSeg(tiempoLimite)}</span>`;
+    elTemporizador.classList.toggle("temporizador-urgente", tiempoLimite <= 300);
+    intervaloTemporizador = setInterval(() => {
+      tiempoLimite--;
+      if (tiempoLimite <= 0) {
+        clearInterval(intervaloTemporizador);
+        Swal.fire({
+          title: '¡Tiempo terminado!',
+          text: 'Se ha finalizado el test automáticamente.',
+          icon: 'warning',
+          confirmButtonText: 'Ver resultados'
+        }).then(() => mostrarResultados());
+        return;
+      }
+      elTexto.innerHTML = `⏱ Tiempo restante: <span class="pulse">${formatearMinSeg(tiempoLimite)}</span>`;
+      elTemporizador.classList.toggle("temporizador-urgente", tiempoLimite <= 300);
+      const porcentajeTiempo = ((tiempoTotalAsignado - tiempoLimite) / tiempoTotalAsignado) * 100;
+      document.getElementById("progreso-tiempo").style.width = `${porcentajeTiempo}%`;
+      const elTextoProgresoTiempo = document.getElementById("texto-progreso-tiempo");
+      if (elTextoProgresoTiempo) elTextoProgresoTiempo.textContent = `${Math.round(porcentajeTiempo)}%`;
+      if (tiempoLimite % 10 === 0) {
+        import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+          autoguardarProgreso({
+            respuestas_usuario: respuestasUsuario,
+            marcadas_revision: marcadasRevision,
+            indice_actual: indicePreguntaActual,
+            tiempo_restante_segundos: tiempoLimite
+          });
+        });
+      }
+    }, 1000);
+  } else {
+    tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
+    elTexto.textContent = `⏱ Tiempo: ${formatearMinSeg(tiempoTranscurridoBase)}`;
+    intervaloTemporizador = setInterval(() => {
+      const transcurrido = tiempoTranscurridoActual();
+      elTexto.textContent = `⏱ Tiempo: ${formatearMinSeg(transcurrido)}`;
+      if (transcurrido % 10 === 0) {
+        import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+          autoguardarProgreso({
+            respuestas_usuario: respuestasUsuario,
+            marcadas_revision: marcadasRevision,
+            indice_actual: indicePreguntaActual,
+            tiempo_transcurrido_segundos: transcurrido
+          });
+        });
+      }
+    }, 1000);
+  }
 }
 
 function confirmarFinalizar() {
@@ -87,12 +169,16 @@ function actualizarNavegadorPreguntas() {
   });
 }
 
-function mostrarPregunta(i) {
+async function mostrarPregunta(i) {
+  // El texto de la pregunta/opciones viene generado por IA -- se escapa
+  // antes de inyectarlo en innerHTML (mismo motivo y misma función que ya
+  // usa la pantalla de resultados, ver assets/resultados-test.js).
+  const { escaparHtml } = await import("/assets/resultados-test.js");
   indicePreguntaActual = i;
   visitadas[i] = true;
   actualizarNavegadorPreguntas();
   const p = preguntas[i];
-  let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+  let textoPregunta = escaparHtml(p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, ""));
   let html = `<form id="form-pregunta">
     <div class="pregunta-en-negrita">
       <span>${i + 1}. ${textoPregunta}</span>
@@ -103,7 +189,7 @@ function mostrarPregunta(i) {
     </div>`;
 
   for (const letra in p.opciones) {
-    const opcion = p.opciones[letra];
+    const opcion = escaparHtml(p.opciones[letra]);
     const checked = respuestasUsuario[i] === letra ? "checked" : "";
     html += `
       <label class="opcion-respuesta">
@@ -206,6 +292,7 @@ function mostrarPregunta(i) {
 async function mostrarResultados() {
   clearInterval(intervaloTemporizador);
   document.getElementById("temporizador").style.display = "none";
+  document.getElementById("barra-progreso-tiempo").style.display = "none";
   document.getElementById("navegador-preguntas").style.display = "none";
   document.getElementById("contenedor-test").innerHTML = "";
   document.getElementById("contenedor-test").style.display = "none";
@@ -219,7 +306,7 @@ async function mostrarResultados() {
     contenedor: cont,
     preguntas,
     respuestasUsuario,
-    listaTemas: []
+    listaTemas: listaTemasGlobal
   });
 
   document.getElementById("btn-descargar-pdf").style.display = "block";
@@ -230,7 +317,7 @@ async function mostrarResultados() {
     const authHeaders = await obtenerAuthHeaders();
     if (!authHeaders) return;
     const { obtenerOposicionActual } = await import("/assets/oposicion.js");
-    await fetch("https://oposicion-age.onrender.com/guardar-test", {
+    const res = await fetch("https://oposicion-age.onrender.com/guardar-test", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders },
       body: JSON.stringify({
@@ -241,9 +328,32 @@ async function mostrarResultados() {
         test_id: testIdEnCurso()
       })
     });
-    limpiarSeguimiento();
+    const datos = await res.json();
+    if (!res.ok) {
+      const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+      mostrarErrorGlobal(datos.error || "No se pudo guardar el resultado de tu test. Tus respuestas de esta pantalla siguen visibles, pero no han quedado guardadas en Mis Tests.");
+    } else {
+      limpiarSeguimiento();
+    }
   } catch (err) {
     console.error("❌ Error al guardar test:", err);
+    const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+    mostrarErrorGlobal("No se pudo guardar el resultado de tu test. Tus respuestas de esta pantalla siguen visibles, pero no han quedado guardadas en Mis Tests.");
+  }
+}
+
+// Solo para pintar el desglose por tema en la pantalla de resultados
+// (renderizarResultadosTest) -- no se usa aquí ningún selector de temas
+// visible, a diferencia de test-personalizado.
+async function cargarListaTemas(oposicion) {
+  try {
+    const authHeaders = await obtenerAuthHeaders();
+    if (!authHeaders) return;
+    const res = await fetch(`https://oposicion-age.onrender.com/temas-disponibles?oposicion=${encodeURIComponent(oposicion)}`, { headers: authHeaders });
+    const datos = await res.json();
+    listaTemasGlobal = datos.temas || [];
+  } catch (e) {
+    console.error("No se pudieron cargar los temas para el desglose de resultados:", e);
   }
 }
 
@@ -287,17 +397,26 @@ window.addEventListener("load", async () => {
       for (let k = 0; k <= indicePreguntaActual && k < visitadas.length; k++) visitadas[k] = true;
       const { obtenerOposicionActual: obtenerOposicionResume } = await import("/assets/oposicion.js");
       oposicionActual = guardado.oposicion || obtenerOposicionResume();
+      cargarListaTemas(oposicionActual);
       const favoritasApiResume = await import("/assets/favoritas.js");
       botonFavoritaHTML = favoritasApiResume.botonFavoritaHTML;
       activarBotonFavorita = favoritasApiResume.activarBotonFavorita;
       textosFavoritas = await favoritasApiResume.cargarTextosFavoritas(oposicionActual);
-      iniciarTemporizador(guardado.tiempo_transcurrido_segundos || 0);
+      modoCronometradoElegido = !!guardado.modo_cronometrado;
+      if (modoCronometradoElegido) {
+        tiempoTotalAsignado = guardado.tiempo_total_asignado_segundos || guardado.tiempo_restante_segundos || 0;
+        iniciarTemporizador(guardado.tiempo_restante_segundos ?? tiempoTotalAsignado);
+      } else {
+        iniciarTemporizador(null, guardado.tiempo_transcurrido_segundos || 0);
+      }
       document.getElementById("navegador-preguntas").style.display = "flex";
       mostrarPregunta(indicePreguntaActual);
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
         marcadas_revision: marcadasRevision,
         indice_actual: indicePreguntaActual,
+        modo_cronometrado: tiempoLimite !== null,
+        tiempo_restante_segundos: tiempoLimite,
         tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
       return;
@@ -324,10 +443,14 @@ window.addEventListener("load", async () => {
       const { obtenerOposicionActual } = await import("/assets/oposicion.js");
       const oposicion = obtenerOposicionActual();
       oposicionActual = oposicion;
+      cargarListaTemas(oposicion);
       const favoritasApiRepetir = await import("/assets/favoritas.js");
       botonFavoritaHTML = favoritasApiRepetir.botonFavoritaHTML;
       activarBotonFavorita = favoritasApiRepetir.activarBotonFavorita;
       textosFavoritas = await favoritasApiRepetir.cargarTextosFavoritas(oposicion);
+      const eleccionCronometro = await preguntarModoCronometrado();
+      modoCronometradoElegido = eleccionCronometro.cronometrado;
+      minutosElegidos = eleccionCronometro.minutos;
       generarTestId();
       guardarContenidoInicial({
         oposicion, tipo: "repetido", temas: [],
@@ -335,12 +458,17 @@ window.addEventListener("load", async () => {
         respuestas_usuario: respuestasUsuario,
         marcadas_revision: marcadasRevision,
         indice_actual: 0,
+        modo_cronometrado: modoCronometradoElegido,
+        tiempo_restante_segundos: modoCronometradoElegido ? minutosElegidos * 60 : null,
+        tiempo_total_asignado_segundos: modoCronometradoElegido ? minutosElegidos * 60 : null,
         pagina_origen: "/repetir-test/"
       });
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
         marcadas_revision: marcadasRevision,
         indice_actual: indicePreguntaActual,
+        modo_cronometrado: tiempoLimite !== null,
+        tiempo_restante_segundos: tiempoLimite,
         tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
       iniciarTemporizador();
@@ -366,10 +494,14 @@ window.addEventListener("load", async () => {
     marcadasRevision = Array(preguntas.length).fill(false);
     visitadas = Array(preguntas.length).fill(false);
     oposicionActual = oposicion;
+    cargarListaTemas(oposicion);
     const favoritasApiUltimo = await import("/assets/favoritas.js");
     botonFavoritaHTML = favoritasApiUltimo.botonFavoritaHTML;
     activarBotonFavorita = favoritasApiUltimo.activarBotonFavorita;
     textosFavoritas = await favoritasApiUltimo.cargarTextosFavoritas(oposicion);
+    const eleccionCronometro = await preguntarModoCronometrado();
+    modoCronometradoElegido = eleccionCronometro.cronometrado;
+    minutosElegidos = eleccionCronometro.minutos;
     generarTestId();
     guardarContenidoInicial({
       oposicion, tipo: "repetido", temas: [],
@@ -377,12 +509,17 @@ window.addEventListener("load", async () => {
       respuestas_usuario: respuestasUsuario,
       marcadas_revision: marcadasRevision,
       indice_actual: 0,
+      modo_cronometrado: modoCronometradoElegido,
+      tiempo_restante_segundos: modoCronometradoElegido ? minutosElegidos * 60 : null,
+      tiempo_total_asignado_segundos: modoCronometradoElegido ? minutosElegidos * 60 : null,
       pagina_origen: "/repetir-test/"
     });
     activarGuardadoAlSalir(() => ({
       respuestas_usuario: respuestasUsuario,
       marcadas_revision: marcadasRevision,
       indice_actual: indicePreguntaActual,
+      modo_cronometrado: tiempoLimite !== null,
+      tiempo_restante_segundos: tiempoLimite,
       tiempo_transcurrido_segundos: tiempoTranscurridoActual()
     }));
     iniciarTemporizador();

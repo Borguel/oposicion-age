@@ -52,7 +52,7 @@ function quitarNumeracion(texto) {
 // temario o de un PDF subido por el usuario) y se interpola en innerHTML:
 // se escapa para que un documento con "<script>" o similar como texto plano
 // no pueda ejecutarse en el navegador de quien lo generó.
-function escaparHtml(texto) {
+export function escaparHtml(texto) {
   const div = document.createElement("div");
   div.textContent = texto ?? "";
   return div.innerHTML;

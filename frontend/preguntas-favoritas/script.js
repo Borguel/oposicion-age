@@ -202,7 +202,11 @@ async function obtenerAuthHeaders() {
       });
     }
 
-    function mostrarPregunta(i) {
+    async function mostrarPregunta(i) {
+      // El texto de la pregunta/opciones viene generado por IA -- se escapa
+      // antes de inyectarlo en innerHTML (mismo motivo y misma función que ya
+      // usa la pantalla de resultados, ver assets/resultados-test.js).
+      const { escaparHtml } = await import("/assets/resultados-test.js");
       indicePreguntaActual = i;
       visitadas[i] = true;
       actualizarNavegadorPreguntas();
@@ -210,7 +214,7 @@ async function obtenerAuthHeaders() {
       const p = preguntas[i];
       let html = `<form id="form-pregunta">
         <div class="pregunta-en-negrita">
-          <span>${i + 1}. ${p.pregunta}</span>
+          <span>${i + 1}. ${escaparHtml(p.pregunta)}</span>
           <div class="pregunta-acciones-header">
             ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
             <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""}" aria-label="Marcar para revisión" title="Marcar para revisar más tarde">🔖</button>
@@ -218,7 +222,7 @@ async function obtenerAuthHeaders() {
         </div>`;
 
       for (const letra in p.opciones) {
-        const opcion = p.opciones[letra];
+        const opcion = escaparHtml(p.opciones[letra]);
         const checked = respuestasUsuario[i] === letra ? "checked" : "";
         html += `
           <label class="opcion-respuesta">
@@ -347,12 +351,15 @@ async function obtenerAuthHeaders() {
 
         const datos = await res.json();
         if (!res.ok) {
-          console.error("Error al guardar test:", datos.error || "No se pudo guardar el test.");
+          const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+          mostrarErrorGlobal(datos.error || "No se pudo guardar el resultado de tu test. Tus respuestas de esta pantalla siguen visibles, pero no han quedado guardadas en Mis Tests.");
         } else {
           limpiarSeguimiento();
         }
       } catch (e) {
         console.error("Error al guardar test favoritas:", e);
+        const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+        mostrarErrorGlobal("No se pudo guardar el resultado de tu test. Tus respuestas de esta pantalla siguen visibles, pero no han quedado guardadas en Mis Tests.");
       }
     }
 

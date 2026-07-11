@@ -560,12 +560,16 @@ async function obtenerAuthHeaders() {
       });
     }
 
-    function mostrarPregunta(i) {
+    async function mostrarPregunta(i) {
+      // El texto de la pregunta/opciones viene generado por IA -- se escapa
+      // antes de inyectarlo en innerHTML (mismo motivo y misma función que ya
+      // usa la pantalla de resultados, ver assets/resultados-test.js).
+      const { escaparHtml } = await import("/assets/resultados-test.js");
       indicePreguntaActual = i;
       visitadas[i] = true;
       actualizarNavegadorPreguntas();
       const p = preguntas[i];
-      let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+      let textoPregunta = escaparHtml(p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, ""));
       let html = `<form id="form-pregunta">
         <div class="pregunta-en-negrita">
           <span>${i + 1}. ${textoPregunta}</span>
@@ -575,7 +579,7 @@ async function obtenerAuthHeaders() {
           </div>
         </div>`;
       for (const letra in p.opciones) {
-        const opcion = p.opciones[letra];
+        const opcion = escaparHtml(p.opciones[letra]);
         const checked = respuestasUsuario[i] === letra ? "checked" : "";
         html += `
           <label class="opcion-respuesta">
