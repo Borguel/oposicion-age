@@ -1,0 +1,1682 @@
+[
+  {
+    "numero": 1,
+    "parte": "primera",
+    "pregunta": "La Constitución Española de 1978 fue ratificada por:",
+    "opciones": {
+      "A": "El pueblo español.",
+      "B": "Las Cortes Generales.",
+      "C": "El Rey.",
+      "D": "El Congreso de los Diputados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 2,
+    "parte": "primera",
+    "pregunta": "Conforme al artículo 8 de la Constitución Española de 1978, las Fuerzas Armadas constituidas por el Ejército de Tierra, la Armada y el Ejército del Aire, tienen como misión:",
+    "opciones": {
+      "A": "Garantizar la soberanía e independencia de España.",
+      "B": "Defender su integridad patrimonial y el ordenamiento constitucional.",
+      "C": "Defender su integridad territorial y el ordenamiento democrático.",
+      "D": "Garantizar la soberanía e individualidad de España."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 3,
+    "parte": "primera",
+    "pregunta": "Conforme al artículo 167.1 de la Constitución Española de 1978, los proyectos de reforma constitucional deberán ser aprobados por:",
+    "opciones": {
+      "A": "Mayoría absoluta de cada una de las Cámaras.",
+      "B": "Una mayoría de dos tercios de ambas Cámaras.",
+      "C": "Una mayoría de dos tercios del Senado y mayoría absoluta del Congreso.",
+      "D": "Una mayoría de tres quintos de cada una de las Cámaras."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 4,
+    "parte": "primera",
+    "pregunta": "Según el artículo 57 de la Constitución Española de 1978, las abdicaciones y renuncias y cualquier duda de hecho o de derecho que ocurra en el orden de sucesión a la Corona se resolverán:",
+    "opciones": {
+      "A": "Por Ley ordinaria.",
+      "B": "Por Real Decreto del Presidente del Gobierno.",
+      "C": "Por resolución judicial o administrativa.",
+      "D": "Por Ley orgánica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 5,
+    "parte": "primera",
+    "pregunta": "Según el artículo 78 de la Constitución Española de 1978, en cada Cámara habrá una Diputación Permanente compuesta por:",
+    "opciones": {
+      "A": "Un mínimo de 21 miembros.",
+      "B": "21 miembros.",
+      "C": "Un máximo de 21 miembros.",
+      "D": "Un mínimo de 21 miembros y un máximo de 50."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 6,
+    "parte": "primera",
+    "pregunta": "Conforme al artículo 63 de la Constitución Española de 1978, corresponde al Rey declarar la guerra y hacer la paz:",
+    "opciones": {
+      "A": "Previa autorización de la persona titular del Ministerio de Defensa.",
+      "B": "Previa autorización del Presidente del Gobierno.",
+      "C": "Previa autorización del Consejo de Ministros.",
+      "D": "Previa autorización de las Cortes Generales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 7,
+    "parte": "primera",
+    "pregunta": "Conforme al artículo 123 de la Constitución Española de 1978, el Presidente del Tribunal Supremo será nombrado por:",
+    "opciones": {
+      "A": "El Rey, a propuesta del Consejo General del Poder Judicial.",
+      "B": "El Consejo General del Poder Judicial, a propuesta del Fiscal General del Estado.",
+      "C": "El Rey, a propuesta del presidente del Consejo General del Poder Judicial.",
+      "D": "El presidente del Consejo General del Poder Judicial, a propuesta del Rey."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 8,
+    "parte": "primera",
+    "pregunta": "¿Cómo se lleva a cabo el nombramiento de los Secretarios de Estado conforme al artículo 15 de la Ley 50/1997, de 27 de noviembre, del Gobierno?",
+    "opciones": {
+      "A": "Por el Congreso de los Diputados, a propuesta del Presidente del Gobierno.",
+      "B": "Por el Rey, a propuesta del Presidente del Gobierno.",
+      "C": "Por Real Decreto del Consejo de Ministros, a propuesta del Presidente del Gobierno o del miembro del Gobierno a cuyo Departamento pertenezcan.",
+      "D": "Por Orden Ministerial, previo conocimiento del Consejo de Ministros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 9,
+    "parte": "primera",
+    "pregunta": "Según el artículo 102 de la Constitución Española de 1978, la responsabilidad criminal del Presidente y de los demás miembros del Gobierno será exigible, en su caso, ante la Sala de lo Penal:",
+    "opciones": {
+      "A": "Del Tribunal Superior de Justicia de Madrid.",
+      "B": "De la Audiencia Nacional.",
+      "C": "Del Tribunal Constitucional.",
+      "D": "Del Tribunal Supremo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 10,
+    "parte": "primera",
+    "pregunta": "¿Cuál es el órgano encargado de estudiar las actuaciones de los órganos competentes de la Administración General del Estado para el cumplimiento de los Objetivos de Desarrollo Sostenible y la Agenda 2030?",
+    "opciones": {
+      "A": "La Conferencia Sectorial para la Agenda 2030.",
+      "B": "El Consejo de Desarrollo Sostenible.",
+      "C": "La Comisión Delegada del Gobierno para la Agenda 2030.",
+      "D": "La Dirección General de la Agenda 2030."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 11,
+    "parte": "primera",
+    "pregunta": "¿Cómo se pueden recurrir las resoluciones dictadas en materia de acceso a la información pública conforme a la Ley 19/2013, de 9 de diciembre, de transparencia, acceso a la información pública y buen gobierno?",
+    "opciones": {
+      "A": "Mediante recurso de alzada.",
+      "B": "Mediante recurso potestativo de reposición.",
+      "C": "Mediante recurso contencioso administrativo.",
+      "D": "Mediante reclamación previa preceptiva ante el Consejo de Transparencia y Buen Gobierno."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 12,
+    "parte": "primera",
+    "pregunta": "Señale, de entre las siguientes funciones, cuál corresponde a los Ministros, según la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público:",
+    "opciones": {
+      "A": "Otorgar premios y recompensas propios del Departamento y proponer las que correspondan según sus normas reguladoras.",
+      "B": "Convocar y resolver los concursos de personal funcionario.",
+      "C": "Desempeñar la jefatura superior de todo el personal del Departamento.",
+      "D": "Convocar y resolver pruebas selectivas de personal funcionario y laboral."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 13,
+    "parte": "primera",
+    "pregunta": "Señale la afirmación correcta sobre los Delegados del Gobierno en las Comunidades Autónomas, según la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público:",
+    "opciones": {
+      "A": "Serán nombrados y separados por Real Decreto del Presidente del Gobierno.",
+      "B": "Son órganos directivos con rango de Subsecretario que dependen orgánicamente del Ministerio competente por razón de la materia.",
+      "C": "Tienen la condición de alto cargo.",
+      "D": "Representan ordinariamente al Estado en el territorio de la respectiva Comunidad Autónoma."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 14,
+    "parte": "primera",
+    "pregunta": "Señale cuál de los siguientes NO es un elemento del Municipio, según lo dispuesto en el artículo 11 de la Ley 7/1985, de 2 de abril, Reguladora de las Bases del Régimen Local:",
+    "opciones": {
+      "A": "La organización.",
+      "B": "La denominación.",
+      "C": "El territorio.",
+      "D": "La población."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 15,
+    "parte": "primera",
+    "pregunta": "Señale cuál de los siguientes servicios deberá prestarse en todos los Municipios, según lo dispuesto en el artículo 26 de la Ley 7/1985, de 2 de abril, Reguladora de las Bases del Régimen Local:",
+    "opciones": {
+      "A": "Pavimentación de las vías públicas.",
+      "B": "Tratamiento de residuos.",
+      "C": "Prevención y extinción de incendios.",
+      "D": "Biblioteca pública."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 16,
+    "parte": "primera",
+    "pregunta": "Señale la afirmación correcta sobre el Consejo Europeo, según lo dispuesto en el artículo 15 del Tratado de la Unión Europea:",
+    "opciones": {
+      "A": "Se pronunciará por consenso, excepto cuando los Tratados dispongan otra cosa.",
+      "B": "Elegirá a su Presidente por mayoría cualificada para un mandato de cinco años, que podrá renovarse una sola vez.",
+      "C": "Se reunirá una vez por semestre por convocatoria de su Presidente.",
+      "D": "Estará compuesto por un representante de cada Estado miembro, de rango ministerial."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 17,
+    "parte": "primera",
+    "pregunta": "Señale cuál de los siguientes Estados es miembro de la Unión Europea desde el año 2004:",
+    "opciones": {
+      "A": "Rumanía.",
+      "B": "Suecia.",
+      "C": "Eslovenia.",
+      "D": "Austria."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 18,
+    "parte": "primera",
+    "pregunta": "De conformidad con la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, en los procedimientos iniciados a solicitud del interesado, ¿qué consecuencia produciría el vencimiento del plazo máximo sin haberse notificado resolución expresa?",
+    "opciones": {
+      "A": "Legitimaría al interesado o interesados para entenderla estimada por silencio administrativo, excepto en los supuestos en los que una norma con rango de ley o una norma de Derecho de la Unión Europea o de Derecho internacional aplicable en España establezcan lo contrario.",
+      "B": "El silencio tendría efecto estimatorio si se trata de un procedimiento relativo al ejercicio del derecho de petición, a que se refiere el artículo 29 de la Constitución.",
+      "C": "Legitimaría al interesado o interesados para entenderla desestimada por silencio administrativo, excepto en los supuestos en los que una norma con rango de ley o una norma de Derecho de la Unión Europea o de Derecho internacional aplicable en España establezcan lo contrario.",
+      "D": "En los casos de estimación por silencio administrativo, la resolución expresa posterior al vencimiento del plazo se adoptará por la Administración sin vinculación alguna al sentido del silencio."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 19,
+    "parte": "primera",
+    "pregunta": "¿Para cuál de las siguientes actuaciones requerirán las Administraciones Públicas a los interesados el uso obligatorio de firma, en los términos del artículo 11 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas?",
+    "opciones": {
+      "A": "Interponer acciones.",
+      "B": "Formular denuncias.",
+      "C": "Presentar comunicaciones.",
+      "D": "Desistir de derechos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 20,
+    "parte": "primera",
+    "pregunta": "Indique la respuesta correcta respecto de los efectos de los actos de las Administraciones Públicas sujetos al Derecho Administrativo a que alude el artículo 39 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas:",
+    "opciones": {
+      "A": "La eficacia del acto no quedará demorada cuando esté supeditada a su publicación.",
+      "B": "Excepcionalmente, podrá otorgarse eficacia retroactiva a los actos cuando se dicten en sustitución de actos nulos.",
+      "C": "Excepcionalmente, podrá otorgarse eficacia retroactiva a los actos cuando produzcan efectos desfavorables al interesado.",
+      "D": "La eficacia quedará demorada cuando así lo exija el contenido del acto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 21,
+    "parte": "primera",
+    "pregunta": "¿Cuál de las siguientes infracciones está tipificada como muy grave conforme a la Ley 19/2013, de 9 de diciembre, de transparencia, acceso a la información pública y buen gobierno?",
+    "opciones": {
+      "A": "La publicación o utilización indebida de la documentación o información a que tengan o hayan tenido acceso por razón de su cargo o función.",
+      "B": "El abuso de autoridad en el ejercicio del cargo.",
+      "C": "La intervención en un procedimiento administrativo cuando se dé alguna de las causas de abstención legalmente señaladas.",
+      "D": "No guardar el debido sigilo respecto a los asuntos que se conozcan por razón del cargo, cuando causen perjuicio a la Administración o se utilice en provecho propio."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 22,
+    "parte": "primera",
+    "pregunta": "Conforme al artículo 37 del Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público, señale cuál de estas materias queda excluida de la obligatoriedad de negociación:",
+    "opciones": {
+      "A": "Los criterios generales sobre ofertas de empleo público.",
+      "B": "La regulación y determinación concreta, en cada caso, de los sistemas, criterios, órganos y procedimientos de acceso al empleo público y a la promoción profesional.",
+      "C": "La determinación y aplicación de las retribuciones complementarias de los funcionarios.",
+      "D": "Las normas que fijen los criterios y mecanismos generales en materia de evaluación del desempeño."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 23,
+    "parte": "primera",
+    "pregunta": "De acuerdo con el artículo 87 del Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público, quienes se encuentren en situación de servicios especiales percibirán:",
+    "opciones": {
+      "A": "Las retribuciones que les correspondan como funcionarios de carrera y no las del puesto o cargo que desempeñen, sin perjuicio del derecho a percibir los trienios que tengan reconocidos en cada momento.",
+      "B": "Las retribuciones del puesto o cargo que desempeñen y no las que les correspondan como funcionarios de carrera, sin derecho a percibir los trienios que tengan reconocidos en cada momento.",
+      "C": "Las retribuciones que les correspondan como funcionarios de carrera y no las que les correspondan como puesto o cargo que desempeñen, sin derecho a percibir los trienios que tengan reconocidos.",
+      "D": "Las retribuciones del puesto o cargo que desempeñen y no las que les correspondan como funcionarios de carrera, sin perjuicio del derecho a percibir los trienios que tengan reconocidos en cada momento."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 24,
+    "parte": "primera",
+    "pregunta": "Conforme al artículo 88.2 del Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público, ¿en qué situación se encuentran los funcionarios transferidos a las Comunidades Autónomas en la función pública en la que se integran?",
+    "opciones": {
+      "A": "Servicios en otras Administraciones Públicas.",
+      "B": "Servicios especiales.",
+      "C": "Servicios en Comunidades Autónomas.",
+      "D": "Servicio activo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 25,
+    "parte": "primera",
+    "pregunta": "Conforme al artículo 53 del Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público, es un principio ético en la actuación de los empleados públicos:",
+    "opciones": {
+      "A": "Tratar con atención y respeto a los ciudadanos, a sus superiores y a los restantes empleados públicos.",
+      "B": "Administrar los recursos y bienes públicos con austeridad y no utilizar los mismos en provecho propio o de personas allegadas.",
+      "C": "No aceptar ningún trato de favor o situación que implique privilegio o ventaja injustificada, por parte de personas físicas o entidades privadas.",
+      "D": "Obedecer las instrucciones y órdenes profesionales de los superiores, salvo que constituyan una infracción manifiesta del ordenamiento jurídico, en cuyo caso las pondrán inmediatamente en conocimiento de los órganos de inspección procedentes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 26,
+    "parte": "primera",
+    "pregunta": "Señale la afirmación correcta en relación con lo establecido en el artículo 97 del Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público sobre prescripción de las faltas disciplinarias del personal empleado público:",
+    "opciones": {
+      "A": "Las infracciones muy graves prescribirán a los tres años, las graves al año y las leves a los seis meses.",
+      "B": "Las infracciones muy graves prescribirán a los tres años, las graves a los dos años y las leves al año.",
+      "C": "Las infracciones muy graves prescribirán a los tres años, las graves a los dos años y las leves a los seis meses.",
+      "D": "Las infracciones muy graves prescribirán a los tres años, las graves a los seis meses y las leves a los tres meses."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 27,
+    "parte": "primera",
+    "pregunta": "¿Cuál de las siguientes NO es una sanción disciplinaria, de conformidad con el artículo 96 del Real Decreto Legislativo 5/2015, de 30 de octubre, por el que se aprueba el texto refundido de la Ley del Estatuto Básico del Empleado Público?",
+    "opciones": {
+      "A": "Suspensión firme de funciones.",
+      "B": "Traslado forzoso con cambio de residencia.",
+      "C": "Separación del servicio.",
+      "D": "Deducción proporcional de retribuciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 28,
+    "parte": "primera",
+    "pregunta": "El artículo 28 de la Ley 47/2003, de 26 de noviembre, General Presupuestaria establece que los escenarios presupuestarios plurianuales en los que se enmarcarán anualmente los Presupuestos Generales del Estado serán confeccionados por:",
+    "opciones": {
+      "A": "El Consejo de Ministros.",
+      "B": "El Ministerio de Hacienda.",
+      "C": "El Ministerio de Economía, Comercio y Empresa.",
+      "D": "Las Cortes Generales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 29,
+    "parte": "primera",
+    "pregunta": "Conforme al artículo 41 de la Ley 47/2003, de 26 de noviembre, General Presupuestaria, en relación con la clasificación económica de los estados de ingresos se consideran ingresos de capital:",
+    "opciones": {
+      "A": "Las transferencias corrientes.",
+      "B": "Los ingresos patrimoniales.",
+      "C": "Las tasas, precios públicos y otros ingresos.",
+      "D": "La enajenación de inversiones reales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 30,
+    "parte": "primera",
+    "pregunta": "Conforme a la Ley Orgánica 3/2007, de 22 de marzo, para la igualdad efectiva de mujeres y hombres, la situación en que una disposición, criterio o práctica aparentemente neutros pone a personas de un sexo en desventaja particular con respecto a personas del otro, salvo que dicha disposición, criterio o práctica puedan justificarse objetivamente en atención a una finalidad legítima y que los medios para alcanzar dicha finalidad sean necesarios y adecuados, se considera:",
+    "opciones": {
+      "A": "Acoso sexual.",
+      "B": "Acoso por razón de sexo.",
+      "C": "Discriminación directa por razón de sexo.",
+      "D": "Discriminación indirecta por razón de sexo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 31,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras contiene un error ortográfico:",
+    "opciones": {
+      "A": "Leitmotib.",
+      "B": "Oaxaqueño.",
+      "C": "Sonámbulo.",
+      "D": "Hortícola."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 32,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras contiene un error ortográfico:",
+    "opciones": {
+      "A": "Duermevela.",
+      "B": "Diéresis.",
+      "C": "Exhuberante.",
+      "D": "Viudedad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 33,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras contiene un error ortográfico:",
+    "opciones": {
+      "A": "Oriunda.",
+      "B": "Ermitaño.",
+      "C": "Eximio.",
+      "D": "Livido."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 34,
+    "parte": "primera",
+    "pregunta": "Indique entre las siguientes palabras cuál es el antónimo u opuesto de la palabra TERSO.",
+    "opciones": {
+      "A": "Ingenioso.",
+      "B": "Fino.",
+      "C": "Dulce.",
+      "D": "Rugoso."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 35,
+    "parte": "primera",
+    "pregunta": "Indique entre las siguientes palabras cuál es el antónimo u opuesto de la palabra ERIAL.",
+    "opciones": {
+      "A": "Páramo.",
+      "B": "Vergel.",
+      "C": "Desierto.",
+      "D": "Descampado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 36,
+    "parte": "primera",
+    "pregunta": "Indique entre las siguientes palabras cuál es el antónimo u opuesto de la palabra VENTURA.",
+    "opciones": {
+      "A": "Desdicha.",
+      "B": "Suerte.",
+      "C": "Destino.",
+      "D": "Azar."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 37,
+    "parte": "primera",
+    "pregunta": "Indique entre las siguientes palabras cuál es el sinónimo o afín de la palabra DESLAVAZADO.",
+    "opciones": {
+      "A": "Estructurado.",
+      "B": "Insulso.",
+      "C": "Avanzado.",
+      "D": "Atrasado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 38,
+    "parte": "primera",
+    "pregunta": "Indique entre las siguientes palabras cuál es el sinónimo o afín de la palabra HEREJE.",
+    "opciones": {
+      "A": "Ortodoxo.",
+      "B": "Arrepentido.",
+      "C": "Penitente.",
+      "D": "Heterodoxo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 39,
+    "parte": "primera",
+    "pregunta": "Indique entre las siguientes palabras cuál es el sinónimo o afín de la palabra FANTÁSTICA.",
+    "opciones": {
+      "A": "Tangible.",
+      "B": "Pésima.",
+      "C": "Estupenda.",
+      "D": "Deplorable."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 40,
+    "parte": "primera",
+    "pregunta": "Si hay un 8 % de descuento en un producto cuyo precio original es de 45 €, ¿qué importe se pagará una vez aplicado el descuento?",
+    "opciones": {
+      "A": "40,25 €",
+      "B": "41,40 €",
+      "C": "38,72 €",
+      "D": "39,05 €"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 41,
+    "parte": "primera",
+    "pregunta": "Hemos estado pagando 58 € al mes por la suscripción a un gimnasio y este mes se incrementa el precio un 4 %. ¿Qué importe pagaremos una vez aplicado el incremento de precio?",
+    "opciones": {
+      "A": "60,90 €",
+      "B": "63,00 €",
+      "C": "61,77 €",
+      "D": "60,32 €"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 42,
+    "parte": "primera",
+    "pregunta": "Tenemos un grupo de 50 personas inscritas en una conferencia, pero sólo asisten el 64 % de los inscritos. ¿Cuántas de las personas inscritas han faltado?",
+    "opciones": {
+      "A": "18.",
+      "B": "32.",
+      "C": "34.",
+      "D": "16."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 43,
+    "parte": "primera",
+    "pregunta": "Tenemos que preparar 616 paquetes de bienvenida. El primer día preparamos tres octavos del total de paquetes y el segundo día preparamos dos octavos del total. ¿Cuántos paquetes nos quedan por preparar?",
+    "opciones": {
+      "A": "259.",
+      "B": "231.",
+      "C": "212.",
+      "D": "244."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 44,
+    "parte": "primera",
+    "pregunta": "¿Qué número continúa la secuencia 5, 3, 15, 4, 60, 5, _?",
+    "opciones": {
+      "A": "300",
+      "B": "320",
+      "C": "280",
+      "D": "340"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 45,
+    "parte": "primera",
+    "pregunta": "¿Qué número continúa la secuencia 384, 96, 24, _?",
+    "opciones": {
+      "A": "3",
+      "B": "9",
+      "C": "12",
+      "D": "6"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 46,
+    "parte": "primera",
+    "pregunta": "Halla el valor de x en la siguiente ecuación: 5(5x - 3) = x",
+    "opciones": {
+      "A": "1,447",
+      "B": "0,098",
+      "C": "0,916",
+      "D": "0,625"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 47,
+    "parte": "primera",
+    "pregunta": "Halla el valor de x en la siguiente ecuación: 9(7x - 13) = -x + 1",
+    "opciones": {
+      "A": "1,84",
+      "B": "-2,08",
+      "C": "1,55",
+      "D": "8,08"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 48,
+    "parte": "primera",
+    "pregunta": "Halla el valor de x en la siguiente ecuación: 10 - 9x = 4(x - 4)",
+    "opciones": {
+      "A": "1",
+      "B": "2",
+      "C": "3",
+      "D": "4"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 49,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Préstamos\" (Título/Autor/Lugar de edición/Año/Editorial/Ejemplares disponibles/Ejemplares prestados/Préstamos realizados), ¿cuál de las siguientes editoriales acumula un mayor número de ejemplares disponibles?",
+    "opciones": {
+      "A": "Plaza & Janés.",
+      "B": "Destino.",
+      "C": "Alfaguara.",
+      "D": "Santillana."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 50,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Préstamos\", ¿cuál de las siguientes editoriales acumula un mayor número de préstamos realizados?",
+    "opciones": {
+      "A": "Destino.",
+      "B": "Santillana.",
+      "C": "Anagrama.",
+      "D": "Plaza & Janés."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 51,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Préstamos\", ¿cuál de los siguientes títulos está publicado en una editorial de Barcelona, en un año posterior a 1998 y cuenta con más de 10 ejemplares disponibles?",
+    "opciones": {
+      "A": "Entre visillos.",
+      "B": "El amante lesbiano.",
+      "C": "Hija de la fortuna.",
+      "D": "Un calor tan cercano."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 52,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Préstamos\", ¿cuál de las siguientes editoriales acumula un mayor número de ejemplares prestados?",
+    "opciones": {
+      "A": "Plaza & Janés.",
+      "B": "Alfaguara.",
+      "C": "Anagrama.",
+      "D": "Santillana."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 53,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Préstamos\", ¿cuál de los siguientes títulos tiene un mayor porcentaje de ejemplares prestados con respecto a los disponibles?",
+    "opciones": {
+      "A": "La temporada de caza.",
+      "B": "Aranmanoth.",
+      "C": "El equipaje del viajero.",
+      "D": "Entre visillos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 54,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Préstamos\", ¿cuál de los siguientes autores tiene un mayor porcentaje de ejemplares prestados con respecto al total de préstamos realizados?",
+    "opciones": {
+      "A": "Sampedro, José Luis.",
+      "B": "Puértolas, Soledad.",
+      "C": "Marías, Javier.",
+      "D": "Martín Gaite, Carmen."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 55,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Desplazamientos\" (Proyecto/Departamento/Oficina/Duración días/Kilómetros/Peajes/Dieta/Combustible), ¿cuál de las siguientes oficinas ha realizado un mayor número de kilómetros?",
+    "opciones": {
+      "A": "Zaragoza.",
+      "B": "Valencia.",
+      "C": "Tarragona.",
+      "D": "Bilbao."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 56,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Desplazamientos\", ¿cuál de los siguientes departamentos tiene una media mayor de duración en días de sus desplazamientos?",
+    "opciones": {
+      "A": "Técnico.",
+      "B": "Marketing.",
+      "C": "Comercial.",
+      "D": "Administración."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 57,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Desplazamientos\", ¿cuál de los siguientes departamentos tiene una media mayor de pago en euros por peaje?",
+    "opciones": {
+      "A": "Comercial.",
+      "B": "Administración.",
+      "C": "Marketing.",
+      "D": "Técnico."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 58,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Desplazamientos\", ¿cuál de los siguientes proyectos ha tenido un mayor pago de peajes por kilómetro realizado?",
+    "opciones": {
+      "A": "C-510",
+      "B": "C-491",
+      "C": "A-115",
+      "D": "M-254"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 59,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Desplazamientos\", ¿cuál es el porcentaje de kilómetros realizados por la oficina de Tarragona con respecto al total de kilómetros realizado por todas las oficinas?",
+    "opciones": {
+      "A": "25,83 %",
+      "B": "24,60 %",
+      "C": "26,11 %",
+      "D": "23,82 %"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 60,
+    "parte": "primera",
+    "pregunta": "Según los datos de la tabla \"Desplazamientos\", ¿cuál de los siguientes es el porcentaje de kilómetros realizados en el proyecto A-115 con respecto al total de kilómetros de todos los proyectos?",
+    "opciones": {
+      "A": "34,51 %",
+      "B": "32,82 %",
+      "C": "33,76 %",
+      "D": "31,68 %"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 61,
+    "parte": "primera",
+    "pregunta": "Conforme lo determinado por el Real Decreto Legislativo 1/2013, de 29 de noviembre, por el que se aprueba el Texto Refundido de la Ley General de derechos de las personas con discapacidad y de su inclusión social, se considera infracción muy grave:",
+    "opciones": {
+      "A": "Los actos discriminatorios u omisiones que supongan directa o indirectamente un trato menos favorable a la persona con discapacidad en relación con otra persona que se encuentre en situación análoga o comparable.",
+      "B": "La imposición abusiva de cualquier forma de renuncia total o parcial a los derechos de las personas por motivo o por razón de su discapacidad, basada en una posición de ventaja.",
+      "C": "Las acciones que deliberadamente generen un grave perjuicio económico o profesional para las personas con discapacidad.",
+      "D": "La coacción, amenaza, represalia ejercida sobre la persona con discapacidad o sobre otras personas físicas o jurídicas, que hayan entablado o pretendan entablar cualquier clase de acción legal, reclamación, denuncia o participen en procedimientos ya iniciados para exigir el cumplimiento del principio de igualdad de oportunidades, así como la tentativa de ejercitar tales actos."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 62,
+    "parte": "primera",
+    "pregunta": "Conforme establece el artículo 240 del Tratado de Funcionamiento de la Unión Europea, en las cuestiones de procedimiento y para la aprobación de su reglamento interno, el Consejo se pronunciará por:",
+    "opciones": {
+      "A": "Consenso.",
+      "B": "Mayoría cualificada.",
+      "C": "Unanimidad.",
+      "D": "Mayoría simple."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 63,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras está correctamente escrita:",
+    "opciones": {
+      "A": "Idiosincracia.",
+      "B": "Idiosincrasia.",
+      "C": "Idiocincrasia.",
+      "D": "Idiosincrazia."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 64,
+    "parte": "primera",
+    "pregunta": "Indique entre las siguientes palabras cuál es el antónimo u opuesto de la palabra PERSPICAZ.",
+    "opciones": {
+      "A": "Obtuso.",
+      "B": "Sutil.",
+      "C": "Abusado.",
+      "D": "Vivo."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 65,
+    "parte": "primera",
+    "pregunta": "Indique dos números de los propuestos sabiendo que uno es cuatro veces mayor que el otro y su suma es 25.",
+    "opciones": {
+      "A": "10 y 15.",
+      "B": "5 y 20.",
+      "C": "4 y 21.",
+      "D": "8 y 17."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 1,
+    "parte": "segunda",
+    "pregunta": "La función de atención personalizada al ciudadano relativa a facilitarle la orientación y ayuda que precisen en el momento inicial de su visita se denomina, según el Real Decreto 208/1996, de 9 de febrero, por el que se regulan los servicios de información administrativa y atención al ciudadano:",
+    "opciones": {
+      "A": "De gestión y recepción.",
+      "B": "De orientación e información.",
+      "C": "De asistencia y orientación.",
+      "D": "De recepción y acogida."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 2,
+    "parte": "segunda",
+    "pregunta": "¿Cuándo y en qué sentido se reformó la Constitución Española de 1978 en garantía de los derechos de las personas con discapacidad para la igualdad real?",
+    "opciones": {
+      "A": "En 2024 y sustituyó el término minusválido por personas con discapacidad.",
+      "B": "En 2024 y sustituyó el término disminuidos por personas con discapacidad.",
+      "C": "En 2023 y sustituyó el término minusválido por personas con discapacidad.",
+      "D": "En 2023 y sustituyó el término disminuido por personas con discapacidad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 3,
+    "parte": "segunda",
+    "pregunta": "¿Para qué colectivos de personas con discapacidad recoge expresamente la Constitución Española de 1978 la atención de necesidades específicas?",
+    "opciones": {
+      "A": "Menores de edad y mayores de 65 años.",
+      "B": "Menores de edad y personas con discapacidad superior al 66 %.",
+      "C": "Menores de edad y mujeres.",
+      "D": "Personas con riesgo de exclusión social."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 4,
+    "parte": "segunda",
+    "pregunta": "Según el Real Decreto 208/1996, de 9 de febrero, por el que se regulan los servicios de información administrativa y atención al ciudadano, la información administrativa se clasifica en:",
+    "opciones": {
+      "A": "General y particular.",
+      "B": "Pública y privada.",
+      "C": "Ordinaria y extraordinaria.",
+      "D": "Interna y externa."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 5,
+    "parte": "segunda",
+    "pregunta": "Tal y como indica el Real Decreto 951/2005, de 29 de julio, por el que se establece el marco general para la mejora de la calidad en la Administración General del Estado, las cartas de servicios y sus posteriores actualizaciones serán aprobadas mediante:",
+    "opciones": {
+      "A": "Resolución del Subsecretario del departamento al que pertenezca el órgano y se publicará en el Boletín Oficial del Estado.",
+      "B": "Resolución del Subsecretario del departamento al que pertenezca el órgano, sin que sea necesaria la publicación en Boletín Oficial del Estado, pero sí se llevarán a cabo las acciones divulgativas más eficaces, garantizando siempre que puedan ser conocidas por los usuarios en todas sus dependencias con atención al público.",
+      "C": "Orden Ministerial del departamento al que pertenezca el órgano y se publicará en el Boletín Oficial del Estado.",
+      "D": "Orden Ministerial del departamento al que pertenezca el órgano sin que sea necesaria la publicación en el Boletín Oficial del Estado, pero se llevarán a cabo las acciones divulgativas más eficaces, garantizando siempre que puedan ser conocidas por los usuarios en todas sus dependencias con atención al público."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 6,
+    "parte": "segunda",
+    "pregunta": "Según el Real Decreto Legislativo 1/2013, de 29 de noviembre, por el que se aprueba el Texto Refundido de la Ley General de derechos de las personas con discapacidad y de su inclusión social, el principio en virtud del cual la sociedad debe permitir que todas las personas con discapacidad tengan las oportunidades y recursos necesarios para participar plenamente en cualquier ámbito de la vida, es el de:",
+    "opciones": {
+      "A": "Inclusión social.",
+      "B": "Accesibilidad universal.",
+      "C": "Diseño universal.",
+      "D": "Transversalidad de las políticas públicas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 7,
+    "parte": "segunda",
+    "pregunta": "Según el artículo 16 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, los registros electrónicos de todas y cada una de las Administraciones deben ser:",
+    "opciones": {
+      "A": "Autónomos.",
+      "B": "Digitalizables.",
+      "C": "Accesibles.",
+      "D": "Interoperables."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 8,
+    "parte": "segunda",
+    "pregunta": "Entre los principios que el sector público debe respetar en sus actuaciones y relaciones electrónicas regulados en el Real Decreto 203/2021, de 30 de marzo, por el que se aprueba el Reglamento de actuación y funcionamiento del sector público por medios electrónicos, aquel que se define como \"la capacidad de las Administraciones Públicas para que partiendo del conocimiento adquirido del usuario final del servicio, proporcione servicios precumplimentados y se anticipe a las necesidades\", es el principio de:",
+    "opciones": {
+      "A": "Adaptabilidad.",
+      "B": "Accesibilidad.",
+      "C": "Facilidad de uso.",
+      "D": "Personalización y proactividad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 9,
+    "parte": "segunda",
+    "pregunta": "¿Qué significan las siglas DEHu en el ámbito del Real Decreto 203/2021, de 30 de marzo, por el que se aprueba el Reglamento de actuación y funcionamiento del sector público por medios electrónicos?",
+    "opciones": {
+      "A": "Dirección Electrónica Habilitada para usuarios.",
+      "B": "Dirección Electrónica Habilitada universal.",
+      "C": "Dirección Electrónica Habilitada única.",
+      "D": "Dirección Electrónica Homologada para usuarios."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 10,
+    "parte": "segunda",
+    "pregunta": "¿Qué quiere decir CSV en el marco del Real Decreto 203/2021, de 30 de marzo, por el que se aprueba el Reglamento de actuación y funcionamiento del sector público por medios electrónicos?",
+    "opciones": {
+      "A": "Clave Segura de Validación.",
+      "B": "Clave de Seguridad Verificada.",
+      "C": "Código de Seguridad Validado.",
+      "D": "Código Seguro de Verificación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 11,
+    "parte": "segunda",
+    "pregunta": "En materia de seguridad informática, ¿qué nombre recibe la técnica que consiste en manipular publicidad en línea con el objetivo de conseguir infectar dispositivos, de manera que, cuando el usuario accede a alguno de esos anuncios instala software malicioso sin ser consciente de ello?",
+    "opciones": {
+      "A": "Crimeware.",
+      "B": "Warshipping.",
+      "C": "Malvertising.",
+      "D": "Spyware."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 12,
+    "parte": "segunda",
+    "pregunta": "Según la ISO/IEC 27000, el conjunto de elementos interrelacionados o interactuantes que utiliza una organización para establecer una política y unos objetivos de seguridad de la información y alcanzar dichos objetivos, basándose en un enfoque de gestión del riesgo y de mejora continua, ¿qué nombre recibe?",
+    "opciones": {
+      "A": "Sistema de Información.",
+      "B": "Sistema de Gestión de la Seguridad de la Información.",
+      "C": "Seguridad de la Información.",
+      "D": "Gestión de Incidentes de Seguridad de la Información."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 13,
+    "parte": "segunda",
+    "pregunta": "¿Qué es un insider en ciberseguridad?",
+    "opciones": {
+      "A": "Un insider es una persona que no pertenece a la organización y que provoca un incidente de seguridad de forma intencionada.",
+      "B": "Un insider es una persona que no pertenece a la organización y que provoca un incidente de seguridad de forma accidental.",
+      "C": "Un insider es una persona perteneciente a la propia organización que provoca un incidente de seguridad de forma intencionada.",
+      "D": "Un insider es una persona perteneciente a la propia organización que provoca un incidente de seguridad de forma accidental."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 14,
+    "parte": "segunda",
+    "pregunta": "¿Qué es el plug and play en el sistema operativo Windows 11?",
+    "opciones": {
+      "A": "Es un sistema de virtualización que permite ejecutar varios sistemas operativos simultáneamente sin modificar el hardware físico.",
+      "B": "Es un protocolo de seguridad que cifra automáticamente los dispositivos externos antes de que el sistema los reconozca.",
+      "C": "Es la técnica que permite a un sistema informático adaptarse a los cambios de hardware con mínima intervención del usuario, permitiendo agregar o quitar dispositivos sin configuración manual.",
+      "D": "Es una función del sistema que optimiza el rendimiento del procesador al detectar nuevos componentes internos instalados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 15,
+    "parte": "segunda",
+    "pregunta": "¿Cuál de los siguientes estándares de codificación es el más utilizado en los sistemas operativos modernos debido a su capacidad para representar casi todos los idiomas, símbolos y emojis mediante una longitud de bits variable?",
+    "opciones": {
+      "A": "UTF-8 (Unicode)",
+      "B": "ASCII",
+      "C": "EBCDIC",
+      "D": "Sistema Binario Puro"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 16,
+    "parte": "segunda",
+    "pregunta": "¿Cuál de las siguientes afirmaciones define correctamente la característica principal del almacenamiento secundario?",
+    "opciones": {
+      "A": "Es una memoria volátil que almacena los datos temporales que el procesador necesita utilizar de manera inmediata.",
+      "B": "Es un soporte de almacenamiento no volátil que permite guardar datos de forma permanente, incluso cuando el dispositivo se apaga.",
+      "C": "Es un tipo de memoria de solo lectura que contiene las instrucciones críticas para el arranque del sistema.",
+      "D": "Es el espacio de almacenamiento temporal ubicado dentro de la CPU para acelerar el procesamiento de cálculos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 17,
+    "parte": "segunda",
+    "pregunta": "En Windows 11, ¿cuáles son algunas de las opciones que aparecen en la pantalla de seguridad al presionar la combinación de teclas Ctrl + Alt + Supr?",
+    "opciones": {
+      "A": "Buscar; Cambiar de usuario; Administrador de tareas; Cerrar sesión.",
+      "B": "Configuración; Cambiar de usuario; Administrador de tareas; Cerrar sesión.",
+      "C": "Bloquear; Cambiar de usuario; Cerrar sesión; Administrador de tareas.",
+      "D": "Suspender; Cambiar de usuario; Administrador de tareas; Cerrar sesión."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 18,
+    "parte": "segunda",
+    "pregunta": "En Windows 11, de las opciones propuestas, ¿qué tareas se pueden realizar desde el Administrador de tareas?",
+    "opciones": {
+      "A": "Finalizar procesos que no responden, monitorizar el uso de CPU/RAM en tiempo real y gestionar las aplicaciones que utiliza el sistema.",
+      "B": "Ajustar la resolución de pantalla, cambiar el brillo de la pantalla integrada y cambiar el tamaño del texto, las aplicaciones y otros elementos.",
+      "C": "Crear carpetas en el Explorador de archivos, editar tareas y crear calendarios.",
+      "D": "Configurar el tiempo de espera para que la pantalla se apague, activar el ahorro de energía y cambiar el plan de rendimiento del procesador."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 19,
+    "parte": "segunda",
+    "pregunta": "En el panel de Configuración de Windows 11, dentro de la categoría Personalización, si accedemos al apartado de Temas y seleccionamos la opción Configuración de iconos de escritorio, ¿cuáles son los iconos específicos del sistema que podemos activar o desactivar en esta ventana?",
+    "opciones": {
+      "A": "Pantalla, Sonido, Notificaciones, Concentración y Almacenamiento.",
+      "B": "Equipo, Archivos del usuario, Red, Papelera de reciclaje y Panel de control.",
+      "C": "Escritorio, Descargas, Documentos, Imágenes, Música y Vídeos.",
+      "D": "Fondo, Colores, Iluminación dinámica y Pantalla de bloqueo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 20,
+    "parte": "segunda",
+    "pregunta": "En Windows 11, accediendo a Inicio > Configuración > Personalización, ¿cuál de las siguientes opciones corresponde específicamente a la configuración de Colores del sistema?",
+    "opciones": {
+      "A": "Activar o desactivar el efecto transparencia, por lo que las ventanas y las superficies aparecen traslúcidas.",
+      "B": "Cambiar los colores que aparecen en Windows y en las aplicaciones, pudiendo elegir entre el modo resaltado y contrastado.",
+      "C": "Habilitar la opción para ajustar automáticamente la temperatura de color de la pantalla según la hora del día, modificando los tonos cálidos y fríos para reducir la fatiga visual.",
+      "D": "Configurar el \"Color principal del sistema\", que permite aplicar temas de color para deficiencias visuales y sensibilidad a la luz."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 21,
+    "parte": "segunda",
+    "pregunta": "En Windows 11, ¿cómo se denomina al elemento de interfaz interactivo y dinámico que funciona como un contenedor visual asociado a una aplicación, diseñado para mostrar información personalizada y gráficos de un vistazo, sin necesidad de abrir el programa completo?",
+    "opciones": {
+      "A": "Barra de tareas.",
+      "B": "Acceso directo.",
+      "C": "Widget.",
+      "D": "Controles XAML."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 22,
+    "parte": "segunda",
+    "pregunta": "En Windows 11, ¿cuál es la función principal de los escritorios virtuales?",
+    "opciones": {
+      "A": "Ejecutar varios sistemas operativos de manera simultánea sin necesidad de reiniciar el equipo.",
+      "B": "Dividir la pantalla en varias áreas para mostrar distintas aplicaciones al mismo tiempo en un mismo escritorio.",
+      "C": "Crear entornos de trabajo independientes, lo que permiten separar tareas y organizar mejor el trabajo diario.",
+      "D": "Crear perfiles de usuario adicionales con configuraciones y archivos completamente independientes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 23,
+    "parte": "segunda",
+    "pregunta": "¿Qué nombre recibe la capacidad de un sistema basado en inteligencia artificial para generar contenido original y creativo, como imágenes, texto o música, a partir de un conjunto de datos de entrada?",
+    "opciones": {
+      "A": "RPA (Robotic Process Automation).",
+      "B": "Robotización industrial.",
+      "C": "Automatización inteligente.",
+      "D": "Inteligencia Artificial generativa."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 24,
+    "parte": "segunda",
+    "pregunta": "¿Cuál de las siguientes afirmaciones es correcta sobre un archivo en un sistema operativo actual?",
+    "opciones": {
+      "A": "Es un conjunto de información volátil que se pierde al apagar el equipo.",
+      "B": "Se identifica mediante un nombre y puede tener una extensión.",
+      "C": "Solo existe mientras una aplicación está en ejecución.",
+      "D": "No puede organizarse dentro de carpetas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 25,
+    "parte": "segunda",
+    "pregunta": "Señale la respuesta correcta sobre el funcionamiento de Microsoft Access 365.",
+    "opciones": {
+      "A": "Una vez borrado un registro, no existe ningún comando para deshacer la operación.",
+      "B": "En una tabla pueden existir dos campos con el mismo nombre.",
+      "C": "La longitud máxima del tipo Texto corto es de 249 caracteres.",
+      "D": "Todas las propiedades de campo están disponibles para todos los tipos de datos posibles."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 26,
+    "parte": "segunda",
+    "pregunta": "Para utilizar una aplicación diferente a la que tiene asociada el archivo por defecto, ¿cuál es el procedimiento que permite cambiar la aplicación predeterminada para abrir un tipo de archivo específico en Windows 11?",
+    "opciones": {
+      "A": "Hacer clic con el botón derecho sobre el archivo, en el menú seleccionar el comando \"Propiedades\", hacer clic en la pestaña \"Personalizar\", en el grupo \"Iconos de carpeta\" seleccionar \"Cambiar icono…\", y por último, \"Elegir otra aplicación\" y seleccionar la aplicación correspondiente.",
+      "B": "Hacer clic con el botón derecho sobre el archivo, en el menú seleccionar el comando \"Abrir con\", elegir una aplicación propuesta, o en su caso, seleccionar \"Elegir otra aplicación\" y seleccionar la aplicación correspondiente.",
+      "C": "Hacer clic en \"Inicio\", seleccionar \"Configuración\", en el menú lateral izquierdo seleccionar la sección \"Aplicaciones\", en el panel principal seleccionar la opción \"Configuración avanzada de aplicaciones\" y, por último, hacer clic en \"Elegir otra aplicación\" y seleccionar la aplicación correspondiente.",
+      "D": "Hacer clic en \"Inicio\", escribir \"Panel de Control\", seleccionar \"Opciones del Explorador de archivos\", en la pestaña \"General\" ir a la sección \"Acciones al hacer clic en un elemento\", seleccionar \"Elegir otra aplicación\" y seleccionar la aplicación correspondiente."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 27,
+    "parte": "segunda",
+    "pregunta": "En Windows 11, al hacer clic en el botón Inicio, seleccionar Configuración, entrar en el apartado Sistema y acceder a la sección Almacenamiento, ¿cuáles son las cuatro categorías de Recomendaciones de limpieza que ofrece el sistema?",
+    "opciones": {
+      "A": "Archivos residuales, copias de seguridad sin usar, archivos sincronizados a la nube, aplicaciones sin usar.",
+      "B": "Archivos residuales, archivos grandes o sin usar, archivos sincronizados a la nube, aplicaciones sin usar.",
+      "C": "Archivos temporales, archivos duplicados, archivos sincronizados a la nube, aplicaciones en segundo plano.",
+      "D": "Archivos temporales, archivos grandes y sin usar, archivos sincronizados a la nube, aplicaciones sin usar."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 28,
+    "parte": "segunda",
+    "pregunta": "En una combinación de correspondencia en Microsoft Word 365 se requiere que una carta muestre el texto \"Vencido\" solo si la fecha actual es posterior a la fecha de pago. ¿Qué regla es la más adecuada?",
+    "opciones": {
+      "A": "Siguiente registro si",
+      "B": "Si... Entonces... Sino",
+      "C": "Saltar registro si",
+      "D": "Rellenar"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 29,
+    "parte": "segunda",
+    "pregunta": "En Microsoft Word 365 configurado en español, ¿qué acción se realiza al presionar la combinación de teclas CTRL + B dentro de un documento?",
+    "opciones": {
+      "A": "Se abre el cuadro de diálogo \"Buscar y reemplazar\".",
+      "B": "Abre el panel de tareas de Navegación para buscar en el contenido del documento.",
+      "C": "Se guarda el documento con un nuevo nombre.",
+      "D": "Se inserta una nota al pie."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 30,
+    "parte": "segunda",
+    "pregunta": "¿Qué sucede en Microsoft Word 365 al escribir =rand() en una línea en blanco y presionar la tecla Enter?",
+    "opciones": {
+      "A": "Se insertan números aleatorios en el documento.",
+      "B": "No ocurre nada, ya que Word no permite el uso de funciones.",
+      "C": "Se genera automáticamente texto de relleno compuesto por párrafos predefinidos.",
+      "D": "Se abre un cuadro de diálogo para configurar opciones avanzadas de texto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 31,
+    "parte": "segunda",
+    "pregunta": "¿Cuál de las siguientes acciones mejora la accesibilidad en Microsoft Word 365?",
+    "opciones": {
+      "A": "Agregar texto alternativo a las imágenes y objetos visuales.",
+      "B": "Utilizar tablas para organizar el contenido.",
+      "C": "Escribir la URL completa de una página web en el documento.",
+      "D": "Utilizar colores sin contraste en el texto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 32,
+    "parte": "segunda",
+    "pregunta": "En una hoja de Microsoft Excel 365, donde la Columna A es Fecha, Columna B es Concepto, Columna C es Importe, ¿qué valores se sumarán si se utiliza la siguiente fórmula? =SUMAR.SI.CONJUNTO(C2:C6;B2:B6;\"Nómina\";C2:C6;\">2000\";A2:A6;\">=01/01/2025\";A2:A6;\"<=31/12/2025\")",
+    "opciones": {
+      "A": "Sumará los importes mayores a 2.000 € del año 2025, siempre que la celda de concepto contenga el texto \"Nómina\", aunque no coincida exactamente.",
+      "B": "Sumará los importes de nómina del año 2025 y, además, los importes superiores a 2.000 € de otros conceptos distintos de nómina.",
+      "C": "No devolverá ningún resultado, ya que el rango de suma y uno de los rangos de criterio son el mismo, lo cual provoca un error.",
+      "D": "Sumará los importes correspondientes a nóminas con importe superior a 2.000 € y cuyas fechas estén comprendidas en el año 2025."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 33,
+    "parte": "segunda",
+    "pregunta": "La función en Microsoft Excel 365 que comprueba si la entrada coincide con el patrón y devuelve VERDADERO o FALSO se denomina:",
+    "opciones": {
+      "A": "ENCONTRAR",
+      "B": "REGEXPRUEBA",
+      "C": "COINCIDIRX",
+      "D": "ESTEXTO"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 34,
+    "parte": "segunda",
+    "pregunta": "¿En qué situación de las propuestas, Microsoft Excel 365 mostraría el símbolo ##### en una celda?",
+    "opciones": {
+      "A": "Es un error de visualización y ocurre cuando una celda contiene valores de fecha u hora negativos.",
+      "B": "Es un error que ocurre cuando una celda con una fórmula que utiliza datos de otras celdas o rangos no puede encontrar esas referencias.",
+      "C": "Es un error que ocurre al escribir incorrectamente la fórmula que se pretende utilizar.",
+      "D": "Es un error que suele ocurrir al intentar realizar operaciones matemáticas con celdas que contienen información no numérica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 35,
+    "parte": "segunda",
+    "pregunta": "¿Cuál de las siguientes opciones contiene una función válida de Microsoft Excel 365 diseñada para realizar búsquedas avanzadas?",
+    "opciones": {
+      "A": "BUSCARV2",
+      "B": "BUSCARMATRIZ",
+      "C": "BUSCARX",
+      "D": "BUSCARAVANZADO"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 36,
+    "parte": "segunda",
+    "pregunta": "En Microsoft Excel 365, si una celda tiene el valor 0,758 con formato general, se aplica el formato porcentaje y se reducen los decimales a cero, ¿qué contenido se mostrará visualmente en la celda?",
+    "opciones": {
+      "A": "75 %",
+      "B": "0,76 %",
+      "C": "76 %",
+      "D": "1 %"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 37,
+    "parte": "segunda",
+    "pregunta": "En Microsoft Excel 365, si una celda tiene el valor 1 con formato Número y se cambia a formato de Fecha corta, ¿qué contenido se mostrará visualmente en la celda?",
+    "opciones": {
+      "A": "01/01/1900",
+      "B": "01/01/1990",
+      "C": "01/01/0001",
+      "D": "1 de enero de 2026"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 38,
+    "parte": "segunda",
+    "pregunta": "Para importar un archivo HTML en Microsoft Access 365 desde la pestaña Datos externos, ¿cuál de las siguientes opciones de menú se debe utilizar?",
+    "opciones": {
+      "A": "De un archivo.",
+      "B": "De una base de datos.",
+      "C": "De servicios en línea.",
+      "D": "De otros orígenes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 39,
+    "parte": "segunda",
+    "pregunta": "Los formularios en Microsoft Access 365 tienen varios modos o vistas a los que se accede desde el botón Ver de la pestaña Inicio. ¿Cuáles son estas vistas?",
+    "opciones": {
+      "A": "Borrador, Formulario e Impresión.",
+      "B": "Edición, Diseño y Presentación.",
+      "C": "Diseño, Formulario y Presentación.",
+      "D": "Hoja de datos, Formulario y Diseño."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 40,
+    "parte": "segunda",
+    "pregunta": "En un formulario de Microsoft Access 365, ¿cómo se llama la vista que introduce, modifica o accede a la información almacenada en la base de datos?",
+    "opciones": {
+      "A": "Diseño.",
+      "B": "Presentación.",
+      "C": "Formulario.",
+      "D": "Edición."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 41,
+    "parte": "segunda",
+    "pregunta": "En la vista Diseño de una consulta de Microsoft Access 365 sobre una tabla de contratos, se desea filtrar los registros para mostrar únicamente los de \"Suministros\" cuya fecha de adjudicación sea posterior al 01/01/2025. ¿Cómo deben configurarse correctamente los criterios?",
+    "opciones": {
+      "A": "En la fila criterios del campo 'tipo de contrato' escribir \"Suministros\" y en la misma fila del campo 'Fecha de adjudicación' escribir >#01/01/2025#",
+      "B": "En la fila criterios del campo 'tipo de contrato' escribir [Suministros] y en la misma fila del campo 'Fecha de adjudicación' escribir >=01/01/2025=",
+      "C": "En la fila criterios del campo 'tipo de contrato' escribir *Suministros* y en la misma fila del campo 'Fecha de adjudicación' escribir >{01/01/2025}",
+      "D": "En la fila criterios del campo 'tipo de contrato' escribir \"Suministros\" y en la misma fila del campo 'Fecha de adjudicación' escribir <#01/01/2025#"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 42,
+    "parte": "segunda",
+    "pregunta": "En Microsoft Access 365, ¿qué nombre recibe la propiedad de campo que contiene el mensaje asociado a la infracción de la Regla de validación?",
+    "opciones": {
+      "A": "Valor de validación.",
+      "B": "Título de validación.",
+      "C": "Máscara de validación.",
+      "D": "Texto de validación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 43,
+    "parte": "segunda",
+    "pregunta": "En Microsoft Outlook 365 versión escritorio, ¿qué función permite programar el envío de un correo electrónico para que se remita en una fecha y hora específicas, en lugar de enviarse inmediatamente?",
+    "opciones": {
+      "A": "Crear una regla de envío diferido desde la pestaña Inicio > Reglas > Administrar reglas y alertas, aplicable a todos los mensajes salientes de forma global.",
+      "B": "Acceder a la pestaña Insertar > Programar envío y definir el intervalo de tiempo antes de redactar el cuerpo del mensaje.",
+      "C": "Seleccionar la pestaña Opciones, en el grupo Más Opciones, hacer clic en el botón \"Retrasar entrega,\" y configurar la opción \"No entregar antes de\" con la fecha y hora deseadas.",
+      "D": "Guardar el correo en la carpeta de Borradores y configurar una tarea de sincronización programada en el menú Archivo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 44,
+    "parte": "segunda",
+    "pregunta": "En Microsoft Outlook 365, ¿es posible cancelar el envío de un correo electrónico inmediatamente después de haber pulsado el botón Enviar?",
+    "opciones": {
+      "A": "Sí, utilizando la función \"Recuperar este mensaje\", pero se recupera solo cuando ambos usuarios tengan cuentas de Microsoft 365 en la misma organización y que el destinatario aún no haya abierto el correo.",
+      "B": "Sí, siempre que se active \"Deshacer envío\" en los ajustes, lo cual permite borrar el rastro del mensaje en el servidor del destinatario sin excepciones durante los primeros 30 segundos.",
+      "C": "Sí, mediante la opción \"Anular entrega\", que requiere instalar un plug-in de administración avanzada en el equipo del remitente para habilitar la eliminación del mensaje en servidores externos.",
+      "D": "No, una vez que el botón \"Enviar\" es pulsado, el protocolo SMTP impide cualquier modificación o eliminación en el buzón de destino por razones de integridad y seguridad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 45,
+    "parte": "segunda",
+    "pregunta": "En Microsoft Outlook 365, al redactar un nuevo mensaje y acceder a las opciones del menú Cifrar (dentro de la pestaña Opciones), ¿cuál es una de las opciones disponibles para restringir las acciones del destinatario sobre el correo?",
+    "opciones": {
+      "A": "No imprimir.",
+      "B": "No reenviar.",
+      "C": "No copiar texto.",
+      "D": "No imprimir pantalla."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 46,
+    "parte": "segunda",
+    "pregunta": "En el calendario de Microsoft Outlook 365, ¿cuál es una de las utilidades principales del Asistente para programación al organizar una convocatoria de reunión en la misma organización?",
+    "opciones": {
+      "A": "Enviar de forma automatizada las invitaciones a todos los contactos de la organización sin necesidad de seleccionarlos manualmente.",
+      "B": "Permitir visualizar fácilmente la disponibilidad de los asistentes para elegir una fecha y encontrar un intervalo horario compatible con todos los participantes.",
+      "C": "Bloquear las franjas horarias en los calendarios de los invitados sin necesidad de conformidad.",
+      "D": "Configurar de forma automática el patrón de periodicidad diaria para convertir cualquier cita puntual en una reunión recurrente."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 47,
+    "parte": "segunda",
+    "pregunta": "En Microsoft Outlook 365, al realizar una mención en el cuerpo de un correo electrónico escribiendo el símbolo @ seguido del nombre del usuario de la misma organización, ¿qué acción ejecuta el sistema automáticamente si el contacto mencionado no estaba incluido previamente como destinatario?",
+    "opciones": {
+      "A": "Resalta el nombre de la persona en el cuerpo y añade automáticamente su dirección al campo \"Para\".",
+      "B": "Únicamente resalta el nombre de la persona en el cuerpo del mensaje para dar énfasis visual.",
+      "C": "Inserta el nombre en el cuerpo del mensaje y añade a la persona en el campo de copia carbón (CC).",
+      "D": "Resalta el nombre, añade a la persona como destinataria y marca el mensaje con \"Importancia alta\" por defecto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 48,
+    "parte": "segunda",
+    "pregunta": "¿Qué nombre recibe una conexión segura entre redes utilizando Internet como medio de conexión, gracias a la encriptación de todos los datos que se envían y a la ocultación de datos?",
+    "opciones": {
+      "A": "Enrutador.",
+      "B": "Red Privada Virtual.",
+      "C": "Punto de acceso.",
+      "D": "Modo avión."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 49,
+    "parte": "segunda",
+    "pregunta": "¿Cuál de las siguientes opciones define al sistema de nombres de dominio (DNS) en Internet?",
+    "opciones": {
+      "A": "Es un protocolo estándar del sector que asigna nombres de dominio a direcciones IP, lo que permite la resolución de nombres para ordenadores y usuarios.",
+      "B": "Es el software encargado de asignar automáticamente direcciones IP únicas que identifiquen a cualquier dispositivo que se conecte a nuestra red.",
+      "C": "Es el complemento necesario para que la dirección IP sirva realmente para identificar a un dispositivo en una red.",
+      "D": "Es el hardware que permite conectarnos a la red. Puede ser una tarjeta inalámbrica, un adaptador Bluetooth, el conector para red cableada o todos según el tipo de dispositivo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 50,
+    "parte": "segunda",
+    "pregunta": "¿Cuál es la función principal de un servidor DHCP en una red local?",
+    "opciones": {
+      "A": "Traducir nombres de dominio legibles en direcciones IP numéricas.",
+      "B": "Filtrar el tráfico malicioso proveniente de Internet.",
+      "C": "Almacenar páginas web para que carguen más rápido.",
+      "D": "Asignar automáticamente direcciones IP dinámicas a los dispositivos que se conectan."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 51,
+    "parte": "segunda",
+    "pregunta": "Si en la carpeta Descargas del Explorador de archivos de Windows 11, se aplica una configuración de vista agrupada por Tipo y ordenada por Fecha de modificación, de forma Ascendente, ¿cuál de los siguientes elementos aparecería en la primera posición de la lista?",
+    "opciones": {
+      "A": "Confirmacion_Vuelo.msg (modificado el 05/11/2025)",
+      "B": "Backup_informes.zip (modificado el 01/12/2024)",
+      "C": "Acta_Reunion.docx (modificado el 10/01/2026)",
+      "D": "Instalador_Chrome.exe (modificado el 15/01/2025)"
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 52,
+    "parte": "segunda",
+    "pregunta": "En Microsoft Excel 365, si se produce un cierre inesperado del programa o el usuario olvida guardar un libro nuevo antes de cerrar, ¿es posible recuperar dicho archivo?",
+    "opciones": {
+      "A": "Sí, el programa guarda cada cambio de forma permanentemente automáticamente, aunque el archivo nunca se haya guardado.",
+      "B": "Sí, Excel guarda copias temporales automáticamente que se pueden recuperar desde el menú Archivo > Información > Administrar libro.",
+      "C": "Sí, solo si el archivo estaba guardado previamente en un pendrive o disco externo.",
+      "D": "No, si no se pulsó el botón \"Guardar\" antes de cerrar, toda la información se pierde sin posibilidad de recuperarla."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 53,
+    "parte": "segunda",
+    "pregunta": "¿Cuál es la función principal de Microsoft To Do dentro del ecosistema de Microsoft 365?",
+    "opciones": {
+      "A": "Diseñar diapositivas interactivas y presentaciones profesionales.",
+      "B": "Organizar tareas diarias y gestionar el tiempo de forma eficiente mediante listas personalizables y sincronizadas.",
+      "C": "Realizar cálculos estadísticos avanzados y gestionar bases de datos relacionales.",
+      "D": "Almacenar archivos en la nube en complemento de OneDrive."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 54,
+    "parte": "segunda",
+    "pregunta": "Según el Real Decreto 210/2024, de 27 de febrero, por el que se establece la estructura orgánica básica del Ministerio para la Transformación Digital y de la Función Pública, la gestión del Centro de Información Administrativa es una función atribuida a:",
+    "opciones": {
+      "A": "La Dirección General de la Función Pública.",
+      "B": "La Dirección General de Gobernanza Pública.",
+      "C": "La Dirección General del Dato.",
+      "D": "La Dirección General de Digitalización e Inteligencia Artificial."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 55,
+    "parte": "segunda",
+    "pregunta": "La actualización de las cartas de servicios en la Administración General del Estado, según el Real Decreto 951/2005, de 29 de julio, por el que se establece el marco general para la mejora de la calidad en la Administración General del Estado, debe hacerse en cualquier caso cada:",
+    "opciones": {
+      "A": "Dos años.",
+      "B": "Tres años.",
+      "C": "Cuatro años.",
+      "D": "Cinco años."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  }
+]
