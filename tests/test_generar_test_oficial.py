@@ -195,6 +195,60 @@ def test_ruta_generar_test_oficial_modo_reparto_invalido_cae_a_equitativo(client
         parche.stop()
 
 
+def test_ruta_generar_test_oficial_excluye_psicotecnicas_si_se_pide(client, db):
+    for i in range(5):
+        db.sembrar(("examenes_oficiales_AUXILIAR", f"c{i:03d}"), {
+            "tipo": "pregunta", **_pregunta(i, "bloque_01-tema_01", examen="AUXILIAR 2025 - Ejercicio único (ingreso libre)"),
+            "psicotecnico": False,
+        })
+    for i in range(5):
+        db.sembrar(("examenes_oficiales_AUXILIAR", f"p{i:03d}"), {
+            "tipo": "pregunta", **_pregunta(100 + i, "", examen="AUXILIAR 2025 - Ejercicio único (ingreso libre)"),
+            "psicotecnico": True,
+        })
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AUXILIAR": {"plan": "basico", "subscription_status": "active"}}
+    })
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/generar-test-oficial",
+            json={"num_preguntas": 10, "oposicion": "AUXILIAR", "excluir_psicotecnicas": True},
+            headers={"Authorization": "Bearer x"}
+        )
+        assert resp.status_code == 200
+        test = resp.get_json()["test"]
+        assert len(test) == 5
+        assert all(not p["psicotecnico"] for p in test)
+    finally:
+        parche.stop()
+
+
+def test_ruta_generar_test_oficial_incluye_psicotecnicas_por_defecto(client, db):
+    db.sembrar(("examenes_oficiales_AUXILIAR", "p001"), {
+        "tipo": "pregunta", **_pregunta(1, "", examen="AUXILIAR 2025 - Ejercicio único (ingreso libre)"),
+        "psicotecnico": True,
+    })
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AUXILIAR": {"plan": "basico", "subscription_status": "active"}}
+    })
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/generar-test-oficial",
+            json={"num_preguntas": 5, "oposicion": "AUXILIAR"},
+            headers={"Authorization": "Bearer x"}
+        )
+        assert resp.status_code == 200
+        test = resp.get_json()["test"]
+        assert len(test) == 1
+        assert test[0]["psicotecnico"] is True
+    finally:
+        parche.stop()
+
+
 def test_ruta_generar_test_oficial_404_si_no_hay_preguntas_cargadas(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",

@@ -145,6 +145,11 @@ def generar_test_oficial():
     modo_reparto = data.get("modo_reparto", "equitativo")
     if modo_reparto not in ("equitativo", "realista"):
         modo_reparto = "equitativo"
+    # Solo tiene efecto real en oposiciones con preguntas psicotécnicas en su
+    # examen oficial (hoy, Auxiliar -- ver cargar_examen_oficial_auxiliar.py);
+    # en el resto simplemente no hay ninguna pregunta con "psicotecnico": true
+    # que excluir, así que el filtro es un no-op inofensivo.
+    excluir_psicotecnicas = bool(data.get("excluir_psicotecnicas", False))
     logger.info("Número de preguntas solicitado: %s, exámenes filtrados: %s, temas filtrados: %s", num_preguntas, examenes_filtrados, temas_filtrados)
     coleccion = coleccion_examenes_oficiales(g.oposicion)
     try:
@@ -160,6 +165,8 @@ def generar_test_oficial():
         if examenes_filtrados:
             if d.get("examen", "").lower() not in [e.lower() for e in examenes_filtrados]:
                 continue
+        if excluir_psicotecnicas and d.get("psicotecnico"):
+            continue
         opciones_originales = d.get("opciones", {})
         opciones_mayus = {k.upper(): v for k, v in opciones_originales.items()}
         preguntas.append({
@@ -169,7 +176,8 @@ def generar_test_oficial():
             "explicacion": d.get("explicacion", ""),
             "examen": d.get("examen", ""),
             "numero": d.get("numero", 0),
-            "tema_id": d.get("tema_id", "")
+            "tema_id": d.get("tema_id", ""),
+            "psicotecnico": d.get("psicotecnico", False)
         })
     logger.info("Preguntas encontradas tras filtro en %s: %d", coleccion, len(preguntas))
     if not preguntas:

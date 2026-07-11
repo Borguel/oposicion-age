@@ -319,6 +319,25 @@ def calcular_pesos_reales_por_bloque(db, oposicion):
     return _desde_cache_o_calcular(("pesos_bloque", oposicion), _calcular)
 
 
+def tiene_preguntas_psicotecnicas(db, oposicion):
+    """True si la colección de exámenes oficiales de esta oposición tiene
+    alguna pregunta marcada como "psicotecnico" (aptitud administrativa,
+    numérica o verbal, sin relación con ningún tema del temario -- ver
+    cargar_examen_oficial_auxiliar.py). Hoy solo ocurre en Auxiliar, pero se
+    calcula empíricamente en vez de fijarlo a una oposición concreta, igual
+    que calcular_pesos_reales_por_bloque, para que el frontend solo ofrezca
+    el filtro "excluir psicotécnicas" cuando de verdad hay alguna que
+    excluir."""
+    def _calcular():
+        coleccion = coleccion_examenes_oficiales(oposicion)
+        for doc in db.collection(coleccion).stream():
+            d = doc.to_dict() or {}
+            if d.get("tipo") == "pregunta" and d.get("psicotecnico"):
+                return True
+        return False
+    return _desde_cache_o_calcular(("tiene_psicotecnicas", oposicion), _calcular)
+
+
 def _repartir_por_peso(ids, cantidad, pesos_norm):
     """Reparto proporcional de 'cantidad' unidades ENTERAS entre ids según
     pesos_norm (método del resto mayor / Hamilton): cada id recibe

@@ -29,6 +29,19 @@ def test_oposiciones_disponibles_no_requiere_login(client):
     assert por_id["AGE"]["tiene_pesos_reales"] is False
     assert por_id["GACE"]["tiene_pesos_reales"] is False
     assert por_id["AUXILIAR"]["tiene_pesos_reales"] is False
+    # Igual que con tiene_pesos_reales, sin ningún examen sembrado no hay
+    # preguntas psicotécnicas para ninguna oposición.
+    assert por_id["AGE"]["tiene_psicotecnicas"] is False
+    assert por_id["AUXILIAR"]["tiene_psicotecnicas"] is False
+
+
+def test_oposiciones_disponibles_marca_tiene_psicotecnicas_solo_donde_las_hay(client, db):
+    db.sembrar(("examenes_oficiales_AUXILIAR", "p1"), {"tipo": "pregunta", "psicotecnico": True})
+    db.sembrar(("examenes_oficiales_AGE", "a1"), {"tipo": "pregunta", "psicotecnico": False})
+    resp = client.get("/oposiciones-disponibles")
+    por_id = {o["id"]: o for o in resp.get_json()["oposiciones"]}
+    assert por_id["AUXILIAR"]["tiene_psicotecnicas"] is True
+    assert por_id["AGE"]["tiene_psicotecnicas"] is False
 
 
 def test_oposiciones_disponibles_marca_tiene_pesos_reales_si_hay_examenes(client, db):
