@@ -7,3 +7,50 @@
   max-width: 1200px;
   margin: 0 auto 20px;
 }
+
+.comparacion-intentos {
+  max-width: 1200px;
+  margin: 0 auto 20px;
+  padding: 18px 22px;
+  border-radius: var(--age-radius-md);
+  border: 1px solid var(--age-border);
+  background: var(--age-card);
+}
+
+.comparacion-intentos-titulo {
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.comparacion-intentos-fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 0.95rem;
+}
+
+.comparacion-intentos-etiqueta {
+  color: var(--age-ink-soft);
+}
+
+.comparacion-intentos-mensaje {
+  margin-top: 10px;
+  font-weight: 700;
+}
+
+.comparacion-intentos.comparacion-mejora {
+  border-color: var(--age-success, #2e7d32);
+}
+
+.comparacion-intentos.comparacion-mejora .comparacion-intentos-mensaje {
+  color: var(--age-success, #2e7d32);
+}
+
+.comparacion-intentos.comparacion-empeora {
+  border-color: var(--age-danger);
+}
+
+.comparacion-intentos.comparacion-empeora .comparacion-intentos-mensaje {
+  color: var(--age-danger);
+}

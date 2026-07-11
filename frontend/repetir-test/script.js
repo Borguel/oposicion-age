@@ -22,6 +22,11 @@ let textosFavoritas = new Set();
 let botonFavoritaHTML = () => "";
 let activarBotonFavorita = () => {};
 let listaTemasGlobal = [];
+// Estadísticas del intento ORIGINAL (?repetir=<id>), para comparar contra
+// el intento nuevo en la pantalla de resultados -- null si se llegó desde
+// "último test"/reanudado, donde no hay un intento anterior concreto con
+// el que comparar (aunque el test en sí ya fuera una repetición previa).
+let intentoOriginal = null;
 // Repetir-test no tiene un formulario propio (arranca directo al cargar la
 // página), así que el modo cronometrado no viene de un checkbox en el DOM
 // como en test-personalizado -- se pregunta con un diálogo antes de
@@ -289,6 +294,39 @@ async function mostrarPregunta(i) {
   });
 }
 
+// Bloque "comparar intentos": se inserta al principio de los resultados
+// (renderizarResultadosTest ya rellena el resto de #contenedor-resultados,
+// así que esto se antepone con insertAdjacentHTML en vez de tocar el
+// módulo compartido, que no sabe nada de intentos anteriores).
+function generarComparacionIntentosHTML(original, nuevo) {
+  const deltaAciertos = nuevo.aciertos - original.aciertos;
+  let mensaje;
+  let clase;
+  if (deltaAciertos > 0) {
+    mensaje = `¡Has mejorado! ${deltaAciertos} acierto${deltaAciertos !== 1 ? "s" : ""} más que la vez anterior.`;
+    clase = "comparacion-mejora";
+  } else if (deltaAciertos < 0) {
+    mensaje = `${Math.abs(deltaAciertos)} acierto${Math.abs(deltaAciertos) !== 1 ? "s" : ""} menos que la vez anterior.`;
+    clase = "comparacion-empeora";
+  } else {
+    mensaje = "Mismos aciertos que en tu intento anterior.";
+    clase = "comparacion-igual";
+  }
+  return `
+    <div class="comparacion-intentos ${clase}">
+      <div class="comparacion-intentos-titulo">🔁 Comparado con tu intento anterior</div>
+      <div class="comparacion-intentos-fila">
+        <span class="comparacion-intentos-etiqueta">Aciertos</span>
+        <span class="comparacion-intentos-valores">${original.aciertos} → <strong>${nuevo.aciertos}</strong></span>
+      </div>
+      <div class="comparacion-intentos-fila">
+        <span class="comparacion-intentos-etiqueta">Fallos</span>
+        <span class="comparacion-intentos-valores">${original.fallos} → <strong>${nuevo.fallos}</strong></span>
+      </div>
+      <div class="comparacion-intentos-mensaje">${mensaje}</div>
+    </div>`;
+}
+
 async function mostrarResultados() {
   clearInterval(intervaloTemporizador);
   document.getElementById("temporizador").style.display = "none";
@@ -308,6 +346,10 @@ async function mostrarResultados() {
     respuestasUsuario,
     listaTemas: listaTemasGlobal
   });
+
+  if (intentoOriginal && intentoOriginal.aciertos !== null) {
+    cont.insertAdjacentHTML("afterbegin", generarComparacionIntentosHTML(intentoOriginal, ultimasEstadisticas));
+  }
 
   document.getElementById("btn-descargar-pdf").style.display = "block";
 
@@ -440,6 +482,12 @@ window.addEventListener("load", async () => {
       respuestasUsuario = Array(preguntas.length).fill(null);
       marcadasRevision = Array(preguntas.length).fill(false);
       visitadas = Array(preguntas.length).fill(false);
+      intentoOriginal = {
+        aciertos: datosRepetir.test.aciertos ?? null,
+        fallos: datosRepetir.test.fallos ?? null,
+        blancos: datosRepetir.test.blancos ?? null,
+        fecha: datosRepetir.test.fecha ?? null
+      };
       const { obtenerOposicionActual } = await import("/assets/oposicion.js");
       const oposicion = obtenerOposicionActual();
       oposicionActual = oposicion;
