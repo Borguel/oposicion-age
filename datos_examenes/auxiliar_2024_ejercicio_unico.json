@@ -1,0 +1,1682 @@
+[
+  {
+    "numero": 1,
+    "parte": "primera",
+    "pregunta": "Según el artículo 27 de la Constitución Española de 1978, la enseñanza básica es:",
+    "opciones": {
+      "A": "Obligatoria y gratuita.",
+      "B": "Voluntaria y gratuita.",
+      "C": "Obligatoria y de pago.",
+      "D": "Voluntaria y de pago."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 2,
+    "parte": "primera",
+    "pregunta": "Conforme a lo previsto en la Constitución Española de 1978, ¿qué mayoría se exige en el procedimiento de reforma constitucional contemplado en el artículo 167.1?",
+    "opciones": {
+      "A": "Mayoría de dos tercios de cada una de las Cámaras.",
+      "B": "Mayoría de tres quintos de cada una de las Cámaras.",
+      "C": "Mayoría de tres quintos del Congreso de los Diputados.",
+      "D": "Mayoría de dos tercios del Congreso de los Diputados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 3,
+    "parte": "primera",
+    "pregunta": "Conforme al artículo 75 de la Constitución Española de 1978, las Cámaras funcionan:",
+    "opciones": {
+      "A": "En Pleno exclusivamente.",
+      "B": "En Pleno y en Diputación Permanente.",
+      "C": "En Pleno y en Asamblea.",
+      "D": "En Pleno y por Comisiones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 4,
+    "parte": "primera",
+    "pregunta": "Conforme a lo previsto en la Constitución Española de 1978, la soberanía nacional reside:",
+    "opciones": {
+      "A": "En las Cortes Generales.",
+      "B": "En el Rey.",
+      "C": "En el pueblo español.",
+      "D": "En el poder judicial."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 5,
+    "parte": "primera",
+    "pregunta": "De acuerdo con el artículo 8 de la Ley 50/1997, de 27 de noviembre, del Gobierno, la Presidencia de la Comisión General de Secretarios de Estado y Subsecretarios corresponde:",
+    "opciones": {
+      "A": "Al Ministro de la Presidencia o, en su defecto, a un Vicepresidente del Gobierno.",
+      "B": "Al Subsecretario de la Presidencia.",
+      "C": "A un Vicepresidente del Gobierno o, en su defecto, al Secretario de Estado de la Presidencia.",
+      "D": "A un Vicepresidente del Gobierno o, en su defecto, al Ministro de la Presidencia."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 6,
+    "parte": "primera",
+    "pregunta": "¿Quién nombra, conforme a lo previsto en la Constitución Española de 1978, a los miembros del Tribunal Constitucional?",
+    "opciones": {
+      "A": "El Congreso de los Diputados.",
+      "B": "El Senado.",
+      "C": "El Rey.",
+      "D": "El Gobierno."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 7,
+    "parte": "primera",
+    "pregunta": "Según la Ley 50/1997, de 27 de noviembre, del Gobierno, ¿cuál de las siguientes facultades podrá ejercer el Presidente del Gobierno en funciones?",
+    "opciones": {
+      "A": "Proponer al Rey la convocatoria de un referéndum consultivo.",
+      "B": "Plantear la cuestión de confianza.",
+      "C": "Proponer al Rey la disolución de alguna de las Cámaras, o de las Cortes Generales.",
+      "D": "Aprobar decretos leyes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 8,
+    "parte": "primera",
+    "pregunta": "De acuerdo con el artículo 7 de la Ley 19/2013, de 9 de diciembre, de transparencia, acceso a la información pública y buen gobierno, las Administraciones Públicas, en el ámbito de sus competencias, publicarán la siguiente información de relevancia jurídica:",
+    "opciones": {
+      "A": "Los documentos que, conforme a la legislación sectorial vigente, deban ser sometidos a un período de información pública durante su tramitación.",
+      "B": "Las cuentas anuales que deban rendirse.",
+      "C": "Los proyectos de Decreto Ley.",
+      "D": "Las retribuciones percibidas por todos los órganos superiores y directivos de la Administración General del Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 9,
+    "parte": "primera",
+    "pregunta": "El IV Plan de Gobierno Abierto de España 2020-2024 se articula en 5 ejes y recoge 10 compromisos. ¿Cuál de los siguientes compromisos permite a cualquier persona conocer el proceso de elaboración de las normas desde el inicio hasta su aprobación?",
+    "opciones": {
+      "A": "Plan de Mejora de la Participación.",
+      "B": "Observatorio de Gobierno Abierto.",
+      "C": "Huella normativa.",
+      "D": "Sistemas preventivos de integridad pública."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 10,
+    "parte": "primera",
+    "pregunta": "¿Cuántos miembros del Consejo General del Poder Judicial propone el Senado conforme a la Constitución Española de 1978?",
+    "opciones": {
+      "A": "Dos.",
+      "B": "Cuatro.",
+      "C": "Cinco.",
+      "D": "Seis."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 11,
+    "parte": "primera",
+    "pregunta": "Conforme a la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, las unidades administrativas a las que se les atribuyan funciones que tengan efectos jurídicos frente a terceros, o cuya actuación tenga carácter preceptivo, tendrán la consideración de:",
+    "opciones": {
+      "A": "Poderes públicos.",
+      "B": "Órganos superiores.",
+      "C": "Unidades vinculantes.",
+      "D": "Órganos administrativos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 12,
+    "parte": "primera",
+    "pregunta": "Conforme a la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, la estructura de las Delegaciones y Subdelegaciones del Gobierno se fijará por:",
+    "opciones": {
+      "A": "Real Decreto del Consejo de Ministros.",
+      "B": "Real Decreto del Presidente del Gobierno.",
+      "C": "Ley ordinaria.",
+      "D": "Orden del Ministerio de Política Territorial y Memoria Democrática."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 13,
+    "parte": "primera",
+    "pregunta": "Señala el artículo 150 de la Constitución que \"El Estado podrá transferir o delegar en las Comunidades Autónomas facultades correspondientes a materia de titularidad estatal que por su propia naturaleza sean susceptibles de transferencia o delegación\". Esta transferencia o delegación se ha de hacer mediante:",
+    "opciones": {
+      "A": "Ley orgánica.",
+      "B": "Ley ordinaria.",
+      "C": "Ley marco.",
+      "D": "Ley de armonización cuando lo exija el interés general."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 14,
+    "parte": "primera",
+    "pregunta": "¿De cuántos órganos consta el Tribunal de Justicia de la Unión Europea?",
+    "opciones": {
+      "A": "Uno, el Tribunal de Justicia.",
+      "B": "Dos, el Tribunal de Justicia y el Consejo de Abogados.",
+      "C": "Dos, el Tribunal General y el Consejo de Abogados.",
+      "D": "Dos, el Tribunal de Justicia y el Tribunal General."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 15,
+    "parte": "primera",
+    "pregunta": "Según lo dispuesto en la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, en la Administración General del Estado en el exterior son órganos directivos:",
+    "opciones": {
+      "A": "El Consejero de Política Exterior, los embajadores y representantes permanentes ante Organizaciones internacionales.",
+      "B": "El Consejero Ejecutivo de Política Exterior, los embajadores y representantes permanentes ante Organizaciones internacionales.",
+      "C": "Los embajadores y representantes permanentes ante Organizaciones internacionales.",
+      "D": "Los embajadores y representantes permanentes ante Organizaciones internacionales y el jefe de la oficina consular."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 16,
+    "parte": "primera",
+    "pregunta": "Según la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público, y salvo las excepciones previstas en esa misma ley, la organización de la Administración General del Estado responde:",
+    "opciones": {
+      "A": "A los principios de división funcional en Departamentos ministeriales, organismos autonomos y entes publicos y de gestión territorial integrada en Delegaciones del Gobierno en las Comunidades Autónomas y Subdelegaciones del Gobierno en las provincias.",
+      "B": "A los principios de división funcional en Departamentos ministeriales, en Delegaciones del Gobierno en las Comunidades Autónomas y Subdelegaciones del Gobierno en las provincias.",
+      "C": "A los principios de división funcional en Departamentos ministeriales y de gestión territorial integrada en Delegaciones del Gobierno en las Comunidades Autónomas.",
+      "D": "A los principios de división funcional en Organizacion Central, Organización Territorial y Administracion General del Estado en el exterior."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 17,
+    "parte": "primera",
+    "pregunta": "En relación con el artículo 107 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, previa su declaración de lesividad para el interés público, las Administraciones Públicas podrán impugnar ante el orden jurisdiccional contencioso-administrativo:",
+    "opciones": {
+      "A": "Los actos favorables para los interesados que sean anulables.",
+      "B": "Los actos desfavorables para los interesados que sean nulos de pleno derecho.",
+      "C": "Los actos favorables y desfavorables para los interesados, ya sean nulos de pleno derecho o anulables.",
+      "D": "Los actos favorables para los interesados, ya sean nulos de pleno derecho o anulables."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 18,
+    "parte": "primera",
+    "pregunta": "De acuerdo con la Resolución de 7 de mayo de 2014, de la Secretaría de Estado de Administraciones Públicas, por la que se establece el procedimiento de aprobación y gestión de listas de candidatos a personal funcionario interino de los Cuerpos de la Administración General del Estado, cuya selección se encomienda a la Comisión Permanente de Selección, el candidato deberá presentarse para tomar posesión de su puesto de trabajo en el plazo máximo de:",
+    "opciones": {
+      "A": "Tres días naturales desde el nombramiento.",
+      "B": "Tres días hábiles desde el nombramiento.",
+      "C": "Cinco días hábiles desde el nombramiento.",
+      "D": "Cinco días naturales desde el nombramiento."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 19,
+    "parte": "primera",
+    "pregunta": "En lo que respecta a la notificación en papel y, de conformidad con el artículo 42 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas, cuando la notificación se practique en el domicilio del interesado, de no hallarse presente, podrá hacerse cargo de la misma:",
+    "opciones": {
+      "A": "Cualquier persona mayor de doce años que se encuentre en el domicilio y haga constar su identidad.",
+      "B": "Cualquier persona mayor de catorce años que se encuentre en el domicilio y haga constar su identidad.",
+      "C": "Cualquier persona mayor de dieciséis años que se encuentre en el domicilio sin ser necesario hacer constar su identidad.",
+      "D": "Cualquier persona mayor de dieciocho años que se encuentre en el domicilio sin ser necesario hacer constar su identidad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 20,
+    "parte": "primera",
+    "pregunta": "Según el texto refundido de la Ley del Estatuto Básico del Empleado Público, las infracciones muy graves prescribirán:",
+    "opciones": {
+      "A": "A los tres años.",
+      "B": "A los dos años.",
+      "C": "A los seis meses.",
+      "D": "A los seis años."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 21,
+    "parte": "primera",
+    "pregunta": "Corresponde a los órganos superiores de la Administración General del Estado, según lo dispuesto en el artículo 55 de la ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público:",
+    "opciones": {
+      "A": "Establecer los planes de actuación de la organización situada bajo su responsabilidad.",
+      "B": "Establecer los planes de actuación de la organización situada bajo su responsabilidad, así como su desarrollo y ejecución.",
+      "C": "El desarrollo y ejecución de los planes de actuación de la organización.",
+      "D": "La evaluación de la gestión realizada por el órgano directivo competente, sin perjuicio del control establecido por la Ley General Presupuestaria."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 22,
+    "parte": "primera",
+    "pregunta": "¿Qué establece el artículo 3 de la Ley 39/2015, de 1 de octubre, del Procedimiento Administrativo Común de las Administraciones Públicas respecto a la capacidad de obrar de los grupos de afectados?",
+    "opciones": {
+      "A": "No tendrán capacidad de obrar en el procedimiento administrativo.",
+      "B": "Tendrán capacidad de obrar cuando una disposición de carácter general así lo declare expresamente.",
+      "C": "Tendrán capacidad de obrar cuando un reglamento así lo declare expresamente.",
+      "D": "Tendrán capacidad de obrar cuando la ley así lo declare expresamente."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 23,
+    "parte": "primera",
+    "pregunta": "Conforme a la Ley 39/2006, de 14 de diciembre, de Promoción de la Autonomía Personal y Atención a las personas en situación de dependencia, ¿a quién corresponde financiar el nivel mínimo de protección garantizado para cada uno de los beneficiarios del Sistema para la Autonomía y Atención a la Dependencia, según el grado de su dependencia?",
+    "opciones": {
+      "A": "Los Ayuntamientos.",
+      "B": "Los Servicios Públicos de Salud.",
+      "C": "El Gobierno.",
+      "D": "Las Comunidades Autónomas."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 24,
+    "parte": "primera",
+    "pregunta": "Según el artículo 2 de la Ley 47/2003, de 26 de noviembre, General Presupuestaria, ¿cuál de las siguientes entidades es un organismo público vinculado o dependiente de la Administración General del Estado?",
+    "opciones": {
+      "A": "Sociedades mercantiles.",
+      "B": "Autoridades administrativas independientes.",
+      "C": "Fondos sin personalidad jurídica.",
+      "D": "Entidades Públicas Empresariales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 25,
+    "parte": "primera",
+    "pregunta": "Conforme al artículo 40 de la Ley 47/2003, de 26 de noviembre, General Presupuestaria, en relación con la clasificación económica de los estados de gastos, se distinguen como créditos para operaciones de capital:",
+    "opciones": {
+      "A": "Los gastos de personal.",
+      "B": "El Fondo de Contingencia.",
+      "C": "Las transferencias corrientes.",
+      "D": "Las inversiones reales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 26,
+    "parte": "primera",
+    "pregunta": "Según la Ley 3/2007, de 22 de marzo, para la igualdad efectiva de mujeres y hombres, en cuanto a la tutela judicial efectiva regulada en su artículo 12, ¿quién es la persona legitimada en los litigios sobre acoso sexual y acoso por razón de sexo?",
+    "opciones": {
+      "A": "Cualquier persona física o jurídica.",
+      "B": "Cualquier persona física o con o sin interés legítimo.",
+      "C": "Cualquier persona jurídica con o sin interés legítimo.",
+      "D": "La persona acosada."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 27,
+    "parte": "primera",
+    "pregunta": "Conforme al artículo 9 de la Ley 4/2023, de 28 de febrero, para la igualdad real y efectiva de las personas trans y para la garantía de los derechos de las personas LGTBI, se constituye el Consejo de Participación de personas LGTBI, órgano dependiente del:",
+    "opciones": {
+      "A": "Ministerio de la Presidencia, Justicia y Relaciones con las Cortes.",
+      "B": "Ministerio de Igualdad.",
+      "C": "Ministerio de Derechos Sociales, Consumo y Agenda 2030.",
+      "D": "Ministerio de Inclusión, Seguridad Social y Migraciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 28,
+    "parte": "primera",
+    "pregunta": "De acuerdo con el artículo 29 del texto refundido de la Ley del Estatuto Básico del Empleado Público, las cantidades destinadas a financiar aportaciones a planes de pensiones o contratos de seguros tendrán a todos los efectos la consideración de:",
+    "opciones": {
+      "A": "Indemnizaciones.",
+      "B": "Retribuciones básicas.",
+      "C": "Retribuciones diferidas.",
+      "D": "Retribuciones complementarias."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 29,
+    "parte": "primera",
+    "pregunta": "Según el artículo 2 de la Orden TDF/379/2024, de 26 de abril, para la regulación de especialidades de los procedimientos de provisión de puestos del personal directivo público profesional y las herramientas para su gestión en el marco de lo dispuesto en el Real Decreto-ley 6/2023, de 19 de diciembre, la provisión de puestos de personal directivo público profesional en la Administración del Estado se realizará mediante el sistema de:",
+    "opciones": {
+      "A": "Concurso.",
+      "B": "Adscripción provisional.",
+      "C": "Reasignación de efectivos.",
+      "D": "Libre designación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 30,
+    "parte": "primera",
+    "pregunta": "El intervalo de niveles en el Subgrupo C2, conforme la Resolución de la Secretaría de Estado de Función Pública, de 7 de mayo de 2024, para la adecuación de los puestos de trabajo a la disposición transitoria sexta del Real Decreto-Ley 6/2023, de 19 de diciembre, es:",
+    "opciones": {
+      "A": "Nivel mínimo 14 y nivel máximo 18.",
+      "B": "Nivel mínimo 12 y nivel máximo 18.",
+      "C": "Nivel mínimo 16 y nivel máximo 22.",
+      "D": "Nivel mínimo 14 y nivel máximo 20."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 31,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras es el sinónimo de AGLOMERADO.",
+    "opciones": {
+      "A": "Defecto.",
+      "B": "Amalgama.",
+      "C": "Avanzado.",
+      "D": "Necesario."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 32,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras es el antónimo de la palabra NULIDAD.",
+    "opciones": {
+      "A": "Competencia.",
+      "B": "Triste.",
+      "C": "Alzado.",
+      "D": "Franco."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 33,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras es el antónimo de la palabra FÚTIL.",
+    "opciones": {
+      "A": "Aceitoso.",
+      "B": "Conjuntado.",
+      "C": "Pálido.",
+      "D": "Esencial."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 34,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras es el sinónimo de ALIFAFE.",
+    "opciones": {
+      "A": "Indisposición.",
+      "B": "Salvar.",
+      "C": "Terruño.",
+      "D": "Cita."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 35,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras es el antónimo de la palabra EMBUSTE.",
+    "opciones": {
+      "A": "Yuca.",
+      "B": "Gracia.",
+      "C": "Verdad.",
+      "D": "Modo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 36,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras contiene un error ortográfico.",
+    "opciones": {
+      "A": "Varniz.",
+      "B": "Baño.",
+      "C": "Pátina.",
+      "D": "Grabar."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 37,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras es el sinónimo de LAPSO.",
+    "opciones": {
+      "A": "Traumático.",
+      "B": "Transcurso.",
+      "C": "Falaz.",
+      "D": "Numeroso."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 38,
+    "parte": "primera",
+    "pregunta": "Dadas las siguientes equivalencias: a=0001, b=0010, c=0100, d=1000, e=0011, f=0101 ¿Qué serie de letras corresponde a la siguiente serie de números?: 0010100001000010",
+    "opciones": {
+      "A": "faeb",
+      "B": "accb",
+      "C": "baed",
+      "D": "ecbd"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 39,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras contiene un error ortográfico.",
+    "opciones": {
+      "A": "Giñapo.",
+      "B": "Saya.",
+      "C": "Tramoya.",
+      "D": "Ajonjolí."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 40,
+    "parte": "primera",
+    "pregunta": "Tenemos 12 bolas en una bolsa de las cuales 4 son rojas, 3 son verdes y 5 son azules. Si seleccionamos una bola al azar, ¿cuál es la probabilidad de que sea roja?",
+    "opciones": {
+      "A": "12,50 %",
+      "B": "25,10 %",
+      "C": "41,15 %",
+      "D": "33,33 %"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 41,
+    "parte": "primera",
+    "pregunta": "Indique cuál de las siguientes palabras contiene un error ortográfico.",
+    "opciones": {
+      "A": "Harapo.",
+      "B": "Jabalí.",
+      "C": "Halgama.",
+      "D": "Jirón."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 42,
+    "parte": "primera",
+    "pregunta": "Dadas las siguientes equivalencias: d=0101, k=0110, l=1101, p=1010, r=0010, t=1001 ¿Qué serie de letras corresponde a la siguiente serie de números?: 1010010110011101",
+    "opciones": {
+      "A": "pdtl",
+      "B": "klpd",
+      "C": "rdkl",
+      "D": "tdkr"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 43,
+    "parte": "primera",
+    "pregunta": "Dadas las siguientes equivalencias: g=1001, i=1011, b=0010, r=1101, a=0011, x=0100. ¿Qué serie de letras corresponde a la siguiente serie de números?: 1011001110010010",
+    "opciones": {
+      "A": "axig",
+      "B": "iixb",
+      "C": "iagb",
+      "D": "gxai"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 44,
+    "parte": "primera",
+    "pregunta": "Si el número total de empleados de una oficina es 73 y 12 están en el departamento comercial, ¿qué porcentaje suponen el resto de los empleados de los otros departamentos?",
+    "opciones": {
+      "A": "92,55 %",
+      "B": "64,15 %",
+      "C": "83,56 %",
+      "D": "79,85 %"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 45,
+    "parte": "primera",
+    "pregunta": "Indique cuál de los siguientes números continúa la secuencia 5, 1, 5, 2, 10, 3, _",
+    "opciones": {
+      "A": "13",
+      "B": "17",
+      "C": "33",
+      "D": "30"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 46,
+    "parte": "primera",
+    "pregunta": "Indique cuál de los siguientes números continúa la secuencia: 48, 2, 24, 2, 12, 2, _",
+    "opciones": {
+      "A": "5",
+      "B": "11",
+      "C": "6",
+      "D": "15"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 47,
+    "parte": "primera",
+    "pregunta": "Se sortean 5 teléfonos móviles, 3 tabletas, y 1 ordenador portátil. Si somos 9 personas y recibiremos un objeto cada uno, ¿qué probabilidad tenemos de que nos toque el ordenador portátil?",
+    "opciones": {
+      "A": "15,90 %",
+      "B": "13,33 %",
+      "C": "11,11 %",
+      "D": "10,25 %"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 48,
+    "parte": "primera",
+    "pregunta": "Indique cuál de los siguientes números continúa la secuencia: 32, -3, 29, 5, 34, -2, _",
+    "opciones": {
+      "A": "29",
+      "B": "36",
+      "C": "28",
+      "D": "32"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 49,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Biblioteca (Materia/Clasificación/Planta/Clasificación/Pasillo/Estanterías/Total/En uso), siendo que la columna Clasificación de ubicación se refiere al nombre del título, ¿en cuál de las siguientes ubicaciones, habría que colocar este libro? Tema: Derecho Económico. Nombre: \"Trabajo temporal. Tributación\".",
+    "opciones": {
+      "A": "Planta: 1. Pasillo: 2 izquierda. Estanterías: 2 a 5.",
+      "B": "Planta: 1. Pasillo: 3 derecha. Estanterías: 2 a 5.",
+      "C": "Planta: 2. Pasillo: 2 derecha. Estanterías: 3 a 5.",
+      "D": "Planta: 1. Pasillo: 3 derecha. Estanterías: 1 a 5."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 50,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Biblioteca, siendo que la columna Clasificación de ubicación se refiere al nombre del título, ¿cuál de los siguientes títulos se ubicará en la planta 3, pasillo 1 izquierda, estanterías 1 a 4?",
+    "opciones": {
+      "A": "Tema: Derecho económico. Nombre: \"Leyes aduaneras de la Unión Europea\".",
+      "B": "Tema: Geografía política. Nombre: \"Agricultura en el sur de Europa\".",
+      "C": "Tema: Geografía física. Nombre: \"Picos más altos de España\".",
+      "D": "Tema: Derecho laboral. Nombre: \"Contratos y acuerdos laborales\"."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 51,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Biblioteca, ¿cuál de los siguientes temas tiene un mayor número total de títulos?",
+    "opciones": {
+      "A": "Geografía Física.",
+      "B": "Derecho Laboral.",
+      "C": "Derecho Económico.",
+      "D": "Geografía Política."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 52,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Biblioteca, ¿cuál de los siguientes temas tiene un número total de títulos superior a la media de títulos por tema?",
+    "opciones": {
+      "A": "Geografía Política.",
+      "B": "Geografía Cartografía.",
+      "C": "Derecho Económico.",
+      "D": "Geografía Física."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 53,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Biblioteca, siendo que la columna Clasificación de ubicación se refiere al nombre del título, ¿en cuál de las siguientes ubicaciones, habría que colocar este libro? Tema: Geografía física. Nombre: \"Cordilleras asiáticas\".",
+    "opciones": {
+      "A": "Planta: 3 Pasillo: 1 derecha. Estanterías: 1 a 4.",
+      "B": "Planta: 2 Pasillo: 2 derecha. Estanterías: 3 a 5.",
+      "C": "Planta: 2. Pasillo: 3 derecha. Estanterías: 2 a 4.",
+      "D": "Planta: 3 Pasillo: 1 derecha. Estanterías: 1 a 5."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 54,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Biblioteca, siendo que la columna Clasificación de ubicación se refiere al nombre del título, ¿cuál de los siguientes títulos se ubicará en la planta 2, pasillo 1 izquierda, estanterías 2 a 4?",
+    "opciones": {
+      "A": "Tema: Derecho laboral. Nombre: \"Contratos y acuerdos laborales\".",
+      "B": "Tema: Geografía cartografía. Nombre: \"Mapas de Europa\".",
+      "C": "Tema: Geografía física. Nombre: \"Cordilleras asiáticas\".",
+      "D": "Tema: Derecho económico. Nombre: \"Teoría y práctica del derecho económico\"."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 55,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Laboratorios (Profesor/Materia/Día/Hora/Inscritos/Planta/Aula/Capacidad) y suponiendo que asisten todos los inscritos, ¿qué día hay mayor asistencia de alumnos?",
+    "opciones": {
+      "A": "Miércoles.",
+      "B": "Jueves.",
+      "C": "Martes.",
+      "D": "Viernes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 56,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Laboratorios, ¿en cuál de las plantas hay una menor capacidad total?",
+    "opciones": {
+      "A": "Planta 1.",
+      "B": "Planta 2.",
+      "C": "Planta 3.",
+      "D": "Planta 4."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 57,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Laboratorios, ¿cuál de las siguientes aulas, situada por encima de la segunda planta, cuenta con un número mayor de inscritos?",
+    "opciones": {
+      "A": "4",
+      "B": "7",
+      "C": "1",
+      "D": "3"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 58,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Laboratorios, indique cuál de las siguientes materias cuenta con un laboratorio de más de 45 puestos de capacidad, se imparte después del martes, y está en la planta 3.",
+    "opciones": {
+      "A": "Biología.",
+      "B": "Genética.",
+      "C": "Bioinformática.",
+      "D": "Inmunología."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 59,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Laboratorios, ¿cuál de los siguientes profesores imparte su materia en la planta 2 y termina más tarde, teniendo en cuenta que todas las clases tienen una hora de duración?",
+    "opciones": {
+      "A": "Marta Torres.",
+      "B": "Rubén Gómez.",
+      "C": "Inés Herrera.",
+      "D": "Ignacio Benítez."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 60,
+    "parte": "primera",
+    "pregunta": "Según los datos del cuadro Laboratorios, indique cuál de los siguientes profesores imparte la materia en el aula número 2, con una capacidad superior a 40 puestos y a una hora más temprana.",
+    "opciones": {
+      "A": "Ángel Gutiérrez.",
+      "B": "Ignacio Benítez.",
+      "C": "Rubén Gómez.",
+      "D": "Antonio Durán."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 61,
+    "parte": "primera",
+    "pregunta": "Indique la respuesta correcta en referencia al Plan Anual Normativo previsto en el artículo 25 de la Ley 50/1997, de 27 de noviembre, del Gobierno:",
+    "opciones": {
+      "A": "El Ministro de la Presidencia lo elevará al Consejo de Ministros para su aprobación antes del 30 de abril.",
+      "B": "El Ministro de la Presidencia lo elevará al Consejo de Ministros para su aprobación antes del 1 de junio.",
+      "C": "El Ministro de la Presidencia lo elevará al Consejo de Ministros para su aprobación antes del 31 de octubre.",
+      "D": "El Ministro de la Presidencia lo elevará al Consejo de Ministros para su aprobación antes del 31 de diciembre."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 62,
+    "parte": "primera",
+    "pregunta": "De conformidad con el Reglamento 2016/679, del Parlamento Europeo y del Consejo, de 27 de abril, relativo a la protección de las personas físicas, en lo que respecta al tratamiento de datos personales y a la libre circulación de estos datos, indique a quién responde la siguiente definición: persona física o jurídica, autoridad pública, servicio u otro organismo que, solo o junto con otros, determina los fines y medios del tratamiento de datos.",
+    "opciones": {
+      "A": "Responsable del tratamiento.",
+      "B": "Encargado del tratamiento.",
+      "C": "Destinatario del tratamiento.",
+      "D": "Interesado."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 63,
+    "parte": "primera",
+    "pregunta": "Indique entre las siguientes palabras cuál es el antónimo de la palabra VENTURA.",
+    "opciones": {
+      "A": "Aireado.",
+      "B": "Quimerista.",
+      "C": "Peligroso.",
+      "D": "Desdicha."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 64,
+    "parte": "primera",
+    "pregunta": "Ana tiene 12 libros de historia, 16 novelas y 8 ensayos. ¿Cuál es el porcentaje de novelas?",
+    "opciones": {
+      "A": "41,10 %",
+      "B": "58,35 %",
+      "C": "36,50 %",
+      "D": "44,44 %"
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 65,
+    "parte": "primera",
+    "pregunta": "Halle el valor de x en la ecuación 21(4x – 6) = x",
+    "opciones": {
+      "A": "- 1,93",
+      "B": "1,52",
+      "C": "0,70",
+      "D": "- 10,28"
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 1,
+    "parte": "segunda",
+    "pregunta": "De conformidad con el artículo 4 del Real Decreto 366/2007, de 16 de marzo, en relación con las Oficinas de Atención al Ciudadano, en el caso de disponer de plazas de aparcamiento, ¿cuántas reservarán destinadas en exclusividad a personas con movilidad reducida?",
+    "opciones": {
+      "A": "Un número suficiente de plazas.",
+      "B": "Un 2 % del total.",
+      "C": "Un 5 % del total.",
+      "D": "Un 7 % del total."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 2,
+    "parte": "segunda",
+    "pregunta": "Conforme con la regulación contenida en el Real Decreto 951/2005, de 29 de julio, por el que se establece el marco general para la mejora de la calidad en la Administración General del Estado, recibida una queja o sugerencia la unidad responsable de su gestión informará al interesado de las actuaciones realizadas en el plazo de:",
+    "opciones": {
+      "A": "15 días hábiles.",
+      "B": "20 días hábiles.",
+      "C": "30 días hábiles.",
+      "D": "10 días hábiles."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 3,
+    "parte": "segunda",
+    "pregunta": "De acuerdo con el artículo 2 del Real Decreto 366/2007, de 16 de marzo, por el que se establecen las condiciones de accesibilidad y no discriminación de las personas con discapacidad en sus relaciones con la Administración General del Estado y con arreglo a lo dispuesto en el segundo párrafo del apartado 1 de la disposición final quinta de la Ley 51/2003, de 2 de diciembre, la actuación de la Administración General del Estado asegurará a los ciudadanos con discapacidad la efectividad de sus derechos en sus relaciones con la Administración mediante:",
+    "opciones": {
+      "A": "La accesibilidad, en determinados supuestos.",
+      "B": "La compensación de las ventajas que estos ciudadanos pudieran presentar en sus relaciones con la Administración.",
+      "C": "La discriminación por razón de discapacidad.",
+      "D": "La garantía de la igualdad de oportunidades."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 4,
+    "parte": "segunda",
+    "pregunta": "Según el Real Decreto 203/2021, de 30 de marzo, por el que se aprueba el Reglamento de actuación y funcionamiento del sector público por medios electrónicos, la creación y supresión de portales de internet en el ámbito estatal requerirá informe favorable de:",
+    "opciones": {
+      "A": "Persona titular del Departamento.",
+      "B": "Comisión Ministerial de Administración Digital.",
+      "C": "Secretaría General Técnica del Departamento.",
+      "D": "Comisión Superior Digital."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 5,
+    "parte": "segunda",
+    "pregunta": "Entre las funciones de atención al ciudadano, la de recepción y acogida a los ciudadanos, al objeto de facilitarles la orientación y ayuda que precisen en el momento inicial de su visita y, en particular, la relativa a la localización de dependencias y funcionarios, según indica el Real Decreto 208/1996, de 9 de febrero, por el que se regulan los servicios de información administrativa y atención al ciudadano se corresponde con la atención:",
+    "opciones": {
+      "A": "General.",
+      "B": "Colaborativa.",
+      "C": "Descentralizada.",
+      "D": "Personalizada."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 6,
+    "parte": "segunda",
+    "pregunta": "De conformidad con el artículo 9.1 del Real Decreto 208/1996, de 9 de febrero, por el que se regulan los servicios de información administrativa y atención al ciudadano, las oficinas de información y atención al ciudadano dependientes de las Delegaciones del Gobierno en las Comunidades Autónomas, de los Gobiernos Civiles y de las Delegaciones Insulares del Gobierno tendrán el carácter de:",
+    "opciones": {
+      "A": "Oficinas auxiliares.",
+      "B": "Oficinas de apoyo y colaboración.",
+      "C": "Oficinas centrales.",
+      "D": "Oficinas sectoriales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 7,
+    "parte": "segunda",
+    "pregunta": "De conformidad con el Real Decreto 1708/2011, de 18 de noviembre, ¿qué clase de archivo cumple con la función de coordinar y controlar el funcionamiento de los distintos archivos de gestión?",
+    "opciones": {
+      "A": "Archivo intermedio.",
+      "B": "Archivo de oficina.",
+      "C": "Archivo Histórico Nacional.",
+      "D": "Archivo Central."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 8,
+    "parte": "segunda",
+    "pregunta": "La definición dada por el Real Decreto 1708/2011, de 18 de noviembre, por el que se establece el Sistema Español de Archivos y se regula el Sistema de Archivos de la Administración General del Estado y de sus Organismos Públicos y su régimen de acceso, al \"Conjunto de normas reguladoras, así como de órganos, centros y servicios competentes en la gestión eficaz de los documentos y de los archivos\" se corresponde con:",
+    "opciones": {
+      "A": "Ciclo vital de documentos.",
+      "B": "Expediente electrónico.",
+      "C": "Documento electrónico.",
+      "D": "Sistema archivístico."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 9,
+    "parte": "segunda",
+    "pregunta": "De acuerdo con la Orden PCM/1382/2021, de 9 de diciembre, por la que se regula el Registro Electrónico General en el ámbito de la Administración General del Estado, concluido el trámite de registro en el REG-AGE, los documentos serán cursados a sus destinatarios y a las unidades administrativas correspondientes desde el registro en que hubieran sido recibidos:",
+    "opciones": {
+      "A": "Sin dilación.",
+      "B": "En el plazo máximo de 1 día.",
+      "C": "En el plazo máximo de 2 días.",
+      "D": "En el plazo máximo de 3 días."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 10,
+    "parte": "segunda",
+    "pregunta": "De conformidad con la Orden HAP/1949/2014, de 13 de octubre, por la que se regula el Punto de Acceso General de la Administración General del Estado y se crea su sede electrónica, la dirección electrónica de referencia de la sede electrónica del Punto de Acceso General será:",
+    "opciones": {
+      "A": "https://sede.telefono060.es",
+      "B": "https://sede.administracion.gob.es",
+      "C": "https://administracion.com",
+      "D": "https://administracionelectronica.gob.es"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 11,
+    "parte": "segunda",
+    "pregunta": "¿Cuál es el documento digital que contiene los datos identificativos de su suscriptor y le vincula con unos datos de verificación de firma y confirma su identidad?",
+    "opciones": {
+      "A": "Certificado electrónico FNMT de Ciudadano.",
+      "B": "Certificación HACCP.",
+      "C": "ISO 9001.",
+      "D": "Número de serie CMD."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 12,
+    "parte": "segunda",
+    "pregunta": "Indique cuál de los siguientes dispositivos propuestos se utiliza para la impresión.",
+    "opciones": {
+      "A": "Plóter.",
+      "B": "UPS.",
+      "C": "Conmutador de red.",
+      "D": "Lápiz óptico."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 13,
+    "parte": "segunda",
+    "pregunta": "¿Qué es el \"Contenido destacado\" de Windows 10?",
+    "opciones": {
+      "A": "Es el contenido anclado en la barra de tareas.",
+      "B": "Es una característica de Windows que muestra diferentes imágenes de fondo y, en ocasiones, ofrece sugerencias en la pantalla de bloqueo.",
+      "C": "Es el contenido anclado al área Acceso rápido del Explorador de Windows.",
+      "D": "Es un tipo de contenido que se puede seleccionar para que se muestre en Microsoft Edge, al abrir una nueva pestaña."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 14,
+    "parte": "segunda",
+    "pregunta": "Indique cuál de los siguientes tipos de datos se corresponde con el siguiente dato: 6,21",
+    "opciones": {
+      "A": "Entero.",
+      "B": "Booleano.",
+      "C": "Lista.",
+      "D": "Coma flotante."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 15,
+    "parte": "segunda",
+    "pregunta": "De los siguientes elementos propuestos, ¿cuál recoge el calor generado por el procesador y lo transmite al ambiente?",
+    "opciones": {
+      "A": "Tarjeta de red.",
+      "B": "Procesador (CPU).",
+      "C": "Placa base.",
+      "D": "Disipador."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 16,
+    "parte": "segunda",
+    "pregunta": "En Windows 10, ¿cuál de las siguientes afirmaciones es verdadera con respecto a la visualización del nombre del dispositivo y de la edición de Windows?",
+    "opciones": {
+      "A": "Ambos datos están disponibles en la sección \"Acerca de\", de la Configuración.",
+      "B": "El nombre del dispositivo es información sensible y por tanto no está disponible en la Configuración.",
+      "C": "El nombre del dispositivo únicamente está disponible en el Administrador de dispositivos, y no en la sección \"Acerca de\", de la Configuración.",
+      "D": "La edición de Windows únicamente está disponible en Administración de equipos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 17,
+    "parte": "segunda",
+    "pregunta": "Indique cuál de las siguientes opciones describe el término informático \"Python\":",
+    "opciones": {
+      "A": "Sistema operativo.",
+      "B": "Aplicación de hoja de cálculo.",
+      "C": "Lenguaje de programación.",
+      "D": "Protocolo de comunicaciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 18,
+    "parte": "segunda",
+    "pregunta": "Indique la afirmación correcta con respecto a la configuración de teléfonos en Windows 10.",
+    "opciones": {
+      "A": "Es posible vincular teléfonos con un equipo con Windows 10, siempre y cuando también utilicen un sistema operativo Windows.",
+      "B": "Es posible descargar la información almacenada en un teléfono móvil en un equipo Windows 10, pero no es posible la vinculación.",
+      "C": "Es posible vincular teléfonos Android o iPhone con Windows 10, de modo que podamos enviar mensajes de texto y mirar fotos del teléfono directamente en el equipo.",
+      "D": "Es posible vincular teléfonos Android o iPhone con Windows 10, lo que permite utilizar el sistema de audio del equipo en llamadas de teléfono, pero no es posible enviar mensajes de texto y mirar fotos del teléfono directamente en el equipo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 19,
+    "parte": "segunda",
+    "pregunta": "Queremos saber el impacto en el consumo de energía de una aplicación que estamos utilizando en un dispositivo con Windows 10, ¿cuál es la herramienta que nos proporcionará esta información entre las opciones propuestas?",
+    "opciones": {
+      "A": "Servicios.",
+      "B": "Administrador de tareas.",
+      "C": "Visor de eventos.",
+      "D": "Explorador de archivos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 20,
+    "parte": "segunda",
+    "pregunta": "De las siguientes afirmaciones propuestas, ¿cuál es correcta con respecto al Explorador de archivos de Windows 10?",
+    "opciones": {
+      "A": "Es posible seleccionar distintos diseños para mostrar los archivos, pero no es posible agruparlos por diferentes columnas que podemos elegir.",
+      "B": "Es posible agrupar los archivos por diferentes columnas que podemos elegir, pero no existen diferentes diseños para mostrar los archivos.",
+      "C": "Solo es posible agrupar los archivos por diferentes columnas que podemos elegir en algunos de los diseños para mostrar los archivos.",
+      "D": "Es posible seleccionar distintos diseños para mostrar los archivos, así como también es posible agruparlos por diferentes columnas que podemos elegir."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 21,
+    "parte": "segunda",
+    "pregunta": "Trabajamos en un dispositivo con Windows 10 y necesitamos compartirlo con un técnico de soporte para que acceda en remoto. ¿Cuál de los siguientes accesorios de Windows nos servirá para tal propósito?",
+    "opciones": {
+      "A": "Visor XPS.",
+      "B": "Windows Media Player.",
+      "C": "Grabación de acciones de usuario.",
+      "D": "Asistencia rápida."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 22,
+    "parte": "segunda",
+    "pregunta": "¿Cuál de las siguientes afirmaciones es correcta con respecto a las búsquedas de Windows 10?",
+    "opciones": {
+      "A": "Es posible optar por ocultar la búsqueda o mostrar el cuadro de búsqueda. La opción de mostrar únicamente el icono no está disponible.",
+      "B": "Es posible optar por mostrar únicamente el icono de búsqueda, o mostrar el cuadro de búsqueda, pero no es posible ocultar la búsqueda.",
+      "C": "Es posible optar por ocultar la búsqueda o por mostrar únicamente el icono de búsqueda, pero la opción de mostrar el cuadro de búsqueda no está disponible.",
+      "D": "Es posible optar por ocultar la búsqueda, mostrar únicamente el icono de búsqueda, o mostrar el cuadro de búsqueda."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 23,
+    "parte": "segunda",
+    "pregunta": "¿Qué es lo que se muestra en el Acceso rápido del Explorador de archivos de Windows 10 por defecto?",
+    "opciones": {
+      "A": "Bibliotecas y OneDrive.",
+      "B": "Carpetas frecuentes y Archivos recientes.",
+      "C": "Configuración y Red.",
+      "D": "Bibliotecas y Configuración."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 24,
+    "parte": "segunda",
+    "pregunta": "En una hoja de Excel 365 en idioma español, en una celda a la cual no se le ha aplicado ningún tipo de formato, escribimos el siguiente valor: 20-2 ¿Cuál de las siguientes opciones es la que mostrará tras pulsar la tecla Enter?",
+    "opciones": {
+      "A": "20-feb",
+      "B": "18",
+      "C": "20-2",
+      "D": "45342,00"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 25,
+    "parte": "segunda",
+    "pregunta": "¿Cuál de las siguientes funciones de Windows 10 permite hacer copias de seguridad automáticas de los archivos?",
+    "opciones": {
+      "A": "Historial.",
+      "B": "Acceso rápido.",
+      "C": "Copiar a.",
+      "D": "Seguridad avanzada."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 26,
+    "parte": "segunda",
+    "pregunta": "De las siguientes propuestas, ¿cuál es la utilidad principal de indexar archivos en la Búsqueda en Windows 10?",
+    "opciones": {
+      "A": "Realizar copias de seguridad de los archivos, mensajes de correo electrónico u otro contenido local, como precaución de borrado en la búsqueda.",
+      "B": "Copiar los archivos, mensajes de correo electrónico u otro contenido local en OneDrive y sincronizarlos con la copia local.",
+      "C": "Seleccionar los archivos, mensajes de correo electrónico u otro contenido local para marcarlo y que no se utilice en las búsquedas.",
+      "D": "Obtener resultados aún más rápido al buscar archivos, mensajes de correo electrónico u otro contenido local."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 27,
+    "parte": "segunda",
+    "pregunta": "En un párrafo seleccionado de Word 365 queremos reducir el tamaño de la fuente empleando el teclado para ello. ¿Qué combinación de teclas emplearemos de entre las propuestas?",
+    "opciones": {
+      "A": "Ctrl + símbolo \"-\"",
+      "B": "Alt + símbolo \"-\"",
+      "C": "Ctrl + símbolo \"<\"",
+      "D": "Alt + símbolo \"<\""
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 28,
+    "parte": "segunda",
+    "pregunta": "Vamos a escribir e imprimir un sobre con Word 365. ¿Cuál de las siguientes afirmaciones es correcta con respecto al remite?",
+    "opciones": {
+      "A": "Es necesario escribir el remite cada vez que escribimos el sobre.",
+      "B": "Es posible guardar el remite en Word, para reutilizarlo, en las opciones avanzadas del archivo.",
+      "C": "No hay ninguna funcionalidad específica de remite en un documento.",
+      "D": "Solo es posible reutilizar el remite si lo hemos guardado en Access."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 29,
+    "parte": "segunda",
+    "pregunta": "En Word 365 queremos aplicar formatos preestablecidos a algunos textos y que esta acción nos sirva también para después crear una tabla de contenido. ¿Qué tipo de herramienta de la cinta de opciones aplicaremos?",
+    "opciones": {
+      "A": "Tamaño de letra.",
+      "B": "Espaciado.",
+      "C": "Tipo de fuente.",
+      "D": "Estilos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 30,
+    "parte": "segunda",
+    "pregunta": "¿Cuál de las características de Word 365 será la adecuada para enumerar los términos y los temas que se tratan en un documento, así como las páginas en las que aparecen?",
+    "opciones": {
+      "A": "Insertar índice.",
+      "B": "Insertar nota al final.",
+      "C": "Referencia indexada.",
+      "D": "Elementos rápidos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 31,
+    "parte": "segunda",
+    "pregunta": "De las opciones propuestas, ¿cuál de las siguientes descripciones es adecuada para la función Editor de Word 365?",
+    "opciones": {
+      "A": "Cambia la vista del documento para ver únicamente el texto.",
+      "B": "Comprueba la ortografía, la gramática y las sugerencias de escritura.",
+      "C": "Utiliza la voz para crear contenido en un documento.",
+      "D": "Ofrece una lista de antónimos de la palabra seleccionada."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 32,
+    "parte": "segunda",
+    "pregunta": "Una celda de Excel 365 aparece con un valor predeterminado de formato General y posteriormente lo modificaremos al formato Porcentaje. Indique cuál de los siguientes valores hay que introducir primero con el formato General, para que una vez convertido lo muestre el valor 21,00 %.",
+    "opciones": {
+      "A": "21",
+      "B": "0,21",
+      "C": "21,00",
+      "D": "0,0021"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 33,
+    "parte": "segunda",
+    "pregunta": "En un libro de Excel 365 tenemos varias hojas, y en la hoja activa varias tablas de las cuales hemos seleccionado una. ¿Cuál de las siguientes opciones debemos elegir para imprimir solo esta tabla?",
+    "opciones": {
+      "A": "Imprimir todo el libro.",
+      "B": "Imprimir hojas activas.",
+      "C": "Imprimir selección.",
+      "D": "Imprimir todas las hojas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 34,
+    "parte": "segunda",
+    "pregunta": "Indique cuál es la utilidad de la función de segmentación de datos en Excel 365.",
+    "opciones": {
+      "A": "Es una función que permite realizar operaciones de cálculo sobre una columna numérica.",
+      "B": "Permite dividir una tabla de origen en varias tablas de destino separadas, según un criterio de segmentación.",
+      "C": "Permite realizar cálculos financieros utilizando varias columnas de una tabla.",
+      "D": "Es una función que permite filtrar datos de manera interactiva en tablas o tablas dinámicas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 35,
+    "parte": "segunda",
+    "pregunta": "En la celda G20 de un libro de Excel 365 tenemos la siguiente fórmula: =SI(E20>1000;\"Grande\";\"Pequeño\") ¿Cuál de las siguientes opciones describe correctamente el valor que se mostrará en la celda G20?",
+    "opciones": {
+      "A": "La celda G20 mostrará la fórmula. En la celda E20 se mostrarán los valores Grande o Pequeño en función de que el valor que reciba sea mayor o menor de 1000.",
+      "B": "El valor mostrado en la celda E20 será el texto Grande si el valor de la celda G20 es mayor que 1000, y el texto Pequeño, si el valor de la celda G20 es menor de 1000.",
+      "C": "El valor mostrado en la celda E20 será el texto Grande si el valor de la celda G20 es menor que 1000, y el texto Pequeño, si el valor de la celda G20 es mayor de 1000.",
+      "D": "El valor mostrado en la celda G20 será el texto Grande si el valor de la celda E20 es mayor que 1000, y el texto Pequeño, si el valor de la celda E20 es menor de 1000."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 36,
+    "parte": "segunda",
+    "pregunta": "Necesitamos agregar un campo a una tabla de Access 365, en el cual vamos a almacenar texto con una longitud de hasta 60.000 caracteres. ¿Cuál de los siguientes tipos de campo es el correcto en Access para esta función?",
+    "opciones": {
+      "A": "Byte.",
+      "B": "Texto largo.",
+      "C": "Texto corto.",
+      "D": "Número grande."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 37,
+    "parte": "segunda",
+    "pregunta": "Queremos configurar Outlook 365 para que cuando recibamos un mensaje que incluya el texto \"Aviso\" en el asunto, se modifique la importancia a \"alta\". De las siguientes capacidades de Outlook, indique cuál emplearemos.",
+    "opciones": {
+      "A": "Alerta.",
+      "B": "Regla.",
+      "C": "Seguimiento.",
+      "D": "Tarea."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 38,
+    "parte": "segunda",
+    "pregunta": "Indique cuál es el tamaño máximo que puede almacenar un campo de tipo \"Datos adjuntos\" en una tabla de Access 365.",
+    "opciones": {
+      "A": "Únicamente lo limita el espacio disponible en el disco duro.",
+      "B": "Hasta 2GB.",
+      "C": "255 caracteres.",
+      "D": "64 bytes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 39,
+    "parte": "segunda",
+    "pregunta": "Añadimos un campo de tipo Calculado en una base de datos de Access 365. De las siguientes opciones, indique cómo debemos obtener el valor de ese campo.",
+    "opciones": {
+      "A": "Escribiendo una expresión válida en la celda en la Vista de Hoja de Datos.",
+      "B": "Escribiendo una expresión válida en la Descripción de la Vista de Diseño.",
+      "C": "Escribiendo una expresión válida en el Generador de expresiones.",
+      "D": "Escribiendo una expresión válida en el campo Formato de la pestaña General dentro de la Vista de Diseño."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 40,
+    "parte": "segunda",
+    "pregunta": "Vamos a crear un informe en una base de datos de Access 365. ¿Cuál de las siguientes opciones indica de forma correcta el tipo de objetos sobre los que podemos crear el informe?",
+    "opciones": {
+      "A": "Sólo Consultas.",
+      "B": "Consultas y Formularios.",
+      "C": "Sólo Formularios.",
+      "D": "Tablas y Consultas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 41,
+    "parte": "segunda",
+    "pregunta": "En Outlook 365, ¿cuál de las siguientes afirmaciones es correcta con respecto a los calendarios?",
+    "opciones": {
+      "A": "Es posible crear citas, pero para crear eventos es necesario Microsoft Teams.",
+      "B": "Los calendarios de Outlook no se pueden enviar por correo electrónico.",
+      "C": "Si hay acceso a un sitio de SharePoint, es posible ver las listas de eventos de ese sitio en el Calendario Outlook.",
+      "D": "Es posible tener varios calendarios asociados a la cuenta, pero no se pueden visualizar uno al lado de otro."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 42,
+    "parte": "segunda",
+    "pregunta": "Queremos realizar una consulta en una base de datos de Access 365, cuyo objeto es combinar datos de dos o más tablas en una sola consulta. ¿Cuál de los siguientes tipos de consulta deberíamos emplear?",
+    "opciones": {
+      "A": "Consulta de Unión.",
+      "B": "Consulta de Inserción.",
+      "C": "Consulta de Resumen.",
+      "D": "Consulta de Eliminación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 43,
+    "parte": "segunda",
+    "pregunta": "¿Cuál de las siguientes opciones corresponde a un sistema de gestión de contenidos (CMS) en internet?",
+    "opciones": {
+      "A": "Spotify.",
+      "B": "Instagram.",
+      "C": "Gmail.",
+      "D": "WordPress."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 44,
+    "parte": "segunda",
+    "pregunta": "Tenemos dos cuentas de usuario agregadas a Outlook 365. ¿Cuál de las siguientes opciones es correcta si realizamos una búsqueda sobre el Buzón en el que nos encontramos?",
+    "opciones": {
+      "A": "La búsqueda se realiza sobre todas las carpetas de todos los buzones de las dos cuentas de usuario agregadas a Outlook.",
+      "B": "La búsqueda se realiza sobre la carpeta en la que nos encontramos dentro del buzón y en ambas cuentas de usuario agregadas a Outlook.",
+      "C": "La búsqueda se realiza sobre todas las carpetas del buzón de la cuenta de usuario en el que nos encontramos.",
+      "D": "La búsqueda se realiza sobre todos los elementos de Outlook de la cuenta de usuario en el que nos encontramos, incluidas citas o tareas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 45,
+    "parte": "segunda",
+    "pregunta": "De los siguientes elementos propuestos, indique cuál permite administrar el tamaño del buzón de correo en Outlook 365.",
+    "opciones": {
+      "A": "Preferencias de descarga.",
+      "B": "Pasos rápidos.",
+      "C": "Limpieza de buzón.",
+      "D": "Crear grupo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 46,
+    "parte": "segunda",
+    "pregunta": "¿Cuál de los siguientes es un protocolo asociado a la seguridad en los correos electrónicos?",
+    "opciones": {
+      "A": "TLS",
+      "B": "XML",
+      "C": "ASCII",
+      "D": "CSS"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 47,
+    "parte": "segunda",
+    "pregunta": "El acceso a servicios informáticos bajo demanda por Internet, a recursos como servidores (físicos y virtuales), almacenamiento de datos, herramientas de desarrollo y capacidades de redes, ¿qué nombre recibe?",
+    "opciones": {
+      "A": "Bitdefender.",
+      "B": "Computación cuántica.",
+      "C": "Computación en la nube.",
+      "D": "Factura electrónica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 48,
+    "parte": "segunda",
+    "pregunta": "¿Qué empresa es la actual propietaria del portal de asistente web basado en Inteligencia Artificial de nombre Copilot?",
+    "opciones": {
+      "A": "Google.",
+      "B": "Amazon.",
+      "C": "Lenovo.",
+      "D": "Microsoft."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 49,
+    "parte": "segunda",
+    "pregunta": "Indique cuál de las siguientes opciones corresponde a un software de servidor web.",
+    "opciones": {
+      "A": "Apache.",
+      "B": "Kaspersky.",
+      "C": "YouTube.",
+      "D": "Voz IP."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 50,
+    "parte": "segunda",
+    "pregunta": "De los siguientes organismos propuestos, ¿cuál es el responsable de generar estándares y buenas prácticas de accesibilidad web?",
+    "opciones": {
+      "A": "Internet Corporation for Assigned Names and Numbers (ICANN).",
+      "B": "Internet Assigned Numbers Authority (IANA).",
+      "C": "World Wide Web Consortium (W3C).",
+      "D": "Internet Engineering Task Force (IETF)."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 51,
+    "parte": "segunda",
+    "pregunta": "En la Unión Europea y España se aplican normas y leyes para garantizar la accesibilidad web (práctica inclusiva de garantizar la accesibilidad a los sitios web). ¿Desde qué año se aplican estas normas y leyes?",
+    "opciones": {
+      "A": "2002.",
+      "B": "1985.",
+      "C": "1996.",
+      "D": "2014."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 52,
+    "parte": "segunda",
+    "pregunta": "En una hoja de Excel 365 tenemos la fecha 02/02/2024 en la celda A2, y la fecha 11/02/2024 en la celda A3. En la celda C2 tenemos la siguiente fórmula: =DIAS(A2;A3) ¿Cuál de las siguientes opciones será el valor que muestre la celda C2 como resultado de la fórmula?",
+    "opciones": {
+      "A": "-9",
+      "B": "12/02/2024",
+      "C": "9",
+      "D": "01/02/2024"
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 53,
+    "parte": "segunda",
+    "pregunta": "En un dispositivo portátil con Windows 10 instalado, queremos configurar algunas opciones como el uso de energía o los perfiles de sincronización. ¿Cuál de las siguientes capacidades podemos utilizar para realizar esta tarea?",
+    "opciones": {
+      "A": "Administrador de dispositivos.",
+      "B": "Administrador de equipos.",
+      "C": "Administrador de tareas.",
+      "D": "Centro de movilidad."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 54,
+    "parte": "segunda",
+    "pregunta": "En Excel 365 hay tres opciones de inmovilización para facilitar la navegación por los datos de una hoja. ¿Cuál de las siguientes opciones de inmovilización es falsa?",
+    "opciones": {
+      "A": "Inmovilizar celdas seleccionadas.",
+      "B": "Inmovilizar fila superior.",
+      "C": "Inmovilizar paneles.",
+      "D": "Inmovilizar primera columna."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 55,
+    "parte": "segunda",
+    "pregunta": "Conforme a la regulación contenida en la Orden HAP/1949/2014, de 13 de octubre, por la que se regula el Punto de Acceso General de la Administración General del Estado y se crea su sede electrónica, serán canales de acceso a los servicios del Punto de Acceso General:",
+    "opciones": {
+      "A": "Internet, las oficinas 060 y el teléfono 060.",
+      "B": "El teléfono 060, exclusivamente.",
+      "C": "La oficina 060, exclusivamente.",
+      "D": "Atención con apoderamiento."
+    },
+    "reserva": true,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  }
+]
