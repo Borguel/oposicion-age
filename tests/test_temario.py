@@ -18,12 +18,11 @@ def test_oposiciones_disponibles_no_requiere_login(client):
     assert "AGE" in ids
     assert "GACE" in ids
     # Formato real del simulacro oficial (para el botón "Simulacro oficial"
-    # de un clic en /test-oficial/) -- Auxiliar no tiene examen oficial
-    # cargado todavía, así que no debe ofrecer el botón.
+    # de un clic en /test-oficial/).
     por_id = {o["id"]: o for o in oposiciones}
     assert por_id["AGE"]["simulacro_oficial"] == {"num_preguntas": 70, "minutos": None}
     assert por_id["GACE"]["simulacro_oficial"] == {"num_preguntas": 100, "minutos": 90}
-    assert por_id["AUXILIAR"]["simulacro_oficial"] is None
+    assert por_id["AUXILIAR"]["simulacro_oficial"] == {"num_preguntas": 110, "minutos": 90}
     # Sin ningún examen oficial sembrado en el FakeFirestore de test, ninguna
     # oposición tiene datos para el reparto "realista" todavía.
     assert por_id["AGE"]["tiene_pesos_reales"] is False

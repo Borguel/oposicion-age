@@ -31,9 +31,13 @@ OPOSICIONES = {
     "AUXILIAR": {
         "nombre": "Cuerpo General Auxiliar de la Administración del Estado (Auxiliar, C2)",
         "coleccion_temario": "Temario Auxiliar",
-        # Sin examen oficial cargado todavía (ver cargar_temario_auxiliar.py)
-        # -- sin datos de convocatoria verificados, no se ofrece el botón.
-        "simulacro_oficial": None,
+        # Ejercicio único (ambas partes, ver datos_examenes/datos_convocatoria_AUXILIAR.json):
+        # 60 preguntas (1ª parte: 30 del bloque I + 30 psicotécnicas) + 50
+        # preguntas (2ª parte, bloque II) = 110 preguntas, 90 minutos para las
+        # dos partes juntas. El frontend deja elegir si se incluyen o no las
+        # psicotécnicas (ver utils.tiene_preguntas_psicotecnicas) antes de
+        # lanzar el simulacro.
+        "simulacro_oficial": {"num_preguntas": 110, "minutos": 90},
     },
 }
 

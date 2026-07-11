@@ -137,7 +137,11 @@ def generar_test_oficial():
     data = request.get_json()
     logger.info("Ruta /generar-test-oficial llamada con datos: %s", data)
     try:
-        num_preguntas = max(1, min(100, int(data.get("num_preguntas", 10))))
+        # El tope sube a 120 (no 100) porque el simulacro oficial de Auxiliar
+        # son 110 preguntas reales (60 primera parte + 50 segunda, ver
+        # oposiciones.py) -- el resto de rutas de generación de test se
+        # quedan en 100.
+        num_preguntas = max(1, min(120, int(data.get("num_preguntas", 10))))
     except (TypeError, ValueError):
         num_preguntas = 10
     examenes_filtrados = data.get("examenes", [])
