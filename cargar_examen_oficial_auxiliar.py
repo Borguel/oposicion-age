@@ -119,6 +119,7 @@ def cargar_examen(anio):
             "respuesta_correcta": p["respuesta_correcta"],
             "explicacion": explicacion,
             "reserva": p.get("reserva", False),
+            "psicotecnico": p.get("psicotecnico", False),
         })
         print("OK")
 

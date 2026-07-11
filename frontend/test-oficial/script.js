@@ -181,6 +181,26 @@ async function obtenerAuthHeaders() {
       }
     }
 
+    // Solo algunas oposiciones (hoy, Auxiliar) tienen preguntas psicotécnicas
+    // en su examen oficial (ver utils.tiene_preguntas_psicotecnicas) -- el
+    // checkbox para excluirlas solo se muestra si la oposición actual tiene
+    // alguna cargada, igual que iniciarSelectorRepartoRealista con el reparto.
+    async function iniciarSelectorPsicotecnicas() {
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
+        const datos = await res.json();
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const oposicionActualId = obtenerOposicionActual();
+        const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
+        const bloque = document.getElementById("filtro-psicotecnicas");
+        if (bloque && infoOposicion && infoOposicion.tiene_psicotecnicas) {
+          bloque.style.display = "block";
+        }
+      } catch (e) {
+        console.error("No se pudo comprobar si hay preguntas psicotécnicas:", e);
+      }
+    }
+
     // tiempoRestanteReanudado: si se pasa (al reanudar un test cronometrado
     // guardado), se usa como tiempoLimite inicial en vez de recalcularlo
     // desde el campo "minutos_cronometro" del formulario (que al reanudar no
@@ -281,6 +301,7 @@ async function obtenerAuthHeaders() {
       const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
       const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
       const modoRepartoElegido = document.querySelector('input[name="modo_reparto"]:checked')?.value || "equitativo";
+      const excluirPsicotecnicas = document.getElementById("excluir_psicotecnicas")?.checked || false;
       if (REQUIERE_TEMA && temas.length === 0) {
         Swal.fire({
           icon: "warning",
@@ -319,7 +340,7 @@ async function obtenerAuthHeaders() {
         const res = await fetch("https://oposicion-age.onrender.com" + ENDPOINT_GENERAR, {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
-          body: JSON.stringify({ temas, num_preguntas, oposicion, modo_reparto: modoRepartoElegido })
+          body: JSON.stringify({ temas, num_preguntas, oposicion, modo_reparto: modoRepartoElegido, excluir_psicotecnicas: excluirPsicotecnicas })
         });
         clearInterval(intervalCarga);
         if (res.status === 403) {
@@ -664,6 +685,7 @@ async function obtenerAuthHeaders() {
       await cargarTemas();
       iniciarBotonSimulacroOficial();
       iniciarSelectorRepartoRealista();
+      iniciarSelectorPsicotecnicas();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
       if (resumeId) {

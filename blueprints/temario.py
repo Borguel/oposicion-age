@@ -4,7 +4,7 @@ from flask import Blueprint, g, jsonify
 from firebase_setup import db
 from auth_utils import requiere_login, obtener_oposicion_solicitada
 from oposiciones import OPOSICIONES, coleccion_temario
-from utils import calcular_pesos_reales_por_bloque
+from utils import calcular_pesos_reales_por_bloque, tiene_preguntas_psicotecnicas
 
 bp = Blueprint("temario", __name__)
 
@@ -24,6 +24,11 @@ def obtener_oposiciones_disponibles():
                 # Auxiliar, sin exámenes cargados todavía), solo tiene
                 # sentido el reparto equitativo.
                 "tiene_pesos_reales": bool(calcular_pesos_reales_por_bloque(db, oid)),
+                # Solo Auxiliar tiene preguntas psicotécnicas en su examen
+                # oficial (ver cargar_examen_oficial_auxiliar.py) -- el
+                # frontend usa esta flag para ofrecer el filtro "excluir
+                # psicotécnicas" únicamente donde tiene sentido.
+                "tiene_psicotecnicas": tiene_preguntas_psicotecnicas(db, oid),
             }
             for oid, datos in OPOSICIONES.items()
         ]
