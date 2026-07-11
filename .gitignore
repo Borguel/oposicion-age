@@ -201,6 +201,7 @@ cache_paginas_*.pkl
 preview_temario.json
 preview_tema_gace_09.json
 preview_temario_auxiliar.json
+preview_temario_auxiliar_bloque2.json
 
 # Node / Playwright (tests-frontend)
 node_modules/

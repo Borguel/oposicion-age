@@ -1,0 +1,53 @@
+name: Cargar temario Auxiliar (Bloque II) a Firestore
+
+# Carga el Bloque II ("Actividad Administrativa y Ofimática", 12 temas) de
+# "Temario Auxiliar" desde los 12 PDFs ya subidos al repo (uno por tema, con
+# licencia confirmada por el usuario), vía cargar_temario_auxiliar_bloque2.py.
+# Se dispara a mano porque el sandbox de desarrollo no tiene salida a
+# api.deepseek.com (política de red del proxy), y este runner de GitHub
+# Actions sí tiene acceso normal a internet -- mismo motivo que ya tiene
+# cargar-temario-auxiliar.yml (Bloque I) para no necesitar un ordenador con
+# clave-firebase.json a mano.
+#
+# Ejecuta primero con accion=preview (no toca Firestore, solo genera
+# preview_temario_auxiliar_bloque2.json y un resumen por tema en el log) y
+# revisa el resultado antes de volver a ejecutar con accion=subir.
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "preview (solo genera el informe) o subir (repara el espaciado con DeepSeek y sube de verdad a Firestore)"
+        required: true
+        default: "preview"
+        type: choice
+        options:
+          - preview
+          - subir
+
+jobs:
+  cargar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Cargar temario Auxiliar (Bloque II)
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: python cargar_temario_auxiliar_bloque2.py --${{ github.event.inputs.accion }}
+
+      - name: Guardar vista previa como artefacto
+        if: github.event.inputs.accion == 'preview'
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-temario-auxiliar-bloque2
+          path: preview_temario_auxiliar_bloque2.json
