@@ -143,6 +143,28 @@ async function obtenerAuthHeaders() {
       document.querySelector('.test-type-container')?.classList.add('test-type-compacto');
     }
 
+    // Los tres inicializadores de abajo (simulacro, reparto realista,
+    // psicotécnicas) necesitan la misma info de /oposiciones-disponibles --
+    // antes cada uno hacía su propio fetch, así que cada carga de página
+    // disparaba 3 peticiones idénticas en paralelo. Esa ruta ya es lenta de
+    // por sí (calcula el reparto real y si hay psicotécnicas recorriendo
+    // TODA la colección de exámenes oficiales de cada oposición, ver
+    // utils.calcular_pesos_reales_por_bloque/tiene_preguntas_psicotecnicas),
+    // así que triplicar la petición solo empeoraba la espera. Se memoiza en
+    // una única promesa compartida para que solo se pida una vez por carga
+    // de página.
+    let promesaInfoOposiciones = null;
+    async function obtenerInfoOposicionActual() {
+      if (!promesaInfoOposiciones) {
+        promesaInfoOposiciones = fetch("https://oposicion-age.onrender.com/oposiciones-disponibles")
+          .then((res) => res.json());
+      }
+      const datos = await promesaInfoOposiciones;
+      const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+      const oposicionActualId = obtenerOposicionActual();
+      return (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
+    }
+
     // "Simulacro oficial" de un clic: precarga el número real de preguntas
     // (y, cuando se conoce, el tiempo real) de la 1ª parte del examen
     // oficial de la oposición actual (ver oposiciones.py, datos verificados
@@ -156,11 +178,7 @@ async function obtenerAuthHeaders() {
       const separador = document.getElementById("separador-o");
       if (!tarjeta || !boton) return;
       try {
-        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
-        const datos = await res.json();
-        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
-        const oposicionActualId = obtenerOposicionActual();
-        const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
+        const infoOposicion = await obtenerInfoOposicionActual();
         const simulacro = infoOposicion && infoOposicion.simulacro_oficial;
         if (!simulacro) return; // sin datos verificados para esta oposición -- no se ofrece
         if (testYaIniciado) return; // el usuario ya empezó el test por otro camino mientras se esperaba esta respuesta
@@ -192,11 +210,7 @@ async function obtenerAuthHeaders() {
     // note ninguna diferencia.
     async function iniciarSelectorRepartoRealista() {
       try {
-        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
-        const datos = await res.json();
-        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
-        const oposicionActualId = obtenerOposicionActual();
-        const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
+        const infoOposicion = await obtenerInfoOposicionActual();
         if (infoOposicion && infoOposicion.tiene_pesos_reales) return;
         if (testYaIniciado) return; // el usuario ya empezó el test por otro camino mientras se esperaba esta respuesta
 
@@ -217,11 +231,7 @@ async function obtenerAuthHeaders() {
     // alguna cargada, igual que iniciarSelectorRepartoRealista con el reparto.
     async function iniciarSelectorPsicotecnicas() {
       try {
-        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
-        const datos = await res.json();
-        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
-        const oposicionActualId = obtenerOposicionActual();
-        const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
+        const infoOposicion = await obtenerInfoOposicionActual();
         if (testYaIniciado) return; // el usuario ya empezó el test por otro camino mientras se esperaba esta respuesta
         const bloque = document.getElementById("filtro-psicotecnicas");
         if (bloque && infoOposicion && infoOposicion.tiene_psicotecnicas) {

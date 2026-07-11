@@ -124,12 +124,13 @@ def _limpiar_cache_temario():
     _CACHE_TEMARIO.clear()
 
 
-def _desde_cache_o_calcular(clave, calcular):
+def _desde_cache_o_calcular(clave, calcular, ttl_segundos=None):
+    ttl = ttl_segundos if ttl_segundos is not None else _TTL_CACHE_TEMARIO_SEGUNDOS
     ahora = time.time()
     en_cache = _CACHE_TEMARIO.get(clave)
     if en_cache is not None:
         timestamp, valor = en_cache
-        if ahora - timestamp < _TTL_CACHE_TEMARIO_SEGUNDOS:
+        if ahora - timestamp < ttl:
             return valor
     valor = calcular()
     _CACHE_TEMARIO[clave] = (ahora, valor)
@@ -316,7 +317,14 @@ def calcular_pesos_reales_por_bloque(db, oposicion):
         if not total:
             return {}
         return {b: c / total for b, c in contador.items()}
-    return _desde_cache_o_calcular(("pesos_bloque", oposicion), _calcular)
+    # TTL más largo que el resto del temario (30 min en vez de 5): esta
+    # cuenta recorre TODA la colección de exámenes oficiales de la
+    # oposición (cientos de documentos ya, con varios años cargados), y
+    # /oposiciones-disponibles la calcula para las 3 oposiciones en cada
+    # petición sin caché -- con el TTL corto, cualquier rato sin tráfico
+    # bastaba para que la siguiente visita disparase de nuevo ese barrido
+    # completo y la carga de "Test Oficial" se notase lenta.
+    return _desde_cache_o_calcular(("pesos_bloque", oposicion), _calcular, ttl_segundos=1800)
 
 
 def tiene_preguntas_psicotecnicas(db, oposicion):
@@ -335,7 +343,9 @@ def tiene_preguntas_psicotecnicas(db, oposicion):
             if d.get("tipo") == "pregunta" and d.get("psicotecnico"):
                 return True
         return False
-    return _desde_cache_o_calcular(("tiene_psicotecnicas", oposicion), _calcular)
+    # Mismo TTL largo que calcular_pesos_reales_por_bloque y por el mismo
+    # motivo: recorre toda la colección de exámenes oficiales.
+    return _desde_cache_o_calcular(("tiene_psicotecnicas", oposicion), _calcular, ttl_segundos=1800)
 
 
 def _repartir_por_peso(ids, cantidad, pesos_norm):
