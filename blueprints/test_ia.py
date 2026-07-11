@@ -310,6 +310,20 @@ Escribe un análisis breve (máximo 3-4 frases), cercano y motivador, en españo
     return jsonify({"analisis": analisis.strip()})
 
 
+@bp.route("/preguntas-pendientes-repaso", methods=["GET"])
+@requiere_login(db)
+def preguntas_pendientes_repaso():
+    """Solo el conteo (no las preguntas en sí) para el aviso proactivo de
+    repaso espaciado en Zona Opositor -- de ahí la agregación .count() en
+    vez de traer y contar los documentos completos como sí hace
+    /generar-test-fallos (que necesita el contenido real de cada uno)."""
+    oposicion = obtener_oposicion_solicitada()
+    consulta = db.collection("usuarios").document(g.uid).collection("preguntas_falladas") \
+        .where("oposicion", "==", oposicion)
+    total = consulta.count().get()[0][0].value
+    return jsonify({"total_pendientes": total})
+
+
 @bp.route("/generar-test-fallos", methods=["POST"])
 @requiere_login(db)
 def generar_test_fallos():

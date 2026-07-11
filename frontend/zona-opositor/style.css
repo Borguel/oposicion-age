@@ -213,6 +213,10 @@ body {
   }
 }
 
+.zona-repaso-card {
+  border-color: var(--age-danger, #e0473f);
+}
+
 .zona-cuenta-atras-card {
   display: flex;
   align-items: center;

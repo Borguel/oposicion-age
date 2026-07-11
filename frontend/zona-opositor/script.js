@@ -198,6 +198,29 @@ async function cargarTestEnProgreso() {
   }
 }
 
+// Repaso espaciado proactivo: en vez de esperar a que el usuario recuerde
+// entrar en /preguntas-falladas/, se avisa aquí en cuanto tiene alguna
+// pendiente para esta oposición (banco persistente de banco_fallos.py).
+async function cargarRepasoPendiente() {
+  try {
+    const token = await idToken();
+    const oposicion = obtenerOposicionActual();
+    const res = await fetch(`${BACKEND_URL}/preguntas-pendientes-repaso?oposicion=${encodeURIComponent(oposicion)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const { total_pendientes } = await res.json();
+    if (!total_pendientes) return;
+
+    const plural = total_pendientes !== 1 ? "s" : "";
+    fijarTexto("zona-repaso-detalle", `Tienes ${total_pendientes} pregunta${plural} fallada${plural} sin repasar todavía.`);
+    const elRepaso = document.getElementById("zona-repaso");
+    if (elRepaso) elRepaso.style.display = "";
+  } catch (e) {
+    console.error("Error cargando preguntas pendientes de repaso:", e);
+  }
+}
+
 // Avisos rotativos con recomendaciones de uso, inspirados en el panel de
 // inicio de la competencia (aula.opositatest.com): cada uno enlaza a una
 // herramienta real de la web, no son solo texto decorativo.
@@ -351,6 +374,7 @@ async function iniciar() {
   cargarRacha();
   cargarProgresoInsignias();
   cargarTestEnProgreso();
+  cargarRepasoPendiente();
   iniciarBotonNotificaciones();
   inicializarCuentaAtras();
   renderAviso();
