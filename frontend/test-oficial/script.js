@@ -115,6 +115,41 @@ async function obtenerAuthHeaders() {
       }
     }
 
+    // "Simulacro oficial" de un clic: precarga el número real de preguntas
+    // (y, cuando se conoce, el tiempo real) de la 1ª parte del examen
+    // oficial de la oposición actual (ver oposiciones.py, datos verificados
+    // contra el BOE) y lanza el test directamente, en vez de que el usuario
+    // tenga que teclear a mano cuántas preguntas y cuánto tiempo simula un
+    // examen real.
+    async function iniciarBotonSimulacroOficial() {
+      const boton = document.getElementById("btn-simulacro-oficial");
+      if (!boton) return;
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
+        const datos = await res.json();
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const oposicionActualId = obtenerOposicionActual();
+        const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
+        const simulacro = infoOposicion && infoOposicion.simulacro_oficial;
+        if (!simulacro) return; // sin datos verificados para esta oposición -- no se ofrece
+        boton.textContent = simulacro.minutos
+          ? `🏛️ Simulacro oficial (${simulacro.num_preguntas} preguntas, ${simulacro.minutos} min)`
+          : `🏛️ Simulacro oficial (${simulacro.num_preguntas} preguntas)`;
+        boton.style.display = "block";
+        boton.addEventListener("click", () => {
+          document.getElementById("num_preguntas").value = simulacro.num_preguntas;
+          if (simulacro.minutos) {
+            document.getElementById("modo_cronometrado").checked = true;
+            document.getElementById("minutos_cronometro").value = simulacro.minutos;
+            document.getElementById("tiempo_cronometro").style.display = "flex";
+          }
+          document.getElementById("form-generar-test").requestSubmit();
+        });
+      } catch (e) {
+        console.error("No se pudo cargar el formato del simulacro oficial:", e);
+      }
+    }
+
     // tiempoRestanteReanudado: si se pasa (al reanudar un test cronometrado
     // guardado), se usa como tiempoLimite inicial en vez de recalcularlo
     // desde el campo "minutos_cronometro" del formulario (que al reanudar no
@@ -595,6 +630,7 @@ async function obtenerAuthHeaders() {
 
     window.addEventListener("load", async () => {
       await cargarTemas();
+      iniciarBotonSimulacroOficial();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
       if (resumeId) {

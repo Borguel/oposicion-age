@@ -13,9 +13,17 @@ def _con_sesion(cliente, uid="u1", email="u1@example.com"):
 def test_oposiciones_disponibles_no_requiere_login(client):
     resp = client.get("/oposiciones-disponibles")
     assert resp.status_code == 200
-    ids = [o["id"] for o in resp.get_json()["oposiciones"]]
+    oposiciones = resp.get_json()["oposiciones"]
+    ids = [o["id"] for o in oposiciones]
     assert "AGE" in ids
     assert "GACE" in ids
+    # Formato real del simulacro oficial (para el botón "Simulacro oficial"
+    # de un clic en /test-oficial/) -- Auxiliar no tiene examen oficial
+    # cargado todavía, así que no debe ofrecer el botón.
+    por_id = {o["id"]: o for o in oposiciones}
+    assert por_id["AGE"]["simulacro_oficial"] == {"num_preguntas": 70, "minutos": None}
+    assert por_id["GACE"]["simulacro_oficial"] == {"num_preguntas": 100, "minutos": 90}
+    assert por_id["AUXILIAR"]["simulacro_oficial"] is None
 
 
 def test_temas_disponibles_requiere_login(client):

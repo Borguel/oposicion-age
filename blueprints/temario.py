@@ -11,7 +11,10 @@ bp = Blueprint("temario", __name__)
 @bp.route("/oposiciones-disponibles", methods=["GET"])
 def obtener_oposiciones_disponibles():
     return jsonify({
-        "oposiciones": [{"id": oid, "nombre": datos["nombre"]} for oid, datos in OPOSICIONES.items()]
+        "oposiciones": [
+            {"id": oid, "nombre": datos["nombre"], "simulacro_oficial": datos.get("simulacro_oficial")}
+            for oid, datos in OPOSICIONES.items()
+        ]
     })
 
 
