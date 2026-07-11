@@ -36,6 +36,13 @@
         <div class="description">Preguntas reales de exámenes de convocatorias anteriores, tal como se hicieron el día del examen.</div>
       </div>
     </div>
+    <div class="reparto-preguntas" id="filtro-psicotecnicas" style="display:none;">
+      <label class="reparto-opcion">
+        <input type="checkbox" id="excluir_psicotecnicas">
+        <span><strong>Excluir preguntas psicotécnicas</strong> — no incluir preguntas de aptitud (vocabulario, cálculo, series, tablas), tanto en el simulacro oficial como en tu propio test.</span>
+      </label>
+    </div>
+
     <div class="card fade-in simulacro-card" id="tarjeta-simulacro" style="display:none;">
       <div class="simulacro-icono">🏛️</div>
       <div class="simulacro-info">
@@ -52,7 +59,7 @@
       <p class="tarjeta-formulario-subtitulo">Elige tú cuántas preguntas quieres y de qué temas, en vez del formato oficial completo.</p>
       <form id="form-generar-test">
         <label for="num_preguntas">Número de preguntas:</label>
-        <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="100" value="10" required>
+        <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="120" value="10" required>
         <div class="timer-settings">
           <label>
             <input type="checkbox" id="modo_cronometrado"> <span>Activar modo examen cronometrado</span>
@@ -75,12 +82,6 @@
             <span><strong>Según el examen real</strong> — más preguntas de los bloques que históricamente más caen, menos de los que casi no aparecen.</span>
           </label>
           <p class="reparto-opcion-nota" id="reparto-nota-sin-datos" style="display:none;">No disponible: esta oposición todavía no tiene exámenes oficiales cargados para calcularlo.</p>
-        </div>
-        <div class="reparto-preguntas" id="filtro-psicotecnicas" style="display:none;">
-          <label class="reparto-opcion">
-            <input type="checkbox" id="excluir_psicotecnicas">
-            <span><strong>Excluir preguntas psicotécnicas</strong> — no incluir preguntas de aptitud (vocabulario, cálculo, series, tablas) en el test.</span>
-          </label>
         </div>
         <button type="submit" class="btn btn-primary btn-block">Generar test oficial</button>
       </form>
