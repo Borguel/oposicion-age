@@ -115,6 +115,24 @@ async function obtenerAuthHeaders() {
       }
     }
 
+    // Oculta todo el bloque de selección previo (tarjeta de simulacro,
+    // separador "o bien", filtro de psicotécnicas y formulario a medida) al
+    // arrancar un test, sea por el botón de simulacro, por el formulario a
+    // medida o al reanudar uno guardado -- antes solo se ocultaba
+    // "tarjeta-formulario", así que si se empezaba por el simulacro (u otro
+    // camino) el resto de tarjetas se quedaban visibles encima del test ya
+    // en marcha.
+    function ocultarSelectorTestOficial() {
+      document.getElementById('tarjeta-formulario').style.display = "none";
+      const tarjetaSimulacro = document.getElementById('tarjeta-simulacro');
+      if (tarjetaSimulacro) tarjetaSimulacro.style.display = "none";
+      const separador = document.getElementById('separador-o');
+      if (separador) separador.style.display = "none";
+      const filtroPsicotecnicas = document.getElementById('filtro-psicotecnicas');
+      if (filtroPsicotecnicas) filtroPsicotecnicas.style.display = "none";
+      document.querySelector('.test-type-container')?.classList.add('test-type-compacto');
+    }
+
     // "Simulacro oficial" de un clic: precarga el número real de preguntas
     // (y, cuando se conoce, el tiempo real) de la 1ª parte del examen
     // oficial de la oposición actual (ver oposiciones.py, datos verificados
@@ -311,8 +329,7 @@ async function obtenerAuthHeaders() {
         });
         return;
       }
-      document.getElementById('tarjeta-formulario').style.display = "none";
-      document.querySelector('.test-type-container')?.classList.add('test-type-compacto');
+      ocultarSelectorTestOficial();
       document.getElementById("contenedor-test").style.display = "block";
       document.getElementById("contenedor-test").innerHTML = `
         <div class="carga-generando">
@@ -658,8 +675,7 @@ async function obtenerAuthHeaders() {
       activarBotonFavorita = favoritasApi.activarBotonFavorita;
       textosFavoritas = await favoritasApi.cargarTextosFavoritas(oposicionActual);
 
-      document.getElementById('tarjeta-formulario').style.display = "none";
-      document.querySelector('.test-type-container')?.classList.add('test-type-compacto');
+      ocultarSelectorTestOficial();
       document.getElementById("contenedor-test").style.display = "block";
 
       if (guardado.modo_cronometrado) {
