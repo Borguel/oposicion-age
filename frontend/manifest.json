@@ -1,7 +1,7 @@
 {
   "name": "Domina tu Opo",
   "short_name": "DominaTuOpo",
-  "description": "Prepara tu oposición AGE: tests, temario, herramientas IA y seguimiento de tu progreso.",
+  "description": "Prepara tu oposición: tests, temario, herramientas IA y seguimiento de tu progreso.",
   "start_url": "/zona-opositor/",
   "scope": "/",
   "display": "standalone",
