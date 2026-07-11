@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <script src="/assets/redirect-dominio-antiguo.js"></script>
+  <style>html:not(.auth-listo) body { visibility: hidden; }</style>
+  <script type="module" src="/assets/auth-guard.js"></script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#ffa633" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Repetir último test - Oposición AGE</title>
+  <title>Repetir último test - Domina tu Opo</title>
   <meta name="description" content="Repite un test que ya hiciste antes, con las mismas preguntas." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Repetir último test - Oposición AGE" />
+  <meta property="og:title" content="Repetir último test - Domina tu Opo" />
   <meta property="og:description" content="Repite un test que ya hiciste antes, con las mismas preguntas." />
-  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary" />
+  <link rel="canonical" href="https://www.dominatuopo.com/repetir-test/" />
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
   <link rel="stylesheet" href="/assets/theme.css" />
   <link rel="stylesheet" href="/test-generator/style.css" />
@@ -26,6 +32,10 @@
   <div id="temporizador" style="display:none;">
     <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador">👁️</button>
     <span id="temporizador-texto">⏱ Tiempo: 00:00</span>
+  </div>
+  <div id="barra-progreso-tiempo" class="progress-container" style="display: none;">
+    <div id="progreso-tiempo" class="progress-bar" style="background: linear-gradient(90deg, #4caf50, #66bb6a);"></div>
+    <div id="texto-progreso-tiempo" class="progress-text"></div>
   </div>
   <div id="navegador-preguntas" class="navegador-preguntas" style="display:none;"></div>
   <div id="contenedor-test" class="card fade-in">Cargando test anterior...</div>

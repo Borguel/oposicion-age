@@ -54,11 +54,15 @@ async function obtenerAuthHeaders() {
         const datos = await res.json();
         if (!res.ok) {
           console.error("❌ Error al guardar tarjetas en Firebase:", datos.error);
+          const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+          mostrarErrorGlobal("No se pudieron guardar las tarjetas en tu cuenta. Las tarjetas siguen visibles en pantalla, pero no han quedado guardadas.");
         } else {
           console.log("✅ Tarjetas guardadas automáticamente en Firebase");
         }
       } catch (e) {
         console.error("⚠️ Error al guardar tarjetas en Firebase:", e);
+        const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+        mostrarErrorGlobal("No se pudieron guardar las tarjetas en tu cuenta. Las tarjetas siguen visibles en pantalla, pero no han quedado guardadas.");
       }
     }
 
@@ -165,7 +169,7 @@ async function obtenerAuthHeaders() {
         doc.setFontSize(9);
         doc.setTextColor(150);
         doc.text(`Página ${pagina + 1}`, pageWidth - margin, pageHeight - 10, { align: "right" });
-        doc.text("Oposición AGE", margin, pageHeight - 10);
+        doc.text("Domina tu Opo", margin, pageHeight - 10);
         doc.setTextColor(0);
       }
       function nuevaPagina() {

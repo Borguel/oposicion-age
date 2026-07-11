@@ -115,6 +115,72 @@ async function obtenerAuthHeaders() {
       }
     }
 
+    // "Simulacro oficial" de un clic: precarga el número real de preguntas
+    // (y, cuando se conoce, el tiempo real) de la 1ª parte del examen
+    // oficial de la oposición actual (ver oposiciones.py, datos verificados
+    // contra el BOE) y lanza el test directamente, en vez de que el usuario
+    // tenga que teclear a mano cuántas preguntas y cuánto tiempo simula un
+    // examen real.
+    async function iniciarBotonSimulacroOficial() {
+      const tarjeta = document.getElementById("tarjeta-simulacro");
+      const boton = document.getElementById("btn-simulacro-oficial");
+      const descripcion = document.getElementById("simulacro-descripcion");
+      const separador = document.getElementById("separador-o");
+      if (!tarjeta || !boton) return;
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
+        const datos = await res.json();
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const oposicionActualId = obtenerOposicionActual();
+        const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
+        const simulacro = infoOposicion && infoOposicion.simulacro_oficial;
+        if (!simulacro) return; // sin datos verificados para esta oposición -- no se ofrece
+        if (descripcion) {
+          descripcion.textContent = simulacro.minutos
+            ? `Genera un examen con el mismo formato del examen real: ${simulacro.num_preguntas} preguntas en ${simulacro.minutos} minutos.`
+            : `Genera un examen con el mismo número de preguntas del examen real: ${simulacro.num_preguntas} preguntas.`;
+        }
+        tarjeta.style.display = "flex";
+        if (separador) separador.style.display = "flex";
+        boton.addEventListener("click", () => {
+          document.getElementById("num_preguntas").value = simulacro.num_preguntas;
+          if (simulacro.minutos) {
+            document.getElementById("modo_cronometrado").checked = true;
+            document.getElementById("minutos_cronometro").value = simulacro.minutos;
+            document.getElementById("tiempo_cronometro").style.display = "flex";
+          }
+          document.getElementById("form-generar-test").requestSubmit();
+        });
+      } catch (e) {
+        console.error("No se pudo cargar el formato del simulacro oficial:", e);
+      }
+    }
+
+    // Si la oposición actual todavía no tiene ningún examen oficial cargado
+    // (ver utils.calcular_pesos_reales_por_bloque), el reparto "realista" no
+    // tiene con qué calcularse -- se deshabilita la opción con una nota
+    // explicando por qué, en vez de dejar que el usuario la elija y no
+    // note ninguna diferencia.
+    async function iniciarSelectorRepartoRealista() {
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
+        const datos = await res.json();
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const oposicionActualId = obtenerOposicionActual();
+        const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
+        if (infoOposicion && infoOposicion.tiene_pesos_reales) return;
+
+        const radioRealista = document.getElementById("opcion-reparto-realista");
+        if (!radioRealista) return;
+        radioRealista.disabled = true;
+        radioRealista.closest(".reparto-opcion")?.classList.add("reparto-opcion-deshabilitada");
+        const nota = document.getElementById("reparto-nota-sin-datos");
+        if (nota) nota.style.display = "block";
+      } catch (e) {
+        console.error("No se pudo comprobar si hay datos para el reparto realista:", e);
+      }
+    }
+
     // tiempoRestanteReanudado: si se pasa (al reanudar un test cronometrado
     // guardado), se usa como tiempoLimite inicial en vez de recalcularlo
     // desde el campo "minutos_cronometro" del formulario (que al reanudar no
@@ -214,6 +280,7 @@ async function obtenerAuthHeaders() {
       document.getElementById("barra-progreso-tiempo").style.display = "none";
       const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
       const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
+      const modoRepartoElegido = document.querySelector('input[name="modo_reparto"]:checked')?.value || "equitativo";
       if (REQUIERE_TEMA && temas.length === 0) {
         Swal.fire({
           icon: "warning",
@@ -252,7 +319,7 @@ async function obtenerAuthHeaders() {
         const res = await fetch("https://oposicion-age.onrender.com" + ENDPOINT_GENERAR, {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
-          body: JSON.stringify({ temas, num_preguntas, oposicion })
+          body: JSON.stringify({ temas, num_preguntas, oposicion, modo_reparto: modoRepartoElegido })
         });
         clearInterval(intervalCarga);
         if (res.status === 403) {
@@ -343,12 +410,16 @@ async function obtenerAuthHeaders() {
       });
     }
 
-    function mostrarPregunta(i) {
+    async function mostrarPregunta(i) {
+      // El texto de la pregunta/opciones viene generado por IA -- se escapa
+      // antes de inyectarlo en innerHTML (mismo motivo y misma función que ya
+      // usa la pantalla de resultados, ver assets/resultados-test.js).
+      const { escaparHtml } = await import("/assets/resultados-test.js");
       indicePreguntaActual = i;
       visitadas[i] = true;
       actualizarNavegadorPreguntas();
       const p = preguntas[i];
-      let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+      let textoPregunta = escaparHtml(p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, ""));
       let html = `<form id="form-pregunta">
         <div class="pregunta-en-negrita">
           <span>${i + 1}. ${textoPregunta}</span>
@@ -358,7 +429,7 @@ async function obtenerAuthHeaders() {
           </div>
         </div>`;
       for (const letra in p.opciones) {
-        const opcion = p.opciones[letra];
+        const opcion = escaparHtml(p.opciones[letra]);
         const checked = respuestasUsuario[i] === letra ? "checked" : "";
         html += `
           <label class="opcion-respuesta">
@@ -591,6 +662,8 @@ async function obtenerAuthHeaders() {
 
     window.addEventListener("load", async () => {
       await cargarTemas();
+      iniciarBotonSimulacroOficial();
+      iniciarSelectorRepartoRealista();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
       if (resumeId) {

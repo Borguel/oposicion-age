@@ -1,18 +1,24 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <script src="/assets/redirect-dominio-antiguo.js"></script>
+  <style>html:not(.auth-listo) body { visibility: hidden; }</style>
+  <script type="module" src="/assets/auth-guard.js"></script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#ffa633" />
-  <title>Test Oficial - Oposición AGE</title>
+  <title>Test Oficial - Domina tu Opo</title>
   <meta name="description" content="Genera un test con preguntas reales de exámenes de convocatorias anteriores." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Test Oficial - Oposición AGE" />
+  <meta property="og:title" content="Test Oficial - Domina tu Opo" />
   <meta property="og:description" content="Genera un test con preguntas reales de exámenes de convocatorias anteriores." />
-  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary" />
+  <link rel="canonical" href="https://www.dominatuopo.com/test-oficial/" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
   <link rel="stylesheet" href="/assets/theme.css" />
@@ -26,17 +32,30 @@
     <div class="test-type-container">
       <div class="test-type-card selected">
         <div class="icon">🏛️</div>
-        <div class="title">Test Oficial</div>
+        <h1 class="title">Test Oficial</h1>
         <div class="description">Preguntas reales de exámenes de convocatorias anteriores, tal como se hicieron el día del examen.</div>
       </div>
     </div>
+    <div class="card fade-in simulacro-card" id="tarjeta-simulacro" style="display:none;">
+      <div class="simulacro-icono">🏛️</div>
+      <div class="simulacro-info">
+        <div class="simulacro-titulo">Simulacro oficial</div>
+        <div class="simulacro-descripcion" id="simulacro-descripcion">Genera un examen con el mismo formato exacto de la convocatoria real.</div>
+      </div>
+      <button type="button" id="btn-simulacro-oficial" class="age-btn age-btn-primary">Empezar simulacro</button>
+    </div>
+
+    <div class="separador-o" id="separador-o" style="display:none;"><span>o bien</span></div>
+
     <div class="card fade-in" id="tarjeta-formulario">
+      <h3 class="tarjeta-formulario-titulo">Configura tu propio test</h3>
+      <p class="tarjeta-formulario-subtitulo">Elige tú cuántas preguntas quieres y de qué temas, en vez del formato oficial completo.</p>
       <form id="form-generar-test">
         <label for="num_preguntas">Número de preguntas:</label>
         <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="100" value="10" required>
         <div class="timer-settings">
           <label>
-            <input type="checkbox" id="modo_cronometrado"> Activar modo examen cronometrado
+            <input type="checkbox" id="modo_cronometrado"> <span>Activar modo examen cronometrado</span>
           </label>
           <div id="tiempo_cronometro" style="display: none;">
             <label for="minutos_cronometro">Tiempo (minutos):</label>
@@ -45,6 +64,18 @@
         </div>
         <label id="label-lista-temas">Filtra por tema (opcional, deja todo sin marcar para todos los temas):</label>
         <div id="lista-temas"></div>
+        <div class="reparto-preguntas" id="reparto-preguntas">
+          <span class="reparto-preguntas-titulo">Reparto de preguntas entre los temas elegidos:</span>
+          <label class="reparto-opcion">
+            <input type="radio" name="modo_reparto" value="equitativo" checked>
+            <span><strong>Equitativo</strong> — mismo número de preguntas por cada tema, sin importar su peso real en el examen.</span>
+          </label>
+          <label class="reparto-opcion">
+            <input type="radio" name="modo_reparto" value="realista" id="opcion-reparto-realista">
+            <span><strong>Según el examen real</strong> — más preguntas de los bloques que históricamente más caen, menos de los que casi no aparecen.</span>
+          </label>
+          <p class="reparto-opcion-nota" id="reparto-nota-sin-datos" style="display:none;">No disponible: esta oposición todavía no tiene exámenes oficiales cargados para calcularlo.</p>
+        </div>
         <button type="submit" class="btn btn-primary btn-block">Generar test oficial</button>
       </form>
     </div>

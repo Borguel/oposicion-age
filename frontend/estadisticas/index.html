@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <script src="/assets/redirect-dominio-antiguo.js"></script>
+  <style>html:not(.auth-listo) body { visibility: hidden; }</style>
+  <script type="module" src="/assets/auth-guard.js"></script>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#ffa633" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Estadísticas – Tu Progreso</title>
+  <title>Estadísticas de tu progreso - Domina tu Opo</title>
   <meta name="description" content="Consulta tu progreso, tus aciertos por tema y detecta tus puntos flojos con IA." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Estadísticas – Tu Progreso" />
+  <meta property="og:title" content="Estadísticas de tu progreso - Domina tu Opo" />
   <meta property="og:description" content="Consulta tu progreso, tus aciertos por tema y detecta tus puntos flojos con IA." />
-  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary" />
+  <link rel="canonical" href="https://www.dominatuopo.com/estadisticas/" />
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
   <link rel="stylesheet" href="/assets/theme.css" />
 
@@ -25,7 +31,7 @@
 
 <div id="estadisticas-container">
   <div id="estadisticas-header">
-    <h3>Estadísticas de tu estudio</h3>
+    <h1>Estadísticas de tu estudio</h1>
     <div class="estadisticas-header-botones">
       <button id="estadisticas-refresh" type="button" aria-label="Actualizar" title="Actualizar">
         <svg class="icono-actualizar" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -73,6 +79,24 @@
       <div class="valor vistazo-valor" id="vistazo-racha">—</div>
       <div class="vistazo-label">Racha actual</div>
     </div>
+  </section>
+
+  <!-- Cuenta atrás al examen: mismo widget y misma lógica que Zona
+       Opositor (ver assets/cuenta-atras.js) -- aquí, justo al lado de los
+       temas flojos/cobertura del temario, es donde tiene más sentido el
+       "¿estoy listo?" con los días que quedan. -->
+  <section class="age-card zona-cuenta-atras-card" id="zona-cuenta-atras">
+    <div class="zona-cuenta-atras-icono">📅</div>
+    <div class="zona-cuenta-atras-info">
+      <div class="zona-cuenta-atras-numero" id="cuenta-atras-numero">—</div>
+      <div class="zona-cuenta-atras-mensaje" id="cuenta-atras-mensaje">Cargando…</div>
+    </div>
+    <button type="button" class="age-btn age-btn-outline zona-cuenta-atras-boton" id="cuenta-atras-boton">Configurar</button>
+    <form class="zona-cuenta-atras-form" id="cuenta-atras-form" style="display:none;">
+      <input type="date" id="cuenta-atras-input" required />
+      <button type="submit" class="age-btn age-btn-primary">Guardar</button>
+      <button type="button" class="zona-cuenta-atras-quitar" id="cuenta-atras-quitar" style="display:none;">Quitar fecha</button>
+    </form>
   </section>
 
   <!-- Evolución de la nota: gráfica de línea de los últimos tests. Es lo

@@ -1,0 +1,50 @@
+name: Cargar examen oficial AGE a Firestore
+
+# Sube a Firestore las preguntas de un examen oficial de AGE (Cuerpo General
+# Administrativo, Ingreso Libre) ya transcritas en
+# datos_examenes/age_<anio>_ejercicio_unico.json (+ _explicaciones.json y,
+# opcionalmente, _temas.json), usando cargar_examen_oficial_age.py y
+# etiquetar_temas_examenes_age.py. Se dispara a mano (sin credenciales en el
+# repo ni en el chat: la clave de Firebase vive solo en el secreto
+# FIREBASE_CREDENTIALS_JSON de este repositorio) por el mismo motivo que
+# subir-datos-convocatoria.yml: el sandbox de desarrollo no tiene
+# clave-firebase.json a mano.
+on:
+  workflow_dispatch:
+    inputs:
+      anio:
+        description: "Identificador del examen (debe existir datos_examenes/age_<anio>_ejercicio_unico.json), p. ej. 2019 o 2019_extra"
+        required: true
+        default: "2019"
+      etiquetar_temas:
+        description: "Etiquetar también con tema_id tras la carga (requiere age_<anio>_ejercicio_unico_temas.json)"
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  cargar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Cargar preguntas del examen
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: python cargar_examen_oficial_age.py "${{ github.event.inputs.anio }}"
+
+      - name: Etiquetar preguntas con tema_id
+        if: ${{ github.event.inputs.etiquetar_temas == 'true' }}
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: python etiquetar_temas_examenes_age.py "${{ github.event.inputs.anio }}"

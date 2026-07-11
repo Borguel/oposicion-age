@@ -133,6 +133,68 @@ def test_ruta_generar_test_oficial_filtra_por_examen(client, db):
         parche.stop()
 
 
+def test_ruta_generar_test_oficial_modo_realista_pondera_por_bloque(client, db):
+    # bloque_06 tiene muchas más preguntas históricas cargadas que
+    # bloque_01, así que con modo_reparto=realista debe llevarse la
+    # mayoría de las preguntas del test aunque se filtre por ambos temas.
+    for i in range(2):
+        db.sembrar(("examenes_oficiales_AGE", f"b1-{i}"), {"tipo": "pregunta", **_pregunta(i, "bloque_01-tema_01")})
+    for i in range(18):
+        db.sembrar(("examenes_oficiales_AGE", f"b6-{i}"), {"tipo": "pregunta", **_pregunta(100 + i, "bloque_06-tema_01")})
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}}
+    })
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/generar-test-oficial",
+            json={
+                "num_preguntas": 10, "oposicion": "AGE",
+                "temas": ["bloque_01-tema_01", "bloque_06-tema_01"],
+                "modo_reparto": "realista",
+            },
+            headers={"Authorization": "Bearer x"}
+        )
+        assert resp.status_code == 200
+        test = resp.get_json()["test"]
+        assert len(test) == 10
+        de_bloque_06 = sum(1 for p in test if p["tema_id"] == "bloque_06-tema_01")
+        # 18 de 20 preguntas históricas son de bloque_06 -> 90% de peso.
+        assert de_bloque_06 == 9
+    finally:
+        parche.stop()
+
+
+def test_ruta_generar_test_oficial_modo_reparto_invalido_cae_a_equitativo(client, db):
+    for i in range(10):
+        db.sembrar(("examenes_oficiales_AGE", f"b1-{i}"), {"tipo": "pregunta", **_pregunta(i, "bloque_01-tema_01")})
+    for i in range(10):
+        db.sembrar(("examenes_oficiales_AGE", f"b2-{i}"), {"tipo": "pregunta", **_pregunta(100 + i, "bloque_02-tema_01")})
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}}
+    })
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/generar-test-oficial",
+            json={
+                "num_preguntas": 6, "oposicion": "AGE",
+                "temas": ["bloque_01-tema_01", "bloque_02-tema_01"],
+                "modo_reparto": "esto-no-existe",
+            },
+            headers={"Authorization": "Bearer x"}
+        )
+        test = resp.get_json()["test"]
+        por_tema = {}
+        for p in test:
+            por_tema[p["tema_id"]] = por_tema.get(p["tema_id"], 0) + 1
+        assert por_tema == {"bloque_01-tema_01": 3, "bloque_02-tema_01": 3}
+    finally:
+        parche.stop()
+
+
 def test_ruta_generar_test_oficial_404_si_no_hay_preguntas_cargadas(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",

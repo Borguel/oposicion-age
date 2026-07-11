@@ -114,6 +114,31 @@ async function obtenerAuthHeaders() {
       }
     }
 
+    // Si la oposición actual todavía no tiene ningún examen oficial cargado
+    // (ver utils.calcular_pesos_reales_por_bloque), el reparto "realista" no
+    // tiene con qué calcularse -- se deshabilita la opción con una nota
+    // explicando por qué, en vez de dejar que el usuario la elija y no
+    // note ninguna diferencia.
+    async function iniciarSelectorRepartoRealista() {
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
+        const datos = await res.json();
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const oposicionActualId = obtenerOposicionActual();
+        const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
+        if (infoOposicion && infoOposicion.tiene_pesos_reales) return;
+
+        const radioRealista = document.getElementById("opcion-reparto-realista");
+        if (!radioRealista) return;
+        radioRealista.disabled = true;
+        radioRealista.closest(".reparto-opcion")?.classList.add("reparto-opcion-deshabilitada");
+        const nota = document.getElementById("reparto-nota-sin-datos");
+        if (nota) nota.style.display = "block";
+      } catch (e) {
+        console.error("No se pudo comprobar si hay datos para el reparto realista:", e);
+      }
+    }
+
     // tiempoRestanteReanudado: si se pasa (al reanudar un test cronometrado
     // guardado), se usa como tiempoLimite inicial en vez de recalcularlo
     // desde el campo "minutos_cronometro" del formulario (que al reanudar no
@@ -208,11 +233,147 @@ async function obtenerAuthHeaders() {
       return `${m}:${s}`;
     }
 
+    // Metadatos fijos del test en curso (fijados al entrar en modo test),
+    // reusados para los autoguardados en segundo plano mientras llegan más
+    // preguntas -- /autosave-test sobrescribe el documento entero cuando
+    // manda "contenido", así que cada guardado posterior debe repetirlos.
+    let metadatosFijosTest = null;
+    // Si el usuario termina el test (mostrarResultados) mientras el resto
+    // de preguntas todavía se está generando en segundo plano, hay que
+    // dejar de tocar el estado ya cerrado -- el stream SSE sigue leyéndose
+    // hasta el final igualmente, pero sin efecto sobre la UI/autoguardado.
+    let testFinalizado = false;
+
+    function asignarTemaFallback(pregunta, temas) {
+      if (!pregunta.tema_id && temas.length > 0) {
+        pregunta.tema_id = temas[Math.floor(Math.random() * temas.length)];
+      }
+    }
+
+    function mostrarIndicadorGenerandoFondo(completadas, total) {
+      if (testFinalizado) return;
+      let el = document.getElementById("indicador-generando-fondo");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "indicador-generando-fondo";
+        el.className = "indicador-generando-fondo";
+        document.getElementById("navegador-preguntas").insertAdjacentElement("afterend", el);
+      }
+      const restantes = Math.max(total - completadas, 0);
+      el.textContent = restantes > 0
+        ? `⏳ Generando ${restantes} pregunta${restantes !== 1 ? "s" : ""} más en segundo plano...`
+        : "⏳ Terminando de verificar el resto de preguntas...";
+    }
+
+    function ocultarIndicadorGenerandoFondo() {
+      document.getElementById("indicador-generando-fondo")?.remove();
+    }
+
+    // Aviso NO bloqueante para cuando algo falla generando el resto de
+    // preguntas en segundo plano -- el usuario ya está respondiendo el
+    // test, así que un Swal/alert a pantalla completa (como en el resto de
+    // errores de esta página) le interrumpiría innecesariamente. Reutiliza
+    // el mismo hueco del indicador de "generando en segundo plano" durante
+    // unos segundos.
+    function mostrarErrorGlobalNoBloqueante(mensaje) {
+      let el = document.getElementById("indicador-generando-fondo");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "indicador-generando-fondo";
+        document.getElementById("navegador-preguntas").insertAdjacentElement("afterend", el);
+      }
+      el.className = "indicador-generando-fondo indicador-generando-fondo-aviso";
+      el.textContent = `⚠️ ${mensaje}`;
+      setTimeout(() => el.remove(), 8000);
+    }
+
+    function guardarContenidoEnSegundoPlano() {
+      if (!metadatosFijosTest) return;
+      import("/assets/test-progreso.js").then(({ actualizarContenidoEnCurso }) => {
+        actualizarContenidoEnCurso({
+          ...metadatosFijosTest,
+          contenido: preguntas,
+          respuestas_usuario: respuestasUsuario,
+          marcadas_revision: marcadasRevision,
+          indice_actual: indicePreguntaActual,
+          tiempo_restante_segundos: tiempoLimite,
+          tiempo_transcurrido_segundos: tiempoTranscurridoActual()
+        });
+      });
+    }
+
+    // Añade una pregunta que ha terminado de generarse/verificarse DESPUÉS
+    // de que el usuario ya haya empezado a responder (test de N>10
+    // preguntas, ver entrarEnModoTest) -- siempre al final, para no
+    // desalinear las respuestas ya dadas a las preguntas anteriores.
+    function agregarPreguntaEnCurso(pregunta, temas) {
+      if (testFinalizado) return;
+      asignarTemaFallback(pregunta, temas);
+      preguntas.push(pregunta);
+      respuestasUsuario.push(null);
+      marcadasRevision.push(false);
+      visitadas.push(false);
+      actualizarNavegadorPreguntas();
+      guardarContenidoEnSegundoPlano();
+    }
+
+    // Arranca la pantalla de test con las preguntas ya disponibles --
+    // llamada tanto en el camino "normal" (todas las preguntas listas, al
+    // llegar "fin") como en el camino de inicio temprano (N>10, en cuanto
+    // hay min(10, N) preguntas, ver el bucle de lectura del stream SSE más
+    // abajo). A partir de aquí el stream puede seguir corriendo en segundo
+    // plano sin que esto se vuelva a llamar.
+    async function entrarEnModoTest(preguntasIniciales, oposicion, temas) {
+      preguntas = preguntasIniciales;
+      preguntas.forEach(p => asignarTemaFallback(p, temas));
+      respuestasUsuario = Array(preguntas.length).fill(null);
+      marcadasRevision = Array(preguntas.length).fill(false);
+      visitadas = Array(preguntas.length).fill(false);
+      indicePreguntaActual = 0;
+      oposicionActual = oposicion;
+      const favoritasApi = await import("/assets/favoritas.js");
+      botonFavoritaHTML = favoritasApi.botonFavoritaHTML;
+      activarBotonFavorita = favoritasApi.activarBotonFavorita;
+      textosFavoritas = await favoritasApi.cargarTextosFavoritas(oposicion);
+
+      const modoCronometrado = document.getElementById('modo_cronometrado').checked;
+      const minutosCronometro = parseInt(document.getElementById('minutos_cronometro').value) || 60;
+      metadatosFijosTest = {
+        oposicion, tipo: TIPO_TEST, temas,
+        modo_cronometrado: modoCronometrado,
+        tiempo_total_asignado_segundos: modoCronometrado ? minutosCronometro * 60 : null,
+        pagina_origen: "/test-personalizado/"
+      };
+      const { generarTestId, guardarContenidoInicial, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
+      generarTestId();
+      guardarContenidoInicial({
+        ...metadatosFijosTest,
+        contenido: preguntas,
+        respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
+        indice_actual: indicePreguntaActual,
+        tiempo_restante_segundos: modoCronometrado ? minutosCronometro * 60 : null
+      });
+      activarGuardadoAlSalir(() => ({
+        respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
+        indice_actual: indicePreguntaActual,
+        modo_cronometrado: tiempoLimite !== null,
+        tiempo_restante_segundos: tiempoLimite,
+        tiempo_transcurrido_segundos: tiempoTranscurridoActual()
+      }));
+
+      iniciarTemporizador();
+      document.getElementById("navegador-preguntas").style.display = "flex";
+      mostrarPregunta(indicePreguntaActual);
+    }
+
     document.getElementById("form-generar-test").addEventListener("submit", async function(e) {
       e.preventDefault();
       document.getElementById("barra-progreso-tiempo").style.display = "none";
       const num_preguntas = parseInt(document.getElementById("num_preguntas").value);
       const temas = Array.from(document.querySelectorAll('input[name="tema"]:checked')).map(el => el.value);
+      const modoRepartoElegido = document.querySelector('input[name="modo_reparto"]:checked')?.value || "equitativo";
       if (REQUIERE_TEMA && temas.length === 0) {
         Swal.fire({
           icon: "warning",
@@ -234,9 +395,31 @@ async function obtenerAuthHeaders() {
           </div>
         </div>
       `;
+
+      // Punto 1: antes de que llegue el primer evento SSE real, el
+      // backend está montando el hilo y repartiendo cupos (no es
+      // instantáneo) -- sin esto la barra se queda clavada en 0% un rato
+      // y da sensación de que la página se ha colgado. Sube el % poco a
+      // poco de forma artificial, con un techo bajo, y se para en cuanto
+      // llega el primer evento de progreso real.
+      let progresoCosmetico = 0;
+      let intervaloCosmetico = setInterval(() => {
+        progresoCosmetico = Math.min(progresoCosmetico + Math.random() * 3, 15);
+        const elBarraCosmetica = document.getElementById("progreso-generacion");
+        const elTextoBarraCosmetica = document.getElementById("texto-progreso-generacion");
+        if (elBarraCosmetica) elBarraCosmetica.style.width = `${progresoCosmetico}%`;
+        if (elTextoBarraCosmetica) elTextoBarraCosmetica.textContent = `${Math.round(progresoCosmetico)}%`;
+      }, 400);
+      const pararProgresoCosmetico = () => {
+        if (intervaloCosmetico) {
+          clearInterval(intervaloCosmetico);
+          intervaloCosmetico = null;
+        }
+      };
+
       try {
         const authHeaders = await obtenerAuthHeaders();
-        if (!authHeaders) return;
+        if (!authHeaders) { pararProgresoCosmetico(); return; }
         const { obtenerOposicionActual } = await import("/assets/oposicion.js");
         const oposicion = obtenerOposicionActual();
         // Cada pregunta se ancla a un artículo real del temario y se
@@ -248,9 +431,10 @@ async function obtenerAuthHeaders() {
         const res = await fetch("https://oposicion-age.onrender.com" + ENDPOINT_GENERAR, {
           method: "POST",
           headers: {"Content-Type": "application/json", ...authHeaders},
-          body: JSON.stringify({ temas, num_preguntas, oposicion })
+          body: JSON.stringify({ temas, num_preguntas, oposicion, modo_reparto: modoRepartoElegido })
         });
         if (res.status === 403) {
+          pararProgresoCosmetico();
           const datosError = await res.json();
           document.getElementById('contenedor-test').innerHTML = `
             <p>${datosError.error === "Requiere plan superior" ? `Este tipo de test requiere el plan <strong>${datosError.plan_requerido}</strong>.` : "No tienes acceso a esta función."}</p>
@@ -259,11 +443,13 @@ async function obtenerAuthHeaders() {
           return;
         }
         if (res.status === 429) {
+          pararProgresoCosmetico();
           const datosError = await res.json();
           document.getElementById('contenedor-test').innerHTML = `<p>⏳ ${datosError.error || "Has alcanzado el límite de uso de esta herramienta por ahora."}</p>`;
           return;
         }
         if (!res.ok || !res.body) {
+          pararProgresoCosmetico();
           document.getElementById('contenedor-test').innerHTML = `
             <p>Error al generar el test. Vuelve a intentarlo en unos segundos.</p>
             <button type="button" class="btn btn-primary" id="btn-volver-a-intentar">Volver a intentar</button>
@@ -272,13 +458,21 @@ async function obtenerAuthHeaders() {
           return;
         }
 
-        const elMensajeCarga = document.getElementById("mensaje-carga");
-        const elBarra = document.getElementById("progreso-generacion");
-        const elTextoBarra = document.getElementById("texto-progreso-generacion");
         const lector = res.body.getReader();
         const decodificador = new TextDecoder();
         let buffer = "";
         let datosFinales = null;
+
+        // Punto 2: para peticiones de más de 10 preguntas, en cuanto
+        // llegan las primeras min(10, num_preguntas) ya aceptadas se deja
+        // al usuario empezar a responder mientras el resto se sigue
+        // generando en segundo plano -- la lectura del stream NO se
+        // interrumpe al transicionar, sigue drenándose hasta "fin".
+        let transicionadoATest = false;
+        let preguntasRecibidas = [];
+        const umbralInicioTemprano = Math.min(10, num_preguntas);
+        let ultimoCompletadas = 0;
+        let ultimoTotal = num_preguntas;
 
         while (true) {
           const { done, value } = await lector.read();
@@ -295,12 +489,35 @@ async function obtenerAuthHeaders() {
             } catch {
               continue;
             }
-            if (evento.tipo === "progreso" && elBarra) {
-              const porcentaje = evento.total ? Math.round((evento.completadas / evento.total) * 100) : 0;
-              elBarra.style.width = `${porcentaje}%`;
-              elTextoBarra.textContent = `${porcentaje}%`;
-              if (elMensajeCarga) {
-                elMensajeCarga.textContent = `Generando y verificando pregunta ${evento.completadas} de ${evento.total}...`;
+            pararProgresoCosmetico();
+
+            if (evento.tipo === "progreso") {
+              ultimoCompletadas = evento.completadas;
+              ultimoTotal = evento.total;
+              if (!transicionadoATest) {
+                const elMensajeCarga = document.getElementById("mensaje-carga");
+                const elBarra = document.getElementById("progreso-generacion");
+                const elTextoBarra = document.getElementById("texto-progreso-generacion");
+                const porcentaje = evento.total ? Math.round((evento.completadas / evento.total) * 100) : 0;
+                if (elBarra) elBarra.style.width = `${porcentaje}%`;
+                if (elTextoBarra) elTextoBarra.textContent = `${porcentaje}%`;
+                if (elMensajeCarga) {
+                  elMensajeCarga.textContent = `Generando y verificando pregunta ${evento.completadas} de ${evento.total}...`;
+                }
+              } else {
+                mostrarIndicadorGenerandoFondo(evento.completadas, evento.total);
+              }
+            } else if (evento.tipo === "pregunta" && evento.pregunta) {
+              if (!transicionadoATest) {
+                preguntasRecibidas.push(evento.pregunta);
+                if (num_preguntas > 10 && preguntasRecibidas.length >= umbralInicioTemprano) {
+                  transicionadoATest = true;
+                  entrarEnModoTest(preguntasRecibidas, oposicion, temas).then(() => {
+                    mostrarIndicadorGenerandoFondo(ultimoCompletadas, ultimoTotal);
+                  });
+                }
+              } else {
+                agregarPreguntaEnCurso(evento.pregunta, temas);
               }
             } else if (evento.tipo === "fin") {
               datosFinales = evento;
@@ -308,59 +525,42 @@ async function obtenerAuthHeaders() {
           }
         }
 
+        if (transicionadoATest) {
+          // El usuario ya está haciendo el test -- "fin" solo sirve para
+          // reconciliar el conjunto definitivo (por si el streaming
+          // entregó alguna pregunta que agregarPreguntaEnCurso no llegó a
+          // procesar) y avisar de forma NO intrusiva si algo falló, sin
+          // interrumpir la pregunta que se esté viendo. Si el usuario ya
+          // terminó el test antes de que llegara "fin", no hay nada que
+          // reconciliar en la UI (el resultado ya se calculó y se guardó).
+          if (testFinalizado) return;
+          ocultarIndicadorGenerandoFondo();
+          if (datosFinales && Array.isArray(datosFinales.test)) {
+            for (let i = preguntas.length; i < datosFinales.test.length; i++) {
+              agregarPreguntaEnCurso(datosFinales.test[i], temas);
+            }
+            if (datosFinales.advertencia) {
+              mostrarErrorGlobalNoBloqueante(datosFinales.advertencia);
+            }
+          } else if (!datosFinales || datosFinales.error) {
+            mostrarErrorGlobalNoBloqueante((datosFinales && datosFinales.error) || "Ha ocurrido un error terminando de generar el resto de preguntas.");
+          }
+          guardarContenidoEnSegundoPlano();
+          return;
+        }
+
         if (!datosFinales) {
           document.getElementById('contenedor-test').innerHTML = "<p>Error al generar el test. Vuelve a intentarlo.</p>";
           return;
         }
         const datos = datosFinales;
-        preguntas = datos.test || [];
-        if (preguntas.length === 0) {
+        if (!datos.test || datos.test.length === 0) {
           document.getElementById('contenedor-test').innerHTML = `<p>${datos.advertencia || datos.error || "No se han recibido preguntas."}</p>`;
           return;
         }
-        preguntas.forEach(p => {
-          if (!p.tema_id && temas.length > 0) {
-            p.tema_id = temas[Math.floor(Math.random() * temas.length)];
-          }
-        });
-        respuestasUsuario = Array(preguntas.length).fill(null);
-        marcadasRevision = Array(preguntas.length).fill(false);
-        visitadas = Array(preguntas.length).fill(false);
-        indicePreguntaActual = 0;
-        oposicionActual = oposicion;
-        const favoritasApi = await import("/assets/favoritas.js");
-        botonFavoritaHTML = favoritasApi.botonFavoritaHTML;
-        activarBotonFavorita = favoritasApi.activarBotonFavorita;
-        textosFavoritas = await favoritasApi.cargarTextosFavoritas(oposicion);
-
-        const modoCronometrado = document.getElementById('modo_cronometrado').checked;
-        const minutosCronometro = parseInt(document.getElementById('minutos_cronometro').value) || 60;
-        const { generarTestId, guardarContenidoInicial, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
-        generarTestId();
-        guardarContenidoInicial({
-          oposicion, tipo: TIPO_TEST, temas,
-          contenido: preguntas,
-          respuestas_usuario: respuestasUsuario,
-          marcadas_revision: marcadasRevision,
-          indice_actual: indicePreguntaActual,
-          modo_cronometrado: modoCronometrado,
-          tiempo_restante_segundos: modoCronometrado ? minutosCronometro * 60 : null,
-          tiempo_total_asignado_segundos: modoCronometrado ? minutosCronometro * 60 : null,
-          pagina_origen: "/test-personalizado/"
-        });
-        activarGuardadoAlSalir(() => ({
-          respuestas_usuario: respuestasUsuario,
-          marcadas_revision: marcadasRevision,
-          indice_actual: indicePreguntaActual,
-          modo_cronometrado: tiempoLimite !== null,
-          tiempo_restante_segundos: tiempoLimite,
-          tiempo_transcurrido_segundos: tiempoTranscurridoActual()
-        }));
-
-        iniciarTemporizador();
-        document.getElementById("navegador-preguntas").style.display = "flex";
-        mostrarPregunta(indicePreguntaActual);
+        await entrarEnModoTest(datos.test, oposicion, temas);
       } catch (error) {
+        pararProgresoCosmetico();
         const contenedorTest = document.getElementById('contenedor-test');
         contenedorTest.innerHTML = `
           <p>Error al generar el test: ${error.message}</p>
@@ -386,12 +586,16 @@ async function obtenerAuthHeaders() {
       });
     }
 
-    function mostrarPregunta(i) {
+    async function mostrarPregunta(i) {
+      // El texto de la pregunta/opciones viene generado por IA -- se escapa
+      // antes de inyectarlo en innerHTML (mismo motivo y misma función que ya
+      // usa la pantalla de resultados, ver assets/resultados-test.js).
+      const { escaparHtml } = await import("/assets/resultados-test.js");
       indicePreguntaActual = i;
       visitadas[i] = true;
       actualizarNavegadorPreguntas();
       const p = preguntas[i];
-      let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+      let textoPregunta = escaparHtml(p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, ""));
       let html = `<form id="form-pregunta">
         <div class="pregunta-en-negrita">
           <span>${i + 1}. ${textoPregunta}</span>
@@ -401,7 +605,7 @@ async function obtenerAuthHeaders() {
           </div>
         </div>`;
       for (const letra in p.opciones) {
-        const opcion = p.opciones[letra];
+        const opcion = escaparHtml(p.opciones[letra]);
         const checked = respuestasUsuario[i] === letra ? "checked" : "";
         html += `
           <label class="opcion-respuesta">
@@ -510,6 +714,8 @@ async function obtenerAuthHeaders() {
     let ultimasEstadisticas = null;
 
     async function mostrarResultados() {
+      testFinalizado = true;
+      ocultarIndicadorGenerandoFondo();
       clearInterval(intervaloTemporizador);
       if (tiempoLimite !== null) clearInterval(intervaloCronometro);
       document.getElementById("temporizador").style.display = "none";
@@ -634,6 +840,7 @@ async function obtenerAuthHeaders() {
 
     window.addEventListener("load", async () => {
       await cargarTemas();
+      iniciarSelectorRepartoRealista();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
       if (resumeId) {

@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <script src="/assets/redirect-dominio-antiguo.js"></script>
+  <style>html:not(.auth-listo) body { visibility: hidden; }</style>
+  <script type="module" src="/assets/auth-guard.js"></script>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#ffa633" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Zona opositor - Oposición AGE</title>
+  <title>Zona opositor - Domina tu Opo</title>
   <meta name="description" content="Tu panel principal: racha de estudio, accesos rápidos y recomendaciones para preparar tu oposición." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Zona opositor - Oposición AGE" />
+  <meta property="og:title" content="Zona opositor - Domina tu Opo" />
   <meta property="og:description" content="Tu panel principal: racha de estudio, accesos rápidos y recomendaciones para preparar tu oposición." />
-  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary" />
+  <link rel="canonical" href="https://www.dominatuopo.com/zona-opositor/" />
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
   <link rel="stylesheet" href="/assets/theme.css" />
   <link rel="stylesheet" href="/zona-opositor/style.css" />
@@ -49,6 +55,15 @@
       <a href="#" class="age-btn age-btn-primary zona-continuar-boton" id="zona-continuar-boton">Continuar</a>
     </section>
 
+    <section class="age-card zona-continuar-card zona-repaso-card" id="zona-repaso" style="display:none;">
+      <div class="zona-continuar-icono">🧠</div>
+      <div class="zona-continuar-info">
+        <div class="zona-continuar-titulo">Tienes preguntas pendientes de repasar</div>
+        <div class="zona-continuar-detalle" id="zona-repaso-detalle">Cargando…</div>
+      </div>
+      <a href="/preguntas-falladas/" class="age-btn age-btn-primary zona-continuar-boton">Repasar ahora</a>
+    </section>
+
     <section class="age-card zona-onboarding-card" id="zona-onboarding" style="display:none;">
       <div class="zona-onboarding-cabecera">
         <h3>Primeros pasos</h3>
@@ -79,6 +94,12 @@
         <button type="submit" class="age-btn age-btn-primary">Guardar</button>
         <button type="button" class="zona-cuenta-atras-quitar" id="cuenta-atras-quitar" style="display:none;">Quitar fecha</button>
       </form>
+    </section>
+
+    <section class="age-card zona-plan-card" id="zona-plan-estudio" style="display:none;">
+      <h3>📋 Tu plan de estudio</h3>
+      <p class="zona-plan-ritmo" id="zona-plan-ritmo"></p>
+      <div class="zona-plan-hoy" id="zona-plan-hoy"></div>
     </section>
 
     <section class="zona-accesos" id="zona-progreso" style="display:none;">

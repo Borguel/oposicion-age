@@ -194,10 +194,38 @@ h1, h2, h3 {
   margin: 20px 0;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 15px;
 }
 
-.timer-settings input {
+/* La casilla y su texto van en flex propio (no como texto suelto dentro
+   del <label>) para que, si el texto tiene que partirse en dos líneas en
+   pantallas estrechas, la segunda línea quede alineada bajo la primera en
+   vez de volver al borde izquierdo del contenedor. */
+.timer-settings label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.timer-settings input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 3px;
+  width: auto;
+}
+
+/* #tiempo_cronometro alterna a display:flex por JS (ver script.js) al
+   marcar la casilla -- aquí solo se fija cómo se alinean su etiqueta y su
+   campo cuando está visible, para que "Tiempo (minutos):" quede centrado
+   verticalmente con el recuadro en vez de pegado arriba. */
+#tiempo_cronometro {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.timer-settings input[type="number"] {
   padding: 10px 15px;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -343,11 +371,12 @@ h1, h2, h3 {
 }
 
 .bloque-temas {
-  display: grid;
-  /* En pantallas anchas, varios temas caben uno junto a otro en vez de
-     apilarse en una sola columna larga -- se ven más temas a la vez sin
-     tener que hacer scroll. */
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  /* Un tema debajo de otro, siempre en una sola columna -- con varias
+     columnas (como se probó antes) el ojo salta de una a otra al leer y
+     en tablet queda especialmente confuso al no coincidir con el ancho
+     real del bloque. */
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   margin: 8px 0 4px 30px;
 }
@@ -358,6 +387,55 @@ h1, h2, h3 {
 
 .tema-check-label {
   font-size: 0.92em;
+}
+
+.reparto-preguntas {
+  background: var(--age-neutral-bg);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reparto-preguntas-titulo {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.reparto-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--age-ink-soft);
+}
+
+.reparto-opcion input[type="radio"] {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.reparto-opcion strong {
+  color: var(--age-ink);
+}
+
+.reparto-opcion input:disabled {
+  cursor: not-allowed;
+}
+
+.reparto-opcion-deshabilitada {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.reparto-opcion-nota {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--age-ink-faint);
+  font-style: italic;
 }
 
 .barra-carga {
@@ -477,6 +555,54 @@ h1, h2, h3 {
 .nav-preg.np-actual {
   box-shadow: 0 0 0 3px var(--age-primary-soft);
   border-color: var(--age-primary);
+}
+
+/* Tests largos (>20 preguntas): la rejilla se pliega detrás de un
+   botón-cabecera con un resumen (mismo patrón que "N temas ▾" en las
+   tarjetas de Mis Tests, ver mis-tests/style.css .test-card-temas-toggle)
+   en vez de ocupar toda la pantalla con cuadraditos, especialmente en
+   móvil. */
+.navegador-preguntas.navegador-preguntas-plegable {
+  display: block;
+}
+
+.navegador-preguntas-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: var(--age-ink-soft);
+  font-family: var(--age-font);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.navegador-preguntas-toggle:hover {
+  color: var(--age-ink);
+}
+
+.navegador-preguntas-caret {
+  transition: transform 0.15s var(--age-ease);
+}
+
+.navegador-preguntas-toggle.open .navegador-preguntas-caret {
+  transform: rotate(180deg);
+}
+
+.navegador-preguntas-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.navegador-preguntas-grid.hidden {
+  display: none;
 }
 
 /* ========== Footer de acciones: Guardar y salir / Finalizar ==========
@@ -727,7 +853,7 @@ h1, h2, h3 {
   }
 }
 
-/* --- Unificación de marca (Oposición AGE) --- */
+/* --- Unificación de marca (Domina tu Opo) --- */
 :root {
   --color-primary: var(--age-primary);
   --color-primary-dark: var(--age-primary-dark);

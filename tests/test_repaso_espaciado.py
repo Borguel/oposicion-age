@@ -84,6 +84,31 @@ def test_generar_test_favoritas_prioriza_la_nunca_repasada(client, db):
         parche.stop()
 
 
+def test_preguntas_pendientes_repaso_cuenta_solo_la_oposicion_pedida(client, db):
+    db.sembrar(("usuarios", "u1"), {})
+    db.sembrar(("usuarios", "u1", "preguntas_falladas", "age1"), _pregunta_base("¿AGE 1?", "b1-t1"))
+    db.sembrar(("usuarios", "u1", "preguntas_falladas", "age2"), _pregunta_base("¿AGE 2?", "b1-t1"))
+    gace = dict(_pregunta_base("¿GACE 1?", "b1-t1"))
+    gace["oposicion"] = "GACE"
+    db.sembrar(("usuarios", "u1", "preguntas_falladas", "gace1"), gace)
+
+    parche = _con_sesion(client)
+    try:
+        resp = client.get("/preguntas-pendientes-repaso?oposicion=AGE", headers={"Authorization": "Bearer x"})
+        assert resp.status_code == 200
+        assert resp.get_json()["total_pendientes"] == 2
+
+        resp_gace = client.get("/preguntas-pendientes-repaso?oposicion=GACE", headers={"Authorization": "Bearer x"})
+        assert resp_gace.get_json()["total_pendientes"] == 1
+    finally:
+        parche.stop()
+
+
+def test_preguntas_pendientes_repaso_requiere_login(client):
+    resp = client.get("/preguntas-pendientes-repaso?oposicion=AGE")
+    assert resp.status_code == 401
+
+
 def test_generar_test_favoritas_marca_fecha_ultimo_repaso(client, db):
     db.sembrar(("usuarios", "u1"), {})
     doc_id = _id_pregunta("AGE", "¿Nunca repasada?")

@@ -159,9 +159,44 @@ def test_generar_test_verificado_reparte_cupo_y_reporta_progreso(db):
     assert len(eventos_progreso) == 4
     assert [e["completadas"] for e in eventos_progreso] == [1, 2, 3, 4]
     assert eventos_progreso[-1]["total"] == 4
+    # Cada evento de progreso lleva también la pregunta recién aceptada
+    # (para que el llamante pueda ir entregándola sin esperar al final).
+    assert all(e["pregunta"] is not None for e in eventos_progreso)
+    assert {e["pregunta"]["pregunta"] for e in eventos_progreso} == {p["pregunta"] for p in resultado["test"]}
     # Cada pregunta generada sabe de qué tema salió de verdad.
     temas_de_las_preguntas = {p["tema_id"] for p in resultado["test"]}
     assert temas_de_las_preguntas == {"bloque_01-tema_01", "bloque_02-tema_01"}
+
+
+def test_generar_test_verificado_modo_realista_pondera_por_bloque(db):
+    relleno = " ".join(["palabra"] * 30)
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del bloque 1. {relleno}"
+    })
+    db.sembrar(("Temario AGE", "bloque_06", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 40/2015", "texto": f"Artículo 5. Contenido del bloque 6. {relleno}"
+    })
+    # bloque_06 concentra el 90% de las preguntas históricas de examenes
+    # oficiales -> con modo_reparto="realista" debe llevarse la mayoría del
+    # cupo del test personalizado, no la mitad como haría "equitativo".
+    db.sembrar(("examenes_oficiales_AGE", "b1-0"), {"tipo": "pregunta", "tema_id": "bloque_01-tema_01"})
+    for i in range(9):
+        db.sembrar(("examenes_oficiales_AGE", f"b6-{i}"), {"tipo": "pregunta", "tema_id": "bloque_06-tema_01"})
+
+    contador = itertools.count()
+    lock_contador = threading.Lock()
+    with patch("generador_preguntas_verificado.call_deepseek_api",
+               side_effect=_mock_deepseek_siempre_valido(contador, lock_contador)), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        resultado = generar_test_verificado(
+            db, temas=["bloque_01-tema_01", "bloque_06-tema_01"], num_preguntas=10,
+            coleccion="Temario AGE", oposicion="AGE", modo_reparto="realista"
+        )
+
+    assert len(resultado["test"]) == 10
+    temas_de_las_preguntas = [p["tema_id"] for p in resultado["test"]]
+    assert temas_de_las_preguntas.count("bloque_06-tema_01") == 9
+    assert temas_de_las_preguntas.count("bloque_01-tema_01") == 1
 
 
 def test_generar_test_verificado_sin_temas_no_falla(db):
@@ -227,6 +262,14 @@ def test_ruta_generar_test_avanzado_emite_eventos_y_registra_uso(client, db):
         # También se han retransmitido eventos de progreso reales por el
         # camino, no solo el resultado final de golpe.
         assert any(e["tipo"] == "progreso" for e in eventos)
+        # Y las preguntas aceptadas se retransmiten individualmente en
+        # cuanto están listas, en un evento aparte -- para que el frontend
+        # pueda empezar el test antes de que termine todo el streaming.
+        eventos_pregunta = [e for e in eventos if e["tipo"] == "pregunta"]
+        assert len(eventos_pregunta) == 2
+        assert all("pregunta" in e and "opciones" in e["pregunta"] for e in eventos_pregunta)
+        # El evento "progreso" no debe llevar la pregunta duplicada dentro.
+        assert all("pregunta" not in e for e in eventos if e["tipo"] == "progreso")
         datos_usuario = db.leer(("usuarios", "u1"))
         assert datos_usuario["limites_uso"]["test_avanzado_verificado"]["contador"] == 1
     finally:

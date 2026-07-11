@@ -122,12 +122,16 @@ async function obtenerAuthHeaders() {
         const datos = await res.json();
         if (!res.ok) {
           console.warn("Test guardado: advertencia del backend", datos);
+          const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+          mostrarErrorGlobal("No se pudo guardar el resultado de tu test en tu cuenta. Tus respuestas siguen visibles en pantalla, pero no han quedado guardadas.");
         } else {
           console.log("Test guardado exitosamente en Firebase");
           limpiarSeguimiento();
         }
       } catch (e) {
         console.error("Error al guardar test en backend:", e);
+        const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+        mostrarErrorGlobal("No se pudo guardar el resultado de tu test en tu cuenta. Tus respuestas siguen visibles en pantalla, pero no han quedado guardadas.");
       }
     }
 
@@ -173,6 +177,93 @@ async function obtenerAuthHeaders() {
       document.getElementById('archivo-pdf').dispatchEvent(event);
     });
 
+    // Consume el stream SSE de /generar-test-desde-pdf (progreso real por
+    // lote, ver blueprints/pdf_ia.py) y devuelve el evento "fin" -- usado
+    // tanto al subir un PDF nuevo como al generar un test desde un
+    // documento ya guardado en "Mis documentos" (ambos llaman a la misma
+    // ruta). Antes de que llegue el primer evento real sube el % de forma
+    // cosmética (igual que en test-personalizado) para que no parezca que
+    // la página se ha colgado mientras el backend lee el PDF/reparte lotes.
+    async function generarTestDesdePdfConProgreso(formData, authHeaders) {
+      const textoEstado = document.getElementById('texto-estado');
+      const aiIcon = document.getElementById('ai-icon');
+
+      let progresoCosmetico = 0;
+      let intervaloCosmetico = setInterval(() => {
+        progresoCosmetico = Math.min(progresoCosmetico + Math.random() * 3, 15);
+        const elBarraCosmetica = document.getElementById("progreso-generacion-pdf");
+        const elTextoBarraCosmetica = document.getElementById("texto-progreso-generacion-pdf");
+        if (elBarraCosmetica) elBarraCosmetica.style.width = `${progresoCosmetico}%`;
+        if (elTextoBarraCosmetica) elTextoBarraCosmetica.textContent = `${Math.round(progresoCosmetico)}%`;
+      }, 400);
+      const pararProgresoCosmetico = () => {
+        if (intervaloCosmetico) {
+          clearInterval(intervaloCosmetico);
+          intervaloCosmetico = null;
+        }
+      };
+
+      try {
+        const res = await fetch("https://oposicion-age.onrender.com/generar-test-desde-pdf", {
+          method: "POST",
+          headers: authHeaders,
+          body: formData
+        });
+        if (res.status === 403) {
+          throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
+        }
+        if (!res.ok || !res.body) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+        }
+
+        const lector = res.body.getReader();
+        const decodificador = new TextDecoder();
+        let buffer = "";
+        let datosFinales = null;
+
+        while (true) {
+          const { done, value } = await lector.read();
+          if (done) break;
+          buffer += decodificador.decode(value, { stream: true });
+          const bloques = buffer.split("\n\n");
+          buffer = bloques.pop(); // el último trozo puede venir incompleto
+          for (const bloque of bloques) {
+            const linea = bloque.trim();
+            if (!linea.startsWith("data: ")) continue;
+            let evento;
+            try {
+              evento = JSON.parse(linea.slice(6));
+            } catch {
+              continue;
+            }
+            pararProgresoCosmetico();
+            if (evento.tipo === "progreso") {
+              const porcentaje = evento.total ? Math.round((evento.completadas / evento.total) * 100) : 0;
+              const elBarra = document.getElementById("progreso-generacion-pdf");
+              const elTextoBarra = document.getElementById("texto-progreso-generacion-pdf");
+              if (elBarra) elBarra.style.width = `${porcentaje}%`;
+              if (elTextoBarra) elTextoBarra.textContent = `${porcentaje}%`;
+              if (textoEstado) textoEstado.textContent = `Generando preguntas (lote ${evento.completadas} de ${evento.total})…`;
+              if (aiIcon) aiIcon.textContent = "🧠";
+            } else if (evento.tipo === "fin") {
+              datosFinales = evento;
+            }
+          }
+        }
+
+        if (!datosFinales) {
+          throw new Error("Error al generar el test. Vuelve a intentarlo.");
+        }
+        if (!datosFinales.test || datosFinales.test.length === 0) {
+          throw new Error(datosFinales.error || "No se pudieron generar preguntas válidas desde el PDF.");
+        }
+        return datosFinales;
+      } finally {
+        pararProgresoCosmetico();
+      }
+    }
+
     // === ENVÍO DE FORMULARIO ===
     document.getElementById('form-subir-pdf').addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -189,65 +280,19 @@ async function obtenerAuthHeaders() {
 
       document.getElementById('tarjeta-formulario').style.display = 'none';
       document.getElementById('contenedor-carga').style.display = 'block';
-
-      const textoEstado = document.getElementById('texto-estado');
-      const aiIcon = document.getElementById('ai-icon');
-
-      const mensajes = [
-        { mensaje: "Leyendo texto del PDF…", icono: "📄" },
-        { mensaje: "Extrayendo conceptos clave…", icono: "🔍" },
-        { mensaje: "Analizando estructura del temario…", icono: "📊" },
-        { mensaje: "Generando preguntas inteligentes…", icono: "🧠" },
-        { mensaje: "Preparando test…", icono: "✅" }
-      ];
-
-      let datosIA = null;
-      let errorIA = null;
-
-      let indiceMensaje = 0;
-      textoEstado.textContent = mensajes[0].mensaje;
-      aiIcon.textContent = mensajes[0].icono;
-      const intervaloMensajes = setInterval(() => {
-        indiceMensaje = (indiceMensaje + 1) % mensajes.length;
-        textoEstado.textContent = mensajes[indiceMensaje].mensaje;
-        aiIcon.textContent = mensajes[indiceMensaje].icono;
-      }, 2200);
+      document.getElementById('texto-estado').textContent = "Leyendo el PDF y preparando la generación…";
+      document.getElementById('ai-icon').textContent = "📄";
 
       const authHeaders = await obtenerAuthHeaders();
-      if (!authHeaders) { clearInterval(intervaloMensajes); return; }
+      if (!authHeaders) return;
 
-      // Ejecutar la petición en segundo plano
       try {
-        const res = await fetch("https://oposicion-age.onrender.com/generar-test-desde-pdf", {
-          method: "POST",
-          headers: authHeaders,
-          body: formData
-        });
-        if (res.status === 403) {
-          throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
-        }
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
-        }
-        const datos = await res.json();
-        if (!datos.test || datos.test.length === 0) {
-          throw new Error(datos.error || "No se pudieron generar preguntas válidas desde el PDF.");
-        }
-        datosIA = datos;
+        const datosFinales = await generarTestDesdePdfConProgreso(formData, authHeaders);
+        documentoIdActual = datosFinales.documento_id || documentoIdActual;
+        iniciarTest(datosFinales.test);
       } catch (err) {
-        errorIA = err;
+        mostrarError(err.message || "Error al generar el test.");
       }
-
-      clearInterval(intervaloMensajes);
-
-      if (errorIA) {
-        mostrarError(errorIA.message || "Error al generar el test.");
-        return;
-      }
-
-      documentoIdActual = datosIA.documento_id || documentoIdActual;
-      iniciarTest(datosIA.test);
     });
 
     async function iniciarTest(preguntasEntrada) {
@@ -370,35 +415,26 @@ async function obtenerAuthHeaders() {
         const formData = new FormData();
         formData.append('documento_id', documentoId);
         formData.append('num_preguntas', numPreguntas);
-        const res = await fetch("https://oposicion-age.onrender.com/generar-test-desde-pdf", {
-          method: "POST",
-          headers: authHeaders,
-          body: formData
-        });
-        if (res.status === 403) throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
-        }
-        const datos = await res.json();
-        if (!datos.test || datos.test.length === 0) {
-          throw new Error(datos.error || "No se pudieron generar preguntas válidas desde el PDF.");
-        }
-        nombreArchivo = datos.nombre_archivo || nombreArchivo;
-        documentoIdActual = datos.documento_id || documentoIdActual;
-        iniciarTest(datos.test);
+        const datosFinales = await generarTestDesdePdfConProgreso(formData, authHeaders);
+        nombreArchivo = datosFinales.nombre_archivo || nombreArchivo;
+        documentoIdActual = datosFinales.documento_id || documentoIdActual;
+        iniciarTest(datosFinales.test);
       } catch (err) {
         mostrarError(err.message);
       }
     })();
 
     // === RENDERIZADO DE PREGUNTAS ===
-    function mostrarPregunta(i) {
+    async function mostrarPregunta(i) {
+      // El texto de la pregunta/opciones viene generado por IA -- se escapa
+      // antes de inyectarlo en innerHTML (mismo motivo y misma función que ya
+      // usa la pantalla de resultados, ver assets/resultados-test.js).
+      const { escaparHtml } = await import("/assets/resultados-test.js");
       indicePreguntaActual = i;
       actualizarBarraProgresoPreguntas();
 
       const p = preguntas[i];
-      let textoPregunta = p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, "");
+      let textoPregunta = escaparHtml(p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, ""));
       let html = `<form id="form-pregunta">
         <div class="pregunta-en-negrita">
           <span>${i + 1}. ${textoPregunta}</span>
@@ -406,7 +442,7 @@ async function obtenerAuthHeaders() {
         </div>`;
 
       for (const letra in p.opciones) {
-        const opcion = p.opciones[letra];
+        const opcion = escaparHtml(p.opciones[letra]);
         const checked = respuestasUsuario[i] === letra ? "checked" : "";
         html += `
           <label class="opcion-respuesta">

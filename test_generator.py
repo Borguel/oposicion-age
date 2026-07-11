@@ -4,9 +4,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from deepseek_utils import call_deepseek_api
 
 
-def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, tamano_lote=15, temperature=0.4):
+def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, tamano_lote=15, temperature=0.4, on_progreso=None):
     """Genera 'num_preguntas' preguntas pidiéndolas a DeepSeek en varios lotes
     en paralelo (ThreadPoolExecutor) en vez de una única llamada gigante.
+
+    on_progreso(evento), si se pasa, se llama cada vez que un lote termina
+    (con éxito o error), con {"completadas": i, "total": n_lotes} -- pensado
+    para retransmitir progreso real por SSE en vez de mensajes rotativos
+    cosméticos (ver /generar-test-desde-pdf en blueprints/pdf_ia.py).
 
     Usada por blueprints/pdf_ia.py (generar_test_desde_pdf), donde
     construir_prompt(n) embebe el texto real del PDF subido por el usuario --
@@ -59,14 +64,18 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, tamano_lote=1
 
     preguntas = []
     errores = []
+    completadas = 0
     with ThreadPoolExecutor(max_workers=min(5, len(lotes))) as executor:
         futuros = [executor.submit(_pedir_lote, n) for n in lotes]
         for futuro in as_completed(futuros):
             lote_preguntas, error = futuro.result()
+            completadas += 1
             if error:
                 errores.append(error)
             else:
                 preguntas.extend(lote_preguntas)
+            if on_progreso:
+                on_progreso({"completadas": completadas, "total": len(lotes)})
 
     vistas = set()
     preguntas_unicas = []

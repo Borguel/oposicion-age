@@ -18,8 +18,7 @@ Disallow: /repetir-test/
 Disallow: /preguntas-falladas/
 Disallow: /preguntas-favoritas/
 Disallow: /subida-pdf-*/
-Disallow: /asistente/
-Disallow: /chat-ai/
+Disallow: /tu-tutor/
 Disallow: /ranking/
 
-Sitemap: https://oposicion-age-1.onrender.com/sitemap.xml
+Sitemap: https://www.dominatuopo.com/sitemap.xml

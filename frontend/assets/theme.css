@@ -1,8 +1,20 @@
 /* ============================================================
-   Oposición AGE — sistema de diseño compartido
+   Domina tu Opo — sistema de diseño compartido
    Un único fichero de tokens + barra de navegación para que todas
    las páginas se sientan como una sola web coherente y profesional.
    ============================================================ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 :root {
   --age-primary: #ffa633;
@@ -146,15 +158,10 @@ body {
 }
 
 .age-nav-brand .age-nav-brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   width: 28px;
   height: 28px;
-  border-radius: 9px;
-  background: var(--age-primary);
-  color: #1b1f2e;
-  font-size: 15px;
+  flex-shrink: 0;
 }
 
 .age-nav-links {

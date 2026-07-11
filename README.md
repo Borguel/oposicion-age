@@ -1,4 +1,4 @@
-# Oposición AGE
+# Domina tu Opo
 
 Plataforma web de preparación de oposiciones (AGE, GACE, Auxiliar/C2...):
 tests sobre el temario oficial y sobre exámenes reales, herramientas de

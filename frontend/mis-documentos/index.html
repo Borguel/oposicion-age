@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <script src="/assets/redirect-dominio-antiguo.js"></script>
+  <style>html:not(.auth-listo) body { visibility: hidden; }</style>
+  <script type="module" src="/assets/auth-guard.js"></script>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#ffa633" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mis documentos - Oposición AGE</title>
+  <title>Mis documentos - Domina tu Opo</title>
   <meta name="description" content="Consulta los resúmenes, esquemas, tarjetas y tests que has generado desde tus propios PDF." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Mis documentos - Oposición AGE" />
+  <meta property="og:title" content="Mis documentos - Domina tu Opo" />
   <meta property="og:description" content="Consulta los resúmenes, esquemas, tarjetas y tests que has generado desde tus propios PDF." />
-  <meta property="og:image" content="/assets/favicon-512.png" />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary" />
+  <link rel="canonical" href="https://www.dominatuopo.com/mis-documentos/" />
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
   <link rel="stylesheet" href="/assets/theme.css" />
   <link rel="stylesheet" href="/mis-documentos/style.css" />
@@ -23,7 +29,7 @@
 
 <div class="documentos-header">
   <div class="age-container">
-    <h1>📚 Mis documentos</h1>
+    <h1><span aria-hidden="true">📚</span> Mis documentos</h1>
     <p>Todos los PDF que has subido, organizados por carpetas, con todo lo que ya generaste de cada uno listo para repasar.</p>
   </div>
 </div>

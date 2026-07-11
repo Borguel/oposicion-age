@@ -21,7 +21,7 @@ SENDGRID_API_URL = "https://api.sendgrid.com/v3/mail/send"
 def _remitente():
     return {
         "email": os.getenv("SENDGRID_FROM_EMAIL", "no-reply@oposicion-age.com"),
-        "name": "Oposición AGE",
+        "name": "Domina tu Opo",
     }
 
 
@@ -78,7 +78,7 @@ def enviar_email_bienvenida(destinatario, nombre=""):
 
     html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #1b1f2e;">
-      <h2 style="color: #1b1f2e;">¡Bienvenido/a a Oposición AGE!</h2>
+      <h2 style="color: #1b1f2e;">¡Bienvenido/a a Domina tu Opo!</h2>
       <p>{saludo}, gracias por registrarte.</p>
       <p>Ya puedes empezar a preparar tu oposición con tests del temario oficial,
       seguimiento de tu progreso por temas y nuestras herramientas de IA para
@@ -90,7 +90,7 @@ def enviar_email_bienvenida(destinatario, nombre=""):
       </p>
     </div>
     """
-    _enviar(destinatario, "bienvenida", asunto="Bienvenido/a a Oposición AGE", html=html)
+    _enviar(destinatario, "bienvenida", asunto="Bienvenido/a a Domina tu Opo", html=html)
 
 
 def enviar_email_racha_en_riesgo(destinatario, racha_actual, nombre=""):

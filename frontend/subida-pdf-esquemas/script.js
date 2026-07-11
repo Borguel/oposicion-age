@@ -45,6 +45,8 @@ async function obtenerAuthHeaders() {
         const datos = await res.json();
         if (!res.ok) {
           console.error("❌ Error al guardar esquema en Firebase:", datos.error);
+          const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+          mostrarErrorGlobal("No se pudo guardar el esquema en tu cuenta. El contenido sigue visible en pantalla, pero no ha quedado guardado.");
         } else {
           console.log("✅ Esquema guardado automáticamente en Firebase");
           // Mostrar indicador
@@ -55,6 +57,8 @@ async function obtenerAuthHeaders() {
         }
       } catch (e) {
         console.error("⚠️ Error al guardar esquema en Firebase:", e);
+        const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+        mostrarErrorGlobal("No se pudo guardar el esquema en tu cuenta. El contenido sigue visible en pantalla, pero no ha quedado guardado.");
       }
     }
     // === Funciones auxiliares ===
@@ -225,7 +229,7 @@ async function obtenerAuthHeaders() {
         doc.setFontSize(9);
         doc.setTextColor(150);
         doc.text(`Página ${pagina + 1}`, pageWidth - margin, pageHeight - 10, { align: "right" });
-        doc.text("Oposición AGE", margin, pageHeight - 10);
+        doc.text("Domina tu Opo", margin, pageHeight - 10);
         doc.setTextColor(0);
       }
       function nuevaPagina() {

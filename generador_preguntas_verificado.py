@@ -29,7 +29,11 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from deepseek_utils import call_deepseek_api
-from utils import obtener_subbloques_individuales, repartir_cupos_por_tema, barajar_opciones_pregunta
+from utils import (
+    obtener_subbloques_individuales, repartir_cupos_por_tema,
+    repartir_cupos_por_tema_realista, calcular_pesos_reales_por_bloque,
+    barajar_opciones_pregunta,
+)
 from validador_preguntas import validar_pregunta
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
@@ -269,16 +273,24 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
 
 
 def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
-                             oposicion=OPOSICION_POR_DEFECTO, on_progreso=None):
-    """Genera hasta num_preguntas preguntas verificadas, repartidas en cuota
-    equitativa entre 'temas' (igual criterio que el generador anterior),
+                             oposicion=OPOSICION_POR_DEFECTO, on_progreso=None,
+                             modo_reparto="equitativo"):
+    """Genera hasta num_preguntas preguntas verificadas, repartidas entre
+    'temas' según modo_reparto: "equitativo" (por defecto, cuota igual
+    para cada tema) o "realista" (más preguntas de los bloques que
+    históricamente más caen en los exámenes oficiales ya cargados, ver
+    utils.calcular_pesos_reales_por_bloque -- si la oposición no tiene
+    ninguno cargado, cae de vuelta a un reparto igual entre bloques),
     ejecutando el pipeline generar->verificar->reintentar de cada pregunta
     en paralelo (una pregunta con problemas no bloquea a las demás).
 
     on_progreso(evento), si se pasa, se llama cada vez que un hueco de
     pregunta termina (con éxito o descartado), con
-    {"completadas": i, "total": n, "aceptadas": len(preguntas_hasta_ahora)}
-    -- pensado para retransmitir progreso real (no cosmético) por SSE.
+    {"completadas": i, "total": n, "aceptadas": len(preguntas_hasta_ahora),
+    "pregunta": <dict de la pregunta aceptada, o None si se descartó>}
+    -- pensado para retransmitir progreso real (no cosmético) por SSE, y
+    para que el llamante pueda ir entregando preguntas ya aceptadas antes
+    de que termine todo el test (ver /generar-test-avanzado).
     """
     temas_unicos = list(dict.fromkeys(t for t in temas if t))
     if not temas_unicos:
@@ -293,11 +305,21 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
         return {"test": [], "descartadas": 0,
                 "advertencia": "No se encontraron subbloques válidos para los temas elegidos."}
 
-    cupos = repartir_cupos_por_tema(temas_con_contenido, num_preguntas)
+    if modo_reparto == "realista":
+        pesos_por_bloque = calcular_pesos_reales_por_bloque(db, oposicion)
+        cupos = repartir_cupos_por_tema_realista(temas_con_contenido, num_preguntas, pesos_por_bloque)
+    else:
+        cupos = repartir_cupos_por_tema(temas_con_contenido, num_preguntas)
     huecos = [tid for tid, cupo in cupos.items() for _ in range(cupo)]
     total = len(huecos)
     if total == 0:
         return {"test": [], "descartadas": 0}
+    # Se baraja el orden de ENVÍO (no el resultado final) para que las
+    # preguntas que van llegando primero por el streaming ya salgan
+    # mezcladas por tema, en vez de agrupadas -- así el frontend puede
+    # empezar el test con las primeras que lleguen sin tener que esperar
+    # a barajar el conjunto completo al final.
+    random.shuffle(huecos)
 
     subbloques_ya_usados = set()
     preguntas_ya_aceptadas = set()
@@ -322,9 +344,11 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
             else:
                 descartadas += 1
             if on_progreso:
-                on_progreso({"completadas": completadas, "total": total, "aceptadas": len(preguntas)})
+                on_progreso({
+                    "completadas": completadas, "total": total, "aceptadas": len(preguntas),
+                    "pregunta": resultado,
+                })
 
-    random.shuffle(preguntas)
     resultado_final = {"test": preguntas, "descartadas": descartadas}
     if len(preguntas) < num_preguntas:
         resultado_final["advertencia"] = (

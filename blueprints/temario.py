@@ -4,6 +4,7 @@ from flask import Blueprint, g, jsonify
 from firebase_setup import db
 from auth_utils import requiere_login, obtener_oposicion_solicitada
 from oposiciones import OPOSICIONES, coleccion_temario
+from utils import calcular_pesos_reales_por_bloque
 
 bp = Blueprint("temario", __name__)
 
@@ -11,7 +12,21 @@ bp = Blueprint("temario", __name__)
 @bp.route("/oposiciones-disponibles", methods=["GET"])
 def obtener_oposiciones_disponibles():
     return jsonify({
-        "oposiciones": [{"id": oid, "nombre": datos["nombre"]} for oid, datos in OPOSICIONES.items()]
+        "oposiciones": [
+            {
+                "id": oid,
+                "nombre": datos["nombre"],
+                "simulacro_oficial": datos.get("simulacro_oficial"),
+                # Si hay exámenes oficiales cargados y etiquetados con
+                # tema_id para esta oposición, el frontend puede ofrecer el
+                # reparto "realista" (ver utils.calcular_pesos_reales_por_bloque)
+                # en Test Personalizado/Test Oficial -- si no (p. ej.
+                # Auxiliar, sin exámenes cargados todavía), solo tiene
+                # sentido el reparto equitativo.
+                "tiene_pesos_reales": bool(calcular_pesos_reales_por_bloque(db, oid)),
+            }
+            for oid, datos in OPOSICIONES.items()
+        ]
     })
 
 

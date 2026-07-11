@@ -31,7 +31,7 @@ self.addEventListener("activate", (event) => {
 // backend). El payload es JSON con {title, body, url}; al hacer clic se
 // enfoca una pestaña ya abierta de la web si existe, o si no se abre una.
 self.addEventListener("push", (event) => {
-  let datos = { title: "Oposición AGE", body: "Tienes novedades.", url: "/zona-opositor/" };
+  let datos = { title: "Domina tu Opo", body: "Tienes novedades.", url: "/zona-opositor/" };
   if (event.data) {
     try {
       datos = { ...datos, ...event.data.json() };

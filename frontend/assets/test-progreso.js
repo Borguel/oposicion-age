@@ -9,6 +9,91 @@ import { BACKEND_URL } from "/assets/firebase-config.js";
 
 let testIdActual = null;
 let temporizadorDebounce = null;
+let temporizadorDebounceContenido = null;
+
+// Modo offline resiliente: red de seguridad local ante cortes de conexión
+// mientras se hace un test. NO sustituye el autoguardado real en Firestore
+// (que sigue siendo la fuente de verdad para "Mis Tests"/reanudar desde
+// otro dispositivo) -- solo evita perder el progreso de ESTA pestaña si el
+// autoguardado falla por falta de red, guardando una copia combinada en
+// localStorage y reintentando el envío en cuanto vuelve la conexión.
+const PREFIJO_OFFLINE = "age_test_offline_";
+
+function claveOffline(testId) {
+  return `${PREFIJO_OFFLINE}${testId}`;
+}
+
+// Igual que hace el backend (test_ref.set(campos, merge=True)): cada
+// autoguardado solo trae los campos que cambian (p. ej. autoguardarProgreso
+// nunca manda "contenido"), así que la copia local se combina con la
+// anterior en vez de sobrescribirla entera -- si no, un autoguardado
+// parcial posterior borraría el "contenido" ya guardado por el primero.
+function guardarCopiaLocal(payload) {
+  try {
+    const clave = claveOffline(payload.test_id);
+    const previo = JSON.parse(localStorage.getItem(clave) || "null") || {};
+    localStorage.setItem(clave, JSON.stringify({ ...previo, ...payload }));
+  } catch (e) {
+    // localStorage lleno o inaccesible (privado/incógnito estricto): la
+    // copia local es solo una red de seguridad extra, no algo crítico.
+  }
+}
+
+function leerCopiaLocal(testId) {
+  try {
+    return JSON.parse(localStorage.getItem(claveOffline(testId)) || "null");
+  } catch (e) {
+    return null;
+  }
+}
+
+function borrarCopiaLocal(testId) {
+  try {
+    localStorage.removeItem(claveOffline(testId));
+  } catch (e) {
+    // ignorar
+  }
+}
+
+let payloadPendienteReintento = null;
+let reintentoArmado = false;
+let bannerOffline = null;
+
+function mostrarBannerOffline() {
+  if (!bannerOffline) {
+    bannerOffline = document.createElement("div");
+    bannerOffline.id = "age-banner-offline";
+    bannerOffline.textContent = "📡 Sin conexión: tu progreso se está guardando en este dispositivo y se sincronizará al volver a tener internet.";
+    Object.assign(bannerOffline.style, {
+      position: "fixed", bottom: "0", left: "0", right: "0", zIndex: "9999",
+      background: "#b8790a", color: "#fff", textAlign: "center",
+      padding: "10px 16px", fontSize: "0.9rem", fontFamily: "inherit"
+    });
+    document.body.appendChild(bannerOffline);
+  }
+  bannerOffline.style.display = "block";
+}
+
+function ocultarBannerOffline() {
+  if (bannerOffline) bannerOffline.style.display = "none";
+}
+
+// Se activa la primera vez que hace falta (primer autoguardado de un test
+// en curso) para no añadir listeners globales en páginas que no están
+// haciendo ningún test.
+function armarDeteccionOffline() {
+  if (reintentoArmado) return;
+  reintentoArmado = true;
+  if (!navigator.onLine) mostrarBannerOffline();
+  window.addEventListener("offline", mostrarBannerOffline);
+  window.addEventListener("online", async () => {
+    ocultarBannerOffline();
+    if (!payloadPendienteReintento) return;
+    const payload = payloadPendienteReintento;
+    payloadPendienteReintento = null;
+    await enviarAutosave(payload, false);
+  });
+}
 
 // Nuevo test: genera un id de sesión (UUID) que se usará como nombre de
 // documento en Firestore durante todo el test, tanto para los autoguardados
@@ -31,21 +116,28 @@ export function testIdEnCurso() {
 
 export function limpiarSeguimiento() {
   clearTimeout(temporizadorDebounce);
+  clearTimeout(temporizadorDebounceContenido);
+  if (testIdActual) borrarCopiaLocal(testIdActual);
   testIdActual = null;
 }
 
 async function enviarAutosave(payload, keepalive) {
+  guardarCopiaLocal(payload);
+  armarDeteccionOffline();
   const token = await idToken();
   if (!token) return;
   try {
-    await fetch(`${BACKEND_URL}/autosave-test`, {
+    const res = await fetch(`${BACKEND_URL}/autosave-test`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(payload),
       keepalive
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    payloadPendienteReintento = null;
   } catch (e) {
-    console.error("No se pudo autoguardar el progreso del test:", e);
+    console.error("No se pudo autoguardar el progreso del test (se reintentará al recuperar conexión):", e);
+    payloadPendienteReintento = payload;
   }
 }
 
@@ -58,6 +150,26 @@ async function enviarAutosave(payload, keepalive) {
 export function guardarContenidoInicial(datos) {
   if (!testIdActual) return Promise.resolve();
   return enviarAutosave({ test_id: testIdActual, ...datos }, false);
+}
+
+// Igual que guardarContenidoInicial (manda el snapshot completo, incluido
+// "contenido"), pero para cuando el test personalizado empieza a jugarse
+// con las primeras preguntas mientras el resto se sigue generando en
+// segundo plano (test-personalizado, N>10): cada pregunta nueva que llega
+// llama a esto para que el documento de reanudación crezca con ellas. Va
+// con su propio debounce (variable de timer separada de
+// autoguardarProgreso) para que una ráfaga de preguntas casi simultáneas
+// colapse en un único guardado sin pisar el debounce de las respuestas del
+// usuario. El backend (/autosave-test) sobrescribe el documento entero
+// cuando "contenido" viene informado, así que el llamante debe mandar
+// siempre el snapshot COMPLETO (metadatos fijos + estado variable), nunca
+// solo el array de preguntas.
+export function actualizarContenidoEnCurso(datosCompletos) {
+  if (!testIdActual) return;
+  clearTimeout(temporizadorDebounceContenido);
+  temporizadorDebounceContenido = setTimeout(() => {
+    enviarAutosave({ test_id: testIdActual, ...datosCompletos }, false);
+  }, 2000);
 }
 
 // Progreso posterior (respuesta marcada, navegación entre preguntas, tick
@@ -109,13 +221,20 @@ export async function cargarTestEnProgreso(testId) {
     const res = await fetch(`${BACKEND_URL}/mi-test/${testId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) return null;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const datos = await res.json();
     testIdActual = testId;
     return datos.test;
   } catch (e) {
-    console.error("No se pudo cargar el test en progreso:", e);
-    return null;
+    // Sin conexión (u otro fallo de red) para traer el test desde el
+    // servidor: si esta misma pestaña ya tenía una copia local de ESE test
+    // (guardada por enviarAutosave más arriba), se reanuda desde ahí en vez
+    // de dejar al usuario sin nada -- solo cubre "seguir en esta pestaña",
+    // no reanudar desde otro dispositivo, que sigue necesitando red.
+    console.error("No se pudo cargar el test en progreso desde el servidor, usando copia local si existe:", e);
+    testIdActual = testId;
+    armarDeteccionOffline();
+    return leerCopiaLocal(testId);
   }
 }
 

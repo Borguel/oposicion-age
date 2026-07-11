@@ -5,6 +5,7 @@ import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual } from "
 import { icono } from "/assets/icons.js";
 import { fijarTexto } from "/assets/dom.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
+import { inicializarCuentaAtras } from "/assets/cuenta-atras.js";
 
 const MENSAJES_RACHA = [
   { minimo: 0, texto: "Empieza hoy tu racha: haz un test o repasa algo para arrancar." },
@@ -64,16 +65,20 @@ async function cargarProgresoInsignias() {
   try {
     const token = await idToken();
     const oposicion = obtenerOposicionActual();
-    const [resEstadisticas, resRacha, resTemas] = await Promise.all([
+    const [resEstadisticas, resRacha, resTemas, resFecha] = await Promise.all([
       fetch(`${BACKEND_URL}/estadisticas-completas?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${BACKEND_URL}/mi-racha`, { headers: { Authorization: `Bearer ${token}` } }),
-      fetch(`${BACKEND_URL}/temas-disponibles?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${BACKEND_URL}/temas-disponibles?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${BACKEND_URL}/fecha-examen?oposicion=${encodeURIComponent(oposicion)}`, { headers: { Authorization: `Bearer ${token}` } })
     ]);
     if (!resEstadisticas.ok) return;
     const { estadisticas } = await resEstadisticas.json();
     if (!estadisticas || estadisticas.error) return;
     const racha = resRacha.ok ? await resRacha.json() : { racha_maxima: 0 };
     const temas = resTemas.ok ? (await resTemas.json()).temas || [] : [];
+    const fechaExamen = resFecha.ok ? (await resFecha.json()).fecha_examen : null;
+
+    renderPlanEstudio(estadisticas.rendimiento_por_tema ?? {}, temas, fechaExamen);
 
     const datos = {
       testsRealizados: estadisticas.tests_realizados ?? 0,
@@ -102,9 +107,8 @@ async function cargarProgresoInsignias() {
 const UMBRAL_ACIERTO_FLOJO = 60;
 const MINIMO_PREGUNTAS_FLOJO = 3;
 
-function renderTemaFlojo(rendimientoPorTema, todosTemas) {
-  const contenedor = document.getElementById("zona-tema-flojo");
-  const peor = Object.entries(rendimientoPorTema || {})
+function peorTemaFlojo(rendimientoPorTema) {
+  return Object.entries(rendimientoPorTema || {})
     .map(([id, r]) => {
       const respondidas = (r.aciertos || 0) + (r.fallos || 0);
       const porcentaje = respondidas > 0 ? Math.round((r.aciertos / respondidas) * 100) : null;
@@ -112,6 +116,11 @@ function renderTemaFlojo(rendimientoPorTema, todosTemas) {
     })
     .filter((t) => t.respondidas >= MINIMO_PREGUNTAS_FLOJO && t.porcentaje !== null && t.porcentaje < UMBRAL_ACIERTO_FLOJO)
     .sort((a, b) => a.porcentaje - b.porcentaje)[0];
+}
+
+function renderTemaFlojo(rendimientoPorTema, todosTemas) {
+  const contenedor = document.getElementById("zona-tema-flojo");
+  const peor = peorTemaFlojo(rendimientoPorTema);
 
   if (!peor) {
     contenedor.style.display = "none";
@@ -132,6 +141,74 @@ function renderTemaFlojo(rendimientoPorTema, todosTemas) {
     </a>
   `;
   contenedor.style.display = "";
+}
+
+// Planificador de estudio: combina la fecha de examen configurada (ver
+// cuenta-atras.js/GET /fecha-examen) con qué temas quedan por tocar
+// todavía, para sugerir un ritmo aproximado y un "tema de hoy" concreto en
+// vez de dejar al usuario adivinar por dónde seguir. "Tocado" usa el mismo
+// criterio simple que ya tenía disponible esta página (aparece en
+// rendimiento_por_tema), sin traer todo el historial de tests solo para
+// esto -- si se necesitase la definición exacta de Estadísticas
+// (temas.some) habría que traer también /mis-tests aquí.
+function renderPlanEstudio(rendimientoPorTema, todosTemas, fechaExamenISO) {
+  const seccion = document.getElementById("zona-plan-estudio");
+  if (!todosTemas.length) {
+    seccion.style.display = "none";
+    return;
+  }
+
+  const temasTocados = new Set(Object.keys(rendimientoPorTema || {}));
+  const pendientes = todosTemas.filter((t) => !temasTocados.has(t.id));
+
+  let ritmo;
+  if (!fechaExamenISO) {
+    ritmo = pendientes.length > 0
+      ? `Te quedan ${pendientes.length} de ${todosTemas.length} temas por tocar. Configura la fecha de tu examen (arriba) para ver un ritmo sugerido.`
+      : "Ya has tocado todos los temas al menos una vez. ¡Sigue repasando para consolidarlos!";
+  } else {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const diasRestantes = Math.round((new Date(`${fechaExamenISO}T00:00:00`) - hoy) / 86400000);
+    if (diasRestantes <= 0) {
+      ritmo = pendientes.length > 0 ? `Quedan ${pendientes.length} temas sin tocar y tu examen ya está aquí: repásalos como puedas.` : "Has tocado todos los temas. ¡A por el examen!";
+    } else if (pendientes.length === 0) {
+      ritmo = `Ya has tocado los ${todosTemas.length} temas. Quedan ${diasRestantes} días: aprovéchalos para repasar y afianzar.`;
+    } else {
+      const ritmoDias = Math.max(1, Math.floor(diasRestantes / pendientes.length));
+      ritmo = `Te quedan ${pendientes.length} temas nuevos y ${diasRestantes} días hasta el examen: te toca ver un tema nuevo aprox. cada ${ritmoDias} día${ritmoDias !== 1 ? "s" : ""} para llegar a verlos todos.`;
+    }
+  }
+  fijarTexto("zona-plan-ritmo", ritmo);
+
+  const contenedorHoy = document.getElementById("zona-plan-hoy");
+  const siguienteNuevo = pendientes[0];
+  const peorFlojo = peorTemaFlojo(rendimientoPorTema);
+  let sugerido = null;
+  let motivo = "";
+  if (siguienteNuevo) {
+    sugerido = siguienteNuevo;
+    motivo = "aún no lo has tocado";
+  } else if (peorFlojo) {
+    sugerido = todosTemas.find((t) => t.id === peorFlojo.id);
+    motivo = `${peorFlojo.porcentaje}% de acierto todavía`;
+  }
+
+  if (!sugerido) {
+    contenedorHoy.innerHTML = "";
+  } else {
+    contenedorHoy.innerHTML = `
+      <a class="zona-mis-cosas-item" href="/test-personalizado/?temas=${encodeURIComponent(sugerido.id)}">
+        <span class="zona-mis-cosas-icono">${icono("diana", 26)}</span>
+        <span class="zona-mis-cosas-texto">
+          <strong>Tema de hoy: <span title="${sugerido.titulo}">${sugerido.titulo}</span></strong>
+          <small>${motivo}</small>
+        </span>
+        <span class="zona-mis-cosas-flecha">→</span>
+      </a>
+    `;
+  }
+  seccion.style.display = "";
 }
 
 async function iniciarBotonNotificaciones() {
@@ -160,95 +237,6 @@ async function iniciarBotonNotificaciones() {
       mostrarErrorGlobal(e.message || "No se pudieron activar las notificaciones.");
     } finally {
       boton.disabled = false;
-    }
-  });
-}
-
-function formatearCuentaAtras(fechaISO) {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const fechaExamen = new Date(`${fechaISO}T00:00:00`);
-  const dias = Math.round((fechaExamen - hoy) / 86400000);
-  if (dias > 1) return { numero: `${dias} días`, mensaje: "para tu examen" };
-  if (dias === 1) return { numero: "Mañana", mensaje: "es tu examen. ¡Mucho ánimo!" };
-  if (dias === 0) return { numero: "¡Hoy!", mensaje: "es el día de tu examen. ¡A por ello!" };
-  return { numero: "Ya pasó", mensaje: "la fecha que configuraste" };
-}
-
-async function cargarCuentaAtras() {
-  const numeroEl = document.getElementById("cuenta-atras-numero");
-  const mensajeEl = document.getElementById("cuenta-atras-mensaje");
-  const boton = document.getElementById("cuenta-atras-boton");
-  const form = document.getElementById("cuenta-atras-form");
-  const input = document.getElementById("cuenta-atras-input");
-  const quitar = document.getElementById("cuenta-atras-quitar");
-  const token = await idToken();
-  const oposicion = obtenerOposicionActual();
-
-  const pintar = (fecha) => {
-    if (fecha) {
-      const { numero, mensaje } = formatearCuentaAtras(fecha);
-      numeroEl.textContent = numero;
-      mensajeEl.textContent = mensaje;
-      boton.textContent = "Cambiar fecha";
-      quitar.style.display = "";
-    } else {
-      numeroEl.textContent = "—";
-      mensajeEl.textContent = "Configura la fecha de tu examen para ver la cuenta atrás.";
-      boton.textContent = "Configurar";
-      quitar.style.display = "none";
-    }
-  };
-
-  let fechaActual = null;
-  try {
-    const res = await fetch(`${BACKEND_URL}/fecha-examen?oposicion=${encodeURIComponent(oposicion)}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (res.ok) {
-      const datos = await res.json();
-      fechaActual = datos.fecha_examen || null;
-    }
-  } catch (e) {
-    console.error("Error cargando fecha de examen:", e);
-  }
-  pintar(fechaActual);
-
-  boton.addEventListener("click", () => {
-    input.value = fechaActual || "";
-    form.style.display = form.style.display === "none" ? "flex" : "none";
-  });
-
-  form.addEventListener("submit", async (evento) => {
-    evento.preventDefault();
-    try {
-      await fetch(`${BACKEND_URL}/fecha-examen?oposicion=${encodeURIComponent(oposicion)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ fecha_examen: input.value })
-      });
-      fechaActual = input.value;
-      pintar(fechaActual);
-      form.style.display = "none";
-    } catch (e) {
-      console.error("Error guardando fecha de examen:", e);
-      mostrarErrorGlobal("No se pudo guardar la fecha del examen. Inténtalo de nuevo.");
-    }
-  });
-
-  quitar.addEventListener("click", async () => {
-    try {
-      await fetch(`${BACKEND_URL}/fecha-examen?oposicion=${encodeURIComponent(oposicion)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ fecha_examen: "" })
-      });
-      fechaActual = null;
-      pintar(fechaActual);
-      form.style.display = "none";
-    } catch (e) {
-      console.error("Error quitando fecha de examen:", e);
-      mostrarErrorGlobal("No se pudo quitar la fecha del examen. Inténtalo de nuevo.");
     }
   });
 }
@@ -283,6 +271,29 @@ async function cargarTestEnProgreso() {
     if (elContinuar) elContinuar.style.display = "";
   } catch (e) {
     console.error("Error cargando test en progreso:", e);
+  }
+}
+
+// Repaso espaciado proactivo: en vez de esperar a que el usuario recuerde
+// entrar en /preguntas-falladas/, se avisa aquí en cuanto tiene alguna
+// pendiente para esta oposición (banco persistente de banco_fallos.py).
+async function cargarRepasoPendiente() {
+  try {
+    const token = await idToken();
+    const oposicion = obtenerOposicionActual();
+    const res = await fetch(`${BACKEND_URL}/preguntas-pendientes-repaso?oposicion=${encodeURIComponent(oposicion)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const { total_pendientes } = await res.json();
+    if (!total_pendientes) return;
+
+    const plural = total_pendientes !== 1 ? "s" : "";
+    fijarTexto("zona-repaso-detalle", `Tienes ${total_pendientes} pregunta${plural} fallada${plural} sin repasar todavía.`);
+    const elRepaso = document.getElementById("zona-repaso");
+    if (elRepaso) elRepaso.style.display = "";
+  } catch (e) {
+    console.error("Error cargando preguntas pendientes de repaso:", e);
   }
 }
 
@@ -439,8 +450,9 @@ async function iniciar() {
   cargarRacha();
   cargarProgresoInsignias();
   cargarTestEnProgreso();
+  cargarRepasoPendiente();
   iniciarBotonNotificaciones();
-  cargarCuentaAtras();
+  inicializarCuentaAtras();
   renderAviso();
   renderSwitcher();
   renderOnboarding();

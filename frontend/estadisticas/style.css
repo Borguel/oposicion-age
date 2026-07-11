@@ -69,7 +69,7 @@
       gap: 15px;
     }
 
-    #estadisticas-header h3 {
+    #estadisticas-header h1 {
       font-size: 1.8rem;
       font-weight: 800;
       color: var(--theme-heading);
@@ -1221,7 +1221,7 @@
       }
     }
 
-/* --- Unificación de marca (Oposición AGE) ---
+/* --- Unificación de marca (Domina tu Opo) ---
    Esta página nació con su propio sistema de variables (--theme-*, --primary,
    --secondary...) antes de que existiera el sistema compartido de
    /assets/theme.css. En vez de reescribir cada regla una a una, se
@@ -1246,4 +1246,80 @@
   --card-radius: var(--age-radius-lg);
   --btn-radius: var(--age-radius-pill);
   --modal-radius: var(--age-radius-lg);
+}
+
+/* Cuenta atrás al examen -- mismas reglas que zona-opositor/style.css,
+   para que el widget compartido (assets/cuenta-atras.js) se vea igual en
+   ambas páginas. */
+.zona-cuenta-atras-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 26px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.zona-cuenta-atras-icono {
+  font-size: 2.6rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.zona-cuenta-atras-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.zona-cuenta-atras-numero {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.zona-cuenta-atras-mensaje {
+  color: var(--age-ink-soft);
+  font-size: 0.92rem;
+}
+
+.zona-cuenta-atras-boton {
+  flex-shrink: 0;
+}
+
+.zona-cuenta-atras-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.zona-cuenta-atras-form input[type="date"] {
+  padding: 10px 14px;
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-sm);
+  font-family: var(--age-font);
+  background: var(--age-card);
+  color: var(--age-ink);
+}
+
+.zona-cuenta-atras-quitar {
+  border: none;
+  background: none;
+  color: var(--age-danger);
+  cursor: pointer;
+  font-size: 0.88rem;
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .zona-cuenta-atras-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .zona-cuenta-atras-form {
+    justify-content: center;
+  }
 }
