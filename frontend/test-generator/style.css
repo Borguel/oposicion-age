@@ -194,10 +194,38 @@ h1, h2, h3 {
   margin: 20px 0;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 15px;
 }
 
-.timer-settings input {
+/* La casilla y su texto van en flex propio (no como texto suelto dentro
+   del <label>) para que, si el texto tiene que partirse en dos líneas en
+   pantallas estrechas, la segunda línea quede alineada bajo la primera en
+   vez de volver al borde izquierdo del contenedor. */
+.timer-settings label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.timer-settings input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 3px;
+  width: auto;
+}
+
+/* #tiempo_cronometro alterna a display:flex por JS (ver script.js) al
+   marcar la casilla -- aquí solo se fija cómo se alinean su etiqueta y su
+   campo cuando está visible, para que "Tiempo (minutos):" quede centrado
+   verticalmente con el recuadro en vez de pegado arriba. */
+#tiempo_cronometro {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.timer-settings input[type="number"] {
   padding: 10px 15px;
   border: 1px solid #ccc;
   border-radius: 8px;
