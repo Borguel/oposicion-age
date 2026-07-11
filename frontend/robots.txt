@@ -21,4 +21,4 @@ Disallow: /subida-pdf-*/
 Disallow: /tu-tutor/
 Disallow: /ranking/
 
-Sitemap: https://oposicion-age-1.onrender.com/sitemap.xml
+Sitemap: https://www.dominatuopo.com/sitemap.xml
