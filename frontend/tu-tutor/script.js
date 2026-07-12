@@ -275,6 +275,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const authHeaders = await obtenerAuthHeaders();
     if (!authHeaders) return;
 
+    ultimoMensajeUsuario = texto;
     mostrarTyping(true);
 
     const { obtenerOposicionActual } = await import("/assets/oposicion.js");
@@ -315,6 +316,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const decodificador = new TextDecoder();
     let buffer = "";
     let textoAcumulado = "";
+    let temasRelacionados = [];
     let huboError = false;
 
     try {
@@ -338,6 +340,7 @@ document.addEventListener("DOMContentLoaded", function () {
             actualizarBurbujaBot(burbuja, textoAcumulado);
           } else if (evento.tipo === "fin") {
             chatIdActual = evento.chat_id;
+            temasRelacionados = evento.temas_relacionados || [];
           } else if (evento.tipo === "error") {
             huboError = true;
           }
@@ -363,7 +366,65 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    finalizarBurbujaBot(burbuja, temasRelacionados);
     cargarHistorial();
+  }
+
+  // Añade a una respuesta ya completa sus acciones: "Más fácil" y "Otra
+  // respuesta" (secundarias), y -- si la respuesta iba sobre un tema concreto
+  // del temario-- un botón que lleva a generar un test de ese tema (deep-link
+  // al Test Personalizado con el tema ya marcado). Todo con textContent, sin
+  // HTML crudo del backend.
+  function finalizarBurbujaBot(burbuja, temasRelacionados) {
+    const bubble = burbuja.div.querySelector(".bubble-bot");
+    if (!bubble) return;
+
+    const pie = document.createElement("div");
+    pie.className = "bubble-bot-pie";
+
+    const secundarias = document.createElement("div");
+    secundarias.className = "bubble-bot-secundarias";
+
+    const btnFacil = document.createElement("button");
+    btnFacil.type = "button";
+    btnFacil.className = "btn-mensaje-sec";
+    btnFacil.textContent = "💡 Más fácil";
+    btnFacil.title = "Explícamelo de forma más sencilla";
+    btnFacil.addEventListener("click", () => {
+      input.value = "Explícamelo de forma más sencilla, con un ejemplo cotidiano.";
+      enviarMensaje();
+    });
+
+    const btnOtra = document.createElement("button");
+    btnOtra.type = "button";
+    btnOtra.className = "btn-mensaje-sec";
+    btnOtra.textContent = "🔄 Otra respuesta";
+    btnOtra.title = "Regenerar esta respuesta";
+    btnOtra.addEventListener("click", () => {
+      if (!ultimoMensajeUsuario) return;
+      burbuja.div.remove();
+      pedirRespuestaTutor(ultimoMensajeUsuario);
+    });
+
+    secundarias.append(btnFacil, btnOtra);
+    pie.appendChild(secundarias);
+
+    if (Array.isArray(temasRelacionados) && temasRelacionados.length) {
+      const temasRow = document.createElement("div");
+      temasRow.className = "bubble-bot-temas";
+      temasRelacionados.forEach(tema => {
+        if (!tema || !tema.tema_id) return;
+        const enlace = document.createElement("a");
+        enlace.className = "btn-tema-mensaje";
+        enlace.href = "/test-personalizado/?temas=" + encodeURIComponent(tema.tema_id);
+        enlace.textContent = "📝 Generar test de " + tema.titulo;
+        temasRow.appendChild(enlace);
+      });
+      if (temasRow.children.length) pie.appendChild(temasRow);
+    }
+
+    bubble.appendChild(pie);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
   // A diferencia de .bubble-bot-actions (el icono de copiar, oculto salvo
@@ -396,6 +457,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // pendiente...). Se pide una vez y se reutiliza al iniciar cada nueva
   // conversación, sin volver a llamar al backend.
   let sugerenciaInicial = null;
+  // Último mensaje que envió el usuario: lo usan los botones "Otra respuesta"
+  // (regenerar) de cada burbuja del bot para volver a preguntar lo mismo.
+  let ultimoMensajeUsuario = "";
 
   async function cargarHistorial() {
     const authHeaders = await obtenerAuthHeaders();

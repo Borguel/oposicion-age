@@ -291,6 +291,32 @@ def test_sugerencia_inicial_usuario_nuevo_sin_tests_no_tiene_accion(db):
     assert sugerencia["sugerencias"]
 
 
+def test_stream_incluye_temas_relacionados_para_generar_test(db):
+    # Cuando la respuesta va sobre un tema concreto del temario, el evento
+    # "fin" lleva ese tema (id + título) para que el frontend pueda ofrecer un
+    # "Generar test de este tema" debajo del mensaje.
+    _sembrar_tema(db)
+    with patch("chat_controller.call_deepseek_api_stream", return_value=iter(["La Constitución ", "consta de..."])), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        eventos = list(responder_tutor_stream(
+            "Explícame la Constitución Española", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE"
+        ))
+    fin = [e for e in eventos if e["tipo"] == "fin"][0]
+    assert fin["temas_relacionados"] == [
+        {"tema_id": "bloque_01-tema_01", "titulo": "La Constitución Española de 1978"}
+    ]
+
+
+def test_stream_sin_tema_concreto_no_incluye_acciones_de_tema(db):
+    _sembrar_tema(db)
+    with patch("chat_controller.call_deepseek_api_stream", return_value=iter(["Ánimo, sigue así"])):
+        eventos = list(responder_tutor_stream(
+            "¿Qué consejos me das para no rendirme?", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE"
+        ))
+    fin = [e for e in eventos if e["tipo"] == "fin"][0]
+    assert fin["temas_relacionados"] == []
+
+
 def test_tema_con_pocos_intentos_no_cuenta_como_flojo_ni_se_menciona(db):
     db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Organización del Estado"})
     db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "La Constitución Española de 1978"})
