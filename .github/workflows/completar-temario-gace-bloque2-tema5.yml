@@ -1,0 +1,51 @@
+name: Completar temario GACE bloque_02/tema_05 (presupuesto y fondos) a Firestore
+
+# Rellena Temario GACE/bloque_02/tema_05 ("El presupuesto comunitario. Los
+# fondos europeos. La cohesión económica y social."), que quedó sin
+# contenido tras podar_temario_gace_bloque2_temas1_5.py. Combina Arts.
+# 310-325 del TFUE (Sexta Parte, Tít. II, disposiciones financieras) con 4
+# fichas temáticas del Parlamento Europeo (cohesión, FEDER, Fondo de
+# Cohesión, Fondo de Solidaridad). Se dispara a mano porque escribe en
+# Firestore.
+#
+# Ejecuta primero con accion=preview (no toca Firestore, solo genera
+# preview_completar_gace_bloque2_tema5.json y un resumen en el log) y
+# revisa el resultado antes de volver a ejecutar con accion=subir.
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "preview (solo genera el informe) o subir (sube de verdad a Firestore)"
+        required: true
+        default: "preview"
+        type: choice
+        options:
+          - preview
+          - subir
+
+jobs:
+  completar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Completar temario GACE bloque_02/tema_05
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: python completar_temario_gace_bloque2_tema5.py --${{ github.event.inputs.accion }}
+
+      - name: Guardar vista previa como artefacto
+        if: github.event.inputs.accion == 'preview'
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-completar-gace-bloque2-tema5
+          path: preview_completar_gace_bloque2_tema5.json
