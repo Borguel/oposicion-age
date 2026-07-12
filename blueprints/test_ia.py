@@ -11,7 +11,7 @@ from firebase_setup import db
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 from limites_uso import verificar_limite_uso, registrar_uso
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales
-from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, barajar_opciones_pregunta, calcular_pesos_reales_por_bloque
+from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, barajar_opciones_pregunta, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales
 from test_generator import generar_preguntas_ia_en_lotes
 from generador_preguntas_verificado import generar_test_verificado
 from esquema_generator import generar_esquema
@@ -157,15 +157,12 @@ def generar_test_oficial():
     logger.info("Número de preguntas solicitado: %s, exámenes filtrados: %s, temas filtrados: %s", num_preguntas, examenes_filtrados, temas_filtrados)
     coleccion = coleccion_examenes_oficiales(g.oposicion)
     try:
-        docs = db.collection(coleccion).stream()
+        docs_pregunta = obtener_preguntas_examenes_oficiales(db, g.oposicion)
     except Exception:
         logger.exception("Error accediendo a Firestore")
         return jsonify({"error": "No se pudo acceder a Firestore"}), 500
     preguntas = []
-    for doc in docs:
-        d = doc.to_dict()
-        if d.get("tipo") != "pregunta":
-            continue
+    for d in docs_pregunta:
         if examenes_filtrados:
             if d.get("examen", "").lower() not in [e.lower() for e in examenes_filtrados]:
                 continue

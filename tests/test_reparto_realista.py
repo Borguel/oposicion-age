@@ -4,6 +4,7 @@ de siempre): en vez de una cuota igual por tema, reparte primero entre
 bloques según su peso real en exámenes oficiales ya cargados."""
 from utils import (
     calcular_pesos_reales_por_bloque,
+    obtener_preguntas_examenes_oficiales,
     repartir_cupos_por_tema_realista,
     seleccionar_preguntas_con_cuota,
     _limpiar_cache_temario,
@@ -33,6 +34,27 @@ def test_calcular_pesos_reales_por_bloque_usa_cache(db):
     assert calcular_pesos_reales_por_bloque(db, "AGE") == primero
     _limpiar_cache_temario()
     assert calcular_pesos_reales_por_bloque(db, "AGE") == {"bloque_01": 0.5, "bloque_06": 0.5}
+
+
+def test_obtener_preguntas_examenes_oficiales_filtra_por_tipo(db):
+    db.sembrar(("examenes_oficiales_AGE", "p1"), {"tipo": "pregunta", "pregunta": "1+1"})
+    db.sembrar(("examenes_oficiales_AGE", "p2"), {"tipo": "pregunta", "pregunta": "2+2"})
+    db.sembrar(("examenes_oficiales_AGE", "meta"), {"tipo": "otra_cosa"})
+
+    preguntas = obtener_preguntas_examenes_oficiales(db, "AGE")
+
+    assert len(preguntas) == 2
+    assert {p["pregunta"] for p in preguntas} == {"1+1", "2+2"}
+
+
+def test_obtener_preguntas_examenes_oficiales_usa_cache(db):
+    db.sembrar(("examenes_oficiales_AGE", "p1"), {"tipo": "pregunta", "pregunta": "1+1"})
+    primero = obtener_preguntas_examenes_oficiales(db, "AGE")
+    db.sembrar(("examenes_oficiales_AGE", "p2"), {"tipo": "pregunta", "pregunta": "2+2"})
+    # Sin limpiar la caché, sigue viendo el resultado de antes de sembrar p2.
+    assert obtener_preguntas_examenes_oficiales(db, "AGE") == primero
+    _limpiar_cache_temario()
+    assert len(obtener_preguntas_examenes_oficiales(db, "AGE")) == 2
 
 
 def test_repartir_cupos_por_tema_realista_respeta_el_peso_del_bloque():
