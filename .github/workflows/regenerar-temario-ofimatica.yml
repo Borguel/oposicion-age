@@ -1,0 +1,72 @@
+name: Regenerar temario ofimática (AGE bloque_06 + Auxiliar bloque_02)
+
+# Sustituye el bloque de informática básica y ofimática de Temario AGE
+# (bloque_06) y Temario Auxiliar (bloque_02, temas 5-12) por contenido
+# generado desde cero con DeepSeek a partir SOLO del índice extraído de
+# los PDF originales de Persevera Oposiciones (ya borrados del repo, sin
+# licencia confirmada para su texto de desarrollo). GACE no tiene bloque
+# de ofimática y este workflow no lo toca.
+#
+# paso=paso1: borra los subbloques existentes (Persevera) de Temario
+#   Auxiliar/bloque_02 temas 5-12. No toca temas 1-4 ni GACE.
+# paso=generar: UNA llamada a DeepSeek por tema (8 en total, no 16) desde
+#   indices-ofimatica.json, cacheada entre ejecuciones (accion=preview
+#   guarda la cache; accion=subir la reutiliza sin volver a llamar a
+#   DeepSeek si ya existe) y sube el mismo texto a Temario AGE/bloque_06
+#   y Temario Auxiliar/bloque_02 (temas 5-12).
+#
+# Ejecuta siempre primero con accion=preview y revisa el resultado antes
+# de accion=subir.
+on:
+  workflow_dispatch:
+    inputs:
+      paso:
+        description: "paso1 (borrar contenido Persevera de Auxiliar) o generar (generar y subir con DeepSeek)"
+        required: true
+        type: choice
+        options:
+          - paso1
+          - generar
+      accion:
+        description: "preview (no toca Firestore) o subir (sube/borra de verdad)"
+        required: true
+        default: "preview"
+        type: choice
+        options:
+          - preview
+          - subir
+
+jobs:
+  regenerar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Cache del contenido generado por DeepSeek
+        if: github.event.inputs.paso == 'generar'
+        uses: actions/cache@v4
+        with:
+          path: contenido-generado-ofimatica.json
+          key: ofimatica-generado-${{ hashFiles('indices-ofimatica.json') }}
+
+      - name: Ejecutar paso
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: python regenerar_temario_ofimatica.py --${{ github.event.inputs.paso }} --${{ github.event.inputs.accion }}
+
+      - name: Guardar contenido generado como artefacto
+        if: github.event.inputs.paso == 'generar'
+        uses: actions/upload-artifact@v4
+        with:
+          name: contenido-generado-ofimatica-${{ github.event.inputs.accion }}
+          path: contenido-generado-ofimatica.json

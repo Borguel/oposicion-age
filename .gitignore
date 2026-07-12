@@ -200,6 +200,14 @@ clave-firebase.json
 cache_paginas_*.pkl
 preview_*.json
 
+# regenerar_temario_ofimatica.py: contenido-generado-ofimatica.json es una
+# cache de lo generado por DeepSeek que viaja entre ejecuciones del
+# workflow vía actions/cache, no por git. indices-ofimatica.json SÍ se
+# versiona (ver más abajo, fuera de este bloque): es la única fuente de
+# la estructura de temas ahora que los PDF originales de Persevera se han
+# borrado del repo.
+contenido-generado-ofimatica.json
+
 # Node / Playwright (tests-frontend)
 node_modules/
 test-results/
