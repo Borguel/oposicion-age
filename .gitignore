@@ -202,6 +202,7 @@ preview_temario.json
 preview_tema_gace_09.json
 preview_temario_auxiliar.json
 preview_temario_auxiliar_bloque2.json
+preview_temario_gace_bloque2_ue.json
 
 # Node / Playwright (tests-frontend)
 node_modules/
