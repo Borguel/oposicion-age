@@ -346,11 +346,12 @@ html { scroll-behavior: smooth; }
   background: var(--age-card);
   color: var(--age-ink);
   border-radius: 20px 20px 6px 20px;
-  padding: 13px 18px;
+  padding: 12px 17px;
   box-shadow: var(--age-shadow);
   margin-left: auto;
   max-width: 70%;
   font-size: 15px;
+  line-height: 1.5;
   word-break: break-word;
   border: 1px solid var(--age-border);
 }
@@ -363,17 +364,19 @@ html { scroll-behavior: smooth; }
   margin-right: 8px;
   max-width: 78%;
   font-size: 15px;
+  line-height: 1.55;
   position: relative;
   word-break: break-word;
   border: 1px solid var(--age-border);
 }
-.bubble-bot h3 { margin: 10px 0 6px; font-size: 16px; color: var(--age-ink); }
+.bubble-bot h3 { margin: 14px 0 6px; font-size: 15.5px; font-weight: 700; color: var(--age-ink); }
 .bubble-bot h3:first-child { margin-top: 0; }
-.bubble-bot p { margin: 0 0 8px; }
+.bubble-bot p { margin: 0 0 10px; }
 .bubble-bot p:last-child { margin-bottom: 0; }
-.bubble-bot ul { margin: 0 0 8px; padding-left: 20px; }
-.bubble-bot li { margin-bottom: 4px; }
-.bubble-bot strong { color: var(--age-ink); }
+.bubble-bot ul { margin: 0 0 10px; padding-left: 20px; }
+.bubble-bot li { margin-bottom: 5px; }
+.bubble-bot li::marker { color: var(--tutor-accent); }
+.bubble-bot strong { color: var(--age-ink); font-weight: 700; }
 .avatar-bot-mini img {
   width: 26px;
   height: 26px;
@@ -424,6 +427,48 @@ html { scroll-behavior: smooth; }
 }
 .btn-regenerar-mensaje:hover { background: var(--age-primary-soft); }
 .btn-regenerar-mensaje:disabled { opacity: 0.6; cursor: default; }
+
+/* Pie de una respuesta ya completa: acciones secundarias (más fácil / otra
+   respuesta) y, si iba sobre un tema, el botón de generar test de ese tema.
+   Siempre visible (a diferencia de .bubble-bot-actions, que es solo hover):
+   son acciones que el usuario querrá encontrar sin adivinar dónde están. */
+.bubble-bot-pie {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--age-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bubble-bot-secundarias { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-mensaje-sec {
+  background: none;
+  border: 1px solid var(--age-border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+  font-family: var(--age-font);
+  color: var(--age-ink-soft, var(--age-ink));
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.btn-mensaje-sec:hover { background: var(--age-primary-soft); border-color: var(--tutor-accent); }
+
+.bubble-bot-temas { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-tema-mensaje {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--tutor-accent);
+  color: #fff;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s, filter 0.2s;
+}
+.btn-tema-mensaje:hover { transform: translateY(-1px); filter: brightness(1.05); }
 
 .quick-questions {
   display: flex;

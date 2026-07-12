@@ -463,6 +463,17 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
     temas_detectados = _temas_mencionados_en_la_conversacion(mensaje, historial, catalogo)
     usar_rag = _necesita_rag(mensaje, temas_detectados)
 
+    # Temas concretos a los que va referida la respuesta (id + título), para
+    # que el frontend pueda ofrecer un "Generar test de este tema" debajo del
+    # mensaje. Solo cuando se ha detectado un tema específico por su título;
+    # el fallback de "buscar en todo el catálogo" (patrón genérico sin tema
+    # claro) no cuenta, porque ahí no hay un tema concreto que practicar.
+    catalogo_por_id = {tema["id"]: tema["titulo"] for tema in catalogo}
+    temas_relacionados = [
+        {"tema_id": id_tema, "titulo": catalogo_por_id[id_tema]}
+        for id_tema in temas_detectados if id_tema in catalogo_por_id
+    ][:2]
+
     if usar_rag:
         # Si se detectó un tema concreto por título, se busca solo ahí; si
         # el mensaje solo menciona un patrón genérico ("artículo 14") sin
@@ -544,7 +555,7 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
         })
     mensajes.extend(historial)
     mensajes.append({"role": "user", "content": prompt_usuario})
-    return mensajes, usar_rag
+    return mensajes, usar_rag, temas_relacionados
 
 
 # ============================================================
@@ -621,7 +632,7 @@ def _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta):
 # como si fuera una respuesta real del asistente. El llamador (la ruta
 # /tu-tutor) es quien decide qué mostrarle al usuario en ese caso.
 def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO):
-    mensajes, usar_rag = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion)
+    mensajes, usar_rag, _temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion)
     respuesta = call_deepseek_api(messages=mensajes, temperature=0.7, max_tokens=1500)
     if not respuesta:
         return None, chat_id, usar_rag
@@ -638,7 +649,7 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
 # Firestore, o {"tipo": "error"} si DeepSeek falla o no llega ningún
 # fragmento (mismo criterio que responder_tutor: nada se guarda en ese caso).
 def responder_tutor_stream(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO):
-    mensajes, usar_rag = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion)
+    mensajes, usar_rag, temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion)
 
     fragmentos = []
     for fragmento in call_deepseek_api_stream(messages=mensajes, temperature=0.7, max_tokens=1500):
@@ -653,4 +664,7 @@ def responder_tutor_stream(mensaje, db, usuario_id="anonimo", chat_id=None, cole
         return
 
     chat_id = _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta)
-    yield {"tipo": "fin", "chat_id": chat_id, "usar_rag": usar_rag}
+    # temas_relacionados va en el "fin" para que el frontend pueda ofrecer un
+    # "Generar test de este tema" debajo de la respuesta (deep-link al Test
+    # Personalizado con ese tema ya marcado).
+    yield {"tipo": "fin", "chat_id": chat_id, "usar_rag": usar_rag, "temas_relacionados": temas_relacionados}
