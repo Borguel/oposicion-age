@@ -69,6 +69,42 @@ _DESCRIPCION_TIPO_PREGUNTA = {
     ),
 }
 
+# Variante para temario NO normativo (informática, ofimática, temas técnicos o
+# descriptivos): el mismo repertorio de tipos de pregunta, pero descrito sin
+# lenguaje jurídico -- si no, el generador y el verificador exigen artículos,
+# plazos y "lenguaje de la norma" que no existen en este contenido, y acaban
+# descartando la mayoría de preguntas válidas.
+_DESCRIPCION_TIPO_PREGUNTA_DESCRIPTIVO = {
+    "memoria_literal": (
+        "Pregunta de memoria literal: exige recordar con precisión un dato concreto del contenido "
+        "(un nombre, una función, un atajo de teclado, un valor, una característica...)."
+    ),
+    "comprension": (
+        "Pregunta de comprensión: exige entender cómo funciona o para qué sirve algo, no solo "
+        "memorizar un dato suelto."
+    ),
+    "aplicacion_practica": (
+        "Pregunta de aplicación práctica: plantea una situación concreta y pregunta qué haría o qué "
+        "ocurre según el contenido."
+    ),
+    "pregunta_trampa": (
+        "Pregunta trampa típica de examen: los distractores deben ser muy parecidos a la respuesta "
+        "correcta, cambiando un único dato (un nombre, un valor, una función) para poner a prueba la "
+        "atención al detalle."
+    ),
+    "distincion_articulos": (
+        "Pregunta que distingue entre dos conceptos o apartados relacionados: la respuesta correcta y "
+        "al menos un distractor deben basarse en el matiz que los diferencia."
+    ),
+}
+
+
+def _es_normativo(anclas):
+    """True si el contenido base es normativo (se detectó al menos un
+    'Artículo N.'). En ese caso se usan los prompts jurídicos; si no (temas
+    descriptivos como ofimática), los prompts descriptivos."""
+    return any(ancla.get("articulo") for ancla in anclas)
+
 
 def _extraer_articulos(texto):
     """Trocea el texto verbatim de un subbloque en fragmentos por artículo
@@ -136,7 +172,22 @@ def _bloques_texto_legal(anclas):
     return "\n\n".join(partes)
 
 
+def _bloques_contenido(anclas):
+    partes = []
+    for i, ancla in enumerate(anclas, start=1):
+        partes.append(f"CONTENIDO {i} -- {ancla['norma']}:\n{ancla['texto_legal']}")
+    return "\n\n".join(partes)
+
+
 def _prompt_generacion(anclas, tipo_pregunta, oposicion):
+    """Elige el prompt de generación según el tipo de contenido: jurídico si
+    el tema es normativo (tiene artículos), descriptivo en caso contrario."""
+    if _es_normativo(anclas):
+        return _prompt_generacion_normativo(anclas, tipo_pregunta, oposicion)
+    return _prompt_generacion_descriptivo(anclas, tipo_pregunta, oposicion)
+
+
+def _prompt_generacion_normativo(anclas, tipo_pregunta, oposicion):
     nombre_oposicion = OPOSICIONES.get(oposicion, OPOSICIONES[OPOSICION_POR_DEFECTO])["nombre"]
     descripcion_tipo = _DESCRIPCION_TIPO_PREGUNTA[tipo_pregunta]
     contenido = _bloques_texto_legal(anclas)
@@ -174,7 +225,53 @@ def _prompt_generacion(anclas, tipo_pregunta, oposicion):
     return system, user
 
 
+def _prompt_generacion_descriptivo(anclas, tipo_pregunta, oposicion):
+    nombre_oposicion = OPOSICIONES.get(oposicion, OPOSICIONES[OPOSICION_POR_DEFECTO])["nombre"]
+    descripcion_tipo = _DESCRIPCION_TIPO_PREGUNTA_DESCRIPTIVO[tipo_pregunta]
+    contenido = _bloques_contenido(anclas)
+
+    system = (
+        f"Eres un generador profesional de preguntas tipo test para la oposición al {nombre_oposicion}, "
+        "sobre contenido técnico y descriptivo del temario (por ejemplo informática básica y ofimática), "
+        "con el nivel de exigencia de las mejores academias. La fidelidad al contenido proporcionado es "
+        "la prioridad ABSOLUTA.\n\n"
+        "REGLAS INQUEBRANTABLES:\n"
+        "1. La pregunta, las 4 opciones y la explicación deben basarse EXCLUSIVAMENTE en el contenido de "
+        "más abajo. No completes huecos con conocimiento propio ni añadas datos que no estén en él.\n"
+        "2. Cualquier dato concreto (un nombre, una función, un atajo de teclado, un menú, un valor, una "
+        "característica, un paso) debe copiarse EXACTAMENTE del contenido -- nunca aproximarlo ni "
+        "inventarlo.\n"
+        "3. Debe existir una única respuesta correcta, completa y verificable en el contenido. Las otras "
+        "tres deben parecer plausibles, con dificultad de examen oficial, cada una con un único error "
+        "claro (un dato cambiado) -- nunca absurdas, ninguna defendible como parcialmente correcta.\n"
+        "4. La explicación debe repasar TODAS las opciones, una por línea y en orden, con este formato "
+        "exacto: \"A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) "
+        "...\", limitándose al contenido proporcionado.\n"
+        "5. Afirma cada dato DIRECTAMENTE. NO uses muletillas como \"según el contenido\", \"según el "
+        "texto\", \"en el contenido proporcionado\", \"tal como se indica\" ni similares -- están "
+        "prohibidas y harían que la pregunta se descarte.\n"
+        f"6. Tipo de pregunta a construir: {descripcion_tipo}\n\n"
+        "Antes de responder, comprueba internamente: ¿existe una única respuesta correcta? ¿podría "
+        "defenderse otra opción? ¿todos los datos coinciden EXACTAMENTE con el contenido? Si tienes "
+        "cualquier duda, ajusta la pregunta antes de responder.\n\n"
+        "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin bloques de código ni texto adicional:\n"
+        '{"tema": "...", "tipo_pregunta": "...", "pregunta": "...", '
+        '"opciones": {"A": "...", "B": "...", "C": "...", "D": "..."}, "respuesta_correcta": "A", '
+        '"explicacion": "..."}'
+    )
+    user = f"{contenido}\n\nGenera la pregunta a partir de este contenido."
+    return system, user
+
+
 def _prompt_verificacion(pregunta_candidata, anclas):
+    """Elige el prompt de verificación acorde al tipo de contenido, igual que
+    _prompt_generacion."""
+    if _es_normativo(anclas):
+        return _prompt_verificacion_normativo(pregunta_candidata, anclas)
+    return _prompt_verificacion_descriptivo(pregunta_candidata, anclas)
+
+
+def _prompt_verificacion_normativo(pregunta_candidata, anclas):
     contenido = _bloques_texto_legal(anclas)
     system = (
         "Eres un verificador jurídico independiente. Te llega una pregunta tipo test YA REDACTADA por "
@@ -198,6 +295,35 @@ def _prompt_verificacion(pregunta_candidata, anclas):
         "proporcionado (posible alucinación).\n"
         "11. Un tribunal de oposición podría razonablemente considerar correcta una opción distinta a "
         "la marcada.\n\n"
+        "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
+        '{"valido": true, "problemas": []}\n'
+        "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo."
+    )
+    user = f"{contenido}\n\nPREGUNTA A VERIFICAR:\n{json.dumps(pregunta_candidata, ensure_ascii=False)}"
+    return system, user
+
+
+def _prompt_verificacion_descriptivo(pregunta_candidata, anclas):
+    contenido = _bloques_contenido(anclas)
+    system = (
+        "Eres un verificador independiente. Te llega una pregunta tipo test YA REDACTADA por otro "
+        "proceso, y el ÚNICO contenido real del que debería haber salido. No des por hecho que la "
+        "pregunta es correcta: comprueba cada afirmación contra el contenido, como si lo vieras por "
+        "primera vez y no supieras nada más. Se trata de temario técnico/descriptivo (informática, "
+        "ofimática...), NO de una norma legal: no exijas artículos, plazos ni terminología de leyes.\n\n"
+        "Marca la pregunta como inválida si detectas CUALQUIERA de estos problemas:\n"
+        "1. El contenido de la pregunta no coincide con lo que dice el texto proporcionado.\n"
+        "2. La respuesta marcada como correcta no es completamente correcta según ese contenido.\n"
+        "3. Alguna de las otras tres opciones podría considerarse también correcta o parcialmente "
+        "correcta -- ninguna debe ser defendible.\n"
+        "4. La explicación no repasa las 4 opciones en el formato \"A) ... B) ... C) ... D) ...\", o no "
+        "coincide exactamente con la respuesta marcada como correcta.\n"
+        "5. Cualquier dato concreto (nombre, función, atajo, menú, valor, característica, paso) no "
+        "coincide con el contenido.\n"
+        "6. Se mezcla información de partes distintas del contenido de forma que resulte incorrecta.\n"
+        "7. Existe alguna contradicción interna entre la pregunta, las opciones y la explicación.\n"
+        "8. Hay cualquier dato o afirmación que no puedas verificar en el contenido proporcionado "
+        "(posible invención).\n\n"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
         '{"valido": true, "problemas": []}\n'
         "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo."
