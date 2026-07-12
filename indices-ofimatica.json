@@ -1,0 +1,583 @@
+{
+  "tema_01": {
+    "titulo_generico": "Informática básica",
+    "age_tema": "tema_01",
+    "aux_tema": "tema_05",
+    "epigrafes": [
+      {
+        "numero": 1,
+        "titulo": "Informática básica: conceptos fundamentales sobre el hardware y el software",
+        "subtitulos": [
+          "Concepto de informática y de ordenador",
+          "Generaciones del ordenador",
+          "T ipos de ordenador",
+          "El hardware: clasificación y función",
+          "L a arquitectura V on Neumann",
+          "L a CPU y sus componentes",
+          "El firmware: BIOS y UEFI",
+          "T ipos de memoria: volatilidad y jerarquía",
+          "L a placa base: componentes internos y conectores e xternos",
+          "P eriféricos",
+          "El software: categorías y formas de comercialización"
+        ]
+      },
+      {
+        "numero": 2,
+        "titulo": "Sistemas de almacenamiento de datos",
+        "subtitulos": [
+          "Sistemas de numeración: la base del almacenamiento",
+          "Datos e información: una distinción fundamental",
+          "Soportes de almacenamiento",
+          "Estructura interna del disco duro (HDD)",
+          "P articiones, formato, RAID y almacenamiento en red",
+          "L a nube: almacenamiento y computación como ser vicio",
+          "Conceptos complementarios de almacenamiento y archivos"
+        ]
+      },
+      {
+        "numero": 3,
+        "titulo": "Sistemas operativos",
+        "subtitulos": [
+          "El sistema operativo: capa intermedia entre hardware y aplicaciones",
+          "Anatomía del sistema operativo: k ernel, shell y sistema de archivos",
+          "L as seis funciones del sistema operativo",
+          "Clasificación de los sistemas operativos",
+          "L os grandes sistemas operativos del mercado",
+          "El sistema de archivos: cómo el SO ordena los datos",
+          "V irtualización"
+        ]
+      },
+      {
+        "numero": 4,
+        "titulo": "Nociones básicas de seguridad informática",
+        "subtitulos": [
+          "L a información como activo: confidencialidad y normativa de protección",
+          "de datos",
+          "Gestión de usuarios: los cinco pasos",
+          "Amenazas y vulnerabilidades",
+          "T ipos de malware",
+          "Medidas de protección",
+          "Identificación y firma en el procedimiento administrativo",
+          "F irma electrónica y certificado digital",
+          "Conceptos complementarios de ciberseguridad"
+        ]
+      }
+    ]
+  },
+  "tema_02": {
+    "titulo_generico": "El entorno Windows / sistema operativo",
+    "age_tema": "tema_02",
+    "aux_tema": "tema_06",
+    "epigrafes": [
+      {
+        "numero": 1,
+        "titulo": "Introducción al sistema operativo: el entorno W in ­ dows. F undamentos. T rabajo en el entorno gráfico de W indows: ventanas, iconos, menús conte xtuales, cuadros de diálogo",
+        "subtitulos": [
+          "Concepto y elementos del sistema operativo",
+          "Sistemas operativos más comunes",
+          "W indows 11: versión, ediciones y especificaciones",
+          "El entorno gráfico: ventanas, iconos, menús y diálogos"
+        ]
+      },
+      {
+        "numero": 2,
+        "titulo": "El escritorio y sus elementos. El menú inicio",
+        "subtitulos": [
+          "P antalla de bloqueo e inicio de sesión",
+          "El escritorio",
+          "L a barra de tareas",
+          "L a bandeja de sistema",
+          "V ista de tareas y escritorios virtuales",
+          "W idgets",
+          "El menú Inicio",
+          "El menú W in+X y el A dministrador de tareas"
+        ]
+      },
+      {
+        "numero": 3,
+        "titulo": "Copilot",
+        "subtitulos": [
+          "Qué es Copilot",
+          "A cceso a Copilot en W indows 11",
+          "Capacidades y funciones de Copilot",
+          "Copilot+ PCs",
+          "Copilot en Microsoft 365"
+        ]
+      }
+    ]
+  },
+  "tema_03": {
+    "titulo_generico": "El Explorador de Windows",
+    "age_tema": "tema_03",
+    "aux_tema": "tema_07",
+    "epigrafes": [
+      {
+        "numero": 1,
+        "titulo": "El Explorador de W indows",
+        "subtitulos": [
+          "Concepto y función del Explorador",
+          "Cómo abrir el Explorador",
+          "L a ventana del Explorador : 13 elementos",
+          "L os paneles auxiliares: detalles y vista previa",
+          "V istas del Explorador",
+          "Navegación con pestañas",
+          "Bibliotecas",
+          "Opciones de carpeta"
+        ]
+      },
+      {
+        "numero": 2,
+        "titulo": "Gestión de carpetas y archivos. Operaciones de búsqueda",
+        "subtitulos": [
+          "Conceptos fundamentales",
+          "Selección de elementos",
+          "Operaciones básicas de gestión",
+          "Compresión nativa en W indows 11",
+          "Eliminar y la P apelera de reciclaje",
+          "P ropiedades de un archivo o carpeta",
+          "Inde xación en W indows 11",
+          "Búsqueda en el Explorador"
+        ]
+      },
+      {
+        "numero": 3,
+        "titulo": "Herramientas «Este equipo » y «A cceso rápido »",
+        "subtitulos": [
+          "L a herramienta «Este equipo »",
+          "L a herramienta «Inicio » y «A cceso rápido »",
+          "Modo Dios ( God Mode )"
+        ]
+      },
+      {
+        "numero": 4,
+        "titulo": "A ccesorios",
+        "subtitulos": [
+          "Bloc de notas ( Notepad )",
+          "W ordP ad (eliminado en W indows 11 24H2)",
+          "Calculadora",
+          "Herramienta R ecortes ( Snipping T ool )",
+          "P aint",
+          "P ortapapeles mejorado (W in + V)",
+          "Asistencia R ápida",
+          "Cone xión a Escritorio R emoto",
+          "Grabación de acciones de usuario ( Steps R ecor der )",
+          "Mapa de caracteres",
+          "Cámara",
+          "F otos",
+          "Game Bar (Barra de juego)",
+          "Otras aplicaciones incluidas",
+          "A ccesibilidad"
+        ]
+      },
+      {
+        "numero": 5,
+        "titulo": "Herramientas del sistema",
+        "subtitulos": [
+          "T abla resumen de herramientas",
+          "Liberador de espacio en disco ( cleanmgr )",
+          "Desfragmentador / Optimizar unidades ( dfrgui )",
+          "A dministrador de tareas ( taskmgr )",
+          "A dministrador de dispositivos ( devmgmt.msc )",
+          "F irewall de W indows ( wf.msc )",
+          "Editor de R egistro ( regedit )",
+          "A dministración de equipos ( compmgmt.msc )",
+          "Configuración del sistema ( msconfig )",
+          "Diagnóstico de memoria ( mdsched )",
+          "Información del sistema ( msinfo32 )",
+          "Unidad de recuperación",
+          "Comandos principales del símbolo de sistema ( cmd )",
+          "Cuentas de usuario"
+        ]
+      }
+    ]
+  },
+  "tema_04": {
+    "titulo_generico": "Procesadores de texto: Word 365",
+    "age_tema": "tema_04",
+    "aux_tema": "tema_08",
+    "epigrafes": [
+      {
+        "numero": 1,
+        "titulo": "P rincipales funciones y utilidades",
+        "subtitulos": [
+          "Qué es W ord: historia y características",
+          "P antalla de inicio y vista Backstage",
+          "L a ventana de W ord 36",
+          "Grupo P ortapapeles (ficha Inicio)",
+          "F ormato de carácter (grupo F uente)",
+          "F ormato de párrafo (grupo P árrafo)",
+          "Estilos",
+          "Listas",
+          "Grupo Edición",
+          "Grupo V oz: dictar y transcribir",
+          "Microsoft Copilot en W ord",
+          "A tajos de teclado de W ord 365"
+        ]
+      },
+      {
+        "numero": 2,
+        "titulo": "Creación y estructuración del documento",
+        "subtitulos": [
+          "F icha Insertar — grupo P áginas",
+          "F icha Insertar — grupo T ablas",
+          "F icha Insertar — grupo Ilustraciones",
+          "F icha Insertar — grupo Vínculos",
+          "F icha Insertar — grupo Encabezado y pie de página",
+          "F icha Insertar — grupo T e xto",
+          "F icha Diseño — temas y fondo de página",
+          "F icha Disposición — configurar página",
+          "F icha R eferencias",
+          "F icha Correspondencia — combinar correspondencia"
+        ]
+      },
+      {
+        "numero": 3,
+        "titulo": "Gestión, grabación, recuperación e impresión de ficheros",
+        "subtitulos": [
+          "F ormatos de archivo compatibles con W ord",
+          "Guardar , abrir y recuperar documentos",
+          "F icha Archivo — Información",
+          "F icha R evisar — herramientas de revisión",
+          "Impresión"
+        ]
+      },
+      {
+        "numero": 4,
+        "titulo": "P ersonalización del entorno de trabajo",
+        "subtitulos": [
+          "P ersonalizar la cinta de opciones",
+          "P ersonalizar la barra de acceso rápido (BAR)",
+          "Opciones de W ord",
+          "V istas del documento",
+          "Grupo Inmersivo: L ector Inmersivo y Concentración",
+          "Grupo V entana",
+          "P anel de navegación",
+          "Plantillas y documentos maestros"
+        ]
+      }
+    ]
+  },
+  "tema_05": {
+    "titulo_generico": "Hojas de cálculo: Excel 365",
+    "age_tema": "tema_05",
+    "aux_tema": "tema_09",
+    "epigrafes": [
+      {
+        "numero": 1,
+        "titulo": "P rincipales funciones y utilidades. Libros, hojas y celdas",
+        "subtitulos": [
+          "Qué es Excel: historia y propósito",
+          "El libro Excel: concepto, dimensiones y pantalla de bienvenida",
+          "L os siete elementos de la ventana de Excel 36",
+          "L a cinta de opciones y sus modos",
+          "V istas del libro",
+          "Gestión de hojas de cálculo",
+          "Gestión de filas, columnas y celdas",
+          "Selección y cursores",
+          "A utorrelleno y series",
+          "Inmovilizar paneles"
+        ]
+      },
+      {
+        "numero": 2,
+        "titulo": "Configuración. P ersonalización del entorno de tra ­ bajo",
+        "subtitulos": [
+          "P ersonalizar la barra de herramientas de acceso rápido (BAR)",
+          "P ersonalizar la cinta de opciones",
+          "Archivo →  Opciones: las categorías de configuración",
+          "A tajos de teclado de Excel 365"
+        ]
+      },
+      {
+        "numero": 3,
+        "titulo": "Introducción y edición de datos",
+        "subtitulos": [
+          "T ipos de datos en Excel",
+          "Copiar , cortar y pegado especial",
+          "F ormato de celdas: las seis pestañas",
+          "Estilos de celda",
+          "F ormato condicional",
+          "Analizar datos",
+          "V alidación de datos"
+        ]
+      },
+      {
+        "numero": 4,
+        "titulo": "F órmulas y funciones",
+        "subtitulos": [
+          "F órmulas: operadores y orden de precedencia",
+          "R eferencias: relativas, absolutas y mixtas",
+          "Errores más frecuentes en fórmulas",
+          "R angos con nombre y administrador de nombres",
+          "El asistente de funciones",
+          "F unciones matemáticas",
+          "F unciones estadísticas",
+          "F unciones de te xto",
+          "F unciones lógicas",
+          "F unciones de búsqueda y referencia",
+          "F unciones de fecha y hora",
+          "F unciones de información",
+          "F unciones financieras",
+          "F unciones de base de datos",
+          "F unciones de matriz dinámica",
+          "T ablas de Excel (objeto estructurado)"
+        ]
+      },
+      {
+        "numero": 5,
+        "titulo": "Gráficos. Gestión de datos",
+        "subtitulos": [
+          "T ipos de gráfico en Excel 365",
+          "Crear y modificar un gráfico",
+          "Minigráficos (sparklines)",
+          "T ablas dinámicas",
+          "Gráficos dinámicos",
+          "Ordenar datos",
+          "F iltrar datos",
+          "Subtotales",
+          "Quitar duplicados",
+          "T e xto en columnas y Buscar objetivo",
+          "Configurar página e impresión",
+          "Guardar , formatos y plantillas",
+          "P rotección de hojas y libros",
+          "Control del rendimiento y Mostrar cambios",
+          "Compartir libro"
+        ]
+      }
+    ]
+  },
+  "tema_06": {
+    "titulo_generico": "Bases de datos: Access 365",
+    "age_tema": "tema_06",
+    "aux_tema": "tema_10",
+    "epigrafes": [
+      {
+        "numero": 1,
+        "titulo": "Bases de datos: A ccess 365. P rincipales funciones y utilidades",
+        "subtitulos": [
+          "Concepto de base de datos relacional",
+          "Especificaciones técnicas de A ccess",
+          "P antalla de bienvenida y creación de una base de datos",
+          "Compactar y reparar la base de datos",
+          "Contraseña de la base de datos",
+          "F ormatos de archivo",
+          "Dividir la base de datos: front-end y back-end",
+          "Herramientas de base de datos",
+          "F ichas de la cinta de opciones",
+          "A tajos de teclado",
+          "P ersonalización del entorno"
+        ]
+      },
+      {
+        "numero": 2,
+        "titulo": "T ablas",
+        "subtitulos": [
+          "Crear una tabla en vista Diseño",
+          "R eglas para nombrar campos",
+          "T ipos de datos",
+          "P ropiedades de campo",
+          "Clave principal y clave e xterna",
+          "V ista Hoja de datos",
+          "F iltros"
+        ]
+      },
+      {
+        "numero": 3,
+        "titulo": "Consultas",
+        "subtitulos": [
+          "Concepto y clasificación",
+          "T ipos de consultas de selección",
+          "Consultas multitabla",
+          "T ipos de consultas de acción",
+          "Operadores en A ccess",
+          "V ista Diseño de consultas: cuadrícula QBE",
+          "V ista SQL",
+          "Generador de e xpresiones",
+          "F unciones incorporadas",
+          "Comparativa Excel ↔  A ccess"
+        ]
+      },
+      {
+        "numero": 4,
+        "titulo": "F ormularios",
+        "subtitulos": [
+          "Concepto",
+          "Métodos de creación",
+          "V istas de un formulario",
+          "Controles de un formulario",
+          "Estructura: secciones de un formulario",
+          "Barra de navegación y buscador",
+          "Orden de tabulación",
+          "Subformularios"
+        ]
+      },
+      {
+        "numero": 5,
+        "titulo": "Informes",
+        "subtitulos": [
+          "Concepto",
+          "Métodos de creación",
+          "V istas de un informe",
+          "Secciones de un informe",
+          "Gráficos en informes"
+        ]
+      },
+      {
+        "numero": 6,
+        "titulo": "R elaciones",
+        "subtitulos": [
+          "P or qué se relacionan las tablas",
+          "L a ventana R elaciones",
+          "T ipos de relación",
+          "Integridad referencial",
+          "T ipos de combinación",
+          "Orden de introducción y eliminación de datos"
+        ]
+      },
+      {
+        "numero": 7,
+        "titulo": "Importación, vinculación y e xportación de datos",
+        "subtitulos": [
+          "T res operaciones con datos e xternos",
+          "Importación de datos",
+          "V inculación de datos",
+          "Exportación de datos",
+          "Combinar correspondencia A ccess →  W ord"
+        ]
+      }
+    ]
+  },
+  "tema_07": {
+    "titulo_generico": "Correo electrónico: Outlook 365",
+    "age_tema": "tema_07",
+    "aux_tema": "tema_11",
+    "epigrafes": [
+      {
+        "numero": 1,
+        "titulo": "Correo electrónico: Outlook 365. Conceptos ele ­ mentales y funcionamiento. El entorno de trabajo",
+        "subtitulos": [
+          "Qué es el correo electrónico",
+          "F ormato de las direcciones de correo electrónico",
+          "W eb ­ mail y programa gestor de correo",
+          "F uncionamiento básico: los protocolos de correo",
+          "Microsoft Exchange y el protocolo MAPI/HTTP",
+          "P artes de un correo electrónico",
+          "T ipos de cuenta en Outlook 365",
+          "El entorno de trabajo de Outlook 365",
+          "L as carpetas del buzón",
+          "A utoarchivar y herramientas de buzón",
+          "L as pestañas de la cinta en el módulo Correo",
+          "L a bandeja de entrada prioritaria",
+          "El panel de lectura",
+          "El calendario de Outlook",
+          "V istas y formato condicional"
+        ]
+      },
+      {
+        "numero": 2,
+        "titulo": "Enviar , recibir , responder y reenviar mensajes. Creación de mensajes",
+        "subtitulos": [
+          "R ecibir mensajes",
+          "Crear y enviar un mensaje nuevo",
+          "A djuntar archivos a un mensaje",
+          "P rioridad, firma, plantillas y herramientas de redacción",
+          "Opciones de entrega: seguimiento, votación y más opciones",
+          "Enviar el mensaje",
+          "L a ficha Inicio: grupos y comandos destacados",
+          "R esponder a un mensaje",
+          "R eenviar un mensaje",
+          "Menú conte xtual de un correo electrónico",
+          "R espuestas automáticas y respuestas sugeridas",
+          "Grupos de envío y recepción",
+          "Búsqueda en Outlook",
+          "Conversaciones",
+          "R ecuperar un mensaje enviado",
+          "F iltro de correo no deseado (spam)"
+        ]
+      },
+      {
+        "numero": 3,
+        "titulo": "R eglas de mensaje. Libreta de direcciones",
+        "subtitulos": [
+          "R eglas de mensaje: concepto y utilidad",
+          "Categorías de reglas",
+          "L os tres componentes de una regla",
+          "Crear una regla con el asistente",
+          "A dministrar reglas: orden, activar , modificar",
+          "Configuración de la cuenta y delegado de acceso",
+          "L a libreta de direcciones",
+          "Contactos: crear , editar e importar/e xportar",
+          "Grupos de contactos (listas de distribución)",
+          "V istas en el módulo Contactos",
+          "Combinación de correspondencia desde Outlook",
+          "Métodos abreviados de teclado habituales en Outlook"
+        ]
+      }
+    ]
+  },
+  "tema_08": {
+    "titulo_generico": "Internet y navegadores web",
+    "age_tema": "tema_08",
+    "aux_tema": "tema_12",
+    "epigrafes": [
+      {
+        "numero": 1,
+        "titulo": "L a R ed Internet: origen, evolución y estado actual",
+        "subtitulos": [
+          "Concepto de Internet",
+          "Historia: de ARP ANET a la web actual",
+          "Estado actual: usuarios y jerarquía de operadores",
+          "El W3C y la accesibilidad web",
+          "Surface W eb, Deep W eb y Dark W eb",
+          "El protocolo TCP/IP",
+          "Direcciones IP : IPv4 e IPv6",
+          "El sistema DNS y los dominios",
+          "L a URL y los protocolos HTTP/HTTPS",
+          "L enguajes de la web: HTML, C SS, XML y JavaScript",
+          "P rotocolos adicionales"
+        ]
+      },
+      {
+        "numero": 2,
+        "titulo": "Conceptos elementales sobre protocolos y ser vi ­ cios en Internet",
+        "subtitulos": [
+          "Hardware de red: elementos físicos",
+          "El ISP : proveedor de ser vicios de Internet",
+          "Cone xiones fijas a Internet",
+          "Cone xiones móviles a Internet",
+          "Clasificación de redes",
+          "Internet, Intranet y Extranet",
+          "Herramientas de diagnóstico: ipconfig , ping  y tracert",
+          "P rincipales ser vicios de Internet",
+          "Buscadores web",
+          "Netiqueta",
+          "Marco de referencia: Modelo OSI y Modelo TCP/IP"
+        ]
+      },
+      {
+        "numero": 3,
+        "titulo": "F uncionalidades básicas de los navegadores web",
+        "subtitulos": [
+          "Qué es un navegador web",
+          "P rincipales navegadores web",
+          "Elementos de una página web",
+          "Interfaz del navegador : zonas principales",
+          "P estañas: atajos y operaciones",
+          "Historial de navegación",
+          "F avoritos o marcadores",
+          "Descargas",
+          "Guardar una página web",
+          "Búsqueda en página y en Internet",
+          "Hiper vínculos e imágenes",
+          "Caché del navegador",
+          "Cookies",
+          "Seguridad en el navegador",
+          "Navegación privada e invitado",
+          "Extensiones",
+          "Códigos de estado HTTP",
+          "Amenazas habituales en la navegación web"
+        ]
+      }
+    ]
+  }
+}
