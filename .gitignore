@@ -200,6 +200,12 @@ clave-firebase.json
 cache_paginas_*.pkl
 preview_*.json
 
+# regenerar_temario_ofimatica.py generated artifacts (índice extraído y
+# cache de contenido generado por DeepSeek -- no se versionan, se
+# regeneran localmente en cada ejecución)
+indices-ofimatica.json
+contenido-generado-ofimatica.json
+
 # Node / Playwright (tests-frontend)
 node_modules/
 test-results/
