@@ -327,6 +327,24 @@ def calcular_pesos_reales_por_bloque(db, oposicion):
     return _desde_cache_o_calcular(("pesos_bloque", oposicion), _calcular, ttl_segundos=1800)
 
 
+def obtener_preguntas_examenes_oficiales(db, oposicion):
+    """Todas las preguntas (tipo "pregunta") de examenes_oficiales_<oposicion>,
+    ya convertidas a dict -- se cachea con el mismo TTL largo que
+    calcular_pesos_reales_por_bloque/tiene_preguntas_psicotecnicas porque
+    recorre la misma colección completa y por el mismo motivo: la usa
+    /generar-test-oficial en cada petición, y sin caché cualquier rato sin
+    tráfico bastaba para que la siguiente visita disparase de nuevo ese
+    barrido completo."""
+    def _calcular():
+        coleccion = coleccion_examenes_oficiales(oposicion)
+        return [
+            doc.to_dict() or {}
+            for doc in db.collection(coleccion).stream()
+            if (doc.to_dict() or {}).get("tipo") == "pregunta"
+        ]
+    return _desde_cache_o_calcular(("preguntas_oficiales", oposicion), _calcular, ttl_segundos=1800)
+
+
 def tiene_preguntas_psicotecnicas(db, oposicion):
     """True si la colección de exámenes oficiales de esta oposición tiene
     alguna pregunta marcada como "psicotecnico" (aptitud administrativa,
