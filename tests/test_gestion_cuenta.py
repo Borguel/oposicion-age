@@ -39,6 +39,28 @@ def test_eliminar_cuenta_borra_subcolecciones_y_documento(db):
     assert db.leer(("usuarios", "u1", "documentos", "d1")) is None
 
 
+def test_exportar_datos_incluye_conversaciones_de_tu_tutor(db):
+    # Las conversaciones de Tu Tutor cuelgan de conversaciones_IA/{uid}/conversaciones,
+    # NO de usuarios/{uid}/conversaciones (ver chat_controller.py: crear_conversacion).
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    db.sembrar(("conversaciones_IA", "u1", "conversaciones", "c1"), {"titulo": "Duda sobre el TREBEP"})
+
+    datos = exportar_datos_usuario(db, "u1")
+
+    assert datos["conversaciones"] == [{"id": "c1", "titulo": "Duda sobre el TREBEP"}]
+
+
+def test_eliminar_cuenta_borra_conversaciones_de_tu_tutor(db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    db.sembrar(("conversaciones_IA", "u1", "conversaciones", "c1"), {"titulo": "Duda sobre el TREBEP"})
+
+    with patch("gestion_cuenta.firebase_auth.delete_user"):
+        eliminar_cuenta_usuario(db, "u1")
+
+    assert db.leer(("conversaciones_IA", "u1", "conversaciones", "c1")) is None
+    assert db.leer(("conversaciones_IA", "u1")) is None
+
+
 def test_eliminar_cuenta_cancela_suscripciones_de_stripe(db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",

@@ -10,10 +10,10 @@ from firebase_admin import auth as firebase_auth
 logger = logging.getLogger(__name__)
 
 # Subcolecciones que cuelgan de usuarios/{uid} en todo el proyecto (ver
-# guardar_resultado.py, documentos_pdf.py, banco_fallos.py, chat_controller.py).
+# guardar_resultado.py, documentos_pdf.py, banco_fallos.py).
 COLECCIONES_USUARIO = (
     "tests", "documentos", "resumenes_pdf", "esquemas_pdf", "tarjetas_pdf",
-    "tests_pdf", "esquemas", "preguntas_falladas", "conversaciones",
+    "tests_pdf", "esquemas", "preguntas_falladas",
 )
 
 
@@ -29,6 +29,15 @@ def exportar_datos_usuario(db, uid):
             {"id": doc.id, **(doc.to_dict() or {})}
             for doc in usuario_ref.collection(coleccion).stream()
         ]
+
+    # Las conversaciones de Tu Tutor NO cuelgan de usuarios/{uid} sino de una
+    # colección propia a nivel raíz (ver chat_controller.py: crear_conversacion),
+    # por eso se tratan aparte en vez de con COLECCIONES_USUARIO.
+    conversaciones_ref = db.collection("conversaciones_IA").document(uid).collection("conversaciones")
+    datos["conversaciones"] = [
+        {"id": doc.id, **(doc.to_dict() or {})}
+        for doc in conversaciones_ref.stream()
+    ]
     return datos
 
 
@@ -52,6 +61,11 @@ def eliminar_cuenta_usuario(db, uid):
     for coleccion in COLECCIONES_USUARIO:
         for doc in usuario_ref.collection(coleccion).stream():
             doc.reference.delete()
+
+    conversaciones_ref = db.collection("conversaciones_IA").document(uid).collection("conversaciones")
+    for doc in conversaciones_ref.stream():
+        doc.reference.delete()
+    db.collection("conversaciones_IA").document(uid).delete()
 
     usuario_ref.delete()
 
