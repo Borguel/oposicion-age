@@ -42,6 +42,20 @@ async function obtenerAuthHeaders() {
     let botonFavoritaHTML = () => "";
     let activarBotonFavorita = () => {};
 
+    // iniciarSelectorRepartoRealista hace un fetch a /oposiciones-disponibles
+    // que puede tardar (el backend en Render tiene arranque en frío) -- si el
+    // usuario ya empezó el test ANTES de que esa respuesta llegue, no debe
+    // tocar ya el formulario a destiempo por encima del test ya en marcha
+    // (mismo patrón que test-oficial/script.js: ocultarSelectorTestOficial +
+    // guarda testYaIniciado en cada inicializador async).
+    let testYaIniciado = false;
+
+    function ocultarSelectorTestPersonalizado() {
+      testYaIniciado = true;
+      document.getElementById('tarjeta-formulario').style.display = "none";
+      document.querySelector('.test-type-container')?.classList.add('test-type-compacto');
+    }
+
     function tiempoTranscurridoActual() {
       if (tiempoLimite !== null) return tiempoTotalAsignado - tiempoLimite;
       return tiempoTranscurridoBase + Math.floor((Date.now() - tiempoInicio) / 1000);
@@ -127,6 +141,7 @@ async function obtenerAuthHeaders() {
         const oposicionActualId = obtenerOposicionActual();
         const infoOposicion = (datos.oposiciones || []).find((o) => o.id === oposicionActualId);
         if (infoOposicion && infoOposicion.tiene_pesos_reales) return;
+        if (testYaIniciado) return; // el usuario ya empezó el test mientras se esperaba esta respuesta
 
         const radioRealista = document.getElementById("opcion-reparto-realista");
         if (!radioRealista) return;
@@ -383,8 +398,7 @@ async function obtenerAuthHeaders() {
         });
         return;
       }
-      document.getElementById('tarjeta-formulario').style.display = "none";
-      document.querySelector('.test-type-container')?.classList.add('test-type-compacto');
+      ocultarSelectorTestPersonalizado();
       document.getElementById("contenedor-test").style.display = "block";
       document.getElementById("contenedor-test").innerHTML = `
         <div class="carga-generando">
@@ -815,8 +829,7 @@ async function obtenerAuthHeaders() {
       activarBotonFavorita = favoritasApi.activarBotonFavorita;
       textosFavoritas = await favoritasApi.cargarTextosFavoritas(oposicionActual);
 
-      document.getElementById('tarjeta-formulario').style.display = "none";
-      document.querySelector('.test-type-container')?.classList.add('test-type-compacto');
+      ocultarSelectorTestPersonalizado();
       document.getElementById("contenedor-test").style.display = "block";
 
       if (guardado.modo_cronometrado) {
