@@ -10,6 +10,17 @@ async function obtenerAuthHeaders() {
 obtenerAuthHeaders();
 
 // ===== FUNCIONES AUXILIARES =====
+// Los títulos del temario pueden ser epígrafes muy largos ("La Administración
+// General del Estado: principios de organización y funcionamiento. Órganos
+// centrales..."). Para las etiquetas de los botones se corta por el primer
+// ":" o "." (que suele dejar el nombre principal del tema) y, si aún es largo,
+// se recorta con puntos suspensivos -- así el botón no se convierte en un
+// bloque gigante de varias líneas.
+function acortarTitulo(titulo) {
+  const base = (String(titulo || "").split(/[:.]/)[0] || String(titulo || "")).trim();
+  return base.length > 55 ? base.slice(0, 55).trim() + "…" : base;
+}
+
 function escapeHtml(text) {
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
   return text.replace(/[&<>"']/g, m => map[m]);
@@ -417,7 +428,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const enlace = document.createElement("a");
         enlace.className = "btn-tema-mensaje";
         enlace.href = "/test-personalizado/?temas=" + encodeURIComponent(tema.tema_id);
-        enlace.textContent = "📝 Generar test de " + tema.titulo;
+        enlace.textContent = "📝 Generar test de " + acortarTitulo(tema.titulo);
         temasRow.appendChild(enlace);
       });
       if (temasRow.children.length) pie.appendChild(temasRow);
@@ -608,7 +619,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const enlace = document.createElement("a");
         enlace.className = "btn-accion-tutor";
         enlace.href = "/test-personalizado/?temas=" + encodeURIComponent(accion.tema_id);
-        enlace.textContent = "📝 " + (accion.label || "Practicar este tema");
+        const etiquetaAccion = accion.titulo ? ("Practicar " + acortarTitulo(accion.titulo)) : (accion.label || "Practicar este tema");
+        enlace.textContent = "📝 " + etiquetaAccion;
         accionEl.appendChild(enlace);
       }
     }
