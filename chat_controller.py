@@ -302,10 +302,16 @@ def _necesita_resumen_temario(mensaje):
 # que serviría para cualquiera.
 # ============================================================
 _MINIMO_INTENTOS_TEMA_FLOJO = 3
-_MAX_TEMAS_FLOJOS = 2
+_UMBRAL_ACIERTO_TEMA_FLOJO = 0.7
+_MAX_TEMAS_FLOJOS = 5
+_MAX_TEMAS_PENDIENTES_EN_CONTEXTO = 5
 
 
 def _temas_flojos(rendimiento_por_tema, catalogo):
+    """Temas con suficientes intentos acumulados (a través de TODOS los
+    tests, no solo el último) y un ratio de acierto por debajo del umbral --
+    así detecta también el caso de "aprueba el test en conjunto pero falla
+    mucho en un tema concreto", no solo un suspenso genérico."""
     catalogo_por_id = {tema["id"]: tema["titulo"] for tema in catalogo}
     candidatos = []
     for tema_id, datos in (rendimiento_por_tema or {}).items():
@@ -314,9 +320,20 @@ def _temas_flojos(rendimiento_por_tema, catalogo):
         if intentos < _MINIMO_INTENTOS_TEMA_FLOJO or not titulo:
             continue
         ratio_acierto = datos.get("aciertos", 0) / intentos
+        if ratio_acierto >= _UMBRAL_ACIERTO_TEMA_FLOJO:
+            continue
         candidatos.append((ratio_acierto, titulo))
     candidatos.sort(key=lambda candidato: candidato[0])
-    return [titulo for _ratio, titulo in candidatos[:_MAX_TEMAS_FLOJOS]]
+    return [(titulo, round(ratio * 100)) for ratio, titulo in candidatos[:_MAX_TEMAS_FLOJOS]]
+
+
+def _temas_pendientes(stats, catalogo):
+    """Temas del catálogo que el usuario todavía no ha tocado en ningún
+    test -- se combinan temas_test (lista explícita) y las claves de
+    rendimiento_por_tema (por si alguna vía antigua solo rellenó una de
+    las dos), para no depender de un único campo."""
+    tocados = set(stats.get("temas_test") or []) | set((stats.get("rendimiento_por_tema") or {}).keys())
+    return [tema["titulo"] for tema in catalogo if tema["id"] not in tocados]
 
 
 def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
@@ -327,8 +344,13 @@ def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
     nombre = (datos.get("nombre") or "").strip()
     racha_actual = (datos.get("racha") or {}).get("racha_actual", 0)
     fecha_examen = (datos.get("fechas_examen") or {}).get(oposicion)
-    rendimiento_por_tema = ((datos.get("estadisticas") or {}).get(oposicion) or {}).get("rendimiento_por_tema", {})
-    temas_flojos = _temas_flojos(rendimiento_por_tema, catalogo)
+    stats = (datos.get("estadisticas") or {}).get(oposicion) or {}
+    temas_flojos = _temas_flojos(stats.get("rendimiento_por_tema", {}), catalogo)
+    # Solo se calculan pendientes para alguien que ya ha hecho algún test --
+    # si no ha hecho ninguno, "pendiente" es todo el catálogo por defecto y
+    # no aporta nada personal que decir (y el propio doc de usuario se crea
+    # en el primer turno de chat, antes de tocar ningún test).
+    temas_pendientes = _temas_pendientes(stats, catalogo) if stats.get("tests_realizados") else []
 
     memoria_cruzada = (datos.get("memoria_tutor") or {}).get("resumen")
 
@@ -339,8 +361,29 @@ def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
         lineas.append(f"Lleva {racha_actual} días seguidos estudiando (racha activa).")
     if fecha_examen:
         lineas.append(f"Tiene marcada la fecha de su examen para el {fecha_examen}.")
+
+    tests_realizados = stats.get("tests_realizados", 0)
+    if tests_realizados:
+        pct_aprobados = round(stats.get("tests_aprobados", 0) / tests_realizados * 100)
+        lineas.append(
+            f"Lleva {tests_realizados} tests hechos en esta oposición, aprueba el {pct_aprobados}% "
+            f"de ellos, con una nota media de {stats.get('puntuacion_media_test', 0)}."
+        )
+
     if temas_flojos:
-        lineas.append("Los temas donde más está fallando últimamente son: " + ", ".join(temas_flojos) + ".")
+        detalle = ", ".join(f"{titulo} ({pct}% de acierto)" for titulo, pct in temas_flojos)
+        lineas.append(
+            "Los temas donde peor rinde (aunque el test en conjunto lo apruebe) son: " + detalle + "."
+        )
+
+    if temas_pendientes:
+        mostrados = temas_pendientes[:_MAX_TEMAS_PENDIENTES_EN_CONTEXTO]
+        resto = len(temas_pendientes) - len(mostrados)
+        detalle_pendientes = ", ".join(mostrados)
+        if resto > 0:
+            detalle_pendientes += f" y {resto} más"
+        lineas.append("Todavía no ha hecho ningún test de estos temas: " + detalle_pendientes + ".")
+
     if memoria_cruzada:
         lineas.append("De conversaciones anteriores (con otro chat) recuerdas esto sobre él/ella: " + memoria_cruzada)
 

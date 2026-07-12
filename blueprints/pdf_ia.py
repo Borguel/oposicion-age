@@ -16,7 +16,7 @@ from PyPDF2 import PdfReader
 
 from firebase_setup import db
 from auth_utils import requiere_login, requiere_plan
-from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso
+from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso, devolver_uso
 from documentos_pdf import (
     obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta,
     listar_carpetas, crear_carpeta, eliminar_carpeta
@@ -262,6 +262,12 @@ def generar_test_desde_pdf():
     uid = g.uid
     plan_actual = g.plan_actual
 
+    # Uso cobrado por adelantado (no al llegar "fin"): el hilo de fondo sigue
+    # generando y gastando en DeepSeek aunque el cliente corte la conexión SSE,
+    # así que cobrar al final permitía saltarse la cuota abortando la petición
+    # en bucle. Si la generación falla de verdad (0 preguntas), se devuelve.
+    registrar_uso(db, uid, "pdf_ia", plan_actual)
+
     def generar():
         eventos = queue.Queue()
 
@@ -299,21 +305,18 @@ def generar_test_desde_pdf():
             except Exception:
                 logger.exception("Error en /generar-test-desde-pdf")
                 resultado = {"test": [], "error": "Error al procesar el PDF o generar preguntas."}
+            if not resultado.get("test"):
+                devolver_uso(db, uid, "pdf_ia", plan_actual)
             eventos.put({"tipo": "fin", **resultado})
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
         hilo.start()
 
-        exito = False
         while True:
             evento = eventos.get()
             yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
             if evento["tipo"] == "fin":
-                exito = bool(evento.get("test"))
                 break
-
-        if exito:
-            registrar_uso(db, uid, "pdf_ia", plan_actual)
 
     return Response(
         stream_with_context(generar()),

@@ -9,7 +9,7 @@ from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
 from firebase_setup import db
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
-from limites_uso import verificar_limite_uso, registrar_uso
+from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales
 from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, barajar_opciones_pregunta, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales
 from test_generator import generar_preguntas_ia_en_lotes
@@ -63,6 +63,15 @@ def generar_test_avanzado_route():
     uid = g.uid
     plan_actual = g.plan_actual
 
+    # El uso se cobra AQUÍ, por adelantado, no al llegar el evento "fin": la
+    # generación corre en un hilo de fondo que sigue gastando en DeepSeek
+    # aunque el cliente corte la conexión SSE, y en ese caso el generador de
+    # abajo nunca llega a su "registrar_uso" final -- cobrar al final dejaba un
+    # hueco para saltarse la cuota abriendo y abortando la petición en bucle.
+    # Si la generación acaba fallando de verdad (0 preguntas), el hilo lo
+    # devuelve con devolver_uso.
+    registrar_uso(db, uid, "test_avanzado_verificado", plan_actual)
+
     def generar():
         eventos = queue.Queue()
 
@@ -89,21 +98,18 @@ def generar_test_avanzado_route():
             except Exception:
                 logger.exception("Error al generar el test personalizado verificado")
                 resultado = {"test": [], "error": "Error inesperado al generar el test"}
+            if not resultado.get("test"):
+                devolver_uso(db, uid, "test_avanzado_verificado", plan_actual)
             eventos.put({"tipo": "fin", **resultado})
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
         hilo.start()
 
-        exito = False
         while True:
             evento = eventos.get()
             yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
             if evento["tipo"] == "fin":
-                exito = bool(evento.get("test"))
                 break
-
-        if exito:
-            registrar_uso(db, uid, "test_avanzado_verificado", plan_actual)
 
     return Response(
         stream_with_context(generar()),

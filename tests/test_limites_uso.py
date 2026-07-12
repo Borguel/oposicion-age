@@ -4,7 +4,7 @@ bloqueados sin motivo, o cuotas que no frenan nada y dejan la puerta
 abierta al gasto en la API de IA."""
 from datetime import date
 
-from limites_uso import verificar_limite_uso, registrar_uso, max_paginas_para_plan
+from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso, max_paginas_para_plan
 
 
 def test_plan_sin_esta_herramienta_queda_bloqueado(db):
@@ -60,6 +60,42 @@ def test_plan_premium_tiene_cuota_diaria_no_mensual(db):
     permitido, _mensaje, _usados, limite = verificar_limite_uso(db, "u1", "premium", "pdf_ia")
     assert permitido is False
     assert limite == 60
+
+
+def test_devolver_uso_resta_uno_al_contador(db):
+    # Cobro por adelantado (2) y luego devolución de uno (generación fallida)
+    # -> queda 1, como si solo se hubiera consumido el uso que sí produjo algo.
+    registrar_uso(db, "u1", "test_avanzado_verificado", "basico")
+    registrar_uso(db, "u1", "test_avanzado_verificado", "basico")
+    devolver_uso(db, "u1", "test_avanzado_verificado", "basico")
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["test_avanzado_verificado"]["contador"] == 1
+
+
+def test_devolver_uso_sin_cobro_previo_no_hace_nada(db):
+    # Devolver cuando no hay ningún contador del periodo actual (usuario sin
+    # uso previo) es un no-op: no crea una entrada ni deja nada raro.
+    devolver_uso(db, "u1", "chat_temario", "premium")
+    assert db.leer(("usuarios", "u1")) is None
+
+
+def test_devolver_uso_no_baja_de_cero(db):
+    # Con un contador del periodo actual ya en 0, devolver no debe dejarlo en
+    # negativo (que luego daría al usuario "usos gratis" fantasma).
+    hoy = date.today().isoformat()
+    db.sembrar(("usuarios", "u1"), {"limites_uso": {"chat_temario": {"periodo": hoy, "contador": 0}}})
+    devolver_uso(db, "u1", "chat_temario", "premium")
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["chat_temario"]["contador"] == 0
+
+
+def test_devolver_uso_no_toca_un_contador_de_otro_periodo(db):
+    # Si el periodo ya rotó entre el cobro y la devolución, ese contador es de
+    # otro periodo y no debe tocarse.
+    db.sembrar(("usuarios", "u1"), {"limites_uso": {"pdf_ia": {"periodo": "2020-01", "contador": 5}}})
+    devolver_uso(db, "u1", "pdf_ia", "basico")
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["pdf_ia"] == {"periodo": "2020-01", "contador": 5}
 
 
 def test_max_paginas_por_plan_tiene_valor_por_defecto_para_plan_desconocido():

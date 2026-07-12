@@ -5,6 +5,7 @@ from flask_cors import CORS
 from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 
 # Logging estructurado (con nivel y hora) en vez de print(): así se puede
@@ -45,6 +46,14 @@ from firebase_setup import db
 
 # Inicializar Flask
 app = Flask(__name__)
+
+# Render sirve la app detrás de su propio proxy inverso: sin esto,
+# request.remote_addr (y por tanto la clave del rate-limiter por IP) sería
+# siempre la IP interna del proxy, no la del cliente real -- todas las
+# peticiones compartirían un único cupo y el límite no serviría para frenar a
+# un solo abusador. x_for=1 = confiar en un único proxy por delante (el de
+# Render), leyendo la IP real de la primera entrada de X-Forwarded-For.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 cors_origins_env = os.getenv("CORS_ORIGINS", "")
 cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
 if not cors_origins:
@@ -142,9 +151,15 @@ registrar_rutas_progreso(app, db)
 
 
 @app.route("/", methods=["GET"])
-def listar_rutas():
-    rutas = [rule.rule for rule in app.url_map.iter_rules()]
-    return jsonify({"rutas_disponibles": rutas})
+def raiz():
+    # No se expone la lista completa de rutas al público: era información
+    # innecesaria que le daba a cualquiera el mapa entero de la API. El
+    # listado solo se devuelve a quien presente la API key (útil para
+    # depurar), y si no hay API key configurada se responde un OK escueto.
+    if API_SECRET_KEY and request.headers.get("X-API-Key") == API_SECRET_KEY:
+        rutas = [rule.rule for rule in app.url_map.iter_rules()]
+        return jsonify({"rutas_disponibles": rutas})
+    return jsonify({"estado": "ok", "servicio": "oposicion-age-api"})
 
 
 _VARIABLES_CRITICAS = [
