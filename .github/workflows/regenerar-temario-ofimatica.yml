@@ -21,14 +21,15 @@ on:
   workflow_dispatch:
     inputs:
       paso:
-        description: "paso1 (borrar contenido Persevera de Auxiliar) o generar (generar y subir con DeepSeek)"
+        description: "paso1 (borrar Persevera de Auxiliar), generar (generar/subir con DeepSeek) o mostrar (ver el contenido ya cacheado, sin llamar a DeepSeek)"
         required: true
         type: choice
         options:
           - paso1
           - generar
+          - mostrar
       accion:
-        description: "preview (no toca Firestore) o subir (sube/borra de verdad)"
+        description: "preview (no toca Firestore) o subir (sube/borra de verdad) -- se ignora si paso=mostrar"
         required: true
         default: "preview"
         type: choice
@@ -52,7 +53,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Cache del contenido generado por DeepSeek
-        if: github.event.inputs.paso == 'generar'
+        if: github.event.inputs.paso == 'generar' || github.event.inputs.paso == 'mostrar'
         uses: actions/cache@v4
         with:
           path: contenido-generado-ofimatica.json
@@ -62,7 +63,12 @@ jobs:
         env:
           FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: python regenerar_temario_ofimatica.py --${{ github.event.inputs.paso }} --${{ github.event.inputs.accion }}
+        run: |
+          if [ "${{ github.event.inputs.paso }}" = "mostrar" ]; then
+            python regenerar_temario_ofimatica.py --mostrar --caracteres 1500
+          else
+            python regenerar_temario_ofimatica.py --${{ github.event.inputs.paso }} --${{ github.event.inputs.accion }}
+          fi
 
       - name: Guardar contenido generado como artefacto
         if: github.event.inputs.paso == 'generar'
