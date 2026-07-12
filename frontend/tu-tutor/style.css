@@ -441,34 +441,48 @@ html { scroll-behavior: smooth; }
   gap: 8px;
 }
 .bubble-bot-secundarias { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Borde y texto en el naranja de la marca para que se vean bien (antes era un
+   gris apenas perceptible). */
 .btn-mensaje-sec {
   background: none;
-  border: 1px solid var(--age-border);
+  border: 1.5px solid var(--tutor-accent);
   border-radius: 999px;
-  padding: 4px 12px;
+  padding: 5px 13px;
   font-size: 12.5px;
+  font-weight: 600;
   font-family: var(--age-font);
-  color: var(--age-ink-soft, var(--age-ink));
+  color: var(--tutor-accent);
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.2s;
 }
-.btn-mensaje-sec:hover { background: var(--age-primary-soft); border-color: var(--tutor-accent); }
+.btn-mensaje-sec:hover { background: var(--age-primary-soft); }
 
-.bubble-bot-temas { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Botón de "generar test de un tema": el título puede ser largo, así que NO es
+   un pill (que se deformaría en un óvalo gigante de varias líneas) sino un
+   botón de esquinas suaves, con el texto alineado a la izquierda. En pantallas
+   pequeñas ocupa todo el ancho del mensaje; en grandes, solo lo que necesita. */
+.bubble-bot-temas { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .btn-tema-mensaje {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
   background: var(--tutor-accent);
   color: #fff;
-  border-radius: 999px;
-  padding: 7px 14px;
+  border-radius: 12px;
+  padding: 9px 14px;
   font-size: 13px;
   font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
   text-decoration: none;
-  transition: transform 0.2s, filter 0.2s;
+  max-width: 100%;
+  transition: filter 0.2s;
 }
-.btn-tema-mensaje:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.btn-tema-mensaje:hover { filter: brightness(1.06); }
+@media (max-width: 640px) {
+  .bubble-bot-temas { align-items: stretch; }
+  .btn-tema-mensaje { width: 100%; }
+}
 
 .quick-questions {
   display: flex;
@@ -500,22 +514,25 @@ html { scroll-behavior: smooth; }
 .welcome-accion { margin-top: 14px; }
 .btn-accion-tutor {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 7px;
   background: var(--tutor-accent);
   color: #fff;
   border: none;
-  border-radius: 22px;
-  padding: 10px 18px;
+  border-radius: 14px;
+  padding: 10px 16px;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
   text-decoration: none;
+  max-width: 100%;
   cursor: pointer;
-  transition: transform 0.2s, filter 0.2s;
+  transition: filter 0.2s;
 }
-.btn-accion-tutor:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.05);
+.btn-accion-tutor:hover { filter: brightness(1.06); }
+@media (max-width: 640px) {
+  .btn-accion-tutor { width: 100%; box-sizing: border-box; }
 }
 
 /* TYPING INDICATOR */
