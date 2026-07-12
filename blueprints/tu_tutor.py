@@ -12,7 +12,8 @@ from firebase_setup import db
 from auth_utils import requiere_plan
 from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
 from oposiciones import coleccion_temario
-from chat_controller import responder_tutor, responder_tutor_stream
+from utils import obtener_catalogo_temas
+from chat_controller import responder_tutor, responder_tutor_stream, sugerencia_inicial_usuario
 
 bp = Blueprint("tu_tutor", __name__)
 
@@ -20,6 +21,17 @@ _ERROR_DEEPSEEK = (
     "El tutor ha tenido un problema técnico al generar la respuesta. "
     "Vuelve a intentarlo en unos segundos."
 )
+
+
+@bp.route("/tu-tutor/sugerencia-inicial", methods=["GET"])
+@requiere_plan(db, "premium")
+def tu_tutor_sugerencia_inicial():
+    """Recomendación proactiva para el saludo de bienvenida del chat. Es
+    determinista (plantillas sobre las estadísticas del usuario), NO llama a
+    DeepSeek, así que no consume cuota ni cuesta dinero -- por eso el frontend
+    puede pedirla en cada carga de la página sin coste."""
+    catalogo = obtener_catalogo_temas(db, coleccion_temario(g.oposicion))
+    return jsonify(sugerencia_inicial_usuario(db, g.uid, g.oposicion, catalogo))
 
 
 @bp.route("/tu-tutor", methods=["POST"])

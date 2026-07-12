@@ -6,7 +6,8 @@ caso correcto, y que el historial siga persistiendo en Firestore."""
 import json
 from unittest.mock import patch
 
-from chat_controller import responder_tutor, responder_tutor_stream
+from chat_controller import responder_tutor, responder_tutor_stream, sugerencia_inicial_usuario
+from utils import obtener_catalogo_temas
 
 
 def _sembrar_tema(db, coleccion="Temario AGE"):
@@ -246,6 +247,48 @@ def test_contexto_personal_del_usuario_se_incluye_en_el_prompt(db):
     assert "La Corona" in contexto_personal
     assert "El acto administrativo" in contexto_personal
     assert "La Constitución Española de 1978" not in contexto_personal
+
+
+def test_sugerencia_inicial_recomienda_practicar_el_tema_mas_flojo(db):
+    db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Organización del Estado"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "La Constitución Española de 1978"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_02"), {"titulo": "La Corona"})
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "nombre": "Borja",
+        "estadisticas": {
+            "AGE": {
+                "tests_realizados": 4,
+                "rendimiento_por_tema": {
+                    "bloque_01-tema_01": {"aciertos": 9, "fallos": 1, "blancos": 0},  # va bien
+                    "bloque_01-tema_02": {"aciertos": 1, "fallos": 5, "blancos": 0},  # muy flojo
+                },
+            }
+        },
+    })
+    catalogo = obtener_catalogo_temas(db, "Temario AGE")
+    sugerencia = sugerencia_inicial_usuario(db, "u1", "AGE", catalogo)
+
+    assert "Borja" in sugerencia["saludo"]
+    # La acción debe apuntar al tema flojo concreto (para el deep-link a
+    # generar un test de ESE tema), no a otro.
+    assert sugerencia["accion"]["tema_id"] == "bloque_01-tema_02"
+    assert "La Corona" in sugerencia["accion"]["label"]
+    assert isinstance(sugerencia["sugerencias"], list) and sugerencia["sugerencias"]
+
+
+def test_sugerencia_inicial_usuario_nuevo_sin_tests_no_tiene_accion(db):
+    db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Organización del Estado"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "La Constitución Española de 1978"})
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    catalogo = obtener_catalogo_temas(db, "Temario AGE")
+    sugerencia = sugerencia_inicial_usuario(db, "u1", "AGE", catalogo)
+
+    # Sin tests hechos, no se recomienda practicar ningún tema concreto: solo
+    # un saludo genérico y sugerencias de arranque.
+    assert sugerencia["accion"] is None
+    assert sugerencia["saludo"]
+    assert sugerencia["sugerencias"]
 
 
 def test_tema_con_pocos_intentos_no_cuenta_como_flojo_ni_se_menciona(db):
