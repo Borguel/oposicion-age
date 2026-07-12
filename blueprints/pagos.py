@@ -115,6 +115,81 @@ def crear_sesion_checkout():
         return jsonify({"error": str(e)}), 500
 
 
+MOTIVOS_BAJA_VALIDOS = {"precio", "no_lo_uso", "aprobado", "faltan_funciones", "otro"}
+
+
+@bp.route("/cancelar-suscripcion", methods=["POST"])
+@requiere_login(db)
+def cancelar_suscripcion():
+    """Cancela la suscripción de una oposición concreta al final del
+    periodo ya pagado (nunca de inmediato, para no cortar algo que el
+    usuario ya ha pagado) y guarda el motivo de la baja -- a diferencia de
+    redirigir sin más al portal genérico de Stripe, esto da una
+    oportunidad real de entender por qué se va alguien antes de que se
+    vaya (ver auditoría de julio 2026)."""
+    data = request.get_json(silent=True) or {}
+    oposicion = data.get("oposicion", OPOSICION_POR_DEFECTO)
+    motivo = data.get("motivo")
+    comentario = (data.get("comentario") or "").strip()[:500]
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    if motivo not in MOTIVOS_BAJA_VALIDOS:
+        return jsonify({"error": "Motivo no válido"}), 400
+
+    usuario_ref = db.collection("usuarios").document(g.uid)
+    usuario = usuario_ref.get().to_dict() or {}
+    subscription_id = ((usuario.get("suscripciones") or {}).get(oposicion) or {}).get("stripe_subscription_id")
+    if not subscription_id:
+        return jsonify({"error": "No tienes ninguna suscripción activa para esta oposición"}), 400
+
+    try:
+        subscription = stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
+    except Exception as e:
+        logger.exception("Error cancelando suscripción de Stripe %s", subscription_id)
+        return jsonify({"error": str(e)}), 500
+
+    usuario_ref.collection("bajas_motivos").document().set({
+        "oposicion": oposicion,
+        "motivo": motivo,
+        "comentario": comentario,
+        "fecha": datetime.utcnow().isoformat(),
+    })
+    actualizar_suscripcion(db, g.uid, oposicion, cancelar_al_final_periodo=True)
+
+    periodo_fin = _current_period_end(subscription)
+    return jsonify({
+        "mensaje": "Tu suscripción se cancelará al final del periodo ya pagado.",
+        "current_period_end": datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None
+    })
+
+
+@bp.route("/reactivar-suscripcion", methods=["POST"])
+@requiere_login(db)
+def reactivar_suscripcion():
+    """Deshace una cancelación programada (/cancelar-suscripcion) antes de
+    que llegue a hacerse efectiva -- la suscripción sigue activa y se
+    renovará con normalidad."""
+    data = request.get_json(silent=True) or {}
+    oposicion = data.get("oposicion", OPOSICION_POR_DEFECTO)
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+
+    usuario_ref = db.collection("usuarios").document(g.uid)
+    usuario = usuario_ref.get().to_dict() or {}
+    subscription_id = ((usuario.get("suscripciones") or {}).get(oposicion) or {}).get("stripe_subscription_id")
+    if not subscription_id:
+        return jsonify({"error": "No tienes ninguna suscripción activa para esta oposición"}), 400
+
+    try:
+        stripe.Subscription.modify(subscription_id, cancel_at_period_end=False)
+    except Exception as e:
+        logger.exception("Error reactivando suscripción de Stripe %s", subscription_id)
+        return jsonify({"error": str(e)}), 500
+
+    actualizar_suscripcion(db, g.uid, oposicion, cancelar_al_final_periodo=False)
+    return jsonify({"mensaje": "Tu suscripción se ha reactivado."})
+
+
 @bp.route("/crear-sesion-portal", methods=["POST"])
 @requiere_login(db)
 def crear_sesion_portal():
@@ -191,7 +266,8 @@ def webhook_stripe():
                     stripe_customer_id=_sget(objeto, "customer"),
                     stripe_subscription_id=subscription_id,
                     subscription_status=subscription["status"],
-                    current_period_end=datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None
+                    current_period_end=datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None,
+                    cancelar_al_final_periodo=_sget(subscription, "cancel_at_period_end", False)
                 )
         elif tipo == "customer.subscription.updated":
             customer_id = _sget(objeto, "customer")
@@ -211,7 +287,8 @@ def webhook_stripe():
                     plan=plan,
                     stripe_subscription_id=_sget(objeto, "id"),
                     subscription_status=_sget(objeto, "status"),
-                    current_period_end=datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None
+                    current_period_end=datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None,
+                    cancelar_al_final_periodo=_sget(objeto, "cancel_at_period_end", False)
                 )
         elif tipo == "customer.subscription.deleted":
             customer_id = _sget(objeto, "customer")
@@ -219,7 +296,7 @@ def webhook_stripe():
             oposicion = _sget(metadata, "oposicion") or OPOSICION_POR_DEFECTO
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
-                actualizar_suscripcion(db, docs[0].id, oposicion, plan="gratis", subscription_status="canceled")
+                actualizar_suscripcion(db, docs[0].id, oposicion, plan="gratis", subscription_status="canceled", cancelar_al_final_periodo=False)
         elif tipo == "invoice.payment_failed":
             customer_id = _sget(objeto, "customer")
             subscription_id = _sget(objeto, "subscription")

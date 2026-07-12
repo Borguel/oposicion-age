@@ -248,7 +248,7 @@ def actualizar_estadisticas_pdf(db, usuario_id, tipo_pdf):
 
 def actualizar_suscripcion(db, usuario_id, oposicion, plan=None, stripe_customer_id=None,
                             stripe_subscription_id=None, subscription_status=None,
-                            current_period_end=None):
+                            current_period_end=None, cancelar_al_final_periodo=None):
     """Sincroniza en Firestore el estado de la suscripción de Stripe de un
     usuario PARA UNA OPOSICIÓN CONCRETA (cada oposición tiene su propia
     suscripción de Stripe, aunque compartan el mismo Customer). Solo se
@@ -270,6 +270,13 @@ def actualizar_suscripcion(db, usuario_id, oposicion, plan=None, stripe_customer
         field_updates[f"{prefijo}subscription_status"] = subscription_status
     if current_period_end is not None:
         field_updates[f"{prefijo}current_period_end"] = current_period_end
+    # Distingue "activa y se renovará" de "activa pero programada para
+    # cancelarse al final del periodo ya pagado" (ver /cancelar-suscripcion
+    # y /reactivar-suscripcion en blueprints/pagos.py) -- subscription_status
+    # se queda en "active" en ambos casos hasta que el periodo termina de
+    # verdad, así que sin este campo el frontend no podría distinguirlos.
+    if cancelar_al_final_periodo is not None:
+        field_updates[f"{prefijo}cancelar_al_final_periodo"] = cancelar_al_final_periodo
 
     doc_ref.update(field_updates)
 

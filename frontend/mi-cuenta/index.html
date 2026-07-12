@@ -79,6 +79,32 @@
     </main>
   </div>
 
+  <div class="cuenta-modal-overlay" id="modal-cancelar-suscripcion" style="display:none;">
+    <div class="age-card cuenta-modal-card">
+      <h2 class="cuenta-modal-titulo">Cancelar tu suscripción</h2>
+      <p class="cuenta-modal-subtitulo">
+        Mantendrás el acceso hasta el final de tu periodo ya pagado. A partir de ahí perderás los tests ilimitados, las herramientas de IA (Tu Tutor, resúmenes, esquemas, tarjetas de memoria...), las estadísticas avanzadas y el resto de ventajas de tu plan.
+      </p>
+      <div class="cuenta-campo">
+        <label>¿Por qué te das de baja?</label>
+        <div class="cuenta-motivos-lista" id="cancelar-motivos-lista">
+          <label class="cuenta-motivo-opcion"><input type="radio" name="motivo-baja" value="precio"> Es demasiado caro</label>
+          <label class="cuenta-motivo-opcion"><input type="radio" name="motivo-baja" value="aprobado"> Ya he aprobado o no me presento</label>
+          <label class="cuenta-motivo-opcion"><input type="radio" name="motivo-baja" value="no_lo_uso"> No lo uso lo suficiente</label>
+          <label class="cuenta-motivo-opcion"><input type="radio" name="motivo-baja" value="faltan_funciones"> Me faltan funciones que necesito</label>
+          <label class="cuenta-motivo-opcion"><input type="radio" name="motivo-baja" value="otro"> Otro motivo</label>
+        </div>
+      </div>
+      <div class="cuenta-campo">
+        <label for="cancelar-comentario">Cuéntanos más (opcional)</label>
+        <textarea id="cancelar-comentario" rows="3" maxlength="500" placeholder="Nos ayuda a mejorar..."></textarea>
+      </div>
+      <div id="cancelar-mensaje-error" class="datos-mensaje error" style="display:none;"></div>
+      <button type="button" class="cuenta-btn-peligro age-btn-block" id="btn-confirmar-cancelar" disabled>Cancelar mi suscripción</button>
+      <button type="button" class="age-btn age-btn-outline age-btn-block" id="btn-seguir-con-plan">Seguir con mi plan</button>
+    </div>
+  </div>
+
   <div class="cuenta-modal-overlay" id="modal-eliminar-cuenta" style="display:none;">
     <div class="age-card cuenta-modal-card">
       <h2 class="cuenta-modal-titulo">Eliminar tu cuenta</h2>

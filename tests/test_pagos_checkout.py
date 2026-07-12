@@ -181,3 +181,142 @@ def test_crear_sesion_portal_propaga_error_de_stripe_como_500(client, db):
         assert "stripe caído" in resp.get_json()["error"]
     finally:
         parche.stop()
+
+
+def test_cancelar_suscripcion_exige_login(client):
+    resp = client.post("/cancelar-suscripcion", json={"oposicion": "AGE", "motivo": "precio"})
+    assert resp.status_code == 401
+
+
+def test_cancelar_suscripcion_rechaza_motivo_no_valido(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "basico", "stripe_subscription_id": "sub_1"}},
+    })
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/cancelar-suscripcion",
+            json={"oposicion": "AGE", "motivo": "no_existe"},
+            headers={"Authorization": "Bearer x"},
+        )
+        assert resp.status_code == 400
+        assert "motivo" in resp.get_json()["error"].lower()
+    finally:
+        parche.stop()
+
+
+def test_cancelar_suscripcion_sin_suscripcion_activa_da_error(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/cancelar-suscripcion",
+            json={"oposicion": "AGE", "motivo": "precio"},
+            headers={"Authorization": "Bearer x"},
+        )
+        assert resp.status_code == 400
+        assert "ninguna suscripción activa" in resp.get_json()["error"].lower()
+    finally:
+        parche.stop()
+
+
+def test_cancelar_suscripcion_programa_la_baja_y_guarda_el_motivo(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "stripe_subscription_id": "sub_1"}},
+    })
+    parche = _con_sesion(client)
+    mock_subscription = {
+        "id": "sub_1",
+        "items": {"data": [{"current_period_end": 1893456000}]},
+    }
+    try:
+        with patch("blueprints.pagos.stripe.Subscription.modify", return_value=mock_subscription) as mock_modify:
+            resp = client.post(
+                "/cancelar-suscripcion",
+                json={"oposicion": "AGE", "motivo": "precio", "comentario": "Demasiado caro para mí"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 200
+        mock_modify.assert_called_once_with("sub_1", cancel_at_period_end=True)
+        assert resp.get_json()["current_period_end"] == "2030-01-01T00:00:00"
+
+        # La suscripción sigue "activa" para Stripe hasta que el periodo
+        # termine, pero el flag propio debe reflejar ya la baja programada.
+        suscripcion = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+        assert suscripcion["cancelar_al_final_periodo"] is True
+
+        motivos = [d.to_dict() for d in db.collection("usuarios").document("u1").collection("bajas_motivos").stream()]
+        assert len(motivos) == 1
+        assert motivos[0]["motivo"] == "precio"
+        assert motivos[0]["comentario"] == "Demasiado caro para mí"
+        assert motivos[0]["oposicion"] == "AGE"
+    finally:
+        parche.stop()
+
+
+def test_cancelar_suscripcion_propaga_error_de_stripe_como_500(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "stripe_subscription_id": "sub_1"}},
+    })
+    parche = _con_sesion(client)
+    try:
+        with patch("blueprints.pagos.stripe.Subscription.modify", side_effect=RuntimeError("stripe caído")):
+            resp = client.post(
+                "/cancelar-suscripcion",
+                json={"oposicion": "AGE", "motivo": "precio"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 500
+        assert "stripe caído" in resp.get_json()["error"]
+        # Si Stripe falla no debe quedar registrado el motivo ni el flag de baja.
+        motivos = list(db.collection("usuarios").document("u1").collection("bajas_motivos").stream())
+        assert motivos == []
+        assert "cancelar_al_final_periodo" not in db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+    finally:
+        parche.stop()
+
+
+def test_reactivar_suscripcion_exige_login(client):
+    resp = client.post("/reactivar-suscripcion", json={"oposicion": "AGE"})
+    assert resp.status_code == 401
+
+
+def test_reactivar_suscripcion_sin_suscripcion_activa_da_error(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/reactivar-suscripcion",
+            json={"oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"},
+        )
+        assert resp.status_code == 400
+    finally:
+        parche.stop()
+
+
+def test_reactivar_suscripcion_deshace_la_baja_programada(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {
+            "plan": "premium",
+            "stripe_subscription_id": "sub_1",
+            "cancelar_al_final_periodo": True,
+        }},
+    })
+    parche = _con_sesion(client)
+    try:
+        with patch("blueprints.pagos.stripe.Subscription.modify", return_value={}) as mock_modify:
+            resp = client.post(
+                "/reactivar-suscripcion",
+                json={"oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 200
+        mock_modify.assert_called_once_with("sub_1", cancel_at_period_end=False)
+        assert db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]["cancelar_al_final_periodo"] is False
+    finally:
+        parche.stop()

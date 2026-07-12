@@ -121,13 +121,59 @@ body {
 
 .cuenta-oposicion-fila {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
   padding: 16px 18px;
   border: 1px solid var(--age-border);
   border-radius: var(--age-radius-md);
   background: var(--age-bg);
+}
+
+.cuenta-oposicion-fila-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cuenta-oposicion-baja-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--age-border);
+  font-size: 13px;
+}
+
+.cuenta-oposicion-baja-texto {
+  color: var(--age-ink-soft);
+}
+
+.cuenta-btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--age-font);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--age-primary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cuenta-btn-link:hover {
+  color: var(--age-primary-dark);
+}
+
+.cuenta-btn-link-danger {
+  color: var(--age-danger);
+}
+
+.cuenta-btn-link-danger:hover {
+  color: var(--age-danger);
+  opacity: 0.8;
 }
 
 .cuenta-oposicion-info {
@@ -332,4 +378,47 @@ body {
 
 .cuenta-modal-card #btn-cancelar-eliminar {
   margin-top: 10px;
+}
+
+.cuenta-modal-card #btn-seguir-con-plan {
+  margin-top: 10px;
+}
+
+.cuenta-motivos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cuenta-motivo-opcion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--age-ink);
+  cursor: pointer;
+}
+
+.cuenta-motivo-opcion input {
+  margin: 0;
+  accent-color: var(--age-primary);
+}
+
+.cuenta-campo textarea {
+  padding: 12px 14px;
+  border-radius: var(--age-radius-sm);
+  border: 1px solid var(--age-border);
+  font-family: var(--age-font);
+  font-size: 13.5px;
+  box-sizing: border-box;
+  background: var(--age-card);
+  color: var(--age-ink);
+  resize: vertical;
+}
+
+.cuenta-campo textarea:focus {
+  outline: none;
+  border-color: var(--age-primary);
+  box-shadow: 0 0 0 3px var(--age-primary-soft);
 }
