@@ -270,6 +270,20 @@ def generar(solo_preview):
         subir_generado(generado)
 
 
+def mostrar(num_caracteres):
+    if not os.path.exists(GENERADO_JSON):
+        print(f"⚠️  No existe {GENERADO_JSON}. Ejecuta antes --generar --preview.")
+        sys.exit(1)
+    with open(GENERADO_JSON, encoding="utf-8") as f:
+        generado = json.load(f)
+    for age_tema in sorted(generado):
+        datos = generado[age_tema]
+        print(f"\n{'=' * 70}\n{age_tema} ({datos['titulo_generico']}) -- {datos.get('tokens_salida_aprox', '?')} tokens aprox.\n{'=' * 70}")
+        print(datos["texto"][:num_caracteres])
+        if len(datos["texto"]) > num_caracteres:
+            print(f"\n   […truncado, {len(datos['texto'])} caracteres en total…]")
+
+
 def subir_generado(generado):
     import firebase_admin
     from firebase_admin import credentials, firestore
@@ -346,12 +360,18 @@ def main():
     parser.add_argument("--paso0", action="store_true")
     parser.add_argument("--paso1", action="store_true")
     parser.add_argument("--generar", action="store_true")
+    parser.add_argument("--mostrar", action="store_true", help="Imprime un extracto del contenido ya cacheado, sin llamar a DeepSeek")
+    parser.add_argument("--caracteres", type=int, default=1200, help="Caracteres a mostrar por tema con --mostrar")
     parser.add_argument("--preview", action="store_true")
     parser.add_argument("--subir", action="store_true")
     args = parser.parse_args()
 
     if args.paso0:
         paso0()
+        return
+
+    if args.mostrar:
+        mostrar(args.caracteres)
         return
 
     if args.paso1:
