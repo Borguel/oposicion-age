@@ -194,9 +194,16 @@ def _extraer_indice(texto_limpio, total_paginas):
         subtitulos = []
         for linea in lineas[i:]:
             mm = re.match(r"^\d+\.\s*(.+)$", linea)
-            texto_subtitulo = mm.group(1) if mm else linea
-            texto_subtitulo, _ = _separar_pagina(texto_subtitulo, total_paginas)
-            subtitulos.append(texto_subtitulo)
+            texto_linea, _ = _separar_pagina(mm.group(1) if mm else linea, total_paginas)
+            if mm:
+                subtitulos.append(texto_linea)
+            elif subtitulos:
+                # Línea de continuación: el subtítulo se partió en dos líneas
+                # en el PDF (p. ej. "...protección" / "de datos") -- se une
+                # al subtítulo anterior en vez de crear uno nuevo.
+                subtitulos[-1] = f"{subtitulos[-1]} {texto_linea}".strip()
+            else:
+                subtitulos.append(texto_linea)
 
         epigrafes.append({"numero": numero, "titulo": titulo, "subtitulos": subtitulos})
     return epigrafes

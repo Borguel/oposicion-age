@@ -51,8 +51,7 @@
         "numero": 4,
         "titulo": "Nociones básicas de seguridad informática",
         "subtitulos": [
-          "L a información como activo: confidencialidad y normativa de protección",
-          "de datos",
+          "L a información como activo: confidencialidad y normativa de protección de datos",
           "Gestión de usuarios: los cinco pasos",
           "Amenazas y vulnerabilidades",
           "T ipos de malware",
@@ -268,7 +267,7 @@
         "subtitulos": [
           "Qué es Excel: historia y propósito",
           "El libro Excel: concepto, dimensiones y pantalla de bienvenida",
-          "L os siete elementos de la ventana de Excel 36",
+          "L os siete elementos de la ventana de Excel 365",
           "L a cinta de opciones y sus modos",
           "V istas del libro",
           "Gestión de hojas de cálculo",
