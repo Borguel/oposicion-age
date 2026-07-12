@@ -57,7 +57,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: contenido-generado-ofimatica.json
-          key: ofimatica-generado-${{ hashFiles('indices-ofimatica.json') }}
+          key: ofimatica-generado-v2-${{ hashFiles('indices-ofimatica.json') }}
 
       - name: Ejecutar paso
         env:
