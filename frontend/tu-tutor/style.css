@@ -447,6 +447,32 @@ html { scroll-behavior: smooth; }
   transform: translateY(-2px);
 }
 
+/* Acción proactiva del saludo: enlace destacado (relleno con el color de
+   acento) que lleva a generar un test del tema recomendado. Se diferencia a
+   propósito de las quick-btn (que solo escriben en el chat): esta SÍ lleva a
+   otra pantalla, así que pesa más visualmente. */
+.welcome-accion:empty { display: none; }
+.welcome-accion { margin-top: 14px; }
+.btn-accion-tutor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--tutor-accent);
+  color: #fff;
+  border: none;
+  border-radius: 22px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.2s;
+}
+.btn-accion-tutor:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
 /* TYPING INDICATOR */
 .typing-indicator {
   display: flex;

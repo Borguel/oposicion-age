@@ -209,7 +209,7 @@ document.addEventListener("DOMContentLoaded", function () {
     div.className = "mensaje-bot";
     div.innerHTML = `
       <div class="avatar-bot-mini">
-        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Tu Tutor" />
+        <img src="/assets/tutor-avatar.svg" alt="Tu Tutor" />
       </div>
       <div class="bubble-bot">
         <div class="bubble-bot-contenido"></div>
@@ -392,6 +392,10 @@ document.addEventListener("DOMContentLoaded", function () {
   // HISTORIAL (persistido en Firestore, no en localStorage)
   let conversaciones = [];
   let chatIdActual = null;
+  // Recomendación proactiva del saludo (nº de tests, tema flojo, tema
+  // pendiente...). Se pide una vez y se reutiliza al iniciar cada nueva
+  // conversación, sin volver a llamar al backend.
+  let sugerenciaInicial = null;
 
   async function cargarHistorial() {
     const authHeaders = await obtenerAuthHeaders();
@@ -495,6 +499,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function iniciarNuevaConversacion() {
     chatMessages.innerHTML = mensajeBienvenidaHTML;
     reengancharPreguntasRapidas();
+    aplicarSugerenciaBienvenida();
     chatIdActual = null;
     document.querySelectorAll("#chat-history li").forEach(li => li.classList.remove("active"));
     if (window.innerWidth <= 950) closeSidebar();
@@ -507,6 +512,72 @@ document.addEventListener("DOMContentLoaded", function () {
         enviarMensaje();
       });
     });
+  }
+
+  // SALUDO PROACTIVO: rellena el mensaje de bienvenida con la recomendación
+  // personalizada (tema flojo / tema pendiente / etc.), un botón que lleva a
+  // generar un test de ese tema, y unas preguntas rápidas contextualizadas.
+  // Todo el texto llega en plano y se inserta con textContent (nunca innerHTML
+  // con datos del usuario), así el nombre o el título del tema no pueden
+  // inyectar HTML.
+  function aplicarSugerenciaBienvenida() {
+    if (!sugerenciaInicial) return;
+    const welcome = chatMessages.querySelector(".welcome-message");
+    if (!welcome) return; // hay una conversación cargada, no el saludo
+
+    const saludoEl = welcome.querySelector(".welcome-saludo");
+    const mensajeEl = welcome.querySelector(".welcome-mensaje");
+    const accionEl = welcome.querySelector(".welcome-accion");
+    const quickWrap = welcome.querySelector(".quick-questions");
+
+    if (saludoEl && sugerenciaInicial.saludo) {
+      saludoEl.textContent = `${sugerenciaInicial.saludo} Soy Tu Tutor`;
+    }
+    if (mensajeEl && sugerenciaInicial.mensaje) {
+      mensajeEl.textContent = sugerenciaInicial.mensaje;
+    }
+
+    if (accionEl) {
+      accionEl.innerHTML = "";
+      const accion = sugerenciaInicial.accion;
+      if (accion && accion.tema_id) {
+        const enlace = document.createElement("a");
+        enlace.className = "btn-accion-tutor";
+        enlace.href = "/test-personalizado/?temas=" + encodeURIComponent(accion.tema_id);
+        enlace.textContent = "📝 " + (accion.label || "Practicar este tema");
+        accionEl.appendChild(enlace);
+      }
+    }
+
+    if (quickWrap && Array.isArray(sugerenciaInicial.sugerencias) && sugerenciaInicial.sugerencias.length) {
+      quickWrap.innerHTML = "";
+      sugerenciaInicial.sugerencias.forEach(textoSugerencia => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "quick-btn";
+        btn.textContent = textoSugerencia;
+        quickWrap.appendChild(btn);
+      });
+      reengancharPreguntasRapidas();
+    }
+  }
+
+  async function cargarSugerenciaInicial() {
+    const authHeaders = await obtenerAuthHeaders();
+    if (!authHeaders) return;
+    try {
+      const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+      const oposicion = obtenerOposicionActual();
+      const res = await fetch(
+        `https://oposicion-age.onrender.com/tu-tutor/sugerencia-inicial?oposicion=${encodeURIComponent(oposicion)}`,
+        { headers: authHeaders }
+      );
+      if (!res.ok) return; // si falla, se queda el saludo estático por defecto
+      sugerenciaInicial = await res.json();
+      aplicarSugerenciaBienvenida();
+    } catch {
+      // Silencioso a propósito: el saludo estático del HTML ya es válido.
+    }
   }
 
   // EVENTOS
@@ -530,4 +601,5 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // INICIO
   cargarHistorial();
+  cargarSugerenciaInicial();
 });

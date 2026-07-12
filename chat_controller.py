@@ -322,18 +322,22 @@ def _temas_flojos(rendimiento_por_tema, catalogo):
         ratio_acierto = datos.get("aciertos", 0) / intentos
         if ratio_acierto >= _UMBRAL_ACIERTO_TEMA_FLOJO:
             continue
-        candidatos.append((ratio_acierto, titulo))
+        candidatos.append((ratio_acierto, tema_id, titulo))
     candidatos.sort(key=lambda candidato: candidato[0])
-    return [(titulo, round(ratio * 100)) for ratio, titulo in candidatos[:_MAX_TEMAS_FLOJOS]]
+    # Se devuelve también el tema_id (además de título y % de acierto) para
+    # que quien lo consuma pueda enlazar a "generar un test de este tema",
+    # no solo mencionarlo por su nombre.
+    return [(tema_id, titulo, round(ratio * 100)) for ratio, tema_id, titulo in candidatos[:_MAX_TEMAS_FLOJOS]]
 
 
 def _temas_pendientes(stats, catalogo):
     """Temas del catálogo que el usuario todavía no ha tocado en ningún
     test -- se combinan temas_test (lista explícita) y las claves de
     rendimiento_por_tema (por si alguna vía antigua solo rellenó una de
-    las dos), para no depender de un único campo."""
+    las dos), para no depender de un único campo. Devuelve pares
+    (tema_id, titulo)."""
     tocados = set(stats.get("temas_test") or []) | set((stats.get("rendimiento_por_tema") or {}).keys())
-    return [tema["titulo"] for tema in catalogo if tema["id"] not in tocados]
+    return [(tema["id"], tema["titulo"]) for tema in catalogo if tema["id"] not in tocados]
 
 
 def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
@@ -371,7 +375,7 @@ def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
         )
 
     if temas_flojos:
-        detalle = ", ".join(f"{titulo} ({pct}% de acierto)" for titulo, pct in temas_flojos)
+        detalle = ", ".join(f"{titulo} ({pct}% de acierto)" for _tema_id, titulo, pct in temas_flojos)
         lineas.append(
             "Los temas donde peor rinde (aunque el test en conjunto lo apruebe) son: " + detalle + "."
         )
@@ -379,7 +383,7 @@ def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
     if temas_pendientes:
         mostrados = temas_pendientes[:_MAX_TEMAS_PENDIENTES_EN_CONTEXTO]
         resto = len(temas_pendientes) - len(mostrados)
-        detalle_pendientes = ", ".join(mostrados)
+        detalle_pendientes = ", ".join(titulo for _tema_id, titulo in mostrados)
         if resto > 0:
             detalle_pendientes += f" y {resto} más"
         lineas.append("Todavía no ha hecho ningún test de estos temas: " + detalle_pendientes + ".")
@@ -388,6 +392,64 @@ def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
         lineas.append("De conversaciones anteriores (con otro chat) recuerdas esto sobre él/ella: " + memoria_cruzada)
 
     return " ".join(lineas) if lineas else None
+
+
+# ============================================================
+# Sugerencia proactiva para el saludo inicial de Tu Tutor: en vez de
+# esperar a que el usuario pregunte "¿qué estudio?", el chat abre ya con
+# una recomendación basada en sus estadísticas. Se calcula con plantillas
+# deterministas sobre los mismos datos que _contexto_personal_usuario --
+# SIN llamar a DeepSeek-- para que sea instantánea y no gaste cuota ni
+# dinero en cada carga de la página.
+# ============================================================
+def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
+    """Devuelve un dict con el saludo inicial personalizado, un mensaje de
+    recomendación, una acción opcional (datos para enlazar a "generar un
+    test de este tema") y unas sugerencias rápidas contextualizadas. Todos
+    los campos son texto plano (sin HTML): el frontend los inserta de forma
+    segura, escapando el nombre y el título del tema."""
+    doc = db.collection("usuarios").document(usuario_id).get()
+    datos = (doc.to_dict() or {}) if doc.exists else {}
+    nombre = (datos.get("nombre") or "").strip()
+    stats = (datos.get("estadisticas") or {}).get(oposicion) or {}
+    tests_realizados = stats.get("tests_realizados", 0)
+
+    saludo = f"¡Hola, {nombre}! 👋" if nombre else "¡Hola! 👋"
+
+    temas_flojos = _temas_flojos(stats.get("rendimiento_por_tema", {}), catalogo)
+    temas_pendientes = _temas_pendientes(stats, catalogo) if tests_realizados else []
+
+    accion = None
+    if temas_flojos:
+        tema_id, titulo, pct = temas_flojos[0]
+        mensaje = (
+            f"He revisado tus tests y donde más se te resiste es {titulo}: aciertas el {pct}%. "
+            f"Un repaso rápido con un test centrado en ese tema te vendría muy bien."
+        )
+        accion = {"tema_id": tema_id, "titulo": titulo, "label": f"Practicar {titulo}"}
+        sugerencias = [f"Explícame lo esencial de {titulo}", "¿Qué me recomiendas estudiar hoy?"]
+    elif temas_pendientes:
+        tema_id, titulo = temas_pendientes[0]
+        mensaje = (
+            f"Vas bien de rendimiento. Todavía no has hecho ningún test de {titulo}: "
+            f"podría ser un buen momento para estrenarlo."
+        )
+        accion = {"tema_id": tema_id, "titulo": titulo, "label": f"Empezar test de {titulo}"}
+        sugerencias = [f"Explícame {titulo}", "¿Cómo es la estructura del examen?"]
+    elif tests_realizados:
+        mensaje = (
+            "Vas muy bien: ahora mismo no detecto ningún tema flojo. "
+            "Pregúntame lo que quieras o repasa el tema que te apetezca."
+        )
+        sugerencias = ["¿Qué me recomiendas repasar?", "Dame consejos para el examen"]
+    else:
+        mensaje = (
+            "Pregúntame cualquier duda sobre el temario o el proceso selectivo. "
+            "En cuanto hagas algún test, te iré diciendo en qué te conviene centrarte."
+        )
+        sugerencias = ["¿Cómo es la estructura del examen?", "Consejos de estudio", "Dame un plan para empezar"]
+
+    return {"saludo": saludo, "mensaje": mensaje, "accion": accion, "sugerencias": sugerencias}
 
 
 # 📌 Construye todo lo necesario para llamar al modelo (system prompt,
