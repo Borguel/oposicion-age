@@ -1,0 +1,48 @@
+name: Limpiar marcador VACIO en títulos de temario
+
+# Quita el sufijo literal "VACIO" / "(VACIO)" que quedó pegado al final del
+# campo "titulo" de algunos temas (recordatorio manual previo a cargar
+# contenido), en las 3 colecciones de Temario. Solo corrige el campo
+# "titulo" del documento de tema, no toca subbloques ni contenido.
+#
+# Ejecuta primero con accion=preview (no toca Firestore, solo genera
+# preview_limpiar_titulos_vacio.json y un resumen en el log) y revisa el
+# resultado antes de volver a ejecutar con accion=subir.
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "preview (solo genera el informe) o subir (corrige de verdad en Firestore)"
+        required: true
+        default: "preview"
+        type: choice
+        options:
+          - preview
+          - subir
+
+jobs:
+  limpiar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Limpiar títulos con marcador VACIO
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: python limpiar_titulos_vacio_temario.py --${{ github.event.inputs.accion }}
+
+      - name: Guardar vista previa como artefacto
+        if: github.event.inputs.accion == 'preview'
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-limpiar-titulos-vacio
+          path: preview_limpiar_titulos_vacio.json
