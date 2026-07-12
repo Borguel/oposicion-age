@@ -14,9 +14,43 @@ from generador_preguntas_verificado import (
     _extraer_articulos,
     _elegir_ancla_legal,
     _generar_pregunta_verificada,
+    _prompt_generacion,
+    _prompt_verificacion,
     generar_test_verificado,
 )
 from limites_uso import _clave_periodo
+
+
+def test_contenido_normativo_usa_prompts_juridicos():
+    # Ancla con artículo detectado -> prompts jurídicos (exigen artículo, plazos,
+    # lenguaje de la norma).
+    anclas = [{"norma": "Ley 39/2015", "articulo": "Artículo 21",
+               "texto_legal": "Artículo 21. La Administración está obligada a resolver.",
+               "etiqueta_subbloque": "s1"}]
+    system_gen, user_gen = _prompt_generacion(anclas, "memoria_literal", "AGE")
+    system_ver, _user = _prompt_verificacion({"pregunta": "x"}, anclas)
+    assert "TEXTO LEGAL" in user_gen
+    assert "jurídic" in system_gen.lower()
+    assert "jurídic" in system_ver.lower()
+
+
+def test_contenido_descriptivo_sin_articulos_usa_prompts_descriptivos():
+    # Contenido de ofimática (sin "Artículo N.") -> prompts descriptivos: no
+    # deben exigir artículos ni lenguaje jurídico, que es lo que hacía que se
+    # descartara la mayoría de preguntas de estos temas.
+    anclas = [{"norma": "Informática básica", "articulo": None,
+               "texto_legal": "El sistema operativo gestiona los recursos del ordenador.",
+               "etiqueta_subbloque": "s1"}]
+    system_gen, user_gen = _prompt_generacion(anclas, "memoria_literal", "AGE")
+    system_ver, _user = _prompt_verificacion({"pregunta": "x"}, anclas)
+    assert "CONTENIDO 1" in user_gen
+    assert "TEXTO LEGAL" not in user_gen
+    assert "jurídic" not in system_gen.lower()
+    assert "jurídic" not in system_ver.lower()
+    # El verificador descriptivo debe decir EXPLÍCITAMENTE que no exija
+    # artículos ni lenguaje legal (esa exigencia era la que descartaba las
+    # preguntas de temas no normativos como ofimática).
+    assert "no exijas artículos" in system_ver.lower()
 
 
 def _pregunta_valida(texto_pregunta="¿Pregunta de ejemplo?"):
