@@ -50,7 +50,7 @@ def encontrar_titulos_a_corregir(db):
             temas_ref = db.collection(coleccion).document(bloque.id).collection("temas")
             for tema in temas_ref.stream():
                 titulo = (tema.to_dict() or {}).get("titulo", "")
-                if not titulo:
+                if not titulo or not PATRON_MARCADOR.search(titulo):
                     continue
                 corregido = PATRON_MARCADOR.sub("", titulo).rstrip()
                 if corregido != titulo:
