@@ -1,0 +1,27 @@
+name: Listar temas vacíos del temario
+
+# Diagnóstico de solo lectura: recorre las 3 colecciones de Temario (AGE,
+# GACE, Auxiliar) y lista en el log qué bloques/temas todavía no tienen
+# ningún subbloque con contenido real. No escribe nada en Firestore.
+on:
+  workflow_dispatch:
+
+jobs:
+  listar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Listar temas vacíos
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: python listar_temas_vacios.py
