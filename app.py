@@ -151,9 +151,15 @@ registrar_rutas_progreso(app, db)
 
 
 @app.route("/", methods=["GET"])
-def listar_rutas():
-    rutas = [rule.rule for rule in app.url_map.iter_rules()]
-    return jsonify({"rutas_disponibles": rutas})
+def raiz():
+    # No se expone la lista completa de rutas al público: era información
+    # innecesaria que le daba a cualquiera el mapa entero de la API. El
+    # listado solo se devuelve a quien presente la API key (útil para
+    # depurar), y si no hay API key configurada se responde un OK escueto.
+    if API_SECRET_KEY and request.headers.get("X-API-Key") == API_SECRET_KEY:
+        rutas = [rule.rule for rule in app.url_map.iter_rules()]
+        return jsonify({"rutas_disponibles": rutas})
+    return jsonify({"estado": "ok", "servicio": "oposicion-age-api"})
 
 
 _VARIABLES_CRITICAS = [

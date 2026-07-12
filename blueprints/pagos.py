@@ -3,7 +3,6 @@ sesiones de pago/portal de facturación, y el webhook que mantiene las
 suscripciones al día."""
 import logging
 import os
-import traceback
 from datetime import date, datetime
 
 import stripe
@@ -310,10 +309,12 @@ def webhook_stripe():
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
                 actualizar_suscripcion(db, docs[0].id, oposicion, subscription_status="past_due")
-    except Exception as e:
+    except Exception:
+        # logger.exception ya vuelca el traceback completo (y lo manda a
+        # Sentry si está configurado). Se responde 500 sin el detalle interno
+        # del error para que Stripe reintente el evento, sin exponer trazas.
         logger.exception("Error procesando webhook de Stripe (%s)", tipo)
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Error interno procesando el evento"}), 500
 
     evento_ref.set({"type": tipo, "processed_at": datetime.utcnow().isoformat()})
     return jsonify({"mensaje": "Evento procesado"}), 200
