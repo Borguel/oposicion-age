@@ -93,17 +93,35 @@ AUX_BLOQUE = "bloque_02"
 SYSTEM_PROMPT = (
     "Eres un redactor de temario de oposiciones españolas para el Cuerpo General "
     "de la Administración del Estado (aplicable a Auxiliar C2 y Administrativo C1, "
-    "que comparten este mismo bloque de informática y ofimática). Se te da "
-    "ÚNICAMENTE una lista de títulos y subtítulos de un tema. Escribe el contenido "
-    "completo desde cero, sin haber visto texto previo de desarrollo. Formato "
-    "requerido:\n"
-    "- Usa como cabecera literal de cada sección \"Epígrafe N — <título>\" (igual "
-    "que en la lista que se te da), seguido del desarrollo de esa sección.\n"
-    "- Tablas comparativas cuando aplique\n"
-    "- Recuadro 'MATIZ' señalando confusiones típicas de examen tipo test\n"
-    "- Recuadro 'RECUERDA' con mnemotecnias\n"
-    "- Versiones, fechas y cifras concretas y verificables\n"
-    "- Nivel alto, orientado a examen tipo test de oposición"
+    "que comparten este mismo bloque de informática y ofimática), con el mismo "
+    "nivel de detalle y exhaustividad que un manual profesional de academia de "
+    "oposiciones (no un resumen ni una introducción genérica). Se te da "
+    "ÚNICAMENTE una lista de títulos y subtítulos (el índice) de un tema; no has "
+    "visto ningún texto de desarrollo previo.\n\n"
+    "PROFUNDIDAD -- esto es lo más importante: cada subtítulo del índice debe "
+    "tener su propio desarrollo sustancial (varios párrafos si el subtítulo lo "
+    "requiere), con definiciones precisas, comparativas concretas, ejemplos "
+    "reales, cifras/fechas/versiones exactas y verificables. NO te limites a una "
+    "frase o un párrafo breve por subtítulo: desarróllalo con la misma densidad "
+    "que un manual de estudio real.\n\n"
+    "FORMATO -- IMPORTANTE: el texto se muestra tal cual, como texto plano, sin "
+    "ningún renderizador de Markdown. Por eso NO debes usar NUNCA los símbolos "
+    "*, #, |, >, _, ni ningún otro símbolo de marcado. En su lugar:\n"
+    "- Cabecera de cada sección, en su propia línea y sin ningún símbolo delante: "
+    "\"Epígrafe N — <título>\" (igual que en el índice dado).\n"
+    "- Cabecera de cada subtítulo, en su propia línea: \"<número>. <título del "
+    "subtítulo>\".\n"
+    "- Para una confusión típica de examen tipo test, escribe un párrafo que "
+    "empiece literalmente por \"Matiz: \" seguido del texto. Usa uno por cada "
+    "subtítulo donde de verdad haya una confusión relevante, no uno solo para "
+    "todo el epígrafe.\n"
+    "- Para una mnemotecnia o idea clave para memorizar, escribe un párrafo que "
+    "empiece literalmente por \"Recuerda: \" seguido del texto. Igual: uno por "
+    "subtítulo relevante.\n"
+    "- Si hay que presentar una comparativa (versiones, tipos, diferencias), "
+    "escríbela como prosa comparativa normal o como una lista de líneas "
+    "\"elemento: descripción\" -- nunca como una tabla con barras verticales.\n"
+    "- Nivel alto, orientado a examen tipo test de oposición."
 )
 
 
@@ -176,9 +194,16 @@ def _extraer_indice(texto_limpio, total_paginas):
         subtitulos = []
         for linea in lineas[i:]:
             mm = re.match(r"^\d+\.\s*(.+)$", linea)
-            texto_subtitulo = mm.group(1) if mm else linea
-            texto_subtitulo, _ = _separar_pagina(texto_subtitulo, total_paginas)
-            subtitulos.append(texto_subtitulo)
+            texto_linea, _ = _separar_pagina(mm.group(1) if mm else linea, total_paginas)
+            if mm:
+                subtitulos.append(texto_linea)
+            elif subtitulos:
+                # Línea de continuación: el subtítulo se partió en dos líneas
+                # en el PDF (p. ej. "...protección" / "de datos") -- se une
+                # al subtítulo anterior en vez de crear uno nuevo.
+                subtitulos[-1] = f"{subtitulos[-1]} {texto_linea}".strip()
+            else:
+                subtitulos.append(texto_linea)
 
         epigrafes.append({"numero": numero, "titulo": titulo, "subtitulos": subtitulos})
     return epigrafes
@@ -242,7 +267,7 @@ def generar(solo_preview):
             continue
         mensaje = _formatear_indice_para_prompt(entrada)
         print(f"🧠 Generando {age_tema} ({entrada['titulo_generico']}) con DeepSeek...")
-        texto = generar_con_continuacion(SYSTEM_PROMPT, mensaje, max_tokens=4096, temperature=0.3, max_continuaciones=3)
+        texto = generar_con_continuacion(SYSTEM_PROMPT, mensaje, max_tokens=4096, temperature=0.3, max_continuaciones=6)
         if not texto:
             print(f"❌ DeepSeek no devolvió contenido para {age_tema}.")
             continue
