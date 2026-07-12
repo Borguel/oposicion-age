@@ -10,7 +10,7 @@ from firebase_admin import firestore
 
 from firebase_setup import db
 from auth_utils import requiere_plan
-from limites_uso import verificar_limite_uso, registrar_uso
+from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
 from oposiciones import coleccion_temario
 from chat_controller import responder_tutor, responder_tutor_stream
 
@@ -70,6 +70,12 @@ def tu_tutor_stream_route():
     plan_actual = g.plan_actual
     oposicion = g.oposicion
 
+    # Uso cobrado por adelantado, no al llegar "fin": si el cliente corta la
+    # conexión a mitad de respuesta, el generador de abajo no llega a su
+    # registrar_uso y se podía saltar la cuota abortando en bucle. Si DeepSeek
+    # falla del todo (evento "error", sin "fin"), se devuelve el uso.
+    registrar_uso(db, uid, "chat_temario", plan_actual)
+
     def generar():
         exito = False
         for evento in responder_tutor_stream(
@@ -83,8 +89,11 @@ def tu_tutor_stream_route():
             if evento["tipo"] == "fin":
                 exito = True
             yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
-        if exito:
-            registrar_uso(db, uid, "chat_temario", plan_actual)
+        # Si el cliente aborta a mitad, aquí no se llega (GeneratorExit en el
+        # yield) y el uso se mantiene consumido a propósito. Solo se devuelve
+        # ante un fallo real de DeepSeek, con el cliente aún conectado.
+        if not exito:
+            devolver_uso(db, uid, "chat_temario", plan_actual)
 
     return Response(
         stream_with_context(generar()),

@@ -186,5 +186,8 @@ class TestResumirPdfYGenerarTestDesdePdf:
         assert eventos[-1]["tipo"] == "fin"
         assert eventos[-1]["test"] == []
         assert "error" in eventos[-1]
-        # Si no se generó ni una sola pregunta, no debe consumirse cuota.
-        assert "pdf_ia" not in db.leer(("usuarios", "u1")).get("limites_uso", {})
+        # El uso se cobra por adelantado (antes de abrir el stream) y, como la
+        # generación no produjo ni una pregunta, el hilo de fondo lo devuelve:
+        # el neto debe quedar en 0 (no se consume cuota por una generación
+        # fallida, pero el contador ya existe por el cobro+devolución).
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0

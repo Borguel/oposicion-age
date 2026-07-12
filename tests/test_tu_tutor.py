@@ -510,8 +510,11 @@ def test_ruta_tu_tutor_stream_no_registra_uso_si_deepseek_falla(client, db):
         assert resp.status_code == 200
         eventos = _eventos_sse(resp.get_data(as_text=True))
         assert eventos == [{"tipo": "error"}]
+        # El uso se cobra por adelantado y, al fallar DeepSeek del todo, se
+        # devuelve: el neto queda en 0 (no se consume cuota por un fallo
+        # técnico, aunque el contador ya exista por el cobro+devolución).
         datos_usuario = db.leer(("usuarios", "u1"))
-        assert (datos_usuario.get("limites_uso") or {}).get("chat_temario") is None
+        assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 0
     finally:
         parche_auth.stop()
 

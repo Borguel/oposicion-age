@@ -121,3 +121,39 @@ def registrar_uso(db, uid, tipo, plan):
         transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": usados + 1}})
 
     ejecutar_en_transaccion(db, _incrementar)
+
+
+def devolver_uso(db, uid, tipo, plan):
+    """Resta 1 al contador del periodo actual (nunca por debajo de 0). Se usa
+    en las rutas de streaming (SSE), donde el uso se cobra por ADELANTADO --
+    antes de abrir el stream-- porque la generación corre en un hilo de fondo
+    que sigue gastando en la API aunque el cliente corte la conexión, así que
+    esperar al final para cobrar dejaba un hueco para saltarse la cuota
+    abriendo y abortando la petición en bucle. Si esa generación acaba
+    fallando de verdad (no produce nada), se devuelve el uso aquí.
+
+    Ojo: NO se devuelve cuando el cliente simplemente corta la conexión a
+    mitad -- en ese caso el trabajo (y el gasto real en la API) ya se ha
+    hecho, así que el uso se mantiene consumido a propósito.
+
+    Lectura y escritura van en la misma transacción, igual que registrar_uso,
+    para no perder un decremento frente a otra petición concurrente."""
+    config = LIMITES.get(tipo, {}).get(plan)
+    if not config:
+        return
+    periodo, _limite = config
+    clave = _clave_periodo(periodo)
+    ref = db.collection("usuarios").document(uid)
+
+    def _decrementar(transaction):
+        doc = ref.get(transaction=transaction)
+        datos = doc.to_dict() or {}
+        uso = ((datos.get("limites_uso") or {}).get(tipo)) or {}
+        # Si el periodo ya rotó (p. ej. cambió el día entre cobro y
+        # devolución), no se toca: ese contador es de otro periodo.
+        if uso.get("periodo") != clave:
+            return
+        usados = uso.get("contador", 0)
+        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": max(0, usados - 1)}})
+
+    ejecutar_en_transaccion(db, _decrementar)

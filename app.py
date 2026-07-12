@@ -5,6 +5,7 @@ from flask_cors import CORS
 from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 
 # Logging estructurado (con nivel y hora) en vez de print(): así se puede
@@ -45,6 +46,14 @@ from firebase_setup import db
 
 # Inicializar Flask
 app = Flask(__name__)
+
+# Render sirve la app detrás de su propio proxy inverso: sin esto,
+# request.remote_addr (y por tanto la clave del rate-limiter por IP) sería
+# siempre la IP interna del proxy, no la del cliente real -- todas las
+# peticiones compartirían un único cupo y el límite no serviría para frenar a
+# un solo abusador. x_for=1 = confiar en un único proxy por delante (el de
+# Render), leyendo la IP real de la primera entrada de X-Forwarded-For.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 cors_origins_env = os.getenv("CORS_ORIGINS", "")
 cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
 if not cors_origins:
