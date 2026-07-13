@@ -28,10 +28,16 @@ def _precio(env, defecto):
         return float(defecto)
 
 
-# € por cada 1.000.000 de tokens. Valores por defecto aproximados y
-# conservadores de deepseek-chat (entrada ~0,25 €/M, salida ~1,00 €/M).
-PRECIO_INPUT_EUR_MILLON = _precio("IA_PRECIO_INPUT_EUR_MILLON", 0.25)
-PRECIO_OUTPUT_EUR_MILLON = _precio("IA_PRECIO_OUTPUT_EUR_MILLON", 1.00)
+# € por cada 1.000.000 de tokens. Valores por defecto según las tarifas
+# oficiales de DeepSeek (deepseek-chat -> gama "flash"), convertidas de
+# dólares a euros al cambio aproximado (~0,92 €/$):
+#   entrada cache miss $0,14/M -> ~0,13 €/M   (usamos el precio caro, sin
+#     descuento de caché, para que la estimación quede siempre por lo alto)
+#   salida            $0,28/M -> ~0,26 €/M
+# Se pueden ajustar sin tocar código con las variables de entorno de abajo
+# (p. ej. si tu cuenta factura como "pro": salida $0,87/M -> ~0,80 €/M).
+PRECIO_INPUT_EUR_MILLON = _precio("IA_PRECIO_INPUT_EUR_MILLON", 0.13)
+PRECIO_OUTPUT_EUR_MILLON = _precio("IA_PRECIO_OUTPUT_EUR_MILLON", 0.26)
 
 
 def coste_estimado(tokens_in, tokens_out):
