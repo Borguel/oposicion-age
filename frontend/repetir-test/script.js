@@ -189,7 +189,7 @@ async function mostrarPregunta(i) {
       <span>${i + 1}. ${textoPregunta}</span>
       <div class="pregunta-acciones-header">
         ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
-        <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""}" aria-label="Marcar para revisión" title="Marcar para revisar más tarde">🔖</button>
+        <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""}" aria-label="Marcar para revisión" title="🔖 Marcar esta pregunta para revisarla antes de terminar el test (queda resaltada en el mapa de preguntas)">🔖</button>
       </div>
     </div>`;
 

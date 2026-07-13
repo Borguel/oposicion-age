@@ -52,7 +52,7 @@ export async function cargarTextosFavoritas(oposicion) {
 // Botón de estrella reutilizable + su listener, para no repetir este HTML
 // en cada una de las páginas que muestran preguntas de test.
 export function botonFavoritaHTML(marcada) {
-  return `<button type="button" class="btn-favorita${marcada ? " activa" : ""}" data-favorita aria-label="Marcar pregunta como favorita" title="Marcar para repasar más tarde">${marcada ? "★" : "☆"}</button>`;
+  return `<button type="button" class="btn-favorita${marcada ? " activa" : ""}" data-favorita aria-label="Guardar en favoritas" title="⭐ Guardar en favoritas para repasarla cuando quieras (queda en 'Preguntas favoritas')">${marcada ? "★" : "☆"}</button>`;
 }
 
 export function activarBotonFavorita(contenedor, pregunta, oposicion, textosFavoritas) {
