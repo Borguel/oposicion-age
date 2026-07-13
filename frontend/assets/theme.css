@@ -1157,11 +1157,11 @@ body {
   font-size: 1.05rem;
   margin-bottom: 14px;
   color: var(--age-ink);
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+  /* El enunciado ocupa todo el ancho; los botones (favorita / revisar) van
+     en su propia fila debajo, para no estrechar el texto de la pregunta. */
+  display: block;
 }
+.pregunta-en-negrita > span { display: block; }
 
 .btn-favorita {
   flex-shrink: 0;

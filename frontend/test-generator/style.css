@@ -498,12 +498,14 @@ h1, h2, h3 {
   padding: 14px 30px;
 }
 
-/* Grupo de iconos junto al enunciado: favorita + marcar para revisión. */
+/* Iconos de acción de la pregunta: favorita + marcar para revisión. Van en
+   su propia fila debajo del enunciado (no a la derecha, para no estrecharlo). */
 .pregunta-acciones-header {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   flex-shrink: 0;
+  margin-top: 10px;
 }
 
 .btn-marcar-revision {
