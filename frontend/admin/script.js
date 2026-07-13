@@ -501,9 +501,11 @@ async function renderUsuarios() {
       <select id="u-plan" class="age-input"><option value="">Todos los planes</option><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
       <button class="age-btn age-btn-primary admin-filtros-btn" id="u-aplicar">Buscar</button>
       <button class="age-btn age-btn-outline admin-filtros-btn" id="u-csv">⬇ CSV</button>
+      ${_permisos.admin ? '<button class="age-btn age-btn-outline admin-filtros-btn" id="u-crear">+ Crear usuario</button>' : ""}
     </div>
     <div class="age-card"><div id="usuarios-tabla"><p class="admin-cargando">Cargando…</p></div></div>`;
   panel.querySelector("#u-aplicar").addEventListener("click", () => { paginaUsuarios = 1; cargarUsuarios(); });
+  panel.querySelector("#u-crear")?.addEventListener("click", modalCrearUsuario);
   panel.querySelector("#u-csv").addEventListener("click", () => {
     const params = new URLSearchParams();
     const b = document.getElementById("u-busqueda")?.value.trim();
@@ -514,6 +516,46 @@ async function renderUsuarios() {
   });
   panel.querySelector("#u-busqueda").addEventListener("keydown", (e) => { if (e.key === "Enter") { paginaUsuarios = 1; cargarUsuarios(); } });
   cargarUsuarios();
+}
+
+function modalCrearUsuario() {
+  abrirModal(`
+    <h2>Crear usuario</h2>
+    <p class="admin-reporte-meta">Se crea la cuenta con email y contraseña. Comunícale la contraseña al usuario; podrá cambiarla luego.</p>
+    <label>Email</label>
+    <input class="age-input" id="nu-email" type="email" placeholder="persona@correo.com">
+    <label>Contraseña (mín. 6 caracteres)</label>
+    <input class="age-input" id="nu-pass" type="text" placeholder="Contraseña inicial">
+    <label>Nombre (opcional)</label>
+    <input class="age-input" id="nu-nombre" placeholder="Nombre">
+    <div class="admin-form-fila">
+      <div><label>Plan de partida</label>
+        <select class="age-input" id="nu-plan"><option value="">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
+      </div>
+      <div><label>Para la oposición</label>
+        <select class="age-input" id="nu-oposicion"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
+      </div>
+    </div>
+    <label class="admin-rol-check" style="margin-top:12px;"><input type="checkbox" id="nu-verificado"> <span>Marcar email como verificado</span></label>
+    <label class="admin-rol-check"><input type="checkbox" id="nu-admin"> <span>Hacer administrador total</span></label>
+    <p class="admin-dato" style="margin-top:8px;"><strong>Roles (acceso parcial, si no es admin):</strong></p>
+    ${["temario", "reportes", "usuarios"].map((p) => `
+      <label class="admin-rol-check"><input type="checkbox" class="nu-permiso" value="${p}"> <span>${p === "temario" ? "Temario y preguntas" : p === "reportes" ? "Reportes" : "Usuarios y planes"}</span></label>`).join("")}
+    <button class="age-btn age-btn-primary" id="nu-crear" style="margin-top:14px;">Crear usuario</button>`);
+  document.getElementById("nu-crear").addEventListener("click", async () => {
+    const cuerpo = {
+      email: document.getElementById("nu-email").value,
+      password: document.getElementById("nu-pass").value,
+      nombre: document.getElementById("nu-nombre").value,
+      plan: document.getElementById("nu-plan").value || undefined,
+      oposicion: document.getElementById("nu-oposicion").value,
+      email_verificado: document.getElementById("nu-verificado").checked,
+      admin: document.getElementById("nu-admin").checked,
+      permisos: Array.from(document.querySelectorAll(".nu-permiso:checked")).map((c) => c.value),
+    };
+    const r = await api("POST", "/admin/api/usuarios", cuerpo);
+    if (r) { toast("Usuario creado."); cerrarModal(); paginaUsuarios = 1; cargarUsuarios(); }
+  });
 }
 
 async function cargarUsuarios() {
@@ -584,9 +626,9 @@ async function abrirUsuario(uid) {
       <p class="admin-dato" style="margin-top:12px;"><strong>Roles (acceso parcial):</strong></p>
       <p class="admin-reporte-meta">Marca a qué secciones puede entrar sin ser admin total.</p>
       ${(u.permisos_disponibles || ["temario", "reportes", "usuarios"]).map((p) => `
-        <label class="admin-opcion-radio" style="display:flex;font-weight:500;margin:4px 0;">
+        <label class="admin-rol-check">
           <input type="checkbox" class="up-permiso" value="${escapeHtml(p)}" ${(u.permisos || []).includes(p) ? "checked" : ""} ${u.es_admin ? "disabled" : ""}>
-          ${p === "temario" ? "Temario y preguntas" : p === "reportes" ? "Reportes de preguntas" : "Usuarios y planes"}
+          <span>${p === "temario" ? "Temario y preguntas" : p === "reportes" ? "Reportes de preguntas" : "Usuarios y planes"}</span>
         </label>`).join("")}
       <button class="age-btn age-btn-outline admin-mini" id="up-roles" ${u.es_admin ? "disabled" : ""} style="margin-top:6px;">Guardar roles</button>
       ${u.es_admin ? '<p class="admin-reporte-meta">Un admin total ya tiene todos los permisos.</p>' : ""}
