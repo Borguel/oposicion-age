@@ -254,6 +254,59 @@ def resumen():
 
 
 # ============================================================
+# Analítica de contenido
+# ============================================================
+@bp.route("/admin/api/analitica-contenido", methods=["GET"])
+@requiere_permiso("temario")
+def analitica_contenido():
+    """Agrega el rendimiento por tema de TODOS los usuarios de una oposición
+    (aciertos/fallos/blancos, solo cifras) para ver qué temas se estudian más
+    o menos y en cuáles se acierta peor. Además, qué temas del temario no
+    tienen ninguna actividad."""
+    oposicion = request.args.get("oposicion") or "AGE"
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+
+    agg = {}
+    for doc in db.collection("usuarios").stream():
+        e = ((doc.to_dict() or {}).get("estadisticas") or {}).get(oposicion) or {}
+        for tid, r in (e.get("rendimiento_por_tema") or {}).items():
+            a = agg.setdefault(tid, {"aciertos": 0, "fallos": 0, "blancos": 0})
+            a["aciertos"] += (r or {}).get("aciertos", 0)
+            a["fallos"] += (r or {}).get("fallos", 0)
+            a["blancos"] += (r or {}).get("blancos", 0)
+
+    coleccion = coleccion_temario(oposicion)
+    temas = []
+    for tid, r in agg.items():
+        respondidas = r["aciertos"] + r["fallos"]
+        intentos = respondidas + r["blancos"]
+        temas.append({
+            "tema_id": tid,
+            "titulo": _titulo_tema(coleccion, tid) if str(tid).startswith("bloque") else tid,
+            "intentos": intentos,
+            "respondidas": respondidas,
+            "aciertos": r["aciertos"],
+            "fallos": r["fallos"],
+            "blancos": r["blancos"],
+            "tasa_acierto": round(100 * r["aciertos"] / respondidas, 1) if respondidas else None,
+        })
+    temas.sort(key=lambda t: t["intentos"], reverse=True)
+
+    # Temas del temario que no registran ninguna actividad.
+    con_actividad = set(agg.keys())
+    sin_actividad = []
+    for bloque in db.collection(coleccion).stream():
+        for tema in db.collection(coleccion).document(bloque.id).collection("temas").stream():
+            tid = f"{bloque.id}-{tema.id}"
+            if tid not in con_actividad:
+                sin_actividad.append({"tema_id": tid, "titulo": (tema.to_dict() or {}).get("titulo", tid)})
+    sin_actividad.sort(key=lambda t: t["tema_id"])
+
+    return jsonify({"oposicion": oposicion, "temas": temas, "sin_actividad": sin_actividad})
+
+
+# ============================================================
 # Temario
 # ============================================================
 @bp.route("/admin/api/temario/<oposicion>", methods=["GET"])

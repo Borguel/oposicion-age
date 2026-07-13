@@ -160,6 +160,17 @@
 .admin-op-linea { padding: 2px 0; }
 .admin-op-correcta { color: var(--age-success, #1e7e34); font-weight: 700; }
 
+/* Analítica */
+.admin-analitica-fila { display: grid; grid-template-columns: 1fr 120px 74px; align-items: center; gap: 10px; margin: 8px 0; }
+.admin-analitica-tema { font-size: 13.5px; }
+.admin-analitica-pct { text-align: right; font-weight: 700; font-size: 13px; }
+.admin-barra { height: 9px; background: var(--age-neutral-bg, #eee); border-radius: 999px; overflow: hidden; }
+.admin-barra-relleno { display: block; height: 100%; border-radius: 999px; }
+@media (max-width: 560px) {
+  .admin-analitica-fila { grid-template-columns: 1fr 60px; }
+  .admin-analitica-fila .admin-barra { display: none; }
+}
+
 /* Toasts */
 .admin-toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 8px; width: min(92vw, 420px); pointer-events: none; }
 .admin-toast {

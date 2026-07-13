@@ -120,6 +120,24 @@ def test_crear_usuario_requiere_admin_total(client, db):
     assert r.status_code == 403
 
 
+# ---------- Analítica de contenido ----------
+def test_analitica_agrega_rendimiento_y_sin_actividad(client, db):
+    _sembrar_tema(db)  # bloque_01 / tema_01 (con contenido) + tema sin actividad
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_02"), {"titulo": "Sin tocar"})
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "estadisticas": {"AGE": {
+        "rendimiento_por_tema": {"bloque_01-tema_01": {"aciertos": 7, "fallos": 3, "blancos": 0}}}}})
+    db.sembrar(("usuarios", "u2"), {"email": "u2@x.com", "estadisticas": {"AGE": {
+        "rendimiento_por_tema": {"bloque_01-tema_01": {"aciertos": 1, "fallos": 9, "blancos": 0}}}}})
+    with _como():
+        d = client.get("/admin/api/analitica-contenido?oposicion=AGE", headers=_AUTH).get_json()
+    tema = d["temas"][0]
+    assert tema["tema_id"] == "bloque_01-tema_01"
+    assert tema["intentos"] == 20  # (7+3) + (1+9)
+    assert tema["tasa_acierto"] == 40.0  # 8 aciertos / 20 respondidas
+    sin = [t["tema_id"] for t in d["sin_actividad"]]
+    assert "bloque_01-tema_02" in sin
+
+
 # ---------- Bloquear / eliminar / soporte ----------
 def test_resetear_limites_pone_a_cero(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "limites_uso": {"resumen": {"periodo": "2026-07-13", "contador": 5}}})
