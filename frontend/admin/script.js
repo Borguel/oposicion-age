@@ -61,6 +61,31 @@ async function api(metodo, ruta, cuerpo) {
 
 const apiGet = (ruta) => api("GET", ruta);
 
+// Descarga un CSV protegido (manda el token, recibe el fichero y fuerza la
+// descarga desde un blob local).
+async function descargarCSV(ruta, nombre) {
+  const headers = await obtenerAuthHeaders();
+  if (!headers) return;
+  let resp;
+  try {
+    resp = await fetch(BACKEND_URL + ruta, { headers });
+  } catch {
+    toast("Sin conexión con el servidor.", "error");
+    return;
+  }
+  if (!resp.ok) { toast("No se pudo generar el CSV.", "error"); return; }
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nombre;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast("Descarga iniciada.");
+}
+
 function mostrarNoAutorizado() {
   document.getElementById("admin-contenido").style.display = "none";
   document.getElementById("admin-no-autorizado").style.display = "block";
@@ -137,6 +162,7 @@ async function renderDashboard() {
       <div class="age-card admin-stat"><span class="admin-stat-num">${d.usuarios_activos_7_dias || 0}</span><span class="admin-stat-lbl">Activos (7 días)</span></div>
       <div class="age-card admin-stat"><span class="admin-stat-num">${d.tests_ultimos_7_dias}</span><span class="admin-stat-lbl">Tests (7 días)</span><span class="admin-stat-sub">${d.tests_ultimos_30_dias} en 30 días</span></div>
       <div class="age-card admin-stat"><span class="admin-stat-num">${d.tests_total || 0}</span><span class="admin-stat-lbl">Tests totales</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-num">${(d.mrr || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Ingresos/mes (MRR)</span><span class="admin-stat-sub">${d.suscripciones_pago || 0} suscripciones de pago</span></div>
       <div class="age-card admin-stat admin-stat-clic ${alertaReportes ? "admin-stat-alerta" : ""}" id="stat-reportes"><span class="admin-stat-num">${d.reportes_pendientes}</span><span class="admin-stat-lbl">Reportes pendientes</span></div>
     </div>
 
@@ -271,11 +297,13 @@ async function renderPreguntas() {
       <input id="f-bloque" class="age-input" placeholder="Bloque (ej. bloque_01)">
       <input id="f-anio" class="age-input" placeholder="Año (ej. 2025)">
       <button class="age-btn age-btn-outline admin-filtros-btn" id="f-aplicar">Filtrar</button>
+      <button class="age-btn age-btn-outline admin-filtros-btn" id="p-csv">⬇ CSV</button>
       <button class="age-btn age-btn-primary admin-filtros-btn" id="p-nueva">+ Nueva</button>
     </div>
     <div class="age-card"><div id="preguntas-tabla"><p class="admin-cargando">Cargando…</p></div></div>`;
   panel.querySelector("#f-aplicar").addEventListener("click", cargarPreguntas);
   panel.querySelector("#p-nueva").addEventListener("click", () => modalPregunta(null));
+  panel.querySelector("#p-csv").addEventListener("click", () => descargarCSV(`/admin/api/preguntas/export?oposicion=${oposicionActual()}`, `preguntas_${oposicionActual()}.csv`));
   panel.querySelector("#f-texto").addEventListener("keydown", (e) => { if (e.key === "Enter") cargarPreguntas(); });
   cargarPreguntas();
 }
@@ -304,7 +332,9 @@ async function cargarPreguntas() {
       <td class="admin-num">${p.veces_fallada}</td>
       <td class="admin-td-acciones">
         <button class="age-btn age-btn-outline admin-mini" data-editar="${escapeHtml(p.id)}">Editar</button>
-        ${p.activa ? `<button class="age-btn age-btn-outline admin-mini" data-desactivar="${escapeHtml(p.id)}">Desactivar</button>` : '<span class="admin-badge-off">inactiva</span>'}
+        ${p.activa
+          ? `<button class="age-btn age-btn-outline admin-mini" data-desactivar="${escapeHtml(p.id)}">Desactivar</button>`
+          : `<button class="age-btn age-btn-outline admin-mini" data-reactivar="${escapeHtml(p.id)}">Reactivar</button>`}
       </td></tr>`;
   }).join("") || `<tr><td colspan="4" class="admin-vacio">Sin preguntas con estos filtros.</td></tr>`;
   cont.innerHTML = `
@@ -315,6 +345,10 @@ async function cargarPreguntas() {
     if (!confirm("¿Desactivar esta pregunta? (no se borra, solo deja de usarse)")) return;
     const r = await api("DELETE", `/admin/api/preguntas/${b.dataset.desactivar}?oposicion=${oposicionActual()}`);
     if (r) { toast("Pregunta desactivada."); cargarPreguntas(); }
+  }));
+  cont.querySelectorAll("[data-reactivar]").forEach((b) => b.addEventListener("click", async () => {
+    const r = await api("POST", `/admin/api/preguntas/${b.dataset.reactivar}/reactivar?oposicion=${oposicionActual()}`);
+    if (r) { toast("Pregunta reactivada."); cargarPreguntas(); }
   }));
 }
 
@@ -366,9 +400,18 @@ async function renderUsuarios() {
       <input id="u-busqueda" class="age-input" placeholder="Buscar por email…">
       <select id="u-plan" class="age-input"><option value="">Todos los planes</option><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
       <button class="age-btn age-btn-primary admin-filtros-btn" id="u-aplicar">Buscar</button>
+      <button class="age-btn age-btn-outline admin-filtros-btn" id="u-csv">⬇ CSV</button>
     </div>
     <div class="age-card"><div id="usuarios-tabla"><p class="admin-cargando">Cargando…</p></div></div>`;
   panel.querySelector("#u-aplicar").addEventListener("click", () => { paginaUsuarios = 1; cargarUsuarios(); });
+  panel.querySelector("#u-csv").addEventListener("click", () => {
+    const params = new URLSearchParams();
+    const b = document.getElementById("u-busqueda")?.value.trim();
+    const pl = document.getElementById("u-plan")?.value;
+    if (b) params.set("busqueda", b);
+    if (pl) params.set("plan", pl);
+    descargarCSV(`/admin/api/usuarios/export?${params.toString()}`, "usuarios.csv");
+  });
   panel.querySelector("#u-busqueda").addEventListener("keydown", (e) => { if (e.key === "Enter") { paginaUsuarios = 1; cargarUsuarios(); } });
   cargarUsuarios();
 }
@@ -430,7 +473,10 @@ async function abrirUsuario(uid) {
     <input id="up-motivo" class="age-input" placeholder="Motivo (queda registrado)" style="margin-top:8px;">
     <button class="age-btn age-btn-primary" id="up-guardar" style="margin-top:10px;">Cambiar plan</button>
     <hr class="admin-sep">
-    <button class="age-btn age-btn-outline" id="up-racha">Resetear racha de estudio</button>`);
+    <h3>Administración</h3>
+    <p class="admin-dato"><strong>Es administrador:</strong> ${u.es_admin ? "sí ✅" : "no"}</p>
+    <button class="age-btn ${u.es_admin ? "age-btn-outline" : "age-btn-primary"}" id="up-admin">${u.es_admin ? "Quitar admin" : "Hacer admin"}</button>
+    <button class="age-btn age-btn-outline" id="up-racha" style="margin-top:8px;">Resetear racha de estudio</button>`);
   document.getElementById("up-plan").value = u.plan;
   document.getElementById("up-oposicion").value = oposicionActual();
   document.getElementById("up-copiar-uid").addEventListener("click", () => {
@@ -443,6 +489,12 @@ async function abrirUsuario(uid) {
       motivo: document.getElementById("up-motivo").value,
     });
     if (r) { toast("Plan actualizado."); cerrarModal(); cargarUsuarios(); }
+  });
+  document.getElementById("up-admin").addEventListener("click", async () => {
+    const dar = !u.es_admin;
+    if (!confirm(dar ? "¿Dar permisos de administrador a este usuario?" : "¿Quitar los permisos de administrador?")) return;
+    const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/admin`, { admin: dar });
+    if (r) { toast(r.mensaje || "Hecho."); u.es_admin = dar; abrirUsuario(u.uid); }
   });
   document.getElementById("up-racha").addEventListener("click", async () => {
     if (!confirm("¿Resetear la racha de este usuario a 0?")) return;
@@ -486,20 +538,31 @@ async function cargarReportes() {
     return;
   }
   const clase = (e) => e === "revisado" ? "admin-estado-revisado" : e === "descartado" ? "admin-estado-descartado" : "admin-estado-pendiente";
-  cont.innerHTML = d.reportes.map((r) => `
+  cont.innerHTML = d.reportes.map((r) => {
+    const po = r.pregunta_oficial;
+    const detalle = po
+      ? `<div class="admin-reporte-oficial">
+           ${["A", "B", "C", "D"].map((k) => `<div class="admin-op-linea ${po.respuesta_correcta === k ? "admin-op-correcta" : ""}">${k}) ${escapeHtml((po.opciones || {})[k] || "")}${po.respuesta_correcta === k ? " ✔" : ""}</div>`).join("")}
+           ${po.explicacion ? `<p class="admin-reporte-meta"><strong>Explicación:</strong> ${escapeHtml(po.explicacion)}</p>` : ""}
+           ${po.activa ? "" : '<span class="admin-badge-alerta">ya desactivada</span>'}
+         </div>`
+      : `<p class="admin-reporte-meta">No se ha localizado en el banco oficial de ${escapeHtml(r.oposicion || "-")} (puede ser una pregunta generada por IA).</p>`;
+    return `
     <div class="admin-reporte">
       <div class="admin-reporte-cab">
         <span class="admin-reporte-estado ${clase(r.estado)}">${escapeHtml(r.estado)}</span>
         <span class="admin-reporte-meta">${escapeHtml(r.oposicion || "-")} · ${escapeHtml(fechaCorta(r.fecha))}</span>
       </div>
       <p class="admin-reporte-preg">${escapeHtml(r.pregunta_texto)}</p>
-      <p class="admin-reporte-motivo"><strong>Motivo:</strong> ${escapeHtml(r.motivo)}</p>
+      ${detalle}
+      <p class="admin-reporte-motivo"><strong>Motivo del usuario:</strong> ${escapeHtml(r.motivo)}</p>
       <div class="admin-reporte-acciones">
         <button class="age-btn age-btn-primary admin-mini" data-editar-preg="${escapeHtml(r.pregunta_texto)}">Editar pregunta</button>
         ${r.estado !== "revisado" ? `<button class="age-btn age-btn-outline admin-mini" data-revisado="${escapeHtml(r.id)}">Marcar revisado</button>` : ""}
         ${r.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-descartar="${escapeHtml(r.id)}">Descartar</button>` : ""}
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
   cont.querySelectorAll("[data-revisado]").forEach((b) => b.addEventListener("click", () => cambiarEstadoReporte(b.dataset.revisado, "revisado")));
   cont.querySelectorAll("[data-descartar]").forEach((b) => b.addEventListener("click", () => cambiarEstadoReporte(b.dataset.descartar, "descartado")));
   cont.querySelectorAll("[data-editar-preg]").forEach((b) => b.addEventListener("click", () => buscarYEditarPregunta(b.dataset.editarPreg)));

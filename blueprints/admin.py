@@ -11,12 +11,14 @@ Convenciones de datos que usa (ya existentes en el proyecto):
               usuario individual falló qué)
 - Reportes:   reportes_preguntas/{id} (colección global, nueva)
 """
+import csv
 import hmac
+import io
 import logging
 import os
 from datetime import datetime, timedelta
 
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, Response, g, jsonify, request
 from firebase_admin import auth as firebase_auth
 
 from firebase_setup import db
@@ -28,10 +30,27 @@ from utils import _limpiar_cache_temario
 logger = logging.getLogger(__name__)
 bp = Blueprint("admin", __name__)
 
+# Precio mensual por plan (€), para estimar los ingresos recurrentes (MRR)
+# en el panel. Debe cuadrar con la página de Planes.
+_PRECIO_PLAN = {"basico": 4.99, "premium": 9.99}
+
 
 # ============================================================
 # Helpers
 # ============================================================
+def _respuesta_csv(cabecera, filas, nombre_fichero):
+    """Genera un CSV descargable (UTF-8 con BOM para que Excel respete los
+    acentos)."""
+    buffer = io.StringIO()
+    escritor = csv.writer(buffer)
+    escritor.writerow(cabecera)
+    escritor.writerows(filas)
+    datos = "﻿" + buffer.getvalue()
+    return Response(datos, mimetype="text/csv; charset=utf-8", headers={
+        "Content-Disposition": f'attachment; filename="{nombre_fichero}"',
+    })
+
+
 def _parse_fecha(valor):
     if not valor:
         return None
@@ -157,12 +176,20 @@ def resumen():
     tests_7 = tests_30 = tests_total = 0
     usuarios_nuevos_7 = usuarios_nuevos_30 = 0
     activos_7 = 0
+    suscripciones_pago = 0
+    mrr = 0.0
 
     for doc in db.collection("usuarios").stream():
         datos = doc.to_dict() or {}
         total_usuarios += 1
         plan = _plan_usuario(datos)
         por_plan[plan] = por_plan.get(plan, 0) + 1
+        # MRR: se cuenta CADA suscripción de pago (una por oposición).
+        for _oid, sub in (datos.get("suscripciones") or {}).items():
+            precio = _PRECIO_PLAN.get((sub or {}).get("plan"))
+            if precio:
+                suscripciones_pago += 1
+                mrr += precio
         alta = _parse_fecha(datos.get("fecha_creacion"))
         if alta and alta >= hace_7:
             usuarios_nuevos_7 += 1
@@ -193,6 +220,8 @@ def resumen():
     return jsonify({
         "usuarios_totales": total_usuarios,
         "usuarios_por_plan": por_plan,
+        "suscripciones_pago": suscripciones_pago,
+        "mrr": round(mrr, 2),
         "usuarios_nuevos_7_dias": usuarios_nuevos_7,
         "usuarios_nuevos_30_dias": usuarios_nuevos_30,
         "usuarios_activos_7_dias": activos_7,
@@ -478,6 +507,48 @@ def preguntas_desactivar(pid):
     return jsonify({"mensaje": "Pregunta desactivada"})
 
 
+@bp.route("/admin/api/preguntas/<pid>/reactivar", methods=["POST"])
+@requiere_admin
+def preguntas_reactivar(pid):
+    """Deshace el soft delete: vuelve a marcar activa=true."""
+    oposicion = request.args.get("oposicion") or "AGE"
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    coleccion = coleccion_examenes_oficiales(oposicion)
+    ref = db.collection(coleccion).document(pid)
+    if not ref.get().exists:
+        return jsonify({"error": "Pregunta no encontrada"}), 404
+    ref.set({"activa": True}, merge=True)
+    _limpiar_cache_temario()
+    return jsonify({"mensaje": "Pregunta reactivada"})
+
+
+@bp.route("/admin/api/preguntas/export", methods=["GET"])
+@requiere_admin
+def preguntas_export():
+    """Descarga todas las preguntas de una oposición en CSV."""
+    oposicion = request.args.get("oposicion") or "AGE"
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    coleccion = coleccion_examenes_oficiales(oposicion)
+    filas = []
+    for doc in db.collection(coleccion).stream():
+        d = doc.to_dict() or {}
+        if d.get("tipo") != "pregunta":
+            continue
+        o = d.get("opciones") or {}
+        filas.append([
+            doc.id, d.get("pregunta", ""),
+            o.get("A", ""), o.get("B", ""), o.get("C", ""), o.get("D", ""),
+            (d.get("respuesta_correcta") or "").upper(),
+            d.get("tema_id", ""), d.get("examen", ""),
+            "no" if d.get("activa", True) is False else "si",
+        ])
+    filas.sort(key=lambda f: (f[7], f[1]))
+    cabecera = ["id", "pregunta", "A", "B", "C", "D", "correcta", "tema_id", "examen", "activa"]
+    return _respuesta_csv(cabecera, filas, f"preguntas_{oposicion}.csv")
+
+
 # ============================================================
 # Usuarios
 # ============================================================
@@ -522,6 +593,32 @@ def usuarios_listar():
     })
 
 
+@bp.route("/admin/api/usuarios/export", methods=["GET"])
+@requiere_admin
+def usuarios_export():
+    """Descarga todos los usuarios (con los filtros aplicados) en CSV."""
+    busqueda = (request.args.get("busqueda") or "").strip().lower()
+    filtro_plan = request.args.get("plan") or ""
+    filas = []
+    for doc in db.collection("usuarios").stream():
+        datos = doc.to_dict() or {}
+        email = (datos.get("email") or "").lower()
+        plan = _plan_usuario(datos)
+        if busqueda and busqueda not in email:
+            continue
+        if filtro_plan and plan != filtro_plan:
+            continue
+        filas.append([
+            doc.id, datos.get("email", ""), datos.get("nombre", ""), plan,
+            ", ".join(_oposiciones_activas(datos)),
+            (datos.get("fecha_creacion") or "")[:10],
+            (datos.get("ultima_actividad") or "")[:10],
+        ])
+    filas.sort(key=lambda f: f[6], reverse=True)
+    cabecera = ["uid", "email", "nombre", "plan", "oposiciones_activas", "alta", "ultima_actividad"]
+    return _respuesta_csv(cabecera, filas, "usuarios.csv")
+
+
 @bp.route("/admin/api/usuarios/<uid>", methods=["GET"])
 @requiere_admin
 def usuarios_detalle(uid):
@@ -551,8 +648,14 @@ def usuarios_detalle(uid):
             ultima_nota = historial[-1].get("nota", ultima_nota)
 
     racha = datos.get("racha") or {}
+    try:
+        claims = firebase_auth.get_user(uid).custom_claims or {}
+        es_admin = claims.get("admin") is True
+    except Exception:
+        es_admin = False
     return jsonify({
         "uid": uid,
+        "es_admin": es_admin,
         "email": datos.get("email", ""),
         "nombre": datos.get("nombre", ""),
         "plan": _plan_usuario(datos),
@@ -600,6 +703,34 @@ def usuarios_cambiar_plan(uid):
     return jsonify({"mensaje": "Plan actualizado"})
 
 
+@bp.route("/admin/api/usuarios/<uid>/admin", methods=["PATCH"])
+@requiere_admin
+def usuarios_cambiar_admin(uid):
+    """Da o quita el custom claim admin a un usuario. Para no quedarse sin
+    ningún administrador por error, un admin no puede quitarse el permiso a
+    sí mismo desde aquí."""
+    data = request.get_json(silent=True) or {}
+    quiere_admin = bool(data.get("admin"))
+    if uid == g.uid and not quiere_admin:
+        return jsonify({"error": "No puedes quitarte a ti mismo el permiso de administrador."}), 400
+    try:
+        usuario = firebase_auth.get_user(uid)
+    except Exception:
+        return jsonify({"error": "Usuario no encontrado en Firebase Auth"}), 404
+    claims = dict(usuario.custom_claims or {})
+    if quiere_admin:
+        claims["admin"] = True
+    else:
+        claims.pop("admin", None)
+    firebase_auth.set_custom_user_claims(uid, claims)
+    logger.info("Admin %s %s permiso admin a %s", g.uid, "dio" if quiere_admin else "quitó", uid)
+    return jsonify({
+        "mensaje": "Permiso de administrador " + ("asignado." if quiere_admin else "revocado."),
+        "es_admin": quiere_admin,
+        "aviso": "El usuario debe cerrar sesión y volver a entrar para que el cambio surta efecto.",
+    })
+
+
 @bp.route("/admin/api/usuarios/<uid>/resetear-racha", methods=["POST"])
 @requiere_admin
 def usuarios_resetear_racha(uid):
@@ -633,6 +764,31 @@ def reportes_listar():
             "fecha": d.get("fecha", ""),
         })
     reportes.sort(key=lambda r: r.get("fecha", ""), reverse=True)
+
+    # Adjuntar la pregunta oficial (opciones + correcta) si se localiza, para
+    # poder juzgar el reporte sin salir de la pantalla. Se carga el banco de
+    # cada oposición implicada una sola vez (no una consulta por reporte).
+    oposiciones_impl = {r["oposicion"] for r in reportes if r.get("oposicion")}
+    bancos = {}
+    for op in oposiciones_impl:
+        if not oposicion_valida(op):
+            continue
+        indice = {}
+        for pdoc in db.collection(coleccion_examenes_oficiales(op)).stream():
+            pd = pdoc.to_dict() or {}
+            if pd.get("tipo") != "pregunta":
+                continue
+            indice[(pd.get("pregunta") or "").strip()] = {
+                "opciones": pd.get("opciones", {}),
+                "respuesta_correcta": (pd.get("respuesta_correcta") or "").upper(),
+                "explicacion": pd.get("explicacion", ""),
+                "activa": pd.get("activa", True) is not False,
+            }
+        bancos[op] = indice
+    for r in reportes:
+        encontrada = bancos.get(r.get("oposicion"), {}).get((r.get("pregunta_texto") or "").strip())
+        r["pregunta_oficial"] = encontrada  # None si no está en el banco
+
     return jsonify({"reportes": reportes})
 
 

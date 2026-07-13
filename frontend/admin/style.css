@@ -142,6 +142,9 @@
 .admin-estado-revisado { background: var(--age-success-soft, #e6f4ea); color: var(--age-success, #1e7e34); }
 .admin-estado-descartado { background: var(--age-neutral-bg, #eee); color: var(--age-ink-soft, #666); }
 .admin-reporte-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-reporte-oficial { background: var(--age-primary-soft); border-radius: 8px; padding: 10px 12px; margin: 8px 0; font-size: 13.5px; }
+.admin-op-linea { padding: 2px 0; }
+.admin-op-correcta { color: var(--age-success, #1e7e34); font-weight: 700; }
 
 /* Toasts */
 .admin-toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 8px; width: min(92vw, 420px); pointer-events: none; }
