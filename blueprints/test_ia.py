@@ -383,6 +383,33 @@ def generar_test_fallos():
     return jsonify({"test": seleccionadas, "mensaje": mensaje, "total_disponibles": total_disponibles})
 
 
+@bp.route("/reportar-pregunta", methods=["POST"])
+@requiere_login(db)
+def reportar_pregunta():
+    """Un usuario normal reporta una pregunta con algún error. Se guarda en la
+    colección global reportes_preguntas (estado='pendiente') para que el panel
+    admin la revise. pregunta_id es opcional (los tests generados por IA no
+    tienen id estable): siempre se guarda el texto como referencia."""
+    from datetime import datetime
+    data = request.get_json(silent=True) or {}
+    motivo = (data.get("motivo") or "").strip()
+    pregunta_texto = (data.get("pregunta_texto") or "").strip()
+    if not motivo:
+        return jsonify({"error": "Indica el motivo del reporte."}), 400
+    if not pregunta_texto:
+        return jsonify({"error": "Falta la pregunta reportada."}), 400
+    db.collection("reportes_preguntas").document().set({
+        "pregunta_id": (data.get("pregunta_id") or "").strip(),
+        "pregunta_texto": pregunta_texto[:1000],
+        "oposicion": obtener_oposicion_solicitada(),
+        "uid": g.uid,
+        "motivo": motivo[:1000],
+        "estado": "pendiente",
+        "fecha": datetime.utcnow().isoformat(),
+    })
+    return jsonify({"mensaje": "Gracias, hemos recibido tu reporte."}), 201
+
+
 @bp.route("/generar-test-favoritas", methods=["POST"])
 @requiere_login(db)
 def generar_test_favoritas():

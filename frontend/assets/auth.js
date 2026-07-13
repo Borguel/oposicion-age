@@ -145,6 +145,21 @@ export function esperarUsuario() {
   return conLimiteDeTiempo(promesa, 8000, null);
 }
 
+// ¿Es administrador? Lee el custom claim `admin` del token del usuario
+// actual (getIdTokenResult). Solo sirve para MOSTRAR/OCULTAR el enlace al
+// panel -- la protección real está en el backend (requiere_admin en cada
+// ruta /admin/*). Nunca fiarse solo de esto en el cliente.
+export async function esAdmin() {
+  const user = await esperarUsuario();
+  if (!user) return false;
+  try {
+    const resultado = await user.getIdTokenResult();
+    return resultado.claims.admin === true;
+  } catch {
+    return false;
+  }
+}
+
 // Token que hay que mandar como "Authorization: Bearer <token>" en cada
 // fetch() a una ruta protegida del backend. Devuelve null si no hay sesión.
 // Espera primero a que Firebase confirme la sesión guardada (si entras
@@ -509,6 +524,25 @@ function inyectarVolverZonaOpositor(user) {
   right.insertBefore(enlace, right.firstChild);
 }
 
+// Enlace "Panel Admin" en la barra de navegación, visible solo si el
+// usuario tiene el claim admin. Se añade de forma asíncrona (esAdmin lee el
+// token) y es puramente cosmético: el backend rechaza igualmente a quien no
+// sea admin aunque manipule el DOM para que aparezca el enlace.
+async function inyectarEnlaceAdmin(user) {
+  const links = document.querySelector(".age-nav-links");
+  if (!links) return;
+  const existente = links.querySelector("[data-admin-link]");
+  if (existente) existente.remove();
+  if (!user || !(await esAdmin())) return;
+
+  const enlace = document.createElement("a");
+  enlace.href = "/admin/";
+  enlace.textContent = "Panel Admin";
+  enlace.dataset.adminLink = "1";
+  if (window.location.pathname.startsWith("/admin/")) enlace.classList.add("age-nav-active");
+  links.appendChild(enlace);
+}
+
 function inyectarNav(user) {
   construirEsqueletoNav();
   inyectarSelectorOposicion(!!user);
@@ -516,6 +550,7 @@ function inyectarNav(user) {
   construirMenuCuenta(user);
   inyectarBannerVerificacion(user);
   inyectarVolverZonaOpositor(user);
+  inyectarEnlaceAdmin(user);
 }
 
 function inyectarFooter() {

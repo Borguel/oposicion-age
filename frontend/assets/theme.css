@@ -1226,6 +1226,23 @@ body {
   color: var(--age-ink);
 }
 
+/* Fila con el botón de explicación + el de reportar error de una pregunta. */
+.detalle-acciones-fila { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.detalle-reportar-btn {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  background: none;
+  color: var(--age-ink-soft);
+  font-family: var(--age-font);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.detalle-reportar-btn:hover { border-color: var(--age-danger, #e0473f); color: var(--age-danger, #e0473f); }
+.detalle-reportar-btn:disabled { cursor: default; opacity: 0.85; }
+
 .detalle-explicacion-panel {
   margin-top: 10px;
   padding: 14px 16px;

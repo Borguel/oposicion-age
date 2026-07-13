@@ -1,0 +1,101 @@
+/* Panel de administración -- se apoya en theme.css (tokens --age-*, .age-card,
+   .age-btn, .age-input). Solo estilos propios del layout del panel. */
+.admin-main { max-width: 1100px; margin: 0 auto; padding: 24px 18px 60px; }
+
+.admin-no-autorizado { text-align: center; padding: 40px 24px; }
+.admin-no-autorizado h2 { margin-bottom: 8px; }
+
+.admin-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.admin-header h1 { font-size: 1.6rem; }
+.admin-oposicion { max-width: 160px; }
+
+.admin-tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--age-border); margin-bottom: 20px; }
+.admin-tab {
+  background: none; border: none; padding: 10px 16px; cursor: pointer;
+  font-size: 14px; font-weight: 600; color: var(--age-ink-soft, var(--age-ink));
+  border-bottom: 2.5px solid transparent; font-family: var(--age-font);
+}
+.admin-tab:hover { color: var(--age-primary); }
+.admin-tab.active { color: var(--age-primary); border-bottom-color: var(--age-primary); }
+
+.admin-cargando, .admin-vacio { color: var(--age-ink-soft, var(--age-ink)); font-size: 14px; padding: 6px 0; }
+.admin-num { text-align: right; }
+.admin-bloque { margin-top: 16px; }
+.admin-bloque h3 { margin-bottom: 10px; font-size: 1rem; }
+
+/* Dashboard */
+.admin-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.admin-stat { text-align: center; padding: 18px 12px; }
+.admin-stat-num { display: block; font-size: 2rem; font-weight: 800; color: var(--age-primary); }
+.admin-stat-lbl { font-size: 13px; color: var(--age-ink-soft, var(--age-ink)); }
+.admin-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-chip { background: var(--age-primary-soft); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+
+.admin-tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-tabla th, .admin-tabla td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--age-border); }
+.admin-tabla th { font-weight: 700; color: var(--age-ink-soft, var(--age-ink)); }
+.admin-inactiva td { opacity: 0.5; }
+.admin-badge { background: var(--age-neutral-bg); border-radius: 999px; padding: 1px 8px; font-size: 12px; margin-left: 4px; }
+.admin-badge-off { color: var(--age-ink-soft, var(--age-ink)); font-size: 12px; }
+
+/* Filtros */
+.admin-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+.admin-filtros .age-input { max-width: 200px; }
+.admin-mini { padding: 5px 11px; font-size: 12.5px; }
+
+/* Temario */
+.admin-temario-grid { display: grid; grid-template-columns: 300px 1fr; gap: 16px; align-items: start; }
+.admin-arbol { max-height: 70vh; overflow-y: auto; }
+.admin-bloque-arbol { margin-bottom: 14px; }
+.admin-bloque-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.admin-bloque-titulo { font-weight: 700; font-size: 14px; }
+.admin-toggle { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; }
+.admin-tema-item {
+  display: block; width: 100%; text-align: left; background: none;
+  border: 1px solid var(--age-border); border-radius: 8px; padding: 7px 10px;
+  margin: 4px 0; cursor: pointer; font-size: 13px; color: var(--age-ink); font-family: var(--age-font);
+}
+.admin-tema-item:hover { border-color: var(--age-primary); background: var(--age-primary-soft); }
+.admin-chunks { max-height: 74vh; overflow-y: auto; }
+.admin-chunk { border: 1px solid var(--age-border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+.admin-chunk-titulo { margin-bottom: 6px; }
+.admin-chunk-texto { width: 100%; resize: vertical; }
+.admin-chunk-acciones { display: flex; gap: 8px; margin-top: 8px; }
+.admin-chunk-nuevo { border-style: dashed; }
+
+/* Formularios / modal */
+.admin-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 40px 16px; z-index: 1000; overflow-y: auto;
+}
+.admin-modal[hidden] { display: none; }
+.admin-modal-caja { position: relative; max-width: 560px; width: 100%; padding: 24px; }
+.admin-modal-cerrar { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--age-ink-soft, var(--age-ink)); }
+.admin-modal label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+.admin-modal textarea, .admin-modal input { width: 100%; }
+.admin-opcion { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.admin-opcion-radio { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; white-space: nowrap; }
+.admin-opcion .age-input { flex: 1; }
+.admin-form-fila { display: flex; gap: 10px; flex-wrap: wrap; }
+.admin-form-fila > div { flex: 1; min-width: 140px; }
+.admin-dato { font-size: 14px; margin: 4px 0; }
+.admin-sep { border: none; border-top: 1px solid var(--age-border); margin: 16px 0; }
+
+/* Usuarios */
+.admin-fila-click { cursor: pointer; }
+.admin-fila-click:hover { background: var(--age-primary-soft); }
+.admin-paginacion { display: flex; align-items: center; gap: 12px; justify-content: center; margin-top: 14px; font-size: 13px; }
+
+/* Reportes */
+.admin-reporte { border: 1px solid var(--age-border); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+.admin-reporte-preg { font-weight: 600; margin-bottom: 6px; }
+.admin-reporte-motivo { font-size: 14px; margin-bottom: 10px; color: var(--age-ink-soft, var(--age-ink)); }
+.admin-reporte-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (max-width: 760px) {
+  .admin-temario-grid { grid-template-columns: 1fr; }
+}

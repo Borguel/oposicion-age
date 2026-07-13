@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script src="/assets/redirect-dominio-antiguo.js"></script>
+  <style>html:not(.auth-listo) body { visibility: hidden; }</style>
+  <script type="module" src="/assets/auth-guard.js"></script>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de administración - Domina tu Opo</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/admin/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+<main class="age-container admin-main">
+  <!-- Bloqueo si no es admin (además del backend, que es la barrera real) -->
+  <div id="admin-no-autorizado" class="age-card admin-no-autorizado" style="display:none;">
+    <h2>Acceso restringido</h2>
+    <p>Esta sección es solo para administradores.</p>
+    <a class="age-btn age-btn-primary" href="/zona-opositor/">Volver a Zona opositor</a>
+  </div>
+
+  <div id="admin-contenido" style="display:none;">
+    <header class="admin-header">
+      <h1>Panel de administración</h1>
+      <select id="admin-oposicion" class="age-input admin-oposicion" aria-label="Oposición">
+        <option value="AGE">AGE</option>
+        <option value="GACE">GACE</option>
+        <option value="AUXILIAR">Auxiliar</option>
+      </select>
+    </header>
+
+    <div class="admin-tabs" role="tablist">
+      <button class="admin-tab active" data-tab="dashboard" role="tab">Dashboard</button>
+      <button class="admin-tab" data-tab="temario" role="tab">Temario</button>
+      <button class="admin-tab" data-tab="preguntas" role="tab">Preguntas</button>
+      <button class="admin-tab" data-tab="usuarios" role="tab">Usuarios</button>
+      <button class="admin-tab" data-tab="reportes" role="tab">Reportes</button>
+    </div>
+
+    <section id="panel-dashboard" class="admin-panel"></section>
+    <section id="panel-temario" class="admin-panel" hidden></section>
+    <section id="panel-preguntas" class="admin-panel" hidden></section>
+    <section id="panel-usuarios" class="admin-panel" hidden></section>
+    <section id="panel-reportes" class="admin-panel" hidden></section>
+  </div>
+</main>
+
+<!-- Modal genérico (crear/editar pregunta, detalle de usuario) -->
+<div id="admin-modal" class="admin-modal" hidden>
+  <div class="admin-modal-caja age-card">
+    <button type="button" class="admin-modal-cerrar" id="admin-modal-cerrar" aria-label="Cerrar">✕</button>
+    <div id="admin-modal-contenido"></div>
+  </div>
+</div>
+
+<script type="module" src="/admin/script.js"></script>
+<script type="module" src="/assets/auth.js"></script>
+</body>
+</html>

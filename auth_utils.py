@@ -55,6 +55,33 @@ def requiere_login(db):
     return decorador
 
 
+def requiere_admin(f):
+    """Exige que quien llama sea administrador (custom claim admin:true en su
+    token de Firebase). A diferencia de requiere_login/requiere_plan NO es una
+    factoría (no necesita db): solo verifica el token y el claim. Devuelve 403
+    -- no 401/redirección-- si el token es válido pero no es admin, porque
+    puede estar perfectamente logueado, solo que sin permisos de admin.
+
+    IMPORTANTE: es la ÚNICA barrera real del panel admin. El frontend solo
+    oculta el enlace; toda ruta /admin/* debe llevar este decorador."""
+    @wraps(f)
+    def envoltura(*args, **kwargs):
+        header = request.headers.get("Authorization", "")
+        if not header.startswith("Bearer "):
+            return jsonify({"error": "No autenticado"}), 401
+        token = header[len("Bearer "):].strip()
+        try:
+            decoded = firebase_auth.verify_id_token(token, check_revoked=True)
+        except Exception:
+            return jsonify({"error": "No autenticado"}), 401
+        if decoded.get("admin") is not True:
+            return jsonify({"error": "Se requieren permisos de administrador"}), 403
+        g.uid = decoded.get("uid")
+        g.email = decoded.get("email")
+        return f(*args, **kwargs)
+    return envoltura
+
+
 def _mejor_plan(suscripciones):
     """El plan más alto entre todas las oposiciones activas del usuario."""
     mejor = "gratis"

@@ -131,6 +131,7 @@ from blueprints.pdf_ia import bp as pdf_ia_bp
 from blueprints.pagos import bp as pagos_bp
 from blueprints.ranking import bp as ranking_bp
 from blueprints.tareas_programadas import bp as tareas_programadas_bp
+from blueprints.admin import bp as admin_bp
 
 app.register_blueprint(temario_bp)
 app.register_blueprint(test_ia_bp)
@@ -139,6 +140,7 @@ app.register_blueprint(pdf_ia_bp)
 app.register_blueprint(pagos_bp)
 app.register_blueprint(ranking_bp)
 app.register_blueprint(tareas_programadas_bp)
+app.register_blueprint(admin_bp)
 
 # Guardado y progreso (rutas_progreso.py ya registra las suyas directamente
 # sobre `app`, con el mismo patrón de "función que recibe app y db").
