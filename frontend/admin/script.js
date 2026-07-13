@@ -181,6 +181,7 @@ async function renderDashboard() {
       <div class="age-card admin-stat"><span class="admin-stat-num">${d.tests_ultimos_7_dias}</span><span class="admin-stat-lbl">Tests (7 días)</span><span class="admin-stat-sub">${d.tests_ultimos_30_dias} en 30 días</span></div>
       <div class="age-card admin-stat"><span class="admin-stat-num">${d.tests_total || 0}</span><span class="admin-stat-lbl">Tests totales</span></div>
       <div class="age-card admin-stat"><span class="admin-stat-num">${(d.mrr || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Ingresos/mes (MRR)</span><span class="admin-stat-sub">${d.suscripciones_pago || 0} suscripciones de pago</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-num">${(d.coste_ia_mes || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Coste IA (este mes)</span></div>
       <div class="age-card admin-stat admin-stat-clic ${alertaReportes ? "admin-stat-alerta" : ""}" id="stat-reportes"><span class="admin-stat-num">${d.reportes_pendientes}</span><span class="admin-stat-lbl">Reportes pendientes</span></div>
     </div>
 
@@ -206,11 +207,21 @@ async function renderDashboard() {
     </div>
 
     <div class="age-card admin-bloque">
+      <h3>Usuarios que más IA consumen (este mes)</h3>
+      <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Email</th><th>Plan</th><th class="admin-num">Coste</th></tr></thead><tbody>${
+        (d.top_gastadores_ia || []).map((g) => `<tr class="admin-fila-click" data-uid-gasto="${escapeHtml(g.uid)}"><td>${escapeHtml(g.email || "(sin email)")}</td><td><span class="admin-chip">${escapeHtml(g.plan)}</span></td><td class="admin-num">${(g.coste_mes || 0).toFixed(4)}€</td></tr>`).join("")
+        || '<tr><td colspan="3" class="admin-vacio">Sin consumo de IA este mes.</td></tr>'}</tbody></table></div>
+    </div>
+
+    <div class="age-card admin-bloque">
       <h3>Top 5 temas más fallados (todos los usuarios)</h3>
       <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Tema</th><th class="admin-num">Fallos</th></tr></thead><tbody>${temas}</tbody></table></div>
     </div>`;
 
   panel.querySelector("#stat-reportes")?.addEventListener("click", () => activarPestana("reportes"));
+  panel.querySelectorAll("[data-uid-gasto]").forEach((tr) => tr.addEventListener("click", () => {
+    if (puedeVer("usuarios")) abrirUsuario(tr.dataset.uidGasto);
+  }));
   panel.querySelectorAll(".admin-hueco").forEach((b) => b.addEventListener("click", () => {
     temaSeleccionado = { bloque: b.dataset.bloque, tema: b.dataset.tema, titulo: b.textContent.trim() };
     activarPestana("temario");
@@ -657,6 +668,7 @@ async function abrirUsuario(uid) {
       <div class="admin-dato-caja"><span class="admin-dato-caja-num">${u.racha_actual}</span><span class="admin-dato-caja-lbl">Racha</span></div>
       <div class="admin-dato-caja"><span class="admin-dato-caja-num">${u.ultima_nota != null ? escapeHtml(u.ultima_nota) : "-"}</span><span class="admin-dato-caja-lbl">Últ. nota</span></div>
     </div>
+    <p class="admin-dato"><strong>Coste IA:</strong> ${(u.coste_ia_mes || 0).toFixed(4)}€ este mes · ${(u.coste_ia_total || 0).toFixed(4)}€ total (${(u.tokens_ia_total || 0).toLocaleString("es")} tokens)</p>
     <p class="admin-dato"><strong>Plan actual:</strong> ${escapeHtml(u.plan)} · <strong>Alta:</strong> ${escapeHtml(fechaCorta(u.fecha_creacion))} · <strong>Últ. actividad:</strong> ${escapeHtml(fechaCorta(u.ultima_actividad))}</p>
     <p class="admin-dato"><strong>Email verificado:</strong> ${u.email_verificado ? "sí" : "no"}</p>
     ${override}

@@ -24,6 +24,7 @@ from firebase_admin import auth as firebase_auth
 from firebase_setup import db
 from auth_utils import requiere_admin, requiere_permiso, PERMISOS_VALIDOS, _mejor_plan
 from banco_fallos import _id_pregunta
+from coste_ia import resumen_coste_usuario
 from oposiciones import OPOSICIONES, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
 from utils import _limpiar_cache_temario
 
@@ -195,12 +196,18 @@ def resumen():
     activos_7 = 0
     suscripciones_pago = 0
     mrr = 0.0
+    coste_ia_mes_total = 0.0
+    gastadores = []  # (coste_mes, email, plan, uid)
 
     for doc in db.collection("usuarios").stream():
         datos = doc.to_dict() or {}
         total_usuarios += 1
         plan = _plan_usuario(datos)
         por_plan[plan] = por_plan.get(plan, 0) + 1
+        coste_mes, _coste_total, _tok = resumen_coste_usuario(datos)
+        if coste_mes > 0:
+            coste_ia_mes_total += coste_mes
+            gastadores.append({"uid": doc.id, "email": datos.get("email", ""), "plan": plan, "coste_mes": coste_mes})
         # MRR: se cuenta CADA suscripción de pago (una por oposición).
         for _oid, sub in (datos.get("suscripciones") or {}).items():
             precio = _PRECIO_PLAN.get((sub or {}).get("plan"))
@@ -239,6 +246,8 @@ def resumen():
         "usuarios_por_plan": por_plan,
         "suscripciones_pago": suscripciones_pago,
         "mrr": round(mrr, 2),
+        "coste_ia_mes": round(coste_ia_mes_total, 2),
+        "top_gastadores_ia": sorted(gastadores, key=lambda g: g["coste_mes"], reverse=True)[:5],
         "usuarios_nuevos_7_dias": usuarios_nuevos_7,
         "usuarios_nuevos_30_dias": usuarios_nuevos_30,
         "usuarios_activos_7_dias": activos_7,
@@ -914,6 +923,7 @@ def usuarios_detalle(uid):
             ultima_nota = historial[-1].get("nota", ultima_nota)
 
     racha = datos.get("racha") or {}
+    _cim, _cit, _tit = resumen_coste_usuario(datos)
     bloqueado = False
     try:
         registro = firebase_auth.get_user(uid)
@@ -945,6 +955,9 @@ def usuarios_detalle(uid):
         "email_verificado": bool(datos.get("email_verificado", False)),
         "admin_override": datos.get("admin_override"),
         "notas_admin": datos.get("notas_admin", ""),
+        "coste_ia_mes": _cim,
+        "coste_ia_total": _cit,
+        "tokens_ia_total": _tit,
     })
 
 

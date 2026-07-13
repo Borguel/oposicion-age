@@ -17,6 +17,17 @@ _REINTENTOS_TRANSITORIOS = 2
 _ESPERA_ENTRE_REINTENTOS_SEGUNDOS = 1.5
 
 
+def _registrar_coste(usage):
+    """Contabiliza el consumo de tokens de una respuesta de DeepSeek en el
+    acumulador de la petición actual (best-effort; ver coste_ia.py). Nunca
+    debe romper la llamada principal."""
+    try:
+        from coste_ia import acumular_usage
+        acumular_usage(usage)
+    except Exception:
+        pass
+
+
 def _es_error_transitorio(exc):
     """Decide si un fallo llamando a DeepSeek merece un reintento
     automático: timeouts y errores de conexión (un simple parpadeo de
@@ -79,6 +90,7 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
             response.raise_for_status()  # Lanza excepción para códigos HTTP 4xx/5xx
 
             data = response.json()
+            _registrar_coste(data.get("usage"))
 
             # Verificar que la respuesta tiene la estructura esperada
             if 'choices' in data and len(data['choices']) > 0:
@@ -191,7 +203,9 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
         if response.status_code != 200:
             logger.warning("DeepSeek devolvió %s generando continuación", response.status_code)
             break
-        choices = (response.json() or {}).get("choices") or []
+        cuerpo = response.json() or {}
+        _registrar_coste(cuerpo.get("usage"))
+        choices = cuerpo.get("choices") or []
         if not choices:
             logger.warning("DeepSeek no devolvió 'choices' generando continuación")
             break
@@ -313,7 +327,11 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7):
         "messages": messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
-        "stream": True
+        "stream": True,
+        # Pide que el último chunk del stream incluya el consumo de tokens,
+        # para poder contabilizar el coste también en las respuestas en
+        # streaming (Tu Tutor, test personalizado).
+        "stream_options": {"include_usage": True},
     }
 
     try:
@@ -332,6 +350,10 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7):
                     data = json.loads(contenido_linea)
                 except json.JSONDecodeError:
                     continue
+                # El chunk final (con include_usage) trae usage y choices
+                # vacío: se contabiliza y no se cede nada.
+                if data.get("usage"):
+                    _registrar_coste(data.get("usage"))
                 choices = data.get("choices") or []
                 if not choices:
                     continue
