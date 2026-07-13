@@ -538,16 +538,25 @@ def reportes_actualizar(rid):
 # variable no está definida, la ruta responde 404 y no hace nada, así que
 # en condiciones normales (sin secreto configurado) es como si no
 # existiera. Pensada para usarse una vez y retirarse después.
-@bp.route("/admin/api/bootstrap", methods=["POST"])
+#
+# Acepta POST (cuerpo JSON) y GET (parámetros en la URL), este último para
+# poder activarse desde el móvil abriendo un simple enlace en el navegador
+# cuando no hay acceso a una terminal. El secreto va en la URL, aceptable
+# solo porque es de un único uso y la variable se retira justo después.
+@bp.route("/admin/api/bootstrap", methods=["GET", "POST"])
 def bootstrap_admin():
     secreto_esperado = os.environ.get("ADMIN_BOOTSTRAP_SECRET", "")
     if not secreto_esperado:
         # Función desactivada: sin secreto configurado no existe.
         return jsonify({"error": "No encontrado"}), 404
 
-    data = request.get_json(silent=True) or {}
-    secreto_recibido = str(data.get("secreto", ""))
-    uid = str(data.get("uid", "")).strip()
+    if request.method == "GET":
+        secreto_recibido = str(request.args.get("secreto", ""))
+        uid = str(request.args.get("uid", "")).strip()
+    else:
+        data = request.get_json(silent=True) or {}
+        secreto_recibido = str(data.get("secreto", ""))
+        uid = str(data.get("uid", "")).strip()
 
     # Comparación en tiempo constante para no filtrar el secreto por timing.
     if not hmac.compare_digest(secreto_recibido, secreto_esperado):
