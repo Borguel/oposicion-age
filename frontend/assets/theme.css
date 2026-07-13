@@ -807,6 +807,19 @@ body {
   text-decoration: underline;
 }
 
+/* ---------- Aviso global del sitio (configurable desde el panel admin) ---------- */
+.age-banner-global {
+  width: 100%;
+  padding: 10px 18px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--age-primary);
+}
+.age-banner-aviso { background: #d98324; }
+.age-banner-urgente { background: #c0392b; }
+
 /* ---------- Aviso de cookies ---------- */
 .age-cookies-banner {
   position: fixed;

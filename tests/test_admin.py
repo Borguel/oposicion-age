@@ -286,6 +286,69 @@ def test_reportes_adjuntan_pregunta_oficial(client, db):
     assert reportes[0]["pregunta_oficial"]["respuesta_correcta"] == "C"
 
 
+# ---------- Editor temario, import, sistema, banner, notas ----------
+def test_crear_bloque_y_tema_y_renombrar(client, db):
+    with _como():
+        assert client.post("/admin/api/temario/AGE/nuevo-bloque",
+                           json={"id": "bloque_09", "titulo": "Nuevo"}, headers=_AUTH).status_code == 201
+        assert client.post("/admin/api/temario/AGE/bloque_09/nuevo-tema",
+                           json={"id": "tema_01", "titulo": "T"}, headers=_AUTH).status_code == 201
+        client.patch("/admin/api/temario/AGE/bloque_09", json={"titulo": "Renombrado"}, headers=_AUTH)
+        client.patch("/admin/api/temario/AGE/bloque_09/tema_01/titulo", json={"titulo": "Tema nuevo"}, headers=_AUTH)
+    assert db.leer(("Temario AGE", "bloque_09"))["titulo"] == "Renombrado"
+    assert db.leer(("Temario AGE", "bloque_09", "temas", "tema_01"))["titulo"] == "Tema nuevo"
+
+
+def test_crear_bloque_rechaza_id_invalido(client, db):
+    with _como():
+        r = client.post("/admin/api/temario/AGE/nuevo-bloque", json={"id": "con/barra"}, headers=_AUTH)
+    assert r.status_code == 400
+
+
+def test_importar_preguntas_lote(client, db):
+    lote = {
+        "oposicion": "AGE", "examen": "AGE 2025",
+        "preguntas": [
+            {"pregunta": "¿P1?", "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A"},
+            {"pregunta": "", "opciones": {"A": "a"}, "respuesta_correcta": "Z"},  # inválida
+        ],
+    }
+    with _como():
+        r = client.post("/admin/api/preguntas/importar", json=lote, headers=_AUTH).get_json()
+    assert r["creadas"] == 1
+    assert len(r["errores"]) == 1 and r["errores"][0]["indice"] == 1
+
+
+def test_sistema_reporta_servicios(client, db, monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "x")
+    monkeypatch.delenv("SENTRY_DSN", raising=False)
+    with _como():
+        servicios = client.get("/admin/api/sistema", headers=_AUTH).get_json()["servicios"]
+    por_nombre = {s["nombre"]: s["ok"] for s in servicios}
+    assert por_nombre["IA (DeepSeek)"] is True
+    assert por_nombre["Errores (Sentry)"] is False
+
+
+def test_banner_guardar_y_lectura_publica(client, db):
+    with _como():
+        client.put("/admin/api/banner", json={"activo": True, "texto": "Hola", "tipo": "aviso"}, headers=_AUTH)
+    # Lectura pública sin token.
+    pub = client.get("/banner-global").get_json()
+    assert pub["activo"] is True and pub["texto"] == "Hola" and pub["tipo"] == "aviso"
+    # Desactivado -> no expone el texto.
+    with _como():
+        client.put("/admin/api/banner", json={"activo": False, "texto": "Hola"}, headers=_AUTH)
+    assert client.get("/banner-global").get_json() == {"activo": False}
+
+
+def test_notas_internas_usuario(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    with _como():
+        client.patch("/admin/api/usuarios/u1/notas", json={"notas": "cliente VIP"}, headers=_AUTH)
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["notas_admin"] == "cliente VIP"
+
+
 # ---------- Auditoría (9) ----------
 def test_cambio_de_plan_queda_en_auditoria(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {"AGE": {"plan": "gratis"}}})

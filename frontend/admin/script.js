@@ -114,6 +114,7 @@ const RENDERS = {
   usuarios: renderUsuarios,
   reportes: renderReportes,
   auditoria: renderAuditoria,
+  sistema: renderSistema,
 };
 let pestanaActual = "dashboard";
 
@@ -208,30 +209,70 @@ async function renderTemario() {
   panel.innerHTML = `<p class="admin-cargando">Cargando temario…</p>`;
   const d = await apiGet(`/admin/api/temario/${oposicionActual()}`);
   if (!d) return;
+  const op = oposicionActual();
   const arbol = (d.bloques || []).map((b) => `
     <div class="admin-bloque-arbol">
       <div class="admin-bloque-cab">
-        <span class="admin-bloque-titulo">${escapeHtml(b.titulo)}</span>
+        <span class="admin-bloque-titulo">${escapeHtml(b.titulo)}
+          <button class="admin-icono" data-renombrar-bloque="${escapeHtml(b.id)}" title="Renombrar bloque">✏️</button>
+        </span>
         <label class="admin-toggle" title="Publicado / borrador">
           <input type="checkbox" data-bloque-pub="${escapeHtml(b.id)}" ${b.publicado ? "checked" : ""}>
           <span>${b.publicado ? "Publicado" : "Borrador"}</span>
         </label>
       </div>
       ${b.temas.map((t) => `
-        <button type="button" class="admin-tema-item ${t.num_chunks ? "" : "sin-contenido"}" data-bloque="${escapeHtml(b.id)}" data-tema="${escapeHtml(t.id)}">
-          <span>${escapeHtml(t.titulo)}${t.publicado ? "" : ' <span class="admin-badge-alerta">borrador</span>'}</span>
-          <span class="admin-badge">${t.num_chunks}</span>
-        </button>`).join("")}
-    </div>`).join("") || '<p class="admin-vacio">Sin bloques.</p>';
+        <div class="admin-tema-fila">
+          <button type="button" class="admin-tema-item ${t.num_chunks ? "" : "sin-contenido"}" data-bloque="${escapeHtml(b.id)}" data-tema="${escapeHtml(t.id)}">
+            <span>${escapeHtml(t.titulo)}${t.publicado ? "" : ' <span class="admin-badge-alerta">borrador</span>'}</span>
+            <span class="admin-badge">${t.num_chunks}</span>
+          </button>
+          <button class="admin-icono" data-renombrar-tema="${escapeHtml(b.id)}|${escapeHtml(t.id)}|${escapeHtml(t.titulo)}" title="Renombrar tema">✏️</button>
+        </div>`).join("")}
+      <button class="age-btn age-btn-outline admin-mini admin-nuevo-tema" data-bloque="${escapeHtml(b.id)}" style="margin-top:6px;">+ Tema</button>
+    </div>`).join("") || '<p class="admin-vacio">Sin bloques todavía.</p>';
 
   panel.innerHTML = `
+    <div class="admin-filtros">
+      <button class="age-btn age-btn-primary admin-mini" id="t-nuevo-bloque">+ Nuevo bloque</button>
+    </div>
     <div class="admin-temario-grid">
       <div class="age-card admin-arbol">${arbol}</div>
       <div class="age-card admin-chunks" id="admin-chunks"><p class="admin-vacio">Elige un tema para ver y editar sus fichas.</p></div>
     </div>`;
 
+  panel.querySelector("#t-nuevo-bloque").addEventListener("click", async () => {
+    const id = prompt("Id del nuevo bloque (ej. bloque_07):");
+    if (!id) return;
+    const titulo = prompt("Título del bloque:", "") || id;
+    const r = await api("POST", `/admin/api/temario/${op}/nuevo-bloque`, { id: id.trim(), titulo });
+    if (r) { toast("Bloque creado."); renderTemario(); }
+  });
+  panel.querySelectorAll(".admin-nuevo-tema").forEach((btn) => btn.addEventListener("click", async () => {
+    const id = prompt("Id del nuevo tema (ej. tema_03):");
+    if (!id) return;
+    const titulo = prompt("Título del tema:", "") || id;
+    const r = await api("POST", `/admin/api/temario/${op}/${btn.dataset.bloque}/nuevo-tema`, { id: id.trim(), titulo });
+    if (r) { toast("Tema creado."); renderTemario(); }
+  }));
+  panel.querySelectorAll("[data-renombrar-bloque]").forEach((btn) => btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const titulo = prompt("Nuevo título del bloque:");
+    if (!titulo) return;
+    const r = await api("PATCH", `/admin/api/temario/${op}/${btn.dataset.renombrarBloque}`, { titulo });
+    if (r) { toast("Bloque renombrado."); renderTemario(); }
+  }));
+  panel.querySelectorAll("[data-renombrar-tema]").forEach((btn) => btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const [bloque, tema, actual] = btn.dataset.renombrarTema.split("|");
+    const titulo = prompt("Nuevo título del tema:", actual);
+    if (!titulo || titulo === actual) return;
+    const r = await api("PATCH", `/admin/api/temario/${op}/${bloque}/${tema}/titulo`, { titulo });
+    if (r) { toast("Tema renombrado."); renderTemario(); }
+  }));
+
   panel.querySelectorAll("[data-bloque-pub]").forEach((chk) => chk.addEventListener("change", async () => {
-    const r = await api("PATCH", `/admin/api/temario/${oposicionActual()}/${chk.dataset.bloquePub}/publicado`, { publicado: chk.checked });
+    const r = await api("PATCH", `/admin/api/temario/${op}/${chk.dataset.bloquePub}/publicado`, { publicado: chk.checked });
     if (r) { toast(chk.checked ? "Bloque publicado." : "Bloque pasado a borrador."); renderTemario(); }
   }));
   panel.querySelectorAll(".admin-tema-item").forEach((btn) => btn.addEventListener("click", () => {
@@ -299,11 +340,13 @@ async function renderPreguntas() {
       <input id="f-anio" class="age-input" placeholder="Año (ej. 2025)">
       <button class="age-btn age-btn-outline admin-filtros-btn" id="f-aplicar">Filtrar</button>
       <button class="age-btn age-btn-outline admin-filtros-btn" id="p-csv">⬇ CSV</button>
+      <button class="age-btn age-btn-outline admin-filtros-btn" id="p-importar">⬆ Importar</button>
       <button class="age-btn age-btn-primary admin-filtros-btn" id="p-nueva">+ Nueva</button>
     </div>
     <div class="age-card"><div id="preguntas-tabla"><p class="admin-cargando">Cargando…</p></div></div>`;
   panel.querySelector("#f-aplicar").addEventListener("click", cargarPreguntas);
   panel.querySelector("#p-nueva").addEventListener("click", () => modalPregunta(null));
+  panel.querySelector("#p-importar").addEventListener("click", modalImportar);
   panel.querySelector("#p-csv").addEventListener("click", () => descargarCSV(`/admin/api/preguntas/export?oposicion=${oposicionActual()}`, `preguntas_${oposicionActual()}.csv`));
   panel.querySelector("#f-texto").addEventListener("keydown", (e) => { if (e.key === "Enter") cargarPreguntas(); });
   cargarPreguntas();
@@ -392,6 +435,47 @@ function modalPregunta(p) {
   });
 }
 
+const _EJEMPLO_IMPORT = JSON.stringify([{
+  pregunta: "¿Enunciado de ejemplo?",
+  opciones: { A: "Opción A", B: "Opción B", C: "Opción C", D: "Opción D" },
+  respuesta_correcta: "A",
+  explicacion: "Por qué es la A (opcional).",
+  tema_id: "bloque_01-tema_01",
+}], null, 2);
+
+function modalImportar() {
+  abrirModal(`
+    <h2>Importar examen (por lote)</h2>
+    <p class="admin-reporte-meta">Pega una lista JSON de preguntas. Se crearán en <strong>${escapeHtml(oposicionActual())}</strong>. Las que no pasen validación se te indicarán sin bloquear al resto.</p>
+    <label>Nombre del examen (opcional, se aplica a las que no lo traigan)</label>
+    <input class="age-input" id="imp-examen" placeholder="Ej. AGE 2025">
+    <label>Preguntas (JSON)</label>
+    <textarea class="age-input" id="imp-json" rows="12" placeholder='${escapeHtml(_EJEMPLO_IMPORT)}'></textarea>
+    <button class="age-btn age-btn-outline admin-mini" id="imp-ejemplo" style="margin-top:8px;">Rellenar con ejemplo</button>
+    <button class="age-btn age-btn-primary" id="imp-enviar" style="margin-top:8px;">Importar</button>
+    <div id="imp-resultado" style="margin-top:12px;"></div>`);
+  document.getElementById("imp-ejemplo").addEventListener("click", () => { document.getElementById("imp-json").value = _EJEMPLO_IMPORT; });
+  document.getElementById("imp-enviar").addEventListener("click", async () => {
+    let preguntas;
+    try {
+      preguntas = JSON.parse(document.getElementById("imp-json").value);
+    } catch {
+      toast("El JSON no es válido. Revisa las comas y comillas.", "error");
+      return;
+    }
+    if (!Array.isArray(preguntas)) { toast("Debe ser una lista [ ... ].", "error"); return; }
+    const r = await api("POST", "/admin/api/preguntas/importar", {
+      oposicion: oposicionActual(), examen: document.getElementById("imp-examen").value, preguntas,
+    });
+    if (!r) return;
+    const errores = (r.errores || []).map((e) => `<li>Fila ${e.indice + 1}: ${escapeHtml(e.error)}</li>`).join("");
+    document.getElementById("imp-resultado").innerHTML = `
+      <div class="admin-aviso"><strong>${r.creadas}</strong> de ${r.total} preguntas creadas.${errores ? `<ul style="margin-top:6px;">${errores}</ul>` : ""}</div>`;
+    toast(`${r.creadas} preguntas importadas.`);
+    if (pestanaActual === "preguntas") cargarPreguntas();
+  });
+}
+
 // ===== Usuarios =====
 let paginaUsuarios = 1;
 async function renderUsuarios() {
@@ -474,6 +558,10 @@ async function abrirUsuario(uid) {
     <input id="up-motivo" class="age-input" placeholder="Motivo (queda registrado)" style="margin-top:8px;">
     <button class="age-btn age-btn-primary" id="up-guardar" style="margin-top:10px;">Cambiar plan</button>
     <hr class="admin-sep">
+    <h3>Notas internas (solo admins)</h3>
+    <textarea class="age-input" id="up-notas" rows="3" placeholder="Anotaciones de soporte sobre este usuario…">${escapeHtml(u.notas_admin || "")}</textarea>
+    <button class="age-btn age-btn-outline admin-mini" id="up-notas-guardar" style="margin-top:6px;">Guardar nota</button>
+    <hr class="admin-sep">
     <h3>Administración</h3>
     <p class="admin-dato"><strong>Es administrador:</strong> ${u.es_admin ? "sí ✅" : "no"}</p>
     <button class="age-btn ${u.es_admin ? "age-btn-outline" : "age-btn-primary"}" id="up-admin">${u.es_admin ? "Quitar admin" : "Hacer admin"}</button>
@@ -490,6 +578,10 @@ async function abrirUsuario(uid) {
       motivo: document.getElementById("up-motivo").value,
     });
     if (r) { toast("Plan actualizado."); cerrarModal(); cargarUsuarios(); }
+  });
+  document.getElementById("up-notas-guardar").addEventListener("click", async () => {
+    const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/notas`, { notas: document.getElementById("up-notas").value });
+    if (r) { toast("Nota guardada."); u.notas_admin = document.getElementById("up-notas").value; }
   });
   document.getElementById("up-admin").addEventListener("click", async () => {
     const dar = !u.es_admin;
@@ -622,6 +714,48 @@ async function renderAuditoria() {
   cont.innerHTML = `
     <p class="admin-reporte-meta" style="margin-bottom:8px;">Últimas ${d.entradas.length} de ${d.total} acciones</p>
     <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Fecha (UTC)</th><th>Acción</th><th>Sobre</th><th>Admin</th></tr></thead><tbody>${filas}</tbody></table></div>`;
+}
+
+// ===== Sistema (salud + banner) =====
+async function renderSistema() {
+  const panel = document.getElementById("panel-sistema");
+  panel.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
+  const [sis, banner] = await Promise.all([apiGet("/admin/api/sistema"), apiGet("/admin/api/banner")]);
+  if (!sis) return;
+  const servicios = (sis.servicios || []).map((s) => `
+    <tr>
+      <td>${s.ok ? "🟢" : "🔴"} ${escapeHtml(s.nombre)}</td>
+      <td>${s.ok ? "Configurado" : "Sin configurar"}</td>
+      <td class="admin-reporte-meta">${escapeHtml(s.detalle)}</td>
+    </tr>`).join("");
+  const b = banner || { activo: false, texto: "", tipo: "info" };
+  panel.innerHTML = `
+    <div class="age-card admin-bloque">
+      <h3>Estado de los servicios</h3>
+      <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Servicio</th><th>Estado</th><th>Para qué</th></tr></thead><tbody>${servicios}</tbody></table></div>
+    </div>
+    <div class="age-card admin-bloque">
+      <h3>Aviso global del sitio</h3>
+      <p class="admin-reporte-meta">Se muestra a todos los usuarios en la parte superior de la web.</p>
+      <label class="admin-toggle" style="margin:8px 0;"><input type="checkbox" id="ban-activo" ${b.activo ? "checked" : ""}> <span>Mostrar el aviso</span></label>
+      <label>Texto</label>
+      <input class="age-input" id="ban-texto" maxlength="300" value="${escapeHtml(b.texto)}" placeholder="Ej. Mantenimiento programado el viernes de 22h a 23h.">
+      <label>Tipo</label>
+      <select class="age-input" id="ban-tipo">
+        <option value="info" ${b.tipo === "info" ? "selected" : ""}>Info (azul)</option>
+        <option value="aviso" ${b.tipo === "aviso" ? "selected" : ""}>Aviso (naranja)</option>
+        <option value="urgente" ${b.tipo === "urgente" ? "selected" : ""}>Urgente (rojo)</option>
+      </select>
+      <button class="age-btn age-btn-primary" id="ban-guardar" style="margin-top:12px;">Guardar aviso</button>
+    </div>`;
+  panel.querySelector("#ban-guardar").addEventListener("click", async () => {
+    const r = await api("PUT", "/admin/api/banner", {
+      activo: panel.querySelector("#ban-activo").checked,
+      texto: panel.querySelector("#ban-texto").value,
+      tipo: panel.querySelector("#ban-tipo").value,
+    });
+    if (r) toast(r.activo ? "Aviso activado." : "Aviso guardado (oculto).");
+  });
 }
 
 // ===== init =====

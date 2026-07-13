@@ -392,6 +392,85 @@ def temario_publicar(oposicion, bloque):
     return jsonify({"mensaje": "Estado de publicación actualizado", "publicado": publicado})
 
 
+def _id_valido(valor):
+    """Valida un id de documento de Firestore sencillo (sin barras ni
+    espacios raros). Evita crear rutas inesperadas."""
+    return bool(valor) and "/" not in valor and len(valor) <= 60 and valor.strip() == valor
+
+
+@bp.route("/admin/api/temario/<oposicion>/nuevo-bloque", methods=["POST"])
+@requiere_admin
+def temario_nuevo_bloque(oposicion):
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    data = request.get_json(silent=True) or {}
+    bloque_id = (data.get("id") or "").strip()
+    if not _id_valido(bloque_id):
+        return jsonify({"error": "Id de bloque no válido (ej. bloque_07)"}), 400
+    ref = db.collection(coleccion_temario(oposicion)).document(bloque_id)
+    if ref.get().exists:
+        return jsonify({"error": "Ya existe un bloque con ese id"}), 400
+    ref.set({"titulo": (data.get("titulo") or bloque_id).strip(), "publicado": bool(data.get("publicado", False))})
+    _limpiar_cache_temario()
+    _registrar_auditoria("temario_nuevo_bloque", f"{oposicion}/{bloque_id}", (data.get("titulo") or "")[:80])
+    return jsonify({"mensaje": "Bloque creado", "id": bloque_id}), 201
+
+
+@bp.route("/admin/api/temario/<oposicion>/<bloque>/nuevo-tema", methods=["POST"])
+@requiere_admin
+def temario_nuevo_tema(oposicion, bloque):
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    data = request.get_json(silent=True) or {}
+    tema_id = (data.get("id") or "").strip()
+    if not _id_valido(tema_id):
+        return jsonify({"error": "Id de tema no válido (ej. tema_03)"}), 400
+    coleccion = coleccion_temario(oposicion)
+    if not db.collection(coleccion).document(bloque).get().exists:
+        return jsonify({"error": "El bloque no existe"}), 404
+    ref = db.collection(coleccion).document(bloque).collection("temas").document(tema_id)
+    if ref.get().exists:
+        return jsonify({"error": "Ya existe un tema con ese id"}), 400
+    ref.set({"titulo": (data.get("titulo") or tema_id).strip(), "publicado": bool(data.get("publicado", False))})
+    _limpiar_cache_temario()
+    _registrar_auditoria("temario_nuevo_tema", f"{oposicion}/{bloque}/{tema_id}", (data.get("titulo") or "")[:80])
+    return jsonify({"mensaje": "Tema creado", "id": tema_id}), 201
+
+
+@bp.route("/admin/api/temario/<oposicion>/<bloque>", methods=["PATCH"])
+@requiere_admin
+def temario_renombrar_bloque(oposicion, bloque):
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    titulo = ((request.get_json(silent=True) or {}).get("titulo") or "").strip()
+    if not titulo:
+        return jsonify({"error": "El título no puede estar vacío"}), 400
+    ref = db.collection(coleccion_temario(oposicion)).document(bloque)
+    if not ref.get().exists:
+        return jsonify({"error": "Bloque no encontrado"}), 404
+    ref.set({"titulo": titulo}, merge=True)
+    _limpiar_cache_temario()
+    _registrar_auditoria("temario_renombrar_bloque", f"{oposicion}/{bloque}", titulo[:80])
+    return jsonify({"mensaje": "Bloque renombrado"})
+
+
+@bp.route("/admin/api/temario/<oposicion>/<bloque>/<tema>/titulo", methods=["PATCH"])
+@requiere_admin
+def temario_renombrar_tema(oposicion, bloque, tema):
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    titulo = ((request.get_json(silent=True) or {}).get("titulo") or "").strip()
+    if not titulo:
+        return jsonify({"error": "El título no puede estar vacío"}), 400
+    ref = db.collection(coleccion_temario(oposicion)).document(bloque).collection("temas").document(tema)
+    if not ref.get().exists:
+        return jsonify({"error": "Tema no encontrado"}), 404
+    ref.set({"titulo": titulo}, merge=True)
+    _limpiar_cache_temario()
+    _registrar_auditoria("temario_renombrar_tema", f"{oposicion}/{bloque}/{tema}", titulo[:80])
+    return jsonify({"mensaje": "Tema renombrado"})
+
+
 # ============================================================
 # Preguntas oficiales
 # ============================================================
@@ -483,6 +562,52 @@ def preguntas_crear():
     _limpiar_cache_temario()  # la caché de preguntas oficiales vive en el mismo store
     _registrar_auditoria("pregunta_crear", f"{oposicion}/{ref.id}", data["pregunta"][:80])
     return jsonify({"mensaje": "Pregunta creada", "id": ref.id}), 201
+
+
+@bp.route("/admin/api/preguntas/importar", methods=["POST"])
+@requiere_admin
+def preguntas_importar():
+    """Alta por lote de un examen completo. Recibe una lista de preguntas y
+    crea las válidas, devolviendo cuántas se crearon y los errores de las
+    que no pasaron validación (con su índice)."""
+    data = request.get_json(silent=True) or {}
+    oposicion = data.get("oposicion") or "AGE"
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    lista = data.get("preguntas")
+    if not isinstance(lista, list) or not lista:
+        return jsonify({"error": "Falta la lista 'preguntas'."}), 400
+    examen_comun = (data.get("examen") or "").strip()
+    coleccion = coleccion_examenes_oficiales(oposicion)
+    creadas = 0
+    errores = []
+    for i, p in enumerate(lista):
+        if not isinstance(p, dict):
+            errores.append({"indice": i, "error": "No es un objeto válido"})
+            continue
+        error = _validar_pregunta_payload(p)
+        if error:
+            errores.append({"indice": i, "error": error})
+            continue
+        db.collection(coleccion).document().set({
+            "tipo": "pregunta",
+            "pregunta": p["pregunta"].strip(),
+            "opciones": {k: str(p["opciones"][k]).strip() for k in ("A", "B", "C", "D")},
+            "respuesta_correcta": p["respuesta_correcta"].upper(),
+            "explicacion": (p.get("explicacion") or "").strip(),
+            "tema_id": (p.get("tema_id") or "").strip(),
+            "examen": (p.get("examen") or examen_comun).strip(),
+            "numero": p.get("numero", i + 1),
+            "psicotecnico": bool(p.get("psicotecnico", False)),
+            "activa": True,
+            "origen": "admin_import",
+            "fecha_creacion": datetime.utcnow().isoformat(),
+        })
+        creadas += 1
+    if creadas:
+        _limpiar_cache_temario()
+        _registrar_auditoria("preguntas_importar", f"{oposicion}/{examen_comun}", f"{creadas} creadas")
+    return jsonify({"creadas": creadas, "errores": errores, "total": len(lista)})
 
 
 @bp.route("/admin/api/preguntas/<pid>", methods=["PUT"])
@@ -696,7 +821,22 @@ def usuarios_detalle(uid):
         "ultima_nota": ultima_nota,
         "email_verificado": bool(datos.get("email_verificado", False)),
         "admin_override": datos.get("admin_override"),
+        "notas_admin": datos.get("notas_admin", ""),
     })
+
+
+@bp.route("/admin/api/usuarios/<uid>/notas", methods=["PATCH"])
+@requiere_admin
+def usuarios_notas(uid):
+    """Guarda una nota interna de soporte sobre el usuario (no visible para
+    él)."""
+    ref = db.collection("usuarios").document(uid)
+    if not ref.get().exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    notas = str((request.get_json(silent=True) or {}).get("notas", ""))[:2000]
+    ref.set({"notas_admin": notas}, merge=True)
+    _registrar_auditoria("usuario_notas", uid)
+    return jsonify({"mensaje": "Nota guardada"})
 
 
 @bp.route("/admin/api/usuarios/<uid>/plan", methods=["PATCH"])
@@ -838,6 +978,75 @@ def reportes_actualizar(rid):
     }, merge=True)
     _registrar_auditoria("reporte_" + estado, rid)
     return jsonify({"mensaje": "Reporte actualizado"})
+
+
+# ============================================================
+# Salud del sistema
+# ============================================================
+@bp.route("/admin/api/sistema", methods=["GET"])
+@requiere_admin
+def sistema_estado():
+    """Estado de configuración de los servicios externos (solo comprueba que
+    las claves están presentes en el entorno, no hace llamadas de red)."""
+    def _hay(*nombres):
+        return all(bool(os.environ.get(n)) for n in nombres)
+    servicios = [
+        {"nombre": "Firebase / Firestore", "ok": True, "detalle": "Conectado (la app arranca con credenciales)."},
+        {"nombre": "IA (DeepSeek)", "ok": _hay("DEEPSEEK_API_KEY"), "detalle": "Necesaria para Tu Tutor y generación de tests/resúmenes."},
+        {"nombre": "Pagos (Stripe)", "ok": _hay("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"), "detalle": "Clave y webhook para cobros y altas de plan."},
+        {"nombre": "Precios de planes", "ok": _hay("STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM"), "detalle": "IDs de precio de básico y premium."},
+        {"nombre": "Email (SendGrid)", "ok": _hay("SENDGRID_API_KEY", "SENDGRID_FROM_EMAIL"), "detalle": "Bienvenida, verificación y avisos de racha."},
+        {"nombre": "Notificaciones push (VAPID)", "ok": _hay("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"), "detalle": "Avisos push del navegador."},
+        {"nombre": "Errores (Sentry)", "ok": _hay("SENTRY_DSN"), "detalle": "Captura de errores en producción. Opcional."},
+        {"nombre": "Límite de peticiones", "ok": os.environ.get("RATELIMIT_ENABLED", "").lower() in ("1", "true", "yes"), "detalle": "Protección contra abuso/bots."},
+    ]
+    return jsonify({"servicios": servicios})
+
+
+# ============================================================
+# Banner / aviso global del sitio
+# ============================================================
+def _leer_banner():
+    doc = db.collection("config").document("banner").get()
+    d = doc.to_dict() or {} if doc.exists else {}
+    return {
+        "activo": bool(d.get("activo", False)),
+        "texto": d.get("texto", ""),
+        "tipo": d.get("tipo", "info"),
+    }
+
+
+@bp.route("/admin/api/banner", methods=["GET"])
+@requiere_admin
+def banner_obtener():
+    return jsonify(_leer_banner())
+
+
+@bp.route("/admin/api/banner", methods=["PUT"])
+@requiere_admin
+def banner_guardar():
+    data = request.get_json(silent=True) or {}
+    tipo = data.get("tipo", "info")
+    if tipo not in ("info", "aviso", "urgente"):
+        tipo = "info"
+    banner = {
+        "activo": bool(data.get("activo", False)),
+        "texto": str(data.get("texto", "")).strip()[:300],
+        "tipo": tipo,
+    }
+    db.collection("config").document("banner").set(banner)
+    _registrar_auditoria("banner", "", ("ON: " if banner["activo"] else "OFF: ") + banner["texto"][:80])
+    return jsonify({"mensaje": "Banner guardado", **banner})
+
+
+@bp.route("/banner-global", methods=["GET"])
+def banner_publico():
+    """Lectura pública del banner (la usa el frontend en todas las páginas).
+    Solo devuelve el texto si está activo."""
+    banner = _leer_banner()
+    if not banner["activo"] or not banner["texto"]:
+        return jsonify({"activo": False})
+    return jsonify(banner)
 
 
 # ============================================================

@@ -551,6 +551,24 @@ function inyectarNav(user) {
   inyectarBannerVerificacion(user);
   inyectarVolverZonaOpositor(user);
   inyectarEnlaceAdmin(user);
+  inyectarBannerGlobal();
+}
+
+// Aviso global configurable desde el panel de administración. Lectura
+// pública (sin token). Se muestra una sola vez por carga, arriba del todo.
+async function inyectarBannerGlobal() {
+  if (document.querySelector(".age-banner-global")) return;
+  try {
+    const resp = await fetch(`${BACKEND_URL}/banner-global`);
+    if (!resp.ok) return;
+    const b = await resp.json();
+    if (!b.activo || !b.texto) return;
+    const barra = document.createElement("div");
+    barra.className = `age-banner-global age-banner-${b.tipo || "info"}`;
+    barra.setAttribute("role", "status");
+    barra.textContent = b.texto;
+    document.body.insertBefore(barra, document.body.firstChild);
+  } catch (e) { /* si falla, no pasa nada: la web sigue igual */ }
 }
 
 function inyectarFooter() {
