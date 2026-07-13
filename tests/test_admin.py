@@ -380,6 +380,27 @@ def test_bootstrap_por_get_desde_navegador(client, monkeypatch):
 
 
 # ---------- Utilidades nuevas (1,2,3,5,16) ----------
+def test_resumen_agrega_coste_ia(client, db):
+    from datetime import datetime
+    mes = datetime.utcnow().strftime("%Y-%m")
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {mes: {"tokens_in": 1000, "tokens_out": 500, "coste": 0.02}}})
+    db.sembrar(("usuarios", "u2"), {"email": "u2@x.com", "coste_ia": {mes: {"tokens_in": 100, "tokens_out": 50, "coste": 0.003}}})
+    with _como():
+        d = client.get("/admin/api/resumen", headers=_AUTH).get_json()
+    assert d["coste_ia_mes"] == round(0.02 + 0.003, 2)
+    assert d["top_gastadores_ia"][0]["uid"] == "u1"
+
+
+def test_detalle_usuario_incluye_coste_ia(client, db):
+    from datetime import datetime
+    mes = datetime.utcnow().strftime("%Y-%m")
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {mes: {"tokens_in": 1000, "tokens_out": 500, "coste": 0.02}}})
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["coste_ia_mes"] == 0.02
+    assert d["tokens_ia_total"] == 1500
+
+
 def test_resumen_calcula_mrr(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "a@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})
     db.sembrar(("usuarios", "u2"), {"email": "b@x.com", "suscripciones": {"AGE": {"plan": "basico"}, "GACE": {"plan": "premium"}}})

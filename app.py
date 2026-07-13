@@ -123,6 +123,15 @@ def verificar_api_key():
     if request.headers.get("X-API-Key") != API_SECRET_KEY:
         return jsonify({"error": "No autorizado"}), 401
 
+
+@app.teardown_request
+def _volcar_coste_ia(_exc=None):
+    # Al terminar cada petición, vuelca a Firestore el consumo de tokens de
+    # DeepSeek acumulado durante ella (ver coste_ia.py). Best-effort: nunca
+    # afecta a la respuesta ya enviada.
+    from coste_ia import flush_coste
+    flush_coste(db)
+
 # === Rutas: cada área de la app vive en su propio blueprint (blueprints/) ===
 from blueprints.temario import bp as temario_bp
 from blueprints.test_ia import bp as test_ia_bp
