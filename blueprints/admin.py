@@ -22,7 +22,7 @@ from flask import Blueprint, Response, g, jsonify, request
 from firebase_admin import auth as firebase_auth
 
 from firebase_setup import db
-from auth_utils import requiere_admin, _mejor_plan
+from auth_utils import requiere_admin, requiere_permiso, PERMISOS_VALIDOS, _mejor_plan
 from banco_fallos import _id_pregunta
 from oposiciones import OPOSICIONES, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
 from utils import _limpiar_cache_temario
@@ -183,7 +183,7 @@ def _preguntas_stats(oposicion):
 # Dashboard
 # ============================================================
 @bp.route("/admin/api/resumen", methods=["GET"])
-@requiere_admin
+@requiere_permiso(*PERMISOS_VALIDOS)  # cualquier miembro del equipo
 def resumen():
     oposicion = request.args.get("oposicion") or "AGE"
     ahora = datetime.utcnow()
@@ -257,7 +257,7 @@ def resumen():
 # Temario
 # ============================================================
 @bp.route("/admin/api/temario/<oposicion>", methods=["GET"])
-@requiere_admin
+@requiere_permiso("temario")
 def temario_arbol(oposicion):
     if not oposicion_valida(oposicion):
         return jsonify({"error": "Oposición no válida"}), 400
@@ -288,7 +288,7 @@ def temario_arbol(oposicion):
 
 
 @bp.route("/admin/api/temario/<oposicion>/<bloque>/<tema>", methods=["GET"])
-@requiere_admin
+@requiere_permiso("temario")
 def temario_tema(oposicion, bloque, tema):
     if not oposicion_valida(oposicion):
         return jsonify({"error": "Oposición no válida"}), 400
@@ -309,7 +309,7 @@ def temario_tema(oposicion, bloque, tema):
 
 
 @bp.route("/admin/api/temario/<oposicion>/<bloque>/<tema>", methods=["POST"])
-@requiere_admin
+@requiere_permiso("temario")
 def temario_anadir_chunk(oposicion, bloque, tema):
     if not oposicion_valida(oposicion):
         return jsonify({"error": "Oposición no válida"}), 400
@@ -332,7 +332,7 @@ def temario_anadir_chunk(oposicion, bloque, tema):
 
 
 @bp.route("/admin/api/temario/<oposicion>/<bloque>/<tema>/<chunk_id>", methods=["PUT"])
-@requiere_admin
+@requiere_permiso("temario")
 def temario_editar_chunk(oposicion, bloque, tema, chunk_id):
     if not oposicion_valida(oposicion):
         return jsonify({"error": "Oposición no válida"}), 400
@@ -355,7 +355,7 @@ def temario_editar_chunk(oposicion, bloque, tema, chunk_id):
 
 
 @bp.route("/admin/api/temario/<oposicion>/<bloque>/<tema>/<chunk_id>", methods=["DELETE"])
-@requiere_admin
+@requiere_permiso("temario")
 def temario_borrar_chunk(oposicion, bloque, tema, chunk_id):
     if not oposicion_valida(oposicion):
         return jsonify({"error": "Oposición no válida"}), 400
@@ -368,7 +368,7 @@ def temario_borrar_chunk(oposicion, bloque, tema, chunk_id):
 
 
 @bp.route("/admin/api/temario/<oposicion>/<bloque>/publicado", methods=["PATCH"])
-@requiere_admin
+@requiere_permiso("temario")
 def temario_publicar(oposicion, bloque):
     """Marca un bloque (o un tema concreto, si viene 'tema' en el cuerpo) como
     publicado o borrador. Los que estén en borrador (publicado=false) no
@@ -399,7 +399,7 @@ def _id_valido(valor):
 
 
 @bp.route("/admin/api/temario/<oposicion>/nuevo-bloque", methods=["POST"])
-@requiere_admin
+@requiere_permiso("temario")
 def temario_nuevo_bloque(oposicion):
     if not oposicion_valida(oposicion):
         return jsonify({"error": "Oposición no válida"}), 400
@@ -417,7 +417,7 @@ def temario_nuevo_bloque(oposicion):
 
 
 @bp.route("/admin/api/temario/<oposicion>/<bloque>/nuevo-tema", methods=["POST"])
-@requiere_admin
+@requiere_permiso("temario")
 def temario_nuevo_tema(oposicion, bloque):
     if not oposicion_valida(oposicion):
         return jsonify({"error": "Oposición no válida"}), 400
@@ -438,7 +438,7 @@ def temario_nuevo_tema(oposicion, bloque):
 
 
 @bp.route("/admin/api/temario/<oposicion>/<bloque>", methods=["PATCH"])
-@requiere_admin
+@requiere_permiso("temario")
 def temario_renombrar_bloque(oposicion, bloque):
     if not oposicion_valida(oposicion):
         return jsonify({"error": "Oposición no válida"}), 400
@@ -455,7 +455,7 @@ def temario_renombrar_bloque(oposicion, bloque):
 
 
 @bp.route("/admin/api/temario/<oposicion>/<bloque>/<tema>/titulo", methods=["PATCH"])
-@requiere_admin
+@requiere_permiso("temario")
 def temario_renombrar_tema(oposicion, bloque, tema):
     if not oposicion_valida(oposicion):
         return jsonify({"error": "Oposición no válida"}), 400
@@ -492,7 +492,7 @@ def _validar_pregunta_payload(data):
 
 
 @bp.route("/admin/api/preguntas", methods=["GET"])
-@requiere_admin
+@requiere_permiso("temario")
 def preguntas_listar():
     oposicion = request.args.get("oposicion") or "AGE"
     if not oposicion_valida(oposicion):
@@ -534,7 +534,7 @@ def preguntas_listar():
 
 
 @bp.route("/admin/api/preguntas", methods=["POST"])
-@requiere_admin
+@requiere_permiso("temario")
 def preguntas_crear():
     data = request.get_json(silent=True) or {}
     oposicion = data.get("oposicion") or "AGE"
@@ -565,7 +565,7 @@ def preguntas_crear():
 
 
 @bp.route("/admin/api/preguntas/importar", methods=["POST"])
-@requiere_admin
+@requiere_permiso("temario")
 def preguntas_importar():
     """Alta por lote de un examen completo. Recibe una lista de preguntas y
     crea las válidas, devolviendo cuántas se crearon y los errores de las
@@ -611,7 +611,7 @@ def preguntas_importar():
 
 
 @bp.route("/admin/api/preguntas/<pid>", methods=["PUT"])
-@requiere_admin
+@requiere_permiso("temario")
 def preguntas_editar(pid):
     data = request.get_json(silent=True) or {}
     oposicion = data.get("oposicion") or "AGE"
@@ -640,7 +640,7 @@ def preguntas_editar(pid):
 
 
 @bp.route("/admin/api/preguntas/<pid>", methods=["DELETE"])
-@requiere_admin
+@requiere_permiso("temario")
 def preguntas_desactivar(pid):
     """Soft delete: marca activa=false en vez de borrar, para no romper el
     histórico de tests ya realizados que la incluyeron."""
@@ -658,7 +658,7 @@ def preguntas_desactivar(pid):
 
 
 @bp.route("/admin/api/preguntas/<pid>/reactivar", methods=["POST"])
-@requiere_admin
+@requiere_permiso("temario")
 def preguntas_reactivar(pid):
     """Deshace el soft delete: vuelve a marcar activa=true."""
     oposicion = request.args.get("oposicion") or "AGE"
@@ -675,7 +675,7 @@ def preguntas_reactivar(pid):
 
 
 @bp.route("/admin/api/preguntas/export", methods=["GET"])
-@requiere_admin
+@requiere_permiso("temario")
 def preguntas_export():
     """Descarga todas las preguntas de una oposición en CSV."""
     oposicion = request.args.get("oposicion") or "AGE"
@@ -704,7 +704,7 @@ def preguntas_export():
 # Usuarios
 # ============================================================
 @bp.route("/admin/api/usuarios", methods=["GET"])
-@requiere_admin
+@requiere_permiso("usuarios")
 def usuarios_listar():
     busqueda = (request.args.get("busqueda") or "").strip().lower()
     filtro_plan = request.args.get("plan") or ""
@@ -745,7 +745,7 @@ def usuarios_listar():
 
 
 @bp.route("/admin/api/usuarios/export", methods=["GET"])
-@requiere_admin
+@requiere_permiso("usuarios")
 def usuarios_export():
     """Descarga todos los usuarios (con los filtros aplicados) en CSV."""
     busqueda = (request.args.get("busqueda") or "").strip().lower()
@@ -771,7 +771,7 @@ def usuarios_export():
 
 
 @bp.route("/admin/api/usuarios/<uid>", methods=["GET"])
-@requiere_admin
+@requiere_permiso("usuarios")
 def usuarios_detalle(uid):
     """Ficha completa de un usuario para el panel: plan por oposición,
     racha, actividad, nº de tests y último override de soporte."""
@@ -802,11 +802,15 @@ def usuarios_detalle(uid):
     try:
         claims = firebase_auth.get_user(uid).custom_claims or {}
         es_admin = claims.get("admin") is True
+        permisos = [p for p in (claims.get("permisos") or []) if p in PERMISOS_VALIDOS]
     except Exception:
         es_admin = False
+        permisos = []
     return jsonify({
         "uid": uid,
         "es_admin": es_admin,
+        "permisos": permisos,
+        "permisos_disponibles": list(PERMISOS_VALIDOS),
         "email": datos.get("email", ""),
         "nombre": datos.get("nombre", ""),
         "plan": _plan_usuario(datos),
@@ -826,7 +830,7 @@ def usuarios_detalle(uid):
 
 
 @bp.route("/admin/api/usuarios/<uid>/notas", methods=["PATCH"])
-@requiere_admin
+@requiere_permiso("usuarios")
 def usuarios_notas(uid):
     """Guarda una nota interna de soporte sobre el usuario (no visible para
     él)."""
@@ -840,7 +844,7 @@ def usuarios_notas(uid):
 
 
 @bp.route("/admin/api/usuarios/<uid>/plan", methods=["PATCH"])
-@requiere_admin
+@requiere_permiso("usuarios")
 def usuarios_cambiar_plan(uid):
     """Cambia el plan de un usuario manualmente (soporte). Deja SIEMPRE
     constancia de quién lo hizo, cuándo y por qué en admin_override, por
@@ -899,8 +903,36 @@ def usuarios_cambiar_admin(uid):
     })
 
 
-@bp.route("/admin/api/usuarios/<uid>/resetear-racha", methods=["POST"])
+@bp.route("/admin/api/usuarios/<uid>/roles", methods=["PATCH"])
 @requiere_admin
+def usuarios_cambiar_roles(uid):
+    """Asigna permisos granulares (temario, reportes, usuarios) a un usuario
+    del equipo, sin darle admin completo. Solo un super-admin puede hacerlo."""
+    data = request.get_json(silent=True) or {}
+    pedidos = data.get("permisos") or []
+    if not isinstance(pedidos, list):
+        return jsonify({"error": "Formato de permisos no válido"}), 400
+    permisos = [p for p in pedidos if p in PERMISOS_VALIDOS]
+    try:
+        usuario = firebase_auth.get_user(uid)
+    except Exception:
+        return jsonify({"error": "Usuario no encontrado en Firebase Auth"}), 404
+    claims = dict(usuario.custom_claims or {})
+    if permisos:
+        claims["permisos"] = permisos
+    else:
+        claims.pop("permisos", None)
+    firebase_auth.set_custom_user_claims(uid, claims)
+    _registrar_auditoria("usuario_roles", uid, ", ".join(permisos) or "(ninguno)")
+    return jsonify({
+        "mensaje": "Permisos actualizados",
+        "permisos": permisos,
+        "aviso": "El usuario debe cerrar sesión y volver a entrar para que el cambio surta efecto.",
+    })
+
+
+@bp.route("/admin/api/usuarios/<uid>/resetear-racha", methods=["POST"])
+@requiere_permiso("usuarios")
 def usuarios_resetear_racha(uid):
     ref = db.collection("usuarios").document(uid)
     if not ref.get().exists:
@@ -914,7 +946,7 @@ def usuarios_resetear_racha(uid):
 # Reportes de preguntas
 # ============================================================
 @bp.route("/admin/api/reportes", methods=["GET"])
-@requiere_admin
+@requiere_permiso("reportes")
 def reportes_listar():
     estado = request.args.get("estado", "pendiente")
     reportes = []
@@ -962,7 +994,7 @@ def reportes_listar():
 
 
 @bp.route("/admin/api/reportes/<rid>", methods=["PATCH"])
-@requiere_admin
+@requiere_permiso("reportes")
 def reportes_actualizar(rid):
     data = request.get_json(silent=True) or {}
     estado = data.get("estado")

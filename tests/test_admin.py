@@ -8,10 +8,12 @@ from unittest.mock import patch
 
 
 @contextmanager
-def _como(admin=True, uid="admin1", email="admin@example.com"):
+def _como(admin=True, uid="admin1", email="admin@example.com", permisos=None):
     decoded = {"uid": uid, "email": email}
     if admin:
         decoded["admin"] = True
+    if permisos:
+        decoded["permisos"] = permisos
     with patch("auth_utils.firebase_auth.verify_id_token", return_value=decoded):
         yield
 
@@ -43,6 +45,50 @@ def test_admin_accede(client, db):
         resp = client.get("/admin/api/resumen", headers=_AUTH)
     assert resp.status_code == 200
     assert "usuarios_totales" in resp.get_json()
+
+
+# ---------- Roles / permisos granulares ----------
+def test_permiso_reportes_accede_solo_a_reportes(client, db):
+    # Un moderador con solo 'reportes' entra a reportes pero no al temario.
+    with _como(admin=False, uid="mod1", permisos=["reportes"]):
+        assert client.get("/admin/api/reportes?estado=pendiente", headers=_AUTH).status_code == 200
+        assert client.get("/admin/api/temario/AGE", headers=_AUTH).status_code == 403
+        assert client.get("/admin/api/usuarios", headers=_AUTH).status_code == 403
+
+
+def test_permiso_temario_puede_editar_pero_no_usuarios(client, db):
+    _sembrar_tema(db)
+    with _como(admin=False, uid="ed1", permisos=["temario"]):
+        assert client.get("/admin/api/temario/AGE", headers=_AUTH).status_code == 200
+        assert client.get("/admin/api/usuarios", headers=_AUTH).status_code == 403
+
+
+def test_sin_permisos_todo_403(client, db):
+    with _como(admin=False, uid="x", permisos=[]):
+        assert client.get("/admin/api/resumen", headers=_AUTH).status_code == 403
+        assert client.get("/admin/api/reportes", headers=_AUTH).status_code == 403
+
+
+def test_asignar_roles_requiere_admin_total(client, db):
+    # Un usuario con permiso 'usuarios' NO puede repartir roles (eso es solo
+    # del super-admin).
+    with _como(admin=False, uid="u", permisos=["usuarios"]):
+        r = client.patch("/admin/api/usuarios/otro/roles", json={"permisos": ["temario"]}, headers=_AUTH)
+    assert r.status_code == 403
+
+
+def test_admin_asigna_roles(client, db):
+    class _U:
+        custom_claims = None
+    llamado = {}
+    with _como(admin=True), \
+         patch("blueprints.admin.firebase_auth.get_user", return_value=_U()), \
+         patch("blueprints.admin.firebase_auth.set_custom_user_claims",
+               side_effect=lambda uid, claims: llamado.update(claims=claims)):
+        r = client.patch("/admin/api/usuarios/otro/roles",
+                         json={"permisos": ["temario", "reportes", "inventado"]}, headers=_AUTH)
+    assert r.status_code == 200
+    assert set(llamado["claims"]["permisos"]) == {"temario", "reportes"}  # 'inventado' se descarta
 
 
 # ---------- Dashboard ----------

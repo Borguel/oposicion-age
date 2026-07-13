@@ -160,6 +160,23 @@ export async function esAdmin() {
   }
 }
 
+// Permisos del panel (admin + roles granulares). Devuelve {admin, permisos}.
+// El super-admin tiene todos los permisos implícitamente. Igual que esAdmin,
+// esto es solo para MOSTRAR/OCULTAR partes del panel; el backend valida.
+export async function obtenerPermisos() {
+  const PERMISOS = ["temario", "reportes", "usuarios"];
+  const user = await esperarUsuario();
+  if (!user) return { admin: false, permisos: [] };
+  try {
+    const { claims } = await user.getIdTokenResult();
+    if (claims.admin === true) return { admin: true, permisos: [...PERMISOS] };
+    const permisos = Array.isArray(claims.permisos) ? claims.permisos.filter((p) => PERMISOS.includes(p)) : [];
+    return { admin: false, permisos };
+  } catch {
+    return { admin: false, permisos: [] };
+  }
+}
+
 // Token que hay que mandar como "Authorization: Bearer <token>" en cada
 // fetch() a una ruta protegida del backend. Devuelve null si no hay sesión.
 // Espera primero a que Firebase confirme la sesión guardada (si entras
@@ -533,11 +550,13 @@ async function inyectarEnlaceAdmin(user) {
   if (!links) return;
   const existente = links.querySelector("[data-admin-link]");
   if (existente) existente.remove();
-  if (!user || !(await esAdmin())) return;
+  if (!user) return;
+  const { admin, permisos } = await obtenerPermisos();
+  if (!admin && permisos.length === 0) return;
 
   const enlace = document.createElement("a");
   enlace.href = "/admin/";
-  enlace.textContent = "Panel Admin";
+  enlace.textContent = admin ? "Panel Admin" : "Panel equipo";
   enlace.dataset.adminLink = "1";
   if (window.location.pathname.startsWith("/admin/")) enlace.classList.add("age-nav-active");
   links.appendChild(enlace);

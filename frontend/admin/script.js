@@ -1,7 +1,21 @@
 // Panel de administración. El backend (requiere_admin) es la barrera real;
 // aquí solo se comprueba esAdmin para no montar la UI a quien no lo es.
-import { esAdmin, obtenerAuthHeaders } from "/assets/auth.js";
+import { esAdmin, obtenerPermisos, obtenerAuthHeaders } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
+
+// Qué permiso necesita cada pestaña. Las de 'admin' solo las ve el super-admin.
+const PERMISO_POR_PESTANA = {
+  dashboard: "cualquiera", temario: "temario", preguntas: "temario",
+  usuarios: "usuarios", reportes: "reportes", auditoria: "admin", sistema: "admin",
+};
+let _permisos = { admin: false, permisos: [] };
+function puedeVer(pestana) {
+  const req = PERMISO_POR_PESTANA[pestana];
+  if (_permisos.admin) return true;
+  if (req === "admin") return false;
+  if (req === "cualquiera") return _permisos.permisos.length > 0;
+  return _permisos.permisos.includes(req);
+}
 
 // ===== utilidades =====
 function escapeHtml(texto) {
@@ -119,6 +133,7 @@ const RENDERS = {
 let pestanaActual = "dashboard";
 
 function activarPestana(nombre) {
+  if (!puedeVer(nombre)) return;
   pestanaActual = nombre;
   document.querySelectorAll(".admin-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === nombre));
   document.querySelectorAll(".admin-panel").forEach((p) => { p.hidden = p.id !== `panel-${nombre}`; });
@@ -564,8 +579,20 @@ async function abrirUsuario(uid) {
     <hr class="admin-sep">
     <h3>Administración</h3>
     <p class="admin-dato"><strong>Es administrador:</strong> ${u.es_admin ? "sí ✅" : "no"}</p>
-    <button class="age-btn ${u.es_admin ? "age-btn-outline" : "age-btn-primary"}" id="up-admin">${u.es_admin ? "Quitar admin" : "Hacer admin"}</button>
-    <button class="age-btn age-btn-outline" id="up-racha" style="margin-top:8px;">Resetear racha de estudio</button>`);
+    ${_permisos.admin ? `
+      <button class="age-btn ${u.es_admin ? "age-btn-outline" : "age-btn-primary"}" id="up-admin">${u.es_admin ? "Quitar admin" : "Hacer admin total"}</button>
+      <p class="admin-dato" style="margin-top:12px;"><strong>Roles (acceso parcial):</strong></p>
+      <p class="admin-reporte-meta">Marca a qué secciones puede entrar sin ser admin total.</p>
+      ${(u.permisos_disponibles || ["temario", "reportes", "usuarios"]).map((p) => `
+        <label class="admin-opcion-radio" style="display:flex;font-weight:500;margin:4px 0;">
+          <input type="checkbox" class="up-permiso" value="${escapeHtml(p)}" ${(u.permisos || []).includes(p) ? "checked" : ""} ${u.es_admin ? "disabled" : ""}>
+          ${p === "temario" ? "Temario y preguntas" : p === "reportes" ? "Reportes de preguntas" : "Usuarios y planes"}
+        </label>`).join("")}
+      <button class="age-btn age-btn-outline admin-mini" id="up-roles" ${u.es_admin ? "disabled" : ""} style="margin-top:6px;">Guardar roles</button>
+      ${u.es_admin ? '<p class="admin-reporte-meta">Un admin total ya tiene todos los permisos.</p>' : ""}
+    ` : `<p class="admin-reporte-meta">Solo un administrador total puede cambiar roles.</p>`}
+    <hr class="admin-sep">
+    <button class="age-btn age-btn-outline" id="up-racha">Resetear racha de estudio</button>`);
   document.getElementById("up-plan").value = u.plan;
   document.getElementById("up-oposicion").value = oposicionActual();
   document.getElementById("up-copiar-uid").addEventListener("click", () => {
@@ -583,11 +610,16 @@ async function abrirUsuario(uid) {
     const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/notas`, { notas: document.getElementById("up-notas").value });
     if (r) { toast("Nota guardada."); u.notas_admin = document.getElementById("up-notas").value; }
   });
-  document.getElementById("up-admin").addEventListener("click", async () => {
+  document.getElementById("up-admin")?.addEventListener("click", async () => {
     const dar = !u.es_admin;
-    if (!confirm(dar ? "¿Dar permisos de administrador a este usuario?" : "¿Quitar los permisos de administrador?")) return;
+    if (!confirm(dar ? "¿Dar permisos de administrador TOTAL a este usuario?" : "¿Quitar los permisos de administrador?")) return;
     const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/admin`, { admin: dar });
     if (r) { toast(r.mensaje || "Hecho."); u.es_admin = dar; abrirUsuario(u.uid); }
+  });
+  document.getElementById("up-roles")?.addEventListener("click", async () => {
+    const permisos = Array.from(document.querySelectorAll(".up-permiso:checked")).map((c) => c.value);
+    const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/roles`, { permisos });
+    if (r) { toast(r.mensaje || "Roles actualizados."); u.permisos = permisos; }
   });
   document.getElementById("up-racha").addEventListener("click", async () => {
     if (!confirm("¿Resetear la racha de este usuario a 0?")) return;
@@ -760,12 +792,23 @@ async function renderSistema() {
 
 // ===== init =====
 document.addEventListener("DOMContentLoaded", async () => {
-  if (!(await esAdmin())) {
+  _permisos = await obtenerPermisos();
+  if (!_permisos.admin && _permisos.permisos.length === 0) {
     mostrarNoAutorizado();
     return;
   }
   document.getElementById("admin-contenido").style.display = "block";
-  document.querySelectorAll(".admin-tab").forEach((b) => b.addEventListener("click", () => activarPestana(b.dataset.tab)));
+  // Ocultar las pestañas para las que no se tiene permiso y quedarnos con la
+  // primera visible.
+  let primera = null;
+  document.querySelectorAll(".admin-tab").forEach((b) => {
+    if (puedeVer(b.dataset.tab)) {
+      b.addEventListener("click", () => activarPestana(b.dataset.tab));
+      if (!primera) primera = b.dataset.tab;
+    } else {
+      b.hidden = true;
+    }
+  });
   document.getElementById("admin-oposicion").addEventListener("change", () => { temaSeleccionado = null; RENDERS[pestanaActual](); });
-  activarPestana("dashboard");
+  activarPestana(primera || "dashboard");
 });
