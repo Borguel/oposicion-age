@@ -47,7 +47,7 @@ def _es_error_transitorio(exc):
     return False
 
 
-def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False):
+def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None):
     """
     Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.
 
@@ -90,7 +90,16 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
             response.raise_for_status()  # Lanza excepción para códigos HTTP 4xx/5xx
 
             data = response.json()
-            _registrar_coste(data.get("usage"))
+            # Si nos pasan on_usage (llamadas dentro de hilos, que no ven
+            # flask.g) se lo entregamos ahí; si no, se contabiliza contra la
+            # petición actual como de costumbre.
+            if on_usage is not None:
+                try:
+                    on_usage(data.get("usage"))
+                except Exception:
+                    pass
+            else:
+                _registrar_coste(data.get("usage"))
 
             # Verificar que la respuesta tiene la estructura esperada
             if 'choices' in data and len(data['choices']) > 0:

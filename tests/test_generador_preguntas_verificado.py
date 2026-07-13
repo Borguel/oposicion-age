@@ -149,7 +149,7 @@ def test_agotar_los_intentos_devuelve_none_sin_bloquear():
 
 
 def _mock_deepseek_siempre_valido(contador, lock_contador):
-    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False):
+    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None):
         contenido_usuario = messages[-1]["content"]
         if "PREGUNTA A VERIFICAR" in contenido_usuario:
             return json.dumps({"valido": True, "problemas": []})

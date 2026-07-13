@@ -23,6 +23,30 @@ def test_resumen_coste_usuario_suma_meses():
     assert tokens_total == 1500 + 3000 + 400
 
 
+def test_acumulador_entre_hilos_vuelca_a_la_peticion(client, db):
+    # Simula lo que hace el generador de test personalizado: varios hilos
+    # suman tokens al acumulador y, al terminar, el hilo de la petición lo
+    # vuelca a g para que el teardown lo guarde.
+    import threading
+    from datetime import datetime
+    from flask import g
+    import app as app_module
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    mes = datetime.utcnow().strftime("%Y-%m")
+    with app_module.app.test_request_context("/"):
+        g.uid = "u1"
+        acc = coste_ia.AcumuladorTokens()
+        hilos = [threading.Thread(target=acc.add, args=({"prompt_tokens": 100, "completion_tokens": 40},)) for _ in range(5)]
+        for h in hilos: h.start()
+        for h in hilos: h.join()
+        acc.volcar_a_peticion()  # en el hilo de la petición
+        coste_ia.flush_coste(db)
+    doc = db.leer(("usuarios", "u1"))["coste_ia"][mes]
+    assert doc["tokens_in"] == 500
+    assert doc["tokens_out"] == 200
+    assert doc["llamadas"] == 5
+
+
 def test_flush_coste_incrementa_el_mes(client, db):
     # Simula que durante una petición se acumuló consumo en g y que el
     # teardown lo vuelca al documento del usuario.

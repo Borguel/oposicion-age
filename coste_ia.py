@@ -15,6 +15,7 @@ sin tocar código si cambian las tarifas de DeepSeek.
 """
 import logging
 import os
+import threading
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -42,26 +43,60 @@ def coste_estimado(tokens_in, tokens_out):
     )
 
 
+def _sumar_a_g(tin, tout, llamadas):
+    """Suma tokens al acumulador de la petición (flask.g). Debe llamarse
+    desde el hilo de la petición (donde g está disponible)."""
+    from flask import g, has_request_context
+    if not has_request_context() or not getattr(g, "uid", None):
+        return
+    acc = getattr(g, "_coste_ia", None)
+    if acc is None:
+        acc = {"in": 0, "out": 0, "llamadas": 0}
+        g._coste_ia = acc
+    acc["in"] += tin
+    acc["out"] += tout
+    acc["llamadas"] += llamadas
+
+
 def acumular_usage(usage):
     """Suma el consumo de una llamada al acumulador de la petición (g). No
     escribe en Firestore. Silencioso si no hay petición o usuario."""
     if not usage:
         return
     try:
-        from flask import g, has_request_context
-        if not has_request_context():
-            return
-        if not getattr(g, "uid", None):
-            return
-        acc = getattr(g, "_coste_ia", None)
-        if acc is None:
-            acc = {"in": 0, "out": 0, "llamadas": 0}
-            g._coste_ia = acc
-        acc["in"] += int(usage.get("prompt_tokens", 0) or 0)
-        acc["out"] += int(usage.get("completion_tokens", 0) or 0)
-        acc["llamadas"] += 1
+        _sumar_a_g(int(usage.get("prompt_tokens", 0) or 0),
+                   int(usage.get("completion_tokens", 0) or 0), 1)
     except Exception:
         logger.debug("No se pudo acumular el usage de IA", exc_info=True)
+
+
+class AcumuladorTokens:
+    """Acumulador seguro entre hilos. Las llamadas a DeepSeek que se hacen en
+    hilos de trabajo (ThreadPoolExecutor del generador de test personalizado)
+    no ven flask.g, así que suman aquí; al terminar, el hilo de la petición
+    llama a volcar_a_peticion() para pasar el total a g y que el
+    teardown_request lo guarde."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self.tin = 0
+        self.tout = 0
+        self.llamadas = 0
+
+    def add(self, usage):
+        if not usage:
+            return
+        with self._lock:
+            self.tin += int(usage.get("prompt_tokens", 0) or 0)
+            self.tout += int(usage.get("completion_tokens", 0) or 0)
+            self.llamadas += 1
+
+    def volcar_a_peticion(self):
+        try:
+            with self._lock:
+                _sumar_a_g(self.tin, self.tout, self.llamadas)
+        except Exception:
+            logger.debug("No se pudo volcar el acumulador de tokens", exc_info=True)
 
 
 def flush_coste(db):
