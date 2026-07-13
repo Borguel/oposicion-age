@@ -286,6 +286,34 @@ def test_reportes_adjuntan_pregunta_oficial(client, db):
     assert reportes[0]["pregunta_oficial"]["respuesta_correcta"] == "C"
 
 
+# ---------- Auditoría (9) ----------
+def test_cambio_de_plan_queda_en_auditoria(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {"AGE": {"plan": "gratis"}}})
+    with _como(uid="admin1", email="admin@x.com"):
+        client.patch("/admin/api/usuarios/u1/plan",
+                     json={"plan": "premium", "oposicion": "AGE", "motivo": "regalo"}, headers=_AUTH)
+        entradas = client.get("/admin/api/auditoria", headers=_AUTH).get_json()["entradas"]
+    assert entradas[0]["accion"] == "usuario_cambiar_plan"
+    assert entradas[0]["objetivo"] == "u1"
+    assert entradas[0]["email_admin"] == "admin@x.com"
+    assert "premium" in entradas[0]["detalle"]
+
+
+def test_auditoria_ordena_reciente_primero(client, db):
+    with _como():
+        client.post("/admin/api/preguntas", json={
+            "oposicion": "AGE", "pregunta": "¿P1?",
+            "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A",
+        }, headers=_AUTH)
+        client.post("/admin/api/preguntas", json={
+            "oposicion": "AGE", "pregunta": "¿P2?",
+            "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A",
+        }, headers=_AUTH)
+        entradas = client.get("/admin/api/auditoria", headers=_AUTH).get_json()["entradas"]
+    assert len(entradas) == 2
+    assert entradas[0]["fecha"] >= entradas[1]["fecha"]
+
+
 # ---------- Reportes ----------
 def test_usuario_reporta_y_admin_lo_revisa(client, db):
     # Un usuario normal reporta.

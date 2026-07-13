@@ -113,6 +113,7 @@ const RENDERS = {
   preguntas: renderPreguntas,
   usuarios: renderUsuarios,
   reportes: renderReportes,
+  auditoria: renderAuditoria,
 };
 let pestanaActual = "dashboard";
 
@@ -585,6 +586,42 @@ async function buscarYEditarPregunta(textoPregunta) {
     return;
   }
   modalPregunta(encontrada);
+}
+
+// ===== Auditoría =====
+const _ACCION_ETIQUETA = {
+  usuario_cambiar_plan: "💳 Cambio de plan", usuario_resetear_racha: "🔥 Reset de racha",
+  admin_dar: "👑 Dar admin", admin_quitar: "🚫 Quitar admin",
+  pregunta_crear: "➕ Crear pregunta", pregunta_editar: "✏️ Editar pregunta",
+  pregunta_desactivar: "🗑️ Desactivar pregunta", pregunta_reactivar: "♻️ Reactivar pregunta",
+  temario_anadir_ficha: "➕ Añadir ficha", temario_editar_ficha: "✏️ Editar ficha",
+  temario_borrar_ficha: "🗑️ Borrar ficha", publicado: "✅ Publicar", borrador: "📝 A borrador",
+  reporte_revisado: "✔️ Reporte revisado", reporte_descartado: "✖️ Reporte descartado",
+};
+function etiquetaAccion(a) { return _ACCION_ETIQUETA[a] || a; }
+
+async function renderAuditoria() {
+  const panel = document.getElementById("panel-auditoria");
+  panel.innerHTML = `<div class="age-card"><div id="auditoria-lista"><p class="admin-cargando">Cargando…</p></div></div>`;
+  const d = await apiGet("/admin/api/auditoria?limite=150");
+  const cont = document.getElementById("auditoria-lista");
+  if (!d) return;
+  if (!(d.entradas || []).length) {
+    cont.innerHTML = `<p class="admin-vacio">Aún no hay acciones registradas.</p>`;
+    return;
+  }
+  const filas = d.entradas.map((e) => {
+    const fecha = (e.fecha || "").replace("T", " ").slice(0, 16);
+    return `<tr>
+      <td>${escapeHtml(fecha)}</td>
+      <td>${escapeHtml(etiquetaAccion(e.accion))}</td>
+      <td>${escapeHtml(e.objetivo || "-")}${e.detalle ? `<br><span class="admin-reporte-meta">${escapeHtml(e.detalle)}</span>` : ""}</td>
+      <td>${escapeHtml(e.email_admin || "-")}</td>
+    </tr>`;
+  }).join("");
+  cont.innerHTML = `
+    <p class="admin-reporte-meta" style="margin-bottom:8px;">Últimas ${d.entradas.length} de ${d.total} acciones</p>
+    <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Fecha (UTC)</th><th>Acción</th><th>Sobre</th><th>Admin</th></tr></thead><tbody>${filas}</tbody></table></div>`;
 }
 
 // ===== init =====
