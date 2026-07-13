@@ -632,9 +632,19 @@ async function abrirUsuario(uid) {
         </label>`).join("")}
       <button class="age-btn age-btn-outline admin-mini" id="up-roles" ${u.es_admin ? "disabled" : ""} style="margin-top:6px;">Guardar roles</button>
       ${u.es_admin ? '<p class="admin-reporte-meta">Un admin total ya tiene todos los permisos.</p>' : ""}
+      ${u.bloqueado ? '<p class="admin-dato"><span class="admin-badge-alerta">Acceso bloqueado</span></p>' : ""}
+      <button class="age-btn age-btn-outline admin-mini" id="up-bloqueo" style="margin-top:10px;">${u.bloqueado ? "Restaurar acceso" : "Bloquear acceso"}</button>
+      <button class="age-btn age-btn-outline admin-mini" id="up-eliminar" style="margin-top:10px;color:var(--age-danger,#c0392b);border-color:var(--age-danger,#c0392b);">Eliminar cuenta</button>
     ` : `<p class="admin-reporte-meta">Solo un administrador total puede cambiar roles.</p>`}
     <hr class="admin-sep">
-    <button class="age-btn age-btn-outline" id="up-racha">Resetear racha de estudio</button>`);
+    <h3>Soporte</h3>
+    <div class="admin-chunk-acciones">
+      <button class="age-btn age-btn-outline admin-mini" id="up-racha">Resetear racha</button>
+      <button class="age-btn age-btn-outline admin-mini" id="up-limites">Resetear límites de uso</button>
+      <button class="age-btn age-btn-outline admin-mini" id="up-reset-pass">Enlace de contraseña</button>
+      ${u.email_verificado ? "" : '<button class="age-btn age-btn-outline admin-mini" id="up-verif">Enlace de verificación</button>'}
+    </div>
+    <div id="up-enlace-caja"></div>`);
   document.getElementById("up-plan").value = u.plan;
   document.getElementById("up-oposicion").value = oposicionActual();
   document.getElementById("up-copiar-uid").addEventListener("click", () => {
@@ -667,6 +677,36 @@ async function abrirUsuario(uid) {
     if (!confirm("¿Resetear la racha de este usuario a 0?")) return;
     const r = await api("POST", `/admin/api/usuarios/${u.uid}/resetear-racha`);
     if (r) toast("Racha reseteada.");
+  });
+  document.getElementById("up-limites").addEventListener("click", async () => {
+    if (!confirm("¿Poner a cero los contadores de uso de IA de este usuario?")) return;
+    const r = await api("POST", `/admin/api/usuarios/${u.uid}/resetear-limites`);
+    if (r) toast("Límites de uso reseteados.");
+  });
+  const mostrarEnlace = async (tipo) => {
+    const r = await api("POST", `/admin/api/usuarios/${u.uid}/enlace`, { tipo });
+    if (!r) return;
+    const caja = document.getElementById("up-enlace-caja");
+    caja.innerHTML = `<div class="admin-aviso">Enlace de ${tipo === "verificacion" ? "verificación" : "contraseña"} (pásaselo al usuario):
+      <input class="age-input" style="margin-top:6px;" readonly value="${escapeHtml(r.enlace)}"></div>`;
+    const input = caja.querySelector("input");
+    input.addEventListener("click", () => input.select());
+    input.select();
+    navigator.clipboard?.writeText(r.enlace).then(() => toast("Enlace copiado al portapapeles.")).catch(() => {});
+  };
+  document.getElementById("up-reset-pass").addEventListener("click", () => mostrarEnlace("password"));
+  document.getElementById("up-verif")?.addEventListener("click", () => mostrarEnlace("verificacion"));
+  document.getElementById("up-bloqueo")?.addEventListener("click", async () => {
+    const bloquear = !u.bloqueado;
+    if (!confirm(bloquear ? "¿Bloquear el acceso de este usuario? No podrá iniciar sesión." : "¿Restaurar el acceso de este usuario?")) return;
+    const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/bloqueo`, { bloqueado: bloquear });
+    if (r) { toast(r.mensaje || "Hecho."); u.bloqueado = bloquear; abrirUsuario(u.uid); }
+  });
+  document.getElementById("up-eliminar")?.addEventListener("click", async () => {
+    if (!confirm(`⚠️ Vas a ELIMINAR por completo la cuenta de ${u.email}. Es IRREVERSIBLE (se borran todos sus datos y su suscripción). ¿Continuar?`)) return;
+    if (!confirm("Confirma otra vez: esta acción no se puede deshacer.")) return;
+    const r = await api("DELETE", `/admin/api/usuarios/${u.uid}`);
+    if (r) { toast("Cuenta eliminada."); cerrarModal(); cargarUsuarios(); }
   });
 }
 

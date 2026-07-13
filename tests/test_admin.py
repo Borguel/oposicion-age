@@ -120,6 +120,63 @@ def test_crear_usuario_requiere_admin_total(client, db):
     assert r.status_code == 403
 
 
+# ---------- Bloquear / eliminar / soporte ----------
+def test_resetear_limites_pone_a_cero(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "limites_uso": {"resumen": {"periodo": "2026-07-13", "contador": 5}}})
+    with _como():
+        client.post("/admin/api/usuarios/u1/resetear-limites", headers=_AUTH)
+    assert db.leer(("usuarios", "u1"))["limites_uso"] == {}
+
+
+def test_bloqueo_llama_a_update_user(client, db):
+    llamado = {}
+    with _como(admin=True), \
+         patch("blueprints.admin.firebase_auth.update_user",
+               side_effect=lambda uid, **kw: llamado.update(uid=uid, **kw)):
+        r = client.patch("/admin/api/usuarios/u1/bloqueo", json={"bloqueado": True}, headers=_AUTH)
+    assert r.status_code == 200
+    assert llamado == {"uid": "u1", "disabled": True}
+
+
+def test_no_puedo_bloquearme_a_mi_mismo(client, db):
+    with _como(admin=True, uid="admin1"):
+        r = client.patch("/admin/api/usuarios/admin1/bloqueo", json={"bloqueado": True}, headers=_AUTH)
+    assert r.status_code == 400
+
+
+def test_bloqueo_requiere_admin_total(client, db):
+    with _como(admin=False, permisos=["usuarios"]):
+        r = client.patch("/admin/api/usuarios/u1/bloqueo", json={"bloqueado": True}, headers=_AUTH)
+    assert r.status_code == 403
+
+
+def test_generar_enlace_password(client, db):
+    reg = type("R", (), {"email": "u1@x.com"})()
+    with _como(), \
+         patch("blueprints.admin.firebase_auth.get_user", return_value=reg), \
+         patch("blueprints.admin.firebase_auth.generate_password_reset_link", return_value="https://reset/abc"):
+        r = client.post("/admin/api/usuarios/u1/enlace", json={"tipo": "password"}, headers=_AUTH).get_json()
+    assert r["enlace"] == "https://reset/abc"
+
+
+def test_eliminar_usuario(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    llamado = {}
+    with _como(admin=True, uid="admin1"), \
+         patch("blueprints.admin.eliminar_cuenta_usuario" if False else "gestion_cuenta.eliminar_cuenta_usuario",
+               side_effect=lambda db_, uid: llamado.update(uid=uid)):
+        r = client.delete("/admin/api/usuarios/u1", headers=_AUTH)
+    assert r.status_code == 200
+    assert llamado["uid"] == "u1"
+
+
+def test_no_puedo_eliminarme_a_mi_mismo(client, db):
+    db.sembrar(("usuarios", "admin1"), {"email": "a@x.com"})
+    with _como(admin=True, uid="admin1"):
+        r = client.delete("/admin/api/usuarios/admin1", headers=_AUTH)
+    assert r.status_code == 400
+
+
 # ---------- Dashboard ----------
 def test_resumen_agrega_planes_y_fallos(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})

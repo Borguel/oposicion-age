@@ -861,16 +861,20 @@ def usuarios_detalle(uid):
             ultima_nota = historial[-1].get("nota", ultima_nota)
 
     racha = datos.get("racha") or {}
+    bloqueado = False
     try:
-        claims = firebase_auth.get_user(uid).custom_claims or {}
+        registro = firebase_auth.get_user(uid)
+        claims = registro.custom_claims or {}
         es_admin = claims.get("admin") is True
         permisos = [p for p in (claims.get("permisos") or []) if p in PERMISOS_VALIDOS]
+        bloqueado = bool(getattr(registro, "disabled", False))
     except Exception:
         es_admin = False
         permisos = []
     return jsonify({
         "uid": uid,
         "es_admin": es_admin,
+        "bloqueado": bloqueado,
         "permisos": permisos,
         "permisos_disponibles": list(PERMISOS_VALIDOS),
         "email": datos.get("email", ""),
@@ -1002,6 +1006,82 @@ def usuarios_resetear_racha(uid):
     ref.set({"racha": {"racha_actual": 0, "ultima_fecha": None}}, merge=True)
     _registrar_auditoria("usuario_resetear_racha", uid)
     return jsonify({"mensaje": "Racha reseteada"})
+
+
+@bp.route("/admin/api/usuarios/<uid>/resetear-limites", methods=["POST"])
+@requiere_permiso("usuarios")
+def usuarios_resetear_limites(uid):
+    """Pone a cero los contadores de uso diario/mensual de las herramientas de
+    IA de un usuario (soporte: si se ha quedado sin cupo por un fallo)."""
+    ref = db.collection("usuarios").document(uid)
+    if not ref.get().exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    ref.set({"limites_uso": {}}, merge=True)
+    _registrar_auditoria("usuario_resetear_limites", uid)
+    return jsonify({"mensaje": "Límites de uso reseteados"})
+
+
+@bp.route("/admin/api/usuarios/<uid>/enlace", methods=["POST"])
+@requiere_permiso("usuarios")
+def usuarios_generar_enlace(uid):
+    """Genera un enlace de restablecer contraseña o de verificación de email
+    para el usuario. No lo envía: lo devuelve para que el admin se lo pase
+    (así no depende de plantillas de email)."""
+    tipo = (request.get_json(silent=True) or {}).get("tipo", "password")
+    try:
+        registro = firebase_auth.get_user(uid)
+    except Exception:
+        return jsonify({"error": "Usuario no encontrado en Firebase Auth"}), 404
+    email = registro.email
+    if not email:
+        return jsonify({"error": "El usuario no tiene email"}), 400
+    try:
+        if tipo == "verificacion":
+            enlace = firebase_auth.generate_email_verification_link(email)
+        else:
+            enlace = firebase_auth.generate_password_reset_link(email)
+    except Exception as exc:
+        logger.warning("Error generando enlace %s para %s: %s", tipo, uid, exc)
+        return jsonify({"error": "No se pudo generar el enlace"}), 400
+    _registrar_auditoria("usuario_enlace_" + tipo, uid)
+    return jsonify({"enlace": enlace, "email": email, "tipo": tipo})
+
+
+@bp.route("/admin/api/usuarios/<uid>/bloqueo", methods=["PATCH"])
+@requiere_admin
+def usuarios_bloqueo(uid):
+    """Habilita o deshabilita el acceso de un usuario (Firebase disabled). Un
+    usuario deshabilitado no puede iniciar sesión. Solo super-admin, y no
+    puede bloquearse a sí mismo."""
+    bloquear = bool((request.get_json(silent=True) or {}).get("bloqueado"))
+    if uid == g.uid and bloquear:
+        return jsonify({"error": "No puedes bloquearte a ti mismo."}), 400
+    try:
+        firebase_auth.update_user(uid, disabled=bloquear)
+    except Exception:
+        return jsonify({"error": "Usuario no encontrado en Firebase Auth"}), 404
+    _registrar_auditoria("usuario_bloquear" if bloquear else "usuario_desbloquear", uid)
+    return jsonify({"mensaje": "Acceso bloqueado" if bloquear else "Acceso restaurado", "bloqueado": bloquear})
+
+
+@bp.route("/admin/api/usuarios/<uid>", methods=["DELETE"])
+@requiere_admin
+def usuarios_eliminar(uid):
+    """Elimina por completo la cuenta de un usuario (Firebase Auth + todos sus
+    datos en Firestore, cancelando su suscripción de Stripe). Irreversible.
+    Solo super-admin, y no puede eliminarse a sí mismo."""
+    from gestion_cuenta import eliminar_cuenta_usuario
+    if uid == g.uid:
+        return jsonify({"error": "No puedes eliminar tu propia cuenta desde aquí."}), 400
+    if not db.collection("usuarios").document(uid).get().exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    try:
+        eliminar_cuenta_usuario(db, uid)
+    except Exception as exc:
+        logger.warning("Error eliminando cuenta %s: %s", uid, exc)
+        return jsonify({"error": "No se pudo eliminar la cuenta por completo"}), 500
+    _registrar_auditoria("usuario_eliminar", uid)
+    return jsonify({"mensaje": "Cuenta eliminada"})
 
 
 # ============================================================
