@@ -403,7 +403,7 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
 
 def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                              oposicion=OPOSICION_POR_DEFECTO, on_progreso=None,
-                             modo_reparto="equitativo"):
+                             modo_reparto="equitativo", uid=None):
     """Genera hasta num_preguntas preguntas verificadas, repartidas entre
     'temas' según modo_reparto: "equitativo" (por defecto, cuota igual
     para cada tema) o "realista" (más preguntas de los bloques que
@@ -484,7 +484,14 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                     "pregunta": resultado,
                 })
 
-    acumulador_tokens.volcar_a_peticion()
+    # Con uid (Test Personalizado): la generación corre en un hilo de fondo
+    # desligado de la petición, así que se vuelca DIRECTO a Firestore. Sin uid
+    # (llamadas dentro del propio hilo de la petición): se vuelca a flask.g y
+    # el teardown_request lo guarda.
+    if uid:
+        acumulador_tokens.volcar_directo(db, uid)
+    else:
+        acumulador_tokens.volcar_a_peticion()
     resultado_final = {"test": preguntas, "descartadas": descartadas}
     if len(preguntas) < num_preguntas:
         resultado_final["advertencia"] = (

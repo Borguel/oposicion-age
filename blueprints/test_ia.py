@@ -93,7 +93,7 @@ def generar_test_avanzado_route():
                 resultado = generar_test_verificado(
                     db, temas=temas, num_preguntas=num_preguntas,
                     coleccion=coleccion, oposicion=oposicion, on_progreso=on_progreso,
-                    modo_reparto=modo_reparto
+                    modo_reparto=modo_reparto, uid=uid
                 )
             except Exception:
                 logger.exception("Error al generar el test personalizado verificado")

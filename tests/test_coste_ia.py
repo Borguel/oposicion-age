@@ -47,6 +47,35 @@ def test_acumulador_entre_hilos_vuelca_a_la_peticion(client, db):
     assert doc["llamadas"] == 5
 
 
+def test_volcar_directo_guarda_sin_contexto_de_peticion(db):
+    # El Test Personalizado genera en un hilo de fondo desligado de la
+    # petición (sin flask.g): el acumulador debe poder volcar DIRECTO al
+    # documento del usuario con db+uid, sin depender de g.
+    from datetime import datetime
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    mes = datetime.utcnow().strftime("%Y-%m")
+    acc = coste_ia.AcumuladorTokens()
+    acc.add({"prompt_tokens": 1000, "completion_tokens": 400})
+    acc.add({"prompt_tokens": 500, "completion_tokens": 100})
+    acc.volcar_directo(db, "u1")
+    doc = db.leer(("usuarios", "u1"))["coste_ia"][mes]
+    assert doc["tokens_in"] == 1500
+    assert doc["tokens_out"] == 500
+    assert doc["llamadas"] == 2
+    assert doc["coste"] == coste_ia.coste_estimado(1500, 500)
+
+
+def test_guardar_coste_directo_acumula_sobre_lo_existente(db):
+    from datetime import datetime
+    mes = datetime.utcnow().strftime("%Y-%m")
+    db.sembrar(("usuarios", "u1"), {"coste_ia": {mes: {"tokens_in": 200, "tokens_out": 50, "llamadas": 1}}})
+    coste_ia.guardar_coste_directo(db, "u1", 300, 100, 2)
+    doc = db.leer(("usuarios", "u1"))["coste_ia"][mes]
+    assert doc["tokens_in"] == 500
+    assert doc["tokens_out"] == 150
+    assert doc["llamadas"] == 3
+
+
 def test_flush_coste_incrementa_el_mes(client, db):
     # Simula que durante una petición se acumuló consumo en g y que el
     # teardown lo vuelca al documento del usuario.
