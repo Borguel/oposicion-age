@@ -11,10 +11,13 @@ Convenciones de datos que usa (ya existentes en el proyecto):
               usuario individual falló qué)
 - Reportes:   reportes_preguntas/{id} (colección global, nueva)
 """
+import hmac
 import logging
+import os
 from datetime import datetime, timedelta
 
 from flask import Blueprint, g, jsonify, request
+from firebase_admin import auth as firebase_auth
 
 from firebase_setup import db
 from auth_utils import requiere_admin, _mejor_plan
@@ -524,3 +527,46 @@ def reportes_actualizar(rid):
         "fecha_revision": datetime.utcnow().isoformat(),
     }, merge=True)
     return jsonify({"mensaje": "Reporte actualizado"})
+
+
+# ============================================================
+# Arranque de un solo uso: asignar el primer admin sin Shell
+# ============================================================
+# NO lleva requiere_admin (sería el problema del huevo y la gallina: nadie
+# es admin todavia). En su lugar se protege con un secreto que SOLO existe
+# en la variable de entorno ADMIN_BOOTSTRAP_SECRET de Render. Si esa
+# variable no está definida, la ruta responde 404 y no hace nada, así que
+# en condiciones normales (sin secreto configurado) es como si no
+# existiera. Pensada para usarse una vez y retirarse después.
+@bp.route("/admin/api/bootstrap", methods=["POST"])
+def bootstrap_admin():
+    secreto_esperado = os.environ.get("ADMIN_BOOTSTRAP_SECRET", "")
+    if not secreto_esperado:
+        # Función desactivada: sin secreto configurado no existe.
+        return jsonify({"error": "No encontrado"}), 404
+
+    data = request.get_json(silent=True) or {}
+    secreto_recibido = str(data.get("secreto", ""))
+    uid = str(data.get("uid", "")).strip()
+
+    # Comparación en tiempo constante para no filtrar el secreto por timing.
+    if not hmac.compare_digest(secreto_recibido, secreto_esperado):
+        logger.warning("Intento de bootstrap admin con secreto incorrecto")
+        return jsonify({"error": "No autorizado"}), 403
+    if not uid:
+        return jsonify({"error": "Falta el uid"}), 400
+
+    try:
+        usuario = firebase_auth.get_user(uid)
+    except Exception:
+        return jsonify({"error": "UID no encontrado en Firebase Auth"}), 404
+
+    claims = dict(usuario.custom_claims or {})
+    claims["admin"] = True
+    firebase_auth.set_custom_user_claims(uid, claims)
+    logger.info("Bootstrap admin: claim admin asignado a %s", uid)
+    return jsonify({
+        "mensaje": "Permiso de administrador asignado.",
+        "email": usuario.email,
+        "aviso": "Cierra sesión y vuelve a entrar para que tu token recoja el cambio. Retira ya la variable ADMIN_BOOTSTRAP_SECRET.",
+    })

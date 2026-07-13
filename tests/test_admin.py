@@ -149,6 +149,41 @@ def test_usuarios_resetear_racha(client, db):
     assert db.leer(("usuarios", "u1"))["racha"]["racha_actual"] == 0
 
 
+# ---------- Bootstrap (primer admin sin Shell) ----------
+def test_bootstrap_desactivado_sin_secreto(client, monkeypatch):
+    monkeypatch.delenv("ADMIN_BOOTSTRAP_SECRET", raising=False)
+    resp = client.post("/admin/api/bootstrap", json={"uid": "u1", "secreto": "x"})
+    assert resp.status_code == 404
+
+
+def test_bootstrap_secreto_incorrecto(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_BOOTSTRAP_SECRET", "clave-buena")
+    resp = client.post("/admin/api/bootstrap", json={"uid": "u1", "secreto": "clave-mala"})
+    assert resp.status_code == 403
+
+
+def test_bootstrap_asigna_claim(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_BOOTSTRAP_SECRET", "clave-buena")
+
+    class _U:
+        email = "yo@example.com"
+        custom_claims = None
+
+    llamado = {}
+
+    def _set_claims(uid, claims):
+        llamado["uid"] = uid
+        llamado["claims"] = claims
+
+    with patch("blueprints.admin.firebase_auth.get_user", return_value=_U()), \
+         patch("blueprints.admin.firebase_auth.set_custom_user_claims", side_effect=_set_claims):
+        resp = client.post("/admin/api/bootstrap",
+                           json={"uid": "abc123", "secreto": "clave-buena"})
+    assert resp.status_code == 200
+    assert llamado["uid"] == "abc123"
+    assert llamado["claims"]["admin"] is True
+
+
 # ---------- Reportes ----------
 def test_usuario_reporta_y_admin_lo_revisa(client, db):
     # Un usuario normal reporta.
