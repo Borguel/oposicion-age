@@ -51,6 +51,23 @@ def _respuesta_csv(cabecera, filas, nombre_fichero):
     })
 
 
+def _registrar_auditoria(accion, objetivo="", detalle=""):
+    """Deja constancia de una acción de administración en la colección
+    admin_auditoria (quién, qué, sobre qué, cuándo). Nunca debe hacer
+    fallar la acción principal, así que cualquier error se ignora."""
+    try:
+        db.collection("admin_auditoria").document().set({
+            "accion": accion,
+            "objetivo": str(objetivo),
+            "detalle": str(detalle)[:500],
+            "por": getattr(g, "uid", ""),
+            "email_admin": getattr(g, "email", ""),
+            "fecha": datetime.utcnow().isoformat(),
+        })
+    except Exception:
+        logger.warning("No se pudo registrar en auditoría: %s", accion, exc_info=True)
+
+
 def _parse_fecha(valor):
     if not valor:
         return None
@@ -310,6 +327,7 @@ def temario_anadir_chunk(oposicion, bloque, tema):
         "fecha_ingesta": datetime.utcnow().isoformat(),
     })
     _limpiar_cache_temario()
+    _registrar_auditoria("temario_anadir_ficha", f"{oposicion}/{bloque}/{tema}", (data.get("titulo") or "")[:80])
     return jsonify({"mensaje": "Chunk añadido", "id": nuevo.id}), 201
 
 
@@ -332,6 +350,7 @@ def temario_editar_chunk(oposicion, bloque, tema, chunk_id):
     if actualizacion:
         ref.update(actualizacion)
         _limpiar_cache_temario()
+        _registrar_auditoria("temario_editar_ficha", f"{oposicion}/{bloque}/{tema}/{chunk_id}")
     return jsonify({"mensaje": "Chunk actualizado"})
 
 
@@ -344,6 +363,7 @@ def temario_borrar_chunk(oposicion, bloque, tema, chunk_id):
     (db.collection(coleccion).document(bloque).collection("temas").document(tema)
      .collection("subbloques").document(chunk_id).delete())
     _limpiar_cache_temario()
+    _registrar_auditoria("temario_borrar_ficha", f"{oposicion}/{bloque}/{tema}/{chunk_id}")
     return jsonify({"mensaje": "Chunk eliminado"})
 
 
@@ -367,6 +387,8 @@ def temario_publicar(oposicion, bloque):
         return jsonify({"error": "No encontrado"}), 404
     ref.set({"publicado": publicado}, merge=True)
     _limpiar_cache_temario()
+    destino = f"{oposicion}/{bloque}" + (f"/{tema}" if tema else "")
+    _registrar_auditoria("publicado" if publicado else "borrador", destino)
     return jsonify({"mensaje": "Estado de publicación actualizado", "publicado": publicado})
 
 
@@ -459,6 +481,7 @@ def preguntas_crear():
         "fecha_creacion": datetime.utcnow().isoformat(),
     })
     _limpiar_cache_temario()  # la caché de preguntas oficiales vive en el mismo store
+    _registrar_auditoria("pregunta_crear", f"{oposicion}/{ref.id}", data["pregunta"][:80])
     return jsonify({"mensaje": "Pregunta creada", "id": ref.id}), 201
 
 
@@ -487,6 +510,7 @@ def preguntas_editar(pid):
         "psicotecnico": bool(data.get("psicotecnico", False)),
     }, merge=True)
     _limpiar_cache_temario()
+    _registrar_auditoria("pregunta_editar", f"{oposicion}/{pid}", data["pregunta"][:80])
     return jsonify({"mensaje": "Pregunta actualizada"})
 
 
@@ -504,6 +528,7 @@ def preguntas_desactivar(pid):
         return jsonify({"error": "Pregunta no encontrada"}), 404
     ref.set({"activa": False}, merge=True)
     _limpiar_cache_temario()
+    _registrar_auditoria("pregunta_desactivar", f"{oposicion}/{pid}")
     return jsonify({"mensaje": "Pregunta desactivada"})
 
 
@@ -520,6 +545,7 @@ def preguntas_reactivar(pid):
         return jsonify({"error": "Pregunta no encontrada"}), 404
     ref.set({"activa": True}, merge=True)
     _limpiar_cache_temario()
+    _registrar_auditoria("pregunta_reactivar", f"{oposicion}/{pid}")
     return jsonify({"mensaje": "Pregunta reactivada"})
 
 
@@ -700,6 +726,7 @@ def usuarios_cambiar_plan(uid):
             "cambio": f"{oposicion} -> {nuevo_plan}",
         },
     })
+    _registrar_auditoria("usuario_cambiar_plan", uid, f"{oposicion} -> {nuevo_plan}: {(data.get('motivo') or '').strip()}")
     return jsonify({"mensaje": "Plan actualizado"})
 
 
@@ -724,6 +751,7 @@ def usuarios_cambiar_admin(uid):
         claims.pop("admin", None)
     firebase_auth.set_custom_user_claims(uid, claims)
     logger.info("Admin %s %s permiso admin a %s", g.uid, "dio" if quiere_admin else "quitó", uid)
+    _registrar_auditoria("admin_dar" if quiere_admin else "admin_quitar", uid)
     return jsonify({
         "mensaje": "Permiso de administrador " + ("asignado." if quiere_admin else "revocado."),
         "es_admin": quiere_admin,
@@ -738,6 +766,7 @@ def usuarios_resetear_racha(uid):
     if not ref.get().exists:
         return jsonify({"error": "Usuario no encontrado"}), 404
     ref.set({"racha": {"racha_actual": 0, "ultima_fecha": None}}, merge=True)
+    _registrar_auditoria("usuario_resetear_racha", uid)
     return jsonify({"mensaje": "Racha reseteada"})
 
 
@@ -807,7 +836,34 @@ def reportes_actualizar(rid):
         "revisado_por": g.uid,
         "fecha_revision": datetime.utcnow().isoformat(),
     }, merge=True)
+    _registrar_auditoria("reporte_" + estado, rid)
     return jsonify({"mensaje": "Reporte actualizado"})
+
+
+# ============================================================
+# Registro de auditoría
+# ============================================================
+@bp.route("/admin/api/auditoria", methods=["GET"])
+@requiere_admin
+def auditoria_listar():
+    """Últimas acciones de administración, de la más reciente a la más
+    antigua."""
+    try:
+        limite = min(200, max(1, int(request.args.get("limite", 100))))
+    except (TypeError, ValueError):
+        limite = 100
+    entradas = []
+    for doc in db.collection("admin_auditoria").stream():
+        d = doc.to_dict() or {}
+        entradas.append({
+            "accion": d.get("accion", ""),
+            "objetivo": d.get("objetivo", ""),
+            "detalle": d.get("detalle", ""),
+            "email_admin": d.get("email_admin", ""),
+            "fecha": d.get("fecha", ""),
+        })
+    entradas.sort(key=lambda e: e.get("fecha", ""), reverse=True)
+    return jsonify({"entradas": entradas[:limite], "total": len(entradas)})
 
 
 # ============================================================
