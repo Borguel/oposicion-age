@@ -333,7 +333,8 @@ def _prompt_verificacion_descriptivo(pregunta_candidata, anclas):
 
 
 def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques_ya_usados,
-                                  preguntas_ya_aceptadas, lock, max_intentos=MAX_INTENTOS_POR_PREGUNTA):
+                                  preguntas_ya_aceptadas, lock, on_usage=None,
+                                  max_intentos=MAX_INTENTOS_POR_PREGUNTA):
     for _intento in range(max_intentos):
         tipo_pregunta = _elegir_tipo_pregunta()
         with lock:
@@ -352,6 +353,7 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             temperature=0.5,
             max_tokens=1000,
             response_format_json=True,
+            on_usage=on_usage,
         )
         if not generado:
             continue
@@ -376,6 +378,7 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             temperature=0.0,
             max_tokens=400,
             response_format_json=True,
+            on_usage=on_usage,
         )
         if not verificacion_raw:
             continue
@@ -454,11 +457,17 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     descartadas = 0
     completadas = 0
 
+    # Acumulador de tokens seguro entre hilos: los workers hacen las llamadas
+    # a DeepSeek (donde no hay contexto de petición) y suman aquí; al acabar,
+    # se vuelca al contador de coste del usuario de la petición.
+    from coste_ia import AcumuladorTokens
+    acumulador_tokens = AcumuladorTokens()
+
     with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS, total)) as executor:
         futuros = [
             executor.submit(
                 _generar_pregunta_verificada, subbloques_por_tema[tid], tid, oposicion,
-                subbloques_ya_usados, preguntas_ya_aceptadas, lock
+                subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add
             )
             for tid in huecos
         ]
@@ -475,6 +484,7 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                     "pregunta": resultado,
                 })
 
+    acumulador_tokens.volcar_a_peticion()
     resultado_final = {"test": preguntas, "descartadas": descartadas}
     if len(preguntas) < num_preguntas:
         resultado_final["advertencia"] = (
