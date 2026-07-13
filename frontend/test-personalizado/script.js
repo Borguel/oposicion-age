@@ -416,18 +416,29 @@ async function obtenerAuthHeaders() {
       // y da sensación de que la página se ha colgado. Sube el % poco a
       // poco de forma artificial, con un techo bajo, y se para en cuanto
       // llega el primer evento de progreso real.
+      // Sube con desaceleración (una fracción de lo que falta hasta un techo
+      // bajo) en vez de a saltos hasta pararse en seco: avanza deprisa al
+      // principio y cada vez más despacio, sin llegar nunca del todo al techo,
+      // de modo que NUNCA se queda "plano" -- siempre se mueve un poquito --
+      // hasta que llega el progreso real. El brillo animado de la barra (CSS)
+      // refuerza esa sensación de que está trabajando.
+      const TECHO_COSMETICO = 18;
       let progresoCosmetico = 0;
+      let baseCosmetica = 0;
       let intervaloCosmetico = setInterval(() => {
-        progresoCosmetico = Math.min(progresoCosmetico + Math.random() * 3, 15);
+        progresoCosmetico += (TECHO_COSMETICO - progresoCosmetico) * 0.055;
         const elBarraCosmetica = document.getElementById("progreso-generacion");
         const elTextoBarraCosmetica = document.getElementById("texto-progreso-generacion");
         if (elBarraCosmetica) elBarraCosmetica.style.width = `${progresoCosmetico}%`;
         if (elTextoBarraCosmetica) elTextoBarraCosmetica.textContent = `${Math.round(progresoCosmetico)}%`;
-      }, 400);
+      }, 350);
       const pararProgresoCosmetico = () => {
         if (intervaloCosmetico) {
           clearInterval(intervaloCosmetico);
           intervaloCosmetico = null;
+          // El progreso real continúa desde donde estaba el cosmético, para
+          // que la barra nunca salte hacia atrás al llegar el primer evento.
+          baseCosmetica = progresoCosmetico;
         }
       };
 
@@ -512,7 +523,11 @@ async function obtenerAuthHeaders() {
                 const elMensajeCarga = document.getElementById("mensaje-carga");
                 const elBarra = document.getElementById("progreso-generacion");
                 const elTextoBarra = document.getElementById("texto-progreso-generacion");
-                const porcentaje = evento.total ? Math.round((evento.completadas / evento.total) * 100) : 0;
+                const fraccionReal = evento.total ? (evento.completadas / evento.total) : 0;
+                // El progreso real se remapea al tramo que queda por encima
+                // del cosmético, para que la barra continúe sin saltar hacia
+                // atrás (el conteo honesto "X de Y" ya va en el mensaje de abajo).
+                const porcentaje = Math.round(baseCosmetica + fraccionReal * (100 - baseCosmetica));
                 if (elBarra) elBarra.style.width = `${porcentaje}%`;
                 if (elTextoBarra) elTextoBarra.textContent = `${porcentaje}%`;
                 if (elMensajeCarga) {

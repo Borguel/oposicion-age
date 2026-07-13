@@ -99,18 +99,42 @@ h1, h2, h3 {
 
 .progress-container {
   position: relative;
-  margin: 30px 0;
-  background: #f0f0f0;
-  border-radius: 10px;
+  margin: 26px auto;
+  max-width: 460px;
+  background: linear-gradient(180deg, #e9ebf1, #f3f4f8);
+  border-radius: 999px;
   overflow: hidden;
-  height: 25px;
+  height: 26px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .progress-bar {
   height: 100%;
   width: 0;
-  transition: width 0.5s ease;
+  /* Curva de salida suave para que cada pequeño incremento del relleno
+     cosmético se anime con naturalidad. */
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* Brillo que recorre la barra: la mantiene "viva" aunque el ancho apenas
+   cambie mientras el backend prepara la generación (evita la sensación de
+   barra pillada). Solo se ve sobre la parte ya rellena. */
+.progress-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 15%, rgba(255, 255, 255, 0.6) 50%, transparent 85%);
+  transform: translateX(-100%);
+  animation: brillo-progreso 1.5s ease-in-out infinite;
+}
+@keyframes brillo-progreso {
+  to { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar::after { animation: none; }
 }
 
 .progress-text {
@@ -119,8 +143,9 @@ h1, h2, h3 {
   left: 50%;
   transform: translate(-50%, -50%);
   color: var(--age-ink);
-  font-weight: 700;
-  font-size: 0.85rem;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
   z-index: 1;
   white-space: nowrap;
   text-shadow: 0 0 5px #fff, 0 0 5px #fff, 0 0 9px #fff;
@@ -1156,7 +1181,8 @@ body {
 }
 
 :root[data-theme="dark"] .progress-container {
-  background: var(--age-neutral-bg);
+  background: linear-gradient(180deg, #2a2d36, #21242c);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 :root[data-theme="dark"] .chart-container {
