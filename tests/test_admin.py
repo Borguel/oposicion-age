@@ -184,6 +184,22 @@ def test_bootstrap_asigna_claim(client, monkeypatch):
     assert llamado["claims"]["admin"] is True
 
 
+def test_bootstrap_por_get_desde_navegador(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_BOOTSTRAP_SECRET", "clave-buena")
+
+    class _U:
+        email = "yo@example.com"
+        custom_claims = None
+
+    llamado = {}
+    with patch("blueprints.admin.firebase_auth.get_user", return_value=_U()), \
+         patch("blueprints.admin.firebase_auth.set_custom_user_claims",
+               side_effect=lambda uid, claims: llamado.update(uid=uid, claims=claims)):
+        resp = client.get("/admin/api/bootstrap?uid=abc123&secreto=clave-buena")
+    assert resp.status_code == 200
+    assert llamado["claims"]["admin"] is True
+
+
 # ---------- Reportes ----------
 def test_usuario_reporta_y_admin_lo_revisa(client, db):
     # Un usuario normal reporta.
