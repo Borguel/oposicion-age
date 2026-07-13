@@ -27,11 +27,14 @@
   <div id="admin-contenido" style="display:none;">
     <header class="admin-header">
       <h1>Panel de administración</h1>
-      <select id="admin-oposicion" class="age-input admin-oposicion" aria-label="Oposición">
-        <option value="AGE">AGE</option>
-        <option value="GACE">GACE</option>
-        <option value="AUXILIAR">Auxiliar</option>
-      </select>
+      <div class="admin-header-op">
+        <label for="admin-oposicion">Gestionando</label>
+        <select id="admin-oposicion" class="age-input admin-oposicion" aria-label="Oposición que se gestiona">
+          <option value="AGE">AGE</option>
+          <option value="GACE">GACE</option>
+          <option value="AUXILIAR">Auxiliar</option>
+        </select>
+      </div>
     </header>
 
     <div class="admin-tabs" role="tablist">
@@ -39,7 +42,7 @@
       <button class="admin-tab" data-tab="temario" role="tab">Temario</button>
       <button class="admin-tab" data-tab="preguntas" role="tab">Preguntas</button>
       <button class="admin-tab" data-tab="usuarios" role="tab">Usuarios</button>
-      <button class="admin-tab" data-tab="reportes" role="tab">Reportes</button>
+      <button class="admin-tab" data-tab="reportes" role="tab">Reportes <span class="admin-tab-badge" id="badge-reportes" hidden>0</span></button>
     </div>
 
     <section id="panel-dashboard" class="admin-panel"></section>
@@ -49,6 +52,9 @@
     <section id="panel-reportes" class="admin-panel" hidden></section>
   </div>
 </main>
+
+<!-- Avisos flotantes (toasts) -->
+<div id="admin-toasts" class="admin-toasts" aria-live="polite"></div>
 
 <!-- Modal genérico (crear/editar pregunta, detalle de usuario) -->
 <div id="admin-modal" class="admin-modal" hidden>

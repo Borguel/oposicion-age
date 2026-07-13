@@ -85,25 +85,95 @@ def _titulo_tema(coleccion, tema_id):
     return (doc.to_dict() or {}).get("titulo", tema_id) if doc.exists else tema_id
 
 
+def _salud_contenido(oposicion):
+    """Recorre el árbol del temario de una oposición y devuelve cifras de
+    salud del contenido: nº de temas, cuántos están sin fichas (huecos de
+    contenido) y cuántos en borrador. Pensado para el panel: de un vistazo
+    saber qué falta por rellenar."""
+    if not oposicion_valida(oposicion):
+        return {"temas_total": 0, "temas_sin_contenido": [], "temas_borrador": 0, "bloques_borrador": 0}
+    coleccion = coleccion_temario(oposicion)
+    temas_total = 0
+    sin_contenido = []
+    temas_borrador = 0
+    bloques_borrador = 0
+    for bloque in db.collection(coleccion).stream():
+        bdatos = bloque.to_dict() or {}
+        if bdatos.get("publicado", True) is False:
+            bloques_borrador += 1
+        for tema in db.collection(coleccion).document(bloque.id).collection("temas").stream():
+            tdatos = tema.to_dict() or {}
+            temas_total += 1
+            if tdatos.get("publicado", True) is False:
+                temas_borrador += 1
+            tiene = any(True for _ in (db.collection(coleccion).document(bloque.id)
+                        .collection("temas").document(tema.id).collection("subbloques").limit(1).stream()))
+            if not tiene:
+                sin_contenido.append({
+                    "tema_id": f"{bloque.id}-{tema.id}",
+                    "bloque": bloque.id,
+                    "tema": tema.id,
+                    "titulo": tdatos.get("titulo", tema.id),
+                })
+    sin_contenido.sort(key=lambda t: t["tema_id"])
+    return {
+        "temas_total": temas_total,
+        "temas_sin_contenido": sin_contenido,
+        "temas_borrador": temas_borrador,
+        "bloques_borrador": bloques_borrador,
+    }
+
+
+def _preguntas_stats(oposicion):
+    """Cuenta preguntas oficiales activas / inactivas / sin explicación."""
+    if not oposicion_valida(oposicion):
+        return {"activas": 0, "inactivas": 0, "sin_explicacion": 0}
+    coleccion = coleccion_examenes_oficiales(oposicion)
+    activas = inactivas = sin_explicacion = 0
+    for doc in db.collection(coleccion).stream():
+        d = doc.to_dict() or {}
+        if d.get("tipo") != "pregunta":
+            continue
+        if d.get("activa", True) is False:
+            inactivas += 1
+            continue
+        activas += 1
+        if not (d.get("explicacion") or "").strip():
+            sin_explicacion += 1
+    return {"activas": activas, "inactivas": inactivas, "sin_explicacion": sin_explicacion}
+
+
 # ============================================================
 # Dashboard
 # ============================================================
 @bp.route("/admin/api/resumen", methods=["GET"])
 @requiere_admin
 def resumen():
+    oposicion = request.args.get("oposicion") or "AGE"
     ahora = datetime.utcnow()
     hace_7, hace_30 = ahora - timedelta(days=7), ahora - timedelta(days=30)
     total_usuarios = 0
     por_plan = {}
-    tests_7 = tests_30 = 0
+    tests_7 = tests_30 = tests_total = 0
+    usuarios_nuevos_7 = usuarios_nuevos_30 = 0
+    activos_7 = 0
 
     for doc in db.collection("usuarios").stream():
         datos = doc.to_dict() or {}
         total_usuarios += 1
         plan = _plan_usuario(datos)
         por_plan[plan] = por_plan.get(plan, 0) + 1
+        alta = _parse_fecha(datos.get("fecha_creacion"))
+        if alta and alta >= hace_7:
+            usuarios_nuevos_7 += 1
+        if alta and alta >= hace_30:
+            usuarios_nuevos_30 += 1
+        ult = _parse_fecha(datos.get("ultima_actividad"))
+        if ult and ult >= hace_7:
+            activos_7 += 1
         for _op, e in (datos.get("estadisticas") or {}).items():
             for t in (e.get("historial_tests") or []):
+                tests_total += 1
                 fecha = _parse_fecha(t.get("fecha"))
                 if not fecha:
                     continue
@@ -123,10 +193,17 @@ def resumen():
     return jsonify({
         "usuarios_totales": total_usuarios,
         "usuarios_por_plan": por_plan,
+        "usuarios_nuevos_7_dias": usuarios_nuevos_7,
+        "usuarios_nuevos_30_dias": usuarios_nuevos_30,
+        "usuarios_activos_7_dias": activos_7,
         "tests_ultimos_7_dias": tests_7,
         "tests_ultimos_30_dias": tests_30,
+        "tests_total": tests_total,
         "top_temas_fallados": top_temas,
         "reportes_pendientes": reportes_pendientes,
+        "oposicion": oposicion,
+        "salud_contenido": _salud_contenido(oposicion),
+        "preguntas_stats": _preguntas_stats(oposicion),
     })
 
 
@@ -445,6 +522,54 @@ def usuarios_listar():
     })
 
 
+@bp.route("/admin/api/usuarios/<uid>", methods=["GET"])
+@requiere_admin
+def usuarios_detalle(uid):
+    """Ficha completa de un usuario para el panel: plan por oposición,
+    racha, actividad, nº de tests y último override de soporte."""
+    ref = db.collection("usuarios").document(uid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    datos = doc.to_dict() or {}
+
+    suscripciones = {}
+    for oid, sub in (datos.get("suscripciones") or {}).items():
+        suscripciones[oid] = {
+            "plan": (sub or {}).get("plan", "gratis"),
+            "estado": (sub or {}).get("subscription_status", ""),
+        }
+
+    tests_por_oposicion = {}
+    tests_total = 0
+    ultima_nota = None
+    for oid, e in (datos.get("estadisticas") or {}).items():
+        historial = e.get("historial_tests") or []
+        tests_por_oposicion[oid] = len(historial)
+        tests_total += len(historial)
+        if historial:
+            ultima_nota = historial[-1].get("nota", ultima_nota)
+
+    racha = datos.get("racha") or {}
+    return jsonify({
+        "uid": uid,
+        "email": datos.get("email", ""),
+        "nombre": datos.get("nombre", ""),
+        "plan": _plan_usuario(datos),
+        "suscripciones": suscripciones,
+        "oposiciones_activas": _oposiciones_activas(datos),
+        "fecha_creacion": datos.get("fecha_creacion"),
+        "ultima_actividad": datos.get("ultima_actividad"),
+        "racha_actual": racha.get("racha_actual", 0),
+        "racha_maxima": racha.get("racha_maxima", racha.get("racha_actual", 0)),
+        "tests_total": tests_total,
+        "tests_por_oposicion": tests_por_oposicion,
+        "ultima_nota": ultima_nota,
+        "email_verificado": bool(datos.get("email_verificado", False)),
+        "admin_override": datos.get("admin_override"),
+    })
+
+
 @bp.route("/admin/api/usuarios/<uid>/plan", methods=["PATCH"])
 @requiere_admin
 def usuarios_cambiar_plan(uid):
@@ -494,7 +619,7 @@ def reportes_listar():
     estado = request.args.get("estado", "pendiente")
     reportes = []
     consulta = db.collection("reportes_preguntas")
-    if estado:
+    if estado and estado != "todos":
         consulta = consulta.where("estado", "==", estado)
     for doc in consulta.stream():
         d = doc.to_dict() or {}

@@ -62,6 +62,35 @@ def test_resumen_agrega_planes_y_fallos(client, db):
     assert datos["top_temas_fallados"][0]["fallos"] == 5  # 3 + 2, agregado
 
 
+def test_resumen_salud_contenido_detecta_temas_sin_fichas(client, db):
+    # Un tema con ficha y otro sin ninguna.
+    db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Bloque I", "publicado": True})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "Con contenido"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "s1"), {"texto": "hola"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_02"), {"titulo": "Vacío"})
+    with _como():
+        datos = client.get("/admin/api/resumen?oposicion=AGE", headers=_AUTH).get_json()
+    salud = datos["salud_contenido"]
+    assert salud["temas_total"] == 2
+    sin = [t["tema"] for t in salud["temas_sin_contenido"]]
+    assert sin == ["tema_02"]
+
+
+def test_detalle_usuario_agrega_tests_y_racha(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com",
+        "suscripciones": {"AGE": {"plan": "premium"}},
+        "racha": {"racha_actual": 7},
+        "estadisticas": {"AGE": {"historial_tests": [{"nota": 8}, {"nota": 9}]}},
+    })
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["tests_total"] == 2
+    assert d["racha_actual"] == 7
+    assert d["ultima_nota"] == 9
+    assert d["plan"] == "premium"
+
+
 # ---------- Temario ----------
 def test_temario_arbol_y_chunks(client, db):
     _sembrar_tema(db)
