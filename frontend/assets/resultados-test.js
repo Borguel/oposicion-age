@@ -144,7 +144,10 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
       detalleHTML += `<div class="${tipoRespuesta}">${icono}${letra}) ${escaparHtml(p.opciones[letra])}</div>`;
     }
     const idExp = `exp-${i}-${Math.random().toString(36).slice(2, 6)}`;
+    detalleHTML += `<div class="detalle-acciones-fila">`;
     detalleHTML += `<button type="button" class="detalle-explicacion-btn" data-toggle-target="${idExp}">📘 Mostrar/Ocultar Explicación</button>`;
+    detalleHTML += `<button type="button" class="detalle-reportar-btn" data-reportar="${i}" title="Avisar de un error en esta pregunta">⚠️ Reportar error</button>`;
+    detalleHTML += `</div>`;
     detalleHTML += `<div id="${idExp}" class="detalle-explicacion-panel" style="display:none;"><strong>Explicación:</strong>${formatearExplicacionHTML(explicacion)}</div></div>`;
   });
 
@@ -298,6 +301,36 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     boton.addEventListener("click", () => {
       const destino = document.getElementById(boton.dataset.toggleTarget);
       if (destino) destino.style.display = destino.style.display === "none" ? "block" : "none";
+    });
+  });
+
+  // Reportar error en una pregunta: manda el texto de la pregunta y el motivo
+  // a /reportar-pregunta (colección reportes_preguntas) para que el panel
+  // admin lo revise. Se pide el motivo con un prompt sencillo.
+  contenedor.querySelectorAll("[data-reportar]").forEach((boton) => {
+    boton.addEventListener("click", async () => {
+      const preg = preguntas[Number(boton.dataset.reportar)];
+      if (!preg) return;
+      const motivo = window.prompt("¿Qué error has visto en esta pregunta? Lo revisará el equipo.");
+      if (!motivo || !motivo.trim()) return;
+      boton.disabled = true;
+      try {
+        const [{ obtenerAuthHeaders }, { BACKEND_URL }, { obtenerOposicionActual }] = await Promise.all([
+          import("/assets/auth.js"), import("/assets/firebase-config.js"), import("/assets/oposicion.js"),
+        ]);
+        const headers = await obtenerAuthHeaders();
+        if (!headers) return;
+        const resp = await fetch(BACKEND_URL + "/reportar-pregunta", {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ pregunta_texto: preg.pregunta || "", motivo: motivo.trim(), oposicion: obtenerOposicionActual() }),
+        });
+        boton.textContent = resp.ok ? "✅ Reportado, ¡gracias!" : "⚠️ No se pudo reportar";
+        if (!resp.ok) boton.disabled = false;
+      } catch {
+        boton.textContent = "⚠️ No se pudo reportar";
+        boton.disabled = false;
+      }
     });
   });
 

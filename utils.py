@@ -337,10 +337,12 @@ def obtener_preguntas_examenes_oficiales(db, oposicion):
     barrido completo."""
     def _calcular():
         coleccion = coleccion_examenes_oficiales(oposicion)
+        # Se excluyen las desactivadas desde el panel admin (activa=false, un
+        # soft delete). Sin el campo se consideran activas, para no ocultar
+        # las ya cargadas.
         return [
-            doc.to_dict() or {}
-            for doc in db.collection(coleccion).stream()
-            if (doc.to_dict() or {}).get("tipo") == "pregunta"
+            d for d in (doc.to_dict() or {} for doc in db.collection(coleccion).stream())
+            if d.get("tipo") == "pregunta" and d.get("activa", True) is not False
         ]
     return _desde_cache_o_calcular(("preguntas_oficiales", oposicion), _calcular, ttl_segundos=1800)
 
