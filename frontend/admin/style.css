@@ -37,6 +37,14 @@
   display: inline-flex; align-items: center; justify-content: center; padding: 0 5px;
 }
 
+/* El .age-card base no trae padding propio: se lo damos aquí a todas las
+   tarjetas del panel para que el contenido no quede pegado al borde. Las
+   que ya definen su propio padding (estadísticas) lo recuperan debajo. */
+.admin-panel .age-card { padding: 16px 18px; }
+.admin-panel .admin-stat { padding: 18px 12px; }
+.admin-panel .admin-arbol,
+.admin-panel .admin-chunks { padding: 14px; }
+
 .admin-cargando, .admin-vacio { color: var(--age-ink-soft, var(--age-ink)); font-size: 14px; padding: 8px 0; }
 .admin-num { text-align: right; white-space: nowrap; }
 .admin-bloque { margin-top: 16px; }
@@ -79,8 +87,9 @@
 .admin-temario-grid { display: grid; grid-template-columns: 300px 1fr; gap: 16px; align-items: start; }
 .admin-arbol { max-height: 70vh; overflow-y: auto; }
 .admin-bloque-arbol { margin-bottom: 14px; }
-.admin-bloque-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
-.admin-bloque-titulo { font-weight: 700; font-size: 14px; }
+.admin-bloque-cab { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.admin-bloque-titulo { font-weight: 700; font-size: 14px; flex: 1; min-width: 0; }
+.admin-bloque-cab .admin-toggle { flex-shrink: 0; }
 .admin-toggle { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; white-space: nowrap; }
 .admin-tema-item {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
