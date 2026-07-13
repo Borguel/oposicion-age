@@ -82,6 +82,64 @@ def requiere_admin(f):
     return envoltura
 
 
+# Permisos granulares del panel. 'admin' (custom claim admin:true) es el
+# super-admin y los tiene todos implícitamente. El resto se conceden sueltos
+# vía el custom claim permisos:[...] para dar acceso parcial (p. ej. un
+# moderador solo con 'reportes').
+PERMISOS_VALIDOS = ("temario", "reportes", "usuarios")
+
+
+def _decodificar_token_admin():
+    """Verifica el token Bearer y devuelve (decoded, None) o (None, respuesta
+    de error) para las rutas del panel. Deja el resultado listo para que los
+    decoradores del panel no repitan la verificación."""
+    header = request.headers.get("Authorization", "")
+    if not header.startswith("Bearer "):
+        return None, (jsonify({"error": "No autenticado"}), 401)
+    token = header[len("Bearer "):].strip()
+    try:
+        decoded = firebase_auth.verify_id_token(token, check_revoked=True)
+    except Exception:
+        return None, (jsonify({"error": "No autenticado"}), 401)
+    return decoded, None
+
+
+def _permisos_de(decoded):
+    """Conjunto de permisos efectivos del token. El super-admin los tiene
+    todos."""
+    if decoded.get("admin") is True:
+        return set(PERMISOS_VALIDOS)
+    brutos = decoded.get("permisos") or []
+    if not isinstance(brutos, list):
+        return set()
+    return {p for p in brutos if p in PERMISOS_VALIDOS}
+
+
+def requiere_permiso(*permisos):
+    """Exige que quien llama tenga AL MENOS UNO de los permisos indicados (o
+    sea super-admin). Si se llama con varios, equivale a 'cualquier miembro
+    del equipo con alguno de estos permisos'. Deja en g: uid, email,
+    es_admin y permisos (set)."""
+    requeridos = set(permisos)
+
+    def decorador(f):
+        @wraps(f)
+        def envoltura(*args, **kwargs):
+            decoded, error = _decodificar_token_admin()
+            if error:
+                return error
+            efectivos = _permisos_de(decoded)
+            if not (requeridos & efectivos):
+                return jsonify({"error": "No tienes permiso para esta acción"}), 403
+            g.uid = decoded.get("uid")
+            g.email = decoded.get("email")
+            g.es_admin = decoded.get("admin") is True
+            g.permisos = efectivos
+            return f(*args, **kwargs)
+        return envoltura
+    return decorador
+
+
 def _mejor_plan(suscripciones):
     """El plan más alto entre todas las oposiciones activas del usuario."""
     mejor = "gratis"
