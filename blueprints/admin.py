@@ -770,6 +770,68 @@ def usuarios_export():
     return _respuesta_csv(cabecera, filas, "usuarios.csv")
 
 
+@bp.route("/admin/api/usuarios", methods=["POST"])
+@requiere_admin
+def usuarios_crear():
+    """Da de alta un usuario nuevo (Firebase Auth + documento en Firestore),
+    con contraseña y, opcionalmente, admin/roles y un plan de partida. Solo
+    un super-admin puede crear usuarios."""
+    from registro_progreso_usuario import inicializar_estadisticas_usuario
+
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    password = str(data.get("password") or "")
+    nombre = (data.get("nombre") or "").strip()
+    if not email or "@" not in email:
+        return jsonify({"error": "Email no válido"}), 400
+    if len(password) < 6:
+        return jsonify({"error": "La contraseña debe tener al menos 6 caracteres"}), 400
+
+    try:
+        usuario = firebase_auth.create_user(
+            email=email, password=password, display_name=nombre or None,
+            email_verified=bool(data.get("email_verificado", False)),
+        )
+    except firebase_auth.EmailAlreadyExistsError:
+        return jsonify({"error": "Ya existe un usuario con ese email"}), 400
+    except Exception as exc:
+        logger.warning("Error creando usuario admin: %s", exc)
+        return jsonify({"error": "No se pudo crear el usuario (revisa el email/contraseña)"}), 400
+
+    uid = usuario.uid
+
+    # Claims: admin total y/o roles parciales.
+    claims = {}
+    if data.get("admin") is True:
+        claims["admin"] = True
+    permisos = [p for p in (data.get("permisos") or []) if p in PERMISOS_VALIDOS]
+    if permisos:
+        claims["permisos"] = permisos
+    if claims:
+        firebase_auth.set_custom_user_claims(uid, claims)
+
+    # Documento del usuario en Firestore (misma inicialización que en el alta
+    # normal) + nombre y, si procede, un plan de partida.
+    inicializar_estadisticas_usuario(db, uid, email=email)
+    doc = {"email": email, "fecha_creacion": datetime.utcnow().isoformat(), "creado_por_admin": g.uid}
+    if nombre:
+        doc["nombre"] = nombre
+    plan = data.get("plan")
+    oposicion = data.get("oposicion") or "AGE"
+    if plan in ("basico", "premium") and oposicion_valida(oposicion):
+        doc[f"suscripciones.{oposicion}.plan"] = plan
+        doc[f"suscripciones.{oposicion}.subscription_status"] = "active"
+    db.collection("usuarios").document(uid).set(
+        {k: v for k, v in doc.items() if "." not in k}, merge=True)
+    # Los campos con punto (plan) se aplican con update para respetar el mapa.
+    puntos = {k: v for k, v in doc.items() if "." in k}
+    if puntos:
+        db.collection("usuarios").document(uid).update(puntos)
+
+    _registrar_auditoria("usuario_crear", uid, email + (" [admin]" if claims.get("admin") else ""))
+    return jsonify({"mensaje": "Usuario creado", "uid": uid, "email": email}), 201
+
+
 @bp.route("/admin/api/usuarios/<uid>", methods=["GET"])
 @requiere_permiso("usuarios")
 def usuarios_detalle(uid):

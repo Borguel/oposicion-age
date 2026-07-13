@@ -91,6 +91,35 @@ def test_admin_asigna_roles(client, db):
     assert set(llamado["claims"]["permisos"]) == {"temario", "reportes"}  # 'inventado' se descarta
 
 
+# ---------- Crear usuarios ----------
+def test_crear_usuario_da_de_alta_y_pone_roles(client, db):
+    creado = type("U", (), {"uid": "new1"})()
+    claims = {}
+    with _como(admin=True), \
+         patch("blueprints.admin.firebase_auth.create_user", return_value=creado), \
+         patch("blueprints.admin.firebase_auth.set_custom_user_claims",
+               side_effect=lambda uid, c: claims.update(c)):
+        r = client.post("/admin/api/usuarios", json={
+            "email": "nuevo@x.com", "password": "secreto123", "nombre": "Nuevo",
+            "permisos": ["reportes"],
+        }, headers=_AUTH)
+    assert r.status_code == 201
+    assert claims == {"permisos": ["reportes"]}
+    assert db.leer(("usuarios", "new1"))["email"] == "nuevo@x.com"
+
+
+def test_crear_usuario_valida_email_y_password(client, db):
+    with _como(admin=True):
+        assert client.post("/admin/api/usuarios", json={"email": "malo", "password": "secreto123"}, headers=_AUTH).status_code == 400
+        assert client.post("/admin/api/usuarios", json={"email": "ok@x.com", "password": "123"}, headers=_AUTH).status_code == 400
+
+
+def test_crear_usuario_requiere_admin_total(client, db):
+    with _como(admin=False, permisos=["usuarios"]):
+        r = client.post("/admin/api/usuarios", json={"email": "ok@x.com", "password": "secreto123"}, headers=_AUTH)
+    assert r.status_code == 403
+
+
 # ---------- Dashboard ----------
 def test_resumen_agrega_planes_y_fallos(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})
