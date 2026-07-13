@@ -229,6 +229,63 @@ def test_bootstrap_por_get_desde_navegador(client, monkeypatch):
     assert llamado["claims"]["admin"] is True
 
 
+# ---------- Utilidades nuevas (1,2,3,5,16) ----------
+def test_resumen_calcula_mrr(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "a@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})
+    db.sembrar(("usuarios", "u2"), {"email": "b@x.com", "suscripciones": {"AGE": {"plan": "basico"}, "GACE": {"plan": "premium"}}})
+    with _como():
+        d = client.get("/admin/api/resumen", headers=_AUTH).get_json()
+    assert d["suscripciones_pago"] == 3
+    assert d["mrr"] == round(9.99 + 4.99 + 9.99, 2)
+
+
+def test_toggle_admin_asigna_y_protege_autobloqueo(client, db):
+    class _U:
+        email = "otro@x.com"
+        custom_claims = None
+    llamado = {}
+    with _como(uid="admin1"), \
+         patch("blueprints.admin.firebase_auth.get_user", return_value=_U()), \
+         patch("blueprints.admin.firebase_auth.set_custom_user_claims",
+               side_effect=lambda uid, claims: llamado.update(claims=claims)):
+        ok = client.patch("/admin/api/usuarios/otro/admin", json={"admin": True}, headers=_AUTH)
+        assert ok.status_code == 200
+        assert llamado["claims"]["admin"] is True
+        # No puede quitarse admin a sí mismo.
+        propio = client.patch("/admin/api/usuarios/admin1/admin", json={"admin": False}, headers=_AUTH)
+        assert propio.status_code == 400
+
+
+def test_reactivar_pregunta(client, db):
+    db.sembrar(("examenes_oficiales_AGE", "p1"), {"tipo": "pregunta", "pregunta": "x", "activa": False})
+    with _como():
+        client.post("/admin/api/preguntas/p1/reactivar?oposicion=AGE", headers=_AUTH)
+    assert db.leer(("examenes_oficiales_AGE", "p1"))["activa"] is True
+
+
+def test_export_usuarios_csv(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "a@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})
+    with _como():
+        resp = client.get("/admin/api/usuarios/export", headers=_AUTH)
+    assert resp.status_code == 200
+    assert "text/csv" in resp.content_type
+    assert "a@x.com" in resp.get_data(as_text=True)
+
+
+def test_reportes_adjuntan_pregunta_oficial(client, db):
+    enunciado = "¿Pregunta oficial?"
+    db.sembrar(("examenes_oficiales_AGE", "p1"), {
+        "tipo": "pregunta", "pregunta": enunciado,
+        "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "C",
+    })
+    db.sembrar(("reportes_preguntas", "r1"), {
+        "pregunta_texto": enunciado, "oposicion": "AGE", "motivo": "dudosa", "estado": "pendiente", "fecha": "2026-01-01",
+    })
+    with _como():
+        reportes = client.get("/admin/api/reportes?estado=pendiente", headers=_AUTH).get_json()["reportes"]
+    assert reportes[0]["pregunta_oficial"]["respuesta_correcta"] == "C"
+
+
 # ---------- Reportes ----------
 def test_usuario_reporta_y_admin_lo_revisa(client, db):
     # Un usuario normal reporta.
