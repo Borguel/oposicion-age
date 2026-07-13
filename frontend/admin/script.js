@@ -5,7 +5,7 @@ import { BACKEND_URL } from "/assets/firebase-config.js";
 
 // Qué permiso necesita cada pestaña. Las de 'admin' solo las ve el super-admin.
 const PERMISO_POR_PESTANA = {
-  dashboard: "cualquiera", temario: "temario", preguntas: "temario",
+  dashboard: "cualquiera", temario: "temario", preguntas: "temario", analitica: "temario",
   usuarios: "usuarios", reportes: "reportes", auditoria: "admin", sistema: "admin",
 };
 let _permisos = { admin: false, permisos: [] };
@@ -125,6 +125,7 @@ const RENDERS = {
   dashboard: renderDashboard,
   temario: renderTemario,
   preguntas: renderPreguntas,
+  analitica: renderAnalitica,
   usuarios: renderUsuarios,
   reportes: renderReportes,
   auditoria: renderAuditoria,
@@ -489,6 +490,59 @@ function modalImportar() {
     toast(`${r.creadas} preguntas importadas.`);
     if (pestanaActual === "preguntas") cargarPreguntas();
   });
+}
+
+// ===== Analítica de contenido =====
+async function renderAnalitica() {
+  const panel = document.getElementById("panel-analitica");
+  panel.innerHTML = `<p class="admin-cargando">Cargando analítica…</p>`;
+  const d = await apiGet(`/admin/api/analitica-contenido?oposicion=${oposicionActual()}`);
+  if (!d) return;
+  const temas = d.temas || [];
+  if (!temas.length && !(d.sin_actividad || []).length) {
+    panel.innerHTML = `<div class="age-card"><p class="admin-vacio">Todavía no hay actividad de estudio en ${escapeHtml(oposicionActual())}.</p></div>`;
+    return;
+  }
+
+  const barra = (t) => {
+    const pct = t.tasa_acierto == null ? 0 : t.tasa_acierto;
+    const color = pct >= 70 ? "var(--age-success,#28a745)" : pct >= 50 ? "#d98324" : "var(--age-danger,#dc3545)";
+    return `<div class="admin-barra"><span class="admin-barra-relleno" style="width:${pct}%;background:${color}"></span></div>`;
+  };
+  const filaEstudio = (t) => `<tr>
+      <td>${escapeHtml(t.titulo || t.tema_id)}</td>
+      <td class="admin-num">${t.intentos}</td>
+      <td class="admin-num">${t.tasa_acierto == null ? "-" : t.tasa_acierto + "%"}</td>
+    </tr>`;
+
+  // Peor tasa de acierto: solo temas con volumen suficiente (>=20 respondidas)
+  // para que el % sea significativo.
+  const peores = temas.filter((t) => t.respondidas >= 20)
+    .sort((a, b) => (a.tasa_acierto ?? 101) - (b.tasa_acierto ?? 101)).slice(0, 10);
+
+  panel.innerHTML = `
+    <div class="age-card admin-bloque">
+      <h3>Temas más estudiados (${escapeHtml(d.oposicion)})</h3>
+      <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Tema</th><th class="admin-num">Intentos</th><th class="admin-num">Acierto</th></tr></thead>
+        <tbody>${temas.slice(0, 15).map(filaEstudio).join("") || '<tr><td colspan="3" class="admin-vacio">Sin datos.</td></tr>'}</tbody></table></div>
+    </div>
+
+    <div class="age-card admin-bloque">
+      <h3>Temas con peor tasa de acierto</h3>
+      <p class="admin-reporte-meta">Solo temas con 20+ preguntas respondidas. Útil para detectar temario flojo o preguntas mal redactadas.</p>
+      ${peores.length ? peores.map((t) => `
+        <div class="admin-analitica-fila">
+          <div class="admin-analitica-tema">${escapeHtml(t.titulo || t.tema_id)}</div>
+          ${barra(t)}
+          <div class="admin-analitica-pct">${t.tasa_acierto}% <span class="admin-reporte-meta">(${t.respondidas})</span></div>
+        </div>`).join("") : '<p class="admin-vacio">Aún no hay temas con volumen suficiente.</p>'}
+    </div>
+
+    <div class="age-card admin-bloque">
+      <h3>Temas sin ninguna actividad (${(d.sin_actividad || []).length})</h3>
+      <p class="admin-reporte-meta">Nadie ha hecho preguntas de estos temas todavía.</p>
+      <div class="admin-chips">${(d.sin_actividad || []).map((t) => `<span class="admin-chip">${escapeHtml(t.titulo || t.tema_id)}</span>`).join("") || '<span class="admin-vacio">Todos los temas tienen actividad. 🎉</span>'}</div>
+    </div>`;
 }
 
 // ===== Usuarios =====
