@@ -571,6 +571,30 @@ function inyectarNav(user) {
   inyectarVolverZonaOpositor(user);
   inyectarEnlaceAdmin(user);
   inyectarBannerGlobal();
+  inyectarWidgetTutor(user);
+}
+
+// Páginas de estudio en las que aparece la burbuja flotante de Tu Tutor
+// (abajo a la derecha) para poder preguntarle sin salir de la página. Se
+// excluye a propósito la propia /tu-tutor/ (ahí ya está el chat a pantalla
+// completa) y cualquier página fuera de esta lista (home, login, admin,
+// legales, planes...). El widget se importa de forma perezosa: solo se
+// descarga su código en las páginas donde de verdad se usa.
+const PAGINAS_CON_WIDGET_TUTOR = [
+  "/zona-opositor/",
+  "/test-generator/", "/test-personalizado/", "/test-oficial/", "/test-inteligente/",
+  "/repetir-test/", "/preguntas-falladas/", "/preguntas-favoritas/", "/mis-tests/",
+  "/subida-pdf-", "/mis-documentos/", "/estadisticas/",
+];
+
+function inyectarWidgetTutor(user) {
+  if (!user) return;
+  const ruta = window.location.pathname;
+  if (ruta.startsWith("/tu-tutor/")) return; // ya es el chat completo
+  if (!PAGINAS_CON_WIDGET_TUTOR.some((prefijo) => ruta.startsWith(prefijo))) return;
+  import("/assets/tutor-widget.js")
+    .then(({ montarWidgetTutor }) => montarWidgetTutor())
+    .catch(() => { /* si no carga, la página sigue funcionando igual */ });
 }
 
 // Aviso global configurable desde el panel de administración. Lectura

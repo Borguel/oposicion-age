@@ -1,9 +1,12 @@
 
+import logging
 import re
 import unicodedata
 from datetime import datetime
 from firebase_admin import firestore
-from utils import obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
+
+logger = logging.getLogger(__name__)
+from utils import buscar_pregunta_oficial, calcular_resultado_test, obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
 from deepseek_utils import call_deepseek_api, call_deepseek_api_stream
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
@@ -29,13 +32,29 @@ def crear_conversacion(db, usuario_id, mensaje_usuario, respuesta_ia):
 # ✅ Añadir mensaje a conversación existente
 
 def agregar_mensaje_a_conversacion(db, usuario_id, conversacion_id, role, content):
-    db.collection("conversaciones_IA") \
-      .document(usuario_id) \
-      .collection("conversaciones") \
-      .document(conversacion_id) \
-      .update({
-          "mensajes": firestore.ArrayUnion([{"role": role, "content": content}])
-      })
+    ref = db.collection("conversaciones_IA") \
+            .document(usuario_id) \
+            .collection("conversaciones") \
+            .document(conversacion_id)
+    mensaje = {"role": role, "content": content}
+    # En Firestore, update() sobre un documento inexistente LANZA (y eso hacía
+    # que el turno no se guardara y la conversación desapareciera del
+    # histórico si llegaba un chat_id obsoleto). Se comprueba primero si
+    # existe: si no, se crea con los campos mínimos en vez de fallar.
+    try:
+        existe = ref.get().exists
+    except Exception:
+        existe = False
+    if existe:
+        ref.update({"mensajes": firestore.ArrayUnion([mensaje])})
+    else:
+        logger.warning("Conversación %s no existía al añadir mensaje; se crea de cero", conversacion_id)
+        ref.set({
+            "usuario_id": usuario_id,
+            "titulo": (content[:80] if role == "user" else "Conversación"),
+            "timestamp_inicio": datetime.utcnow().isoformat(),
+            "mensajes": [mensaje],
+        }, merge=True)
 
 # ✅ Historial previo de una conversación ya existente, para que el modelo
 # tenga memoria real de lo hablado (antes de esto, cada mensaje se mandaba
@@ -229,6 +248,124 @@ def _necesita_rag(mensaje, temas_detectados):
 
 
 # ============================================================
+# Detección de que el usuario ha PEGADO una pregunta tipo test (con sus
+# opciones) para que se la resuelvas. Aquí el tutor debe identificar la
+# respuesta correcta directamente, no forzar RAG sobre un tema arrastrado de
+# la conversación anterior ni negarse a responder "porque no está en el
+# temario". Detecta tanto opciones en mayúscula sueltas (formato en que las
+# pega el frontend del test: "... A La Comisión B El Ministro C ...") como el
+# clásico "a) ... b) ... c) ...".
+# ============================================================
+_PATRON_OPCION_MAYUS = re.compile(r"(?:^|\s)([ABCD])(?=\s|\))")
+_PATRON_OPCION_MINUS = re.compile(r"\b([abcd])[)\.]")
+
+
+def _es_pregunta_de_test(mensaje):
+    texto = mensaje or ""
+    if len(set(_PATRON_OPCION_MAYUS.findall(texto))) >= 3:
+        return True
+    if len(set(_PATRON_OPCION_MINUS.findall(texto.lower()))) >= 3:
+        return True
+    return False
+
+
+# Instrucción que se añade al prompt cuando el usuario pega una pregunta de
+# test: fuerza a resolverla directamente y prohíbe las dos conductas que se
+# vieron fallar (pedir de qué tema es, o negarse "porque no está en el
+# temario").
+_INSTRUCCION_TEST = (
+    "El usuario está haciendo un test y te pega una pregunta tipo test con sus opciones. "
+    "Dile con claridad cuál es la opción correcta (indica la letra) y explica de forma breve por qué "
+    "lo es y, si ayuda, por qué las demás no. Resuélvela tú directamente: NO le pidas que te diga de "
+    "qué tema es, y NO le digas que la pregunta no corresponde al temario o que no puedes ayudarle "
+    "con ella. Si no tienes plena certeza, dilo con honestidad pero dale igualmente tu mejor opción "
+    "razonada."
+)
+
+
+# ============================================================
+# Modo "Examíname": el tutor hace de examinador y va tomando preguntas tipo
+# test una a una, corrigiendo sobre la marcha. Es estudio activo, uno de los
+# usos que más engancha. Se activa por intención en el mensaje del usuario.
+# ============================================================
+_PALABRAS_EXAMINAME = [
+    "examiname", "examername", "hazme preguntas", "hazme un test", "tomame preguntas",
+    "preguntame", "pregúntame", "ponme a prueba", "quiero practicar", "hazme un examen",
+    "tomame un test", "hazme preguntas tipo test", "examen oral", "pon a prueba",
+]
+
+
+def _es_modo_examen(mensaje):
+    mensaje_norm = _normalizar(mensaje)
+    return any(p in mensaje_norm for p in _PALABRAS_EXAMINAME)
+
+
+_INSTRUCCION_EXAMEN = (
+    "MODO EXAMINADOR: el usuario quiere que le hagas preguntas para practicar. Hazle UNA sola pregunta "
+    "tipo test cada vez (un enunciado y cuatro opciones A, B, C, D), sobre el tema que pida; si no dice "
+    "cuál, elige su tema más flojo de los que conoces de sus datos. Espera SIEMPRE su respuesta antes de "
+    "seguir: no te des tú mismo la solución en el mismo mensaje. Cuando conteste, dile si ha acertado, da "
+    "una explicación breve de por qué, y a continuación hazle la siguiente pregunta. Ve numerando "
+    "(\"Pregunta 2 de 5\") y, al terminar la tanda, resume cómo lo ha hecho y en qué conviene que insista. "
+    "Empieza ahora con la primera pregunta."
+)
+
+
+# ============================================================
+# Plan de estudio: convertir "¿qué estudio hoy?" en un plan concreto que
+# cruza días para el examen + temas flojos + temas sin tocar (datos que ya
+# tenemos del usuario), en vez de un consejo genérico.
+# ============================================================
+_PALABRAS_PLAN = [
+    "que estudio", "qué estudio", "que repaso", "qué repaso", "plan de estudio", "que hago hoy",
+    "por donde empiezo", "por dónde empiezo", "organizame", "organízame", "planifica", "planifícame",
+    "que deberia estudiar", "qué debería estudiar", "en que me centro", "en qué me centro",
+    "que estudiar", "qué estudiar", "dame un plan", "hazme un plan",
+]
+
+
+def _pide_plan_estudio(mensaje):
+    mensaje_norm = _normalizar(mensaje)
+    return any(p in mensaje_norm for p in _PALABRAS_PLAN)
+
+
+_INSTRUCCION_PLAN = (
+    "El usuario te pide que le orientes sobre qué estudiar. Dale un plan CONCRETO y accionable, no un "
+    "consejo genérico: prioriza sus temas más flojos y los que todavía no ha tocado, y tenlo en cuenta "
+    "los días que faltan para su examen si los sabes. Ordénalo por prioridad, sé específico con qué "
+    "temas y en qué orden, propón un objetivo realista para hoy y ofrécele generar un test de alguno de "
+    "esos temas para empezar ya."
+)
+
+
+def _bloque_explicar_fallo(contexto_pagina):
+    """Bloque autoritativo para \"¿por qué he fallado esta?\": la pantalla de
+    resultados manda la respuesta correcta, la explicación y (si la hay) la
+    opción que marcó el usuario. Sirve para CUALQUIER test (también los
+    generados por IA, que no están en el banco oficial)."""
+    correcta = str(contexto_pagina.get("respuesta_correcta") or "").upper()
+    if not correcta:
+        return None
+    explicacion = str(contexto_pagina.get("explicacion") or "").strip()
+    marcada = str(contexto_pagina.get("respuesta_usuario") or "").upper()
+    partes = [
+        "El usuario está repasando una pregunta de un test que acaba de hacer y quiere entenderla. "
+        f"La respuesta CORRECTA es la opción {correcta}."
+    ]
+    if marcada and marcada != correcta:
+        partes.append(f"Él había marcado la opción {marcada} (falló).")
+    elif not marcada:
+        partes.append("La dejó en blanco.")
+    if explicacion:
+        partes.append("Explicación de referencia de la propia pregunta: " + explicacion)
+    partes.append(
+        "Explícale con claridad y de forma didáctica por qué la correcta es esa y, si marcó otra, por "
+        "qué la suya no lo era. Dale la respuesta con seguridad; no la pongas en duda ni propongas otra."
+    )
+    return " ".join(partes)
+
+
+# ============================================================
 # Detección de preguntas sobre la ESTRUCTURA/logística del proceso
 # selectivo (nº de preguntas, tiempo, penalización, plazas, calificación...)
 # -- justo el tipo de dato concreto que antes el modelo tendía a inventar
@@ -340,6 +477,106 @@ def _temas_pendientes(stats, catalogo):
     return [(tema["id"], tema["titulo"]) for tema in catalogo if tema["id"] not in tocados]
 
 
+# Nombre legible del tipo de test guardado en historial_tests / ultimo_test
+# (el campo "tipo" que pone actualizar_estadisticas_test), para que Tu Tutor
+# hable del "último test oficial" o "de fallos" en vez de un genérico "test".
+_NOMBRE_TIPO_TEST = {
+    "personalizado": "personalizado",
+    "avanzado_verificado": "personalizado",
+    "oficial": "de examen oficial",
+    "inteligente": "inteligente",
+    "fallos": "de preguntas falladas",
+    "favoritas": "de preguntas marcadas",
+    "repetir": "repetido",
+}
+
+
+def _nota_sobre_10_de(entrada):
+    """Nota sobre 10 de un test guardado, con el mismo criterio oficial que
+    el resto de la web (aciertos - fallos/3, sobre el total). Devuelve None
+    si el registro no trae datos suficientes."""
+    aciertos = entrada.get("aciertos", 0)
+    fallos = entrada.get("fallos", 0)
+    blancos = entrada.get("blancos", 0)
+    if aciertos + fallos + blancos == 0:
+        return None
+    _puntuacion, nota, _resultado = calcular_resultado_test(aciertos, fallos, blancos)
+    return nota
+
+
+def _hace_cuanto(fecha_iso):
+    """Texto relativo ("hoy", "ayer", "hace 3 días") a partir de una fecha
+    ISO (la que guarda actualizar_estadisticas_test con datetime.utcnow()).
+    Devuelve None si no se puede interpretar."""
+    if not fecha_iso:
+        return None
+    try:
+        fecha = datetime.fromisoformat(str(fecha_iso).replace("Z", ""))
+    except (ValueError, TypeError):
+        return None
+    dias = (datetime.utcnow().date() - fecha.date()).days
+    if dias <= 0:
+        return "hoy"
+    if dias == 1:
+        return "ayer"
+    if dias < 7:
+        return f"hace {dias} días"
+    if dias < 30:
+        semanas = dias // 7
+        return "hace una semana" if semanas == 1 else f"hace {semanas} semanas"
+    meses = dias // 30
+    return "hace un mes" if meses == 1 else f"hace {meses} meses"
+
+
+def _lineas_rendimiento_tests(stats):
+    """Frases sobre el rendimiento REAL en tests (última nota, tendencia,
+    nota media sobre 10) a partir del historial guardado -- para que Tu Tutor
+    pueda responder con datos concretos a "¿qué nota saqué?" en vez de decir
+    que no tiene acceso al historial. Se apoya en historial_tests (que trae
+    aciertos/fallos/blancos por test); si está vacío, no dice nada."""
+    historial = stats.get("historial_tests") or []
+    if not historial:
+        return []
+
+    lineas = []
+    ultimo = historial[-1]
+    nota_ultimo = _nota_sobre_10_de(ultimo)
+    if nota_ultimo is not None:
+        total_preg = ultimo.get("aciertos", 0) + ultimo.get("fallos", 0) + ultimo.get("blancos", 0)
+        resultado = ultimo.get("resultado") or ("aprobado" if nota_ultimo >= 5 else "suspendido")
+        tipo = _NOMBRE_TIPO_TEST.get(ultimo.get("tipo"), "")
+        cuando = _hace_cuanto(ultimo.get("fecha"))
+        descripcion = "En su último test"
+        if tipo:
+            descripcion += f" {tipo}"
+        if cuando:
+            descripcion += f" ({cuando})"
+        lineas.append(
+            f"{descripcion} sacó un {nota_ultimo} sobre 10 "
+            f"({ultimo.get('aciertos', 0)} aciertos y {ultimo.get('fallos', 0)} fallos "
+            f"de {total_preg} preguntas): {resultado}."
+        )
+
+    # Nota media real sobre 10 (no confundir con puntuacion_media_test, que es
+    # la media de aciertos por test, no una nota) y mejor nota, calculadas
+    # sobre todo el historial disponible.
+    notas = [n for n in (_nota_sobre_10_de(e) for e in historial) if n is not None]
+    if len(notas) >= 2:
+        media = round(sum(notas) / len(notas), 2)
+        mejor = max(notas)
+        lineas.append(f"Su nota media en tests es {media} sobre 10 y su mejor nota hasta ahora es {mejor}.")
+
+        # Tendencia con los últimos tests: ¿va mejorando o de capa caída?
+        recientes = notas[-3:]
+        if len(recientes) >= 3:
+            if recientes[-1] > recientes[0] + 0.5:
+                lineas.append("En sus últimos tests la nota va subiendo (está mejorando).")
+            elif recientes[-1] < recientes[0] - 0.5:
+                lineas.append("En sus últimos tests la nota ha bajado un poco respecto a antes.")
+
+    return lineas
+
+
 def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
     doc = db.collection("usuarios").document(usuario_id).get()
     if not doc.exists:
@@ -370,9 +607,12 @@ def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
     if tests_realizados:
         pct_aprobados = round(stats.get("tests_aprobados", 0) / tests_realizados * 100)
         lineas.append(
-            f"Lleva {tests_realizados} tests hechos en esta oposición, aprueba el {pct_aprobados}% "
-            f"de ellos, con una nota media de {stats.get('puntuacion_media_test', 0)}."
+            f"Lleva {tests_realizados} tests hechos en esta oposición y aprueba el {pct_aprobados}% de ellos."
         )
+        # Última nota, nota media real sobre 10 y tendencia -- para que pueda
+        # responder con datos concretos a "¿qué nota saqué?" en vez de decir
+        # que no tiene acceso al historial.
+        lineas.extend(_lineas_rendimiento_tests(stats))
 
     if temas_flojos:
         detalle = ", ".join(f"{titulo} ({pct}% de acierto)" for _tema_id, titulo, pct in temas_flojos)
@@ -413,8 +653,14 @@ def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
     nombre = (datos.get("nombre") or "").strip()
     stats = (datos.get("estadisticas") or {}).get(oposicion) or {}
     tests_realizados = stats.get("tests_realizados", 0)
-
-    saludo = f"¡Hola, {nombre}! 👋" if nombre else "¡Hola! 👋"
+    # Continuidad: a quien ya ha estado antes se le saluda como "de vuelta",
+    # para que el tutor se sienta un acompañante que retoma donde lo dejasteis
+    # y no un chat que empieza de cero cada vez.
+    tiene_historia = bool(tests_realizados) or bool((datos.get("memoria_tutor") or {}).get("resumen"))
+    if nombre:
+        saludo = f"¡Hola de nuevo, {nombre}! 👋" if tiene_historia else f"¡Hola, {nombre}! 👋"
+    else:
+        saludo = "¡Hola de nuevo! 👋" if tiene_historia else "¡Hola! 👋"
 
     temas_flojos = _temas_flojos(stats.get("rendimiento_por_tema", {}), catalogo)
     temas_pendientes = _temas_pendientes(stats, catalogo) if tests_realizados else []
@@ -423,11 +669,11 @@ def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
     if temas_flojos:
         tema_id, titulo, pct = temas_flojos[0]
         mensaje = (
-            f"He revisado tus tests y donde más se te resiste es {titulo}: aciertas el {pct}%. "
-            f"Un repaso rápido con un test centrado en ese tema te vendría muy bien."
+            f"La última vez {titulo} se te resistía un poco: aciertas el {pct}%. "
+            f"¿Le damos un repaso? Puedo tomarte unas preguntas o explicarte lo esencial."
         )
         accion = {"tema_id": tema_id, "titulo": titulo, "label": f"Practicar {titulo}"}
-        sugerencias = [f"Explícame lo esencial de {titulo}", "¿Qué me recomiendas estudiar hoy?"]
+        sugerencias = [f"Examíname sobre {titulo}", f"Explícame lo esencial de {titulo}", "¿Qué estudio hoy?"]
     elif temas_pendientes:
         tema_id, titulo = temas_pendientes[0]
         mensaje = (
@@ -435,19 +681,19 @@ def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
             f"podría ser un buen momento para estrenarlo."
         )
         accion = {"tema_id": tema_id, "titulo": titulo, "label": f"Empezar test de {titulo}"}
-        sugerencias = [f"Explícame {titulo}", "¿Cómo es la estructura del examen?"]
+        sugerencias = [f"Examíname sobre {titulo}", f"Explícame {titulo}", "¿Qué estudio hoy?"]
     elif tests_realizados:
         mensaje = (
             "Vas muy bien: ahora mismo no detecto ningún tema flojo. "
-            "Pregúntame lo que quieras o repasa el tema que te apetezca."
+            "¿Quieres que te tome unas preguntas o te preparo un plan para hoy?"
         )
-        sugerencias = ["¿Qué me recomiendas repasar?", "Dame consejos para el examen"]
+        sugerencias = ["Examíname sobre un tema al azar", "¿Qué estudio hoy?", "Dame consejos para el examen"]
     else:
         mensaje = (
             "Pregúntame cualquier duda sobre el temario o el proceso selectivo. "
             "En cuanto hagas algún test, te iré diciendo en qué te conviene centrarte."
         )
-        sugerencias = ["¿Cómo es la estructura del examen?", "Consejos de estudio", "Dame un plan para empezar"]
+        sugerencias = ["¿Cómo es la estructura del examen?", "Examíname sobre un tema", "Dame un plan para empezar"]
 
     return {"saludo": saludo, "mensaje": mensaje, "accion": accion, "sugerencias": sugerencias}
 
@@ -457,11 +703,79 @@ def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
 # historial previo) sin llamar todavía a DeepSeek -- lo comparten
 # responder_tutor (respuesta de una vez) y responder_tutor_stream
 # (respuesta en streaming), para no duplicar la lógica de detección.
-def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
+
+# Longitudes máximas del contexto de página que manda el frontend (la
+# pregunta que el usuario tiene delante en un test), para no dejar que un
+# payload manipulado infle el prompt.
+_MAX_ENUNCIADO_CONTEXTO = 1200
+_MAX_OPCION_CONTEXTO = 400
+
+
+def _texto_pregunta_en_pantalla(contexto_pagina):
+    """Convierte el contexto de página que manda el widget (la pregunta que el
+    usuario está viendo en un test) en un texto legible "enunciado + opciones",
+    o None si no hay una pregunta utilizable. Trunca por seguridad."""
+    if not isinstance(contexto_pagina, dict):
+        return None
+    if contexto_pagina.get("tipo") != "test":
+        return None
+    enunciado = str(contexto_pagina.get("enunciado") or "").strip()[:_MAX_ENUNCIADO_CONTEXTO]
+    if not enunciado:
+        return None
+    opciones = contexto_pagina.get("opciones") or {}
+    lineas = [enunciado]
+    if isinstance(opciones, dict):
+        for letra in sorted(opciones):
+            texto_opcion = str(opciones[letra] or "").strip()[:_MAX_OPCION_CONTEXTO]
+            if texto_opcion:
+                lineas.append(f"{str(letra).upper()}) {texto_opcion}")
+    return "\n".join(lineas) if len(lineas) > 1 or enunciado else None
+
+
+def _bloque_respuesta_oficial(pregunta_oficial):
+    """Mensaje de sistema con la respuesta OFICIAL ya corregida de una
+    pregunta del banco de exámenes, para que el tutor la dé como correcta con
+    seguridad en vez de razonarla desde cero (y no la contradiga)."""
+    letra = (pregunta_oficial.get("respuesta_correcta") or "").upper()
+    explicacion = (pregunta_oficial.get("explicacion") or "").strip()
+    examen = (pregunta_oficial.get("examen") or "").strip()
+    fuente = f" (examen oficial {examen})" if examen else " (examen oficial)"
+    partes = [
+        "DATO VERIFICADO: la pregunta que plantea el usuario coincide con una pregunta de examen "
+        f"oficial ya corregida{fuente}. La respuesta correcta OFICIAL es la opción {letra}. "
+        "Dásela como correcta con seguridad y explícala con tus palabras; no la pongas en duda ni "
+        "propongas otra letra distinta."
+    ]
+    if explicacion:
+        partes.append("Explicación oficial de referencia: " + explicacion)
+    return " ".join(partes)
+
+
+def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina=None):
     historial = _historial_previo(db, usuario_id, chat_id)
     catalogo = obtener_catalogo_temas(db, coleccion)
-    temas_detectados = _temas_mencionados_en_la_conversacion(mensaje, historial, catalogo)
-    usar_rag = _necesita_rag(mensaje, temas_detectados)
+
+    es_test = _es_pregunta_de_test(mensaje)
+    # Una pregunta de test (o un mensaje que solo dice "ayúdame con un test")
+    # es autocontenido: NO se hereda el tema del turno anterior. Antes se
+    # heredaba, y eso hacía que el tutor respondiera con el contenido de un
+    # tema que no venía a cuento -- o se negara a responder "porque no está en
+    # el temario que me has pasado" -- cuando en realidad la pregunta era de
+    # otra cosa.
+    mensaje_sobre_test = es_test or "test" in _tokens(mensaje)
+    if mensaje_sobre_test:
+        temas_detectados = _temas_mencionados(mensaje, catalogo)
+    else:
+        temas_detectados = _temas_mencionados_en_la_conversacion(mensaje, historial, catalogo)
+
+    # Para una pregunta de test solo se consulta el temario si se ha
+    # identificado un tema CONCRETO por su título; si no, se responde con el
+    # conocimiento propio del tutor en vez de volcar todo el catálogo (que
+    # además suele ser el tema equivocado).
+    if es_test:
+        usar_rag = bool(temas_detectados)
+    else:
+        usar_rag = _necesita_rag(mensaje, temas_detectados)
 
     # Temas concretos a los que va referida la respuesta (id + título), para
     # que el frontend pueda ofrecer un "Generar test de este tema" debajo del
@@ -489,25 +803,27 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
         system_prompt = _instrucciones_asistente_examen(oposicion)
         if contexto:
             titulos_temas = _titulos_legibles(temas_detectados, catalogo)
+            partes = [
+                "Tienes cargado automáticamente el siguiente contenido del temario oficial de la "
+                "plataforma. IMPORTANTE: el usuario NO te ha pasado este contenido en su mensaje, así "
+                "que nunca digas \"según el contenido/temario que me has facilitado o pasado\" ni se lo "
+                "atribuyas a él. Úsalo como fuente principal SI la pregunta trata sobre ello. Si la "
+                "pregunta trata de otra norma o de algo que no aparece aquí, respóndela igualmente con "
+                "tu propio conocimiento como tutor: no digas que la pregunta no corresponde al temario "
+                "ni te niegues a responder por ese motivo."
+            ]
             if titulos_temas:
-                nota_fuente = (
-                    "Indica de forma natural en tu respuesta de qué tema del temario procede el "
-                    "contenido (p. ej. \"según el tema de " + titulos_temas[0] + "...\"), citando el "
-                    "título exacto: " + "; ".join(titulos_temas) + "."
+                partes.append(
+                    "Cuando te apoyes en este contenido, menciona con naturalidad el tema del que "
+                    "procede citando su título exacto: " + "; ".join(titulos_temas) + "."
                 )
-            else:
-                nota_fuente = (
-                    "Deja claro que la respuesta se basa en el contenido oficial del temario de la "
-                    "plataforma, no en tu conocimiento general."
-                )
-            prompt_usuario = (
-                "Utiliza el siguiente contenido del temario oficial para responder con claridad y "
-                f"precisión a la pregunta del usuario. {nota_fuente}\n\n"
-                f"CONTENIDO DEL TEMARIO:\n{contexto}\n\n"
-                f"PREGUNTA DEL USUARIO:\n{mensaje}"
-            )
+            if es_test:
+                partes.append(_INSTRUCCION_TEST)
+            partes.append("CONTENIDO DEL TEMARIO:\n" + contexto)
+            partes.append("MENSAJE DEL USUARIO:\n" + mensaje)
+            prompt_usuario = "\n\n".join(partes)
         else:
-            prompt_usuario = mensaje
+            prompt_usuario = (_INSTRUCCION_TEST + "\n\n" + mensaje) if es_test else mensaje
     else:
         system_prompt = _instrucciones_asistente_examen(oposicion)
         datos_convocatoria = obtener_datos_convocatoria(db, oposicion) if _necesita_datos_convocatoria(mensaje) else None
@@ -541,6 +857,10 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
             )
         else:
             prompt_usuario = mensaje
+        # Sin contenido del temario detrás (o con datos oficiales), pero el
+        # usuario ha pegado una pregunta de test: se resuelve directamente.
+        if es_test:
+            prompt_usuario = _INSTRUCCION_TEST + "\n\n" + prompt_usuario
 
     mensajes = [{"role": "system", "content": system_prompt}]
     contexto_personal = _contexto_personal_usuario(db, usuario_id, oposicion, catalogo)
@@ -548,12 +868,64 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
         mensajes.append({
             "role": "system",
             "content": (
-                "Datos de la persona con la que hablas ahora mismo, para que la respuesta se sienta "
-                "cercana y personal: " + contexto_personal + " Menciónalos solo cuando venga a cuento "
-                "y con naturalidad -- nunca los enumeres todos de golpe ni suenes a ficha de cliente."
+                "Datos REALES de la persona con la que hablas ahora mismo, sacados de su actividad en "
+                "la plataforma (sus tests, sus notas, su progreso). SÍ tienes acceso a esta información: "
+                "cuando te pregunte por su última nota, cómo va, en qué falla o qué debería estudiar, "
+                "respóndele con estos datos concretos en vez de decir que no tienes acceso a su historial. "
+                "Si un dato concreto no apariece aquí (p. ej. te pregunta por un test muy antiguo que no "
+                "figura), dilo con naturalidad, pero no niegues tener acceso a su progreso en general.\n\n"
+                + contexto_personal +
+                "\n\nMenciónalos solo cuando venga a cuento y con naturalidad -- nunca los enumeres todos "
+                "de golpe ni suenes a ficha de cliente."
             )
         })
-    mensajes.extend(historial)
+
+    # Instrucciones de modo: examinador ("hazme preguntas") o plan de estudio
+    # ("¿qué estudio hoy?"). Se activan por intención del mensaje y aprovechan
+    # los datos personales de arriba.
+    if _es_modo_examen(mensaje):
+        mensajes.append({"role": "system", "content": _INSTRUCCION_EXAMEN})
+    if _pide_plan_estudio(mensaje):
+        mensajes.append({"role": "system", "content": _INSTRUCCION_PLAN})
+
+    # Pregunta que el usuario tiene delante (la manda el widget). Dos casos:
+    #  - Desde la pantalla de RESULTADOS: viene con la respuesta correcta y la
+    #    explicación -> "¿por qué he fallado esta?" (vale para cualquier test).
+    #  - Desde un test EN CURSO: solo enunciado+opciones -> "¿cuál es la
+    #    correcta?" sobre la que tiene delante.
+    pregunta_en_pantalla = _texto_pregunta_en_pantalla(contexto_pagina)
+    explicar_fallo = _bloque_explicar_fallo(contexto_pagina) if isinstance(contexto_pagina, dict) else None
+
+    if pregunta_en_pantalla and explicar_fallo:
+        mensajes.append({"role": "system", "content": explicar_fallo + "\n\nPREGUNTA:\n" + pregunta_en_pantalla})
+    elif pregunta_en_pantalla and not es_test:
+        mensajes.append({
+            "role": "system",
+            "content": (
+                "El usuario está haciendo un test y ahora mismo tiene esta pregunta en pantalla. "
+                "IMPORTANTE: cuando diga \"¿cuál es la correcta?\", \"ayúdame con esta\", \"esta pregunta\" "
+                "o similar, SIEMPRE se refiere a ESTA pregunta en pantalla, nunca a una pregunta anterior "
+                "de la conversación (aunque antes hayáis hablado de otra pregunta distinta). Resuélvela "
+                "directamente indicando la opción correcta y por qué. Solo si su mensaje va claramente de "
+                "otra cosa, ignórala.\n\nPREGUNTA EN PANTALLA:\n" + pregunta_en_pantalla
+            )
+        })
+
+    # Respuesta oficial verificada: si la pregunta (la pegada en el mensaje o
+    # la que tiene en pantalla) coincide con una del banco de exámenes
+    # oficiales, se le da la respuesta correcta ya corregida. Se salta si ya
+    # tenemos la respuesta correcta desde la pantalla de resultados.
+    texto_para_banco = mensaje if es_test else (pregunta_en_pantalla or "")
+    if texto_para_banco and not explicar_fallo:
+        pregunta_oficial = buscar_pregunta_oficial(db, oposicion, texto_para_banco)
+        if pregunta_oficial:
+            mensajes.append({"role": "system", "content": _bloque_respuesta_oficial(pregunta_oficial)})
+
+    # Una pregunta de test pegada es autocontenida: NO se le mete el historial
+    # de la conversación, para que el tutor no responda sobre una pregunta
+    # anterior en vez de sobre la que se le acaba de pegar.
+    if not es_test:
+        mensajes.extend(historial)
     mensajes.append({"role": "user", "content": prompt_usuario})
     return mensajes, usar_rag, temas_relacionados
 
@@ -618,7 +990,13 @@ def _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta):
         agregar_mensaje_a_conversacion(db, usuario_id, chat_id, "assistant", texto_respuesta)
     else:
         chat_id = crear_conversacion(db, usuario_id, mensaje, texto_respuesta)
-    _actualizar_memoria_cruzada(db, usuario_id, chat_id)
+    # La memoria cruzada es un extra (resumen entre conversaciones): si falla
+    # NO debe tirar abajo el guardado del turno ni romper el stream, que es lo
+    # que dejaría el historial vacío. La conversación ya está persistida arriba.
+    try:
+        _actualizar_memoria_cruzada(db, usuario_id, chat_id)
+    except Exception:
+        logger.exception("Fallo al actualizar la memoria cruzada del tutor (no crítico)")
     return chat_id
 
 
@@ -631,8 +1009,8 @@ def _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta):
 # ni reenviar al modelo en el siguiente turno un mensaje de error genérico
 # como si fuera una respuesta real del asistente. El llamador (la ruta
 # /tu-tutor) es quien decide qué mostrarle al usuario en ese caso.
-def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO):
-    mensajes, usar_rag, _temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion)
+def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO, contexto_pagina=None):
+    mensajes, usar_rag, _temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
     respuesta = call_deepseek_api(messages=mensajes, temperature=0.7, max_tokens=1500)
     if not respuesta:
         return None, chat_id, usar_rag
@@ -648,8 +1026,8 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
 # {"tipo": "fin", "chat_id": ..., "usar_rag": ...} una vez guardado en
 # Firestore, o {"tipo": "error"} si DeepSeek falla o no llega ningún
 # fragmento (mismo criterio que responder_tutor: nada se guarda en ese caso).
-def responder_tutor_stream(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO):
-    mensajes, usar_rag, temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion)
+def responder_tutor_stream(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO, contexto_pagina=None):
+    mensajes, usar_rag, temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
 
     fragmentos = []
     for fragmento in call_deepseek_api_stream(messages=mensajes, temperature=0.7, max_tokens=1500):

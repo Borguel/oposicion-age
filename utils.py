@@ -347,6 +347,51 @@ def obtener_preguntas_examenes_oficiales(db, oposicion):
     return _desde_cache_o_calcular(("preguntas_oficiales", oposicion), _calcular, ttl_segundos=1800)
 
 
+def _normalizar_enunciado(texto):
+    """Minúsculas, sin acentos, sin signos y con espacios colapsados -- para
+    comparar el enunciado de una pregunta que el usuario pega en el chat con
+    los enunciados del banco oficial sin que un acento o un espacio de más
+    impidan el emparejamiento."""
+    import unicodedata
+    descompuesto = unicodedata.normalize("NFD", (texto or "").lower())
+    sin_acentos = "".join(c for c in descompuesto if unicodedata.category(c) != "Mn")
+    return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", sin_acentos)).strip()
+
+
+def buscar_pregunta_oficial(db, oposicion, texto):
+    """Busca en el banco de exámenes oficiales de la oposición una pregunta
+    cuyo enunciado esté contenido en `texto` (lo que el usuario pega en el
+    chat suele traer el enunciado + las opciones). Devuelve el dict de la
+    pregunta oficial (con respuesta_correcta y explicacion) o None.
+
+    Sirve para que Tu Tutor responda con la respuesta OFICIAL ya corregida
+    cuando el usuario pega una pregunta de un test oficial, en vez de
+    razonarla desde cero (más fiable y coherente con lo que marca el test).
+    El emparejamiento es por contención del enunciado normalizado: exige que
+    el enunciado oficial (>= 20 caracteres para no casar con fragmentos
+    triviales) aparezca íntegro dentro del texto pegado. Si varios encajan,
+    gana el enunciado más largo (el más específico)."""
+    consulta = _normalizar_enunciado(texto)
+    if len(consulta) < 20:
+        return None
+    try:
+        candidatas = obtener_preguntas_examenes_oficiales(db, oposicion)
+    except Exception:
+        return None
+    mejor = None
+    mejor_longitud = 0
+    for d in candidatas:
+        if not d.get("respuesta_correcta"):
+            continue
+        enunciado = _normalizar_enunciado(d.get("pregunta", ""))
+        if len(enunciado) < 20:
+            continue
+        if enunciado in consulta and len(enunciado) > mejor_longitud:
+            mejor = d
+            mejor_longitud = len(enunciado)
+    return mejor
+
+
 def tiene_preguntas_psicotecnicas(db, oposicion):
     """True si la colección de exámenes oficiales de esta oposición tiene
     alguna pregunta marcada como "psicotecnico" (aptitud administrativa,

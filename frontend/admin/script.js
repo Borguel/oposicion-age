@@ -6,7 +6,7 @@ import { BACKEND_URL } from "/assets/firebase-config.js";
 // Qué permiso necesita cada pestaña. Las de 'admin' solo las ve el super-admin.
 const PERMISO_POR_PESTANA = {
   dashboard: "cualquiera", temario: "temario", preguntas: "temario", analitica: "temario",
-  usuarios: "usuarios", reportes: "reportes", auditoria: "admin", sistema: "admin",
+  usuarios: "usuarios", reportes: "reportes", limites: "admin", auditoria: "admin", sistema: "admin",
 };
 let _permisos = { admin: false, permisos: [] };
 function puedeVer(pestana) {
@@ -128,6 +128,7 @@ const RENDERS = {
   analitica: renderAnalitica,
   usuarios: renderUsuarios,
   reportes: renderReportes,
+  limites: renderLimites,
   auditoria: renderAuditoria,
   sistema: renderSistema,
 };
@@ -428,8 +429,9 @@ function modalPregunta(p) {
   const correcta = p ? p.respuesta_correcta : "A";
   const radios = ["A", "B", "C", "D"].map((k) => `
     <div class="admin-opcion">
-      <label class="admin-opcion-radio"><input type="radio" name="correcta" value="${k}" ${correcta === k ? "checked" : ""}> ${k}</label>
-      <input class="age-input" id="op-${k}" value="${escapeHtml(o[k] || "")}" placeholder="Opción ${k}">
+      <input type="radio" name="correcta" id="rc-${k}" value="${k}" class="admin-opcion-check" ${correcta === k ? "checked" : ""}>
+      <label for="rc-${k}" class="admin-opcion-letra">${k}</label>
+      <input class="age-input admin-opcion-txt" id="op-${k}" value="${escapeHtml(o[k] || "")}" placeholder="Opción ${k}">
     </div>`).join("");
   abrirModal(`
     <h2>${p ? "Editar pregunta" : "Nueva pregunta"}</h2>
@@ -558,6 +560,7 @@ async function renderAnalitica() {
 
 // ===== Usuarios =====
 let paginaUsuarios = 1;
+let ordenUsuarios = "";  // "" = por última actividad; "uso" = por mayor % de cupo
 async function renderUsuarios() {
   const panel = document.getElementById("panel-usuarios");
   panel.innerHTML = `
@@ -631,18 +634,27 @@ async function cargarUsuarios() {
   const plan = document.getElementById("u-plan")?.value;
   if (busqueda) params.set("busqueda", busqueda);
   if (plan) params.set("plan", plan);
+  if (ordenUsuarios === "uso") params.set("orden", "uso");
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/usuarios?${params.toString()}`);
   if (!d) return;
+  const celdaUso = (u) => {
+    const pct = u.uso_pct || 0;
+    const cls = pct >= 100 ? "u-uso-alto" : (pct >= 80 ? "u-uso-medio" : (pct > 0 ? "u-uso-ok" : "u-uso-cero"));
+    const titulo = u.uso_tool ? `${u.uso_tool}: ${pct}% de su cupo` : "Sin uso este periodo";
+    return `<span class="u-uso ${cls}" title="${escapeHtml(titulo)}"><span class="u-uso-punto"></span>${pct}%</span>`;
+  };
   const filas = (d.usuarios || []).map((u) => `
     <tr class="admin-fila-click" data-uid="${escapeHtml(u.uid)}">
       <td>${escapeHtml(u.email || "(sin email)")}</td><td><span class="admin-chip">${escapeHtml(u.plan)}</span></td>
       <td>${(u.oposiciones_activas || []).map(escapeHtml).join(", ") || "-"}</td>
+      <td>${celdaUso(u)}</td>
       <td class="admin-num">${fechaCorta(u.ultima_actividad)}</td></tr>`).join("")
-    || `<tr><td colspan="4" class="admin-vacio">Sin usuarios.</td></tr>`;
+    || `<tr><td colspan="5" class="admin-vacio">Sin usuarios.</td></tr>`;
   const totalPaginas = Math.max(1, Math.ceil((d.total || 0) / (d.por_pagina || 20)));
+  const flechaUso = ordenUsuarios === "uso" ? " ▼" : "";
   cont.innerHTML = `
-    <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Email</th><th>Plan</th><th>Oposiciones</th><th class="admin-num">Últ. act.</th></tr></thead><tbody>${filas}</tbody></table></div>
+    <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Email</th><th>Plan</th><th>Oposiciones</th><th><button class="admin-orden-btn" id="u-orden-uso" title="Ordenar por mayor uso">Uso${flechaUso}</button></th><th class="admin-num">Últ. act.</th></tr></thead><tbody>${filas}</tbody></table></div>
     <div class="admin-paginacion">
       <button class="age-btn age-btn-outline admin-mini" id="u-prev" ${paginaUsuarios <= 1 ? "disabled" : ""}>◀ Anterior</button>
       <span>Página ${d.pagina} de ${totalPaginas} · ${d.total} usuarios</span>
@@ -651,66 +663,197 @@ async function cargarUsuarios() {
   cont.querySelectorAll(".admin-fila-click").forEach((tr) => tr.addEventListener("click", () => abrirUsuario(tr.dataset.uid)));
   cont.querySelector("#u-prev")?.addEventListener("click", () => { paginaUsuarios--; cargarUsuarios(); });
   cont.querySelector("#u-next")?.addEventListener("click", () => { paginaUsuarios++; cargarUsuarios(); });
+  cont.querySelector("#u-orden-uso")?.addEventListener("click", () => {
+    ordenUsuarios = ordenUsuarios === "uso" ? "" : "uso";
+    paginaUsuarios = 1;
+    cargarUsuarios();
+  });
+}
+
+// ---- Ficha de cliente: piezas visuales reutilizables ----
+function fichaPlanBadge(plan) {
+  const p = (plan || "gratis").toLowerCase();
+  const map = { premium: ["Premium", "ficha-badge-premium"], basico: ["Básico", "ficha-badge-basico"], gratis: ["Gratis", "ficha-badge-gratis"] };
+  const [txt, cls] = map[p] || map.gratis;
+  return `<span class="ficha-badge ${cls}">${txt}</span>`;
+}
+function fichaEuros(n) { return (n || 0).toLocaleString("es", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) + " €"; }
+const _MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+function mesLegible(m) { const p = (m || "").split("-"); return (_MESES_CORTOS[(+p[1] || 1) - 1] || "") + " " + (p[0] || ""); }
+function fichaMini(icono, num, label) {
+  return `<div class="ficha-mini"><span class="ficha-mini-ico">${icono}</span><span class="ficha-mini-num">${(num || 0).toLocaleString("es")}</span><span class="ficha-mini-lbl">${label}</span></div>`;
+}
+function fichaCosteBarras(hist) {
+  if (!hist || !hist.length) return '<p class="ficha-vacio">Sin consumo de IA todavía.</p>';
+  const barras = hist.slice(-12); // últimos 12 meses en el gráfico
+  const max = Math.max(...barras.map((h) => h.coste)) || 1;
+  return `<div class="ficha-barras" role="group" aria-label="Gasto de IA por mes">${barras.map((h) => {
+    const alt = h.coste > 0 ? Math.max(8, Math.round((h.coste / max) * 100)) : 3;
+    const tip = `${mesLegible(h.mes)}: ${fichaEuros(h.coste)} · ${(h.tokens || 0).toLocaleString("es")} tokens · ${h.llamadas || 0} llamadas`;
+    return `<button type="button" class="ficha-barra-col" data-mes="${escapeHtml(h.mes)}" title="${tip}"><div class="ficha-barra-wrap"><div class="ficha-barra" style="height:${alt}%"></div></div><span class="ficha-barra-lbl">${escapeHtml((h.mes || "").slice(5))}</span></button>`;
+  }).join("")}</div>`;
+}
+
+function fichaUsoFila(f) {
+  const per = f.periodo === "dia" ? "hoy" : "este mes";
+  if (!f.limite) {
+    return `<div class="ficha-uso-fila ficha-uso-off"><span class="ficha-uso-nombre">${escapeHtml(f.nombre)}</span><span class="ficha-uso-val">No incluido</span></div>`;
+  }
+  const pct = f.porcentaje == null ? 0 : Math.min(100, f.porcentaje);
+  const cls = f.porcentaje >= 100 ? "ficha-uso-alto" : (f.porcentaje >= 80 ? "ficha-uso-medio" : "");
+  return `<div class="ficha-uso-fila ${cls}">
+    <div class="ficha-uso-cab"><span class="ficha-uso-nombre">${escapeHtml(f.nombre)}</span>
+      <span class="ficha-uso-val">${(f.consumido || 0).toLocaleString("es")} / ${(f.limite || 0).toLocaleString("es")} ${escapeHtml(f.unidad)} <small>(${per})</small></span></div>
+    <div class="ficha-uso-barra"><span class="ficha-uso-relleno" style="width:${pct}%"></span></div>
+  </div>`;
 }
 
 async function abrirUsuario(uid) {
   abrirModal(`<p class="admin-cargando">Cargando ficha…</p>`);
   const u = await apiGet(`/admin/api/usuarios/${uid}`);
   if (!u) { cerrarModal(); return; }
+  const c = u.contenido_creado || {};
+  const r = u.rendimiento || {};
+  const inicial = (u.email || "?").trim().charAt(0).toUpperCase() || "?";
+  const oposActivas = (u.oposiciones_activas || []);
   const override = u.admin_override
     ? `<div class="admin-aviso"><strong>Último cambio de soporte:</strong> ${escapeHtml(u.admin_override.cambio || "")} — ${escapeHtml(u.admin_override.motivo || "sin motivo")} (${escapeHtml(fechaCorta(u.admin_override.fecha))})</div>`
     : "";
   abrirModal(`
-    <h2>${escapeHtml(u.email || "(sin email)")}</h2>
-    <p class="admin-dato admin-dato-mono"><strong>UID:</strong> ${escapeHtml(u.uid)}<button class="admin-copiar" id="up-copiar-uid">copiar</button></p>
-    <div class="admin-datos-grid">
-      <div class="admin-dato-caja"><span class="admin-dato-caja-num">${u.tests_total}</span><span class="admin-dato-caja-lbl">Tests</span></div>
-      <div class="admin-dato-caja"><span class="admin-dato-caja-num">${u.racha_actual}</span><span class="admin-dato-caja-lbl">Racha</span></div>
-      <div class="admin-dato-caja"><span class="admin-dato-caja-num">${u.ultima_nota != null ? escapeHtml(u.ultima_nota) : "-"}</span><span class="admin-dato-caja-lbl">Últ. nota</span></div>
-    </div>
-    <p class="admin-dato"><strong>Coste IA:</strong> ${(u.coste_ia_mes || 0).toFixed(4)}€ este mes · ${(u.coste_ia_total || 0).toFixed(4)}€ total (${(u.tokens_ia_total || 0).toLocaleString("es")} tokens)</p>
-    <p class="admin-dato"><strong>Plan actual:</strong> ${escapeHtml(u.plan)} · <strong>Alta:</strong> ${escapeHtml(fechaCorta(u.fecha_creacion))} · <strong>Últ. actividad:</strong> ${escapeHtml(fechaCorta(u.ultima_actividad))}</p>
-    <p class="admin-dato"><strong>Email verificado:</strong> ${u.email_verificado ? "sí" : "no"}</p>
-    ${override}
-    <hr class="admin-sep">
-    <h3>Cambiar plan (soporte)</h3>
-    <div class="admin-form-fila">
-      <select id="up-plan" class="age-input"><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
-      <select id="up-oposicion" class="age-input"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
-    </div>
-    <input id="up-motivo" class="age-input" placeholder="Motivo (queda registrado)" style="margin-top:8px;">
-    <button class="age-btn age-btn-primary" id="up-guardar" style="margin-top:10px;">Cambiar plan</button>
-    <hr class="admin-sep">
-    <h3>Notas internas (solo admins)</h3>
-    <textarea class="age-input" id="up-notas" rows="3" placeholder="Anotaciones de soporte sobre este usuario…">${escapeHtml(u.notas_admin || "")}</textarea>
-    <button class="age-btn age-btn-outline admin-mini" id="up-notas-guardar" style="margin-top:6px;">Guardar nota</button>
-    <hr class="admin-sep">
-    <h3>Administración</h3>
-    <p class="admin-dato"><strong>Es administrador:</strong> ${u.es_admin ? "sí ✅" : "no"}</p>
-    ${_permisos.admin ? `
-      <button class="age-btn ${u.es_admin ? "age-btn-outline" : "age-btn-primary"}" id="up-admin">${u.es_admin ? "Quitar admin" : "Hacer admin total"}</button>
-      <p class="admin-dato" style="margin-top:12px;"><strong>Roles (acceso parcial):</strong></p>
-      <p class="admin-reporte-meta">Marca a qué secciones puede entrar sin ser admin total.</p>
-      ${(u.permisos_disponibles || ["temario", "reportes", "usuarios"]).map((p) => `
-        <label class="admin-rol-check">
-          <input type="checkbox" class="up-permiso" value="${escapeHtml(p)}" ${(u.permisos || []).includes(p) ? "checked" : ""} ${u.es_admin ? "disabled" : ""}>
-          <span>${p === "temario" ? "Temario y preguntas" : p === "reportes" ? "Reportes de preguntas" : "Usuarios y planes"}</span>
-        </label>`).join("")}
-      <button class="age-btn age-btn-outline admin-mini" id="up-roles" ${u.es_admin ? "disabled" : ""} style="margin-top:6px;">Guardar roles</button>
-      ${u.es_admin ? '<p class="admin-reporte-meta">Un admin total ya tiene todos los permisos.</p>' : ""}
-      ${u.bloqueado ? '<p class="admin-dato"><span class="admin-badge-alerta">Acceso bloqueado</span></p>' : ""}
-      <button class="age-btn age-btn-outline admin-mini" id="up-bloqueo" style="margin-top:10px;">${u.bloqueado ? "Restaurar acceso" : "Bloquear acceso"}</button>
-      <button class="age-btn age-btn-outline admin-mini" id="up-eliminar" style="margin-top:10px;color:var(--age-danger,#c0392b);border-color:var(--age-danger,#c0392b);">Eliminar cuenta</button>
-    ` : `<p class="admin-reporte-meta">Solo un administrador total puede cambiar roles.</p>`}
-    <hr class="admin-sep">
-    <h3>Soporte</h3>
-    <div class="admin-chunk-acciones">
-      <button class="age-btn age-btn-outline admin-mini" id="up-racha">Resetear racha</button>
-      <button class="age-btn age-btn-outline admin-mini" id="up-limites">Resetear límites de uso</button>
-      <button class="age-btn age-btn-outline admin-mini" id="up-reset-pass">Enlace de contraseña</button>
-      ${u.email_verificado ? "" : '<button class="age-btn age-btn-outline admin-mini" id="up-verif">Enlace de verificación</button>'}
-    </div>
-    <div id="up-enlace-caja"></div>`);
+    <div class="ficha">
+      <div class="ficha-cabecera">
+        <div class="ficha-avatar">${escapeHtml(inicial)}</div>
+        <div class="ficha-id">
+          <h2 class="ficha-email">${escapeHtml(u.email || "(sin email)")}</h2>
+          ${u.nombre ? `<p class="ficha-nombre">${escapeHtml(u.nombre)}</p>` : ""}
+          <div class="ficha-badges">
+            ${fichaPlanBadge(u.plan)}
+            <span class="ficha-badge ${u.email_verificado ? "ficha-badge-ok" : "ficha-badge-warn"}">${u.email_verificado ? "✓ Verificado" : "Sin verificar"}</span>
+            ${u.es_admin ? '<span class="ficha-badge ficha-badge-admin">👑 Admin total</span>' : ""}
+            ${(!u.es_admin && (u.permisos || []).length) ? `<span class="ficha-badge ficha-badge-rol">🛡️ ${(u.permisos || []).length} rol(es)</span>` : ""}
+            ${u.bloqueado ? '<span class="ficha-badge ficha-badge-bloqueo">🚫 Bloqueado</span>' : ""}
+          </div>
+          <p class="ficha-uid"><span>UID: ${escapeHtml(u.uid)}</span><button class="admin-copiar" id="up-copiar-uid">copiar</button></p>
+        </div>
+      </div>
+
+      <div class="ficha-kpis">
+        <div class="ficha-kpi"><span class="ficha-kpi-num">${(u.tests_total || 0).toLocaleString("es")}</span><span class="ficha-kpi-lbl">Tests hechos</span></div>
+        <div class="ficha-kpi"><span class="ficha-kpi-num">${u.racha_actual || 0}</span><span class="ficha-kpi-lbl">Racha (máx ${u.racha_maxima || 0})</span></div>
+        <div class="ficha-kpi"><span class="ficha-kpi-num">${u.ultima_nota != null ? escapeHtml(u.ultima_nota) : "–"}</span><span class="ficha-kpi-lbl">Última nota</span></div>
+        <div class="ficha-kpi"><span class="ficha-kpi-num">${r.porcentaje != null ? r.porcentaje + "%" : "–"}</span><span class="ficha-kpi-lbl">Acierto global</span></div>
+      </div>
+
+      <div class="ficha-cols">
+        <div class="ficha-panel ficha-coste">
+          <div class="ficha-panel-cab"><span class="ficha-panel-ico">🤖</span><h3>Gasto en IA</h3></div>
+          <div class="ficha-coste-cifras">
+            <div class="ficha-coste-grande"><span class="ficha-coste-num">${fichaEuros(u.coste_ia_mes)}</span><span class="ficha-coste-lbl">este mes</span></div>
+            <div class="ficha-coste-sec">
+              <div><strong>${fichaEuros(u.coste_ia_total)}</strong><span>histórico</span></div>
+              <div><strong>${(u.tokens_ia_total || 0).toLocaleString("es")}</strong><span>tokens</span></div>
+            </div>
+          </div>
+          ${fichaCosteBarras(u.coste_ia_historico)}
+          <p class="ficha-coste-detalle" id="up-coste-detalle">${(u.coste_ia_historico || []).length ? "Toca una barra para ver el detalle de ese mes." : ""}</p>
+          ${(u.coste_ia_historico || []).length ? `
+          <details class="ficha-rango">
+            <summary>🔎 Buscar por rango de meses</summary>
+            <div class="ficha-rango-cuerpo">
+              <div class="ficha-rango-selects">
+                <label>Desde <select id="up-rango-desde" class="age-input">${(u.coste_ia_historico || []).map((h) => `<option value="${escapeHtml(h.mes)}">${mesLegible(h.mes)}</option>`).join("")}</select></label>
+                <label>Hasta <select id="up-rango-hasta" class="age-input">${(u.coste_ia_historico || []).map((h) => `<option value="${escapeHtml(h.mes)}">${mesLegible(h.mes)}</option>`).join("")}</select></label>
+              </div>
+              <div class="ficha-rango-res" id="up-rango-res"></div>
+            </div>
+          </details>` : ""}
+        </div>
+
+        <div class="ficha-panel">
+          <div class="ficha-panel-cab"><span class="ficha-panel-ico">📚</span><h3>Contenido creado</h3></div>
+          <div class="ficha-minis">
+            ${fichaMini("📄", c.documentos, "Documentos")}
+            ${fichaMini("📝", c.resumenes, "Resúmenes")}
+            ${fichaMini("🗂️", c.esquemas, "Esquemas")}
+            ${fichaMini("🃏", c.tarjetas, "Tarjetas")}
+            ${fichaMini("🧪", c.tests_pdf, "Tests de PDF")}
+            ${fichaMini("⭐", c.favoritas, "Favoritas")}
+            ${fichaMini("🔁", c.falladas, "A repasar")}
+          </div>
+        </div>
+      </div>
+
+      <div class="ficha-panel">
+        <div class="ficha-panel-cab"><span class="ficha-panel-ico">🪪</span><h3>Datos de la cuenta</h3></div>
+        <dl class="ficha-datos">
+          <div><dt>Plan</dt><dd>${escapeHtml(u.plan)}${oposActivas.length ? " · " + oposActivas.map(escapeHtml).join(", ") : ""}</dd></div>
+          <div><dt>Alta</dt><dd>${escapeHtml(fechaCorta(u.fecha_creacion))}</dd></div>
+          <div><dt>Última actividad</dt><dd>${escapeHtml(fechaCorta(u.ultima_actividad))}</dd></div>
+          <div><dt>Rendimiento</dt><dd>${(r.aciertos || 0)} aciertos · ${(r.fallos || 0)} fallos · ${(r.blancos || 0)} blancos</dd></div>
+        </dl>
+        ${override}
+      </div>
+
+      <div class="ficha-panel">
+        <div class="ficha-panel-cab"><span class="ficha-panel-ico">📊</span><h3>Uso de herramientas (periodo actual)</h3></div>
+        ${((u.uso_herramientas || {}).filas || []).map(fichaUsoFila).join("")}
+        <p class="ficha-uso-nota">Consumo frente al límite del plan de este usuario. El Test Personalizado se mide en preguntas. Si alguna barra se pone en rojo, está apurando su cupo.</p>
+      </div>
+
+      <details class="ficha-acordeon">
+        <summary><span class="ficha-panel-ico">💳</span> Cambiar plan (soporte)</summary>
+        <div class="ficha-acordeon-cuerpo">
+          <div class="admin-form-fila">
+            <select id="up-plan" class="age-input"><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
+            <select id="up-oposicion" class="age-input"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
+          </div>
+          <input id="up-motivo" class="age-input" placeholder="Motivo (queda registrado)" style="margin-top:8px;">
+          <button class="age-btn age-btn-primary" id="up-guardar" style="margin-top:10px;">Cambiar plan</button>
+        </div>
+      </details>
+
+      <details class="ficha-acordeon">
+        <summary><span class="ficha-panel-ico">🛟</span> Soporte y notas</summary>
+        <div class="ficha-acordeon-cuerpo">
+          <h4 class="ficha-sub">📝 Notas internas</h4>
+          <div id="up-notas-lista" class="ficha-notas"></div>
+          <textarea class="age-input" id="up-nota-nueva" rows="2" placeholder="Escribe una nota nueva…"></textarea>
+          <button class="age-btn age-btn-primary admin-mini" id="up-nota-anadir" style="margin-top:6px;">+ Añadir nota</button>
+          <h4 class="ficha-sub" style="margin-top:18px;">🛠️ Acciones de soporte</h4>
+          <div class="ficha-soporte-acciones">
+            <button class="age-btn admin-mini ficha-btn-soporte" id="up-racha">🔥 Resetear racha</button>
+            <button class="age-btn admin-mini ficha-btn-soporte" id="up-limites">♻️ Resetear límites de uso</button>
+            <button class="age-btn admin-mini ficha-btn-soporte" id="up-reset-pass">🔑 Enlace de contraseña</button>
+            ${u.email_verificado ? "" : '<button class="age-btn admin-mini ficha-btn-soporte" id="up-verif">✉️ Enlace de verificación</button>'}
+          </div>
+          <div id="up-enlace-caja"></div>
+        </div>
+      </details>
+
+      <details class="ficha-acordeon ficha-acordeon-peligro">
+        <summary><span class="ficha-panel-ico">🔐</span> Roles y administración</summary>
+        <div class="ficha-acordeon-cuerpo">
+          ${_permisos.admin ? `
+            <p class="ficha-roles-intro">${u.es_admin ? "Este usuario es <strong>administrador total</strong> (acceso a todo)." : "Da acceso parcial marcando solo las secciones que necesite, sin hacerlo admin total."}</p>
+            <div class="ficha-roles">
+              ${(u.permisos_disponibles || ["temario", "reportes", "usuarios"]).map((p) => `
+                <label class="ficha-rol ${u.es_admin ? "ficha-rol-off" : ""}">
+                  <input type="checkbox" class="up-permiso" value="${escapeHtml(p)}" ${(u.permisos || []).includes(p) ? "checked" : ""} ${u.es_admin ? "disabled" : ""}>
+                  <span class="ficha-rol-ico">${p === "temario" ? "📖" : p === "reportes" ? "🚩" : "👥"}</span>
+                  <span class="ficha-rol-txt"><strong>${p === "temario" ? "Temario y preguntas" : p === "reportes" ? "Reportes de preguntas" : "Usuarios y planes"}</strong><small>${p === "temario" ? "Editar y subir temario, gestionar preguntas" : p === "reportes" ? "Revisar reportes de preguntas de los usuarios" : "Ver usuarios, cambiar planes y roles"}</small></span>
+                </label>`).join("")}
+            </div>
+            <button class="age-btn age-btn-outline admin-mini" id="up-roles" ${u.es_admin ? "disabled" : ""} style="margin-top:10px;">Guardar roles</button>
+            <hr class="admin-sep">
+            <div class="ficha-admin-acciones">
+              <button class="age-btn ${u.es_admin ? "age-btn-outline" : "age-btn-primary"}" id="up-admin">${u.es_admin ? "Quitar admin total" : "Hacer admin total"}</button>
+              <button class="age-btn age-btn-outline admin-mini" id="up-bloqueo">${u.bloqueado ? "Restaurar acceso" : "Bloquear acceso"}</button>
+              <button class="age-btn age-btn-outline admin-mini ficha-btn-peligro" id="up-eliminar">Eliminar cuenta</button>
+            </div>
+          ` : `<p class="admin-reporte-meta">Solo un administrador total puede cambiar roles y administración.</p>`}
+        </div>
+      </details>
+    </div>`);
   document.getElementById("up-plan").value = u.plan;
   document.getElementById("up-oposicion").value = oposicionActual();
   document.getElementById("up-copiar-uid").addEventListener("click", () => {
@@ -724,10 +867,61 @@ async function abrirUsuario(uid) {
     });
     if (r) { toast("Plan actualizado."); cerrarModal(); cargarUsuarios(); }
   });
-  document.getElementById("up-notas-guardar").addEventListener("click", async () => {
-    const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/notas`, { notas: document.getElementById("up-notas").value });
-    if (r) { toast("Nota guardada."); u.notas_admin = document.getElementById("up-notas").value; }
+  // ---- Notas internas (lista: añadir / eliminar) ----
+  let notas = Array.isArray(u.notas_lista) ? u.notas_lista.slice() : [];
+  const renderNotas = () => {
+    const cont = document.getElementById("up-notas-lista");
+    if (!cont) return;
+    if (!notas.length) { cont.innerHTML = '<p class="ficha-notas-vacio">Sin notas todavía.</p>'; return; }
+    cont.innerHTML = notas.map((n) => {
+      const meta = [n.autor, n.fecha ? fechaCorta(n.fecha) : ""].filter(Boolean).join(" · ");
+      return `<div class="ficha-nota"><div class="ficha-nota-txt">${escapeHtml(n.texto || "")}</div>
+        <div class="ficha-nota-pie">${meta ? `<span class="ficha-nota-meta">${escapeHtml(meta)}</span>` : "<span></span>"}
+        <button class="ficha-nota-borrar" data-id="${escapeHtml(n.id)}" title="Eliminar nota">🗑</button></div></div>`;
+    }).join("");
+    cont.querySelectorAll(".ficha-nota-borrar").forEach((b) => b.addEventListener("click", async () => {
+      if (!confirm("¿Eliminar esta nota?")) return;
+      const r = await api("DELETE", `/admin/api/usuarios/${u.uid}/notas/${b.dataset.id}`);
+      if (r) { notas = notas.filter((x) => x.id !== b.dataset.id); renderNotas(); toast("Nota eliminada."); }
+    }));
+  };
+  renderNotas();
+  document.getElementById("up-nota-anadir")?.addEventListener("click", async () => {
+    const ta = document.getElementById("up-nota-nueva");
+    const texto = (ta.value || "").trim();
+    if (!texto) { toast("Escribe algo en la nota.", "error"); return; }
+    const r = await api("POST", `/admin/api/usuarios/${u.uid}/notas`, { texto });
+    if (r && r.nota) { notas.push(r.nota); ta.value = ""; renderNotas(); toast("Nota añadida."); }
   });
+  // ---- Gasto IA: tocar barra para ver el mes ----
+  const hist = u.coste_ia_historico || [];
+  const detalle = document.getElementById("up-coste-detalle");
+  document.querySelectorAll(".ficha-barra-col").forEach((b) => b.addEventListener("click", () => {
+    const h = hist.find((x) => x.mes === b.dataset.mes);
+    if (h && detalle) detalle.innerHTML = `<strong>${mesLegible(h.mes)}:</strong> ${fichaEuros(h.coste)} · ${(h.tokens || 0).toLocaleString("es")} tokens (${(h.tokens_in || 0).toLocaleString("es")} entrada / ${(h.tokens_out || 0).toLocaleString("es")} salida) · ${h.llamadas || 0} llamadas`;
+    document.querySelectorAll(".ficha-barra-col").forEach((x) => x.classList.toggle("activa", x === b));
+  }));
+  // ---- Gasto IA: rango de meses ----
+  const rangoDesde = document.getElementById("up-rango-desde");
+  const rangoHasta = document.getElementById("up-rango-hasta");
+  const calcularRango = () => {
+    if (!rangoDesde || !rangoHasta) return;
+    let a = rangoDesde.value, b = rangoHasta.value;
+    if (a > b) { [a, b] = [b, a]; }
+    const sel = hist.filter((h) => h.mes >= a && h.mes <= b);
+    const coste = sel.reduce((s, h) => s + (h.coste || 0), 0);
+    const tokens = sel.reduce((s, h) => s + (h.tokens || 0), 0);
+    const llamadas = sel.reduce((s, h) => s + (h.llamadas || 0), 0);
+    document.getElementById("up-rango-res").innerHTML =
+      `<strong>${mesLegible(a)} → ${mesLegible(b)}:</strong> ${fichaEuros(coste)} · ${tokens.toLocaleString("es")} tokens · ${llamadas.toLocaleString("es")} llamadas`;
+  };
+  if (rangoDesde && rangoHasta) {
+    rangoDesde.value = hist.length ? hist[0].mes : "";
+    rangoHasta.value = hist.length ? hist[hist.length - 1].mes : "";
+    rangoDesde.addEventListener("change", calcularRango);
+    rangoHasta.addEventListener("change", calcularRango);
+    calcularRango();
+  }
   document.getElementById("up-admin")?.addEventListener("click", async () => {
     const dar = !u.es_admin;
     if (!confirm(dar ? "¿Dar permisos de administrador TOTAL a este usuario?" : "¿Quitar los permisos de administrador?")) return;
@@ -897,19 +1091,96 @@ async function renderAuditoria() {
 }
 
 // ===== Sistema (salud + banner) =====
+// ===== Límites de uso (editable) =====
+const _NOMBRE_PLAN = { gratis: "Gratis", basico: "Básico", premium: "Premium" };
+async function renderLimites() {
+  const panel = document.getElementById("panel-limites");
+  panel.innerHTML = `<p class="admin-cargando">Cargando límites…</p>`;
+  const cfg = await apiGet("/admin/api/limites");
+  if (!cfg) return;
+  const planes = cfg.planes || ["gratis", "basico", "premium"];
+  const celda = (tipo, plan) => {
+    const c = (cfg.tools[tipo] || {})[plan] || { periodo: "mes", limite: 0 };
+    return `<div class="lim-plan lim-plan-${plan}">
+      <span class="lim-plan-nombre">${_NOMBRE_PLAN[plan] || plan}</span>
+      <div class="lim-plan-campos">
+        <input type="number" min="0" inputmode="numeric" class="age-input lim-num" data-tipo="${tipo}" data-plan="${plan}" value="${c.limite}" aria-label="Usos de ${_NOMBRE_PLAN[plan] || plan}">
+        <select class="age-input lim-per" data-tipo="${tipo}" data-plan="${plan}" aria-label="Periodo de ${_NOMBRE_PLAN[plan] || plan}">
+          <option value="dia" ${c.periodo === "dia" ? "selected" : ""}>al día</option>
+          <option value="mes" ${c.periodo === "mes" ? "selected" : ""}>al mes</option>
+        </select>
+      </div>
+    </div>`;
+  };
+  const tarjetaTool = (m) => `
+    <div class="age-card lim-tool">
+      <div class="lim-tool-cab"><h3>${escapeHtml(m.nombre)}${m.unidad === "preguntas" ? '<span class="lim-unidad">cupo en preguntas</span>' : ""}</h3><p>${escapeHtml(m.descripcion)}</p></div>
+      <div class="lim-planes">${planes.map((p) => celda(m.id, p)).join("")}</div>
+    </div>`;
+  const tarjetaPaginas = `
+    <div class="age-card lim-tool">
+      <div class="lim-tool-cab"><h3>📄 Máximo de páginas por PDF subido</h3><p>Tope de páginas de un documento según el plan (no es un cupo de usos).</p></div>
+      <div class="lim-planes">${planes.map((p) => `
+        <div class="lim-plan lim-plan-${p}"><span class="lim-plan-nombre">${_NOMBRE_PLAN[p] || p}</span>
+          <div class="lim-plan-campos"><input type="number" min="1" inputmode="numeric" class="age-input lim-pag" data-plan="${p}" value="${(cfg.max_paginas || {})[p] || 0}" aria-label="Páginas de ${_NOMBRE_PLAN[p] || p}"><span class="lim-pag-uni">págs</span></div>
+        </div>`).join("")}</div>
+    </div>`;
+  panel.innerHTML = `
+    <div class="age-card lim-intro"><p>Define cuántas veces puede usar cada herramienta cada perfil. <strong>0</strong> significa que ese plan <strong>no incluye</strong> la herramienta. El periodo (día/mes) marca cada cuánto se renueva el cupo. Los cambios se aplican en unos segundos.</p></div>
+    ${(cfg.meta || []).map(tarjetaTool).join("")}
+    ${tarjetaPaginas}
+    <div class="lim-barra"><button class="age-btn age-btn-primary" id="lim-guardar">💾 Guardar cambios</button></div>`;
+  document.getElementById("lim-guardar").addEventListener("click", async () => {
+    const tools = {};
+    document.querySelectorAll(".lim-num").forEach((inp) => {
+      const t = inp.dataset.tipo, p = inp.dataset.plan;
+      const per = document.querySelector(`.lim-per[data-tipo="${t}"][data-plan="${p}"]`).value;
+      tools[t] = tools[t] || {};
+      tools[t][p] = { periodo: per, limite: Math.max(0, parseInt(inp.value, 10) || 0) };
+    });
+    const maxPaginas = {};
+    document.querySelectorAll(".lim-pag").forEach((inp) => {
+      maxPaginas[inp.dataset.plan] = Math.max(1, parseInt(inp.value, 10) || 1);
+    });
+    const r = await api("PUT", "/admin/api/limites", { tools, max_paginas: maxPaginas });
+    if (r) toast("Límites guardados. Se aplican en unos segundos.");
+  });
+}
+
 async function renderSistema() {
   const panel = document.getElementById("panel-sistema");
   panel.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const [sis, banner] = await Promise.all([apiGet("/admin/api/sistema"), apiGet("/admin/api/banner")]);
   if (!sis) return;
-  const servicios = (sis.servicios || []).map((s) => `
-    <tr>
-      <td>${s.ok ? "🟢" : "🔴"} ${escapeHtml(s.nombre)}</td>
-      <td>${s.ok ? "Configurado" : "Sin configurar"}</td>
+  const diag = sis.diagnostico || {};
+  const servicios = (sis.servicios || []).map((s) => {
+    // 3 estados: verde (OK), rojo (crítico sin configurar), ámbar (opcional
+    // sin configurar -> no es un problema, no alarma).
+    const estado = s.ok
+      ? { punto: "🟢", txt: "Configurado", cls: "sis-ok" }
+      : (s.critico
+        ? { punto: "🔴", txt: "Falta (crítico)", cls: "sis-ko" }
+        : { punto: "🟡", txt: "Opcional, sin configurar", cls: "sis-opt" });
+    return `<tr class="${estado.cls}">
+      <td>${estado.punto} ${escapeHtml(s.nombre)}</td>
+      <td>${estado.txt}</td>
       <td class="admin-reporte-meta">${escapeHtml(s.detalle)}</td>
-    </tr>`).join("");
+    </tr>`;
+  }).join("");
   const b = banner || { activo: false, texto: "", tipo: "info" };
+  // Panel de diagnóstico: semáforo global + cosas a vigilar.
+  const todoOk = diag.todo_ok !== false;
+  const avisos = [];
+  if (diag.banner_activo) avisos.push(`<span class="sis-aviso sis-aviso-info">📢 Hay un aviso global ACTIVO en la web ahora mismo</span>`);
+  if ((diag.opcionales_ko || []).length) avisos.push(`<span class="sis-aviso sis-aviso-soft">🟡 Servicios opcionales sin configurar: ${diag.opcionales_ko.map(escapeHtml).join(", ")}</span>`);
   panel.innerHTML = `
+    <div class="age-card admin-bloque sis-diagnostico ${todoOk ? "sis-diag-ok" : "sis-diag-ko"}">
+      <div class="sis-diag-cab"><span class="sis-diag-ico">${todoOk ? "✅" : "⚠️"}</span>
+        <div><h3>${todoOk ? "Todo en orden" : "Atención necesaria"}</h3>
+        <p class="admin-reporte-meta">${todoOk ? "Todos los servicios críticos están configurados y la web funciona." : "Servicios críticos sin configurar: " + (diag.criticos_ko || []).map(escapeHtml).join(", ")}</p></div>
+      </div>
+      ${avisos.length ? `<div class="sis-avisos">${avisos.join("")}</div>` : ""}
+    </div>
     <div class="age-card admin-bloque">
       <h3>Estado de los servicios</h3>
       <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Servicio</th><th>Estado</th><th>Para qué</th></tr></thead><tbody>${servicios}</tbody></table></div>

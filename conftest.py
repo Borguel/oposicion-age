@@ -35,6 +35,8 @@ with patch("firebase_admin.credentials.Certificate", return_value=MagicMock()), 
 def _limpiar_fake_db():
     fake_db.reset()
     _limpiar_cache_temario()
+    import limites_uso
+    limites_uso.invalidar_cache_limites()  # evita que overrides de un test se filtren a otro
     yield
 
 

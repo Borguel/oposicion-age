@@ -28,10 +28,16 @@ def _precio(env, defecto):
         return float(defecto)
 
 
-# € por cada 1.000.000 de tokens. Valores por defecto aproximados y
-# conservadores de deepseek-chat (entrada ~0,25 €/M, salida ~1,00 €/M).
-PRECIO_INPUT_EUR_MILLON = _precio("IA_PRECIO_INPUT_EUR_MILLON", 0.25)
-PRECIO_OUTPUT_EUR_MILLON = _precio("IA_PRECIO_OUTPUT_EUR_MILLON", 1.00)
+# € por cada 1.000.000 de tokens. Valores por defecto según las tarifas
+# oficiales de DeepSeek (deepseek-chat -> gama "flash"), convertidas de
+# dólares a euros al cambio aproximado (~0,92 €/$):
+#   entrada cache miss $0,14/M -> ~0,13 €/M   (usamos el precio caro, sin
+#     descuento de caché, para que la estimación quede siempre por lo alto)
+#   salida            $0,28/M -> ~0,26 €/M
+# Se pueden ajustar sin tocar código con las variables de entorno de abajo
+# (p. ej. si tu cuenta factura como "pro": salida $0,87/M -> ~0,80 €/M).
+PRECIO_INPUT_EUR_MILLON = _precio("IA_PRECIO_INPUT_EUR_MILLON", 0.13)
+PRECIO_OUTPUT_EUR_MILLON = _precio("IA_PRECIO_OUTPUT_EUR_MILLON", 0.26)
 
 
 def coste_estimado(tokens_in, tokens_out):
@@ -98,6 +104,53 @@ class AcumuladorTokens:
         except Exception:
             logger.debug("No se pudo volcar el acumulador de tokens", exc_info=True)
 
+    def volcar_directo(self, db, uid):
+        """Vuelca lo acumulado directamente al documento del usuario, sin pasar
+        por flask.g. Necesario cuando la generación corre en un hilo de fondo
+        desligado de la petición (el Test Personalizado genera en un
+        threading.Thread propio, ver blueprints/test_ia.py), donde flask.g no
+        está disponible y volcar_a_peticion() no tendría efecto."""
+        try:
+            with self._lock:
+                tin, tout, llamadas = self.tin, self.tout, self.llamadas
+            guardar_coste_directo(db, uid, tin, tout, llamadas)
+        except Exception:
+            logger.debug("No se pudo volcar el acumulador de tokens (directo)", exc_info=True)
+
+
+def _incrementar_mes(db, uid, tin, tout, llamadas):
+    """Suma el consumo indicado al contador del mes actual del usuario en
+    usuarios/{uid}.coste_ia.{YYYY-MM}. Lectura+escritura (no atómica): el
+    consumo de un mismo usuario se vuelca desde un único hilo por petición,
+    así que basta para el uso previsto."""
+    mes = datetime.utcnow().strftime("%Y-%m")
+    ref = db.collection("usuarios").document(uid)
+    doc = ref.get()
+    if not doc.exists:
+        return
+    actual = ((doc.to_dict() or {}).get("coste_ia") or {}).get(mes) or {}
+    tin_total = (actual.get("tokens_in", 0) or 0) + tin
+    tout_total = (actual.get("tokens_out", 0) or 0) + tout
+    llamadas_total = (actual.get("llamadas", 0) or 0) + llamadas
+    ref.update({
+        f"coste_ia.{mes}.tokens_in": tin_total,
+        f"coste_ia.{mes}.tokens_out": tout_total,
+        f"coste_ia.{mes}.llamadas": llamadas_total,
+        f"coste_ia.{mes}.coste": coste_estimado(tin_total, tout_total),
+    })
+
+
+def guardar_coste_directo(db, uid, tin, tout, llamadas):
+    """Vuelca un consumo de tokens al contador del usuario sin depender de
+    flask.g. Pensado para hilos de fondo. Nunca debe romper el flujo que la
+    llama."""
+    try:
+        if not uid or (not tin and not tout):
+            return
+        _incrementar_mes(db, uid, int(tin or 0), int(tout or 0), int(llamadas or 0))
+    except Exception:
+        logger.debug("No se pudo guardar el coste de IA (directo)", exc_info=True)
+
 
 def flush_coste(db):
     """Vuelca lo acumulado en g al contador del mes del usuario. Se llama en
@@ -111,21 +164,7 @@ def flush_coste(db):
         if not acc or not uid or (acc["in"] == 0 and acc["out"] == 0):
             return
         g._coste_ia = None  # evitar doble volcado si algo re-entrara
-        mes = datetime.utcnow().strftime("%Y-%m")
-        ref = db.collection("usuarios").document(uid)
-        doc = ref.get()
-        if not doc.exists:
-            return
-        actual = ((doc.to_dict() or {}).get("coste_ia") or {}).get(mes) or {}
-        tin = (actual.get("tokens_in", 0) or 0) + acc["in"]
-        tout = (actual.get("tokens_out", 0) or 0) + acc["out"]
-        llamadas = (actual.get("llamadas", 0) or 0) + acc["llamadas"]
-        ref.update({
-            f"coste_ia.{mes}.tokens_in": tin,
-            f"coste_ia.{mes}.tokens_out": tout,
-            f"coste_ia.{mes}.llamadas": llamadas,
-            f"coste_ia.{mes}.coste": coste_estimado(tin, tout),
-        })
+        _incrementar_mes(db, uid, acc["in"], acc["out"], acc["llamadas"])
     except Exception:
         logger.debug("No se pudo volcar el coste de IA", exc_info=True)
 

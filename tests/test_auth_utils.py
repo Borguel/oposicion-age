@@ -9,7 +9,13 @@ from flask import Flask, g, jsonify
 
 from firebase_admin import auth as firebase_auth
 
-from auth_utils import obtener_uid_desde_token, requiere_login, requiere_plan, _mejor_plan
+from auth_utils import (
+    obtener_uid_desde_token,
+    obtener_identidad_desde_token,
+    requiere_login,
+    requiere_plan,
+    _mejor_plan,
+)
 
 
 class FakeRequest:
@@ -128,6 +134,29 @@ def test_requiere_plan_global_check_usa_la_mejor_oposicion(mini_app, db):
         cliente = mini_app.test_client()
         resp = cliente.get("/solo-premium-global", headers={"Authorization": "Bearer x"})
     assert resp.status_code == 200
+
+
+def test_identidad_marca_es_admin_con_claim():
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "a@b.com", "admin": True}):
+        assert obtener_identidad_desde_token(FakeRequest({"Authorization": "Bearer x"})) == ("u1", "a@b.com", True)
+
+
+def test_identidad_no_admin_sin_claim():
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "a@b.com"}):
+        assert obtener_identidad_desde_token(FakeRequest({"Authorization": "Bearer x"})) == ("u1", "a@b.com", False)
+
+
+def test_requiere_plan_deja_pasar_al_admin_sin_suscripcion(mini_app, db):
+    # Un administrador (claim admin:true) debe poder usar cualquier
+    # herramienta premium sin tener suscripción de pago, para probar y dar
+    # soporte. Sin este bypass el admin recibía 403 y, p. ej., el tutor no
+    # guardaba conversación.
+    db.sembrar(("usuarios", "adm"), {"suscripciones": {"AGE": {"plan": "gratis"}}})
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "adm", "email": "a@b.com", "admin": True}):
+        cliente = mini_app.test_client()
+        resp = cliente.get("/solo-basico?oposicion=AGE", headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    assert resp.get_json()["oposicion"] == "AGE"
 
 
 def test_mejor_plan_elige_el_mas_alto_entre_oposiciones():

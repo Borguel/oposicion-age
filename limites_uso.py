@@ -13,23 +13,32 @@ Dos capas de protección:
    "prácticamente ilimitado" de cara al cliente pero con un tope de
    seguridad diario para que un solo mal uso no dispare el gasto de golpe.
 """
+import time
 from datetime import date
 
 from utils import ejecutar_en_transaccion
 
-MAX_PAGINAS_POR_PLAN = {"gratis": 40, "basico": 200, "premium": 200}
+MAX_PAGINAS_POR_PLAN = {"gratis": 50, "basico": 300, "premium": 500}
 
 # Cada entrada es (periodo, límite). periodo: "dia" o "mes".
+#
+# Filosofía de cupos: en básico y premium todo cuenta POR DÍA (cupos
+# generosos que se renuevan cada 24 h, no un tope mensual estrecho). Son
+# topes anti-abuso, no el uso esperado: un usuario normal gasta una
+# fracción. El coste real de IA es bajo (un test personalizado de 100
+# preguntas ~0,10 € en el peor caso, y menos con la caché de DeepSeek), así
+# que se prioriza que el usuario de pago no se choque con el límite en su
+# uso diario real. El plan gratis se mantiene como muestra reducida.
 LIMITES = {
     "pdf_ia": {
-        "gratis": ("mes", 2),
-        "basico": ("mes", 15),
-        "premium": ("dia", 60),
+        "gratis": ("mes", 3),
+        "basico": ("dia", 10),
+        "premium": ("dia", 100),
     },
     "chat_pdf": {
         "gratis": ("mes", 0),
-        "basico": ("mes", 30),
-        "premium": ("dia", 40),
+        "basico": ("dia", 25),
+        "premium": ("dia", 80),
     },
     # Generación de esquemas/análisis a partir del TEMARIO (no de un PDF
     # subido) -- /generar-esquema, /generar-test-inteligente (hoy
@@ -39,30 +48,138 @@ LIMITES = {
     # coherencia con ese requisito.
     "generacion_ia": {
         "gratis": ("mes", 0),
-        "basico": ("mes", 60),
-        "premium": ("dia", 40),
+        "basico": ("dia", 15),
+        "premium": ("dia", 60),
     },
     # Test Personalizado con verificación jurídica (/generar-test-avanzado):
-    # cada pregunta cuesta entre 2 y 8 llamadas a DeepSeek (generar +
-    # verificar, con reintentos si no supera la verificación), muy por
-    # encima del coste de una generación normal -- de ahí un cupo propio y
-    # más ajustado en vez de compartir el genérico "generacion_ia".
+    # cada pregunta cuesta entre 2 y 8 llamadas a DeepSeek. A DIFERENCIA del
+    # resto, el cupo aquí se mide en PREGUNTAS/día, no en "número de tests":
+    # así un test de 100 preguntas gasta 100 y uno de 10 gasta 10, y no es lo
+    # mismo (antes ambos contaban como "1 uso", lo cual era injusto). El
+    # frontend NO enseña este contador al usuario -- se percibe como
+    # ilimitado, y solo bloquea en el caso raro de agotar el cupo del día.
+    # 300/día = 3 tests de 100 ó 30 de 10 (básico); 1500 = 15 de 100 (premium).
     "test_avanzado_verificado": {
         "gratis": ("mes", 0),
-        "basico": ("mes", 8),
-        "premium": ("dia", 5),
+        "basico": ("dia", 300),
+        "premium": ("dia", 1500),
     },
     # Chat conversacional "Tu Tutor" -- /tu-tutor.
-    # Requiere plan premium (ver @requiere_plan de la ruta).
+    # Requiere plan premium (ver @requiere_plan de la ruta), por eso básico
+    # se queda en 0 (la ruta ni siquiera deja entrar sin premium).
     "chat_temario": {
         "gratis": ("mes", 0),
         "basico": ("mes", 0),
-        "premium": ("dia", 60),
+        "premium": ("dia", 100),
     },
 }
 
 
-def max_paginas_para_plan(plan):
+# Etiquetas legibles de cada herramienta, para pintarlas en el panel de
+# administración (pestaña "Límites"). El orden es el de la interfaz.
+TIPOS_META = [
+    {"id": "test_avanzado_verificado", "nombre": "Test Personalizado (IA verificada)", "unidad": "preguntas",
+     "descripcion": "Se mide en PREGUNTAS al día (no en nº de tests): un test de 100 gasta 100 y uno de 10 gasta 10, así el consumo es justo. El usuario no ve este contador."},
+    {"id": "generacion_ia", "nombre": "Herramientas IA de temario", "unidad": "usos",
+     "descripcion": "Esquemas y análisis de rendimiento a partir del temario."},
+    {"id": "pdf_ia", "nombre": "Subir PDF (resumen / esquema / tarjetas / test)", "unidad": "usos",
+     "descripcion": "Herramientas de IA sobre un PDF que sube el propio usuario."},
+    {"id": "chat_pdf", "nombre": "Chat con PDF", "unidad": "usos",
+     "descripcion": "Conversar con la IA sobre un PDF subido."},
+    {"id": "chat_temario", "nombre": "Tu Tutor (chat del temario)", "unidad": "usos",
+     "descripcion": "Chat conversacional del temario. Solo disponible en premium."},
+]
+_PLANES = ("gratis", "basico", "premium")
+
+# ---------------------------------------------------------------------------
+# Límites efectivos: los valores de arriba (LIMITES / MAX_PAGINAS_POR_PLAN)
+# son los DEFECTO; el panel admin puede sobrescribirlos guardándolos en
+# config/limites. Se cachean unos segundos para no leer Firestore en cada
+# comprobación de cuota.
+# ---------------------------------------------------------------------------
+_TTL_CACHE_S = 30
+_cache_limites = {"data": None, "ts": 0.0}
+
+
+def invalidar_cache_limites():
+    """Fuerza recargar los límites de Firestore en la próxima consulta (se
+    llama tras guardarlos desde el panel)."""
+    _cache_limites["data"] = None
+
+
+def _estructura_defecto():
+    tools = {
+        tipo: {plan: {"periodo": cfg[plan][0], "limite": cfg[plan][1]} for plan in _PLANES}
+        for tipo, cfg in LIMITES.items()
+    }
+    return {"tools": tools, "max_paginas": dict(MAX_PAGINAS_POR_PLAN)}
+
+
+def _fusionar_overrides(guardado):
+    """Parte de los defaults y superpone SOLO valores válidos y conocidos del
+    documento guardado -- así, si en el código se añade una herramienta nueva,
+    aparece aunque el doc guardado sea antiguo, y valores raros se ignoran."""
+    base = _estructura_defecto()
+    if not guardado:
+        return base
+    for tipo, planes in (guardado.get("tools") or {}).items():
+        if tipo not in base["tools"]:
+            continue
+        for plan, cfg in (planes or {}).items():
+            if plan not in base["tools"][tipo]:
+                continue
+            per = (cfg or {}).get("periodo")
+            lim = (cfg or {}).get("limite")
+            if per in ("dia", "mes") and isinstance(lim, (int, float)) and not isinstance(lim, bool):
+                base["tools"][tipo][plan] = {"periodo": per, "limite": max(0, min(100000, int(lim)))}
+    for plan, val in (guardado.get("max_paginas") or {}).items():
+        if plan in base["max_paginas"] and isinstance(val, (int, float)) and not isinstance(val, bool):
+            base["max_paginas"][plan] = max(1, min(100000, int(val)))
+    return base
+
+
+def limites_efectivos(db):
+    """Devuelve {'tools': {...}, 'max_paginas': {...}} efectivos (defaults +
+    overrides de config/limites), cacheado unos segundos."""
+    ahora = time.time()
+    if _cache_limites["data"] is not None and ahora - _cache_limites["ts"] < _TTL_CACHE_S:
+        return _cache_limites["data"]
+    guardado = None
+    try:
+        doc = db.collection("config").document("limites").get()
+        if doc.exists:
+            guardado = doc.to_dict()
+    except Exception:
+        guardado = None
+    data = _fusionar_overrides(guardado)
+    _cache_limites["data"] = data
+    _cache_limites["ts"] = ahora
+    return data
+
+
+def _config_tool(db, tipo, plan):
+    cfg = limites_efectivos(db)["tools"].get(tipo, {}).get(plan)
+    return (cfg["periodo"], cfg["limite"]) if cfg else None
+
+
+def cargar_limites_config(db):
+    """Config completa para el panel admin (GET)."""
+    return limites_efectivos(db)
+
+
+def guardar_limites_config(db, data):
+    """Valida y guarda los límites editados desde el panel (PUT). Devuelve la
+    config efectiva ya saneada."""
+    limpio = _fusionar_overrides(data)
+    db.collection("config").document("limites").set(limpio)
+    invalidar_cache_limites()
+    return limpio
+
+
+def max_paginas_para_plan(plan, db=None):
+    if db is not None:
+        mp = limites_efectivos(db)["max_paginas"]
+        return mp.get(plan, mp.get("gratis"))
     return MAX_PAGINAS_POR_PLAN.get(plan, MAX_PAGINAS_POR_PLAN["gratis"])
 
 
@@ -76,7 +193,7 @@ def verificar_limite_uso(db, uid, plan, tipo):
     sin incrementar todavía el contador (eso se hace en registrar_uso, solo
     si la llamada a la IA se llega a realizar). Devuelve
     (permitido, mensaje_error_o_None, usados, limite)."""
-    config = LIMITES.get(tipo, {}).get(plan)
+    config = _config_tool(db, tipo, plan)
     if not config or config[1] <= 0:
         return False, "Tu plan actual no incluye esta herramienta.", 0, 0
     periodo, limite = config
@@ -88,43 +205,51 @@ def verificar_limite_uso(db, uid, plan, tipo):
     usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
 
     if usados >= limite:
+        # Mensaje sin cifra concreta: para el Test Personalizado el contador va
+        # en preguntas (no en "usos"), y en general se prefiere que el cupo se
+        # perciba como generoso/ilimitado en vez de exponer el número interno.
         if periodo == "dia":
-            mensaje = f"Has alcanzado el límite de {limite} usos diarios para esta herramienta. Podrás volver a usarla mañana."
+            mensaje = "Has alcanzado el límite de uso diario de esta herramienta. Podrás volver a usarla mañana."
         else:
-            mensaje = f"Has alcanzado el límite de {limite} usos mensuales para esta herramienta. Se renueva el próximo mes."
+            mensaje = "Has alcanzado el límite de uso mensual de esta herramienta. Se renueva el próximo mes."
         return False, mensaje, usados, limite
     return True, None, usados, limite
 
 
-def registrar_uso(db, uid, tipo, plan):
-    """Suma 1 al contador del periodo actual. Se llama solo cuando la
-    llamada a la IA se ha realizado de verdad (para no penalizar intentos
-    que fallan antes, p. ej. un PDF sin texto extraíble).
+def registrar_uso(db, uid, tipo, plan, cantidad=1):
+    """Suma `cantidad` al contador del periodo actual (por defecto 1). Se llama
+    solo cuando la llamada a la IA se ha realizado de verdad (para no penalizar
+    intentos que fallan antes, p. ej. un PDF sin texto extraíble). `cantidad`
+    permite cobrar por consumo real: el Test Personalizado carga tantas
+    unidades como preguntas se piden, no 1 fija.
 
     Lectura (contador actual, con su posible reinicio de periodo) y
     escritura (contador+1) van dentro de la misma transacción de Firestore
     -- sin esto, dos peticiones concurrentes del mismo usuario (dos
     pestañas, un reintento del frontend) podían leer el mismo contador y
     perder un incremento, dejando que se superase la cuota."""
-    config = LIMITES.get(tipo, {}).get(plan)
+    config = _config_tool(db, tipo, plan)
     if not config:
         return
     periodo, _limite = config
     clave = _clave_periodo(periodo)
     ref = db.collection("usuarios").document(uid)
 
+    cantidad = max(1, int(cantidad or 1))
+
     def _incrementar(transaction):
         doc = ref.get(transaction=transaction)
         datos = doc.to_dict() or {}
         uso = ((datos.get("limites_uso") or {}).get(tipo)) or {}
         usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
-        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": usados + 1}})
+        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": usados + cantidad}})
 
     ejecutar_en_transaccion(db, _incrementar)
 
 
-def devolver_uso(db, uid, tipo, plan):
-    """Resta 1 al contador del periodo actual (nunca por debajo de 0). Se usa
+def devolver_uso(db, uid, tipo, plan, cantidad=1):
+    """Resta `cantidad` al contador del periodo actual (nunca por debajo de 0,
+    por defecto 1; debe cuadrar con lo que se cobró en registrar_uso). Se usa
     en las rutas de streaming (SSE), donde el uso se cobra por ADELANTADO --
     antes de abrir el stream-- porque la generación corre en un hilo de fondo
     que sigue gastando en la API aunque el cliente corte la conexión, así que
@@ -138,7 +263,7 @@ def devolver_uso(db, uid, tipo, plan):
 
     Lectura y escritura van en la misma transacción, igual que registrar_uso,
     para no perder un decremento frente a otra petición concurrente."""
-    config = LIMITES.get(tipo, {}).get(plan)
+    config = _config_tool(db, tipo, plan)
     if not config:
         return
     periodo, _limite = config
@@ -154,6 +279,6 @@ def devolver_uso(db, uid, tipo, plan):
         if uso.get("periodo") != clave:
             return
         usados = uso.get("contador", 0)
-        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": max(0, usados - 1)}})
+        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": max(0, usados - max(1, int(cantidad or 1)))}})
 
     ejecutar_en_transaccion(db, _decrementar)

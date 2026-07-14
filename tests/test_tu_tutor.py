@@ -105,6 +105,199 @@ def test_pregunta_sin_relacion_con_el_turno_anterior_no_fuerza_rag(db):
     assert usar_rag2 is False
 
 
+def test_deteccion_de_pregunta_de_test():
+    from chat_controller import _es_pregunta_de_test
+    # Formato en que el frontend pega las opciones (letras sueltas en mayúscula).
+    assert _es_pregunta_de_test("¿...? A La Comisión B El Ministro C El Presidente D El Pleno")
+    # Clásico a) b) c) d).
+    assert _es_pregunta_de_test("Pregunta: a) uno b) dos c) tres d) cuatro")
+    # Preguntas normales NO se confunden con un test.
+    assert not _es_pregunta_de_test("¿Qué dice el artículo 14 de la Constitución?")
+    assert not _es_pregunta_de_test("Explícame el poder ejecutivo del Estado")
+
+
+def test_pregunta_de_test_pegada_no_hereda_el_tema_anterior(db):
+    # Se habla de la Constitución y luego se pega una pregunta de test de OTRA
+    # cosa (Consejo de Estado). No debe arrastrar el tema anterior ni meter su
+    # contenido: debe recibir la instrucción de resolver la pregunta directa.
+    _sembrar_tema(db)
+    mcq = ("Según el artículo veintiséis, ¿a quién corresponde aprobar los gastos? "
+           "A A la Comisión Permanente B Al Ministro de Hacienda "
+           "C Al Presidente del Consejo de Estado D Al Pleno del Consejo de Estado")
+    with patch("chat_controller.call_deepseek_api", side_effect=["Sobre la Constitución...", "La correcta es la A"]) as mock_llamada, \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        _t1, chat_id, _r1 = responder_tutor("Explícame la Constitución Española de 1978", db=db, usuario_id="u1")
+        _t2, _c2, usar_rag2 = responder_tutor(mcq, db=db, usuario_id="u1", chat_id=chat_id)
+    assert usar_rag2 is False  # sin tema concreto identificado -> se responde directo
+    prompt = mock_llamada.call_args_list[1].kwargs["messages"][-1]["content"]
+    assert "opción correcta" in prompt          # se le pide resolver la pregunta
+    assert "CONTENIDO DEL TEMARIO" not in prompt  # no se cuela el tema equivocado
+
+
+def test_rag_avisa_de_que_el_contenido_no_lo_ha_pasado_el_usuario(db):
+    # El contenido del temario lo carga la plataforma, no el usuario: el prompt
+    # debe dejarlo claro para que el tutor no diga "según el temario que me has
+    # pasado" ni se niegue a responder si la pregunta no encaja con él.
+    _sembrar_tema(db)
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada, \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        responder_tutor("Explícame la Constitución Española de 1978", db=db, usuario_id="u1")
+    prompt = mock_llamada.call_args.kwargs["messages"][-1]["content"]
+    assert "NO te ha pasado" in prompt
+    assert "CONTENIDO DEL TEMARIO" in prompt
+    assert "MENSAJE DEL USUARIO" in prompt
+
+
+def _texto_sistema(mensajes):
+    return " ".join(m["content"] for m in mensajes if m["role"] == "system")
+
+
+def test_pregunta_de_test_oficial_usa_la_respuesta_verificada(db):
+    # Si la pregunta pegada coincide con una del banco de exámenes oficiales,
+    # el tutor recibe la respuesta correcta ya corregida para no razonarla ni
+    # contradecir lo que marca el test.
+    db.sembrar(("examenes_oficiales_AGE", "of1"), {
+        "tipo": "pregunta",
+        "pregunta": "El plazo para interponer recurso de alzada es de un mes desde la notificacion",
+        "opciones": {"A": "Un mes", "B": "Tres meses", "C": "Quince dias", "D": "Dos meses"},
+        "respuesta_correcta": "A",
+        "explicacion": "El recurso de alzada se interpone en el plazo de un mes (art. 122 LPAC).",
+        "examen": "AGE 2025",
+    })
+    mcq = ("El plazo para interponer recurso de alzada es de un mes desde la notificación. "
+           "A Un mes B Tres meses C Quince días D Dos meses")
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor(mcq, db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+    sistema = _texto_sistema(mock_llamada.call_args.kwargs["messages"])
+    assert "DATO VERIFICADO" in sistema
+    assert "opción A" in sistema
+    assert "art. 122 LPAC" in sistema  # explicación oficial incluida
+
+
+def test_pregunta_de_test_no_oficial_no_inventa_dato_verificado(db):
+    # Una pregunta que NO está en el banco oficial no debe generar un bloque
+    # "DATO VERIFICADO" (que daría falsa autoridad a una respuesta inventada).
+    db.sembrar(("examenes_oficiales_AGE", "of1"), {
+        "tipo": "pregunta",
+        "pregunta": "El plazo para interponer recurso de alzada es de un mes",
+        "opciones": {"A": "Un mes", "B": "Tres meses"},
+        "respuesta_correcta": "A",
+    })
+    mcq = "¿Capital de Francia? A Madrid B París C Roma D Berlín"
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor(mcq, db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+    sistema = _texto_sistema(mock_llamada.call_args.kwargs["messages"])
+    assert "DATO VERIFICADO" not in sistema
+
+
+def test_contexto_de_pagina_pasa_la_pregunta_en_pantalla(db):
+    # El widget manda la pregunta que el usuario tiene delante en un test; el
+    # tutor debe recibirla para resolver "¿cuál es la correcta?" sin pegarla.
+    contexto = {
+        "tipo": "test",
+        "enunciado": "¿Qué órgano aprueba los Presupuestos Generales del Estado?",
+        "opciones": {"A": "El Gobierno", "B": "Las Cortes Generales", "C": "El Rey"},
+    }
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor("¿Cuál es la correcta?", db=db, usuario_id="u1", oposicion="AGE",
+                        coleccion="Temario AGE", contexto_pagina=contexto)
+    sistema = _texto_sistema(mock_llamada.call_args.kwargs["messages"])
+    assert "PREGUNTA EN PANTALLA" in sistema
+    assert "Presupuestos Generales del Estado" in sistema
+    assert "Las Cortes Generales" in sistema
+
+
+def test_modo_examen_inyecta_instruccion_de_examinador(db):
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock:
+        responder_tutor("Examíname sobre la Constitución", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+    assert "MODO EXAMINADOR" in _texto_sistema(mock.call_args.kwargs["messages"])
+
+
+def test_pide_plan_de_estudio_inyecta_instruccion_de_plan(db):
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock:
+        responder_tutor("¿Qué estudio hoy?", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+    sistema = _texto_sistema(mock.call_args.kwargs["messages"])
+    assert "plan" in sistema.lower()
+
+
+def test_explicar_por_que_falle_usa_la_respuesta_pasada(db):
+    # La pantalla de resultados manda la respuesta correcta + la del usuario.
+    contexto = {
+        "tipo": "test",
+        "enunciado": "¿Quién sanciona las leyes?",
+        "opciones": {"A": "El Rey", "B": "El Congreso"},
+        "respuesta_correcta": "A",
+        "respuesta_usuario": "B",
+        "explicacion": "El Rey sanciona y promulga las leyes (art. 62.a CE).",
+    }
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock:
+        responder_tutor("¿Por qué me he equivocado?", db=db, usuario_id="u1", oposicion="AGE",
+                        coleccion="Temario AGE", contexto_pagina=contexto)
+    sistema = _texto_sistema(mock.call_args.kwargs["messages"])
+    assert "opción A" in sistema        # respuesta correcta
+    assert "opción B" in sistema        # la que marcó (falló)
+    assert "art. 62.a CE" in sistema    # explicación de referencia
+
+
+def test_saludo_de_vuelta_y_sugerencias_de_examen_para_usuario_con_historia(db):
+    db.sembrar(("Temario AGE", "b1"), {"titulo": "Bloque I"})
+    db.sembrar(("Temario AGE", "b1", "temas", "t1"), {"titulo": "La Corona"})
+    db.sembrar(("usuarios", "u1"), {
+        "nombre": "Ana",
+        "estadisticas": {"AGE": {
+            "tests_realizados": 4,
+            "rendimiento_por_tema": {"b1-t1": {"aciertos": 2, "fallos": 6, "blancos": 0}},
+        }},
+    })
+    catalogo = obtener_catalogo_temas(db, "Temario AGE")
+    sug = sugerencia_inicial_usuario(db, "u1", "AGE", catalogo)
+    assert "de nuevo" in sug["saludo"]  # saludo de continuidad
+    assert any("Examíname" in s for s in sug["sugerencias"])
+    assert any("estudio hoy" in s.lower() for s in sug["sugerencias"])
+
+
+def test_pregunta_de_test_no_arrastra_el_historial(db):
+    # Con una conversación en curso, al pegar una pregunta de test NO se debe
+    # colar el historial (evita que responda sobre una pregunta anterior).
+    with patch("chat_controller.call_deepseek_api", side_effect=["ok1", "ok2"]) as mock:
+        _t, chat_id, _r = responder_tutor(
+            "Explícame el poder ejecutivo del Estado", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+        responder_tutor(
+            "¿Capital de Francia? A Madrid B París C Roma D Berlín",
+            db=db, usuario_id="u1", chat_id=chat_id, oposicion="AGE", coleccion="Temario AGE")
+    # En la 2ª llamada (pregunta de test) no debe aparecer el mensaje anterior.
+    contenidos = " ".join(m["content"] for m in mock.call_args_list[1].kwargs["messages"])
+    assert "poder ejecutivo" not in contenidos
+
+
+def test_conversacion_normal_si_conserva_el_historial(db):
+    # En una conversación normal (sin pregunta de test) el historial SÍ se
+    # mantiene, para que las preguntas de seguimiento tengan contexto.
+    with patch("chat_controller.call_deepseek_api", side_effect=["ok1", "ok2"]) as mock:
+        _t, chat_id, _r = responder_tutor(
+            "Me llamo Ana y estoy agobiada", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+        responder_tutor(
+            "¿Algún consejo más?", db=db, usuario_id="u1", chat_id=chat_id, oposicion="AGE", coleccion="Temario AGE")
+    contenidos = " ".join(m["content"] for m in mock.call_args_list[1].kwargs["messages"])
+    assert "agobiada" in contenidos
+
+
+def test_buscar_pregunta_oficial_por_contencion_del_enunciado(db):
+    from utils import buscar_pregunta_oficial
+    db.sembrar(("examenes_oficiales_AGE", "of1"), {
+        "tipo": "pregunta",
+        "pregunta": "La soberanía nacional reside en el pueblo español",
+        "opciones": {"A": "El pueblo español", "B": "El Rey"},
+        "respuesta_correcta": "A",
+    })
+    # El texto pegado trae el enunciado + opciones: debe emparejar.
+    encontrada = buscar_pregunta_oficial(db, "AGE", "La soberanía nacional reside en el pueblo español. A ... B ...")
+    assert encontrada is not None
+    assert encontrada["respuesta_correcta"] == "A"
+    # Un texto sin relación no empareja.
+    assert buscar_pregunta_oficial(db, "AGE", "¿Cuántos ríos hay en España?") is None
+
+
 def test_si_deepseek_falla_no_guarda_nada_y_devuelve_none(db):
     with patch("chat_controller.call_deepseek_api", return_value=None), \
          patch("chat_controller.crear_conversacion") as mock_crear, \
@@ -125,6 +318,52 @@ def test_responder_tutor_stream_emite_deltas_y_guarda_al_final(db):
     chat_id = eventos[-1]["chat_id"]
     conversacion = db.leer(("conversaciones_IA", "u1", "conversaciones", chat_id))
     assert conversacion["mensajes"][1]["content"] == "Hola que tal"
+
+
+def test_stream_por_ruta_guarda_la_conversacion_y_sale_en_historial(client, db):
+    # Flujo completo de producción: POST a /tu-tutor/stream, consumir el SSE
+    # entero, y comprobar que la conversación queda guardada y aparece en
+    # /conversaciones (regresión del "historial en blanco").
+    db.sembrar(("usuarios", "u1"), {"suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}})
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}), \
+         patch("chat_controller.call_deepseek_api_stream", return_value=iter(["Hola", " mundo"])):
+        r = client.post("/tu-tutor/stream", json={"mensaje": "Dame consejos", "oposicion": "AGE"},
+                        headers={"Authorization": "Bearer x"})
+        r.get_data(as_text=True)  # consume el stream entero (dispara el guardado)
+        lista = client.get("/conversaciones", headers={"Authorization": "Bearer x"}).get_json()
+    assert len(lista["conversaciones"]) == 1
+    assert lista["conversaciones"][0]["titulo"] == "Dame consejos"
+
+
+def test_anadir_mensaje_a_conversacion_inexistente_la_crea(db):
+    # Si llega un chat_id que ya no existe (obsoleto/borrado), el turno debe
+    # guardarse igualmente creando la conversación, no perderse.
+    from chat_controller import agregar_mensaje_a_conversacion
+    agregar_mensaje_a_conversacion(db, "u1", "id_fantasma", "user", "¿Hola?")
+    conv = db.leer(("conversaciones_IA", "u1", "conversaciones", "id_fantasma"))
+    assert conv is not None
+    assert conv["mensajes"][0]["content"] == "¿Hola?"
+    assert conv.get("timestamp_inicio")
+
+
+def test_listar_conversaciones_incluye_las_antiguas_sin_timestamp(client, db):
+    # Regresión: el histórico salía en blanco porque se ordenaba con
+    # order_by("timestamp_inicio"), que EXCLUYE las conversaciones sin ese
+    # campo. Ahora deben listarse todas, ordenadas por fecha (las que no
+    # tienen fecha van al final, pero aparecen).
+    db.sembrar(("usuarios", "u1"), {"suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}})
+    db.sembrar(("conversaciones_IA", "u1", "conversaciones", "nueva"),
+               {"titulo": "Reciente", "timestamp_inicio": "2026-07-14T10:00:00"})
+    db.sembrar(("conversaciones_IA", "u1", "conversaciones", "antigua"),
+               {"titulo": "Sin fecha"})  # conversación legacy, sin timestamp_inicio
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}):
+        r = client.get("/conversaciones", headers={"Authorization": "Bearer x"})
+    assert r.status_code == 200
+    convs = r.get_json()["conversaciones"]
+    titulos = [c["titulo"] for c in convs]
+    assert "Reciente" in titulos
+    assert "Sin fecha" in titulos  # antes se perdía
+    assert titulos[0] == "Reciente"  # la que tiene fecha, primero
 
 
 def test_responder_tutor_stream_emite_error_si_deepseek_no_devuelve_nada(db):
@@ -247,6 +486,38 @@ def test_contexto_personal_del_usuario_se_incluye_en_el_prompt(db):
     assert "La Corona" in contexto_personal
     assert "El acto administrativo" in contexto_personal
     assert "La Constitución Española de 1978" not in contexto_personal
+
+
+def test_contexto_personal_incluye_la_nota_del_ultimo_test(db):
+    # El tutor debe poder responder "¿qué nota saqué?" con datos reales del
+    # historial (antes decía que no tenía acceso al historial de resultados).
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "nombre": "Ana",
+        "estadisticas": {
+            "AGE": {
+                "tests_realizados": 3,
+                "tests_aprobados": 1,
+                "historial_tests": [
+                    {"aciertos": 4, "fallos": 6, "blancos": 0, "tipo": "personalizado", "resultado": "suspendido"},
+                    {"aciertos": 5, "fallos": 5, "blancos": 0, "tipo": "personalizado", "resultado": "suspendido"},
+                    # Último: 8 aciertos, 1 fallo, 1 blanco de 10 -> nota alta, aprobado.
+                    {"aciertos": 8, "fallos": 1, "blancos": 1, "tipo": "oficial", "resultado": "aprobado"},
+                ],
+            }
+        },
+    })
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor("¿Qué nota saqué en el último test?", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+
+    contexto_personal = mock_llamada.call_args.kwargs["messages"][1]["content"]
+    # Nota del último (8 - 1/3 = 7.67 sobre 10) y que fue aprobado.
+    assert "7.67 sobre 10" in contexto_personal
+    assert "aprobado" in contexto_personal
+    # Nota media real sobre 10, no la media de aciertos.
+    assert "sobre 10" in contexto_personal
+    # Sube desde 1.0 hasta 7.67 -> debe detectar tendencia al alza.
+    assert "subiendo" in contexto_personal
 
 
 def test_sugerencia_inicial_recomienda_practicar_el_tema_mas_flojo(db):

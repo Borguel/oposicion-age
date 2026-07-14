@@ -241,6 +241,90 @@ def test_detalle_usuario_agrega_tests_y_racha(client, db):
     assert d["plan"] == "premium"
 
 
+def test_detalle_usuario_incluye_contenido_y_rendimiento(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com",
+        "estadisticas": {"AGE": {"rendimiento_por_tema": {
+            "tema_01": {"aciertos": 8, "fallos": 2, "blancos": 0},
+            "tema_02": {"aciertos": 2, "fallos": 3, "blancos": 5},
+        }}},
+    })
+    db.sembrar(("usuarios", "u1", "documentos", "d1"), {"nombre": "apuntes.pdf"})
+    db.sembrar(("usuarios", "u1", "tarjetas_pdf", "t1"), {"tarjetas": [{}, {}, {}]})
+    db.sembrar(("usuarios", "u1", "preguntas_favoritas", "f1"), {"oposicion": "AGE"})
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["contenido_creado"]["documentos"] == 1
+    assert d["contenido_creado"]["tarjetas"] == 3
+    assert d["contenido_creado"]["favoritas"] == 1
+    assert d["rendimiento"]["aciertos"] == 10
+    assert d["rendimiento"]["contestadas"] == 20
+    assert d["rendimiento"]["porcentaje"] == 50
+
+
+def test_usuarios_lista_incluye_uso_y_ordena_por_uso(client, db):
+    from datetime import date
+    hoy = date.today().isoformat()
+    # u_bajo: poco uso; u_alto: casi al tope del cupo de test personalizado.
+    db.sembrar(("usuarios", "u_bajo"), {"email": "bajo@x.com", "suscripciones": {"AGE": {"plan": "basico"}},
+                                        "ultima_actividad": "2026-07-14"})
+    db.sembrar(("usuarios", "u_alto"), {"email": "alto@x.com", "suscripciones": {"AGE": {"plan": "basico"}},
+                                        "ultima_actividad": "2026-07-01",
+                                        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 300}}})
+    with _como():
+        d = client.get("/admin/api/usuarios?orden=uso", headers=_AUTH).get_json()
+    # El de más uso va primero al ordenar por uso.
+    assert d["usuarios"][0]["email"] == "alto@x.com"
+    assert d["usuarios"][0]["uso_pct"] == 100
+    assert d["usuarios"][1]["uso_pct"] == 0
+
+
+def test_detalle_usuario_incluye_uso_herramientas(client, db):
+    from datetime import date
+    hoy = date.today().isoformat()
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com",
+        "suscripciones": {"AGE": {"plan": "basico"}},
+        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 150}},
+    })
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    filas = {f["id"]: f for f in d["uso_herramientas"]["filas"]}
+    tp = filas["test_avanzado_verificado"]
+    assert tp["consumido"] == 150
+    assert tp["limite"] == 300  # básico por defecto
+    assert tp["porcentaje"] == 50
+    assert tp["unidad"] == "preguntas"
+    # Tu Tutor no está incluido en básico -> límite 0.
+    assert filas["chat_temario"]["limite"] == 0
+
+
+def test_notas_anadir_y_eliminar(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    with _como():
+        r = client.post("/admin/api/usuarios/u1/notas", json={"texto": "Primera nota"}, headers=_AUTH)
+        assert r.status_code == 201
+        nota_id = r.get_json()["nota"]["id"]
+        client.post("/admin/api/usuarios/u1/notas", json={"texto": "Segunda"}, headers=_AUTH)
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+        assert len(d["notas_lista"]) == 2
+        client.delete(f"/admin/api/usuarios/u1/notas/{nota_id}", headers=_AUTH)
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+        textos = [n["texto"] for n in d["notas_lista"]]
+        assert textos == ["Segunda"]
+
+
+def test_notas_legacy_se_migra_a_lista(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "notas_admin": "Nota antigua"})
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+        assert d["notas_lista"][0]["id"] == "legacy"
+        assert d["notas_lista"][0]["texto"] == "Nota antigua"
+        client.delete("/admin/api/usuarios/u1/notas/legacy", headers=_AUTH)
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+        assert d["notas_lista"] == []
+
+
 # ---------- Temario ----------
 def test_temario_arbol_y_chunks(client, db):
     _sembrar_tema(db)
@@ -498,6 +582,59 @@ def test_sistema_reporta_servicios(client, db, monkeypatch):
     por_nombre = {s["nombre"]: s["ok"] for s in servicios}
     assert por_nombre["IA (DeepSeek)"] is True
     assert por_nombre["Errores (Sentry)"] is False
+    # Sentry sin configurar es OPCIONAL: no debe contar como crítico.
+    critico = {s["nombre"]: s["critico"] for s in servicios}
+    assert critico["IA (DeepSeek)"] is True
+    assert critico["Errores (Sentry)"] is False
+
+
+def test_sistema_diagnostico(client, db, monkeypatch):
+    for k in ("DEEPSEEK_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
+              "STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM",
+              "SENDGRID_API_KEY", "SENDGRID_FROM_EMAIL"):
+        monkeypatch.setenv(k, "x")
+    db.sembrar(("reportes_preguntas", "r1"), {"estado": "pendiente"})
+    db.sembrar(("config", "banner"), {"activo": True})
+    with _como():
+        d = client.get("/admin/api/sistema", headers=_AUTH).get_json()["diagnostico"]
+    assert d["todo_ok"] is True  # todos los críticos configurados
+    assert d["reportes_pendientes"] == 1
+    assert d["banner_activo"] is True
+
+
+def test_limites_obtener_devuelve_defaults(client, db):
+    with _como():
+        cfg = client.get("/admin/api/limites", headers=_AUTH).get_json()
+    assert cfg["tools"]["test_avanzado_verificado"]["premium"] == {"periodo": "dia", "limite": 1500}
+    assert cfg["max_paginas"]["premium"] == 500
+    assert any(m["id"] == "test_avanzado_verificado" for m in cfg["meta"])
+
+
+def test_limites_guardar_y_afecta_a_la_cuota(client, db):
+    from limites_uso import verificar_limite_uso
+    with _como():
+        r = client.put("/admin/api/limites", json={
+            "tools": {"test_avanzado_verificado": {"basico": {"periodo": "dia", "limite": 1}}},
+            "max_paginas": {"basico": 999},
+        }, headers=_AUTH)
+        assert r.status_code == 200
+    # El override se guarda y ya cuenta como límite efectivo.
+    guardado = db.leer(("config", "limites"))
+    assert guardado["tools"]["test_avanzado_verificado"]["basico"]["limite"] == 1
+    assert guardado["max_paginas"]["basico"] == 999
+    # Y verificar_limite_uso lo respeta (1 uso permitido, el 2º ya bloquea).
+    from datetime import date
+    db.sembrar(("usuarios", "u9"), {"limites_uso": {"test_avanzado_verificado": {"periodo": date.today().isoformat(), "contador": 1}}})
+    permitido, _m, _u, limite = verificar_limite_uso(db, "u9", "basico", "test_avanzado_verificado")
+    assert permitido is False
+    assert limite == 1
+
+
+def test_limites_solo_admin_total(client, db):
+    # Un usuario con permiso "usuarios" (no admin total) no puede tocar límites.
+    with _como(admin=False, permisos=["usuarios"]):
+        r = client.get("/admin/api/limites", headers=_AUTH)
+    assert r.status_code == 403
 
 
 def test_banner_guardar_y_lectura_publica(client, db):

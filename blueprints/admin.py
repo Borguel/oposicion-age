@@ -26,6 +26,7 @@ from auth_utils import requiere_admin, requiere_permiso, PERMISOS_VALIDOS, _mejo
 from banco_fallos import _id_pregunta
 from coste_ia import resumen_coste_usuario
 from oposiciones import OPOSICIONES, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
+from limites_uso import cargar_limites_config, guardar_limites_config, TIPOS_META, limites_efectivos, _clave_periodo
 from utils import _limpiar_cache_temario
 
 logger = logging.getLogger(__name__)
@@ -94,6 +95,127 @@ def _oposiciones_activas(datos):
         if (sub or {}).get("plan", "gratis") != "gratis":
             activas.append(oid)
     return activas
+
+
+def _contar_subcoleccion(ref, nombre):
+    """Nº de documentos de una subcolección del usuario. Usa la agregación
+    count() (barata); si no está disponible, cae a contar el stream. Nunca
+    debe romper la ficha."""
+    try:
+        return int(ref.collection(nombre).count().get()[0][0].value)
+    except Exception:
+        try:
+            return sum(1 for _ in ref.collection(nombre).stream())
+        except Exception:
+            return 0
+
+
+def _ficha_actividad(ref, datos):
+    """Reúne, para la ficha de cliente del panel, los contadores de contenido
+    creado (biblioteca de PDF, tarjetas, resúmenes…), el banco de repaso
+    (favoritas/falladas), el rendimiento agregado y el histórico de coste de
+    IA. Todo best-effort: cualquier fallo devuelve 0 en ese campo."""
+    contenido = {
+        "documentos": _contar_subcoleccion(ref, "documentos"),
+        "resumenes": _contar_subcoleccion(ref, "resumenes_pdf"),
+        "esquemas": _contar_subcoleccion(ref, "esquemas_pdf"),
+        "tests_pdf": _contar_subcoleccion(ref, "tests_pdf"),
+        "favoritas": _contar_subcoleccion(ref, "preguntas_favoritas"),
+        "falladas": _contar_subcoleccion(ref, "preguntas_falladas"),
+    }
+    # Tarjetas: cada documento de tarjetas_pdf agrupa varias -- sumamos el
+    # total real de tarjetas, no el nº de generaciones.
+    tarjetas = 0
+    try:
+        for d in ref.collection("tarjetas_pdf").stream():
+            dd = d.to_dict() or {}
+            tarjetas += len(dd.get("tarjetas") or []) or int(dd.get("num_tarjetas", 0) or 0)
+    except Exception:
+        tarjetas = 0
+    contenido["tarjetas"] = tarjetas
+
+    # Rendimiento agregado (aciertos/fallos/blancos) sobre todas las
+    # oposiciones, a partir de rendimiento_por_tema.
+    aciertos = fallos = blancos = 0
+    for e in (datos.get("estadisticas") or {}).values():
+        for r in ((e or {}).get("rendimiento_por_tema") or {}).values():
+            aciertos += (r or {}).get("aciertos", 0) or 0
+            fallos += (r or {}).get("fallos", 0) or 0
+            blancos += (r or {}).get("blancos", 0) or 0
+    contestadas = aciertos + fallos + blancos
+    rendimiento = {
+        "aciertos": aciertos, "fallos": fallos, "blancos": blancos,
+        "contestadas": contestadas,
+        "porcentaje": round(aciertos / contestadas * 100) if contestadas else None,
+    }
+
+    # Histórico de coste de IA: TODOS los meses ordenados de más antiguo a
+    # más reciente. El panel pinta las barras de los últimos meses y usa la
+    # serie completa para el buscador por rango de fechas.
+    hist = []
+    for mes, m in sorted((datos.get("coste_ia") or {}).items()):
+        hist.append({
+            "mes": mes,
+            "coste": round((m or {}).get("coste", 0) or 0, 4),
+            "tokens": ((m or {}).get("tokens_in", 0) or 0) + ((m or {}).get("tokens_out", 0) or 0),
+            "tokens_in": (m or {}).get("tokens_in", 0) or 0,
+            "tokens_out": (m or {}).get("tokens_out", 0) or 0,
+            "llamadas": (m or {}).get("llamadas", 0) or 0,
+        })
+
+    # Consumo del periodo actual por herramienta (limites_uso) -- para ver de
+    # un vistazo cuánta IA está gastando ahora mismo.
+    uso = {}
+    for tipo, u in (datos.get("limites_uso") or {}).items():
+        uso[tipo] = (u or {}).get("contador", 0) or 0
+
+    return contenido, rendimiento, hist, uso
+
+
+def _uso_herramientas(datos):
+    """Consumo real de cada herramienta en el periodo actual frente al límite
+    del plan del usuario -- para vigilar desde la ficha quién está tirando
+    mucho de la IA. El Test Personalizado se mide en preguntas; el resto en
+    usos."""
+    plan = _plan_usuario(datos)
+    tools = limites_efectivos(db)["tools"]
+    usos = datos.get("limites_uso") or {}
+    filas = []
+    for m in TIPOS_META:
+        tipo = m["id"]
+        cfg = tools.get(tipo, {}).get(plan) or {"periodo": "mes", "limite": 0}
+        periodo, limite = cfg.get("periodo", "mes"), cfg.get("limite", 0)
+        u = usos.get(tipo) or {}
+        consumido = u.get("contador", 0) if u.get("periodo") == _clave_periodo(periodo) else 0
+        filas.append({
+            "id": tipo,
+            "nombre": m["nombre"],
+            "unidad": m.get("unidad", "usos"),
+            "consumido": consumido,
+            "limite": limite,
+            "periodo": periodo,
+            "porcentaje": round(consumido / limite * 100) if limite else None,
+        })
+    return {"plan": plan, "filas": filas}
+
+
+def _uso_pico(datos, plan, tools):
+    """% de uso MÁS ALTO entre todas las herramientas del usuario en su periodo
+    actual, y el nombre de esa herramienta. Para el indicador de la lista de
+    usuarios (detectar de un vistazo quién apura su cupo)."""
+    usos = datos.get("limites_uso") or {}
+    pico, nombre = 0, ""
+    for m in TIPOS_META:
+        cfg = tools.get(m["id"], {}).get(plan) or {}
+        limite = cfg.get("limite", 0)
+        if not limite:
+            continue
+        u = usos.get(m["id"]) or {}
+        consumido = u.get("contador", 0) if u.get("periodo") == _clave_periodo(cfg.get("periodo", "mes")) else 0
+        pct = round(consumido / limite * 100)
+        if pct > pico:
+            pico, nombre = pct, m["nombre"]
+    return pico, nombre
 
 
 def _fallos_agregados(oposicion=None):
@@ -775,6 +897,7 @@ def usuarios_listar():
     except (TypeError, ValueError):
         pagina = 1
     por_pagina = 20
+    tools_efectivos = limites_efectivos(db)["tools"]  # una vez, cacheado
 
     filtrados = []
     for doc in db.collection("usuarios").stream():
@@ -785,6 +908,7 @@ def usuarios_listar():
             continue
         if filtro_plan and plan != filtro_plan:
             continue
+        uso_pct, uso_tool = _uso_pico(datos, plan, tools_efectivos)
         filtrados.append({
             "uid": doc.id,
             "email": datos.get("email", ""),
@@ -793,9 +917,15 @@ def usuarios_listar():
             "oposiciones_activas": _oposiciones_activas(datos),
             "fecha_creacion": datos.get("fecha_creacion"),
             "ultima_actividad": datos.get("ultima_actividad"),
+            "uso_pct": uso_pct,
+            "uso_tool": uso_tool,
         })
 
-    filtrados.sort(key=lambda u: u.get("ultima_actividad") or "", reverse=True)
+    orden = request.args.get("orden") or ""
+    if orden == "uso":
+        filtrados.sort(key=lambda u: u.get("uso_pct") or 0, reverse=True)
+    else:
+        filtrados.sort(key=lambda u: u.get("ultima_actividad") or "", reverse=True)
     total = len(filtrados)
     inicio = (pagina - 1) * por_pagina
     return jsonify({
@@ -924,6 +1054,7 @@ def usuarios_detalle(uid):
 
     racha = datos.get("racha") or {}
     _cim, _cit, _tit = resumen_coste_usuario(datos)
+    contenido, rendimiento, coste_historico, uso_actual = _ficha_actividad(ref, datos)
     bloqueado = False
     try:
         registro = firebase_auth.get_user(uid)
@@ -958,14 +1089,31 @@ def usuarios_detalle(uid):
         "coste_ia_mes": _cim,
         "coste_ia_total": _cit,
         "tokens_ia_total": _tit,
+        "coste_ia_historico": coste_historico,
+        "contenido_creado": contenido,
+        "rendimiento": rendimiento,
+        "uso_actual": uso_actual,
+        "uso_herramientas": _uso_herramientas(datos),
+        "notas_lista": _notas_lista(datos),
     })
+
+
+def _notas_lista(datos):
+    """Lista de notas internas del usuario. Migra en caliente la nota única
+    antigua (notas_admin: str) a un elemento de la lista, para no perder lo
+    ya escrito con el sistema viejo."""
+    lista = list(datos.get("notas_lista") or [])
+    legacy = (datos.get("notas_admin") or "").strip()
+    if legacy and not any(n.get("id") == "legacy" for n in lista):
+        lista.insert(0, {"id": "legacy", "texto": legacy, "autor": "", "fecha": ""})
+    return lista
 
 
 @bp.route("/admin/api/usuarios/<uid>/notas", methods=["PATCH"])
 @requiere_permiso("usuarios")
 def usuarios_notas(uid):
-    """Guarda una nota interna de soporte sobre el usuario (no visible para
-    él)."""
+    """Compatibilidad: guarda la nota única antigua (notas_admin). El panel
+    nuevo usa POST/DELETE sobre la lista de notas."""
     ref = db.collection("usuarios").document(uid)
     if not ref.get().exists:
         return jsonify({"error": "Usuario no encontrado"}), 404
@@ -973,6 +1121,50 @@ def usuarios_notas(uid):
     ref.set({"notas_admin": notas}, merge=True)
     _registrar_auditoria("usuario_notas", uid)
     return jsonify({"mensaje": "Nota guardada"})
+
+
+@bp.route("/admin/api/usuarios/<uid>/notas", methods=["POST"])
+@requiere_permiso("usuarios")
+def usuarios_notas_anadir(uid):
+    """Añade una nota interna nueva a la lista, sin borrar las anteriores.
+    Devuelve la nota creada (con su id) para pintarla al momento."""
+    ref = db.collection("usuarios").document(uid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    texto = str((request.get_json(silent=True) or {}).get("texto", "")).strip()[:2000]
+    if not texto:
+        return jsonify({"error": "La nota está vacía"}), 400
+    nota = {
+        "id": datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
+        "texto": texto,
+        "autor": getattr(g, "email", "") or "",
+        "fecha": datetime.utcnow().isoformat(),
+    }
+    lista = list((doc.to_dict() or {}).get("notas_lista") or [])
+    lista.append(nota)
+    ref.set({"notas_lista": lista}, merge=True)
+    _registrar_auditoria("usuario_nota_anadir", uid)
+    return jsonify({"mensaje": "Nota añadida", "nota": nota}), 201
+
+
+@bp.route("/admin/api/usuarios/<uid>/notas/<nota_id>", methods=["DELETE"])
+@requiere_permiso("usuarios")
+def usuarios_notas_eliminar(uid, nota_id):
+    """Elimina una nota concreta por su id. 'legacy' borra la nota única
+    antigua (notas_admin)."""
+    ref = db.collection("usuarios").document(uid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    datos = doc.to_dict() or {}
+    if nota_id == "legacy":
+        ref.set({"notas_admin": ""}, merge=True)
+    else:
+        lista = [n for n in (datos.get("notas_lista") or []) if n.get("id") != nota_id]
+        ref.set({"notas_lista": lista}, merge=True)
+    _registrar_auditoria("usuario_nota_eliminar", uid)
+    return jsonify({"mensaje": "Nota eliminada"})
 
 
 @bp.route("/admin/api/usuarios/<uid>/plan", methods=["PATCH"])
@@ -1230,17 +1422,47 @@ def sistema_estado():
     las claves están presentes en el entorno, no hace llamadas de red)."""
     def _hay(*nombres):
         return all(bool(os.environ.get(n)) for n in nombres)
+    # critico=True: si falta, algo de la web NO funciona (rojo). critico=False:
+    # servicio opcional; si falta no pasa nada (ámbar, no alarma).
     servicios = [
-        {"nombre": "Firebase / Firestore", "ok": True, "detalle": "Conectado (la app arranca con credenciales)."},
-        {"nombre": "IA (DeepSeek)", "ok": _hay("DEEPSEEK_API_KEY"), "detalle": "Necesaria para Tu Tutor y generación de tests/resúmenes."},
-        {"nombre": "Pagos (Stripe)", "ok": _hay("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"), "detalle": "Clave y webhook para cobros y altas de plan."},
-        {"nombre": "Precios de planes", "ok": _hay("STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM"), "detalle": "IDs de precio de básico y premium."},
-        {"nombre": "Email (SendGrid)", "ok": _hay("SENDGRID_API_KEY", "SENDGRID_FROM_EMAIL"), "detalle": "Bienvenida, verificación y avisos de racha."},
-        {"nombre": "Notificaciones push (VAPID)", "ok": _hay("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"), "detalle": "Avisos push del navegador."},
-        {"nombre": "Errores (Sentry)", "ok": _hay("SENTRY_DSN"), "detalle": "Captura de errores en producción. Opcional."},
-        {"nombre": "Límite de peticiones", "ok": os.environ.get("RATELIMIT_ENABLED", "").lower() in ("1", "true", "yes"), "detalle": "Protección contra abuso/bots."},
+        {"nombre": "Firebase / Firestore", "ok": True, "critico": True, "detalle": "Conectado (la app arranca con credenciales)."},
+        {"nombre": "IA (DeepSeek)", "ok": _hay("DEEPSEEK_API_KEY"), "critico": True, "detalle": "Necesaria para Tu Tutor y generación de tests/resúmenes."},
+        {"nombre": "Pagos (Stripe)", "ok": _hay("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"), "critico": True, "detalle": "Clave y webhook para cobros y altas de plan."},
+        {"nombre": "Precios de planes", "ok": _hay("STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM"), "critico": True, "detalle": "IDs de precio de básico y premium."},
+        {"nombre": "Email (SendGrid)", "ok": _hay("SENDGRID_API_KEY", "SENDGRID_FROM_EMAIL"), "critico": True, "detalle": "Bienvenida, verificación y avisos de racha."},
+        {"nombre": "Notificaciones push (VAPID)", "ok": _hay("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"), "critico": False, "detalle": "Avisos push del navegador. Opcional."},
+        {"nombre": "Errores (Sentry)", "ok": _hay("SENTRY_DSN"), "critico": False, "detalle": "Captura de errores en producción. Opcional."},
+        {"nombre": "Límite de peticiones", "ok": os.environ.get("RATELIMIT_ENABLED", "true").lower() != "false", "critico": False, "detalle": "Protección contra abuso/bots. Activo salvo que lo desactives (RATELIMIT_ENABLED=false)."},
     ]
-    return jsonify({"servicios": servicios})
+    criticos_ko = [s["nombre"] for s in servicios if s["critico"] and not s["ok"]]
+    opcionales_ko = [s["nombre"] for s in servicios if not s["critico"] and not s["ok"]]
+
+    # Pulso rápido de la web: cosas que conviene vigilar de un vistazo.
+    def _contar(consulta):
+        try:
+            return int(consulta.count().get()[0][0].value)
+        except Exception:
+            try:
+                return sum(1 for _ in consulta.stream())
+            except Exception:
+                return 0
+    reportes_pendientes = _contar(db.collection("reportes_preguntas").where("estado", "==", "pendiente"))
+    try:
+        banner_doc = db.collection("config").document("banner").get()
+        banner_activo = bool((banner_doc.to_dict() or {}).get("activo")) if banner_doc.exists else False
+    except Exception:
+        banner_activo = False
+
+    return jsonify({
+        "servicios": servicios,
+        "diagnostico": {
+            "todo_ok": not criticos_ko,
+            "criticos_ko": criticos_ko,
+            "opcionales_ko": opcionales_ko,
+            "reportes_pendientes": reportes_pendientes,
+            "banner_activo": banner_activo,
+        },
+    })
 
 
 # ============================================================
@@ -1287,6 +1509,32 @@ def banner_publico():
     if not banner["activo"] or not banner["texto"]:
         return jsonify({"activo": False})
     return jsonify(banner)
+
+
+# ============================================================
+# Límites de uso por plan (editables desde el panel)
+# ============================================================
+@bp.route("/admin/api/limites", methods=["GET"])
+@requiere_admin
+def limites_obtener():
+    cfg = cargar_limites_config(db)
+    return jsonify({
+        "tools": cfg["tools"],
+        "max_paginas": cfg["max_paginas"],
+        "meta": TIPOS_META,
+        "planes": ["gratis", "basico", "premium"],
+    })
+
+
+@bp.route("/admin/api/limites", methods=["PUT"])
+@requiere_admin
+def limites_guardar():
+    """Guarda los límites editados. Solo un admin total puede tocarlos, porque
+    afectan directamente al gasto en IA de toda la plataforma."""
+    data = request.get_json(silent=True) or {}
+    cfg = guardar_limites_config(db, data)
+    _registrar_auditoria("limites_editar", "", "Límites de uso actualizados")
+    return jsonify({"mensaje": "Límites actualizados.", "tools": cfg["tools"], "max_paginas": cfg["max_paginas"]})
 
 
 # ============================================================

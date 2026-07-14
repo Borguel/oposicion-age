@@ -146,6 +146,10 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     const idExp = `exp-${i}-${Math.random().toString(36).slice(2, 6)}`;
     detalleHTML += `<div class="detalle-acciones-fila">`;
     detalleHTML += `<button type="button" class="detalle-explicacion-btn" data-toggle-target="${idExp}">📘 Mostrar/Ocultar Explicación</button>`;
+    // Solo en las que no ha acertado: pedirle al tutor que se lo explique.
+    if (clase !== "acierto") {
+      detalleHTML += `<button type="button" class="detalle-tutor-btn" data-tutor="${i}" title="Que Tu Tutor te explique esta pregunta">🎓 Pregúntale a Tu Tutor</button>`;
+    }
     detalleHTML += `<button type="button" class="detalle-reportar-btn" data-reportar="${i}" title="Avisar de un error en esta pregunta">⚠️ Reportar error</button>`;
     detalleHTML += `</div>`;
     detalleHTML += `<div id="${idExp}" class="detalle-explicacion-panel" style="display:none;"><strong>Explicación:</strong>${formatearExplicacionHTML(explicacion)}</div></div>`;
@@ -301,6 +305,27 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     boton.addEventListener("click", () => {
       const destino = document.getElementById(boton.dataset.toggleTarget);
       if (destino) destino.style.display = destino.style.display === "none" ? "block" : "none";
+    });
+  });
+
+  // "Pregúntale a Tu Tutor": abre la burbuja flotante ya cargada con esta
+  // pregunta y su respuesta correcta, y le pide que explique por qué fallaste.
+  contenedor.querySelectorAll("[data-tutor]").forEach((boton) => {
+    boton.addEventListener("click", () => {
+      const p = preguntas[Number(boton.dataset.tutor)];
+      if (!p) return;
+      if (!window.tutorWidget || typeof window.tutorWidget.abrirConPregunta !== "function") {
+        // El widget aún no ha montado (raro en esta pantalla): no romper nada.
+        return;
+      }
+      window.tutorWidget.abrirConPregunta({
+        enunciado: quitarNumeracion(p.pregunta || ""),
+        opciones: p.opciones || {},
+        respuestaCorrecta: p.respuesta_correcta || "",
+        respuestaUsuario: respuestasUsuario[Number(boton.dataset.tutor)],
+        explicacion: p.explicacion || "",
+        mensajeInicial: "¿Puedes explicarme esta pregunta? Quiero entender por qué me he equivocado.",
+      });
     });
   });
 
