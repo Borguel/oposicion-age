@@ -10,11 +10,12 @@ quedaron con tema_id vacío. Una pregunta sin tema NO sale nunca en un test
 oficial FILTRADO por temas (sí en uno general), así que conviene tenerlas
 todas asignadas.
 
-Este script es idempotente: reaplica el tema_id del mapa (fuente de verdad en
-el repo) a cada pregunta que exista en Firestore, para las tres oposiciones a
-la vez, descubriendo los exámenes automáticamente por los ficheros
-datos_examenes/*_temas.json. Al final lista las preguntas que SIGAN sin tema
-(por si hay alguna que ningún mapa cubre).
+Este script SOLO rellena las preguntas que no tienen tema: nunca pisa un
+tema_id ya asignado (por si se corrigió a mano en el panel). Cubre las tres
+oposiciones a la vez, descubriendo los exámenes automáticamente por los
+ficheros datos_examenes/*_temas.json. En la práctica solo tocará AGE y
+Auxiliar, porque GACE ya está entero etiquetado. Al final lista las preguntas
+que SIGAN sin tema (por si hay alguna que ningún mapa cubre).
 
 Por seguridad va en dos pasos, como el resto de scripts de datos:
     python reasignar_temas_examenes.py            # solo AUDITA (no escribe)
@@ -137,8 +138,11 @@ def main(aplicar):
         if not snap.exists:
             no_encontradas.append(doc_id)
             continue
-        # Solo se escribe si falta o difiere, para no generar escrituras inútiles.
-        if (snap.to_dict() or {}).get("tema_id") != tema_id:
+        # Solo se RELLENAN las que no tienen tema. Una pregunta que ya tiene
+        # tema_id NO se toca, aunque difiera del mapa, para no pisar una
+        # corrección hecha a mano desde el panel ("Editar"). Así en GACE (que
+        # ya está entero etiquetado) este script no escribe nada.
+        if not (snap.to_dict() or {}).get("tema_id"):
             ref.update({"tema_id": tema_id})
             actualizadas += 1
 
