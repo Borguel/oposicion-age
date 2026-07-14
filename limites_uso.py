@@ -52,14 +52,17 @@ LIMITES = {
         "premium": ("dia", 60),
     },
     # Test Personalizado con verificación jurídica (/generar-test-avanzado):
-    # cada pregunta cuesta entre 2 y 8 llamadas a DeepSeek (generar +
-    # verificar, con reintentos si no supera la verificación), muy por
-    # encima del coste de una generación normal -- de ahí un cupo propio y
-    # algo más ajustado que el resto, aunque también generoso.
+    # cada pregunta cuesta entre 2 y 8 llamadas a DeepSeek. A DIFERENCIA del
+    # resto, el cupo aquí se mide en PREGUNTAS/día, no en "número de tests":
+    # así un test de 100 preguntas gasta 100 y uno de 10 gasta 10, y no es lo
+    # mismo (antes ambos contaban como "1 uso", lo cual era injusto). El
+    # frontend NO enseña este contador al usuario -- se percibe como
+    # ilimitado, y solo bloquea en el caso raro de agotar el cupo del día.
+    # 300/día = 3 tests de 100 ó 30 de 10 (básico); 1500 = 15 de 100 (premium).
     "test_avanzado_verificado": {
         "gratis": ("mes", 0),
-        "basico": ("dia", 3),
-        "premium": ("dia", 12),
+        "basico": ("dia", 300),
+        "premium": ("dia", 1500),
     },
     # Chat conversacional "Tu Tutor" -- /tu-tutor.
     # Requiere plan premium (ver @requiere_plan de la ruta), por eso básico
@@ -75,15 +78,15 @@ LIMITES = {
 # Etiquetas legibles de cada herramienta, para pintarlas en el panel de
 # administración (pestaña "Límites"). El orden es el de la interfaz.
 TIPOS_META = [
-    {"id": "test_avanzado_verificado", "nombre": "Test Personalizado (IA verificada)",
-     "descripcion": "Genera tests anclados al temario y verificados jurídicamente. Es lo que más gasta en IA."},
-    {"id": "generacion_ia", "nombre": "Herramientas IA de temario",
+    {"id": "test_avanzado_verificado", "nombre": "Test Personalizado (IA verificada)", "unidad": "preguntas",
+     "descripcion": "Se mide en PREGUNTAS al día (no en nº de tests): un test de 100 gasta 100 y uno de 10 gasta 10, así el consumo es justo. El usuario no ve este contador."},
+    {"id": "generacion_ia", "nombre": "Herramientas IA de temario", "unidad": "usos",
      "descripcion": "Esquemas y análisis de rendimiento a partir del temario."},
-    {"id": "pdf_ia", "nombre": "Subir PDF (resumen / esquema / tarjetas / test)",
+    {"id": "pdf_ia", "nombre": "Subir PDF (resumen / esquema / tarjetas / test)", "unidad": "usos",
      "descripcion": "Herramientas de IA sobre un PDF que sube el propio usuario."},
-    {"id": "chat_pdf", "nombre": "Chat con PDF",
+    {"id": "chat_pdf", "nombre": "Chat con PDF", "unidad": "usos",
      "descripcion": "Conversar con la IA sobre un PDF subido."},
-    {"id": "chat_temario", "nombre": "Tu Tutor (chat del temario)",
+    {"id": "chat_temario", "nombre": "Tu Tutor (chat del temario)", "unidad": "usos",
      "descripcion": "Chat conversacional del temario. Solo disponible en premium."},
 ]
 _PLANES = ("gratis", "basico", "premium")
@@ -202,18 +205,23 @@ def verificar_limite_uso(db, uid, plan, tipo):
     usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
 
     if usados >= limite:
+        # Mensaje sin cifra concreta: para el Test Personalizado el contador va
+        # en preguntas (no en "usos"), y en general se prefiere que el cupo se
+        # perciba como generoso/ilimitado en vez de exponer el número interno.
         if periodo == "dia":
-            mensaje = f"Has alcanzado el límite de {limite} usos diarios para esta herramienta. Podrás volver a usarla mañana."
+            mensaje = "Has alcanzado el límite de uso diario de esta herramienta. Podrás volver a usarla mañana."
         else:
-            mensaje = f"Has alcanzado el límite de {limite} usos mensuales para esta herramienta. Se renueva el próximo mes."
+            mensaje = "Has alcanzado el límite de uso mensual de esta herramienta. Se renueva el próximo mes."
         return False, mensaje, usados, limite
     return True, None, usados, limite
 
 
-def registrar_uso(db, uid, tipo, plan):
-    """Suma 1 al contador del periodo actual. Se llama solo cuando la
-    llamada a la IA se ha realizado de verdad (para no penalizar intentos
-    que fallan antes, p. ej. un PDF sin texto extraíble).
+def registrar_uso(db, uid, tipo, plan, cantidad=1):
+    """Suma `cantidad` al contador del periodo actual (por defecto 1). Se llama
+    solo cuando la llamada a la IA se ha realizado de verdad (para no penalizar
+    intentos que fallan antes, p. ej. un PDF sin texto extraíble). `cantidad`
+    permite cobrar por consumo real: el Test Personalizado carga tantas
+    unidades como preguntas se piden, no 1 fija.
 
     Lectura (contador actual, con su posible reinicio de periodo) y
     escritura (contador+1) van dentro de la misma transacción de Firestore
@@ -227,18 +235,21 @@ def registrar_uso(db, uid, tipo, plan):
     clave = _clave_periodo(periodo)
     ref = db.collection("usuarios").document(uid)
 
+    cantidad = max(1, int(cantidad or 1))
+
     def _incrementar(transaction):
         doc = ref.get(transaction=transaction)
         datos = doc.to_dict() or {}
         uso = ((datos.get("limites_uso") or {}).get(tipo)) or {}
         usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
-        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": usados + 1}})
+        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": usados + cantidad}})
 
     ejecutar_en_transaccion(db, _incrementar)
 
 
-def devolver_uso(db, uid, tipo, plan):
-    """Resta 1 al contador del periodo actual (nunca por debajo de 0). Se usa
+def devolver_uso(db, uid, tipo, plan, cantidad=1):
+    """Resta `cantidad` al contador del periodo actual (nunca por debajo de 0,
+    por defecto 1; debe cuadrar con lo que se cobró en registrar_uso). Se usa
     en las rutas de streaming (SSE), donde el uso se cobra por ADELANTADO --
     antes de abrir el stream-- porque la generación corre en un hilo de fondo
     que sigue gastando en la API aunque el cliente corte la conexión, así que
@@ -268,6 +279,6 @@ def devolver_uso(db, uid, tipo, plan):
         if uso.get("periodo") != clave:
             return
         usados = uso.get("contador", 0)
-        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": max(0, usados - 1)}})
+        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": max(0, usados - max(1, int(cantidad or 1)))}})
 
     ejecutar_en_transaccion(db, _decrementar)

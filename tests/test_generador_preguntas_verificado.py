@@ -305,7 +305,8 @@ def test_ruta_generar_test_avanzado_emite_eventos_y_registra_uso(client, db):
         # El evento "progreso" no debe llevar la pregunta duplicada dentro.
         assert all("pregunta" not in e for e in eventos if e["tipo"] == "progreso")
         datos_usuario = db.leer(("usuarios", "u1"))
-        assert datos_usuario["limites_uso"]["test_avanzado_verificado"]["contador"] == 1
+        # El cupo se mide en preguntas: un test de 2 preguntas gasta 2 unidades.
+        assert datos_usuario["limites_uso"]["test_avanzado_verificado"]["contador"] == 2
     finally:
         parche_auth.stop()
 
@@ -314,7 +315,7 @@ def test_ruta_generar_test_avanzado_429_si_supera_el_limite(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
-        "limites_uso": {"test_avanzado_verificado": {"periodo": _clave_periodo("dia"), "contador": 3}}
+        "limites_uso": {"test_avanzado_verificado": {"periodo": _clave_periodo("dia"), "contador": 300}}
     })
     parche_auth = patch("auth_utils.firebase_auth.verify_id_token",
                          return_value={"uid": "u1", "email": "u1@example.com"})

@@ -1079,7 +1079,7 @@ async function renderLimites() {
   };
   const tarjetaTool = (m) => `
     <div class="age-card lim-tool">
-      <div class="lim-tool-cab"><h3>${escapeHtml(m.nombre)}</h3><p>${escapeHtml(m.descripcion)}</p></div>
+      <div class="lim-tool-cab"><h3>${escapeHtml(m.nombre)}${m.unidad === "preguntas" ? '<span class="lim-unidad">cupo en preguntas</span>' : ""}</h3><p>${escapeHtml(m.descripcion)}</p></div>
       <div class="lim-planes">${planes.map((p) => celda(m.id, p)).join("")}</div>
     </div>`;
   const tarjetaPaginas = `

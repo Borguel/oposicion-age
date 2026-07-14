@@ -70,7 +70,11 @@ def generar_test_avanzado_route():
     # hueco para saltarse la cuota abriendo y abortando la petición en bucle.
     # Si la generación acaba fallando de verdad (0 preguntas), el hilo lo
     # devuelve con devolver_uso.
-    registrar_uso(db, uid, "test_avanzado_verificado", plan_actual)
+    #
+    # El cupo de este test se mide en PREGUNTAS, no en "número de tests": se
+    # cobran tantas unidades como preguntas se piden, así un test de 100 gasta
+    # 100 y uno de 10 gasta 10 (consumo justo). El usuario no ve el contador.
+    registrar_uso(db, uid, "test_avanzado_verificado", plan_actual, cantidad=num_preguntas)
 
     def generar():
         eventos = queue.Queue()
@@ -99,7 +103,7 @@ def generar_test_avanzado_route():
                 logger.exception("Error al generar el test personalizado verificado")
                 resultado = {"test": [], "error": "Error inesperado al generar el test"}
             if not resultado.get("test"):
-                devolver_uso(db, uid, "test_avanzado_verificado", plan_actual)
+                devolver_uso(db, uid, "test_avanzado_verificado", plan_actual, cantidad=num_preguntas)
             eventos.put({"tipo": "fin", **resultado})
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
