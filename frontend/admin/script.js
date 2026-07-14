@@ -679,6 +679,20 @@ function fichaCosteBarras(hist) {
   }).join("")}</div>`;
 }
 
+function fichaUsoFila(f) {
+  const per = f.periodo === "dia" ? "hoy" : "este mes";
+  if (!f.limite) {
+    return `<div class="ficha-uso-fila ficha-uso-off"><span class="ficha-uso-nombre">${escapeHtml(f.nombre)}</span><span class="ficha-uso-val">No incluido</span></div>`;
+  }
+  const pct = f.porcentaje == null ? 0 : Math.min(100, f.porcentaje);
+  const cls = f.porcentaje >= 100 ? "ficha-uso-alto" : (f.porcentaje >= 80 ? "ficha-uso-medio" : "");
+  return `<div class="ficha-uso-fila ${cls}">
+    <div class="ficha-uso-cab"><span class="ficha-uso-nombre">${escapeHtml(f.nombre)}</span>
+      <span class="ficha-uso-val">${(f.consumido || 0).toLocaleString("es")} / ${(f.limite || 0).toLocaleString("es")} ${escapeHtml(f.unidad)} <small>(${per})</small></span></div>
+    <div class="ficha-uso-barra"><span class="ficha-uso-relleno" style="width:${pct}%"></span></div>
+  </div>`;
+}
+
 async function abrirUsuario(uid) {
   abrirModal(`<p class="admin-cargando">Cargando ficha…</p>`);
   const u = await apiGet(`/admin/api/usuarios/${uid}`);
@@ -763,6 +777,12 @@ async function abrirUsuario(uid) {
           <div><dt>Rendimiento</dt><dd>${(r.aciertos || 0)} aciertos · ${(r.fallos || 0)} fallos · ${(r.blancos || 0)} blancos</dd></div>
         </dl>
         ${override}
+      </div>
+
+      <div class="ficha-panel">
+        <div class="ficha-panel-cab"><span class="ficha-panel-ico">📊</span><h3>Uso de herramientas (periodo actual)</h3></div>
+        ${((u.uso_herramientas || {}).filas || []).map(fichaUsoFila).join("")}
+        <p class="ficha-uso-nota">Consumo frente al límite del plan de este usuario. El Test Personalizado se mide en preguntas. Si alguna barra se pone en rojo, está apurando su cupo.</p>
       </div>
 
       <details class="ficha-acordeon">

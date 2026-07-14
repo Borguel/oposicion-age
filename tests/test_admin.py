@@ -262,6 +262,26 @@ def test_detalle_usuario_incluye_contenido_y_rendimiento(client, db):
     assert d["rendimiento"]["porcentaje"] == 50
 
 
+def test_detalle_usuario_incluye_uso_herramientas(client, db):
+    from datetime import date
+    hoy = date.today().isoformat()
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com",
+        "suscripciones": {"AGE": {"plan": "basico"}},
+        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 150}},
+    })
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    filas = {f["id"]: f for f in d["uso_herramientas"]["filas"]}
+    tp = filas["test_avanzado_verificado"]
+    assert tp["consumido"] == 150
+    assert tp["limite"] == 300  # básico por defecto
+    assert tp["porcentaje"] == 50
+    assert tp["unidad"] == "preguntas"
+    # Tu Tutor no está incluido en básico -> límite 0.
+    assert filas["chat_temario"]["limite"] == 0
+
+
 def test_notas_anadir_y_eliminar(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
     with _como():

@@ -26,7 +26,7 @@ from auth_utils import requiere_admin, requiere_permiso, PERMISOS_VALIDOS, _mejo
 from banco_fallos import _id_pregunta
 from coste_ia import resumen_coste_usuario
 from oposiciones import OPOSICIONES, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
-from limites_uso import cargar_limites_config, guardar_limites_config, TIPOS_META
+from limites_uso import cargar_limites_config, guardar_limites_config, TIPOS_META, limites_efectivos, _clave_periodo
 from utils import _limpiar_cache_temario
 
 logger = logging.getLogger(__name__)
@@ -170,6 +170,33 @@ def _ficha_actividad(ref, datos):
         uso[tipo] = (u or {}).get("contador", 0) or 0
 
     return contenido, rendimiento, hist, uso
+
+
+def _uso_herramientas(datos):
+    """Consumo real de cada herramienta en el periodo actual frente al límite
+    del plan del usuario -- para vigilar desde la ficha quién está tirando
+    mucho de la IA. El Test Personalizado se mide en preguntas; el resto en
+    usos."""
+    plan = _plan_usuario(datos)
+    tools = limites_efectivos(db)["tools"]
+    usos = datos.get("limites_uso") or {}
+    filas = []
+    for m in TIPOS_META:
+        tipo = m["id"]
+        cfg = tools.get(tipo, {}).get(plan) or {"periodo": "mes", "limite": 0}
+        periodo, limite = cfg.get("periodo", "mes"), cfg.get("limite", 0)
+        u = usos.get(tipo) or {}
+        consumido = u.get("contador", 0) if u.get("periodo") == _clave_periodo(periodo) else 0
+        filas.append({
+            "id": tipo,
+            "nombre": m["nombre"],
+            "unidad": m.get("unidad", "usos"),
+            "consumido": consumido,
+            "limite": limite,
+            "periodo": periodo,
+            "porcentaje": round(consumido / limite * 100) if limite else None,
+        })
+    return {"plan": plan, "filas": filas}
 
 
 def _fallos_agregados(oposicion=None):
@@ -1039,6 +1066,7 @@ def usuarios_detalle(uid):
         "contenido_creado": contenido,
         "rendimiento": rendimiento,
         "uso_actual": uso_actual,
+        "uso_herramientas": _uso_herramientas(datos),
         "notas_lista": _notas_lista(datos),
     })
 
