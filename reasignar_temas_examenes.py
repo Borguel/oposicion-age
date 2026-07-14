@@ -33,7 +33,8 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
 
-from oposiciones import OPOSICIONES, coleccion_examenes_oficiales
+from oposiciones import OPOSICIONES, coleccion_examenes_oficiales, coleccion_temario
+from utils import obtener_catalogo_temas
 
 load_dotenv()
 
@@ -65,6 +66,18 @@ def _pares_docid_tema():
         nombre = os.path.basename(ruta)
         with open(ruta, encoding="utf-8") as f:
             mapa = json.load(f)
+
+        # Ficheros *_docid_temas.json: mapa DIRECTO doc_id -> tema, para
+        # exámenes subidos por el importador del panel (doc_id fuera del patrón
+        # de los loaders). Estructura: {"oposicion": "AGE", "temas": {doc_id: tema_id}}.
+        if nombre.endswith("_docid_temas.json"):
+            oposicion = mapa.get("oposicion")
+            if oposicion not in OPOSICIONES:
+                print(f"AVISO: {nombre} sin oposición válida, lo salto.")
+                continue
+            for doc_id, tema_id in (mapa.get("temas") or {}).items():
+                pares.append((oposicion, doc_id, tema_id))
+            continue
 
         m_age = re.fullmatch(r"age_(.+)_ejercicio_unico_temas\.json", nombre)
         m_gace = re.fullmatch(r"gacel_(.+)_1er_ejercicio_temas\.json", nombre)
@@ -112,6 +125,29 @@ def _auditar_sin_tema(db):
         if len(sin_tema) > 40:
             print(f"   ... y {len(sin_tema) - 40} más")
     return total
+
+
+def _volcar_sin_tema(db, oposicion):
+    """Vuelca el catálogo de temas de la oposición y el texto COMPLETO de sus
+    preguntas activas sin tema. Sirve para poder mapear a mano exámenes que se
+    subieron por el importador del panel (doc_id fuera del patrón de los
+    loaders, no cubiertos por ningún *_temas.json)."""
+    print("=" * 60)
+    print(f"CATÁLOGO DE TEMAS de {oposicion}:")
+    for tema in obtener_catalogo_temas(db, coleccion_temario(oposicion)):
+        print(f"   {tema['id']}: {tema['titulo']}")
+
+    print("\n" + "=" * 60)
+    print(f"PREGUNTAS SIN TEMA de {oposicion} (texto completo):")
+    coleccion = coleccion_examenes_oficiales(oposicion)
+    for doc in db.collection(coleccion).stream():
+        d = doc.to_dict() or {}
+        if d.get("tipo") != "pregunta" or d.get("activa", True) is False or d.get("tema_id"):
+            continue
+        print(f"\n--- {doc.id} ---")
+        print((d.get("pregunta") or "").strip())
+        for letra, texto in sorted((d.get("opciones") or {}).items()):
+            print(f"   {letra}) {texto}")
 
 
 def main(aplicar):
@@ -162,4 +198,9 @@ def main(aplicar):
 
 
 if __name__ == "__main__":
-    main(aplicar="--aplicar" in sys.argv[1:])
+    args = sys.argv[1:]
+    if "--dump" in args:
+        _init_firebase()
+        _volcar_sin_tema(firestore.client(), "AGE")
+    else:
+        main(aplicar="--aplicar" in args)
