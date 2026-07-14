@@ -26,6 +26,7 @@ from auth_utils import requiere_admin, requiere_permiso, PERMISOS_VALIDOS, _mejo
 from banco_fallos import _id_pregunta
 from coste_ia import resumen_coste_usuario
 from oposiciones import OPOSICIONES, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
+from limites_uso import cargar_limites_config, guardar_limites_config, TIPOS_META
 from utils import _limpiar_cache_temario
 
 logger = logging.getLogger(__name__)
@@ -1453,6 +1454,32 @@ def banner_publico():
     if not banner["activo"] or not banner["texto"]:
         return jsonify({"activo": False})
     return jsonify(banner)
+
+
+# ============================================================
+# Límites de uso por plan (editables desde el panel)
+# ============================================================
+@bp.route("/admin/api/limites", methods=["GET"])
+@requiere_admin
+def limites_obtener():
+    cfg = cargar_limites_config(db)
+    return jsonify({
+        "tools": cfg["tools"],
+        "max_paginas": cfg["max_paginas"],
+        "meta": TIPOS_META,
+        "planes": ["gratis", "basico", "premium"],
+    })
+
+
+@bp.route("/admin/api/limites", methods=["PUT"])
+@requiere_admin
+def limites_guardar():
+    """Guarda los límites editados. Solo un admin total puede tocarlos, porque
+    afectan directamente al gasto en IA de toda la plataforma."""
+    data = request.get_json(silent=True) or {}
+    cfg = guardar_limites_config(db, data)
+    _registrar_auditoria("limites_editar", "", "Límites de uso actualizados")
+    return jsonify({"mensaje": "Límites actualizados.", "tools": cfg["tools"], "max_paginas": cfg["max_paginas"]})
 
 
 # ============================================================

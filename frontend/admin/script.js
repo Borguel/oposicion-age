@@ -6,7 +6,7 @@ import { BACKEND_URL } from "/assets/firebase-config.js";
 // Qué permiso necesita cada pestaña. Las de 'admin' solo las ve el super-admin.
 const PERMISO_POR_PESTANA = {
   dashboard: "cualquiera", temario: "temario", preguntas: "temario", analitica: "temario",
-  usuarios: "usuarios", reportes: "reportes", auditoria: "admin", sistema: "admin",
+  usuarios: "usuarios", reportes: "reportes", limites: "admin", auditoria: "admin", sistema: "admin",
 };
 let _permisos = { admin: false, permisos: [] };
 function puedeVer(pestana) {
@@ -128,6 +128,7 @@ const RENDERS = {
   analitica: renderAnalitica,
   usuarios: renderUsuarios,
   reportes: renderReportes,
+  limites: renderLimites,
   auditoria: renderAuditoria,
   sistema: renderSistema,
 };
@@ -1055,6 +1056,62 @@ async function renderAuditoria() {
 }
 
 // ===== Sistema (salud + banner) =====
+// ===== Límites de uso (editable) =====
+const _NOMBRE_PLAN = { gratis: "Gratis", basico: "Básico", premium: "Premium" };
+async function renderLimites() {
+  const panel = document.getElementById("panel-limites");
+  panel.innerHTML = `<p class="admin-cargando">Cargando límites…</p>`;
+  const cfg = await apiGet("/admin/api/limites");
+  if (!cfg) return;
+  const planes = cfg.planes || ["gratis", "basico", "premium"];
+  const celda = (tipo, plan) => {
+    const c = (cfg.tools[tipo] || {})[plan] || { periodo: "mes", limite: 0 };
+    return `<div class="lim-plan lim-plan-${plan}">
+      <span class="lim-plan-nombre">${_NOMBRE_PLAN[plan] || plan}</span>
+      <div class="lim-plan-campos">
+        <input type="number" min="0" inputmode="numeric" class="age-input lim-num" data-tipo="${tipo}" data-plan="${plan}" value="${c.limite}" aria-label="Usos de ${_NOMBRE_PLAN[plan] || plan}">
+        <select class="age-input lim-per" data-tipo="${tipo}" data-plan="${plan}" aria-label="Periodo de ${_NOMBRE_PLAN[plan] || plan}">
+          <option value="dia" ${c.periodo === "dia" ? "selected" : ""}>al día</option>
+          <option value="mes" ${c.periodo === "mes" ? "selected" : ""}>al mes</option>
+        </select>
+      </div>
+    </div>`;
+  };
+  const tarjetaTool = (m) => `
+    <div class="age-card lim-tool">
+      <div class="lim-tool-cab"><h3>${escapeHtml(m.nombre)}</h3><p>${escapeHtml(m.descripcion)}</p></div>
+      <div class="lim-planes">${planes.map((p) => celda(m.id, p)).join("")}</div>
+    </div>`;
+  const tarjetaPaginas = `
+    <div class="age-card lim-tool">
+      <div class="lim-tool-cab"><h3>📄 Máximo de páginas por PDF subido</h3><p>Tope de páginas de un documento según el plan (no es un cupo de usos).</p></div>
+      <div class="lim-planes">${planes.map((p) => `
+        <div class="lim-plan lim-plan-${p}"><span class="lim-plan-nombre">${_NOMBRE_PLAN[p] || p}</span>
+          <div class="lim-plan-campos"><input type="number" min="1" inputmode="numeric" class="age-input lim-pag" data-plan="${p}" value="${(cfg.max_paginas || {})[p] || 0}" aria-label="Páginas de ${_NOMBRE_PLAN[p] || p}"><span class="lim-pag-uni">págs</span></div>
+        </div>`).join("")}</div>
+    </div>`;
+  panel.innerHTML = `
+    <div class="age-card lim-intro"><p>Define cuántas veces puede usar cada herramienta cada perfil. <strong>0</strong> significa que ese plan <strong>no incluye</strong> la herramienta. El periodo (día/mes) marca cada cuánto se renueva el cupo. Los cambios se aplican en unos segundos.</p></div>
+    ${(cfg.meta || []).map(tarjetaTool).join("")}
+    ${tarjetaPaginas}
+    <div class="lim-barra"><button class="age-btn age-btn-primary" id="lim-guardar">💾 Guardar cambios</button></div>`;
+  document.getElementById("lim-guardar").addEventListener("click", async () => {
+    const tools = {};
+    document.querySelectorAll(".lim-num").forEach((inp) => {
+      const t = inp.dataset.tipo, p = inp.dataset.plan;
+      const per = document.querySelector(`.lim-per[data-tipo="${t}"][data-plan="${p}"]`).value;
+      tools[t] = tools[t] || {};
+      tools[t][p] = { periodo: per, limite: Math.max(0, parseInt(inp.value, 10) || 0) };
+    });
+    const maxPaginas = {};
+    document.querySelectorAll(".lim-pag").forEach((inp) => {
+      maxPaginas[inp.dataset.plan] = Math.max(1, parseInt(inp.value, 10) || 1);
+    });
+    const r = await api("PUT", "/admin/api/limites", { tools, max_paginas: maxPaginas });
+    if (r) toast("Límites guardados. Se aplican en unos segundos.");
+  });
+}
+
 async function renderSistema() {
   const panel = document.getElementById("panel-sistema");
   panel.innerHTML = `<p class="admin-cargando">Cargando…</p>`;

@@ -13,6 +13,7 @@ Dos capas de protección:
    "prácticamente ilimitado" de cara al cliente pero con un tope de
    seguridad diario para que un solo mal uso no dispare el gasto de golpe.
 """
+import time
 from datetime import date
 
 from utils import ejecutar_en_transaccion
@@ -71,7 +72,111 @@ LIMITES = {
 }
 
 
-def max_paginas_para_plan(plan):
+# Etiquetas legibles de cada herramienta, para pintarlas en el panel de
+# administración (pestaña "Límites"). El orden es el de la interfaz.
+TIPOS_META = [
+    {"id": "test_avanzado_verificado", "nombre": "Test Personalizado (IA verificada)",
+     "descripcion": "Genera tests anclados al temario y verificados jurídicamente. Es lo que más gasta en IA."},
+    {"id": "generacion_ia", "nombre": "Herramientas IA de temario",
+     "descripcion": "Esquemas y análisis de rendimiento a partir del temario."},
+    {"id": "pdf_ia", "nombre": "Subir PDF (resumen / esquema / tarjetas / test)",
+     "descripcion": "Herramientas de IA sobre un PDF que sube el propio usuario."},
+    {"id": "chat_pdf", "nombre": "Chat con PDF",
+     "descripcion": "Conversar con la IA sobre un PDF subido."},
+    {"id": "chat_temario", "nombre": "Tu Tutor (chat del temario)",
+     "descripcion": "Chat conversacional del temario. Solo disponible en premium."},
+]
+_PLANES = ("gratis", "basico", "premium")
+
+# ---------------------------------------------------------------------------
+# Límites efectivos: los valores de arriba (LIMITES / MAX_PAGINAS_POR_PLAN)
+# son los DEFECTO; el panel admin puede sobrescribirlos guardándolos en
+# config/limites. Se cachean unos segundos para no leer Firestore en cada
+# comprobación de cuota.
+# ---------------------------------------------------------------------------
+_TTL_CACHE_S = 30
+_cache_limites = {"data": None, "ts": 0.0}
+
+
+def invalidar_cache_limites():
+    """Fuerza recargar los límites de Firestore en la próxima consulta (se
+    llama tras guardarlos desde el panel)."""
+    _cache_limites["data"] = None
+
+
+def _estructura_defecto():
+    tools = {
+        tipo: {plan: {"periodo": cfg[plan][0], "limite": cfg[plan][1]} for plan in _PLANES}
+        for tipo, cfg in LIMITES.items()
+    }
+    return {"tools": tools, "max_paginas": dict(MAX_PAGINAS_POR_PLAN)}
+
+
+def _fusionar_overrides(guardado):
+    """Parte de los defaults y superpone SOLO valores válidos y conocidos del
+    documento guardado -- así, si en el código se añade una herramienta nueva,
+    aparece aunque el doc guardado sea antiguo, y valores raros se ignoran."""
+    base = _estructura_defecto()
+    if not guardado:
+        return base
+    for tipo, planes in (guardado.get("tools") or {}).items():
+        if tipo not in base["tools"]:
+            continue
+        for plan, cfg in (planes or {}).items():
+            if plan not in base["tools"][tipo]:
+                continue
+            per = (cfg or {}).get("periodo")
+            lim = (cfg or {}).get("limite")
+            if per in ("dia", "mes") and isinstance(lim, (int, float)) and not isinstance(lim, bool):
+                base["tools"][tipo][plan] = {"periodo": per, "limite": max(0, min(100000, int(lim)))}
+    for plan, val in (guardado.get("max_paginas") or {}).items():
+        if plan in base["max_paginas"] and isinstance(val, (int, float)) and not isinstance(val, bool):
+            base["max_paginas"][plan] = max(1, min(100000, int(val)))
+    return base
+
+
+def limites_efectivos(db):
+    """Devuelve {'tools': {...}, 'max_paginas': {...}} efectivos (defaults +
+    overrides de config/limites), cacheado unos segundos."""
+    ahora = time.time()
+    if _cache_limites["data"] is not None and ahora - _cache_limites["ts"] < _TTL_CACHE_S:
+        return _cache_limites["data"]
+    guardado = None
+    try:
+        doc = db.collection("config").document("limites").get()
+        if doc.exists:
+            guardado = doc.to_dict()
+    except Exception:
+        guardado = None
+    data = _fusionar_overrides(guardado)
+    _cache_limites["data"] = data
+    _cache_limites["ts"] = ahora
+    return data
+
+
+def _config_tool(db, tipo, plan):
+    cfg = limites_efectivos(db)["tools"].get(tipo, {}).get(plan)
+    return (cfg["periodo"], cfg["limite"]) if cfg else None
+
+
+def cargar_limites_config(db):
+    """Config completa para el panel admin (GET)."""
+    return limites_efectivos(db)
+
+
+def guardar_limites_config(db, data):
+    """Valida y guarda los límites editados desde el panel (PUT). Devuelve la
+    config efectiva ya saneada."""
+    limpio = _fusionar_overrides(data)
+    db.collection("config").document("limites").set(limpio)
+    invalidar_cache_limites()
+    return limpio
+
+
+def max_paginas_para_plan(plan, db=None):
+    if db is not None:
+        mp = limites_efectivos(db)["max_paginas"]
+        return mp.get(plan, mp.get("gratis"))
     return MAX_PAGINAS_POR_PLAN.get(plan, MAX_PAGINAS_POR_PLAN["gratis"])
 
 
@@ -85,7 +190,7 @@ def verificar_limite_uso(db, uid, plan, tipo):
     sin incrementar todavía el contador (eso se hace en registrar_uso, solo
     si la llamada a la IA se llega a realizar). Devuelve
     (permitido, mensaje_error_o_None, usados, limite)."""
-    config = LIMITES.get(tipo, {}).get(plan)
+    config = _config_tool(db, tipo, plan)
     if not config or config[1] <= 0:
         return False, "Tu plan actual no incluye esta herramienta.", 0, 0
     periodo, limite = config
@@ -115,7 +220,7 @@ def registrar_uso(db, uid, tipo, plan):
     -- sin esto, dos peticiones concurrentes del mismo usuario (dos
     pestañas, un reintento del frontend) podían leer el mismo contador y
     perder un incremento, dejando que se superase la cuota."""
-    config = LIMITES.get(tipo, {}).get(plan)
+    config = _config_tool(db, tipo, plan)
     if not config:
         return
     periodo, _limite = config
@@ -147,7 +252,7 @@ def devolver_uso(db, uid, tipo, plan):
 
     Lectura y escritura van en la misma transacción, igual que registrar_uso,
     para no perder un decremento frente a otra petición concurrente."""
-    config = LIMITES.get(tipo, {}).get(plan)
+    config = _config_tool(db, tipo, plan)
     if not config:
         return
     periodo, _limite = config

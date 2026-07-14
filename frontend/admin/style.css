@@ -185,6 +185,33 @@
   .admin-analitica-fila .admin-barra { display: none; }
 }
 
+/* Límites de uso (editable) */
+.lim-intro { padding: 14px 16px; font-size: 13.5px; color: var(--age-ink-soft, var(--age-ink)); margin-bottom: 14px; }
+.lim-intro strong { color: var(--age-ink); }
+.lim-tool { margin-bottom: 14px; }
+.lim-tool-cab { margin-bottom: 12px; }
+.lim-tool-cab h3 { margin: 0 0 2px; font-size: 1rem; }
+.lim-tool-cab p { margin: 0; font-size: 12.5px; color: var(--age-ink-soft, var(--age-ink)); }
+.lim-planes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.lim-plan { border: 1px solid var(--age-border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.lim-plan-gratis { background: var(--age-neutral-bg, #f5f5f5); }
+.lim-plan-basico { background: var(--age-primary-soft); }
+.lim-plan-premium { background: #fdf3e0; }
+.lim-plan-nombre { font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: var(--age-ink-soft, var(--age-ink)); }
+.lim-plan-campos { display: flex; align-items: center; gap: 6px; }
+.lim-plan-campos .lim-num { width: 68px; flex: 0 0 auto; text-align: center; font-weight: 700; }
+.lim-plan-campos .lim-per { flex: 1; min-width: 0; }
+.lim-plan-campos .lim-pag { width: 84px; flex: 0 0 auto; text-align: center; font-weight: 700; }
+.lim-pag-uni { font-size: 12.5px; color: var(--age-ink-soft, var(--age-ink)); }
+.lim-barra { position: sticky; bottom: 0; padding: 12px 0; background: linear-gradient(transparent, var(--age-bg, #fff) 40%); display: flex; justify-content: flex-end; }
+.lim-barra .age-btn { max-width: 100%; }
+@media (max-width: 620px) {
+  .lim-planes { grid-template-columns: 1fr; }
+  .lim-plan { flex-direction: row; align-items: center; justify-content: space-between; }
+  .lim-plan-campos { flex: 0 0 auto; }
+  .lim-barra .age-btn { width: 100%; }
+}
+
 /* Sistema: diagnóstico + estado de servicios */
 .sis-diagnostico { border-left: 5px solid var(--age-success, #28a745); }
 .sis-diagnostico.sis-diag-ko { border-left-color: var(--age-danger, #dc3545); }

@@ -50,7 +50,7 @@ def _resolver_texto_documento(plan_actual):
     if pdf_file.filename == '':
         return None, None, None, (jsonify({"error": "Nombre de archivo inválido"}), 400)
     pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-    limite_paginas = max_paginas_para_plan(plan_actual)
+    limite_paginas = max_paginas_para_plan(plan_actual, db)
     if len(pdf_reader.pages) > limite_paginas:
         return None, None, None, (jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400)
     text = ""
@@ -428,7 +428,7 @@ def subir_pdf_chat():
         return jsonify({"error": "Nombre de archivo inválido"}), 400
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        limite_paginas = max_paginas_para_plan(g.plan_actual)
+        limite_paginas = max_paginas_para_plan(g.plan_actual, db)
         if len(pdf_reader.pages) > limite_paginas:
             return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
         text = ""

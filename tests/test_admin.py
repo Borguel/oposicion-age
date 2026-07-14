@@ -565,6 +565,41 @@ def test_sistema_diagnostico(client, db, monkeypatch):
     assert d["banner_activo"] is True
 
 
+def test_limites_obtener_devuelve_defaults(client, db):
+    with _como():
+        cfg = client.get("/admin/api/limites", headers=_AUTH).get_json()
+    assert cfg["tools"]["test_avanzado_verificado"]["premium"] == {"periodo": "dia", "limite": 12}
+    assert cfg["max_paginas"]["premium"] == 500
+    assert any(m["id"] == "test_avanzado_verificado" for m in cfg["meta"])
+
+
+def test_limites_guardar_y_afecta_a_la_cuota(client, db):
+    from limites_uso import verificar_limite_uso
+    with _como():
+        r = client.put("/admin/api/limites", json={
+            "tools": {"test_avanzado_verificado": {"basico": {"periodo": "dia", "limite": 1}}},
+            "max_paginas": {"basico": 999},
+        }, headers=_AUTH)
+        assert r.status_code == 200
+    # El override se guarda y ya cuenta como límite efectivo.
+    guardado = db.leer(("config", "limites"))
+    assert guardado["tools"]["test_avanzado_verificado"]["basico"]["limite"] == 1
+    assert guardado["max_paginas"]["basico"] == 999
+    # Y verificar_limite_uso lo respeta (1 uso permitido, el 2º ya bloquea).
+    from datetime import date
+    db.sembrar(("usuarios", "u9"), {"limites_uso": {"test_avanzado_verificado": {"periodo": date.today().isoformat(), "contador": 1}}})
+    permitido, _m, _u, limite = verificar_limite_uso(db, "u9", "basico", "test_avanzado_verificado")
+    assert permitido is False
+    assert limite == 1
+
+
+def test_limites_solo_admin_total(client, db):
+    # Un usuario con permiso "usuarios" (no admin total) no puede tocar límites.
+    with _como(admin=False, permisos=["usuarios"]):
+        r = client.get("/admin/api/limites", headers=_AUTH)
+    assert r.status_code == 403
+
+
 def test_banner_guardar_y_lectura_publica(client, db):
     with _como():
         client.put("/admin/api/banner", json={"activo": True, "texto": "Hola", "tipo": "aviso"}, headers=_AUTH)
