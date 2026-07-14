@@ -148,17 +148,19 @@ def _ficha_actividad(ref, datos):
         "porcentaje": round(aciertos / contestadas * 100) if contestadas else None,
     }
 
-    # Histórico de coste de IA: últimos 6 meses ordenados de más antiguo a
-    # más reciente, para pintar un mini-gráfico de barras en el panel.
+    # Histórico de coste de IA: TODOS los meses ordenados de más antiguo a
+    # más reciente. El panel pinta las barras de los últimos meses y usa la
+    # serie completa para el buscador por rango de fechas.
     hist = []
     for mes, m in sorted((datos.get("coste_ia") or {}).items()):
         hist.append({
             "mes": mes,
             "coste": round((m or {}).get("coste", 0) or 0, 4),
             "tokens": ((m or {}).get("tokens_in", 0) or 0) + ((m or {}).get("tokens_out", 0) or 0),
+            "tokens_in": (m or {}).get("tokens_in", 0) or 0,
+            "tokens_out": (m or {}).get("tokens_out", 0) or 0,
             "llamadas": (m or {}).get("llamadas", 0) or 0,
         })
-    hist = hist[-6:]
 
     # Consumo del periodo actual por herramienta (limites_uso) -- para ver de
     # un vistazo cuánta IA está gastando ahora mismo.
@@ -1036,14 +1038,26 @@ def usuarios_detalle(uid):
         "contenido_creado": contenido,
         "rendimiento": rendimiento,
         "uso_actual": uso_actual,
+        "notas_lista": _notas_lista(datos),
     })
+
+
+def _notas_lista(datos):
+    """Lista de notas internas del usuario. Migra en caliente la nota única
+    antigua (notas_admin: str) a un elemento de la lista, para no perder lo
+    ya escrito con el sistema viejo."""
+    lista = list(datos.get("notas_lista") or [])
+    legacy = (datos.get("notas_admin") or "").strip()
+    if legacy and not any(n.get("id") == "legacy" for n in lista):
+        lista.insert(0, {"id": "legacy", "texto": legacy, "autor": "", "fecha": ""})
+    return lista
 
 
 @bp.route("/admin/api/usuarios/<uid>/notas", methods=["PATCH"])
 @requiere_permiso("usuarios")
 def usuarios_notas(uid):
-    """Guarda una nota interna de soporte sobre el usuario (no visible para
-    él)."""
+    """Compatibilidad: guarda la nota única antigua (notas_admin). El panel
+    nuevo usa POST/DELETE sobre la lista de notas."""
     ref = db.collection("usuarios").document(uid)
     if not ref.get().exists:
         return jsonify({"error": "Usuario no encontrado"}), 404
@@ -1051,6 +1065,50 @@ def usuarios_notas(uid):
     ref.set({"notas_admin": notas}, merge=True)
     _registrar_auditoria("usuario_notas", uid)
     return jsonify({"mensaje": "Nota guardada"})
+
+
+@bp.route("/admin/api/usuarios/<uid>/notas", methods=["POST"])
+@requiere_permiso("usuarios")
+def usuarios_notas_anadir(uid):
+    """Añade una nota interna nueva a la lista, sin borrar las anteriores.
+    Devuelve la nota creada (con su id) para pintarla al momento."""
+    ref = db.collection("usuarios").document(uid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    texto = str((request.get_json(silent=True) or {}).get("texto", "")).strip()[:2000]
+    if not texto:
+        return jsonify({"error": "La nota está vacía"}), 400
+    nota = {
+        "id": datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
+        "texto": texto,
+        "autor": getattr(g, "email", "") or "",
+        "fecha": datetime.utcnow().isoformat(),
+    }
+    lista = list((doc.to_dict() or {}).get("notas_lista") or [])
+    lista.append(nota)
+    ref.set({"notas_lista": lista}, merge=True)
+    _registrar_auditoria("usuario_nota_anadir", uid)
+    return jsonify({"mensaje": "Nota añadida", "nota": nota}), 201
+
+
+@bp.route("/admin/api/usuarios/<uid>/notas/<nota_id>", methods=["DELETE"])
+@requiere_permiso("usuarios")
+def usuarios_notas_eliminar(uid, nota_id):
+    """Elimina una nota concreta por su id. 'legacy' borra la nota única
+    antigua (notas_admin)."""
+    ref = db.collection("usuarios").document(uid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    datos = doc.to_dict() or {}
+    if nota_id == "legacy":
+        ref.set({"notas_admin": ""}, merge=True)
+    else:
+        lista = [n for n in (datos.get("notas_lista") or []) if n.get("id") != nota_id]
+        ref.set({"notas_lista": lista}, merge=True)
+    _registrar_auditoria("usuario_nota_eliminar", uid)
+    return jsonify({"mensaje": "Nota eliminada"})
 
 
 @bp.route("/admin/api/usuarios/<uid>/plan", methods=["PATCH"])

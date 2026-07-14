@@ -129,9 +129,14 @@
 .admin-modal h2 { padding-right: 30px; word-break: break-word; }
 .admin-modal label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
 .admin-modal textarea, .admin-modal input, .admin-modal select { width: 100%; }
-.admin-opcion { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.admin-opcion { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .admin-opcion-radio { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; white-space: nowrap; }
 .admin-opcion .age-input { flex: 1; }
+/* Editar pregunta: círculo (radio) + letra + texto, todo en una línea. El
+   radio lleva ancho fijo para no heredar el width:100% genérico del modal. */
+.admin-opcion-check { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; cursor: pointer; }
+.admin-opcion-letra { flex: 0 0 auto; width: 20px; text-align: center; font-weight: 800; margin: 0; cursor: pointer; color: var(--age-ink); }
+.admin-opcion-txt { flex: 1; min-width: 0; }
 .admin-rol-check { display: flex; align-items: flex-start; gap: 8px; margin: 6px 0; font-size: 14px; cursor: pointer; }
 .admin-rol-check input { margin-top: 3px; flex: 0 0 auto; }
 .admin-modal .age-btn { max-width: 100%; }
@@ -285,6 +290,44 @@
 .ficha-rol-off:hover { border-color: var(--age-border); background: none; }
 .ficha-admin-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
 .ficha-btn-peligro { color: var(--age-danger, #c0392b); border-color: var(--age-danger, #c0392b); }
+
+/* Barras de gasto: ahora son botones (tocables) */
+.ficha-barra-col { background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; }
+.ficha-barra-col:hover .ficha-barra { filter: brightness(1.12); }
+.ficha-barra-col.activa .ficha-barra { background: var(--age-ink, #222); }
+.ficha-barra-col.activa .ficha-barra-lbl { font-weight: 800; color: var(--age-ink); }
+.ficha-coste-detalle { font-size: 12.5px; color: var(--age-ink-soft, var(--age-ink)); margin: 10px 0 0; min-height: 1.2em; }
+.ficha-coste-detalle strong { color: var(--age-ink); }
+
+/* Buscador por rango de meses */
+.ficha-rango { margin-top: 12px; border-top: 1px dashed var(--age-border); padding-top: 10px; }
+.ficha-rango > summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--age-primary); list-style: none; }
+.ficha-rango > summary::-webkit-details-marker { display: none; }
+.ficha-rango-cuerpo { margin-top: 10px; }
+.ficha-rango-selects { display: flex; gap: 10px; flex-wrap: wrap; }
+.ficha-rango-selects label { font-size: 11.5px; font-weight: 700; color: var(--age-ink-soft, var(--age-ink)); display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 120px; }
+.ficha-rango-selects .age-input { width: 100%; }
+.ficha-rango-res { margin-top: 10px; font-size: 13px; background: var(--age-primary-soft); border-radius: 8px; padding: 8px 10px; }
+.ficha-rango-res strong { color: var(--age-primary); }
+
+/* Notas internas (lista) */
+.ficha-sub { font-size: 0.9rem; margin: 0 0 8px; }
+.ficha-notas { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.ficha-notas-vacio { font-size: 12.5px; color: var(--age-ink-soft, var(--age-ink)); margin: 0 0 4px; }
+.ficha-nota { background: var(--age-neutral-bg, var(--age-primary-soft)); border-radius: 10px; padding: 9px 11px; }
+.ficha-nota-txt { font-size: 13.5px; white-space: pre-wrap; word-break: break-word; }
+.ficha-nota-pie { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 5px; }
+.ficha-nota-meta { font-size: 11px; color: var(--age-ink-soft, var(--age-ink)); }
+.ficha-nota-borrar { background: none; border: none; cursor: pointer; font-size: 13px; opacity: 0.6; padding: 2px 4px; }
+.ficha-nota-borrar:hover { opacity: 1; }
+
+/* Acciones de soporte: color propio (verde info) para que no queden ocultas */
+.ficha-soporte-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.ficha-btn-soporte {
+  background: var(--age-info-soft, #e7f0ff); color: var(--age-info, #1e56b0);
+  border: 1px solid var(--age-info-border, #b9d3ff);
+}
+.ficha-btn-soporte:hover { background: var(--age-info, #1e56b0); color: #fff; border-color: var(--age-info, #1e56b0); }
 
 @media (max-width: 560px) {
   .ficha-cols { grid-template-columns: 1fr; }

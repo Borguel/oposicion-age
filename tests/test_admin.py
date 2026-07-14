@@ -262,6 +262,32 @@ def test_detalle_usuario_incluye_contenido_y_rendimiento(client, db):
     assert d["rendimiento"]["porcentaje"] == 50
 
 
+def test_notas_anadir_y_eliminar(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    with _como():
+        r = client.post("/admin/api/usuarios/u1/notas", json={"texto": "Primera nota"}, headers=_AUTH)
+        assert r.status_code == 201
+        nota_id = r.get_json()["nota"]["id"]
+        client.post("/admin/api/usuarios/u1/notas", json={"texto": "Segunda"}, headers=_AUTH)
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+        assert len(d["notas_lista"]) == 2
+        client.delete(f"/admin/api/usuarios/u1/notas/{nota_id}", headers=_AUTH)
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+        textos = [n["texto"] for n in d["notas_lista"]]
+        assert textos == ["Segunda"]
+
+
+def test_notas_legacy_se_migra_a_lista(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "notas_admin": "Nota antigua"})
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+        assert d["notas_lista"][0]["id"] == "legacy"
+        assert d["notas_lista"][0]["texto"] == "Nota antigua"
+        client.delete("/admin/api/usuarios/u1/notas/legacy", headers=_AUTH)
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+        assert d["notas_lista"] == []
+
+
 # ---------- Temario ----------
 def test_temario_arbol_y_chunks(client, db):
     _sembrar_tema(db)

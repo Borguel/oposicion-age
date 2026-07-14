@@ -428,8 +428,9 @@ function modalPregunta(p) {
   const correcta = p ? p.respuesta_correcta : "A";
   const radios = ["A", "B", "C", "D"].map((k) => `
     <div class="admin-opcion">
-      <label class="admin-opcion-radio"><input type="radio" name="correcta" value="${k}" ${correcta === k ? "checked" : ""}> ${k}</label>
-      <input class="age-input" id="op-${k}" value="${escapeHtml(o[k] || "")}" placeholder="Opción ${k}">
+      <input type="radio" name="correcta" id="rc-${k}" value="${k}" class="admin-opcion-check" ${correcta === k ? "checked" : ""}>
+      <label for="rc-${k}" class="admin-opcion-letra">${k}</label>
+      <input class="age-input admin-opcion-txt" id="op-${k}" value="${escapeHtml(o[k] || "")}" placeholder="Opción ${k}">
     </div>`).join("");
   abrirModal(`
     <h2>${p ? "Editar pregunta" : "Nueva pregunta"}</h2>
@@ -661,17 +662,19 @@ function fichaPlanBadge(plan) {
   return `<span class="ficha-badge ${cls}">${txt}</span>`;
 }
 function fichaEuros(n) { return (n || 0).toLocaleString("es", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) + " €"; }
+const _MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+function mesLegible(m) { const p = (m || "").split("-"); return (_MESES_CORTOS[(+p[1] || 1) - 1] || "") + " " + (p[0] || ""); }
 function fichaMini(icono, num, label) {
   return `<div class="ficha-mini"><span class="ficha-mini-ico">${icono}</span><span class="ficha-mini-num">${(num || 0).toLocaleString("es")}</span><span class="ficha-mini-lbl">${label}</span></div>`;
 }
 function fichaCosteBarras(hist) {
   if (!hist || !hist.length) return '<p class="ficha-vacio">Sin consumo de IA todavía.</p>';
-  const max = Math.max(...hist.map((h) => h.coste)) || 1;
-  return `<div class="ficha-barras">${hist.map((h) => {
+  const barras = hist.slice(-12); // últimos 12 meses en el gráfico
+  const max = Math.max(...barras.map((h) => h.coste)) || 1;
+  return `<div class="ficha-barras" role="group" aria-label="Gasto de IA por mes">${barras.map((h) => {
     const alt = h.coste > 0 ? Math.max(8, Math.round((h.coste / max) * 100)) : 3;
-    const mesLbl = (h.mes || "").slice(5);
-    const tip = `${escapeHtml(h.mes)}: ${fichaEuros(h.coste)} · ${(h.tokens || 0).toLocaleString("es")} tokens · ${h.llamadas || 0} llamadas`;
-    return `<div class="ficha-barra-col" title="${tip}"><div class="ficha-barra-wrap"><div class="ficha-barra" style="height:${alt}%"></div></div><span class="ficha-barra-lbl">${escapeHtml(mesLbl)}</span></div>`;
+    const tip = `${mesLegible(h.mes)}: ${fichaEuros(h.coste)} · ${(h.tokens || 0).toLocaleString("es")} tokens · ${h.llamadas || 0} llamadas`;
+    return `<button type="button" class="ficha-barra-col" data-mes="${escapeHtml(h.mes)}" title="${tip}"><div class="ficha-barra-wrap"><div class="ficha-barra" style="height:${alt}%"></div></div><span class="ficha-barra-lbl">${escapeHtml((h.mes || "").slice(5))}</span></button>`;
   }).join("")}</div>`;
 }
 
@@ -722,6 +725,18 @@ async function abrirUsuario(uid) {
             </div>
           </div>
           ${fichaCosteBarras(u.coste_ia_historico)}
+          <p class="ficha-coste-detalle" id="up-coste-detalle">${(u.coste_ia_historico || []).length ? "Toca una barra para ver el detalle de ese mes." : ""}</p>
+          ${(u.coste_ia_historico || []).length ? `
+          <details class="ficha-rango">
+            <summary>🔎 Buscar por rango de meses</summary>
+            <div class="ficha-rango-cuerpo">
+              <div class="ficha-rango-selects">
+                <label>Desde <select id="up-rango-desde" class="age-input">${(u.coste_ia_historico || []).map((h) => `<option value="${escapeHtml(h.mes)}">${mesLegible(h.mes)}</option>`).join("")}</select></label>
+                <label>Hasta <select id="up-rango-hasta" class="age-input">${(u.coste_ia_historico || []).map((h) => `<option value="${escapeHtml(h.mes)}">${mesLegible(h.mes)}</option>`).join("")}</select></label>
+              </div>
+              <div class="ficha-rango-res" id="up-rango-res"></div>
+            </div>
+          </details>` : ""}
         </div>
 
         <div class="ficha-panel">
@@ -764,13 +779,16 @@ async function abrirUsuario(uid) {
       <details class="ficha-acordeon">
         <summary><span class="ficha-panel-ico">🛟</span> Soporte y notas</summary>
         <div class="ficha-acordeon-cuerpo">
-          <textarea class="age-input" id="up-notas" rows="3" placeholder="Anotaciones internas sobre este usuario…">${escapeHtml(u.notas_admin || "")}</textarea>
-          <button class="age-btn age-btn-outline admin-mini" id="up-notas-guardar" style="margin-top:6px;">Guardar nota</button>
-          <div class="admin-chunk-acciones" style="margin-top:12px;">
-            <button class="age-btn age-btn-outline admin-mini" id="up-racha">Resetear racha</button>
-            <button class="age-btn age-btn-outline admin-mini" id="up-limites">Resetear límites de uso</button>
-            <button class="age-btn age-btn-outline admin-mini" id="up-reset-pass">Enlace de contraseña</button>
-            ${u.email_verificado ? "" : '<button class="age-btn age-btn-outline admin-mini" id="up-verif">Enlace de verificación</button>'}
+          <h4 class="ficha-sub">📝 Notas internas</h4>
+          <div id="up-notas-lista" class="ficha-notas"></div>
+          <textarea class="age-input" id="up-nota-nueva" rows="2" placeholder="Escribe una nota nueva…"></textarea>
+          <button class="age-btn age-btn-primary admin-mini" id="up-nota-anadir" style="margin-top:6px;">+ Añadir nota</button>
+          <h4 class="ficha-sub" style="margin-top:18px;">🛠️ Acciones de soporte</h4>
+          <div class="ficha-soporte-acciones">
+            <button class="age-btn admin-mini ficha-btn-soporte" id="up-racha">🔥 Resetear racha</button>
+            <button class="age-btn admin-mini ficha-btn-soporte" id="up-limites">♻️ Resetear límites de uso</button>
+            <button class="age-btn admin-mini ficha-btn-soporte" id="up-reset-pass">🔑 Enlace de contraseña</button>
+            ${u.email_verificado ? "" : '<button class="age-btn admin-mini ficha-btn-soporte" id="up-verif">✉️ Enlace de verificación</button>'}
           </div>
           <div id="up-enlace-caja"></div>
         </div>
@@ -813,10 +831,61 @@ async function abrirUsuario(uid) {
     });
     if (r) { toast("Plan actualizado."); cerrarModal(); cargarUsuarios(); }
   });
-  document.getElementById("up-notas-guardar").addEventListener("click", async () => {
-    const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/notas`, { notas: document.getElementById("up-notas").value });
-    if (r) { toast("Nota guardada."); u.notas_admin = document.getElementById("up-notas").value; }
+  // ---- Notas internas (lista: añadir / eliminar) ----
+  let notas = Array.isArray(u.notas_lista) ? u.notas_lista.slice() : [];
+  const renderNotas = () => {
+    const cont = document.getElementById("up-notas-lista");
+    if (!cont) return;
+    if (!notas.length) { cont.innerHTML = '<p class="ficha-notas-vacio">Sin notas todavía.</p>'; return; }
+    cont.innerHTML = notas.map((n) => {
+      const meta = [n.autor, n.fecha ? fechaCorta(n.fecha) : ""].filter(Boolean).join(" · ");
+      return `<div class="ficha-nota"><div class="ficha-nota-txt">${escapeHtml(n.texto || "")}</div>
+        <div class="ficha-nota-pie">${meta ? `<span class="ficha-nota-meta">${escapeHtml(meta)}</span>` : "<span></span>"}
+        <button class="ficha-nota-borrar" data-id="${escapeHtml(n.id)}" title="Eliminar nota">🗑</button></div></div>`;
+    }).join("");
+    cont.querySelectorAll(".ficha-nota-borrar").forEach((b) => b.addEventListener("click", async () => {
+      if (!confirm("¿Eliminar esta nota?")) return;
+      const r = await api("DELETE", `/admin/api/usuarios/${u.uid}/notas/${b.dataset.id}`);
+      if (r) { notas = notas.filter((x) => x.id !== b.dataset.id); renderNotas(); toast("Nota eliminada."); }
+    }));
+  };
+  renderNotas();
+  document.getElementById("up-nota-anadir")?.addEventListener("click", async () => {
+    const ta = document.getElementById("up-nota-nueva");
+    const texto = (ta.value || "").trim();
+    if (!texto) { toast("Escribe algo en la nota.", "error"); return; }
+    const r = await api("POST", `/admin/api/usuarios/${u.uid}/notas`, { texto });
+    if (r && r.nota) { notas.push(r.nota); ta.value = ""; renderNotas(); toast("Nota añadida."); }
   });
+  // ---- Gasto IA: tocar barra para ver el mes ----
+  const hist = u.coste_ia_historico || [];
+  const detalle = document.getElementById("up-coste-detalle");
+  document.querySelectorAll(".ficha-barra-col").forEach((b) => b.addEventListener("click", () => {
+    const h = hist.find((x) => x.mes === b.dataset.mes);
+    if (h && detalle) detalle.innerHTML = `<strong>${mesLegible(h.mes)}:</strong> ${fichaEuros(h.coste)} · ${(h.tokens || 0).toLocaleString("es")} tokens (${(h.tokens_in || 0).toLocaleString("es")} entrada / ${(h.tokens_out || 0).toLocaleString("es")} salida) · ${h.llamadas || 0} llamadas`;
+    document.querySelectorAll(".ficha-barra-col").forEach((x) => x.classList.toggle("activa", x === b));
+  }));
+  // ---- Gasto IA: rango de meses ----
+  const rangoDesde = document.getElementById("up-rango-desde");
+  const rangoHasta = document.getElementById("up-rango-hasta");
+  const calcularRango = () => {
+    if (!rangoDesde || !rangoHasta) return;
+    let a = rangoDesde.value, b = rangoHasta.value;
+    if (a > b) { [a, b] = [b, a]; }
+    const sel = hist.filter((h) => h.mes >= a && h.mes <= b);
+    const coste = sel.reduce((s, h) => s + (h.coste || 0), 0);
+    const tokens = sel.reduce((s, h) => s + (h.tokens || 0), 0);
+    const llamadas = sel.reduce((s, h) => s + (h.llamadas || 0), 0);
+    document.getElementById("up-rango-res").innerHTML =
+      `<strong>${mesLegible(a)} → ${mesLegible(b)}:</strong> ${fichaEuros(coste)} · ${tokens.toLocaleString("es")} tokens · ${llamadas.toLocaleString("es")} llamadas`;
+  };
+  if (rangoDesde && rangoHasta) {
+    rangoDesde.value = hist.length ? hist[0].mes : "";
+    rangoHasta.value = hist.length ? hist[hist.length - 1].mes : "";
+    rangoDesde.addEventListener("change", calcularRango);
+    rangoHasta.addEventListener("change", calcularRango);
+    calcularRango();
+  }
   document.getElementById("up-admin")?.addEventListener("click", async () => {
     const dar = !u.es_admin;
     if (!confirm(dar ? "¿Dar permisos de administrador TOTAL a este usuario?" : "¿Quitar los permisos de administrador?")) return;
