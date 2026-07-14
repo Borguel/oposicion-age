@@ -6,7 +6,7 @@ from datetime import datetime
 from firebase_admin import firestore
 
 logger = logging.getLogger(__name__)
-from utils import calcular_resultado_test, obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
+from utils import buscar_pregunta_oficial, calcular_resultado_test, obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
 from deepseek_utils import call_deepseek_api, call_deepseek_api_stream
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
@@ -615,7 +615,55 @@ def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
 # historial previo) sin llamar todavía a DeepSeek -- lo comparten
 # responder_tutor (respuesta de una vez) y responder_tutor_stream
 # (respuesta en streaming), para no duplicar la lógica de detección.
-def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
+
+# Longitudes máximas del contexto de página que manda el frontend (la
+# pregunta que el usuario tiene delante en un test), para no dejar que un
+# payload manipulado infle el prompt.
+_MAX_ENUNCIADO_CONTEXTO = 1200
+_MAX_OPCION_CONTEXTO = 400
+
+
+def _texto_pregunta_en_pantalla(contexto_pagina):
+    """Convierte el contexto de página que manda el widget (la pregunta que el
+    usuario está viendo en un test) en un texto legible "enunciado + opciones",
+    o None si no hay una pregunta utilizable. Trunca por seguridad."""
+    if not isinstance(contexto_pagina, dict):
+        return None
+    if contexto_pagina.get("tipo") != "test":
+        return None
+    enunciado = str(contexto_pagina.get("enunciado") or "").strip()[:_MAX_ENUNCIADO_CONTEXTO]
+    if not enunciado:
+        return None
+    opciones = contexto_pagina.get("opciones") or {}
+    lineas = [enunciado]
+    if isinstance(opciones, dict):
+        for letra in sorted(opciones):
+            texto_opcion = str(opciones[letra] or "").strip()[:_MAX_OPCION_CONTEXTO]
+            if texto_opcion:
+                lineas.append(f"{str(letra).upper()}) {texto_opcion}")
+    return "\n".join(lineas) if len(lineas) > 1 or enunciado else None
+
+
+def _bloque_respuesta_oficial(pregunta_oficial):
+    """Mensaje de sistema con la respuesta OFICIAL ya corregida de una
+    pregunta del banco de exámenes, para que el tutor la dé como correcta con
+    seguridad en vez de razonarla desde cero (y no la contradiga)."""
+    letra = (pregunta_oficial.get("respuesta_correcta") or "").upper()
+    explicacion = (pregunta_oficial.get("explicacion") or "").strip()
+    examen = (pregunta_oficial.get("examen") or "").strip()
+    fuente = f" (examen oficial {examen})" if examen else " (examen oficial)"
+    partes = [
+        "DATO VERIFICADO: la pregunta que plantea el usuario coincide con una pregunta de examen "
+        f"oficial ya corregida{fuente}. La respuesta correcta OFICIAL es la opción {letra}. "
+        "Dásela como correcta con seguridad y explícala con tus palabras; no la pongas en duda ni "
+        "propongas otra letra distinta."
+    ]
+    if explicacion:
+        partes.append("Explicación oficial de referencia: " + explicacion)
+    return " ".join(partes)
+
+
+def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina=None):
     historial = _historial_previo(db, usuario_id, chat_id)
     catalogo = obtener_catalogo_temas(db, coleccion)
 
@@ -743,6 +791,32 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
                 "de golpe ni suenes a ficha de cliente."
             )
         })
+
+    # Pregunta que el usuario tiene delante en un test (la manda el widget
+    # flotante desde la página de test). Se le da como contexto para que
+    # "ayúdame con esta pregunta" funcione sin que la pegue.
+    pregunta_en_pantalla = _texto_pregunta_en_pantalla(contexto_pagina)
+    if pregunta_en_pantalla and not es_test:
+        mensajes.append({
+            "role": "system",
+            "content": (
+                "El usuario está haciendo un test y ahora mismo tiene esta pregunta en pantalla. Si su "
+                "mensaje se refiere a ella (\"ayúdame con esta\", \"¿cuál es la correcta?\"...), resuélvela "
+                "directamente indicando la opción correcta y por qué; si su mensaje va de otra cosa, "
+                "ignórala.\n\nPREGUNTA EN PANTALLA:\n" + pregunta_en_pantalla
+            )
+        })
+
+    # Respuesta oficial verificada: si la pregunta (la pegada en el mensaje o
+    # la que tiene en pantalla) coincide con una del banco de exámenes
+    # oficiales, se le da la respuesta correcta ya corregida para que no la
+    # razone desde cero ni contradiga lo que marca el test.
+    texto_para_banco = mensaje if es_test else (pregunta_en_pantalla or "")
+    if texto_para_banco:
+        pregunta_oficial = buscar_pregunta_oficial(db, oposicion, texto_para_banco)
+        if pregunta_oficial:
+            mensajes.append({"role": "system", "content": _bloque_respuesta_oficial(pregunta_oficial)})
+
     mensajes.extend(historial)
     mensajes.append({"role": "user", "content": prompt_usuario})
     return mensajes, usar_rag, temas_relacionados
@@ -827,8 +901,8 @@ def _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta):
 # ni reenviar al modelo en el siguiente turno un mensaje de error genérico
 # como si fuera una respuesta real del asistente. El llamador (la ruta
 # /tu-tutor) es quien decide qué mostrarle al usuario en ese caso.
-def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO):
-    mensajes, usar_rag, _temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion)
+def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO, contexto_pagina=None):
+    mensajes, usar_rag, _temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
     respuesta = call_deepseek_api(messages=mensajes, temperature=0.7, max_tokens=1500)
     if not respuesta:
         return None, chat_id, usar_rag
@@ -844,8 +918,8 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
 # {"tipo": "fin", "chat_id": ..., "usar_rag": ...} una vez guardado en
 # Firestore, o {"tipo": "error"} si DeepSeek falla o no llega ningún
 # fragmento (mismo criterio que responder_tutor: nada se guarda en ese caso).
-def responder_tutor_stream(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO):
-    mensajes, usar_rag, temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion)
+def responder_tutor_stream(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO, contexto_pagina=None):
+    mensajes, usar_rag, temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
 
     fragmentos = []
     for fragmento in call_deepseek_api_stream(messages=mensajes, temperature=0.7, max_tokens=1500):

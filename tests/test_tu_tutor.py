@@ -148,6 +148,81 @@ def test_rag_avisa_de_que_el_contenido_no_lo_ha_pasado_el_usuario(db):
     assert "MENSAJE DEL USUARIO" in prompt
 
 
+def _texto_sistema(mensajes):
+    return " ".join(m["content"] for m in mensajes if m["role"] == "system")
+
+
+def test_pregunta_de_test_oficial_usa_la_respuesta_verificada(db):
+    # Si la pregunta pegada coincide con una del banco de exámenes oficiales,
+    # el tutor recibe la respuesta correcta ya corregida para no razonarla ni
+    # contradecir lo que marca el test.
+    db.sembrar(("examenes_oficiales_AGE", "of1"), {
+        "tipo": "pregunta",
+        "pregunta": "El plazo para interponer recurso de alzada es de un mes desde la notificacion",
+        "opciones": {"A": "Un mes", "B": "Tres meses", "C": "Quince dias", "D": "Dos meses"},
+        "respuesta_correcta": "A",
+        "explicacion": "El recurso de alzada se interpone en el plazo de un mes (art. 122 LPAC).",
+        "examen": "AGE 2025",
+    })
+    mcq = ("El plazo para interponer recurso de alzada es de un mes desde la notificación. "
+           "A Un mes B Tres meses C Quince días D Dos meses")
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor(mcq, db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+    sistema = _texto_sistema(mock_llamada.call_args.kwargs["messages"])
+    assert "DATO VERIFICADO" in sistema
+    assert "opción A" in sistema
+    assert "art. 122 LPAC" in sistema  # explicación oficial incluida
+
+
+def test_pregunta_de_test_no_oficial_no_inventa_dato_verificado(db):
+    # Una pregunta que NO está en el banco oficial no debe generar un bloque
+    # "DATO VERIFICADO" (que daría falsa autoridad a una respuesta inventada).
+    db.sembrar(("examenes_oficiales_AGE", "of1"), {
+        "tipo": "pregunta",
+        "pregunta": "El plazo para interponer recurso de alzada es de un mes",
+        "opciones": {"A": "Un mes", "B": "Tres meses"},
+        "respuesta_correcta": "A",
+    })
+    mcq = "¿Capital de Francia? A Madrid B París C Roma D Berlín"
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor(mcq, db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+    sistema = _texto_sistema(mock_llamada.call_args.kwargs["messages"])
+    assert "DATO VERIFICADO" not in sistema
+
+
+def test_contexto_de_pagina_pasa_la_pregunta_en_pantalla(db):
+    # El widget manda la pregunta que el usuario tiene delante en un test; el
+    # tutor debe recibirla para resolver "¿cuál es la correcta?" sin pegarla.
+    contexto = {
+        "tipo": "test",
+        "enunciado": "¿Qué órgano aprueba los Presupuestos Generales del Estado?",
+        "opciones": {"A": "El Gobierno", "B": "Las Cortes Generales", "C": "El Rey"},
+    }
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor("¿Cuál es la correcta?", db=db, usuario_id="u1", oposicion="AGE",
+                        coleccion="Temario AGE", contexto_pagina=contexto)
+    sistema = _texto_sistema(mock_llamada.call_args.kwargs["messages"])
+    assert "PREGUNTA EN PANTALLA" in sistema
+    assert "Presupuestos Generales del Estado" in sistema
+    assert "Las Cortes Generales" in sistema
+
+
+def test_buscar_pregunta_oficial_por_contencion_del_enunciado(db):
+    from utils import buscar_pregunta_oficial
+    db.sembrar(("examenes_oficiales_AGE", "of1"), {
+        "tipo": "pregunta",
+        "pregunta": "La soberanía nacional reside en el pueblo español",
+        "opciones": {"A": "El pueblo español", "B": "El Rey"},
+        "respuesta_correcta": "A",
+    })
+    # El texto pegado trae el enunciado + opciones: debe emparejar.
+    encontrada = buscar_pregunta_oficial(db, "AGE", "La soberanía nacional reside en el pueblo español. A ... B ...")
+    assert encontrada is not None
+    assert encontrada["respuesta_correcta"] == "A"
+    # Un texto sin relación no empareja.
+    assert buscar_pregunta_oficial(db, "AGE", "¿Cuántos ríos hay en España?") is None
+
+
 def test_si_deepseek_falla_no_guarda_nada_y_devuelve_none(db):
     with patch("chat_controller.call_deepseek_api", return_value=None), \
          patch("chat_controller.crear_conversacion") as mock_crear, \

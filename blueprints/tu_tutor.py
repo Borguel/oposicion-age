@@ -52,7 +52,8 @@ def tu_tutor_route():
         usuario_id=g.uid,
         chat_id=chat_id,
         coleccion=coleccion_temario(g.oposicion),
-        oposicion=g.oposicion
+        oposicion=g.oposicion,
+        contexto_pagina=data.get("contexto_pagina")
     )
     if respuesta is None:
         # No se registra uso: un fallo técnico de DeepSeek no debe consumir
@@ -79,6 +80,7 @@ def tu_tutor_stream_route():
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
     chat_id = data.get("chat_id")
+    contexto_pagina = data.get("contexto_pagina")
     uid = g.uid
     plan_actual = g.plan_actual
     oposicion = g.oposicion
@@ -97,7 +99,8 @@ def tu_tutor_stream_route():
             usuario_id=uid,
             chat_id=chat_id,
             coleccion=coleccion_temario(oposicion),
-            oposicion=oposicion
+            oposicion=oposicion,
+            contexto_pagina=contexto_pagina
         ):
             if evento["tipo"] == "fin":
                 exito = True

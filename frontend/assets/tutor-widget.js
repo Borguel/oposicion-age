@@ -49,6 +49,28 @@ function formatearMensajeBot(texto) {
   return html;
 }
 
+// Lee la pregunta que el usuario tiene AHORA en pantalla si está haciendo un
+// test (las 6 páginas de test comparten este marcado: .pregunta-en-negrita +
+// .opcion-respuesta con .opcion-letra/.opcion-texto). Devuelve un objeto que
+// se manda al backend como `contexto_pagina` para que el tutor pueda resolver
+// "ayúdame con esta pregunta" sin que el usuario la copie y pegue. Si no hay
+// pregunta a la vista (no es página de test, o aún no ha empezado), null.
+function leerPreguntaEnPantalla() {
+  const bloque = document.querySelector(".pregunta-en-negrita");
+  if (!bloque) return null;
+  const span = bloque.querySelector("span");
+  // Se quita la numeración inicial ("12. ") que añade la vista del test.
+  const enunciado = (span ? span.textContent : "").replace(/^\s*\d+\s*[.)]\s*/, "").trim();
+  if (!enunciado) return null;
+  const opciones = {};
+  document.querySelectorAll(".opcion-respuesta").forEach((label) => {
+    const letra = label.querySelector(".opcion-letra")?.textContent.trim();
+    const texto = label.querySelector(".opcion-texto")?.textContent.trim();
+    if (letra && texto) opciones[letra] = texto;
+  });
+  return { tipo: "test", enunciado, opciones };
+}
+
 let montado = false;
 
 export function montarWidgetTutor() {
@@ -213,12 +235,16 @@ export function montarWidgetTutor() {
     mostrarTyping(true);
     const oposicion = obtenerOposicionActual();
 
+    // Si está haciendo un test, se adjunta la pregunta que tiene en pantalla
+    // para que el tutor pueda ayudarle con ella sin copiarla.
+    const contextoPagina = leerPreguntaEnPantalla();
+
     let respuesta;
     try {
       respuesta = await fetch(`${BACKEND_URL}/tu-tutor/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ mensaje: texto, chat_id: chatId, oposicion }),
+        body: JSON.stringify({ mensaje: texto, chat_id: chatId, oposicion, contexto_pagina: contextoPagina }),
         signal: AbortSignal.timeout(60000),
       });
     } catch {
