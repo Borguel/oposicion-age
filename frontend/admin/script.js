@@ -653,64 +653,153 @@ async function cargarUsuarios() {
   cont.querySelector("#u-next")?.addEventListener("click", () => { paginaUsuarios++; cargarUsuarios(); });
 }
 
+// ---- Ficha de cliente: piezas visuales reutilizables ----
+function fichaPlanBadge(plan) {
+  const p = (plan || "gratis").toLowerCase();
+  const map = { premium: ["Premium", "ficha-badge-premium"], basico: ["Básico", "ficha-badge-basico"], gratis: ["Gratis", "ficha-badge-gratis"] };
+  const [txt, cls] = map[p] || map.gratis;
+  return `<span class="ficha-badge ${cls}">${txt}</span>`;
+}
+function fichaEuros(n) { return (n || 0).toLocaleString("es", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) + " €"; }
+function fichaMini(icono, num, label) {
+  return `<div class="ficha-mini"><span class="ficha-mini-ico">${icono}</span><span class="ficha-mini-num">${(num || 0).toLocaleString("es")}</span><span class="ficha-mini-lbl">${label}</span></div>`;
+}
+function fichaCosteBarras(hist) {
+  if (!hist || !hist.length) return '<p class="ficha-vacio">Sin consumo de IA todavía.</p>';
+  const max = Math.max(...hist.map((h) => h.coste)) || 1;
+  return `<div class="ficha-barras">${hist.map((h) => {
+    const alt = h.coste > 0 ? Math.max(8, Math.round((h.coste / max) * 100)) : 3;
+    const mesLbl = (h.mes || "").slice(5);
+    const tip = `${escapeHtml(h.mes)}: ${fichaEuros(h.coste)} · ${(h.tokens || 0).toLocaleString("es")} tokens · ${h.llamadas || 0} llamadas`;
+    return `<div class="ficha-barra-col" title="${tip}"><div class="ficha-barra-wrap"><div class="ficha-barra" style="height:${alt}%"></div></div><span class="ficha-barra-lbl">${escapeHtml(mesLbl)}</span></div>`;
+  }).join("")}</div>`;
+}
+
 async function abrirUsuario(uid) {
   abrirModal(`<p class="admin-cargando">Cargando ficha…</p>`);
   const u = await apiGet(`/admin/api/usuarios/${uid}`);
   if (!u) { cerrarModal(); return; }
+  const c = u.contenido_creado || {};
+  const r = u.rendimiento || {};
+  const inicial = (u.email || "?").trim().charAt(0).toUpperCase() || "?";
+  const oposActivas = (u.oposiciones_activas || []);
   const override = u.admin_override
     ? `<div class="admin-aviso"><strong>Último cambio de soporte:</strong> ${escapeHtml(u.admin_override.cambio || "")} — ${escapeHtml(u.admin_override.motivo || "sin motivo")} (${escapeHtml(fechaCorta(u.admin_override.fecha))})</div>`
     : "";
   abrirModal(`
-    <h2>${escapeHtml(u.email || "(sin email)")}</h2>
-    <p class="admin-dato admin-dato-mono"><strong>UID:</strong> ${escapeHtml(u.uid)}<button class="admin-copiar" id="up-copiar-uid">copiar</button></p>
-    <div class="admin-datos-grid">
-      <div class="admin-dato-caja"><span class="admin-dato-caja-num">${u.tests_total}</span><span class="admin-dato-caja-lbl">Tests</span></div>
-      <div class="admin-dato-caja"><span class="admin-dato-caja-num">${u.racha_actual}</span><span class="admin-dato-caja-lbl">Racha</span></div>
-      <div class="admin-dato-caja"><span class="admin-dato-caja-num">${u.ultima_nota != null ? escapeHtml(u.ultima_nota) : "-"}</span><span class="admin-dato-caja-lbl">Últ. nota</span></div>
-    </div>
-    <p class="admin-dato"><strong>Coste IA:</strong> ${(u.coste_ia_mes || 0).toFixed(4)}€ este mes · ${(u.coste_ia_total || 0).toFixed(4)}€ total (${(u.tokens_ia_total || 0).toLocaleString("es")} tokens)</p>
-    <p class="admin-dato"><strong>Plan actual:</strong> ${escapeHtml(u.plan)} · <strong>Alta:</strong> ${escapeHtml(fechaCorta(u.fecha_creacion))} · <strong>Últ. actividad:</strong> ${escapeHtml(fechaCorta(u.ultima_actividad))}</p>
-    <p class="admin-dato"><strong>Email verificado:</strong> ${u.email_verificado ? "sí" : "no"}</p>
-    ${override}
-    <hr class="admin-sep">
-    <h3>Cambiar plan (soporte)</h3>
-    <div class="admin-form-fila">
-      <select id="up-plan" class="age-input"><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
-      <select id="up-oposicion" class="age-input"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
-    </div>
-    <input id="up-motivo" class="age-input" placeholder="Motivo (queda registrado)" style="margin-top:8px;">
-    <button class="age-btn age-btn-primary" id="up-guardar" style="margin-top:10px;">Cambiar plan</button>
-    <hr class="admin-sep">
-    <h3>Notas internas (solo admins)</h3>
-    <textarea class="age-input" id="up-notas" rows="3" placeholder="Anotaciones de soporte sobre este usuario…">${escapeHtml(u.notas_admin || "")}</textarea>
-    <button class="age-btn age-btn-outline admin-mini" id="up-notas-guardar" style="margin-top:6px;">Guardar nota</button>
-    <hr class="admin-sep">
-    <h3>Administración</h3>
-    <p class="admin-dato"><strong>Es administrador:</strong> ${u.es_admin ? "sí ✅" : "no"}</p>
-    ${_permisos.admin ? `
-      <button class="age-btn ${u.es_admin ? "age-btn-outline" : "age-btn-primary"}" id="up-admin">${u.es_admin ? "Quitar admin" : "Hacer admin total"}</button>
-      <p class="admin-dato" style="margin-top:12px;"><strong>Roles (acceso parcial):</strong></p>
-      <p class="admin-reporte-meta">Marca a qué secciones puede entrar sin ser admin total.</p>
-      ${(u.permisos_disponibles || ["temario", "reportes", "usuarios"]).map((p) => `
-        <label class="admin-rol-check">
-          <input type="checkbox" class="up-permiso" value="${escapeHtml(p)}" ${(u.permisos || []).includes(p) ? "checked" : ""} ${u.es_admin ? "disabled" : ""}>
-          <span>${p === "temario" ? "Temario y preguntas" : p === "reportes" ? "Reportes de preguntas" : "Usuarios y planes"}</span>
-        </label>`).join("")}
-      <button class="age-btn age-btn-outline admin-mini" id="up-roles" ${u.es_admin ? "disabled" : ""} style="margin-top:6px;">Guardar roles</button>
-      ${u.es_admin ? '<p class="admin-reporte-meta">Un admin total ya tiene todos los permisos.</p>' : ""}
-      ${u.bloqueado ? '<p class="admin-dato"><span class="admin-badge-alerta">Acceso bloqueado</span></p>' : ""}
-      <button class="age-btn age-btn-outline admin-mini" id="up-bloqueo" style="margin-top:10px;">${u.bloqueado ? "Restaurar acceso" : "Bloquear acceso"}</button>
-      <button class="age-btn age-btn-outline admin-mini" id="up-eliminar" style="margin-top:10px;color:var(--age-danger,#c0392b);border-color:var(--age-danger,#c0392b);">Eliminar cuenta</button>
-    ` : `<p class="admin-reporte-meta">Solo un administrador total puede cambiar roles.</p>`}
-    <hr class="admin-sep">
-    <h3>Soporte</h3>
-    <div class="admin-chunk-acciones">
-      <button class="age-btn age-btn-outline admin-mini" id="up-racha">Resetear racha</button>
-      <button class="age-btn age-btn-outline admin-mini" id="up-limites">Resetear límites de uso</button>
-      <button class="age-btn age-btn-outline admin-mini" id="up-reset-pass">Enlace de contraseña</button>
-      ${u.email_verificado ? "" : '<button class="age-btn age-btn-outline admin-mini" id="up-verif">Enlace de verificación</button>'}
-    </div>
-    <div id="up-enlace-caja"></div>`);
+    <div class="ficha">
+      <div class="ficha-cabecera">
+        <div class="ficha-avatar">${escapeHtml(inicial)}</div>
+        <div class="ficha-id">
+          <h2 class="ficha-email">${escapeHtml(u.email || "(sin email)")}</h2>
+          ${u.nombre ? `<p class="ficha-nombre">${escapeHtml(u.nombre)}</p>` : ""}
+          <div class="ficha-badges">
+            ${fichaPlanBadge(u.plan)}
+            <span class="ficha-badge ${u.email_verificado ? "ficha-badge-ok" : "ficha-badge-warn"}">${u.email_verificado ? "✓ Verificado" : "Sin verificar"}</span>
+            ${u.es_admin ? '<span class="ficha-badge ficha-badge-admin">👑 Admin total</span>' : ""}
+            ${(!u.es_admin && (u.permisos || []).length) ? `<span class="ficha-badge ficha-badge-rol">🛡️ ${(u.permisos || []).length} rol(es)</span>` : ""}
+            ${u.bloqueado ? '<span class="ficha-badge ficha-badge-bloqueo">🚫 Bloqueado</span>' : ""}
+          </div>
+          <p class="ficha-uid"><span>UID: ${escapeHtml(u.uid)}</span><button class="admin-copiar" id="up-copiar-uid">copiar</button></p>
+        </div>
+      </div>
+
+      <div class="ficha-kpis">
+        <div class="ficha-kpi"><span class="ficha-kpi-num">${(u.tests_total || 0).toLocaleString("es")}</span><span class="ficha-kpi-lbl">Tests hechos</span></div>
+        <div class="ficha-kpi"><span class="ficha-kpi-num">${u.racha_actual || 0}</span><span class="ficha-kpi-lbl">Racha (máx ${u.racha_maxima || 0})</span></div>
+        <div class="ficha-kpi"><span class="ficha-kpi-num">${u.ultima_nota != null ? escapeHtml(u.ultima_nota) : "–"}</span><span class="ficha-kpi-lbl">Última nota</span></div>
+        <div class="ficha-kpi"><span class="ficha-kpi-num">${r.porcentaje != null ? r.porcentaje + "%" : "–"}</span><span class="ficha-kpi-lbl">Acierto global</span></div>
+      </div>
+
+      <div class="ficha-cols">
+        <div class="ficha-panel ficha-coste">
+          <div class="ficha-panel-cab"><span class="ficha-panel-ico">🤖</span><h3>Gasto en IA</h3></div>
+          <div class="ficha-coste-cifras">
+            <div class="ficha-coste-grande"><span class="ficha-coste-num">${fichaEuros(u.coste_ia_mes)}</span><span class="ficha-coste-lbl">este mes</span></div>
+            <div class="ficha-coste-sec">
+              <div><strong>${fichaEuros(u.coste_ia_total)}</strong><span>histórico</span></div>
+              <div><strong>${(u.tokens_ia_total || 0).toLocaleString("es")}</strong><span>tokens</span></div>
+            </div>
+          </div>
+          ${fichaCosteBarras(u.coste_ia_historico)}
+        </div>
+
+        <div class="ficha-panel">
+          <div class="ficha-panel-cab"><span class="ficha-panel-ico">📚</span><h3>Contenido creado</h3></div>
+          <div class="ficha-minis">
+            ${fichaMini("📄", c.documentos, "Documentos")}
+            ${fichaMini("📝", c.resumenes, "Resúmenes")}
+            ${fichaMini("🗂️", c.esquemas, "Esquemas")}
+            ${fichaMini("🃏", c.tarjetas, "Tarjetas")}
+            ${fichaMini("🧪", c.tests_pdf, "Tests de PDF")}
+            ${fichaMini("⭐", c.favoritas, "Favoritas")}
+            ${fichaMini("🔁", c.falladas, "A repasar")}
+          </div>
+        </div>
+      </div>
+
+      <div class="ficha-panel">
+        <div class="ficha-panel-cab"><span class="ficha-panel-ico">🪪</span><h3>Datos de la cuenta</h3></div>
+        <dl class="ficha-datos">
+          <div><dt>Plan</dt><dd>${escapeHtml(u.plan)}${oposActivas.length ? " · " + oposActivas.map(escapeHtml).join(", ") : ""}</dd></div>
+          <div><dt>Alta</dt><dd>${escapeHtml(fechaCorta(u.fecha_creacion))}</dd></div>
+          <div><dt>Última actividad</dt><dd>${escapeHtml(fechaCorta(u.ultima_actividad))}</dd></div>
+          <div><dt>Rendimiento</dt><dd>${(r.aciertos || 0)} aciertos · ${(r.fallos || 0)} fallos · ${(r.blancos || 0)} blancos</dd></div>
+        </dl>
+        ${override}
+      </div>
+
+      <details class="ficha-acordeon">
+        <summary><span class="ficha-panel-ico">💳</span> Cambiar plan (soporte)</summary>
+        <div class="ficha-acordeon-cuerpo">
+          <div class="admin-form-fila">
+            <select id="up-plan" class="age-input"><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
+            <select id="up-oposicion" class="age-input"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
+          </div>
+          <input id="up-motivo" class="age-input" placeholder="Motivo (queda registrado)" style="margin-top:8px;">
+          <button class="age-btn age-btn-primary" id="up-guardar" style="margin-top:10px;">Cambiar plan</button>
+        </div>
+      </details>
+
+      <details class="ficha-acordeon">
+        <summary><span class="ficha-panel-ico">🛟</span> Soporte y notas</summary>
+        <div class="ficha-acordeon-cuerpo">
+          <textarea class="age-input" id="up-notas" rows="3" placeholder="Anotaciones internas sobre este usuario…">${escapeHtml(u.notas_admin || "")}</textarea>
+          <button class="age-btn age-btn-outline admin-mini" id="up-notas-guardar" style="margin-top:6px;">Guardar nota</button>
+          <div class="admin-chunk-acciones" style="margin-top:12px;">
+            <button class="age-btn age-btn-outline admin-mini" id="up-racha">Resetear racha</button>
+            <button class="age-btn age-btn-outline admin-mini" id="up-limites">Resetear límites de uso</button>
+            <button class="age-btn age-btn-outline admin-mini" id="up-reset-pass">Enlace de contraseña</button>
+            ${u.email_verificado ? "" : '<button class="age-btn age-btn-outline admin-mini" id="up-verif">Enlace de verificación</button>'}
+          </div>
+          <div id="up-enlace-caja"></div>
+        </div>
+      </details>
+
+      <details class="ficha-acordeon ficha-acordeon-peligro">
+        <summary><span class="ficha-panel-ico">🔐</span> Roles y administración</summary>
+        <div class="ficha-acordeon-cuerpo">
+          ${_permisos.admin ? `
+            <p class="ficha-roles-intro">${u.es_admin ? "Este usuario es <strong>administrador total</strong> (acceso a todo)." : "Da acceso parcial marcando solo las secciones que necesite, sin hacerlo admin total."}</p>
+            <div class="ficha-roles">
+              ${(u.permisos_disponibles || ["temario", "reportes", "usuarios"]).map((p) => `
+                <label class="ficha-rol ${u.es_admin ? "ficha-rol-off" : ""}">
+                  <input type="checkbox" class="up-permiso" value="${escapeHtml(p)}" ${(u.permisos || []).includes(p) ? "checked" : ""} ${u.es_admin ? "disabled" : ""}>
+                  <span class="ficha-rol-ico">${p === "temario" ? "📖" : p === "reportes" ? "🚩" : "👥"}</span>
+                  <span class="ficha-rol-txt"><strong>${p === "temario" ? "Temario y preguntas" : p === "reportes" ? "Reportes de preguntas" : "Usuarios y planes"}</strong><small>${p === "temario" ? "Editar y subir temario, gestionar preguntas" : p === "reportes" ? "Revisar reportes de preguntas de los usuarios" : "Ver usuarios, cambiar planes y roles"}</small></span>
+                </label>`).join("")}
+            </div>
+            <button class="age-btn age-btn-outline admin-mini" id="up-roles" ${u.es_admin ? "disabled" : ""} style="margin-top:10px;">Guardar roles</button>
+            <hr class="admin-sep">
+            <div class="ficha-admin-acciones">
+              <button class="age-btn ${u.es_admin ? "age-btn-outline" : "age-btn-primary"}" id="up-admin">${u.es_admin ? "Quitar admin total" : "Hacer admin total"}</button>
+              <button class="age-btn age-btn-outline admin-mini" id="up-bloqueo">${u.bloqueado ? "Restaurar acceso" : "Bloquear acceso"}</button>
+              <button class="age-btn age-btn-outline admin-mini ficha-btn-peligro" id="up-eliminar">Eliminar cuenta</button>
+            </div>
+          ` : `<p class="admin-reporte-meta">Solo un administrador total puede cambiar roles y administración.</p>`}
+        </div>
+      </details>
+    </div>`);
   document.getElementById("up-plan").value = u.plan;
   document.getElementById("up-oposicion").value = oposicionActual();
   document.getElementById("up-copiar-uid").addEventListener("click", () => {

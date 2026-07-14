@@ -96,6 +96,79 @@ def _oposiciones_activas(datos):
     return activas
 
 
+def _contar_subcoleccion(ref, nombre):
+    """Nº de documentos de una subcolección del usuario. Usa la agregación
+    count() (barata); si no está disponible, cae a contar el stream. Nunca
+    debe romper la ficha."""
+    try:
+        return int(ref.collection(nombre).count().get()[0][0].value)
+    except Exception:
+        try:
+            return sum(1 for _ in ref.collection(nombre).stream())
+        except Exception:
+            return 0
+
+
+def _ficha_actividad(ref, datos):
+    """Reúne, para la ficha de cliente del panel, los contadores de contenido
+    creado (biblioteca de PDF, tarjetas, resúmenes…), el banco de repaso
+    (favoritas/falladas), el rendimiento agregado y el histórico de coste de
+    IA. Todo best-effort: cualquier fallo devuelve 0 en ese campo."""
+    contenido = {
+        "documentos": _contar_subcoleccion(ref, "documentos"),
+        "resumenes": _contar_subcoleccion(ref, "resumenes_pdf"),
+        "esquemas": _contar_subcoleccion(ref, "esquemas_pdf"),
+        "tests_pdf": _contar_subcoleccion(ref, "tests_pdf"),
+        "favoritas": _contar_subcoleccion(ref, "preguntas_favoritas"),
+        "falladas": _contar_subcoleccion(ref, "preguntas_falladas"),
+    }
+    # Tarjetas: cada documento de tarjetas_pdf agrupa varias -- sumamos el
+    # total real de tarjetas, no el nº de generaciones.
+    tarjetas = 0
+    try:
+        for d in ref.collection("tarjetas_pdf").stream():
+            dd = d.to_dict() or {}
+            tarjetas += len(dd.get("tarjetas") or []) or int(dd.get("num_tarjetas", 0) or 0)
+    except Exception:
+        tarjetas = 0
+    contenido["tarjetas"] = tarjetas
+
+    # Rendimiento agregado (aciertos/fallos/blancos) sobre todas las
+    # oposiciones, a partir de rendimiento_por_tema.
+    aciertos = fallos = blancos = 0
+    for e in (datos.get("estadisticas") or {}).values():
+        for r in ((e or {}).get("rendimiento_por_tema") or {}).values():
+            aciertos += (r or {}).get("aciertos", 0) or 0
+            fallos += (r or {}).get("fallos", 0) or 0
+            blancos += (r or {}).get("blancos", 0) or 0
+    contestadas = aciertos + fallos + blancos
+    rendimiento = {
+        "aciertos": aciertos, "fallos": fallos, "blancos": blancos,
+        "contestadas": contestadas,
+        "porcentaje": round(aciertos / contestadas * 100) if contestadas else None,
+    }
+
+    # Histórico de coste de IA: últimos 6 meses ordenados de más antiguo a
+    # más reciente, para pintar un mini-gráfico de barras en el panel.
+    hist = []
+    for mes, m in sorted((datos.get("coste_ia") or {}).items()):
+        hist.append({
+            "mes": mes,
+            "coste": round((m or {}).get("coste", 0) or 0, 4),
+            "tokens": ((m or {}).get("tokens_in", 0) or 0) + ((m or {}).get("tokens_out", 0) or 0),
+            "llamadas": (m or {}).get("llamadas", 0) or 0,
+        })
+    hist = hist[-6:]
+
+    # Consumo del periodo actual por herramienta (limites_uso) -- para ver de
+    # un vistazo cuánta IA está gastando ahora mismo.
+    uso = {}
+    for tipo, u in (datos.get("limites_uso") or {}).items():
+        uso[tipo] = (u or {}).get("contador", 0) or 0
+
+    return contenido, rendimiento, hist, uso
+
+
 def _fallos_agregados(oposicion=None):
     """Agrega el banco de falladas de TODOS los usuarios (collection_group)
     -- solo cifras agregadas, nunca qué usuario falló qué. Devuelve
@@ -924,6 +997,7 @@ def usuarios_detalle(uid):
 
     racha = datos.get("racha") or {}
     _cim, _cit, _tit = resumen_coste_usuario(datos)
+    contenido, rendimiento, coste_historico, uso_actual = _ficha_actividad(ref, datos)
     bloqueado = False
     try:
         registro = firebase_auth.get_user(uid)
@@ -958,6 +1032,10 @@ def usuarios_detalle(uid):
         "coste_ia_mes": _cim,
         "coste_ia_total": _cit,
         "tokens_ia_total": _tit,
+        "coste_ia_historico": coste_historico,
+        "contenido_creado": contenido,
+        "rendimiento": rendimiento,
+        "uso_actual": uso_actual,
     })
 
 

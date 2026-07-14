@@ -241,6 +241,27 @@ def test_detalle_usuario_agrega_tests_y_racha(client, db):
     assert d["plan"] == "premium"
 
 
+def test_detalle_usuario_incluye_contenido_y_rendimiento(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com",
+        "estadisticas": {"AGE": {"rendimiento_por_tema": {
+            "tema_01": {"aciertos": 8, "fallos": 2, "blancos": 0},
+            "tema_02": {"aciertos": 2, "fallos": 3, "blancos": 5},
+        }}},
+    })
+    db.sembrar(("usuarios", "u1", "documentos", "d1"), {"nombre": "apuntes.pdf"})
+    db.sembrar(("usuarios", "u1", "tarjetas_pdf", "t1"), {"tarjetas": [{}, {}, {}]})
+    db.sembrar(("usuarios", "u1", "preguntas_favoritas", "f1"), {"oposicion": "AGE"})
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["contenido_creado"]["documentos"] == 1
+    assert d["contenido_creado"]["tarjetas"] == 3
+    assert d["contenido_creado"]["favoritas"] == 1
+    assert d["rendimiento"]["aciertos"] == 10
+    assert d["rendimiento"]["contestadas"] == 20
+    assert d["rendimiento"]["porcentaje"] == 50
+
+
 # ---------- Temario ----------
 def test_temario_arbol_y_chunks(client, db):
     _sembrar_tema(db)
