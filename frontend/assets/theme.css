@@ -1441,6 +1441,39 @@ body {
 }
 .tutor-widget-panel.abierto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
 
+/* Asa para redimensionar el chat, en la esquina superior izquierda (la libre,
+   porque el panel está anclado abajo-derecha). Oculta en móvil. */
+.tutor-widget-resize { display: none; }
+@media (min-width: 561px) {
+  .tutor-widget-resize {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 22px;
+    height: 22px;
+    z-index: 6;
+    cursor: nwse-resize;
+    touch-action: none;
+    border-top-left-radius: var(--age-radius-lg);
+  }
+  /* Escuadra que marca la esquina como "tirador" de tamaño. */
+  .tutor-widget-resize::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 9px;
+    height: 9px;
+    border-top: 2px solid rgba(255, 255, 255, 0.7);
+    border-left: 2px solid rgba(255, 255, 255, 0.7);
+    border-radius: 3px 0 0 0;
+    transition: border-color 0.15s var(--age-ease);
+  }
+  .tutor-widget-resize:hover::before,
+  .tutor-widget-resize.activo::before { border-color: #fff; }
+}
+
 .tutor-widget-cabecera {
   display: flex;
   align-items: center;
