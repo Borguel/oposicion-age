@@ -1376,7 +1376,7 @@ def sistema_estado():
         {"nombre": "Email (SendGrid)", "ok": _hay("SENDGRID_API_KEY", "SENDGRID_FROM_EMAIL"), "critico": True, "detalle": "Bienvenida, verificación y avisos de racha."},
         {"nombre": "Notificaciones push (VAPID)", "ok": _hay("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"), "critico": False, "detalle": "Avisos push del navegador. Opcional."},
         {"nombre": "Errores (Sentry)", "ok": _hay("SENTRY_DSN"), "critico": False, "detalle": "Captura de errores en producción. Opcional."},
-        {"nombre": "Límite de peticiones", "ok": os.environ.get("RATELIMIT_ENABLED", "").lower() in ("1", "true", "yes"), "critico": False, "detalle": "Protección contra abuso/bots. Recomendado."},
+        {"nombre": "Límite de peticiones", "ok": os.environ.get("RATELIMIT_ENABLED", "true").lower() != "false", "critico": False, "detalle": "Protección contra abuso/bots. Activo salvo que lo desactives (RATELIMIT_ENABLED=false)."},
     ]
     criticos_ko = [s["nombre"] for s in servicios if s["critico"] and not s["ok"]]
     opcionales_ko = [s["nombre"] for s in servicios if not s["critico"] and not s["ok"]]
