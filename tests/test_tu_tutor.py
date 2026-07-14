@@ -127,6 +127,26 @@ def test_responder_tutor_stream_emite_deltas_y_guarda_al_final(db):
     assert conversacion["mensajes"][1]["content"] == "Hola que tal"
 
 
+def test_listar_conversaciones_incluye_las_antiguas_sin_timestamp(client, db):
+    # Regresión: el histórico salía en blanco porque se ordenaba con
+    # order_by("timestamp_inicio"), que EXCLUYE las conversaciones sin ese
+    # campo. Ahora deben listarse todas, ordenadas por fecha (las que no
+    # tienen fecha van al final, pero aparecen).
+    db.sembrar(("usuarios", "u1"), {"suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}})
+    db.sembrar(("conversaciones_IA", "u1", "conversaciones", "nueva"),
+               {"titulo": "Reciente", "timestamp_inicio": "2026-07-14T10:00:00"})
+    db.sembrar(("conversaciones_IA", "u1", "conversaciones", "antigua"),
+               {"titulo": "Sin fecha"})  # conversación legacy, sin timestamp_inicio
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}):
+        r = client.get("/conversaciones", headers={"Authorization": "Bearer x"})
+    assert r.status_code == 200
+    convs = r.get_json()["conversaciones"]
+    titulos = [c["titulo"] for c in convs]
+    assert "Reciente" in titulos
+    assert "Sin fecha" in titulos  # antes se perdía
+    assert titulos[0] == "Reciente"  # la que tiene fecha, primero
+
+
 def test_responder_tutor_stream_emite_error_si_deepseek_no_devuelve_nada(db):
     with patch("chat_controller.call_deepseek_api_stream", return_value=iter([])), \
          patch("chat_controller.crear_conversacion") as mock_crear:

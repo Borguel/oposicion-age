@@ -4,9 +4,9 @@ sin RAG -- fusionadas en una sola ruta que decide por mensaje qué hace
 falta, ver chat_controller.responder_tutor) y el historial de esas
 conversaciones."""
 import json
+import logging
 
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
-from firebase_admin import firestore
 
 from firebase_setup import db
 from auth_utils import requiere_plan
@@ -15,6 +15,7 @@ from oposiciones import coleccion_temario
 from utils import obtener_catalogo_temas
 from chat_controller import responder_tutor, responder_tutor_stream, sugerencia_inicial_usuario
 
+logger = logging.getLogger(__name__)
 bp = Blueprint("tu_tutor", __name__)
 
 _ERROR_DEEPSEEK = (
@@ -117,19 +118,29 @@ def tu_tutor_stream_route():
 @bp.route("/conversaciones", methods=["GET"])
 @requiere_plan(db, "premium")
 def obtener_conversaciones_usuario():
-    docs = db.collection("conversaciones_IA") \
-             .document(g.uid) \
-             .collection("conversaciones") \
-             .order_by("timestamp_inicio", direction=firestore.Query.DESCENDING) \
-             .stream()
+    # Se traen TODAS y se ordenan en Python (no con order_by de Firestore) a
+    # propósito: un order_by por "timestamp_inicio" EXCLUYE del resultado las
+    # conversaciones que no tengan ese campo (p. ej. guardadas por versiones
+    # antiguas), lo que dejaba el histórico en blanco; y además puede fallar
+    # si el índice del campo no está disponible. Cada usuario tiene pocas
+    # conversaciones, así que ordenar en memoria es barato y no se pierde
+    # ninguna.
     resultado = []
-    for doc in docs:
-        data = doc.to_dict()
-        resultado.append({
-            "id": doc.id,
-            "titulo": data.get("titulo", "Sin título"),
-            "timestamp_inicio": data.get("timestamp_inicio")
-        })
+    try:
+        docs = db.collection("conversaciones_IA") \
+                 .document(g.uid) \
+                 .collection("conversaciones") \
+                 .stream()
+        for doc in docs:
+            data = doc.to_dict() or {}
+            resultado.append({
+                "id": doc.id,
+                "titulo": data.get("titulo", "Sin título"),
+                "timestamp_inicio": data.get("timestamp_inicio"),
+            })
+        resultado.sort(key=lambda c: c.get("timestamp_inicio") or "", reverse=True)
+    except Exception:
+        logger.exception("No se pudieron listar las conversaciones del tutor de %s", getattr(g, "uid", "?"))
     return jsonify({"conversaciones": resultado})
 
 
