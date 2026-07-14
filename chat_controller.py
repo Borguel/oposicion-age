@@ -248,6 +248,42 @@ def _necesita_rag(mensaje, temas_detectados):
 
 
 # ============================================================
+# Detección de que el usuario ha PEGADO una pregunta tipo test (con sus
+# opciones) para que se la resuelvas. Aquí el tutor debe identificar la
+# respuesta correcta directamente, no forzar RAG sobre un tema arrastrado de
+# la conversación anterior ni negarse a responder "porque no está en el
+# temario". Detecta tanto opciones en mayúscula sueltas (formato en que las
+# pega el frontend del test: "... A La Comisión B El Ministro C ...") como el
+# clásico "a) ... b) ... c) ...".
+# ============================================================
+_PATRON_OPCION_MAYUS = re.compile(r"(?:^|\s)([ABCD])(?=\s|\))")
+_PATRON_OPCION_MINUS = re.compile(r"\b([abcd])[)\.]")
+
+
+def _es_pregunta_de_test(mensaje):
+    texto = mensaje or ""
+    if len(set(_PATRON_OPCION_MAYUS.findall(texto))) >= 3:
+        return True
+    if len(set(_PATRON_OPCION_MINUS.findall(texto.lower()))) >= 3:
+        return True
+    return False
+
+
+# Instrucción que se añade al prompt cuando el usuario pega una pregunta de
+# test: fuerza a resolverla directamente y prohíbe las dos conductas que se
+# vieron fallar (pedir de qué tema es, o negarse "porque no está en el
+# temario").
+_INSTRUCCION_TEST = (
+    "El usuario está haciendo un test y te pega una pregunta tipo test con sus opciones. "
+    "Dile con claridad cuál es la opción correcta (indica la letra) y explica de forma breve por qué "
+    "lo es y, si ayuda, por qué las demás no. Resuélvela tú directamente: NO le pidas que te diga de "
+    "qué tema es, y NO le digas que la pregunta no corresponde al temario o que no puedes ayudarle "
+    "con ella. Si no tienes plena certeza, dilo con honestidad pero dale igualmente tu mejor opción "
+    "razonada."
+)
+
+
+# ============================================================
 # Detección de preguntas sobre la ESTRUCTURA/logística del proceso
 # selectivo (nº de preguntas, tiempo, penalización, plazas, calificación...)
 # -- justo el tipo de dato concreto que antes el modelo tendía a inventar
@@ -582,8 +618,28 @@ def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
 def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
     historial = _historial_previo(db, usuario_id, chat_id)
     catalogo = obtener_catalogo_temas(db, coleccion)
-    temas_detectados = _temas_mencionados_en_la_conversacion(mensaje, historial, catalogo)
-    usar_rag = _necesita_rag(mensaje, temas_detectados)
+
+    es_test = _es_pregunta_de_test(mensaje)
+    # Una pregunta de test (o un mensaje que solo dice "ayúdame con un test")
+    # es autocontenido: NO se hereda el tema del turno anterior. Antes se
+    # heredaba, y eso hacía que el tutor respondiera con el contenido de un
+    # tema que no venía a cuento -- o se negara a responder "porque no está en
+    # el temario que me has pasado" -- cuando en realidad la pregunta era de
+    # otra cosa.
+    mensaje_sobre_test = es_test or "test" in _tokens(mensaje)
+    if mensaje_sobre_test:
+        temas_detectados = _temas_mencionados(mensaje, catalogo)
+    else:
+        temas_detectados = _temas_mencionados_en_la_conversacion(mensaje, historial, catalogo)
+
+    # Para una pregunta de test solo se consulta el temario si se ha
+    # identificado un tema CONCRETO por su título; si no, se responde con el
+    # conocimiento propio del tutor en vez de volcar todo el catálogo (que
+    # además suele ser el tema equivocado).
+    if es_test:
+        usar_rag = bool(temas_detectados)
+    else:
+        usar_rag = _necesita_rag(mensaje, temas_detectados)
 
     # Temas concretos a los que va referida la respuesta (id + título), para
     # que el frontend pueda ofrecer un "Generar test de este tema" debajo del
@@ -611,25 +667,27 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
         system_prompt = _instrucciones_asistente_examen(oposicion)
         if contexto:
             titulos_temas = _titulos_legibles(temas_detectados, catalogo)
+            partes = [
+                "Tienes cargado automáticamente el siguiente contenido del temario oficial de la "
+                "plataforma. IMPORTANTE: el usuario NO te ha pasado este contenido en su mensaje, así "
+                "que nunca digas \"según el contenido/temario que me has facilitado o pasado\" ni se lo "
+                "atribuyas a él. Úsalo como fuente principal SI la pregunta trata sobre ello. Si la "
+                "pregunta trata de otra norma o de algo que no aparece aquí, respóndela igualmente con "
+                "tu propio conocimiento como tutor: no digas que la pregunta no corresponde al temario "
+                "ni te niegues a responder por ese motivo."
+            ]
             if titulos_temas:
-                nota_fuente = (
-                    "Indica de forma natural en tu respuesta de qué tema del temario procede el "
-                    "contenido (p. ej. \"según el tema de " + titulos_temas[0] + "...\"), citando el "
-                    "título exacto: " + "; ".join(titulos_temas) + "."
+                partes.append(
+                    "Cuando te apoyes en este contenido, menciona con naturalidad el tema del que "
+                    "procede citando su título exacto: " + "; ".join(titulos_temas) + "."
                 )
-            else:
-                nota_fuente = (
-                    "Deja claro que la respuesta se basa en el contenido oficial del temario de la "
-                    "plataforma, no en tu conocimiento general."
-                )
-            prompt_usuario = (
-                "Utiliza el siguiente contenido del temario oficial para responder con claridad y "
-                f"precisión a la pregunta del usuario. {nota_fuente}\n\n"
-                f"CONTENIDO DEL TEMARIO:\n{contexto}\n\n"
-                f"PREGUNTA DEL USUARIO:\n{mensaje}"
-            )
+            if es_test:
+                partes.append(_INSTRUCCION_TEST)
+            partes.append("CONTENIDO DEL TEMARIO:\n" + contexto)
+            partes.append("MENSAJE DEL USUARIO:\n" + mensaje)
+            prompt_usuario = "\n\n".join(partes)
         else:
-            prompt_usuario = mensaje
+            prompt_usuario = (_INSTRUCCION_TEST + "\n\n" + mensaje) if es_test else mensaje
     else:
         system_prompt = _instrucciones_asistente_examen(oposicion)
         datos_convocatoria = obtener_datos_convocatoria(db, oposicion) if _necesita_datos_convocatoria(mensaje) else None
@@ -663,6 +721,10 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
             )
         else:
             prompt_usuario = mensaje
+        # Sin contenido del temario detrás (o con datos oficiales), pero el
+        # usuario ha pegado una pregunta de test: se resuelve directamente.
+        if es_test:
+            prompt_usuario = _INSTRUCCION_TEST + "\n\n" + prompt_usuario
 
     mensajes = [{"role": "system", "content": system_prompt}]
     contexto_personal = _contexto_personal_usuario(db, usuario_id, oposicion, catalogo)

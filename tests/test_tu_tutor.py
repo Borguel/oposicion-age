@@ -105,6 +105,49 @@ def test_pregunta_sin_relacion_con_el_turno_anterior_no_fuerza_rag(db):
     assert usar_rag2 is False
 
 
+def test_deteccion_de_pregunta_de_test():
+    from chat_controller import _es_pregunta_de_test
+    # Formato en que el frontend pega las opciones (letras sueltas en mayúscula).
+    assert _es_pregunta_de_test("¿...? A La Comisión B El Ministro C El Presidente D El Pleno")
+    # Clásico a) b) c) d).
+    assert _es_pregunta_de_test("Pregunta: a) uno b) dos c) tres d) cuatro")
+    # Preguntas normales NO se confunden con un test.
+    assert not _es_pregunta_de_test("¿Qué dice el artículo 14 de la Constitución?")
+    assert not _es_pregunta_de_test("Explícame el poder ejecutivo del Estado")
+
+
+def test_pregunta_de_test_pegada_no_hereda_el_tema_anterior(db):
+    # Se habla de la Constitución y luego se pega una pregunta de test de OTRA
+    # cosa (Consejo de Estado). No debe arrastrar el tema anterior ni meter su
+    # contenido: debe recibir la instrucción de resolver la pregunta directa.
+    _sembrar_tema(db)
+    mcq = ("Según el artículo veintiséis, ¿a quién corresponde aprobar los gastos? "
+           "A A la Comisión Permanente B Al Ministro de Hacienda "
+           "C Al Presidente del Consejo de Estado D Al Pleno del Consejo de Estado")
+    with patch("chat_controller.call_deepseek_api", side_effect=["Sobre la Constitución...", "La correcta es la A"]) as mock_llamada, \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        _t1, chat_id, _r1 = responder_tutor("Explícame la Constitución Española de 1978", db=db, usuario_id="u1")
+        _t2, _c2, usar_rag2 = responder_tutor(mcq, db=db, usuario_id="u1", chat_id=chat_id)
+    assert usar_rag2 is False  # sin tema concreto identificado -> se responde directo
+    prompt = mock_llamada.call_args_list[1].kwargs["messages"][-1]["content"]
+    assert "opción correcta" in prompt          # se le pide resolver la pregunta
+    assert "CONTENIDO DEL TEMARIO" not in prompt  # no se cuela el tema equivocado
+
+
+def test_rag_avisa_de_que_el_contenido_no_lo_ha_pasado_el_usuario(db):
+    # El contenido del temario lo carga la plataforma, no el usuario: el prompt
+    # debe dejarlo claro para que el tutor no diga "según el temario que me has
+    # pasado" ni se niegue a responder si la pregunta no encaja con él.
+    _sembrar_tema(db)
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada, \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        responder_tutor("Explícame la Constitución Española de 1978", db=db, usuario_id="u1")
+    prompt = mock_llamada.call_args.kwargs["messages"][-1]["content"]
+    assert "NO te ha pasado" in prompt
+    assert "CONTENIDO DEL TEMARIO" in prompt
+    assert "MENSAJE DEL USUARIO" in prompt
+
+
 def test_si_deepseek_falla_no_guarda_nada_y_devuelve_none(db):
     with patch("chat_controller.call_deepseek_api", return_value=None), \
          patch("chat_controller.crear_conversacion") as mock_crear, \
