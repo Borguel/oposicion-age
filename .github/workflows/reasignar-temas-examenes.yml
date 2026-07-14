@@ -1,0 +1,44 @@
+name: Reasignar tema_id a preguntas de exámenes oficiales
+
+# Reaplica el tema_id (bloque-tema) a TODAS las preguntas de exámenes
+# oficiales de las tres oposiciones (AGE, GACE, Auxiliar) a partir de los
+# mapas datos_examenes/*_temas.json, y audita cuáles se quedan sin tema. Sirve
+# para recuperar preguntas que se subieron pero cuyo etiquetado no se llegó a
+# ejecutar (esas no salían nunca en un test oficial filtrado por temas).
+#
+# Se lanza a mano. Por defecto solo AUDITA (no escribe): revisa el log para ver
+# cuántas hay sin tema antes de aplicar. Pon "aplicar" = true para corregir.
+# La clave de Firebase vive solo en el secreto FIREBASE_CREDENTIALS_JSON.
+on:
+  workflow_dispatch:
+    inputs:
+      aplicar:
+        description: "Escribir los tema_id (true) o solo auditar sin tocar nada (false)"
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  reasignar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Reasignar / auditar temas
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: |
+          if [ "${{ github.event.inputs.aplicar }}" = "true" ]; then
+            python reasignar_temas_examenes.py --aplicar
+          else
+            python reasignar_temas_examenes.py
+          fi
