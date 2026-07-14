@@ -1060,14 +1060,36 @@ async function renderSistema() {
   panel.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const [sis, banner] = await Promise.all([apiGet("/admin/api/sistema"), apiGet("/admin/api/banner")]);
   if (!sis) return;
-  const servicios = (sis.servicios || []).map((s) => `
-    <tr>
-      <td>${s.ok ? "🟢" : "🔴"} ${escapeHtml(s.nombre)}</td>
-      <td>${s.ok ? "Configurado" : "Sin configurar"}</td>
+  const diag = sis.diagnostico || {};
+  const servicios = (sis.servicios || []).map((s) => {
+    // 3 estados: verde (OK), rojo (crítico sin configurar), ámbar (opcional
+    // sin configurar -> no es un problema, no alarma).
+    const estado = s.ok
+      ? { punto: "🟢", txt: "Configurado", cls: "sis-ok" }
+      : (s.critico
+        ? { punto: "🔴", txt: "Falta (crítico)", cls: "sis-ko" }
+        : { punto: "🟡", txt: "Opcional, sin configurar", cls: "sis-opt" });
+    return `<tr class="${estado.cls}">
+      <td>${estado.punto} ${escapeHtml(s.nombre)}</td>
+      <td>${estado.txt}</td>
       <td class="admin-reporte-meta">${escapeHtml(s.detalle)}</td>
-    </tr>`).join("");
+    </tr>`;
+  }).join("");
   const b = banner || { activo: false, texto: "", tipo: "info" };
+  // Panel de diagnóstico: semáforo global + cosas a vigilar.
+  const todoOk = diag.todo_ok !== false;
+  const avisos = [];
+  if (diag.reportes_pendientes) avisos.push(`<button class="sis-aviso sis-aviso-warn" id="sis-ir-reportes">🚩 ${diag.reportes_pendientes} reporte(s) de preguntas por revisar</button>`);
+  if (diag.banner_activo) avisos.push(`<span class="sis-aviso sis-aviso-info">📢 Hay un aviso global ACTIVO en la web ahora mismo</span>`);
+  if ((diag.opcionales_ko || []).length) avisos.push(`<span class="sis-aviso sis-aviso-soft">🟡 Servicios opcionales sin configurar: ${diag.opcionales_ko.map(escapeHtml).join(", ")}</span>`);
   panel.innerHTML = `
+    <div class="age-card admin-bloque sis-diagnostico ${todoOk ? "sis-diag-ok" : "sis-diag-ko"}">
+      <div class="sis-diag-cab"><span class="sis-diag-ico">${todoOk ? "✅" : "⚠️"}</span>
+        <div><h3>${todoOk ? "Todo en orden" : "Atención necesaria"}</h3>
+        <p class="admin-reporte-meta">${todoOk ? "Todos los servicios críticos están configurados y la web funciona." : "Servicios críticos sin configurar: " + (diag.criticos_ko || []).map(escapeHtml).join(", ")}</p></div>
+      </div>
+      ${avisos.length ? `<div class="sis-avisos">${avisos.join("")}</div>` : ""}
+    </div>
     <div class="age-card admin-bloque">
       <h3>Estado de los servicios</h3>
       <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Servicio</th><th>Estado</th><th>Para qué</th></tr></thead><tbody>${servicios}</tbody></table></div>
@@ -1093,6 +1115,9 @@ async function renderSistema() {
       tipo: panel.querySelector("#ban-tipo").value,
     });
     if (r) toast(r.activo ? "Aviso activado." : "Aviso guardado (oculto).");
+  });
+  panel.querySelector("#sis-ir-reportes")?.addEventListener("click", () => {
+    if (puedeVer("reportes")) activarPestana("reportes");
   });
 }
 

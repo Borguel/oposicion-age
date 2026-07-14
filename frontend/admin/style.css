@@ -185,6 +185,23 @@
   .admin-analitica-fila .admin-barra { display: none; }
 }
 
+/* Sistema: diagnóstico + estado de servicios */
+.sis-diagnostico { border-left: 5px solid var(--age-success, #28a745); }
+.sis-diagnostico.sis-diag-ko { border-left-color: var(--age-danger, #dc3545); }
+.sis-diag-cab { display: flex; align-items: center; gap: 12px; }
+.sis-diag-cab h3 { margin: 0; }
+.sis-diag-ico { font-size: 1.8rem; flex: 0 0 auto; }
+.sis-avisos { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.sis-aviso { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; border-radius: 8px; padding: 8px 12px; text-align: left; }
+button.sis-aviso { border: none; cursor: pointer; font-family: var(--age-font); width: 100%; }
+.sis-aviso-warn { background: var(--age-danger-soft, #fdecea); color: var(--age-danger, #b02a37); }
+.sis-aviso-warn:hover { filter: brightness(0.97); }
+.sis-aviso-info { background: var(--age-primary-soft); color: var(--age-primary); }
+.sis-aviso-soft { background: var(--age-neutral-bg, #f0f0f0); color: var(--age-ink-soft, #666); }
+tr.sis-ok td:first-child { font-weight: 600; }
+tr.sis-ko td:nth-child(2) { color: var(--age-danger, #b02a37); font-weight: 700; }
+tr.sis-opt td:nth-child(2) { color: #b8860b; }
+
 /* Toasts */
 .admin-toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 8px; width: min(92vw, 420px); pointer-events: none; }
 .admin-toast {

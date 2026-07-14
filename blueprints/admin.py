@@ -1366,17 +1366,47 @@ def sistema_estado():
     las claves están presentes en el entorno, no hace llamadas de red)."""
     def _hay(*nombres):
         return all(bool(os.environ.get(n)) for n in nombres)
+    # critico=True: si falta, algo de la web NO funciona (rojo). critico=False:
+    # servicio opcional; si falta no pasa nada (ámbar, no alarma).
     servicios = [
-        {"nombre": "Firebase / Firestore", "ok": True, "detalle": "Conectado (la app arranca con credenciales)."},
-        {"nombre": "IA (DeepSeek)", "ok": _hay("DEEPSEEK_API_KEY"), "detalle": "Necesaria para Tu Tutor y generación de tests/resúmenes."},
-        {"nombre": "Pagos (Stripe)", "ok": _hay("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"), "detalle": "Clave y webhook para cobros y altas de plan."},
-        {"nombre": "Precios de planes", "ok": _hay("STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM"), "detalle": "IDs de precio de básico y premium."},
-        {"nombre": "Email (SendGrid)", "ok": _hay("SENDGRID_API_KEY", "SENDGRID_FROM_EMAIL"), "detalle": "Bienvenida, verificación y avisos de racha."},
-        {"nombre": "Notificaciones push (VAPID)", "ok": _hay("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"), "detalle": "Avisos push del navegador."},
-        {"nombre": "Errores (Sentry)", "ok": _hay("SENTRY_DSN"), "detalle": "Captura de errores en producción. Opcional."},
-        {"nombre": "Límite de peticiones", "ok": os.environ.get("RATELIMIT_ENABLED", "").lower() in ("1", "true", "yes"), "detalle": "Protección contra abuso/bots."},
+        {"nombre": "Firebase / Firestore", "ok": True, "critico": True, "detalle": "Conectado (la app arranca con credenciales)."},
+        {"nombre": "IA (DeepSeek)", "ok": _hay("DEEPSEEK_API_KEY"), "critico": True, "detalle": "Necesaria para Tu Tutor y generación de tests/resúmenes."},
+        {"nombre": "Pagos (Stripe)", "ok": _hay("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"), "critico": True, "detalle": "Clave y webhook para cobros y altas de plan."},
+        {"nombre": "Precios de planes", "ok": _hay("STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM"), "critico": True, "detalle": "IDs de precio de básico y premium."},
+        {"nombre": "Email (SendGrid)", "ok": _hay("SENDGRID_API_KEY", "SENDGRID_FROM_EMAIL"), "critico": True, "detalle": "Bienvenida, verificación y avisos de racha."},
+        {"nombre": "Notificaciones push (VAPID)", "ok": _hay("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"), "critico": False, "detalle": "Avisos push del navegador. Opcional."},
+        {"nombre": "Errores (Sentry)", "ok": _hay("SENTRY_DSN"), "critico": False, "detalle": "Captura de errores en producción. Opcional."},
+        {"nombre": "Límite de peticiones", "ok": os.environ.get("RATELIMIT_ENABLED", "").lower() in ("1", "true", "yes"), "critico": False, "detalle": "Protección contra abuso/bots. Recomendado."},
     ]
-    return jsonify({"servicios": servicios})
+    criticos_ko = [s["nombre"] for s in servicios if s["critico"] and not s["ok"]]
+    opcionales_ko = [s["nombre"] for s in servicios if not s["critico"] and not s["ok"]]
+
+    # Pulso rápido de la web: cosas que conviene vigilar de un vistazo.
+    def _contar(consulta):
+        try:
+            return int(consulta.count().get()[0][0].value)
+        except Exception:
+            try:
+                return sum(1 for _ in consulta.stream())
+            except Exception:
+                return 0
+    reportes_pendientes = _contar(db.collection("reportes_preguntas").where("estado", "==", "pendiente"))
+    try:
+        banner_doc = db.collection("config").document("banner").get()
+        banner_activo = bool((banner_doc.to_dict() or {}).get("activo")) if banner_doc.exists else False
+    except Exception:
+        banner_activo = False
+
+    return jsonify({
+        "servicios": servicios,
+        "diagnostico": {
+            "todo_ok": not criticos_ko,
+            "criticos_ko": criticos_ko,
+            "opcionales_ko": opcionales_ko,
+            "reportes_pendientes": reportes_pendientes,
+            "banner_activo": banner_activo,
+        },
+    })
 
 
 # ============================================================

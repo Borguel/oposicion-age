@@ -545,6 +545,24 @@ def test_sistema_reporta_servicios(client, db, monkeypatch):
     por_nombre = {s["nombre"]: s["ok"] for s in servicios}
     assert por_nombre["IA (DeepSeek)"] is True
     assert por_nombre["Errores (Sentry)"] is False
+    # Sentry sin configurar es OPCIONAL: no debe contar como crítico.
+    critico = {s["nombre"]: s["critico"] for s in servicios}
+    assert critico["IA (DeepSeek)"] is True
+    assert critico["Errores (Sentry)"] is False
+
+
+def test_sistema_diagnostico(client, db, monkeypatch):
+    for k in ("DEEPSEEK_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
+              "STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM",
+              "SENDGRID_API_KEY", "SENDGRID_FROM_EMAIL"):
+        monkeypatch.setenv(k, "x")
+    db.sembrar(("reportes_preguntas", "r1"), {"estado": "pendiente"})
+    db.sembrar(("config", "banner"), {"activo": True})
+    with _como():
+        d = client.get("/admin/api/sistema", headers=_AUTH).get_json()["diagnostico"]
+    assert d["todo_ok"] is True  # todos los críticos configurados
+    assert d["reportes_pendientes"] == 1
+    assert d["banner_activo"] is True
 
 
 def test_banner_guardar_y_lectura_publica(client, db):
