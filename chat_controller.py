@@ -800,10 +800,12 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, c
         mensajes.append({
             "role": "system",
             "content": (
-                "El usuario está haciendo un test y ahora mismo tiene esta pregunta en pantalla. Si su "
-                "mensaje se refiere a ella (\"ayúdame con esta\", \"¿cuál es la correcta?\"...), resuélvela "
-                "directamente indicando la opción correcta y por qué; si su mensaje va de otra cosa, "
-                "ignórala.\n\nPREGUNTA EN PANTALLA:\n" + pregunta_en_pantalla
+                "El usuario está haciendo un test y ahora mismo tiene esta pregunta en pantalla. "
+                "IMPORTANTE: cuando diga \"¿cuál es la correcta?\", \"ayúdame con esta\", \"esta pregunta\" "
+                "o similar, SIEMPRE se refiere a ESTA pregunta en pantalla, nunca a una pregunta anterior "
+                "de la conversación (aunque antes hayáis hablado de otra pregunta distinta). Resuélvela "
+                "directamente indicando la opción correcta y por qué. Solo si su mensaje va claramente de "
+                "otra cosa, ignórala.\n\nPREGUNTA EN PANTALLA:\n" + pregunta_en_pantalla
             )
         })
 

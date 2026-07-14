@@ -11,11 +11,6 @@ import { BACKEND_URL } from "/assets/firebase-config.js";
 import { obtenerAuthHeaders } from "/assets/auth.js";
 import { obtenerOposicionActual } from "/assets/oposicion.js";
 
-// El chat_id vive en sessionStorage para que, al navegar de una página de
-// estudio a otra, se siga la MISMA conversación en vez de empezar una nueva
-// cada vez. Se borra al cerrar la pestaña (sessionStorage), no se acumula.
-const CLAVE_CHAT_ID = "tutorWidgetChatId";
-
 const ERROR_TECNICO = "⚠️ El tutor ha tenido un problema técnico. Vuelve a intentarlo en unos segundos.";
 
 function escapeHtml(text) {
@@ -97,12 +92,25 @@ export function montarWidgetTutor() {
           </div>
         </div>
         <div class="tutor-widget-cabecera-acciones">
-          <a href="/tu-tutor/" class="tutor-widget-expandir" aria-label="Abrir el chat completo" title="Abrir chat completo">⤢</a>
-          <button type="button" class="tutor-widget-cerrar" aria-label="Cerrar">✕</button>
+          <button type="button" class="tutor-widget-accion tutor-widget-nueva" aria-label="Nueva conversación" title="Nueva conversación">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <button type="button" class="tutor-widget-accion tutor-widget-historial-btn" aria-label="Ver conversaciones anteriores" title="Conversaciones anteriores">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.7 3M3 4v4h4"/><path d="M12 8v4l3 2"/></svg>
+          </button>
+          <a href="/tu-tutor/" class="tutor-widget-accion tutor-widget-expandir" aria-label="Abrir el chat completo" title="Abrir chat completo">⤢</a>
+          <button type="button" class="tutor-widget-accion tutor-widget-cerrar" aria-label="Cerrar">✕</button>
         </div>
       </header>
       <div class="tutor-widget-mensajes" id="tutor-widget-mensajes"></div>
       <div class="tutor-widget-typing" hidden><span></span><span></span><span></span></div>
+      <div class="tutor-widget-historial-panel" hidden>
+        <div class="tutor-widget-historial-cabecera">
+          <button type="button" class="tutor-widget-historial-volver" aria-label="Volver al chat">←</button>
+          <span>Tus conversaciones</span>
+        </div>
+        <ul class="tutor-widget-historial-lista"></ul>
+      </div>
       <form class="tutor-widget-form">
         <textarea class="tutor-widget-input" rows="1" placeholder="Escribe tu duda…" aria-label="Mensaje para Tu Tutor"></textarea>
         <button type="submit" class="tutor-widget-enviar" aria-label="Enviar">
@@ -120,8 +128,18 @@ export function montarWidgetTutor() {
   const typing = raiz.querySelector(".tutor-widget-typing");
   const form = raiz.querySelector(".tutor-widget-form");
   const input = raiz.querySelector(".tutor-widget-input");
+  const btnNueva = raiz.querySelector(".tutor-widget-nueva");
+  const btnHistorial = raiz.querySelector(".tutor-widget-historial-btn");
+  const panelHistorial = raiz.querySelector(".tutor-widget-historial-panel");
+  const listaHistorial = raiz.querySelector(".tutor-widget-historial-lista");
+  const btnVolverHistorial = raiz.querySelector(".tutor-widget-historial-volver");
 
-  let chatId = sessionStorage.getItem(CLAVE_CHAT_ID) || null;
+  // Cada apertura del widget arranca en una conversación NUEVA (no se
+  // restaura la última): así, al abrirlo mientras haces un test, no se cuela
+  // el historial de una pregunta anterior y "¿cuál es la correcta?" se
+  // responde sobre la pregunta que tienes en pantalla, no sobre otra. Las
+  // conversaciones anteriores siguen accesibles desde el botón de historial.
+  let chatId = null;
   let sugerenciaPedida = false;
   let enviando = false;
 
@@ -143,9 +161,84 @@ export function montarWidgetTutor() {
 
   fab.addEventListener("click", abrir);
   cerrar.addEventListener("click", cerrarPanel);
+  btnNueva.addEventListener("click", nuevaConversacion);
+  btnHistorial.addEventListener("click", abrirHistorial);
+  btnVolverHistorial.addEventListener("click", cerrarHistorial);
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && panel.classList.contains("abierto")) cerrarPanel();
+    if (e.key !== "Escape") return;
+    if (!panelHistorial.hidden) { cerrarHistorial(); return; }
+    if (panel.classList.contains("abierto")) cerrarPanel();
   });
+
+  // Empieza una conversación nueva (vacía): borra los mensajes en pantalla y
+  // suelta el chat_id, para que el siguiente mensaje NO arrastre nada de la
+  // conversación anterior. Es lo que evita que, al abrir el widget en un test,
+  // conteste sobre una pregunta de antes.
+  function nuevaConversacion() {
+    cerrarHistorial();
+    chatId = null;
+    enviando = false;
+    mensajesEl.innerHTML = "";
+    sugerenciaPedida = true;
+    cargarSugerencia();
+    setTimeout(() => input.focus(), 60);
+  }
+
+  async function abrirHistorial() {
+    listaHistorial.innerHTML = `<li class="tw-hist-cargando">Cargando…</li>`;
+    panelHistorial.hidden = false;
+    const authHeaders = await obtenerAuthHeaders();
+    if (!authHeaders) return;
+    let conversaciones = [];
+    try {
+      const res = await fetch(`${BACKEND_URL}/conversaciones`, { headers: authHeaders });
+      if (res.ok) conversaciones = (await res.json()).conversaciones || [];
+    } catch { /* se muestra el vacío de abajo */ }
+
+    if (!conversaciones.length) {
+      listaHistorial.innerHTML = `<li class="tw-hist-vacio">Aún no tienes conversaciones guardadas.</li>`;
+      return;
+    }
+    listaHistorial.innerHTML = "";
+    conversaciones.forEach((conv) => {
+      const li = document.createElement("li");
+      li.className = "tw-hist-item";
+      li.setAttribute("role", "button");
+      li.setAttribute("tabindex", "0");
+      li.textContent = conv.titulo || "Conversación";
+      const abrir = () => cargarConversacion(conv.id);
+      li.addEventListener("click", abrir);
+      li.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrir(); } });
+      listaHistorial.appendChild(li);
+    });
+  }
+
+  function cerrarHistorial() {
+    panelHistorial.hidden = true;
+  }
+
+  async function cargarConversacion(id) {
+    cerrarHistorial();
+    mensajesEl.innerHTML = `<div class="tw-msg tw-msg-bot"><div class="tw-msg-bot-contenido"><p>Cargando…</p></div></div>`;
+    const authHeaders = await obtenerAuthHeaders();
+    if (!authHeaders) return;
+    try {
+      const res = await fetch(`${BACKEND_URL}/conversacion/${encodeURIComponent(id)}`, { headers: authHeaders });
+      if (!res.ok) throw new Error("no");
+      const data = await res.json();
+      chatId = id;
+      sugerenciaPedida = true; // no meter el saludo proactivo encima de una conversación cargada
+      mensajesEl.innerHTML = "";
+      (data.mensajes || []).forEach((m) => {
+        if (m.role === "user") agregarUsuario(m.content);
+        else agregarBotSimple(m.content);
+      });
+      scrollAbajo();
+    } catch {
+      mensajesEl.innerHTML = "";
+      agregarBotSimple("❌ No se pudo cargar la conversación.");
+    }
+  }
 
   input.addEventListener("input", () => {
     input.style.height = "auto";
@@ -300,7 +393,7 @@ export function montarWidgetTutor() {
           let evento;
           try { evento = JSON.parse(linea.slice(6)); } catch { continue; }
           if (evento.tipo === "delta") { acumulado += evento.texto; pintarBot(burbuja, acumulado); }
-          else if (evento.tipo === "fin") { chatId = evento.chat_id; if (chatId) sessionStorage.setItem(CLAVE_CHAT_ID, chatId); }
+          else if (evento.tipo === "fin") { chatId = evento.chat_id; }
           else if (evento.tipo === "error") { huboError = true; }
         }
       }

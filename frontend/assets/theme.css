@@ -1621,3 +1621,80 @@ body {
     border-radius: var(--age-radius-lg) var(--age-radius-lg) 0 0;
   }
 }
+
+/* Botones de acción de la cabecera del widget (nueva conversación, historial,
+   ampliar, cerrar) y panel de conversaciones anteriores. */
+.tutor-widget-accion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--age-radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--age-navy-ink);
+  cursor: pointer;
+  font-size: 16px;
+  text-decoration: none;
+  transition: background 0.15s var(--age-ease), color 0.15s var(--age-ease);
+}
+.tutor-widget-accion:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+
+.tutor-widget-historial-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: var(--age-card);
+  display: flex;
+  flex-direction: column;
+}
+.tutor-widget-historial-panel[hidden] { display: none; }
+.tutor-widget-historial-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px;
+  border-bottom: 1px solid var(--age-border);
+  font-weight: 700;
+  color: var(--age-ink);
+  flex-shrink: 0;
+}
+.tutor-widget-historial-volver {
+  border: none;
+  background: var(--age-neutral-bg);
+  color: var(--age-ink);
+  width: 30px;
+  height: 30px;
+  border-radius: var(--age-radius-sm);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.tutor-widget-historial-volver:hover { background: var(--age-border); }
+.tutor-widget-historial-lista {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+.tw-hist-item {
+  padding: 11px 12px;
+  border-radius: var(--age-radius-sm);
+  cursor: pointer;
+  color: var(--age-ink);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.12s var(--age-ease);
+}
+.tw-hist-item:hover { background: var(--age-primary-soft); color: var(--age-primary-dark); }
+.tw-hist-vacio,
+.tw-hist-cargando {
+  padding: 16px 12px;
+  color: var(--age-ink-soft);
+  font-size: 13.5px;
+  text-align: center;
+}
