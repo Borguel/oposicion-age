@@ -10,9 +10,9 @@ ORDEN_PLANES = {"gratis": 0, "basico": 1, "premium": 2}
 ESTADOS_SUSCRIPCION_ACTIVA = {"active", "trialing"}
 
 
-def obtener_uid_desde_token(req):
+def obtener_identidad_desde_token(req):
     """Verifica el Firebase ID token del header Authorization: Bearer <token>.
-    Devuelve el uid verificado o None si falta o es inválido."""
+    Devuelve (uid, email, es_admin) o None si falta o es inválido."""
     header = req.headers.get("Authorization", "")
     if not header.startswith("Bearer "):
         return None
@@ -23,7 +23,13 @@ def obtener_uid_desde_token(req):
         decoded = firebase_auth.verify_id_token(token, check_revoked=True)
     except Exception:
         return None
-    return decoded.get("uid"), decoded.get("email")
+    return decoded.get("uid"), decoded.get("email"), decoded.get("admin") is True
+
+
+def obtener_uid_desde_token(req):
+    """Compatibilidad: (uid, email) verificados o None."""
+    ident = obtener_identidad_desde_token(req)
+    return (ident[0], ident[1]) if ident else None
 
 
 def obtener_oposicion_solicitada(default=OPOSICION_POR_DEFECTO):
@@ -43,13 +49,14 @@ def requiere_login(db):
     def decorador(f):
         @wraps(f)
         def envoltura(*args, **kwargs):
-            resultado = obtener_uid_desde_token(request)
-            if not resultado or not resultado[0]:
+            ident = obtener_identidad_desde_token(request)
+            if not ident or not ident[0]:
                 return jsonify({"error": "No autenticado"}), 401
-            uid, email = resultado
+            uid, email, es_admin = ident
             inicializar_estadisticas_usuario(db, uid, email=email)
             g.uid = uid
             g.email = email
+            g.es_admin = es_admin
             return f(*args, **kwargs)
         return envoltura
     return decorador
@@ -178,6 +185,16 @@ def requiere_plan(db, minimo, global_check=False):
                 g.oposicion = obtener_oposicion_solicitada()
                 sub = suscripciones.get(g.oposicion, {}) or {}
                 plan_actual = sub.get("plan", "gratis")
+
+            # Los administradores (custom claim admin:true) tienen acceso
+            # completo a todas las herramientas sin necesidad de una
+            # suscripción de pago, para poder probar y dar soporte. Se les
+            # trata como premium activo, saltando las dos comprobaciones de
+            # abajo, pero manteniendo g.oposicion ya resuelta arriba.
+            if getattr(g, "es_admin", False):
+                g.plan_actual = "premium"
+                return f(*args, **kwargs)
+
             g.plan_actual = plan_actual
 
             if ORDEN_PLANES.get(plan_actual, 0) < ORDEN_PLANES.get(minimo, 0):
