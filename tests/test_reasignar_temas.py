@@ -20,7 +20,21 @@ def test_reconstruccion_de_doc_ids_por_oposicion():
 
     assert set(por_op) == {"AGE", "GACE", "AUXILIAR"}
 
-    # Los patrones de doc_id coinciden con los de cada loader.
-    assert all(re.fullmatch(r"age_.+_eu_\d{3}", d) for d, _ in por_op["AGE"])
-    assert all(re.fullmatch(r"gacel_.+_1ej_\d{3}", d) for d, _ in por_op["GACE"])
-    assert all(re.fullmatch(r"auxiliar_.+_eu_p[12]_\d{3}", d) for d, _ in por_op["AUXILIAR"])
+    # Los patrones de doc_id coinciden con los de cada loader. Los exámenes
+    # subidos por el importador del panel (mapas *_docid_temas.json) llevan un
+    # doc_id fuera de ese patrón (p. ej. modelo_a_2024_pregunta_NN), así que se
+    # aceptan también esos: lo importante es que el doc_id no venga vacío.
+    def es_docid_directo(d):
+        return bool(re.fullmatch(r"[a-z0-9_]+_pregunta_[a-z0-9_]+", d))
+
+    assert all(re.fullmatch(r"age_.+_eu_\d{3}", d) or es_docid_directo(d)
+               for d, _ in por_op["AGE"])
+    assert all(re.fullmatch(r"gacel_.+_1ej_\d{3}", d) or es_docid_directo(d)
+               for d, _ in por_op["GACE"])
+    assert all(re.fullmatch(r"auxiliar_.+_eu_p[12]_\d{3}", d) or es_docid_directo(d)
+               for d, _ in por_op["AUXILIAR"])
+
+    # El examen modelo_a_2024 (subido por el importador) está mapeado: sus 75
+    # preguntas tienen tema asignado por el fichero *_docid_temas.json.
+    directos = [d for d, _ in por_op["AGE"] if d.startswith("modelo_a_2024_")]
+    assert len(directos) == 75
