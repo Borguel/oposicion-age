@@ -819,7 +819,11 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, c
         if pregunta_oficial:
             mensajes.append({"role": "system", "content": _bloque_respuesta_oficial(pregunta_oficial)})
 
-    mensajes.extend(historial)
+    # Una pregunta de test pegada es autocontenida: NO se le mete el historial
+    # de la conversación, para que el tutor no responda sobre una pregunta
+    # anterior en vez de sobre la que se le acaba de pegar.
+    if not es_test:
+        mensajes.extend(historial)
     mensajes.append({"role": "user", "content": prompt_usuario})
     return mensajes, usar_rag, temas_relacionados
 

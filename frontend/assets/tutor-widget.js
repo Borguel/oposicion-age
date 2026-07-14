@@ -142,6 +142,11 @@ export function montarWidgetTutor() {
   let chatId = null;
   let sugerenciaPedida = false;
   let enviando = false;
+  // Enunciado de la última pregunta de test sobre la que se preguntó: si
+  // cambia (el usuario pasa a otra pregunta del test), se arranca una
+  // conversación nueva para que el tutor no arrastre el historial de la
+  // pregunta anterior y responda justo sobre la que tiene delante.
+  let ultimoEnunciado = null;
 
   const scrollAbajo = () => { mensajesEl.scrollTop = mensajesEl.scrollHeight; };
 
@@ -329,8 +334,14 @@ export function montarWidgetTutor() {
     const oposicion = obtenerOposicionActual();
 
     // Si está haciendo un test, se adjunta la pregunta que tiene en pantalla
-    // para que el tutor pueda ayudarle con ella sin copiarla.
+    // para que el tutor pueda ayudarle con ella sin copiarla. Y si ha pasado a
+    // una pregunta distinta desde el último mensaje, se empieza conversación
+    // nueva (chatId=null) para no arrastrar el historial de la anterior.
     const contextoPagina = leerPreguntaEnPantalla();
+    if (contextoPagina) {
+      if (chatId && contextoPagina.enunciado !== ultimoEnunciado) chatId = null;
+      ultimoEnunciado = contextoPagina.enunciado;
+    }
 
     let respuesta;
     try {

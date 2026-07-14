@@ -207,6 +207,32 @@ def test_contexto_de_pagina_pasa_la_pregunta_en_pantalla(db):
     assert "Las Cortes Generales" in sistema
 
 
+def test_pregunta_de_test_no_arrastra_el_historial(db):
+    # Con una conversación en curso, al pegar una pregunta de test NO se debe
+    # colar el historial (evita que responda sobre una pregunta anterior).
+    with patch("chat_controller.call_deepseek_api", side_effect=["ok1", "ok2"]) as mock:
+        _t, chat_id, _r = responder_tutor(
+            "Explícame el poder ejecutivo del Estado", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+        responder_tutor(
+            "¿Capital de Francia? A Madrid B París C Roma D Berlín",
+            db=db, usuario_id="u1", chat_id=chat_id, oposicion="AGE", coleccion="Temario AGE")
+    # En la 2ª llamada (pregunta de test) no debe aparecer el mensaje anterior.
+    contenidos = " ".join(m["content"] for m in mock.call_args_list[1].kwargs["messages"])
+    assert "poder ejecutivo" not in contenidos
+
+
+def test_conversacion_normal_si_conserva_el_historial(db):
+    # En una conversación normal (sin pregunta de test) el historial SÍ se
+    # mantiene, para que las preguntas de seguimiento tengan contexto.
+    with patch("chat_controller.call_deepseek_api", side_effect=["ok1", "ok2"]) as mock:
+        _t, chat_id, _r = responder_tutor(
+            "Me llamo Ana y estoy agobiada", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+        responder_tutor(
+            "¿Algún consejo más?", db=db, usuario_id="u1", chat_id=chat_id, oposicion="AGE", coleccion="Temario AGE")
+    contenidos = " ".join(m["content"] for m in mock.call_args_list[1].kwargs["messages"])
+    assert "agobiada" in contenidos
+
+
 def test_buscar_pregunta_oficial_por_contencion_del_enunciado(db):
     from utils import buscar_pregunta_oficial
     db.sembrar(("examenes_oficiales_AGE", "of1"), {
