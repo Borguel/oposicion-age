@@ -1079,7 +1079,6 @@ async function renderSistema() {
   // Panel de diagnóstico: semáforo global + cosas a vigilar.
   const todoOk = diag.todo_ok !== false;
   const avisos = [];
-  if (diag.reportes_pendientes) avisos.push(`<button class="sis-aviso sis-aviso-warn" id="sis-ir-reportes">🚩 ${diag.reportes_pendientes} reporte(s) de preguntas por revisar</button>`);
   if (diag.banner_activo) avisos.push(`<span class="sis-aviso sis-aviso-info">📢 Hay un aviso global ACTIVO en la web ahora mismo</span>`);
   if ((diag.opcionales_ko || []).length) avisos.push(`<span class="sis-aviso sis-aviso-soft">🟡 Servicios opcionales sin configurar: ${diag.opcionales_ko.map(escapeHtml).join(", ")}</span>`);
   panel.innerHTML = `
@@ -1115,9 +1114,6 @@ async function renderSistema() {
       tipo: panel.querySelector("#ban-tipo").value,
     });
     if (r) toast(r.activo ? "Aviso activado." : "Aviso guardado (oculto).");
-  });
-  panel.querySelector("#sis-ir-reportes")?.addEventListener("click", () => {
-    if (puedeVer("reportes")) activarPestana("reportes");
   });
 }
 
