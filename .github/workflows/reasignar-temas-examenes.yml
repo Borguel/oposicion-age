@@ -12,11 +12,15 @@ name: Reasignar tema_id a preguntas de exámenes oficiales
 on:
   workflow_dispatch:
     inputs:
-      aplicar:
-        description: "Escribir los tema_id (true) o solo auditar sin tocar nada (false)"
+      modo:
+        description: "Qué hacer"
         required: true
-        default: false
-        type: boolean
+        default: "auditar"
+        type: choice
+        options:
+          - auditar   # solo lectura: cuenta las que no tienen tema
+          - dump      # solo lectura: vuelca el texto completo de las AGE sin tema + catálogo
+          - aplicar   # escribe los tema_id que falten
 
 jobs:
   reasignar:
@@ -37,8 +41,8 @@ jobs:
         env:
           FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
         run: |
-          if [ "${{ github.event.inputs.aplicar }}" = "true" ]; then
-            python reasignar_temas_examenes.py --aplicar
-          else
-            python reasignar_temas_examenes.py
-          fi
+          case "${{ github.event.inputs.modo }}" in
+            aplicar) python reasignar_temas_examenes.py --aplicar ;;
+            dump)    python reasignar_temas_examenes.py --dump ;;
+            *)       python reasignar_temas_examenes.py ;;
+          esac
