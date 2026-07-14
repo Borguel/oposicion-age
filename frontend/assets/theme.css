@@ -1703,3 +1703,18 @@ body {
   font-size: 13.5px;
   text-align: center;
 }
+
+/* Botón "Pregúntale a Tu Tutor" en el detalle de resultados de un test. */
+.detalle-tutor-btn {
+  border: 1px solid var(--age-primary);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  border-radius: var(--age-radius-pill);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--age-font);
+  cursor: pointer;
+  transition: background 0.15s var(--age-ease), color 0.15s var(--age-ease);
+}
+.detalle-tutor-btn:hover { background: var(--age-primary); color: #fff; }

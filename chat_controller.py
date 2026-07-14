@@ -284,6 +284,88 @@ _INSTRUCCION_TEST = (
 
 
 # ============================================================
+# Modo "Examíname": el tutor hace de examinador y va tomando preguntas tipo
+# test una a una, corrigiendo sobre la marcha. Es estudio activo, uno de los
+# usos que más engancha. Se activa por intención en el mensaje del usuario.
+# ============================================================
+_PALABRAS_EXAMINAME = [
+    "examiname", "examername", "hazme preguntas", "hazme un test", "tomame preguntas",
+    "preguntame", "pregúntame", "ponme a prueba", "quiero practicar", "hazme un examen",
+    "tomame un test", "hazme preguntas tipo test", "examen oral", "pon a prueba",
+]
+
+
+def _es_modo_examen(mensaje):
+    mensaje_norm = _normalizar(mensaje)
+    return any(p in mensaje_norm for p in _PALABRAS_EXAMINAME)
+
+
+_INSTRUCCION_EXAMEN = (
+    "MODO EXAMINADOR: el usuario quiere que le hagas preguntas para practicar. Hazle UNA sola pregunta "
+    "tipo test cada vez (un enunciado y cuatro opciones A, B, C, D), sobre el tema que pida; si no dice "
+    "cuál, elige su tema más flojo de los que conoces de sus datos. Espera SIEMPRE su respuesta antes de "
+    "seguir: no te des tú mismo la solución en el mismo mensaje. Cuando conteste, dile si ha acertado, da "
+    "una explicación breve de por qué, y a continuación hazle la siguiente pregunta. Ve numerando "
+    "(\"Pregunta 2 de 5\") y, al terminar la tanda, resume cómo lo ha hecho y en qué conviene que insista. "
+    "Empieza ahora con la primera pregunta."
+)
+
+
+# ============================================================
+# Plan de estudio: convertir "¿qué estudio hoy?" en un plan concreto que
+# cruza días para el examen + temas flojos + temas sin tocar (datos que ya
+# tenemos del usuario), en vez de un consejo genérico.
+# ============================================================
+_PALABRAS_PLAN = [
+    "que estudio", "qué estudio", "que repaso", "qué repaso", "plan de estudio", "que hago hoy",
+    "por donde empiezo", "por dónde empiezo", "organizame", "organízame", "planifica", "planifícame",
+    "que deberia estudiar", "qué debería estudiar", "en que me centro", "en qué me centro",
+    "que estudiar", "qué estudiar", "dame un plan", "hazme un plan",
+]
+
+
+def _pide_plan_estudio(mensaje):
+    mensaje_norm = _normalizar(mensaje)
+    return any(p in mensaje_norm for p in _PALABRAS_PLAN)
+
+
+_INSTRUCCION_PLAN = (
+    "El usuario te pide que le orientes sobre qué estudiar. Dale un plan CONCRETO y accionable, no un "
+    "consejo genérico: prioriza sus temas más flojos y los que todavía no ha tocado, y tenlo en cuenta "
+    "los días que faltan para su examen si los sabes. Ordénalo por prioridad, sé específico con qué "
+    "temas y en qué orden, propón un objetivo realista para hoy y ofrécele generar un test de alguno de "
+    "esos temas para empezar ya."
+)
+
+
+def _bloque_explicar_fallo(contexto_pagina):
+    """Bloque autoritativo para \"¿por qué he fallado esta?\": la pantalla de
+    resultados manda la respuesta correcta, la explicación y (si la hay) la
+    opción que marcó el usuario. Sirve para CUALQUIER test (también los
+    generados por IA, que no están en el banco oficial)."""
+    correcta = str(contexto_pagina.get("respuesta_correcta") or "").upper()
+    if not correcta:
+        return None
+    explicacion = str(contexto_pagina.get("explicacion") or "").strip()
+    marcada = str(contexto_pagina.get("respuesta_usuario") or "").upper()
+    partes = [
+        "El usuario está repasando una pregunta de un test que acaba de hacer y quiere entenderla. "
+        f"La respuesta CORRECTA es la opción {correcta}."
+    ]
+    if marcada and marcada != correcta:
+        partes.append(f"Él había marcado la opción {marcada} (falló).")
+    elif not marcada:
+        partes.append("La dejó en blanco.")
+    if explicacion:
+        partes.append("Explicación de referencia de la propia pregunta: " + explicacion)
+    partes.append(
+        "Explícale con claridad y de forma didáctica por qué la correcta es esa y, si marcó otra, por "
+        "qué la suya no lo era. Dale la respuesta con seguridad; no la pongas en duda ni propongas otra."
+    )
+    return " ".join(partes)
+
+
+# ============================================================
 # Detección de preguntas sobre la ESTRUCTURA/logística del proceso
 # selectivo (nº de preguntas, tiempo, penalización, plazas, calificación...)
 # -- justo el tipo de dato concreto que antes el modelo tendía a inventar
@@ -571,8 +653,14 @@ def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
     nombre = (datos.get("nombre") or "").strip()
     stats = (datos.get("estadisticas") or {}).get(oposicion) or {}
     tests_realizados = stats.get("tests_realizados", 0)
-
-    saludo = f"¡Hola, {nombre}! 👋" if nombre else "¡Hola! 👋"
+    # Continuidad: a quien ya ha estado antes se le saluda como "de vuelta",
+    # para que el tutor se sienta un acompañante que retoma donde lo dejasteis
+    # y no un chat que empieza de cero cada vez.
+    tiene_historia = bool(tests_realizados) or bool((datos.get("memoria_tutor") or {}).get("resumen"))
+    if nombre:
+        saludo = f"¡Hola de nuevo, {nombre}! 👋" if tiene_historia else f"¡Hola, {nombre}! 👋"
+    else:
+        saludo = "¡Hola de nuevo! 👋" if tiene_historia else "¡Hola! 👋"
 
     temas_flojos = _temas_flojos(stats.get("rendimiento_por_tema", {}), catalogo)
     temas_pendientes = _temas_pendientes(stats, catalogo) if tests_realizados else []
@@ -581,11 +669,11 @@ def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
     if temas_flojos:
         tema_id, titulo, pct = temas_flojos[0]
         mensaje = (
-            f"He revisado tus tests y donde más se te resiste es {titulo}: aciertas el {pct}%. "
-            f"Un repaso rápido con un test centrado en ese tema te vendría muy bien."
+            f"La última vez {titulo} se te resistía un poco: aciertas el {pct}%. "
+            f"¿Le damos un repaso? Puedo tomarte unas preguntas o explicarte lo esencial."
         )
         accion = {"tema_id": tema_id, "titulo": titulo, "label": f"Practicar {titulo}"}
-        sugerencias = [f"Explícame lo esencial de {titulo}", "¿Qué me recomiendas estudiar hoy?"]
+        sugerencias = [f"Examíname sobre {titulo}", f"Explícame lo esencial de {titulo}", "¿Qué estudio hoy?"]
     elif temas_pendientes:
         tema_id, titulo = temas_pendientes[0]
         mensaje = (
@@ -593,19 +681,19 @@ def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
             f"podría ser un buen momento para estrenarlo."
         )
         accion = {"tema_id": tema_id, "titulo": titulo, "label": f"Empezar test de {titulo}"}
-        sugerencias = [f"Explícame {titulo}", "¿Cómo es la estructura del examen?"]
+        sugerencias = [f"Examíname sobre {titulo}", f"Explícame {titulo}", "¿Qué estudio hoy?"]
     elif tests_realizados:
         mensaje = (
             "Vas muy bien: ahora mismo no detecto ningún tema flojo. "
-            "Pregúntame lo que quieras o repasa el tema que te apetezca."
+            "¿Quieres que te tome unas preguntas o te preparo un plan para hoy?"
         )
-        sugerencias = ["¿Qué me recomiendas repasar?", "Dame consejos para el examen"]
+        sugerencias = ["Examíname sobre un tema al azar", "¿Qué estudio hoy?", "Dame consejos para el examen"]
     else:
         mensaje = (
             "Pregúntame cualquier duda sobre el temario o el proceso selectivo. "
             "En cuanto hagas algún test, te iré diciendo en qué te conviene centrarte."
         )
-        sugerencias = ["¿Cómo es la estructura del examen?", "Consejos de estudio", "Dame un plan para empezar"]
+        sugerencias = ["¿Cómo es la estructura del examen?", "Examíname sobre un tema", "Dame un plan para empezar"]
 
     return {"saludo": saludo, "mensaje": mensaje, "accion": accion, "sugerencias": sugerencias}
 
@@ -792,11 +880,25 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, c
             )
         })
 
-    # Pregunta que el usuario tiene delante en un test (la manda el widget
-    # flotante desde la página de test). Se le da como contexto para que
-    # "ayúdame con esta pregunta" funcione sin que la pegue.
+    # Instrucciones de modo: examinador ("hazme preguntas") o plan de estudio
+    # ("¿qué estudio hoy?"). Se activan por intención del mensaje y aprovechan
+    # los datos personales de arriba.
+    if _es_modo_examen(mensaje):
+        mensajes.append({"role": "system", "content": _INSTRUCCION_EXAMEN})
+    if _pide_plan_estudio(mensaje):
+        mensajes.append({"role": "system", "content": _INSTRUCCION_PLAN})
+
+    # Pregunta que el usuario tiene delante (la manda el widget). Dos casos:
+    #  - Desde la pantalla de RESULTADOS: viene con la respuesta correcta y la
+    #    explicación -> "¿por qué he fallado esta?" (vale para cualquier test).
+    #  - Desde un test EN CURSO: solo enunciado+opciones -> "¿cuál es la
+    #    correcta?" sobre la que tiene delante.
     pregunta_en_pantalla = _texto_pregunta_en_pantalla(contexto_pagina)
-    if pregunta_en_pantalla and not es_test:
+    explicar_fallo = _bloque_explicar_fallo(contexto_pagina) if isinstance(contexto_pagina, dict) else None
+
+    if pregunta_en_pantalla and explicar_fallo:
+        mensajes.append({"role": "system", "content": explicar_fallo + "\n\nPREGUNTA:\n" + pregunta_en_pantalla})
+    elif pregunta_en_pantalla and not es_test:
         mensajes.append({
             "role": "system",
             "content": (
@@ -811,10 +913,10 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, c
 
     # Respuesta oficial verificada: si la pregunta (la pegada en el mensaje o
     # la que tiene en pantalla) coincide con una del banco de exámenes
-    # oficiales, se le da la respuesta correcta ya corregida para que no la
-    # razone desde cero ni contradiga lo que marca el test.
+    # oficiales, se le da la respuesta correcta ya corregida. Se salta si ya
+    # tenemos la respuesta correcta desde la pantalla de resultados.
     texto_para_banco = mensaje if es_test else (pregunta_en_pantalla or "")
-    if texto_para_banco:
+    if texto_para_banco and not explicar_fallo:
         pregunta_oficial = buscar_pregunta_oficial(db, oposicion, texto_para_banco)
         if pregunta_oficial:
             mensajes.append({"role": "system", "content": _bloque_respuesta_oficial(pregunta_oficial)})

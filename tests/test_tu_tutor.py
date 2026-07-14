@@ -207,6 +207,55 @@ def test_contexto_de_pagina_pasa_la_pregunta_en_pantalla(db):
     assert "Las Cortes Generales" in sistema
 
 
+def test_modo_examen_inyecta_instruccion_de_examinador(db):
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock:
+        responder_tutor("Examíname sobre la Constitución", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+    assert "MODO EXAMINADOR" in _texto_sistema(mock.call_args.kwargs["messages"])
+
+
+def test_pide_plan_de_estudio_inyecta_instruccion_de_plan(db):
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock:
+        responder_tutor("¿Qué estudio hoy?", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+    sistema = _texto_sistema(mock.call_args.kwargs["messages"])
+    assert "plan" in sistema.lower()
+
+
+def test_explicar_por_que_falle_usa_la_respuesta_pasada(db):
+    # La pantalla de resultados manda la respuesta correcta + la del usuario.
+    contexto = {
+        "tipo": "test",
+        "enunciado": "¿Quién sanciona las leyes?",
+        "opciones": {"A": "El Rey", "B": "El Congreso"},
+        "respuesta_correcta": "A",
+        "respuesta_usuario": "B",
+        "explicacion": "El Rey sanciona y promulga las leyes (art. 62.a CE).",
+    }
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock:
+        responder_tutor("¿Por qué me he equivocado?", db=db, usuario_id="u1", oposicion="AGE",
+                        coleccion="Temario AGE", contexto_pagina=contexto)
+    sistema = _texto_sistema(mock.call_args.kwargs["messages"])
+    assert "opción A" in sistema        # respuesta correcta
+    assert "opción B" in sistema        # la que marcó (falló)
+    assert "art. 62.a CE" in sistema    # explicación de referencia
+
+
+def test_saludo_de_vuelta_y_sugerencias_de_examen_para_usuario_con_historia(db):
+    db.sembrar(("Temario AGE", "b1"), {"titulo": "Bloque I"})
+    db.sembrar(("Temario AGE", "b1", "temas", "t1"), {"titulo": "La Corona"})
+    db.sembrar(("usuarios", "u1"), {
+        "nombre": "Ana",
+        "estadisticas": {"AGE": {
+            "tests_realizados": 4,
+            "rendimiento_por_tema": {"b1-t1": {"aciertos": 2, "fallos": 6, "blancos": 0}},
+        }},
+    })
+    catalogo = obtener_catalogo_temas(db, "Temario AGE")
+    sug = sugerencia_inicial_usuario(db, "u1", "AGE", catalogo)
+    assert "de nuevo" in sug["saludo"]  # saludo de continuidad
+    assert any("Examíname" in s for s in sug["sugerencias"])
+    assert any("estudio hoy" in s.lower() for s in sug["sugerencias"])
+
+
 def test_pregunta_de_test_no_arrastra_el_historial(db):
     # Con una conversación en curso, al pegar una pregunta de test NO se debe
     # colar el historial (evita que responda sobre una pregunta anterior).

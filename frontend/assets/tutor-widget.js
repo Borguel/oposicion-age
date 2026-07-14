@@ -51,14 +51,19 @@ function formatearMensajeBot(texto) {
 // "ayúdame con esta pregunta" sin que el usuario la copie y pegue. Si no hay
 // pregunta a la vista (no es página de test, o aún no ha empezado), null.
 function leerPreguntaEnPantalla() {
-  const bloque = document.querySelector(".pregunta-en-negrita");
+  // Solo la pregunta ACTIVA de un test en curso (dentro de #form-pregunta),
+  // no las de la lista de la pantalla de resultados (que también usan
+  // .pregunta-en-negrita).
+  const form = document.getElementById("form-pregunta");
+  if (!form) return null;
+  const bloque = form.querySelector(".pregunta-en-negrita");
   if (!bloque) return null;
   const span = bloque.querySelector("span");
   // Se quita la numeración inicial ("12. ") que añade la vista del test.
   const enunciado = (span ? span.textContent : "").replace(/^\s*\d+\s*[.)]\s*/, "").trim();
   if (!enunciado) return null;
   const opciones = {};
-  document.querySelectorAll(".opcion-respuesta").forEach((label) => {
+  form.querySelectorAll(".opcion-respuesta").forEach((label) => {
     const letra = label.querySelector(".opcion-letra")?.textContent.trim();
     const texto = label.querySelector(".opcion-texto")?.textContent.trim();
     if (letra && texto) opciones[letra] = texto;
@@ -147,6 +152,11 @@ export function montarWidgetTutor() {
   // conversación nueva para que el tutor no arrastre el historial de la
   // pregunta anterior y responda justo sobre la que tiene delante.
   let ultimoEnunciado = null;
+  // Pregunta fijada desde fuera (p. ej. la pantalla de resultados manda "¿por
+  // qué he fallado esta?" con la respuesta correcta). Mientras esté puesta,
+  // se usa como contexto en vez de leer el DOM. Se limpia al empezar otra
+  // conversación o al cargar una del historial.
+  let contextoOverride = null;
 
   // Posición a la que el usuario ha arrastrado el chat (desplazamiento
   // respecto a su esquina por defecto). Se guarda para respetarla entre
@@ -250,6 +260,8 @@ export function montarWidgetTutor() {
     cerrarHistorial();
     chatId = null;
     enviando = false;
+    contextoOverride = null;
+    ultimoEnunciado = null;
     mensajesEl.innerHTML = "";
     sugerenciaPedida = true;
     cargarSugerencia();
@@ -291,6 +303,8 @@ export function montarWidgetTutor() {
 
   async function cargarConversacion(id) {
     cerrarHistorial();
+    contextoOverride = null;
+    ultimoEnunciado = null;
     mensajesEl.innerHTML = `<div class="tw-msg tw-msg-bot"><div class="tw-msg-bot-contenido"><p>Cargando…</p></div></div>`;
     const authHeaders = await obtenerAuthHeaders();
     if (!authHeaders) return;
@@ -404,7 +418,7 @@ export function montarWidgetTutor() {
     // para que el tutor pueda ayudarle con ella sin copiarla. Y si ha pasado a
     // una pregunta distinta desde el último mensaje, se empieza conversación
     // nueva (chatId=null) para no arrastrar el historial de la anterior.
-    const contextoPagina = leerPreguntaEnPantalla();
+    const contextoPagina = contextoOverride || leerPreguntaEnPantalla();
     if (contextoPagina) {
       if (chatId && contextoPagina.enunciado !== ultimoEnunciado) chatId = null;
       ultimoEnunciado = contextoPagina.enunciado;
@@ -488,4 +502,32 @@ export function montarWidgetTutor() {
     }
     enviando = false;
   }
+
+  // API pública para que otras partes de la web abran el chat con una pregunta
+  // concreta ya cargada (p. ej. la pantalla de resultados: "¿por qué he
+  // fallado esta?"). Fija la pregunta como contexto y, si se pasa un mensaje
+  // inicial, lo envía solo.
+  window.tutorWidget = {
+    abrir,
+    abrirConPregunta(pregunta = {}) {
+      const opciones = pregunta.opciones && typeof pregunta.opciones === "object" ? pregunta.opciones : {};
+      contextoOverride = {
+        tipo: "test",
+        enunciado: String(pregunta.enunciado || ""),
+        opciones,
+        respuesta_correcta: pregunta.respuestaCorrecta || pregunta.respuesta_correcta || "",
+        respuesta_usuario: pregunta.respuestaUsuario || pregunta.respuesta_usuario || "",
+        explicacion: pregunta.explicacion || "",
+      };
+      chatId = null;             // conversación nueva, sin arrastrar nada
+      ultimoEnunciado = contextoOverride.enunciado;
+      sugerenciaPedida = true;   // no meter el saludo proactivo encima
+      mensajesEl.innerHTML = "";
+      abrir();
+      if (pregunta.mensajeInicial) {
+        input.value = pregunta.mensajeInicial;
+        enviarMensaje();
+      }
+    },
+  };
 }
