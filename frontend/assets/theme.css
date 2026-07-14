@@ -1451,6 +1451,11 @@ body {
   color: #fff;
   flex-shrink: 0;
 }
+/* En pantallas grandes la cabecera es el asa para arrastrar el chat. */
+@media (min-width: 561px) {
+  .tutor-widget-cabecera { cursor: grab; touch-action: none; user-select: none; }
+  .tutor-widget-cabecera.arrastrando { cursor: grabbing; }
+}
 .tutor-widget-cabecera-info { display: flex; align-items: center; gap: 10px; }
 .tutor-widget-cabecera-info img { border-radius: 50%; background: rgba(255,255,255,0.12); }
 .tutor-widget-cabecera-info strong { display: block; font-size: 15px; line-height: 1.2; }

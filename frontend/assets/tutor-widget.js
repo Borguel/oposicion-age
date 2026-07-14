@@ -148,6 +148,33 @@ export function montarWidgetTutor() {
   // pregunta anterior y responda justo sobre la que tiene delante.
   let ultimoEnunciado = null;
 
+  // Posición a la que el usuario ha arrastrado el chat (desplazamiento
+  // respecto a su esquina por defecto). Se guarda para respetarla entre
+  // aperturas. La burbuja cerrada siempre vuelve a su esquina; solo el panel
+  // abierto se coloca donde el usuario lo dejó.
+  const CLAVE_POS = "tutorWidgetPos";
+  let posX = 0, posY = 0;
+  try {
+    const guardada = JSON.parse(localStorage.getItem(CLAVE_POS) || "null");
+    if (guardada && window.innerWidth > 560) { posX = guardada.x || 0; posY = guardada.y || 0; }
+  } catch { /* posición por defecto */ }
+
+  function aplicarPosicion(activa) {
+    raiz.style.transform = (activa && (posX || posY)) ? `translate(${posX}px, ${posY}px)` : "";
+  }
+
+  // Reencaja el panel dentro de la pantalla (por si la ventana se ha hecho
+  // más pequeña desde la última vez que se arrastró) dejando un margen.
+  function corregirDentroDePantalla() {
+    const r = panel.getBoundingClientRect();
+    const m = 8;
+    if (r.left < m) posX += (m - r.left);
+    if (r.top < m) posY += (m - r.top);
+    if (r.right > window.innerWidth - m) posX -= (r.right - (window.innerWidth - m));
+    if (r.bottom > window.innerHeight - m) posY -= (r.bottom - (window.innerHeight - m));
+    aplicarPosicion(true);
+  }
+
   const scrollAbajo = () => { mensajesEl.scrollTop = mensajesEl.scrollHeight; };
 
   function abrir() {
@@ -155,6 +182,8 @@ export function montarWidgetTutor() {
     panel.setAttribute("aria-hidden", "false");
     fab.classList.add("oculto");
     raiz.querySelector(".tutor-widget-fab-punto")?.remove();
+    aplicarPosicion(true);
+    requestAnimationFrame(corregirDentroDePantalla);
     if (!sugerenciaPedida) { sugerenciaPedida = true; cargarSugerencia(); }
     setTimeout(() => input.focus(), 120);
   }
@@ -162,7 +191,45 @@ export function montarWidgetTutor() {
     panel.classList.remove("abierto");
     panel.setAttribute("aria-hidden", "true");
     fab.classList.remove("oculto");
+    aplicarPosicion(false); // la burbuja vuelve siempre a su esquina
   }
+
+  // Arrastre del chat por su cabecera (solo en pantallas grandes; en móvil el
+  // panel ya ocupa casi toda la pantalla). No interfiere con los botones de la
+  // cabecera. Doble clic en la cabecera devuelve el chat a su esquina.
+  (function habilitarArrastre() {
+    const cabecera = raiz.querySelector(".tutor-widget-cabecera");
+    let arrastrando = false, iniX = 0, iniY = 0, baseX = 0, baseY = 0;
+    cabecera.addEventListener("pointerdown", (e) => {
+      if (window.innerWidth <= 560) return;
+      if (e.target.closest(".tutor-widget-accion")) return; // pulsar un botón no arrastra
+      arrastrando = true;
+      iniX = e.clientX; iniY = e.clientY; baseX = posX; baseY = posY;
+      cabecera.setPointerCapture(e.pointerId);
+      cabecera.classList.add("arrastrando");
+    });
+    cabecera.addEventListener("pointermove", (e) => {
+      if (!arrastrando) return;
+      posX = baseX + (e.clientX - iniX);
+      posY = baseY + (e.clientY - iniY);
+      aplicarPosicion(true);
+    });
+    const fin = () => {
+      if (!arrastrando) return;
+      arrastrando = false;
+      cabecera.classList.remove("arrastrando");
+      corregirDentroDePantalla();
+      try { localStorage.setItem(CLAVE_POS, JSON.stringify({ x: posX, y: posY })); } catch { /* nada */ }
+    };
+    cabecera.addEventListener("pointerup", fin);
+    cabecera.addEventListener("pointercancel", fin);
+    cabecera.addEventListener("dblclick", (e) => {
+      if (e.target.closest(".tutor-widget-accion")) return;
+      posX = 0; posY = 0; aplicarPosicion(false);
+      try { localStorage.removeItem(CLAVE_POS); } catch { /* nada */ }
+    });
+    window.addEventListener("resize", () => { if (panel.classList.contains("abierto")) corregirDentroDePantalla(); });
+  })();
 
   fab.addEventListener("click", abrir);
   cerrar.addEventListener("click", cerrarPanel);
