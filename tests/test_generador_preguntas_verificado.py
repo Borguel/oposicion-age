@@ -314,7 +314,7 @@ def test_ruta_generar_test_avanzado_429_si_supera_el_limite(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
-        "limites_uso": {"test_avanzado_verificado": {"periodo": _clave_periodo("mes"), "contador": 8}}
+        "limites_uso": {"test_avanzado_verificado": {"periodo": _clave_periodo("dia"), "contador": 3}}
     })
     parche_auth = patch("auth_utils.firebase_auth.verify_id_token",
                          return_value={"uid": "u1", "email": "u1@example.com"})

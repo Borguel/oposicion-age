@@ -22,14 +22,15 @@ def test_usuario_nuevo_sin_uso_previo_puede_usarla(db):
     assert usados == 0
 
 
-def test_bloquea_al_alcanzar_el_limite_mensual(db):
-    clave_mes = date.today().strftime("%Y-%m")
-    db.sembrar(("usuarios", "u1"), {"limites_uso": {"pdf_ia": {"periodo": clave_mes, "contador": 15}}})
+def test_bloquea_al_alcanzar_el_limite_diario(db):
+    # Básico ahora cuenta por día (cupo generoso que se renueva cada 24 h).
+    clave_dia = date.today().isoformat()
+    db.sembrar(("usuarios", "u1"), {"limites_uso": {"pdf_ia": {"periodo": clave_dia, "contador": 10}}})
     permitido, mensaje, usados, limite = verificar_limite_uso(db, "u1", "basico", "pdf_ia")
     assert permitido is False
-    assert usados == 15
-    assert limite == 15
-    assert "mensuales" in mensaje
+    assert usados == 10
+    assert limite == 10
+    assert "diarios" in mensaje
 
 
 def test_contador_de_un_periodo_anterior_no_cuenta(db):
@@ -56,10 +57,10 @@ def test_registrar_uso_reinicia_el_contador_en_un_periodo_nuevo(db):
 
 def test_plan_premium_tiene_cuota_diaria_no_mensual(db):
     hoy = date.today().isoformat()
-    db.sembrar(("usuarios", "u1"), {"limites_uso": {"pdf_ia": {"periodo": hoy, "contador": 60}}})
+    db.sembrar(("usuarios", "u1"), {"limites_uso": {"pdf_ia": {"periodo": hoy, "contador": 100}}})
     permitido, _mensaje, _usados, limite = verificar_limite_uso(db, "u1", "premium", "pdf_ia")
     assert permitido is False
-    assert limite == 60
+    assert limite == 100
 
 
 def test_devolver_uso_resta_uno_al_contador(db):

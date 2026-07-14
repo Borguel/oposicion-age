@@ -17,19 +17,27 @@ from datetime import date
 
 from utils import ejecutar_en_transaccion
 
-MAX_PAGINAS_POR_PLAN = {"gratis": 40, "basico": 200, "premium": 200}
+MAX_PAGINAS_POR_PLAN = {"gratis": 50, "basico": 300, "premium": 500}
 
 # Cada entrada es (periodo, límite). periodo: "dia" o "mes".
+#
+# Filosofía de cupos: en básico y premium todo cuenta POR DÍA (cupos
+# generosos que se renuevan cada 24 h, no un tope mensual estrecho). Son
+# topes anti-abuso, no el uso esperado: un usuario normal gasta una
+# fracción. El coste real de IA es bajo (un test personalizado de 100
+# preguntas ~0,10 € en el peor caso, y menos con la caché de DeepSeek), así
+# que se prioriza que el usuario de pago no se choque con el límite en su
+# uso diario real. El plan gratis se mantiene como muestra reducida.
 LIMITES = {
     "pdf_ia": {
-        "gratis": ("mes", 2),
-        "basico": ("mes", 15),
-        "premium": ("dia", 60),
+        "gratis": ("mes", 3),
+        "basico": ("dia", 10),
+        "premium": ("dia", 100),
     },
     "chat_pdf": {
         "gratis": ("mes", 0),
-        "basico": ("mes", 30),
-        "premium": ("dia", 40),
+        "basico": ("dia", 25),
+        "premium": ("dia", 80),
     },
     # Generación de esquemas/análisis a partir del TEMARIO (no de un PDF
     # subido) -- /generar-esquema, /generar-test-inteligente (hoy
@@ -39,25 +47,26 @@ LIMITES = {
     # coherencia con ese requisito.
     "generacion_ia": {
         "gratis": ("mes", 0),
-        "basico": ("mes", 60),
-        "premium": ("dia", 40),
+        "basico": ("dia", 15),
+        "premium": ("dia", 60),
     },
     # Test Personalizado con verificación jurídica (/generar-test-avanzado):
     # cada pregunta cuesta entre 2 y 8 llamadas a DeepSeek (generar +
     # verificar, con reintentos si no supera la verificación), muy por
     # encima del coste de una generación normal -- de ahí un cupo propio y
-    # más ajustado en vez de compartir el genérico "generacion_ia".
+    # algo más ajustado que el resto, aunque también generoso.
     "test_avanzado_verificado": {
         "gratis": ("mes", 0),
-        "basico": ("mes", 8),
-        "premium": ("dia", 5),
+        "basico": ("dia", 3),
+        "premium": ("dia", 12),
     },
     # Chat conversacional "Tu Tutor" -- /tu-tutor.
-    # Requiere plan premium (ver @requiere_plan de la ruta).
+    # Requiere plan premium (ver @requiere_plan de la ruta), por eso básico
+    # se queda en 0 (la ruta ni siquiera deja entrar sin premium).
     "chat_temario": {
         "gratis": ("mes", 0),
         "basico": ("mes", 0),
-        "premium": ("dia", 60),
+        "premium": ("dia", 100),
     },
 }
 
