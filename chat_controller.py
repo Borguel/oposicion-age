@@ -1,8 +1,11 @@
 
+import logging
 import re
 import unicodedata
 from datetime import datetime
 from firebase_admin import firestore
+
+logger = logging.getLogger(__name__)
 from utils import obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
 from deepseek_utils import call_deepseek_api, call_deepseek_api_stream
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
@@ -29,13 +32,29 @@ def crear_conversacion(db, usuario_id, mensaje_usuario, respuesta_ia):
 # ✅ Añadir mensaje a conversación existente
 
 def agregar_mensaje_a_conversacion(db, usuario_id, conversacion_id, role, content):
-    db.collection("conversaciones_IA") \
-      .document(usuario_id) \
-      .collection("conversaciones") \
-      .document(conversacion_id) \
-      .update({
-          "mensajes": firestore.ArrayUnion([{"role": role, "content": content}])
-      })
+    ref = db.collection("conversaciones_IA") \
+            .document(usuario_id) \
+            .collection("conversaciones") \
+            .document(conversacion_id)
+    mensaje = {"role": role, "content": content}
+    # En Firestore, update() sobre un documento inexistente LANZA (y eso hacía
+    # que el turno no se guardara y la conversación desapareciera del
+    # histórico si llegaba un chat_id obsoleto). Se comprueba primero si
+    # existe: si no, se crea con los campos mínimos en vez de fallar.
+    try:
+        existe = ref.get().exists
+    except Exception:
+        existe = False
+    if existe:
+        ref.update({"mensajes": firestore.ArrayUnion([mensaje])})
+    else:
+        logger.warning("Conversación %s no existía al añadir mensaje; se crea de cero", conversacion_id)
+        ref.set({
+            "usuario_id": usuario_id,
+            "titulo": (content[:80] if role == "user" else "Conversación"),
+            "timestamp_inicio": datetime.utcnow().isoformat(),
+            "mensajes": [mensaje],
+        }, merge=True)
 
 # ✅ Historial previo de una conversación ya existente, para que el modelo
 # tenga memoria real de lo hablado (antes de esto, cada mensaje se mandaba
@@ -618,7 +637,13 @@ def _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta):
         agregar_mensaje_a_conversacion(db, usuario_id, chat_id, "assistant", texto_respuesta)
     else:
         chat_id = crear_conversacion(db, usuario_id, mensaje, texto_respuesta)
-    _actualizar_memoria_cruzada(db, usuario_id, chat_id)
+    # La memoria cruzada es un extra (resumen entre conversaciones): si falla
+    # NO debe tirar abajo el guardado del turno ni romper el stream, que es lo
+    # que dejaría el historial vacío. La conversación ya está persistida arriba.
+    try:
+        _actualizar_memoria_cruzada(db, usuario_id, chat_id)
+    except Exception:
+        logger.exception("Fallo al actualizar la memoria cruzada del tutor (no crítico)")
     return chat_id
 
 

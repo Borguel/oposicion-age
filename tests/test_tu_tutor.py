@@ -127,6 +127,32 @@ def test_responder_tutor_stream_emite_deltas_y_guarda_al_final(db):
     assert conversacion["mensajes"][1]["content"] == "Hola que tal"
 
 
+def test_stream_por_ruta_guarda_la_conversacion_y_sale_en_historial(client, db):
+    # Flujo completo de producción: POST a /tu-tutor/stream, consumir el SSE
+    # entero, y comprobar que la conversación queda guardada y aparece en
+    # /conversaciones (regresión del "historial en blanco").
+    db.sembrar(("usuarios", "u1"), {"suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}})
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}), \
+         patch("chat_controller.call_deepseek_api_stream", return_value=iter(["Hola", " mundo"])):
+        r = client.post("/tu-tutor/stream", json={"mensaje": "Dame consejos", "oposicion": "AGE"},
+                        headers={"Authorization": "Bearer x"})
+        r.get_data(as_text=True)  # consume el stream entero (dispara el guardado)
+        lista = client.get("/conversaciones", headers={"Authorization": "Bearer x"}).get_json()
+    assert len(lista["conversaciones"]) == 1
+    assert lista["conversaciones"][0]["titulo"] == "Dame consejos"
+
+
+def test_anadir_mensaje_a_conversacion_inexistente_la_crea(db):
+    # Si llega un chat_id que ya no existe (obsoleto/borrado), el turno debe
+    # guardarse igualmente creando la conversación, no perderse.
+    from chat_controller import agregar_mensaje_a_conversacion
+    agregar_mensaje_a_conversacion(db, "u1", "id_fantasma", "user", "¿Hola?")
+    conv = db.leer(("conversaciones_IA", "u1", "conversaciones", "id_fantasma"))
+    assert conv is not None
+    assert conv["mensajes"][0]["content"] == "¿Hola?"
+    assert conv.get("timestamp_inicio")
+
+
 def test_listar_conversaciones_incluye_las_antiguas_sin_timestamp(client, db):
     # Regresión: el histórico salía en blanco porque se ordenaba con
     # order_by("timestamp_inicio"), que EXCLUYE las conversaciones sin ese
