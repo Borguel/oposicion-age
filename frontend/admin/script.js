@@ -560,6 +560,7 @@ async function renderAnalitica() {
 
 // ===== Usuarios =====
 let paginaUsuarios = 1;
+let ordenUsuarios = "";  // "" = por última actividad; "uso" = por mayor % de cupo
 async function renderUsuarios() {
   const panel = document.getElementById("panel-usuarios");
   panel.innerHTML = `
@@ -633,18 +634,27 @@ async function cargarUsuarios() {
   const plan = document.getElementById("u-plan")?.value;
   if (busqueda) params.set("busqueda", busqueda);
   if (plan) params.set("plan", plan);
+  if (ordenUsuarios === "uso") params.set("orden", "uso");
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/usuarios?${params.toString()}`);
   if (!d) return;
+  const celdaUso = (u) => {
+    const pct = u.uso_pct || 0;
+    const cls = pct >= 100 ? "u-uso-alto" : (pct >= 80 ? "u-uso-medio" : (pct > 0 ? "u-uso-ok" : "u-uso-cero"));
+    const titulo = u.uso_tool ? `${u.uso_tool}: ${pct}% de su cupo` : "Sin uso este periodo";
+    return `<span class="u-uso ${cls}" title="${escapeHtml(titulo)}"><span class="u-uso-punto"></span>${pct}%</span>`;
+  };
   const filas = (d.usuarios || []).map((u) => `
     <tr class="admin-fila-click" data-uid="${escapeHtml(u.uid)}">
       <td>${escapeHtml(u.email || "(sin email)")}</td><td><span class="admin-chip">${escapeHtml(u.plan)}</span></td>
       <td>${(u.oposiciones_activas || []).map(escapeHtml).join(", ") || "-"}</td>
+      <td>${celdaUso(u)}</td>
       <td class="admin-num">${fechaCorta(u.ultima_actividad)}</td></tr>`).join("")
-    || `<tr><td colspan="4" class="admin-vacio">Sin usuarios.</td></tr>`;
+    || `<tr><td colspan="5" class="admin-vacio">Sin usuarios.</td></tr>`;
   const totalPaginas = Math.max(1, Math.ceil((d.total || 0) / (d.por_pagina || 20)));
+  const flechaUso = ordenUsuarios === "uso" ? " ▼" : "";
   cont.innerHTML = `
-    <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Email</th><th>Plan</th><th>Oposiciones</th><th class="admin-num">Últ. act.</th></tr></thead><tbody>${filas}</tbody></table></div>
+    <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Email</th><th>Plan</th><th>Oposiciones</th><th><button class="admin-orden-btn" id="u-orden-uso" title="Ordenar por mayor uso">Uso${flechaUso}</button></th><th class="admin-num">Últ. act.</th></tr></thead><tbody>${filas}</tbody></table></div>
     <div class="admin-paginacion">
       <button class="age-btn age-btn-outline admin-mini" id="u-prev" ${paginaUsuarios <= 1 ? "disabled" : ""}>◀ Anterior</button>
       <span>Página ${d.pagina} de ${totalPaginas} · ${d.total} usuarios</span>
@@ -653,6 +663,11 @@ async function cargarUsuarios() {
   cont.querySelectorAll(".admin-fila-click").forEach((tr) => tr.addEventListener("click", () => abrirUsuario(tr.dataset.uid)));
   cont.querySelector("#u-prev")?.addEventListener("click", () => { paginaUsuarios--; cargarUsuarios(); });
   cont.querySelector("#u-next")?.addEventListener("click", () => { paginaUsuarios++; cargarUsuarios(); });
+  cont.querySelector("#u-orden-uso")?.addEventListener("click", () => {
+    ordenUsuarios = ordenUsuarios === "uso" ? "" : "uso";
+    paginaUsuarios = 1;
+    cargarUsuarios();
+  });
 }
 
 // ---- Ficha de cliente: piezas visuales reutilizables ----

@@ -262,6 +262,23 @@ def test_detalle_usuario_incluye_contenido_y_rendimiento(client, db):
     assert d["rendimiento"]["porcentaje"] == 50
 
 
+def test_usuarios_lista_incluye_uso_y_ordena_por_uso(client, db):
+    from datetime import date
+    hoy = date.today().isoformat()
+    # u_bajo: poco uso; u_alto: casi al tope del cupo de test personalizado.
+    db.sembrar(("usuarios", "u_bajo"), {"email": "bajo@x.com", "suscripciones": {"AGE": {"plan": "basico"}},
+                                        "ultima_actividad": "2026-07-14"})
+    db.sembrar(("usuarios", "u_alto"), {"email": "alto@x.com", "suscripciones": {"AGE": {"plan": "basico"}},
+                                        "ultima_actividad": "2026-07-01",
+                                        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 300}}})
+    with _como():
+        d = client.get("/admin/api/usuarios?orden=uso", headers=_AUTH).get_json()
+    # El de más uso va primero al ordenar por uso.
+    assert d["usuarios"][0]["email"] == "alto@x.com"
+    assert d["usuarios"][0]["uso_pct"] == 100
+    assert d["usuarios"][1]["uso_pct"] == 0
+
+
 def test_detalle_usuario_incluye_uso_herramientas(client, db):
     from datetime import date
     hoy = date.today().isoformat()

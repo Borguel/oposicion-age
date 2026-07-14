@@ -155,6 +155,16 @@
 .admin-aviso { background: var(--age-primary-soft); border-left: 3px solid var(--age-primary); border-radius: 8px; padding: 10px 12px; font-size: 13px; margin: 10px 0; }
 
 /* Usuarios */
+.admin-orden-btn { background: none; border: none; cursor: pointer; font: inherit; font-weight: 700; color: var(--age-ink-soft, var(--age-ink)); padding: 0; display: inline-flex; align-items: center; gap: 2px; }
+.admin-orden-btn:hover { color: var(--age-primary); }
+.u-uso { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.u-uso-punto { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; background: var(--age-neutral-bg, #ccc); }
+.u-uso-cero { color: var(--age-ink-soft, #888); font-weight: 500; }
+.u-uso-ok .u-uso-punto { background: var(--age-success, #28a745); }
+.u-uso-medio { color: #b8860b; }
+.u-uso-medio .u-uso-punto { background: #d98324; }
+.u-uso-alto { color: var(--age-danger, #b02a37); }
+.u-uso-alto .u-uso-punto { background: var(--age-danger, #dc3545); }
 .admin-fila-click { cursor: pointer; }
 .admin-fila-click:hover { background: var(--age-primary-soft); }
 .admin-paginacion { display: flex; align-items: center; gap: 12px; justify-content: center; margin-top: 14px; font-size: 13px; flex-wrap: wrap; }

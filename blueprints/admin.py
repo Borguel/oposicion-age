@@ -199,6 +199,25 @@ def _uso_herramientas(datos):
     return {"plan": plan, "filas": filas}
 
 
+def _uso_pico(datos, plan, tools):
+    """% de uso MÁS ALTO entre todas las herramientas del usuario en su periodo
+    actual, y el nombre de esa herramienta. Para el indicador de la lista de
+    usuarios (detectar de un vistazo quién apura su cupo)."""
+    usos = datos.get("limites_uso") or {}
+    pico, nombre = 0, ""
+    for m in TIPOS_META:
+        cfg = tools.get(m["id"], {}).get(plan) or {}
+        limite = cfg.get("limite", 0)
+        if not limite:
+            continue
+        u = usos.get(m["id"]) or {}
+        consumido = u.get("contador", 0) if u.get("periodo") == _clave_periodo(cfg.get("periodo", "mes")) else 0
+        pct = round(consumido / limite * 100)
+        if pct > pico:
+            pico, nombre = pct, m["nombre"]
+    return pico, nombre
+
+
 def _fallos_agregados(oposicion=None):
     """Agrega el banco de falladas de TODOS los usuarios (collection_group)
     -- solo cifras agregadas, nunca qué usuario falló qué. Devuelve
@@ -878,6 +897,7 @@ def usuarios_listar():
     except (TypeError, ValueError):
         pagina = 1
     por_pagina = 20
+    tools_efectivos = limites_efectivos(db)["tools"]  # una vez, cacheado
 
     filtrados = []
     for doc in db.collection("usuarios").stream():
@@ -888,6 +908,7 @@ def usuarios_listar():
             continue
         if filtro_plan and plan != filtro_plan:
             continue
+        uso_pct, uso_tool = _uso_pico(datos, plan, tools_efectivos)
         filtrados.append({
             "uid": doc.id,
             "email": datos.get("email", ""),
@@ -896,9 +917,15 @@ def usuarios_listar():
             "oposiciones_activas": _oposiciones_activas(datos),
             "fecha_creacion": datos.get("fecha_creacion"),
             "ultima_actividad": datos.get("ultima_actividad"),
+            "uso_pct": uso_pct,
+            "uso_tool": uso_tool,
         })
 
-    filtrados.sort(key=lambda u: u.get("ultima_actividad") or "", reverse=True)
+    orden = request.args.get("orden") or ""
+    if orden == "uso":
+        filtrados.sort(key=lambda u: u.get("uso_pct") or 0, reverse=True)
+    else:
+        filtrados.sort(key=lambda u: u.get("ultima_actividad") or "", reverse=True)
     total = len(filtrados)
     inicio = (pagina - 1) * por_pagina
     return jsonify({
