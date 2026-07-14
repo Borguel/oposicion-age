@@ -197,12 +197,21 @@ export function montarWidgetTutor() {
   }
 
   function aplicarPosicion(activa) {
+    // En móvil el panel es `position: fixed` a pantalla completa; NUNCA se le
+    // pone transform al contenedor, porque un transform (aunque sea de 0px)
+    // convierte a `.tutor-widget` en el bloque contenedor del panel fijo y este
+    // dejaría de anclarse a la ventana (se iría hacia la derecha, fuera de
+    // pantalla). En móvil, mover el chat no aplica.
+    if (window.innerWidth <= 560) { raiz.style.transform = ""; return; }
     raiz.style.transform = (activa && (posX || posY)) ? `translate(${posX}px, ${posY}px)` : "";
   }
 
   // Reencaja el panel dentro de la pantalla (por si la ventana se ha hecho
-  // más pequeña desde la última vez que se arrastró) dejando un margen.
+  // más pequeña desde la última vez que se arrastró) dejando un margen. En
+  // móvil no hace nada: el panel ya ocupa toda la pantalla y aplicar cualquier
+  // transform lo descolocaría (ver aplicarPosicion).
   function corregirDentroDePantalla() {
+    if (window.innerWidth <= 560) { raiz.style.transform = ""; return; }
     const r = panel.getBoundingClientRect();
     const m = 8;
     if (r.left < m) posX += (m - r.left);
