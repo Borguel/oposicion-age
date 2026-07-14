@@ -1645,7 +1645,10 @@ body {
 /* Móvil: el panel ocupa casi toda la pantalla para que se pueda leer y
    escribir cómodo; la burbuja se mantiene pero algo más pequeña. */
 @media (max-width: 560px) {
-  .tutor-widget { right: 14px; bottom: calc(14px + var(--age-cookie-banner-height, 0px)); }
+  /* transform:none es imprescindible: si el contenedor tuviera cualquier
+     transform, se convertiría en el bloque contenedor del panel fijo y este se
+     saldría de la pantalla por la derecha. */
+  .tutor-widget { right: 14px; bottom: calc(14px + var(--age-cookie-banner-height, 0px)); transform: none !important; }
   .tutor-widget-fab { width: 54px; height: 54px; }
   .tutor-widget-panel {
     position: fixed;
