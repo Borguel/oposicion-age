@@ -295,6 +295,38 @@ def test_contexto_personal_del_usuario_se_incluye_en_el_prompt(db):
     assert "La Constitución Española de 1978" not in contexto_personal
 
 
+def test_contexto_personal_incluye_la_nota_del_ultimo_test(db):
+    # El tutor debe poder responder "¿qué nota saqué?" con datos reales del
+    # historial (antes decía que no tenía acceso al historial de resultados).
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "nombre": "Ana",
+        "estadisticas": {
+            "AGE": {
+                "tests_realizados": 3,
+                "tests_aprobados": 1,
+                "historial_tests": [
+                    {"aciertos": 4, "fallos": 6, "blancos": 0, "tipo": "personalizado", "resultado": "suspendido"},
+                    {"aciertos": 5, "fallos": 5, "blancos": 0, "tipo": "personalizado", "resultado": "suspendido"},
+                    # Último: 8 aciertos, 1 fallo, 1 blanco de 10 -> nota alta, aprobado.
+                    {"aciertos": 8, "fallos": 1, "blancos": 1, "tipo": "oficial", "resultado": "aprobado"},
+                ],
+            }
+        },
+    })
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor("¿Qué nota saqué en el último test?", db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+
+    contexto_personal = mock_llamada.call_args.kwargs["messages"][1]["content"]
+    # Nota del último (8 - 1/3 = 7.67 sobre 10) y que fue aprobado.
+    assert "7.67 sobre 10" in contexto_personal
+    assert "aprobado" in contexto_personal
+    # Nota media real sobre 10, no la media de aciertos.
+    assert "sobre 10" in contexto_personal
+    # Sube desde 1.0 hasta 7.67 -> debe detectar tendencia al alza.
+    assert "subiendo" in contexto_personal
+
+
 def test_sugerencia_inicial_recomienda_practicar_el_tema_mas_flojo(db):
     db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Organización del Estado"})
     db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "La Constitución Española de 1978"})

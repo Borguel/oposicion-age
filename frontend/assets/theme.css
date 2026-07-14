@@ -1369,3 +1369,255 @@ body {
   line-height: 1.55;
 }
 
+
+/* ============================================================
+   Burbuja flotante de Tu Tutor (assets/tutor-widget.js): chat rápido
+   abajo a la derecha en las páginas de estudio, sin salir de la página.
+   ============================================================ */
+.tutor-widget {
+  position: fixed;
+  /* Se sube por encima del aviso de cookies mientras esté visible, para
+     no quedar tapada por él (la variable la fija el propio banner). */
+  right: 20px;
+  bottom: calc(20px + var(--age-cookie-banner-height, 0px));
+  z-index: 1200;
+}
+
+.tutor-widget-fab {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--age-radius-pill);
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(145deg, var(--age-primary), var(--age-primary-dark));
+  box-shadow: var(--age-shadow-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.18s var(--age-ease), opacity 0.18s var(--age-ease);
+}
+.tutor-widget-fab:hover { transform: translateY(-2px) scale(1.04); }
+.tutor-widget-fab:active { transform: scale(0.97); }
+.tutor-widget-fab.oculto { opacity: 0; pointer-events: none; transform: scale(0.6); }
+.tutor-widget-fab img { width: 34px; height: 34px; display: block; }
+
+.tutor-widget-fab-punto {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--age-success);
+  border: 2px solid #fff;
+  animation: tutorWidgetPulso 2s infinite;
+}
+@keyframes tutorWidgetPulso {
+  0% { box-shadow: 0 0 0 0 rgba(30, 158, 99, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(30, 158, 99, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(30, 158, 99, 0); }
+}
+
+.tutor-widget-panel {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  height: 560px;
+  max-height: calc(100vh - 100px);
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  box-shadow: var(--age-shadow-hover);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(16px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 0.2s var(--age-ease), transform 0.2s var(--age-ease);
+}
+.tutor-widget-panel.abierto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+
+.tutor-widget-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, var(--age-navy), var(--age-navy-soft));
+  color: #fff;
+  flex-shrink: 0;
+}
+.tutor-widget-cabecera-info { display: flex; align-items: center; gap: 10px; }
+.tutor-widget-cabecera-info img { border-radius: 50%; background: rgba(255,255,255,0.12); }
+.tutor-widget-cabecera-info strong { display: block; font-size: 15px; line-height: 1.2; }
+.tutor-widget-estado { font-size: 12px; color: var(--age-navy-ink); }
+.tutor-widget-cabecera-acciones { display: flex; align-items: center; gap: 4px; }
+.tutor-widget-expandir,
+.tutor-widget-cerrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--age-radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--age-navy-ink);
+  cursor: pointer;
+  font-size: 16px;
+  text-decoration: none;
+  transition: background 0.15s var(--age-ease), color 0.15s var(--age-ease);
+}
+.tutor-widget-expandir:hover,
+.tutor-widget-cerrar:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+.tutor-widget-mensajes {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--age-bg);
+}
+
+.tw-msg {
+  max-width: 85%;
+  padding: 9px 13px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+.tw-msg-user {
+  align-self: flex-end;
+  background: linear-gradient(145deg, var(--age-primary), var(--age-primary-dark));
+  color: #fff;
+  border-bottom-right-radius: 4px;
+  white-space: pre-wrap;
+}
+.tw-msg-bot {
+  align-self: flex-start;
+  background: var(--age-card);
+  color: var(--age-ink);
+  border: 1px solid var(--age-border);
+  border-bottom-left-radius: 4px;
+}
+.tw-msg-bot-contenido p { margin: 0 0 6px; }
+.tw-msg-bot-contenido p:last-child { margin-bottom: 0; }
+.tw-msg-bot-contenido h4 { margin: 6px 0 4px; font-size: 14px; color: var(--age-primary-dark); }
+.tw-msg-bot-contenido ul { margin: 4px 0; padding-left: 18px; }
+.tw-msg-bot-contenido li { margin-bottom: 3px; }
+.tw-msg-bot-contenido strong { color: var(--age-ink); }
+
+.tw-aviso-cortada { margin-top: 6px; font-size: 12px; color: var(--age-warning); font-weight: 600; }
+
+.tw-cta-planes {
+  align-self: flex-start;
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.tw-cta-planes:hover { background: var(--age-primary-dark); }
+
+.tw-sugerencias { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; margin-top: 2px; }
+.tw-sugerencia-btn {
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  border: 1px solid transparent;
+  border-radius: var(--age-radius-pill);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s var(--age-ease), border-color 0.15s var(--age-ease);
+}
+.tw-sugerencia-btn:hover { border-color: var(--age-primary); }
+
+.tutor-widget-typing {
+  display: flex;
+  gap: 4px;
+  padding: 4px 20px 8px;
+  background: var(--age-bg);
+}
+.tutor-widget-typing[hidden] { display: none; }
+.tutor-widget-typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--age-ink-faint);
+  animation: tutorWidgetTyping 1.2s infinite ease-in-out;
+}
+.tutor-widget-typing span:nth-child(2) { animation-delay: 0.2s; }
+.tutor-widget-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tutorWidgetTyping {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.tutor-widget-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--age-border);
+  background: var(--age-card);
+  flex-shrink: 0;
+}
+.tutor-widget-input {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 9px 12px;
+  font-family: var(--age-font);
+  font-size: 14px;
+  color: var(--age-ink);
+  background: var(--age-bg);
+  max-height: 90px;
+  line-height: 1.4;
+}
+.tutor-widget-input:focus { outline: none; border-color: var(--age-primary); }
+.tutor-widget-enviar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--age-radius-md);
+  border: none;
+  background: var(--age-primary);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s var(--age-ease);
+}
+.tutor-widget-enviar:hover { background: var(--age-primary-dark); }
+
+/* Móvil: el panel ocupa casi toda la pantalla para que se pueda leer y
+   escribir cómodo; la burbuja se mantiene pero algo más pequeña. */
+@media (max-width: 560px) {
+  .tutor-widget { right: 14px; bottom: calc(14px + var(--age-cookie-banner-height, 0px)); }
+  .tutor-widget-fab { width: 54px; height: 54px; }
+  .tutor-widget-panel {
+    position: fixed;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    width: 100vw;
+    max-width: 100vw;
+    height: 82vh;
+    max-height: 82vh;
+    border-radius: var(--age-radius-lg) var(--age-radius-lg) 0 0;
+  }
+}

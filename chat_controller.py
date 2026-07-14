@@ -6,7 +6,7 @@ from datetime import datetime
 from firebase_admin import firestore
 
 logger = logging.getLogger(__name__)
-from utils import obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
+from utils import calcular_resultado_test, obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
 from deepseek_utils import call_deepseek_api, call_deepseek_api_stream
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
@@ -359,6 +359,106 @@ def _temas_pendientes(stats, catalogo):
     return [(tema["id"], tema["titulo"]) for tema in catalogo if tema["id"] not in tocados]
 
 
+# Nombre legible del tipo de test guardado en historial_tests / ultimo_test
+# (el campo "tipo" que pone actualizar_estadisticas_test), para que Tu Tutor
+# hable del "último test oficial" o "de fallos" en vez de un genérico "test".
+_NOMBRE_TIPO_TEST = {
+    "personalizado": "personalizado",
+    "avanzado_verificado": "personalizado",
+    "oficial": "de examen oficial",
+    "inteligente": "inteligente",
+    "fallos": "de preguntas falladas",
+    "favoritas": "de preguntas marcadas",
+    "repetir": "repetido",
+}
+
+
+def _nota_sobre_10_de(entrada):
+    """Nota sobre 10 de un test guardado, con el mismo criterio oficial que
+    el resto de la web (aciertos - fallos/3, sobre el total). Devuelve None
+    si el registro no trae datos suficientes."""
+    aciertos = entrada.get("aciertos", 0)
+    fallos = entrada.get("fallos", 0)
+    blancos = entrada.get("blancos", 0)
+    if aciertos + fallos + blancos == 0:
+        return None
+    _puntuacion, nota, _resultado = calcular_resultado_test(aciertos, fallos, blancos)
+    return nota
+
+
+def _hace_cuanto(fecha_iso):
+    """Texto relativo ("hoy", "ayer", "hace 3 días") a partir de una fecha
+    ISO (la que guarda actualizar_estadisticas_test con datetime.utcnow()).
+    Devuelve None si no se puede interpretar."""
+    if not fecha_iso:
+        return None
+    try:
+        fecha = datetime.fromisoformat(str(fecha_iso).replace("Z", ""))
+    except (ValueError, TypeError):
+        return None
+    dias = (datetime.utcnow().date() - fecha.date()).days
+    if dias <= 0:
+        return "hoy"
+    if dias == 1:
+        return "ayer"
+    if dias < 7:
+        return f"hace {dias} días"
+    if dias < 30:
+        semanas = dias // 7
+        return "hace una semana" if semanas == 1 else f"hace {semanas} semanas"
+    meses = dias // 30
+    return "hace un mes" if meses == 1 else f"hace {meses} meses"
+
+
+def _lineas_rendimiento_tests(stats):
+    """Frases sobre el rendimiento REAL en tests (última nota, tendencia,
+    nota media sobre 10) a partir del historial guardado -- para que Tu Tutor
+    pueda responder con datos concretos a "¿qué nota saqué?" en vez de decir
+    que no tiene acceso al historial. Se apoya en historial_tests (que trae
+    aciertos/fallos/blancos por test); si está vacío, no dice nada."""
+    historial = stats.get("historial_tests") or []
+    if not historial:
+        return []
+
+    lineas = []
+    ultimo = historial[-1]
+    nota_ultimo = _nota_sobre_10_de(ultimo)
+    if nota_ultimo is not None:
+        total_preg = ultimo.get("aciertos", 0) + ultimo.get("fallos", 0) + ultimo.get("blancos", 0)
+        resultado = ultimo.get("resultado") or ("aprobado" if nota_ultimo >= 5 else "suspendido")
+        tipo = _NOMBRE_TIPO_TEST.get(ultimo.get("tipo"), "")
+        cuando = _hace_cuanto(ultimo.get("fecha"))
+        descripcion = "En su último test"
+        if tipo:
+            descripcion += f" {tipo}"
+        if cuando:
+            descripcion += f" ({cuando})"
+        lineas.append(
+            f"{descripcion} sacó un {nota_ultimo} sobre 10 "
+            f"({ultimo.get('aciertos', 0)} aciertos y {ultimo.get('fallos', 0)} fallos "
+            f"de {total_preg} preguntas): {resultado}."
+        )
+
+    # Nota media real sobre 10 (no confundir con puntuacion_media_test, que es
+    # la media de aciertos por test, no una nota) y mejor nota, calculadas
+    # sobre todo el historial disponible.
+    notas = [n for n in (_nota_sobre_10_de(e) for e in historial) if n is not None]
+    if len(notas) >= 2:
+        media = round(sum(notas) / len(notas), 2)
+        mejor = max(notas)
+        lineas.append(f"Su nota media en tests es {media} sobre 10 y su mejor nota hasta ahora es {mejor}.")
+
+        # Tendencia con los últimos tests: ¿va mejorando o de capa caída?
+        recientes = notas[-3:]
+        if len(recientes) >= 3:
+            if recientes[-1] > recientes[0] + 0.5:
+                lineas.append("En sus últimos tests la nota va subiendo (está mejorando).")
+            elif recientes[-1] < recientes[0] - 0.5:
+                lineas.append("En sus últimos tests la nota ha bajado un poco respecto a antes.")
+
+    return lineas
+
+
 def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
     doc = db.collection("usuarios").document(usuario_id).get()
     if not doc.exists:
@@ -389,9 +489,12 @@ def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
     if tests_realizados:
         pct_aprobados = round(stats.get("tests_aprobados", 0) / tests_realizados * 100)
         lineas.append(
-            f"Lleva {tests_realizados} tests hechos en esta oposición, aprueba el {pct_aprobados}% "
-            f"de ellos, con una nota media de {stats.get('puntuacion_media_test', 0)}."
+            f"Lleva {tests_realizados} tests hechos en esta oposición y aprueba el {pct_aprobados}% de ellos."
         )
+        # Última nota, nota media real sobre 10 y tendencia -- para que pueda
+        # responder con datos concretos a "¿qué nota saqué?" en vez de decir
+        # que no tiene acceso al historial.
+        lineas.extend(_lineas_rendimiento_tests(stats))
 
     if temas_flojos:
         detalle = ", ".join(f"{titulo} ({pct}% de acierto)" for _tema_id, titulo, pct in temas_flojos)
@@ -567,9 +670,15 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion):
         mensajes.append({
             "role": "system",
             "content": (
-                "Datos de la persona con la que hablas ahora mismo, para que la respuesta se sienta "
-                "cercana y personal: " + contexto_personal + " Menciónalos solo cuando venga a cuento "
-                "y con naturalidad -- nunca los enumeres todos de golpe ni suenes a ficha de cliente."
+                "Datos REALES de la persona con la que hablas ahora mismo, sacados de su actividad en "
+                "la plataforma (sus tests, sus notas, su progreso). SÍ tienes acceso a esta información: "
+                "cuando te pregunte por su última nota, cómo va, en qué falla o qué debería estudiar, "
+                "respóndele con estos datos concretos en vez de decir que no tienes acceso a su historial. "
+                "Si un dato concreto no apariece aquí (p. ej. te pregunta por un test muy antiguo que no "
+                "figura), dilo con naturalidad, pero no niegues tener acceso a su progreso en general.\n\n"
+                + contexto_personal +
+                "\n\nMenciónalos solo cuando venga a cuento y con naturalidad -- nunca los enumeres todos "
+                "de golpe ni suenes a ficha de cliente."
             )
         })
     mensajes.extend(historial)
