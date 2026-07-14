@@ -88,6 +88,7 @@ export function montarWidgetTutor() {
       <span class="tutor-widget-fab-punto" aria-hidden="true"></span>
     </button>
     <section class="tutor-widget-panel" role="dialog" aria-label="Chat con Tu Tutor" aria-hidden="true">
+      <span class="tutor-widget-resize" role="separator" aria-label="Cambiar el tamaño del chat" title="Arrastra para cambiar el tamaño (doble clic para restablecer)"></span>
       <header class="tutor-widget-cabecera">
         <div class="tutor-widget-cabecera-info">
           <img src="/assets/tutor-avatar.svg" alt="" width="28" height="28" />
@@ -169,6 +170,32 @@ export function montarWidgetTutor() {
     if (guardada && window.innerWidth > 560) { posX = guardada.x || 0; posY = guardada.y || 0; }
   } catch { /* posición por defecto */ }
 
+  // Tamaño al que el usuario ha estirado/encogido el chat. Se guarda para
+  // respetarlo entre aperturas. Solo aplica en escritorio; en móvil el panel
+  // ocupa siempre casi toda la pantalla, así que no se redimensiona.
+  const CLAVE_TAM = "tutorWidgetTam";
+  let anchoChat = null, altoChat = null;
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE_TAM) || "null");
+    if (g && window.innerWidth > 560) { anchoChat = g.w || null; altoChat = g.h || null; }
+  } catch { /* tamaño por defecto */ }
+
+  // Límites: ni tan pequeño que no se pueda leer, ni más grande que la ventana.
+  function limitesTam() {
+    return {
+      minW: 300,
+      minH: 380,
+      maxW: Math.max(300, window.innerWidth - 32),
+      maxH: Math.max(380, window.innerHeight - 90),
+    };
+  }
+  function aplicarTamano() {
+    if (window.innerWidth <= 560) { panel.style.width = ""; panel.style.height = ""; return; }
+    const { minW, minH, maxW, maxH } = limitesTam();
+    panel.style.width = anchoChat ? Math.min(Math.max(anchoChat, minW), maxW) + "px" : "";
+    panel.style.height = altoChat ? Math.min(Math.max(altoChat, minH), maxH) + "px" : "";
+  }
+
   function aplicarPosicion(activa) {
     raiz.style.transform = (activa && (posX || posY)) ? `translate(${posX}px, ${posY}px)` : "";
   }
@@ -192,6 +219,7 @@ export function montarWidgetTutor() {
     panel.setAttribute("aria-hidden", "false");
     fab.classList.add("oculto");
     raiz.querySelector(".tutor-widget-fab-punto")?.remove();
+    aplicarTamano();
     aplicarPosicion(true);
     requestAnimationFrame(corregirDentroDePantalla);
     if (!sugerenciaPedida) { sugerenciaPedida = true; cargarSugerencia(); }
@@ -238,7 +266,49 @@ export function montarWidgetTutor() {
       posX = 0; posY = 0; aplicarPosicion(false);
       try { localStorage.removeItem(CLAVE_POS); } catch { /* nada */ }
     });
-    window.addEventListener("resize", () => { if (panel.classList.contains("abierto")) corregirDentroDePantalla(); });
+    window.addEventListener("resize", () => { if (panel.classList.contains("abierto")) { aplicarTamano(); corregirDentroDePantalla(); } });
+  })();
+
+  // Redimensionar el chat tirando de la esquina superior izquierda (la libre,
+  // porque el panel está anclado abajo-derecha): así el usuario lo agranda para
+  // leer mejor o lo encoge para que no le tape el test. Doble clic restablece
+  // el tamaño por defecto. Solo en escritorio; en móvil ocupa toda la pantalla.
+  (function habilitarRedimension() {
+    const asa = raiz.querySelector(".tutor-widget-resize");
+    if (!asa) return;
+    let activo = false, iniX = 0, iniY = 0, baseW = 0, baseH = 0;
+    asa.addEventListener("pointerdown", (e) => {
+      if (window.innerWidth <= 560) return;
+      e.preventDefault();
+      const r = panel.getBoundingClientRect();
+      activo = true;
+      iniX = e.clientX; iniY = e.clientY; baseW = r.width; baseH = r.height;
+      asa.setPointerCapture(e.pointerId);
+      asa.classList.add("activo");
+    });
+    asa.addEventListener("pointermove", (e) => {
+      if (!activo) return;
+      const { minW, minH, maxW, maxH } = limitesTam();
+      // Anclado abajo-derecha: mover el asa hacia arriba-izquierda agranda.
+      anchoChat = Math.min(Math.max(baseW + (iniX - e.clientX), minW), maxW);
+      altoChat = Math.min(Math.max(baseH + (iniY - e.clientY), minH), maxH);
+      panel.style.width = anchoChat + "px";
+      panel.style.height = altoChat + "px";
+    });
+    const finRedim = () => {
+      if (!activo) return;
+      activo = false;
+      asa.classList.remove("activo");
+      corregirDentroDePantalla();
+      try { localStorage.setItem(CLAVE_TAM, JSON.stringify({ w: anchoChat, h: altoChat })); } catch { /* nada */ }
+    };
+    asa.addEventListener("pointerup", finRedim);
+    asa.addEventListener("pointercancel", finRedim);
+    asa.addEventListener("dblclick", () => {
+      anchoChat = null; altoChat = null;
+      panel.style.width = ""; panel.style.height = "";
+      try { localStorage.removeItem(CLAVE_TAM); } catch { /* nada */ }
+    });
   })();
 
   fab.addEventListener("click", abrir);

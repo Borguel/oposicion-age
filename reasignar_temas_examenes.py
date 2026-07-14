@@ -105,11 +105,18 @@ def _pares_docid_tema():
 
 
 def _auditar_sin_tema(db):
-    """Cuenta y lista las preguntas activas sin tema_id en cada oposición."""
+    """Cuenta y lista las preguntas activas sin tema_id en cada oposición.
+
+    Distingue las que son psicotécnicas (`psicotecnico: True`) de las que no:
+    una psicotécnica SIN tema es correcto (no pertenece a ningún tema del
+    temario y se filtra con el toggle de psicotécnicas), pero una NO
+    psicotécnica sin tema es un hueco real (no saldría nunca en un test
+    filtrado por temas). Por eso se resaltan solo esas últimas."""
     total = 0
     for oposicion in OPOSICIONES:
         coleccion = coleccion_examenes_oficiales(oposicion)
         sin_tema = []
+        sin_tema_no_psico = []
         for doc in db.collection(coleccion).stream():
             d = doc.to_dict() or {}
             if d.get("tipo") != "pregunta":
@@ -118,12 +125,19 @@ def _auditar_sin_tema(db):
                 continue
             if not d.get("tema_id"):
                 sin_tema.append((doc.id, (d.get("pregunta") or "")[:70]))
+                if not d.get("psicotecnico"):
+                    sin_tema_no_psico.append((doc.id, (d.get("pregunta") or "")[:70]))
         total += len(sin_tema)
-        print(f"\n[{oposicion}] preguntas activas SIN tema: {len(sin_tema)}")
-        for doc_id, texto in sin_tema[:40]:
-            print(f"   - {doc_id}: {texto}")
-        if len(sin_tema) > 40:
-            print(f"   ... y {len(sin_tema) - 40} más")
+        psico = len(sin_tema) - len(sin_tema_no_psico)
+        print(f"\n[{oposicion}] preguntas activas SIN tema: {len(sin_tema)}"
+              f"  (psicotécnicas: {psico} · NO psicotécnicas: {len(sin_tema_no_psico)})")
+        # Solo se listan las problemáticas: sin tema Y no psicotécnicas.
+        for doc_id, texto in sin_tema_no_psico[:40]:
+            print(f"   ⚠ sin tema y NO psicotécnica -> {doc_id}: {texto}")
+        if len(sin_tema_no_psico) > 40:
+            print(f"   ... y {len(sin_tema_no_psico) - 40} más sin tema y no psicotécnicas")
+        elif not sin_tema_no_psico and sin_tema:
+            print("   (todas las que quedan sin tema son psicotécnicas: correcto)")
     return total
 
 
