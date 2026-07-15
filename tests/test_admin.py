@@ -591,7 +591,7 @@ def test_sistema_reporta_servicios(client, db, monkeypatch):
 def test_sistema_diagnostico(client, db, monkeypatch):
     for k in ("DEEPSEEK_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
               "STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM",
-              "SENDGRID_API_KEY", "SENDGRID_FROM_EMAIL"):
+              "BREVO_API_KEY", "BREVO_FROM_EMAIL"):
         monkeypatch.setenv(k, "x")
     db.sembrar(("reportes_preguntas", "r1"), {"estado": "pendiente"})
     db.sembrar(("config", "banner"), {"activo": True})

@@ -11,7 +11,6 @@ import {
   GoogleAuthProvider,
   EmailAuthProvider,
   getAdditionalUserInfo,
-  sendPasswordResetEmail,
   linkWithCredential,
   verifyBeforeUpdateEmail,
   reauthenticateWithCredential,
@@ -109,11 +108,23 @@ export function cambiarContrasena(nuevaContrasena) {
   return updatePassword(auth.currentUser, nuevaContrasena);
 }
 
-// Envía el correo de "restablecer contraseña" de Firebase. Firebase no dice
-// si el correo existe o no (para no filtrar qué correos están registrados),
-// así que desde fuera siempre se muestra el mismo mensaje de éxito.
-export function recuperarContrasena(email) {
-  return sendPasswordResetEmail(auth, email);
+// Pide al backend el correo de "restablecer contraseña" (lo genera con
+// Firebase Admin y lo manda por Brevo -- ver blueprints/auth_publico.py, así
+// tiene la misma imagen de marca que el resto de correos transaccionales en
+// vez del que manda Firebase por su cuenta). El backend NUNCA dice si el
+// correo existe o no (para no filtrar qué correos están registrados), así
+// que desde fuera siempre se resuelve igual salvo un fallo de red real.
+const PATRON_EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+export async function recuperarContrasena(email) {
+  if (!PATRON_EMAIL.test(email)) {
+    throw { code: "auth/invalid-email" };
+  }
+  await fetch(`${BACKEND_URL}/recuperar-contrasena`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
 }
 
 export function signOut() {

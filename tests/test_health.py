@@ -32,7 +32,7 @@ def test_health_devuelve_503_si_firestore_falla(client):
 def test_health_devuelve_503_si_falta_una_variable_critica(client, monkeypatch):
     # Firestore sigue respondiendo bien -- el fallo es solo de
     # configuración (p. ej. una variable que se quedó sin rellenar tras
-    # un redeploy), sin llamar de verdad a Stripe/DeepSeek/SendGrid.
+    # un redeploy), sin llamar de verdad a Stripe/DeepSeek/Brevo.
     monkeypatch.delenv("STRIPE_SECRET_KEY", raising=False)
     resp = client.get("/health")
     assert resp.status_code == 503

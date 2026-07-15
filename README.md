@@ -23,7 +23,7 @@ python app.py                     # sirve en http://localhost:5000
 
 `.env.example` documenta cada variable y qué pasa si se deja vacía --
 la mayoría de integraciones opcionales (Sentry, notificaciones push,
-plantillas de SendGrid) se desactivan solas sin bloquear el arranque.
+plantillas de Brevo) se desactivan solas sin bloquear el arranque.
 Sin credenciales reales de Firebase/Stripe/DeepSeek el servidor arranca
 pero esas funciones fallarán al usarlas; para desarrollar sin ninguna
 credencial real, los tests (más abajo) usan un doble en memoria de
