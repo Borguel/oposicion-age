@@ -8,8 +8,10 @@ email no se haya podido enviar.
 Cada correo se manda por una plantilla de Brevo (Campañas -> Plantillas ->
 Transaccional; el diseño se edita ahí sin tocar código) si su variable de
 entorno BREVO_TEMPLATE_* está configurada (con el ID numérico de la
-plantilla); si no, cae al HTML de reserva definido aquí mismo, para que el
-envío nunca dependa de haber montado ya las plantillas en Brevo."""
+plantilla); si no, cae al HTML de reserva definido aquí mismo (_plantilla_html),
+con la misma imagen de marca que el resto de la web (colores y logo de
+theme.css/favicon), para que el envío nunca dependa de haber montado ya las
+plantillas en Brevo."""
 import logging
 import os
 import requests
@@ -18,10 +20,20 @@ logger = logging.getLogger(__name__)
 
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
+# Paleta de marca (idéntica a las variables --age-* de frontend/assets/theme.css,
+# modo claro -- el correo siempre se manda en claro: no todos los clientes de
+# email respetan prefers-color-scheme, y un fondo oscuro mal soportado es
+# ilegible en más sitios de los que ayuda).
+_COLOR_NAVY = "#1b1f2e"
+_COLOR_PRIMARY = "#ffa633"
+_COLOR_INK = "#16181d"
+_COLOR_INK_SOFT = "#6b7280"
+_COLOR_BG = "#f6f7f9"
+
 
 def _remitente():
     return {
-        "email": os.getenv("BREVO_FROM_EMAIL", "no-reply@dominatuopo.com"),
+        "email": os.getenv("BREVO_FROM_EMAIL", "dominatuopo@gmail.com"),
         "name": os.getenv("BREVO_FROM_NOMBRE", "Domina tu Opo"),
     }
 
@@ -51,30 +63,86 @@ def _enviar(destinatario, motivo, *, asunto=None, html=None, template_id=None, d
         logger.exception("Excepción enviando email de %s", motivo)
 
 
+def _url_logo():
+    # El mismo icono que el favicon/la marca de la barra de navegación
+    # (frontend/assets/favicon-192.png), servido por el propio frontend.
+    # Se usa el PNG (no el SVG del favicon) porque Outlook de escritorio no
+    # renderiza SVG en <img>, y el PNG sí funciona en todos los clientes.
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
+    return f"{frontend_url}/assets/favicon-192.png"
+
+
 def _boton(texto, url):
+    # Mismo estilo que .age-btn-primary en theme.css (fondo naranja, texto
+    # marino, esquinas de 10px, negrita) -- en tabla en vez de en el propio
+    # <a>, porque Outlook de escritorio (motor Word) ignora border-radius en
+    # elementos inline y así al menos el fondo sí queda como un botón.
     return f"""
-    <p style="margin-top: 24px;">
-      <a href="{url}"
-         style="background:#FFA633;color:#1b1f2e;padding:12px 22px;border-radius:8px;
-                text-decoration:none;font-weight:bold;display:inline-block;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 26px 0 6px;">
+      <tr>
+        <td style="background:{_COLOR_PRIMARY}; border-radius:10px;">
+          <a href="{url}"
+             style="display:inline-block; padding:13px 26px; font-family:Arial,Helvetica,sans-serif;
+                    font-size:15px; font-weight:700; color:{_COLOR_NAVY}; text-decoration:none;">
+            {texto}
+          </a>
+        </td>
+      </tr>
+    </table>
+    """
+
+
+def _aviso(texto):
+    """Línea secundaria en gris, más pequeña -- para las notas de "si no has
+    sido tú, ignora este correo" y similares."""
+    return f"""
+      <p style="margin: 20px 0 0; font-size: 13px; line-height: 1.6; color: {_COLOR_INK_SOFT};">
         {texto}
-      </a>
-    </p>
-    """
-
-
-def _plantilla_html(titulo, cuerpo_html, *, pie_extra=""):
-    """Envoltorio común (mismo look en los seis correos) para no repetir el
-    encabezado/pie en cada función de envío."""
-    return f"""
-    <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #1b1f2e;">
-      <h2 style="color: #1b1f2e; margin-bottom: 4px;">{titulo}</h2>
-      {cuerpo_html}
-      <p style="margin-top: 32px; font-size: 13px; color: #666; border-top: 1px solid #e5e5e5; padding-top: 16px;">
-        Domina tu Opo · dominatuopo.com{pie_extra}
       </p>
-    </div>
     """
+
+
+def _plantilla_html(titulo, cuerpo_html, *, emoji=""):
+    """Envoltorio común de marca para los seis correos: cabecera marino con
+    el logo y el nombre, tarjeta blanca con el contenido, pie de página.
+    Maquetado con tablas y estilos inline (en vez de CSS en <style> o
+    flexbox/grid) porque es lo único que se renderiza de forma fiable en
+    todos los clientes de correo, incluido Outlook de escritorio."""
+    logo = _url_logo()
+    titulo_completo = f"{emoji} {titulo}" if emoji else titulo
+    return f"""<!DOCTYPE html>
+<html lang="es">
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+  <body style="margin:0; padding:0; background:{_COLOR_BG};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{_COLOR_BG};">
+      <tr>
+        <td align="center" style="padding: 32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; font-family: Arial, Helvetica, sans-serif;">
+            <tr>
+              <td style="background:{_COLOR_NAVY}; border-radius:20px 20px 0 0; padding:22px 32px; text-align:center;">
+                <img src="{logo}" width="36" height="36" alt="" style="display:inline-block; vertical-align:middle; border-radius:8px;">
+                <span style="display:inline-block; vertical-align:middle; margin-left:10px; color:#ffffff; font-size:17px; font-weight:700;">Domina tu Opo</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#ffffff; padding:36px 32px; border-radius:0 0 20px 20px; box-shadow: 0 6px 20px rgba(20,24,34,0.06);">
+                <h1 style="margin:0 0 16px; color:{_COLOR_NAVY}; font-size:21px; font-weight:800; line-height:1.3;">{titulo_completo}</h1>
+                <div style="color:{_COLOR_INK}; font-size:15px; line-height:1.65;">
+                  {cuerpo_html}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center; padding:20px 12px; color:#9aa0ac; font-size:12px; font-family: Arial, Helvetica, sans-serif;">
+                Domina tu Opo &middot; dominatuopo.com
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>"""
 
 
 def enviar_email_bienvenida(destinatario, nombre=""):
@@ -90,17 +158,15 @@ def enviar_email_bienvenida(destinatario, nombre=""):
         return
 
     cuerpo = f"""
-      <p>{saludo}, gracias por registrarte.</p>
+      <p style="margin:0;">{saludo}, gracias por registrarte.</p>
       <p>Ya puedes empezar a preparar tu oposición con tests del temario oficial,
       seguimiento de tu progreso por temas y nuestras herramientas de IA para
       generar tests, resúmenes, esquemas y tarjetas de memoria a partir de tus
       propios documentos.</p>
       {_boton("Empezar a estudiar", frontend_url)}
-      <p style="margin-top: 20px; font-size: 13px; color: #666;">
-        Si no has creado tú esta cuenta, puedes ignorar este correo.
-      </p>
+      {_aviso("Si no has creado tú esta cuenta, puedes ignorar este correo.")}
     """
-    html = _plantilla_html("¡Bienvenido/a a Domina tu Opo!", cuerpo)
+    html = _plantilla_html("¡Bienvenido/a a Domina tu Opo!", cuerpo, emoji="🎉")
     _enviar(destinatario, "bienvenida", asunto="Bienvenido/a a Domina tu Opo", html=html)
 
 
@@ -120,14 +186,12 @@ def enviar_email_recuperar_contrasena(destinatario, enlace, nombre=""):
         return
 
     cuerpo = f"""
-      <p>{saludo}, hemos recibido una solicitud para restablecer la contraseña de tu cuenta.</p>
+      <p style="margin:0;">{saludo}, hemos recibido una solicitud para restablecer la contraseña de tu cuenta.</p>
       {_boton("Restablecer mi contraseña", enlace)}
-      <p style="margin-top: 20px; font-size: 13px; color: #666;">
-        Si no has pedido tú este cambio, puedes ignorar este correo: tu contraseña seguirá siendo la misma.
-        Por seguridad, este enlace caduca pasado un tiempo.
-      </p>
+      {_aviso("Si no has pedido tú este cambio, puedes ignorar este correo: tu contraseña seguirá siendo la misma. "
+              "Por seguridad, este enlace caduca pasado un tiempo.")}
     """
-    html = _plantilla_html("Restablece tu contraseña", cuerpo)
+    html = _plantilla_html("Restablece tu contraseña", cuerpo, emoji="🔑")
     _enviar(destinatario, "recuperar contraseña", asunto="Restablece tu contraseña de Domina tu Opo", html=html)
 
 
@@ -151,7 +215,7 @@ def enviar_email_cancelacion_suscripcion(destinatario, oposicion_nombre, fecha_f
         return
 
     cuerpo = f"""
-      <p>{saludo}, confirmamos que hemos programado la baja de tu suscripción a
+      <p style="margin:0;">{saludo}, confirmamos que hemos programado la baja de tu suscripción a
       <strong>{oposicion_nombre}</strong>.</p>
       <p>Seguirás teniendo acceso completo{linea_fecha}, sin ningún cobro adicional. Después,
       tu cuenta pasará al plan gratuito, pero tu progreso y tus datos se mantienen intactos.</p>
@@ -181,10 +245,10 @@ def enviar_email_racha_en_riesgo(destinatario, racha_actual, nombre=""):
         return
 
     cuerpo = f"""
-      <p>{saludo}, todavía no has estudiado hoy. Un test corto basta para mantener viva tu racha.</p>
+      <p style="margin:0;">{saludo}, todavía no has estudiado hoy. Un test corto basta para mantener viva tu racha.</p>
       {_boton("Hacer un test rápido", f"{frontend_url}/zona-opositor/")}
     """
-    html = _plantilla_html(f"🔥 Tu racha de {racha_dias_texto} está en juego", cuerpo)
+    html = _plantilla_html(f"Tu racha de {racha_dias_texto} está en juego", cuerpo, emoji="🔥")
     _enviar(destinatario, "racha en riesgo", asunto=f"No pierdas tu racha de {racha_dias_texto}", html=html)
 
 
@@ -204,8 +268,8 @@ def enviar_email_reengagement(destinatario, dias_inactivo, nombre=""):
         return
 
     cuerpo = f"""
-      <p>{saludo}, tu preparación te está esperando. Retómalo con un test corto o repasa tus temas flojos en las estadísticas.</p>
+      <p style="margin:0;">{saludo}, tu preparación te está esperando. Retómalo con un test corto o repasa tus temas flojos en las estadísticas.</p>
       {_boton("Volver a estudiar", f"{frontend_url}/zona-opositor/")}
     """
-    html = _plantilla_html(f"Llevas {dias_inactivo} días sin estudiar", cuerpo)
+    html = _plantilla_html(f"Llevas {dias_inactivo} días sin estudiar", cuerpo, emoji="📚")
     _enviar(destinatario, "reengagement", asunto="Retoma tu preparación de la oposición", html=html)
