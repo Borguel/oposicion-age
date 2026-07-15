@@ -118,7 +118,7 @@ def verificar_api_key():
         return
     if request.method == "OPTIONS":
         return
-    if request.path in ("/", "/health", "/webhook-stripe", "/tareas/recordatorios-racha"):
+    if request.path in ("/", "/health", "/webhook-stripe", "/tareas/recordatorios-racha", "/recuperar-contrasena"):
         return
     if request.headers.get("X-API-Key") != API_SECRET_KEY:
         return jsonify({"error": "No autorizado"}), 401
@@ -141,6 +141,7 @@ from blueprints.pagos import bp as pagos_bp
 from blueprints.ranking import bp as ranking_bp
 from blueprints.tareas_programadas import bp as tareas_programadas_bp
 from blueprints.admin import bp as admin_bp
+from blueprints.auth_publico import bp as auth_publico_bp
 
 app.register_blueprint(temario_bp)
 app.register_blueprint(test_ia_bp)
@@ -150,6 +151,13 @@ app.register_blueprint(pagos_bp)
 app.register_blueprint(ranking_bp)
 app.register_blueprint(tareas_programadas_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(auth_publico_bp)
+
+# /recuperar-contrasena es pública (nadie ha iniciado sesión todavía) y
+# siempre responde igual exista o no el correo, así que el único freno ante
+# un abuso (spam de resets, sondear correos por tiempos de respuesta) es un
+# límite de peticiones más estricto que el general de la app.
+limiter.limit("8 per hour")(auth_publico_bp)
 
 # Guardado y progreso (rutas_progreso.py ya registra las suyas directamente
 # sobre `app`, con el mismo patrón de "función que recibe app y db").
@@ -175,7 +183,7 @@ def raiz():
 
 _VARIABLES_CRITICAS = [
     "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
-    "DEEPSEEK_API_KEY", "SENDGRID_API_KEY",
+    "DEEPSEEK_API_KEY", "BREVO_API_KEY",
 ]
 
 
@@ -188,7 +196,7 @@ def estado_salud():
     el servicio tras un rato de inactividad.
 
     Además de comprobar Firestore con una lectura real, comprueba que las
-    variables de entorno de Stripe/DeepSeek/SendGrid están configuradas
+    variables de entorno de Stripe/DeepSeek/Brevo están configuradas
     -- SIN hacer ninguna llamada de red real a esos servicios (más lento,
     más caro en cada ping, y un fallo transitorio ajeno marcaría el
     backend entero como "unhealthy" sin que lo esté). El caso real que

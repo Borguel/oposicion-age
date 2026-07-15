@@ -232,7 +232,8 @@ def test_cancelar_suscripcion_programa_la_baja_y_guarda_el_motivo(client, db):
         "items": {"data": [{"current_period_end": 1893456000}]},
     }
     try:
-        with patch("blueprints.pagos.stripe.Subscription.modify", return_value=mock_subscription) as mock_modify:
+        with patch("blueprints.pagos.stripe.Subscription.modify", return_value=mock_subscription) as mock_modify, \
+             patch("blueprints.pagos.enviar_email_cancelacion_suscripcion") as mock_email:
             resp = client.post(
                 "/cancelar-suscripcion",
                 json={"oposicion": "AGE", "motivo": "precio", "comentario": "Demasiado caro para mí"},
@@ -241,6 +242,14 @@ def test_cancelar_suscripcion_programa_la_baja_y_guarda_el_motivo(client, db):
         assert resp.status_code == 200
         mock_modify.assert_called_once_with("sub_1", cancel_at_period_end=True)
         assert resp.get_json()["current_period_end"] == "2030-01-01T00:00:00"
+
+        # La confirmación de baja se manda al momento (no se espera al
+        # webhook de Stripe, que llega días después al final del periodo).
+        mock_email.assert_called_once()
+        args_email = mock_email.call_args
+        assert args_email.args[0] == "u1@example.com"
+        assert "AGE" in args_email.args[1] or "Administrativo" in args_email.args[1]
+        assert args_email.kwargs["fecha_fin"] == "01/01/2030"
 
         # La suscripción sigue "activa" para Stripe hasta que el periodo
         # termine, pero el flag propio debe reflejar ya la baja programada.

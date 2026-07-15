@@ -49,7 +49,7 @@ class TestExtraerJsonArray:
 def documento_sembrado(db):
     # Se siembra también "usuarios/u1" para que requiere_login no dispare
     # el email de bienvenida de un usuario "nuevo" en cada test (ruido de
-    # red real hacia SendGrid sin mockear, sin afectar al resultado del
+    # red real hacia Brevo sin mockear, sin afectar al resultado del
     # test pero sí ensuciando la salida).
     db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
     db.sembrar(("usuarios", "u1", "documentos", "d1"), {

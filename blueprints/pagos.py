@@ -12,7 +12,8 @@ from firebase_setup import db
 from auth_utils import requiere_login, obtener_oposicion_solicitada
 from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario
 from gestion_cuenta import exportar_datos_usuario, eliminar_cuenta_usuario
-from oposiciones import OPOSICION_POR_DEFECTO, oposicion_valida
+from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida
+from email_utils import enviar_email_cancelacion_suscripcion
 
 logger = logging.getLogger(__name__)
 
@@ -156,9 +157,14 @@ def cancelar_suscripcion():
     actualizar_suscripcion(db, g.uid, oposicion, cancelar_al_final_periodo=True)
 
     periodo_fin = _current_period_end(subscription)
+    fecha_fin_iso = datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None
+    fecha_fin_legible = datetime.utcfromtimestamp(periodo_fin).strftime("%d/%m/%Y") if periodo_fin else None
+    oposicion_nombre = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
+    enviar_email_cancelacion_suscripcion(g.email, oposicion_nombre, fecha_fin=fecha_fin_legible)
+
     return jsonify({
         "mensaje": "Tu suscripción se cancelará al final del periodo ya pagado.",
-        "current_period_end": datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None
+        "current_period_end": fecha_fin_iso
     })
 
 
