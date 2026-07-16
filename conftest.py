@@ -45,6 +45,21 @@ def db():
     return fake_db
 
 
+def sembrar_usuario_activo(db, uid, plan="premium", email=None, oposicion="AGE", **campos_extra):
+    """Siembra usuarios/{uid} con una suscripción de pago ya activa (evita
+    tener que pasar por inicializar_estadisticas_usuario para tener acceso
+    en tests que no están probando específicamente el bloqueo por plan --
+    desde que existe la prueba gratuita de 7 días, un usuario sembrado a
+    mano sin esto no tiene `prueba_fin` y resuelve a plan "gratis")."""
+    datos = {
+        "email": email or f"{uid}@example.com",
+        "suscripciones": {oposicion: {"plan": plan, "subscription_status": "active"}},
+        **campos_extra,
+    }
+    db.sembrar(("usuarios", uid), datos)
+    return datos
+
+
 @pytest.fixture
 def flask_app():
     app_module.app.config.update(TESTING=True)

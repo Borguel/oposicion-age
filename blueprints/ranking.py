@@ -8,7 +8,7 @@ import re
 from flask import Blueprint, g, jsonify, request
 
 from firebase_setup import db
-from auth_utils import requiere_login
+from auth_utils import requiere_plan
 
 bp = Blueprint("ranking", __name__)
 
@@ -22,7 +22,7 @@ def _alias_valido(alias):
 
 
 @bp.route("/ranking/mi-estado", methods=["GET"])
-@requiere_login(db)
+@requiere_plan(db, "basico", global_check=True)
 def mi_estado_ranking():
     datos = db.collection("usuarios").document(g.uid).get().to_dict() or {}
     return jsonify({
@@ -32,7 +32,7 @@ def mi_estado_ranking():
 
 
 @bp.route("/ranking/unirse", methods=["POST"])
-@requiere_login(db)
+@requiere_plan(db, "basico", global_check=True)
 def unirse_ranking():
     alias = ((request.get_json(silent=True) or {}).get("alias") or "").strip()
     if not _alias_valido(alias):
@@ -45,14 +45,14 @@ def unirse_ranking():
 
 
 @bp.route("/ranking/salir", methods=["POST"])
-@requiere_login(db)
+@requiere_plan(db, "basico", global_check=True)
 def salir_ranking():
     db.collection("usuarios").document(g.uid).update({"ranking_optin": False})
     return jsonify({"mensaje": "ok"})
 
 
 @bp.route("/ranking", methods=["GET"])
-@requiere_login(db)
+@requiere_plan(db, "basico", global_check=True)
 def obtener_ranking():
     participantes = []
     for doc in db.collection("usuarios").where("ranking_optin", "==", True).stream():

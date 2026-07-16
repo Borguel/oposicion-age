@@ -4,6 +4,7 @@ sitios que lo usan -- antes había 3 versiones distintas que no siempre
 coincidían entre sí (ver utils.calcular_resultado_test)."""
 from unittest.mock import patch
 
+from conftest import sembrar_usuario_activo
 from utils import calcular_resultado_test
 from registro_progreso_usuario import actualizar_estadisticas_test
 
@@ -66,7 +67,7 @@ def test_calcular_resultado_test_blancos_cambian_el_resultado():
 
 
 def test_guardar_test_con_numeros_del_bug_guarda_suspendido(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     contenido, respuestas = _contenido_con_aciertos_y_fallos(aciertos=6, fallos=4)
     parche = _con_sesion(client)
     try:
@@ -90,7 +91,7 @@ def test_guardar_test_con_numeros_del_bug_guarda_suspendido(client, db):
 def test_mis_tests_autocura_un_resultado_guardado_mal(client, db):
     # Simula un test guardado ANTES del arreglo: aciertos/fallos correctos
     # pero con el campo "resultado" mal calculado (como estaba el bug).
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     db.sembrar(("usuarios", "u1", "tests", "t1"), {
         "oposicion": "AGE",
         "estado": "finalizado",

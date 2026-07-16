@@ -414,6 +414,8 @@ document.getElementById("btn-descargar-pdf").addEventListener("click", async () 
 // ?repetir=<id> empieza un intento NUEVO (sin las respuestas de la vez
 // anterior) a partir del contenido de ESE test concreto, no solo el último.
 window.addEventListener("load", async () => {
+  const { protegerPagina } = await import("/assets/plan.js");
+  if (!(await protegerPagina("basico"))) return;
   const { idDesdeUrlResume, usarTestId, cargarTestEnProgreso, generarTestId, guardarContenidoInicial, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
   const resumeId = idDesdeUrlResume();
   const repetirId = new URLSearchParams(window.location.search).get("repetir");

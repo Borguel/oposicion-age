@@ -913,6 +913,96 @@ body {
   font-weight: 600;
 }
 
+/* ---------- Aviso de prueba gratuita (cuenta atrás / terminada) ---------- */
+.age-banner-prueba {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 24px;
+  background: var(--age-primary-soft);
+  border-bottom: 1px solid var(--age-primary-light);
+}
+
+.age-banner-prueba p {
+  margin: 0;
+  max-width: 640px;
+  font-family: var(--age-font);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--age-primary-dark);
+  font-weight: 600;
+}
+
+.age-banner-prueba-acciones {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.age-banner-prueba-acciones .age-btn {
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.age-banner-prueba-bloqueado {
+  background: var(--age-danger-bg, #fdecea);
+  border-bottom: 1px solid var(--age-danger, #c62828);
+}
+
+.age-banner-prueba-bloqueado p {
+  color: var(--age-danger, #c62828);
+}
+
+/* ---------- Bloqueo de página por prueba terminada / plan insuficiente ---------- */
+.age-bloqueo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--age-bg);
+}
+
+.age-bloqueo-card {
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  box-shadow: var(--age-shadow);
+  padding: 40px 32px;
+}
+
+.age-bloqueo-icono {
+  font-size: 34px;
+  margin-bottom: 14px;
+}
+
+.age-bloqueo-card h1 {
+  margin: 0 0 10px;
+  font-size: 1.3rem;
+  color: var(--age-ink);
+}
+
+.age-bloqueo-card p {
+  margin: 0 0 24px;
+  color: var(--age-ink-soft);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.age-bloqueo-botones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 @media (max-width: 640px) {
   .age-verificacion-banner {
     flex-direction: column;

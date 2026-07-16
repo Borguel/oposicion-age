@@ -22,6 +22,45 @@ body {
   font-size: 0.98rem;
 }
 
+.cuenta-prueba {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.cuenta-prueba strong {
+  display: block;
+  font-size: 1.02rem;
+  margin-bottom: 4px;
+}
+
+.cuenta-prueba p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--age-ink-soft);
+  max-width: 480px;
+}
+
+.cuenta-prueba-activa {
+  background: var(--age-warning-bg);
+  border-color: var(--age-warning);
+}
+
+.cuenta-prueba-activa strong {
+  color: var(--age-warning);
+}
+
+.cuenta-prueba-terminada {
+  background: var(--age-danger-bg);
+  border-color: var(--age-danger);
+}
+
+.cuenta-prueba-terminada strong {
+  color: var(--age-danger);
+}
+
 .cuenta-layout {
   display: grid;
   grid-template-columns: 260px 1fr;

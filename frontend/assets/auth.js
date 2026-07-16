@@ -526,6 +526,60 @@ function inyectarBannerVerificacion(user) {
   });
 }
 
+// Aviso de cuenta atrás de la prueba gratuita de 7 días (mientras está
+// activa) o de bloqueo total (si terminó sin contratar ningún plan) --
+// mismo patrón que inyectarBannerVerificacion/inyectarBannerGlobal. Se
+// importa plan.js de forma perezosa (como el widget de Tu Tutor) para no
+// crear una dependencia estática circular con este propio módulo (plan.js
+// ya importa idToken/esperarUsuario de aquí).
+const CLAVE_BANNER_PRUEBA_CERRADO = "age_banner_prueba_cerrado";
+
+async function inyectarBannerPrueba(user) {
+  const existente = document.querySelector(".age-banner-prueba");
+  if (existente) existente.remove();
+  if (!user) return;
+
+  const { obtenerPlan } = await import("/assets/plan.js");
+  const perfil = await obtenerPlan();
+
+  const banner = document.createElement("div");
+  banner.className = "age-banner-prueba";
+
+  if (perfil.plan === "gratis") {
+    // Prueba terminada y sin ningún plan de pago: aviso fijo, no se puede
+    // cerrar -- refuerza en toda la web el bloqueo que ya aplican las
+    // páginas de herramientas por su cuenta (ver assets/plan.js).
+    banner.classList.add("age-banner-prueba-bloqueado");
+    banner.innerHTML = `
+      <p>Tu prueba gratuita ha terminado. Elige un plan para seguir usando Domina tu Opo.</p>
+      <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>
+    `;
+    document.body.prepend(banner);
+    return;
+  }
+
+  if (!perfil.prueba_activa || !perfil.prueba_fin) return;
+  if (sessionStorage.getItem(CLAVE_BANNER_PRUEBA_CERRADO) === "1") return;
+
+  const diasRestantes = Math.max(0, Math.ceil((new Date(perfil.prueba_fin) - new Date()) / 86400000));
+  const texto = diasRestantes === 0
+    ? "Tu prueba gratuita termina hoy."
+    : `Te quedan ${diasRestantes} día${diasRestantes === 1 ? "" : "s"} de prueba gratuita del plan Premium.`;
+
+  banner.innerHTML = `
+    <p>🎁 ${texto}</p>
+    <div class="age-banner-prueba-acciones">
+      <a class="age-btn age-btn-outline" href="/planes/">Ver planes</a>
+      <button type="button" class="age-verificacion-banner-cerrar" id="age-prueba-cerrar" aria-label="Cerrar aviso">✕</button>
+    </div>
+  `;
+  document.body.prepend(banner);
+  document.getElementById("age-prueba-cerrar").addEventListener("click", () => {
+    sessionStorage.setItem(CLAVE_BANNER_PRUEBA_CERRADO, "1");
+    banner.remove();
+  });
+}
+
 // Páginas a las que solo se llega pinchando algo dentro de Zona Opositor
 // (generar test, herramientas IA, mis tests...) -- en todas ellas se ofrece
 // un enlace directo de vuelta, para no depender de la navegación principal
@@ -587,6 +641,7 @@ function inyectarNav(user) {
   construirBusquedaGlobal(user);
   construirMenuCuenta(user);
   inyectarBannerVerificacion(user);
+  inyectarBannerPrueba(user);
   inyectarVolverZonaOpositor(user);
   inyectarEnlaceAdmin(user);
   inyectarBannerGlobal();

@@ -192,6 +192,8 @@ async function inicializar() {
     window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
     return;
   }
+  const { protegerPagina } = await import("/assets/plan.js");
+  if (!(await protegerPagina("basico"))) return;
 
   try {
     const { obtenerOposicionActual } = await import("/assets/oposicion.js");

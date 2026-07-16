@@ -1,3 +1,5 @@
+import("/assets/plan.js").then(({ protegerPagina }) => protegerPagina("premium"));
+
 async function obtenerAuthHeaders() {
       const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");
       return fn();
@@ -472,6 +474,10 @@ async function obtenerAuthHeaders() {
         if (res.status === 403) {
           throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
         }
+        if (res.status === 429) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} Ve a /planes/ para ampliar tu plan.`);
+        }
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
           throw new Error(errorData.error || `Error del servidor: ${res.status}`);
@@ -575,6 +581,10 @@ async function obtenerAuthHeaders() {
           body: formData
         });
         if (res.status === 403) throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
+        if (res.status === 429) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} Ve a /planes/ para ampliar tu plan.`);
+        }
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
           throw new Error(errorData.error || `Error del servidor: ${res.status}`);

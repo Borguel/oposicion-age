@@ -403,6 +403,12 @@ async function renderOnboarding() {
   const completado = await comprobarPasosOnboarding(token);
   if (PASOS_ONBOARDING.every((p) => completado[p.id])) return;
 
+  const subtitulo = document.getElementById("zona-onboarding-subtitulo");
+  if (subtitulo) {
+    const perfil = await obtenerPlan(false);
+    subtitulo.style.display = perfil.prueba_activa ? "block" : "none";
+  }
+
   const lista = document.getElementById("zona-onboarding-lista");
   lista.innerHTML = PASOS_ONBOARDING.map((p) => `
     <li class="zona-onboarding-paso${completado[p.id] ? " completado" : ""}">

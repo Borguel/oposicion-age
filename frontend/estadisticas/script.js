@@ -44,6 +44,9 @@ async function obtenerAuthHeaders() {
 }
 
 document.addEventListener("DOMContentLoaded", async function () {
+  const { protegerPagina } = await import("/assets/plan.js");
+  if (!(await protegerPagina("basico"))) return;
+
   localStorage.setItem("age_visito_estadisticas", "1");
 
   const refreshBtn = document.getElementById("estadisticas-refresh");

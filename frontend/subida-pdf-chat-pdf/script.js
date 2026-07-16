@@ -1,4 +1,7 @@
 import { obtenerAuthHeaders } from "/assets/auth.js";
+import { protegerPagina } from "/assets/plan.js";
+
+protegerPagina("premium");
 
 const BACKEND_URL = "https://oposicion-age.onrender.com";
 
@@ -78,6 +81,12 @@ async function handlePdfUpload() {
       addMessageToPdfChat('Esta herramienta requiere el plan Básico o superior. Ve a <a href="/planes/">/planes/</a> para activarlo.', 'bot');
       return;
     }
+    if (response.status === 429) {
+      const errorData = await response.json().catch(() => ({}));
+      pdfPreviewText.textContent = "Límite de uso alcanzado.";
+      addMessageToPdfChat(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} Ve a <a href="/planes/">/planes/</a> para ampliar tu plan.`, 'bot');
+      return;
+    }
     const datos = await response.json().catch(() => ({}));
     if (!response.ok) {
       pdfPreviewText.textContent = "No se pudo procesar el documento.";
@@ -122,6 +131,10 @@ async function enviarMensajePdf() {
     const datos = await response.json().catch(() => ({}));
     if (response.status === 403) {
       addMessageToPdfChat('Esta herramienta requiere el plan Básico o superior. Ve a <a href="/planes/">/planes/</a> para activarlo.', 'bot');
+      return;
+    }
+    if (response.status === 429) {
+      addMessageToPdfChat(`${datos.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} Ve a <a href="/planes/">/planes/</a> para ampliar tu plan.`, 'bot');
       return;
     }
     if (!response.ok) {

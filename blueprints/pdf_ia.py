@@ -15,7 +15,7 @@ from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 from PyPDF2 import PdfReader
 
 from firebase_setup import db
-from auth_utils import requiere_login, requiere_plan
+from auth_utils import requiere_plan
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso, devolver_uso
 from documentos_pdf import (
     obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta,
@@ -87,7 +87,7 @@ def _extraer_json_array(texto):
 
 
 @bp.route('/resumir-pdf', methods=['POST'])
-@requiere_plan(db, "gratis", global_check=True)
+@requiere_plan(db, "premium", global_check=True)
 def resumir_pdf():
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
@@ -131,13 +131,13 @@ def resumir_pdf():
 
 # ✅ NUEVA RUTA: alias para compatibilidad con frontend
 @bp.route('/resumir-documento', methods=['POST'])
-@requiere_plan(db, "gratis", global_check=True)
+@requiere_plan(db, "premium", global_check=True)
 def resumir_documento():
     return resumir_pdf()
 
 
 @bp.route('/generar-esquema-desde-pdf', methods=['POST'])
-@requiere_plan(db, "gratis", global_check=True)
+@requiere_plan(db, "premium", global_check=True)
 def generar_esquema_desde_pdf():
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
@@ -218,7 +218,7 @@ def generar_esquema_desde_pdf():
 
 
 @bp.route('/generar-test-desde-pdf', methods=['POST'])
-@requiere_plan(db, "gratis", global_check=True)
+@requiere_plan(db, "premium", global_check=True)
 def generar_test_desde_pdf():
     # En streaming (SSE, mismo patrón que /generar-test-avanzado en
     # blueprints/test_ia.py) para poder retransmitir progreso real por lote
@@ -326,7 +326,7 @@ def generar_test_desde_pdf():
 
 
 @bp.route('/generar-tarjetas-desde-pdf', methods=['POST'])
-@requiere_plan(db, "gratis", global_check=True)
+@requiere_plan(db, "premium", global_check=True)
 def generar_tarjetas_desde_pdf():
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
@@ -419,7 +419,7 @@ MAX_CARACTERES_CHAT_PDF = 12000
 
 
 @bp.route('/subir-pdf-chat', methods=['POST'])
-@requiere_plan(db, "basico", global_check=True)
+@requiere_plan(db, "premium", global_check=True)
 def subir_pdf_chat():
     if 'pdf' not in request.files:
         return jsonify({"error": "No se encontró archivo PDF"}), 400
@@ -456,7 +456,7 @@ def subir_pdf_chat():
 
 
 @bp.route('/chat-pdf-mensaje', methods=['POST'])
-@requiere_plan(db, "basico", global_check=True)
+@requiere_plan(db, "premium", global_check=True)
 def chat_pdf_mensaje():
     datos = request.get_json(silent=True) or {}
     mensaje = (datos.get("mensaje") or "").strip()
@@ -555,7 +555,7 @@ def chat_deepseek():
 # NUEVAS RUTAS PARA GUARDAR CONTENIDO DESDE PDF
 # ===================================================================
 @bp.route('/guardar-test-pdf', methods=['POST'])
-@requiere_plan(db, "gratis", global_check=True)
+@requiere_plan(db, "premium", global_check=True)
 def guardar_test_pdf():
     try:
         data = request.get_json()
@@ -591,7 +591,7 @@ def guardar_test_pdf():
 
 
 @bp.route('/guardar-resumen-pdf', methods=['POST'])
-@requiere_plan(db, "gratis", global_check=True)
+@requiere_plan(db, "premium", global_check=True)
 def guardar_resumen_pdf():
     try:
         data = request.get_json()
@@ -616,7 +616,7 @@ def guardar_resumen_pdf():
 
 
 @bp.route('/guardar-esquema-pdf', methods=['POST'])
-@requiere_plan(db, "gratis", global_check=True)
+@requiere_plan(db, "premium", global_check=True)
 def guardar_esquema_pdf():
     try:
         data = request.get_json()
@@ -641,7 +641,7 @@ def guardar_esquema_pdf():
 
 
 @bp.route('/guardar-tarjetas-pdf', methods=['POST'])
-@requiere_plan(db, "gratis", global_check=True)
+@requiere_plan(db, "premium", global_check=True)
 def guardar_tarjetas_pdf():
     try:
         data = request.get_json()
@@ -671,7 +671,7 @@ def guardar_tarjetas_pdf():
 # volver a subir el archivo ni volver a generarlo.
 # ===================================================================
 @bp.route('/mis-documentos', methods=['GET'])
-@requiere_login(db)
+@requiere_plan(db, "premium", global_check=True)
 def mis_documentos():
     return jsonify({
         "documentos": listar_documentos(db, g.uid),
@@ -680,7 +680,7 @@ def mis_documentos():
 
 
 @bp.route('/carpetas-documentos', methods=['POST'])
-@requiere_login(db)
+@requiere_plan(db, "premium", global_check=True)
 def crear_carpeta_documentos():
     datos = request.get_json(silent=True) or {}
     nombre = crear_carpeta(db, g.uid, datos.get("nombre"))
@@ -690,7 +690,7 @@ def crear_carpeta_documentos():
 
 
 @bp.route('/carpetas-documentos', methods=['DELETE'])
-@requiere_login(db)
+@requiere_plan(db, "premium", global_check=True)
 def eliminar_carpeta_documentos():
     datos = request.get_json(silent=True) or {}
     eliminar_carpeta(db, g.uid, datos.get("nombre") or "")
@@ -698,7 +698,7 @@ def eliminar_carpeta_documentos():
 
 
 @bp.route('/documento/<documento_id>/carpeta', methods=['POST'])
-@requiere_login(db)
+@requiere_plan(db, "premium", global_check=True)
 def documento_carpeta(documento_id):
     datos = request.get_json(silent=True) or {}
     ok = actualizar_carpeta(db, g.uid, documento_id, datos.get("carpeta", ""))
@@ -720,7 +720,7 @@ def _ultimo_por_documento(coleccion, documento_id, uid):
 
 
 @bp.route('/documento/<documento_id>/resumen', methods=['GET'])
-@requiere_login(db)
+@requiere_plan(db, "premium", global_check=True)
 def documento_resumen(documento_id):
     datos = _ultimo_por_documento("resumenes_pdf", documento_id, g.uid)
     if not datos:
@@ -729,7 +729,7 @@ def documento_resumen(documento_id):
 
 
 @bp.route('/documento/<documento_id>/esquema', methods=['GET'])
-@requiere_login(db)
+@requiere_plan(db, "premium", global_check=True)
 def documento_esquema(documento_id):
     datos = _ultimo_por_documento("esquemas_pdf", documento_id, g.uid)
     if not datos:
@@ -738,7 +738,7 @@ def documento_esquema(documento_id):
 
 
 @bp.route('/documento/<documento_id>/test', methods=['GET'])
-@requiere_login(db)
+@requiere_plan(db, "premium", global_check=True)
 def documento_test(documento_id):
     datos = _ultimo_por_documento("tests_pdf", documento_id, g.uid)
     if not datos:
@@ -747,7 +747,7 @@ def documento_test(documento_id):
 
 
 @bp.route('/documento/<documento_id>/tarjetas', methods=['GET'])
-@requiere_login(db)
+@requiere_plan(db, "premium", global_check=True)
 def documento_tarjetas(documento_id):
     docs = (
         db.collection("usuarios").document(g.uid).collection("tarjetas_pdf")

@@ -3,6 +3,7 @@ reales ya cargados en Firestore, sin llamar a ninguna IA) y del reparto
 por cuotas que comparte con el Test Personalizado verificado."""
 from unittest.mock import patch
 
+from conftest import sembrar_usuario_activo
 from utils import repartir_cupos_por_tema, seleccionar_preguntas_con_cuota
 
 
@@ -290,7 +291,7 @@ def test_ruta_generar_test_oficial_bloqueada_para_plan_gratis(client, db):
 # ============================================================
 
 def test_ruta_guardar_test_oficial_guarda_el_resultado(client, db):
-    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     parche = _con_sesion(client)
     try:
         resp = client.post(
@@ -307,7 +308,7 @@ def test_ruta_guardar_test_oficial_guarda_el_resultado(client, db):
 
 
 def test_ruta_guardar_test_oficial_400_si_faltan_datos(client, db):
-    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     parche = _con_sesion(client)
     try:
         resp = client.post(

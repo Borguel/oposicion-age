@@ -1,6 +1,8 @@
 """Borrado de tests propios (finalizados y en progreso) desde Mis Tests."""
 from unittest.mock import patch
 
+from conftest import sembrar_usuario_activo
+
 
 def _con_sesion(cliente, uid="u1", email="u1@example.com"):
     parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
@@ -9,7 +11,7 @@ def _con_sesion(cliente, uid="u1", email="u1@example.com"):
 
 
 def test_borrar_test_finalizado(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     db.sembrar(("usuarios", "u1", "tests", "t1"), {
         "oposicion": "AGE", "estado": "finalizado", "aciertos": 5, "fallos": 0, "blancos": 0,
     })
@@ -25,7 +27,7 @@ def test_borrar_test_finalizado(client, db):
 
 
 def test_borrar_test_en_progreso(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     db.sembrar(("usuarios", "u1", "tests", "t2"), {
         "oposicion": "AGE", "estado": "en_progreso", "num_preguntas": 10, "indice_actual": 3,
     })
@@ -44,11 +46,11 @@ def test_borrar_test_de_otro_usuario_no_lo_afecta(client, db):
     # El borrado vive bajo la subcolección del propio uid autenticado -- un
     # usuario no puede tocar el test de otro aunque conozca su id, porque la
     # ruta solo mira dentro de usuarios/{g.uid}/tests.
-    db.sembrar(("usuarios", "victima"), {})
+    sembrar_usuario_activo(db, "victima", plan="basico")
     db.sembrar(("usuarios", "victima", "tests", "t3"), {"oposicion": "AGE", "estado": "finalizado"})
     parche = _con_sesion(client, uid="atacante", email="atacante@example.com")
     try:
-        db.sembrar(("usuarios", "atacante"), {})
+        sembrar_usuario_activo(db, "atacante", plan="basico", email="atacante@example.com")
         resp = client.delete("/mi-test/t3", headers={"Authorization": "Bearer x"})
         assert resp.status_code == 200  # borra (si existe) bajo SU propia subcolección, no la ajena
 

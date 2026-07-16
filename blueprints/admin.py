@@ -22,7 +22,8 @@ from flask import Blueprint, Response, g, jsonify, request
 from firebase_admin import auth as firebase_auth
 
 from firebase_setup import db
-from auth_utils import requiere_admin, requiere_permiso, PERMISOS_VALIDOS, _mejor_plan
+from auth_utils import requiere_admin, requiere_permiso, PERMISOS_VALIDOS
+from planes import resolver_plan_efectivo, prueba_activa
 from banco_fallos import _id_pregunta
 from coste_ia import resumen_coste_usuario
 from oposiciones import OPOSICIONES, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
@@ -85,7 +86,7 @@ def _bloque_de_tema(tema_id):
 
 
 def _plan_usuario(datos):
-    plan, _sub = _mejor_plan(datos.get("suscripciones") or {})
+    plan, _sub = resolver_plan_efectivo(datos)
     return plan
 
 
@@ -914,6 +915,7 @@ def usuarios_listar():
             "email": datos.get("email", ""),
             "nombre": datos.get("nombre", ""),
             "plan": plan,
+            "en_prueba": prueba_activa(datos),
             "oposiciones_activas": _oposiciones_activas(datos),
             "fecha_creacion": datos.get("fecha_creacion"),
             "ultima_actividad": datos.get("ultima_actividad"),
@@ -1074,6 +1076,8 @@ def usuarios_detalle(uid):
         "email": datos.get("email", ""),
         "nombre": datos.get("nombre", ""),
         "plan": _plan_usuario(datos),
+        "en_prueba": prueba_activa(datos),
+        "prueba_fin": datos.get("prueba_fin"),
         "suscripciones": suscripciones,
         "oposiciones_activas": _oposiciones_activas(datos),
         "fecha_creacion": datos.get("fecha_creacion"),
@@ -1253,6 +1257,28 @@ def usuarios_cambiar_roles(uid):
         "permisos": permisos,
         "aviso": "El usuario debe cerrar sesión y volver a entrar para que el cambio surta efecto.",
     })
+
+
+@bp.route("/admin/api/usuarios/<uid>/prueba", methods=["PATCH"])
+@requiere_permiso("usuarios")
+def usuarios_otorgar_prueba(uid):
+    """Otorga o alarga la prueba gratuita de acceso Premium de un usuario
+    (soporte: p. ej. compensar un problema, o dar más margen antes de que
+    se bloquee). Vuelve a fijar prueba_fin desde AHORA + `dias`, sin sumar
+    a lo que quedara antes."""
+    ref = db.collection("usuarios").document(uid)
+    if not ref.get().exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    try:
+        dias = int((request.get_json(silent=True) or {}).get("dias", 7))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Número de días no válido"}), 400
+    if dias <= 0:
+        return jsonify({"error": "El número de días debe ser mayor que 0"}), 400
+    fin = (datetime.utcnow() + timedelta(days=dias)).isoformat()
+    ref.set({"prueba_fin": fin}, merge=True)
+    _registrar_auditoria("usuario_otorgar_prueba", uid, f"{dias} días")
+    return jsonify({"mensaje": f"Prueba otorgada hasta {fin}", "prueba_fin": fin})
 
 
 @bp.route("/admin/api/usuarios/<uid>/resetear-racha", methods=["POST"])

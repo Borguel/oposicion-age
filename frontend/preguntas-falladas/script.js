@@ -472,6 +472,8 @@ async function obtenerAuthHeaders() {
     }
 
     window.addEventListener("load", async () => {
+      const { protegerPagina } = await import("/assets/plan.js");
+      if (!(await protegerPagina("basico"))) return;
       await cargarTemas();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();

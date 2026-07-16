@@ -7,69 +7,65 @@ Dos capas de protección:
    suba p. ej. un PDF de 3000 páginas), independiente del gasto de IA en sí
    (ese ya está acotado aparte truncando el texto que se manda al modelo).
 2. Una cuota de usos por usuario y por plan, guardada en Firestore
-   (usuarios/{uid}.limites_uso.{tipo} = {periodo, contador}). El periodo de
-   la cuota (día o mes) depende del plan: Gratis/Básico tienen cuotas
-   mensuales (fáciles de anunciar, tipo "20 documentos/mes"); Premium es
-   "prácticamente ilimitado" de cara al cliente pero con un tope de
-   seguridad diario para que un solo mal uso no dispare el gasto de golpe.
+   (usuarios/{uid}.limites_uso.{tipo} = {periodo, contador}).
+
+Ya no existe un plan "gratis" permanente (sustituido por una prueba de
+Premium de 7 días, ver planes.py) -- ninguna ruta puede resolver ya a ese
+plan sin ser bloqueada antes por requiere_plan, así que estos diccionarios
+solo tienen "basico"/"premium".
 """
 import time
 from datetime import date
 
 from utils import ejecutar_en_transaccion
 
-MAX_PAGINAS_POR_PLAN = {"gratis": 50, "basico": 300, "premium": 500}
+MAX_PAGINAS_POR_PLAN = {"basico": 300, "premium": 500}
 
 # Cada entrada es (periodo, límite). periodo: "dia" o "mes".
 #
-# Filosofía de cupos: en básico y premium todo cuenta POR DÍA (cupos
-# generosos que se renuevan cada 24 h, no un tope mensual estrecho). Son
-# topes anti-abuso, no el uso esperado: un usuario normal gasta una
-# fracción. El coste real de IA es bajo (un test personalizado de 100
-# preguntas ~0,10 € en el peor caso, y menos con la caché de DeepSeek), así
-# que se prioriza que el usuario de pago no se choque con el límite en su
-# uso diario real. El plan gratis se mantiene como muestra reducida.
+# Filosofía de cupos: Básico se queda deliberadamente corto y VISIBLE (el
+# frontend sí enseña estos números, a diferencia de antes) para que se note
+# la limitación frente a Premium, presentado de cara al usuario como
+# "ilimitado" aunque internamente siga topado por seguridad de coste (el
+# coste real de IA es bajo -- un test personalizado de 100 preguntas ~0,10 €
+# en el peor caso -- así que el tope de premium es solo anti-abuso, no el
+# uso esperado).
 LIMITES = {
+    # Herramientas de PDF propio y chat -- exclusivas de Premium (ver
+    # @requiere_plan de cada ruta en pdf_ia.py), básico se queda a 0 por
+    # coherencia con eso.
     "pdf_ia": {
-        "gratis": ("mes", 3),
-        "basico": ("dia", 10),
+        "basico": ("dia", 0),
         "premium": ("dia", 100),
     },
     "chat_pdf": {
-        "gratis": ("mes", 0),
-        "basico": ("dia", 25),
+        "basico": ("dia", 0),
         "premium": ("dia", 80),
     },
     # Generación de esquemas/análisis a partir del TEMARIO (no de un PDF
     # subido) -- /generar-esquema, /generar-test-inteligente (hoy
     # desactivado en la web, pero la ruta sigue existiendo),
-    # /analisis-rendimiento. Requieren plan básico como mínimo (ver
-    # @requiere_plan de cada ruta), así que gratis queda en 0 solo por
-    # coherencia con ese requisito.
+    # /analisis-rendimiento. Incluidas en Básico, con cupo bajo a propósito.
     "generacion_ia": {
-        "gratis": ("mes", 0),
-        "basico": ("dia", 15),
+        "basico": ("dia", 5),
         "premium": ("dia", 60),
     },
     # Test Personalizado con verificación jurídica (/generar-test-avanzado):
     # cada pregunta cuesta entre 2 y 8 llamadas a DeepSeek. A DIFERENCIA del
     # resto, el cupo aquí se mide en PREGUNTAS/día, no en "número de tests":
     # así un test de 100 preguntas gasta 100 y uno de 10 gasta 10, y no es lo
-    # mismo (antes ambos contaban como "1 uso", lo cual era injusto). El
-    # frontend NO enseña este contador al usuario -- se percibe como
-    # ilimitado, y solo bloquea en el caso raro de agotar el cupo del día.
-    # 300/día = 3 tests de 100 ó 30 de 10 (básico); 1500 = 15 de 100 (premium).
+    # mismo (antes ambos contaban como "1 uso", lo cual era injusto).
+    # 60/día = 2-3 tests cortos (básico, cupo visible para el usuario);
+    # 1500 = 15 de 100 (premium, presentado como "ilimitado").
     "test_avanzado_verificado": {
-        "gratis": ("mes", 0),
-        "basico": ("dia", 300),
+        "basico": ("dia", 60),
         "premium": ("dia", 1500),
     },
     # Chat conversacional "Tu Tutor" -- /tu-tutor.
     # Requiere plan premium (ver @requiere_plan de la ruta), por eso básico
     # se queda en 0 (la ruta ni siquiera deja entrar sin premium).
     "chat_temario": {
-        "gratis": ("mes", 0),
-        "basico": ("mes", 0),
+        "basico": ("dia", 0),
         "premium": ("dia", 100),
     },
 }
@@ -89,7 +85,7 @@ TIPOS_META = [
     {"id": "chat_temario", "nombre": "Tu Tutor (chat del temario)", "unidad": "usos",
      "descripcion": "Chat conversacional del temario. Solo disponible en premium."},
 ]
-_PLANES = ("gratis", "basico", "premium")
+_PLANES = ("basico", "premium")
 
 # ---------------------------------------------------------------------------
 # Límites efectivos: los valores de arriba (LIMITES / MAX_PAGINAS_POR_PLAN)
@@ -179,8 +175,8 @@ def guardar_limites_config(db, data):
 def max_paginas_para_plan(plan, db=None):
     if db is not None:
         mp = limites_efectivos(db)["max_paginas"]
-        return mp.get(plan, mp.get("gratis"))
-    return MAX_PAGINAS_POR_PLAN.get(plan, MAX_PAGINAS_POR_PLAN["gratis"])
+        return mp.get(plan, mp.get("basico"))
+    return MAX_PAGINAS_POR_PLAN.get(plan, MAX_PAGINAS_POR_PLAN["basico"])
 
 
 def _clave_periodo(periodo):
