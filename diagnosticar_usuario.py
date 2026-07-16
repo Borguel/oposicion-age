@@ -30,6 +30,7 @@ def conectar_firestore():
 
 
 def diagnosticar(db, email):
+    print(f"📦 Proyecto Firebase conectado: {firebase_admin.get_app().project_id}")
     print(f"🔎 Buscando \"{email}\"...")
     print()
 
