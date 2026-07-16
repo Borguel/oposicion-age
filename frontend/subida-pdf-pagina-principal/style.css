@@ -86,3 +86,233 @@ body {
   color: var(--age-primary-dark);
   flex-shrink: 0;
 }
+
+/* ========== Rejilla de herramientas (bento): la de test destaca en
+   tamaño (es la más usada) y cada herramienta lleva su propio color de
+   acento -- ni todo del mismo naranja plano, ni un arcoíris: el acento
+   vive solo en el icono, la franja superior y el estado hover, la
+   tarjeta en sí sigue siendo neutra (--age-card) para no competir con
+   el contenido. ========== */
+.pdf-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+@media (min-width: 900px) {
+  .pdf-tools-grid {
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 1fr;
+    grid-auto-flow: dense;
+  }
+
+  .pdf-tool-card--featured {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 599px) {
+  .pdf-tools-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pdf-tool-card {
+  --accent: var(--age-primary);
+  --accent-soft: var(--age-primary-soft);
+  --accent-dark: var(--age-primary-dark);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  padding: 24px 22px;
+  text-decoration: none;
+  color: var(--age-ink);
+  box-shadow: var(--age-shadow);
+  overflow: hidden;
+  transition: transform 0.2s var(--age-ease), box-shadow 0.2s var(--age-ease), border-color 0.2s var(--age-ease);
+}
+
+.pdf-tool-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s var(--age-ease);
+}
+
+.pdf-tool-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--age-shadow-hover);
+  border-color: var(--accent);
+}
+
+.pdf-tool-card:hover::before {
+  opacity: 1;
+}
+
+.pdf-tool-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: var(--age-radius-md);
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.pdf-tool-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.pdf-tool-desc {
+  font-size: 0.9rem;
+  color: var(--age-ink-soft);
+  line-height: 1.45;
+  flex: 1;
+}
+
+.pdf-tool-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 4px 10px;
+  border-radius: var(--age-radius-pill);
+}
+
+.pdf-tool-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: var(--accent-dark);
+  margin-top: 4px;
+}
+
+.pdf-tool-cta span {
+  transition: transform 0.15s var(--age-ease);
+}
+
+.pdf-tool-card:hover .pdf-tool-cta span {
+  transform: translateX(3px);
+}
+
+/* La destacada (test desde PDF): icono y título más grandes para que se
+   note que pesa más en la jerarquía visual, no solo por ocupar más
+   espacio. */
+.pdf-tool-card--featured {
+  padding: 32px 28px;
+  background:
+    radial-gradient(circle at 100% 0%, var(--accent-soft), transparent 55%),
+    var(--age-card);
+}
+
+.pdf-tool-highlights {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  flex: 1;
+}
+
+.pdf-tool-highlights li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--age-ink-soft);
+  line-height: 1.4;
+}
+
+.pdf-tool-highlights li::before {
+  content: "✓";
+  flex-shrink: 0;
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+.pdf-tool-card--featured .pdf-tool-cta {
+  margin-top: 4px;
+}
+
+.pdf-tool-card--featured .pdf-tool-icon {
+  width: 60px;
+  height: 60px;
+  font-size: 28px;
+  margin-bottom: 4px;
+}
+
+.pdf-tool-card--featured .pdf-tool-title {
+  font-size: 1.35rem;
+}
+
+.pdf-tool-card--featured .pdf-tool-desc {
+  font-size: 0.98rem;
+  max-width: 46ch;
+}
+
+/* Acentos por herramienta (mismo criterio de contraste que --age-primary-soft/dark). */
+.pdf-tool-card--resumen {
+  --accent: #3b82f6;
+  --accent-soft: rgba(59, 130, 246, 0.14);
+  --accent-dark: #2563eb;
+}
+
+.pdf-tool-card--esquema {
+  --accent: #8b5cf6;
+  --accent-soft: rgba(139, 92, 246, 0.14);
+  --accent-dark: #7c3aed;
+}
+
+.pdf-tool-card--tarjetas {
+  --accent: #ec4899;
+  --accent-soft: rgba(236, 72, 153, 0.14);
+  --accent-dark: #db2777;
+}
+
+.pdf-tool-card--chat {
+  --accent: #14b8a6;
+  --accent-soft: rgba(20, 184, 166, 0.14);
+  --accent-dark: #0d9488;
+}
+
+:root[data-theme="dark"] .pdf-tool-card--resumen {
+  --accent-soft: rgba(59, 130, 246, 0.2);
+  --accent-dark: #93c5fd;
+}
+
+:root[data-theme="dark"] .pdf-tool-card--esquema {
+  --accent-soft: rgba(139, 92, 246, 0.22);
+  --accent-dark: #c4b5fd;
+}
+
+:root[data-theme="dark"] .pdf-tool-card--tarjetas {
+  --accent-soft: rgba(236, 72, 153, 0.2);
+  --accent-dark: #f9a8d4;
+}
+
+:root[data-theme="dark"] .pdf-tool-card--chat {
+  --accent-soft: rgba(20, 184, 166, 0.22);
+  --accent-dark: #5eead4;
+}

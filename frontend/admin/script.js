@@ -132,6 +132,10 @@ const RENDERS = {
   auditoria: renderAuditoria,
   sistema: renderSistema,
 };
+const TITULO_POR_PESTANA = {
+  dashboard: "Dashboard", temario: "Temario", preguntas: "Preguntas", analitica: "Analítica",
+  usuarios: "Usuarios", reportes: "Reportes", limites: "Límites", auditoria: "Auditoría", sistema: "Sistema",
+};
 let pestanaActual = "dashboard";
 
 function activarPestana(nombre) {
@@ -139,8 +143,34 @@ function activarPestana(nombre) {
   pestanaActual = nombre;
   document.querySelectorAll(".admin-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === nombre));
   document.querySelectorAll(".admin-panel").forEach((p) => { p.hidden = p.id !== `panel-${nombre}`; });
+  const titulo = document.getElementById("admin-titulo");
+  if (titulo) titulo.textContent = TITULO_POR_PESTANA[nombre] || nombre;
+  cerrarSidebar();
   RENDERS[nombre]();
 }
+
+// ===== sidebar móvil (cajón deslizante) =====
+const sidebar = document.getElementById("admin-sidebar");
+const sidebarOverlay = document.getElementById("admin-sidebar-overlay");
+const menuBtn = document.getElementById("admin-menu-btn");
+const sidebarCerrarBtn = document.getElementById("admin-sidebar-cerrar");
+
+function abrirSidebar() {
+  sidebar.classList.add("abierta");
+  sidebarOverlay.classList.add("abierta");
+  sidebarOverlay.hidden = false;
+  menuBtn?.setAttribute("aria-expanded", "true");
+}
+function cerrarSidebar() {
+  sidebar.classList.remove("abierta");
+  sidebarOverlay.classList.remove("abierta");
+  sidebarOverlay.hidden = true;
+  menuBtn?.setAttribute("aria-expanded", "false");
+}
+menuBtn?.addEventListener("click", abrirSidebar);
+sidebarCerrarBtn?.addEventListener("click", cerrarSidebar);
+sidebarOverlay?.addEventListener("click", cerrarSidebar);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrarSidebar(); });
 
 function actualizarBadgeReportes(n) {
   const badge = document.getElementById("badge-reportes");
@@ -177,13 +207,13 @@ async function renderDashboard() {
 
   panel.innerHTML = `
     <div class="admin-cards">
-      <div class="age-card admin-stat"><span class="admin-stat-num">${d.usuarios_totales}</span><span class="admin-stat-lbl">Usuarios</span><span class="admin-stat-sub">+${d.usuarios_nuevos_7_dias || 0} en 7 días</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-num">${d.usuarios_activos_7_dias || 0}</span><span class="admin-stat-lbl">Activos (7 días)</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-num">${d.tests_ultimos_7_dias}</span><span class="admin-stat-lbl">Tests (7 días)</span><span class="admin-stat-sub">${d.tests_ultimos_30_dias} en 30 días</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-num">${d.tests_total || 0}</span><span class="admin-stat-lbl">Tests totales</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-num">${(d.mrr || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Ingresos/mes (MRR)</span><span class="admin-stat-sub">${d.suscripciones_pago || 0} suscripciones de pago</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-num">${(d.coste_ia_mes || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Coste IA (este mes)</span></div>
-      <div class="age-card admin-stat admin-stat-clic ${alertaReportes ? "admin-stat-alerta" : ""}" id="stat-reportes"><span class="admin-stat-num">${d.reportes_pendientes}</span><span class="admin-stat-lbl">Reportes pendientes</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">👥</span><span class="admin-stat-num">${d.usuarios_totales}</span><span class="admin-stat-lbl">Usuarios</span><span class="admin-stat-sub">+${d.usuarios_nuevos_7_dias || 0} en 7 días</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">⚡</span><span class="admin-stat-num">${d.usuarios_activos_7_dias || 0}</span><span class="admin-stat-lbl">Activos (7 días)</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">📝</span><span class="admin-stat-num">${d.tests_ultimos_7_dias}</span><span class="admin-stat-lbl">Tests (7 días)</span><span class="admin-stat-sub">${d.tests_ultimos_30_dias} en 30 días</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">📚</span><span class="admin-stat-num">${d.tests_total || 0}</span><span class="admin-stat-lbl">Tests totales</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">💶</span><span class="admin-stat-num">${(d.mrr || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Ingresos/mes (MRR)</span><span class="admin-stat-sub">${d.suscripciones_pago || 0} suscripciones de pago</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">🤖</span><span class="admin-stat-num">${(d.coste_ia_mes || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Coste IA (este mes)</span></div>
+      <div class="age-card admin-stat admin-stat-clic ${alertaReportes ? "admin-stat-alerta" : ""}" id="stat-reportes"><span class="admin-stat-ico" aria-hidden="true">🚩</span><span class="admin-stat-num">${d.reportes_pendientes}</span><span class="admin-stat-lbl">Reportes pendientes</span></div>
     </div>
 
     <div class="age-card admin-bloque">
@@ -1231,7 +1261,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     mostrarNoAutorizado();
     return;
   }
-  document.getElementById("admin-contenido").style.display = "block";
+  document.getElementById("admin-contenido").style.display = "flex";
   // Ocultar las pestañas para las que no se tiene permiso y quedarnos con la
   // primera visible.
   let primera = null;
