@@ -176,7 +176,7 @@ def _post_deepseek_con_reintentos(headers, payload, timeout, stream=False):
         return response
 
 
-def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, temperature=0.3, max_continuaciones=2):
+def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, temperature=0.3, max_continuaciones=2, on_usage=None):
     """Genera texto largo (resúmenes/esquemas a partir de un PDF) sin
     arriesgarse a que se corte a mitad de frase -- o directamente a mitad
     del documento -- si el texto de origen es largo. Si DeepSeek corta la
@@ -186,6 +186,12 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
     max_tokens=2000 y, si el documento era largo, el resumen simplemente se
     quedaba a medias (p. ej. cortado en mitad del índice de artículos) sin
     ningún aviso.
+
+    on_usage, igual que en call_deepseek_api: si se pasa (llamadas hechas
+    desde un hilo de trabajo que no ve flask.g, p. ej. dentro del
+    ThreadPoolExecutor de generar_documento_largo_por_partes), se le entrega
+    el usage de cada llamada en vez de contabilizarlo contra la petición
+    actual.
 
     Devuelve el texto completo, o None si la primera llamada falla."""
     api_key = os.getenv("DEEPSEEK_API_KEY")
@@ -213,7 +219,13 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
             logger.warning("DeepSeek devolvió %s generando continuación", response.status_code)
             break
         cuerpo = response.json() or {}
-        _registrar_coste(cuerpo.get("usage"))
+        if on_usage is not None:
+            try:
+                on_usage(cuerpo.get("usage"))
+            except Exception:
+                pass
+        else:
+            _registrar_coste(cuerpo.get("usage"))
         choices = cuerpo.get("choices") or []
         if not choices:
             logger.warning("DeepSeek no devolvió 'choices' generando continuación")
@@ -256,7 +268,7 @@ def _trocear_en_parrafos(texto, tamano=TAMANO_CHUNK_CARACTERES):
     return fragmentos
 
 
-def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096, instrucciones_fusion_extra=None):
+def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096, instrucciones_fusion_extra=None, on_usage=None):
     """Para documentos largos, en vez de meter todo el texto de golpe en un
     único prompt (peor calidad: el modelo tiene que abarcar decenas de
     miles de palabras a la vez, y es más fácil que se pierda o mezcle
@@ -278,10 +290,15 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
     necesita que se detecte y fusione un mismo epígrafe tratado a distinta
     profundidad en fragmentos distintos, algo que la instrucción genérica de
     "sin secciones duplicadas" no cubre por sí sola porque el texto de esas
-    dos versiones no es literalmente idéntico)."""
+    dos versiones no es literalmente idéntico).
+
+    on_usage, si se pasa, recibe el usage de cada llamada (MAP y fusión)
+    para contabilizar coste desde fuera de flask.g -- ver AcumuladorTokens
+    en coste_ia.py. Imprescindible cuando el documento se trocea, porque el
+    paso MAP corre en un ThreadPoolExecutor sin contexto de petición."""
     fragmentos = _trocear_en_parrafos(texto)
     if len(fragmentos) == 1:
-        return generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens)
+        return generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens, on_usage=on_usage)
 
     def _generar_parcial(indice_fragmento):
         indice, fragmento = indice_fragmento
@@ -291,7 +308,11 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
             "posteriores ni lo indiques en tu respuesta. Aplica el formato pedido solo al "
             f"contenido de este fragmento.\n\n{etiqueta_documento} (fragmento {indice + 1}/{len(fragmentos)}):\n{fragmento}"
         )
-        return generar_con_continuacion(system_prompt, mensaje, max_tokens=max_tokens)
+        # on_usage es obligatorio aquí (no el _registrar_coste por defecto):
+        # este closure corre dentro del ThreadPoolExecutor de abajo, en un
+        # hilo de trabajo sin flask.g, así que sin on_usage el coste de
+        # TODAS las llamadas del MAP se perdería en silencio.
+        return generar_con_continuacion(system_prompt, mensaje, max_tokens=max_tokens, on_usage=on_usage)
 
     with ThreadPoolExecutor(max_workers=min(4, len(fragmentos))) as executor:
         parciales = list(executor.map(_generar_parcial, enumerate(fragmentos)))
@@ -307,11 +328,14 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
         "consecutivos del MISMO documento (separados por '---'). Fusiónalos en un único resultado "
         "coherente, sin secciones duplicadas ni solapadas, respetando el orden original y el mismo "
         "formato indicado arriba. No añadas ningún comentario sobre la fusión en sí ni menciones "
-        "que procede de varios fragmentos."
+        "que procede de varios fragmentos. No introduzcas en el resultado fusionado ningún dato, "
+        "cifra, fecha o afirmación que no estuviera ya presente en alguno de los fragmentos "
+        "parciales que se te dan a continuación -- fusionar no significa completar ni enriquecer, "
+        "solo combinar y reorganizar lo ya generado."
         + (f"\n\n{instrucciones_fusion_extra}" if instrucciones_fusion_extra else "")
     )
     bloque_parciales = "\n\n---\n\n".join(parciales)
-    return generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens)
+    return generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens, on_usage=on_usage)
 
 
 # Versión en streaming de call_deepseek_api: en vez de devolver el texto
