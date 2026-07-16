@@ -40,6 +40,8 @@
   --age-warning-bg: #fff3d6;
   --age-danger: #e0473f;
   --age-danger-bg: #fdeceb;
+  --age-info: #1e56b0;
+  --age-info-bg: #e7f0ff;
   --age-neutral-bg: #eef0f3;
 
   --age-radius-lg: 20px;
@@ -83,6 +85,8 @@
   --age-warning-bg: rgba(240, 185, 61, 0.16);
   --age-danger: #f0655f;
   --age-danger-bg: rgba(240, 101, 95, 0.14);
+  --age-info: #7aa7ff;
+  --age-info-bg: rgba(122, 167, 255, 0.16);
   --age-neutral-bg: #232734;
 
   --age-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
