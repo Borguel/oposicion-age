@@ -156,7 +156,10 @@ app.register_blueprint(auth_publico_bp)
 # /recuperar-contrasena es pública (nadie ha iniciado sesión todavía) y
 # siempre responde igual exista o no el correo, así que el único freno ante
 # un abuso (spam de resets, sondear correos por tiempos de respuesta) es un
-# límite de peticiones más estricto que el general de la app.
+# límite de peticiones más estricto que el general de la app. Se aplica a
+# todo el blueprint (incluida /enviar-verificacion-email, que sí exige
+# sesión) para que reenviar el correo de verificación no pueda usarse para
+# bombardear una bandeja ajena tampoco.
 limiter.limit("8 per hour")(auth_publico_bp)
 
 # Guardado y progreso (rutas_progreso.py ya registra las suyas directamente
