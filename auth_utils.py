@@ -1,4 +1,5 @@
 import logging
+import time
 from functools import wraps
 
 from firebase_admin import auth as firebase_auth
@@ -12,6 +13,38 @@ from planes import mejor_plan as _mejor_plan  # alias: admin.py y tests ya impor
 logger = logging.getLogger(__name__)
 
 
+def _verificar_id_token(token, log_prefix=""):
+    """verify_id_token() con un reintento ante fallos de red al obtener los
+    certificados públicos de Google (CertificateFetchError) -- confirmado en
+    producción: un corte de conexión saliente de un par de segundos entre
+    Render y googleapis.com hacía fallar TODAS las peticiones autenticadas
+    de golpe ("No autenticado" para cualquiera, incluido un administrador
+    con la cuenta perfectamente al día), y se resolvía solo en la siguiente
+    petición. Un solo reintento con una pausa breve absorbe ese tipo de
+    corte puntual sin esconder un token realmente inválido/caducado (esos
+    fallan igual en el reintento) ni añadir demasiada latencia al caso normal."""
+    intentos = (0, 0.4)
+    ultimo_exc = None
+    for espera in intentos:
+        if espera:
+            time.sleep(espera)
+        try:
+            return firebase_auth.verify_id_token(token, check_revoked=True)
+        except firebase_auth.CertificateFetchError as exc:
+            ultimo_exc = exc
+            continue
+        except Exception as exc:
+            # Sin este log no había forma de distinguir un token realmente
+            # inválido/caducado de, por ejemplo, un fallo transitorio de red
+            # al comprobar la revocación contra Firebase -- ambos acababan
+            # en el mismo "No autenticado" opaco para quien lo sufre y para
+            # quien lo investiga después.
+            logger.warning("%sFallo al verificar ID token: %s: %s", log_prefix, type(exc).__name__, exc)
+            return None
+    logger.warning("%sFallo al verificar ID token tras reintento: %s: %s", log_prefix, type(ultimo_exc).__name__, ultimo_exc)
+    return None
+
+
 def obtener_identidad_desde_token(req):
     """Verifica el Firebase ID token del header Authorization: Bearer <token>.
     Devuelve (uid, email, es_admin) o None si falta o es inválido."""
@@ -21,15 +54,8 @@ def obtener_identidad_desde_token(req):
     token = header[len("Bearer "):].strip()
     if not token:
         return None
-    try:
-        decoded = firebase_auth.verify_id_token(token, check_revoked=True)
-    except Exception as exc:
-        # Sin este log no había forma de distinguir un token realmente
-        # inválido/caducado de, por ejemplo, un fallo transitorio de red al
-        # comprobar la revocación contra Firebase -- ambos acababan en el
-        # mismo "No autenticado" opaco para quien lo sufre y para quien lo
-        # investiga después.
-        logger.warning("Fallo al verificar ID token: %s: %s", type(exc).__name__, exc)
+    decoded = _verificar_id_token(token)
+    if decoded is None:
         return None
     return decoded.get("uid"), decoded.get("email"), decoded.get("admin") is True
 
@@ -85,10 +111,8 @@ def requiere_admin(f):
         if not header.startswith("Bearer "):
             return jsonify({"error": "No autenticado"}), 401
         token = header[len("Bearer "):].strip()
-        try:
-            decoded = firebase_auth.verify_id_token(token, check_revoked=True)
-        except Exception as exc:
-            logger.warning("requiere_admin: fallo al verificar ID token: %s: %s", type(exc).__name__, exc)
+        decoded = _verificar_id_token(token, log_prefix="requiere_admin: ")
+        if decoded is None:
             return jsonify({"error": "No autenticado"}), 401
         if decoded.get("admin") is not True:
             return jsonify({"error": "Se requieren permisos de administrador"}), 403
@@ -113,10 +137,8 @@ def _decodificar_token_admin():
     if not header.startswith("Bearer "):
         return None, (jsonify({"error": "No autenticado"}), 401)
     token = header[len("Bearer "):].strip()
-    try:
-        decoded = firebase_auth.verify_id_token(token, check_revoked=True)
-    except Exception as exc:
-        logger.warning("Panel admin: fallo al verificar ID token: %s: %s", type(exc).__name__, exc)
+    decoded = _verificar_id_token(token, log_prefix="Panel admin: ")
+    if decoded is None:
         return None, (jsonify({"error": "No autenticado"}), 401)
     return decoded, None
 

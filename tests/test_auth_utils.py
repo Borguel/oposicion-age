@@ -60,6 +60,28 @@ def test_obtener_uid_con_token_revocado():
         assert obtener_uid_desde_token(FakeRequest({"Authorization": "Bearer x"})) is None
 
 
+def test_obtener_uid_reintenta_tras_fallo_de_red_al_verificar():
+    # Visto en producción: un corte de conexión saliente de un par de
+    # segundos entre Render y googleapis.com hacía fallar la verificación
+    # de CUALQUIER token válido (CertificateFetchError, al no poder
+    # descargar los certificados públicos de Google) -- un usuario
+    # perfectamente logueado veía "No autenticado" sin motivo real. Un
+    # reintento absorbe ese corte puntual.
+    error_red = firebase_auth.CertificateFetchError("sin red", cause=None)
+    with patch(
+        "auth_utils.firebase_auth.verify_id_token",
+        side_effect=[error_red, {"uid": "u1", "email": "a@b.com"}],
+    ), patch("auth_utils.time.sleep"):
+        assert obtener_uid_desde_token(FakeRequest({"Authorization": "Bearer x"})) == ("u1", "a@b.com")
+
+
+def test_obtener_uid_no_reintenta_indefinidamente_si_la_red_sigue_caida():
+    error_red = firebase_auth.CertificateFetchError("sin red", cause=None)
+    with patch("auth_utils.firebase_auth.verify_id_token", side_effect=error_red), \
+            patch("auth_utils.time.sleep"):
+        assert obtener_uid_desde_token(FakeRequest({"Authorization": "Bearer x"})) is None
+
+
 @pytest.fixture
 def mini_app(db):
     app = Flask(__name__)
