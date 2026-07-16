@@ -9,6 +9,11 @@ const mensajeError = document.getElementById("mensaje-error");
 const btnGoogle = document.getElementById("btn-google");
 const bloqueTerminos = document.getElementById("bloque-terminos");
 const checkTerminos = document.getElementById("check-terminos");
+const bloqueNombreApellidos = document.getElementById("bloque-nombre-apellidos");
+const inputNombre = document.getElementById("nombre");
+const inputApellidos = document.getElementById("apellidos");
+const bloqueRepetirPassword = document.getElementById("bloque-repetir-password");
+const inputRepetirPassword = document.getElementById("repetir-password");
 
 const pasoCuenta = document.getElementById("paso-cuenta");
 const pasoPerfil = document.getElementById("paso-perfil");
@@ -36,33 +41,47 @@ let modo = "login";
 
 function cambiarModo(nuevoModo) {
   modo = nuevoModo;
+  const esAlta = modo === "signup";
   tabLogin.classList.toggle("active", modo === "login");
-  tabSignup.classList.toggle("active", modo === "signup");
+  tabSignup.classList.toggle("active", esAlta);
   btnSubmit.textContent = modo === "login" ? "Iniciar sesión" : "Crear cuenta";
   mensajeError.style.display = "none";
+
+  // Nombre, apellidos y repetir contraseña solo se piden al dar de alta una
+  // cuenta nueva (en "Iniciar sesión" no aplican). display:none NO exime a
+  // un campo required de la validación nativa del navegador (willValidate
+  // sigue siendo true), así que hay que quitar también el atributo required
+  // o el formulario de login queda bloqueado en silencio sin mostrar error.
+  bloqueNombreApellidos.style.display = esAlta ? "block" : "none";
+  bloqueRepetirPassword.style.display = esAlta ? "block" : "none";
+  inputNombre.required = esAlta;
+  inputApellidos.required = esAlta;
+  inputRepetirPassword.required = esAlta;
+  inputNombre.value = "";
+  inputApellidos.value = "";
+  inputRepetirPassword.value = "";
+
+  // "¿Olvidaste tu contraseña?" solo tiene sentido si ya existe una cuenta.
+  btnOlvidePassword.style.display = esAlta ? "none" : "block";
+
   // La aceptación de Términos y Política de Privacidad solo aplica al alta
   // de una cuenta nueva (obligatorio por ley) -- al volver a "Iniciar
   // sesión" se oculta y se resetea, para no arrastrar un estado confuso si
   // el usuario cambia de pestaña.
-  bloqueTerminos.style.display = modo === "signup" ? "block" : "none";
+  bloqueTerminos.style.display = esAlta ? "block" : "none";
   checkTerminos.checked = false;
 }
 
 tabLogin.addEventListener("click", () => cambiarModo("login"));
 tabSignup.addEventListener("click", () => cambiarModo("signup"));
 
+// Sincroniza el estado inicial (sobre todo el atributo required de los
+// campos de alta, que si no quedan bloqueando el login en silencio).
+cambiarModo("login");
+
 function siguienteDestino() {
   const params = new URLSearchParams(window.location.search);
   return params.get("next") || "/zona-opositor/";
-}
-
-async function enviarPerfilVacio() {
-  const token = await idToken();
-  await fetch(`${BACKEND_URL}/registrar-usuario`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({})
-  });
 }
 
 async function guardarPerfilBasico(nombre, apellidos) {
@@ -74,9 +93,7 @@ async function guardarPerfilBasico(nombre, apellidos) {
   });
 }
 
-function mostrarPasoPerfil(nombre = "", apellidos = "") {
-  document.getElementById("perfil-nombre").value = nombre;
-  document.getElementById("perfil-apellidos").value = apellidos;
+function mostrarPasoPerfil() {
   pasoCuenta.style.display = "none";
   pasoPerfil.style.display = "block";
 }
@@ -101,16 +118,25 @@ form.addEventListener("submit", async (evento) => {
   evento.preventDefault();
   mensajeError.style.display = "none";
 
-  if (modo === "signup" && !checkTerminos.checked) {
-    mensajeError.textContent = "Debes aceptar los Términos y condiciones y la Política de Privacidad para crear una cuenta.";
-    mensajeError.style.display = "block";
-    return;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const nombre = inputNombre.value.trim();
+  const apellidos = inputApellidos.value.trim();
+
+  if (modo === "signup") {
+    if (password !== inputRepetirPassword.value) {
+      mensajeError.textContent = "Las contraseñas no coinciden.";
+      mensajeError.style.display = "block";
+      return;
+    }
+    if (!checkTerminos.checked) {
+      mensajeError.textContent = "Debes aceptar los Términos y condiciones y la Política de Privacidad para crear una cuenta.";
+      mensajeError.style.display = "block";
+      return;
+    }
   }
 
   btnSubmit.disabled = true;
-
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
 
   try {
     if (modo === "login") {
@@ -121,7 +147,7 @@ form.addEventListener("submit", async (evento) => {
       // Mejor esfuerzo: si falla el envío del correo de verificación no se
       // bloquea el alta -- el banner de auth.js ya ofrece reenviarlo luego.
       enviarVerificacionEmail().catch(() => {});
-      await enviarPerfilVacio();
+      await guardarPerfilBasico(nombre, apellidos);
       mostrarPasoPerfil();
     }
   } catch (error) {
@@ -262,8 +288,8 @@ formPerfil.addEventListener("submit", async (evento) => {
   perfilMensajeError.style.display = "none";
   btnPerfilSubmit.disabled = true;
 
-  const nombre = document.getElementById("perfil-nombre").value.trim();
-  const apellidos = document.getElementById("perfil-apellidos").value.trim();
+  // Nombre y apellidos ya se guardaron al dar de alta la cuenta (o los trae
+  // Google); este paso solo completa teléfono y dirección.
   const telefono = document.getElementById("perfil-telefono").value.trim();
   const direccion = document.getElementById("perfil-direccion").value.trim();
 
@@ -272,7 +298,7 @@ formPerfil.addEventListener("submit", async (evento) => {
     const res = await fetch(`${BACKEND_URL}/registrar-usuario`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ nombre, apellidos, telefono, direccion })
+      body: JSON.stringify({ telefono, direccion })
     });
     if (!res.ok) throw new Error("No se pudo guardar tu perfil");
     window.location.href = siguienteDestino();
