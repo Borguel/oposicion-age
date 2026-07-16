@@ -1,0 +1,48 @@
+name: Migrar usuarios existentes a la prueba gratuita
+
+# Da los 7 días de prueba Premium (planes.py) a los usuarios que ya
+# existían antes de sustituir el plan "gratis" permanente por la prueba,
+# para que no se encuentren bloqueados sin haber tenido nunca su ventana
+# de prueba. No toca a quien ya tiene un plan de pago ni a quien ya tiene
+# `prueba_fin` fijado (por ejemplo, por haberse registrado después del
+# cambio, o por una prueba ya otorgada a mano desde el panel admin).
+#
+# Se lanza a mano. Por defecto solo SIMULA (no escribe): revisa el log
+# para ver a quién afectaría antes de aplicarlo. Pon "modo" = aplicar para
+# escribir los cambios de verdad. La clave de Firebase vive solo en el
+# secreto FIREBASE_CREDENTIALS_JSON.
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "Qué hacer"
+        required: true
+        default: "simular"
+        type: choice
+        options:
+          - simular   # solo lectura: muestra a quién afectaría
+          - aplicar   # escribe prueba_fin en quien corresponda
+
+jobs:
+  migrar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Migrar usuarios a la prueba gratuita
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: |
+          case "${{ github.event.inputs.modo }}" in
+            aplicar) python migrar_usuarios_prueba.py --aplicar ;;
+            *)       python migrar_usuarios_prueba.py ;;
+          esac

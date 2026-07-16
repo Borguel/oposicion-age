@@ -646,7 +646,7 @@ async function cargarUsuarios() {
   };
   const filas = (d.usuarios || []).map((u) => `
     <tr class="admin-fila-click" data-uid="${escapeHtml(u.uid)}">
-      <td>${escapeHtml(u.email || "(sin email)")}</td><td><span class="admin-chip">${escapeHtml(u.plan)}</span></td>
+      <td>${escapeHtml(u.email || "(sin email)")}</td><td><span class="admin-chip">${escapeHtml(u.plan)}</span>${u.en_prueba ? ' <span class="admin-chip admin-chip-prueba">en prueba</span>' : ""}</td>
       <td>${(u.oposiciones_activas || []).map(escapeHtml).join(", ") || "-"}</td>
       <td>${celdaUso(u)}</td>
       <td class="admin-num">${fechaCorta(u.ultima_actividad)}</td></tr>`).join("")
@@ -671,7 +671,8 @@ async function cargarUsuarios() {
 }
 
 // ---- Ficha de cliente: piezas visuales reutilizables ----
-function fichaPlanBadge(plan) {
+function fichaPlanBadge(plan, enPrueba) {
+  if (enPrueba) return `<span class="ficha-badge ficha-badge-prueba">⏳ En prueba (Premium)</span>`;
   const p = (plan || "gratis").toLowerCase();
   const map = { premium: ["Premium", "ficha-badge-premium"], basico: ["Básico", "ficha-badge-basico"], gratis: ["Gratis", "ficha-badge-gratis"] };
   const [txt, cls] = map[p] || map.gratis;
@@ -727,7 +728,7 @@ async function abrirUsuario(uid) {
           <h2 class="ficha-email">${escapeHtml(u.email || "(sin email)")}</h2>
           ${u.nombre ? `<p class="ficha-nombre">${escapeHtml(u.nombre)}</p>` : ""}
           <div class="ficha-badges">
-            ${fichaPlanBadge(u.plan)}
+            ${fichaPlanBadge(u.plan, u.en_prueba)}
             <span class="ficha-badge ${u.email_verificado ? "ficha-badge-ok" : "ficha-badge-warn"}">${u.email_verificado ? "✓ Verificado" : "Sin verificar"}</span>
             ${u.es_admin ? '<span class="ficha-badge ficha-badge-admin">👑 Admin total</span>' : ""}
             ${(!u.es_admin && (u.permisos || []).length) ? `<span class="ficha-badge ficha-badge-rol">🛡️ ${(u.permisos || []).length} rol(es)</span>` : ""}
@@ -809,6 +810,15 @@ async function abrirUsuario(uid) {
           </div>
           <input id="up-motivo" class="age-input" placeholder="Motivo (queda registrado)" style="margin-top:8px;">
           <button class="age-btn age-btn-primary" id="up-guardar" style="margin-top:10px;">Cambiar plan</button>
+          <hr class="admin-sep">
+          <h4 class="ficha-sub">⏳ Prueba gratuita Premium</h4>
+          <p class="ficha-prueba-estado">${u.en_prueba
+            ? `En prueba hasta el <strong>${escapeHtml(fechaCorta(u.prueba_fin))}</strong>.`
+            : (u.prueba_fin ? `Su prueba terminó el ${escapeHtml(fechaCorta(u.prueba_fin))}.` : "Nunca ha tenido una prueba.")}</p>
+          <div class="admin-form-fila">
+            <input id="up-prueba-dias" class="age-input" type="number" min="1" max="90" value="7" style="max-width:100px;">
+            <button class="age-btn age-btn-outline admin-mini" id="up-prueba-otorgar">Otorgar/alargar prueba</button>
+          </div>
         </div>
       </details>
 
@@ -942,6 +952,11 @@ async function abrirUsuario(uid) {
     if (!confirm("¿Poner a cero los contadores de uso de IA de este usuario?")) return;
     const r = await api("POST", `/admin/api/usuarios/${u.uid}/resetear-limites`);
     if (r) toast("Límites de uso reseteados.");
+  });
+  document.getElementById("up-prueba-otorgar")?.addEventListener("click", async () => {
+    const dias = parseInt(document.getElementById("up-prueba-dias").value, 10) || 7;
+    const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/prueba`, { dias });
+    if (r) { toast(r.mensaje || "Prueba actualizada."); cerrarModal(); cargarUsuarios(); }
   });
   const mostrarEnlace = async (tipo) => {
     const r = await api("POST", `/admin/api/usuarios/${u.uid}/enlace`, { tipo });

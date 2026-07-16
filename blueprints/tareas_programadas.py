@@ -9,7 +9,13 @@ from datetime import date
 from flask import Blueprint, jsonify, request
 
 from firebase_setup import db
-from email_utils import enviar_email_racha_en_riesgo, enviar_email_reengagement
+from email_utils import (
+    enviar_email_racha_en_riesgo,
+    enviar_email_reengagement,
+    enviar_email_prueba_terminando,
+    enviar_email_prueba_terminada,
+)
+from planes import ORDEN_PLANES, mejor_plan
 from push_utils import enviar_push
 
 logger = logging.getLogger(__name__)
@@ -68,3 +74,48 @@ def enviar_recordatorios_racha():
 
     logger.info("Recordatorios de racha enviados: %s en riesgo, %s reengagement", en_riesgo, reengagement)
     return jsonify({"en_riesgo": en_riesgo, "reengagement": reengagement})
+
+
+@bp.route("/tareas/recordatorios-prueba", methods=["POST"])
+def enviar_recordatorios_prueba():
+    """Avisa por email del final de la prueba gratuita Premium (planes.py):
+    2 días antes de que termine, y el primer día después de haber terminado
+    si el usuario sigue sin ningún plan de pago. No avisa a quien ya
+    contrató Básico o Premium (mejor_plan mira solo las suscripciones
+    reales, sin la prueba, así que un plan de pago vigente lo excluye sin
+    necesidad de comprobar nada más)."""
+    if not _clave_cron_valida():
+        return jsonify({"error": "No autorizado"}), 401
+
+    hoy = date.today()
+    terminando = 0
+    terminada = 0
+
+    for doc in db.collection("usuarios").stream():
+        datos = doc.to_dict() or {}
+        email = datos.get("email")
+        prueba_fin = datos.get("prueba_fin")
+        if not email or not prueba_fin:
+            continue
+
+        plan_pago, _sub = mejor_plan(datos.get("suscripciones"))
+        if ORDEN_PLANES.get(plan_pago, 0) >= ORDEN_PLANES["basico"]:
+            continue
+
+        try:
+            fin_fecha = date.fromisoformat(prueba_fin[:10])
+        except ValueError:
+            continue
+
+        dias_restantes = (fin_fecha - hoy).days
+        nombre = datos.get("nombre") or ""
+
+        if dias_restantes == 2:
+            enviar_email_prueba_terminando(email, dias_restantes, nombre=nombre)
+            terminando += 1
+        elif dias_restantes == -1:
+            enviar_email_prueba_terminada(email, nombre=nombre)
+            terminada += 1
+
+    logger.info("Recordatorios de prueba enviados: %s terminando, %s terminada", terminando, terminada)
+    return jsonify({"terminando": terminando, "terminada": terminada})
