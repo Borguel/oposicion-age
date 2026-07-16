@@ -34,7 +34,7 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8080")
 @requiere_login(db)
 def mi_perfil():
     oposicion = obtener_oposicion_solicitada()
-    return jsonify(obtener_perfil_usuario(db, g.uid, oposicion=oposicion))
+    return jsonify(obtener_perfil_usuario(db, g.uid, oposicion=oposicion, es_admin=getattr(g, "es_admin", False)))
 
 
 @bp.route("/mi-racha", methods=["GET"])
