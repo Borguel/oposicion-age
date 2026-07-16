@@ -285,11 +285,17 @@ def actualizar_suscripcion(db, usuario_id, oposicion, plan=None, stripe_customer
 
     doc_ref.update(field_updates)
 
-def obtener_perfil_usuario(db, usuario_id, oposicion=None):
+def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
     """Datos mínimos de plan/suscripción para pintar la UI del frontend.
     Si se pasa `oposicion`, además de la lista completa de suscripciones se
     incluyen plan/subscription_status/current_period_end de esa oposición
-    concreta (para no obligar al frontend a leer el mapa completo)."""
+    concreta (para no obligar al frontend a leer el mapa completo).
+
+    `es_admin` reproduce aquí el mismo bypass que ya tiene
+    `auth_utils.requiere_plan()` para las rutas protegidas: un
+    administrador (custom claim de Firebase, no depende de Firestore) no
+    debe ver el banner ni la pantalla de bloqueo de prueba/plan en el
+    frontend aunque su cuenta no tenga ninguna suscripción de pago."""
     doc = db.collection("usuarios").document(usuario_id).get()
     if not doc.exists:
         perfil = {
@@ -297,7 +303,12 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None):
             "prueba_activa": False, "prueba_fin": None,
         }
         if oposicion:
-            perfil.update({"oposicion": oposicion, "plan": "gratis", "subscription_status": None, "current_period_end": None})
+            perfil.update({
+                "oposicion": oposicion,
+                "plan": "premium" if es_admin else "gratis",
+                "subscription_status": "active" if es_admin else None,
+                "current_period_end": None,
+            })
         return perfil
 
     datos = doc.to_dict() or {}
@@ -315,7 +326,10 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None):
         "prueba_fin": datos.get("prueba_fin"),
     }
     if oposicion:
-        plan, sub = resolver_plan_efectivo(datos, oposicion=oposicion)
+        if es_admin:
+            plan, sub = "premium", {"subscription_status": "active"}
+        else:
+            plan, sub = resolver_plan_efectivo(datos, oposicion=oposicion)
         perfil.update({
             "oposicion": oposicion,
             "plan": plan,
