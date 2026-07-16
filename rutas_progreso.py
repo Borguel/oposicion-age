@@ -13,6 +13,7 @@ from guardar_resultado import obtener_estadisticas_completas_usuario
 from banco_favoritas import marcar_favorita, desmarcar_favorita, listar_favoritas
 from push_utils import VAPID_PUBLIC_KEY, push_disponible, guardar_suscripcion, borrar_suscripcion
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
+from planes import ORDEN_PLANES, resolver_plan_efectivo
 from utils import calcular_resultado_test
 import random
 
@@ -94,19 +95,19 @@ def registrar_rutas_progreso(app, db):
         return jsonify({"mensaje": f"Progreso de {tipo_pdf} actualizado"})
 
     @app.route("/resumen-progreso", methods=["GET"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def obtener_resumen_progreso_route():
         resumen = obtener_resumen_progreso(db, g.uid, oposicion=obtener_oposicion_solicitada())
         return jsonify({"resumen": resumen})
 
     @app.route("/estadisticas-completas", methods=["GET"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def obtener_estadisticas_completas():
         estadisticas = obtener_estadisticas_completas_usuario(db, g.uid, oposicion=obtener_oposicion_solicitada())
         return jsonify({"estadisticas": estadisticas})
 
     @app.route("/fecha-examen", methods=["GET"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def obtener_fecha_examen():
         oposicion = obtener_oposicion_solicitada()
         doc = db.collection("usuarios").document(g.uid).get()
@@ -115,7 +116,7 @@ def registrar_rutas_progreso(app, db):
         return jsonify({"fecha_examen": fecha})
 
     @app.route("/fecha-examen", methods=["POST"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def guardar_fecha_examen():
         oposicion = obtener_oposicion_solicitada()
         datos = request.get_json(silent=True) or {}
@@ -132,7 +133,7 @@ def registrar_rutas_progreso(app, db):
         return jsonify({"mensaje": "Fecha de examen actualizada"})
 
     @app.route("/marcar-favorita", methods=["POST"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def marcar_favorita_route():
         datos = request.get_json(silent=True) or {}
         pregunta = datos.get("pregunta") or {}
@@ -142,7 +143,7 @@ def registrar_rutas_progreso(app, db):
         return jsonify({"mensaje": "Pregunta marcada como favorita"})
 
     @app.route("/desmarcar-favorita", methods=["POST"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def desmarcar_favorita_route():
         datos = request.get_json(silent=True) or {}
         texto = (datos.get("pregunta") or "").strip()
@@ -152,7 +153,7 @@ def registrar_rutas_progreso(app, db):
         return jsonify({"mensaje": "Pregunta desmarcada"})
 
     @app.route("/preguntas-favoritas", methods=["GET"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def preguntas_favoritas_route():
         favoritas = listar_favoritas(db, g.uid, obtener_oposicion_solicitada())
         return jsonify({"favoritas": favoritas})
@@ -181,7 +182,7 @@ def registrar_rutas_progreso(app, db):
         return jsonify({"mensaje": "Notificaciones desactivadas"})
 
     @app.route("/ultimo-test", methods=["GET"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def obtener_ultimo_test():
         oposicion = obtener_oposicion_solicitada()
         try:
@@ -230,8 +231,18 @@ def registrar_rutas_progreso(app, db):
         try:
             # "contenido" (las preguntas en sí) solo se manda una vez, en el
             # primer autoguardado de este test_id -- a partir de ahí basta con
-            # actualizar los campos que cambian en cada pregunta/tick.
+            # actualizar los campos que cambian en cada pregunta/tick. Ese
+            # primer guardado SÍ exige plan (evita poder "vivir" indefinidamente
+            # de un único test ya generado, vía autosave, una vez caducada la
+            # prueba/suscripción); los guardados posteriores del mismo test_id
+            # no, para no perder un test que ya se estaba haciendo
+            # legítimamente si el plan caduca a mitad de la resolución.
             if datos.get("contenido") is not None or not test_ref.get().exists:
+                if not getattr(g, "es_admin", False):
+                    usuario = db.collection("usuarios").document(g.uid).get().to_dict() or {}
+                    plan_actual, _sub = resolver_plan_efectivo(usuario, oposicion=obtener_oposicion_solicitada())
+                    if ORDEN_PLANES.get(plan_actual, 0) < ORDEN_PLANES["basico"]:
+                        return jsonify({"error": "Requiere plan superior", "plan_actual": plan_actual, "plan_requerido": "basico"}), 403
                 test_ref.set({
                     "fecha": ahora,
                     "estado": "en_progreso",
@@ -252,7 +263,7 @@ def registrar_rutas_progreso(app, db):
             return jsonify({"error": f"Error autoguardando el test: {str(e)}"}), 500
 
     @app.route("/mis-tests", methods=["GET"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def obtener_mis_tests():
         oposicion = obtener_oposicion_solicitada()
         estado_filtro = request.args.get("estado")  # "en_progreso" | "finalizado" | None (todos)
@@ -287,7 +298,7 @@ def registrar_rutas_progreso(app, db):
             return jsonify({"error": f"Error listando tests: {str(e)}"}), 500
 
     @app.route("/mi-test/<test_id>", methods=["GET"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def obtener_mi_test(test_id):
         try:
             # La propiedad ya está garantizada por vivir bajo la subcolección
@@ -303,7 +314,7 @@ def registrar_rutas_progreso(app, db):
             return jsonify({"error": f"Error obteniendo el test: {str(e)}"}), 500
 
     @app.route("/mi-test/<test_id>", methods=["DELETE"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def borrar_mi_test(test_id):
         try:
             db.collection("usuarios").document(g.uid).collection("tests").document(test_id).delete()
@@ -312,7 +323,7 @@ def registrar_rutas_progreso(app, db):
             return jsonify({"error": f"Error borrando el test: {str(e)}"}), 500
 
     @app.route("/test-desde-historial", methods=["GET"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def generar_test_desde_historial():
         cantidad = int(request.args.get("cantidad", 10))
         oposicion = obtener_oposicion_solicitada()
@@ -372,7 +383,7 @@ def registrar_rutas_progreso(app, db):
             return jsonify({"error": f"Error obteniendo contenido PDF: {str(e)}"}), 500
 
     @app.route("/progreso-general", methods=["GET"])
-    @requiere_login(db)
+    @requiere_plan(db, "basico", global_check=False)
     def obtener_progreso_general():
         try:
             oposicion = obtener_oposicion_solicitada()

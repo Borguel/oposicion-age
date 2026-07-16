@@ -8,7 +8,7 @@ import threading
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
 from firebase_setup import db
-from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
+from auth_utils import requiere_plan, obtener_oposicion_solicitada
 from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales
 from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, barajar_opciones_pregunta, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales
@@ -200,7 +200,7 @@ def generar_test_oficial():
 
 
 @bp.route("/guardar-test-oficial", methods=["POST"])
-@requiere_login(db)
+@requiere_plan(db, "basico", global_check=False)
 def guardar_test_oficial():
     data = request.get_json()
     logger.info("Guardando test oficial: %s", data)
@@ -342,7 +342,7 @@ Escribe un análisis breve (máximo 3-4 frases), cercano y motivador, en españo
 
 
 @bp.route("/preguntas-pendientes-repaso", methods=["GET"])
-@requiere_login(db)
+@requiere_plan(db, "basico", global_check=False)
 def preguntas_pendientes_repaso():
     """Solo el conteo (no las preguntas en sí) para el aviso proactivo de
     repaso espaciado en Zona Opositor -- de ahí la agregación .count() en
@@ -356,7 +356,7 @@ def preguntas_pendientes_repaso():
 
 
 @bp.route("/generar-test-fallos", methods=["POST"])
-@requiere_login(db)
+@requiere_plan(db, "basico", global_check=False)
 def generar_test_fallos():
     data = request.get_json()
     num_preguntas = data.get("num_preguntas", 10)
@@ -388,7 +388,7 @@ def generar_test_fallos():
 
 
 @bp.route("/reportar-pregunta", methods=["POST"])
-@requiere_login(db)
+@requiere_plan(db, "basico", global_check=False)
 def reportar_pregunta():
     """Un usuario normal reporta una pregunta con algún error. Se guarda en la
     colección global reportes_preguntas (estado='pendiente') para que el panel
@@ -415,7 +415,7 @@ def reportar_pregunta():
 
 
 @bp.route("/generar-test-favoritas", methods=["POST"])
-@requiere_login(db)
+@requiere_plan(db, "basico", global_check=False)
 def generar_test_favoritas():
     data = request.get_json()
     num_preguntas = data.get("num_preguntas", 10)

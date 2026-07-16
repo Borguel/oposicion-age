@@ -26,6 +26,32 @@ function formatearFecha(iso) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
 }
 
+function renderizarEstadoPrueba(pruebaActiva, pruebaFin, algunaDePago) {
+  const contenedor = document.getElementById("cuenta-prueba");
+  if (!pruebaFin || (!pruebaActiva && algunaDePago)) {
+    contenedor.style.display = "none";
+    return;
+  }
+  const fin = new Date(pruebaFin);
+  const diasRestantes = Math.ceil((fin - new Date()) / (1000 * 60 * 60 * 24));
+  contenedor.style.display = "block";
+  if (pruebaActiva) {
+    contenedor.className = "age-card cuenta-prueba cuenta-prueba-activa";
+    contenedor.innerHTML = `
+      <strong>Estás en tu prueba gratuita Premium</strong>
+      <p>Te ${diasRestantes === 1 ? "queda 1 día" : `quedan ${diasRestantes} días`}, hasta el ${formatearFecha(pruebaFin)}. Elige un plan antes de que termine para no perder el acceso.</p>
+      <a href="/planes/" class="age-btn age-btn-primary">Ver planes</a>
+    `;
+  } else {
+    contenedor.className = "age-card cuenta-prueba cuenta-prueba-terminada";
+    contenedor.innerHTML = `
+      <strong>Tu prueba gratuita ha terminado</strong>
+      <p>Terminó el ${formatearFecha(pruebaFin)}. Elige un plan para seguir usando Domina tu Opo; tus datos y tests ya hechos siguen a salvo.</p>
+      <a href="/planes/" class="age-btn age-btn-primary">Ver planes</a>
+    `;
+  }
+}
+
 function renderizarOposiciones() {
   const contenedorOposiciones = document.getElementById("cuenta-oposiciones");
   contenedorOposiciones.innerHTML = "";
@@ -66,6 +92,7 @@ function renderizarOposiciones() {
   const btnPortal = document.getElementById("btn-portal");
   btnPortal.disabled = !algunaDePago;
   btnPortal.textContent = algunaDePago ? "Gestionar facturación y suscripciones" : "Sin suscripciones activas";
+  return algunaDePago;
 }
 
 let oposicionParaCancelar = null;
@@ -163,9 +190,10 @@ async function iniciar() {
   fijarTexto("cuenta-email", usuario.email || "");
   fijarTexto("cuenta-avatar", (usuario.email || "?").trim().charAt(0).toUpperCase());
 
-  const { nombre, apellidos, telefono, direccion, suscripciones } = await obtenerPlan(true);
+  const { nombre, apellidos, telefono, direccion, suscripciones, prueba_activa, prueba_fin } = await obtenerPlan(true);
   suscripcionesActuales = suscripciones || {};
-  renderizarOposiciones();
+  const algunaDePago = renderizarOposiciones();
+  renderizarEstadoPrueba(prueba_activa, prueba_fin, algunaDePago);
 
   fijarTexto("resumen-nombre", nombre || "—");
   fijarTexto("resumen-apellidos", apellidos || "—");

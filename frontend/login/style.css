@@ -197,6 +197,14 @@ body {
   color: var(--age-primary-dark);
 }
 
+.login-aviso-prueba {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--age-primary-dark);
+}
+
 .login-legal {
   margin-top: 18px;
   font-size: 12px;

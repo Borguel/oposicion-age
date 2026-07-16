@@ -100,7 +100,10 @@ async function copyToClipboard(text) {
 }
 
 // ===== LÓGICA PRINCIPAL =====
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
+  const { protegerPagina } = await import("/assets/plan.js");
+  if (!(await protegerPagina("premium"))) return;
+
   const contenedor = document.getElementById("tutor-container");
   const input = document.getElementById("chat-input");
   const sendBtn = document.getElementById("chat-send");
@@ -314,7 +317,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     if (respuesta.status === 429) {
       const datosError = await respuesta.json().catch(() => ({}));
-      agregarMensaje("bot", `⏳ ${datosError.error || "Has alcanzado el límite de uso del chat por ahora."}`);
+      agregarMensaje("bot", `⏳ ${datosError.error || "Has alcanzado el límite de uso del chat por ahora."} Ve a /planes/ para ampliar tu plan.`);
       return;
     }
     if (!respuesta.ok || !respuesta.body) {

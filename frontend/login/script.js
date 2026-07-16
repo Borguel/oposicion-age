@@ -14,6 +14,7 @@ const inputNombre = document.getElementById("nombre");
 const inputApellidos = document.getElementById("apellidos");
 const bloqueRepetirPassword = document.getElementById("bloque-repetir-password");
 const inputRepetirPassword = document.getElementById("repetir-password");
+const avisoPrueba = document.getElementById("aviso-prueba");
 
 const pasoCuenta = document.getElementById("paso-cuenta");
 const pasoPerfil = document.getElementById("paso-perfil");
@@ -70,6 +71,7 @@ function cambiarModo(nuevoModo) {
   // el usuario cambia de pestaña.
   bloqueTerminos.style.display = esAlta ? "block" : "none";
   checkTerminos.checked = false;
+  avisoPrueba.style.display = esAlta ? "block" : "none";
 }
 
 tabLogin.addEventListener("click", () => cambiarModo("login"));

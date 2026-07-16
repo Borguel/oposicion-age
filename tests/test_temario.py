@@ -3,6 +3,8 @@ temario -- sin ningún test dedicado hasta ahora pese a ser la fuente que
 usan Tu Tutor y el selector de temas del resto de la web."""
 from unittest.mock import patch
 
+from conftest import sembrar_usuario_activo
+
 
 def _con_sesion(cliente, uid="u1", email="u1@example.com"):
     parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
@@ -111,13 +113,13 @@ def test_progreso_usuario_404_si_no_existe(client, db):
 
 
 def test_progreso_usuario_devuelve_los_campos_esperados(client, db):
-    db.sembrar(("usuarios", "u1"), {
-        "tests_realizados": 3,
-        "puntuacion_media_test": 7.5,
-        "ultimo_test": {"aciertos": 8},
-        "total_aciertos": 20,
-        "esquemas_generados": 2,
-    })
+    sembrar_usuario_activo(db, "u1", plan="basico",
+        tests_realizados=3,
+        puntuacion_media_test=7.5,
+        ultimo_test={"aciertos": 8},
+        total_aciertos=20,
+        esquemas_generados=2,
+    )
     parche = _con_sesion(client)
     try:
         resp = client.get("/progreso-usuario", headers={"Authorization": "Bearer x"})

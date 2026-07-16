@@ -7,6 +7,7 @@ import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 
 const mensajeCheckout = document.getElementById("mensaje-checkout");
 const selectorOposicion = document.getElementById("selector-oposicion");
+const ctaPrueba = document.getElementById("cta-prueba");
 
 const CONFIANZA = [
   { icono: "candado", texto: "Pago cifrado y seguro" },
@@ -59,14 +60,18 @@ function inicializarSelectorOposicion() {
 function restaurarBotones() {
   document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
     boton.disabled = false;
-    boton.textContent = boton.dataset.planBtn === "basico" ? "Elegir Básico" : boton.dataset.planBtn === "premium" ? "Elegir Premium" : "Empezar gratis";
+    boton.textContent = boton.dataset.planBtn === "basico" ? "Elegir Básico" : "Elegir Premium";
   });
 }
 
 async function marcarPlanActual() {
   restaurarBotones();
   const usuario = await esperarUsuario();
-  if (!usuario) return;
+  if (!usuario) {
+    ctaPrueba.style.display = "flex";
+    return;
+  }
+  ctaPrueba.style.display = "none";
   const oposicion = selectorOposicion.value;
   establecerOposicionActual(oposicion);
   const { plan } = await obtenerPlan(true, oposicion);
@@ -85,10 +90,6 @@ document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
     const usuario = await esperarUsuario();
     if (!usuario) {
       window.location.href = "/login/?next=/planes/";
-      return;
-    }
-    if (plan === "gratis") {
-      window.location.href = "/";
       return;
     }
     boton.disabled = true;

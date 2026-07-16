@@ -470,7 +470,10 @@ async function obtenerAuthHeaders() {
         if (res.status === 429) {
           pararProgresoCosmetico();
           const datosError = await res.json();
-          document.getElementById('contenedor-test').innerHTML = `<p>⏳ ${datosError.error || "Has alcanzado el límite de uso de esta herramienta por ahora."}</p>`;
+          document.getElementById('contenedor-test').innerHTML = `
+            <p>⏳ ${datosError.error || "Has alcanzado el límite de uso de esta herramienta por ahora."}</p>
+            <a class="btn btn-primary" href="/planes/">Ver planes</a>
+          `;
           return;
         }
         if (!res.ok || !res.body) {
@@ -867,6 +870,8 @@ async function obtenerAuthHeaders() {
     }
 
     window.addEventListener("load", async () => {
+      const { protegerPagina } = await import("/assets/plan.js");
+      if (!(await protegerPagina("basico"))) return;
       await cargarTemas();
       iniciarSelectorRepartoRealista();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");

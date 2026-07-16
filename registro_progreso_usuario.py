@@ -1,8 +1,9 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from google.cloud import firestore
 
 from oposiciones import OPOSICION_POR_DEFECTO
 from email_utils import enviar_email_bienvenida
+from planes import DURACION_PRUEBA_DIAS, prueba_activa, resolver_plan_efectivo
 from utils import calcular_resultado_test, ejecutar_en_transaccion
 
 
@@ -64,6 +65,10 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None):
             "tarjetas_pdf_realizados": 0,
             "total_archivos_procesados": 0,
             "fecha_creacion": datetime.utcnow().isoformat(),
+            # Prueba gratuita de acceso Premium, una única vez por cuenta (no
+            # por oposición): pasados estos días, si no hay ninguna
+            # suscripción de pago, el usuario queda bloqueado (ver planes.py).
+            "prueba_fin": (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat(),
             # CAMPOS DE IDENTIDAD Y SUSCRIPCIÓN (Firebase Auth + Stripe)
             "email": email,
             "nombre": "",
@@ -287,7 +292,10 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None):
     concreta (para no obligar al frontend a leer el mapa completo)."""
     doc = db.collection("usuarios").document(usuario_id).get()
     if not doc.exists:
-        perfil = {"suscripciones": {}, "email": None, "nombre": "", "apellidos": "", "telefono": "", "direccion": ""}
+        perfil = {
+            "suscripciones": {}, "email": None, "nombre": "", "apellidos": "", "telefono": "", "direccion": "",
+            "prueba_activa": False, "prueba_fin": None,
+        }
         if oposicion:
             perfil.update({"oposicion": oposicion, "plan": "gratis", "subscription_status": None, "current_period_end": None})
         return perfil
@@ -301,12 +309,16 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None):
         "telefono": datos.get("telefono", ""),
         "direccion": datos.get("direccion", ""),
         "suscripciones": suscripciones,
+        # El frontend usa esto para pintar el banner de cuenta atrás y saber
+        # si tiene que bloquear la página (ver assets/plan.js).
+        "prueba_activa": prueba_activa(datos),
+        "prueba_fin": datos.get("prueba_fin"),
     }
     if oposicion:
-        sub = suscripciones.get(oposicion, {}) or {}
+        plan, sub = resolver_plan_efectivo(datos, oposicion=oposicion)
         perfil.update({
             "oposicion": oposicion,
-            "plan": sub.get("plan", "gratis"),
+            "plan": plan,
             "subscription_status": sub.get("subscription_status"),
             "current_period_end": sub.get("current_period_end"),
         })

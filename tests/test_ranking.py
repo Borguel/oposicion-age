@@ -3,6 +3,8 @@ que nadie aparezca sin haberse apuntado, que el alias se valide, y que
 salir del ranking oculte al usuario sin borrarle la racha."""
 from unittest.mock import patch
 
+from conftest import sembrar_usuario_activo
+
 
 def _con_sesion(cliente, uid="u1", email="u1@example.com"):
     parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
@@ -11,7 +13,7 @@ def _con_sesion(cliente, uid="u1", email="u1@example.com"):
 
 
 def test_ranking_vacio_si_nadie_se_ha_apuntado(client, db):
-    db.sembrar(("usuarios", "u1"), {"racha": {"racha_actual": 5}})
+    sembrar_usuario_activo(db, "u1", plan="basico", racha={"racha_actual": 5})
     parche = _con_sesion(client)
     try:
         resp = client.get("/ranking", headers={"Authorization": "Bearer x"})

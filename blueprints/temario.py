@@ -2,7 +2,7 @@
 from flask import Blueprint, g, jsonify
 
 from firebase_setup import db
-from auth_utils import requiere_login, obtener_oposicion_solicitada
+from auth_utils import requiere_plan, obtener_oposicion_solicitada
 from oposiciones import OPOSICIONES, coleccion_temario
 from utils import calcular_pesos_reales_por_bloque, tiene_preguntas_psicotecnicas
 
@@ -36,7 +36,7 @@ def obtener_oposiciones_disponibles():
 
 
 @bp.route("/temas-disponibles", methods=["GET"])
-@requiere_login(db)
+@requiere_plan(db, "basico", global_check=False)
 def obtener_temas_disponibles():
     oposicion = obtener_oposicion_solicitada()
     coleccion = coleccion_temario(oposicion)
@@ -68,7 +68,7 @@ def obtener_temas_disponibles():
 
 
 @bp.route("/progreso-usuario", methods=["GET"])
-@requiere_login(db)
+@requiere_plan(db, "basico", global_check=False)
 def progreso_usuario():
     doc_user = db.collection("usuarios").document(g.uid)
     progreso = doc_user.get().to_dict()

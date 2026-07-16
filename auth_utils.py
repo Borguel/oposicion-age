@@ -5,9 +5,8 @@ from flask import g, jsonify, request
 
 from registro_progreso_usuario import inicializar_estadisticas_usuario
 from oposiciones import OPOSICION_POR_DEFECTO, oposicion_valida
-
-ORDEN_PLANES = {"gratis": 0, "basico": 1, "premium": 2}
-ESTADOS_SUSCRIPCION_ACTIVA = {"active", "trialing"}
+from planes import ORDEN_PLANES, ESTADOS_SUSCRIPCION_ACTIVA, resolver_plan_efectivo
+from planes import mejor_plan as _mejor_plan  # alias: admin.py y tests ya importan este nombre
 
 
 def obtener_identidad_desde_token(req):
@@ -147,18 +146,6 @@ def requiere_permiso(*permisos):
     return decorador
 
 
-def _mejor_plan(suscripciones):
-    """El plan más alto entre todas las oposiciones activas del usuario."""
-    mejor = "gratis"
-    mejor_sub = {}
-    for datos in (suscripciones or {}).values():
-        plan = datos.get("plan", "gratis")
-        if ORDEN_PLANES.get(plan, 0) > ORDEN_PLANES.get(mejor, 0):
-            mejor = plan
-            mejor_sub = datos
-    return mejor, mejor_sub
-
-
 def requiere_plan(db, minimo, global_check=False):
     """Exige que el usuario tenga, como mínimo, el plan `minimo`.
 
@@ -177,14 +164,16 @@ def requiere_plan(db, minimo, global_check=False):
         def envoltura(*args, **kwargs):
             doc = db.collection("usuarios").document(g.uid).get()
             datos = doc.to_dict() or {}
-            suscripciones = datos.get("suscripciones", {}) or {}
 
+            # resolver_plan_efectivo ya tiene en cuenta la prueba gratuita de
+            # 7 días (planes.py): si el usuario no tiene un plan de pago de
+            # rango suficiente pero sigue dentro de la ventana de prueba, se
+            # le trata como premium.
             if global_check:
-                plan_actual, sub = _mejor_plan(suscripciones)
+                plan_actual, sub = resolver_plan_efectivo(datos)
             else:
                 g.oposicion = obtener_oposicion_solicitada()
-                sub = suscripciones.get(g.oposicion, {}) or {}
-                plan_actual = sub.get("plan", "gratis")
+                plan_actual, sub = resolver_plan_efectivo(datos, oposicion=g.oposicion)
 
             # Los administradores (custom claim admin:true) tienen acceso
             # completo a todas las herramientas sin necesidad de una

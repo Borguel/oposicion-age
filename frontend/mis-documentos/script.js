@@ -360,6 +360,8 @@ async function cargarDocumentos() {
     window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname);
     return;
   }
+  const { protegerPagina } = await import("/assets/plan.js");
+  if (!(await protegerPagina("premium"))) return;
 
   try {
     const res = await fetch(`${BACKEND_URL}/mis-documentos`, { headers: { Authorization: `Bearer ${token}` } });

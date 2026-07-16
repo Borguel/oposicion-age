@@ -335,6 +335,13 @@ body {
   line-height: 1;
 }
 
+.zona-onboarding-subtitulo {
+  margin: -6px 0 14px;
+  font-size: 13px;
+  color: var(--age-primary-dark);
+  font-weight: 600;
+}
+
 .zona-onboarding-cerrar:hover {
   color: var(--age-ink);
 }

@@ -270,7 +270,7 @@ def test_usuarios_lista_incluye_uso_y_ordena_por_uso(client, db):
                                         "ultima_actividad": "2026-07-14"})
     db.sembrar(("usuarios", "u_alto"), {"email": "alto@x.com", "suscripciones": {"AGE": {"plan": "basico"}},
                                         "ultima_actividad": "2026-07-01",
-                                        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 300}}})
+                                        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 60}}})
     with _como():
         d = client.get("/admin/api/usuarios?orden=uso", headers=_AUTH).get_json()
     # El de más uso va primero al ordenar por uso.
@@ -285,14 +285,14 @@ def test_detalle_usuario_incluye_uso_herramientas(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@x.com",
         "suscripciones": {"AGE": {"plan": "basico"}},
-        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 150}},
+        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 30}},
     })
     with _como():
         d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
     filas = {f["id"]: f for f in d["uso_herramientas"]["filas"]}
     tp = filas["test_avanzado_verificado"]
-    assert tp["consumido"] == 150
-    assert tp["limite"] == 300  # básico por defecto
+    assert tp["consumido"] == 30
+    assert tp["limite"] == 60  # básico por defecto
     assert tp["porcentaje"] == 50
     assert tp["unidad"] == "preguntas"
     # Tu Tutor no está incluido en básico -> límite 0.
@@ -410,6 +410,42 @@ def test_usuarios_resetear_racha(client, db):
     with _como():
         client.post("/admin/api/usuarios/u1/resetear-racha", headers=_AUTH)
     assert db.leer(("usuarios", "u1"))["racha"]["racha_actual"] == 0
+
+
+def test_usuarios_otorgar_prueba_fija_prueba_fin(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    with _como():
+        resp = client.patch("/admin/api/usuarios/u1/prueba", json={"dias": 14}, headers=_AUTH)
+    assert resp.status_code == 200
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["prueba_fin"] == resp.get_json()["prueba_fin"]
+    from datetime import datetime
+    dias_restantes = (datetime.fromisoformat(datos["prueba_fin"]) - datetime.utcnow()).days
+    assert 12 <= dias_restantes <= 14
+
+
+def test_usuarios_otorgar_prueba_usuario_inexistente(client, db):
+    with _como():
+        resp = client.patch("/admin/api/usuarios/fantasma/prueba", json={"dias": 7}, headers=_AUTH)
+    assert resp.status_code == 404
+
+
+def test_usuarios_otorgar_prueba_dias_invalidos(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    with _como():
+        resp = client.patch("/admin/api/usuarios/u1/prueba", json={"dias": 0}, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_usuarios_detalle_incluye_en_prueba(client, db):
+    from datetime import datetime, timedelta
+    prueba_fin = (datetime.utcnow() + timedelta(days=3)).isoformat()
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "prueba_fin": prueba_fin})
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["en_prueba"] is True
+    assert d["prueba_fin"] == prueba_fin
+    assert d["plan"] == "premium"
 
 
 # ---------- Bootstrap (primer admin sin Shell) ----------

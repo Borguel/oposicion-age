@@ -8,35 +8,35 @@ from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso, max_p
 
 
 def test_plan_sin_esta_herramienta_queda_bloqueado(db):
-    # El plan gratis tiene 0 usos de chat_pdf configurados (a diferencia de
-    # pdf_ia, que sí incluye 2 usos/mes en gratis).
-    permitido, mensaje, usados, limite = verificar_limite_uso(db, "u1", "gratis", "chat_pdf")
+    # Las herramientas de PDF/chat son exclusivas de Premium: básico tiene
+    # 0 usos de chat_pdf configurados a propósito.
+    permitido, mensaje, usados, limite = verificar_limite_uso(db, "u1", "basico", "chat_pdf")
     assert permitido is False
     assert "no incluye esta herramienta" in mensaje
 
 
 def test_usuario_nuevo_sin_uso_previo_puede_usarla(db):
-    permitido, mensaje, usados, limite = verificar_limite_uso(db, "u1", "basico", "pdf_ia")
+    permitido, mensaje, usados, limite = verificar_limite_uso(db, "u1", "basico", "generacion_ia")
     assert permitido is True
     assert mensaje is None
     assert usados == 0
 
 
 def test_bloquea_al_alcanzar_el_limite_diario(db):
-    # Básico ahora cuenta por día (cupo generoso que se renueva cada 24 h).
+    # Básico cuenta por día (cupo bajo y visible a propósito: 5 usos/día).
     clave_dia = date.today().isoformat()
-    db.sembrar(("usuarios", "u1"), {"limites_uso": {"pdf_ia": {"periodo": clave_dia, "contador": 10}}})
-    permitido, mensaje, usados, limite = verificar_limite_uso(db, "u1", "basico", "pdf_ia")
+    db.sembrar(("usuarios", "u1"), {"limites_uso": {"generacion_ia": {"periodo": clave_dia, "contador": 5}}})
+    permitido, mensaje, usados, limite = verificar_limite_uso(db, "u1", "basico", "generacion_ia")
     assert permitido is False
-    assert usados == 10
-    assert limite == 10
+    assert usados == 5
+    assert limite == 5
     assert "diario" in mensaje
 
 
 def test_contador_de_un_periodo_anterior_no_cuenta(db):
     # Un contador de "2020-01" no debe bloquear a nadie en el periodo actual.
     db.sembrar(("usuarios", "u1"), {"limites_uso": {"pdf_ia": {"periodo": "2020-01", "contador": 999}}})
-    permitido, _mensaje, usados, _limite = verificar_limite_uso(db, "u1", "basico", "pdf_ia")
+    permitido, _mensaje, usados, _limite = verificar_limite_uso(db, "u1", "premium", "pdf_ia")
     assert permitido is True
     assert usados == 0
 
@@ -116,7 +116,7 @@ def test_devolver_uso_no_toca_un_contador_de_otro_periodo(db):
 
 
 def test_max_paginas_por_plan_tiene_valor_por_defecto_para_plan_desconocido():
-    assert max_paginas_para_plan("plan-inexistente") == max_paginas_para_plan("gratis")
+    assert max_paginas_para_plan("plan-inexistente") == max_paginas_para_plan("basico")
 
 
 def test_registrar_uso_pasa_de_verdad_por_una_transaccion(db):

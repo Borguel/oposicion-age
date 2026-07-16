@@ -3,6 +3,8 @@ test a partir de ellas, siguiendo el mismo patrón de deduplicación por
 hash que ya usa el banco de preguntas falladas."""
 from unittest.mock import patch
 
+from conftest import sembrar_usuario_activo
+
 
 def _con_sesion(cliente, uid="u1", email="u1@example.com"):
     parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
@@ -20,7 +22,7 @@ PREGUNTA = {
 
 
 def test_marcar_y_listar_favorita(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     parche = _con_sesion(client)
     try:
         resp = client.post("/marcar-favorita?oposicion=AGE", json={"pregunta": PREGUNTA},
@@ -36,7 +38,7 @@ def test_marcar_y_listar_favorita(client, db):
 
 
 def test_marcar_dos_veces_no_duplica(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     parche = _con_sesion(client)
     try:
         client.post("/marcar-favorita?oposicion=AGE", json={"pregunta": PREGUNTA}, headers={"Authorization": "Bearer x"})
@@ -49,7 +51,7 @@ def test_marcar_dos_veces_no_duplica(client, db):
 
 
 def test_desmarcar_favorita(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     parche = _con_sesion(client)
     try:
         client.post("/marcar-favorita?oposicion=AGE", json={"pregunta": PREGUNTA}, headers={"Authorization": "Bearer x"})
@@ -64,7 +66,10 @@ def test_desmarcar_favorita(client, db):
 
 
 def test_favoritas_no_se_mezclan_entre_oposiciones(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico", suscripciones={
+        "AGE": {"plan": "basico", "subscription_status": "active"},
+        "GACE": {"plan": "basico", "subscription_status": "active"},
+    })
     parche = _con_sesion(client)
     try:
         client.post("/marcar-favorita?oposicion=AGE", json={"pregunta": PREGUNTA}, headers={"Authorization": "Bearer x"})
@@ -75,7 +80,7 @@ def test_favoritas_no_se_mezclan_entre_oposiciones(client, db):
 
 
 def test_generar_test_favoritas_filtra_por_tema(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     parche = _con_sesion(client)
     try:
         client.post("/marcar-favorita?oposicion=AGE", json={"pregunta": PREGUNTA}, headers={"Authorization": "Bearer x"})
@@ -93,7 +98,7 @@ def test_generar_test_favoritas_filtra_por_tema(client, db):
 
 
 def test_generar_test_favoritas_sin_favoritas_avisa(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     parche = _con_sesion(client)
     try:
         resp = client.post("/generar-test-favoritas?oposicion=AGE", json={"num_preguntas": 10},

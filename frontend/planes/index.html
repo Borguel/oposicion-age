@@ -9,10 +9,10 @@
   <meta name="theme-color" content="#ffa633" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Planes - Domina tu Opo</title>
-  <meta name="description" content="Compara los planes Gratis, Básico y Premium de Domina tu Opo y elige el que necesitas." />
+  <meta name="description" content="Empieza con 7 días de prueba Premium gratis y sin tarjeta. Compara después los planes Básico y Premium de Domina tu Opo." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Planes - Domina tu Opo" />
-  <meta property="og:description" content="Compara los planes Gratis, Básico y Premium de Domina tu Opo y elige el que necesitas." />
+  <meta property="og:description" content="Empieza con 7 días de prueba Premium gratis y sin tarjeta. Compara después los planes Básico y Premium de Domina tu Opo." />
   <meta property="og:image" content="/assets/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -27,7 +27,15 @@
 
   <div class="hero">
     <h1>Elige tu plan</h1>
-    <p>Empieza gratis y sube de nivel cuando quieras. Puedes cancelar cuando quieras desde "Mi cuenta".</p>
+    <p>Todas las cuentas nuevas empiezan con 7 días de prueba Premium gratis, sin tarjeta. Después, sube de nivel cuando quieras. Puedes cancelar cuando quieras desde "Mi cuenta".</p>
+  </div>
+
+  <div id="cta-prueba" class="cta-prueba" style="display:none;">
+    <div class="cta-prueba-texto">
+      <strong>Empieza gratis: 7 días de Premium sin tarjeta.</strong>
+      <span>Crea tu cuenta y accede de inmediato a todas las herramientas. Sin compromiso.</span>
+    </div>
+    <a class="btn-plan btn-plan-primary" href="/login/?next=/planes/">Crear cuenta gratis</a>
   </div>
 
   <div class="planes-confianza" id="planes-confianza"></div>
@@ -39,40 +47,32 @@
 
   <div id="mensaje-checkout" class="mensaje-checkout" style="display:none;"></div>
 
-  <div class="planes-grid">
-    <div class="plan-card" data-plan="gratis">
-      <div class="plan-nombre">Gratis</div>
-      <div class="plan-precio">0€</div>
-      <ul class="plan-features">
-        <li>Test oficiales (preguntas de exámenes reales)</li>
-        <li>Repetir tu último test</li>
-        <li>Test de preguntas falladas</li>
-        <li>Estadísticas de tu progreso</li>
-      </ul>
-      <button type="button" class="btn-plan" data-plan-btn="gratis">Empezar gratis</button>
-    </div>
-
+  <div class="planes-grid planes-grid-2">
     <div class="plan-card">
       <div class="plan-nombre">Básico</div>
       <div class="plan-precio">4,99 €<span class="plan-precio-periodo">/mes</span></div>
+      <p class="plan-resumen">Lo justo para practicar con exámenes reales. Cupos diarios limitados.</p>
       <ul class="plan-features">
-        <li>Todo lo del plan Gratis</li>
-        <li>Generador de test personalizado con IA</li>
-        <li>Test "inteligente" adaptado a tu nivel</li>
-        <li>Generación de esquemas con IA</li>
+        <li>Test Oficial con preguntas de exámenes reales, sin límite</li>
+        <li>Test Personalizado con IA: hasta 60 preguntas al día</li>
+        <li>Test Inteligente, esquemas del temario y análisis de rendimiento: 5 usos al día (comparten cupo)</li>
+        <li>Estadísticas de tu progreso</li>
+        <li class="plan-feature-no">Herramientas sobre tus propios PDF (resumen, esquema, tarjetas, test, chat)</li>
+        <li class="plan-feature-no">Tu Tutor (chat con el temario)</li>
       </ul>
-      <button type="button" class="btn-plan btn-plan-primary" data-plan-btn="basico">Elegir Básico</button>
+      <button type="button" class="btn-plan" data-plan-btn="basico">Elegir Básico</button>
     </div>
 
     <div class="plan-card plan-destacado">
       <div class="plan-badge">Más completo</div>
       <div class="plan-nombre">Premium</div>
       <div class="plan-precio">9,99 €<span class="plan-precio-periodo">/mes</span></div>
+      <p class="plan-resumen">Todo ilimitado para preparar tu oposición sin restricciones.</p>
       <ul class="plan-features">
-        <li>Todo lo del plan Básico</li>
-        <li>Todas las herramientas desde PDF (test, tarjetas, esquemas, resumen, chat)</li>
-        <li>Chat IA general</li>
-        <li>Asistente premium de examen</li>
+        <li>Todo lo del plan Básico, ilimitado</li>
+        <li>Sube tus propios apuntes: resumen, esquema, tarjetas y test desde PDF</li>
+        <li>Chat con tus PDF</li>
+        <li>Tu Tutor: resuelve tus dudas del temario por chat, en cualquier momento</li>
       </ul>
       <button type="button" class="btn-plan btn-plan-primary" data-plan-btn="premium">Elegir Premium</button>
     </div>
@@ -104,6 +104,15 @@
     <div class="planes-faq-lista">
       <div class="planes-faq-item">
         <button type="button" class="planes-faq-pregunta" data-faq-toggle aria-expanded="false">
+          ¿Cómo funciona la prueba gratuita de 7 días?
+          <span class="planes-faq-chevron">▾</span>
+        </button>
+        <div class="planes-faq-respuesta" style="display:none;">
+          Al crear tu cuenta empiezas automáticamente con 7 días de acceso Premium completo, sin necesidad de tarjeta. Cuando termine, si no has contratado un plan de pago, tu cuenta queda bloqueada (aunque tus datos y tests ya hechos se conservan) hasta que elijas Básico o Premium.
+        </div>
+      </div>
+      <div class="planes-faq-item">
+        <button type="button" class="planes-faq-pregunta" data-faq-toggle aria-expanded="false">
           ¿Puedo cancelar cuando quiera?
           <span class="planes-faq-chevron">▾</span>
         </button>
@@ -117,7 +126,7 @@
           <span class="planes-faq-chevron">▾</span>
         </button>
         <div class="planes-faq-respuesta" style="display:none;">
-          Cada oposición tiene su propia suscripción independiente. Puedes tener, por ejemplo, el plan Premium en una y el plan Gratis en otra.
+          Cada oposición tiene su propia suscripción independiente. Puedes tener, por ejemplo, el plan Premium en una y el plan Básico en otra.
         </div>
       </div>
       <div class="planes-faq-item">

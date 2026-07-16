@@ -38,6 +38,8 @@ async function inicializar() {
     window.location.href = "/login/?next=" + encodeURIComponent(window.location.pathname + window.location.search);
     return;
   }
+  const { protegerPagina } = await import("/assets/plan.js");
+  if (!(await protegerPagina("basico"))) return;
 
   const params = new URLSearchParams(window.location.search);
   const testId = params.get("id");

@@ -535,6 +535,12 @@ export function montarWidgetTutor() {
     if (respuesta.status === 429) {
       const datos = await respuesta.json().catch(() => ({}));
       agregarBotSimple(`⏳ ${datos.error || "Has alcanzado el límite de uso del chat por ahora."}`);
+      const enlace = document.createElement("a");
+      enlace.className = "tw-cta-planes";
+      enlace.href = "/planes/";
+      enlace.textContent = "Ver planes";
+      mensajesEl.appendChild(enlace);
+      scrollAbajo();
       enviando = false;
       return;
     }

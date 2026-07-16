@@ -9,6 +9,7 @@ import pytest
 from unittest.mock import patch
 
 from blueprints.pdf_ia import _extraer_json_array
+from conftest import sembrar_usuario_activo
 
 
 def _con_sesion(cliente, uid="u1", email="u1@example.com"):
@@ -47,11 +48,12 @@ class TestExtraerJsonArray:
 
 @pytest.fixture
 def documento_sembrado(db):
-    # Se siembra también "usuarios/u1" para que requiere_login no dispare
-    # el email de bienvenida de un usuario "nuevo" en cada test (ruido de
-    # red real hacia Brevo sin mockear, sin afectar al resultado del
-    # test pero sí ensuciando la salida).
-    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    # Se siembra también "usuarios/u1" (con un plan de pago activo, ya que
+    # las herramientas de PDF exigen Premium) para que requiere_login no
+    # dispare el email de bienvenida de un usuario "nuevo" en cada test
+    # (ruido de red real hacia Brevo sin mockear, sin afectar al resultado
+    # del test pero sí ensuciando la salida).
+    sembrar_usuario_activo(db, "u1", plan="premium")
     db.sembrar(("usuarios", "u1", "documentos", "d1"), {
         "texto": "Texto del documento de prueba.",
         "nombre_archivo": "doc.pdf",

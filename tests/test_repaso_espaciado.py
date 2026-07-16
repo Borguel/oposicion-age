@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from banco_favoritas import _id_pregunta
+from conftest import sembrar_usuario_activo
 
 
 def _con_sesion(cliente, uid="u1", email="u1@example.com"):
@@ -28,7 +29,7 @@ def _pregunta_base(texto, tema_id="b1-t1"):
 
 
 def test_generar_test_fallos_prioriza_la_mas_fallada(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     hace_poco = (datetime.utcnow() - timedelta(days=1)).isoformat()
     db.sembrar(("usuarios", "u1", "preguntas_falladas", "poco_fallada"), dict(
         _pregunta_base("¿Poco fallada?"), veces_fallada=1, fecha_ultimo_fallo=hace_poco))
@@ -47,7 +48,7 @@ def test_generar_test_fallos_prioriza_la_mas_fallada(client, db):
 
 
 def test_generar_test_fallos_a_igualdad_prioriza_la_mas_antigua(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     hace_mucho = (datetime.utcnow() - timedelta(days=30)).isoformat()
     hace_poco = (datetime.utcnow() - timedelta(days=1)).isoformat()
     db.sembrar(("usuarios", "u1", "preguntas_falladas", "reciente"), dict(
@@ -66,7 +67,7 @@ def test_generar_test_fallos_a_igualdad_prioriza_la_mas_antigua(client, db):
 
 
 def test_generar_test_favoritas_prioriza_la_nunca_repasada(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     hace_poco = (datetime.utcnow() - timedelta(hours=1)).isoformat()
     db.sembrar(("usuarios", "u1", "preguntas_favoritas", _id_pregunta("AGE", "¿Ya repasada?")), dict(
         _pregunta_base("¿Ya repasada?"), fecha_marcada=hace_poco, fecha_ultimo_repaso=hace_poco))
@@ -85,7 +86,10 @@ def test_generar_test_favoritas_prioriza_la_nunca_repasada(client, db):
 
 
 def test_preguntas_pendientes_repaso_cuenta_solo_la_oposicion_pedida(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico", suscripciones={
+        "AGE": {"plan": "basico", "subscription_status": "active"},
+        "GACE": {"plan": "basico", "subscription_status": "active"},
+    })
     db.sembrar(("usuarios", "u1", "preguntas_falladas", "age1"), _pregunta_base("¿AGE 1?", "b1-t1"))
     db.sembrar(("usuarios", "u1", "preguntas_falladas", "age2"), _pregunta_base("¿AGE 2?", "b1-t1"))
     gace = dict(_pregunta_base("¿GACE 1?", "b1-t1"))
@@ -110,7 +114,7 @@ def test_preguntas_pendientes_repaso_requiere_login(client):
 
 
 def test_generar_test_favoritas_marca_fecha_ultimo_repaso(client, db):
-    db.sembrar(("usuarios", "u1"), {})
+    sembrar_usuario_activo(db, "u1", plan="basico")
     doc_id = _id_pregunta("AGE", "¿Nunca repasada?")
     db.sembrar(("usuarios", "u1", "preguntas_favoritas", doc_id), _pregunta_base("¿Nunca repasada?"))
 
