@@ -152,3 +152,33 @@ def test_ignora_usuarios_sin_email_o_sin_prueba_fin(client, db):
         assert resp.get_json() == {"terminando": 0, "terminada": 0}
         mock_terminando.assert_not_called()
         mock_terminada.assert_not_called()
+
+
+def test_diagnostico_red_google_sin_clave_devuelve_401(client):
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}):
+        resp = client.get("/tareas/diagnostico-red-google")
+        assert resp.status_code == 401
+
+
+def test_diagnostico_red_google_con_clave_por_querystring(client):
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.requests.get") as mock_get:
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.headers = {"Server": "GSE"}
+        mock_get.return_value.text = "-----BEGIN CERTIFICATE-----"
+        resp = client.get("/tareas/diagnostico-red-google?clave=secreta")
+        assert resp.status_code == 200
+        datos = resp.get_json()
+        assert datos["ok"] is True
+        assert datos["status_code"] == 200
+        assert datos["headers"] == {"Server": "GSE"}
+
+
+def test_diagnostico_red_google_devuelve_el_error_si_falla_la_peticion(client):
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.requests.get", side_effect=ConnectionError("sin red")):
+        resp = client.get("/tareas/diagnostico-red-google?clave=secreta")
+        assert resp.status_code == 500
+        datos = resp.get_json()
+        assert datos["ok"] is False
+        assert "ConnectionError" in datos["error"]
