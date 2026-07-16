@@ -67,6 +67,17 @@ def test_recuperar_contrasena_incluye_el_enlace(monkeypatch):
     assert "https://dominatuopo.com/reset?oobCode=x" in payload["htmlContent"]
 
 
+def test_verificacion_email_incluye_el_enlace(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_VERIFICACION", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_verificacion("u@example.com", "https://dominatuopo.com/__/auth/action?mode=verifyEmail")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert "https://dominatuopo.com/__/auth/action?mode=verifyEmail" in payload["htmlContent"]
+    assert payload["to"] == [{"email": "u@example.com"}]
+
+
 def test_cancelacion_suscripcion_incluye_oposicion_y_fecha(monkeypatch):
     monkeypatch.setenv("BREVO_API_KEY", "clave")
     monkeypatch.delenv("BREVO_TEMPLATE_CANCELACION", raising=False)

@@ -195,6 +195,32 @@ def enviar_email_recuperar_contrasena(destinatario, enlace, nombre=""):
     _enviar(destinatario, "recuperar contraseña", asunto="Restablece tu contraseña de Domina tu Opo", html=html)
 
 
+def enviar_email_verificacion(destinatario, enlace, nombre=""):
+    """Correo con el enlace para verificar la dirección de correo (el enlace
+    lo genera Firebase Admin; ver blueprints/auth_publico.py). Antes lo
+    mandaba Firebase directamente desde el cliente con sendEmailVerification:
+    llegaba en inglés, sin marca y desde noreply@<proyecto>.firebaseapp.com,
+    un remitente que varios proveedores de correo (Gmail incluido) acaban
+    marcando como spam."""
+    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+
+    template_id = os.getenv("BREVO_TEMPLATE_VERIFICACION")
+    if template_id:
+        _enviar(destinatario, "verificación de correo", template_id=template_id, datos={
+            "saludo": saludo,
+            "enlace": enlace,
+        })
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, confirma tu dirección de correo para terminar de activar tu cuenta.</p>
+      {_boton("Verificar mi correo", enlace)}
+      {_aviso("Si no has creado tú esta cuenta, puedes ignorar este correo.")}
+    """
+    html = _plantilla_html("Verifica tu correo electrónico", cuerpo, emoji="✅")
+    _enviar(destinatario, "verificación de correo", asunto="Verifica tu correo en Domina tu Opo", html=html)
+
+
 def enviar_email_cancelacion_suscripcion(destinatario, oposicion_nombre, fecha_fin=None, nombre=""):
     """Confirmación de que la baja se ha registrado -- se manda al aceptar
     /cancelar-suscripcion, no al webhook de Stripe (que llega días después,

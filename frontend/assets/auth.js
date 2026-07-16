@@ -14,7 +14,6 @@ import {
   linkWithCredential,
   verifyBeforeUpdateEmail,
   reauthenticateWithCredential,
-  sendEmailVerification,
   updatePassword,
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
@@ -38,9 +37,18 @@ export function signUp(email, password) {
 // Envía (o reenvía) el correo de verificación de dirección. No bloquea el
 // uso de la web -- solo se avisa con un banner (ver inyectarBannerVerificacion)
 // para que quien se registró con un correo que no controla no quede
-// atrapado sin poder confirmar nunca.
-export function enviarVerificacionEmail(user = auth.currentUser) {
-  return sendEmailVerification(user);
+// atrapado sin poder confirmar nunca. Lo genera Firebase Admin y lo manda
+// por Brevo (ver blueprints/auth_publico.py) en vez de sendEmailVerification
+// del SDK de cliente, que llegaba sin marca, en inglés y desde un remitente
+// que varios proveedores de correo marcan como spam.
+export async function enviarVerificacionEmail() {
+  const token = await idToken();
+  if (!token) throw new Error("No hay sesión activa.");
+  const res = await fetch(`${BACKEND_URL}/enviar-verificacion-email`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error("No se pudo enviar el correo de verificación.");
 }
 
 // Inicia sesión (o crea la cuenta la primera vez) con Google. Devuelve
@@ -504,7 +512,7 @@ function inyectarBannerVerificacion(user) {
     boton.disabled = true;
     boton.textContent = "Enviando…";
     try {
-      await enviarVerificacionEmail(user);
+      await enviarVerificacionEmail();
       boton.textContent = "Correo enviado";
     } catch (e) {
       boton.textContent = "Reenviar correo";
