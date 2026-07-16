@@ -472,11 +472,11 @@ async function obtenerAuthHeaders() {
           body: formData
         });
         if (res.status === 403) {
-          throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
+          throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
         }
         if (res.status === 429) {
           const errorData = await res.json().catch(() => ({}));
-          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} Ve a /planes/ para ampliar tu plan.`);
+          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
         }
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
@@ -580,10 +580,10 @@ async function obtenerAuthHeaders() {
           headers: authHeaders,
           body: formData
         });
-        if (res.status === 403) throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
+        if (res.status === 403) throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
         if (res.status === 429) {
           const errorData = await res.json().catch(() => ({}));
-          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} Ve a /planes/ para ampliar tu plan.`);
+          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
         }
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
