@@ -34,11 +34,24 @@
       </div>
 
       <form id="form-auth">
+        <div id="bloque-nombre-apellidos" style="display:none;">
+          <label for="nombre">Nombre</label>
+          <input type="text" id="nombre" autocomplete="given-name" />
+
+          <label for="apellidos">Apellidos</label>
+          <input type="text" id="apellidos" autocomplete="family-name" />
+        </div>
+
         <label for="email">Correo electrónico</label>
         <input type="email" id="email" required autocomplete="email" />
 
         <label for="password">Contraseña</label>
         <input type="password" id="password" required autocomplete="current-password" minlength="6" />
+
+        <div id="bloque-repetir-password" style="display:none;">
+          <label for="repetir-password">Repetir contraseña</label>
+          <input type="password" id="repetir-password" autocomplete="new-password" minlength="6" />
+        </div>
 
         <button type="button" id="btn-olvide-password" class="login-link-olvide">¿Olvidaste tu contraseña?</button>
 
@@ -77,12 +90,6 @@
       <h2 class="login-titulo">Completa tu perfil</h2>
       <p class="login-subtitulo">Solo un par de datos más antes de empezar.</p>
       <form id="form-perfil">
-        <label for="perfil-nombre">Nombre</label>
-        <input type="text" id="perfil-nombre" required autocomplete="given-name" />
-
-        <label for="perfil-apellidos">Apellidos</label>
-        <input type="text" id="perfil-apellidos" required autocomplete="family-name" />
-
         <label for="perfil-telefono">Teléfono</label>
         <input type="tel" id="perfil-telefono" required autocomplete="tel" />
 
