@@ -6,6 +6,7 @@ import logging
 import os
 from datetime import date
 
+import requests
 from flask import Blueprint, jsonify, request
 
 from firebase_setup import db
@@ -119,3 +120,30 @@ def enviar_recordatorios_prueba():
 
     logger.info("Recordatorios de prueba enviados: %s terminando, %s terminada", terminando, terminada)
     return jsonify({"terminando": terminando, "terminada": terminada})
+
+
+@bp.route("/tareas/diagnostico-red-google", methods=["GET"])
+def diagnostico_red_google():
+    """Diagnóstico temporal: reproduce desde el propio proceso en
+    producción, con visibilidad completa (código, cabeceras), la misma
+    petición HTTP que falla dentro de firebase_admin al verificar un ID
+    token (CertificateFetchError) -- sin esto, la excepción de la librería
+    no dice si el 403 viene de verdad de Google o de algo intermedio antes
+    de llegar a Google. Acepta la clave por querystring (no solo por
+    cabecera, a diferencia del resto de /tareas/*) para poder abrirlo
+    directamente desde el navegador sin herramientas adicionales."""
+    clave_esperada = os.getenv("CRON_SECRET_KEY")
+    if not clave_esperada or request.args.get("clave") != clave_esperada:
+        return jsonify({"error": "No autorizado"}), 401
+
+    url = "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+    try:
+        resp = requests.get(url, timeout=10)
+        return jsonify({
+            "ok": True,
+            "status_code": resp.status_code,
+            "headers": dict(resp.headers),
+            "cuerpo_recortado": resp.text[:300],
+        })
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"{type(exc).__name__}: {exc}"}), 500
