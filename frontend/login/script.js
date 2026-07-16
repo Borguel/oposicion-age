@@ -7,6 +7,8 @@ const form = document.getElementById("form-auth");
 const btnSubmit = document.getElementById("btn-submit");
 const mensajeError = document.getElementById("mensaje-error");
 const btnGoogle = document.getElementById("btn-google");
+const bloqueTerminos = document.getElementById("bloque-terminos");
+const checkTerminos = document.getElementById("check-terminos");
 
 const pasoCuenta = document.getElementById("paso-cuenta");
 const pasoPerfil = document.getElementById("paso-perfil");
@@ -38,6 +40,12 @@ function cambiarModo(nuevoModo) {
   tabSignup.classList.toggle("active", modo === "signup");
   btnSubmit.textContent = modo === "login" ? "Iniciar sesión" : "Crear cuenta";
   mensajeError.style.display = "none";
+  // La aceptación de Términos y Política de Privacidad solo aplica al alta
+  // de una cuenta nueva (obligatorio por ley) -- al volver a "Iniciar
+  // sesión" se oculta y se resetea, para no arrastrar un estado confuso si
+  // el usuario cambia de pestaña.
+  bloqueTerminos.style.display = modo === "signup" ? "block" : "none";
+  checkTerminos.checked = false;
 }
 
 tabLogin.addEventListener("click", () => cambiarModo("login"));
@@ -92,6 +100,13 @@ const MENSAJES_ERROR = {
 form.addEventListener("submit", async (evento) => {
   evento.preventDefault();
   mensajeError.style.display = "none";
+
+  if (modo === "signup" && !checkTerminos.checked) {
+    mensajeError.textContent = "Debes aceptar los Términos y condiciones y la Política de Privacidad para crear una cuenta.";
+    mensajeError.style.display = "block";
+    return;
+  }
+
   btnSubmit.disabled = true;
 
   const email = document.getElementById("email").value.trim();
@@ -118,8 +133,15 @@ form.addEventListener("submit", async (evento) => {
 });
 
 btnGoogle.addEventListener("click", async () => {
-  btnGoogle.disabled = true;
   mensajeError.style.display = "none";
+
+  if (modo === "signup" && !checkTerminos.checked) {
+    mensajeError.textContent = "Debes aceptar los Términos y condiciones y la Política de Privacidad para crear una cuenta.";
+    mensajeError.style.display = "block";
+    return;
+  }
+
+  btnGoogle.disabled = true;
   try {
     const { esNuevo, nombre, apellidos } = await signInWithGoogle();
     if (esNuevo) {
