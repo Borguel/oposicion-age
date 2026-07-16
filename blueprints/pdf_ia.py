@@ -25,6 +25,8 @@ from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import generar_preguntas_ia_en_lotes
 from utils import barajar_opciones_pregunta
 from deepseek_utils import generar_documento_largo_por_partes
+from coste_ia import AcumuladorTokens
+from tarjetas_generator import generar_tarjetas_verificadas
 
 logger = logging.getLogger(__name__)
 
@@ -115,11 +117,24 @@ def resumir_pdf():
             "línea, de forma que se pueda destacar como una caja de definición aparte.\n"
             "No uses tablas, bloques de código, ni HTML. Cada línea de texto debe ir en su "
             "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga. El "
-            "resumen debe ser útil para un opositor."
+            "resumen debe ser útil para un opositor.\n"
+            "IMPORTANTE -- fidelidad al documento: basa el resumen ÚNICAMENTE en el "
+            "contenido del documento proporcionado. No añadas información externa, no "
+            "completes huecos con conocimiento propio, y no inventes datos, fechas, "
+            "artículos, cifras o nombres que no aparezcan literalmente en el texto. Si el "
+            "documento no aporta un dato que normalmente se esperaría, no lo inventes: "
+            "sencillamente no lo incluyas. Antes de dar tu respuesta por buena, revisa "
+            "mentalmente que cada dato concreto que has escrito (fecha, cifra, ley, "
+            "artículo, plazo) aparezca efectivamente en el documento que se te ha dado."
         )
         if not os.getenv("DEEPSEEK_API_KEY"):
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
-        resumen = generar_documento_largo_por_partes(system_prompt, text, etiqueta_documento="Documento para resumir")
+        acumulador_tokens = AcumuladorTokens()
+        resumen = generar_documento_largo_por_partes(
+            system_prompt, text, etiqueta_documento="Documento para resumir",
+            on_usage=acumulador_tokens.add,
+        )
+        acumulador_tokens.volcar_a_peticion()
         if not resumen:
             return jsonify({"error": "Error en DeepSeek API"}), 500
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
@@ -186,7 +201,15 @@ def generar_esquema_desde_pdf():
             "del esquema deben acabar con un nivel de detalle similar entre sí -- evita que "
             "una sección quede muy desarrollada y las demás apenas esbozadas.\n"
             "No uses tablas, bloques de código, ni HTML. Cada línea de texto debe ir en su "
-            "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga."
+            "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga.\n"
+            "IMPORTANTE -- fidelidad al documento: basa el esquema ÚNICAMENTE en el "
+            "contenido del documento proporcionado. No añadas información externa, no "
+            "completes huecos con conocimiento propio, y no inventes datos, fechas, "
+            "artículos, cifras o nombres que no aparezcan literalmente en el texto. Si el "
+            "documento no aporta un dato que normalmente se esperaría, no lo inventes: "
+            "sencillamente no lo incluyas. Antes de dar tu respuesta por buena, revisa "
+            "mentalmente que cada dato concreto que has escrito (fecha, cifra, ley, "
+            "artículo, plazo) aparezca efectivamente en el documento que se te ha dado."
         )
         if not os.getenv("DEEPSEEK_API_KEY"):
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
@@ -202,12 +225,15 @@ def generar_esquema_desde_pdf():
             "por venir de un fragmento distinto, resúmela ligeramente para igualar el nivel "
             "de detalle general del esquema."
         )
+        acumulador_tokens = AcumuladorTokens()
         esquema = generar_documento_largo_por_partes(
             system_prompt,
             text,
             etiqueta_documento="Documento para crear esquema",
             instrucciones_fusion_extra=instrucciones_fusion_esquema,
+            on_usage=acumulador_tokens.add,
         )
+        acumulador_tokens.volcar_a_peticion()
         if not esquema:
             return jsonify({"error": "Error en DeepSeek API"}), 500
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
@@ -270,12 +296,16 @@ def generar_test_desde_pdf():
 
     def generar():
         eventos = queue.Queue()
+        acumulador_tokens = AcumuladorTokens()
 
         def _en_hilo_de_fondo():
             def on_progreso(evento_progreso):
                 eventos.put({"tipo": "progreso", **evento_progreso})
             try:
-                preguntas, errores_lotes = generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, on_progreso=on_progreso)
+                preguntas, errores_lotes = generar_preguntas_ia_en_lotes(
+                    construir_prompt, num_preguntas, text, on_progreso=on_progreso,
+                    on_usage=acumulador_tokens.add,
+                )
                 if not preguntas:
                     resultado = {
                         "test": [],
@@ -307,6 +337,11 @@ def generar_test_desde_pdf():
                 resultado = {"test": [], "error": "Error al procesar el PDF o generar preguntas."}
             if not resultado.get("test"):
                 devolver_uso(db, uid, "pdf_ia", plan_actual)
+            # Este hilo corre desligado de la petición (igual que el generador
+            # de Test Personalizado, ver generador_preguntas_verificado.py) --
+            # flask.g no está disponible aquí, así que se vuelca directo a
+            # Firestore en vez de a través del teardown_request habitual.
+            acumulador_tokens.volcar_directo(db, uid)
             eventos.put({"tipo": "fin", **resultado})
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
@@ -334,7 +369,6 @@ def generar_tarjetas_desde_pdf():
     text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
     if error:
         return error
-    respuesta = None
     try:
         max_length = 150000
         if len(text) > max_length:
@@ -344,71 +378,26 @@ def generar_tarjetas_desde_pdf():
         except (TypeError, ValueError):
             num_tarjetas = 10
         num_tarjetas = max(1, min(num_tarjetas, 50))
-        system_prompt = (
-            "Eres un experto en metodologías de estudio para oposiciones en España. Tu tarea es crear tarjetas de memoria (flashcards) "
-            "de alta calidad a partir de un documento normativo o temario. Cada tarjeta debe cumplir lo siguiente:\n"
-            "1. **Formato**: una pregunta clara y específica en el anverso; una respuesta concisa, precisa y completa en el reverso.\n"
-            "2. **Tipos de tarjetas**: combina diferentes formatos:\n"
-            "   - Definiciones: \"¿Qué es...?\"\n"
-            "   - Enumeraciones: \"¿Cuáles son los principios de...?\", \"¿Qué plazos establece la ley para...?\"\n"
-            "   - Comparaciones: \"¿Cuál es la diferencia entre X e Y?\"\n"
-            "   - Funciones/competencias: \"¿A quién corresponde...?\", \"¿Qué órgano es competente para...?\"\n"
-            "   - Supuestos prácticos breves: \"Si un funcionario hace X, ¿qué tipo de falta comete?\"\n"
-            "   - Excepciones o límites: \"¿En qué casos NO se aplica...?\"\n"
-            "3. **Profundidad, no repetición**: evita generar múltiples tarjetas del mismo artículo. En su lugar, extrae los conceptos clave y formula preguntas distintas.\n"
-            "4. **Precisión normativa**: si el texto menciona leyes, artículos, reales decretos, etc., inclúyelos en la respuesta, pero no como copia literal.\n"
-            "5. **Evita**: preguntas vagas, respuestas largas, frases incompletas o contenido redundante.\n"
-            f"Genera EXACTAMENTE {num_tarjetas} tarjetas (ni más ni menos), como un array JSON con este formato:\n"
-            "[{\"pregunta\": \"...\", \"respuesta\": \"...\"}]\n"
-            "NO añadas texto adicional antes ni después del JSON."
-        )
-        api_key = os.getenv("DEEPSEEK_API_KEY")
-        if not api_key:
+        if not os.getenv("DEEPSEEK_API_KEY"):
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        payload = {
-            "model": "deepseek-chat",
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Documento para crear tarjetas de memoria:\n{text}"}
-            ],
-            "temperature": 0.3,
-            # Margen amplio por tarjeta para que no se corte la respuesta a
-            # medias (antes era un límite fijo de 2000, insuficiente para
-            # bastantes tarjetas y provocaba un JSON incompleto).
-            "max_tokens": min(8000, 200 + num_tarjetas * 220)
-        }
-        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
-        if response.status_code != 200:
-            return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
+        acumulador_tokens = AcumuladorTokens()
+        resultado = generar_tarjetas_verificadas(text, num_tarjetas, on_usage=acumulador_tokens.add)
+        acumulador_tokens.volcar_a_peticion()
+        if not resultado["tarjetas"]:
+            return jsonify({
+                "error": "La IA no generó ninguna tarjeta válida a partir del documento.",
+            }), 500
+        # A diferencia del "cobrar en cuanto DeepSeek responde 200" de antes
+        # (que gastaba cupo aunque el JSON resultara ilegible), aquí solo se
+        # factura una vez hay al menos una tarjeta ya verificada.
         registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
-        data = response.json()
-        respuesta = data['choices'][0]['message']['content']
-        try:
-            tarjetas = _extraer_json_array(respuesta)
-        except ValueError:
-            return jsonify({
-                "error": "La IA no devolvió un JSON válido. Error técnico.",
-                "respuesta_cruda": respuesta[:500]
-            }), 500
-        tarjetas_validadas = []
-        for t in tarjetas:
-            if isinstance(t, dict) and "pregunta" in t and "respuesta" in t:
-                t["pregunta"] = str(t["pregunta"]).strip() if t["pregunta"] else "Pregunta no disponible"
-                t["respuesta"] = str(t["respuesta"]).strip() if t["respuesta"] else "Respuesta no disponible"
-                tarjetas_validadas.append(t)
-        if not tarjetas_validadas:
-            return jsonify({
-                "error": "La IA generó tarjetas vacías o inválidas.",
-                "respuesta_cruda": respuesta[:500]
-            }), 500
-        return jsonify({"tarjetas": tarjetas_validadas, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
+        respuesta = {"tarjetas": resultado["tarjetas"], "documento_id": documento_id, "nombre_archivo": nombre_archivo}
+        if "advertencia" in resultado:
+            respuesta["advertencia"] = resultado["advertencia"]
+        return jsonify(respuesta)
     except Exception as e:
         logger.exception("Error en /generar-tarjetas-desde-pdf")
-        return jsonify({
-            "error": f"Error al procesar el PDF o generar tarjetas: {str(e)}",
-            "respuesta_cruda": respuesta[:500] if respuesta is not None else "N/A"
-        }), 500
+        return jsonify({"error": f"Error al procesar el PDF o generar tarjetas: {str(e)}"}), 500
 
 
 # Nº de caracteres del PDF que se guardan para poder chatear sobre él. Se

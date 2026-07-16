@@ -39,7 +39,11 @@ async function obtenerAuthHeaders() {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: mensaje,
+        // html en vez de text: los mensajes de plan insuficiente/límite
+        // agotado incluyen un enlace real a /planes/ (ver más abajo). El
+        // resto de mensajes son texto plano nuestro (nunca contenido del
+        // PDF subido), así que no hay riesgo de inyectar HTML ajeno aquí.
+        html: mensaje,
         confirmButtonText: 'Entendido'
       });
       document.getElementById('tarjeta-formulario').style.display = 'block';
@@ -212,11 +216,11 @@ async function obtenerAuthHeaders() {
           body: formData
         });
         if (res.status === 403) {
-          throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
+          throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
         }
         if (res.status === 429) {
           const errorData = await res.json().catch(() => ({}));
-          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} Ve a /planes/ para ampliar tu plan.`);
+          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
         }
         if (!res.ok || !res.body) {
           const errorData = await res.json().catch(() => ({}));

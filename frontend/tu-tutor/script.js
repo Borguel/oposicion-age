@@ -215,6 +215,19 @@ document.addEventListener("DOMContentLoaded", async function () {
     return burbuja;
   }
 
+  // Enlace real a /planes/ para los avisos de plan insuficiente/límite
+  // agotado -- agregarMensaje() escapa el texto del bot (necesario, viene
+  // de la IA), así que un <a> no puede ir dentro de ese texto: se añade
+  // como elemento aparte, mismo patrón y clase que assets/tutor-widget.js.
+  function agregarCtaPlanes() {
+    const enlace = document.createElement("a");
+    enlace.className = "tw-cta-planes";
+    enlace.href = "/planes/";
+    enlace.textContent = "Ver planes";
+    chatMessages.appendChild(enlace);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
   // Burbuja de respuesta del tutor que empieza vacía y se va rellenando a
   // medida que llegan fragmentos del streaming (efecto de "escritura"), en
   // vez de aparecer de golpe cuando termina toda la respuesta.
@@ -312,12 +325,14 @@ document.addEventListener("DOMContentLoaded", async function () {
     mostrarTyping(false);
 
     if (respuesta.status === 403) {
-      agregarMensaje("bot", "🔒 Tu Tutor requiere el plan Premium. Ve a /planes/ para activarlo.");
+      agregarMensaje("bot", "🔒 Tu Tutor requiere el plan Premium.");
+      agregarCtaPlanes();
       return;
     }
     if (respuesta.status === 429) {
       const datosError = await respuesta.json().catch(() => ({}));
-      agregarMensaje("bot", `⏳ ${datosError.error || "Has alcanzado el límite de uso del chat por ahora."} Ve a /planes/ para ampliar tu plan.`);
+      agregarMensaje("bot", `⏳ ${datosError.error || "Has alcanzado el límite de uso del chat por ahora."}`);
+      agregarCtaPlanes();
       return;
     }
     if (!respuesta.ok || !respuesta.body) {

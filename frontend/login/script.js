@@ -16,12 +16,6 @@ const bloqueRepetirPassword = document.getElementById("bloque-repetir-password")
 const inputRepetirPassword = document.getElementById("repetir-password");
 const avisoPrueba = document.getElementById("aviso-prueba");
 
-const pasoCuenta = document.getElementById("paso-cuenta");
-const pasoPerfil = document.getElementById("paso-perfil");
-const formPerfil = document.getElementById("form-perfil");
-const btnPerfilSubmit = document.getElementById("btn-perfil-submit");
-const perfilMensajeError = document.getElementById("perfil-mensaje-error");
-
 const btnOlvidePassword = document.getElementById("btn-olvide-password");
 const modalRecuperar = document.getElementById("modal-recuperar");
 const formRecuperar = document.getElementById("form-recuperar");
@@ -95,11 +89,6 @@ async function guardarPerfilBasico(nombre, apellidos) {
   });
 }
 
-function mostrarPasoPerfil() {
-  pasoCuenta.style.display = "none";
-  pasoPerfil.style.display = "block";
-}
-
 const MENSAJES_ERROR = {
   "auth/invalid-email": "El correo electrónico no es válido.",
   "auth/user-not-found": "No existe ninguna cuenta con ese correo.",
@@ -150,7 +139,11 @@ form.addEventListener("submit", async (evento) => {
       // bloquea el alta -- el banner de auth.js ya ofrece reenviarlo luego.
       enviarVerificacionEmail().catch(() => {});
       await guardarPerfilBasico(nombre, apellidos);
-      mostrarPasoPerfil();
+      // Igual que en el alta con Google: teléfono y dirección no son
+      // imprescindibles para usar la web, y ya se pueden añadir después,
+      // opcionalmente, desde Mi Cuenta -- pedirlos aquí solo añade fricción
+      // justo antes de que el usuario pueda probar la herramienta.
+      window.location.href = siguienteDestino();
     }
   } catch (error) {
     mensajeError.textContent = MENSAJES_ERROR[error.code] || "No se pudo completar la operación. Inténtalo de nuevo.";
@@ -173,11 +166,8 @@ btnGoogle.addEventListener("click", async () => {
   try {
     const { esNuevo, nombre, apellidos } = await signInWithGoogle();
     if (esNuevo) {
-      // A diferencia del alta por email/contraseña, Google ya nos da nombre
-      // y apellidos -- pedir además teléfono/dirección antes de dejar
-      // entrar daría la sensación de que el login se ha quedado colgado.
-      // Se guardan los datos que ya tenemos y se puede completar el resto
-      // más tarde desde Mi Cuenta.
+      // Google ya nos da nombre y apellidos; el resto de datos opcionales
+      // (teléfono, dirección) se pueden añadir más tarde desde Mi Cuenta.
       await guardarPerfilBasico(nombre, apellidos);
     }
     // Al iniciar sesión con Google se va directo a "Zona opositor" en vez
@@ -282,31 +272,5 @@ formRecuperar.addEventListener("submit", async (evento) => {
       formRecuperar.style.display = "none";
       recuperarMensajeOk.style.display = "block";
     }
-  }
-});
-
-formPerfil.addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  perfilMensajeError.style.display = "none";
-  btnPerfilSubmit.disabled = true;
-
-  // Nombre y apellidos ya se guardaron al dar de alta la cuenta (o los trae
-  // Google); este paso solo completa teléfono y dirección.
-  const telefono = document.getElementById("perfil-telefono").value.trim();
-  const direccion = document.getElementById("perfil-direccion").value.trim();
-
-  try {
-    const token = await idToken();
-    const res = await fetch(`${BACKEND_URL}/registrar-usuario`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ telefono, direccion })
-    });
-    if (!res.ok) throw new Error("No se pudo guardar tu perfil");
-    window.location.href = siguienteDestino();
-  } catch (error) {
-    perfilMensajeError.textContent = error.message || "No se pudo guardar tu perfil. Inténtalo de nuevo.";
-    perfilMensajeError.style.display = "block";
-    btnPerfilSubmit.disabled = false;
   }
 });
