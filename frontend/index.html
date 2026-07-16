@@ -9,10 +9,10 @@
   <meta name="theme-color" content="#ffa633" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Domina tu Opo - Plataforma de Estudio con IA</title>
-  <meta name="description" content="Prepara tu oposición con tests ilimitados sobre el temario oficial, herramientas con IA para tus propios apuntes y estadísticas de progreso." />
+  <meta name="description" content="Empieza con 7 días de Premium gratis, sin tarjeta. Tests ilimitados sobre el temario oficial, herramientas con IA para tus propios apuntes y estadísticas de progreso." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Domina tu Opo - Plataforma de Estudio con IA" />
-  <meta property="og:description" content="Prepara tu oposición con tests ilimitados, herramientas con IA y estadísticas de progreso." />
+  <meta property="og:description" content="Empieza con 7 días de Premium gratis, sin tarjeta. Tests ilimitados, herramientas con IA y estadísticas de progreso." />
   <meta property="og:image" content="/assets/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -40,6 +40,14 @@
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Cómo funciona la prueba gratuita de 7 días?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Al crear tu cuenta empiezas automáticamente con 7 días de acceso Premium completo, sin necesidad de tarjeta. Cuando termine, si no has contratado un plan de pago, tu cuenta queda bloqueada hasta que elijas Básico o Premium."
+      }
+    },
     {
       "@type": "Question",
       "name": "¿Para qué oposiciones sirve la web?",
@@ -176,6 +184,67 @@
       justify-content: center;
       flex-wrap: wrap;
       margin-bottom: 26px;
+    }
+
+    /* ---------- Banner de prueba gratuita ---------- */
+    .home-prueba-banner {
+      background: linear-gradient(135deg, var(--age-primary) 0%, var(--age-primary-dark) 100%);
+      padding: 22px 20px;
+    }
+
+    .home-prueba-banner-inner {
+      max-width: var(--age-container);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      text-align: center;
+    }
+
+    .home-prueba-banner-emoji {
+      font-size: 2.2rem;
+      flex-shrink: 0;
+    }
+
+    .home-prueba-banner-texto {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-align: left;
+    }
+
+    .home-prueba-banner-texto strong {
+      color: #1b1f2e;
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    .home-prueba-banner-texto span {
+      color: rgba(27, 31, 46, 0.75);
+      font-size: 0.92rem;
+    }
+
+    .home-prueba-banner .age-btn-primary {
+      background: #1b1f2e;
+      color: #fff;
+      border-color: #1b1f2e;
+      white-space: nowrap;
+    }
+
+    .home-prueba-banner .age-btn-primary:hover {
+      background: #10131c;
+    }
+
+    @media (max-width: 640px) {
+      .home-prueba-banner-inner {
+        flex-direction: column;
+        text-align: center;
+      }
+      .home-prueba-banner-texto {
+        text-align: center;
+      }
     }
 
     .home-section {
@@ -677,11 +746,22 @@
         <h1>Prepara tu oposición sin perderte entre apuntes</h1>
         <p>Tests ilimitados sobre el temario oficial de tu oposición, herramientas con inteligencia artificial avanzada para tus propios documentos, y estadísticas claras de tu progreso — todo en un solo sitio.</p>
         <div class="home-hero-ctas">
-          <a href="/test-generator/" class="age-btn age-btn-primary">Empezar un test gratis</a>
+          <a href="/login/?next=/zona-opositor/" class="age-btn age-btn-primary">Empezar mi prueba gratuita</a>
           <a href="/planes/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Ver planes</a>
         </div>
       </div>
       <div class="home-hero-imagen" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="home-prueba-banner">
+    <div class="home-prueba-banner-inner">
+      <span class="home-prueba-banner-emoji">🎁</span>
+      <div class="home-prueba-banner-texto">
+        <strong>7 días de Premium gratis, sin tarjeta</strong>
+        <span>Accede a todas las herramientas desde el primer día. Después, tú decides si sigues.</span>
+      </div>
+      <a href="/login/?next=/zona-opositor/" class="age-btn age-btn-primary">Crear cuenta gratis</a>
     </div>
   </section>
 
@@ -734,8 +814,8 @@
       </div>
       <div class="paso-card">
         <div class="paso-num">2</div>
-        <h3>Practica gratis con el temario oficial</h3>
-        <p>Tests oficiales, repetir tu último test, repasar fallos y ver tus estadísticas — sin coste, sin tarjeta.</p>
+        <h3>Empieza tu prueba Premium gratis</h3>
+        <p>Crea tu cuenta y consigue 7 días de acceso Premium completo, sin tarjeta: tests oficiales, tus estadísticas y todas las herramientas de IA.</p>
       </div>
       <div class="paso-card">
         <div class="paso-num">3</div>
@@ -838,23 +918,18 @@
 
   <section class="home-section">
     <h2 class="home-section-titulo">Elige tu plan</h2>
-    <p class="home-section-sub">Sin permanencia: empieza gratis y sube de nivel cuando quieras. Cancela cuando quieras desde "Mi cuenta".</p>
+    <p class="home-section-sub">Empieza con 7 días de Premium gratis, sin tarjeta. Sin permanencia: cancela cuando quieras desde "Mi cuenta".</p>
     <div class="pricing-teaser-grid">
       <div class="pricing-teaser-card">
-        <h3>Gratis</h3>
-        <div class="pricing-teaser-price">0€</div>
-        <p class="desc">Tests oficiales, repite tu último test, repasa fallos y estadísticas.</p>
+        <h3>Básico</h3>
+        <div class="pricing-teaser-price">4,99€<span>/mes</span></div>
+        <p class="desc">Test personalizado e inteligente con IA, y generación de esquemas.</p>
       </div>
       <div class="pricing-teaser-card destacado">
         <div class="pricing-teaser-badge">Más completo</div>
         <h3>Premium</h3>
         <div class="pricing-teaser-price">9,99€<span>/mes</span></div>
         <p class="desc">Todas las herramientas desde PDF y Tu Tutor, el chat premium de IA.</p>
-      </div>
-      <div class="pricing-teaser-card">
-        <h3>Básico</h3>
-        <div class="pricing-teaser-price">4,99€<span>/mes</span></div>
-        <p class="desc">Test personalizado e inteligente con IA, y generación de esquemas.</p>
       </div>
     </div>
     <p class="pricing-teaser-note">
@@ -866,6 +941,10 @@
     <h2 class="home-section-titulo">Preguntas frecuentes</h2>
     <p class="home-section-sub">Todo lo que necesitas saber sobre Domina tu Opo.</p>
     <div class="faq-list">
+      <details class="faq-item">
+        <summary>¿Cómo funciona la prueba gratuita de 7 días?</summary>
+        <p>Al crear tu cuenta empiezas automáticamente con 7 días de acceso Premium completo, sin necesidad de tarjeta. Cuando termine, si no has contratado un plan de pago, tu cuenta queda bloqueada (tus datos y tests ya hechos se conservan) hasta que elijas Básico o Premium.</p>
+      </details>
       <details class="faq-item">
         <summary>¿Para qué oposiciones sirve la web?</summary>
         <p>Preparamos oposiciones de la Administración Pública y vamos añadiendo más continuamente. Puedes estudiar varias a la vez: cada una tiene su propio temario, tests y estadísticas independientes.</p>
@@ -899,10 +978,10 @@
 
   <section class="home-cta-final">
     <h2>¿Listo para empezar a practicar?</h2>
-    <p>Prueba gratis con el temario oficial. Sin tarjeta, sin compromiso.</p>
+    <p>7 días de Premium gratis, sin tarjeta. Después, tú decides si sigues.</p>
     <div class="home-hero-ctas">
-      <a href="/test-generator/" class="age-btn age-btn-primary">Probar gratis ahora</a>
-      <a href="/login/?next=/mi-cuenta/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Crear cuenta</a>
+      <a href="/login/?next=/zona-opositor/" class="age-btn age-btn-primary">Empezar mi prueba gratuita</a>
+      <a href="/planes/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Ver planes</a>
     </div>
   </section>
 
