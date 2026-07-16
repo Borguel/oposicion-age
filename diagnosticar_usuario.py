@@ -47,6 +47,7 @@ def diagnosticar(db, email):
     print(f"  cuenta deshabilitada: {registro.disabled}")
     print(f"  creada: {registro.user_metadata.creation_timestamp}")
     print(f"  último login: {registro.user_metadata.last_sign_in_timestamp}")
+    print(f"  tokens válidos desde: {registro.tokens_valid_after_timestamp}")
     print(f"  custom claims: {registro.custom_claims or {}}")
     print()
 
@@ -61,6 +62,7 @@ def diagnosticar(db, email):
     datos = doc.to_dict() or {}
     print("== Firestore (usuarios/{}) ==".format(registro.uid))
     print(f"  email guardado: {datos.get('email')}")
+    print(f"  nombre: {datos.get('nombre')!r}  apellidos: {datos.get('apellidos')!r}")
     print(f"  suscripciones: {json.dumps(datos.get('suscripciones', {}), indent=2, ensure_ascii=False)}")
     print(f"  prueba_fin: {datos.get('prueba_fin')}")
     print(f"  stripe_customer_id: {datos.get('stripe_customer_id')}")
