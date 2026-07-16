@@ -44,6 +44,13 @@ test("la página de login muestra el formulario de email y contraseña", async (
 test("test personalizado muestra el input de preguntas y el temario numerado", async ({ page }) => {
   await mockAuth(page);
   await mockOposicion(page);
+  // protegerPagina("basico") llama a /mi-perfil para resolver el plan antes
+  // de pintar nada de la página (ver plan.js) -- sin este mock la petición
+  // real falla en CI, cae a plan "gratis" y la pantalla de bloqueo tapa
+  // #lista-temas antes de que el test llegue a comprobarlo.
+  await page.route("**/mi-perfil*", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ plan: "premium", subscription_status: "active" }) })
+  );
   await page.route("**/temas-disponibles*", (route) =>
     route.fulfill({
       contentType: "application/json",
