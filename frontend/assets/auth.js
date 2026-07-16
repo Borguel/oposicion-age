@@ -539,8 +539,14 @@ async function inyectarBannerPrueba(user) {
   if (existente) existente.remove();
   if (!user) return;
 
+  // forzarRefresco=true a propósito: este aviso decide si se bloquea al
+  // usuario en toda la web, así que nunca debe fiarse de una respuesta
+  // guardada en sessionStorage de antes de un cambio de plan/prueba (p.ej.
+  // justo después de pagar, o de un fix de backend como el bypass de
+  // administrador) -- solo se pinta una vez por carga de página, así que
+  // el coste de la petición extra a /mi-perfil es asumible.
   const { obtenerPlan } = await import("/assets/plan.js");
-  const perfil = await obtenerPlan();
+  const perfil = await obtenerPlan(true);
 
   const banner = document.createElement("div");
   banner.className = "age-banner-prueba";

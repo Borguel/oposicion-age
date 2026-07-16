@@ -1,0 +1,32 @@
+name: Diagnosticar una cuenta (Auth + Firestore)
+
+# Herramienta de soporte: mira el estado real de Firebase Auth y
+# Firestore de una cuenta concreta cuando algo no cuadra con lo que el
+# usuario ve en la web. Solo lectura, no escribe nada. Se lanza a mano
+# indicando el email a investigar.
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: "Email de la cuenta a investigar"
+        required: true
+
+jobs:
+  diagnosticar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Diagnosticar cuenta
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: python diagnosticar_usuario.py "${{ github.event.inputs.email }}"

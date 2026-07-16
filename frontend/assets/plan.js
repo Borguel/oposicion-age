@@ -60,7 +60,12 @@ export async function protegerPagina(planMinimo, oposicion = obtenerOposicionAct
     window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
     return false;
   }
-  const perfil = await obtenerPlan(false, oposicion);
+  // forzarRefresco=true: esto decide si se bloquea la página entera, así
+  // que no puede fiarse de una respuesta cacheada de antes de un cambio de
+  // plan/prueba (pagar, o un fix de backend). Cuesta una petición extra a
+  // /mi-perfil por carga de página, asumible frente al riesgo de bloquear
+  // (o dejar pasar) con datos desfasados.
+  const perfil = await obtenerPlan(true, oposicion);
   if (!planCubre(perfil.plan, planMinimo)) {
     mostrarPantallaBloqueo(planMinimo, perfil);
     return false;
