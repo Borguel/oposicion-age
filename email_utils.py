@@ -278,6 +278,58 @@ def enviar_email_racha_en_riesgo(destinatario, racha_actual, nombre=""):
     _enviar(destinatario, "racha en riesgo", asunto=f"No pierdas tu racha de {racha_dias_texto}", html=html)
 
 
+def enviar_email_prueba_terminando(destinatario, dias_restantes, nombre=""):
+    """Aviso de que quedan pocos días de la prueba gratuita Premium (ver
+    planes.py): se envía una única vez, al cruzar los 2 días restantes."""
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
+    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    dias_texto = f"{dias_restantes} día{'s' if dias_restantes != 1 else ''}"
+
+    template_id = os.getenv("BREVO_TEMPLATE_PRUEBA_TERMINANDO")
+    if template_id:
+        _enviar(destinatario, "prueba terminando", template_id=template_id, datos={
+            "saludo": saludo,
+            "dias_restantes": dias_restantes,
+            "dias_texto": dias_texto,
+            "frontend_url": frontend_url,
+        })
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, tu prueba gratuita de Premium termina en <strong>{dias_texto}</strong>.</p>
+      <p>Cuando termine, si no eliges un plan, perderás el acceso a las herramientas de PDF, a Tu Tutor
+      y a los tests ya generados que sean de Premium. Elige ahora Básico o Premium para no perder nada.</p>
+      {_boton("Ver planes", f"{frontend_url}/planes/")}
+    """
+    html = _plantilla_html(f"Tu prueba termina en {dias_texto}", cuerpo, emoji="⏳")
+    _enviar(destinatario, "prueba terminando", asunto=f"Tu prueba gratuita termina en {dias_texto}", html=html)
+
+
+def enviar_email_prueba_terminada(destinatario, nombre=""):
+    """Aviso de que la prueba gratuita Premium ya ha terminado sin que el
+    usuario haya contratado ningún plan: se envía el primer día tras
+    expirar (ver blueprints/tareas_programadas.py)."""
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
+    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+
+    template_id = os.getenv("BREVO_TEMPLATE_PRUEBA_TERMINADA")
+    if template_id:
+        _enviar(destinatario, "prueba terminada", template_id=template_id, datos={
+            "saludo": saludo,
+            "frontend_url": frontend_url,
+        })
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, tu prueba gratuita de Premium ha terminado.</p>
+      <p>Tu cuenta ha quedado bloqueada hasta que elijas un plan: tus datos y los tests que ya hiciste
+      siguen a salvo y los recuperas en cuanto te suscribas a Básico o Premium.</p>
+      {_boton("Elegir un plan", f"{frontend_url}/planes/")}
+    """
+    html = _plantilla_html("Tu prueba gratuita ha terminado", cuerpo, emoji="🔒")
+    _enviar(destinatario, "prueba terminada", asunto="Tu prueba gratuita en Domina tu Opo ha terminado", html=html)
+
+
 def enviar_email_reengagement(destinatario, dias_inactivo, nombre=""):
     """Aviso para quien lleva varios días sin actividad y ya perdió la
     racha, para intentar que retome la preparación."""

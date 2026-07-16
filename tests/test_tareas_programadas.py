@@ -76,3 +76,79 @@ def test_ignora_usuarios_sin_email_o_sin_racha(client, db):
         assert resp.get_json() == {"en_riesgo": 0, "reengagement": 0}
         mock_riesgo.assert_not_called()
         mock_reengagement.assert_not_called()
+
+
+# ============================================================
+# /tareas/recordatorios-prueba
+# ============================================================
+
+def _prueba_fin_en(dias):
+    return (date.today() + timedelta(days=dias)).isoformat() + "T00:00:00"
+
+
+def test_recordatorios_prueba_sin_clave_devuelve_401(client):
+    with patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("CRON_SECRET_KEY", None)
+        resp = client.post("/tareas/recordatorios-prueba", headers={"X-Cron-Key": "lo-que-sea"})
+        assert resp.status_code == 401
+
+
+def test_avisa_a_quien_le_quedan_2_dias_de_prueba(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "prueba_fin": _prueba_fin_en(2)})
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:
+        resp = client.post("/tareas/recordatorios-prueba", headers={"X-Cron-Key": "secreta"})
+        assert resp.status_code == 200
+        assert resp.get_json() == {"terminando": 1, "terminada": 0}
+        mock_terminando.assert_called_once_with("u1@example.com", 2, nombre="")
+        mock_terminada.assert_not_called()
+
+
+def test_avisa_a_quien_la_prueba_termino_ayer(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "prueba_fin": _prueba_fin_en(-1)})
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:
+        resp = client.post("/tareas/recordatorios-prueba", headers={"X-Cron-Key": "secreta"})
+        assert resp.get_json() == {"terminando": 0, "terminada": 1}
+        mock_terminada.assert_called_once_with("u1@example.com", nombre="")
+        mock_terminando.assert_not_called()
+
+
+def test_no_avisa_a_quien_ya_tiene_plan_de_pago(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "prueba_fin": _prueba_fin_en(2),
+        "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:
+        resp = client.post("/tareas/recordatorios-prueba", headers={"X-Cron-Key": "secreta"})
+        assert resp.get_json() == {"terminando": 0, "terminada": 0}
+        mock_terminando.assert_not_called()
+        mock_terminada.assert_not_called()
+
+
+def test_no_avisa_fuera_de_los_dias_exactos(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "prueba_fin": _prueba_fin_en(5)})
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:
+        resp = client.post("/tareas/recordatorios-prueba", headers={"X-Cron-Key": "secreta"})
+        assert resp.get_json() == {"terminando": 0, "terminada": 0}
+        mock_terminando.assert_not_called()
+        mock_terminada.assert_not_called()
+
+
+def test_ignora_usuarios_sin_email_o_sin_prueba_fin(client, db):
+    db.sembrar(("usuarios", "sin_email"), {"prueba_fin": _prueba_fin_en(2)})
+    db.sembrar(("usuarios", "sin_prueba"), {"email": "x@example.com"})
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:
+        resp = client.post("/tareas/recordatorios-prueba", headers={"X-Cron-Key": "secreta"})
+        assert resp.get_json() == {"terminando": 0, "terminada": 0}
+        mock_terminando.assert_not_called()
+        mock_terminada.assert_not_called()

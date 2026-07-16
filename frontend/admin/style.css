@@ -64,6 +64,7 @@
 .admin-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-chip { background: var(--age-primary-soft); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
 .admin-chip-warn { background: var(--age-danger-soft, #fdecea); color: var(--age-danger, #b02a37); }
+.admin-chip-prueba { background: #fde9c8; color: #8a5a00; font-size: 11px; padding: 3px 9px; }
 
 /* Tablas -- envueltas en .admin-scroll para poder deslizarlas en móvil sin
    que se corten ni desborden la página. */
@@ -276,6 +277,8 @@ tr.sis-opt td:nth-child(2) { color: #b8860b; }
 .ficha-badge-admin { background: #f3e8ff; color: #7b2cbf; }
 .ficha-badge-rol { background: #e7f0ff; color: #1e56b0; }
 .ficha-badge-bloqueo { background: var(--age-danger-soft, #fdecea); color: var(--age-danger, #b02a37); }
+.ficha-badge-prueba { background: #fde9c8; color: #8a5a00; }
+.ficha-prueba-estado { font-size: 13px; color: var(--age-ink-soft, #555); margin: 4px 0 8px; }
 .ficha-uid { display: flex; align-items: center; gap: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: var(--age-ink-soft, var(--age-ink)); margin: 4px 0 0; }
 .ficha-uid span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
