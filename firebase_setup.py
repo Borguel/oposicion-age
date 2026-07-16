@@ -6,6 +6,27 @@ circular)."""
 import json
 import os
 
+
+def propagar_proxy_saliente(entorno=os.environ):
+    """Si hay un proxy de salida con IP estática configurado (p.ej.
+    QuotaGuard, para esquivar el bloqueo de Google a las IPs de salida
+    compartidas del plan gratuito de Render -- ver incidencia de
+    CertificateFetchError / PermissionDenied 403), lo propaga a las
+    variables de entorno estándar que leen tanto `requests` (verificación
+    de tokens de Firebase) como gRPC (llamadas a Firestore): así basta con
+    fijar QUOTAGUARDSTATIC_URL para cubrir las dos, sin configurar cada
+    librería por separado. Sin esa variable, no hace nada (comportamiento
+    actual intacto). Debe llamarse ANTES de crear cualquier cliente de
+    Firebase/Firestore, para que la propagación surta efecto."""
+    proxy_saliente = entorno.get("QUOTAGUARDSTATIC_URL")
+    if not proxy_saliente:
+        return
+    for variable in ("HTTPS_PROXY", "HTTP_PROXY", "https_proxy", "http_proxy"):
+        entorno.setdefault(variable, proxy_saliente)
+
+
+propagar_proxy_saliente()
+
 import firebase_admin
 from firebase_admin import credentials, firestore
 
