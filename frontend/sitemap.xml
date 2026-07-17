@@ -16,6 +16,21 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://www.dominatuopo.com/oposicion-administrativo-estado-c1/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/oposicion-gace/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/oposicion-auxiliar-administrativo-estado/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.dominatuopo.com/privacidad/</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
