@@ -96,18 +96,20 @@
         </div>
       </div>
       <div class="controles-tarjetas">
-        <div class="contador-tarjetas">
-          <span id="tarjeta-actual-num">1</span> de <span id="total-tarjetas">0</span>
+        <div class="nav-tarjetas">
+          <button id="btn-anterior" class="btn-nav-tarjeta" aria-label="Tarjeta anterior"><span data-icon="atras" data-icon-size="18"></span></button>
+          <div class="contador-tarjetas">
+            <span id="tarjeta-actual-num">1</span> de <span id="total-tarjetas">0</span>
+          </div>
+          <button id="btn-siguiente" class="btn-nav-tarjeta btn-nav-tarjeta-siguiente" aria-label="Tarjeta siguiente"><span data-icon="atras" data-icon-size="18"></span></button>
         </div>
-        <div class="botones-navegacion-tarjetas">
-          <button id="btn-anterior" class="btn btn-outline">← Anterior</button>
-          <button id="btn-siguiente" class="btn btn-outline">Siguiente →</button>
+        <div class="acciones-tarjetas-secundarias">
+          <button id="btn-lista-tarjetas" class="btn-tarjeta-secundario"><span data-icon="lista" data-icon-size="14"></span> Ver lista</button>
+          <span class="acciones-tarjetas-separador" aria-hidden="true"></span>
+          <button id="btn-descargar-pdf" class="btn-tarjeta-secundario"><span data-icon="documento" data-icon-size="14"></span> Descargar PDF</button>
+          <span class="acciones-tarjetas-separador" aria-hidden="true"></span>
+          <button id="btn-cerrar" class="btn-tarjeta-secundario"><span data-icon="cruz" data-icon-size="14"></span> Cerrar</button>
         </div>
-      </div>
-      <div class="filters" style="margin-top: 2rem;">
-        <button id="btn-lista-tarjetas" class="btn btn-secondary"><span data-icon="lista" data-icon-size="16"></span> Ver Lista de Tarjetas</button>
-        <button id="btn-descargar-pdf" class="btn btn-outline"><span data-icon="documento" data-icon-size="16"></span> Descargar PDF</button>
-        <button id="btn-cerrar" class="btn btn-primary"><span data-icon="cruz" data-icon-size="16"></span> Cerrar</button>
       </div>
       <div id="otras-herramientas-bloque" class="otras-herramientas-bloque hidden"></div>
     </div>

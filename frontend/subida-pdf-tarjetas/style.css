@@ -99,24 +99,84 @@
   opacity: 0.7;
   color: var(--age-ink-soft);
 }
+/* Controles bajo la tarjeta: la navegación (anterior/siguiente) se queda
+   cerca y a mano, en botones circulares compactos que no compiten en peso
+   visual con la propia tarjeta. Las acciones secundarias (lista, PDF,
+   cerrar) bajan de categoría a una fila de texto discreta y separada, para
+   que el foco siga estando en la tarjeta -- no en un muro de botones. */
 .controles-tarjetas {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 22px;
   margin-top: 24px;
+}
+.nav-tarjetas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
 }
 .contador-tarjetas {
   font-weight: 700;
   color: var(--age-ink-soft);
+  min-width: 64px;
+  text-align: center;
 }
-.botones-navegacion-tarjetas {
+.btn-nav-tarjeta {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
   display: flex;
-  gap: 12px;
-  width: 100%;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s var(--age-ease), border-color 0.15s var(--age-ease), transform 0.15s var(--age-ease);
 }
-.botones-navegacion-tarjetas .btn {
-  flex: 1 1 0;
+.btn-nav-tarjeta-siguiente svg { transform: scaleX(-1); }
+.btn-nav-tarjeta:hover:not(:disabled) {
+  background: var(--age-primary-soft);
+  border-color: var(--age-primary);
+}
+.btn-nav-tarjeta:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.btn-nav-tarjeta:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.acciones-tarjetas-secundarias {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.btn-tarjeta-secundario {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  font-family: var(--age-font);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--age-ink-soft);
+  cursor: pointer;
+  transition: color 0.15s var(--age-ease);
+}
+.btn-tarjeta-secundario:hover {
+  color: var(--age-primary-dark);
+}
+.acciones-tarjetas-separador {
+  width: 1px;
+  height: 14px;
+  background: var(--age-border);
 }
 .filters {
   display: flex;
