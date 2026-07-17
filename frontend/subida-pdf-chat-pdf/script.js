@@ -1,7 +1,14 @@
 import { obtenerAuthHeaders } from "/assets/auth.js";
 import { protegerPagina } from "/assets/plan.js";
+import { icono } from "/assets/icons.js";
 
 protegerPagina("premium");
+
+// Iconos estáticos del markup: se pintan aquí, una sola vez, a partir de
+// los data-icon del HTML (en vez de emoji sueltos incrustados en el HTML).
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+});
 
 const BACKEND_URL = "https://oposicion-age.onrender.com";
 

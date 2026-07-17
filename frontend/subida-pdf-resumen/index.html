@@ -29,7 +29,7 @@
 <nav class="age-nav"></nav>
 
   <div class="pdfherr-header">
-    <div class="pdfherr-icon">📄</div>
+    <div class="pdfherr-icon" data-icon="documento" data-icon-size="32"></div>
     <h1>Resumir Documentos</h1>
     <p>Sube tus documentos y obtén resúmenes automáticos con los puntos clave. Ideal para sintetizar temas extensos y estudiar de forma más eficaz.</p>
   </div>
@@ -38,31 +38,31 @@
     <!-- Formulario PDF -->
     <div id="formulario-pdf" class="card fade-in">
       <div class="card-header">
-        <div class="card-icon">⬆️</div>
+        <div class="card-icon" data-icon="subir" data-icon-size="20"></div>
         <h2 class="card-title">Subir Documento PDF</h2>
       </div>
       <form id="form-subir-pdf">
         <div class="form-group">
-          <label for="archivo-pdf">📄 Selecciona tu archivo PDF (máx. 10 MB)</label>
+          <label for="archivo-pdf"><span data-icon="documento" data-icon-size="16"></span> Selecciona tu archivo PDF (máx. 10 MB)</label>
           <p class="limite-paginas-nota hidden" id="limite-paginas-nota"></p>
           <div class="file-upload-area" id="upload-area">
-            <div class="upload-icon">⬆️</div>
+            <div class="upload-icon" data-icon="subir" data-icon-size="28"></div>
             <div class="upload-text">
               <h3>Arrastra y suelta tu PDF aquí</h3>
               <p>O haz clic para seleccionar un archivo</p>
             </div>
-            <button type="button" class="btn btn-outline" id="select-file-btn">📁 Explorar Archivos</button>
+            <button type="button" class="btn btn-outline" id="select-file-btn"><span data-icon="carpeta" data-icon-size="16"></span> Explorar Archivos</button>
             <input type="file" id="archivo-pdf" class="file-input" accept=".pdf" required>
           </div>
           <div id="file-name" class="file-name hidden"></div>
         </div>
-        <button type="submit" class="btn btn-primary btn-full">✨ Generar Resumen Automático</button>
+        <button type="submit" class="btn btn-primary btn-full"><span data-icon="destellos" data-icon-size="16"></span> Generar Resumen Automático</button>
       </form>
     </div>
     <!-- Estado de Carga -->
     <div id="contenedor-carga" class="card hidden">
       <div class="loading-container">
-        <div class="ai-icon" id="ai-icon">🤖</div>
+        <div class="ai-icon" id="ai-icon" data-icon="robot" data-icon-size="34"></div>
         <div class="mensaje-estado">
           <span id="texto-estado">Leyendo texto del PDF…</span>
         </div>
@@ -75,7 +75,7 @@
     <!-- Resultado: Resumen Profesional -->
     <div id="resultado-resumen" class="card hidden">
       <div class="card-header">
-        <div class="card-icon">📄</div>
+        <div class="card-icon" data-icon="documento" data-icon-size="20"></div>
         <h2 class="card-title">Resumen Generado</h2>
       </div>
       <div id="resumen-profesional">
@@ -88,19 +88,19 @@
         </div>
       </div>
       <div class="resumen-actions">
-        <button id="btn-descargar-pdf" class="btn btn-outline-secondary">📄 Descargar PDF</button>
-        <button id="btn-cerrar" class="btn btn-primary">✖️ Cerrar</button>
+        <button id="btn-descargar-pdf" class="btn btn-outline-secondary"><span data-icon="documento" data-icon-size="16"></span> Descargar PDF</button>
+        <button id="btn-cerrar" class="btn btn-primary"><span data-icon="cruz" data-icon-size="16"></span> Cerrar</button>
       </div>
       <div id="otras-herramientas-bloque" class="otras-herramientas-bloque hidden"></div>
     </div>
   </div>
   <!-- Indicador de Auto-guardado -->
-  <div id="auto-save-indicator" class="auto-save-indicator">💾 Guardado automáticamente</div>
+  <div id="auto-save-indicator" class="auto-save-indicator"><span data-icon="guardar" data-icon-size="16"></span> Guardado automáticamente</div>
   <!-- Librerías externas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
-  <script src="/subida-pdf-resumen/script.js"></script>
+  <script type="module" src="/subida-pdf-resumen/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
   <script type="module">
     import { mostrarLimitePaginas } from "/assets/limite-paginas.js";

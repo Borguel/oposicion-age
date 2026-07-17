@@ -74,6 +74,16 @@
   margin-top: 15px;
 }
 
+/* Icono + texto en "Guardar y salir" (antes solo un emoji suelto delante
+   del texto): que el SVG quede centrado con la línea de texto, sin perder
+   el display:block/ancho completo de .btn-guardar-salir-estatico. */
+#btn-guardar-salir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 .stats-container {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -4,11 +4,13 @@
 // texto ya extraído sin tener que volver a subir el archivo (cada página ya
 // sabe leer ese parámetro, ver inicializarDesdeDocumento en su script.js).
 
+import { icono } from "/assets/icons.js";
+
 const HERRAMIENTAS = [
-  { slug: "subida-pdf-resumen", etiqueta: "Resumen", icono: "📄" },
-  { slug: "subida-pdf-esquemas", etiqueta: "Esquema", icono: "🗂️" },
-  { slug: "subida-pdf-tarjetas", etiqueta: "Tarjetas", icono: "🃏" },
-  { slug: "subida-pdf-generar-test", etiqueta: "Test", icono: "✏️" },
+  { slug: "subida-pdf-resumen", etiqueta: "Resumen", icono: "documento" },
+  { slug: "subida-pdf-esquemas", etiqueta: "Esquema", icono: "esquema" },
+  { slug: "subida-pdf-tarjetas", etiqueta: "Tarjetas", icono: "tarjeta" },
+  { slug: "subida-pdf-generar-test", etiqueta: "Test", icono: "lapiz" },
 ];
 
 export function pintarAccesosOtrasHerramientas({ contenedor, documentoId, herramientaActual }) {
@@ -17,7 +19,7 @@ export function pintarAccesosOtrasHerramientas({ contenedor, documentoId, herram
   contenedor.innerHTML = `
     <p class="otras-herramientas-titulo">También puedes generar desde este mismo documento:</p>
     <div class="otras-herramientas-botones">
-      ${otras.map((h) => `<a class="btn btn-outline" href="/${h.slug}/?documento_id=${encodeURIComponent(documentoId)}">${h.icono} ${h.etiqueta}</a>`).join("")}
+      ${otras.map((h) => `<a class="btn btn-outline" href="/${h.slug}/?documento_id=${encodeURIComponent(documentoId)}">${icono(h.icono, 16)} ${h.etiqueta}</a>`).join("")}
     </div>
   `;
   contenedor.classList.remove("hidden");

@@ -329,7 +329,10 @@ body {
 }
 
 .planes-beneficio-icono {
-  font-size: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--age-primary);
   margin-bottom: 10px;
 }
 

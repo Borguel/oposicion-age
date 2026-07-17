@@ -3,6 +3,7 @@
 // patrón simple de fetch + Authorization que el resto de módulos de /assets.
 import { idToken } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
+import { icono } from "/assets/icons.js";
 
 export async function marcarFavorita(pregunta, oposicion) {
   try {
@@ -52,7 +53,7 @@ export async function cargarTextosFavoritas(oposicion) {
 // Botón de estrella reutilizable + su listener, para no repetir este HTML
 // en cada una de las páginas que muestran preguntas de test.
 export function botonFavoritaHTML(marcada) {
-  return `<button type="button" class="btn-favorita${marcada ? " activa" : ""}" data-favorita aria-label="Guardar en favoritas" title="⭐ Guardar en favoritas para repasarla cuando quieras (queda en 'Preguntas favoritas')">${marcada ? "★" : "☆"}</button>`;
+  return `<button type="button" class="btn-favorita${marcada ? " activa" : ""}" data-favorita aria-label="Guardar en favoritas" title="Guardar en favoritas para repasarla cuando quieras (queda en 'Preguntas favoritas')">${icono("estrella", 18)}</button>`;
 }
 
 export function activarBotonFavorita(contenedor, pregunta, oposicion, textosFavoritas) {
@@ -79,11 +80,9 @@ export function activarBotonFavorita(contenedor, pregunta, oposicion, textosFavo
       if (marcada) {
         textosFavoritas.delete(pregunta.pregunta);
         boton.classList.remove("activa");
-        boton.textContent = "☆";
       } else {
         textosFavoritas.add(pregunta.pregunta);
         boton.classList.add("activa");
-        boton.textContent = "★";
       }
     } finally {
       boton.disabled = false;

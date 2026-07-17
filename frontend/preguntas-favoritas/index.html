@@ -34,7 +34,7 @@
       <form id="form-favoritas">
         <div class="test-type-container">
           <div class="test-type-card selected">
-            <div class="icon">⭐</div>
+            <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2.5 15 9.3 22 9.8 16.6 14.2 18.5 21 12 17 5.5 21 7.4 14.2 2 9.8 9 9.3"/></svg></div>
             <div class="title">Repaso de Favoritas</div>
             <div class="description">Practica con las preguntas que has marcado para repasar</div>
           </div>
@@ -54,12 +54,12 @@
     </div>
 
     <div id="aviso-favoritas" class="aviso">
-      No tienes preguntas favoritas marcadas en tu cuenta. Marca la estrella ⭐ durante cualquier test para guardarlas aquí.
+      No tienes preguntas favoritas marcadas en tu cuenta. Marca la estrella <span class="icono-inline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2.5 15 9.3 22 9.8 16.6 14.2 18.5 21 12 17 5.5 21 7.4 14.2 2 9.8 9 9.3"/></svg></span> durante cualquier test para guardarlas aquí.
     </div>
 
     <div id="temporizador" style="display:none;">
-      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador">👁️</button>
-      <span id="temporizador-texto"></span>
+      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <span id="temporizador-texto" class="icono-inline"></span>
     </div>
 
     <div id="navegador-preguntas" class="navegador-preguntas" style="display:none;"></div>
@@ -67,7 +67,7 @@
     <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
 
     <div class="acciones-test-footer">
-      <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;">💾 Guardar y salir</button>
+      <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico icono-inline" style="display:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v6h8V4"/><path d="M8 21v-7h8v7"/></svg> Guardar y salir</button>
       <button id="btn-finalizar" class="age-btn age-btn-danger-outline age-btn-block" style="display:none;">Finalizar Test</button>
     </div>
     <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
@@ -76,7 +76,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <script src="/preguntas-favoritas/script.js"></script>
+  <script type="module" src="/preguntas-favoritas/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
 </body>
 </html>

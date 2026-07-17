@@ -555,10 +555,10 @@ function inyectarBannerVerificacion(user) {
   const banner = document.createElement("div");
   banner.className = "age-verificacion-banner";
   banner.innerHTML = `
-    <p>📧 Confirma tu correo electrónico (<strong>${user.email}</strong>) para proteger tu cuenta. Revisa tu bandeja de entrada (y la carpeta de spam).</p>
+    <p>${icono("correo", 16)} Confirma tu correo electrónico (<strong>${user.email}</strong>) para proteger tu cuenta. Revisa tu bandeja de entrada (y la carpeta de spam).</p>
     <div class="age-verificacion-banner-acciones">
       <button type="button" class="age-btn age-btn-outline" id="age-verificacion-reenviar">Reenviar correo</button>
-      <button type="button" class="age-verificacion-banner-cerrar" id="age-verificacion-cerrar" aria-label="Cerrar aviso">✕</button>
+      <button type="button" class="age-verificacion-banner-cerrar" id="age-verificacion-cerrar" aria-label="Cerrar aviso">${icono("cruz", 15)}</button>
     </div>
     <p class="age-verificacion-banner-error" id="age-verificacion-error" style="display:none;">No se pudo enviar el correo. Inténtalo de nuevo en unos segundos.</p>
   `;
@@ -632,10 +632,10 @@ async function inyectarBannerPrueba(user) {
     : `Te quedan ${diasRestantes} día${diasRestantes === 1 ? "" : "s"} de prueba gratuita del plan Premium.`;
 
   banner.innerHTML = `
-    <p>🎁 ${texto}</p>
+    <p>${icono("regalo", 16)} ${texto}</p>
     <div class="age-banner-prueba-acciones">
       <a class="age-btn age-btn-outline" href="/planes/">Ver planes</a>
-      <button type="button" class="age-verificacion-banner-cerrar" id="age-prueba-cerrar" aria-label="Cerrar aviso">✕</button>
+      <button type="button" class="age-verificacion-banner-cerrar" id="age-prueba-cerrar" aria-label="Cerrar aviso">${icono("cruz", 15)}</button>
     </div>
   `;
   document.body.prepend(banner);

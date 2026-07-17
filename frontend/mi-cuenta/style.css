@@ -357,6 +357,10 @@ body {
 }
 
 .cuenta-btn-peligro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 11px 22px;
   border-radius: var(--age-radius-pill);
   border: 1.5px solid var(--age-danger);

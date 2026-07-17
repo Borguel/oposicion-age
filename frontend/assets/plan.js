@@ -14,6 +14,7 @@
 import { idToken, esperarUsuario } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { obtenerOposicionActual } from "/assets/oposicion.js";
+import { icono } from "/assets/icons.js";
 
 const ORDEN_PLANES = { gratis: 0, basico: 1, premium: 2 };
 
@@ -89,7 +90,7 @@ export function mostrarPantallaBloqueo(planMinimo, perfil) {
   overlay.className = "age-bloqueo-overlay";
   overlay.innerHTML = `
     <div class="age-bloqueo-card">
-      <div class="age-bloqueo-icono">🔒</div>
+      <div class="age-bloqueo-icono">${icono("candado", 32)}</div>
       <h1>${titulo}</h1>
       <p>${cuerpo}</p>
       <div class="age-bloqueo-botones">

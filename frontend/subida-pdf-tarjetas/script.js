@@ -1,4 +1,12 @@
+import { icono } from "/assets/icons.js";
+
 import("/assets/plan.js").then(({ protegerPagina }) => protegerPagina("premium"));
+
+// Iconos estáticos del markup (los que no cambian dinámicamente por JS): se
+// pintan aquí, una sola vez, a partir de los data-icon del HTML.
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+});
 
 async function obtenerAuthHeaders() {
       const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");
@@ -138,7 +146,7 @@ async function obtenerAuthHeaders() {
     }
     // === Funciones auxiliares ===
     function mostrarError(mensaje) {
-      mensajeError.innerHTML = `⚠️ <strong>Error:</strong> ${mensaje}`;
+      mensajeError.innerHTML = `${icono("alerta", 18)} <strong>Error:</strong> ${mensaje}`;
       mensajeError.classList.remove('hidden');
       contenedorCarga.classList.add('hidden');
       modoEstudio.classList.add('hidden');
@@ -325,7 +333,8 @@ async function obtenerAuthHeaders() {
           return;
         }
         const fileName = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
-        fileNameDisplay.textContent = `📄 ${fileName}`;
+        fileNameDisplay.innerHTML = icono("documento", 16);
+        fileNameDisplay.append(` ${fileName}`);
         fileNameDisplay.classList.remove('hidden');
       } else {
         fileNameDisplay.classList.add('hidden');
@@ -446,18 +455,18 @@ async function obtenerAuthHeaders() {
       const textoEstado = document.getElementById('texto-estado');
       const aiIcon = document.getElementById('ai-icon');
       const etapas = [
-        { mensaje: "Leyendo texto del PDF…", icono: "📄" },
-        { mensaje: "Extrayendo conceptos clave…", icono: "🔍" },
-        { mensaje: "Analizando estructura del temario…", icono: "📊" },
-        { mensaje: "Generando preguntas inteligentes…", icono: "🧠" },
-        { mensaje: "Preparando tarjetas de estudio…", icono: "✅" }
+        { mensaje: "Leyendo texto del PDF…", icono: "documento" },
+        { mensaje: "Extrayendo conceptos clave…", icono: "buscar" },
+        { mensaje: "Analizando estructura del temario…", icono: "grafico" },
+        { mensaje: "Generando preguntas inteligentes…", icono: "cerebro" },
+        { mensaje: "Preparando tarjetas de estudio…", icono: "check" }
       ];
       let indiceEtapa = 0;
-      aiIcon.textContent = etapas[0].icono;
+      aiIcon.innerHTML = icono(etapas[0].icono, 32);
       textoEstado.textContent = etapas[0].mensaje;
       const intervaloEtapas = setInterval(() => {
         indiceEtapa = (indiceEtapa + 1) % etapas.length;
-        aiIcon.textContent = etapas[indiceEtapa].icono;
+        aiIcon.innerHTML = icono(etapas[indiceEtapa].icono, 32);
         textoEstado.textContent = etapas[indiceEtapa].mensaje;
       }, 2200);
 
@@ -511,10 +520,12 @@ async function obtenerAuthHeaders() {
       tarjetas = shuffleArray(tarjetasEntrada);
       if (advertencia) {
         alertaPreguntas.innerHTML = `
-          ⚠️
-          <div>
-            <strong>Aviso:</strong> ${advertencia}
-            ${sugerencia ? `<br><em>${sugerencia}</em>` : ''}
+          <div class="alerta-aviso">
+            <span class="alerta-aviso-icono">${icono("alerta", 20)}</span>
+            <div>
+              <strong>Aviso:</strong> ${advertencia}
+              ${sugerencia ? `<br><em>${sugerencia}</em>` : ''}
+            </div>
           </div>
         `;
         alertaPreguntas.classList.remove('hidden');
@@ -570,7 +581,7 @@ async function obtenerAuthHeaders() {
       }
 
       textoEstado.textContent = 'Generando tarjetas desde tu documento…';
-      aiIcon.textContent = '🧠';
+      aiIcon.innerHTML = icono('cerebro', 32);
       try {
         const formData = new FormData();
         formData.append('documento_id', documentoId);

@@ -31,21 +31,21 @@
 
     <aside class="admin-sidebar" id="admin-sidebar">
       <div class="admin-sidebar-brand">
-        <span class="admin-sidebar-logo" aria-hidden="true">🛠️</span>
+        <span class="admin-sidebar-logo" aria-hidden="true" data-icon="herramienta"></span>
         <span>Panel admin</span>
-        <button type="button" class="admin-sidebar-cerrar" id="admin-sidebar-cerrar" aria-label="Cerrar menú">✕</button>
+        <button type="button" class="admin-sidebar-cerrar" id="admin-sidebar-cerrar" aria-label="Cerrar menú" data-icon="cruz" data-icon-size="15"></button>
       </div>
 
       <nav class="admin-tabs" role="tablist">
-        <button class="admin-tab active" data-tab="dashboard" role="tab"><span class="admin-tab-ico" aria-hidden="true">📊</span><span>Dashboard</span></button>
-        <button class="admin-tab" data-tab="temario" role="tab"><span class="admin-tab-ico" aria-hidden="true">📚</span><span>Temario</span></button>
-        <button class="admin-tab" data-tab="preguntas" role="tab"><span class="admin-tab-ico" aria-hidden="true">❓</span><span>Preguntas</span></button>
-        <button class="admin-tab" data-tab="analitica" role="tab"><span class="admin-tab-ico" aria-hidden="true">📈</span><span>Analítica</span></button>
-        <button class="admin-tab" data-tab="usuarios" role="tab"><span class="admin-tab-ico" aria-hidden="true">👥</span><span>Usuarios</span></button>
-        <button class="admin-tab" data-tab="reportes" role="tab"><span class="admin-tab-ico" aria-hidden="true">🚩</span><span>Reportes</span><span class="admin-tab-badge" id="badge-reportes" hidden>0</span></button>
-        <button class="admin-tab" data-tab="limites" role="tab"><span class="admin-tab-ico" aria-hidden="true">🎚️</span><span>Límites</span></button>
-        <button class="admin-tab" data-tab="auditoria" role="tab"><span class="admin-tab-ico" aria-hidden="true">📜</span><span>Auditoría</span></button>
-        <button class="admin-tab" data-tab="sistema" role="tab"><span class="admin-tab-ico" aria-hidden="true">🩺</span><span>Sistema</span></button>
+        <button class="admin-tab active" data-tab="dashboard" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="grafico"></span><span>Dashboard</span></button>
+        <button class="admin-tab" data-tab="temario" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="libros"></span><span>Temario</span></button>
+        <button class="admin-tab" data-tab="preguntas" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="pregunta"></span><span>Preguntas</span></button>
+        <button class="admin-tab" data-tab="analitica" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="brujula"></span><span>Analítica</span></button>
+        <button class="admin-tab" data-tab="usuarios" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="usuarios"></span><span>Usuarios</span></button>
+        <button class="admin-tab" data-tab="reportes" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="bandera"></span><span>Reportes</span><span class="admin-tab-badge" id="badge-reportes" hidden>0</span></button>
+        <button class="admin-tab" data-tab="limites" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="ajustes"></span><span>Límites</span></button>
+        <button class="admin-tab" data-tab="auditoria" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="historial"></span><span>Auditoría</span></button>
+        <button class="admin-tab" data-tab="sistema" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="pulso"></span><span>Sistema</span></button>
       </nav>
 
       <a href="/zona-opositor/" class="admin-sidebar-salir"><span aria-hidden="true">←</span> Volver a la web</a>
@@ -88,7 +88,7 @@
 <!-- Modal genérico (crear/editar pregunta, detalle de usuario) -->
 <div id="admin-modal" class="admin-modal" hidden>
   <div class="admin-modal-caja age-card">
-    <button type="button" class="admin-modal-cerrar" id="admin-modal-cerrar" aria-label="Cerrar">✕</button>
+    <button type="button" class="admin-modal-cerrar" id="admin-modal-cerrar" aria-label="Cerrar" data-icon="cruz" data-icon-size="15"></button>
     <div id="admin-modal-contenido"></div>
   </div>
 </div>

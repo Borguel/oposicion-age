@@ -1,6 +1,14 @@
 import { idToken } from "/assets/auth.js";
+import { icono } from "/assets/icons.js";
 
 const BACKEND_URL = "https://oposicion-age.onrender.com";
+
+// Iconos de las tarjetas de herramientas y del banner "Mis documentos": se
+// pintan aquí, una sola vez, a partir de los data-icon del HTML (en vez de
+// emoji sueltos incrustados en el markup).
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+});
 
 // Este hub de herramientas se podía ver entero sin haber iniciado sesión.
 // Ahora se exige login nada más cargar la página, como en el resto de

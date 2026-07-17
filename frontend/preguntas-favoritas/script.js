@@ -1,3 +1,5 @@
+import { icono } from "/assets/icons.js";
+
 async function obtenerAuthHeaders() {
       const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");
       return fn();
@@ -33,7 +35,7 @@ async function obtenerAuthHeaders() {
 
     function mostrarAviso(texto) {
       const aviso = document.getElementById('aviso-favoritas');
-      aviso.innerText = texto;
+      aviso.innerHTML = texto;
       aviso.style.display = 'block';
     }
 
@@ -66,11 +68,11 @@ async function obtenerAuthHeaders() {
       const elTemporizador = document.getElementById("temporizador");
       const elTexto = document.getElementById("temporizador-texto");
       elTemporizador.style.display = "flex";
-      elTexto.textContent = `⏱ Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
+      elTexto.innerHTML = `${icono("reloj", 16)} Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
       document.getElementById("btn-toggle-temporizador").onclick = () => elTemporizador.classList.toggle("temporizador-oculto");
       intervaloTemporizador = setInterval(() => {
         const transcurrido = tiempoTranscurridoActual();
-        elTexto.textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
+        elTexto.innerHTML = `${icono("reloj", 16)} Tiempo: ${formatearTiempo(transcurrido)}`;
         if (transcurrido % 10 === 0) {
           import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
             autoguardarProgreso({
@@ -129,7 +131,7 @@ async function obtenerAuthHeaders() {
         preguntas = datos.test || [];
 
         if (preguntas.length === 0) {
-          mostrarAviso(datos.mensaje || "No tienes preguntas favoritas marcadas en tu cuenta. Marca la estrella ⭐ durante cualquier test para guardarlas aquí.");
+          mostrarAviso(datos.mensaje || `No tienes preguntas favoritas marcadas en tu cuenta. Marca la estrella <span class="icono-inline">${icono("estrella", 14)}</span> durante cualquier test para guardarlas aquí.`);
           document.getElementById("contenedor-test").innerHTML = "";
           document.getElementById("contenedor-test").style.display = "none";
           document.getElementById('tarjeta-formulario').style.display = "";
@@ -179,7 +181,7 @@ async function obtenerAuthHeaders() {
         mostrarPregunta(indicePreguntaActual);
       } catch (error) {
         clearInterval(intervalCarga);
-        mostrarAviso("❌ Error buscando preguntas favoritas. Intenta más tarde.");
+        mostrarAviso(`<span class="icono-inline">${icono("cruz", 16)} Error buscando preguntas favoritas. Intenta más tarde.</span>`);
         document.getElementById("contenedor-test").innerHTML = "";
         document.getElementById("contenedor-test").style.display = "none";
         document.getElementById('tarjeta-formulario').style.display = "";
@@ -217,7 +219,7 @@ async function obtenerAuthHeaders() {
           <span>${i + 1}. ${escaparHtml(p.pregunta)}</span>
           <div class="pregunta-acciones-header">
             ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
-            <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""}" aria-label="Marcar para revisión" title="🔖 Marcar esta pregunta para revisarla antes de terminar el test (queda resaltada en el mapa de preguntas)">🔖</button>
+            <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""} icono-inline" aria-label="Marcar para revisión" title="Marcar esta pregunta para revisarla antes de terminar el test (queda resaltada en el mapa de preguntas)">${icono("marcador", 16)}</button>
           </div>
         </div>`;
 
@@ -272,7 +274,7 @@ async function obtenerAuthHeaders() {
       const botonGuardarSalir = document.getElementById("btn-guardar-salir");
       botonGuardarSalir.style.display = "block";
       botonGuardarSalir.disabled = false;
-      botonGuardarSalir.textContent = "💾 Guardar y salir";
+      botonGuardarSalir.innerHTML = `${icono("guardar", 16)} Guardar y salir`;
       botonGuardarSalir.onclick = async function() {
         const boton = this;
         boton.disabled = true;

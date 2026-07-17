@@ -5,6 +5,10 @@ import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual } from "
 import { icono } from "/assets/icons.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+});
+
 const mensajeCheckout = document.getElementById("mensaje-checkout");
 const selectorOposicion = document.getElementById("selector-oposicion");
 const ctaPrueba = document.getElementById("cta-prueba");

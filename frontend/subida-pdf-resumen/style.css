@@ -4,6 +4,10 @@
    resumen generado y las animaciones puntuales. */
 
 .hidden { display: none !important; }
+
+/* Icono + texto en el indicador de autoguardado (antes solo un emoji suelto
+   delante del texto): que el SVG quede centrado con la línea de texto. */
+.auto-save-indicator { display: inline-flex; align-items: center; gap: 6px; }
 .fade-in { animation: fadeIn 0.5s ease; }
 @keyframes fadeIn {
   from { opacity: 0; }

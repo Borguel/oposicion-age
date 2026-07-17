@@ -31,7 +31,7 @@
 <nav class="age-nav"></nav>
 
   <div class="pdfherr-header">
-    <div class="pdfherr-icon">🧪</div>
+    <div class="pdfherr-icon" data-icon="matraz" data-icon-size="32"></div>
     <h1 id="titulo-formulario">Generar Test desde PDF</h1>
     <p>Sube tu documento y ponte a prueba con un test generado por IA a partir de su contenido.</p>
   </div>
@@ -40,15 +40,15 @@
     <!-- Formulario PDF -->
     <div class="card fade-in" id="tarjeta-formulario">
       <div class="card-header">
-        <div class="card-icon">⬆️</div>
+        <div class="card-icon" data-icon="subir" data-icon-size="20"></div>
         <h2 class="card-title">Subir Documento PDF</h2>
       </div>
       <form id="form-subir-pdf">
         <div class="form-group">
-          <label for="archivo-pdf">📄 Sube tu documento PDF (máx. 10 MB)</label>
+          <label for="archivo-pdf"><span data-icon="documento" data-icon-size="16"></span> Sube tu documento PDF (máx. 10 MB)</label>
           <p class="limite-paginas-nota hidden" id="limite-paginas-nota"></p>
           <div class="file-upload-area" id="upload-area">
-            <div class="upload-icon">⬆️</div>
+            <div class="upload-icon" data-icon="subir" data-icon-size="28"></div>
             <div class="upload-text">
               <h3>Arrastra y suelta aquí tu PDF</h3>
               <p>o pincha para cargarlo</p>
@@ -61,14 +61,14 @@
           <label for="num_preguntas">Número de preguntas (1–100):</label>
           <input type="number" id="num_preguntas" min="1" max="100" value="10" required>
         </div>
-        <button type="submit" class="btn btn-primary btn-full">✨ Generar Test desde PDF</button>
+        <button type="submit" class="btn btn-primary btn-full"><span data-icon="destellos" data-icon-size="16"></span> Generar Test desde PDF</button>
       </form>
     </div>
 
     <!-- Contenedor de carga -->
     <div id="contenedor-carga" class="card fade-in" style="display:none;">
       <div class="loading-container">
-        <div class="ai-icon" id="ai-icon">🤖</div>
+        <div class="ai-icon" id="ai-icon" data-icon="robot" data-icon-size="34"></div>
         <div class="mensaje-estado">
           <span id="texto-estado">Leyendo texto del PDF…</span>
         </div>
@@ -95,13 +95,13 @@
     <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
 
     <!-- Botones finales -->
-    <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;">💾 Guardar y salir</button>
+    <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;"><span data-icon="guardar" data-icon-size="16"></span> Guardar y salir</button>
     <button id="btn-finalizar" class="btn btn-danger btn-full" style="display:none;">Finalizar Test</button>
     <button id="btn-descargar-pdf" class="btn btn-secondary btn-full" style="display:none;">Descargar PDF del test</button>
     <div id="otras-herramientas-bloque" class="otras-herramientas-bloque hidden"></div>
   </div>
 
-  <script src="/subida-pdf-generar-test/script.js"></script>
+  <script type="module" src="/subida-pdf-generar-test/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
   <script type="module">
     import { mostrarLimitePaginas } from "/assets/limite-paginas.js";

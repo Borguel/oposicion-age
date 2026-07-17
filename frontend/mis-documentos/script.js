@@ -1,5 +1,6 @@
 import { idToken } from "/assets/auth.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
+import { icono } from "/assets/icons.js";
 
 const BACKEND_URL = "https://oposicion-age.onrender.com";
 const NUEVA_CARPETA = "__nueva__";
@@ -7,6 +8,10 @@ const NUEVA_CARPETA = "__nueva__";
 // tal en el catálogo de carpetas del backend, se calcula aquí a partir de
 // qué documentos tienen "carpeta" vacío.
 const SIN_CARPETA = "__sin_carpeta__";
+
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+});
 
 let documentos = [];
 let carpetas = [];
@@ -31,7 +36,7 @@ function formatearFecha(iso) {
   }
 }
 
-function filaContenido({ label, icono, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar }) {
+function filaContenido({ label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar }) {
   const acciones = [];
   if (existe) {
     acciones.push(`<a class="documento-card-btn principal" href="${urlVer}">Ver</a>`);
@@ -45,7 +50,7 @@ function filaContenido({ label, icono, existe, cantidad, urlVer, urlGenerar, url
   const etiquetaCantidad = existe && cantidad ? ` (${cantidad})` : "";
   return `
     <div class="documento-card-fila">
-      <span class="documento-card-fila-label">${icono} ${label}${etiquetaCantidad}</span>
+      <span class="documento-card-fila-label">${iconoHtml} ${label}${etiquetaCantidad}</span>
       <div class="documento-card-fila-acciones">${acciones.join("")}</div>
     </div>
   `;
@@ -75,7 +80,7 @@ function seccionCarpeta(doc, modoCarpeta) {
     `;
   }
   if (modoCarpeta === "etiqueta") {
-    return `<div class="documento-card-carpeta documento-card-carpeta-etiqueta">📁 ${doc.carpeta ? escaparHtml(doc.carpeta) : "Sin carpeta"}</div>`;
+    return `<div class="documento-card-carpeta documento-card-carpeta-etiqueta">${icono("carpeta", 16)} ${doc.carpeta ? escaparHtml(doc.carpeta) : "Sin carpeta"}</div>`;
   }
   return "";
 }
@@ -90,26 +95,26 @@ function tarjetaDocumento(doc, modoCarpeta) {
 
   const filas = [
     filaContenido({
-      label: "Resumen", icono: "📄", existe: doc.tiene_resumen,
+      label: "Resumen", iconoHtml: icono("documento", 16), existe: doc.tiene_resumen,
       urlVer: `/subida-pdf-resumen/?documento_id=${doc.id}&ver=resumen`,
       urlGenerar: `/subida-pdf-resumen/?documento_id=${doc.id}`,
       textoGenerar: "Generar resumen"
     }),
     filaContenido({
-      label: "Esquema", icono: "🗂️", existe: doc.tiene_esquema,
+      label: "Esquema", iconoHtml: icono("esquema", 16), existe: doc.tiene_esquema,
       urlVer: `/subida-pdf-esquemas/?documento_id=${doc.id}&ver=esquema`,
       urlGenerar: `/subida-pdf-esquemas/?documento_id=${doc.id}`,
       textoGenerar: "Generar esquema"
     }),
     filaContenido({
-      label: "Tarjetas", icono: "🃏", existe: doc.num_tarjetas > 0, cantidad: doc.num_tarjetas,
+      label: "Tarjetas", iconoHtml: icono("tarjeta", 16), existe: doc.num_tarjetas > 0, cantidad: doc.num_tarjetas,
       urlVer: `/subida-pdf-tarjetas/?documento_id=${doc.id}&ver=tarjetas&modo=todas`,
       urlAleatorias: `/subida-pdf-tarjetas/?documento_id=${doc.id}&ver=tarjetas&modo=aleatorias&cantidad=10`,
       urlGenerar: `/subida-pdf-tarjetas/?documento_id=${doc.id}`,
       textoGenerar: "Generar tarjetas"
     }),
     filaContenido({
-      label: "Test", icono: "🧪", existe: doc.num_tests > 0,
+      label: "Test", iconoHtml: icono("matraz", 16), existe: doc.num_tests > 0,
       cantidad: doc.num_tests ? `${doc.num_tests} intento${doc.num_tests > 1 ? "s" : ""}` : null,
       urlVer: `/subida-pdf-generar-test/?documento_id=${doc.id}&ver=test`,
       urlGenerar: `/subida-pdf-generar-test/?documento_id=${doc.id}`,
@@ -120,7 +125,7 @@ function tarjetaDocumento(doc, modoCarpeta) {
   return `
     <div class="documento-card" data-id="${doc.id}">
       <div class="documento-card-header">
-        <div class="documento-card-icon">📘</div>
+        <div class="documento-card-icon">${icono("libro", 26)}</div>
         <div>
           <p class="documento-card-titulo">${escaparHtml(nombreCorto)}</p>
           <p class="documento-card-meta">${escaparHtml(meta)}</p>
@@ -135,7 +140,7 @@ function tarjetaDocumento(doc, modoCarpeta) {
 function tarjetaCarpeta(idCarpeta, nombreMostrado, cantidad, esEspecial) {
   return `
     <button type="button" class="carpeta-tile${esEspecial ? " carpeta-tile-especial" : ""}" data-carpeta="${escaparHtml(idCarpeta)}">
-      <span class="carpeta-tile-icono">${esEspecial ? "📄" : "📁"}</span>
+      <span class="carpeta-tile-icono">${esEspecial ? icono("documento", 26) : icono("carpeta", 26)}</span>
       <span class="carpeta-tile-nombre">${escaparHtml(nombreMostrado)}</span>
       <span class="carpeta-tile-contador">${cantidad} documento${cantidad === 1 ? "" : "s"}</span>
     </button>

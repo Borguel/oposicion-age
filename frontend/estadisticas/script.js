@@ -1,3 +1,11 @@
+import { icono } from "/assets/icons.js";
+
+function inyectarIconosEstaticos() {
+  document.querySelectorAll("[data-icon]").forEach((el) => {
+    el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 20));
+  });
+}
+
 // "puntuacion_final" guardado en historial_tests es la puntuación en
 // bruto (aciertos - fallos/3, sin normalizar -- puede ser cualquier rango
 // según el nº de preguntas del test), NO la nota sobre 10. Se recalcula
@@ -44,6 +52,7 @@ async function obtenerAuthHeaders() {
 }
 
 document.addEventListener("DOMContentLoaded", async function () {
+  inyectarIconosEstaticos();
   const { protegerPagina } = await import("/assets/plan.js");
   if (!(await protegerPagina("basico"))) return;
 
@@ -291,16 +300,16 @@ document.addEventListener("DOMContentLoaded", async function () {
   // tiene un umbral simple; si no está conseguida se muestra en gris con
   // el progreso actual para animar a seguir usando la web.
   const INSIGNIAS = [
-    { icono: "🎯", titulo: "Primer test", descripcion: "Completa tu primer test", valor: (d) => d.testsRealizados, umbral: 1, unidad: "test" },
-    { icono: "🔥", titulo: "Racha de 3 días", descripcion: "Estudia 3 días seguidos", valor: (d) => d.rachaMaxima, umbral: 3, unidad: "días" },
-    { icono: "🔥", titulo: "Racha de 7 días", descripcion: "Estudia 7 días seguidos", valor: (d) => d.rachaMaxima, umbral: 7, unidad: "días" },
-    { icono: "🔥", titulo: "Racha de 30 días", descripcion: "Estudia 30 días seguidos", valor: (d) => d.rachaMaxima, umbral: 30, unidad: "días" },
-    { icono: "📚", titulo: "10 tests", descripcion: "Completa 10 tests", valor: (d) => d.testsRealizados, umbral: 10, unidad: "tests" },
-    { icono: "🎓", titulo: "50 tests", descripcion: "Completa 50 tests", valor: (d) => d.testsRealizados, umbral: 50, unidad: "tests" },
-    { icono: "✅", titulo: "10 aprobados", descripcion: "Aprueba 10 tests", valor: (d) => d.testsAprobados, umbral: 10, unidad: "aprobados" },
-    { icono: "🏆", titulo: "Excelencia", descripcion: "Nota media de 8 o más", valor: (d) => d.puntuacionMedia, umbral: 8, unidad: "puntos" },
-    { icono: "🗂️", titulo: "Esquematizador", descripcion: "Genera 5 esquemas", valor: (d) => d.esquemas, umbral: 5, unidad: "esquemas" },
-    { icono: "📄", titulo: "Documentalista", descripcion: "Sube 3 documentos PDF", valor: (d) => d.totalArchivos, umbral: 3, unidad: "documentos" }
+    { icono: "diana", titulo: "Primer test", descripcion: "Completa tu primer test", valor: (d) => d.testsRealizados, umbral: 1, unidad: "test" },
+    { icono: "fuego", titulo: "Racha de 3 días", descripcion: "Estudia 3 días seguidos", valor: (d) => d.rachaMaxima, umbral: 3, unidad: "días" },
+    { icono: "fuego", titulo: "Racha de 7 días", descripcion: "Estudia 7 días seguidos", valor: (d) => d.rachaMaxima, umbral: 7, unidad: "días" },
+    { icono: "fuego", titulo: "Racha de 30 días", descripcion: "Estudia 30 días seguidos", valor: (d) => d.rachaMaxima, umbral: 30, unidad: "días" },
+    { icono: "libros", titulo: "10 tests", descripcion: "Completa 10 tests", valor: (d) => d.testsRealizados, umbral: 10, unidad: "tests" },
+    { icono: "graduacion", titulo: "50 tests", descripcion: "Completa 50 tests", valor: (d) => d.testsRealizados, umbral: 50, unidad: "tests" },
+    { icono: "check", titulo: "10 aprobados", descripcion: "Aprueba 10 tests", valor: (d) => d.testsAprobados, umbral: 10, unidad: "aprobados" },
+    { icono: "trofeo", titulo: "Excelencia", descripcion: "Nota media de 8 o más", valor: (d) => d.puntuacionMedia, umbral: 8, unidad: "puntos" },
+    { icono: "esquema", titulo: "Esquematizador", descripcion: "Genera 5 esquemas", valor: (d) => d.esquemas, umbral: 5, unidad: "esquemas" },
+    { icono: "documento", titulo: "Documentalista", descripcion: "Sube 3 documentos PDF", valor: (d) => d.totalArchivos, umbral: 3, unidad: "documentos" }
   ];
 
   function renderizarInsignias(datos) {
@@ -311,14 +320,14 @@ document.addEventListener("DOMContentLoaded", async function () {
       const actual = insignia.valor(datos) || 0;
       const conseguida = actual >= insignia.umbral;
       if (conseguida) {
-        conseguidas.push(`${insignia.icono} ${insignia.titulo}`);
+        conseguidas.push(insignia.titulo);
       } else {
         pendientes.push({ insignia, actual, progreso: actual / insignia.umbral });
       }
       const actualMostrado = Number.isInteger(insignia.umbral) ? Math.floor(Math.min(actual, insignia.umbral)) : Math.min(actual, insignia.umbral).toFixed(1);
       return `
         <div class="insignia${conseguida ? " conseguida" : ""}" title="${insignia.descripcion}">
-          <div class="insignia-icono">${insignia.icono}</div>
+          <div class="insignia-icono">${icono(insignia.icono, 22)}</div>
           <div class="insignia-titulo">${insignia.titulo}</div>
           <div class="insignia-estado">${conseguida ? "Conseguida" : `${actualMostrado}/${insignia.umbral}`}</div>
         </div>
@@ -345,7 +354,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const restanteTexto = Number.isInteger(insignia.umbral) ? Math.ceil(restante) : restante.toFixed(1);
 
     contenedor.innerHTML = `
-      <span class="insignia-siguiente-icono">${insignia.icono}</span>
+      <span class="insignia-siguiente-icono">${icono(insignia.icono, 20)}</span>
       <span class="insignia-siguiente-texto">Te falta poco para <strong>${insignia.titulo}</strong>: ${restanteTexto} ${insignia.unidad} más y la consigues.</span>
     `;
     contenedor.style.display = "flex";

@@ -29,7 +29,7 @@
 <nav class="age-nav"></nav>
 
   <div class="pdfherr-header">
-    <div class="pdfherr-icon">💬</div>
+    <div class="pdfherr-icon" data-icon="chat" data-icon-size="32"></div>
     <h1>Chat con tu PDF</h1>
     <p>Sube un documento y pregúntale a la IA lo que quieras sobre su contenido, como si chatearas con alguien que se lo ha leído entero.</p>
   </div>
@@ -38,16 +38,16 @@
     <div class="pdf-chat-grid">
       <div class="card pdf-chat-upload-card">
         <div class="card-header">
-          <div class="card-icon">📄</div>
+          <div class="card-icon" data-icon="documento" data-icon-size="20"></div>
           <h2 class="card-title">Sube tu documento</h2>
         </div>
         <p class="limite-paginas-nota hidden" id="limite-paginas-nota"></p>
         <div class="file-upload-area" id="pdf-upload-area">
-          <div class="upload-icon">📄</div>
+          <div class="upload-icon" data-icon="documento" data-icon-size="28"></div>
           <h3>Arrastra tu PDF aquí</h3>
           <p>o haz clic para seleccionar un archivo</p>
           <input type="file" id="pdf-file" class="file-input" accept=".pdf" hidden>
-          <button type="button" class="btn btn-primary" id="select-pdf-btn">📂 Seleccionar PDF</button>
+          <button type="button" class="btn btn-primary" id="select-pdf-btn"><span data-icon="carpeta" data-icon-size="16"></span> Seleccionar PDF</button>
         </div>
 
         <div id="pdf-info" class="pdf-info-box hidden">
@@ -74,7 +74,7 @@
         </div>
         <div class="input-container">
           <input type="text" id="pdf-user-input" placeholder="Haz una pregunta sobre el documento..." disabled>
-          <button id="pdf-send-btn" disabled aria-label="Enviar pregunta">➤</button>
+          <button id="pdf-send-btn" disabled aria-label="Enviar pregunta"><span data-icon="reproducir" data-icon-size="16"></span></button>
         </div>
       </div>
     </div>

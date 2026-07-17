@@ -3,7 +3,7 @@ import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
-import { fijarTexto } from "/assets/dom.js";
+import { fijarTexto, fijarHTML } from "/assets/dom.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { inicializarCuentaAtras } from "/assets/cuenta-atras.js";
 
@@ -34,7 +34,7 @@ async function cargarRacha() {
     fijarTexto("racha-numero", racha_actual);
     fijarTexto("racha-plural", racha_actual === 1 ? "" : "s");
     fijarTexto("racha-mensaje", mensajeParaRacha(racha_actual));
-    fijarTexto("racha-icono", racha_actual > 0 ? "🔥" : "💤");
+    fijarHTML("racha-icono", racha_actual > 0 ? icono("fuego", 22) : icono("luna", 22));
     if (racha_maxima > racha_actual) {
       fijarTexto("racha-maxima", `Tu mejor racha: ${racha_maxima} día${racha_maxima === 1 ? "" : "s"}`);
       const elMaxima = document.getElementById("racha-maxima");
@@ -218,7 +218,7 @@ async function iniciarBotonNotificaciones() {
   if (!(await pushDisponibleEnNavegador()) || !(await pushConfiguradoEnServidor())) return;
 
   const pintar = (activas) => {
-    boton.textContent = activas ? "🔕 Desactivar avisos" : "🔔 Avisarme si la pierdo";
+    boton.innerHTML = activas ? `${icono("campanaOff", 15)} Desactivar avisos` : `${icono("campana", 15)} Avisarme si la pierdo`;
   };
   pintar(await notificacionesActivas());
   boton.style.display = "";
@@ -323,7 +323,7 @@ const AVISOS = [
     href: "/test-oficial/"
   },
   {
-    emoji: "🔥",
+    iconoNombre: "fuego",
     titulo: "No rompas tu racha de estudio",
     texto: "Cada día que practicas cuenta. Haz aunque sea un test corto para mantener viva tu racha.",
     cta: "Hacer un test",
@@ -338,7 +338,7 @@ function renderAviso() {
   const a = AVISOS[avisoActual];
   contenedor.innerHTML = `
     <div class="zona-avisos-card">
-      <span class="zona-avisos-icono">${a.emoji || icono(a.iconoNombre, 32)}</span>
+      <span class="zona-avisos-icono">${icono(a.iconoNombre, 32)}</span>
       <div class="zona-avisos-texto">
         <h3>${a.titulo}</h3>
         <p>${a.texto}</p>
@@ -444,7 +444,14 @@ function renderSwitcher() {
 
 const PILL_PLAN = { gratis: "age-pill", basico: "age-pill age-pill-primary", premium: "age-pill age-pill-success" };
 
+function inyectarIconosEstaticos() {
+  document.querySelectorAll("[data-icon]").forEach((el) => {
+    el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 20));
+  });
+}
+
 async function iniciar() {
+  inyectarIconosEstaticos();
   const usuario = await esperarUsuario();
   if (!usuario) {
     window.location.href = "/login/?next=/zona-opositor/";

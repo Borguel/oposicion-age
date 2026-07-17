@@ -1,17 +1,22 @@
 import { idToken } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
+import { icono } from "/assets/icons.js";
 
 const TIPO_INFO = {
-  personalizado: { icono: "📝", label: "Personalizado" },
-  oficial: { icono: "🏛️", label: "Oficial" },
-  inteligente: { icono: "🤖", label: "Inteligente IA" },
-  repetido: { icono: "🔁", label: "Repetido" },
-  falladas: { icono: "❌", label: "Preguntas falladas" },
+  personalizado: { iconoHtml: icono("lapiz", 30), label: "Personalizado" },
+  oficial: { iconoHtml: icono("edificio", 30), label: "Oficial" },
+  inteligente: { iconoHtml: icono("robot", 30), label: "Inteligente IA" },
+  repetido: { iconoHtml: icono("repetir", 30), label: "Repetido" },
+  falladas: { iconoHtml: icono("cruz", 30), label: "Preguntas falladas" },
 };
 
 function tipoInfo(tipo) {
-  return TIPO_INFO[tipo] || { icono: "🧪", label: tipo || "Test" };
+  return TIPO_INFO[tipo] || { iconoHtml: icono("matraz", 30), label: tipo || "Test" };
 }
+
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+});
 
 function formatearFecha(iso) {
   if (!iso) return "";
@@ -67,7 +72,7 @@ async function inicializar() {
     const respuestasUsuario = preguntas.map((p) => p.respuesta_usuario ?? null);
 
     const info = tipoInfo(test.tipo);
-    document.getElementById("resultado-icono").textContent = info.icono;
+    document.getElementById("resultado-icono").innerHTML = info.iconoHtml;
     document.getElementById("resultado-titulo").textContent = `Resultados — ${info.label}`;
     document.getElementById("resultado-fecha").textContent = formatearFecha(test.fecha);
 

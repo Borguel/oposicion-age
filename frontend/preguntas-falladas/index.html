@@ -34,7 +34,7 @@
       <form id="form-falladas">
         <div class="test-type-container">
           <div class="test-type-card selected">
-            <div class="icon">📊</div>
+            <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="14" width="3" height="6"/><rect x="11" y="10" width="3" height="10"/><rect x="16" y="6" width="3" height="14"/></svg></div>
             <div class="title">Repaso de Fallos</div>
             <div class="description">Practica con las preguntas que has fallado anteriormente</div>
           </div>
@@ -58,8 +58,8 @@
     </div>
 
     <div id="temporizador" style="display:none;">
-      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador">👁️</button>
-      <span id="temporizador-texto"></span>
+      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <span id="temporizador-texto" class="icono-inline"></span>
     </div>
 
     <div id="navegador-preguntas" class="navegador-preguntas" style="display:none;"></div>
@@ -67,7 +67,7 @@
     <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
 
     <div class="acciones-test-footer">
-      <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;">💾 Guardar y salir</button>
+      <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico icono-inline" style="display:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v6h8V4"/><path d="M8 21v-7h8v7"/></svg> Guardar y salir</button>
       <button id="btn-finalizar" class="age-btn age-btn-danger-outline age-btn-block" style="display:none;">Finalizar Test</button>
     </div>
     <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
@@ -77,7 +77,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   
-  <script src="/preguntas-falladas/script.js"></script>
+  <script type="module" src="/preguntas-falladas/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
 </body>
 </html>

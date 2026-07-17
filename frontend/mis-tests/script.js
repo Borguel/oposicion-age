@@ -1,14 +1,15 @@
 import { idToken } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
+import { icono } from "/assets/icons.js";
 
 const TIPO_INFO = {
-  personalizado: { icono: "📝", label: "Personalizado" },
-  oficial: { icono: "🏛️", label: "Oficial" },
-  inteligente: { icono: "🤖", label: "Inteligente IA" },
-  repetido: { icono: "🔁", label: "Repetido" },
-  falladas: { icono: "❌", label: "Preguntas falladas" },
-  favoritas: { icono: "⭐", label: "Preguntas favoritas" },
+  personalizado: { iconoHtml: icono("lapiz", 28), label: "Personalizado" },
+  oficial: { iconoHtml: icono("edificio", 28), label: "Oficial" },
+  inteligente: { iconoHtml: icono("robot", 28), label: "Inteligente IA" },
+  repetido: { iconoHtml: icono("repetir", 28), label: "Repetido" },
+  falladas: { iconoHtml: icono("cruz", 28), label: "Preguntas falladas" },
+  favoritas: { iconoHtml: icono("estrella", 28), label: "Preguntas favoritas" },
 };
 
 const PAGINA_POR_TIPO = {
@@ -20,12 +21,16 @@ const PAGINA_POR_TIPO = {
   favoritas: "/preguntas-favoritas/",
 };
 
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+});
+
 let tests = [];
 let temasPorId = new Map();
 let filtroEstado = "";
 
 function tipoInfo(tipo) {
-  return TIPO_INFO[tipo] || { icono: "🧪", label: tipo || "Test" };
+  return TIPO_INFO[tipo] || { iconoHtml: icono("matraz", 28), label: tipo || "Test" };
 }
 
 function formatearFecha(iso) {
@@ -52,7 +57,7 @@ function pillsTemas(temaIds, testId) {
   }).join("");
   return `
     <button type="button" class="test-card-temas-toggle" data-toggle-temas="${testId}">
-      <span>📚 ${temaIds.length} tema${temaIds.length !== 1 ? "s" : ""}</span>
+      <span>${icono("libros", 16)} ${temaIds.length} tema${temaIds.length !== 1 ? "s" : ""}</span>
       <span class="test-card-temas-caret">▾</span>
     </button>
     <div class="test-card-temas hidden" id="temas-${testId}">${pills}</div>
@@ -69,7 +74,7 @@ function tarjetaTest(t) {
   let acciones;
   if (t.estado === "en_progreso") {
     const vistas = (t.indice_actual || 0) + 1;
-    bloqueEstado = `<span class="age-pill age-pill-primary">🕐 En progreso — pregunta ${vistas}/${t.num_preguntas || "?"}</span>`;
+    bloqueEstado = `<span class="age-pill age-pill-primary">${icono("reloj", 16)} En progreso — pregunta ${vistas}/${t.num_preguntas || "?"}</span>`;
     acciones = `
       <a class="age-btn age-btn-primary" href="${pagina}?resume=${t.id}">Continuar</a>
       <button type="button" class="age-btn age-btn-danger" data-borrar-test="${t.id}">Eliminar</button>
@@ -77,7 +82,7 @@ function tarjetaTest(t) {
   } else {
     const aprobado = t.resultado === "aprobado";
     bloqueEstado = `
-      <span class="age-pill ${aprobado ? "age-pill-success" : "age-pill-danger"}">${aprobado ? "✅ Aprobado" : "❌ Suspendido"}</span>
+      <span class="age-pill ${aprobado ? "age-pill-success" : "age-pill-danger"}">${aprobado ? `${icono("check", 16)} Aprobado` : `${icono("cruz", 16)} Suspendido`}</span>
       <span class="age-pill">${t.porcentaje_acierto ?? 0}% acierto</span>
     `;
     acciones = `
@@ -90,7 +95,7 @@ function tarjetaTest(t) {
   return `
     <div class="test-card" data-id="${t.id}">
       <div class="test-card-header">
-        <div class="test-card-icon">${info.icono}</div>
+        <div class="test-card-icon">${info.iconoHtml}</div>
         <div>
           <p class="test-card-titulo">${info.label}</p>
           <p class="test-card-meta">${partes.join(" · ")}</p>

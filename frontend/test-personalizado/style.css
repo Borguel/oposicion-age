@@ -26,3 +26,13 @@
   border-color: var(--age-warning);
   color: var(--age-warning);
 }
+
+/* Agrupa un icono SVG con el texto que lo acompaña (botones, avisos,
+   cronómetro) para que quede centrado verticalmente en vez de desalineado
+   con la línea base del texto. */
+.icono-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+}

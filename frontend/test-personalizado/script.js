@@ -3,6 +3,8 @@
 // las demás páginas de test (ver /test-generator/, /test-oficial/,
 // /test-inteligente/), separada en su propia página para no mezclar el
 // selector de tipo de test con el propio formulario de generación.
+import { icono } from "/assets/icons.js";
+
 const TIPO_TEST = "personalizado";
 const ENDPOINT_GENERAR = "/generar-test-avanzado";
 const REQUIERE_TEMA = true;
@@ -184,7 +186,7 @@ async function obtenerAuthHeaders() {
         if (TIPO_TEST !== "oficial") {
           document.getElementById("barra-progreso-tiempo").style.display = "block";
         }
-        elTexto.innerHTML = `⏱ Tiempo restante: <span class="pulse">${formatearTiempo(tiempoLimite)}</span>`;
+        elTexto.innerHTML = `${icono("reloj", 16)} Tiempo restante: <span class="pulse">${formatearTiempo(tiempoLimite)}</span>`;
         elTemporizador.classList.toggle("temporizador-urgente", tiempoLimite <= 300);
         intervaloTemporizador = setInterval(() => {
           tiempoLimite--;
@@ -200,7 +202,7 @@ async function obtenerAuthHeaders() {
             });
             return;
           }
-          elTexto.innerHTML = `⏱ Tiempo restante: <span class="pulse">${formatearTiempo(tiempoLimite)}</span>`;
+          elTexto.innerHTML = `${icono("reloj", 16)} Tiempo restante: <span class="pulse">${formatearTiempo(tiempoLimite)}</span>`;
           // Últimos 5 minutos: aviso rojo con parpadeo suave (antes no había
           // ningún estado de urgencia real, solo un tono azul que no cambiaba
           // nada visualmente hasta el último minuto).
@@ -224,10 +226,10 @@ async function obtenerAuthHeaders() {
         }, 1000);
       } else {
         tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
-        elTexto.textContent = `⏱ Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
+        elTexto.innerHTML = `${icono("reloj", 16)} Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
         intervaloTemporizador = setInterval(() => {
           const transcurrido = tiempoTranscurridoActual();
-          elTexto.textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
+          elTexto.innerHTML = `${icono("reloj", 16)} Tiempo: ${formatearTiempo(transcurrido)}`;
           if (transcurrido % 10 === 0) {
             import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
               autoguardarProgreso({
@@ -275,9 +277,9 @@ async function obtenerAuthHeaders() {
         document.getElementById("navegador-preguntas").insertAdjacentElement("afterend", el);
       }
       const restantes = Math.max(total - completadas, 0);
-      el.textContent = restantes > 0
-        ? `⏳ Generando ${restantes} pregunta${restantes !== 1 ? "s" : ""} más en segundo plano...`
-        : "⏳ Terminando de verificar el resto de preguntas...";
+      el.innerHTML = restantes > 0
+        ? `<span class="icono-inline">${icono("arena", 16)} Generando ${restantes} pregunta${restantes !== 1 ? "s" : ""} más en segundo plano...</span>`
+        : `<span class="icono-inline">${icono("arena", 16)} Terminando de verificar el resto de preguntas...</span>`;
     }
 
     function ocultarIndicadorGenerandoFondo() {
@@ -298,7 +300,7 @@ async function obtenerAuthHeaders() {
         document.getElementById("navegador-preguntas").insertAdjacentElement("afterend", el);
       }
       el.className = "indicador-generando-fondo indicador-generando-fondo-aviso";
-      el.textContent = `⚠️ ${mensaje}`;
+      el.innerHTML = `<span class="icono-inline">${icono("alerta", 16)} ${mensaje}</span>`;
       setTimeout(() => el.remove(), 8000);
     }
 
@@ -471,7 +473,7 @@ async function obtenerAuthHeaders() {
           pararProgresoCosmetico();
           const datosError = await res.json();
           document.getElementById('contenedor-test').innerHTML = `
-            <p>⏳ ${datosError.error || "Has alcanzado el límite de uso de esta herramienta por ahora."}</p>
+            <p class="icono-inline">${icono("arena", 18)} ${datosError.error || "Has alcanzado el límite de uso de esta herramienta por ahora."}</p>
             <a class="btn btn-primary" href="/planes/">Ver planes</a>
           `;
           return;
@@ -633,7 +635,7 @@ async function obtenerAuthHeaders() {
           <span>${i + 1}. ${textoPregunta}</span>
           <div class="pregunta-acciones-header">
             ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
-            <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""}" aria-label="Marcar para revisión" title="🔖 Marcar esta pregunta para revisarla antes de terminar el test (queda resaltada en el mapa de preguntas)">🔖</button>
+            <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""} icono-inline" aria-label="Marcar para revisión" title="Marcar esta pregunta para revisarla antes de terminar el test (queda resaltada en el mapa de preguntas)">${icono("marcador", 16)}</button>
           </div>
         </div>`;
       for (const letra in p.opciones) {
@@ -685,7 +687,7 @@ async function obtenerAuthHeaders() {
       const botonGuardarSalir = document.getElementById("btn-guardar-salir");
       botonGuardarSalir.style.display = "block";
       botonGuardarSalir.disabled = false;
-      botonGuardarSalir.textContent = "💾 Guardar y salir";
+      botonGuardarSalir.innerHTML = `${icono("guardar", 16)} Guardar y salir`;
       botonGuardarSalir.onclick = async function() {
         const boton = this;
         boton.disabled = true;

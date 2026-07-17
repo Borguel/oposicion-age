@@ -438,6 +438,9 @@
     }
 
     .showcase-text h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       font-size: clamp(1.3rem, 2.4vw, 1.7rem);
       font-weight: 800;
       letter-spacing: -0.01em;
@@ -755,7 +758,7 @@
   <section class="home-hero">
     <div class="home-hero-inner">
       <div class="home-hero-texto">
-        <span class="age-pill age-pill-primary">🎯 Estudia con IA, a tu ritmo</span>
+        <span class="age-pill age-pill-primary"><span data-icon="diana" data-icon-size="16"></span> Estudia con IA, a tu ritmo</span>
         <h1>Prepara tu oposición sin perderte entre apuntes</h1>
         <p>Tests ilimitados sobre el temario oficial de tu oposición, herramientas con inteligencia artificial avanzada para tus propios documentos, y estadísticas claras de tu progreso — todo en un solo sitio.</p>
         <div class="home-hero-ctas">
@@ -769,7 +772,7 @@
 
   <section class="home-prueba-banner">
     <div class="home-prueba-banner-inner">
-      <span class="home-prueba-banner-emoji">🎁</span>
+      <span class="home-prueba-banner-emoji" data-icon="regalo" data-icon-size="32"></span>
       <div class="home-prueba-banner-texto">
         <strong>7 días de Premium gratis, sin tarjeta</strong>
         <span>Accede a todas las herramientas desde el primer día. Después, tú decides si sigues.</span>
@@ -794,22 +797,22 @@
     <p class="home-section-sub">Herramientas pensadas para opositores que quieren estudiar de forma inteligente, no solo memorizar.</p>
     <div class="highlight-grid">
       <div class="highlight-card">
-        <div class="highlight-icon">📝</div>
+        <div class="highlight-icon" data-icon="lapiz" data-icon-size="30"></div>
         <h3>Tests personalizados y oficiales</h3>
         <p>Elige los temas que quieres practicar, simula exámenes con preguntas reales o deja que la IA adapte el nivel a cómo vas rindiendo.</p>
       </div>
       <div class="highlight-card">
-        <div class="highlight-icon">🔁</div>
+        <div class="highlight-icon" data-icon="repetir" data-icon-size="30"></div>
         <h3>Intentos ilimitados</h3>
         <p>Repite el último test, repasa solo las preguntas que has fallado y vuelve sobre cualquier tema tantas veces como necesites.</p>
       </div>
       <div class="highlight-card">
-        <div class="highlight-icon">🤖</div>
+        <div class="highlight-icon" data-icon="robot" data-icon-size="30"></div>
         <h3>IA avanzada</h3>
         <p>Nuestro motor de IA analiza tus propios apuntes o el BOE y genera preguntas relevantes con explicaciones detalladas para cada respuesta.</p>
       </div>
       <div class="highlight-card">
-        <div class="highlight-icon">⚡</div>
+        <div class="highlight-icon" data-icon="rayo" data-icon-size="30"></div>
         <h3>Resultados instantáneos</h3>
         <p>Corrección automática, feedback inmediato y estadísticas por tema para saber exactamente dónde flojeas.</p>
       </div>
@@ -849,7 +852,7 @@
 
     <div class="showcase-row">
       <div class="showcase-text">
-        <h3>📝 Tests que se adaptan a ti</h3>
+        <h3><span data-icon="lapiz" data-icon-size="22"></span> Tests que se adaptan a ti</h3>
         <p>Genera exámenes <strong>personalizados</strong> eligiendo los temas que quieres reforzar, ponte a prueba con <strong>preguntas oficiales</strong> reales de convocatorias anteriores, o deja que la IA cree un test <strong>inteligente</strong> que se ajusta a tu nivel según tus aciertos y fallos.</p>
         <a href="/test-generator/" class="age-btn age-btn-outline">Generar un test</a>
       </div>
@@ -858,7 +861,7 @@
           <div class="mock-linea"></div>
           <div class="mock-linea corta"></div>
           <div class="mock-opcion"><span class="letra">A</span> Primera opción</div>
-          <div class="mock-opcion correcta"><span class="letra">B</span> Segunda opción ✓</div>
+          <div class="mock-opcion correcta"><span class="letra">B</span> Segunda opción <span data-icon="check" data-icon-size="14"></span></div>
           <div class="mock-opcion"><span class="letra">C</span> Tercera opción</div>
         </div>
       </div>
@@ -866,7 +869,7 @@
 
     <div class="showcase-row reverse">
       <div class="showcase-text">
-        <h3>🃏 Tarjetas de memoria</h3>
+        <h3><span data-icon="tarjeta" data-icon-size="22"></span> Tarjetas de memoria</h3>
         <p>Avanza más rápido con <strong>memorización activa</strong>. Convierte cualquier PDF en tarjetas de pregunta/respuesta, repásalas en modo estudio y trabaja la <strong>memoria a largo plazo</strong> en vez de releer lo mismo una y otra vez.</p>
         <a href="/subida-pdf-tarjetas/" class="age-btn age-btn-outline">Crear tarjetas de memoria</a>
       </div>
@@ -880,7 +883,7 @@
 
     <div class="showcase-row">
       <div class="showcase-text">
-        <h3>🗂️ Esquemas y resúmenes automáticos</h3>
+        <h3><span data-icon="esquema" data-icon-size="22"></span> Esquemas y resúmenes automáticos</h3>
         <p>Sube un documento largo y consigue un <strong>esquema jerárquico</strong> listo para repasar de un vistazo, o un <strong>resumen</strong> con los puntos clave para sintetizar un tema entero en minutos.</p>
         <a href="/subida-pdf-esquemas/" class="age-btn age-btn-outline">Generar un esquema</a>
       </div>
@@ -897,7 +900,7 @@
 
     <div class="showcase-row reverse">
       <div class="showcase-text">
-        <h3>💬 Tu Tutor</h3>
+        <h3><span data-icon="chat" data-icon-size="22"></span> Tu Tutor</h3>
         <p>Resuelve cualquier duda del temario charlando con la IA como lo harías con un compañero de estudio, o pregúntale por la <strong>estructura del examen, plazos y consejos</strong> de cara a la prueba: Tu Tutor entiende qué necesitas y responde en consecuencia.</p>
         <a href="/tu-tutor/" class="age-btn age-btn-outline">Abrir Tu Tutor</a>
       </div>
@@ -912,7 +915,7 @@
 
     <div class="showcase-row">
       <div class="showcase-text">
-        <h3>📊 Estadísticas de tu progreso</h3>
+        <h3><span data-icon="grafico" data-icon-size="22"></span> Estadísticas de tu progreso</h3>
         <p>Aciertos, fallos, nota media, temas más estudiados y temas pendientes — todo separado por oposición, para que sepas exactamente qué repasar antes del examen.</p>
         <a href="/estadisticas/" class="age-btn age-btn-outline">Ver mis estadísticas</a>
       </div>
@@ -1003,22 +1006,22 @@
     <p class="home-section-sub">Elige por dónde quieres empezar hoy</p>
     <div class="home-grid">
       <a class="age-option-card" href="/test-generator/">
-        <span class="age-option-icon">📝</span>
+        <span class="age-option-icon" data-icon="lapiz" data-icon-size="28"></span>
         <span class="age-option-title">Tests</span>
         <span class="age-option-desc">Personalizados, oficiales, con IA, repite el último o repasa tus fallos.</span>
       </a>
       <a class="age-option-card" href="/subida-pdf-pagina-principal/">
-        <span class="age-option-icon">🧠</span>
+        <span class="age-option-icon" data-icon="cerebro" data-icon-size="28"></span>
         <span class="age-option-title">Herramientas IA</span>
         <span class="age-option-desc">Sube un PDF y consigue resúmenes, esquemas, tarjetas o preguntas al momento.</span>
       </a>
       <a class="age-option-card" href="/tu-tutor/">
-        <span class="age-option-icon">💬</span>
+        <span class="age-option-icon" data-icon="chat" data-icon-size="28"></span>
         <span class="age-option-title">Tu Tutor</span>
         <span class="age-option-desc">Resuelve dudas del temario o del proceso selectivo en un único chat.</span>
       </a>
       <a class="age-option-card" href="/estadisticas/">
-        <span class="age-option-icon">📊</span>
+        <span class="age-option-icon" data-icon="grafico" data-icon-size="28"></span>
         <span class="age-option-title">Estadísticas</span>
         <span class="age-option-desc">Tu progreso, aciertos y temas pendientes, separado por cada oposición.</span>
       </a>
@@ -1027,6 +1030,11 @@
 
   <script type="module" src="/assets/auth.js"></script>
   <script type="module">
+    import { icono } from "/assets/icons.js";
+    document.querySelectorAll("[data-icon]").forEach((el) => {
+      el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+    });
+
     function animarConteo(elemento, destino, duracionMs = 1500) {
       const inicio = performance.now();
       function paso(ahora) {

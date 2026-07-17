@@ -10,8 +10,9 @@
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { obtenerAuthHeaders } from "/assets/auth.js";
 import { obtenerOposicionActual } from "/assets/oposicion.js";
+import { icono } from "/assets/icons.js";
 
-const ERROR_TECNICO = "⚠️ El tutor ha tenido un problema técnico. Vuelve a intentarlo en unos segundos.";
+const ERROR_TECNICO = "El tutor ha tenido un problema técnico. Vuelve a intentarlo en unos segundos.";
 
 function escapeHtml(text) {
   const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
@@ -105,7 +106,7 @@ export function montarWidgetTutor() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.7 3M3 4v4h4"/><path d="M12 8v4l3 2"/></svg>
           </button>
           <a href="/tu-tutor/" class="tutor-widget-accion tutor-widget-expandir" aria-label="Abrir el chat completo" title="Abrir chat completo">⤢</a>
-          <button type="button" class="tutor-widget-accion tutor-widget-cerrar" aria-label="Cerrar">✕</button>
+          <button type="button" class="tutor-widget-accion tutor-widget-cerrar" aria-label="Cerrar">${icono("cruz", 16)}</button>
         </div>
       </header>
       <div class="tutor-widget-mensajes" id="tutor-widget-mensajes"></div>
@@ -401,7 +402,7 @@ export function montarWidgetTutor() {
       scrollAbajo();
     } catch {
       mensajesEl.innerHTML = "";
-      agregarBotSimple("❌ No se pudo cargar la conversación.");
+      agregarBotSimple("No se pudo cargar la conversación.", "cruz");
     }
   }
 
@@ -436,9 +437,19 @@ export function montarWidgetTutor() {
     scrollAbajo();
   }
 
-  function agregarBotSimple(texto) {
+  // iconoPrefijo (opcional): nombre de icono de /assets/icons.js que se
+  // antepone al primer bloque del mensaje. Se inserta como SVG de confianza
+  // DESPUÉS de que pintarBot()/formatearMensajeBot() ya hayan escapado el
+  // texto, igual que en /tu-tutor/script.js -- así el icono nunca puede
+  // colarse como HTML crudo si "texto" llegase a venir de fuera.
+  function agregarBotSimple(texto, iconoPrefijo) {
     const b = crearBurbujaBot();
     pintarBot(b, texto);
+    if (iconoPrefijo) {
+      const primerBloque = b.contenido.querySelector("p, h4, li");
+      if (primerBloque) primerBloque.insertAdjacentHTML("afterbegin", `${icono(iconoPrefijo, 15)} `);
+    }
+    return b;
   }
 
   function mostrarTyping(v) { typing.hidden = !v; if (v) scrollAbajo(); }
@@ -456,9 +467,9 @@ export function montarWidgetTutor() {
       if (res.ok) sugerencia = await res.json();
     } catch { /* saludo estático */ }
 
-    const saludo = sugerencia?.saludo || "¡Hola! 👋";
+    const saludo = sugerencia?.saludo || "¡Hola!";
     const mensaje = sugerencia?.mensaje || "Soy Tu Tutor. Pregúntame cualquier duda sobre el temario o tu estudio.";
-    agregarBotSimple(`**${saludo}**\n\n${mensaje}`);
+    agregarBotSimple(`**${saludo}**\n\n${mensaje}`, "mano");
 
     const sugerencias = Array.isArray(sugerencia?.sugerencias) ? sugerencia.sugerencias : ["¿Qué me recomiendas estudiar hoy?"];
     if (sugerencias.length) {
@@ -513,7 +524,7 @@ export function montarWidgetTutor() {
       });
     } catch {
       mostrarTyping(false);
-      agregarBotSimple("❌ Error al conectar con el servidor.");
+      agregarBotSimple("Error al conectar con el servidor.", "cruz");
       enviando = false;
       return;
     }
@@ -521,7 +532,7 @@ export function montarWidgetTutor() {
     mostrarTyping(false);
 
     if (respuesta.status === 403) {
-      agregarBotSimple("🔒 Tu Tutor forma parte del plan Premium. Actívalo en la página de [Planes](/planes/) para poder chatear.");
+      agregarBotSimple("Tu Tutor forma parte del plan Premium. Actívalo en la página de [Planes](/planes/) para poder chatear.", "candado");
       // El markdown-lite no genera <a>; se pone un enlace real aparte.
       const enlace = document.createElement("a");
       enlace.className = "tw-cta-planes";
@@ -534,7 +545,7 @@ export function montarWidgetTutor() {
     }
     if (respuesta.status === 429) {
       const datos = await respuesta.json().catch(() => ({}));
-      agregarBotSimple(`⏳ ${datos.error || "Has alcanzado el límite de uso del chat por ahora."}`);
+      agregarBotSimple(datos.error || "Has alcanzado el límite de uso del chat por ahora.", "arena");
       const enlace = document.createElement("a");
       enlace.className = "tw-cta-planes";
       enlace.href = "/planes/";
@@ -545,7 +556,7 @@ export function montarWidgetTutor() {
       return;
     }
     if (!respuesta.ok || !respuesta.body) {
-      agregarBotSimple(ERROR_TECNICO);
+      agregarBotSimple(ERROR_TECNICO, "alerta");
       enviando = false;
       return;
     }
@@ -578,11 +589,11 @@ export function montarWidgetTutor() {
 
     if (huboError && !acumulado) {
       burbuja.div.remove();
-      agregarBotSimple(ERROR_TECNICO);
+      agregarBotSimple(ERROR_TECNICO, "alerta");
     } else if (huboError && acumulado) {
       const aviso = document.createElement("div");
       aviso.className = "tw-aviso-cortada";
-      aviso.textContent = "⚠️ Respuesta incompleta";
+      aviso.innerHTML = `${icono("alerta", 15)} Respuesta incompleta`;
       burbuja.div.appendChild(aviso);
     }
     enviando = false;

@@ -341,6 +341,11 @@ html { scroll-behavior: smooth; }
   position: relative;
   animation: fadeIn 0.5s ease-out;
 }
+.welcome-saludo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .mensaje-user { justify-content: flex-end; }
 .bubble-user {
   background: var(--age-card);
@@ -391,6 +396,9 @@ html { scroll-behavior: smooth; }
 }
 .bubble-bot:hover .bubble-bot-actions { display: block; }
 .bubble-bot-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: var(--age-success);
@@ -415,7 +423,15 @@ html { scroll-behavior: smooth; }
   color: var(--age-warning, var(--age-ink-soft));
   flex-wrap: wrap;
 }
+.bubble-bot-cortada-aviso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .btn-regenerar-mensaje {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--age-border);
   background: var(--age-card);
   color: var(--age-ink);
@@ -444,6 +460,9 @@ html { scroll-behavior: smooth; }
 /* Borde y texto en el naranja de la marca para que se vean bien (antes era un
    gris apenas perceptible). */
 .btn-mensaje-sec {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: none;
   border: 1.5px solid var(--tutor-accent);
   border-radius: 999px;

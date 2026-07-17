@@ -1,3 +1,5 @@
+import { icono } from "/assets/icons.js";
+
 async function obtenerAuthHeaders() {
   const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");
   return fn();
@@ -92,7 +94,7 @@ function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudad
       // tiempoTotalAsignado ya lo fija quien llama (restaurado del guardado)
     }
     document.getElementById("barra-progreso-tiempo").style.display = "block";
-    elTexto.innerHTML = `⏱ Tiempo restante: <span class="pulse">${formatearMinSeg(tiempoLimite)}</span>`;
+    elTexto.innerHTML = `${icono("reloj", 16)} Tiempo restante: <span class="pulse">${formatearMinSeg(tiempoLimite)}</span>`;
     elTemporizador.classList.toggle("temporizador-urgente", tiempoLimite <= 300);
     intervaloTemporizador = setInterval(() => {
       tiempoLimite--;
@@ -106,7 +108,7 @@ function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudad
         }).then(() => mostrarResultados());
         return;
       }
-      elTexto.innerHTML = `⏱ Tiempo restante: <span class="pulse">${formatearMinSeg(tiempoLimite)}</span>`;
+      elTexto.innerHTML = `${icono("reloj", 16)} Tiempo restante: <span class="pulse">${formatearMinSeg(tiempoLimite)}</span>`;
       elTemporizador.classList.toggle("temporizador-urgente", tiempoLimite <= 300);
       const porcentajeTiempo = ((tiempoTotalAsignado - tiempoLimite) / tiempoTotalAsignado) * 100;
       document.getElementById("progreso-tiempo").style.width = `${porcentajeTiempo}%`;
@@ -125,10 +127,10 @@ function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudad
     }, 1000);
   } else {
     tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
-    elTexto.textContent = `⏱ Tiempo: ${formatearMinSeg(tiempoTranscurridoBase)}`;
+    elTexto.innerHTML = `${icono("reloj", 16)} Tiempo: ${formatearMinSeg(tiempoTranscurridoBase)}`;
     intervaloTemporizador = setInterval(() => {
       const transcurrido = tiempoTranscurridoActual();
-      elTexto.textContent = `⏱ Tiempo: ${formatearMinSeg(transcurrido)}`;
+      elTexto.innerHTML = `${icono("reloj", 16)} Tiempo: ${formatearMinSeg(transcurrido)}`;
       if (transcurrido % 10 === 0) {
         import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
           autoguardarProgreso({
@@ -189,7 +191,7 @@ async function mostrarPregunta(i) {
       <span>${i + 1}. ${textoPregunta}</span>
       <div class="pregunta-acciones-header">
         ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
-        <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""}" aria-label="Marcar para revisión" title="🔖 Marcar esta pregunta para revisarla antes de terminar el test (queda resaltada en el mapa de preguntas)">🔖</button>
+        <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""} icono-inline" aria-label="Marcar para revisión" title="Marcar esta pregunta para revisarla antes de terminar el test (queda resaltada en el mapa de preguntas)">${icono("marcador", 16)}</button>
       </div>
     </div>`;
 
@@ -250,7 +252,7 @@ async function mostrarPregunta(i) {
   const botonGuardarSalir = document.getElementById("btn-guardar-salir");
   botonGuardarSalir.style.display = "block";
   botonGuardarSalir.disabled = false;
-  botonGuardarSalir.textContent = "💾 Guardar y salir";
+  botonGuardarSalir.innerHTML = `${icono("guardar", 16)} Guardar y salir`;
   botonGuardarSalir.onclick = async function () {
     const boton = this;
     boton.disabled = true;
@@ -314,7 +316,7 @@ function generarComparacionIntentosHTML(original, nuevo) {
   }
   return `
     <div class="comparacion-intentos ${clase}">
-      <div class="comparacion-intentos-titulo">🔁 Comparado con tu intento anterior</div>
+      <div class="comparacion-intentos-titulo icono-inline">${icono("repetir", 18)} Comparado con tu intento anterior</div>
       <div class="comparacion-intentos-fila">
         <span class="comparacion-intentos-etiqueta">Aciertos</span>
         <span class="comparacion-intentos-valores">${original.aciertos} → <strong>${nuevo.aciertos}</strong></span>

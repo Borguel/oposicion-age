@@ -511,7 +511,7 @@
     }
 
     .insignia-icono {
-      font-size: 1.8rem;
+      display: inline-flex;
       margin-bottom: 8px;
     }
 
@@ -959,7 +959,7 @@
     }
 
     .insignia-siguiente-icono {
-      font-size: 1.6rem;
+      display: inline-flex;
       flex-shrink: 0;
     }
 

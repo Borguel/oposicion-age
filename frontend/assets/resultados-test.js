@@ -6,6 +6,7 @@
 //
 // Requiere que la página ya tenga cargado jsPDF (para la descarga) via
 // <script> normal antes de este módulo.
+import { icono } from "/assets/icons.js";
 
 function calcularEstadisticas(preguntas, respuestasUsuario) {
   let aciertos = 0;
@@ -102,9 +103,9 @@ function calcularMejorRacha(preguntas, respuestasUsuario) {
 }
 
 function mensajeMotivacional(mejorRacha) {
-  if (mejorRacha >= 20) return `🔥 ¡Racha brutal! ${mejorRacha} aciertos seguidos en este test.`;
-  if (mejorRacha >= 10) return `💪 ¡${mejorRacha} aciertos seguidos! Vas a por todas.`;
-  if (mejorRacha >= 5) return `👏 Llevas ${mejorRacha} aciertos seguidos, ¡sigue así!`;
+  if (mejorRacha >= 20) return `${icono("fuego", 16)} ¡Racha brutal! ${mejorRacha} aciertos seguidos en este test.`;
+  if (mejorRacha >= 10) return `${icono("rayo", 16)} ¡${mejorRacha} aciertos seguidos! Vas a por todas.`;
+  if (mejorRacha >= 5) return `${icono("estrella", 16)} Llevas ${mejorRacha} aciertos seguidos, ¡sigue así!`;
   return null;
 }
 
@@ -132,25 +133,25 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
       <div class="pregunta-en-negrita">${i + 1}. ${escaparHtml(quitarNumeracion(p.pregunta))}</div>`;
     for (const letra in p.opciones) {
       let tipoRespuesta = "detalle-opcion";
-      let icono = "";
+      let iconoOpcion = "";
       if (letra === correcta) {
         tipoRespuesta = "detalle-opcion correcta";
-        icono = '<span class="icono-correcto">✅</span>';
+        iconoOpcion = `<span class="icono-correcto">${icono("check", 15)}</span>`;
       }
       if (letra === seleccion && seleccion !== correcta) {
         tipoRespuesta = "detalle-opcion incorrecta";
-        icono = '<span class="icono-incorrecto">❌</span>';
+        iconoOpcion = `<span class="icono-incorrecto">${icono("cruz", 15)}</span>`;
       }
-      detalleHTML += `<div class="${tipoRespuesta}">${icono}${letra}) ${escaparHtml(p.opciones[letra])}</div>`;
+      detalleHTML += `<div class="${tipoRespuesta}">${iconoOpcion}${letra}) ${escaparHtml(p.opciones[letra])}</div>`;
     }
     const idExp = `exp-${i}-${Math.random().toString(36).slice(2, 6)}`;
     detalleHTML += `<div class="detalle-acciones-fila">`;
-    detalleHTML += `<button type="button" class="detalle-explicacion-btn" data-toggle-target="${idExp}">📘 Mostrar/Ocultar Explicación</button>`;
+    detalleHTML += `<button type="button" class="detalle-explicacion-btn" data-toggle-target="${idExp}">${icono("libro", 15)} Mostrar/Ocultar Explicación</button>`;
     // Solo en las que no ha acertado: pedirle al tutor que se lo explique.
     if (clase !== "acierto") {
-      detalleHTML += `<button type="button" class="detalle-tutor-btn" data-tutor="${i}" title="Que Tu Tutor te explique esta pregunta">🎓 Pregúntale a Tu Tutor</button>`;
+      detalleHTML += `<button type="button" class="detalle-tutor-btn" data-tutor="${i}" title="Que Tu Tutor te explique esta pregunta">${icono("graduacion", 15)} Pregúntale a Tu Tutor</button>`;
     }
-    detalleHTML += `<button type="button" class="detalle-reportar-btn" data-reportar="${i}" title="Avisar de un error en esta pregunta">⚠️ Reportar error</button>`;
+    detalleHTML += `<button type="button" class="detalle-reportar-btn" data-reportar="${i}" title="Avisar de un error en esta pregunta">${icono("alerta", 15)} Reportar error</button>`;
     detalleHTML += `</div>`;
     detalleHTML += `<div id="${idExp}" class="detalle-explicacion-panel" style="display:none;"><strong>Explicación:</strong>${formatearExplicacionHTML(explicacion)}</div></div>`;
   });
@@ -185,7 +186,7 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
   contenedor.innerHTML = `
     <div class="resultado-resumen-card">
       <div class="resultado-veredicto ${stats.apto ? "aprobado" : "suspendido"}">
-        <span class="resultado-veredicto-texto">${stats.apto ? "✅ Aprobado" : "❌ Suspendido"}</span>
+        <span class="resultado-veredicto-texto">${stats.apto ? icono("check", 16) + " Aprobado" : icono("cruz", 16) + " Suspendido"}</span>
       </div>
 
       <div class="resultado-notas-grid">
@@ -201,48 +202,48 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
 
       <div class="resultado-resumen-grid">
         <div class="resultado-resumen-tile tile-acierto">
-          <span class="tile-info"><span class="tile-icono">✅</span>Aciertos</span>
+          <span class="tile-info"><span class="tile-icono">${icono("check", 16)}</span>Aciertos</span>
           <span class="tile-valor">${stats.aciertos}</span>
         </div>
         <div class="resultado-resumen-tile tile-fallo">
-          <span class="tile-info"><span class="tile-icono">❌</span>Fallos</span>
+          <span class="tile-info"><span class="tile-icono">${icono("cruz", 16)}</span>Fallos</span>
           <span class="tile-valor">${stats.fallos}</span>
         </div>
         <div class="resultado-resumen-tile tile-blanco">
-          <span class="tile-info"><span class="tile-icono">⏸</span>En blanco</span>
+          <span class="tile-info"><span class="tile-icono">${icono("pausa", 16)}</span>En blanco</span>
           <span class="tile-valor">${stats.sinResponder}</span>
         </div>
         <div class="resultado-resumen-tile tile-porcentaje">
-          <span class="tile-info"><span class="tile-icono">🎯</span>Acierto</span>
+          <span class="tile-info"><span class="tile-icono">${icono("diana", 16)}</span>Acierto</span>
           <span class="tile-valor">${stats.porcentaje}%</span>
         </div>
       </div>
       ${rachaHTML}
     </div>
     <div class="analisis-ia-bloque">
-      <button type="button" id="btn-analisis-ia" class="btn age-btn-outline">🤖 Ver análisis de mi rendimiento con IA</button>
+      <button type="button" id="btn-analisis-ia" class="btn age-btn-outline">${icono("robot", 16)} Ver análisis de mi rendimiento con IA</button>
       <div id="analisis-ia-resultado"></div>
     </div>
     <div class="resultado-temas-desplegable">
       <button type="button" class="resultado-toggle-btn resultado-temas-toggle" id="btn-temas-toggle" aria-expanded="false">
-        <span class="resultado-toggle-icono">📈</span>
+        <span class="resultado-toggle-icono">${icono("grafico", 16)}</span>
         <span class="resultado-toggle-texto">Estadísticas por tema</span>
         <span class="resultado-toggle-chevron">▾</span>
       </button>
       <div class="resultado-temas-panel" id="panel-temas" style="display:none;">${tablaTemasHTML}</div>
     </div>
     <div class="resultado-detalle-cabecera">
-      <h3 class="resultado-detalle-titulo">📝 Detalle de preguntas</h3>
+      <h3 class="resultado-detalle-titulo">${icono("lista", 18)} Detalle de preguntas</h3>
       <div class="resultado-filtro-dropdown" id="filtro-dropdown">
         <button type="button" class="resultado-toggle-btn resultado-filtro-btn" id="btn-filtro-preguntas" aria-expanded="false">
-          <span class="resultado-toggle-icono">🔍</span>
+          <span class="resultado-toggle-icono">${icono("buscar", 16)}</span>
           <span class="resultado-toggle-texto" id="filtro-preguntas-label">Todas las preguntas</span>
           <span class="resultado-toggle-chevron">▾</span>
         </button>
         <div class="resultado-filtro-panel" id="panel-filtro-preguntas" style="display:none;">
-          <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="acierto" checked> ✅ Aciertos</label>
-          <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="fallo" checked> ❌ Fallos</label>
-          <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="blanco" checked> ⏸ En blanco</label>
+          <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="acierto" checked> ${icono("check", 14)} Aciertos</label>
+          <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="fallo" checked> ${icono("cruz", 14)} Fallos</label>
+          <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="blanco" checked> ${icono("pausa", 14)} En blanco</label>
         </div>
       </div>
     </div>
@@ -350,10 +351,10 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
           headers: { ...headers, "Content-Type": "application/json" },
           body: JSON.stringify({ pregunta_texto: preg.pregunta || "", motivo: motivo.trim(), oposicion: obtenerOposicionActual() }),
         });
-        boton.textContent = resp.ok ? "✅ Reportado, ¡gracias!" : "⚠️ No se pudo reportar";
+        boton.textContent = resp.ok ? "Reportado, ¡gracias!" : "No se pudo reportar";
         if (!resp.ok) boton.disabled = false;
       } catch {
-        boton.textContent = "⚠️ No se pudo reportar";
+        boton.textContent = "No se pudo reportar";
         boton.disabled = false;
       }
     });

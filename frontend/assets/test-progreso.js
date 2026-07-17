@@ -6,6 +6,7 @@
 // retomarse exactamente donde se dejó desde "Mis Tests".
 import { idToken } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
+import { icono } from "/assets/icons.js";
 
 let testIdActual = null;
 let temporizadorDebounce = null;
@@ -63,15 +64,16 @@ function mostrarBannerOffline() {
   if (!bannerOffline) {
     bannerOffline = document.createElement("div");
     bannerOffline.id = "age-banner-offline";
-    bannerOffline.textContent = "📡 Sin conexión: tu progreso se está guardando en este dispositivo y se sincronizará al volver a tener internet.";
+    bannerOffline.innerHTML = `${icono("alerta", 16)} Sin conexión: tu progreso se está guardando en este dispositivo y se sincronizará al volver a tener internet.`;
     Object.assign(bannerOffline.style, {
       position: "fixed", bottom: "0", left: "0", right: "0", zIndex: "9999",
       background: "#b8790a", color: "#fff", textAlign: "center",
-      padding: "10px 16px", fontSize: "0.9rem", fontFamily: "inherit"
+      padding: "10px 16px", fontSize: "0.9rem", fontFamily: "inherit",
+      display: "flex", alignItems: "center", justifyContent: "center", gap: "8px"
     });
     document.body.appendChild(bannerOffline);
   }
-  bannerOffline.style.display = "block";
+  bannerOffline.style.display = "flex";
 }
 
 function ocultarBannerOffline() {

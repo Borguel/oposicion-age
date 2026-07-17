@@ -31,7 +31,7 @@
   <div class="container">
     <div class="test-type-container">
       <div class="test-type-card selected">
-        <div class="icon">🤖</div>
+        <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="11" rx="2"/><circle cx="9" cy="13.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="13.5" r="1.1" fill="currentColor" stroke="none"/><line x1="12" y1="8" x2="12" y2="4"/><circle cx="12" cy="3" r="1"/><line x1="2" y1="13" x2="2" y2="16"/><line x1="22" y1="13" x2="22" y2="16"/></svg></div>
         <h1 class="title">Test Inteligente IA</h1>
         <div class="description">Preguntas nuevas generadas con IA, con el nivel y estilo de un examen oficial, sobre los temas que elijas.</div>
       </div>
@@ -55,8 +55,8 @@
       </form>
     </div>
     <div id="temporizador" style="display:none;">
-      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador">👁️</button>
-      <span id="temporizador-texto"></span>
+      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <span id="temporizador-texto" class="icono-inline"></span>
     </div>
     <div id="barra-progreso-tiempo" class="progress-container" style="display: none;">
       <div id="progreso-tiempo" class="progress-bar" style="background: linear-gradient(90deg, #4caf50, #66bb6a);"></div>
@@ -66,7 +66,7 @@
     <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
     <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
     <div class="acciones-test-footer">
-      <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;">💾 Guardar y salir</button>
+      <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico icono-inline" style="display:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v6h8V4"/><path d="M8 21v-7h8v7"/></svg> Guardar y salir</button>
       <button id="btn-finalizar" class="age-btn age-btn-danger-outline age-btn-block" style="display:none;">Finalizar Test</button>
     </div>
     <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
@@ -76,7 +76,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <script src="/test-inteligente/script.js"></script>
+  <script type="module" src="/test-inteligente/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
 </body>
 </html>

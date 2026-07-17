@@ -4,6 +4,11 @@ import { BACKEND_URL } from "/assets/firebase-config.js";
 import { OPOSICIONES } from "/assets/oposicion.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { fijarTexto } from "/assets/dom.js";
+import { icono } from "/assets/icons.js";
+
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+});
 
 const ESTADOS_LEGIBLES = {
   active: "activa",
@@ -249,7 +254,7 @@ document.getElementById("btn-exportar-datos").addEventListener("click", async (e
     mostrarErrorGlobal(error.message || "No se pudieron exportar tus datos.");
   } finally {
     boton.disabled = false;
-    boton.textContent = "⬇️ Descargar mis datos";
+    boton.innerHTML = `${icono("descargar", 16)} Descargar mis datos`;
   }
 });
 

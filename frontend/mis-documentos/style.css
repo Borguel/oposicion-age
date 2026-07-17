@@ -45,7 +45,10 @@ body {
 }
 
 .documentos-vacio-icono {
-  font-size: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--age-primary-dark);
   margin-bottom: 14px;
 }
 
@@ -346,6 +349,9 @@ body {
 }
 
 .documentos-modal-cerrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
   color: var(--age-ink-faint);

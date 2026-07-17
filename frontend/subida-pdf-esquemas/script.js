@@ -1,4 +1,12 @@
+import { icono } from "/assets/icons.js";
+
 import("/assets/plan.js").then(({ protegerPagina }) => protegerPagina("premium"));
+
+// Iconos estáticos del markup (los que no cambian dinámicamente por JS): se
+// pintan aquí, una sola vez, a partir de los data-icon del HTML.
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+});
 
 async function obtenerAuthHeaders() {
       const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");
@@ -65,7 +73,7 @@ async function obtenerAuthHeaders() {
     }
     // === Funciones auxiliares ===
     function mostrarError(mensaje) {
-      mensajeError.innerHTML = `⚠️ <strong>Error:</strong> ${mensaje}`;
+      mensajeError.innerHTML = `${icono("alerta", 18)} <strong>Error:</strong> ${mensaje}`;
       mensajeError.classList.remove('hidden');
       contenedorCarga.classList.add('hidden');
       resultadoEsquema.classList.add('hidden');
@@ -413,7 +421,8 @@ async function obtenerAuthHeaders() {
         }
         nombreArchivo = file.name;
         const fileName = nombreArchivo.length > 30 ? nombreArchivo.substring(0, 27) + '...' : nombreArchivo;
-        fileNameDisplay.textContent = `📄 ${fileName}`;
+        fileNameDisplay.innerHTML = icono("documento", 16);
+        fileNameDisplay.append(` ${fileName}`);
         fileNameDisplay.classList.remove('hidden');
       } else {
         fileNameDisplay.classList.add('hidden');
@@ -488,18 +497,18 @@ async function obtenerAuthHeaders() {
       const textoEstado = document.getElementById('texto-estado');
       const aiIcon = document.getElementById('ai-icon');
       const etapas = [
-        { mensaje: "Leyendo texto del PDF…", icono: "📄" },
-        { mensaje: "Analizando estructura del documento…", icono: "🔍" },
-        { mensaje: "Identificando temas y subtemas…", icono: "📊" },
-        { mensaje: "Organizando jerarquía conceptual…", icono: "🧠" },
-        { mensaje: "Preparando esquema final…", icono: "✅" }
+        { mensaje: "Leyendo texto del PDF…", icono: "documento" },
+        { mensaje: "Analizando estructura del documento…", icono: "buscar" },
+        { mensaje: "Identificando temas y subtemas…", icono: "grafico" },
+        { mensaje: "Organizando jerarquía conceptual…", icono: "cerebro" },
+        { mensaje: "Preparando esquema final…", icono: "check" }
       ];
       let indiceEtapa = 0;
-      aiIcon.textContent = etapas[0].icono;
+      aiIcon.innerHTML = icono(etapas[0].icono, 32);
       textoEstado.textContent = etapas[0].mensaje;
       const intervaloEtapas = setInterval(() => {
         indiceEtapa = (indiceEtapa + 1) % etapas.length;
-        aiIcon.textContent = etapas[indiceEtapa].icono;
+        aiIcon.innerHTML = icono(etapas[indiceEtapa].icono, 32);
         textoEstado.textContent = etapas[indiceEtapa].mensaje;
       }, 2200);
 
@@ -638,7 +647,7 @@ async function obtenerAuthHeaders() {
       }
 
       textoEstado.textContent = 'Generando esquema desde tu documento…';
-      aiIcon.textContent = '🧠';
+      aiIcon.innerHTML = icono('cerebro', 32);
       try {
         const formData = new FormData();
         formData.append('documento_id', documentoId);

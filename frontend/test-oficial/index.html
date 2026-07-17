@@ -31,7 +31,7 @@
   <div class="container">
     <div class="test-type-container">
       <div class="test-type-card selected">
-        <div class="icon">🏛️</div>
+        <div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21h16M5 21V10M9 21V10M12 21V10M15 21V10M19 21V10M3 10l9-6 9 6"/></svg></div>
         <h1 class="title">Test Oficial</h1>
         <div class="description">Preguntas reales de exámenes de convocatorias anteriores, tal como se hicieron el día del examen.</div>
       </div>
@@ -44,7 +44,7 @@
     </div>
 
     <div class="card fade-in simulacro-card" id="tarjeta-simulacro" style="display:none;">
-      <div class="simulacro-icono">🏛️</div>
+      <div class="simulacro-icono"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21h16M5 21V10M9 21V10M12 21V10M15 21V10M19 21V10M3 10l9-6 9 6"/></svg></div>
       <div class="simulacro-info">
         <div class="simulacro-titulo">Simulacro oficial</div>
         <div class="simulacro-descripcion" id="simulacro-descripcion">Genera un examen con el mismo formato exacto de la convocatoria real.</div>
@@ -87,8 +87,8 @@
       </form>
     </div>
     <div id="temporizador" style="display:none;">
-      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador">👁️</button>
-      <span id="temporizador-texto"></span>
+      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <span id="temporizador-texto" class="icono-inline"></span>
     </div>
     <div id="barra-progreso-tiempo" class="progress-container" style="display: none;">
       <div id="progreso-tiempo" class="progress-bar" style="background: linear-gradient(90deg, #4caf50, #66bb6a);"></div>
@@ -98,7 +98,7 @@
     <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
     <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
     <div class="acciones-test-footer">
-      <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;">💾 Guardar y salir</button>
+      <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico icono-inline" style="display:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v6h8V4"/><path d="M8 21v-7h8v7"/></svg> Guardar y salir</button>
       <button id="btn-finalizar" class="age-btn age-btn-danger-outline age-btn-block" style="display:none;">Finalizar Test</button>
     </div>
     <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
@@ -108,7 +108,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <script src="/test-oficial/script.js"></script>
+  <script type="module" src="/test-oficial/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
 </body>
 </html>

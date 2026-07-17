@@ -39,12 +39,12 @@
         </svg>
         <div class="spinner"></div>
       </button>
-      <button id="estadisticas-exportar-pdf" type="button" class="age-btn age-btn-outline">📄 Exportar PDF</button>
+      <button id="estadisticas-exportar-pdf" type="button" class="age-btn age-btn-outline"><span data-icon="documento" data-icon-size="15" style="display:inline-flex;vertical-align:middle;"></span> Exportar PDF</button>
     </div>
   </div>
   <div class="tarjeta-recomendacion" id="tarjeta-temas-flojos" style="display:none;">
-    <button type="button" class="recomendacion-cerrar" id="recomendacion-cerrar" aria-label="Cerrar">✕</button>
-    <div class="recomendacion-icono">💡</div>
+    <button type="button" class="recomendacion-cerrar" id="recomendacion-cerrar" aria-label="Cerrar" data-icon="cruz" data-icon-size="15"></button>
+    <div class="recomendacion-icono" data-icon="bombilla" data-icon-size="24"></div>
     <div class="recomendacion-texto">
       <h4>Tus temas con más margen de mejora</h4>
       <p id="recomendacion-descripcion">Estos son los temas donde menos aciertas. Un repaso rápido ahora mismo puede subirte mucho la nota.</p>
@@ -57,25 +57,25 @@
        repartidas por "Resumen general"). -->
   <section class="resumen-vistazo" id="resumen-vistazo">
     <div class="vistazo-tile">
-      <div class="vistazo-icono">📈</div>
+      <div class="vistazo-icono" data-icon="grafico" data-icon-size="22"></div>
       <div class="valor vistazo-valor" id="vistazo-media">—</div>
       <div class="vistazo-label">Nota media</div>
       <div class="tendencia" id="tendencia-media"><span>...</span></div>
     </div>
     <div class="vistazo-tile vistazo-resultado">
-      <div class="vistazo-icono">✅</div>
+      <div class="vistazo-icono" data-icon="check" data-icon-size="22"></div>
       <div class="valor vistazo-valor" id="vistazo-aprobados-pct">—</div>
       <div class="vistazo-label">Aprobados</div>
       <div class="vistazo-detalle" id="vistazo-aprobados-detalle">— aprobados · — suspendidos</div>
       <div class="vistazo-mini-barra"><div class="vistazo-mini-fill" id="vistazo-aprobados-fill" style="width:0%"></div></div>
     </div>
     <div class="vistazo-tile">
-      <div class="vistazo-icono">📝</div>
+      <div class="vistazo-icono" data-icon="lapiz" data-icon-size="22"></div>
       <div class="valor vistazo-valor" id="vistazo-tests">—</div>
       <div class="vistazo-label">Tests realizados</div>
     </div>
     <div class="vistazo-tile">
-      <div class="vistazo-icono">🔥</div>
+      <div class="vistazo-icono" data-icon="fuego" data-icon-size="22"></div>
       <div class="valor vistazo-valor" id="vistazo-racha">—</div>
       <div class="vistazo-label">Racha actual</div>
     </div>
@@ -86,7 +86,7 @@
        temas flojos/cobertura del temario, es donde tiene más sentido el
        "¿estoy listo?" con los días que quedan. -->
   <section class="age-card zona-cuenta-atras-card" id="zona-cuenta-atras">
-    <div class="zona-cuenta-atras-icono">📅</div>
+    <div class="zona-cuenta-atras-icono" data-icon="calendario" data-icon-size="24"></div>
     <div class="zona-cuenta-atras-info">
       <div class="zona-cuenta-atras-numero" id="cuenta-atras-numero">—</div>
       <div class="zona-cuenta-atras-mensaje" id="cuenta-atras-mensaje">Cargando…</div>
@@ -140,14 +140,14 @@
   </div>
 
   <section class="insignias-seccion">
-    <h3>🏅 Insignias</h3>
+    <h3><span data-icon="medalla" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Insignias</h3>
     <div class="insignia-siguiente" id="insignia-siguiente" style="display:none;"></div>
     <div class="insignias-grid" id="insignias-grid"></div>
   </section>
 
   <div id="estadisticas-usuario">
     <div class="seccion-separador seccion-separador-primera">
-      <h3>🎯 Aciertos y fallos</h3>
+      <h3><span data-icon="diana" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Aciertos y fallos</h3>
     </div>
     <!-- Tiempo dedicado a hacer test: barra de ancho completo -->
     <div class="tarjeta-estadistica neutra tarjeta-tiempo-total">
@@ -200,7 +200,7 @@
     </div>
 
     <div class="seccion-separador">
-      <h3>📚 Tus temas</h3>
+      <h3><span data-icon="libros" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Tus temas</h3>
     </div>
     <!-- Cobertura del temario: cuántos temas se han trabajado ya en total,
          para dar contexto a los números sueltos de las tarjetas de abajo. -->
@@ -238,7 +238,7 @@
       <button class="btn-ver-temas" id="btn-ver-nuevos" type="button">Ver lista completa</button>
     </div>
     <div class="seccion-separador">
-      <h3>🕒 Otra actividad</h3>
+      <h3><span data-icon="reloj" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Otra actividad</h3>
     </div>
     <!-- Antes eran 6 tarjetas grandes casi vacías (la mayoría de usuarios
          tiene 0 en varias); ahora un solo bloque con mini-números. -->
@@ -308,7 +308,7 @@
 </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="/estadisticas/script.js"></script>
+  <script type="module" src="/estadisticas/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
 </body>
 </html>

@@ -12,6 +12,8 @@
 // las tarjetas de Mis Tests, ver mis-tests/script.js:pillsTemas). El estado
 // abierto/cerrado se recuerda por contenedor (persiste entre preguntas,
 // ya que esta función se vuelve a llamar en cada navegación).
+import { icono } from "/assets/icons.js";
+
 const UMBRAL_PLEGADO = 20;
 const estadoExpandido = new WeakMap();
 
@@ -42,7 +44,7 @@ export function renderizarNavegadorPreguntas(contenedor, { total, respuestasUsua
     const abierto = estadoExpandido.get(contenedor) ?? false;
     contenedor.innerHTML = `
       <button type="button" class="navegador-preguntas-toggle${abierto ? " open" : ""}">
-        <span>🧭 ${respondidas}/${total} respondidas — pregunta ${indiceActual + 1} actual</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;">${icono("brujula", 16)} ${respondidas}/${total} respondidas — pregunta ${indiceActual + 1} actual</span>
         <span class="navegador-preguntas-caret">▾</span>
       </button>
       <div class="navegador-preguntas-grid${abierto ? "" : " hidden"}">${botones}</div>

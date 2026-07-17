@@ -1,4 +1,12 @@
+import { icono } from "/assets/icons.js";
+
 import("/assets/plan.js").then(({ protegerPagina }) => protegerPagina("premium"));
+
+// Iconos estáticos del markup (los que no cambian dinámicamente por JS): se
+// pintan aquí, una sola vez, a partir de los data-icon del HTML.
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+});
 
 async function obtenerAuthHeaders() {
       const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");
@@ -255,7 +263,7 @@ async function obtenerAuthHeaders() {
               if (elBarra) elBarra.style.width = `${porcentaje}%`;
               if (elTextoBarra) elTextoBarra.textContent = `${porcentaje}%`;
               if (textoEstado) textoEstado.textContent = `Generando preguntas (lote ${evento.completadas} de ${evento.total})…`;
-              if (aiIcon) aiIcon.textContent = "🧠";
+              if (aiIcon) aiIcon.innerHTML = icono("cerebro", 32);
             } else if (evento.tipo === "fin") {
               datosFinales = evento;
             }
@@ -291,7 +299,7 @@ async function obtenerAuthHeaders() {
       document.getElementById('tarjeta-formulario').style.display = 'none';
       document.getElementById('contenedor-carga').style.display = 'block';
       document.getElementById('texto-estado').textContent = "Leyendo el PDF y preparando la generación…";
-      document.getElementById('ai-icon').textContent = "📄";
+      document.getElementById('ai-icon').innerHTML = icono("documento", 32);
 
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
@@ -419,7 +427,7 @@ async function obtenerAuthHeaders() {
       }
 
       textoEstado.textContent = 'Generando test desde tu documento…';
-      aiIcon.textContent = '🧠';
+      aiIcon.innerHTML = icono('cerebro', 32);
       try {
         const numPreguntas = parseInt(params.get('num_preguntas')) || 10;
         const formData = new FormData();
@@ -485,7 +493,7 @@ async function obtenerAuthHeaders() {
       const botonGuardarSalir = document.getElementById("btn-guardar-salir");
       botonGuardarSalir.style.display = "block";
       botonGuardarSalir.disabled = false;
-      botonGuardarSalir.textContent = "💾 Guardar y salir";
+      botonGuardarSalir.innerHTML = `${icono("guardar", 16)} Guardar y salir`;
       botonGuardarSalir.onclick = async function() {
         const boton = this;
         boton.disabled = true;

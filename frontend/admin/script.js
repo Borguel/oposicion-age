@@ -2,6 +2,16 @@
 // aquí solo se comprueba esAdmin para no montar la UI a quien no lo es.
 import { esAdmin, obtenerPermisos, obtenerAuthHeaders } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
+import { icono } from "/assets/icons.js";
+
+// Inyecta los iconos SVG en los elementos estáticos del HTML marcados con
+// data-icon (sidebar, botones de cerrar) -- se hace aquí en vez de a mano
+// en el HTML para tener una sola fuente de verdad (icons.js).
+function inyectarIconosEstaticos() {
+  document.querySelectorAll("[data-icon]").forEach((el) => {
+    el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 18));
+  });
+}
 
 // Qué permiso necesita cada pestaña. Las de 'admin' solo las ve el super-admin.
 const PERMISO_POR_PESTANA = {
@@ -38,8 +48,8 @@ function toast(mensaje, tipo = "ok") {
   if (!cont) return;
   const el = document.createElement("div");
   el.className = `admin-toast admin-toast-${tipo}`;
-  const icono = tipo === "error" ? "⚠️" : tipo === "ok" ? "✅" : "ℹ️";
-  el.innerHTML = `<span class="admin-toast-icono">${icono}</span><span>${escapeHtml(mensaje)}</span>`;
+  const nombreIcono = tipo === "error" ? "alerta" : tipo === "ok" ? "check" : "informacion";
+  el.innerHTML = `<span class="admin-toast-icono">${icono(nombreIcono, 16)}</span><span>${escapeHtml(mensaje)}</span>`;
   cont.appendChild(el);
   setTimeout(() => { el.style.opacity = "0"; el.style.transform = "translateY(12px)"; }, 3200);
   setTimeout(() => el.remove(), 3600);
@@ -203,17 +213,17 @@ async function renderDashboard() {
         <button type="button" class="admin-chip admin-chip-warn admin-hueco" data-bloque="${escapeHtml(t.bloque)}" data-tema="${escapeHtml(t.tema)}">
           ${escapeHtml(t.titulo)} →
         </button>`).join("")
-    : `<span class="admin-vacio">Todos los temas tienen contenido. 🎉</span>`;
+    : `<span class="admin-vacio">Todos los temas tienen contenido. ${icono("check", 14)}</span>`;
 
   panel.innerHTML = `
     <div class="admin-cards">
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">👥</span><span class="admin-stat-num">${d.usuarios_totales}</span><span class="admin-stat-lbl">Usuarios</span><span class="admin-stat-sub">+${d.usuarios_nuevos_7_dias || 0} en 7 días</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">⚡</span><span class="admin-stat-num">${d.usuarios_activos_7_dias || 0}</span><span class="admin-stat-lbl">Activos (7 días)</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">📝</span><span class="admin-stat-num">${d.tests_ultimos_7_dias}</span><span class="admin-stat-lbl">Tests (7 días)</span><span class="admin-stat-sub">${d.tests_ultimos_30_dias} en 30 días</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">📚</span><span class="admin-stat-num">${d.tests_total || 0}</span><span class="admin-stat-lbl">Tests totales</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">💶</span><span class="admin-stat-num">${(d.mrr || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Ingresos/mes (MRR)</span><span class="admin-stat-sub">${d.suscripciones_pago || 0} suscripciones de pago</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">🤖</span><span class="admin-stat-num">${(d.coste_ia_mes || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Coste IA (este mes)</span></div>
-      <div class="age-card admin-stat admin-stat-clic ${alertaReportes ? "admin-stat-alerta" : ""}" id="stat-reportes"><span class="admin-stat-ico" aria-hidden="true">🚩</span><span class="admin-stat-num">${d.reportes_pendientes}</span><span class="admin-stat-lbl">Reportes pendientes</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("usuarios", 22)}</span><span class="admin-stat-num">${d.usuarios_totales}</span><span class="admin-stat-lbl">Usuarios</span><span class="admin-stat-sub">+${d.usuarios_nuevos_7_dias || 0} en 7 días</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("rayo", 22)}</span><span class="admin-stat-num">${d.usuarios_activos_7_dias || 0}</span><span class="admin-stat-lbl">Activos (7 días)</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("matraz", 22)}</span><span class="admin-stat-num">${d.tests_ultimos_7_dias}</span><span class="admin-stat-lbl">Tests (7 días)</span><span class="admin-stat-sub">${d.tests_ultimos_30_dias} en 30 días</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("libros", 22)}</span><span class="admin-stat-num">${d.tests_total || 0}</span><span class="admin-stat-lbl">Tests totales</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("euro", 22)}</span><span class="admin-stat-num">${(d.mrr || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Ingresos/mes (MRR)</span><span class="admin-stat-sub">${d.suscripciones_pago || 0} suscripciones de pago</span></div>
+      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("robot", 22)}</span><span class="admin-stat-num">${(d.coste_ia_mes || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Coste IA (este mes)</span></div>
+      <div class="age-card admin-stat admin-stat-clic ${alertaReportes ? "admin-stat-alerta" : ""}" id="stat-reportes"><span class="admin-stat-ico" aria-hidden="true">${icono("bandera", 22)}</span><span class="admin-stat-num">${d.reportes_pendientes}</span><span class="admin-stat-lbl">Reportes pendientes</span></div>
     </div>
 
     <div class="age-card admin-bloque">
@@ -272,7 +282,7 @@ async function renderTemario() {
     <div class="admin-bloque-arbol">
       <div class="admin-bloque-cab">
         <span class="admin-bloque-titulo">${escapeHtml(b.titulo)}
-          <button class="admin-icono" data-renombrar-bloque="${escapeHtml(b.id)}" title="Renombrar bloque">✏️</button>
+          <button class="admin-icono" data-renombrar-bloque="${escapeHtml(b.id)}" title="Renombrar bloque">${icono("lapiz", 14)}</button>
         </span>
         <label class="admin-toggle" title="Publicado / borrador">
           <input type="checkbox" data-bloque-pub="${escapeHtml(b.id)}" ${b.publicado ? "checked" : ""}>
@@ -285,7 +295,7 @@ async function renderTemario() {
             <span>${escapeHtml(t.titulo)}${t.publicado ? "" : ' <span class="admin-badge-alerta">borrador</span>'}</span>
             <span class="admin-badge">${t.num_chunks}</span>
           </button>
-          <button class="admin-icono" data-renombrar-tema="${escapeHtml(b.id)}|${escapeHtml(t.id)}|${escapeHtml(t.titulo)}" title="Renombrar tema">✏️</button>
+          <button class="admin-icono" data-renombrar-tema="${escapeHtml(b.id)}|${escapeHtml(t.id)}|${escapeHtml(t.titulo)}" title="Renombrar tema">${icono("lapiz", 14)}</button>
         </div>`).join("")}
       <button class="age-btn age-btn-outline admin-mini admin-nuevo-tema" data-bloque="${escapeHtml(b.id)}" style="margin-top:6px;">+ Tema</button>
     </div>`).join("") || '<p class="admin-vacio">Sin bloques todavía.</p>';
@@ -397,8 +407,8 @@ async function renderPreguntas() {
       <input id="f-bloque" class="age-input" placeholder="Bloque (ej. bloque_01)">
       <input id="f-anio" class="age-input" placeholder="Año (ej. 2025)">
       <button class="age-btn age-btn-outline admin-filtros-btn" id="f-aplicar">Filtrar</button>
-      <button class="age-btn age-btn-outline admin-filtros-btn" id="p-csv">⬇ CSV</button>
-      <button class="age-btn age-btn-outline admin-filtros-btn" id="p-importar">⬆ Importar</button>
+      <button class="age-btn age-btn-outline admin-filtros-btn" id="p-csv">${icono("descargar", 15)} CSV</button>
+      <button class="age-btn age-btn-outline admin-filtros-btn" id="p-importar">${icono("subir", 15)} Importar</button>
       <button class="age-btn age-btn-primary admin-filtros-btn" id="p-nueva">+ Nueva</button>
     </div>
     <div class="age-card"><div id="preguntas-tabla"><p class="admin-cargando">Cargando…</p></div></div>`;
@@ -584,7 +594,7 @@ async function renderAnalitica() {
     <div class="age-card admin-bloque">
       <h3>Temas sin ninguna actividad (${(d.sin_actividad || []).length})</h3>
       <p class="admin-reporte-meta">Nadie ha hecho preguntas de estos temas todavía.</p>
-      <div class="admin-chips">${(d.sin_actividad || []).map((t) => `<span class="admin-chip">${escapeHtml(t.titulo || t.tema_id)}</span>`).join("") || '<span class="admin-vacio">Todos los temas tienen actividad. 🎉</span>'}</div>
+      <div class="admin-chips">${(d.sin_actividad || []).map((t) => `<span class="admin-chip">${escapeHtml(t.titulo || t.tema_id)}</span>`).join("") || `<span class="admin-vacio">Todos los temas tienen actividad. ${icono("check", 14)}</span>`}</div>
     </div>`;
 }
 
@@ -598,7 +608,7 @@ async function renderUsuarios() {
       <input id="u-busqueda" class="age-input" placeholder="Buscar por email…">
       <select id="u-plan" class="age-input"><option value="">Todos los planes</option><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
       <button class="age-btn age-btn-primary admin-filtros-btn" id="u-aplicar">Buscar</button>
-      <button class="age-btn age-btn-outline admin-filtros-btn" id="u-csv">⬇ CSV</button>
+      <button class="age-btn age-btn-outline admin-filtros-btn" id="u-csv">${icono("descargar", 15)} CSV</button>
       ${_permisos.admin ? '<button class="age-btn age-btn-outline admin-filtros-btn" id="u-crear">+ Crear usuario</button>' : ""}
     </div>
     <div class="age-card"><div id="usuarios-tabla"><p class="admin-cargando">Cargando…</p></div></div>`;
@@ -711,8 +721,8 @@ function fichaPlanBadge(plan, enPrueba) {
 function fichaEuros(n) { return (n || 0).toLocaleString("es", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) + " €"; }
 const _MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function mesLegible(m) { const p = (m || "").split("-"); return (_MESES_CORTOS[(+p[1] || 1) - 1] || "") + " " + (p[0] || ""); }
-function fichaMini(icono, num, label) {
-  return `<div class="ficha-mini"><span class="ficha-mini-ico">${icono}</span><span class="ficha-mini-num">${(num || 0).toLocaleString("es")}</span><span class="ficha-mini-lbl">${label}</span></div>`;
+function fichaMini(iconoHtml, num, label) {
+  return `<div class="ficha-mini"><span class="ficha-mini-ico">${iconoHtml}</span><span class="ficha-mini-num">${(num || 0).toLocaleString("es")}</span><span class="ficha-mini-lbl">${label}</span></div>`;
 }
 function fichaCosteBarras(hist) {
   if (!hist || !hist.length) return '<p class="ficha-vacio">Sin consumo de IA todavía.</p>';
@@ -759,10 +769,10 @@ async function abrirUsuario(uid) {
           ${u.nombre ? `<p class="ficha-nombre">${escapeHtml(u.nombre)}</p>` : ""}
           <div class="ficha-badges">
             ${fichaPlanBadge(u.plan, u.en_prueba)}
-            <span class="ficha-badge ${u.email_verificado ? "ficha-badge-ok" : "ficha-badge-warn"}">${u.email_verificado ? "✓ Verificado" : "Sin verificar"}</span>
-            ${u.es_admin ? '<span class="ficha-badge ficha-badge-admin">👑 Admin total</span>' : ""}
-            ${(!u.es_admin && (u.permisos || []).length) ? `<span class="ficha-badge ficha-badge-rol">🛡️ ${(u.permisos || []).length} rol(es)</span>` : ""}
-            ${u.bloqueado ? '<span class="ficha-badge ficha-badge-bloqueo">🚫 Bloqueado</span>' : ""}
+            <span class="ficha-badge ${u.email_verificado ? "ficha-badge-ok" : "ficha-badge-warn"}">${u.email_verificado ? icono("check", 13) + " Verificado" : "Sin verificar"}</span>
+            ${u.es_admin ? `<span class="ficha-badge ficha-badge-admin">${icono("corona", 13)} Admin total</span>` : ""}
+            ${(!u.es_admin && (u.permisos || []).length) ? `<span class="ficha-badge ficha-badge-rol">${icono("escudo", 13)} ${(u.permisos || []).length} rol(es)</span>` : ""}
+            ${u.bloqueado ? `<span class="ficha-badge ficha-badge-bloqueo">${icono("prohibido", 13)} Bloqueado</span>` : ""}
           </div>
           <p class="ficha-uid"><span>UID: ${escapeHtml(u.uid)}</span><button class="admin-copiar" id="up-copiar-uid">copiar</button></p>
         </div>
@@ -777,7 +787,7 @@ async function abrirUsuario(uid) {
 
       <div class="ficha-cols">
         <div class="ficha-panel ficha-coste">
-          <div class="ficha-panel-cab"><span class="ficha-panel-ico">🤖</span><h3>Gasto en IA</h3></div>
+          <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("robot", 17)}</span><h3>Gasto en IA</h3></div>
           <div class="ficha-coste-cifras">
             <div class="ficha-coste-grande"><span class="ficha-coste-num">${fichaEuros(u.coste_ia_mes)}</span><span class="ficha-coste-lbl">este mes</span></div>
             <div class="ficha-coste-sec">
@@ -789,7 +799,7 @@ async function abrirUsuario(uid) {
           <p class="ficha-coste-detalle" id="up-coste-detalle">${(u.coste_ia_historico || []).length ? "Toca una barra para ver el detalle de ese mes." : ""}</p>
           ${(u.coste_ia_historico || []).length ? `
           <details class="ficha-rango">
-            <summary>🔎 Buscar por rango de meses</summary>
+            <summary>${icono("buscar", 14)} Buscar por rango de meses</summary>
             <div class="ficha-rango-cuerpo">
               <div class="ficha-rango-selects">
                 <label>Desde <select id="up-rango-desde" class="age-input">${(u.coste_ia_historico || []).map((h) => `<option value="${escapeHtml(h.mes)}">${mesLegible(h.mes)}</option>`).join("")}</select></label>
@@ -801,21 +811,21 @@ async function abrirUsuario(uid) {
         </div>
 
         <div class="ficha-panel">
-          <div class="ficha-panel-cab"><span class="ficha-panel-ico">📚</span><h3>Contenido creado</h3></div>
+          <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("libros", 17)}</span><h3>Contenido creado</h3></div>
           <div class="ficha-minis">
-            ${fichaMini("📄", c.documentos, "Documentos")}
-            ${fichaMini("📝", c.resumenes, "Resúmenes")}
-            ${fichaMini("🗂️", c.esquemas, "Esquemas")}
-            ${fichaMini("🃏", c.tarjetas, "Tarjetas")}
-            ${fichaMini("🧪", c.tests_pdf, "Tests de PDF")}
-            ${fichaMini("⭐", c.favoritas, "Favoritas")}
-            ${fichaMini("🔁", c.falladas, "A repasar")}
+            ${fichaMini(icono("documento", 18), c.documentos, "Documentos")}
+            ${fichaMini(icono("lapiz", 18), c.resumenes, "Resúmenes")}
+            ${fichaMini(icono("esquema", 18), c.esquemas, "Esquemas")}
+            ${fichaMini(icono("tarjeta", 18), c.tarjetas, "Tarjetas")}
+            ${fichaMini(icono("matraz", 18), c.tests_pdf, "Tests de PDF")}
+            ${fichaMini(icono("estrella", 18), c.favoritas, "Favoritas")}
+            ${fichaMini(icono("repetir", 18), c.falladas, "A repasar")}
           </div>
         </div>
       </div>
 
       <div class="ficha-panel">
-        <div class="ficha-panel-cab"><span class="ficha-panel-ico">🪪</span><h3>Datos de la cuenta</h3></div>
+        <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("usuario", 17)}</span><h3>Datos de la cuenta</h3></div>
         <dl class="ficha-datos">
           <div><dt>Plan</dt><dd>${escapeHtml(u.plan)}${oposActivas.length ? " · " + oposActivas.map(escapeHtml).join(", ") : ""}</dd></div>
           <div><dt>Alta</dt><dd>${escapeHtml(fechaCorta(u.fecha_creacion))}</dd></div>
@@ -826,13 +836,13 @@ async function abrirUsuario(uid) {
       </div>
 
       <div class="ficha-panel">
-        <div class="ficha-panel-cab"><span class="ficha-panel-ico">📊</span><h3>Uso de herramientas (periodo actual)</h3></div>
+        <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("grafico", 17)}</span><h3>Uso de herramientas (periodo actual)</h3></div>
         ${((u.uso_herramientas || {}).filas || []).map(fichaUsoFila).join("")}
         <p class="ficha-uso-nota">Consumo frente al límite del plan de este usuario. El Test Personalizado se mide en preguntas. Si alguna barra se pone en rojo, está apurando su cupo.</p>
       </div>
 
       <details class="ficha-acordeon">
-        <summary><span class="ficha-panel-ico">💳</span> Cambiar plan (soporte)</summary>
+        <summary><span class="ficha-panel-ico">${icono("tarjeta", 16)}</span> Cambiar plan (soporte)</summary>
         <div class="ficha-acordeon-cuerpo">
           <div class="admin-form-fila">
             <select id="up-plan" class="age-input"><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
@@ -841,7 +851,7 @@ async function abrirUsuario(uid) {
           <input id="up-motivo" class="age-input" placeholder="Motivo (queda registrado)" style="margin-top:8px;">
           <button class="age-btn age-btn-primary" id="up-guardar" style="margin-top:10px;">Cambiar plan</button>
           <hr class="admin-sep">
-          <h4 class="ficha-sub">⏳ Prueba gratuita Premium</h4>
+          <h4 class="ficha-sub">${icono("arena", 15)} Prueba gratuita Premium</h4>
           <p class="ficha-prueba-estado">${u.en_prueba
             ? `En prueba hasta el <strong>${escapeHtml(fechaCorta(u.prueba_fin))}</strong>.`
             : (u.prueba_fin ? `Su prueba terminó el ${escapeHtml(fechaCorta(u.prueba_fin))}.` : "Nunca ha tenido una prueba.")}</p>
@@ -853,25 +863,25 @@ async function abrirUsuario(uid) {
       </details>
 
       <details class="ficha-acordeon">
-        <summary><span class="ficha-panel-ico">🛟</span> Soporte y notas</summary>
+        <summary><span class="ficha-panel-ico">${icono("escudo", 16)}</span> Soporte y notas</summary>
         <div class="ficha-acordeon-cuerpo">
-          <h4 class="ficha-sub">📝 Notas internas</h4>
+          <h4 class="ficha-sub">${icono("lapiz", 15)} Notas internas</h4>
           <div id="up-notas-lista" class="ficha-notas"></div>
           <textarea class="age-input" id="up-nota-nueva" rows="2" placeholder="Escribe una nota nueva…"></textarea>
           <button class="age-btn age-btn-primary admin-mini" id="up-nota-anadir" style="margin-top:6px;">+ Añadir nota</button>
-          <h4 class="ficha-sub" style="margin-top:18px;">🛠️ Acciones de soporte</h4>
+          <h4 class="ficha-sub" style="margin-top:18px;">${icono("herramienta", 15)} Acciones de soporte</h4>
           <div class="ficha-soporte-acciones">
-            <button class="age-btn admin-mini ficha-btn-soporte" id="up-racha">🔥 Resetear racha</button>
-            <button class="age-btn admin-mini ficha-btn-soporte" id="up-limites">♻️ Resetear límites de uso</button>
-            <button class="age-btn admin-mini ficha-btn-soporte" id="up-reset-pass">🔑 Enlace de contraseña</button>
-            ${u.email_verificado ? "" : '<button class="age-btn admin-mini ficha-btn-soporte" id="up-verif">✉️ Enlace de verificación</button>'}
+            <button class="age-btn admin-mini ficha-btn-soporte" id="up-racha">${icono("fuego", 15)} Resetear racha</button>
+            <button class="age-btn admin-mini ficha-btn-soporte" id="up-limites">${icono("actualizar", 15)} Resetear límites de uso</button>
+            <button class="age-btn admin-mini ficha-btn-soporte" id="up-reset-pass">${icono("llave", 15)} Enlace de contraseña</button>
+            ${u.email_verificado ? "" : `<button class="age-btn admin-mini ficha-btn-soporte" id="up-verif">${icono("correo", 15)} Enlace de verificación</button>`}
           </div>
           <div id="up-enlace-caja"></div>
         </div>
       </details>
 
       <details class="ficha-acordeon ficha-acordeon-peligro">
-        <summary><span class="ficha-panel-ico">🔐</span> Roles y administración</summary>
+        <summary><span class="ficha-panel-ico">${icono("candado", 16)}</span> Roles y administración</summary>
         <div class="ficha-acordeon-cuerpo">
           ${_permisos.admin ? `
             <p class="ficha-roles-intro">${u.es_admin ? "Este usuario es <strong>administrador total</strong> (acceso a todo)." : "Da acceso parcial marcando solo las secciones que necesite, sin hacerlo admin total."}</p>
@@ -879,7 +889,7 @@ async function abrirUsuario(uid) {
               ${(u.permisos_disponibles || ["temario", "reportes", "usuarios"]).map((p) => `
                 <label class="ficha-rol ${u.es_admin ? "ficha-rol-off" : ""}">
                   <input type="checkbox" class="up-permiso" value="${escapeHtml(p)}" ${(u.permisos || []).includes(p) ? "checked" : ""} ${u.es_admin ? "disabled" : ""}>
-                  <span class="ficha-rol-ico">${p === "temario" ? "📖" : p === "reportes" ? "🚩" : "👥"}</span>
+                  <span class="ficha-rol-ico">${p === "temario" ? icono("libro", 17) : p === "reportes" ? icono("bandera", 17) : icono("usuarios", 17)}</span>
                   <span class="ficha-rol-txt"><strong>${p === "temario" ? "Temario y preguntas" : p === "reportes" ? "Reportes de preguntas" : "Usuarios y planes"}</strong><small>${p === "temario" ? "Editar y subir temario, gestionar preguntas" : p === "reportes" ? "Revisar reportes de preguntas de los usuarios" : "Ver usuarios, cambiar planes y roles"}</small></span>
                 </label>`).join("")}
             </div>
@@ -917,7 +927,7 @@ async function abrirUsuario(uid) {
       const meta = [n.autor, n.fecha ? fechaCorta(n.fecha) : ""].filter(Boolean).join(" · ");
       return `<div class="ficha-nota"><div class="ficha-nota-txt">${escapeHtml(n.texto || "")}</div>
         <div class="ficha-nota-pie">${meta ? `<span class="ficha-nota-meta">${escapeHtml(meta)}</span>` : "<span></span>"}
-        <button class="ficha-nota-borrar" data-id="${escapeHtml(n.id)}" title="Eliminar nota">🗑</button></div></div>`;
+        <button class="ficha-nota-borrar" data-id="${escapeHtml(n.id)}" title="Eliminar nota">${icono("papelera", 14)}</button></div></div>`;
     }).join("");
     cont.querySelectorAll(".ficha-nota-borrar").forEach((b) => b.addEventListener("click", async () => {
       if (!confirm("¿Eliminar esta nota?")) return;
@@ -1008,7 +1018,7 @@ async function abrirUsuario(uid) {
     if (r) { toast(r.mensaje || "Hecho."); u.bloqueado = bloquear; abrirUsuario(u.uid); }
   });
   document.getElementById("up-eliminar")?.addEventListener("click", async () => {
-    if (!confirm(`⚠️ Vas a ELIMINAR por completo la cuenta de ${u.email}. Es IRREVERSIBLE (se borran todos sus datos y su suscripción). ¿Continuar?`)) return;
+    if (!confirm(`Vas a ELIMINAR por completo la cuenta de ${u.email}. Es IRREVERSIBLE (se borran todos sus datos y su suscripción). ¿Continuar?`)) return;
     if (!confirm("Confirma otra vez: esta acción no se puede deshacer.")) return;
     const r = await api("DELETE", `/admin/api/usuarios/${u.uid}`);
     if (r) { toast("Cuenta eliminada."); cerrarModal(); cargarUsuarios(); }
@@ -1046,7 +1056,7 @@ async function cargarReportes() {
   const pendientes = (d.reportes || []).filter((r) => r.estado === "pendiente").length;
   if (estadoReportes === "pendiente") actualizarBadgeReportes(pendientes);
   if (!(d.reportes || []).length) {
-    cont.innerHTML = `<p class="admin-vacio">No hay reportes en este estado. 🎉</p>`;
+    cont.innerHTML = `<p class="admin-vacio">No hay reportes en este estado. ${icono("check", 14)}</p>`;
     return;
   }
   const clase = (e) => e === "revisado" ? "admin-estado-revisado" : e === "descartado" ? "admin-estado-descartado" : "admin-estado-pendiente";
@@ -1054,7 +1064,7 @@ async function cargarReportes() {
     const po = r.pregunta_oficial;
     const detalle = po
       ? `<div class="admin-reporte-oficial">
-           ${["A", "B", "C", "D"].map((k) => `<div class="admin-op-linea ${po.respuesta_correcta === k ? "admin-op-correcta" : ""}">${k}) ${escapeHtml((po.opciones || {})[k] || "")}${po.respuesta_correcta === k ? " ✔" : ""}</div>`).join("")}
+           ${["A", "B", "C", "D"].map((k) => `<div class="admin-op-linea ${po.respuesta_correcta === k ? "admin-op-correcta" : ""}">${k}) ${escapeHtml((po.opciones || {})[k] || "")}${po.respuesta_correcta === k ? " " + icono("check", 13) : ""}</div>`).join("")}
            ${po.explicacion ? `<p class="admin-reporte-meta"><strong>Explicación:</strong> ${escapeHtml(po.explicacion)}</p>` : ""}
            ${po.activa ? "" : '<span class="admin-badge-alerta">ya desactivada</span>'}
          </div>`
@@ -1100,16 +1110,19 @@ async function buscarYEditarPregunta(textoPregunta) {
 }
 
 // ===== Auditoría =====
-const _ACCION_ETIQUETA = {
-  usuario_cambiar_plan: "💳 Cambio de plan", usuario_resetear_racha: "🔥 Reset de racha",
-  admin_dar: "👑 Dar admin", admin_quitar: "🚫 Quitar admin",
-  pregunta_crear: "➕ Crear pregunta", pregunta_editar: "✏️ Editar pregunta",
-  pregunta_desactivar: "🗑️ Desactivar pregunta", pregunta_reactivar: "♻️ Reactivar pregunta",
-  temario_anadir_ficha: "➕ Añadir ficha", temario_editar_ficha: "✏️ Editar ficha",
-  temario_borrar_ficha: "🗑️ Borrar ficha", publicado: "✅ Publicar", borrador: "📝 A borrador",
-  reporte_revisado: "✔️ Reporte revisado", reporte_descartado: "✖️ Reporte descartado",
-};
-function etiquetaAccion(a) { return _ACCION_ETIQUETA[a] || a; }
+function _etiquetaAccionMapa() {
+  const i14 = (n) => icono(n, 14);
+  return {
+    usuario_cambiar_plan: `${i14("tarjeta")} Cambio de plan`, usuario_resetear_racha: `${i14("fuego")} Reset de racha`,
+    admin_dar: `${i14("corona")} Dar admin`, admin_quitar: `${i14("prohibido")} Quitar admin`,
+    pregunta_crear: `${i14("mas")} Crear pregunta`, pregunta_editar: `${i14("lapiz")} Editar pregunta`,
+    pregunta_desactivar: `${i14("papelera")} Desactivar pregunta`, pregunta_reactivar: `${i14("actualizar")} Reactivar pregunta`,
+    temario_anadir_ficha: `${i14("mas")} Añadir ficha`, temario_editar_ficha: `${i14("lapiz")} Editar ficha`,
+    temario_borrar_ficha: `${i14("papelera")} Borrar ficha`, publicado: `${i14("check")} Publicar`, borrador: `${i14("lapiz")} A borrador`,
+    reporte_revisado: `${i14("check")} Reporte revisado`, reporte_descartado: `${i14("cruz")} Reporte descartado`,
+  };
+}
+function etiquetaAccion(a) { return _etiquetaAccionMapa()[a] || a; }
 
 async function renderAuditoria() {
   const panel = document.getElementById("panel-auditoria");
@@ -1125,7 +1138,7 @@ async function renderAuditoria() {
     const fecha = (e.fecha || "").replace("T", " ").slice(0, 16);
     return `<tr>
       <td>${escapeHtml(fecha)}</td>
-      <td>${escapeHtml(etiquetaAccion(e.accion))}</td>
+      <td>${etiquetaAccion(e.accion)}</td>
       <td>${escapeHtml(e.objetivo || "-")}${e.detalle ? `<br><span class="admin-reporte-meta">${escapeHtml(e.detalle)}</span>` : ""}</td>
       <td>${escapeHtml(e.email_admin || "-")}</td>
     </tr>`;
@@ -1164,7 +1177,7 @@ async function renderLimites() {
     </div>`;
   const tarjetaPaginas = `
     <div class="age-card lim-tool">
-      <div class="lim-tool-cab"><h3>📄 Máximo de páginas por PDF subido</h3><p>Tope de páginas de un documento según el plan (no es un cupo de usos).</p></div>
+      <div class="lim-tool-cab"><h3>${icono("documento", 17)} Máximo de páginas por PDF subido</h3><p>Tope de páginas de un documento según el plan (no es un cupo de usos).</p></div>
       <div class="lim-planes">${planes.map((p) => `
         <div class="lim-plan lim-plan-${p}"><span class="lim-plan-nombre">${_NOMBRE_PLAN[p] || p}</span>
           <div class="lim-plan-campos"><input type="number" min="1" inputmode="numeric" class="age-input lim-pag" data-plan="${p}" value="${(cfg.max_paginas || {})[p] || 0}" aria-label="Páginas de ${_NOMBRE_PLAN[p] || p}"><span class="lim-pag-uni">págs</span></div>
@@ -1174,7 +1187,7 @@ async function renderLimites() {
     <div class="age-card lim-intro"><p>Define cuántas veces puede usar cada herramienta cada perfil. <strong>0</strong> significa que ese plan <strong>no incluye</strong> la herramienta. El periodo (día/mes) marca cada cuánto se renueva el cupo. Los cambios se aplican en unos segundos.</p></div>
     ${(cfg.meta || []).map(tarjetaTool).join("")}
     ${tarjetaPaginas}
-    <div class="lim-barra"><button class="age-btn age-btn-primary" id="lim-guardar">💾 Guardar cambios</button></div>`;
+    <div class="lim-barra"><button class="age-btn age-btn-primary" id="lim-guardar">${icono("guardar", 15)} Guardar cambios</button></div>`;
   document.getElementById("lim-guardar").addEventListener("click", async () => {
     const tools = {};
     document.querySelectorAll(".lim-num").forEach((inp) => {
@@ -1202,10 +1215,10 @@ async function renderSistema() {
     // 3 estados: verde (OK), rojo (crítico sin configurar), ámbar (opcional
     // sin configurar -> no es un problema, no alarma).
     const estado = s.ok
-      ? { punto: "🟢", txt: "Configurado", cls: "sis-ok" }
+      ? { punto: '<span class="sis-punto"></span>', txt: "Configurado", cls: "sis-ok" }
       : (s.critico
-        ? { punto: "🔴", txt: "Falta (crítico)", cls: "sis-ko" }
-        : { punto: "🟡", txt: "Opcional, sin configurar", cls: "sis-opt" });
+        ? { punto: '<span class="sis-punto"></span>', txt: "Falta (crítico)", cls: "sis-ko" }
+        : { punto: '<span class="sis-punto"></span>', txt: "Opcional, sin configurar", cls: "sis-opt" });
     return `<tr class="${estado.cls}">
       <td>${estado.punto} ${escapeHtml(s.nombre)}</td>
       <td>${estado.txt}</td>
@@ -1216,11 +1229,11 @@ async function renderSistema() {
   // Panel de diagnóstico: semáforo global + cosas a vigilar.
   const todoOk = diag.todo_ok !== false;
   const avisos = [];
-  if (diag.banner_activo) avisos.push(`<span class="sis-aviso sis-aviso-info">📢 Hay un aviso global ACTIVO en la web ahora mismo</span>`);
-  if ((diag.opcionales_ko || []).length) avisos.push(`<span class="sis-aviso sis-aviso-soft">🟡 Servicios opcionales sin configurar: ${diag.opcionales_ko.map(escapeHtml).join(", ")}</span>`);
+  if (diag.banner_activo) avisos.push(`<span class="sis-aviso sis-aviso-info">${icono("megafono", 15)} Hay un aviso global ACTIVO en la web ahora mismo</span>`);
+  if ((diag.opcionales_ko || []).length) avisos.push(`<span class="sis-aviso sis-aviso-soft">${icono("alerta", 15)} Servicios opcionales sin configurar: ${diag.opcionales_ko.map(escapeHtml).join(", ")}</span>`);
   panel.innerHTML = `
     <div class="age-card admin-bloque sis-diagnostico ${todoOk ? "sis-diag-ok" : "sis-diag-ko"}">
-      <div class="sis-diag-cab"><span class="sis-diag-ico">${todoOk ? "✅" : "⚠️"}</span>
+      <div class="sis-diag-cab"><span class="sis-diag-ico">${todoOk ? icono("check", 26) : icono("alerta", 26)}</span>
         <div><h3>${todoOk ? "Todo en orden" : "Atención necesaria"}</h3>
         <p class="admin-reporte-meta">${todoOk ? "Todos los servicios críticos están configurados y la web funciona." : "Servicios críticos sin configurar: " + (diag.criticos_ko || []).map(escapeHtml).join(", ")}</p></div>
       </div>
@@ -1256,6 +1269,7 @@ async function renderSistema() {
 
 // ===== init =====
 document.addEventListener("DOMContentLoaded", async () => {
+  inyectarIconosEstaticos();
   _permisos = await obtenerPermisos();
   if (!_permisos.admin && _permisos.permisos.length === 0) {
     mostrarNoAutorizado();

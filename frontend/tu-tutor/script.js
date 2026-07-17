@@ -1,3 +1,13 @@
+import { icono } from "/assets/icons.js";
+
+// Se resuelve aquí, en el nivel superior del módulo (que se ejecuta
+// "deferred" pero SIEMPRE antes de DOMContentLoaded), y no dentro del
+// listener de más abajo: así "mensajeBienvenidaHTML" captura el SVG ya
+// insertado, no el marcador data-icon sin resolver.
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+});
+
 // ===== AUTENTICACIÓN =====
 async function obtenerAuthHeaders() {
   const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");
@@ -200,7 +210,12 @@ document.addEventListener("DOMContentLoaded", async function () {
   });
 
   // GESTIÓN DE MENSAJES
-  function agregarMensaje(tipo, texto) {
+  // iconoPrefijo (opcional): nombre de icono de /assets/icons.js que se
+  // antepone al primer bloque del mensaje. Se inserta como SVG de confianza
+  // (viene siempre de nuestro propio código, nunca del texto en sí) DESPUÉS
+  // de que formatearMensajeBot() ya haya escapado el texto -- así un icono
+  // no puede colarse como HTML crudo si algún día "texto" viene de fuera.
+  function agregarMensaje(tipo, texto, iconoPrefijo) {
     const safeText = escapeHtml(texto);
     const div = document.createElement("div");
     if (tipo === "user") {
@@ -212,6 +227,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
     const burbuja = crearBurbujaBot();
     actualizarBurbujaBot(burbuja, texto);
+    if (iconoPrefijo) {
+      const primerBloque = burbuja.contenido.querySelector("p, h3, li");
+      if (primerBloque) primerBloque.insertAdjacentHTML("afterbegin", `${icono(iconoPrefijo, 16)} `);
+    }
     return burbuja;
   }
 
@@ -240,7 +259,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       </div>
       <div class="bubble-bot">
         <div class="bubble-bot-contenido"></div>
-        <div class="bubble-bot-actions"><button type="button" class="btn-copiar-mensaje" aria-label="Copiar mensaje" title="Copiar">📋</button></div>
+        <div class="bubble-bot-actions"><button type="button" class="btn-copiar-mensaje" aria-label="Copiar mensaje" title="Copiar">${icono("documento", 16)}</button></div>
       </div>
     `;
     chatMessages.appendChild(div);
@@ -253,11 +272,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     const botonCopiar = div.querySelector(".btn-copiar-mensaje");
     botonCopiar.addEventListener("click", async () => {
       const exito = await copyToClipboard(estado.texto);
-      const iconoOriginal = botonCopiar.textContent;
-      botonCopiar.textContent = exito ? "✅" : "⚠️";
+      const iconoOriginal = botonCopiar.innerHTML;
+      botonCopiar.innerHTML = exito ? icono("check", 16) : icono("alerta", 16);
       botonCopiar.title = exito ? "Copiado" : "No se pudo copiar";
       setTimeout(() => {
-        botonCopiar.textContent = iconoOriginal;
+        botonCopiar.innerHTML = iconoOriginal;
         botonCopiar.title = "Copiar";
       }, 1500);
     });
@@ -277,7 +296,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
   }
 
-  const ERROR_TECNICO_TUTOR = "⚠️ El tutor ha tenido un problema técnico al generar la respuesta. Vuelve a intentarlo en unos segundos.";
+  const ERROR_TECNICO_TUTOR = "El tutor ha tenido un problema técnico al generar la respuesta. Vuelve a intentarlo en unos segundos.";
 
   // ENVÍO. Usa /tu-tutor/stream (Server-Sent Events) para mostrar la
   // respuesta con efecto de escritura en vez de esperar a que DeepSeek
@@ -318,25 +337,25 @@ document.addEventListener("DOMContentLoaded", async function () {
       });
     } catch {
       mostrarTyping(false);
-      agregarMensaje("bot", "❌ Error al conectar con el servidor.");
+      agregarMensaje("bot", "Error al conectar con el servidor.", "cruz");
       return;
     }
 
     mostrarTyping(false);
 
     if (respuesta.status === 403) {
-      agregarMensaje("bot", "🔒 Tu Tutor requiere el plan Premium.");
+      agregarMensaje("bot", "Tu Tutor requiere el plan Premium.", "candado");
       agregarCtaPlanes();
       return;
     }
     if (respuesta.status === 429) {
       const datosError = await respuesta.json().catch(() => ({}));
-      agregarMensaje("bot", `⏳ ${datosError.error || "Has alcanzado el límite de uso del chat por ahora."}`);
+      agregarMensaje("bot", datosError.error || "Has alcanzado el límite de uso del chat por ahora.", "arena");
       agregarCtaPlanes();
       return;
     }
     if (!respuesta.ok || !respuesta.body) {
-      agregarMensaje("bot", ERROR_TECNICO_TUTOR);
+      agregarMensaje("bot", ERROR_TECNICO_TUTOR, "alerta");
       return;
     }
 
@@ -381,7 +400,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     if (huboError && !textoAcumulado) {
       burbuja.div.remove();
-      agregarMensaje("bot", ERROR_TECNICO_TUTOR);
+      agregarMensaje("bot", ERROR_TECNICO_TUTOR, "alerta");
       return;
     }
 
@@ -417,7 +436,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const btnFacil = document.createElement("button");
     btnFacil.type = "button";
     btnFacil.className = "btn-mensaje-sec";
-    btnFacil.textContent = "💡 Más fácil";
+    btnFacil.innerHTML = `${icono("bombilla", 16)} Más fácil`;
     btnFacil.title = "Explícamelo de forma más sencilla";
     btnFacil.addEventListener("click", () => {
       input.value = "Explícamelo de forma más sencilla, con un ejemplo cotidiano.";
@@ -427,7 +446,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const btnOtra = document.createElement("button");
     btnOtra.type = "button";
     btnOtra.className = "btn-mensaje-sec";
-    btnOtra.textContent = "🔄 Otra respuesta";
+    btnOtra.innerHTML = `${icono("actualizar", 16)} Otra respuesta`;
     btnOtra.title = "Regenerar esta respuesta";
     btnOtra.addEventListener("click", () => {
       if (!ultimoMensajeUsuario) return;
@@ -446,7 +465,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         const enlace = document.createElement("a");
         enlace.className = "btn-tema-mensaje";
         enlace.href = "/test-personalizado/?temas=" + encodeURIComponent(tema.tema_id);
-        enlace.textContent = "📝 Generar test de " + acortarTitulo(tema.titulo);
+        enlace.innerHTML = `${icono("lapiz", 16)} Generar test de ${escapeHtml(acortarTitulo(tema.titulo))}`;
         temasRow.appendChild(enlace);
       });
       if (temasRow.children.length) pie.appendChild(temasRow);
@@ -464,11 +483,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     const bloque = document.createElement("div");
     bloque.className = "bubble-bot-cortada";
     const aviso = document.createElement("span");
-    aviso.textContent = "⚠️ Respuesta incompleta";
+    aviso.className = "bubble-bot-cortada-aviso";
+    aviso.innerHTML = `${icono("alerta", 16)} Respuesta incompleta`;
     const botonRegenerar = document.createElement("button");
     botonRegenerar.type = "button";
     botonRegenerar.className = "btn-regenerar-mensaje";
-    botonRegenerar.textContent = "🔄 Regenerar";
+    botonRegenerar.innerHTML = `${icono("actualizar", 16)} Regenerar`;
     botonRegenerar.addEventListener("click", async () => {
       botonRegenerar.disabled = true;
       botonRegenerar.textContent = "Regenerando…";
@@ -579,7 +599,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       })
       .catch(() => {
         mostrarTyping(false);
-        agregarMensaje("bot", "❌ No se pudo cargar la conversación.");
+        agregarMensaje("bot", "No se pudo cargar la conversación.", "cruz");
       });
 
     document.querySelectorAll("#chat-history li").forEach(li => {
@@ -618,7 +638,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const welcome = chatMessages.querySelector(".welcome-message");
     if (!welcome) return; // hay una conversación cargada, no el saludo
 
-    const saludoEl = welcome.querySelector(".welcome-saludo");
+    const saludoEl = welcome.querySelector(".welcome-saludo-texto") || welcome.querySelector(".welcome-saludo");
     const mensajeEl = welcome.querySelector(".welcome-mensaje");
     const accionEl = welcome.querySelector(".welcome-accion");
     const quickWrap = welcome.querySelector(".quick-questions");
@@ -638,7 +658,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         enlace.className = "btn-accion-tutor";
         enlace.href = "/test-personalizado/?temas=" + encodeURIComponent(accion.tema_id);
         const etiquetaAccion = accion.titulo ? ("Practicar " + acortarTitulo(accion.titulo)) : (accion.label || "Practicar este tema");
-        enlace.textContent = "📝 " + etiquetaAccion;
+        enlace.innerHTML = `${icono("lapiz", 16)} ${escapeHtml(etiquetaAccion)}`;
         accionEl.appendChild(enlace);
       }
     }
