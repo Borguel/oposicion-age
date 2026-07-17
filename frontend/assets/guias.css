@@ -106,7 +106,9 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
   margin-top: 2px;
 }
 
-/* Bloques del temario, como una lista de tarjetas compactas */
+/* Bloques del temario: cada uno es un <details> plegable que, al abrirse,
+   lista sus temas uno a uno -- en vez de una tarjeta cerrada que solo dice
+   cuántos temas hay, sin poder verlos. */
 .guia-bloques {
   display: flex;
   flex-direction: column;
@@ -114,14 +116,20 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
   margin: 16px 0;
 }
 .guia-bloque {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
   background: var(--age-card);
   border: 1px solid var(--age-border);
   border-radius: var(--age-radius-md);
-  padding: 14px 18px;
+  overflow: hidden;
 }
+.guia-bloque-resumen {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 14px 18px;
+  cursor: pointer;
+  list-style: none;
+}
+.guia-bloque-resumen::-webkit-details-marker { display: none; }
 .guia-bloque-num {
   flex-shrink: 0;
   font-weight: 800;
@@ -131,11 +139,38 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
 }
 .guia-bloque-cuerpo { flex: 1 1 auto; }
 .guia-bloque-titulo { font-weight: 700; font-size: 15px; }
-.guia-bloque-temas {
+.guia-bloque-temas-num {
   flex-shrink: 0;
   font-size: 13px;
   color: var(--age-ink-soft);
   white-space: nowrap;
+}
+.guia-bloque-flecha {
+  flex-shrink: 0;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--age-ink-soft);
+  transition: transform 0.2s var(--age-ease);
+}
+.guia-bloque[open] .guia-bloque-flecha { transform: rotate(180deg); }
+.guia-bloque-lista {
+  margin: 0;
+  padding: 2px 18px 16px 56px;
+  list-style: decimal;
+  color: var(--age-ink);
+  font-size: 14px;
+  line-height: 1.8;
+  border-top: 1px solid var(--age-border);
+  padding-top: 12px;
+}
+.guia-bloque-lista li { color: var(--age-ink); }
+.guia-bloque-lista-vacio {
+  margin: 0;
+  padding: 4px 18px 16px 18px;
+  color: var(--age-ink-soft);
+  font-size: 13.5px;
+  font-style: italic;
+  border-top: 1px solid var(--age-border);
 }
 
 .guia-aviso-fuente {
