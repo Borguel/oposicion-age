@@ -216,29 +216,33 @@ body {
   margin-left: 8px;
 }
 
-.age-nav select[data-nav-oposicion] {
-  padding: 8px 12px;
+/* ---------- Grupo de utilidades (buscador + oposición + modo oscuro) ----------
+   Los tres controles comparten el mismo lenguaje visual (icono circular de
+   38px, popover con position:absolute) y se agrupan en un "pill" con fondo
+   sutil para que se lean como un conjunto en vez de piezas sueltas junto al
+   avatar de cuenta -- que queda separado por un borde a la izquierda, como
+   elemento de identidad distinto de las utilidades. En móvil este grupo
+   entero se oculta (ver @media 900px) y sus piezas se pintan dentro del
+   cajón del menú hamburguesa en su lugar. */
+.age-nav-utilidades {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
   border-radius: var(--age-radius-pill);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  font-family: var(--age-font);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
 }
 
-.age-nav select[data-nav-oposicion] option {
-  color: var(--age-ink);
+.age-nav-right .age-account {
+  margin-left: 10px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-/* ---------- Botón "Zona opositor" en páginas alcanzadas desde ahí ----------
-   Vive dentro de .age-nav-right, con el mismo tratamiento circular y
-   discreto que el botón de modo oscuro de al lado -- un icono suelto en
-   tono claro sobre el navy de la cabecera, en vez de una tarjeta blanca
-   flotando debajo del todo. Siempre visible (a diferencia de los enlaces
-   de .age-nav-links, que en móvil quedan ocultos tras el menú hamburguesa). */
-.age-volver-zona-btn {
+/* Botón-icono circular compartido por buscador, selector de oposición,
+   modo oscuro y "volver a zona opositor" -- antes cada uno duplicaba el
+   mismo bloque de 38x38px con su propio hover. */
+.age-nav-icon-btn {
   width: 38px;
   height: 38px;
   display: inline-flex;
@@ -247,64 +251,38 @@ body {
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
-  color: var(--age-primary-light);
+  color: #fff;
+  cursor: pointer;
   flex-shrink: 0;
   transition: background 0.2s var(--age-ease), color 0.2s var(--age-ease);
 }
 
+.age-nav-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ---------- Botón "Zona opositor" en páginas alcanzadas desde ahí ----------
+   Vive dentro de .age-nav-right, con el mismo tratamiento circular que el
+   resto de iconos de la nav pero en un tono cálido propio, para
+   distinguirlo como un atajo contextual en vez de una utilidad global.
+   Siempre visible (a diferencia de los enlaces de .age-nav-links, que en
+   móvil quedan ocultos tras el menú hamburguesa). */
+.age-volver-zona-btn {
+  color: var(--age-primary-light);
+}
+
 .age-volver-zona-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
 
-/* ---------- Buscador global (temas + documentos) ---------- */
-.age-buscador {
-  position: relative;
-}
-
-.age-buscador-btn {
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.2s var(--age-ease);
-}
-
-.age-buscador-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.age-tema-btn {
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.2s var(--age-ease);
-}
-
-.age-tema-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.age-buscador-panel {
+/* ---------- Popover compartido (buscador, selector de oposición, cuenta) ----------
+   Base común de posicionamiento/sombra/borde; cada uso concreto ajusta
+   solo ancho y espaciado interno más abajo. activarPopover() (popover.js)
+   añade la clase age-popover-root a la raíz y alterna "open" en ella. */
+.age-popover {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: min(360px, 90vw);
   background: var(--age-card);
   border-radius: var(--age-radius-md);
   box-shadow: var(--age-shadow-hover);
@@ -316,8 +294,54 @@ body {
   z-index: 600;
 }
 
-.age-buscador.open .age-buscador-panel {
+.age-popover-root.open .age-popover {
   display: flex;
+}
+
+/* ---------- Selector de oposición (escritorio: icono + popover) ---------- */
+.age-oposicion-popover {
+  position: relative;
+}
+
+.age-account-menu,
+.age-popover-menu {
+  width: min(260px, 90vw);
+  padding: 8px;
+  gap: 2px;
+}
+
+.age-popover-opcion {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: var(--age-radius-sm);
+  font-family: var(--age-font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--age-ink);
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.age-popover-opcion:hover {
+  background: var(--age-bg);
+}
+
+.age-popover-opcion-actual {
+  color: var(--age-primary-dark, var(--age-ink));
+  font-weight: 800;
+}
+
+/* ---------- Buscador global (temas + documentos) ---------- */
+.age-buscador {
+  position: relative;
+}
+
+.age-buscador-panel {
+  width: min(360px, 90vw);
 }
 
 .age-buscador-input {
@@ -442,26 +466,6 @@ body {
   transform: rotate(180deg);
 }
 
-.age-account-menu {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  min-width: 220px;
-  background: var(--age-card);
-  border-radius: var(--age-radius-md);
-  box-shadow: var(--age-shadow-hover);
-  border: 1px solid var(--age-border);
-  padding: 8px;
-  display: none;
-  flex-direction: column;
-  gap: 2px;
-  z-index: 600;
-}
-
-.age-account.open .age-account-menu {
-  display: flex;
-}
-
 .age-account-menu a,
 .age-account-menu button {
   display: flex;
@@ -508,15 +512,29 @@ body {
   flex-shrink: 0;
 }
 
+/* Piezas que solo existen dentro del cajón móvil (buscador y selector de
+   oposición inline, separadores, fila de modo oscuro) -- ocultas en
+   escritorio, donde sus equivalentes viven en .age-nav-utilidades. */
+.age-oposicion-movil,
+.age-buscador-movil,
+.age-nav-links-separador,
+.age-tema-movil {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .age-nav-burger {
     display: inline-flex;
   }
 
-  .age-nav select[data-nav-oposicion] {
-    max-width: 96px;
-    text-overflow: ellipsis;
-    padding: 8px 6px 8px 10px;
+  .age-nav-utilidades {
+    display: none;
+  }
+
+  .age-nav-right .age-account {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
   }
 
   .age-nav-links {
@@ -553,9 +571,88 @@ body {
     display: none;
   }
 
-  .age-nav select[data-nav-oposicion] {
-    font-size: 12.5px;
-    padding: 7px 10px;
+  /* Separadores: visibles entre secciones del cajón, salvo si quedan
+     como primer hijo (sin sesión no hay buscador/oposición que anteponer,
+     así que el separador de arriba del todo no debe verse suelto). */
+  .age-nav-links-separador {
+    display: block;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    margin: 6px 4px;
+  }
+
+  .age-nav-links-separador:first-child {
+    display: none;
+  }
+
+  .age-buscador-movil {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 4px 10px;
+  }
+
+  .age-buscador-movil .age-buscador-input {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #fff;
+  }
+
+  .age-buscador-movil .age-buscador-input::placeholder {
+    color: var(--age-navy-ink);
+  }
+
+  .age-oposicion-movil {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 4px 10px;
+  }
+
+  .age-oposicion-movil-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--age-navy-ink);
+  }
+
+  .age-oposicion-movil select {
+    padding: 10px 12px;
+    border-radius: var(--age-radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-family: var(--age-font);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .age-oposicion-movil select option {
+    color: var(--age-ink);
+  }
+
+  .age-tema-movil {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 12px;
+    border-radius: var(--age-radius-sm);
+    font-family: var(--age-font);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--age-navy-ink);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .age-tema-movil:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
   }
 }
 
@@ -661,7 +758,9 @@ body {
 .age-btn:focus-visible,
 .age-nav-links a:focus-visible,
 .age-account-btn:focus-visible,
-.age-tema-btn:focus-visible {
+.age-nav-icon-btn:focus-visible,
+.age-popover-opcion:focus-visible,
+.age-tema-movil:focus-visible {
   outline: 2px solid var(--age-primary);
   outline-offset: 2px;
 }

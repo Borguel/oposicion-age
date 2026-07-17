@@ -3,6 +3,9 @@
 // cuál está estudiando el usuario ahora mismo. Se guarda en localStorage
 // (no en la cuenta) porque es solo "qué estoy mirando ahora", no depende
 // de qué oposiciones tenga contratadas -- eso lo dice /mi-perfil.
+import { icono } from "/assets/icons.js";
+import { activarPopover } from "/assets/popover.js";
+
 export const OPOSICIONES = [
   { id: "AGE", nombre: "Cuerpo General Administrativo (AGE)", siglas: "AGE" },
   { id: "GACE", nombre: "Cuerpo de Gestión (GACE)", siglas: "GACE" },
@@ -21,41 +24,66 @@ export function establecerOposicionActual(id) {
   localStorage.setItem(CLAVE, id);
 }
 
-// Inserta (si no existe ya) un selector de oposición en la barra de
-// navegación compartida (dentro de #age-nav-right si existe, o en .age-nav
-// como fallback). Al cambiarlo se recarga la página para que temas/tests/
-// chat se actualicen con la oposición nueva. Solo tiene sentido con sesión
-// iniciada (sin cuenta no hay temario/tests que cambiar de oposición), así
-// que si no hay usuario se quita si ya estuviera puesto.
+function cambiarOposicionYRecargar(id) {
+  establecerOposicionActual(id);
+  sessionStorage.clear();
+  window.location.reload();
+}
+
+// Inserta (si no existe ya) el selector de oposición en la barra de
+// navegación compartida -- dos versiones, mostradas o no según el
+// breakpoint por CSS (no por JS, ya que cambiar de oposición siempre
+// recarga la página, así que no hay estado que sincronizar entre las
+// dos): un botón-icono con popover dentro de .age-nav-utilidades para
+// escritorio (mismo lenguaje visual que el buscador y la cuenta), y un
+// <select> nativo inline dentro del cajón del menú hamburguesa
+// (.age-nav-links) para móvil, más cómodo al tacto que un popover
+// anidado dentro de otro cajón. Solo tiene sentido con sesión iniciada
+// (sin cuenta no hay temario/tests que cambiar de oposición), así que si
+// no hay usuario se quita si ya estuviera puesto.
 export function inyectarSelectorOposicion(haySesion) {
-  const contenedor = document.getElementById("age-nav-right") || document.querySelector(".age-nav");
-  if (!contenedor) return;
+  const utilidades = document.querySelector(".age-nav-utilidades");
+  const drawer = document.querySelector(".age-nav-links");
 
   if (!haySesion) {
-    const existente = contenedor.querySelector("[data-nav-oposicion]");
-    if (existente) existente.remove();
+    utilidades?.querySelector(".age-oposicion-popover")?.remove();
+    drawer?.querySelector(".age-oposicion-movil")?.remove();
     return;
   }
 
-  if (contenedor.querySelector("[data-nav-oposicion]")) return;
+  const actual = obtenerOposicionActual();
 
-  const select = document.createElement("select");
-  select.setAttribute("data-nav-oposicion", "");
-  select.title = "Oposición que estás estudiando";
-  OPOSICIONES.forEach((o) => {
-    const opcion = document.createElement("option");
-    opcion.value = o.id;
-    // Siglas cortas en el menú (con el nombre completo en el "title" del
-    // <option>) para que no se corte en pantallas de móvil estrechas.
-    opcion.textContent = o.siglas || o.nombre;
-    opcion.title = o.nombre;
-    select.appendChild(opcion);
-  });
-  select.value = obtenerOposicionActual();
-  select.addEventListener("change", () => {
-    establecerOposicionActual(select.value);
-    sessionStorage.clear();
-    window.location.reload();
-  });
-  contenedor.insertBefore(select, contenedor.firstChild);
+  if (utilidades && !utilidades.querySelector(".age-oposicion-popover")) {
+    const popover = document.createElement("div");
+    popover.className = "age-oposicion-popover";
+    popover.innerHTML = `
+      <button type="button" class="age-nav-icon-btn" data-popover-toggle aria-label="Cambiar de oposición" title="Oposición que estás estudiando">${icono("edificio", 18)}</button>
+      <div class="age-popover age-popover-menu" data-popover-panel>
+        ${OPOSICIONES.map((o) => `<button type="button" class="age-popover-opcion${o.id === actual ? " age-popover-opcion-actual" : ""}" data-op="${o.id}">${o.nombre}</button>`).join("")}
+      </div>
+    `;
+    popover.querySelectorAll("[data-op]").forEach((btn) => {
+      btn.addEventListener("click", () => cambiarOposicionYRecargar(btn.dataset.op));
+    });
+    activarPopover(popover);
+    utilidades.insertBefore(popover, utilidades.firstChild);
+  }
+
+  if (drawer && !drawer.querySelector(".age-oposicion-movil")) {
+    const bloque = document.createElement("div");
+    bloque.className = "age-oposicion-movil";
+    const select = document.createElement("select");
+    select.setAttribute("data-nav-oposicion", "");
+    OPOSICIONES.forEach((o) => {
+      const opcion = document.createElement("option");
+      opcion.value = o.id;
+      opcion.textContent = o.nombre;
+      select.appendChild(opcion);
+    });
+    select.value = actual;
+    select.addEventListener("change", () => cambiarOposicionYRecargar(select.value));
+    bloque.innerHTML = `<label class="age-oposicion-movil-label">Oposición</label>`;
+    bloque.appendChild(select);
+    drawer.prepend(bloque);
+  }
 }

@@ -21,6 +21,7 @@ import { firebaseConfig, BACKEND_URL } from "/assets/firebase-config.js";
 import { inyectarSelectorOposicion, obtenerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
 import { iniciarAnalitica, CLAVE_COOKIES_ACEPTADAS } from "/assets/analytics.js";
+import { activarPopover } from "/assets/popover.js";
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
@@ -239,6 +240,18 @@ function esEnlaceActivo(match, ruta) {
   return match.some((prefijo) => (prefijo === "/" ? ruta === "/" : ruta.startsWith(prefijo)));
 }
 
+// Construye el esqueleto de la nav una sola vez (guardado por
+// nav.dataset.built). El resto de funciones (selector de oposición,
+// buscador, cuenta) se reconstruyen en cada onAuthStateChanged y se
+// insertan DENTRO de piezas de este esqueleto (.age-nav-utilidades,
+// .age-nav-links) que persisten entre esas reconstrucciones.
+//
+// En escritorio, buscador + oposición + modo oscuro viven agrupados en
+// el "pill" .age-nav-utilidades, separado del avatar de cuenta. En móvil
+// ese grupo se oculta entero y sus piezas (más el selector de oposición
+// y una fila de modo oscuro) se pintan en su lugar dentro del cajón que
+// abre el menú hamburguesa (.age-nav-links) -- ver inyectarSelectorOposicion
+// y construirBusquedaGlobal para la parte que insertan ellas mismas.
 function construirEsqueletoNav() {
   const nav = document.querySelector(".age-nav");
   if (!nav || nav.dataset.built) return;
@@ -255,6 +268,15 @@ function construirEsqueletoNav() {
 
   const links = document.createElement("div");
   links.className = "age-nav-links";
+
+  // Marcador de posición donde el buscador/oposición móviles se insertan
+  // por delante (drawer.prepend en inyectarSelectorOposicion/
+  // construirBusquedaGlobal) -- se oculta solo si queda como primer hijo
+  // (es decir, si no hay sesión y no hay nada que anteponer).
+  const separadorUtilidadesMovil = document.createElement("hr");
+  separadorUtilidadesMovil.className = "age-nav-links-separador";
+  links.appendChild(separadorUtilidadesMovil);
+
   const ruta = window.location.pathname;
   NAV_LINKS.forEach(({ href, label, match }) => {
     const a = document.createElement("a");
@@ -264,21 +286,37 @@ function construirEsqueletoNav() {
     links.appendChild(a);
   });
 
+  const separadorTemaMovil = document.createElement("hr");
+  separadorTemaMovil.className = "age-nav-links-separador";
+  links.appendChild(separadorTemaMovil);
+
+  const temaBtnMovil = document.createElement("button");
+  temaBtnMovil.type = "button";
+  temaBtnMovil.className = "age-tema-movil";
+  links.appendChild(temaBtnMovil);
+
   const right = document.createElement("div");
   right.className = "age-nav-right";
   right.id = "age-nav-right";
 
+  const utilidades = document.createElement("div");
+  utilidades.className = "age-nav-utilidades";
+  right.appendChild(utilidades);
+
   const temaBtn = document.createElement("button");
   temaBtn.type = "button";
-  temaBtn.className = "age-tema-btn";
+  temaBtn.className = "age-nav-icon-btn age-tema-btn";
   temaBtn.id = "age-tema-btn";
+  utilidades.appendChild(temaBtn);
+
   const actualizarIconoTema = () => {
     const oscuro = document.documentElement.dataset.theme === "dark";
     temaBtn.innerHTML = icono(oscuro ? "sol" : "luna", 18);
     temaBtn.setAttribute("aria-label", oscuro ? "Activar modo claro" : "Activar modo oscuro");
+    temaBtnMovil.innerHTML = `${icono(oscuro ? "sol" : "luna", 18)}<span>${oscuro ? "Modo claro" : "Modo oscuro"}</span>`;
   };
   actualizarIconoTema();
-  temaBtn.addEventListener("click", () => {
+  const alternarTema = () => {
     const oscuro = document.documentElement.dataset.theme === "dark";
     if (oscuro) {
       delete document.documentElement.dataset.theme;
@@ -288,8 +326,9 @@ function construirEsqueletoNav() {
       localStorage.setItem("age-theme", "dark");
     }
     actualizarIconoTema();
-  });
-  right.appendChild(temaBtn);
+  };
+  temaBtn.addEventListener("click", alternarTema);
+  temaBtnMovil.addEventListener("click", alternarTema);
 
   const burger = document.createElement("button");
   burger.type = "button";
@@ -381,50 +420,74 @@ function renderizarResultadosBusqueda(contenedor, query) {
   contenedor.innerHTML = bloques.join("");
 }
 
-function construirBusquedaGlobal(user) {
-  const right = document.getElementById("age-nav-right");
-  if (!right) return;
+const MARCADOR_RESULTADOS_VACIO = `<p class="age-buscador-vacio">Escribe para buscar entre tus temas y documentos.</p>`;
 
-  let buscador = right.querySelector(".age-buscador");
-  if (buscador) buscador.remove();
+// Pinta dos versiones (escritorio: icono + popover dentro de
+// .age-nav-utilidades; móvil: input inline al principio del cajón del
+// menú hamburguesa) que comparten la misma carga de datos y el mismo
+// renderizado de resultados -- solo cambia cómo/cuándo se abren, ya que
+// no hace falta sincronizar estado entre ellas (cada una filtra en
+// memoria de forma independiente sobre el mismo caché).
+function construirBusquedaGlobal(user) {
+  const utilidades = document.querySelector(".age-nav-utilidades");
+  const drawer = document.querySelector(".age-nav-links");
+
+  utilidades?.querySelector(".age-buscador")?.remove();
+  drawer?.querySelector(".age-buscador-movil")?.remove();
   if (!user) return;
 
-  buscador = document.createElement("div");
-  buscador.className = "age-buscador";
-  buscador.innerHTML = `
-    <button type="button" class="age-buscador-btn" aria-label="Buscar temas y documentos">${icono("buscar", 18)}</button>
-    <div class="age-buscador-panel">
+  if (utilidades) {
+    const buscador = document.createElement("div");
+    buscador.className = "age-buscador";
+    buscador.innerHTML = `
+      <button type="button" class="age-nav-icon-btn" data-popover-toggle aria-label="Buscar temas y documentos">${icono("buscar", 18)}</button>
+      <div class="age-popover age-buscador-panel" data-popover-panel>
+        <input type="search" class="age-buscador-input" placeholder="Buscar temas o documentos…" />
+        <div class="age-buscador-resultados">${MARCADOR_RESULTADOS_VACIO}</div>
+      </div>
+    `;
+    utilidades.insertBefore(buscador, utilidades.firstChild);
+
+    const input = buscador.querySelector(".age-buscador-input");
+    const resultados = buscador.querySelector(".age-buscador-resultados");
+    let temporizador = null;
+    input.addEventListener("input", () => {
+      clearTimeout(temporizador);
+      temporizador = setTimeout(() => renderizarResultadosBusqueda(resultados, input.value), 150);
+    });
+    activarPopover(buscador, {
+      onAbrir: async () => {
+        input.focus();
+        await cargarDatosBusquedaGlobal();
+        renderizarResultadosBusqueda(resultados, input.value);
+      },
+    });
+  }
+
+  if (drawer) {
+    const bloque = document.createElement("div");
+    bloque.className = "age-buscador-movil";
+    bloque.innerHTML = `
       <input type="search" class="age-buscador-input" placeholder="Buscar temas o documentos…" />
-      <div class="age-buscador-resultados"><p class="age-buscador-vacio">Escribe para buscar entre tus temas y documentos.</p></div>
-    </div>
-  `;
-  right.insertBefore(buscador, right.firstChild);
+      <div class="age-buscador-resultados">${MARCADOR_RESULTADOS_VACIO}</div>
+    `;
+    drawer.prepend(bloque);
 
-  const input = buscador.querySelector(".age-buscador-input");
-  const resultados = buscador.querySelector(".age-buscador-resultados");
-  let temporizador = null;
-
-  buscador.querySelector(".age-buscador-btn").addEventListener("click", async (evento) => {
-    evento.stopPropagation();
-    const abriendo = !buscador.classList.contains("open");
-    buscador.classList.toggle("open");
-    if (abriendo) {
-      input.focus();
+    const inputMovil = bloque.querySelector(".age-buscador-input");
+    const resultadosMovil = bloque.querySelector(".age-buscador-resultados");
+    let temporizadorMovil = null;
+    let cargado = false;
+    inputMovil.addEventListener("focus", async () => {
+      if (cargado) return;
+      cargado = true;
       await cargarDatosBusquedaGlobal();
-      renderizarResultadosBusqueda(resultados, input.value);
-    }
-  });
-
-  input.addEventListener("input", () => {
-    clearTimeout(temporizador);
-    temporizador = setTimeout(() => renderizarResultadosBusqueda(resultados, input.value), 150);
-  });
-  input.addEventListener("click", (evento) => evento.stopPropagation());
-
-  document.addEventListener("click", () => buscador.classList.remove("open"));
-  document.addEventListener("keydown", (evento) => {
-    if (evento.key === "Escape") buscador.classList.remove("open");
-  });
+      renderizarResultadosBusqueda(resultadosMovil, inputMovil.value);
+    });
+    inputMovil.addEventListener("input", () => {
+      clearTimeout(temporizadorMovil);
+      temporizadorMovil = setTimeout(() => renderizarResultadosBusqueda(resultadosMovil, inputMovil.value), 150);
+    });
+  }
 }
 
 function construirMenuCuenta(user) {
@@ -440,12 +503,12 @@ function construirMenuCuenta(user) {
   if (user) {
     const inicial = (user.email || "?").trim().charAt(0).toUpperCase();
     acc.innerHTML = `
-      <button type="button" class="age-account-btn" data-account-toggle>
+      <button type="button" class="age-account-btn" data-popover-toggle>
         <span class="age-account-avatar">${inicial}</span>
         <span class="age-account-nombre" id="age-account-nombre"></span>
         <span class="age-account-caret">▾</span>
       </button>
-      <div class="age-account-menu">
+      <div class="age-popover age-account-menu" data-popover-panel>
         <a href="/zona-opositor/">${icono("diana")} Zona opositor</a>
         <a href="/mi-cuenta/">${icono("usuario")} Mi cuenta</a>
         <a href="/planes/">${icono("tarjeta")} Planes</a>
@@ -453,15 +516,11 @@ function construirMenuCuenta(user) {
         <button type="button" data-account-logout>${icono("salir")} Cerrar sesión</button>
       </div>
     `;
-    acc.querySelector("[data-account-toggle]").addEventListener("click", (evento) => {
-      evento.stopPropagation();
-      acc.classList.toggle("open");
-    });
+    activarPopover(acc);
     acc.querySelector("[data-account-logout]").addEventListener("click", async () => {
       await signOut();
       window.location.href = "/";
     });
-    document.addEventListener("click", () => acc.classList.remove("open"));
 
     // El nombre solo se muestra (vía CSS) en pantallas no móviles, junto al
     // avatar con la inicial; en móvil se deja solo la inicial para no comerse
@@ -612,7 +671,7 @@ function inyectarVolverZonaOpositor(user) {
   if (!PAGINAS_CON_VOLVER_ZONA_OPOSITOR.some((prefijo) => ruta.startsWith(prefijo))) return;
 
   const enlace = document.createElement("a");
-  enlace.className = "age-volver-zona-btn";
+  enlace.className = "age-nav-icon-btn age-volver-zona-btn";
   enlace.href = "/zona-opositor/";
   enlace.setAttribute("aria-label", "Volver a Zona opositor");
   enlace.title = "Volver a Zona opositor";
