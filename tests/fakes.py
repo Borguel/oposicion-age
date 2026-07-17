@@ -122,7 +122,10 @@ class FakeCollectionRef:
     def limit(self, n):
         return FakeCollectionRef(self._store, self._path, self._filtros, n)
 
-    def stream(self):
+    def stream(self, **kwargs):
+        # **kwargs absorbe timeout/retry -- el cliente real de Firestore los
+        # acepta en .stream(), este fake los ignora sin más (no hay red que
+        # cronometrar).
         largo = len(self._path)
         vistos = 0
         for path, datos in list(self._store.items()):
@@ -172,7 +175,7 @@ class FakeCollectionGroupRef:
     def count(self):
         return FakeAggregationQuery(self)
 
-    def stream(self):
+    def stream(self, **kwargs):
         for path, datos in list(self._store.items()):
             if len(path) >= 2 and path[-2] == self._nombre:
                 if all(_cumple_filtro(datos, f) for f in self._filtros):

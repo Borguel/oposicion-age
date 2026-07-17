@@ -205,10 +205,16 @@ def estado_salud():
     más caro en cada ping, y un fallo transitorio ajeno marcaría el
     backend entero como "unhealthy" sin que lo esté). El caso real que
     esto detecta es una variable de entorno que se quedó sin rellenar
-    tras un redeploy, no una caída puntual de un proveedor externo."""
+    tras un redeploy, no una caída puntual de un proveedor externo.
+
+    La lectura de Firestore lleva timeout=10: sin él, si la conexión se
+    queda colgada en vez de fallar rápido (p. ej. al probar sin el proxy
+    de salida con IP estática, ver firebase_setup.py), un solo hilo
+    atascado podía dejar sin respuesta a TODA la web, no solo a esta
+    ruta -- ver también `threaded=True` en app.run() más abajo."""
     faltantes = [var for var in _VARIABLES_CRITICAS if not os.getenv(var)]
     try:
-        next(db.collection("usuarios").limit(1).stream(), None)
+        next(db.collection("usuarios").limit(1).stream(timeout=10), None)
     except Exception:
         logger.exception("Fallo en /health comprobando Firestore")
         return jsonify({"estado": "error", "firestore": "error", "variables_faltantes": faltantes}), 503
@@ -247,4 +253,8 @@ def prueba_ip_directa():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    # threaded=True: sin esto, el servidor de desarrollo de Flask es de un
+    # solo hilo -- una sola petición que se quede colgada (p. ej. una
+    # conexión a Firestore sin proxy que no falla rápido, ver /health más
+    # arriba) bloquea TODA la web para todo el mundo, no solo esa ruta.
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), threaded=True)
