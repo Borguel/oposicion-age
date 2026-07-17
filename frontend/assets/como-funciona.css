@@ -204,6 +204,20 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
   font-style: italic;
 }
 
+/* Capturas reales de la app (en vez de mockups dibujados): se muestran a
+   tamaño de móvil, centradas, dentro del mismo marco .cf-mockup. */
+.cf-mockup-cuerpo img {
+  display: block;
+  width: 100%;
+  border-radius: var(--age-radius-sm);
+}
+.cf-mockup--telefono {
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.cf-mockup--telefono .cf-mockup-cuerpo { padding: 0; background: var(--age-card); }
+
 /* Mockup: chat de Tu Tutor */
 .cf-chat { display: flex; flex-direction: column; gap: 12px; }
 .cf-chat-fila { display: flex; gap: 10px; align-items: flex-start; }
