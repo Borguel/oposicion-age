@@ -219,7 +219,6 @@ class FakeFirestore:
 
     def __init__(self):
         self._store = {}
-        self.project = "proyecto-de-pruebas"
 
     def collection(self, nombre):
         return FakeCollectionRef(self._store, (nombre,))

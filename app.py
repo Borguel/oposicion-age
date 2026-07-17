@@ -1,6 +1,5 @@
 import os
 import logging
-import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_talisman import Talisman
@@ -222,34 +221,6 @@ def estado_salud():
         logger.warning("/health: variables de entorno sin configurar: %s", faltantes)
         return jsonify({"estado": "error", "firestore": "ok", "variables_faltantes": faltantes}), 503
     return jsonify({"estado": "ok"})
-
-
-@app.route("/health/prueba-ip", methods=["GET"])
-@limiter.limit("10 per minute")
-def prueba_ip_directa():
-    """Diagnóstico TEMPORAL (borrar esta ruta una vez usada) para saber si
-    la IP de salida actual de Render sigue bloqueada por Google, SIN pasar
-    por el proxy Fixie/QuotaGuard y sin tocar la conexión ya establecida
-    de `db` (que durante esta prueba sigue yendo por el proxy con
-    normalidad, no se toca ni se gasta cuota de Fixie).
-
-    Hace una petición HTTPS directa y sin credenciales a la API REST de
-    Firestore, forzando `proxies={"http": None, "https": None}` para que
-    `requests` ignore las variables HTTPS_PROXY/HTTP_PROXY del proceso.
-    No importa que Google responda 401 (falta de autenticación, es
-    normal, no mandamos ningún token a propósito): lo único que interesa
-    es si la conexión de red llega siquiera a Google. Un timeout o
-    "connection refused" indica que la IP sigue bloqueada; cualquier
-    respuesta HTTP (401 incluido) indica que ya no lo está."""
-    url = f"https://firestore.googleapis.com/v1/projects/{db.project}/databases/(default)/documents/usuarios?pageSize=1"
-    try:
-        resp = requests.get(url, timeout=10, proxies={"http": None, "https": None})
-        return jsonify({
-            "ip_bloqueada": False,
-            "detalle": f"Conexión directa OK, Google respondió HTTP {resp.status_code} (401 es normal, no se mandaron credenciales a propósito)"
-        })
-    except requests.exceptions.RequestException as e:
-        return jsonify({"ip_bloqueada": True, "detalle": str(e)}), 503
 
 
 if __name__ == "__main__":

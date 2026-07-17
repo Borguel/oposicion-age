@@ -29,28 +29,6 @@ def test_health_devuelve_503_si_firestore_falla(client):
         assert datos["firestore"] == "error"
 
 
-def test_prueba_ip_directa_ok_si_google_responde(client):
-    # Que Google responda 401 (sin credenciales, a propósito) cuenta como
-    # "la IP no está bloqueada" -- lo único que importa es si la conexión
-    # de red llega, no si la petición está autenticada.
-    class RespuestaFalsa:
-        status_code = 401
-    with patch("app.requests.get", return_value=RespuestaFalsa()) as mock_get:
-        resp = client.get("/health/prueba-ip")
-        assert resp.status_code == 200
-        assert resp.get_json()["ip_bloqueada"] is False
-        # Confirma que se fuerza a ignorar el proxy de Fixie/QuotaGuard.
-        assert mock_get.call_args.kwargs["proxies"] == {"http": None, "https": None}
-
-
-def test_prueba_ip_directa_detecta_bloqueo(client):
-    import requests as requests_module
-    with patch("app.requests.get", side_effect=requests_module.exceptions.ConnectTimeout("bloqueada")):
-        resp = client.get("/health/prueba-ip")
-        assert resp.status_code == 503
-        assert resp.get_json()["ip_bloqueada"] is True
-
-
 def test_health_devuelve_503_si_falta_una_variable_critica(client, monkeypatch):
     # Firestore sigue respondiendo bien -- el fallo es solo de
     # configuración (p. ej. una variable que se quedó sin rellenar tras
