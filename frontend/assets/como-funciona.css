@@ -82,7 +82,7 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
   color: var(--age-ink);
 }
 .cf-wrap ul { padding-left: 22px; margin: 10px 0; }
-.cf-wrap a { color: var(--age-primary-dark); }
+.cf-wrap a:not(.age-btn) { color: var(--age-primary-dark); }
 
 /* Tarjetas de la página índice */
 .cf-tool-grid {

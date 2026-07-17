@@ -77,7 +77,7 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
 }
 
 .guia-wrap ul { padding-left: 22px; margin: 10px 0; }
-.guia-wrap a { color: var(--age-primary-dark); }
+.guia-wrap a:not(.age-btn) { color: var(--age-primary-dark); }
 
 /* Rejilla de datos clave (plazas, sueldo, fecha) */
 .guia-stat-grid {
