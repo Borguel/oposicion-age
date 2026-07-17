@@ -8,6 +8,7 @@ Allow: /terminos/
 Allow: /oposicion-administrativo-estado-c1/
 Allow: /oposicion-gace/
 Allow: /oposicion-auxiliar-administrativo-estado/
+Allow: /como-funciona/
 Disallow: /zona-opositor/
 Disallow: /mi-cuenta/
 Disallow: /mis-documentos/
