@@ -11,6 +11,7 @@ let respuestasUsuario = [];
 // visitadas en esta sesión (para distinguir en el navegador el gris de "no
 // visitada" del rojo de "visitada pero sin responder").
 let marcadasRevision = [];
+let marcadasDuda = [];
 let visitadas = [];
 let indicePreguntaActual = 0;
 let tiempoInicio;
@@ -119,6 +120,7 @@ function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudad
           autoguardarProgreso({
             respuestas_usuario: respuestasUsuario,
             marcadas_revision: marcadasRevision,
+            marcadas_duda: marcadasDuda,
             indice_actual: indicePreguntaActual,
             tiempo_restante_segundos: tiempoLimite
           });
@@ -136,6 +138,7 @@ function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudad
           autoguardarProgreso({
             respuestas_usuario: respuestasUsuario,
             marcadas_revision: marcadasRevision,
+            marcadas_duda: marcadasDuda,
             indice_actual: indicePreguntaActual,
             tiempo_transcurrido_segundos: transcurrido
           });
@@ -192,6 +195,7 @@ async function mostrarPregunta(i) {
       <div class="pregunta-acciones-header">
         ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
         <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""} icono-inline" aria-label="Marcar para revisión" title="Marcar esta pregunta para revisarla antes de terminar el test (queda resaltada en el mapa de preguntas)">${icono("marcador", 16)}</button>
+        <button type="button" id="btn-marcar-duda" class="btn-marcar-duda${marcadasDuda[i] ? " activa" : ""} icono-inline" aria-label="Marcar como duda" title="Marcar esta pregunta como duda: al terminar el test verás la nota contándola y sin contarla">${icono("pregunta", 16)}</button>
       </div>
     </div>`;
 
@@ -226,6 +230,19 @@ async function mostrarPregunta(i) {
       autoguardarProgreso({
         respuestas_usuario: respuestasUsuario,
         marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
+        indice_actual: i
+      });
+    });
+  });
+  document.getElementById("btn-marcar-duda").addEventListener("click", function() {
+    marcadasDuda[i] = !marcadasDuda[i];
+    this.classList.toggle("activa", marcadasDuda[i]);
+    import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+      autoguardarProgreso({
+        respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
         indice_actual: i
       });
     });
@@ -261,6 +278,7 @@ async function mostrarPregunta(i) {
     await guardarProgresoInmediato({
       respuestas_usuario: respuestasUsuario,
       marcadas_revision: marcadasRevision,
+      marcadas_duda: marcadasDuda,
       indice_actual: indicePreguntaActual,
       tiempo_transcurrido_segundos: tiempoTranscurridoActual()
     });
@@ -283,6 +301,7 @@ async function mostrarPregunta(i) {
       autoguardarProgreso({
         respuestas_usuario: respuestasUsuario,
         marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
         indice_actual: i + 1 < preguntas.length ? i + 1 : i,
         tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       });
@@ -346,7 +365,8 @@ async function mostrarResultados() {
     contenedor: cont,
     preguntas,
     respuestasUsuario,
-    listaTemas: listaTemasGlobal
+    listaTemas: listaTemasGlobal,
+    marcadasDuda
   });
 
   if (intentoOriginal && intentoOriginal.aciertos !== null) {
@@ -369,7 +389,8 @@ async function mostrarResultados() {
         respuestas: respuestasUsuario,
         metadatos: { tiempo: segundosTotales, tipo: "repetido", temas: [] },
         oposicion: obtenerOposicionActual(),
-        test_id: testIdEnCurso()
+        test_id: testIdEnCurso(),
+        marcadas_duda: marcadasDuda
       })
     });
     const datos = await res.json();
@@ -436,6 +457,9 @@ window.addEventListener("load", async () => {
       marcadasRevision = Array.isArray(guardado.marcadas_revision) && guardado.marcadas_revision.length === preguntas.length
         ? guardado.marcadas_revision
         : Array(preguntas.length).fill(false);
+      marcadasDuda = Array.isArray(guardado.marcadas_duda) && guardado.marcadas_duda.length === preguntas.length
+        ? guardado.marcadas_duda
+        : Array(preguntas.length).fill(false);
       indicePreguntaActual = guardado.indice_actual || 0;
       // No se guarda un historial de "visitadas" -- se asume que se llegó
       // hasta indice_actual avanzando en orden.
@@ -460,6 +484,7 @@ window.addEventListener("load", async () => {
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
         marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
         indice_actual: indicePreguntaActual,
         modo_cronometrado: tiempoLimite !== null,
         tiempo_restante_segundos: tiempoLimite,
@@ -485,6 +510,7 @@ window.addEventListener("load", async () => {
       preguntas = preguntasRepetir;
       respuestasUsuario = Array(preguntas.length).fill(null);
       marcadasRevision = Array(preguntas.length).fill(false);
+      marcadasDuda = Array(preguntas.length).fill(false);
       visitadas = Array(preguntas.length).fill(false);
       intentoOriginal = {
         aciertos: datosRepetir.test.aciertos ?? null,
@@ -509,6 +535,7 @@ window.addEventListener("load", async () => {
         contenido: preguntas,
         respuestas_usuario: respuestasUsuario,
         marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
         indice_actual: 0,
         modo_cronometrado: modoCronometradoElegido,
         tiempo_restante_segundos: modoCronometradoElegido ? minutosElegidos * 60 : null,
@@ -518,6 +545,7 @@ window.addEventListener("load", async () => {
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
         marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
         indice_actual: indicePreguntaActual,
         modo_cronometrado: tiempoLimite !== null,
         tiempo_restante_segundos: tiempoLimite,
@@ -544,6 +572,7 @@ window.addEventListener("load", async () => {
     preguntas = datos.test;
     respuestasUsuario = Array(preguntas.length).fill(null);
     marcadasRevision = Array(preguntas.length).fill(false);
+    marcadasDuda = Array(preguntas.length).fill(false);
     visitadas = Array(preguntas.length).fill(false);
     oposicionActual = oposicion;
     cargarListaTemas(oposicion);
@@ -560,6 +589,7 @@ window.addEventListener("load", async () => {
       contenido: preguntas,
       respuestas_usuario: respuestasUsuario,
       marcadas_revision: marcadasRevision,
+      marcadas_duda: marcadasDuda,
       indice_actual: 0,
       modo_cronometrado: modoCronometradoElegido,
       tiempo_restante_segundos: modoCronometradoElegido ? minutosElegidos * 60 : null,
@@ -569,6 +599,7 @@ window.addEventListener("load", async () => {
     activarGuardadoAlSalir(() => ({
       respuestas_usuario: respuestasUsuario,
       marcadas_revision: marcadasRevision,
+      marcadas_duda: marcadasDuda,
       indice_actual: indicePreguntaActual,
       modo_cronometrado: tiempoLimite !== null,
       tiempo_restante_segundos: tiempoLimite,

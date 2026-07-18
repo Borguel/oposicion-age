@@ -21,6 +21,7 @@ async function obtenerAuthHeaders() {
     // visitadas en esta sesión (para distinguir en el navegador el gris de
     // "no visitada" del rojo de "visitada pero sin responder").
     let marcadasRevision = [];
+    let marcadasDuda = [];
     let visitadas = [];
     let tiempoInicio;
     let intervaloTemporizador;
@@ -87,7 +88,7 @@ async function obtenerAuthHeaders() {
           // Se manda el mismo test_id que se usó para autoguardar el
           // progreso mientras se hacía: así el documento "en_progreso" se
           // sobrescribe con el resultado final en vez de quedar duplicado.
-          body: JSON.stringify({ contenido, respuestas, metadatos, oposicion, test_id: testIdEnCurso() })
+          body: JSON.stringify({ contenido, respuestas, metadatos, oposicion, test_id: testIdEnCurso(), marcadas_duda: marcadasDuda })
         });
         const datos = await res.json();
         if (!res.ok) {
@@ -218,6 +219,7 @@ async function obtenerAuthHeaders() {
               autoguardarProgreso({
                 respuestas_usuario: respuestasUsuario,
                 marcadas_revision: marcadasRevision,
+                marcadas_duda: marcadasDuda,
                 indice_actual: indicePreguntaActual,
                 tiempo_restante_segundos: tiempoLimite
               });
@@ -235,6 +237,7 @@ async function obtenerAuthHeaders() {
               autoguardarProgreso({
                 respuestas_usuario: respuestasUsuario,
                 marcadas_revision: marcadasRevision,
+                marcadas_duda: marcadasDuda,
                 indice_actual: indicePreguntaActual,
                 tiempo_transcurrido_segundos: transcurrido
               });
@@ -312,6 +315,7 @@ async function obtenerAuthHeaders() {
           contenido: preguntas,
           respuestas_usuario: respuestasUsuario,
           marcadas_revision: marcadasRevision,
+          marcadas_duda: marcadasDuda,
           indice_actual: indicePreguntaActual,
           tiempo_restante_segundos: tiempoLimite,
           tiempo_transcurrido_segundos: tiempoTranscurridoActual()
@@ -329,6 +333,7 @@ async function obtenerAuthHeaders() {
       preguntas.push(pregunta);
       respuestasUsuario.push(null);
       marcadasRevision.push(false);
+      marcadasDuda.push(false);
       visitadas.push(false);
       actualizarNavegadorPreguntas();
       guardarContenidoEnSegundoPlano();
@@ -345,6 +350,7 @@ async function obtenerAuthHeaders() {
       preguntas.forEach(p => asignarTemaFallback(p, temas));
       respuestasUsuario = Array(preguntas.length).fill(null);
       marcadasRevision = Array(preguntas.length).fill(false);
+      marcadasDuda = Array(preguntas.length).fill(false);
       visitadas = Array(preguntas.length).fill(false);
       indicePreguntaActual = 0;
       oposicionActual = oposicion;
@@ -368,12 +374,14 @@ async function obtenerAuthHeaders() {
         contenido: preguntas,
         respuestas_usuario: respuestasUsuario,
         marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
         indice_actual: indicePreguntaActual,
         tiempo_restante_segundos: modoCronometrado ? minutosCronometro * 60 : null
       });
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
         marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
         indice_actual: indicePreguntaActual,
         modo_cronometrado: tiempoLimite !== null,
         tiempo_restante_segundos: tiempoLimite,
@@ -636,6 +644,7 @@ async function obtenerAuthHeaders() {
           <div class="pregunta-acciones-header">
             ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
             <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""} icono-inline" aria-label="Marcar para revisión" title="Marcar esta pregunta para revisarla antes de terminar el test (queda resaltada en el mapa de preguntas)">${icono("marcador", 16)}</button>
+            <button type="button" id="btn-marcar-duda" class="btn-marcar-duda${marcadasDuda[i] ? " activa" : ""} icono-inline" aria-label="Marcar como duda" title="Marcar esta pregunta como duda: al terminar el test verás la nota contándola y sin contarla">${icono("pregunta", 16)}</button>
           </div>
         </div>`;
       for (const letra in p.opciones) {
@@ -666,6 +675,19 @@ async function obtenerAuthHeaders() {
           autoguardarProgreso({
             respuestas_usuario: respuestasUsuario,
             marcadas_revision: marcadasRevision,
+            marcadas_duda: marcadasDuda,
+            indice_actual: i
+          });
+        });
+      });
+      document.getElementById("btn-marcar-duda").addEventListener("click", function() {
+        marcadasDuda[i] = !marcadasDuda[i];
+        this.classList.toggle("activa", marcadasDuda[i]);
+        import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+          autoguardarProgreso({
+            respuestas_usuario: respuestasUsuario,
+            marcadas_revision: marcadasRevision,
+            marcadas_duda: marcadasDuda,
             indice_actual: i
           });
         });
@@ -696,6 +718,7 @@ async function obtenerAuthHeaders() {
         await guardarProgresoInmediato({
           respuestas_usuario: respuestasUsuario,
           marcadas_revision: marcadasRevision,
+          marcadas_duda: marcadasDuda,
           indice_actual: indicePreguntaActual,
           tiempo_restante_segundos: tiempoLimite,
           tiempo_transcurrido_segundos: tiempoTranscurridoActual()
@@ -717,6 +740,7 @@ async function obtenerAuthHeaders() {
           autoguardarProgreso({
             respuestas_usuario: respuestasUsuario,
             marcadas_revision: marcadasRevision,
+            marcadas_duda: marcadasDuda,
             indice_actual: i + 1 < preguntas.length ? i + 1 : i,
             tiempo_restante_segundos: tiempoLimite,
             tiempo_transcurrido_segundos: tiempoTranscurridoActual()
@@ -767,7 +791,8 @@ async function obtenerAuthHeaders() {
         contenedor: cont,
         preguntas,
         respuestasUsuario,
-        listaTemas: listaTemasGlobal
+        listaTemas: listaTemasGlobal,
+        marcadasDuda
       });
       aciertos = ultimasEstadisticas.aciertos;
       fallos = ultimasEstadisticas.fallos;
@@ -836,6 +861,9 @@ async function obtenerAuthHeaders() {
       marcadasRevision = Array.isArray(guardado.marcadas_revision) && guardado.marcadas_revision.length === preguntas.length
         ? guardado.marcadas_revision
         : Array(preguntas.length).fill(false);
+      marcadasDuda = Array.isArray(guardado.marcadas_duda) && guardado.marcadas_duda.length === preguntas.length
+        ? guardado.marcadas_duda
+        : Array(preguntas.length).fill(false);
       indicePreguntaActual = guardado.indice_actual || 0;
       // No se guarda un historial de "visitadas" -- se asume que se llegó
       // hasta indice_actual avanzando en orden, así que se marcan como
@@ -864,6 +892,7 @@ async function obtenerAuthHeaders() {
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
         marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
         indice_actual: indicePreguntaActual,
         modo_cronometrado: tiempoLimite !== null,
         tiempo_restante_segundos: tiempoLimite,
