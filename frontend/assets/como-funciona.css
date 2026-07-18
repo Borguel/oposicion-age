@@ -366,6 +366,44 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
   background: var(--age-primary-soft); border-color: var(--age-primary-light);
   color: var(--age-primary-dark, var(--age-ink));
 }
+.cf-resultado-boton--reportar { color: var(--age-warning); border-color: rgba(184, 121, 10, 0.35); }
+
+/* Mockup: flujo de "Reportar error" */
+.cf-reportar-mock {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 16px 18px;
+}
+.cf-reportar-linea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.cf-reportar-caja {
+  background: var(--age-bg);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--age-ink-soft);
+  font-style: italic;
+  margin: 0 0 14px;
+}
+.cf-reportar-confirmacion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--age-success-bg);
+  color: var(--age-success);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 999px;
+}
 
 /* Mockup: subida de PDF */
 .cf-upload-mock {
@@ -442,6 +480,259 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
   text-decoration: none;
 }
 .cf-otras-lista a:hover { border-color: var(--age-primary); color: var(--age-primary-dark); }
+
+/* Mockup: tarjetas de estadística / rejilla de números */
+.cf-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+}
+.cf-stat {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 14px 12px;
+  text-align: center;
+}
+.cf-stat-icono {
+  width: 32px; height: 32px; margin: 0 auto 8px;
+  border-radius: 50%;
+  background: var(--age-primary-soft); color: var(--age-primary-dark, var(--age-ink));
+  display: flex; align-items: center; justify-content: center;
+}
+.cf-stat-num { font-size: 1.25rem; font-weight: 800; line-height: 1.1; }
+.cf-stat-label { font-size: 11.5px; color: var(--age-ink-soft); margin-top: 3px; }
+.cf-stat-tendencia { font-size: 11px; font-weight: 700; margin-top: 3px; }
+.cf-stat-tendencia--positiva { color: var(--age-success); }
+
+/* Mockup: tarjeta "widget" con icono + info + botón (racha, cuenta atrás,
+   avisos de "test a medias"...): mismo patrón visual en varias pantallas. */
+.cf-widget-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.cf-widget-icono {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--age-primary-soft); color: var(--age-primary-dark, var(--age-ink));
+  display: flex; align-items: center; justify-content: center;
+}
+.cf-widget-info { flex: 1 1 auto; min-width: 0; }
+.cf-widget-num { font-weight: 800; font-size: 14.5px; }
+.cf-widget-msg { font-size: 12.5px; color: var(--age-ink-soft); }
+.cf-widget-boton {
+  flex-shrink: 0;
+  font-size: 12.5px; font-weight: 700;
+  padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--age-border); color: var(--age-ink);
+  white-space: nowrap;
+}
+.cf-widget-boton--primario { background: var(--age-primary); border-color: var(--age-primary); color: #1b1200; }
+
+/* Mockup: saludo + oposición actual (cabecera de Zona Opositor) */
+.cf-saludo-mock { margin-bottom: 14px; }
+.cf-saludo-texto { font-size: 13px; color: var(--age-ink-soft); margin-bottom: 2px; }
+.cf-saludo-titulo { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+.cf-oposicion-actual {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--age-neutral-bg);
+  border-radius: 999px;
+  padding: 6px 8px 6px 14px;
+  font-size: 12.5px;
+}
+.cf-oposicion-actual strong { font-weight: 800; }
+.cf-oposicion-plan {
+  background: var(--age-primary); color: #1b1200;
+  font-size: 10.5px; font-weight: 800;
+  padding: 3px 10px; border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.cf-seccion-sub-mock {
+  font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
+  color: var(--age-ink-soft);
+  margin: 16px 0 8px;
+}
+
+/* Mockup: rejilla de accesos (menú de enlaces con icono) */
+.cf-accesos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.cf-acceso-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 12px 14px;
+}
+.cf-acceso-icono {
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: var(--age-radius-sm);
+  background: var(--age-neutral-bg); color: var(--age-ink);
+  display: flex; align-items: center; justify-content: center;
+}
+.cf-acceso-titulo { font-size: 13px; font-weight: 700; }
+.cf-acceso-desc { font-size: 11.5px; color: var(--age-ink-soft); }
+
+/* Mockup: gráfica de evolución (barras simples) */
+.cf-grafica-mock {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 90px;
+  padding: 10px 4px 0;
+}
+.cf-grafica-barra {
+  flex: 1 1 auto;
+  background: linear-gradient(180deg, var(--age-primary-light), var(--age-primary));
+  border-radius: 4px 4px 0 0;
+  min-width: 10px;
+}
+
+/* Mockup: calendario de racha (mapa de calor mensual) */
+.cf-calendario-mock {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+.cf-calendario-dia {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background: var(--age-neutral-bg);
+}
+.cf-calendario-dia--activo { background: var(--age-primary); }
+.cf-calendario-dia--activo-suave { background: var(--age-primary-light); }
+
+/* Mockup: barra apilada (aciertos/fallos/blancos) */
+.cf-barra-apilada {
+  display: flex;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.cf-barra-acierto { background: var(--age-success); }
+.cf-barra-fallo { background: var(--age-danger); }
+.cf-barra-blanco { background: var(--age-neutral-bg); }
+.cf-barra-leyenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; }
+.cf-barra-leyenda-item { display: flex; align-items: center; gap: 6px; }
+.cf-barra-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* Mockup: barra de cobertura del temario */
+.cf-cobertura-barra {
+  height: 10px; border-radius: 999px;
+  background: var(--age-neutral-bg);
+  overflow: hidden;
+  margin: 8px 0;
+}
+.cf-cobertura-fill { height: 100%; background: var(--age-primary); border-radius: 999px; }
+
+/* Mockup: insignias (medallas) */
+.cf-insignias-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+.cf-insignia {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--age-neutral-bg); color: var(--age-ink-faint);
+}
+.cf-insignia--desbloqueada { background: var(--age-primary-soft); color: var(--age-primary-dark, var(--age-ink)); }
+
+/* Mockup: pestañas + filtros (Mis Tests) */
+.cf-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.cf-tab {
+  font-size: 12.5px; font-weight: 700;
+  padding: 7px 14px; border-radius: 999px;
+  border: 1px solid var(--age-border); color: var(--age-ink-soft);
+}
+.cf-tab--activa { background: var(--age-primary); border-color: var(--age-primary); color: #1b1200; }
+
+/* Mockup: tarjeta de test (Mis Tests) */
+.cf-test-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.cf-test-card-icono {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: var(--age-radius-sm);
+  background: var(--age-primary-soft); color: var(--age-primary-dark, var(--age-ink));
+  display: flex; align-items: center; justify-content: center;
+}
+.cf-test-card-info { flex: 1 1 200px; min-width: 0; }
+.cf-test-card-titulo { font-weight: 700; font-size: 13.5px; }
+.cf-test-card-meta { font-size: 12px; color: var(--age-ink-soft); }
+.cf-test-card-estado {
+  font-size: 11px; font-weight: 800;
+  padding: 4px 10px; border-radius: 999px;
+}
+.cf-test-card-estado--progreso { background: var(--age-warning-bg); color: var(--age-warning); }
+.cf-test-card-estado--aprobado { background: var(--age-success-bg); color: var(--age-success); }
+.cf-test-card-estado--suspendido { background: var(--age-danger-bg); color: var(--age-danger); }
+.cf-test-card-acciones { display: flex; gap: 6px; flex-wrap: wrap; }
+.cf-test-card-boton {
+  font-size: 12px; font-weight: 700;
+  padding: 7px 12px; border-radius: 999px;
+  border: 1px solid var(--age-border); color: var(--age-ink-soft);
+  white-space: nowrap;
+}
+.cf-test-card-boton--primario { background: var(--age-primary); border-color: var(--age-primary); color: #1b1200; }
+
+/* Mockup: carpetas (Mis Documentos) */
+.cf-carpeta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.cf-carpeta-card {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 16px 14px;
+  text-align: center;
+}
+.cf-carpeta-icono {
+  width: 36px; height: 36px; margin: 0 auto 8px;
+  border-radius: var(--age-radius-sm);
+  background: var(--age-primary-soft); color: var(--age-primary-dark, var(--age-ink));
+  display: flex; align-items: center; justify-content: center;
+}
+.cf-carpeta-nombre { font-weight: 700; font-size: 13px; }
+.cf-carpeta-cuenta { font-size: 11.5px; color: var(--age-ink-soft); margin-top: 2px; }
+
+/* Mockup: modal (añadir documentos a una carpeta) */
+.cf-modal-mock {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  overflow: hidden;
+}
+.cf-modal-mock-cabecera {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--age-border);
+  font-size: 13.5px; font-weight: 700;
+}
+.cf-modal-mock-cuerpo { padding: 12px 16px; }
+.cf-modal-mock-pie { padding: 12px 16px; border-top: 1px solid var(--age-border); text-align: right; }
 
 @media (max-width: 600px) {
   .cf-wrap h1 { font-size: 1.6rem; }

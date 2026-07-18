@@ -40,6 +40,11 @@
         "@type": "Question",
         "name": "¿Para qué sirve la estrella junto a cada pregunta?",
         "acceptedAnswer": { "@type": "Answer", "text": "Guarda esa pregunta en 'Preguntas favoritas' para repasarla más adelante, aunque hayas terminado el test. Es distinta del icono de marcador, que solo resalta la pregunta durante ese test concreto." }
+      },
+      {
+        "@type": "Question",
+        "name": "¿Qué hago si una pregunta generada por IA está mal formulada?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Pulsa 'Reportar error' en esa pregunta, dentro del detalle de resultados, y cuenta brevemente qué has visto. El equipo revisa los reportes para corregir la pregunta." }
       }
     ]
   }
@@ -139,10 +144,31 @@
           <div class="cf-resultado-acciones">
             <span class="cf-resultado-boton">Mostrar explicación</span>
             <span class="cf-resultado-boton cf-resultado-boton--tutor">Pregúntale a Tu Tutor</span>
+            <span class="cf-resultado-boton cf-resultado-boton--reportar">Reportar error</span>
           </div>
         </div>
       </div>
       <p class="cf-mockup-nota">Cada pregunta muestra la opción correcta y la que marcaste, con un acceso directo a Tu Tutor si quieres más detalle.</p>
+    </div>
+
+    <h2><span class="cf-h2-icono" data-icon="alerta" data-icon-size="20"></span>¿Una pregunta no te cuadra? Repórtala</h2>
+    <p>
+      Las preguntas las genera la IA a partir del temario oficial, así que muy de vez en cuando alguna
+      puede salir mal formulada o con la respuesta correcta equivocada. El botón "Reportar error" está en
+      todas las preguntas del detalle de resultados, acierte o no acierte, para que puedas avisar en
+      cuanto lo veas.
+    </p>
+    <div class="cf-mockup">
+      <div class="cf-mockup-cuerpo">
+        <div class="cf-reportar-mock">
+          <div class="cf-reportar-linea">
+            <span data-icon="alerta" data-icon-size="15"></span> ¿Qué error has visto en esta pregunta?
+          </div>
+          <div class="cf-reportar-caja">"La opción correcta debería ser la C, no la B: el artículo dice justo lo contrario..."</div>
+          <span class="cf-reportar-confirmacion"><span data-icon="check" data-icon-size="13"></span> Reportado, ¡gracias!</span>
+        </div>
+      </div>
+      <p class="cf-mockup-nota">Se te pide brevemente qué has visto raro y tu equipo revisa el reporte para corregirlo si hace falta.</p>
     </div>
 
     <h2><span class="cf-h2-icono" data-icon="lista" data-icon-size="20"></span>Funciones que quizá no habías visto</h2>

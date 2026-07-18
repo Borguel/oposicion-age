@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script src="/assets/redirect-dominio-antiguo.js"></script>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cómo funciona Mis Tests: retoma, repite o revisa | Domina tu Opo</title>
+  <meta name="description" content="Guía de Mis Tests: retoma un test a medias, repite uno ya terminado, revisa resultados antiguos y filtra por tipo y resultado." />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Cómo funciona Mis Tests" />
+  <meta property="og:description" content="Retoma, repite o revisa cualquier test que hayas hecho, filtrando por tipo y resultado." />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://www.dominatuopo.com/como-funciona/mis-tests/" />
+  <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/assets/como-funciona.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "¿Qué es Mis Tests?",
+        "acceptedAnswer": { "@type": "Answer", "text": "El listado de todos los tests que has empezado o terminado, tanto si los acabaste como si los dejaste a medias, con filtros por estado, tipo y resultado." }
+      },
+      {
+        "@type": "Question",
+        "name": "¿Qué diferencia hay entre 'Repetir' y 'Continuar'?",
+        "acceptedAnswer": { "@type": "Answer", "text": "'Continuar' retoma un test que dejaste a medias justo donde lo dejaste. 'Repetir' vuelve a lanzarte las mismas preguntas de un test ya finalizado, para comprobar si ahora las aciertas." }
+      },
+      {
+        "@type": "Question",
+        "name": "¿Puedo ver qué temas entraron en un test antiguo?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Sí, cada test tiene un desplegable con las etiquetas de los temas que incluyó, sin necesidad de abrir el resultado completo." }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <nav class="age-nav"></nav>
+
+  <div class="cf-wrap">
+    <p class="cf-migas"><a href="/">Inicio</a> / <a href="/como-funciona/">Cómo funciona</a> / Mis Tests</p>
+
+    <span class="cf-hero-etiqueta">Cómo funciona</span>
+    <h1>Mis Tests: retoma, repite o revisa cualquier test</h1>
+    <p class="cf-intro">
+      El historial completo de todos los tests que has hecho, vengan de donde vengan (Test
+      Personalizado, Test Oficial, tus PDF, preguntas falladas o favoritas), en un solo sitio.
+    </p>
+    <div class="cf-cta-fila">
+      <a class="age-btn age-btn-primary" href="/login/">Ver mis tests</a>
+      <a class="age-btn age-btn-outline" href="/planes/">Ver planes</a>
+    </div>
+
+    <h2><span class="cf-h2-icono" data-icon="matraz" data-icon-size="20"></span>Así se ve tu listado</h2>
+    <div class="cf-mockup">
+      <div class="cf-mockup-barra">
+        <span class="cf-mockup-punto"></span><span class="cf-mockup-punto"></span><span class="cf-mockup-punto"></span>
+        <span class="cf-mockup-url">dominatuopo.com/mis-tests</span>
+      </div>
+      <div class="cf-mockup-cuerpo">
+        <div class="cf-tabs">
+          <span class="cf-tab cf-tab--activa">Todos</span>
+          <span class="cf-tab">En progreso</span>
+          <span class="cf-tab">Finalizados</span>
+        </div>
+
+        <div class="cf-test-card">
+          <span class="cf-test-card-icono" data-icon="lapiz" data-icon-size="16"></span>
+          <div class="cf-test-card-info">
+            <div class="cf-test-card-titulo">Test Personalizado</div>
+            <div class="cf-test-card-meta">20 preguntas · pregunta 6 de 20</div>
+          </div>
+          <span class="cf-test-card-estado cf-test-card-estado--progreso">En progreso</span>
+          <div class="cf-test-card-acciones">
+            <span class="cf-test-card-boton cf-test-card-boton--primario">Continuar</span>
+          </div>
+        </div>
+
+        <div class="cf-test-card">
+          <span class="cf-test-card-icono" data-icon="matraz" data-icon-size="16"></span>
+          <div class="cf-test-card-info">
+            <div class="cf-test-card-titulo">Test Oficial</div>
+            <div class="cf-test-card-meta">25 preguntas · hace 3 días</div>
+          </div>
+          <span class="cf-test-card-estado cf-test-card-estado--aprobado">Aprobado</span>
+          <div class="cf-test-card-acciones">
+            <span class="cf-test-card-boton">Repetir</span>
+            <span class="cf-test-card-boton cf-test-card-boton--primario">Ver resultados</span>
+          </div>
+        </div>
+
+        <div class="cf-test-card">
+          <span class="cf-test-card-icono" data-icon="subir" data-icon-size="16"></span>
+          <div class="cf-test-card-info">
+            <div class="cf-test-card-titulo">Test desde PDF</div>
+            <div class="cf-test-card-meta">15 preguntas · hace 1 semana</div>
+          </div>
+          <span class="cf-test-card-estado cf-test-card-estado--suspendido">Suspendido</span>
+          <div class="cf-test-card-acciones">
+            <span class="cf-test-card-boton">Repetir</span>
+            <span class="cf-test-card-boton cf-test-card-boton--primario">Ver resultados</span>
+          </div>
+        </div>
+      </div>
+      <p class="cf-mockup-nota">Cada tarjeta tiene también un desplegable con los temas que incluyó ese test.</p>
+    </div>
+
+    <h2><span class="cf-h2-icono" data-icon="lista" data-icon-size="20"></span>Qué puedes hacer aquí</h2>
+    <ol class="cf-pasos">
+      <li class="cf-paso">
+        <div class="cf-paso-cuerpo">
+          <div class="cf-paso-titulo">Filtra por estado</div>
+          <div class="cf-paso-desc">Las pestañas "Todos", "En progreso" y "Finalizados" separan lo que tienes a medias de lo que ya terminaste.</div>
+        </div>
+      </li>
+      <li class="cf-paso">
+        <div class="cf-paso-cuerpo">
+          <div class="cf-paso-titulo">Filtra por tipo y por resultado</div>
+          <div class="cf-paso-desc">Dos desplegables adicionales permiten quedarte solo con, por ejemplo, tus Tests Oficiales suspendidos, o solo tus tests de Preguntas favoritas.</div>
+        </div>
+      </li>
+      <li class="cf-paso">
+        <div class="cf-paso-cuerpo">
+          <div class="cf-paso-titulo">Continúa un test a medias</div>
+          <div class="cf-paso-desc">Te lleva exactamente a la pregunta donde lo dejaste, con las respuestas que ya habías marcado guardadas.</div>
+        </div>
+      </li>
+      <li class="cf-paso">
+        <div class="cf-paso-cuerpo">
+          <div class="cf-paso-titulo">Repite un test ya finalizado</div>
+          <div class="cf-paso-desc">Vuelve a lanzarte las mismas preguntas para comprobar si esta vez las aciertas, útil para ver si de verdad has aprendido lo que fallaste.</div>
+        </div>
+      </li>
+      <li class="cf-paso">
+        <div class="cf-paso-cuerpo">
+          <div class="cf-paso-titulo">Revisa los resultados de cualquier test antiguo</div>
+          <div class="cf-paso-desc">"Ver resultados" abre el detalle completo con tu nota, el desglose por tema y la explicación de cada pregunta, igual que justo al terminarlo.</div>
+        </div>
+      </li>
+    </ol>
+
+    <div class="cf-tip cf-tip-info">
+      <span class="cf-tip-icono" data-icon="informacion" data-icon-size="18"></span>
+      <span>
+        Si todavía no has hecho ningún test, esta página te lo dice claramente y te lleva directo al
+        generador para que empieces el primero.
+      </span>
+    </div>
+
+    <div class="cf-cta-final">
+      <h2>No pierdas de vista ni un test</h2>
+      <p>Todo lo que has hecho, siempre a mano para continuar o repasar.</p>
+      <a class="age-btn age-btn-primary" href="/login/">Crear cuenta gratis</a>
+    </div>
+
+    <div class="cf-otras">
+      <p><strong>Sigue descubriendo la plataforma</strong></p>
+      <div class="cf-otras-lista">
+        <a href="/como-funciona/zona-opositor/">Zona Opositor</a>
+        <a href="/como-funciona/estadisticas/">Estadísticas</a>
+        <a href="/como-funciona/mis-documentos/">Mis Documentos</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/assets/auth.js"></script>
+  <script type="module">
+    import { icono } from "/assets/icons.js";
+    document.querySelectorAll("[data-icon]").forEach((el) => {
+      el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 20));
+    });
+  </script>
+</body>
+</html>
