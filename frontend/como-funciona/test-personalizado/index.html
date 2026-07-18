@@ -43,6 +43,11 @@
       },
       {
         "@type": "Question",
+        "name": "¿Para qué sirve marcar una pregunta como duda?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Señala las preguntas en las que no estás seguro de tu respuesta. No cambia tu nota real, pero al terminar el test también verás la nota que sacarías si esas preguntas no contaran, para valorar si te compensa arriesgar o dejarlas en blanco. Solo se puede marcar una pregunta que ya hayas respondido." }
+      },
+      {
+        "@type": "Question",
         "name": "¿Qué hago si una pregunta generada por IA está mal formulada?",
         "acceptedAnswer": { "@type": "Answer", "text": "Pulsa 'Reportar error' en esa pregunta, dentro del detalle de resultados, y cuenta brevemente qué has visto. El equipo revisa los reportes para corregir la pregunta." }
       }
@@ -109,6 +114,7 @@
             <span class="cf-pregunta-mock-acciones">
               <span class="cf-pregunta-mock-boton cf-pregunta-mock-boton--activa" data-icon="estrella" data-icon-size="15" title="Favorita"></span>
               <span class="cf-pregunta-mock-boton" data-icon="marcador" data-icon-size="15" title="Marcar para revisión"></span>
+              <span class="cf-pregunta-mock-boton" data-icon="pregunta" data-icon-size="15" title="Marcar como duda"></span>
             </span>
           </div>
           <div class="cf-opcion-mock"><span class="cf-opcion-mock-letra">A</span> Solo la reserva del puesto</div>
@@ -117,7 +123,7 @@
           <div class="cf-opcion-mock"><span class="cf-opcion-mock-letra">D</span> Ninguna de las anteriores</div>
         </div>
       </div>
-      <p class="cf-mockup-nota">La estrella (activada aquí en naranja) guarda la pregunta en favoritas; el icono de al lado la marca para revisarla solo en este test.</p>
+      <p class="cf-mockup-nota">La estrella (activada aquí en naranja) guarda la pregunta en favoritas; el marcador la señala para revisarla solo en este test; y el tercero (una interrogación) la marca como duda.</p>
     </div>
 
     <h2><span class="cf-h2-icono" data-icon="grafico" data-icon-size="20"></span>3. Revisa tus resultados</h2>
@@ -149,6 +155,31 @@
         </div>
       </div>
       <p class="cf-mockup-nota">Cada pregunta muestra la opción correcta y la que marcaste, con un acceso directo a Tu Tutor si quieres más detalle.</p>
+    </div>
+
+    <p>
+      Si marcaste alguna pregunta como duda, aparece una tercera nota junto a las otras dos: la que
+      sacarías si esas preguntas no contaran en absoluto (ni sumando ni restando). Así puedes ver de un
+      vistazo si de verdad te compensaba arriesgar.
+    </p>
+    <div class="cf-mockup">
+      <div class="cf-mockup-cuerpo">
+        <div class="cf-stat-grid">
+          <div class="cf-stat">
+            <div class="cf-stat-num">5,00</div>
+            <div class="cf-stat-label">Nota de este test</div>
+          </div>
+          <div class="cf-stat">
+            <div class="cf-stat-num">50,0</div>
+            <div class="cf-stat-label">Nota examen oficial</div>
+          </div>
+          <div class="cf-stat">
+            <div class="cf-stat-num">62,5</div>
+            <div class="cf-stat-label">Nota sin las dudas</div>
+          </div>
+        </div>
+      </div>
+      <p class="cf-mockup-nota">Sin las 2 preguntas marcadas como duda, en este ejemplo seguirías aprobando igual.</p>
     </div>
 
     <h2><span class="cf-h2-icono" data-icon="alerta" data-icon-size="20"></span>¿Una pregunta no te cuadra? Repórtala</h2>
@@ -183,6 +214,12 @@
         <div class="cf-paso-cuerpo">
           <div class="cf-paso-titulo">El marcador resalta la pregunta solo en este test</div>
           <div class="cf-paso-desc">Sirve para acordarte de volver a mirarla antes de finalizar: aparece resaltada en el mapa de preguntas de la parte inferior, junto a las que ya has respondido y las que aún tienes en blanco.</div>
+        </div>
+      </li>
+      <li class="cf-paso">
+        <div class="cf-paso-cuerpo">
+          <div class="cf-paso-titulo">El icono de interrogación marca la pregunta como duda</div>
+          <div class="cf-paso-desc">Solo puedes marcarla si ya la has respondido (si no, te avisa antes de dejarte). Al terminar el test verás una nota alternativa contando qué pasaría si esas preguntas no contaran, y en el detalle de resultados puedes filtrar por "Dudosas" para verlas todas juntas.</div>
         </div>
       </li>
       <li class="cf-paso">
