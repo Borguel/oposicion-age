@@ -520,6 +520,32 @@ h1, h2, h3 {
   background: var(--age-warning-bg);
 }
 
+/* Marcar una pregunta como "duda" (no estoy seguro de la respuesta): azul
+   a propósito, para distinguirse de un vistazo de la estrella (naranja,
+   favorita) y la bandera (ámbar, revisión). Al terminar el test, si hay
+   alguna marcada, resultados-test.js añade una nota alternativa
+   excluyéndolas. */
+.btn-marcar-duda {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--age-ink-faint);
+  padding: 2px 4px;
+  border-radius: var(--age-radius-sm);
+  transition: transform 0.15s var(--age-ease), color 0.15s var(--age-ease), background 0.15s var(--age-ease);
+}
+
+.btn-marcar-duda:hover {
+  transform: scale(1.1);
+}
+
+.btn-marcar-duda.activa {
+  color: var(--age-info);
+  background: var(--age-info-bg);
+}
+
 /* ========== Navegador de preguntas (mapa de progreso del examen) ==========
    Un cuadradito por pregunta, coloreado según su estado, para ver de un
    vistazo cuánto queda y saltar directamente a cualquiera sin tener que

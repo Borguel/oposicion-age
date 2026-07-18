@@ -22,6 +22,24 @@ function calcularEstadisticas(preguntas, respuestasUsuario) {
   return { aciertos, fallos, sinResponder, porcentaje, nota, notaOficial100, apto };
 }
 
+/**
+ * Nota alternativa como si las preguntas marcadas como "duda" no contaran
+ * en absoluto (ni acierto ni fallo, ni en el numerador ni en el
+ * denominador) -- reutiliza calcularEstadisticas sobre el subconjunto
+ * filtrado en vez de duplicar la fórmula de puntuación.
+ */
+function calcularEstadisticasSinDudas(preguntas, respuestasUsuario, marcadasDuda) {
+  const preguntasFiltradas = [];
+  const respuestasFiltradas = [];
+  preguntas.forEach((p, i) => {
+    if (!marcadasDuda[i]) {
+      preguntasFiltradas.push(p);
+      respuestasFiltradas.push(respuestasUsuario[i]);
+    }
+  });
+  return { stats: calcularEstadisticas(preguntasFiltradas, respuestasFiltradas), numRestantes: preguntasFiltradas.length };
+}
+
 function agruparPorTema(preguntas, respuestasUsuario, listaTemas) {
   const stats = {};
   preguntas.forEach((p, i) => {
@@ -114,11 +132,21 @@ function mensajeMotivacional(mejorRacha) {
  * `contenedor`. Devuelve las estadísticas calculadas por si la página
  * necesita guardarlas (p. ej. para mandarlas al backend).
  */
-export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsuario, listaTemas = [] }) {
+export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsuario, listaTemas = [], marcadasDuda = [] }) {
   const stats = calcularEstadisticas(preguntas, respuestasUsuario);
   const statsPorTema = agruparPorTema(preguntas, respuestasUsuario, listaTemas);
   const mejorRacha = calcularMejorRacha(preguntas, respuestasUsuario);
   const mensajeRacha = mensajeMotivacional(mejorRacha);
+
+  // Nota alternativa sin las preguntas marcadas como "duda" -- solo se
+  // calcula/muestra si se ha marcado al menos una, para no cambiar la
+  // pantalla de resultados en el caso común de que nadie use la función.
+  const numDudas = marcadasDuda.filter(Boolean).length;
+  let statsSinDudas = null;
+  if (numDudas > 0) {
+    const { stats: statsFiltradas, numRestantes } = calcularEstadisticasSinDudas(preguntas, respuestasUsuario, marcadasDuda);
+    statsSinDudas = { ...statsFiltradas, numDudas, numRestantes };
+  }
 
   let detalleHTML = "";
   preguntas.forEach((p, i) => {
@@ -183,6 +211,17 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     ? `<div class="mensaje-racha-test">${mensajeRacha}</div>`
     : "";
 
+  const notaSinDudasHTML = statsSinDudas ? `
+    <div class="resultado-nota-box">
+      <span class="resultado-nota-label">Nota sin las dudas</span>
+      <span class="resultado-nota-valor">${statsSinDudas.numRestantes ? statsSinDudas.notaOficial100 : "—"}<small> / 100</small></span>
+      <span class="resultado-nota-aclaracion">${
+        statsSinDudas.numRestantes
+          ? `Sin ${statsSinDudas.numDudas === 1 ? "esa pregunta" : `esas ${statsSinDudas.numDudas} preguntas`} marcada${statsSinDudas.numDudas === 1 ? "" : "s"} como duda, ${statsSinDudas.apto ? "seguirías aprobando" : "no aprobarías"}.`
+          : "Has marcado todas las preguntas como duda: no queda ninguna con la que calcular una nota alternativa."
+      }</span>
+    </div>` : "";
+
   contenedor.innerHTML = `
     <div class="resultado-resumen-card">
       <div class="resultado-veredicto ${stats.apto ? "aprobado" : "suspendido"}">
@@ -198,6 +237,7 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
           <span class="resultado-nota-label">Nota examen oficial</span>
           <span class="resultado-nota-valor">${stats.notaOficial100}<small> / 100</small></span>
         </div>
+        ${notaSinDudasHTML}
       </div>
 
       <div class="resultado-resumen-grid">
@@ -389,7 +429,7 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     });
   }
 
-  return stats;
+  return { ...stats, sinDudas: statsSinDudas };
 }
 
 function limpiarTextoPDF(texto) {
@@ -472,7 +512,14 @@ export function descargarResultadosPDF({ preguntas, respuestasUsuario, stats, ti
   yPos += 8;
   doc.setFont("helvetica", "normal");
   doc.text(`Nota de este test: ${stats.nota} / ${preguntas.length}   ·   Nota examen oficial: ${stats.notaOficial100} / 100 (${stats.apto ? "Aprobado" : "Suspendido"})`, pageWidth / 2, yPos, { align: "center" });
-  yPos += 14;
+  yPos += 8;
+  if (stats.sinDudas) {
+    doc.setTextColor(110);
+    doc.text(`Nota sin las ${stats.sinDudas.numDudas} en duda: ${stats.sinDudas.numRestantes ? stats.sinDudas.notaOficial100 + " / 100" : "—"}`, pageWidth / 2, yPos, { align: "center" });
+    doc.setTextColor(0);
+    yPos += 8;
+  }
+  yPos += 6;
   doc.setDrawColor(220);
   doc.line(margin, yPos, pageWidth - margin, yPos);
   yPos += 12;

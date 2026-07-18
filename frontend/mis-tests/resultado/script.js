@@ -70,6 +70,7 @@ async function inicializar() {
     const test = datos.test;
     const preguntas = test.preguntas || [];
     const respuestasUsuario = preguntas.map((p) => p.respuesta_usuario ?? null);
+    const marcadasDuda = preguntas.map((p) => p.marcada_duda ?? false);
 
     const info = tipoInfo(test.tipo);
     document.getElementById("resultado-icono").innerHTML = info.iconoHtml;
@@ -81,7 +82,8 @@ async function inicializar() {
       contenedor: document.getElementById("resultado-render"),
       preguntas,
       respuestasUsuario,
-      listaTemas
+      listaTemas,
+      marcadasDuda
     });
 
     document.getElementById("resultado-cargando").classList.add("hidden");

@@ -1278,6 +1278,15 @@ body {
   color: var(--age-ink-soft);
 }
 
+.resultado-nota-aclaracion {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--age-ink-faint);
+  margin-top: 2px;
+  white-space: normal;
+  text-align: center;
+}
+
 .resultado-resumen-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
