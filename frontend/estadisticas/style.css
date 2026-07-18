@@ -873,7 +873,22 @@
       background: transparent;
     }
 
-    .calendario-celda.con-actividad {
+    /* Escala de intensidad por actividad del día (1 test = verde claro,
+       2 = verde medio, 3+ = verde oscuro), en vez de un simple sí/no, para
+       que se note de un vistazo qué días se estudió más. */
+    .calendario-celda.nivel-1 {
+      background: var(--age-success-bg);
+      color: var(--age-success);
+      font-weight: 700;
+    }
+
+    .calendario-celda.nivel-2 {
+      background: color-mix(in srgb, var(--age-success) 55%, var(--age-success-bg));
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .calendario-celda.nivel-3 {
       background: var(--age-success);
       color: #fff;
       font-weight: 700;
@@ -889,6 +904,28 @@
       margin: 10px 0 0;
       text-align: center;
     }
+
+    .calendario-leyenda {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 10px 0 0;
+      font-size: 0.78rem;
+      color: var(--age-ink-faint);
+    }
+
+    .calendario-leyenda-celda {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      background: var(--age-neutral-bg);
+      display: inline-block;
+    }
+
+    .calendario-leyenda-celda.nivel-1 { background: var(--age-success-bg); }
+    .calendario-leyenda-celda.nivel-2 { background: color-mix(in srgb, var(--age-success) 55%, var(--age-success-bg)); }
+    .calendario-leyenda-celda.nivel-3 { background: var(--age-success); }
 
     .tema-acierto {
       background: var(--secondary);

@@ -560,9 +560,15 @@ document.addEventListener("DOMContentLoaded", async function () {
     const anio = mesCalendarioActual.getFullYear();
     const mes = mesCalendarioActual.getMonth();
 
-    const diasConActividad = new Set(
-      historialCalendario.map(t => fechaLocalYMD(t.fecha)).filter(Boolean)
-    );
+    // Cuántos tests hizo cada día, para pintar una escala de intensidad
+    // (1 test = verde claro, 2 = verde medio, 3+ = verde oscuro) en vez de
+    // un simple sí/no.
+    const testsPorDia = new Map();
+    historialCalendario.forEach(t => {
+      const clave = fechaLocalYMD(t.fecha);
+      if (!clave) return;
+      testsPorDia.set(clave, (testsPorDia.get(clave) || 0) + 1);
+    });
 
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
@@ -583,10 +589,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
     for (let dia = 1; dia <= diasEnMes; dia++) {
       const clave = `${anio}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
-      const activo = diasConActividad.has(clave);
+      const numTests = testsPorDia.get(clave) || 0;
+      const nivel = numTests >= 3 ? "nivel-3" : numTests === 2 ? "nivel-2" : numTests === 1 ? "nivel-1" : "";
       const esHoy = esMesActual && dia === hoy.getDate();
-      const clases = ["calendario-celda", activo ? "con-actividad" : "", esHoy ? "hoy" : ""].filter(Boolean).join(" ");
-      celdas.push(`<div class="${clases}" title="${dia}${activo ? ": estudiaste" : ""}">${dia}</div>`);
+      const clases = ["calendario-celda", nivel, esHoy ? "hoy" : ""].filter(Boolean).join(" ");
+      const titulo = numTests === 0 ? `${dia}` : `${dia}: ${numTests} test${numTests === 1 ? "" : "s"}`;
+      celdas.push(`<div class="${clases}" title="${titulo}">${dia}</div>`);
     }
     contenedor.innerHTML = celdas.join("");
   }
