@@ -14,6 +14,15 @@ def _con_sesion(cliente, uid="u1", email="u1@example.com"):
     return parche
 
 
+def _mock_precio(currency="eur", unit_amount=999, interval="month"):
+    # El checkout ya no manda un price_id fijo como line_item: genera un
+    # Price "al vuelo" (price_data) reutilizando importe/moneda/periodicidad
+    # del Price configurado (STRIPE_PRICE_ID_BASICO/PREMIUM), para que el
+    # nombre del producto pueda incluir la oposición sin tener que crear
+    # Products/Prices nuevos en Stripe (ver blueprints/pagos.py).
+    return {"currency": currency, "unit_amount": unit_amount, "recurring": {"interval": interval}}
+
+
 def test_crear_sesion_checkout_exige_login(client):
     resp = client.post("/crear-sesion-checkout", json={"plan": "basico"})
     assert resp.status_code == 401
@@ -57,6 +66,7 @@ def test_crear_sesion_checkout_crea_customer_nuevo_y_guarda_su_id(client, db):
     mock_session = MagicMock(url="https://checkout.stripe.com/nueva")
     try:
         with patch("blueprints.pagos.stripe.Customer.create", return_value=mock_customer) as mock_crear_customer, \
+             patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
              patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
             resp = client.post(
                 "/crear-sesion-checkout",
@@ -72,13 +82,23 @@ def test_crear_sesion_checkout_crea_customer_nuevo_y_guarda_su_id(client, db):
         assert db.leer(("usuarios", "u1"))["stripe_customer_id"] == "cus_nuevo_1"
 
         # La sesión de checkout se crea con ese customer, en modo suscripción,
-        # con el price_id correcto y la metadata (uid/plan/oposicion) tanto en
-        # la propia sesión como en subscription_data -- lo que el webhook
-        # necesita luego para reconciliar el evento.
+        # con un price_data que reproduce el importe/moneda/periodicidad del
+        # Price configurado pero con un nombre de producto que sí distingue
+        # la oposición, y la metadata (uid/plan/oposicion) tanto en la propia
+        # sesión como en subscription_data -- lo que el webhook necesita
+        # luego para reconciliar el evento.
         _, kwargs = mock_crear_sesion.call_args
         assert kwargs["mode"] == "subscription"
         assert kwargs["customer"] == "cus_nuevo_1"
-        assert kwargs["line_items"] == [{"price": "price_basico_test", "quantity": 1}]
+        assert kwargs["line_items"] == [{
+            "price_data": {
+                "currency": "eur",
+                "unit_amount": 999,
+                "recurring": {"interval": "month"},
+                "product_data": {"name": "Domina tu Opo — Plan Básico (AGE)"},
+            },
+            "quantity": 1,
+        }]
         assert kwargs["client_reference_id"] == "u1"
         assert kwargs["metadata"] == {"uid": "u1", "plan": "basico", "oposicion": "AGE"}
         assert kwargs["subscription_data"] == {"metadata": {"uid": "u1", "plan": "basico", "oposicion": "AGE"}}
@@ -92,6 +112,7 @@ def test_crear_sesion_checkout_reusa_customer_existente(client, db):
     mock_session = MagicMock(url="https://checkout.stripe.com/existente")
     try:
         with patch("blueprints.pagos.stripe.Customer.create") as mock_crear_customer, \
+             patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio(unit_amount=1999)), \
              patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
             resp = client.post(
                 "/crear-sesion-checkout",
@@ -102,7 +123,15 @@ def test_crear_sesion_checkout_reusa_customer_existente(client, db):
         mock_crear_customer.assert_not_called()
         _, kwargs = mock_crear_sesion.call_args
         assert kwargs["customer"] == "cus_existente_1"
-        assert kwargs["line_items"] == [{"price": "price_premium_test", "quantity": 1}]
+        assert kwargs["line_items"] == [{
+            "price_data": {
+                "currency": "eur",
+                "unit_amount": 1999,
+                "recurring": {"interval": "month"},
+                "product_data": {"name": "Domina tu Opo — Plan Premium (AGE)"},
+            },
+            "quantity": 1,
+        }]
     finally:
         parche.stop()
 
@@ -112,7 +141,8 @@ def test_crear_sesion_checkout_usa_oposicion_por_defecto_si_no_se_manda(client, 
     parche = _con_sesion(client)
     mock_session = MagicMock(url="https://checkout.stripe.com/x")
     try:
-        with patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
+        with patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
+             patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
             resp = client.post(
                 "/crear-sesion-checkout",
                 json={"plan": "basico"},
@@ -134,7 +164,8 @@ def test_crear_sesion_checkout_aplica_descuento_de_promocion_activa_del_mismo_pl
     parche = _con_sesion(client)
     mock_session = MagicMock(url="https://checkout.stripe.com/promo")
     try:
-        with patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
+        with patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
+             patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
             resp = client.post(
                 "/crear-sesion-checkout",
                 json={"plan": "premium", "oposicion": "AGE"},
@@ -156,7 +187,8 @@ def test_crear_sesion_checkout_no_aplica_descuento_de_otro_plan(client, db):
     parche = _con_sesion(client)
     mock_session = MagicMock(url="https://checkout.stripe.com/sin-promo")
     try:
-        with patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
+        with patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
+             patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
             resp = client.post(
                 "/crear-sesion-checkout",
                 json={"plan": "basico", "oposicion": "AGE"},
@@ -178,7 +210,8 @@ def test_crear_sesion_checkout_no_aplica_descuento_de_promocion_caducada(client,
     parche = _con_sesion(client)
     mock_session = MagicMock(url="https://checkout.stripe.com/caducada")
     try:
-        with patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
+        with patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
+             patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
             resp = client.post(
                 "/crear-sesion-checkout",
                 json={"plan": "premium", "oposicion": "AGE"},
@@ -195,7 +228,8 @@ def test_crear_sesion_checkout_propaga_error_de_stripe_como_500(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_existente_1"})
     parche = _con_sesion(client)
     try:
-        with patch("blueprints.pagos.stripe.checkout.Session.create", side_effect=RuntimeError("stripe caído")):
+        with patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
+             patch("blueprints.pagos.stripe.checkout.Session.create", side_effect=RuntimeError("stripe caído")):
             resp = client.post(
                 "/crear-sesion-checkout",
                 json={"plan": "basico", "oposicion": "AGE"},
@@ -203,6 +237,22 @@ def test_crear_sesion_checkout_propaga_error_de_stripe_como_500(client, db):
             )
         assert resp.status_code == 500
         assert "stripe caído" in resp.get_json()["error"]
+    finally:
+        parche.stop()
+
+
+def test_crear_sesion_checkout_propaga_error_al_obtener_precio_base_como_500(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_existente_1"})
+    parche = _con_sesion(client)
+    try:
+        with patch("blueprints.pagos.stripe.Price.retrieve", side_effect=RuntimeError("price no encontrado")):
+            resp = client.post(
+                "/crear-sesion-checkout",
+                json={"plan": "basico", "oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 500
+        assert "price no encontrado" in resp.get_json()["error"]
     finally:
         parche.stop()
 

@@ -29,6 +29,12 @@ STRIPE_PRICE_IDS = {
 }
 PRECIO_A_PLAN = {v: k for k, v in STRIPE_PRICE_IDS.items() if v}
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8080")
+NOMBRE_PLAN = {"basico": "Básico", "premium": "Premium"}
+# Mismas siglas cortas que ya usa el selector de oposición del frontend
+# (frontend/assets/oposicion.js) -- se usan aquí para que el nombre del
+# producto que ve el usuario en el Checkout/portal de Stripe distinga de
+# qué oposición es cada suscripción (ver /crear-sesion-checkout).
+SIGLAS_OPOSICION = {"AGE": "AGE", "GACE": "GACE", "AUXILIAR": "Auxiliar"}
 
 
 @bp.route("/mi-perfil", methods=["GET"])
@@ -111,16 +117,45 @@ def crear_sesion_checkout():
             customer = stripe.Customer.create(email=g.email, metadata={"uid": g.uid})
             stripe_customer_id = customer.id
             actualizar_suscripcion(db, g.uid, oposicion, stripe_customer_id=stripe_customer_id)
+        # El Price configurado (STRIPE_PRICE_ID_BASICO/PREMIUM) es uno solo,
+        # compartido por las 3 oposiciones -- así que su Product en Stripe se
+        # llama simplemente "Básico"/"Premium" y, en el portal de facturación,
+        # dos suscripciones a oposiciones distintas del mismo plan son
+        # indistinguibles entre sí (no hay forma de saber cuál cancelar).
+        # Para arreglarlo sin tener que crear Products/Prices nuevos a mano en
+        # el Dashboard, se genera un Price "al vuelo" (price_data) con el
+        # mismo importe/moneda/periodicidad que el Price configurado pero un
+        # nombre de producto que sí incluye la oposición -- así queda visible
+        # en el Checkout y en el portal de Stripe.
+        try:
+            precio_base = stripe.Price.retrieve(price_id)
+        except Exception as e:
+            logger.exception("Error obteniendo el precio de Stripe %s", price_id)
+            return jsonify({"error": str(e)}), 500
+        nombre_producto = f"Domina tu Opo — Plan {NOMBRE_PLAN.get(plan, plan)} ({SIGLAS_OPOSICION.get(oposicion, oposicion)})"
+
         # La oposición viaja tanto en la metadata de la sesión de checkout
         # (solo disponible en el evento checkout.session.completed) como en
         # subscription_data.metadata, para que quede grabada en la propia
         # Subscription de Stripe y así los eventos posteriores
         # (customer.subscription.updated/deleted) también sepan a qué
-        # oposición pertenecen.
+        # oposición pertenecen. El plan (básico/premium) viaja igual, para no
+        # depender de reconocer el price_id en el webhook -- ahora que cada
+        # sesión genera un Price nuevo, el price_id ya no sirve para eso (ver
+        # PRECIO_A_PLAN, que solo queda como fallback para suscripciones
+        # antiguas creadas antes de este cambio).
         kwargs_checkout = dict(
             mode="subscription",
             customer=stripe_customer_id,
-            line_items=[{"price": price_id, "quantity": 1}],
+            line_items=[{
+                "price_data": {
+                    "currency": precio_base["currency"],
+                    "unit_amount": precio_base["unit_amount"],
+                    "recurring": {"interval": precio_base["recurring"]["interval"]},
+                    "product_data": {"name": nombre_producto},
+                },
+                "quantity": 1,
+            }],
             success_url=f"{FRONTEND_URL}/mi-cuenta/?checkout=success&oposicion={oposicion}",
             cancel_url=f"{FRONTEND_URL}/planes/?checkout=cancel&oposicion={oposicion}",
             client_reference_id=g.uid,
@@ -286,8 +321,17 @@ def webhook_stripe():
             subscription_id = _sget(objeto, "subscription")
             if uid and subscription_id:
                 subscription = stripe.Subscription.retrieve(subscription_id)
-                price_id = subscription["items"]["data"][0]["price"]["id"]
-                plan = PRECIO_A_PLAN.get(price_id, "gratis")
+                # El plan viaja en la metadata de la propia sesión (puesta
+                # ahí al crear el checkout) -- se prefiere sobre el price_id
+                # porque, desde que cada sesión genera su Price al vuelo (ver
+                # /crear-sesion-checkout), el price_id ya no es un valor fijo
+                # reconocible en PRECIO_A_PLAN. Ese lookup por price_id queda
+                # solo como fallback para suscripciones creadas antes de este
+                # cambio.
+                plan = _sget(metadata, "plan")
+                if not plan:
+                    price_id = subscription["items"]["data"][0]["price"]["id"]
+                    plan = PRECIO_A_PLAN.get(price_id, "gratis")
                 periodo_fin = _current_period_end(subscription)
                 actualizar_suscripcion(
                     db, uid, oposicion,
@@ -308,8 +352,12 @@ def webhook_stripe():
             oposicion = _sget(metadata, "oposicion") or OPOSICION_POR_DEFECTO
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
-                price_id = objeto["items"]["data"][0]["price"]["id"]
-                plan = PRECIO_A_PLAN.get(price_id, "gratis")
+                # Igual que en checkout.session.completed: se prefiere el
+                # plan de la metadata sobre el price_id, que ya no es fijo.
+                plan = _sget(metadata, "plan")
+                if not plan:
+                    price_id = objeto["items"]["data"][0]["price"]["id"]
+                    plan = PRECIO_A_PLAN.get(price_id, "gratis")
                 periodo_fin = _current_period_end(objeto)
                 actualizar_suscripcion(
                     db, docs[0].id, oposicion,
