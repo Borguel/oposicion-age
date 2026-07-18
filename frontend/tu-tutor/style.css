@@ -27,13 +27,6 @@ html { scroll-behavior: smooth; }
   }
 }
 
-/* Colores de acento seleccionables desde el panel de personalización.
-   Se guardan en una variable propia (--tutor-accent), no en --age-primary,
-   para no descolocar el resto del sitio (nav, botones globales, etc.). */
-.tutor-container[data-acento="verde"] { --tutor-accent: #1a9c6e; }
-.tutor-container[data-acento="morado"] { --tutor-accent: #8b5cf6; }
-.tutor-container[data-acento="rojo"] { --tutor-accent: #e0473f; }
-
 /* Botones de icono de la cabecera (ajustes, cerrar): pequeños y
    discretos, integrados en la propia barra en vez de un botón flotante
    grande y llamativo encima del chat. */
@@ -57,8 +50,6 @@ html { scroll-behavior: smooth; }
   color: var(--age-ink);
   outline: none;
 }
-#settings-toggle { margin-left: auto; }
-
 /* SIDEBAR (historial) */
 .tutor-sidebar {
   width: 260px;
@@ -596,7 +587,10 @@ html { scroll-behavior: smooth; }
   border: none;
   border-radius: 17px;
   padding: 11px 15px;
-  font-size: 15px;
+  /* 16px, no menos: por debajo de eso Safari en iOS hace zoom automático al
+     enfocar el campo, y el usuario tenía que hacer pinch-zoom manual para
+     volver a ver la página a tamaño normal. */
+  font-size: 16px;
   background: var(--age-neutral-bg);
   color: var(--age-ink);
   min-height: 36px;
@@ -614,6 +608,7 @@ html { scroll-behavior: smooth; }
 .btn-enviar {
   border: none;
   background: var(--tutor-accent);
+  color: #fff;
   border-radius: 50%;
   cursor: pointer;
   width: 38px;
@@ -630,91 +625,27 @@ html { scroll-behavior: smooth; }
 }
 .btn-enviar svg { display: block; }
 
-/* PANEL DE PERSONALIZACIÓN */
-.settings-panel {
+/* Botón flotante "ir al último mensaje": solo aparece cuando el usuario ha
+   subido a leer mensajes anteriores mientras el tutor sigue escribiendo (ver
+   cercaDelFinal()/actualizarBotonScroll() en script.js) -- así puede leer con
+   calma sin que la conversación le arrastre hacia abajo en cada fragmento. */
+.btn-scroll-abajo {
   position: absolute;
-  top: 0;
-  right: -320px;
-  width: 300px;
-  height: 100%;
-  background: var(--age-card);
-  z-index: 200;
-  transition: right 0.3s ease;
-  border-left: 1px solid var(--age-border);
-  box-shadow: -5px 0 15px rgba(0,0,0,0.08);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.settings-panel.active { right: 0; }
-.settings-header {
-  padding: 18px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--age-border);
-}
-.settings-header h3 { font-size: 17px; color: var(--age-ink); margin: 0; }
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--age-ink);
-  cursor: pointer;
-  font-size: 22px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  line-height: 1;
-}
-.close-btn:hover { background: var(--age-neutral-bg); }
-.settings-content { padding: 20px; flex: 1; overflow-y: auto; }
-.theme-option { margin-bottom: 25px; }
-.theme-option h4 { font-size: 14px; margin: 0 0 12px; color: var(--age-ink); }
-.theme-colors { display: flex; gap: 14px; }
-.color-option {
+  right: 18px;
+  bottom: 92px;
+  z-index: 15;
   width: 36px;
   height: 36px;
   border-radius: 50%;
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  box-shadow: var(--age-shadow-hover, 0 4px 14px rgba(0,0,0,0.12));
   cursor: pointer;
-  border: 2px solid transparent;
-  padding: 0;
-  position: relative;
+  align-items: center;
+  justify-content: center;
 }
-.color-option.active { border-color: var(--age-ink); }
-.color-option.active::after {
-  content: "✓";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #fff;
-  font-size: 15px;
-  font-weight: bold;
-}
-.switch-container { display: flex; align-items: center; justify-content: space-between; }
-.switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider {
-  position: absolute;
-  inset: 0;
-  cursor: pointer;
-  background-color: var(--age-border);
-  transition: 0.3s;
-  border-radius: 24px;
-}
-.slider::before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: #fff;
-  transition: 0.3s;
-  border-radius: 50%;
-}
-input:checked + .slider { background-color: var(--tutor-accent); }
-input:checked + .slider::before { transform: translateX(22px); }
+.btn-scroll-abajo:hover { background: var(--age-neutral-bg); }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }

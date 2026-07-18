@@ -162,44 +162,32 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   sidebarOverlay?.addEventListener("click", closeSidebar);
 
-  // PANEL DE PERSONALIZACIÓN (color de acento + modo oscuro)
-  const settingsToggle = document.getElementById("settings-toggle");
-  const settingsPanel = document.getElementById("settings-panel");
-  const closeSettings = document.getElementById("close-settings");
-  const colorOptions = document.querySelectorAll(".color-option");
-  const darkModeToggle = document.getElementById("dark-mode-toggle");
+  // AUTOSCROLL "PEGAJOSO": mientras el tutor va escribiendo (streaming), solo
+  // seguimos bajando la vista si el usuario ya estaba abajo del todo -- si ha
+  // subido a releer un mensaje anterior, se queda donde está en vez de que
+  // cada fragmento nuevo le arrastre hacia el final. irAlFinal() se usa para
+  // los saltos "forzados" (el usuario acaba de enviar algo, o de pulsar un
+  // botón que genera una respuesta nueva); irAlFinalSiProcede() es la versión
+  // que respeta la posición de scroll durante el streaming.
+  const UMBRAL_SCROLL_FINAL = 80;
+  const scrollAbajoBtn = document.getElementById("scroll-to-bottom");
 
-  settingsToggle.addEventListener("click", () => settingsPanel.classList.toggle("active"));
-  closeSettings.addEventListener("click", () => settingsPanel.classList.remove("active"));
-
-  const acentoGuardado = localStorage.getItem("tutorAcento");
-  if (acentoGuardado) {
-    contenedor.dataset.acento = acentoGuardado;
-    colorOptions.forEach(op => op.classList.toggle("active", op.dataset.acento === acentoGuardado));
+  function cercaDelFinal() {
+    return chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight <= UMBRAL_SCROLL_FINAL;
   }
-  colorOptions.forEach(op => {
-    op.addEventListener("click", () => {
-      const acento = op.dataset.acento;
-      contenedor.dataset.acento = acento;
-      localStorage.setItem("tutorAcento", acento);
-      colorOptions.forEach(o => o.classList.toggle("active", o === op));
-    });
-  });
-
-  // El modo oscuro es una preferencia global del sitio (misma variable que
-  // usa el botón de la barra de navegación, data-theme + "age-theme" en
-  // localStorage), no un ajuste propio de esta página -- así no quedan
-  // desincronizados el interruptor de aquí y el de la barra de navegación.
-  darkModeToggle.checked = document.documentElement.dataset.theme === "dark";
-  darkModeToggle.addEventListener("change", () => {
-    if (darkModeToggle.checked) {
-      document.documentElement.dataset.theme = "dark";
-      localStorage.setItem("age-theme", "dark");
-    } else {
-      delete document.documentElement.dataset.theme;
-      localStorage.setItem("age-theme", "light");
-    }
-  });
+  function actualizarBotonScroll() {
+    if (scrollAbajoBtn) scrollAbajoBtn.style.display = cercaDelFinal() ? "none" : "flex";
+  }
+  function irAlFinal() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    actualizarBotonScroll();
+  }
+  function irAlFinalSiProcede() {
+    if (cercaDelFinal()) irAlFinal();
+    else actualizarBotonScroll();
+  }
+  chatMessages.addEventListener("scroll", actualizarBotonScroll);
+  scrollAbajoBtn?.addEventListener("click", irAlFinal);
 
   // PREGUNTAS RÁPIDAS
   document.querySelectorAll(".quick-btn").forEach(btn => {
@@ -222,7 +210,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       div.className = "mensaje-user";
       div.innerHTML = `<div class="bubble-user">${safeText}</div>`;
       chatMessages.appendChild(div);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+      irAlFinal();
       return null;
     }
     const burbuja = crearBurbujaBot();
@@ -244,7 +232,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     enlace.href = "/planes/";
     enlace.textContent = "Ver planes";
     chatMessages.appendChild(enlace);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    irAlFinal();
   }
 
   // Burbuja de respuesta del tutor que empieza vacía y se va rellenando a
@@ -263,7 +251,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       </div>
     `;
     chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    irAlFinal();
     const estado = { texto: "" };
     // addEventListener con "estado" capturado por closure, en vez de un
     // onclick inline: no depende de 'unsafe-inline' en el CSP. Lee
@@ -286,13 +274,13 @@ document.addEventListener("DOMContentLoaded", async function () {
   function actualizarBurbujaBot(burbuja, texto) {
     burbuja.estado.texto = texto;
     burbuja.contenido.innerHTML = formatearMensajeBot(texto);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    irAlFinalSiProcede();
   }
 
   function mostrarTyping(show) {
     typingIndicator.style.display = show ? "flex" : "none";
     if (show) {
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+      irAlFinal();
     }
   }
 
@@ -472,7 +460,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     bubble.appendChild(pie);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    irAlFinalSiProcede();
   }
 
   // A diferencia de .bubble-bot-actions (el icono de copiar, oculto salvo
