@@ -233,7 +233,9 @@ const NAV_LINKS = [
   { href: "/subida-pdf-pagina-principal/", label: "Herramientas IA", match: ["/subida-pdf-"] },
   { href: "/tu-tutor/", label: "Tu Tutor", match: ["/tu-tutor/"] },
   { href: "/estadisticas/", label: "Estadísticas", match: ["/estadisticas/"] },
-  { href: "/planes/", label: "Planes", match: ["/planes/"] }
+  { href: "/planes/", label: "Planes", match: ["/planes/"] },
+  { href: "/oposiciones/", label: "Oposiciones", match: ["/oposiciones/", "/oposicion-administrativo-estado-c1/", "/oposicion-gace/", "/oposicion-auxiliar-administrativo-estado/"] },
+  { href: "/como-funciona/", label: "Cómo funciona", match: ["/como-funciona/"] }
 ];
 
 function esEnlaceActivo(match, ruta) {

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script src="/assets/redirect-dominio-antiguo.js"></script>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oposiciones del Estado: guías de Administrativo, GACE y Auxiliar | Domina tu Opo</title>
+  <meta name="description" content="Elige tu oposición y consulta su guía completa: temario, cómo es el examen, plazas de la última convocatoria y sueldo aproximado. Administrativo C1, GACE A2 y Auxiliar C2." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Oposiciones del Estado: guías por cuerpo" />
+  <meta property="og:description" content="Temario, examen, plazas y sueldo de cada oposición: Administrativo del Estado (C1), GACE (A2) y Auxiliar Administrativo (C2)." />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://www.dominatuopo.com/oposiciones/" />
+  <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/assets/guias.css" />
+</head>
+<body>
+  <nav class="age-nav"></nav>
+
+  <div class="guia-wrap">
+    <p class="guia-migas"><a href="/">Inicio</a> / Oposiciones</p>
+
+    <span class="guia-hero-etiqueta">Guías por oposición</span>
+    <h1>¿Qué oposición del Estado preparas?</h1>
+    <p class="guia-intro">
+      Elige tu cuerpo y encontrarás una guía completa: cómo se organiza el temario, cómo es el examen,
+      cuántas plazas hubo en la última convocatoria y qué se cobra una vez dentro.
+    </p>
+
+    <div class="age-option-grid">
+      <a class="age-option-card" href="/oposicion-administrativo-estado-c1/">
+        <span class="age-option-icon" data-icon="documento" data-icon-size="28"></span>
+        <span class="age-option-title">Administrativo del Estado (C1)</span>
+        <span class="age-option-desc">Cuerpo General Administrativo: temario, examen y plazas de la última OEP.</span>
+      </a>
+      <a class="age-option-card" href="/oposicion-gace/">
+        <span class="age-option-icon" data-icon="edificio" data-icon-size="28"></span>
+        <span class="age-option-title">GACE (A2)</span>
+        <span class="age-option-desc">Gestión de la Administración Civil del Estado: temario, examen y plazas.</span>
+      </a>
+      <a class="age-option-card" href="/oposicion-auxiliar-administrativo-estado/">
+        <span class="age-option-icon" data-icon="lapiz" data-icon-size="28"></span>
+        <span class="age-option-title">Auxiliar Administrativo (C2)</span>
+        <span class="age-option-desc">Cuerpo General Auxiliar: temario, examen y plazas de la última OEP.</span>
+      </a>
+    </div>
+
+    <div class="guia-cta-final">
+      <h2>Prepárala con temario oficial y tests ilimitados</h2>
+      <p>Tests oficiales, generador con IA por tema, tarjetas de memoria y seguimiento de tu progreso, todo en un mismo sitio.</p>
+      <a class="age-btn age-btn-primary" href="/login/">Crear cuenta gratis</a>
+    </div>
+  </div>
+
+  <script type="module" src="/assets/auth.js"></script>
+  <script type="module">
+    import { icono } from "/assets/icons.js";
+    document.querySelectorAll("[data-icon]").forEach((el) => {
+      el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 20));
+    });
+  </script>
+</body>
+</html>

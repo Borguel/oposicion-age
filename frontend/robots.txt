@@ -5,6 +5,7 @@ Allow: /login/
 Allow: /privacidad/
 Allow: /cookies/
 Allow: /terminos/
+Allow: /oposiciones/
 Allow: /oposicion-administrativo-estado-c1/
 Allow: /oposicion-gace/
 Allow: /oposicion-auxiliar-administrativo-estado/
