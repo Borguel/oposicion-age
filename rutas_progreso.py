@@ -11,6 +11,7 @@ from registro_progreso_usuario import (
 )
 from guardar_resultado import obtener_estadisticas_completas_usuario
 from banco_favoritas import marcar_favorita, desmarcar_favorita, listar_favoritas
+from banco_fallos import listar_fallos
 from push_utils import VAPID_PUBLIC_KEY, push_disponible, guardar_suscripcion, borrar_suscripcion
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 from planes import ORDEN_PLANES, resolver_plan_efectivo
@@ -157,6 +158,12 @@ def registrar_rutas_progreso(app, db):
     def preguntas_favoritas_route():
         favoritas = listar_favoritas(db, g.uid, obtener_oposicion_solicitada())
         return jsonify({"favoritas": favoritas})
+
+    @app.route("/preguntas-falladas", methods=["GET"])
+    @requiere_plan(db, "basico", global_check=False)
+    def preguntas_falladas_route():
+        falladas = listar_fallos(db, g.uid, obtener_oposicion_solicitada())
+        return jsonify({"falladas": falladas})
 
     @app.route("/notificaciones-push/clave-publica", methods=["GET"])
     def clave_publica_push_route():

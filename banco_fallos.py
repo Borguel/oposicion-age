@@ -53,6 +53,12 @@ def ordenar_por_prioridad_repaso(candidatas):
     return candidatas
 
 
+def listar_fallos(db, usuario_id, oposicion):
+    docs = db.collection("usuarios").document(usuario_id).collection("preguntas_falladas") \
+        .where("oposicion", "==", oposicion).stream()
+    return [d.to_dict() for d in docs]
+
+
 def actualizar_banco_fallos(db, usuario_id, oposicion, tipo_test, contenido, respuestas):
     if tipo_test not in TIPOS_QUE_ALIMENTAN_BANCO:
         return

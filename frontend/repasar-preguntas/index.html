@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script src="/assets/redirect-dominio-antiguo.js"></script>
+  <style>html:not(.auth-listo) body { visibility: hidden; }</style>
+  <script type="module" src="/assets/auth-guard.js"></script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <title>Repasar preguntas - Domina tu Opo</title>
+  <meta name="description" content="Repasa de un vistazo tus preguntas favoritas y las que más fallas, con la respuesta correcta y su explicación." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Repasar preguntas - Domina tu Opo" />
+  <meta property="og:description" content="Repasa de un vistazo tus preguntas favoritas y las que más fallas, con la respuesta correcta y su explicación." />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="canonical" href="https://www.dominatuopo.com/repasar-preguntas/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/test-generator/style.css" />
+  <link rel="stylesheet" href="/repasar-preguntas/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+  <div class="container">
+
+    <div class="rp-cabecera">
+      <h1>Repasar preguntas</h1>
+      <p>Consulta el enunciado completo, la respuesta correcta y la explicación, sin necesidad de generar un test nuevo.</p>
+    </div>
+
+    <div class="rp-tabs" role="tablist">
+      <button type="button" class="rp-tab activa" id="rp-tab-favoritas" data-tab="favoritas" role="tab" aria-selected="true">
+        <span data-icon="estrella" data-icon-size="16"></span> Favoritas
+      </button>
+      <button type="button" class="rp-tab" id="rp-tab-falladas" data-tab="falladas" role="tab" aria-selected="false">
+        <span data-icon="cruz" data-icon-size="16"></span> Falladas
+      </button>
+    </div>
+
+    <div class="rp-filtro-fila">
+      <label for="rp-filtro-tema">Filtrar por tema:</label>
+      <select id="rp-filtro-tema">
+        <option value="">Todos los temas</option>
+      </select>
+    </div>
+
+    <div id="rp-aviso" class="aviso" style="display:none;"></div>
+    <div id="rp-cargando" class="rp-cargando">Cargando preguntas…</div>
+    <div id="rp-lista" class="rp-lista"></div>
+  </div>
+
+  <script type="module" src="/repasar-preguntas/script.js"></script>
+  <script type="module" src="/assets/auth.js"></script>
+</body>
+</html>

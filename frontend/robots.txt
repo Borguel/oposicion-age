@@ -22,6 +22,7 @@ Disallow: /test-inteligente/
 Disallow: /repetir-test/
 Disallow: /preguntas-falladas/
 Disallow: /preguntas-favoritas/
+Disallow: /repasar-preguntas/
 Disallow: /subida-pdf-*/
 Disallow: /tu-tutor/
 Disallow: /ranking/

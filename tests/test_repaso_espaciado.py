@@ -113,6 +113,42 @@ def test_preguntas_pendientes_repaso_requiere_login(client):
     assert resp.status_code == 401
 
 
+def test_listar_preguntas_falladas_incluye_veces_fallada(client, db):
+    sembrar_usuario_activo(db, "u1", plan="basico")
+    db.sembrar(("usuarios", "u1", "preguntas_falladas", "muy_fallada"), dict(
+        _pregunta_base("¿Muy fallada?"), veces_fallada=3))
+
+    parche = _con_sesion(client)
+    try:
+        resp = client.get("/preguntas-falladas?oposicion=AGE", headers={"Authorization": "Bearer x"})
+        assert resp.status_code == 200
+        falladas = resp.get_json()["falladas"]
+        assert len(falladas) == 1
+        assert falladas[0]["veces_fallada"] == 3
+    finally:
+        parche.stop()
+
+
+def test_listar_preguntas_falladas_no_se_mezclan_entre_oposiciones(client, db):
+    sembrar_usuario_activo(db, "u1", plan="basico", suscripciones={
+        "AGE": {"plan": "basico", "subscription_status": "active"},
+        "GACE": {"plan": "basico", "subscription_status": "active"},
+    })
+    db.sembrar(("usuarios", "u1", "preguntas_falladas", "age1"), _pregunta_base("¿AGE?"))
+    gace = dict(_pregunta_base("¿GACE?"))
+    gace["oposicion"] = "GACE"
+    db.sembrar(("usuarios", "u1", "preguntas_falladas", "gace1"), gace)
+
+    parche = _con_sesion(client)
+    try:
+        resp = client.get("/preguntas-falladas?oposicion=GACE", headers={"Authorization": "Bearer x"})
+        falladas = resp.get_json()["falladas"]
+        assert len(falladas) == 1
+        assert falladas[0]["pregunta"] == "¿GACE?"
+    finally:
+        parche.stop()
+
+
 def test_generar_test_favoritas_marca_fecha_ultimo_repaso(client, db):
     sembrar_usuario_activo(db, "u1", plan="basico")
     doc_id = _id_pregunta("AGE", "¿Nunca repasada?")

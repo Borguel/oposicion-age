@@ -1,0 +1,237 @@
+/* La mayoría de estilos base (contenedor, tarjetas) vienen de
+   /test-generator/style.css, reutilizado aquí para que se vea igual que el
+   resto de páginas de test. Aquí solo lo específico de esta página. */
+
+.aviso {
+  color: var(--age-danger);
+  font-weight: bold;
+  margin-bottom: 18px;
+  text-align: center;
+  padding: 15px;
+  background: var(--age-danger-bg);
+  border-radius: var(--age-radius-md);
+  display: none;
+}
+
+.rp-cabecera {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.rp-cabecera h1 {
+  font-size: 1.6rem;
+  color: var(--age-ink);
+  margin-bottom: 6px;
+}
+
+.rp-cabecera p {
+  color: var(--age-ink-soft);
+  font-size: 0.95rem;
+}
+
+.rp-tabs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.rp-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink-soft);
+  font-family: var(--age-font);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rp-tab.activa {
+  background: var(--age-primary);
+  border-color: var(--age-primary);
+  color: #fff;
+}
+
+.rp-filtro-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.rp-filtro-fila label {
+  color: var(--age-ink-soft);
+  font-size: 0.9rem;
+}
+
+.rp-filtro-fila select {
+  padding: 8px 12px;
+  border-radius: var(--age-radius-md);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-family: var(--age-font);
+}
+
+.rp-cargando {
+  text-align: center;
+  color: var(--age-ink-faint);
+  padding: 20px;
+  display: none;
+}
+
+.rp-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rp-tarjeta {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  box-shadow: var(--age-shadow);
+  padding: 20px;
+}
+
+.rp-tarjeta-cabecera {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.rp-badge-fallos {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--age-danger);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rp-tarjeta-pregunta {
+  font-weight: 700;
+  color: var(--age-ink);
+  line-height: 1.45;
+}
+
+.rp-tarjeta-tema {
+  display: inline-block;
+  font-size: 0.78rem;
+  color: var(--age-ink-faint);
+  background: var(--age-neutral-bg);
+  border-radius: var(--age-radius-pill);
+  padding: 3px 10px;
+  margin-bottom: 14px;
+}
+
+.rp-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.rp-opcion {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--age-radius-md);
+  background: var(--age-neutral-bg);
+  font-size: 0.92rem;
+  color: var(--age-ink-soft);
+}
+
+.rp-opcion-letra {
+  font-weight: 800;
+  color: var(--age-ink);
+}
+
+.rp-opcion.rp-opcion-correcta {
+  background: var(--age-success-bg);
+  color: var(--age-success);
+}
+
+.rp-opcion.rp-opcion-correcta .rp-opcion-letra {
+  color: var(--age-success);
+}
+
+.rp-tarjeta-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rp-btn-ver-respuesta,
+.rp-btn-quitar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink-soft);
+  font-family: var(--age-font);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rp-btn-ver-respuesta:hover {
+  border-color: var(--age-primary);
+  color: var(--age-ink);
+}
+
+.rp-btn-quitar:hover {
+  border-color: var(--age-danger);
+  color: var(--age-danger);
+}
+
+.rp-btn-quitar:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.rp-respuesta-panel {
+  margin-top: 12px;
+  padding: 14px 16px;
+  background: var(--age-neutral-bg);
+  border-radius: var(--age-radius-md);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--age-ink-soft);
+}
+
+.rp-respuesta-correcta {
+  color: var(--age-success);
+  margin-bottom: 8px;
+}
+
+.rp-respuesta-correcta strong,
+.rp-explicacion strong {
+  color: var(--age-ink);
+}
+
+@media (max-width: 640px) {
+  .rp-tabs {
+    flex-wrap: wrap;
+  }
+
+  .rp-tarjeta {
+    padding: 16px;
+  }
+}
