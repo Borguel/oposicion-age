@@ -77,7 +77,14 @@ cambiarModo("login");
 
 function siguienteDestino() {
   const params = new URLSearchParams(window.location.search);
-  return params.get("next") || "/zona-opositor/";
+  const next = params.get("next");
+  // Solo se acepta una ruta relativa dentro del propio sitio: "next" viene
+  // de la URL (controlable por quien comparta el enlace), así que aceptar
+  // una URL absoluta o protocol-relative ("//dominio-ajeno.com") permitiría
+  // usar nuestro propio dominio de confianza para redirigir tras el login a
+  // un sitio de phishing externo (open redirect).
+  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+  return "/zona-opositor/";
 }
 
 async function guardarPerfilBasico(nombre, apellidos) {

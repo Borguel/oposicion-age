@@ -26,5 +26,6 @@ Disallow: /repasar-preguntas/
 Disallow: /subida-pdf-*/
 Disallow: /tu-tutor/
 Disallow: /ranking/
+Disallow: /admin/
 
 Sitemap: https://www.dominatuopo.com/sitemap.xml
