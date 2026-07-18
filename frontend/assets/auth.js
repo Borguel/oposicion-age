@@ -846,6 +846,7 @@ function inyectarFooter() {
   const anio = new Date().getFullYear();
   footer.innerHTML = `
     <span>© ${anio} Domina tu Opo</span>
+    <a href="/aviso-legal/">Aviso legal</a>
     <a href="/terminos/">Términos y condiciones</a>
     <a href="/privacidad/">Privacidad</a>
     <a href="/cookies/">Cookies</a>

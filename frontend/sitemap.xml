@@ -86,6 +86,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.dominatuopo.com/aviso-legal/</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>https://www.dominatuopo.com/privacidad/</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
