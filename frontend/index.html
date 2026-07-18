@@ -546,9 +546,126 @@
       border-radius: 999px;
     }
 
-    /* mock: esquema */
-    .mock-esquema .mock-linea:nth-child(1) { width: 70%; }
-    .mock-esquema .sub { margin-left: 18px; width: 60%; background: var(--age-border); }
+    /* mock: esquema (recreación en miniatura de un esquema real: "La
+       Constitución Española" a modo de ejemplo, con el mismo lenguaje
+       visual que genera la herramienta -- insignia circular con número
+       romano para cada bloque y numeración I.1/I.2 para sus sub-apartados). */
+    .mock-esquema-real { width: 100%; text-align: left; }
+    .eq-titulo {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--age-ink-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--age-border);
+    }
+    .eq-h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--age-ink);
+      background: var(--age-primary-soft);
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin: 10px 0 6px;
+    }
+    .eq-h2:first-of-type { margin-top: 0; }
+    .eq-badge {
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--age-primary);
+      color: #fff;
+      font-size: 0.66rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .eq-h3 {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--age-primary-dark);
+      font-weight: 700;
+      margin: 6px 0 6px 14px;
+      padding-left: 10px;
+      border-left: 2px solid var(--age-primary);
+    }
+    .eq-num {
+      color: var(--age-ink-soft);
+      font-weight: 800;
+      font-size: 0.66rem;
+    }
+
+    /* mock: estadísticas (recreación en miniatura: tiempo total, reparto
+       de aciertos/fallos/blancos y cobertura de temas estudiados, igual
+       que en la página real de Estadísticas). */
+    .mock-stats-real { width: 100%; text-align: left; }
+    .st-tiempo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--age-ink);
+      margin-bottom: 12px;
+    }
+    .st-tiempo [data-icon] { color: var(--age-primary-dark); display: inline-flex; }
+    .st-barra {
+      display: flex;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--age-neutral-bg);
+      margin-bottom: 8px;
+    }
+    .st-barra-acierto { background: var(--age-success); }
+    .st-barra-fallo { background: var(--age-danger); }
+    .st-barra-blanco { background: var(--age-border); }
+    .st-leyenda {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.68rem;
+      color: var(--age-ink-soft);
+      margin-bottom: 16px;
+    }
+    .st-leyenda .dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+    .st-leyenda .dot.acierto { background: var(--age-success); }
+    .st-leyenda .dot.fallo { background: var(--age-danger); }
+    .st-leyenda .dot.blanco { background: var(--age-border); }
+    .st-temas {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--age-ink-soft);
+      margin-bottom: 6px;
+    }
+    .st-temas strong { color: var(--age-ink); font-weight: 700; }
+    .st-cobertura {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--age-neutral-bg);
+      overflow: hidden;
+    }
+    .st-cobertura-fill {
+      height: 100%;
+      background: var(--age-primary);
+      border-radius: 999px;
+    }
 
     /* mock: chat */
     .mock-chat .bubble {
@@ -571,23 +688,6 @@
       border-bottom-right-radius: 4px;
       font-weight: 500;
     }
-
-    /* mock: estadísticas */
-    .mock-stats {
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      height: 90px;
-      padding: 0 6px;
-    }
-    .mock-stats .barra {
-      flex: 1;
-      border-radius: 6px 6px 0 0;
-      background: var(--age-primary);
-    }
-    .mock-stats .barra:nth-child(2) { background: var(--age-primary-light); }
-    .mock-stats .barra:nth-child(3) { background: var(--age-navy-soft); }
-    .mock-stats .barra:nth-child(4) { background: var(--age-primary-light); }
 
     @media (max-width: 820px) {
       .showcase-row,
@@ -888,12 +988,13 @@
         <a href="/subida-pdf-esquemas/" class="age-btn age-btn-outline">Generar un esquema</a>
       </div>
       <div class="showcase-visual" style="background: #eef1fb;">
-        <div class="showcase-mock mock-esquema">
-          <div class="mock-linea"></div>
-          <div class="mock-linea sub"></div>
-          <div class="mock-linea sub"></div>
-          <div class="mock-linea corta"></div>
-          <div class="mock-linea sub"></div>
+        <div class="showcase-mock mock-esquema-real">
+          <div class="eq-titulo">Ejemplo: La Constitución Española</div>
+          <div class="eq-h2"><span class="eq-badge">I</span> Título Preliminar</div>
+          <div class="eq-h3"><span class="eq-num">I.1</span> Fundamentos del Estado</div>
+          <div class="eq-h3"><span class="eq-num">I.2</span> La bandera y la capital</div>
+          <div class="eq-h2"><span class="eq-badge">II</span> Derechos y deberes fundamentales</div>
+          <div class="eq-h3"><span class="eq-num">II.1</span> Derechos fundamentales y libertades</div>
         </div>
       </div>
     </div>
@@ -920,13 +1021,20 @@
         <a href="/estadisticas/" class="age-btn age-btn-outline">Ver mis estadísticas</a>
       </div>
       <div class="showcase-visual" style="background: var(--age-primary-soft);">
-        <div class="showcase-mock">
-          <div class="mock-stats">
-            <div class="barra" style="height:40%;"></div>
-            <div class="barra" style="height:75%;"></div>
-            <div class="barra" style="height:55%;"></div>
-            <div class="barra" style="height:90%;"></div>
+        <div class="showcase-mock mock-stats-real">
+          <div class="st-tiempo"><span data-icon="reloj" data-icon-size="14"></span> 14h 32m estudiadas</div>
+          <div class="st-barra">
+            <div class="st-barra-acierto" style="width:62%;"></div>
+            <div class="st-barra-fallo" style="width:28%;"></div>
+            <div class="st-barra-blanco" style="width:10%;"></div>
           </div>
+          <div class="st-leyenda">
+            <span><i class="dot acierto"></i>Aciertos 62%</span>
+            <span><i class="dot fallo"></i>Fallos 28%</span>
+            <span><i class="dot blanco"></i>Blanco 10%</span>
+          </div>
+          <div class="st-temas"><span>Temas estudiados</span> <strong>32 de 45</strong></div>
+          <div class="st-cobertura"><div class="st-cobertura-fill" style="width:71%;"></div></div>
         </div>
       </div>
     </div>
