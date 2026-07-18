@@ -364,6 +364,8 @@ def resumen():
     ]
     reportes_pendientes = sum(
         1 for _ in db.collection("reportes_preguntas").where("estado", "==", "pendiente").stream()
+    ) + sum(
+        1 for _ in db.collection("mensajes_soporte").where("estado", "==", "pendiente").stream()
     )
     return jsonify({
         "usuarios_totales": total_usuarios,
@@ -1440,6 +1442,51 @@ def reportes_actualizar(rid):
 
 
 # ============================================================
+# Mensajes de soporte (consultas/problemas generales desde Mi Cuenta,
+# sin pregunta asociada -- reusan el mismo permiso "reportes" que los
+# reportes de preguntas, mostrados en la misma pestaña del panel admin)
+# ============================================================
+@bp.route("/admin/api/soporte", methods=["GET"])
+@requiere_permiso("reportes")
+def soporte_listar():
+    estado = request.args.get("estado", "pendiente")
+    consulta = db.collection("mensajes_soporte")
+    if estado and estado != "todos":
+        consulta = consulta.where("estado", "==", estado)
+    mensajes = []
+    for doc in consulta.stream():
+        d = doc.to_dict() or {}
+        mensajes.append({
+            "id": doc.id,
+            "email": d.get("email", ""),
+            "mensaje": d.get("mensaje", ""),
+            "estado": d.get("estado", "pendiente"),
+            "fecha": d.get("fecha", ""),
+        })
+    mensajes.sort(key=lambda m: m.get("fecha", ""), reverse=True)
+    return jsonify({"mensajes": mensajes})
+
+
+@bp.route("/admin/api/soporte/<mid>", methods=["PATCH"])
+@requiere_permiso("reportes")
+def soporte_actualizar(mid):
+    data = request.get_json(silent=True) or {}
+    estado = data.get("estado")
+    if estado not in ("pendiente", "revisado", "descartado"):
+        return jsonify({"error": "Estado no válido"}), 400
+    ref = db.collection("mensajes_soporte").document(mid)
+    if not ref.get().exists:
+        return jsonify({"error": "Mensaje no encontrado"}), 404
+    ref.set({
+        "estado": estado,
+        "revisado_por": g.uid,
+        "fecha_revision": datetime.utcnow().isoformat(),
+    }, merge=True)
+    _registrar_auditoria("soporte_" + estado, mid)
+    return jsonify({"mensaje": "Mensaje actualizado"})
+
+
+# ============================================================
 # Salud del sistema
 # ============================================================
 @bp.route("/admin/api/sistema", methods=["GET"])
@@ -1473,7 +1520,10 @@ def sistema_estado():
                 return sum(1 for _ in consulta.stream())
             except Exception:
                 return 0
-    reportes_pendientes = _contar(db.collection("reportes_preguntas").where("estado", "==", "pendiente"))
+    reportes_pendientes = (
+        _contar(db.collection("reportes_preguntas").where("estado", "==", "pendiente"))
+        + _contar(db.collection("mensajes_soporte").where("estado", "==", "pendiente"))
+    )
     try:
         banner_doc = db.collection("config").document("banner").get()
         banner_activo = bool((banner_doc.to_dict() or {}).get("activo")) if banner_doc.exists else False

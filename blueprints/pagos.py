@@ -75,6 +75,23 @@ def eliminar_cuenta():
     return jsonify({"mensaje": "Cuenta eliminada"})
 
 
+@bp.route("/mi-cuenta/contactar", methods=["POST"])
+@requiere_login(db)
+def contactar_soporte():
+    data = request.get_json(silent=True) or {}
+    mensaje = (data.get("mensaje") or "").strip()
+    if not mensaje:
+        return jsonify({"error": "Escribe tu consulta antes de enviarla."}), 400
+    db.collection("mensajes_soporte").document().set({
+        "uid": g.uid,
+        "email": g.email,
+        "mensaje": mensaje[:2000],
+        "estado": "pendiente",
+        "fecha": datetime.utcnow().isoformat(),
+    })
+    return jsonify({"mensaje": "Hemos recibido tu mensaje. Te responderemos por email."}), 201
+
+
 @bp.route("/crear-sesion-checkout", methods=["POST"])
 @requiere_login(db)
 def crear_sesion_checkout():

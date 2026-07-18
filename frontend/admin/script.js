@@ -1026,11 +1026,22 @@ async function abrirUsuario(uid) {
 }
 
 // ===== Reportes =====
+// La pestaña "Reportes" agrupa dos cosas distintas que comparten el mismo
+// permiso ("reportes"): los reportes de una pregunta de test concreta
+// (cruzados con el banco oficial) y los mensajes de soporte generales que
+// un usuario manda desde Mi Cuenta (solo texto libre, sin pregunta
+// asociada) -- de ahí el selector de vista para no mezclarlos en una
+// misma lista con campos tan distintos.
 let estadoReportes = "pendiente";
+let vistaReportes = "preguntas";
 async function renderReportes() {
   const panel = document.getElementById("panel-reportes");
   panel.innerHTML = `
     <div class="age-card admin-filtros">
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button type="button" class="age-btn ${vistaReportes === "preguntas" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="r-vista-preguntas">Preguntas reportadas</button>
+        <button type="button" class="age-btn ${vistaReportes === "soporte" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="r-vista-soporte">Mensajes de soporte</button>
+      </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">Estado
         <select id="r-estado" class="age-input" style="max-width:180px;">
           <option value="pendiente">Pendientes</option>
@@ -1043,8 +1054,11 @@ async function renderReportes() {
     <div class="age-card"><div id="reportes-lista"><p class="admin-cargando">Cargando…</p></div></div>`;
   const sel = panel.querySelector("#r-estado");
   sel.value = estadoReportes;
-  sel.addEventListener("change", () => { estadoReportes = sel.value; cargarReportes(); });
-  cargarReportes();
+  const cargarVistaActual = () => (vistaReportes === "soporte" ? cargarSoporte() : cargarReportes());
+  sel.addEventListener("change", () => { estadoReportes = sel.value; cargarVistaActual(); });
+  panel.querySelector("#r-vista-preguntas").addEventListener("click", () => { vistaReportes = "preguntas"; renderReportes(); });
+  panel.querySelector("#r-vista-soporte").addEventListener("click", () => { vistaReportes = "soporte"; renderReportes(); });
+  cargarVistaActual();
 }
 
 async function cargarReportes() {
@@ -1095,6 +1109,38 @@ async function cambiarEstadoReporte(id, estado) {
   if (r) { toast(estado === "revisado" ? "Reporte marcado como revisado." : "Reporte descartado."); cargarReportes(); }
 }
 
+async function cargarSoporte() {
+  const cont = document.getElementById("reportes-lista");
+  if (!cont) return;
+  cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
+  const d = await apiGet(`/admin/api/soporte?estado=${estadoReportes}`);
+  if (!d) return;
+  if (!(d.mensajes || []).length) {
+    cont.innerHTML = `<p class="admin-vacio">No hay mensajes en este estado. ${icono("check", 14)}</p>`;
+    return;
+  }
+  const clase = (e) => e === "revisado" ? "admin-estado-revisado" : e === "descartado" ? "admin-estado-descartado" : "admin-estado-pendiente";
+  cont.innerHTML = d.mensajes.map((m) => `
+    <div class="admin-reporte">
+      <div class="admin-reporte-cab">
+        <span class="admin-reporte-estado ${clase(m.estado)}">${escapeHtml(m.estado)}</span>
+        <span class="admin-reporte-meta">${escapeHtml(m.email || "-")} · ${escapeHtml(fechaCorta(m.fecha))}</span>
+      </div>
+      <p class="admin-reporte-motivo">${escapeHtml(m.mensaje)}</p>
+      <div class="admin-reporte-acciones">
+        ${m.estado !== "revisado" ? `<button class="age-btn age-btn-outline admin-mini" data-soporte-revisado="${escapeHtml(m.id)}">Marcar revisado</button>` : ""}
+        ${m.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-soporte-descartar="${escapeHtml(m.id)}">Descartar</button>` : ""}
+      </div>
+    </div>`).join("");
+  cont.querySelectorAll("[data-soporte-revisado]").forEach((b) => b.addEventListener("click", () => cambiarEstadoSoporte(b.dataset.soporteRevisado, "revisado")));
+  cont.querySelectorAll("[data-soporte-descartar]").forEach((b) => b.addEventListener("click", () => cambiarEstadoSoporte(b.dataset.soporteDescartar, "descartado")));
+}
+
+async function cambiarEstadoSoporte(id, estado) {
+  const r = await api("PATCH", `/admin/api/soporte/${id}`, { estado });
+  if (r) { toast(estado === "revisado" ? "Mensaje marcado como revisado." : "Mensaje descartado."); cargarSoporte(); }
+}
+
 // Desde un reporte, localiza la pregunta oficial por su texto y abre el modal
 // de edición ya cargada (si es una pregunta generada por IA que no está en la
 // colección oficial, avisa de que no se puede editar centralmente).
@@ -1120,6 +1166,7 @@ function _etiquetaAccionMapa() {
     temario_anadir_ficha: `${i14("mas")} Añadir ficha`, temario_editar_ficha: `${i14("lapiz")} Editar ficha`,
     temario_borrar_ficha: `${i14("papelera")} Borrar ficha`, publicado: `${i14("check")} Publicar`, borrador: `${i14("lapiz")} A borrador`,
     reporte_revisado: `${i14("check")} Reporte revisado`, reporte_descartado: `${i14("cruz")} Reporte descartado`,
+    soporte_revisado: `${i14("check")} Mensaje de soporte revisado`, soporte_descartado: `${i14("cruz")} Mensaje de soporte descartado`,
   };
 }
 function etiquetaAccion(a) { return _etiquetaAccionMapa()[a] || a; }

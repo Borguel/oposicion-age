@@ -303,4 +303,42 @@ btnConfirmarEliminar.addEventListener("click", async () => {
   }
 });
 
+const btnContacto = document.getElementById("btn-enviar-contacto");
+const campoContacto = document.getElementById("contacto-mensaje");
+const feedbackContacto = document.getElementById("contacto-mensaje-feedback");
+
+btnContacto.addEventListener("click", async () => {
+  const mensaje = campoContacto.value.trim();
+  feedbackContacto.style.display = "none";
+  if (!mensaje) {
+    feedbackContacto.className = "datos-mensaje error";
+    feedbackContacto.textContent = "Escribe tu consulta antes de enviarla.";
+    feedbackContacto.style.display = "block";
+    return;
+  }
+  btnContacto.disabled = true;
+  btnContacto.textContent = "Enviando…";
+  try {
+    const token = await idToken();
+    const res = await fetch(`${BACKEND_URL}/mi-cuenta/contactar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ mensaje })
+    });
+    const datos = await res.json();
+    if (!res.ok) throw new Error(datos.error || "No se pudo enviar tu mensaje.");
+    feedbackContacto.className = "datos-mensaje ok";
+    feedbackContacto.textContent = datos.mensaje || "Mensaje enviado.";
+    feedbackContacto.style.display = "block";
+    campoContacto.value = "";
+  } catch (error) {
+    feedbackContacto.className = "datos-mensaje error";
+    feedbackContacto.textContent = error.message || "No se pudo enviar tu mensaje.";
+    feedbackContacto.style.display = "block";
+  } finally {
+    btnContacto.disabled = false;
+    btnContacto.textContent = "Enviar mensaje";
+  }
+});
+
 iniciar();
