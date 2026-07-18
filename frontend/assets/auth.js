@@ -647,6 +647,89 @@ async function inyectarBannerPrueba(user) {
   });
 }
 
+// Aviso de promoción/descuento temporal, configurable desde el panel de
+// administración (ver blueprints/admin.py + promociones.py). A diferencia
+// de inyectarBannerPrueba (que solo aplica con sesión), este se muestra
+// también a quien navega sin haber iniciado sesión -- es publicidad, no un
+// aviso de cuenta -- y se oculta por completo a quien, con sesión, ya tenga
+// el plan de la promoción activo (pagado o en prueba: planCubre no
+// distingue, igual que el resto del gating de plan.js).
+const CLAVE_BANNER_PROMO_CERRADO = "age_banner_promo_cerrado";
+let _promoIntervalo = null;
+
+function formatearCuentaAtrasPromo(msRestantes) {
+  const totalSeg = Math.max(0, Math.floor(msRestantes / 1000));
+  const d = Math.floor(totalSeg / 86400);
+  const h = Math.floor((totalSeg % 86400) / 3600);
+  const m = Math.floor((totalSeg % 3600) / 60);
+  const s = totalSeg % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return [[d, "d"], [h, "h"], [m, "m"], [s, "s"]]
+    .map(([valor, unidad]) => `<span class="age-banner-promo-chip">${pad(valor)}${unidad}</span>`)
+    .join('<span class="age-banner-promo-sep">:</span>');
+}
+
+async function inyectarBannerPromocion(user) {
+  const existente = document.querySelector(".age-banner-promo");
+  if (existente) existente.remove();
+  if (_promoIntervalo) { clearInterval(_promoIntervalo); _promoIntervalo = null; }
+  if (sessionStorage.getItem(CLAVE_BANNER_PROMO_CERRADO) === "1") return;
+
+  let promo;
+  try {
+    const resp = await fetch(`${BACKEND_URL}/promocion-activa`);
+    if (!resp.ok) return;
+    promo = await resp.json();
+  } catch (e) { return; }
+  if (!promo.activo) return;
+
+  if (user) {
+    const [{ obtenerPlan, planCubre }] = await Promise.all([import("/assets/plan.js")]);
+    const perfil = await obtenerPlan();
+    if (planCubre(perfil.plan, promo.plan)) return; // ya tiene este plan (o uno mejor): no le sale nada
+  }
+
+  const nombrePlan = promo.plan === "premium" ? "Premium" : "Básico";
+  const mensaje = promo.mensaje
+    || `${promo.descuento_pct}% de descuento en el plan ${nombrePlan}${promo.duracion_texto ? " durante " + promo.duracion_texto : ""}`;
+
+  const banner = document.createElement("div");
+  banner.className = "age-banner-promo";
+  banner.setAttribute("role", "status");
+  banner.innerHTML = `
+    <span class="age-banner-promo-texto">${icono("destellos", 16)} <strong>${escapeHtmlBuscador(mensaje)}</strong></span>
+    <span class="age-banner-promo-cuenta" id="age-promo-cuenta" aria-hidden="true"></span>
+    <div class="age-banner-promo-acciones">
+      <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>
+      <button type="button" class="age-banner-promo-cerrar" id="age-promo-cerrar" aria-label="Cerrar aviso">${icono("cruz", 15)}</button>
+    </div>
+  `;
+  document.body.prepend(banner);
+
+  document.getElementById("age-promo-cerrar").addEventListener("click", () => {
+    sessionStorage.setItem(CLAVE_BANNER_PROMO_CERRADO, "1");
+    if (_promoIntervalo) clearInterval(_promoIntervalo);
+    banner.remove();
+  });
+
+  if (promo.fecha_fin) {
+    const cuentaEl = document.getElementById("age-promo-cuenta");
+    const fin = new Date(promo.fecha_fin).getTime();
+    const actualizar = () => {
+      const restante = fin - Date.now();
+      if (restante <= 0) {
+        clearInterval(_promoIntervalo);
+        _promoIntervalo = null;
+        banner.remove();
+        return;
+      }
+      cuentaEl.innerHTML = formatearCuentaAtrasPromo(restante);
+    };
+    actualizar();
+    _promoIntervalo = setInterval(actualizar, 1000);
+  }
+}
+
 // Páginas a las que solo se llega pinchando algo dentro de Zona Opositor
 // (generar test, herramientas IA, mis tests...) -- en todas ellas se ofrece
 // un enlace directo de vuelta, para no depender de la navegación principal
@@ -712,6 +795,7 @@ function inyectarNav(user) {
   inyectarVolverZonaOpositor(user);
   inyectarEnlaceAdmin(user);
   inyectarBannerGlobal();
+  inyectarBannerPromocion(user);
   inyectarWidgetTutor(user);
 }
 

@@ -1205,10 +1205,31 @@ async function renderLimites() {
   });
 }
 
+// Formato "datetime-local" (sin segundos, hora local del navegador) <->
+// ISO en UTC que espera el backend (planes.py/promociones.py parsean con
+// datetime.fromisoformat). Vive aquí porque solo lo usa el formulario de
+// promoción; si otro panel necesitara lo mismo, se movería a un helper
+// compartido.
+function isoAInputLocal(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function inputLocalAIso(valor) {
+  if (!valor) return "";
+  const d = new Date(valor);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 19);
+}
+
 async function renderSistema() {
   const panel = document.getElementById("panel-sistema");
   panel.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
-  const [sis, banner] = await Promise.all([apiGet("/admin/api/sistema"), apiGet("/admin/api/banner")]);
+  const [sis, banner, promo] = await Promise.all([
+    apiGet("/admin/api/sistema"), apiGet("/admin/api/banner"), apiGet("/admin/api/promocion"),
+  ]);
   if (!sis) return;
   const diag = sis.diagnostico || {};
   const servicios = (sis.servicios || []).map((s) => {
@@ -1226,6 +1247,7 @@ async function renderSistema() {
     </tr>`;
   }).join("");
   const b = banner || { activo: false, texto: "", tipo: "info" };
+  const p = promo || { activo: false, plan: "premium", descuento_pct: 0, duracion_texto: "", fecha_fin: "", stripe_promotion_code: "", mensaje: "" };
   // Panel de diagnóstico: semáforo global + cosas a vigilar.
   const todoOk = diag.todo_ok !== false;
   const avisos = [];
@@ -1256,6 +1278,28 @@ async function renderSistema() {
         <option value="urgente" ${b.tipo === "urgente" ? "selected" : ""}>Urgente (rojo)</option>
       </select>
       <button class="age-btn age-btn-primary" id="ban-guardar" style="margin-top:12px;">Guardar aviso</button>
+    </div>
+    <div class="age-card admin-bloque">
+      <h3>${icono("destellos", 17)} Promoción / descuento temporal</h3>
+      <p class="admin-reporte-meta">Muestra un banner con cuenta atrás a quien todavía NO tenga el plan elegido (visitantes sin cuenta incluidos). A quien ya lo tenga activo no le sale nada.</p>
+      <label class="admin-toggle" style="margin:8px 0;"><input type="checkbox" id="promo-activo" ${p.activo ? "checked" : ""}> <span>Activar promoción</span></label>
+      <label>Plan al que aplica</label>
+      <select class="age-input" id="promo-plan">
+        <option value="basico" ${p.plan === "basico" ? "selected" : ""}>Básico</option>
+        <option value="premium" ${p.plan === "premium" ? "selected" : ""}>Premium</option>
+      </select>
+      <label>% de descuento (solo para el texto del aviso)</label>
+      <input class="age-input" id="promo-descuento" type="number" min="0" max="100" value="${p.descuento_pct || 0}">
+      <label>Duración del descuento (texto libre, ej. "2 meses")</label>
+      <input class="age-input" id="promo-duracion" maxlength="60" value="${escapeHtml(p.duracion_texto)}" placeholder="Ej. 2 meses">
+      <label>Termina el</label>
+      <input class="age-input" id="promo-fecha-fin" type="datetime-local" value="${isoAInputLocal(p.fecha_fin)}">
+      <label>Código de promoción de Stripe</label>
+      <input class="age-input" id="promo-codigo" maxlength="80" value="${escapeHtml(p.stripe_promotion_code)}" placeholder="Ej. promo_1AbCdE...">
+      <p class="admin-reporte-meta">Créalo antes en el Dashboard de Stripe (Productos → Cupones → Código promocional) y pega aquí su ID: al activarlo, se aplica solo al comprar el plan elegido arriba. Si lo dejas vacío, el aviso se muestra igualmente pero sin descuento automático en el pago.</p>
+      <label>Mensaje del aviso (opcional, si lo dejas vacío se genera uno automático)</label>
+      <input class="age-input" id="promo-mensaje" maxlength="200" value="${escapeHtml(p.mensaje)}" placeholder="Ej. 20% de descuento en Premium durante 2 meses">
+      <button class="age-btn age-btn-primary" id="promo-guardar" style="margin-top:12px;">Guardar promoción</button>
     </div>`;
   panel.querySelector("#ban-guardar").addEventListener("click", async () => {
     const r = await api("PUT", "/admin/api/banner", {
@@ -1264,6 +1308,19 @@ async function renderSistema() {
       tipo: panel.querySelector("#ban-tipo").value,
     });
     if (r) toast(r.activo ? "Aviso activado." : "Aviso guardado (oculto).");
+  });
+  panel.querySelector("#promo-guardar").addEventListener("click", async () => {
+    const fechaFin = panel.querySelector("#promo-fecha-fin").value;
+    const r = await api("PUT", "/admin/api/promocion", {
+      activo: panel.querySelector("#promo-activo").checked,
+      plan: panel.querySelector("#promo-plan").value,
+      descuento_pct: parseInt(panel.querySelector("#promo-descuento").value, 10) || 0,
+      duracion_texto: panel.querySelector("#promo-duracion").value,
+      fecha_fin: inputLocalAIso(fechaFin),
+      stripe_promotion_code: panel.querySelector("#promo-codigo").value,
+      mensaje: panel.querySelector("#promo-mensaje").value,
+    });
+    if (r) toast(r.activo ? "Promoción activada." : "Promoción guardada (oculta).");
   });
 }
 

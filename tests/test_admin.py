@@ -685,6 +685,47 @@ def test_banner_guardar_y_lectura_publica(client, db):
     assert client.get("/banner-global").get_json() == {"activo": False}
 
 
+def test_promocion_guardar_y_lectura_publica(client, db):
+    with _como():
+        r = client.put(
+            "/admin/api/promocion",
+            json={
+                "activo": True, "plan": "premium", "descuento_pct": 20,
+                "duracion_texto": "2 meses", "fecha_fin": "2099-01-01T00:00:00",
+                "stripe_promotion_code": "promo_abc123", "mensaje": "Oferta especial",
+            },
+            headers=_AUTH,
+        )
+    assert r.status_code == 200
+    pub = client.get("/promocion-activa").get_json()
+    assert pub["activo"] is True
+    assert pub["plan"] == "premium"
+    assert pub["descuento_pct"] == 20
+    assert pub["stripe_promotion_code"] == "promo_abc123"
+
+
+def test_promocion_caducada_no_se_expone_aunque_siga_activa(client, db):
+    with _como():
+        client.put(
+            "/admin/api/promocion",
+            json={"activo": True, "plan": "premium", "descuento_pct": 15, "fecha_fin": "2000-01-01T00:00:00"},
+            headers=_AUTH,
+        )
+    assert client.get("/promocion-activa").get_json() == {"activo": False}
+
+
+def test_promocion_desactivada_no_se_expone(client, db):
+    with _como():
+        client.put("/admin/api/promocion", json={"activo": False, "plan": "premium"}, headers=_AUTH)
+    assert client.get("/promocion-activa").get_json() == {"activo": False}
+
+
+def test_promocion_sin_admin_devuelve_403(client, db):
+    with _como(admin=False):
+        r = client.put("/admin/api/promocion", json={"activo": True}, headers=_AUTH)
+    assert r.status_code == 403
+
+
 def test_notas_internas_usuario(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
     with _como():

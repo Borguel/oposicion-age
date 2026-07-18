@@ -24,6 +24,7 @@ from firebase_admin import auth as firebase_auth
 from firebase_setup import db
 from auth_utils import requiere_admin, requiere_permiso, PERMISOS_VALIDOS
 from planes import resolver_plan_efectivo, prueba_activa
+from promociones import leer_promocion, promocion_vigente, PLANES_PROMOCIONABLES
 from banco_fallos import _id_pregunta
 from coste_ia import resumen_coste_usuario
 from oposiciones import OPOSICIONES, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
@@ -1535,6 +1536,62 @@ def banner_publico():
     if not banner["activo"] or not banner["texto"]:
         return jsonify({"activo": False})
     return jsonify(banner)
+
+
+# ============================================================
+# Promoción / descuento temporal
+# ============================================================
+@bp.route("/admin/api/promocion", methods=["GET"])
+@requiere_admin
+def promocion_obtener():
+    return jsonify(leer_promocion())
+
+
+@bp.route("/admin/api/promocion", methods=["PUT"])
+@requiere_admin
+def promocion_guardar():
+    data = request.get_json(silent=True) or {}
+    plan = data.get("plan", "premium")
+    if plan not in PLANES_PROMOCIONABLES:
+        plan = "premium"
+    try:
+        descuento_pct = int(data.get("descuento_pct", 0))
+    except (TypeError, ValueError):
+        descuento_pct = 0
+    descuento_pct = max(0, min(descuento_pct, 100))
+    fecha_fin = str(data.get("fecha_fin", "")).strip()
+    if fecha_fin:
+        try:
+            datetime.fromisoformat(fecha_fin)
+        except ValueError:
+            return jsonify({"error": "Fecha de fin no válida (usa formato ISO, ej. 2026-08-01T23:59:00)"}), 400
+    promo = {
+        "activo": bool(data.get("activo", False)),
+        "plan": plan,
+        "descuento_pct": descuento_pct,
+        "duracion_texto": str(data.get("duracion_texto", "")).strip()[:60],
+        "fecha_fin": fecha_fin,
+        "stripe_promotion_code": str(data.get("stripe_promotion_code", "")).strip()[:80],
+        "mensaje": str(data.get("mensaje", "")).strip()[:200],
+    }
+    db.collection("config").document("promocion").set(promo)
+    _registrar_auditoria(
+        "promocion", "",
+        ("ON: " if promo["activo"] else "OFF: ") + f"{promo['plan']} -{promo['descuento_pct']}%"
+    )
+    return jsonify({"mensaje": "Promoción guardada", **promo})
+
+
+@bp.route("/promocion-activa", methods=["GET"])
+def promocion_publica():
+    """Lectura pública: el frontend decide si mostrarla según el plan del
+    usuario (o si no hay sesión). Solo devuelve datos si sigue vigente --
+    pasada la fecha_fin se comporta como si estuviera desactivada, sin
+    necesidad de que nadie la apague a mano."""
+    promo = leer_promocion()
+    if not promocion_vigente(promo):
+        return jsonify({"activo": False})
+    return jsonify(promo)
 
 
 # ============================================================

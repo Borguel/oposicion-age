@@ -14,6 +14,7 @@ from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usu
 from gestion_cuenta import exportar_datos_usuario, eliminar_cuenta_usuario
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida
 from email_utils import enviar_email_cancelacion_suscripcion
+from promociones import leer_promocion, promocion_vigente
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +100,7 @@ def crear_sesion_checkout():
         # Subscription de Stripe y así los eventos posteriores
         # (customer.subscription.updated/deleted) también sepan a qué
         # oposición pertenecen.
-        session = stripe.checkout.Session.create(
+        kwargs_checkout = dict(
             mode="subscription",
             customer=stripe_customer_id,
             line_items=[{"price": price_id, "quantity": 1}],
@@ -109,6 +110,12 @@ def crear_sesion_checkout():
             metadata={"uid": g.uid, "plan": plan, "oposicion": oposicion},
             subscription_data={"metadata": {"uid": g.uid, "plan": plan, "oposicion": oposicion}}
         )
+        # Descuento activo desde el panel de admin (ver promociones.py):
+        # se aplica solo si la promoción es para ESTE plan y sigue vigente.
+        promo = leer_promocion()
+        if promocion_vigente(promo) and promo.get("plan") == plan and promo.get("stripe_promotion_code"):
+            kwargs_checkout["discounts"] = [{"promotion_code": promo["stripe_promotion_code"]}]
+        session = stripe.checkout.Session.create(**kwargs_checkout)
         return jsonify({"url": session.url})
     except Exception as e:
         logger.exception("Error creando sesión de Stripe Checkout")

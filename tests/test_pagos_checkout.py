@@ -125,6 +125,72 @@ def test_crear_sesion_checkout_usa_oposicion_por_defecto_si_no_se_manda(client, 
         parche.stop()
 
 
+def test_crear_sesion_checkout_aplica_descuento_de_promocion_activa_del_mismo_plan(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_existente_1"})
+    db.sembrar(("config", "promocion"), {
+        "activo": True, "plan": "premium", "descuento_pct": 20,
+        "fecha_fin": "2099-01-01T00:00:00", "stripe_promotion_code": "promo_xyz",
+    })
+    parche = _con_sesion(client)
+    mock_session = MagicMock(url="https://checkout.stripe.com/promo")
+    try:
+        with patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
+            resp = client.post(
+                "/crear-sesion-checkout",
+                json={"plan": "premium", "oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 200
+        _, kwargs = mock_crear_sesion.call_args
+        assert kwargs["discounts"] == [{"promotion_code": "promo_xyz"}]
+    finally:
+        parche.stop()
+
+
+def test_crear_sesion_checkout_no_aplica_descuento_de_otro_plan(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_existente_1"})
+    db.sembrar(("config", "promocion"), {
+        "activo": True, "plan": "premium", "descuento_pct": 20,
+        "fecha_fin": "2099-01-01T00:00:00", "stripe_promotion_code": "promo_xyz",
+    })
+    parche = _con_sesion(client)
+    mock_session = MagicMock(url="https://checkout.stripe.com/sin-promo")
+    try:
+        with patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
+            resp = client.post(
+                "/crear-sesion-checkout",
+                json={"plan": "basico", "oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 200
+        _, kwargs = mock_crear_sesion.call_args
+        assert "discounts" not in kwargs
+    finally:
+        parche.stop()
+
+
+def test_crear_sesion_checkout_no_aplica_descuento_de_promocion_caducada(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_existente_1"})
+    db.sembrar(("config", "promocion"), {
+        "activo": True, "plan": "premium", "descuento_pct": 20,
+        "fecha_fin": "2000-01-01T00:00:00", "stripe_promotion_code": "promo_xyz",
+    })
+    parche = _con_sesion(client)
+    mock_session = MagicMock(url="https://checkout.stripe.com/caducada")
+    try:
+        with patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
+            resp = client.post(
+                "/crear-sesion-checkout",
+                json={"plan": "premium", "oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 200
+        _, kwargs = mock_crear_sesion.call_args
+        assert "discounts" not in kwargs
+    finally:
+        parche.stop()
+
+
 def test_crear_sesion_checkout_propaga_error_de_stripe_como_500(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_existente_1"})
     parche = _con_sesion(client)
