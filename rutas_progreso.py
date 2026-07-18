@@ -228,6 +228,7 @@ def registrar_rutas_progreso(app, db):
         campos_variables = {
             "respuestas_usuario": datos.get("respuestas_usuario", []),
             "marcadas_revision": datos.get("marcadas_revision", []),
+            "marcadas_duda": datos.get("marcadas_duda", []),
             "indice_actual": datos.get("indice_actual", 0),
             "modo_cronometrado": bool(datos.get("modo_cronometrado", False)),
             "tiempo_restante_segundos": datos.get("tiempo_restante_segundos"),

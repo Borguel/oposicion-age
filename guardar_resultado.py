@@ -8,7 +8,7 @@ from utils import calcular_resultado_test
 
 logger = logging.getLogger(__name__)
 
-def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None, oposicion=OPOSICION_POR_DEFECTO, test_id=None):
+def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None, oposicion=OPOSICION_POR_DEFECTO, test_id=None, marcadas_duda=None):
     metadatos = metadatos or {}
     doc_user = db.collection("usuarios").document(usuario_id)
     registrar_actividad_racha(db, usuario_id)
@@ -88,7 +88,8 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
                     "opciones": p.get("opciones"),
                     "explicacion": p.get("explicacion", "Sin explicación."),
                     "tema_id": p.get("tema_id"),
-                    "acierto": (respuestas[i] if i < len(respuestas) else None) == p.get("respuesta_correcta")
+                    "acierto": (respuestas[i] if i < len(respuestas) else None) == p.get("respuesta_correcta"),
+                    "marcada_duda": bool(marcadas_duda[i]) if marcadas_duda and i < len(marcadas_duda) else False,
                 } for i, p in enumerate(contenido)
             ]
         })

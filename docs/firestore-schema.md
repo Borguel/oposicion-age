@@ -68,7 +68,19 @@ Otros campos: `notas_personales`, `resumen_mensual`, `recomendaciones_ia`.
   (`personalizado|oficial|inteligente|repetido|falladas|favoritas`),
   `oposicion`, `estado`, `num_preguntas`, `aciertos`, `fallos`,
   `blancos`, `porcentaje_acierto`, `puntuacion_final`, `tiempo`, `temas`,
-  `resultado` (`aprobado|suspendido`), `preguntas: [...]`.
+  `resultado` (`aprobado|suspendido`), `preguntas: [...]` -- cada
+  pregunta guarda `pregunta`, `respuesta_correcta`, `respuesta_usuario`,
+  `opciones`, `explicacion`, `tema_id`, `acierto` (bool) y `marcada_duda`
+  (bool, `false` por defecto en tests guardados antes de esta
+  funcionalidad) -- si el usuario la marcó como "duda" durante el test,
+  para poder recalcular en el frontend (`resultados-test.js`) la nota
+  alternativa excluyendo esas preguntas, tanto justo al terminar como al
+  volver a ver el resultado desde "Mis Tests". Mientras el test está
+  `en_progreso` (autoguardado) también existe un array paralelo a nivel
+  de documento `marcadas_duda: [bool, ...]` (uno por índice de pregunta,
+  igual que el ya existente pero no documentado `marcadas_revision`),
+  que se traduce al `marcada_duda` por pregunta arriba en cuanto el test
+  se finaliza.
 - `esquemas/{id}` -- `fecha`, `temas`, `oposicion`, `contenido`.
 - `tests_pdf/{id}`, `resumenes_pdf/{id}`, `esquemas_pdf/{id}`,
   `tarjetas_pdf/{id}` -- contenido generado desde un PDF propio, cada uno

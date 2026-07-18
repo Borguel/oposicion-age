@@ -9,6 +9,7 @@ def guardar_test_route(db):
         contenido = datos.get("contenido", [])
         metadatos = datos.get("metadatos", {})
         metadatos["respuestas"] = datos.get("respuestas", [])
+        marcadas_duda = datos.get("marcadas_duda", [])
 
         resultado = guardar_resultado_en_firestore(
             db=db,
@@ -17,7 +18,8 @@ def guardar_test_route(db):
             usuario_id=g.uid,
             metadatos=metadatos,
             oposicion=obtener_oposicion_solicitada(),
-            test_id=datos.get("test_id")
+            test_id=datos.get("test_id"),
+            marcadas_duda=marcadas_duda,
         )
         return jsonify({"mensaje": "Test guardado correctamente"})
 
