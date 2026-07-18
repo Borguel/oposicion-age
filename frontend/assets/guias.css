@@ -173,6 +173,46 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
   border-top: 1px solid var(--age-border);
 }
 
+/* Lista de requisitos de acceso: cada uno con un icono circular a modo de
+   check, para que se lea como una lista de condiciones a cumplir y no como
+   párrafo corrido. */
+.guia-requisitos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+}
+.guia-requisito {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 14px 16px;
+}
+.guia-requisito-icono {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--age-success-bg);
+  color: var(--age-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.guia-requisito-texto {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--age-ink);
+}
+.guia-requisito-texto strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 15px;
+}
+
 .guia-aviso-fuente {
   display: flex;
   gap: 10px;
