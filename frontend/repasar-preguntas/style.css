@@ -78,6 +78,12 @@
   background: var(--age-card);
   color: var(--age-ink);
   font-family: var(--age-font);
+  /* Los títulos de tema son largos -- sin un tope de ancho, el <select>
+     nativo se dimensiona por su opción más larga y se sale de la pantalla
+     en móvil (el texto se recorta con ellipsis, pero el desplegable al
+     abrirse sigue mostrando la opción completa). */
+  max-width: 100%;
+  text-overflow: ellipsis;
 }
 
 .rp-cargando {
@@ -126,16 +132,58 @@
   font-weight: 700;
   color: var(--age-ink);
   line-height: 1.45;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.rp-tarjeta-tema {
-  display: inline-block;
-  font-size: 0.78rem;
-  color: var(--age-ink-faint);
-  background: var(--age-neutral-bg);
-  border-radius: var(--age-radius-pill);
-  padding: 3px 10px;
+.rp-tema-bloque {
   margin-bottom: 14px;
+  max-width: 100%;
+}
+
+.rp-tema-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 10px;
+  border: none;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-neutral-bg);
+  color: var(--age-ink-faint);
+  font-family: var(--age-font);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rp-tema-toggle:hover {
+  color: var(--age-ink-soft);
+}
+
+.rp-tema-chevron {
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.rp-tema-panel {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--age-neutral-bg);
+  border-radius: var(--age-radius-md);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.rp-tema-linea {
+  font-size: 0.82rem;
+  color: var(--age-ink-soft);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.rp-tema-linea:first-child {
+  margin-bottom: 4px;
 }
 
 .rp-opciones {

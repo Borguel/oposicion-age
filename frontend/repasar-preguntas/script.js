@@ -11,6 +11,10 @@ document.querySelectorAll("[data-icon]").forEach((el) => {
 
 let oposicionActual = "";
 let todosLosTemas = [];
+// Bloque + numeración (romano/arábigo) de cada tema, para poder mostrar
+// "Bloque II · Tema 3: ..." bajo cada pregunta -- se calcula una vez al
+// cargar los temas, igual que en Estadísticas.
+let infoTemasPorId = new Map();
 // Cache por pestaña: se pide una sola vez a cada endpoint y el filtro de
 // tema se aplica en el cliente sobre lo ya descargado.
 const cache = { favoritas: null, falladas: null };
@@ -30,9 +34,8 @@ function ocultarAviso() {
   elAviso.style.display = "none";
 }
 
-function tituloTema(temaId) {
-  const tema = todosLosTemas.find((t) => t.id === temaId);
-  return tema ? tema.titulo : null;
+function infoTema(temaId) {
+  return infoTemasPorId.get(temaId) || null;
 }
 
 async function cargarTemas() {
@@ -49,6 +52,19 @@ async function cargarTemas() {
       opt.value = t.id;
       opt.textContent = t.titulo;
       elFiltroTema.appendChild(opt);
+    });
+
+    const { agruparTemasPorBloque } = await import("/assets/temas-numeracion.js");
+    infoTemasPorId = new Map();
+    agruparTemasPorBloque(todosLosTemas).forEach((grupo) => {
+      grupo.temas.forEach((t) => {
+        infoTemasPorId.set(t.id, {
+          numeroRomano: grupo.numeroRomano,
+          bloqueTitulo: grupo.titulo,
+          numeroTema: t.numeroTema,
+          titulo: t.titulo,
+        });
+      });
     });
   } catch (err) {
     console.error("Error cargando temas:", err);
@@ -76,13 +92,26 @@ function tarjetaHTML(pregunta, tipo, indice) {
     </div>
   `).join("");
 
-  const tema = tituloTema(pregunta.tema_id);
+  const tema = infoTema(pregunta.tema_id);
   const badgeFallos = tipo === "falladas"
     ? `<span class="rp-badge-fallos" title="Veces que has fallado esta pregunta">${pregunta.veces_fallada || 1}</span>`
     : "";
   const botonQuitar = tipo === "favoritas"
     ? `<button type="button" class="rp-btn-quitar" data-quitar="${indice}" title="Quitar de favoritas">${icono("papelera", 15)} Quitar</button>`
     : "";
+  // El tema empieza plegado (solo un botón "Ver tema") para no alargar cada
+  // tarjeta con un texto que a veces es largo -- quien quiera verlo lo abre.
+  const temaHTML = tema ? `
+    <div class="rp-tema-bloque">
+      <button type="button" class="rp-tema-toggle" data-tema-toggle aria-expanded="false">
+        <span class="rp-tema-chevron">▾</span> Ver tema
+      </button>
+      <div class="rp-tema-panel" style="display:none;">
+        <div class="rp-tema-linea">Bloque ${tema.numeroRomano}: ${escaparHtml(tema.bloqueTitulo)}</div>
+        <div class="rp-tema-linea">Tema ${tema.numeroTema}: ${escaparHtml(tema.titulo)}</div>
+      </div>
+    </div>
+  ` : "";
 
   return `
     <div class="rp-tarjeta" data-indice="${indice}">
@@ -90,7 +119,7 @@ function tarjetaHTML(pregunta, tipo, indice) {
         ${badgeFallos}
         <div class="rp-tarjeta-pregunta">${escaparHtml(pregunta.pregunta)}</div>
       </div>
-      ${tema ? `<div class="rp-tarjeta-tema">${escaparHtml(tema)}</div>` : ""}
+      ${temaHTML}
       <div class="rp-opciones">${opcionesHTML}</div>
       <div class="rp-tarjeta-acciones">
         <button type="button" class="rp-btn-ver-respuesta" data-ver="${indice}">${icono("ojo", 15)} Ver respuesta correcta</button>
@@ -130,6 +159,16 @@ async function pintarPestaña() {
   }
 
   elLista.innerHTML = listaFiltrada.map((p, i) => tarjetaHTML(p, pestañaActual, i)).join("");
+
+  elLista.querySelectorAll("[data-tema-toggle]").forEach((boton) => {
+    boton.addEventListener("click", () => {
+      const panel = boton.nextElementSibling;
+      const abierto = panel.style.display !== "none";
+      panel.style.display = abierto ? "none" : "block";
+      boton.setAttribute("aria-expanded", String(!abierto));
+      boton.innerHTML = `<span class="rp-tema-chevron">${abierto ? "▾" : "▴"}</span> ${abierto ? "Ver tema" : "Ocultar tema"}`;
+    });
+  });
 
   elLista.querySelectorAll("[data-ver]").forEach((boton) => {
     boton.addEventListener("click", () => {
