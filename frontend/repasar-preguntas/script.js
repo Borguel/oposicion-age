@@ -207,11 +207,9 @@ async function pintarPestaña() {
       const abierto = panel.style.display !== "none";
       panel.style.display = abierto ? "none" : "block";
       boton.innerHTML = abierto ? `${icono("ojo", 15)} Ver respuesta correcta` : `${icono("ojo", 15)} Ocultar respuesta`;
-      if (!abierto) {
-        tarjeta.querySelectorAll(".rp-opcion").forEach((op) => {
-          op.classList.toggle("rp-opcion-correcta", op.dataset.letra === pregunta.respuesta_correcta);
-        });
-      }
+      tarjeta.querySelectorAll(".rp-opcion").forEach((op) => {
+        op.classList.toggle("rp-opcion-correcta", !abierto && op.dataset.letra === pregunta.respuesta_correcta);
+      });
     });
   });
 
