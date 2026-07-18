@@ -43,6 +43,10 @@
   --age-info: #1e56b0;
   --age-info-bg: #e7f0ff;
   --age-neutral-bg: #eef0f3;
+  /* Color propio del icono de racha/fuego: más rojo-anaranjado que
+     --age-primary (que es el ámbar de marca), para que destaque como
+     "llama" y no se confunda con un botón o acento normal de la web. */
+  --age-fuego: #ff5722;
 
   --age-radius-lg: 20px;
   --age-radius-md: 14px;
@@ -88,6 +92,7 @@
   --age-info: #7aa7ff;
   --age-info-bg: rgba(122, 167, 255, 0.16);
   --age-neutral-bg: #232734;
+  --age-fuego: #ff7a50;
 
   --age-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   --age-shadow-hover: 0 16px 36px rgba(0, 0, 0, 0.45);

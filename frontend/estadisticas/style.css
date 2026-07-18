@@ -177,6 +177,10 @@
       margin-bottom: 6px;
     }
 
+    .vistazo-icono[data-icon="fuego"] {
+      color: var(--age-fuego);
+    }
+
     .vistazo-valor {
       font-size: 1.7rem;
       font-weight: 800;
