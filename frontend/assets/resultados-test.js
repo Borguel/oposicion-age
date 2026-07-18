@@ -156,8 +156,9 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     let clase = "fallo";
     if (seleccion === correcta) clase = "acierto";
     else if (seleccion === null || seleccion === undefined) clase = "blanco";
+    const claseCompleta = marcadasDuda[i] ? `${clase} duda` : clase;
 
-    detalleHTML += `<div class="${clase}">
+    detalleHTML += `<div class="${claseCompleta}">
       <div class="pregunta-en-negrita">${i + 1}. ${escaparHtml(quitarNumeracion(p.pregunta))}</div>`;
     for (const letra in p.opciones) {
       let tipoRespuesta = "detalle-opcion";
@@ -284,6 +285,7 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
           <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="acierto" checked> ${icono("check", 14)} Aciertos</label>
           <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="fallo" checked> ${icono("cruz", 14)} Fallos</label>
           <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="blanco" checked> ${icono("pausa", 14)} En blanco</label>
+          <label class="resultado-filtro-opcion"><input type="checkbox" data-filtro-valor="duda"> ${icono("pregunta", 14)} Dudosas</label>
         </div>
       </div>
     </div>
@@ -312,14 +314,26 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
   const panelFiltro = contenedor.querySelector("#panel-filtro-preguntas");
   const labelFiltro = contenedor.querySelector("#filtro-preguntas-label");
   const checksFiltro = Array.from(contenedor.querySelectorAll("[data-filtro-valor]"));
-  const ETIQUETA_FILTRO = { acierto: "Aciertos", fallo: "Fallos", blanco: "En blanco" };
+  const ETIQUETA_FILTRO = { acierto: "Aciertos", fallo: "Fallos", blanco: "En blanco", duda: "Dudosas" };
 
+  // "duda" no es una categoría de corrección (acierto/fallo/blanco son
+  // excluyentes entre sí y cubren el 100% de las preguntas) sino una marca
+  // adicional que puede combinarse con cualquiera de ellas, así que se trata
+  // aparte: cuando está marcada, restringe (AND) en vez de sumar (OR) al
+  // conjunto de categorías activas.
   function aplicarFiltroPreguntas() {
     const activos = checksFiltro.filter((c) => c.checked).map((c) => c.dataset.filtroValor);
-    const todas = activos.length === 0 || activos.length === checksFiltro.length;
-    labelFiltro.textContent = todas ? "Todas las preguntas" : activos.map((v) => ETIQUETA_FILTRO[v]).join(", ");
+    const coreActivos = activos.filter((v) => v !== "duda");
+    const soloDudas = activos.includes("duda");
+    const todasCategorias = coreActivos.length === 0 || coreActivos.length === checksFiltro.length - 1;
+    const etiquetas = [];
+    if (!todasCategorias) etiquetas.push(...coreActivos.map((v) => ETIQUETA_FILTRO[v]));
+    if (soloDudas) etiquetas.push("Dudosas");
+    labelFiltro.textContent = etiquetas.length ? etiquetas.join(", ") : "Todas las preguntas";
     contenedor.querySelectorAll(".lista-detalle-preguntas > div").forEach((item) => {
-      item.style.display = todas || activos.some((v) => item.classList.contains(v)) ? "block" : "none";
+      const coincideCategoria = todasCategorias || coreActivos.some((v) => item.classList.contains(v));
+      const coincideDuda = !soloDudas || item.classList.contains("duda");
+      item.style.display = coincideCategoria && coincideDuda ? "block" : "none";
     });
   }
 

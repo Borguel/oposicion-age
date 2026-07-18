@@ -150,12 +150,17 @@ function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudad
 
 function confirmarFinalizar() {
   const sinContestar = respuestasUsuario.filter(r => r === null).length;
+  const numDudasSinResolver = marcadasDuda.filter(Boolean).length;
+  const avisos = [];
+  if (sinContestar > 0) avisos.push(`has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar`);
+  if (numDudasSinResolver > 0) avisos.push(`has marcado ${numDudasSinResolver} pregunta${numDudasSinResolver > 1 ? 's' : ''} como duda${numDudasSinResolver > 1 ? 's' : ''}`);
+  const mensaje = avisos.length
+    ? avisos.join(' y ').replace(/^./, (c) => c.toUpperCase()) + '.'
+    : '¿Quieres finalizar el test y ver los resultados?';
   Swal.fire({
     icon: 'question',
     title: '¿Deseas finalizar el test?',
-    text: sinContestar > 0
-      ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
-      : '¿Quieres finalizar el test y ver los resultados?',
+    text: mensaje,
     showCancelButton: true,
     confirmButtonText: 'Sí, corregir',
     cancelButtonText: 'Seguir revisando',
@@ -236,6 +241,10 @@ async function mostrarPregunta(i) {
     });
   });
   document.getElementById("btn-marcar-duda").addEventListener("click", function() {
+    if (!marcadasDuda[i] && (respuestasUsuario[i] === null || respuestasUsuario[i] === undefined)) {
+      Swal.fire({ icon: "info", title: "Responde antes de marcarla", text: "Debes contestar esta pregunta antes de poder marcarla como duda." });
+      return;
+    }
     marcadasDuda[i] = !marcadasDuda[i];
     this.classList.toggle("activa", marcadasDuda[i]);
     import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {

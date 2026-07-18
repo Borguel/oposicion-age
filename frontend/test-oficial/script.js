@@ -535,6 +535,10 @@ async function obtenerAuthHeaders() {
         });
       });
       document.getElementById("btn-marcar-duda").addEventListener("click", function() {
+        if (!marcadasDuda[i] && (respuestasUsuario[i] === null || respuestasUsuario[i] === undefined)) {
+          Swal.fire({ icon: "info", title: "Responde antes de marcarla", text: "Debes contestar esta pregunta antes de poder marcarla como duda." });
+          return;
+        }
         marcadasDuda[i] = !marcadasDuda[i];
         this.classList.toggle("activa", marcadasDuda[i]);
         import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
@@ -604,8 +608,12 @@ async function obtenerAuthHeaders() {
           mostrarPregunta(i + 1);
         } else {
           const sinContestar = respuestasUsuario.filter(r => r === null).length;
-          let mensaje = sinContestar > 0
-            ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+          const numDudasSinResolver = marcadasDuda.filter(Boolean).length;
+          const avisos = [];
+          if (sinContestar > 0) avisos.push(`has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar`);
+          if (numDudasSinResolver > 0) avisos.push(`has marcado ${numDudasSinResolver} pregunta${numDudasSinResolver > 1 ? 's' : ''} como duda${numDudasSinResolver > 1 ? 's' : ''}`);
+          let mensaje = avisos.length
+            ? avisos.join(' y ').replace(/^./, (c) => c.toUpperCase()) + '.'
             : '¿Quieres finalizar el test y ver los resultados?';
           Swal.fire({
             icon: 'question',
@@ -660,8 +668,12 @@ async function obtenerAuthHeaders() {
       if (!btnFinalizar) return;
       btnFinalizar.addEventListener("click", () => {
         const sinContestar = respuestasUsuario.filter(r => r === null).length;
-        let mensaje = sinContestar > 0
-          ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+        const numDudasSinResolver = marcadasDuda.filter(Boolean).length;
+        const avisos = [];
+        if (sinContestar > 0) avisos.push(`has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar`);
+        if (numDudasSinResolver > 0) avisos.push(`has marcado ${numDudasSinResolver} pregunta${numDudasSinResolver > 1 ? 's' : ''} como duda${numDudasSinResolver > 1 ? 's' : ''}`);
+        let mensaje = avisos.length
+          ? avisos.join(' y ').replace(/^./, (c) => c.toUpperCase()) + '.'
           : '¿Quieres finalizar el test y ver los resultados?';
         Swal.fire({
           icon: 'question',
