@@ -391,6 +391,7 @@ async function obtenerAuthHeaders() {
       iniciarTemporizador();
       document.getElementById("navegador-preguntas").style.display = "flex";
       mostrarPregunta(indicePreguntaActual);
+      import("/assets/onboarding-tour.js").then(({ mostrarTourTest }) => mostrarTourTest());
     }
 
     document.getElementById("form-generar-test").addEventListener("submit", async function(e) {

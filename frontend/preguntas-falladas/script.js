@@ -184,6 +184,7 @@ async function obtenerAuthHeaders() {
         document.getElementById("navegador-preguntas").style.display = "flex";
 
         mostrarPregunta(indicePreguntaActual);
+        import("/assets/onboarding-tour.js").then(({ mostrarTourTest }) => mostrarTourTest());
       } catch (error) {
         clearInterval(intervalCarga);
         mostrarAviso(`<span class="icono-inline">${icono("cruz", 16)} Error buscando preguntas falladas. Intenta más tarde.</span>`);

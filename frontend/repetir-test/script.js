@@ -563,6 +563,7 @@ window.addEventListener("load", async () => {
       iniciarTemporizador();
       document.getElementById("navegador-preguntas").style.display = "flex";
       mostrarPregunta(0);
+      import("/assets/onboarding-tour.js").then(({ mostrarTourTest }) => mostrarTourTest());
       return;
     }
 
@@ -617,6 +618,7 @@ window.addEventListener("load", async () => {
     iniciarTemporizador();
     document.getElementById("navegador-preguntas").style.display = "flex";
     mostrarPregunta(0);
+    import("/assets/onboarding-tour.js").then(({ mostrarTourTest }) => mostrarTourTest());
   } catch (err) {
     console.error("Error:", err);
     document.getElementById("contenedor-test").innerHTML = "<p>Error al cargar el test.</p>";

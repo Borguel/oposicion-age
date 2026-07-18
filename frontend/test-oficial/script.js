@@ -455,6 +455,7 @@ async function obtenerAuthHeaders() {
         iniciarTemporizador();
         document.getElementById("navegador-preguntas").style.display = "flex";
         mostrarPregunta(indicePreguntaActual);
+        import("/assets/onboarding-tour.js").then(({ mostrarTourTest }) => mostrarTourTest());
       } catch (error) {
         clearInterval(intervalCarga);
         const contenedorTest = document.getElementById('contenedor-test');
