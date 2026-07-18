@@ -122,6 +122,46 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
 .cf-tool-card-desc { font-size: 13.5px; color: var(--age-ink-soft); line-height: 1.5; }
 .cf-tool-card-cta { margin-top: auto; font-size: 13.5px; font-weight: 700; color: var(--age-primary-dark); }
 
+/* Mockup: menú de Herramientas IA (lista vertical de tarjetas) */
+.cf-menu-preview { display: flex; flex-direction: column; gap: 10px; }
+.cf-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 14px 16px;
+}
+.cf-menu-item--destacado {
+  background: linear-gradient(135deg, var(--age-primary-soft), var(--age-card) 70%);
+  border-color: var(--age-primary-light);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.cf-menu-item-badge {
+  position: absolute;
+  top: 12px; right: 14px;
+  font-size: 11px; font-weight: 800;
+  background: var(--age-primary); color: #1b1200;
+  padding: 3px 10px; border-radius: 999px;
+}
+.cf-menu-item-icono {
+  width: 34px; height: 34px; flex-shrink: 0;
+  border-radius: var(--age-radius-sm);
+  display: flex; align-items: center; justify-content: center;
+}
+.cf-menu-item-icono--test { background: var(--age-primary-soft); color: var(--age-primary-dark, var(--age-ink)); }
+.cf-menu-item-icono--resumen { background: #e7effe; color: #2f5fd6; }
+.cf-menu-item-icono--esquema { background: #f0eafd; color: #7c4fd1; }
+.cf-menu-item-icono--tarjetas { background: #fde9f2; color: #d1467f; }
+.cf-menu-item-icono--chat { background: #e3f7f0; color: #1c9c78; }
+.cf-menu-item-titulo { font-weight: 700; font-size: 14.5px; }
+.cf-menu-item-desc { font-size: 13px; color: var(--age-ink-soft); }
+.cf-menu-item-cta { font-size: 12.5px; font-weight: 700; color: var(--age-primary-dark); }
+
 /* Pasos numerados */
 .cf-pasos { list-style: none; margin: 16px 0; padding: 0; counter-reset: cf-paso; }
 .cf-paso {
@@ -204,21 +244,17 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
   font-style: italic;
 }
 
-/* Capturas reales de la app (en vez de mockups dibujados): se muestran a
-   tamaño de móvil, centradas, dentro del mismo marco .cf-mockup. */
-.cf-mockup-cuerpo img {
-  display: block;
-  width: 100%;
-  border-radius: var(--age-radius-sm);
-}
-.cf-mockup--telefono {
-  max-width: 380px;
-  margin-left: auto;
-  margin-right: auto;
-}
-.cf-mockup--telefono .cf-mockup-cuerpo { padding: 0; background: var(--age-card); }
-
 /* Mockup: chat de Tu Tutor */
+.cf-chat-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--age-border);
+}
+.cf-chat-cabecera-titulo { font-weight: 700; font-size: 14.5px; }
+.cf-chat-cabecera-sub { font-size: 12px; color: var(--age-ink-soft); }
 .cf-chat { display: flex; flex-direction: column; gap: 12px; }
 .cf-chat-fila { display: flex; gap: 10px; align-items: flex-start; }
 .cf-chat-fila--usuario { justify-content: flex-end; }
@@ -298,6 +334,38 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
   font-size: 11.5px; font-weight: 800; flex-shrink: 0;
 }
 .cf-opcion-mock--marcada .cf-opcion-mock-letra { background: var(--age-primary); color: #1b1200; }
+
+/* Mockup: detalle de resultados con explicación */
+.cf-resultado-pregunta {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 16px 18px;
+}
+.cf-resultado-enunciado { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+.cf-resultado-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: var(--age-radius-sm);
+  font-size: 13.5px;
+  border: 1.5px solid;
+}
+.cf-resultado-opcion--correcta { border-color: var(--age-success); background: var(--age-success-bg); color: var(--age-success); }
+.cf-resultado-opcion--incorrecta { border-color: var(--age-danger); background: var(--age-danger-bg); color: var(--age-danger); }
+.cf-resultado-opcion span[data-icon] { flex-shrink: 0; margin-top: 1px; }
+.cf-resultado-acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.cf-resultado-boton {
+  font-size: 12.5px; font-weight: 700;
+  padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--age-border); color: var(--age-ink-soft);
+}
+.cf-resultado-boton--tutor {
+  background: var(--age-primary-soft); border-color: var(--age-primary-light);
+  color: var(--age-primary-dark, var(--age-ink));
+}
 
 /* Mockup: subida de PDF */
 .cf-upload-mock {

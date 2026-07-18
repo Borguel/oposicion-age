@@ -64,27 +64,55 @@
     </div>
 
     <h2><span class="cf-h2-icono" data-icon="ajustes" data-icon-size="20"></span>1. Configura tu test</h2>
-    <div class="cf-mockup cf-mockup--telefono">
+    <div class="cf-mockup">
       <div class="cf-mockup-barra">
         <span class="cf-mockup-punto"></span><span class="cf-mockup-punto"></span><span class="cf-mockup-punto"></span>
         <span class="cf-mockup-url">dominatuopo.com/test-personalizado</span>
       </div>
       <div class="cf-mockup-cuerpo">
-        <img src="/assets/capturas/test-personalizado-config.jpg" alt="Captura de la pantalla de configuración de Test Personalizado: número de preguntas, temas por bloque y reparto" width="760" height="1314" />
+        <div class="cf-pregunta-mock" style="margin-bottom:10px;">
+          <div class="cf-pregunta-mock-cabecera" style="margin-bottom:6px;">Número de preguntas: <span style="font-weight:400;">10</span></div>
+          <div class="cf-opcion-mock" style="justify-content:space-between;">
+            <span>Activar modo examen cronometrado</span>
+          </div>
+        </div>
+        <div class="cf-pregunta-mock" style="margin-bottom:10px;">
+          <div class="cf-pregunta-mock-cabecera" style="margin-bottom:6px;">Selecciona uno o varios temas</div>
+          <div class="cf-opcion-mock"><span class="cf-opcion-mock-letra">&nbsp;</span> I. Organización del Estado</div>
+          <div class="cf-opcion-mock"><span class="cf-opcion-mock-letra">&nbsp;</span> II. Unión Europea</div>
+          <div class="cf-opcion-mock cf-opcion-mock--marcada"><span class="cf-opcion-mock-letra">✓</span> III. Políticas públicas</div>
+          <div class="cf-opcion-mock"><span class="cf-opcion-mock-letra">&nbsp;</span> IV. Derecho administrativo general</div>
+        </div>
+        <div class="cf-pregunta-mock">
+          <div class="cf-pregunta-mock-cabecera" style="margin-bottom:6px;">Reparto de preguntas entre los temas elegidos</div>
+          <div class="cf-opcion-mock cf-opcion-mock--marcada"><span class="cf-opcion-mock-letra">●</span> Equitativo — mismo número por tema</div>
+          <div class="cf-opcion-mock"><span class="cf-opcion-mock-letra">&nbsp;</span> Según el examen real — pondera por lo que más cae</div>
+        </div>
       </div>
-      <p class="cf-mockup-nota">Captura real de la pantalla de configuración.</p>
     </div>
 
     <h2><span class="cf-h2-icono" data-icon="pregunta" data-icon-size="20"></span>2. Responde el test</h2>
-    <div class="cf-mockup cf-mockup--telefono">
+    <div class="cf-mockup">
       <div class="cf-mockup-barra">
         <span class="cf-mockup-punto"></span><span class="cf-mockup-punto"></span><span class="cf-mockup-punto"></span>
         <span class="cf-mockup-url">dominatuopo.com/test-personalizado</span>
       </div>
       <div class="cf-mockup-cuerpo">
-        <img src="/assets/capturas/test-pregunta-favorita.jpg" alt="Captura de una pregunta de test con la estrella de favoritos y el marcador de revisión junto al enunciado" width="760" height="1117" />
+        <div class="cf-pregunta-mock">
+          <div class="cf-pregunta-mock-cabecera">
+            <span>7. La excedencia forzosa da derecho a...</span>
+            <span class="cf-pregunta-mock-acciones">
+              <span class="cf-pregunta-mock-boton cf-pregunta-mock-boton--activa" data-icon="estrella" data-icon-size="15" title="Favorita"></span>
+              <span class="cf-pregunta-mock-boton" data-icon="marcador" data-icon-size="15" title="Marcar para revisión"></span>
+            </span>
+          </div>
+          <div class="cf-opcion-mock"><span class="cf-opcion-mock-letra">A</span> Solo la reserva del puesto</div>
+          <div class="cf-opcion-mock cf-opcion-mock--marcada"><span class="cf-opcion-mock-letra">B</span> Reserva del puesto y cómputo de antigüedad</div>
+          <div class="cf-opcion-mock"><span class="cf-opcion-mock-letra">C</span> Solo el cómputo de antigüedad</div>
+          <div class="cf-opcion-mock"><span class="cf-opcion-mock-letra">D</span> Ninguna de las anteriores</div>
+        </div>
       </div>
-      <p class="cf-mockup-nota">La estrella (arriba a la izquierda del enunciado) guarda la pregunta en favoritas; el icono de al lado la marca para revisarla solo en este test.</p>
+      <p class="cf-mockup-nota">La estrella (activada aquí en naranja) guarda la pregunta en favoritas; el icono de al lado la marca para revisarla solo en este test.</p>
     </div>
 
     <h2><span class="cf-h2-icono" data-icon="grafico" data-icon-size="20"></span>3. Revisa tus resultados</h2>
@@ -94,15 +122,27 @@
       pregunta del detalle muestra la explicación de por qué la respuesta correcta lo es y por qué las
       demás no, con un acceso directo para preguntarle a Tu Tutor si algo no te queda claro.
     </p>
-    <div class="cf-mockup cf-mockup--telefono">
+    <div class="cf-mockup">
       <div class="cf-mockup-barra">
         <span class="cf-mockup-punto"></span><span class="cf-mockup-punto"></span><span class="cf-mockup-punto"></span>
         <span class="cf-mockup-url">dominatuopo.com/test-personalizado</span>
       </div>
       <div class="cf-mockup-cuerpo">
-        <img src="/assets/capturas/test-resultado-explicacion.jpg" alt="Captura del detalle de resultados con respuestas correctas e incorrectas resaltadas, explicación y botón para preguntarle a Tu Tutor" width="760" height="1383" />
+        <div class="cf-resultado-pregunta">
+          <div class="cf-resultado-enunciado">1. Según el artículo 142 del TRLGSS, en caso de sociedad disuelta, ¿cómo responden los socios?</div>
+          <div class="cf-resultado-opcion cf-resultado-opcion--incorrecta">
+            <span data-icon="cruz" data-icon-size="13"></span> Responden solidariamente y sin límite alguno.
+          </div>
+          <div class="cf-resultado-opcion cf-resultado-opcion--correcta">
+            <span data-icon="check" data-icon-size="13"></span> Responden solidariamente y hasta el límite del valor de la cuota de liquidación que se les hubiere adjudicado.
+          </div>
+          <div class="cf-resultado-acciones">
+            <span class="cf-resultado-boton">Mostrar explicación</span>
+            <span class="cf-resultado-boton cf-resultado-boton--tutor">Pregúntale a Tu Tutor</span>
+          </div>
+        </div>
       </div>
-      <p class="cf-mockup-nota">Captura real del detalle de resultados, con la explicación de cada pregunta.</p>
+      <p class="cf-mockup-nota">Cada pregunta muestra la opción correcta y la que marcaste, con un acceso directo a Tu Tutor si quieres más detalle.</p>
     </div>
 
     <h2><span class="cf-h2-icono" data-icon="lista" data-icon-size="20"></span>Funciones que quizá no habías visto</h2>
