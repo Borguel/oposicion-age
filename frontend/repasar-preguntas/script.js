@@ -15,6 +15,9 @@ let todosLosTemas = [];
 // "Bloque II · Tema 3: ..." bajo cada pregunta -- se calcula una vez al
 // cargar los temas, igual que en Estadísticas.
 let infoTemasPorId = new Map();
+// Bloques agrupados (con su lista de temas), para poblar el filtro de
+// bloque y, al elegir uno, restringir las opciones del filtro de tema.
+let gruposBloques = [];
 // Cache por pestaña: se pide una sola vez a cada endpoint y el filtro de
 // tema se aplica en el cliente sobre lo ya descargado.
 const cache = { favoritas: null, falladas: null };
@@ -23,6 +26,7 @@ let pestañaActual = "favoritas";
 const elLista = document.getElementById("rp-lista");
 const elAviso = document.getElementById("rp-aviso");
 const elCargando = document.getElementById("rp-cargando");
+const elFiltroBloque = document.getElementById("rp-filtro-bloque");
 const elFiltroTema = document.getElementById("rp-filtro-tema");
 
 function mostrarAviso(texto) {
@@ -38,6 +42,19 @@ function infoTema(temaId) {
   return infoTemasPorId.get(temaId) || null;
 }
 
+function poblarOpcionesTema(bloqueIdFiltro) {
+  elFiltroTema.innerHTML = '<option value="">Todos los temas</option>';
+  const grupos = bloqueIdFiltro ? gruposBloques.filter((g) => g.bloqueId === bloqueIdFiltro) : gruposBloques;
+  grupos.forEach((grupo) => {
+    grupo.temas.forEach((t) => {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = `Tema ${t.numeroTema}: ${t.titulo}`;
+      elFiltroTema.appendChild(opt);
+    });
+  });
+}
+
 async function cargarTemas() {
   try {
     const authHeaders = await obtenerAuthHeaders();
@@ -47,18 +64,20 @@ async function cargarTemas() {
     const res = await fetch(`https://oposicion-age.onrender.com/temas-disponibles?oposicion=${encodeURIComponent(oposicionActual)}`, { headers: authHeaders });
     const datos = await res.json();
     todosLosTemas = datos.temas || [];
-    todosLosTemas.forEach((t) => {
-      const opt = document.createElement("option");
-      opt.value = t.id;
-      opt.textContent = t.titulo;
-      elFiltroTema.appendChild(opt);
-    });
 
     const { agruparTemasPorBloque } = await import("/assets/temas-numeracion.js");
+    gruposBloques = agruparTemasPorBloque(todosLosTemas);
+
     infoTemasPorId = new Map();
-    agruparTemasPorBloque(todosLosTemas).forEach((grupo) => {
+    gruposBloques.forEach((grupo) => {
+      const opt = document.createElement("option");
+      opt.value = grupo.bloqueId;
+      opt.textContent = `Bloque ${grupo.numeroRomano}: ${grupo.titulo}`;
+      elFiltroBloque.appendChild(opt);
+
       grupo.temas.forEach((t) => {
         infoTemasPorId.set(t.id, {
+          bloqueId: grupo.bloqueId,
           numeroRomano: grupo.numeroRomano,
           bloqueTitulo: grupo.titulo,
           numeroTema: t.numeroTema,
@@ -66,6 +85,8 @@ async function cargarTemas() {
         });
       });
     });
+
+    poblarOpcionesTema("");
   } catch (err) {
     console.error("Error cargando temas:", err);
   }
@@ -147,13 +168,20 @@ async function pintarPestaña() {
   const lista = await obtenerLista(pestañaActual);
   elCargando.style.display = "none";
 
+  const bloqueFiltro = elFiltroBloque.value;
   const temaFiltro = elFiltroTema.value;
-  const listaFiltrada = temaFiltro ? lista.filter((p) => p.tema_id === temaFiltro) : lista;
+  let listaFiltrada = lista;
+  if (temaFiltro) {
+    listaFiltrada = listaFiltrada.filter((p) => p.tema_id === temaFiltro);
+  } else if (bloqueFiltro) {
+    listaFiltrada = listaFiltrada.filter((p) => infoTema(p.tema_id)?.bloqueId === bloqueFiltro);
+  }
 
   if (listaFiltrada.length === 0) {
+    const hayFiltro = Boolean(temaFiltro || bloqueFiltro);
     const mensajeVacio = pestañaActual === "favoritas"
-      ? `No tienes preguntas favoritas marcadas${temaFiltro ? " en este tema" : ""}. Marca la estrella ${icono("estrella", 14)} durante cualquier test para guardarlas aquí.`
-      : `No tienes preguntas falladas pendientes${temaFiltro ? " en este tema" : ""}. ¡Buen trabajo!`;
+      ? `No tienes preguntas favoritas marcadas${hayFiltro ? " con este filtro" : ""}. Marca la estrella ${icono("estrella", 14)} durante cualquier test para guardarlas aquí.`
+      : `No tienes preguntas falladas pendientes${hayFiltro ? " con este filtro" : ""}. ¡Buen trabajo!`;
     mostrarAviso(mensajeVacio);
     return;
   }
@@ -223,6 +251,10 @@ document.querySelectorAll(".rp-tab").forEach((boton) => {
   });
 });
 
+elFiltroBloque.addEventListener("change", () => {
+  poblarOpcionesTema(elFiltroBloque.value);
+  pintarPestaña();
+});
 elFiltroTema.addEventListener("change", pintarPestaña);
 
 window.addEventListener("load", async () => {

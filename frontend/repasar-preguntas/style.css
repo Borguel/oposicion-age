@@ -60,15 +60,24 @@
 .rp-filtro-fila {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 20px;
   justify-content: center;
   margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
+.rp-filtro-grupo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .rp-filtro-fila label {
   color: var(--age-ink-soft);
   font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .rp-filtro-fila select {
@@ -78,11 +87,12 @@
   background: var(--age-card);
   color: var(--age-ink);
   font-family: var(--age-font);
-  /* Los títulos de tema son largos -- sin un tope de ancho, el <select>
-     nativo se dimensiona por su opción más larga y se sale de la pantalla
-     en móvil (el texto se recorta con ellipsis, pero el desplegable al
-     abrirse sigue mostrando la opción completa). */
+  /* Los títulos de tema/bloque son largos -- sin un tope de ancho, el
+     <select> nativo se dimensiona por su opción más larga y se sale de la
+     pantalla en móvil (el texto se recorta con ellipsis, pero el
+     desplegable al abrirse sigue mostrando la opción completa). */
   max-width: 100%;
+  min-width: 0;
   text-overflow: ellipsis;
 }
 
@@ -277,6 +287,18 @@
 @media (max-width: 640px) {
   .rp-tabs {
     flex-wrap: wrap;
+  }
+
+  .rp-filtro-fila {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .rp-filtro-grupo {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
   }
 
   .rp-tarjeta {
