@@ -517,12 +517,17 @@ async function calcularNotificaciones() {
     }
     for (const [op, sub] of Object.entries(perfil.suscripciones || {})) {
       if (sub && sub.cancelar_al_final_periodo && sub.current_period_end) {
-        const fecha = new Date(sub.current_period_end).toLocaleDateString("es-ES", { day: "numeric", month: "long" });
-        notis.push({
-          iconoNombre: "salir",
-          texto: `Tu plan en ${op} se cancela el ${fecha}.`,
-          href: "/mi-cuenta/",
-        });
+        const dias = Math.ceil((new Date(sub.current_period_end) - new Date()) / (1000 * 60 * 60 * 24));
+        if (dias <= 3) {
+          const fecha = new Date(sub.current_period_end).toLocaleDateString("es-ES", { day: "numeric", month: "long" });
+          notis.push({
+            iconoNombre: dias <= 1 ? "alerta" : "salir",
+            texto: dias <= 1
+              ? `Tu plan en ${op} se cancela mañana. Reactívalo si quieres seguir con acceso.`
+              : `Tu plan en ${op} se cancela en ${dias} días (${fecha}). Puedes reactivarlo cuando quieras.`,
+            href: "/mi-cuenta/",
+          });
+        }
       }
     }
   } catch (e) { /* sin perfil disponible: se omiten estos avisos, no rompe el resto */ }
