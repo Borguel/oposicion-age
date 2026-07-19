@@ -386,14 +386,23 @@ class TestCosteIaEnHerramientasPdf:
         parche = _con_sesion(client)
         try:
             with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+                # /generar-test-desde-pdf va en streaming SSE: el hilo de fondo
+                # sigue generando lotes en paralelo mientras el cliente todavía
+                # está leyendo eventos, y Werkzeug no drena el generador entero
+                # dentro de client.post() (solo el primer trozo) -- el resto se
+                # consume al llamar a get_data(). Si esa llamada queda fuera del
+                # "with patch", el hilo de fondo puede seguir corriendo ya sin
+                # mock (con DeepSeek real, sin API key) y perder alguna llamada
+                # de un lote que todavía no había terminado, dando un recuento
+                # de coste intermitente por debajo de lo esperado.
                 resp = client.post("/generar-test-desde-pdf", data={
                     "documento_id": documento_sembrado, "num_preguntas": "20"
                 }, headers={"Authorization": "Bearer x"})
+                eventos = _eventos_sse(resp.get_data(as_text=True))
         finally:
             parche.stop()
 
         assert resp.status_code == 200
-        eventos = _eventos_sse(resp.get_data(as_text=True))
         assert eventos[-1]["tipo"] == "fin"
         # num_preguntas=20 con tamano_lote=15 -> 2 lotes; cada lote hace 1
         # llamada de generación + 1 de verificación = 4 llamadas en total.
