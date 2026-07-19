@@ -43,8 +43,30 @@ function detenerObservadorTour() {
   observadorTour = null;
 }
 
+// El bocadillo es position:fixed (coordenadas de viewport, no de página) a
+// propósito -- así no hay que recalcularlo en cada frame de scroll, un solo
+// reposicionamiento basta. Pero si el usuario hace scroll manual (típico en
+// móvil, arrastrando la página antes de leer el paso), el elemento resaltado
+// cambia de posición en el viewport y el bocadillo, al no escuchar el
+// scroll, se queda "flotando" donde se calculó la última vez -- de ahí el
+// efecto de quedarse fijo arriba a la izquierda sin seguir a la página.
+let elementoActivoTour = null;
+
+function onScrollTour() {
+  const bocadillo = document.querySelector(".tour-bocadillo");
+  if (bocadillo && elementoActivoTour && document.body.contains(elementoActivoTour)) {
+    posicionarBocadillo(bocadillo, elementoActivoTour);
+  }
+}
+
+function detenerListenerScrollTour() {
+  window.removeEventListener("scroll", onScrollTour, true);
+  elementoActivoTour = null;
+}
+
 function terminarTour(clave, overlay) {
   detenerObservadorTour();
+  detenerListenerScrollTour();
   document.querySelector(".tour-bocadillo")?.remove();
   document.querySelectorAll(".tour-resaltado").forEach((el) => el.classList.remove("tour-resaltado"));
   overlay?.remove();
@@ -80,6 +102,10 @@ function iniciarPaso(pasos, clave, indice, overlayExistente) {
     if (bocadillo) setTimeout(() => posicionarBocadillo(bocadillo, elemento), 300);
   });
   observadorTour.observe(document.body);
+
+  detenerListenerScrollTour();
+  elementoActivoTour = elemento;
+  window.addEventListener("scroll", onScrollTour, true);
 
   setTimeout(() => mostrarBocadillo(pasos, clave, elemento, paso, indice, overlay), 300);
 }
