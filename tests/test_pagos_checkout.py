@@ -324,6 +324,30 @@ def test_crear_sesion_portal_devuelve_url_de_stripe(client, db):
         parche.stop()
 
 
+def test_crear_sesion_portal_con_customer_huerfano_limpia_el_estado_local(client, db):
+    # El customer guardado puede quedar huérfano igual que en checkout/cancelar
+    # (tras pasar de la clave de test a la de producción): Stripe responde
+    # "No such customer", y como no hay ninguna suscripción real detrás, se
+    # limpia el estado local (customer_id + planes de pago) en vez de dejar
+    # al usuario con un botón que siempre va a fallar.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "stripe_customer_id": "cus_huerfano",
+        "suscripciones": {"AGE": {"plan": "premium", "stripe_subscription_id": "sub_huerfana"}},
+    })
+    parche = _con_sesion(client)
+    try:
+        with patch("blueprints.pagos.stripe.billing_portal.Session.create", side_effect=stripe.InvalidRequestError("No such customer: 'cus_huerfano'", param="customer")):
+            resp = client.post("/crear-sesion-portal", headers={"Authorization": "Bearer x"})
+        assert resp.status_code == 400
+        assert "no hemos encontrado" in resp.get_json()["error"].lower()
+        usuario = db.leer(("usuarios", "u1"))
+        assert "stripe_customer_id" not in usuario
+        assert usuario["suscripciones"]["AGE"]["plan"] == "gratis"
+    finally:
+        parche.stop()
+
+
 def test_crear_sesion_portal_propaga_error_de_stripe_como_500(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_existente_1"})
     parche = _con_sesion(client)

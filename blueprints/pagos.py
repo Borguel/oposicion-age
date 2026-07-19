@@ -6,6 +6,7 @@ import os
 from datetime import date, datetime
 
 import stripe
+from firebase_admin import firestore
 from flask import Blueprint, g, jsonify, request
 
 from firebase_setup import db
@@ -276,7 +277,8 @@ def reactivar_suscripcion():
 @bp.route("/crear-sesion-portal", methods=["POST"])
 @requiere_login(db)
 def crear_sesion_portal():
-    usuario = db.collection("usuarios").document(g.uid).get().to_dict() or {}
+    doc_ref = db.collection("usuarios").document(g.uid)
+    usuario = doc_ref.get().to_dict() or {}
     stripe_customer_id = usuario.get("stripe_customer_id")
     if not stripe_customer_id:
         return jsonify({"error": "Todavía no tienes ninguna suscripción"}), 400
@@ -286,6 +288,18 @@ def crear_sesion_portal():
             return_url=f"{FRONTEND_URL}/mi-cuenta/"
         )
         return jsonify({"url": session.url})
+    except stripe.InvalidRequestError:
+        # El customer guardado quedó huérfano (p. ej. de cuando la web usaba
+        # la clave de pruebas de Stripe) -- no hay ninguna suscripción real
+        # detrás de lo que muestre Firestore, así que se limpia el estado
+        # local para que el usuario pueda volver a contratar un plan desde
+        # cero en vez de quedarse atascado con un botón que siempre falla.
+        logger.warning("stripe_customer_id huérfano para %s (%s); se limpia el estado local", g.uid, stripe_customer_id)
+        doc_ref.update({"stripe_customer_id": firestore.DELETE_FIELD})
+        for oposicion, sub in (usuario.get("suscripciones", {}) or {}).items():
+            if (sub or {}).get("plan", "gratis") != "gratis":
+                actualizar_suscripcion(db, g.uid, oposicion, plan="gratis", subscription_status="canceled", cancelar_al_final_periodo=False)
+        return jsonify({"error": "No hemos encontrado ninguna suscripción de pago activa. Si quieres seguir con Premium o Básico, contrátalo de nuevo desde la página de planes."}), 400
     except Exception as e:
         logger.exception("Error creando sesión del portal de Stripe")
         return jsonify({"error": str(e)}), 500
