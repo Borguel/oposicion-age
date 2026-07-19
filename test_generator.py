@@ -111,10 +111,10 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     contra el que se verifica cada pregunta candidata -- distinto de
     construir_prompt(n), que además incluye las instrucciones de
     generación. Si no se pasa (None), NO se verifica ninguna pregunta y se
-    conserva el comportamiento anterior de esta función: lo usa
-    /generar-test-inteligente (blueprints/test_ia.py, hoy desactivado en
-    el frontend), cuyas preguntas se basan en el conocimiento general del
-    modelo y no en ningún documento concreto contra el que verificar.
+    conserva el comportamiento en el que ninguna pregunta se basa en un
+    documento concreto contra el que verificar (por ejemplo, si algún día
+    se añade un generador basado solo en el conocimiento general del
+    modelo, sin PDF ni temario anclado).
 
     on_progreso(evento), si se pasa, se llama cada vez que un LOTE termina
     de generarse Y VERIFICARSE por completo (con éxito o error), con
@@ -131,8 +131,7 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     está disponible, así que sin on_usage el coste de estas llamadas se
     pierde en silencio (ver AcumuladorTokens en coste_ia.py).
 
-    Antes, /generar-test-inteligente (hoy desactivado en la web) y
-    /generar-test-desde-pdf pedían todo el test de golpe con
+    /generar-test-desde-pdf antes pedía todo el test de golpe con
     max_tokens=min(4000, 300*num_preguntas): a partir de ~13-14 preguntas ese
     tope de 4000 tokens ya se queda corto para el JSON completo
     (pregunta+opciones+explicación ronda 400-600 tokens cada una), y la
@@ -177,9 +176,8 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         if not candidatas:
             return [], None
         if texto_fuente is None:
-            # Sin documento contra el que verificar (p. ej.
-            # /generar-test-inteligente): se acepta la candidata tal cual,
-            # igual que antes de añadir la verificación.
+            # Sin documento contra el que verificar: se acepta la candidata
+            # tal cual, igual que antes de añadir la verificación.
             return candidatas, None
 
         # Se verifica cada candidata del lote EN PARALELO -- en serie

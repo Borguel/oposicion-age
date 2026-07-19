@@ -1,8 +1,8 @@
 // Test Oficial: preguntas reales de exámenes de convocatorias anteriores;
 // el tema es un filtro opcional (sin marcar ninguno = todos los temas).
 // Misma lógica de generación/toma de test/resultados que las demás
-// páginas de test (ver /test-generator/, /test-personalizado/,
-// /test-inteligente/), separada en su propia página para no mezclar el
+// páginas de test (ver /test-generator/, /test-personalizado/),
+// separada en su propia página para no mezclar el
 // selector de tipo de test con el propio formulario de generación.
 import { icono } from "/assets/icons.js";
 

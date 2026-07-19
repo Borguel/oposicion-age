@@ -6,7 +6,6 @@ import { icono } from "/assets/icons.js";
 const TIPO_INFO = {
   personalizado: { iconoHtml: icono("lapiz", 28), label: "Personalizado" },
   oficial: { iconoHtml: icono("edificio", 28), label: "Oficial" },
-  inteligente: { iconoHtml: icono("robot", 28), label: "Inteligente IA" },
   repetido: { iconoHtml: icono("repetir", 28), label: "Repetido" },
   falladas: { iconoHtml: icono("cruz", 28), label: "Preguntas falladas" },
   favoritas: { iconoHtml: icono("estrella", 28), label: "Preguntas favoritas" },
@@ -15,7 +14,6 @@ const TIPO_INFO = {
 const PAGINA_POR_TIPO = {
   personalizado: "/test-personalizado/",
   oficial: "/test-oficial/",
-  inteligente: "/test-inteligente/",
   repetido: "/repetir-test/",
   falladas: "/preguntas-falladas/",
   favoritas: "/preguntas-favoritas/",

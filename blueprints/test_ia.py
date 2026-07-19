@@ -11,8 +11,7 @@ from firebase_setup import db
 from auth_utils import requiere_plan, obtener_oposicion_solicitada
 from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales
-from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, barajar_opciones_pregunta, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales
-from test_generator import generar_preguntas_ia_en_lotes
+from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales
 from generador_preguntas_verificado import generar_test_verificado
 from esquema_generator import generar_esquema
 from deepseek_utils import call_deepseek_api
@@ -221,70 +220,6 @@ def guardar_test_oficial():
         return jsonify({"mensaje": "Test oficial guardado correctamente"}), 200
     except Exception as e:
         logger.exception("Error al guardar test oficial")
-        return jsonify({"error": str(e)}), 500
-
-
-@bp.route("/generar-test-inteligente", methods=["POST"])
-@requiere_plan(db, "basico")
-def generar_test_inteligente():
-    """Decisión intencional: esta ruta está oculta en el frontend (ver
-    limites_uso.py, "hoy desactivado en la web") pero se mantiene aquí a
-    propósito -- no se ha borrado el endpoint de la API por si algún
-    consumidor externo todavía lo usa."""
-    data = request.get_json(silent=True)
-    if not data:
-        return jsonify({"error": "No se ha recibido un cuerpo JSON válido"}), 400
-    temas = data.get("temas", [])
-    try:
-        num_preguntas = max(1, min(100, int(data.get("num_preguntas", 5))))
-    except (TypeError, ValueError):
-        num_preguntas = 5
-    if not temas:
-        return jsonify({"error": "No se han proporcionado temas"}), 400
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "generacion_ia")
-    if not permitido:
-        return jsonify({"error": mensaje_error}), 429
-
-    coleccion = coleccion_temario(g.oposicion)
-    temas_legibles = obtener_titulos_temas_reales(db, coleccion, temas)
-    nombre_oposicion = OPOSICIONES.get(g.oposicion, OPOSICIONES[OPOSICION_POR_DEFECTO])["nombre"]
-
-    def construir_prompt(n):
-        return f"""Actúas como un generador profesional de preguntas tipo test, especializado en la oposición al {nombre_oposicion}.
-Crea EXACTAMENTE {n} preguntas tipo test con el nivel y el estilo de un examen oficial real de esta oposición: técnicas, precisas y basadas en la legislación y el temario oficial vigente sobre estos temas.
-Temas seleccionados: {', '.join(temas_legibles)}
-
-Sigue estrictamente estas normas:
-1. Las preguntas deben ser claras, completas y redactadas en un estilo técnico-formal, citando artículos, leyes o normativa concreta cuando proceda (p. ej. "Según el artículo 62 de la Constitución Española...").
-2. NO uses expresiones como "según el texto", "de acuerdo con lo anterior" o "en el contenido proporcionado": las preguntas se basan en tu conocimiento normativo, no en ningún documento.
-3. Sustituye todas las siglas por su forma completa la primera vez que aparezcan.
-4. Las cuatro opciones deben ser plausibles, basadas en confusiones habituales entre conceptos, plazos, órganos o competencias similares -- evita opciones absurdas o claramente descartables.
-5. Evita preguntas triviales o de cultura general: cada pregunta debe exigir conocimiento normativo o técnico específico del tema.
-6. Prioriza variedad temática entre los temas seleccionados.
-7. La explicación debe repasar TODAS las opciones, una por línea y en orden, con este formato exacto (una frase breve por opción, citando la base normativa si procede): "A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) ...".
-
-Devuelve SOLO un array JSON con este formato exacto, sin texto adicional ni bloques de código:
-[
-  {{
-    "pregunta": "...",
-    "opciones": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
-    "respuesta_correcta": "B",
-    "explicacion": "..."
-  }}
-]
-"""
-    try:
-        preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas)
-        if not preguntas:
-            return jsonify({"error": "Sin respuesta de DeepSeek"}), 500
-        preguntas = [barajar_opciones_pregunta(p) for p in preguntas]
-        resultado = {"test": preguntas}
-        if len(preguntas) < num_preguntas:
-            resultado["advertencia"] = f"Solo se generaron {len(preguntas)} de {num_preguntas} preguntas."
-        registrar_uso(db, g.uid, "generacion_ia", g.plan_actual)
-        return jsonify(resultado)
-    except Exception as e:
-        logger.exception("Error al generar test inteligente")
         return jsonify({"error": str(e)}), 500
 
 

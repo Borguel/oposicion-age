@@ -43,9 +43,8 @@ LIMITES = {
         "premium": ("dia", 80),
     },
     # Generación de esquemas/análisis a partir del TEMARIO (no de un PDF
-    # subido) -- /generar-esquema, /generar-test-inteligente (hoy
-    # desactivado en la web, pero la ruta sigue existiendo),
-    # /analisis-rendimiento. Incluidas en Básico, con cupo bajo a propósito.
+    # subido) -- /generar-esquema, /analisis-rendimiento. Incluidas en
+    # Básico, con cupo bajo a propósito.
     "generacion_ia": {
         "basico": ("dia", 5),
         "premium": ("dia", 60),

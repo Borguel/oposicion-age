@@ -244,7 +244,6 @@ async function iniciarBotonNotificaciones() {
 const PAGINA_POR_TIPO_TEST = {
   personalizado: "/test-personalizado/",
   oficial: "/test-oficial/",
-  inteligente: "/test-inteligente/",
   repetido: "/repetir-test/",
   falladas: "/preguntas-falladas/",
   favoritas: "/preguntas-favoritas/"
@@ -304,7 +303,7 @@ const AVISOS = [
   {
     iconoNombre: "diana",
     titulo: "Repasa lo que más se te resiste",
-    texto: "Identifica tus temas flojos en las estadísticas y genera un test inteligente centrado justo en ellos.",
+    texto: "Identifica tus temas flojos en las estadísticas y genera un Test Personalizado centrado justo en ellos.",
     cta: "Ver mis estadísticas",
     href: "/estadisticas/"
   },

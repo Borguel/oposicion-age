@@ -229,7 +229,7 @@ export async function obtenerAuthHeaders() {
 const NAV_LINKS = [
   { href: "/", label: "Inicio", match: ["/"] },
   { href: "/zona-opositor/", label: "Zona opositor", match: ["/zona-opositor/"] },
-  { href: "/test-generator/", label: "Tests", match: ["/test-generator/", "/test-personalizado/", "/test-oficial/", "/test-inteligente/", "/repetir-test/", "/preguntas-falladas/", "/preguntas-favoritas/", "/mis-tests/"] },
+  { href: "/test-generator/", label: "Tests", match: ["/test-generator/", "/test-personalizado/", "/test-oficial/", "/repetir-test/", "/preguntas-falladas/", "/preguntas-favoritas/", "/mis-tests/"] },
   { href: "/subida-pdf-pagina-principal/", label: "Herramientas IA", match: ["/subida-pdf-"] },
   { href: "/tu-tutor/", label: "Tu Tutor", match: ["/tu-tutor/"] },
   { href: "/estadisticas/", label: "Estadísticas", match: ["/estadisticas/"] },
@@ -736,7 +736,7 @@ async function inyectarBannerPromocion(user) {
 // un enlace directo de vuelta, para no depender de la navegación principal
 // (colapsada tras el menú hamburguesa en móvil).
 const PAGINAS_CON_VOLVER_ZONA_OPOSITOR = [
-  "/test-generator/", "/test-personalizado/", "/test-oficial/", "/test-inteligente/",
+  "/test-generator/", "/test-personalizado/", "/test-oficial/",
   "/repetir-test/", "/preguntas-falladas/", "/preguntas-favoritas/",
   "/mis-tests/", "/mis-documentos/",
   "/subida-pdf-",
@@ -808,7 +808,7 @@ function inyectarNav(user) {
 // descarga su código en las páginas donde de verdad se usa.
 const PAGINAS_CON_WIDGET_TUTOR = [
   "/zona-opositor/",
-  "/test-generator/", "/test-personalizado/", "/test-oficial/", "/test-inteligente/",
+  "/test-generator/", "/test-personalizado/", "/test-oficial/",
   "/repetir-test/", "/preguntas-falladas/", "/preguntas-favoritas/", "/mis-tests/",
   "/subida-pdf-", "/mis-documentos/", "/estadisticas/",
 ];

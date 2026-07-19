@@ -4,9 +4,8 @@ a diferencia de generador_preguntas_verificado.py -- ver ese módulo y
 tests/test_generador_preguntas_verificado.py para /generar-test-avanzado).
 
 Cubre: generar_preguntas_ia_en_lotes (test_generator.py, motor compartido
-por /generar-test-inteligente y por generar-test-desde-pdf), y las rutas
-/generar-esquema, /analisis-rendimiento y /generar-test-inteligente de
-blueprints/test_ia.py."""
+con generar-test-desde-pdf), y las rutas /generar-esquema y
+/analisis-rendimiento de blueprints/test_ia.py."""
 import json
 from unittest.mock import patch
 
@@ -182,40 +181,5 @@ def test_ruta_analisis_rendimiento_con_datos_suficientes_devuelve_texto(client, 
         mock_ia.assert_called_once()
         datos_usuario = db.leer(("usuarios", "u1"))
         assert datos_usuario["limites_uso"]["generacion_ia"]["contador"] == 1
-    finally:
-        parche.stop()
-
-
-# ============================================================
-# /generar-test-inteligente
-# ============================================================
-
-def test_ruta_generar_test_inteligente_devuelve_preguntas_barajadas(client, db):
-    _usuario_basico(db)
-    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "Un tema"})
-    parche = _con_sesion(client)
-    try:
-        with patch("test_generator.call_deepseek_api",
-                    side_effect=lambda **kw: _pregunta_json("¿Pregunta generada?")):
-            resp = client.post(
-                "/generar-test-inteligente",
-                json={"temas": ["bloque_01-tema_01"], "num_preguntas": 1, "oposicion": "AGE"},
-                headers={"Authorization": "Bearer x"}
-            )
-        assert resp.status_code == 200
-        test = resp.get_json()["test"]
-        assert len(test) == 1
-        assert set(test[0]["opciones"].keys()) == {"A", "B", "C", "D"}
-    finally:
-        parche.stop()
-
-
-def test_ruta_generar_test_inteligente_sin_temas_devuelve_400(client, db):
-    _usuario_basico(db)
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/generar-test-inteligente", json={"temas": [], "oposicion": "AGE"},
-                            headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 400
     finally:
         parche.stop()
