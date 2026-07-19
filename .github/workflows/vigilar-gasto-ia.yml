@@ -1,0 +1,19 @@
+name: Vigilar gasto en IA
+
+on:
+  schedule:
+    # 23:30 UTC todos los días: cerca del final del día para que "gasto de
+    # hoy" refleje casi todo el consumo real antes de compararlo con la
+    # media reciente.
+    - cron: "30 23 * * *"
+  workflow_dispatch:
+
+jobs:
+  vigilar-gasto:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al backend
+        run: |
+          curl -sS -X POST "${{ vars.BACKEND_URL || 'https://oposicion-age.onrender.com' }}/tareas/vigilar-gasto-ia" \
+            -H "X-Cron-Key: ${{ secrets.CRON_SECRET_KEY }}" \
+            --fail-with-body

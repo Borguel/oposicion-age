@@ -4,7 +4,7 @@ depender de un login, ya que quien llama no es una persona autenticada.
 """
 import logging
 import os
-from datetime import date
+from datetime import date, datetime
 
 from flask import Blueprint, jsonify, request
 
@@ -14,9 +14,11 @@ from email_utils import (
     enviar_email_reengagement,
     enviar_email_prueba_terminando,
     enviar_email_prueba_terminada,
+    enviar_email_alerta_coste_ia,
 )
 from planes import ORDEN_PLANES, mejor_plan
 from push_utils import enviar_push
+from coste_ia import resumen_coste_usuario
 
 logger = logging.getLogger(__name__)
 bp = Blueprint("tareas_programadas", __name__)
@@ -25,6 +27,14 @@ bp = Blueprint("tareas_programadas", __name__)
 # solo justo al cruzar cada umbral (no cada día a partir de ahí), para no
 # saturar a quien lleva mucho tiempo sin volver.
 UMBRALES_REENGAGEMENT = {3, 7, 14, 30}
+
+# Umbral mínimo (€) para que un pico de gasto en IA merezca una alerta --
+# evita ruido cuando el gasto total todavía es trivial (p. ej. pasar de
+# 0,01€ a 0,05€ es "x5" pero irrelevante) -- y multiplicador sobre la media
+# reciente que se considera "un pico". Configurables por si las tarifas o
+# el volumen de uso cambian mucho.
+UMBRAL_MINIMO_ALERTA_COSTE_IA_EUR = float(os.getenv("IA_ALERTA_GASTO_MINIMO_EUR", "1.0"))
+UMBRAL_MULTIPLICADOR_ALERTA_COSTE_IA = float(os.getenv("IA_ALERTA_GASTO_MULTIPLICADOR", "3.0"))
 
 
 def _clave_cron_valida():
@@ -119,3 +129,59 @@ def enviar_recordatorios_prueba():
 
     logger.info("Recordatorios de prueba enviados: %s terminando, %s terminada", terminando, terminada)
     return jsonify({"terminando": terminando, "terminada": terminada})
+
+
+@bp.route("/tareas/vigilar-gasto-ia", methods=["POST"])
+def vigilar_gasto_ia():
+    """Compara el gasto en IA de HOY con la media de los últimos días y
+    avisa por email al dueño de la web si hay un pico anómalo (posible
+    abuso o un bug), antes de que llegue como sorpresa en la factura de
+    DeepSeek. coste_ia.py solo guarda un total por MES (no por día) para no
+    añadir una escritura extra en el camino caliente de cada petición que
+    usa IA -- aquí se toma una foto diaria de ese total acumulado y el
+    gasto de hoy se calcula por diferencia con la foto de ayer, guardada en
+    config/coste_ia_alerta."""
+    if not _clave_cron_valida():
+        return jsonify({"error": "No autorizado"}), 401
+
+    hoy = date.today().isoformat()
+    ref = db.collection("config").document("coste_ia_alerta")
+    estado = ref.get().to_dict() or {}
+
+    if estado.get("fecha") == hoy:
+        return jsonify({"mensaje": "Ya comprobado hoy"}), 200
+
+    total_acumulado_mes = 0.0
+    for doc in db.collection("usuarios").stream():
+        coste_mes, _coste_total, _tokens = resumen_coste_usuario(doc.to_dict() or {})
+        total_acumulado_mes += coste_mes
+
+    fecha_anterior = estado.get("fecha")
+    total_anterior = estado.get("total_acumulado_mes", 0.0) or 0.0
+    mes_actual = datetime.utcnow().strftime("%Y-%m")
+    gasto_hoy = total_acumulado_mes - total_anterior
+    # Sin foto previa, o foto de un mes distinto (el total del mes se
+    # reinicia a 0 cada mes -- la resta no significaría "gasto de hoy" en
+    # ninguno de los dos casos): se guarda la foto de hoy como referencia y
+    # se sale sin avisar, no hay nada útil que comparar todavía.
+    if not fecha_anterior or gasto_hoy < 0 or not fecha_anterior.startswith(mes_actual):
+        gasto_hoy = None
+
+    historial = estado.get("historial") or []
+    aviso_enviado = False
+    if gasto_hoy is not None:
+        media_reciente = sum(historial[-7:]) / len(historial[-7:]) if historial else 0.0
+        si_pico = gasto_hoy >= UMBRAL_MINIMO_ALERTA_COSTE_IA_EUR and (
+            media_reciente == 0 or gasto_hoy >= media_reciente * UMBRAL_MULTIPLICADOR_ALERTA_COSTE_IA
+        )
+        if si_pico:
+            destinatario = os.getenv("ADMIN_ALERT_EMAIL") or os.getenv("BREVO_FROM_EMAIL", "dominatuopo@gmail.com")
+            enviar_email_alerta_coste_ia(destinatario, gasto_hoy, media_reciente)
+            aviso_enviado = True
+        historial.append(round(gasto_hoy, 4))
+        historial = historial[-14:]  # no crecer sin límite
+
+    ref.set({"fecha": hoy, "total_acumulado_mes": total_acumulado_mes, "historial": historial})
+
+    logger.info("Vigilancia de gasto en IA: hoy=%s€, aviso_enviado=%s", gasto_hoy, aviso_enviado)
+    return jsonify({"gasto_hoy": gasto_hoy, "aviso_enviado": aviso_enviado})

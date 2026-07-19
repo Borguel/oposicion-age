@@ -154,3 +154,92 @@ def test_ignora_usuarios_sin_email_o_sin_prueba_fin(client, db):
         mock_terminada.assert_not_called()
 
 
+# ---------- Vigilancia de gasto en IA ----------
+def _mes_actual():
+    return date.today().strftime("%Y-%m")
+
+
+def test_vigilar_gasto_ia_sin_clave_401(client, db):
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}):
+        resp = client.post("/tareas/vigilar-gasto-ia", headers={"X-Cron-Key": "incorrecta"})
+        assert resp.status_code == 401
+
+
+def test_vigilar_gasto_ia_primer_run_no_avisa_solo_guarda_foto(client, db):
+    # Sin ninguna foto previa no hay "gasto de hoy" que calcular todavía --
+    # se guarda la referencia y se sale sin mandar ningún correo.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {_mes_actual(): {"coste": 5.0}}})
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_alerta_coste_ia") as mock_alerta:
+        resp = client.post("/tareas/vigilar-gasto-ia", headers={"X-Cron-Key": "secreta"})
+    assert resp.status_code == 200
+    datos = resp.get_json()
+    assert datos["gasto_hoy"] is None
+    assert datos["aviso_enviado"] is False
+    mock_alerta.assert_not_called()
+    estado = db.leer(("config", "coste_ia_alerta"))
+    assert estado["total_acumulado_mes"] == 5.0
+
+
+def test_vigilar_gasto_ia_pico_respecto_a_la_media_avisa(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {_mes_actual(): {"coste": 20.0}}})
+    db.sembrar(("config", "coste_ia_alerta"), {
+        "fecha": (date.today() - timedelta(days=1)).isoformat(),
+        "total_acumulado_mes": 10.0,
+        "historial": [0.2, 0.3, 0.25],
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_alerta_coste_ia") as mock_alerta:
+        resp = client.post("/tareas/vigilar-gasto-ia", headers={"X-Cron-Key": "secreta"})
+    assert resp.status_code == 200
+    datos = resp.get_json()
+    assert datos["gasto_hoy"] == 10.0  # 20.0 - 10.0
+    assert datos["aviso_enviado"] is True
+    mock_alerta.assert_called_once()
+    args = mock_alerta.call_args.args
+    assert args[1] == 10.0
+
+
+def test_vigilar_gasto_ia_por_debajo_del_minimo_no_avisa(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {_mes_actual(): {"coste": 10.3}}})
+    db.sembrar(("config", "coste_ia_alerta"), {
+        "fecha": (date.today() - timedelta(days=1)).isoformat(),
+        "total_acumulado_mes": 10.0,
+        "historial": [0.01, 0.02],
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_alerta_coste_ia") as mock_alerta:
+        resp = client.post("/tareas/vigilar-gasto-ia", headers={"X-Cron-Key": "secreta"})
+    assert resp.get_json()["aviso_enviado"] is False
+    mock_alerta.assert_not_called()
+
+
+def test_vigilar_gasto_ia_ya_comprobado_hoy_no_repite(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {_mes_actual(): {"coste": 50.0}}})
+    db.sembrar(("config", "coste_ia_alerta"), {
+        "fecha": date.today().isoformat(),
+        "total_acumulado_mes": 1.0,
+        "historial": [0.1],
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_alerta_coste_ia") as mock_alerta:
+        resp = client.post("/tareas/vigilar-gasto-ia", headers={"X-Cron-Key": "secreta"})
+    assert resp.status_code == 200
+    assert "ya comprobado" in resp.get_json()["mensaje"].lower()
+    mock_alerta.assert_not_called()
+
+
+def test_vigilar_gasto_ia_rollover_de_mes_no_avisa(client, db):
+    # La foto de ayer era de un mes distinto (el total del mes se reinicia a
+    # 0 cada mes) -- la diferencia no significa "gasto de hoy" en absoluto.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {_mes_actual(): {"coste": 0.5}}})
+    db.sembrar(("config", "coste_ia_alerta"), {
+        "fecha": "2020-01-31", "total_acumulado_mes": 40.0, "historial": [1.0],
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_alerta_coste_ia") as mock_alerta:
+        resp = client.post("/tareas/vigilar-gasto-ia", headers={"X-Cron-Key": "secreta"})
+    assert resp.get_json()["gasto_hoy"] is None
+    mock_alerta.assert_not_called()
+
+

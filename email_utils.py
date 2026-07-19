@@ -351,3 +351,18 @@ def enviar_email_reengagement(destinatario, dias_inactivo, nombre=""):
     """
     html = _plantilla_html(f"Llevas {dias_inactivo} días sin estudiar", cuerpo, emoji="📚")
     _enviar(destinatario, "reengagement", asunto="Retoma tu preparación de la oposición", html=html)
+
+
+def enviar_email_alerta_coste_ia(destinatario, gasto_hoy, media_historica):
+    """Aviso interno (no es un email de marca para un usuario) de que el
+    gasto en IA de hoy se ha disparado respecto a la media reciente --
+    posible abuso o bug, para enterarse antes de que llegue como sorpresa
+    en la factura de DeepSeek (ver blueprints/tareas_programadas.py)."""
+    cuerpo = f"""
+      <p style="margin:0;">El gasto estimado en IA de hoy es de <strong>{gasto_hoy:.2f} €</strong>,
+      muy por encima de la media reciente ({media_historica:.2f} €/día).</p>
+      <p>Puede ser uso normal (más gente generando tests) o una señal de abuso/bug -- conviene
+      echarle un vistazo al panel de administración.</p>
+    """
+    html = _plantilla_html("Pico de gasto en IA detectado", cuerpo, emoji="⚠️")
+    _enviar(destinatario, "alerta de gasto en IA", asunto=f"⚠️ Pico de gasto en IA: {gasto_hoy:.2f} € hoy", html=html)
