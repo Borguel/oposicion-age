@@ -652,6 +652,9 @@ function construirMenuCuenta(user) {
         <a href="/mi-cuenta/">${icono("usuario")} Mi cuenta</a>
         <a href="/planes/">${icono("tarjeta")} Planes</a>
         <div class="age-account-menu-divider"></div>
+        <a href="/oposiciones/">${icono("brujula")} Oposiciones y convocatorias</a>
+        <a href="/como-funciona/">${icono("pregunta")} Cómo funciona</a>
+        <div class="age-account-menu-divider"></div>
         <button type="button" data-account-logout>${icono("salir")} Cerrar sesión</button>
       </div>
     `;
