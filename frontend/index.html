@@ -335,17 +335,22 @@
     }
 
     .home-hero-demo-link {
-      display: block;
-      margin-top: 14px;
-      text-align: center;
-      color: var(--age-navy-ink);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 10px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 999px;
+      color: #fff;
       font-size: 14px;
-      font-weight: 600;
-      text-decoration: underline;
+      font-weight: 700;
+      text-decoration: none;
     }
 
     .home-hero-demo-link:hover {
-      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.6);
     }
 
     .home-hero-ctas {
@@ -1045,7 +1050,7 @@
           <a href="/login/?next=/zona-opositor/" class="age-btn age-btn-primary">Empezar mi prueba gratuita</a>
           <a href="/planes/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Ver planes</a>
         </div>
-        <a href="/demo/" class="home-hero-demo-link">¿Prefieres probarlo primero, sin registrarte? →</a>
+        <a href="/demo/" class="home-hero-demo-link"><span data-icon="rayo" data-icon-size="16"></span> Prueba 5 preguntas gratis, sin registrarte</a>
       </div>
       <div class="home-hero-imagen" aria-hidden="true"></div>
     </div>
