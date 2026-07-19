@@ -3,6 +3,7 @@ subido por el usuario -- eso vive en blueprints/pdf_ia.py)."""
 import json
 import logging
 import queue
+import random
 import threading
 
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
@@ -10,7 +11,7 @@ from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 from firebase_setup import db
 from auth_utils import requiere_plan, obtener_oposicion_solicitada
 from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
-from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales
+from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
 from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales
 from generador_preguntas_verificado import generar_test_verificado
 from deepseek_utils import call_deepseek_api
@@ -127,6 +128,35 @@ def generar_test_avanzado_route():
         mimetype="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     )
+
+
+# Ruta PÚBLICA (sin login, sin @requiere_plan) para la demo de la home: deja
+# probar el producto a quien llega por SEO antes de registrarse. Sirve
+# preguntas reales de exámenes oficiales YA CARGADOS en Firestore -- no
+# genera nada con DeepSeek, así que no tiene coste de IA ni cuenta para
+# ningún cupo de usuario. El límite general por IP de flask-limiter
+# (default_limits en app.py) ya la protege de abuso, igual que a /health.
+@bp.route("/demo/test-oficial", methods=["GET"])
+def demo_test_oficial():
+    oposicion = request.args.get("oposicion") or OPOSICION_POR_DEFECTO
+    if not oposicion_valida(oposicion):
+        oposicion = OPOSICION_POR_DEFECTO
+    try:
+        docs_pregunta = obtener_preguntas_examenes_oficiales(db, oposicion)
+    except Exception:
+        logger.exception("Error accediendo a Firestore en la demo")
+        return jsonify({"error": "No se pudo acceder a Firestore"}), 500
+    candidatas = [d for d in docs_pregunta if not d.get("psicotecnico")]
+    if not candidatas:
+        return jsonify({"oposicion": oposicion, "test": []}), 404
+    seleccionadas = random.sample(candidatas, min(5, len(candidatas)))
+    test = [{
+        "pregunta": d.get("pregunta", ""),
+        "opciones": {k.upper(): v for k, v in d.get("opciones", {}).items()},
+        "respuesta_correcta": d.get("respuesta_correcta", "").upper(),
+        "explicacion": d.get("explicacion", ""),
+    } for d in seleccionadas]
+    return jsonify({"oposicion": oposicion, "test": test})
 
 
 @bp.route("/generar-test-oficial", methods=["POST"])

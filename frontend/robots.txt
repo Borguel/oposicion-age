@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Allow: /planes/
+Allow: /demo/
 Allow: /login/
 Allow: /privacidad/
 Allow: /cookies/

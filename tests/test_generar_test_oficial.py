@@ -369,3 +369,49 @@ def test_ruta_guardar_test_oficial_requiere_login(client, db):
         json={"contenido": [_pregunta(1, "bloque_01-tema_01")], "respuestas": {"0": "A"}},
     )
     assert resp.status_code == 401
+
+
+# ============================================================
+# Demo pública (sin login) para la home
+# ============================================================
+def test_demo_test_oficial_no_exige_login(client, db):
+    for i in range(8):
+        db.sembrar(("examenes_oficiales_AGE", f"a{i}"), {"tipo": "pregunta", **_pregunta(i, "bloque_01-tema_01")})
+    resp = client.get("/demo/test-oficial")
+    assert resp.status_code == 200
+    datos = resp.get_json()
+    assert datos["oposicion"] == "AGE"
+    assert len(datos["test"]) == 5
+    # No debe filtrar cupo ni registrar uso -- es de balde y sin cuenta.
+    pregunta = datos["test"][0]
+    assert set(pregunta.keys()) == {"pregunta", "opciones", "respuesta_correcta", "explicacion"}
+
+
+def test_demo_test_oficial_devuelve_menos_de_5_si_no_hay_tantas(client, db):
+    db.sembrar(("examenes_oficiales_AGE", "a1"), {"tipo": "pregunta", **_pregunta(1, "bloque_01-tema_01")})
+    db.sembrar(("examenes_oficiales_AGE", "a2"), {"tipo": "pregunta", **_pregunta(2, "bloque_01-tema_01")})
+    resp = client.get("/demo/test-oficial")
+    assert resp.status_code == 200
+    assert len(resp.get_json()["test"]) == 2
+
+
+def test_demo_test_oficial_excluye_psicotecnicas(client, db):
+    db.sembrar(("examenes_oficiales_AGE", "a1"), {"tipo": "pregunta", **_pregunta(1, "bloque_01-tema_01"), "psicotecnico": True})
+    db.sembrar(("examenes_oficiales_AGE", "a2"), {"tipo": "pregunta", **_pregunta(2, "bloque_01-tema_01")})
+    resp = client.get("/demo/test-oficial")
+    assert resp.get_json()["test"] == [{
+        "pregunta": "Pregunta 2", "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"},
+        "respuesta_correcta": "A", "explicacion": "porque sí",
+    }]
+
+
+def test_demo_test_oficial_404_si_no_hay_preguntas_cargadas(client, db):
+    resp = client.get("/demo/test-oficial")
+    assert resp.status_code == 404
+
+
+def test_demo_test_oficial_oposicion_no_valida_cae_a_age(client, db):
+    db.sembrar(("examenes_oficiales_AGE", "a1"), {"tipo": "pregunta", **_pregunta(1, "bloque_01-tema_01")})
+    resp = client.get("/demo/test-oficial?oposicion=NO_EXISTE")
+    assert resp.status_code == 200
+    assert resp.get_json()["oposicion"] == "AGE"

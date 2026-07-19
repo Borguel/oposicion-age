@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script>if(location.hostname==="oposicion-age-1.onrender.com"){location.replace("https://www.dominatuopo.com"+location.pathname+location.search+location.hash);}</script>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prueba gratis sin registrarte - Domina tu Opo</title>
+  <meta name="description" content="Responde 5 preguntas reales de examen oficial ahora mismo, sin crear ninguna cuenta. Así es Domina tu Opo por dentro." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Prueba gratis sin registrarte - Domina tu Opo" />
+  <meta property="og:description" content="Responde 5 preguntas reales de examen oficial ahora mismo, sin crear ninguna cuenta." />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="canonical" href="https://www.dominatuopo.com/demo/" />
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/demo/style.css" />
+</head>
+<body>
+  <nav class="age-nav"></nav>
+
+  <div class="demo-header">
+    <div class="age-container">
+      <span class="age-pill age-pill-primary"><span data-icon="rayo" data-icon-size="16"></span> Sin registrarte</span>
+      <h1>Pruébalo tú mismo</h1>
+      <p>5 preguntas reales de examen oficial. Sin crear ninguna cuenta, sin tarjeta, sin compromiso.</p>
+      <div class="demo-selector-oposicion">
+        <label for="demo-oposicion">Oposición</label>
+        <select id="demo-oposicion" class="age-input">
+          <option value="AGE">Cuerpo General Administrativo (AGE)</option>
+          <option value="GACE">Cuerpo de Gestión (GACE)</option>
+          <option value="AUXILIAR">Cuerpo General Auxiliar (Auxiliar)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="age-container demo-contenido">
+    <div id="demo-cargando" class="age-card demo-cargando">
+      <p>Cargando preguntas…</p>
+    </div>
+
+    <div id="demo-error" class="age-card demo-cargando" style="display:none;"></div>
+
+    <div id="demo-juego" style="display:none;">
+      <div class="demo-progreso">
+        <span id="demo-progreso-texto">Pregunta 1 de 5</span>
+        <div class="demo-progreso-barra"><span id="demo-progreso-relleno" class="demo-progreso-relleno"></span></div>
+      </div>
+
+      <div class="age-card demo-pregunta-card">
+        <p id="demo-pregunta-texto" class="demo-pregunta-texto"></p>
+        <div id="demo-opciones" class="demo-opciones"></div>
+        <div id="demo-feedback" class="demo-feedback" style="display:none;"></div>
+        <button type="button" id="demo-btn-siguiente" class="age-btn age-btn-primary age-btn-block" style="display:none;">Siguiente pregunta</button>
+      </div>
+    </div>
+
+    <div id="demo-final" class="age-card demo-final" style="display:none;">
+      <div class="demo-final-icono" data-icon="trofeo" data-icon-size="36"></div>
+      <h2 id="demo-final-titulo">¡Has terminado!</h2>
+      <p id="demo-final-nota" class="demo-final-nota"></p>
+      <p class="demo-final-texto">Esto es solo una muestra pequeñísima. Con una cuenta gratis tienes tests ilimitados sobre todo el temario, herramientas de IA para tus propios apuntes y estadísticas de tu progreso — y empiezas con 7 días de Premium sin tarjeta.</p>
+      <div class="demo-final-ctas">
+        <a href="/login/?next=/zona-opositor/" class="age-btn age-btn-primary">Crear cuenta gratis</a>
+        <a href="/planes/" class="age-btn age-btn-outline">Ver planes</a>
+      </div>
+      <button type="button" id="demo-btn-repetir" class="demo-btn-link">Probar con otras 5 preguntas</button>
+    </div>
+  </div>
+
+  <script type="module" src="/assets/auth.js"></script>
+  <script type="module" src="/demo/script.js"></script>
+</body>
+</html>
