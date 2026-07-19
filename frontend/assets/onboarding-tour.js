@@ -9,8 +9,19 @@
 // 2. mostrarTourZonaOpositor(): tour de primeros pasos en Zona Opositor la
 //    primera vez que se entra -- generar test, herramientas IA, tu tutor
 //    y estadísticas.
+import { auth } from "/assets/auth.js";
 
-function iniciarTourGenerico(pasos, clave) {
+// La clave de localStorage se namespacea por uid (no solo por navegador):
+// sin esto, dos cuentas distintas probadas en el mismo navegador (algo
+// habitual al probar la web con varios usuarios de prueba) comparten el
+// mismo "ya visto" y la segunda cuenta nunca ve el tour aunque sea su
+// primera vez de verdad.
+function claveParaUsuario(clave) {
+  return auth.currentUser ? `${clave}_${auth.currentUser.uid}` : clave;
+}
+
+function iniciarTourGenerico(pasos, claveBase) {
+  const clave = claveParaUsuario(claveBase);
   if (localStorage.getItem(clave) === "1") return;
   if (!pasos.some((paso) => document.querySelector(paso.selector))) return;
   setTimeout(() => iniciarPaso(pasos, clave, 0), 400);
