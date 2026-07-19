@@ -20,6 +20,7 @@
   <link rel="canonical" href="https://www.dominatuopo.com/demo/" />
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
   <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/test-generator/style.css" />
   <link rel="stylesheet" href="/demo/style.css" />
 </head>
 <body>
@@ -29,7 +30,7 @@
     <div class="age-container">
       <span class="age-pill age-pill-primary"><span data-icon="rayo" data-icon-size="16"></span> Sin registrarte</span>
       <h1>Pruébalo tú mismo</h1>
-      <p>5 preguntas reales de examen oficial. Sin crear ninguna cuenta, sin tarjeta, sin compromiso.</p>
+      <p>5 preguntas reales de examen oficial, exactamente igual que un test dentro de la web. Sin crear ninguna cuenta, sin tarjeta, sin compromiso.</p>
       <div class="demo-selector-oposicion">
         <label for="demo-oposicion">Oposición</label>
         <select id="demo-oposicion" class="age-input">
@@ -48,32 +49,16 @@
 
     <div id="demo-error" class="age-card demo-cargando" style="display:none;"></div>
 
-    <div id="demo-juego" style="display:none;">
-      <div class="demo-progreso">
-        <span id="demo-progreso-texto">Pregunta 1 de 5</span>
-        <div class="demo-progreso-barra"><span id="demo-progreso-relleno" class="demo-progreso-relleno"></span></div>
-      </div>
-
-      <div class="age-card demo-pregunta-card">
-        <p id="demo-pregunta-texto" class="demo-pregunta-texto"></p>
-        <div id="demo-opciones" class="demo-opciones"></div>
-        <div id="demo-feedback" class="demo-feedback" style="display:none;"></div>
-        <button type="button" id="demo-btn-siguiente" class="age-btn age-btn-primary age-btn-block" style="display:none;">Siguiente pregunta</button>
-      </div>
-    </div>
-
-    <div id="demo-final" class="age-card demo-final" style="display:none;">
-      <div class="demo-final-icono" data-icon="trofeo" data-icon-size="36"></div>
-      <h2 id="demo-final-titulo">¡Has terminado!</h2>
-      <p id="demo-final-nota" class="demo-final-nota"></p>
-      <p class="demo-final-texto">Esto es solo una muestra pequeñísima. Con una cuenta gratis tienes tests ilimitados sobre todo el temario, herramientas de IA para tus propios apuntes y estadísticas de tu progreso — y empiezas con 7 días de Premium sin tarjeta.</p>
-      <div class="demo-final-ctas">
-        <a href="/login/?next=/zona-opositor/" class="age-btn age-btn-primary">Crear cuenta gratis</a>
-        <a href="/planes/" class="age-btn age-btn-outline">Ver planes</a>
-      </div>
-      <button type="button" id="demo-btn-repetir" class="demo-btn-link">Probar con otras 5 preguntas</button>
-    </div>
+    <div id="navegador-preguntas" class="navegador-preguntas" style="display:none;"></div>
+    <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
+    <div id="contenedor-resultados" style="display:none;"></div>
+    <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
   </div>
+
+  <!-- Librerías externas -- mismas que usa el test oficial real, para que
+       la corrección y el PDF de resultados se comporten exactamente igual. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script type="module" src="/assets/auth.js"></script>
   <script type="module" src="/demo/script.js"></script>
