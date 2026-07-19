@@ -7,6 +7,8 @@ propia (validación, creación/reuso de customer, propagación de errores),
 no el SDK de Stripe en sí."""
 from unittest.mock import MagicMock, patch
 
+import stripe
+
 
 def _con_sesion(cliente, uid="u1", email="u1@example.com"):
     parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
@@ -112,6 +114,7 @@ def test_crear_sesion_checkout_reusa_customer_existente(client, db):
     mock_session = MagicMock(url="https://checkout.stripe.com/existente")
     try:
         with patch("blueprints.pagos.stripe.Customer.create") as mock_crear_customer, \
+             patch("blueprints.pagos.stripe.Customer.retrieve", return_value=MagicMock()), \
              patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio(unit_amount=1999)), \
              patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
             resp = client.post(
@@ -136,12 +139,41 @@ def test_crear_sesion_checkout_reusa_customer_existente(client, db):
         parche.stop()
 
 
+def test_crear_sesion_checkout_crea_customer_nuevo_si_el_guardado_esta_huerfano(client, db):
+    # El stripe_customer_id guardado puede quedar huérfano si la web cambió
+    # de clave de Stripe (de test a live, por ejemplo) -- Stripe responde
+    # "No such customer" al intentar reutilizarlo, y hay que crear uno nuevo
+    # en vez de dejar que el error suba tal cual al usuario.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_huerfano"})
+    parche = _con_sesion(client)
+    mock_customer = MagicMock(id="cus_nuevo_2")
+    mock_session = MagicMock(url="https://checkout.stripe.com/nueva-2")
+    try:
+        with patch("blueprints.pagos.stripe.Customer.retrieve", side_effect=stripe.InvalidRequestError("No such customer: 'cus_huerfano'", param="id")), \
+             patch("blueprints.pagos.stripe.Customer.create", return_value=mock_customer) as mock_crear_customer, \
+             patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
+             patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
+            resp = client.post(
+                "/crear-sesion-checkout",
+                json={"plan": "basico", "oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 200
+        mock_crear_customer.assert_called_once_with(email="u1@example.com", metadata={"uid": "u1"})
+        assert db.leer(("usuarios", "u1"))["stripe_customer_id"] == "cus_nuevo_2"
+        _, kwargs = mock_crear_sesion.call_args
+        assert kwargs["customer"] == "cus_nuevo_2"
+    finally:
+        parche.stop()
+
+
 def test_crear_sesion_checkout_usa_oposicion_por_defecto_si_no_se_manda(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_existente_1"})
     parche = _con_sesion(client)
     mock_session = MagicMock(url="https://checkout.stripe.com/x")
     try:
-        with patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
+        with patch("blueprints.pagos.stripe.Customer.retrieve", return_value=MagicMock()), \
+             patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
              patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
             resp = client.post(
                 "/crear-sesion-checkout",
@@ -164,7 +196,8 @@ def test_crear_sesion_checkout_aplica_descuento_de_promocion_activa_del_mismo_pl
     parche = _con_sesion(client)
     mock_session = MagicMock(url="https://checkout.stripe.com/promo")
     try:
-        with patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
+        with patch("blueprints.pagos.stripe.Customer.retrieve", return_value=MagicMock()), \
+             patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
              patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
             resp = client.post(
                 "/crear-sesion-checkout",
@@ -187,7 +220,8 @@ def test_crear_sesion_checkout_no_aplica_descuento_de_otro_plan(client, db):
     parche = _con_sesion(client)
     mock_session = MagicMock(url="https://checkout.stripe.com/sin-promo")
     try:
-        with patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
+        with patch("blueprints.pagos.stripe.Customer.retrieve", return_value=MagicMock()), \
+             patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
              patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
             resp = client.post(
                 "/crear-sesion-checkout",
@@ -210,7 +244,8 @@ def test_crear_sesion_checkout_no_aplica_descuento_de_promocion_caducada(client,
     parche = _con_sesion(client)
     mock_session = MagicMock(url="https://checkout.stripe.com/caducada")
     try:
-        with patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
+        with patch("blueprints.pagos.stripe.Customer.retrieve", return_value=MagicMock()), \
+             patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
              patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
             resp = client.post(
                 "/crear-sesion-checkout",
@@ -228,7 +263,8 @@ def test_crear_sesion_checkout_propaga_error_de_stripe_como_500(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_existente_1"})
     parche = _con_sesion(client)
     try:
-        with patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
+        with patch("blueprints.pagos.stripe.Customer.retrieve", return_value=MagicMock()), \
+             patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
              patch("blueprints.pagos.stripe.checkout.Session.create", side_effect=RuntimeError("stripe caído")):
             resp = client.post(
                 "/crear-sesion-checkout",
@@ -245,7 +281,8 @@ def test_crear_sesion_checkout_propaga_error_al_obtener_precio_base_como_500(cli
     db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_existente_1"})
     parche = _con_sesion(client)
     try:
-        with patch("blueprints.pagos.stripe.Price.retrieve", side_effect=RuntimeError("price no encontrado")):
+        with patch("blueprints.pagos.stripe.Customer.retrieve", return_value=MagicMock()), \
+             patch("blueprints.pagos.stripe.Price.retrieve", side_effect=RuntimeError("price no encontrado")):
             resp = client.post(
                 "/crear-sesion-checkout",
                 json={"plan": "basico", "oposicion": "AGE"},
@@ -400,6 +437,35 @@ def test_cancelar_suscripcion_propaga_error_de_stripe_como_500(client, db):
         motivos = list(db.collection("usuarios").document("u1").collection("bajas_motivos").stream())
         assert motivos == []
         assert "cancelar_al_final_periodo" not in db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+    finally:
+        parche.stop()
+
+
+def test_cancelar_suscripcion_con_subscription_id_huerfano_se_marca_gratis_localmente(client, db):
+    # La suscripción guardada puede quedar huérfana igual que el customer
+    # (p. ej. tras pasar de la clave de test a la de producción de Stripe):
+    # Stripe responde "No such subscription", y en ese caso no hay nada que
+    # cancelar ahí -- se refleja localmente que el plan ya no está activo en
+    # vez de devolver un error 500 sobre algo que el usuario no puede arreglar.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "stripe_subscription_id": "sub_huerfana"}},
+    })
+    parche = _con_sesion(client)
+    try:
+        with patch("blueprints.pagos.stripe.Subscription.modify", side_effect=stripe.InvalidRequestError("No such subscription: 'sub_huerfana'", param="id")), \
+             patch("blueprints.pagos.enviar_email_cancelacion_suscripcion") as mock_email:
+            resp = client.post(
+                "/cancelar-suscripcion",
+                json={"oposicion": "AGE", "motivo": "precio"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 200
+        assert "ya no estaba activa" in resp.get_json()["mensaje"].lower()
+        mock_email.assert_not_called()
+        suscripcion = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+        assert suscripcion["plan"] == "gratis"
+        assert suscripcion["subscription_status"] == "canceled"
     finally:
         parche.stop()
 

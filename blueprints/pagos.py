@@ -113,6 +113,16 @@ def crear_sesion_checkout():
         doc_ref = db.collection("usuarios").document(g.uid)
         usuario = doc_ref.get().to_dict() or {}
         stripe_customer_id = usuario.get("stripe_customer_id")
+        if stripe_customer_id:
+            # El ID guardado puede quedar huérfano si se cambió de clave de
+            # Stripe (p. ej. de test a live: ese Customer solo existe en la
+            # cuenta antigua) -- se valida antes de reutilizarlo y, si ya no
+            # existe, se trata como si no hubiera ninguno guardado.
+            try:
+                stripe.Customer.retrieve(stripe_customer_id)
+            except stripe.InvalidRequestError:
+                logger.warning("stripe_customer_id huérfano para %s (%s); se crea uno nuevo", g.uid, stripe_customer_id)
+                stripe_customer_id = None
         if not stripe_customer_id:
             customer = stripe.Customer.create(email=g.email, metadata={"uid": g.uid})
             stripe_customer_id = customer.id
@@ -203,6 +213,15 @@ def cancelar_suscripcion():
 
     try:
         subscription = stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
+    except stripe.InvalidRequestError:
+        # La suscripción guardada ya no existe en Stripe (p. ej. quedó de
+        # cuando la web usaba la clave de pruebas y se cambió a la de
+        # producción) -- no hay nada que cancelar en Stripe, así que se
+        # refleja localmente que ya no está activa en vez de dar un error
+        # sobre algo que el usuario no puede arreglar.
+        logger.warning("stripe_subscription_id huérfano para %s (%s); se marca como cancelada localmente", g.uid, subscription_id)
+        actualizar_suscripcion(db, g.uid, oposicion, plan="gratis", subscription_status="canceled")
+        return jsonify({"mensaje": "Tu suscripción ya no estaba activa; tu cuenta ha quedado en el plan gratuito."})
     except Exception as e:
         logger.exception("Error cancelando suscripción de Stripe %s", subscription_id)
         return jsonify({"error": str(e)}), 500
