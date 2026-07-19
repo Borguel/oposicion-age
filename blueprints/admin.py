@@ -27,10 +27,11 @@ from planes import resolver_plan_efectivo, prueba_activa
 from promociones import leer_promocion, promocion_vigente, PLANES_PROMOCIONABLES
 from banco_fallos import _id_pregunta
 from coste_ia import resumen_coste_usuario
-from oposiciones import OPOSICIONES, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
+from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
 from blueprints.pagos import MOTIVOS_BAJA_VALIDOS
 from limites_uso import cargar_limites_config, guardar_limites_config, TIPOS_META, limites_efectivos, _clave_periodo
 from utils import _limpiar_cache_temario
+from banco_preguntas_ia import coleccion_banco_preguntas
 
 logger = logging.getLogger(__name__)
 bp = Blueprint("admin", __name__)
@@ -275,6 +276,26 @@ def _titulo_tema(coleccion, tema_id):
     return (doc.to_dict() or {}).get("titulo", tema_id) if doc.exists else tema_id
 
 
+def _titulo_bloque(coleccion, bloque_id):
+    if not bloque_id:
+        return bloque_id
+    doc = db.collection(coleccion).document(bloque_id).get()
+    return (doc.to_dict() or {}).get("titulo", bloque_id) if doc.exists else bloque_id
+
+
+def _contar_coleccion(consulta):
+    """Nº de documentos de una colección/consulta cualquiera. Usa la
+    agregación count() (barata); si no está disponible, cae a contar el
+    stream. Nunca debe romper la página que lo pide."""
+    try:
+        return int(consulta.count().get()[0][0].value)
+    except Exception:
+        try:
+            return sum(1 for _ in consulta.stream())
+        except Exception:
+            return 0
+
+
 def _salud_contenido(oposicion):
     """Recorre el árbol del temario de una oposición y devuelve cifras de
     salud del contenido: nº de temas, cuántos están sin fichas (huecos de
@@ -468,6 +489,52 @@ def analitica_contenido():
     sin_actividad.sort(key=lambda t: t["tema_id"])
 
     return jsonify({"oposicion": oposicion, "temas": temas, "sin_actividad": sin_actividad})
+
+
+@bp.route("/admin/api/banco-preguntas", methods=["GET"])
+@requiere_permiso("temario")
+def banco_preguntas_resumen():
+    """Cuántas preguntas de Test Personalizado hay ya acumuladas en el banco
+    interno por oposición (ver banco_preguntas_ia.py -- de momento solo
+    almacenamiento, nada lo reutiliza todavía), y el desglose por bloque y
+    tema de la oposición elegida. Sirve para decidir cuándo hay ya volumen
+    suficiente como para empezar a ofrecer tests generados a partir de este
+    banco en vez de generar siempre desde cero con DeepSeek."""
+    oposicion = request.args.get("oposicion") or OPOSICION_POR_DEFECTO
+    if not oposicion_valida(oposicion):
+        oposicion = OPOSICION_POR_DEFECTO
+
+    totales_por_oposicion = {
+        oid: _contar_coleccion(db.collection(coleccion_banco_preguntas(oid)))
+        for oid in OPOSICIONES
+    }
+
+    coleccion_temario_actual = coleccion_temario(oposicion)
+    conteo_por_tema = {}
+    for doc in db.collection(coleccion_banco_preguntas(oposicion)).stream():
+        tid = (doc.to_dict() or {}).get("tema_id") or ""
+        conteo_por_tema[tid] = conteo_por_tema.get(tid, 0) + 1
+
+    por_tema = []
+    conteo_por_bloque = {}
+    for tid, total in conteo_por_tema.items():
+        bloque_id = _bloque_de_tema(tid)
+        titulo_tema = _titulo_tema(coleccion_temario_actual, tid) if bloque_id else "Sin tema identificado"
+        titulo_bloque = _titulo_bloque(coleccion_temario_actual, bloque_id) if bloque_id else "Sin bloque identificado"
+        por_tema.append({"tema_id": tid, "titulo": titulo_tema, "bloque_titulo": titulo_bloque, "total": total})
+        conteo_por_bloque[titulo_bloque] = conteo_por_bloque.get(titulo_bloque, 0) + total
+    por_tema.sort(key=lambda t: t["total"], reverse=True)
+
+    por_bloque = [{"titulo": titulo, "total": total} for titulo, total in conteo_por_bloque.items()]
+    por_bloque.sort(key=lambda b: b["total"], reverse=True)
+
+    return jsonify({
+        "totales_por_oposicion": totales_por_oposicion,
+        "oposicion": oposicion,
+        "total_oposicion": totales_por_oposicion.get(oposicion, 0),
+        "por_bloque": por_bloque,
+        "por_tema": por_tema,
+    })
 
 
 # ============================================================

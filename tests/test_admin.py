@@ -138,6 +138,61 @@ def test_analitica_agrega_rendimiento_y_sin_actividad(client, db):
     assert "bloque_01-tema_02" in sin
 
 
+# ---------- Banco de preguntas (Test Personalizado) ----------
+def test_banco_preguntas_requiere_permiso_temario(client, db):
+    with _como(admin=False, permisos=["reportes"]):
+        r = client.get("/admin/api/banco-preguntas", headers=_AUTH)
+    assert r.status_code == 403
+
+
+def test_banco_preguntas_totales_por_oposicion(client, db):
+    db.sembrar(("banco_preguntas_ia_AGE", "p1"), {"tema_id": "bloque_01-tema_01"})
+    db.sembrar(("banco_preguntas_ia_AGE", "p2"), {"tema_id": "bloque_01-tema_01"})
+    db.sembrar(("banco_preguntas_ia_GACE", "p1"), {"tema_id": "bloque_01-tema_01"})
+    with _como():
+        d = client.get("/admin/api/banco-preguntas?oposicion=AGE", headers=_AUTH).get_json()
+    assert d["totales_por_oposicion"] == {"AGE": 2, "GACE": 1, "AUXILIAR": 0}
+    assert d["total_oposicion"] == 2
+    assert d["oposicion"] == "AGE"
+
+
+def test_banco_preguntas_desglose_por_bloque_y_tema(client, db):
+    db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Bloque I"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "La Constitución"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_02"), {"titulo": "El Gobierno"})
+    db.sembrar(("Temario AGE", "bloque_02"), {"titulo": "Bloque II"})
+    db.sembrar(("Temario AGE", "bloque_02", "temas", "tema_01"), {"titulo": "La Unión Europea"})
+
+    db.sembrar(("banco_preguntas_ia_AGE", "p1"), {"tema_id": "bloque_01-tema_01"})
+    db.sembrar(("banco_preguntas_ia_AGE", "p2"), {"tema_id": "bloque_01-tema_01"})
+    db.sembrar(("banco_preguntas_ia_AGE", "p3"), {"tema_id": "bloque_01-tema_02"})
+    db.sembrar(("banco_preguntas_ia_AGE", "p4"), {"tema_id": "bloque_02-tema_01"})
+    db.sembrar(("banco_preguntas_ia_AGE", "p5"), {"tema_id": None})  # pregunta antigua sin tema_id
+
+    with _como():
+        d = client.get("/admin/api/banco-preguntas?oposicion=AGE", headers=_AUTH).get_json()
+
+    por_tema = {t["tema_id"]: t for t in d["por_tema"]}
+    assert por_tema["bloque_01-tema_01"]["total"] == 2
+    assert por_tema["bloque_01-tema_01"]["titulo"] == "La Constitución"
+    assert por_tema["bloque_01-tema_01"]["bloque_titulo"] == "Bloque I"
+    assert por_tema["bloque_01-tema_02"]["total"] == 1
+    assert por_tema["bloque_02-tema_01"]["total"] == 1
+    assert por_tema[""]["titulo"] == "Sin tema identificado"
+
+    por_bloque = {b["titulo"]: b["total"] for b in d["por_bloque"]}
+    assert por_bloque["Bloque I"] == 3
+    assert por_bloque["Bloque II"] == 1
+    assert por_bloque["Sin bloque identificado"] == 1
+
+
+def test_banco_preguntas_oposicion_invalida_cae_a_age(client, db):
+    db.sembrar(("banco_preguntas_ia_AGE", "p1"), {"tema_id": "bloque_01-tema_01"})
+    with _como():
+        d = client.get("/admin/api/banco-preguntas?oposicion=NOEXISTE", headers=_AUTH).get_json()
+    assert d["oposicion"] == "AGE"
+
+
 # ---------- Bloquear / eliminar / soporte ----------
 def test_resetear_limites_pone_a_cero(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "limites_uso": {"resumen": {"periodo": "2026-07-13", "contador": 5}}})

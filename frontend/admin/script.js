@@ -581,10 +581,14 @@ function modalImportar() {
 async function renderAnalitica() {
   const panel = document.getElementById("panel-analitica");
   panel.innerHTML = `<p class="admin-cargando">Cargando analítica…</p>`;
-  const d = await apiGet(`/admin/api/analitica-contenido?oposicion=${oposicionActual()}`);
+  const [d, banco] = await Promise.all([
+    apiGet(`/admin/api/analitica-contenido?oposicion=${oposicionActual()}`),
+    apiGet(`/admin/api/banco-preguntas?oposicion=${oposicionActual()}`),
+  ]);
   if (!d) return;
   const temas = d.temas || [];
-  if (!temas.length && !(d.sin_actividad || []).length) {
+  const hayBanco = banco && (banco.total_oposicion || Object.values(banco.totales_por_oposicion || {}).some((n) => n > 0));
+  if (!temas.length && !(d.sin_actividad || []).length && !hayBanco) {
     panel.innerHTML = `<div class="age-card"><p class="admin-vacio">Todavía no hay actividad de estudio en ${escapeHtml(oposicionActual())}.</p></div>`;
     return;
   }
@@ -604,6 +608,26 @@ async function renderAnalitica() {
   // para que el % sea significativo.
   const peores = temas.filter((t) => t.respondidas >= 20)
     .sort((a, b) => (a.tasa_acierto ?? 101) - (b.tasa_acierto ?? 101)).slice(0, 10);
+
+  const ETIQUETA_OPOSICION = { AGE: "AGE", GACE: "GACE", AUXILIAR: "Auxiliar" };
+  const bancoHtml = !banco ? "" : `
+    <div class="age-card admin-bloque">
+      <h3>Banco de preguntas IA (Test Personalizado)</h3>
+      <p class="admin-reporte-meta">Preguntas ya generadas y verificadas que se van acumulando por oposición. De momento solo se almacenan; sirve para ver cuándo hay volumen suficiente para reutilizarlas en vez de generar siempre desde cero.</p>
+      <div class="admin-chips">
+        ${Object.entries(banco.totales_por_oposicion || {}).map(([oid, total]) => `<span class="admin-chip"><strong>${escapeHtml(ETIQUETA_OPOSICION[oid] || oid)}:</strong> ${total}</span>`).join("")}
+      </div>
+      <h4 style="margin:18px 0 8px;">Por bloque (${escapeHtml(banco.oposicion)})</h4>
+      ${(banco.por_bloque || []).length ? `
+        <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Bloque</th><th class="admin-num">Preguntas</th></tr></thead>
+          <tbody>${banco.por_bloque.map((b) => `<tr><td>${escapeHtml(b.titulo)}</td><td class="admin-num">${b.total}</td></tr>`).join("")}</tbody></table></div>
+      ` : '<p class="admin-vacio">Todavía no hay preguntas en el banco de esta oposición.</p>'}
+      ${(banco.por_tema || []).length ? `
+        <h4 style="margin:18px 0 8px;">Por tema</h4>
+        <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Bloque</th><th>Tema</th><th class="admin-num">Preguntas</th></tr></thead>
+          <tbody>${banco.por_tema.map((t) => `<tr><td>${escapeHtml(t.bloque_titulo)}</td><td>${escapeHtml(t.titulo)}</td><td class="admin-num">${t.total}</td></tr>`).join("")}</tbody></table></div>
+      ` : ""}
+    </div>`;
 
   panel.innerHTML = `
     <div class="age-card admin-bloque">
@@ -627,7 +651,9 @@ async function renderAnalitica() {
       <h3>Temas sin ninguna actividad (${(d.sin_actividad || []).length})</h3>
       <p class="admin-reporte-meta">Nadie ha hecho preguntas de estos temas todavía.</p>
       <div class="admin-chips">${(d.sin_actividad || []).map((t) => `<span class="admin-chip">${escapeHtml(t.titulo || t.tema_id)}</span>`).join("") || `<span class="admin-vacio">Todos los temas tienen actividad. ${icono("check", 14)}</span>`}</div>
-    </div>`;
+    </div>
+
+    ${bancoHtml}`;
 }
 
 // ===== Bajas (motivos de cancelación) =====
