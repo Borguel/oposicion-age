@@ -1,11 +1,11 @@
-"""Pruebas de los generadores de test/esquema/análisis basados en el
-TEMARIO oficial vía IA "libre" (sin anclaje verificado a un artículo real,
-a diferencia de generador_preguntas_verificado.py -- ver ese módulo y
+"""Pruebas de los generadores de test/análisis basados en el TEMARIO
+oficial vía IA "libre" (sin anclaje verificado a un artículo real, a
+diferencia de generador_preguntas_verificado.py -- ver ese módulo y
 tests/test_generador_preguntas_verificado.py para /generar-test-avanzado).
 
 Cubre: generar_preguntas_ia_en_lotes (test_generator.py, motor compartido
-con generar-test-desde-pdf), y las rutas /generar-esquema y
-/analisis-rendimiento de blueprints/test_ia.py."""
+con generar-test-desde-pdf), y la ruta /analisis-rendimiento de
+blueprints/test_ia.py."""
 import json
 from unittest.mock import patch
 
@@ -92,54 +92,6 @@ def test_lote_sin_respuesta_de_deepseek_se_reporta_como_error():
 
 
 # ============================================================
-# /generar-esquema
-# ============================================================
-
-def test_ruta_generar_esquema_devuelve_resultado_y_registra_uso(client, db):
-    _usuario_basico(db)
-    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": "Un tema"})
-    parche = _con_sesion(client)
-    try:
-        with patch("blueprints.test_ia.generar_esquema", return_value="# Esquema\n- punto 1") as mock_esquema:
-            resp = client.post(
-                "/generar-esquema",
-                json={"temas": ["bloque_01-tema_01"], "oposicion": "AGE"},
-                headers={"Authorization": "Bearer x"}
-            )
-        assert resp.status_code == 200
-        assert resp.get_json()["esquema"] == "# Esquema\n- punto 1"
-        mock_esquema.assert_called_once()
-        datos_usuario = db.leer(("usuarios", "u1"))
-        assert datos_usuario["limites_uso"]["generacion_ia"]["contador"] == 1
-    finally:
-        parche.stop()
-
-
-def test_ruta_generar_esquema_sin_json_devuelve_400(client, db):
-    _usuario_basico(db)
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/generar-esquema", data="no es json", content_type="text/plain",
-                            headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 400
-    finally:
-        parche.stop()
-
-
-def test_ruta_generar_esquema_bloqueada_para_plan_gratis(client, db):
-    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "suscripciones": {"AGE": {"plan": "gratis"}}})
-    parche = _con_sesion(client)
-    try:
-        with patch("blueprints.test_ia.generar_esquema") as mock_esquema:
-            resp = client.post("/generar-esquema", json={"temas": ["bloque_01-tema_01"], "oposicion": "AGE"},
-                                headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 403
-        mock_esquema.assert_not_called()
-    finally:
-        parche.stop()
-
-
-# ============================================================
 # /analisis-rendimiento
 # ============================================================
 
@@ -180,6 +132,6 @@ def test_ruta_analisis_rendimiento_con_datos_suficientes_devuelve_texto(client, 
         assert "Tema flojo" in resp.get_json()["analisis"]
         mock_ia.assert_called_once()
         datos_usuario = db.leer(("usuarios", "u1"))
-        assert datos_usuario["limites_uso"]["generacion_ia"]["contador"] == 1
+        assert datos_usuario["limites_uso"]["analisis_ia"]["contador"] == 1
     finally:
         parche.stop()

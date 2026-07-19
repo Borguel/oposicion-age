@@ -42,23 +42,39 @@ LIMITES = {
         "basico": ("dia", 0),
         "premium": ("dia", 80),
     },
-    # Generación de esquemas/análisis a partir del TEMARIO (no de un PDF
-    # subido) -- /generar-esquema, /analisis-rendimiento. Incluidas en
-    # Básico, con cupo bajo a propósito.
-    "generacion_ia": {
-        "basico": ("dia", 5),
+    # Análisis de rendimiento con IA a partir del TEMARIO (/analisis-rendimiento).
+    # Básico se mide en MES (no en día): un cupo bajo pero de uso ocasional,
+    # no algo que se consulte a diario.
+    "analisis_ia": {
+        "basico": ("mes", 20),
         "premium": ("dia", 60),
+    },
+    # Test Oficial (/generar-test-oficial): no llama a ninguna IA (lee del
+    # banco de preguntas ya cargado), pero igualmente se topa por día para
+    # que no se generen tests en bucle sin límite. Premium se deja con un
+    # techo alto (no es un cupo real, es anti-abuso).
+    "test_oficial": {
+        "basico": ("dia", 50),
+        "premium": ("dia", 1000),
     },
     # Test Personalizado con verificación jurídica (/generar-test-avanzado):
     # cada pregunta cuesta entre 2 y 8 llamadas a DeepSeek. A DIFERENCIA del
     # resto, el cupo aquí se mide en PREGUNTAS/día, no en "número de tests":
     # así un test de 100 preguntas gasta 100 y uno de 10 gasta 10, y no es lo
     # mismo (antes ambos contaban como "1 uso", lo cual era injusto).
-    # 60/día = 2-3 tests cortos (básico, cupo visible para el usuario);
-    # 1500 = 15 de 100 (premium, presentado como "ilimitado").
     "test_avanzado_verificado": {
-        "basico": ("dia", 60),
+        "basico": ("dia", 50),
         "premium": ("dia", 1500),
+    },
+    # Tope MENSUAL adicional para el mismo Test Personalizado -- se
+    # comprueba y se cobra en paralelo al cupo diario de arriba (ver
+    # blueprints/test_ia.py), como una segunda cuenta independiente sobre
+    # el mismo consumo en preguntas. El de premium es simplemente su cupo
+    # diario x30 (nunca supone una restricción real, igual que el resto de
+    # topes de premium).
+    "test_avanzado_verificado_mensual": {
+        "basico": ("mes", 400),
+        "premium": ("mes", 45000),
     },
     # Chat conversacional "Tu Tutor" -- /tu-tutor.
     # Requiere plan premium (ver @requiere_plan de la ruta), por eso básico
@@ -73,10 +89,14 @@ LIMITES = {
 # Etiquetas legibles de cada herramienta, para pintarlas en el panel de
 # administración (pestaña "Límites"). El orden es el de la interfaz.
 TIPOS_META = [
-    {"id": "test_avanzado_verificado", "nombre": "Test Personalizado (IA verificada)", "unidad": "preguntas",
+    {"id": "test_oficial", "nombre": "Test Oficial", "unidad": "preguntas",
+     "descripcion": "Se mide en PREGUNTAS al día, igual que el Test Personalizado."},
+    {"id": "test_avanzado_verificado", "nombre": "Test Personalizado (cupo diario)", "unidad": "preguntas",
      "descripcion": "Se mide en PREGUNTAS al día (no en nº de tests): un test de 100 gasta 100 y uno de 10 gasta 10, así el consumo es justo. El usuario no ve este contador."},
-    {"id": "generacion_ia", "nombre": "Herramientas IA de temario", "unidad": "usos",
-     "descripcion": "Esquemas y análisis de rendimiento a partir del temario."},
+    {"id": "test_avanzado_verificado_mensual", "nombre": "Test Personalizado (tope mensual)", "unidad": "preguntas",
+     "descripcion": "Tope adicional en preguntas AL MES, aparte del cupo diario de arriba -- ambos se comprueban a la vez."},
+    {"id": "analisis_ia", "nombre": "Análisis de rendimiento con IA", "unidad": "usos",
+     "descripcion": "Análisis de fortalezas/debilidades por tema, generado con IA, a partir del temario."},
     {"id": "pdf_ia", "nombre": "Subir PDF (resumen / esquema / tarjetas / test)", "unidad": "usos",
      "descripcion": "Herramientas de IA sobre un PDF que sube el propio usuario."},
     {"id": "chat_pdf", "nombre": "Chat con PDF", "unidad": "usos",

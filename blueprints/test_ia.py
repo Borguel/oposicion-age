@@ -1,5 +1,5 @@
-"""Generación de tests/esquemas/análisis a partir del TEMARIO oficial (no
-de un PDF subido por el usuario -- eso vive en blueprints/pdf_ia.py)."""
+"""Generación de tests/análisis a partir del TEMARIO oficial (no de un PDF
+subido por el usuario -- eso vive en blueprints/pdf_ia.py)."""
 import json
 import logging
 import queue
@@ -13,7 +13,6 @@ from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales
 from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales
 from generador_preguntas_verificado import generar_test_verificado
-from esquema_generator import generar_esquema
 from deepseek_utils import call_deepseek_api
 from registro_progreso_usuario import obtener_resumen_progreso
 from banco_fallos import ordenar_por_prioridad_repaso as ordenar_fallos_por_prioridad
@@ -22,6 +21,12 @@ from banco_favoritas import ordenar_por_prioridad_repaso as ordenar_favoritas_po
 logger = logging.getLogger(__name__)
 
 bp = Blueprint("test_ia", __name__)
+
+# El Test Personalizado tiene DOS cupos independientes que se comprueban y
+# se cobran a la vez -- un tope diario y un tope mensual adicional sobre el
+# mismo consumo en preguntas (ver limites_uso.py) -- para que un básico no
+# pueda agotar de golpe el cupo mensual estirando el diario 30 días seguidos.
+TIPOS_CUOTA_TEST_PERSONALIZADO = ("test_avanzado_verificado", "test_avanzado_verificado_mensual")
 
 
 # Test Personalizado en streaming (Server-Sent Events): cada pregunta ancla
@@ -51,11 +56,12 @@ def generar_test_avanzado_route():
     modo_reparto = data.get("modo_reparto", "equitativo")
     if modo_reparto not in ("equitativo", "realista"):
         modo_reparto = "equitativo"
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(
-        db, g.uid, g.plan_actual, "test_avanzado_verificado"
-    )
-    if not permitido:
-        return jsonify({"error": mensaje_error}), 429
+    for tipo_cuota in TIPOS_CUOTA_TEST_PERSONALIZADO:
+        permitido, mensaje_error, _usados, _limite = verificar_limite_uso(
+            db, g.uid, g.plan_actual, tipo_cuota
+        )
+        if not permitido:
+            return jsonify({"error": mensaje_error}), 429
 
     coleccion = coleccion_temario(g.oposicion)
     oposicion = g.oposicion
@@ -73,7 +79,8 @@ def generar_test_avanzado_route():
     # El cupo de este test se mide en PREGUNTAS, no en "número de tests": se
     # cobran tantas unidades como preguntas se piden, así un test de 100 gasta
     # 100 y uno de 10 gasta 10 (consumo justo). El usuario no ve el contador.
-    registrar_uso(db, uid, "test_avanzado_verificado", plan_actual, cantidad=num_preguntas)
+    for tipo_cuota in TIPOS_CUOTA_TEST_PERSONALIZADO:
+        registrar_uso(db, uid, tipo_cuota, plan_actual, cantidad=num_preguntas)
 
     def generar():
         eventos = queue.Queue()
@@ -102,7 +109,8 @@ def generar_test_avanzado_route():
                 logger.exception("Error al generar el test personalizado verificado")
                 resultado = {"test": [], "error": "Error inesperado al generar el test"}
             if not resultado.get("test"):
-                devolver_uso(db, uid, "test_avanzado_verificado", plan_actual, cantidad=num_preguntas)
+                for tipo_cuota in TIPOS_CUOTA_TEST_PERSONALIZADO:
+                    devolver_uso(db, uid, tipo_cuota, plan_actual, cantidad=num_preguntas)
             eventos.put({"tipo": "fin", **resultado})
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
@@ -121,30 +129,14 @@ def generar_test_avanzado_route():
     )
 
 
-@bp.route("/generar-esquema", methods=["POST"])
-@requiere_plan(db, "basico")
-def generar_esquema_route():
-    data = request.get_json(silent=True)
-    if not data:
-        logger.warning("No se ha recibido JSON en la petición")
-        return jsonify({"error": "No se ha recibido un cuerpo JSON válido"}), 400
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "generacion_ia")
-    if not permitido:
-        return jsonify({"error": mensaje_error}), 429
-    logger.info("Datos recibidos en /generar-esquema: %s", data)
-    temas = data.get("temas", [])
-    instrucciones = data.get("instrucciones", "Resume los contenidos clave.")
-    nivel = data.get("nivel", "general")
-    resultado = generar_esquema(temas=temas, db=db, instrucciones=instrucciones, nivel=nivel, coleccion=coleccion_temario(g.oposicion))
-    registrar_uso(db, g.uid, "generacion_ia", g.plan_actual)
-    return jsonify({"esquema": resultado})
-
-
 @bp.route("/generar-test-oficial", methods=["POST"])
 @requiere_plan(db, "basico")
 def generar_test_oficial():
     data = request.get_json()
     logger.info("Ruta /generar-test-oficial llamada con datos: %s", data)
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "test_oficial")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     try:
         # El tope sube a 120 (no 100) porque el simulacro oficial de Auxiliar
         # son 110 preguntas reales (60 primera parte + 50 segunda, ver
@@ -195,6 +187,10 @@ def generar_test_oficial():
     pesos_por_bloque = calcular_pesos_reales_por_bloque(db, g.oposicion) if modo_reparto == "realista" else None
     seleccionadas = seleccionar_preguntas_con_cuota(preguntas, num_preguntas, temas_filtrados, modo_reparto=modo_reparto, pesos_por_bloque=pesos_por_bloque)
     logger.info("Preguntas seleccionadas: %d", len(seleccionadas))
+    # Igual que en el Test Personalizado, el cupo se cobra en PREGUNTAS
+    # realmente entregadas (no en el nº pedido, por si hay menos disponibles).
+    if seleccionadas:
+        registrar_uso(db, g.uid, "test_oficial", g.plan_actual, cantidad=len(seleccionadas))
     return jsonify({"test": seleccionadas})
 
 
@@ -247,7 +243,7 @@ def analisis_rendimiento():
     if len(filas) < 2:
         return jsonify({"analisis": None, "mensaje": "Todavía no tienes suficientes tests por tema para un análisis. ¡Sigue practicando y vuelve a intentarlo más adelante!"})
 
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "generacion_ia")
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "analisis_ia")
     if not permitido:
         return jsonify({"analisis": None, "mensaje": mensaje_error}), 429
 
@@ -272,7 +268,7 @@ Escribe un análisis breve (máximo 3-4 frases), cercano y motivador, en españo
 
     if not analisis:
         return jsonify({"analisis": None, "mensaje": "No se ha podido generar el análisis ahora mismo. Inténtalo de nuevo más tarde."})
-    registrar_uso(db, g.uid, "generacion_ia", g.plan_actual)
+    registrar_uso(db, g.uid, "analisis_ia", g.plan_actual)
     return jsonify({"analisis": analisis.strip()})
 
 

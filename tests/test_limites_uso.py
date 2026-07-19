@@ -16,20 +16,20 @@ def test_plan_sin_esta_herramienta_queda_bloqueado(db):
 
 
 def test_usuario_nuevo_sin_uso_previo_puede_usarla(db):
-    permitido, mensaje, usados, limite = verificar_limite_uso(db, "u1", "basico", "generacion_ia")
+    permitido, mensaje, usados, limite = verificar_limite_uso(db, "u1", "basico", "analisis_ia")
     assert permitido is True
     assert mensaje is None
     assert usados == 0
 
 
 def test_bloquea_al_alcanzar_el_limite_diario(db):
-    # Básico cuenta por día (cupo bajo y visible a propósito: 5 usos/día).
+    # Test Oficial cuenta por día (cupo bajo y visible a propósito: 50/día en básico).
     clave_dia = date.today().isoformat()
-    db.sembrar(("usuarios", "u1"), {"limites_uso": {"generacion_ia": {"periodo": clave_dia, "contador": 5}}})
-    permitido, mensaje, usados, limite = verificar_limite_uso(db, "u1", "basico", "generacion_ia")
+    db.sembrar(("usuarios", "u1"), {"limites_uso": {"test_oficial": {"periodo": clave_dia, "contador": 50}}})
+    permitido, mensaje, usados, limite = verificar_limite_uso(db, "u1", "basico", "test_oficial")
     assert permitido is False
-    assert usados == 5
-    assert limite == 5
+    assert usados == 50
+    assert limite == 50
     assert "diario" in mensaje
 
 

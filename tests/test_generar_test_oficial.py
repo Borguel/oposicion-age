@@ -286,6 +286,48 @@ def test_ruta_generar_test_oficial_bloqueada_para_plan_gratis(client, db):
         parche.stop()
 
 
+def test_ruta_generar_test_oficial_registra_uso_en_preguntas(client, db):
+    for i in range(5):
+        db.sembrar(("examenes_oficiales_AGE", f"a{i}"), {"tipo": "pregunta", **_pregunta(i, "bloque_01-tema_01")})
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}}
+    })
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/generar-test-oficial",
+            json={"num_preguntas": 3, "oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"}
+        )
+        assert resp.status_code == 200
+        datos_usuario = db.leer(("usuarios", "u1"))
+        # El cupo se cobra en PREGUNTAS entregadas, igual que el Test Personalizado.
+        assert datos_usuario["limites_uso"]["test_oficial"]["contador"] == 3
+    finally:
+        parche.stop()
+
+
+def test_ruta_generar_test_oficial_429_si_supera_el_limite_diario(client, db):
+    from limites_uso import _clave_periodo
+    db.sembrar(("examenes_oficiales_AGE", "a1"), {"tipo": "pregunta", **_pregunta(1, "bloque_01-tema_01")})
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
+        "limites_uso": {"test_oficial": {"periodo": _clave_periodo("dia"), "contador": 50}}
+    })
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/generar-test-oficial",
+            json={"num_preguntas": 5, "oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"}
+        )
+        assert resp.status_code == 429
+    finally:
+        parche.stop()
+
+
 # ============================================================
 # /guardar-test-oficial
 # ============================================================

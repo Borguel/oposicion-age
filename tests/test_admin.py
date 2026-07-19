@@ -270,7 +270,7 @@ def test_usuarios_lista_incluye_uso_y_ordena_por_uso(client, db):
                                         "ultima_actividad": "2026-07-14"})
     db.sembrar(("usuarios", "u_alto"), {"email": "alto@x.com", "suscripciones": {"AGE": {"plan": "basico"}},
                                         "ultima_actividad": "2026-07-01",
-                                        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 60}}})
+                                        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 50}}})
     with _como():
         d = client.get("/admin/api/usuarios?orden=uso", headers=_AUTH).get_json()
     # El de más uso va primero al ordenar por uso.
@@ -285,14 +285,14 @@ def test_detalle_usuario_incluye_uso_herramientas(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@x.com",
         "suscripciones": {"AGE": {"plan": "basico"}},
-        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 30}},
+        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 25}},
     })
     with _como():
         d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
     filas = {f["id"]: f for f in d["uso_herramientas"]["filas"]}
     tp = filas["test_avanzado_verificado"]
-    assert tp["consumido"] == 30
-    assert tp["limite"] == 60  # básico por defecto
+    assert tp["consumido"] == 25
+    assert tp["limite"] == 50  # básico por defecto
     assert tp["porcentaje"] == 50
     assert tp["unidad"] == "preguntas"
     # Tu Tutor no está incluido en básico -> límite 0.
