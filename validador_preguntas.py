@@ -38,6 +38,9 @@ def validar_pregunta(pregunta):
     if not all(opcion in opciones for opcion in ["A", "B", "C", "D"]):
         return False
 
+    if not isinstance(pregunta["pregunta"], str) or not isinstance(pregunta["explicacion"], str):
+        return False
+
     # ❌ Filtro de frases prohibidas
     texto_total = (pregunta["pregunta"] + " " + pregunta["explicacion"]).lower()
     frases_prohibidas = [

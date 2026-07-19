@@ -56,6 +56,16 @@ def test_rechaza_explicacion_demasiado_corta():
     assert validar_pregunta(_pregunta_valida(explicacion="Porque sí.")) is False
 
 
+def test_rechaza_pregunta_con_campos_no_string_en_vez_de_petar():
+    # Si DeepSeek devuelve "pregunta" o "explicacion" con un tipo raro (None,
+    # un número...) a pesar del modo JSON forzado, esto debe descartarse como
+    # cualquier otra pregunta mal formada -- nunca lanzar un TypeError al
+    # concatenarlo con " " más abajo, que tiraría todo el lote de
+    # generar_test_verificado (ver test_generador_preguntas_verificado.py).
+    assert validar_pregunta(_pregunta_valida(pregunta=None)) is False
+    assert validar_pregunta(_pregunta_valida(explicacion=123)) is False
+
+
 def test_acepta_explicacion_justo_en_el_limite():
     # 15 caracteres exactos: el filtro rechaza < 15, así que esto debe pasar.
     assert validar_pregunta(_pregunta_valida(explicacion="123456789012345")) is True

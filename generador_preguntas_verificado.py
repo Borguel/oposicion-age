@@ -23,6 +23,7 @@ ya retirado): aquí,
      del test para siempre.
 """
 import json
+import logging
 import random
 import re
 import threading
@@ -37,6 +38,8 @@ from utils import (
 from validador_preguntas import validar_pregunta
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 from banco_preguntas_ia import guardar_pregunta_generada
+
+logger = logging.getLogger(__name__)
 
 MAX_INTENTOS_POR_PREGUNTA = 4
 _MAX_WORKERS = 6
@@ -473,7 +476,16 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
             for tid in huecos
         ]
         for futuro in as_completed(futuros):
-            resultado = futuro.result()
+            try:
+                resultado = futuro.result()
+            except Exception:
+                # Un fallo inesperado en UN hueco (p. ej. una forma de
+                # respuesta de DeepSeek que ningún "continue" contemplaba)
+                # no debe tirar todas las preguntas ya aceptadas por los
+                # demás hilos -- se trata como una pregunta descartada más,
+                # igual que si no hubiera superado la verificación.
+                logger.exception("Fallo inesperado generando una pregunta del test personalizado")
+                resultado = None
             completadas += 1
             if resultado:
                 preguntas.append(resultado)

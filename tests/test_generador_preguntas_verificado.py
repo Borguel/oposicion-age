@@ -210,6 +210,50 @@ def test_generar_test_verificado_reparte_cupo_y_reporta_progreso(db):
     assert all(p["tema_id"] for p in guardadas)
 
 
+def test_generar_test_verificado_sobrevive_a_un_fallo_inesperado_de_un_hueco(db):
+    # Reproduce el caso real reportado: con varios huecos generándose en
+    # paralelo, si UNO revienta con una excepción inesperada (aquí forzada
+    # directamente sobre _generar_pregunta_verificada, simulando por ejemplo
+    # una forma de respuesta de DeepSeek que ningún "continue" contemplaba),
+    # las preguntas que los OTROS hilos ya habían aceptado no deben perderse
+    # ni propagar el error hacia arriba -- se cuenta como una más descartada.
+    relleno = " ".join(["palabra"] * 30)
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del subbloque. {relleno}"
+    })
+
+    contador = itertools.count()
+    lock_contador = threading.Lock()
+
+    def _peta_la_primera_vez(subbloques_tema, tema_id, oposicion, subbloques_ya_usados,
+                              preguntas_ya_aceptadas, lock, on_usage=None, max_intentos=4):
+        with lock_contador:
+            n = next(contador)
+        if n == 0:
+            raise ValueError("forma de respuesta inesperada de DeepSeek")
+        return {
+            "pregunta": f"¿Pregunta {n}?",
+            "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"},
+            "respuesta_correcta": "A",
+            "explicacion": "Explicación suficientemente larga para pasar la validación.",
+            "tema_id": tema_id,
+            "tipo_pregunta": "memoria_literal",
+        }
+
+    with patch("generador_preguntas_verificado._generar_pregunta_verificada",
+               side_effect=_peta_la_primera_vez), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        resultado = generar_test_verificado(
+            db, temas=["bloque_01-tema_01"], num_preguntas=3,
+            coleccion="Temario AGE", oposicion="AGE"
+        )
+
+    # Las 2 preguntas de los huecos que SÍ funcionaron llegan igual, en vez
+    # de perderse todas por el fallo del tercero.
+    assert len(resultado["test"]) == 2
+    assert resultado["descartadas"] == 1
+
+
 def test_generar_test_verificado_modo_realista_pondera_por_bloque(db):
     relleno = " ".join(["palabra"] * 30)
     db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
