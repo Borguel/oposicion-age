@@ -77,9 +77,8 @@ body {
 
 .cta-prueba {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   max-width: 800px;
   margin: 0 auto 24px;
@@ -87,12 +86,26 @@ body {
   border-radius: var(--age-radius-lg);
   background: var(--age-primary-soft);
   border: 1px solid var(--age-primary);
+  text-align: center;
 }
 
 .cta-prueba-texto {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
+}
+
+@media (min-width: 640px) {
+  .cta-prueba {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    text-align: left;
+  }
+  .cta-prueba-texto {
+    align-items: flex-start;
+  }
 }
 
 .cta-prueba-texto strong {
@@ -270,35 +283,32 @@ body {
 .planes-confianza {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
-  gap: 12px;
-  max-width: 800px;
+  row-gap: 8px;
+  column-gap: 20px;
+  max-width: 700px;
   margin: 0 auto 28px;
   padding: 0 20px;
 }
 
+/* Una fila compacta de texto (con icono pequeño inline) en vez de tres
+   píldoras grandes apiladas -- mismo mensaje, mucha menos altura de
+   página, sobre todo en móvil. Sin separadores entre elementos: al
+   envolver en varias líneas dejaban un "·" huérfano al principio de
+   línea. */
 .planes-confianza-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  background: var(--age-card);
-  border: 1px solid var(--age-border);
-  border-radius: var(--age-radius-pill);
-  padding: 9px 18px 9px 10px;
-  font-size: 13.5px;
+  gap: 5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--age-ink-soft);
+  white-space: nowrap;
 }
 
 .planes-confianza-icono {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--age-primary-soft);
+  display: inline-flex;
   color: var(--age-primary-dark);
 }
 

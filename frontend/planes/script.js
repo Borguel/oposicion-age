@@ -22,10 +22,10 @@ const CONFIANZA = [
 function renderizarConfianza() {
   const contenedor = document.getElementById("planes-confianza");
   contenedor.innerHTML = CONFIANZA.map((item) => `
-    <div class="planes-confianza-item">
-      <span class="planes-confianza-icono">${icono(item.icono, 18)}</span>
+    <span class="planes-confianza-item">
+      <span class="planes-confianza-icono">${icono(item.icono, 14)}</span>
       <span>${item.texto}</span>
-    </div>
+    </span>
   `).join("");
 }
 
