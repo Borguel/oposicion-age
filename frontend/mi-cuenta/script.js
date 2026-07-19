@@ -69,12 +69,18 @@ function renderizarOposiciones() {
 
     let accionesHtml = "";
     if (plan !== "gratis") {
+      const fechaRenovacion = sub.current_period_end ? formatearFecha(sub.current_period_end) : "";
       accionesHtml = sub.cancelar_al_final_periodo
-        ? `<div class="cuenta-oposicion-baja-info">
-             <span class="cuenta-oposicion-baja-texto">Se cancelará el ${formatearFecha(sub.current_period_end)}</span>
-             <button type="button" class="cuenta-btn-link" data-accion="reactivar" data-oposicion="${op.id}">Reactivar suscripción</button>
+        ? `<div class="cuenta-oposicion-baja-info cuenta-oposicion-baja-info-aviso">
+             <span class="cuenta-oposicion-baja-texto">
+               ${fechaRenovacion
+                 ? `Tendrás acceso hasta el <strong>${fechaRenovacion}</strong>. Si no reactivas antes de esa fecha, perderás el acceso a este plan.`
+                 : "Tu suscripción se cancelará al final del periodo ya pagado."}
+             </span>
+             <button type="button" class="age-btn age-btn-primary cuenta-btn-reactivar" data-accion="reactivar" data-oposicion="${op.id}">Reactivar suscripción</button>
            </div>`
         : `<div class="cuenta-oposicion-baja-info">
+             <span class="cuenta-oposicion-baja-texto">${fechaRenovacion ? `Próxima renovación: <strong>${fechaRenovacion}</strong>` : ""}</span>
              <button type="button" class="cuenta-btn-link cuenta-btn-link-danger" data-accion="cancelar" data-oposicion="${op.id}">Cancelar suscripción</button>
            </div>`;
     }

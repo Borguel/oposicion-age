@@ -190,6 +190,24 @@ body {
   color: var(--age-ink-soft);
 }
 
+.cuenta-oposicion-baja-info-aviso {
+  background: var(--age-warning-bg);
+  border: 1px solid var(--age-warning);
+  border-radius: var(--age-radius-sm, 8px);
+  padding: 10px 14px;
+  margin-top: 4px;
+}
+
+.cuenta-oposicion-baja-info-aviso .cuenta-oposicion-baja-texto {
+  color: var(--age-ink);
+}
+
+.cuenta-btn-reactivar {
+  font-size: 13.5px;
+  padding: 8px 16px;
+  white-space: nowrap;
+}
+
 .cuenta-btn-link {
   background: none;
   border: none;
