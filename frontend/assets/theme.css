@@ -416,6 +416,63 @@ body {
   text-transform: uppercase;
 }
 
+/* ---------- Centro de notificaciones (campanita) ---------- */
+.age-notificaciones {
+  position: relative;
+}
+
+.age-notificaciones-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.age-notificaciones-panel {
+  width: min(340px, 90vw);
+}
+
+.age-notificaciones-lista {
+  max-height: 340px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.age-notificaciones-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--age-radius-sm);
+  font-size: 13.5px;
+  color: var(--age-ink);
+  text-decoration: none;
+}
+
+.age-notificaciones-item:hover {
+  background: var(--age-bg);
+}
+
+.age-notificaciones-item-icono {
+  flex-shrink: 0;
+  color: var(--age-primary);
+  margin-top: 1px;
+}
+
 /* ---------- Menú de cuenta (avatar + desplegable) ---------- */
 .age-account {
   position: relative;

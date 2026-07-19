@@ -493,6 +493,105 @@ function construirBusquedaGlobal(user) {
   }
 }
 
+// Centro de notificaciones in-app: avisos derivados de datos que ya se
+// piden en otras páginas (prueba a punto de terminar, suscripción con baja
+// programada, preguntas falladas pendientes de repasar), sin depender del
+// permiso de notificaciones push del navegador (que además solo cubre la
+// racha, ver /tareas/recordatorios-racha). Nada de esto es una colección
+// nueva en Firestore -- es solo una lectura distinta de perfiles/cupos ya
+// existentes, calculada de nuevo en cada carga de página.
+async function calcularNotificaciones() {
+  const notis = [];
+  try {
+    const { obtenerPlan } = await import("/assets/plan.js");
+    const perfil = await obtenerPlan();
+    if (perfil.prueba_activa && perfil.prueba_fin) {
+      const dias = Math.ceil((new Date(perfil.prueba_fin) - new Date()) / (1000 * 60 * 60 * 24));
+      if (dias <= 2) {
+        notis.push({
+          iconoNombre: "reloj",
+          texto: dias <= 0 ? "Tu prueba gratuita termina hoy." : `Tu prueba gratuita termina en ${dias} día${dias === 1 ? "" : "s"}.`,
+          href: "/planes/",
+        });
+      }
+    }
+    for (const [op, sub] of Object.entries(perfil.suscripciones || {})) {
+      if (sub && sub.cancelar_al_final_periodo && sub.current_period_end) {
+        const fecha = new Date(sub.current_period_end).toLocaleDateString("es-ES", { day: "numeric", month: "long" });
+        notis.push({
+          iconoNombre: "salir",
+          texto: `Tu plan en ${op} se cancela el ${fecha}.`,
+          href: "/mi-cuenta/",
+        });
+      }
+    }
+  } catch (e) { /* sin perfil disponible: se omiten estos avisos, no rompe el resto */ }
+
+  try {
+    const token = await idToken();
+    const oposicion = obtenerOposicionActual();
+    const res = await fetch(`${BACKEND_URL}/preguntas-pendientes-repaso?oposicion=${encodeURIComponent(oposicion)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const { total_pendientes } = await res.json();
+      if (total_pendientes) {
+        const plural = total_pendientes === 1 ? "" : "s";
+        notis.push({
+          iconoNombre: "estrella",
+          texto: `Tienes ${total_pendientes} pregunta${plural} fallada${plural} sin repasar.`,
+          href: "/repasar-preguntas/",
+        });
+      }
+    }
+  } catch (e) { /* igual: se omite este aviso concreto si falla */ }
+
+  return notis;
+}
+
+function renderizarNotificaciones(lista, notis) {
+  if (!notis.length) {
+    lista.innerHTML = `<p class="age-buscador-vacio">No tienes avisos pendientes.</p>`;
+    return;
+  }
+  lista.innerHTML = notis.map((n) => `
+    <a class="age-notificaciones-item" href="${n.href}">
+      <span class="age-notificaciones-item-icono">${icono(n.iconoNombre, 17)}</span>
+      <span>${escapeHtmlBuscador(n.texto)}</span>
+    </a>
+  `).join("");
+}
+
+function construirNotificaciones(user) {
+  const utilidades = document.querySelector(".age-nav-utilidades");
+  utilidades?.querySelector(".age-notificaciones")?.remove();
+  if (!utilidades || !user) return;
+
+  const cont = document.createElement("div");
+  cont.className = "age-notificaciones";
+  cont.innerHTML = `
+    <button type="button" class="age-nav-icon-btn" data-popover-toggle aria-label="Notificaciones">${icono("campana", 18)}<span class="age-notificaciones-badge" hidden></span></button>
+    <div class="age-popover age-notificaciones-panel" data-popover-panel>
+      <div class="age-notificaciones-lista"><p class="age-buscador-vacio">Cargando…</p></div>
+    </div>
+  `;
+  utilidades.appendChild(cont);
+
+  const badge = cont.querySelector(".age-notificaciones-badge");
+  const lista = cont.querySelector(".age-notificaciones-lista");
+  const promesaNotis = calcularNotificaciones().then((notis) => {
+    if (notis.length) {
+      badge.hidden = false;
+      badge.textContent = String(notis.length);
+    }
+    return notis;
+  }).catch(() => []);
+
+  activarPopover(cont, {
+    onAbrir: async () => renderizarNotificaciones(lista, await promesaNotis),
+  });
+}
+
 function construirMenuCuenta(user) {
   const right = document.getElementById("age-nav-right");
   if (!right) return;
@@ -790,6 +889,7 @@ function inyectarNav(user) {
   construirEsqueletoNav();
   inyectarSelectorOposicion(!!user);
   construirBusquedaGlobal(user);
+  construirNotificaciones(user);
   construirMenuCuenta(user);
   inyectarBannerVerificacion(user);
   inyectarBannerPrueba(user);
