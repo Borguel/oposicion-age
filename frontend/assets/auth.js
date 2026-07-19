@@ -885,7 +885,29 @@ async function inyectarEnlaceAdmin(user) {
   links.appendChild(enlace);
 }
 
+// Enlace "Saltar al contenido principal", invisible hasta que recibe foco
+// por teclado (Tab), para no obligar a quien navega sin ratón a pasar por
+// todos los enlaces de la nav en cada página. Se asume que el elemento
+// justo después de <nav class="age-nav"> es el contenido principal de la
+// página -- patrón que siguen todas las páginas del sitio -- y se le da
+// un id en tiempo de ejecución si no tiene ya uno, para no tener que
+// retocar el HTML de cada página una a una.
+function inyectarSaltoDeContenido() {
+  if (document.querySelector(".age-skip-link")) return;
+  const nav = document.querySelector(".age-nav");
+  const contenido = nav?.nextElementSibling;
+  if (!contenido) return;
+  if (!contenido.id) contenido.id = "contenido-principal";
+
+  const enlace = document.createElement("a");
+  enlace.className = "age-skip-link";
+  enlace.href = `#${contenido.id}`;
+  enlace.textContent = "Saltar al contenido principal";
+  document.body.insertBefore(enlace, document.body.firstChild);
+}
+
 function inyectarNav(user) {
+  inyectarSaltoDeContenido();
   construirEsqueletoNav();
   inyectarSelectorOposicion(!!user);
   construirBusquedaGlobal(user);

@@ -106,12 +106,41 @@ function renderizarOposiciones() {
   return algunaDePago;
 }
 
+// Accesibilidad compartida por los modales de esta página (cancelar
+// suscripción / eliminar cuenta): Escape cierra (con el botón "seguro" que
+// se le indique), el foco no se escapa del modal mientras está abierto
+// (Tab/Shift+Tab), y al cerrarlo el foco vuelve a donde estaba antes de
+// abrirlo -- igual que ya hace el modal genérico del panel de admin.
+function activarAccesibilidadModal(modal, botonCerrarSeguro) {
+  let elementoPrevio = null;
+  function estaAbierto() { return modal.style.display !== "none" && modal.style.display !== ""; }
+  function focables() {
+    return Array.from(modal.querySelectorAll('input, select, textarea, button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'));
+  }
+  document.addEventListener("keydown", (e) => {
+    if (!estaAbierto()) return;
+    if (e.key === "Escape") { botonCerrarSeguro.click(); return; }
+    if (e.key !== "Tab") return;
+    const els = focables();
+    if (!els.length) return;
+    const primero = els[0];
+    const ultimo = els[els.length - 1];
+    if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+  });
+  return {
+    alAbrir() { elementoPrevio = document.activeElement; modal.querySelector('[tabindex="-1"]')?.focus(); },
+    alCerrar() { elementoPrevio?.focus(); elementoPrevio = null; },
+  };
+}
+
 let oposicionParaCancelar = null;
 const modalCancelar = document.getElementById("modal-cancelar-suscripcion");
 const listaMotivos = document.getElementById("cancelar-motivos-lista");
 const campoComentario = document.getElementById("cancelar-comentario");
 const btnConfirmarCancelar = document.getElementById("btn-confirmar-cancelar");
 const cancelarMensajeError = document.getElementById("cancelar-mensaje-error");
+const a11yModalCancelar = activarAccesibilidadModal(modalCancelar, document.getElementById("btn-seguir-con-plan"));
 
 function abrirModalCancelar(oposicionId) {
   oposicionParaCancelar = oposicionId;
@@ -121,6 +150,7 @@ function abrirModalCancelar(oposicionId) {
   cancelarMensajeError.style.display = "none";
   btnConfirmarCancelar.textContent = "Cancelar mi suscripción";
   modalCancelar.style.display = "flex";
+  a11yModalCancelar.alAbrir();
 }
 
 listaMotivos.addEventListener("change", () => {
@@ -129,6 +159,7 @@ listaMotivos.addEventListener("change", () => {
 
 document.getElementById("btn-seguir-con-plan").addEventListener("click", () => {
   modalCancelar.style.display = "none";
+  a11yModalCancelar.alCerrar();
 });
 
 btnConfirmarCancelar.addEventListener("click", async () => {
@@ -153,6 +184,7 @@ btnConfirmarCancelar.addEventListener("click", async () => {
     };
     renderizarOposiciones();
     modalCancelar.style.display = "none";
+    a11yModalCancelar.alCerrar();
   } catch (error) {
     cancelarMensajeError.textContent = error.message || "No se pudo cancelar la suscripción.";
     cancelarMensajeError.style.display = "block";
@@ -272,16 +304,19 @@ const modalEliminar = document.getElementById("modal-eliminar-cuenta");
 const campoConfirmar = document.getElementById("campo-confirmar-eliminar");
 const btnConfirmarEliminar = document.getElementById("btn-confirmar-eliminar");
 const eliminarMensajeError = document.getElementById("eliminar-mensaje-error");
+const a11yModalEliminar = activarAccesibilidadModal(modalEliminar, document.getElementById("btn-cancelar-eliminar"));
 
 document.getElementById("btn-eliminar-cuenta").addEventListener("click", () => {
   campoConfirmar.value = "";
   btnConfirmarEliminar.disabled = true;
   eliminarMensajeError.style.display = "none";
   modalEliminar.style.display = "flex";
+  a11yModalEliminar.alAbrir();
 });
 
 document.getElementById("btn-cancelar-eliminar").addEventListener("click", () => {
   modalEliminar.style.display = "none";
+  a11yModalEliminar.alCerrar();
 });
 
 campoConfirmar.addEventListener("input", () => {

@@ -118,17 +118,48 @@ function mostrarNoAutorizado() {
 // ===== modal =====
 const modal = document.getElementById("admin-modal");
 const modalContenido = document.getElementById("admin-modal-contenido");
+let elementoAntesDelModal = null;
+
+function focablesDelModal() {
+  return Array.from(modal.querySelectorAll('input, select, textarea, button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'));
+}
+
+function atraparTabEnModal(e) {
+  if (e.key !== "Tab" || modal.hidden) return;
+  const focables = focablesDelModal();
+  if (!focables.length) return;
+  const primero = focables[0];
+  const ultimo = focables[focables.length - 1];
+  if (e.shiftKey && document.activeElement === primero) {
+    e.preventDefault();
+    ultimo.focus();
+  } else if (!e.shiftKey && document.activeElement === ultimo) {
+    e.preventDefault();
+    primero.focus();
+  }
+}
+
 function abrirModal(html) {
+  elementoAntesDelModal = document.activeElement;
   modalContenido.innerHTML = html;
   modal.hidden = false;
+  // Mueve el foco dentro del modal al abrirlo (el botón de cerrar, siempre
+  // presente) -- si no, quien navega con teclado seguiría con el foco en
+  // un elemento que ha quedado detrás, invisible tras el modal.
+  document.getElementById("admin-modal-cerrar")?.focus();
 }
 function cerrarModal() {
   modal.hidden = true;
   modalContenido.innerHTML = "";
+  elementoAntesDelModal?.focus();
+  elementoAntesDelModal = null;
 }
 document.getElementById("admin-modal-cerrar").addEventListener("click", cerrarModal);
 modal.addEventListener("click", (e) => { if (e.target === modal) cerrarModal(); });
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.hidden) cerrarModal(); });
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !modal.hidden) cerrarModal();
+  atraparTabEnModal(e);
+});
 
 // ===== pestañas =====
 const RENDERS = {

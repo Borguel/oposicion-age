@@ -92,9 +92,9 @@
     </main>
   </div>
 
-  <div class="cuenta-modal-overlay" id="modal-cancelar-suscripcion" style="display:none;">
+  <div class="cuenta-modal-overlay" id="modal-cancelar-suscripcion" role="dialog" aria-modal="true" aria-labelledby="cancelar-modal-titulo" style="display:none;">
     <div class="age-card cuenta-modal-card">
-      <h2 class="cuenta-modal-titulo">Cancelar tu suscripción</h2>
+      <h2 class="cuenta-modal-titulo" id="cancelar-modal-titulo" tabindex="-1">Cancelar tu suscripción</h2>
       <p class="cuenta-modal-subtitulo">
         Mantendrás el acceso hasta el final de tu periodo ya pagado. A partir de ahí perderás los tests ilimitados, las herramientas de IA (Tu Tutor, resúmenes, esquemas, tarjetas de memoria...), las estadísticas avanzadas y el resto de ventajas de tu plan.
       </p>
@@ -118,9 +118,9 @@
     </div>
   </div>
 
-  <div class="cuenta-modal-overlay" id="modal-eliminar-cuenta" style="display:none;">
+  <div class="cuenta-modal-overlay" id="modal-eliminar-cuenta" role="dialog" aria-modal="true" aria-labelledby="eliminar-modal-titulo" style="display:none;">
     <div class="age-card cuenta-modal-card">
-      <h2 class="cuenta-modal-titulo">Eliminar tu cuenta</h2>
+      <h2 class="cuenta-modal-titulo" id="eliminar-modal-titulo" tabindex="-1">Eliminar tu cuenta</h2>
       <p class="cuenta-modal-subtitulo">
         Esto borrará permanentemente tu perfil, tests, documentos y todo lo demás asociado a tu cuenta, y cancelará cualquier suscripción activa. No se puede deshacer.
       </p>

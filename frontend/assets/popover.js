@@ -8,11 +8,21 @@
 // referencias, que quedarían colgando cuando la nav se reconstruye.
 let instalado = false;
 
+function primerElementoFocable(panel) {
+  return panel.querySelector('input, a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])');
+}
+
 function cerrarAbiertos(elementoClic) {
   document.querySelectorAll(".age-popover-root.open").forEach((raiz) => {
     if (elementoClic && raiz.contains(elementoClic)) return;
+    const boton = raiz.querySelector("[data-popover-toggle]");
+    const panel = raiz.querySelector("[data-popover-panel]");
+    // Si el foco de teclado estaba dentro del panel que se cierra (p. ej.
+    // se cerró con Escape), se devuelve al botón que lo abrió -- si no,
+    // el foco se quedaría "perdido" en un elemento ya invisible.
+    if (panel?.contains(document.activeElement)) boton?.focus();
     raiz.classList.remove("open");
-    raiz.querySelector("[data-popover-toggle]")?.setAttribute("aria-expanded", "false");
+    boton?.setAttribute("aria-expanded", "false");
   });
 }
 
@@ -35,13 +45,21 @@ export function activarPopover(raiz, { onAbrir } = {}) {
   const panel = raiz.querySelector("[data-popover-panel]");
   if (!boton || !panel) return;
   boton.setAttribute("aria-expanded", "false");
+  boton.setAttribute("aria-haspopup", "dialog");
+  if (!panel.hasAttribute("role")) panel.setAttribute("role", "dialog");
   boton.addEventListener("click", (evento) => {
     evento.stopPropagation();
     const abriendo = !raiz.classList.contains("open");
     cerrarAbiertos(null);
     raiz.classList.toggle("open", abriendo);
     boton.setAttribute("aria-expanded", String(abriendo));
-    if (abriendo) onAbrir?.();
+    if (abriendo) {
+      onAbrir?.();
+      // Mueve el foco de teclado dentro del panel al abrirlo (primer campo
+      // o enlace) -- sin esto, alguien navegando solo con teclado no tenía
+      // forma de saber que el panel se había abierto ni de llegar a él.
+      setTimeout(() => primerElementoFocable(panel)?.focus(), 0);
+    }
   });
   panel.addEventListener("click", (evento) => evento.stopPropagation());
 }
