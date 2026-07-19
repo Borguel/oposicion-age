@@ -43,15 +43,19 @@ function renderizarEstadoPrueba(pruebaActiva, pruebaFin, algunaDePago) {
   if (pruebaActiva) {
     contenedor.className = "age-card cuenta-prueba cuenta-prueba-activa";
     contenedor.innerHTML = `
-      <strong>Estás en tu prueba gratuita Premium</strong>
-      <p>Te ${diasRestantes === 1 ? "queda 1 día" : `quedan ${diasRestantes} días`}, hasta el ${formatearFecha(pruebaFin)}. Elige un plan antes de que termine para no perder el acceso.</p>
+      <div class="cuenta-prueba-texto">
+        <strong>Estás en tu prueba gratuita Premium</strong>
+        <p>Te ${diasRestantes === 1 ? "queda 1 día" : `quedan ${diasRestantes} días`}, hasta el ${formatearFecha(pruebaFin)}. Elige un plan antes de que termine para no perder el acceso.</p>
+      </div>
       <a href="/planes/" class="age-btn age-btn-primary">Ver planes</a>
     `;
   } else {
     contenedor.className = "age-card cuenta-prueba cuenta-prueba-terminada";
     contenedor.innerHTML = `
-      <strong>Tu prueba gratuita ha terminado</strong>
-      <p>Terminó el ${formatearFecha(pruebaFin)}. Elige un plan para seguir usando Domina tu Opo; tus datos y tests ya hechos siguen a salvo.</p>
+      <div class="cuenta-prueba-texto">
+        <strong>Tu prueba gratuita ha terminado</strong>
+        <p>Terminó el ${formatearFecha(pruebaFin)}. Elige un plan para seguir usando Domina tu Opo; tus datos y tests ya hechos siguen a salvo.</p>
+      </div>
       <a href="/planes/" class="age-btn age-btn-primary">Ver planes</a>
     `;
   }

@@ -24,16 +24,16 @@ body {
 
 .cuenta-prueba {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  text-align: center;
+  gap: 10px;
+  padding: 22px 24px;
 }
 
 .cuenta-prueba strong {
   display: block;
-  font-size: 1.02rem;
-  margin-bottom: 4px;
+  font-size: 1.05rem;
 }
 
 .cuenta-prueba p {
@@ -41,6 +41,26 @@ body {
   font-size: 13.5px;
   color: var(--age-ink-soft);
   max-width: 480px;
+}
+
+@media (min-width: 640px) {
+  .cuenta-prueba {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    text-align: left;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .cuenta-prueba-texto {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cuenta-prueba .age-btn {
+    flex-shrink: 0;
+  }
 }
 
 .cuenta-prueba-activa {
