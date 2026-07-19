@@ -6,6 +6,7 @@ import { icono } from "/assets/icons.js";
 import { fijarTexto, fijarHTML } from "/assets/dom.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { inicializarCuentaAtras } from "/assets/cuenta-atras.js";
+import { mostrarTourZonaOpositor } from "/assets/onboarding-tour.js";
 
 const MENSAJES_RACHA = [
   { minimo: 0, texto: "Empieza hoy tu racha: haz un test o repasa algo para arrancar." },
@@ -468,6 +469,7 @@ async function iniciar() {
   renderAviso();
   renderSwitcher();
   renderOnboarding();
+  mostrarTourZonaOpositor();
   document.getElementById("zona-reabrir-onboarding").addEventListener("click", () => {
     localStorage.removeItem(CLAVE_ONBOARDING_CERRADO);
     renderOnboarding();
