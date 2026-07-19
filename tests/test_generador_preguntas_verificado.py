@@ -201,6 +201,14 @@ def test_generar_test_verificado_reparte_cupo_y_reporta_progreso(db):
     temas_de_las_preguntas = {p["tema_id"] for p in resultado["test"]}
     assert temas_de_las_preguntas == {"bloque_01-tema_01", "bloque_02-tema_01"}
 
+    # Toda pregunta aceptada se acumula también en el banco de preguntas de
+    # esa oposición (ver banco_preguntas_ia.py) -- de momento solo para
+    # tener un repositorio propio, no se usa aún en ninguna ruta pública.
+    guardadas = [doc.to_dict() for doc in db.collection("banco_preguntas_ia_AGE").stream()]
+    assert len(guardadas) == 4
+    assert {p["pregunta"] for p in guardadas} == {p["pregunta"] for p in resultado["test"]}
+    assert all(p["tema_id"] for p in guardadas)
+
 
 def test_generar_test_verificado_modo_realista_pondera_por_bloque(db):
     relleno = " ".join(["palabra"] * 30)

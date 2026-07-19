@@ -36,6 +36,7 @@ from utils import (
 )
 from validador_preguntas import validar_pregunta
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
+from banco_preguntas_ia import guardar_pregunta_generada
 
 MAX_INTENTOS_POR_PREGUNTA = 4
 _MAX_WORKERS = 6
@@ -476,6 +477,11 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
             completadas += 1
             if resultado:
                 preguntas.append(resultado)
+                # Se acumula aparte, por oposición, un banco de preguntas ya
+                # verificadas (ver banco_preguntas_ia.py) -- de momento solo
+                # para tener un repositorio propio de cara al futuro, no se
+                # usa todavía en ninguna ruta pública.
+                guardar_pregunta_generada(db, oposicion, resultado)
             else:
                 descartadas += 1
             if on_progreso:
