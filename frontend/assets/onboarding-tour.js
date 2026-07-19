@@ -179,24 +179,30 @@ export function mostrarTourTest() {
 // ---------- Tour 2: primeros pasos en Zona Opositor ----------
 const CLAVE_TOUR_ZONA_VISTO = "age_tour_zona_visto";
 
+// Los selectores apuntan a `.age-option-card`, la tarjeta de la propia
+// página, y no a `a[href="..."]` a secas: desde que la barra de navegación
+// también tiene enlaces a estas mismas URLs (selector de sesión en
+// auth.js), un selector genérico por href encontraba antes el enlace del
+// nav -- fijo arriba de la página -- en vez de la tarjeta del dashboard,
+// y el tour se quedaba "pegado" arriba sin recorrer la página.
 const PASOS_ZONA = [
   {
-    selector: 'a[href="/test-generator/"]',
+    selector: '.age-option-card[href="/test-generator/"]',
     titulo: "Genera tu primer test",
     texto: "Aquí creas un test personalizado con IA sobre los temas que elijas, o uno oficial con preguntas de exámenes reales."
   },
   {
-    selector: 'a[href="/subida-pdf-pagina-principal/"]',
+    selector: '.age-option-card[href="/subida-pdf-pagina-principal/"]',
     titulo: "Tus propios apuntes",
     texto: "Si tienes tus PDF, aquí genera resúmenes, esquemas, tarjetas de memoria y tests a partir de ellos."
   },
   {
-    selector: 'a[href="/tu-tutor/"]',
+    selector: '.age-option-card[href="/tu-tutor/"]',
     titulo: "Tu Tutor",
     texto: "Resuelve al momento cualquier duda sobre el temario o el proceso selectivo, charlando como con un profesor particular."
   },
   {
-    selector: 'a[href="/estadisticas/"]',
+    selector: '.age-option-card[href="/estadisticas/"]',
     titulo: "Tu progreso",
     texto: "Según vayas haciendo tests, aquí verás tu nota media y qué temas te cuestan más, para saber qué repasar."
   }

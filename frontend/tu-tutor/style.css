@@ -323,7 +323,13 @@ html { scroll-behavior: smooth; }
      caber en lo que quede del contenedor y sea ELLA la que scrollea, en
      vez de empujar la caja de escribir fuera de la pantalla. */
   min-height: 0;
-  scroll-behavior: smooth;
+  /* Sin scroll-behavior: smooth a propósito: durante el streaming,
+     actualizarBurbujaBot() fija chatMessages.scrollTop en cada fragmento
+     nuevo (varias veces por segundo). Con scroll suave, cada fragmento
+     relanzaba una animación que pisaba cualquier intento del usuario de
+     subir a releer -- el scroll manual perdía siempre porque el siguiente
+     fragmento llegaba antes de que la animación terminara. Con el salto
+     instantáneo, un scroll manual del usuario se respeta de inmediato. */
 }
 .welcome-message, .mensaje-user, .mensaje-bot {
   display: flex;
