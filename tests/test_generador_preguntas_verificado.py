@@ -148,6 +148,31 @@ def test_agotar_los_intentos_devuelve_none_sin_bloquear():
     assert mock_llamada.call_count == 4  # 2 intentos x (generar + verificar), nunca más
 
 
+def test_fallo_inesperado_en_un_intento_consume_solo_ese_intento():
+    # Si la respuesta de verificación viene con una forma que ningún
+    # "continue" contempla (aquí una lista en vez de un objeto, que hace
+    # que verificacion.get(...) reviente con AttributeError), el intento se
+    # descarta como cualquier otro y el hueco se recupera en el siguiente
+    # -- no se pierde el hueco entero a la primera.
+    subbloques_tema = [{
+        "etiqueta": "bloque_01-tema_01-sub_1", "titulo": "Ley 39/2015",
+        "texto": "Artículo 1. Contenido real de ejemplo para anclar la pregunta."
+    }]
+    with patch("generador_preguntas_verificado.call_deepseek_api", side_effect=[
+        _pregunta_valida("¿Intento con verificación de forma rara?"),  # generación intento 1
+        json.dumps([]),                                                # verificación 1: no es un objeto -> revienta
+        _pregunta_valida("¿Segundo intento, ya normal?"),               # generación intento 2
+        json.dumps({"valido": True, "problemas": []}),                  # verificación 2
+    ]) as mock_llamada:
+        resultado = _generar_pregunta_verificada(
+            subbloques_tema, "bloque_01-tema_01", "AGE",
+            subbloques_ya_usados=set(), preguntas_ya_aceptadas=set(), lock=threading.Lock()
+        )
+
+    assert mock_llamada.call_count == 4
+    assert resultado["pregunta"] == "¿Segundo intento, ya normal?"
+
+
 def _mock_deepseek_siempre_valido(contador, lock_contador):
     def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None):
         contenido_usuario = messages[-1]["content"]

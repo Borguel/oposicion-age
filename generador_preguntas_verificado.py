@@ -340,66 +340,75 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
                                   preguntas_ya_aceptadas, lock, on_usage=None,
                                   max_intentos=MAX_INTENTOS_POR_PREGUNTA):
     for _intento in range(max_intentos):
-        tipo_pregunta = _elegir_tipo_pregunta()
-        with lock:
-            usados_snapshot = set(subbloques_ya_usados)
-        anclas = _elegir_ancla_legal(subbloques_tema, usados_snapshot, tipo_pregunta == "distincion_articulos")
-        if not anclas:
-            return None  # este tema no tiene contenido real disponible, no tiene sentido reintentar
-
-        with lock:
-            for ancla in anclas:
-                subbloques_ya_usados.add(ancla["etiqueta_subbloque"])
-
-        system_gen, user_gen = _prompt_generacion(anclas, tipo_pregunta, oposicion)
-        generado = call_deepseek_api(
-            messages=[{"role": "system", "content": system_gen}, {"role": "user", "content": user_gen}],
-            temperature=0.5,
-            max_tokens=1000,
-            response_format_json=True,
-            on_usage=on_usage,
-        )
-        if not generado:
-            continue
         try:
-            pregunta_candidata = json.loads(generado)
-        except json.JSONDecodeError:
-            continue
-        if not validar_pregunta(pregunta_candidata):
-            continue
-        if pregunta_candidata.get("respuesta_correcta") not in ("A", "B", "C", "D"):
-            continue
+            tipo_pregunta = _elegir_tipo_pregunta()
+            with lock:
+                usados_snapshot = set(subbloques_ya_usados)
+            anclas = _elegir_ancla_legal(subbloques_tema, usados_snapshot, tipo_pregunta == "distincion_articulos")
+            if not anclas:
+                return None  # este tema no tiene contenido real disponible, no tiene sentido reintentar
 
-        clave_dedup = re.sub(r"\s+", " ", str(pregunta_candidata.get("pregunta", "")).strip().lower())
-        with lock:
-            ya_existe = clave_dedup in preguntas_ya_aceptadas
-        if ya_existe:
-            continue  # demasiado parecida a una ya aceptada -- se descarta y se reintenta
+            with lock:
+                for ancla in anclas:
+                    subbloques_ya_usados.add(ancla["etiqueta_subbloque"])
 
-        system_ver, user_ver = _prompt_verificacion(pregunta_candidata, anclas)
-        verificacion_raw = call_deepseek_api(
-            messages=[{"role": "system", "content": system_ver}, {"role": "user", "content": user_ver}],
-            temperature=0.0,
-            max_tokens=400,
-            response_format_json=True,
-            on_usage=on_usage,
-        )
-        if not verificacion_raw:
+            system_gen, user_gen = _prompt_generacion(anclas, tipo_pregunta, oposicion)
+            generado = call_deepseek_api(
+                messages=[{"role": "system", "content": system_gen}, {"role": "user", "content": user_gen}],
+                temperature=0.5,
+                max_tokens=1000,
+                response_format_json=True,
+                on_usage=on_usage,
+            )
+            if not generado:
+                continue
+            try:
+                pregunta_candidata = json.loads(generado)
+            except json.JSONDecodeError:
+                continue
+            if not validar_pregunta(pregunta_candidata):
+                continue
+            if pregunta_candidata.get("respuesta_correcta") not in ("A", "B", "C", "D"):
+                continue
+
+            clave_dedup = re.sub(r"\s+", " ", str(pregunta_candidata.get("pregunta", "")).strip().lower())
+            with lock:
+                ya_existe = clave_dedup in preguntas_ya_aceptadas
+            if ya_existe:
+                continue  # demasiado parecida a una ya aceptada -- se descarta y se reintenta
+
+            system_ver, user_ver = _prompt_verificacion(pregunta_candidata, anclas)
+            verificacion_raw = call_deepseek_api(
+                messages=[{"role": "system", "content": system_ver}, {"role": "user", "content": user_ver}],
+                temperature=0.0,
+                max_tokens=400,
+                response_format_json=True,
+                on_usage=on_usage,
+            )
+            if not verificacion_raw:
+                continue
+            try:
+                verificacion = json.loads(verificacion_raw)
+            except json.JSONDecodeError:
+                continue
+
+            if verificacion.get("valido") is not True:
+                continue  # inválida: se descarta ENTERA, nunca se corrige -- siguiente intento desde cero
+
+            with lock:
+                if clave_dedup in preguntas_ya_aceptadas:
+                    continue  # otro hilo aceptó lo mismo mientras se verificaba esta
+                preguntas_ya_aceptadas.add(clave_dedup)
+            pregunta_candidata["tema_id"] = tema_id
+            pregunta_candidata.setdefault("tipo_pregunta", tipo_pregunta)
+        except Exception:
+            # Una forma de respuesta de DeepSeek que ningún "continue" de
+            # arriba contemplaba (p. ej. un campo con un tipo inesperado) no
+            # debe perder este hueco entero a la primera -- cuenta como un
+            # intento fallido más y se reintenta desde cero, igual que una
+            # pregunta que no supera la verificación.
+            logger.exception("Intento fallido generando una pregunta (tema %s), se reintenta", tema_id)
             continue
-        try:
-            verificacion = json.loads(verificacion_raw)
-        except json.JSONDecodeError:
-            continue
-
-        if verificacion.get("valido") is not True:
-            continue  # inválida: se descarta ENTERA, nunca se corrige -- siguiente intento desde cero
-
-        with lock:
-            if clave_dedup in preguntas_ya_aceptadas:
-                continue  # otro hilo aceptó lo mismo mientras se verificaba esta
-            preguntas_ya_aceptadas.add(clave_dedup)
-        pregunta_candidata["tema_id"] = tema_id
-        pregunta_candidata.setdefault("tipo_pregunta", tipo_pregunta)
         return barajar_opciones_pregunta(pregunta_candidata)
 
     return None
