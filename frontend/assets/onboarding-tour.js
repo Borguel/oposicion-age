@@ -20,7 +20,20 @@ function marcarVisto(clave) {
   localStorage.setItem(clave, "1");
 }
 
+// Mientras el tour está abierto, la página sigue cargando datos en segundo
+// plano (racha, test en progreso, avisos...) que pueden insertar tarjetas
+// nuevas por encima del elemento señalado. Este observador detecta esos
+// cambios de tamaño y vuelve a centrar/recolocar el paso actual, para que
+// el bocadillo no se quede apuntando a un hueco vacío.
+let observadorTour = null;
+
+function detenerObservadorTour() {
+  observadorTour?.disconnect();
+  observadorTour = null;
+}
+
 function terminarTour(clave, overlay) {
+  detenerObservadorTour();
   document.querySelector(".tour-bocadillo")?.remove();
   document.querySelectorAll(".tour-resaltado").forEach((el) => el.classList.remove("tour-resaltado"));
   overlay?.remove();
@@ -48,7 +61,25 @@ function iniciarPaso(pasos, clave, indice, overlayExistente) {
   elemento.classList.add("tour-resaltado");
   elemento.scrollIntoView({ block: "center", behavior: "smooth" });
 
+  detenerObservadorTour();
+  observadorTour = new ResizeObserver(() => {
+    if (!document.body.contains(elemento)) return;
+    elemento.scrollIntoView({ block: "center", behavior: "smooth" });
+    const bocadillo = document.querySelector(".tour-bocadillo");
+    if (bocadillo) setTimeout(() => posicionarBocadillo(bocadillo, elemento), 300);
+  });
+  observadorTour.observe(document.body);
+
   setTimeout(() => mostrarBocadillo(pasos, clave, elemento, paso, indice, overlay), 300);
+}
+
+function posicionarBocadillo(bocadillo, elemento) {
+  const rect = elemento.getBoundingClientRect();
+  const alto = bocadillo.offsetHeight;
+  const arriba = window.innerHeight - rect.bottom < alto + 20 && rect.top > alto + 20;
+  bocadillo.style.top = arriba ? `${rect.top - alto - 12}px` : `${rect.bottom + 12}px`;
+  const izquierda = Math.min(Math.max(rect.left, 12), window.innerWidth - bocadillo.offsetWidth - 12);
+  bocadillo.style.left = `${izquierda}px`;
 }
 
 function mostrarBocadillo(pasos, clave, elemento, paso, indice, overlay) {
@@ -66,13 +97,7 @@ function mostrarBocadillo(pasos, clave, elemento, paso, indice, overlay) {
     </div>
   `;
   document.body.appendChild(bocadillo);
-
-  const rect = elemento.getBoundingClientRect();
-  const alto = bocadillo.offsetHeight;
-  const arriba = window.innerHeight - rect.bottom < alto + 20 && rect.top > alto + 20;
-  bocadillo.style.top = arriba ? `${rect.top - alto - 12}px` : `${rect.bottom + 12}px`;
-  const izquierda = Math.min(Math.max(rect.left, 12), window.innerWidth - bocadillo.offsetWidth - 12);
-  bocadillo.style.left = `${izquierda}px`;
+  posicionarBocadillo(bocadillo, elemento);
 
   bocadillo.querySelector(".tour-bocadillo-saltar").addEventListener("click", () => terminarTour(clave, overlay));
   bocadillo.querySelector(".tour-bocadillo-siguiente").addEventListener("click", () => {
