@@ -16,7 +16,7 @@ function inyectarIconosEstaticos() {
 // Qué permiso necesita cada pestaña. Las de 'admin' solo las ve el super-admin.
 const PERMISO_POR_PESTANA = {
   dashboard: "cualquiera", temario: "temario", preguntas: "temario", analitica: "temario",
-  usuarios: "usuarios", reportes: "reportes", limites: "admin", auditoria: "admin", sistema: "admin",
+  usuarios: "usuarios", reportes: "reportes", bajas: "reportes", limites: "admin", auditoria: "admin", sistema: "admin",
 };
 let _permisos = { admin: false, permisos: [] };
 function puedeVer(pestana) {
@@ -138,13 +138,14 @@ const RENDERS = {
   analitica: renderAnalitica,
   usuarios: renderUsuarios,
   reportes: renderReportes,
+  bajas: renderBajas,
   limites: renderLimites,
   auditoria: renderAuditoria,
   sistema: renderSistema,
 };
 const TITULO_POR_PESTANA = {
   dashboard: "Dashboard", temario: "Temario", preguntas: "Preguntas", analitica: "Analítica",
-  usuarios: "Usuarios", reportes: "Reportes", limites: "Límites", auditoria: "Auditoría", sistema: "Sistema",
+  usuarios: "Usuarios", reportes: "Reportes", bajas: "Bajas", limites: "Límites", auditoria: "Auditoría", sistema: "Sistema",
 };
 let pestanaActual = "dashboard";
 
@@ -595,6 +596,66 @@ async function renderAnalitica() {
       <h3>Temas sin ninguna actividad (${(d.sin_actividad || []).length})</h3>
       <p class="admin-reporte-meta">Nadie ha hecho preguntas de estos temas todavía.</p>
       <div class="admin-chips">${(d.sin_actividad || []).map((t) => `<span class="admin-chip">${escapeHtml(t.titulo || t.tema_id)}</span>`).join("") || `<span class="admin-vacio">Todos los temas tienen actividad. ${icono("check", 14)}</span>`}</div>
+    </div>`;
+}
+
+// ===== Bajas (motivos de cancelación) =====
+const ETIQUETA_MOTIVO_BAJA = {
+  precio: "Es demasiado caro",
+  aprobado: "Ya ha aprobado o no se presenta",
+  no_lo_uso: "No lo usa lo suficiente",
+  faltan_funciones: "Le faltan funciones que necesita",
+  otro: "Otro motivo",
+};
+
+async function renderBajas() {
+  const panel = document.getElementById("panel-bajas");
+  panel.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
+  const d = await apiGet(`/admin/api/bajas`);
+  if (!d) return;
+
+  if (!d.total) {
+    panel.innerHTML = `<div class="age-card"><p class="admin-vacio">Todavía no se ha dado de baja nadie. ${icono("check", 14)}</p></div>`;
+    return;
+  }
+
+  const filaMotivo = (motivo, veces) => {
+    const pct = d.total ? Math.round((veces / d.total) * 100) : 0;
+    return `<div class="admin-analitica-fila">
+        <div class="admin-analitica-tema">${escapeHtml(ETIQUETA_MOTIVO_BAJA[motivo] || motivo)}</div>
+        <div class="admin-barra"><span class="admin-barra-relleno" style="width:${pct}%;background:var(--age-danger,#dc3545)"></span></div>
+        <div class="admin-analitica-pct">${pct}% <span class="admin-reporte-meta">(${veces})</span></div>
+      </div>`;
+  };
+  const motivosOrdenados = Object.entries(d.por_motivo || {}).sort((a, b) => b[1] - a[1]);
+
+  const filaComentario = (c) => `
+    <div class="admin-reporte">
+      <div class="admin-reporte-cab">
+        <span class="admin-reporte-estado admin-estado-pendiente">${escapeHtml(ETIQUETA_MOTIVO_BAJA[c.motivo] || c.motivo)}</span>
+        <span class="admin-reporte-meta">${escapeHtml(c.oposicion || "-")} · ${escapeHtml(fechaCorta(c.fecha))}</span>
+      </div>
+      <p class="admin-reporte-motivo">${escapeHtml(c.comentario)}</p>
+    </div>`;
+
+  panel.innerHTML = `
+    <div class="age-card admin-bloque">
+      <h3>Por qué cancela la gente (${d.total} baja${d.total === 1 ? "" : "s"} en total)</h3>
+      ${motivosOrdenados.map(([motivo, veces]) => filaMotivo(motivo, veces)).join("")}
+    </div>
+
+    <div class="age-card admin-bloque">
+      <h3>Bajas por oposición</h3>
+      <div class="admin-chips">${Object.entries(d.por_oposicion || {}).sort((a, b) => b[1] - a[1])
+        .map(([op, veces]) => `<span class="admin-chip">${escapeHtml(op)}: ${veces}</span>`).join("") || '<span class="admin-vacio">Sin datos.</span>'}</div>
+    </div>
+
+    <div class="age-card admin-bloque">
+      <h3>Comentarios recientes (${(d.comentarios_recientes || []).length})</h3>
+      <p class="admin-reporte-meta">Solo se muestran las bajas en las que la persona escribió algo, sin vincularlas a su cuenta.</p>
+      ${(d.comentarios_recientes || []).length
+        ? d.comentarios_recientes.map(filaComentario).join("")
+        : '<p class="admin-vacio">Nadie ha dejado un comentario todavía.</p>'}
     </div>`;
 }
 

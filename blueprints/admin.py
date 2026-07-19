@@ -28,6 +28,7 @@ from promociones import leer_promocion, promocion_vigente, PLANES_PROMOCIONABLES
 from banco_fallos import _id_pregunta
 from coste_ia import resumen_coste_usuario
 from oposiciones import OPOSICIONES, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
+from blueprints.pagos import MOTIVOS_BAJA_VALIDOS
 from limites_uso import cargar_limites_config, guardar_limites_config, TIPOS_META, limites_efectivos, _clave_periodo
 from utils import _limpiar_cache_temario
 
@@ -235,6 +236,34 @@ def _fallos_agregados(oposicion=None):
         fallos_por_tema[tema] = fallos_por_tema.get(tema, 0) + veces
         fallos_por_hash[doc.id] = fallos_por_hash.get(doc.id, 0) + veces
     return fallos_por_tema, fallos_por_hash
+
+
+def _bajas_agregadas():
+    """Agrega los motivos de baja de TODOS los usuarios (collection_group)
+    -- solo cifras + comentarios sueltos, sin exponer qué usuario canceló
+    qué (mismo criterio de privacidad que _fallos_agregados)."""
+    por_motivo = {m: 0 for m in MOTIVOS_BAJA_VALIDOS}
+    por_oposicion = {}
+    comentarios = []
+    total = 0
+    for doc in db.collection_group("bajas_motivos").stream():
+        datos = doc.to_dict() or {}
+        motivo = datos.get("motivo")
+        if motivo not in por_motivo:
+            continue
+        total += 1
+        por_motivo[motivo] += 1
+        oposicion = datos.get("oposicion") or "(sin oposición)"
+        por_oposicion[oposicion] = por_oposicion.get(oposicion, 0) + 1
+        comentario = (datos.get("comentario") or "").strip()
+        if comentario:
+            comentarios.append({
+                "motivo": motivo, "comentario": comentario,
+                "oposicion": datos.get("oposicion", ""), "fecha": datos.get("fecha", ""),
+            })
+    comentarios.sort(key=lambda c: c.get("fecha", ""), reverse=True)
+    return {"total": total, "por_motivo": por_motivo, "por_oposicion": por_oposicion,
+            "comentarios_recientes": comentarios[:50]}
 
 
 def _titulo_tema(coleccion, tema_id):
@@ -1484,6 +1513,15 @@ def soporte_actualizar(mid):
     }, merge=True)
     _registrar_auditoria("soporte_" + estado, mid)
     return jsonify({"mensaje": "Mensaje actualizado"})
+
+
+# ============================================================
+# Motivos de baja (por qué cancela la gente)
+# ============================================================
+@bp.route("/admin/api/bajas", methods=["GET"])
+@requiere_permiso("reportes")
+def bajas_listar():
+    return jsonify(_bajas_agregadas())
 
 
 # ============================================================

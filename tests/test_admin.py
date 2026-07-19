@@ -779,3 +779,43 @@ def test_usuario_reporta_y_admin_lo_revisa(client, db):
         client.patch(f"/admin/api/reportes/{rid}", json={"estado": "revisado"}, headers=_AUTH)
         pendientes = client.get("/admin/api/reportes?estado=pendiente", headers=_AUTH).get_json()["reportes"]
         assert pendientes == []
+
+
+# ---------- Bajas (motivos de cancelación) ----------
+def test_bajas_requiere_permiso_reportes(client, db):
+    with _como(admin=False, uid="x", permisos=[]):
+        assert client.get("/admin/api/bajas", headers=_AUTH).status_code == 403
+    with _como(admin=False, uid="mod1", permisos=["reportes"]):
+        assert client.get("/admin/api/bajas", headers=_AUTH).status_code == 200
+
+
+def test_bajas_agrega_motivos_de_todos_los_usuarios_sin_exponer_el_uid(client, db):
+    # bajas_motivos es una subcolección por usuario -- se agrega con
+    # collection_group, igual que preguntas_falladas, sin decir qué usuario
+    # canceló qué (ver _bajas_agregadas en blueprints/admin.py).
+    db.sembrar(("usuarios", "u1", "bajas_motivos", "b1"),
+               {"motivo": "precio", "comentario": "Muy caro para mí", "oposicion": "AGE", "fecha": "2026-01-01T00:00:00"})
+    db.sembrar(("usuarios", "u2", "bajas_motivos", "b1"),
+               {"motivo": "precio", "comentario": "", "oposicion": "AGE", "fecha": "2026-01-02T00:00:00"})
+    db.sembrar(("usuarios", "u2", "bajas_motivos", "b2"),
+               {"motivo": "no_lo_uso", "comentario": "Ya no tengo tiempo", "oposicion": "GACE", "fecha": "2026-01-03T00:00:00"})
+
+    with _como():
+        d = client.get("/admin/api/bajas", headers=_AUTH).get_json()
+
+    assert d["total"] == 3
+    assert d["por_motivo"]["precio"] == 2
+    assert d["por_motivo"]["no_lo_uso"] == 1
+    assert d["por_motivo"]["otro"] == 0  # motivos sin ninguna baja siguen apareciendo, a 0
+    assert d["por_oposicion"] == {"AGE": 2, "GACE": 1}
+    # Solo se listan los comentarios no vacíos, más reciente primero, y sin uid/email.
+    assert len(d["comentarios_recientes"]) == 2
+    assert d["comentarios_recientes"][0]["comentario"] == "Ya no tengo tiempo"
+    assert all("uid" not in c and "email" not in c for c in d["comentarios_recientes"])
+
+
+def test_bajas_sin_ninguna_no_falla(client, db):
+    with _como():
+        d = client.get("/admin/api/bajas", headers=_AUTH).get_json()
+    assert d["total"] == 0
+    assert d["comentarios_recientes"] == []
