@@ -1377,8 +1377,17 @@
   <script type="module" src="/assets/auth.js"></script>
   <script type="module">
     import { icono } from "/assets/icons.js";
+    import { esperarUsuario } from "/assets/auth.js";
     document.querySelectorAll("[data-icon]").forEach((el) => {
       el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
+    });
+
+    // La demo de 5 preguntas sin registrarse solo tiene sentido para quien
+    // todavía no tiene cuenta -- quien ya ha iniciado sesión tiene los 7
+    // días de prueba con Premium completo (todas las oposiciones incluidas),
+    // así que mostrarle también la demo anónima es ruido, no una alternativa.
+    esperarUsuario().then((usuario) => {
+      if (usuario) document.querySelector(".home-hero-demo-link")?.remove();
     });
 
     function animarConteo(elemento, destino, duracionMs = 1500) {
