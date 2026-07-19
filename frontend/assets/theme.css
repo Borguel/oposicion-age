@@ -217,6 +217,15 @@ body {
   display: none;
 }
 
+/* Envoltorio de los enlaces principales, repintado en cada cambio de
+   sesión (ver actualizarEnlacesNav en auth.js) -- display:contents para
+   que sus <a> cuenten como hijos directos de .age-nav-links a efectos de
+   flex (gap, orden, wrap en el cajón móvil), sin que el div en sí
+   introduzca una caja de por medio. */
+.age-nav-links-items {
+  display: contents;
+}
+
 .age-nav-links a {
   flex: 0 0 auto;
   display: inline-flex;

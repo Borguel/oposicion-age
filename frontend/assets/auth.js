@@ -225,17 +225,28 @@ export async function obtenerAuthHeaders() {
 // ============================================================
 // Barra de navegación: se construye entera desde aquí (una sola
 // fuente de verdad) en vez de repetir <a> sueltos en cada página.
+//
+// Los enlaces varían según haya sesión o no -- antes se mostraban los 9
+// siempre, lo que además de ser ruido para quien todavía no tiene cuenta
+// (la mitad de esos enlaces le rebotan a /login) desbordaba la barra en
+// anchos de escritorio muy comunes (~1280px) sin ninguna pista visual de
+// que hubiera más enlaces con scroll. Al separar por sesión, cada lista
+// es corta de sobra para caber sin desbordar.
 // ============================================================
-const NAV_LINKS = [
+const NAV_LINKS_ANONIMO = [
   { href: "/", label: "Inicio", match: ["/"] },
+  { href: "/oposiciones/", label: "Oposiciones", match: ["/oposiciones/", "/oposicion-administrativo-estado-c1/", "/oposicion-gace/", "/oposicion-auxiliar-administrativo-estado/"] },
+  { href: "/como-funciona/", label: "Cómo funciona", match: ["/como-funciona/"] },
+  { href: "/planes/", label: "Planes", match: ["/planes/"] }
+];
+
+const NAV_LINKS_SESION = [
   { href: "/zona-opositor/", label: "Zona opositor", match: ["/zona-opositor/"] },
   { href: "/test-generator/", label: "Tests", match: ["/test-generator/", "/test-personalizado/", "/test-oficial/", "/repetir-test/", "/preguntas-falladas/", "/preguntas-favoritas/", "/mis-tests/"] },
   { href: "/subida-pdf-pagina-principal/", label: "Herramientas IA", match: ["/subida-pdf-"] },
   { href: "/tu-tutor/", label: "Tu Tutor", match: ["/tu-tutor/"] },
   { href: "/estadisticas/", label: "Estadísticas", match: ["/estadisticas/"] },
-  { href: "/planes/", label: "Planes", match: ["/planes/"] },
-  { href: "/oposiciones/", label: "Oposiciones", match: ["/oposiciones/", "/oposicion-administrativo-estado-c1/", "/oposicion-gace/", "/oposicion-auxiliar-administrativo-estado/"] },
-  { href: "/como-funciona/", label: "Cómo funciona", match: ["/como-funciona/"] }
+  { href: "/planes/", label: "Planes", match: ["/planes/"] }
 ];
 
 function esEnlaceActivo(match, ruta) {
@@ -280,14 +291,15 @@ function construirEsqueletoNav() {
   separadorUtilidadesMovil.className = "age-nav-links-separador";
   links.appendChild(separadorUtilidadesMovil);
 
-  const ruta = window.location.pathname;
-  NAV_LINKS.forEach(({ href, label, match }) => {
-    const a = document.createElement("a");
-    a.href = href;
-    a.textContent = label;
-    if (esEnlaceActivo(match, ruta)) a.classList.add("age-nav-active");
-    links.appendChild(a);
-  });
+  // Contenedor de los enlaces principales -- vacío por ahora, se rellena
+  // en actualizarEnlacesNav() (llamada en cada cambio de sesión, no solo
+  // en esta construcción única del esqueleto) porque la lista de enlaces
+  // depende de si hay sesión iniciada o no. display:contents en CSS para
+  // que sus <a> se comporten como hijos directos de .age-nav-links a
+  // efectos de flex (gap, wrap en el cajón móvil, etc.).
+  const linksItems = document.createElement("div");
+  linksItems.className = "age-nav-links-items";
+  links.appendChild(linksItems);
 
   const separadorTemaMovil = document.createElement("hr");
   separadorTemaMovil.className = "age-nav-links-separador";
@@ -349,6 +361,26 @@ function construirEsqueletoNav() {
   inner.appendChild(right);
   inner.appendChild(burger);
   nav.appendChild(inner);
+}
+
+// Repinta los enlaces principales según haya sesión o no. A diferencia del
+// resto del esqueleto (que se construye una única vez), esto se llama en
+// cada cambio de sesión -- ver inyectarNav() -- porque iniciar/cerrar
+// sesión sin recargar la página (login, logout) debe cambiar el juego de
+// enlaces igual que ya cambian el buscador o el selector de oposición.
+function actualizarEnlacesNav(user) {
+  const contenedor = document.querySelector(".age-nav-links-items");
+  if (!contenedor) return;
+  contenedor.innerHTML = "";
+  const ruta = window.location.pathname;
+  const enlaces = user ? NAV_LINKS_SESION : NAV_LINKS_ANONIMO;
+  enlaces.forEach(({ href, label, match }) => {
+    const a = document.createElement("a");
+    a.href = href;
+    a.textContent = label;
+    if (esEnlaceActivo(match, ruta)) a.classList.add("age-nav-active");
+    contenedor.appendChild(a);
+  });
 }
 
 // ============================================================
@@ -914,6 +946,7 @@ function inyectarSaltoDeContenido() {
 function inyectarNav(user) {
   inyectarSaltoDeContenido();
   construirEsqueletoNav();
+  actualizarEnlacesNav(user);
   inyectarSelectorOposicion(!!user);
   construirBusquedaGlobal(user);
   construirNotificaciones(user);

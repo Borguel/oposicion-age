@@ -182,3 +182,35 @@ test.describe("nav -- sin sesión", () => {
     await expect(page.locator(".age-account a.age-btn-primary")).toContainText("Iniciar sesión");
   });
 });
+
+// Los enlaces principales varían según haya sesión o no (ver
+// actualizarEnlacesNav en auth.js): antes eran los mismos 9 siempre, la
+// mitad de ellos inaccesibles sin cuenta, y además desbordaban la barra en
+// anchos de escritorio comunes sin ninguna pista visual de que hubiera más
+// enlaces con scroll. Estas pruebas fijan el juego de enlaces correcto por
+// sesión y que la barra no desborda en un ancho típico de portátil.
+test.describe("nav -- enlaces principales según sesión", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("sin sesión solo se ven los enlaces de marketing, sin desbordar la barra", async ({ page }) => {
+    await mockNav(page, { conSesion: false });
+    await page.goto("/");
+
+    const enlaces = page.locator(".age-nav-links-items a");
+    await expect(enlaces).toHaveText(["Inicio", "Oposiciones", "Cómo funciona", "Planes"]);
+
+    const overflow = await page.locator(".age-nav-links").evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+
+  test("con sesión se ven los enlaces de la aplicación, sin desbordar la barra", async ({ page }) => {
+    await mockNav(page, { conSesion: true });
+    await page.goto("/zona-opositor/");
+
+    const enlaces = page.locator(".age-nav-links-items a");
+    await expect(enlaces).toHaveText(["Zona opositor", "Tests", "Herramientas IA", "Tu Tutor", "Estadísticas", "Planes"]);
+
+    const overflow = await page.locator(".age-nav-links").evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+});
