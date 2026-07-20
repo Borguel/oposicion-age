@@ -91,6 +91,46 @@ def test_cancelacion_suscripcion_incluye_oposicion_y_fecha(monkeypatch):
     assert "01/01/2030" in payload["htmlContent"]
 
 
+def test_cancelacion_suscripcion_adapta_el_parrafo_al_motivo(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_CANCELACION", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_cancelacion_suscripcion("u@example.com", "AGE", motivo="aprobado")
+    assert "Enhorabuena" in mock_post.call_args.kwargs["json"]["htmlContent"]
+
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_cancelacion_suscripcion("u@example.com", "AGE", motivo="precio")
+    assert "plan Básico" in mock_post.call_args.kwargs["json"]["htmlContent"]
+
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_cancelacion_suscripcion("u@example.com", "AGE", motivo="motivo_desconocido")
+    assert "podríamos haber hecho mejor" in mock_post.call_args.kwargs["json"]["htmlContent"]
+
+
+def test_reactivacion_suscripcion_incluye_oposicion(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_REACTIVACION", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_reactivacion_suscripcion("u@example.com", "GACE", nombre="Ana")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert "GACE" in payload["htmlContent"]
+    assert "reactivado" in payload["htmlContent"]
+
+
+def test_pago_fallido_incluye_oposicion_y_cta_de_actualizar_pago(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.setenv("FRONTEND_URL", "https://dominatuopo.com")
+    monkeypatch.delenv("BREVO_TEMPLATE_PAGO_FALLIDO", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pago_fallido("u@example.com", "AGE")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert "AGE" in payload["htmlContent"]
+    assert "https://dominatuopo.com/mi-cuenta/" in payload["htmlContent"]
+    assert "AGE" in payload["subject"]
+
+
 def test_error_http_de_brevo_no_lanza_excepcion(monkeypatch):
     monkeypatch.setenv("BREVO_API_KEY", "clave")
     mock_error = MagicMock()

@@ -427,6 +427,7 @@ def test_cancelar_suscripcion_programa_la_baja_y_guarda_el_motivo(client, db):
         assert args_email.args[0] == "u1@example.com"
         assert "AGE" in args_email.args[1] or "Administrativo" in args_email.args[1]
         assert args_email.kwargs["fecha_fin"] == "01/01/2030"
+        assert args_email.kwargs["motivo"] == "precio"
 
         # La suscripción sigue "activa" para Stripe hasta que el periodo
         # termine, pero el flag propio debe reflejar ya la baja programada.
@@ -524,7 +525,8 @@ def test_reactivar_suscripcion_deshace_la_baja_programada(client, db):
     })
     parche = _con_sesion(client)
     try:
-        with patch("blueprints.pagos.stripe.Subscription.modify", return_value={}) as mock_modify:
+        with patch("blueprints.pagos.stripe.Subscription.modify", return_value={}) as mock_modify, \
+             patch("blueprints.pagos.enviar_email_reactivacion_suscripcion") as mock_email:
             resp = client.post(
                 "/reactivar-suscripcion",
                 json={"oposicion": "AGE"},
@@ -533,5 +535,9 @@ def test_reactivar_suscripcion_deshace_la_baja_programada(client, db):
         assert resp.status_code == 200
         mock_modify.assert_called_once_with("sub_1", cancel_at_period_end=False)
         assert db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]["cancelar_al_final_periodo"] is False
+        # Contrapartida del email de cancelación: quien deshace la baja
+        # también merece una confirmación explícita, no silencio.
+        mock_email.assert_called_once()
+        assert mock_email.call_args.args[0] == "u1@example.com"
     finally:
         parche.stop()

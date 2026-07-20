@@ -16,6 +16,8 @@ import logging
 import os
 import requests
 
+from planes import DURACION_PRUEBA_DIAS
+
 logger = logging.getLogger(__name__)
 
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
@@ -154,16 +156,23 @@ def enviar_email_bienvenida(destinatario, nombre=""):
         _enviar(destinatario, "bienvenida", template_id=template_id, datos={
             "saludo": saludo,
             "frontend_url": frontend_url,
+            "dias_prueba": DURACION_PRUEBA_DIAS,
         })
         return
 
     cuerpo = f"""
       <p style="margin:0;">{saludo}, gracias por registrarte.</p>
-      <p>Ya puedes empezar a preparar tu oposición con tests del temario oficial,
-      seguimiento de tu progreso por temas y nuestras herramientas de IA para
-      generar tests, resúmenes, esquemas y tarjetas de memoria a partir de tus
-      propios documentos.</p>
-      {_boton("Empezar a estudiar", frontend_url)}
+      <p>Para que puedas probarlo todo sin límites, hemos activado tu <strong>prueba
+      gratuita de Premium de {DURACION_PRUEBA_DIAS} días</strong>: tests ilimitados
+      del temario oficial, Tu Tutor IA y las herramientas de PDF (resúmenes,
+      esquemas, tarjetas de memoria y tests a partir de tus propios documentos).</p>
+      <p style="margin: 20px 0 8px; font-weight:700;">Para empezar con buen pie:</p>
+      <ol style="margin:0 0 4px; padding-left:20px;">
+        <li style="margin-bottom:8px;">Haz tu primer test del temario oficial desde tu Zona Opositor.</li>
+        <li style="margin-bottom:8px;">Pregúntale a Tu Tutor cualquier duda del temario, como si fuera tu profesor particular.</li>
+        <li>Sube un PDF tuyo (apuntes, un tema suelto) y saca de él un resumen, un esquema o un test.</li>
+      </ol>
+      {_boton("Empezar a estudiar", f"{frontend_url}/zona-opositor/")}
       {_aviso("Si no has creado tú esta cuenta, puedes ignorar este correo.")}
     """
     html = _plantilla_html("¡Bienvenido/a a Domina tu Opo!", cuerpo, emoji="🎉")
@@ -221,14 +230,47 @@ def enviar_email_verificacion(destinatario, enlace, nombre=""):
     _enviar(destinatario, "verificación de correo", asunto="Verifica tu correo en Domina tu Opo", html=html)
 
 
-def enviar_email_cancelacion_suscripcion(destinatario, oposicion_nombre, fecha_fin=None, nombre=""):
+_PARRAFO_POR_MOTIVO_BAJA = {
+    # Coincide con MOTIVOS_BAJA_VALIDOS de blueprints/pagos.py. Sin ningún
+    # motivo reconocido (o sin motivo, para llamadas antiguas) se usa el
+    # mensaje de "otro": invitar a que nos cuenten qué ha fallado, sin dar
+    # por hecho ningún motivo concreto.
+    "aprobado": (
+        "¡Enhorabuena por haber llegado hasta aquí! Te deseamos toda la suerte "
+        "en tu proceso selectivo -- te lo has ganado."
+    ),
+    "precio": (
+        "Si el precio ha sido el motivo, recuerda que también tenemos el plan "
+        "Básico, con tests ilimitados a un precio más ajustado. Puedes cambiarte "
+        "a él en cualquier momento antes de que termine tu acceso actual, desde tu cuenta."
+    ),
+    "no_lo_uso": (
+        "Si te ha faltado tiempo más que ganas, tu cuenta y tu progreso seguirán "
+        "aquí intactos por si te apetece retomarlo más adelante."
+    ),
+    "faltan_funciones": (
+        "Si te ha faltado alguna función, nos ayuda muchísimo que nos cuentes cuál "
+        "respondiendo a este correo -- lo tenemos en cuenta para mejorar."
+    ),
+    "otro": (
+        "Si hay algo que podríamos haber hecho mejor, nos ayuda muchísimo que nos "
+        "lo cuentes respondiendo a este correo."
+    ),
+}
+
+
+def enviar_email_cancelacion_suscripcion(destinatario, oposicion_nombre, fecha_fin=None, nombre="", motivo=None):
     """Confirmación de que la baja se ha registrado -- se manda al aceptar
     /cancelar-suscripcion, no al webhook de Stripe (que llega días después,
     al final del periodo): el usuario debe saber YA que su baja ha quedado
-    programada, con acceso hasta la fecha indicada."""
+    programada, con acceso hasta la fecha indicada. `motivo` es el que el
+    propio usuario eligió al cancelar (ver MOTIVOS_BAJA_VALIDOS en
+    blueprints/pagos.py); adapta el segundo párrafo a ese motivo en vez de
+    dar el mismo mensaje genérico a quien aprobó que a quien se va por el precio."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
     saludo = f"Hola{f' {nombre}' if nombre else ''}"
     linea_fecha = f" hasta el <strong>{fecha_fin}</strong>" if fecha_fin else ""
+    parrafo_motivo = _PARRAFO_POR_MOTIVO_BAJA.get(motivo, _PARRAFO_POR_MOTIVO_BAJA["otro"])
 
     template_id = os.getenv("BREVO_TEMPLATE_CANCELACION")
     if template_id:
@@ -237,6 +279,7 @@ def enviar_email_cancelacion_suscripcion(destinatario, oposicion_nombre, fecha_f
             "oposicion_nombre": oposicion_nombre,
             "fecha_fin": fecha_fin or "",
             "frontend_url": frontend_url,
+            "parrafo_motivo": parrafo_motivo,
         })
         return
 
@@ -245,12 +288,76 @@ def enviar_email_cancelacion_suscripcion(destinatario, oposicion_nombre, fecha_f
       <strong>{oposicion_nombre}</strong>.</p>
       <p>Seguirás teniendo acceso completo{linea_fecha}, sin ningún cobro adicional. Después,
       tu cuenta pasará al plan gratuito, pero tu progreso y tus datos se mantienen intactos.</p>
+      <p>{parrafo_motivo}</p>
       <p>Si ha sido un error o cambias de opinión, puedes reactivarla en cualquier momento
       antes de esa fecha desde tu cuenta.</p>
       {_boton("Gestionar mi suscripción", f"{frontend_url}/mi-cuenta/")}
     """
     html = _plantilla_html("Tu suscripción se ha cancelado", cuerpo)
     _enviar(destinatario, "cancelación de suscripción", asunto="Confirmación de baja de tu suscripción", html=html)
+
+
+def enviar_email_reactivacion_suscripcion(destinatario, oposicion_nombre, nombre=""):
+    """Confirmación de que se ha deshecho una baja programada
+    (/reactivar-suscripcion) -- la contrapartida de
+    enviar_email_cancelacion_suscripcion: quien cambia de opinión antes de
+    que la baja llegue a hacerse efectiva merece la misma confirmación
+    explícita que quien se da de baja, no silencio."""
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
+    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+
+    template_id = os.getenv("BREVO_TEMPLATE_REACTIVACION")
+    if template_id:
+        _enviar(destinatario, "reactivación de suscripción", template_id=template_id, datos={
+            "saludo": saludo,
+            "oposicion_nombre": oposicion_nombre,
+            "frontend_url": frontend_url,
+        })
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, confirmamos que hemos reactivado tu suscripción a
+      <strong>{oposicion_nombre}</strong>.</p>
+      <p>Se renovará con normalidad al final de tu periodo actual, sin ninguna interrupción
+      de tu acceso. Gracias por seguir confiando en nosotros para tu preparación.</p>
+      {_boton("Ir a mi cuenta", f"{frontend_url}/mi-cuenta/")}
+    """
+    html = _plantilla_html("Tu suscripción se ha reactivado", cuerpo, emoji="✅")
+    _enviar(destinatario, "reactivación de suscripción", asunto="Tu suscripción sigue activa", html=html)
+
+
+def enviar_email_pago_fallido(destinatario, oposicion_nombre, nombre=""):
+    """Aviso de que Stripe no ha podido cobrar la renovación (webhook
+    invoice.payment_failed) -- hasta ahora este evento solo marcaba
+    subscription_status="past_due" en Firestore en silencio, sin que el
+    usuario se enterase de nada hasta perder el acceso. Stripe reintenta el
+    cobro automáticamente varias veces antes de darse por vencido y cancelar
+    la suscripción del todo (customer.subscription.deleted), así que aquí
+    solo se pide actualizar el método de pago a tiempo, no se anuncia
+    ninguna pérdida de acceso inminente."""
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
+    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+
+    template_id = os.getenv("BREVO_TEMPLATE_PAGO_FALLIDO")
+    if template_id:
+        _enviar(destinatario, "pago fallido", template_id=template_id, datos={
+            "saludo": saludo,
+            "oposicion_nombre": oposicion_nombre,
+            "frontend_url": frontend_url,
+        })
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, no hemos podido cobrar la renovación de tu suscripción a
+      <strong>{oposicion_nombre}</strong>.</p>
+      <p>Suele deberse a una tarjeta caducada, fondos insuficientes o un banco que ha bloqueado
+      el cobro. Vamos a reintentarlo automáticamente en los próximos días, pero para no perder
+      el acceso te recomendamos actualizar tu método de pago cuanto antes.</p>
+      {_boton("Actualizar método de pago", f"{frontend_url}/mi-cuenta/")}
+      {_aviso("Si ya has actualizado tu tarjeta, puedes ignorar este aviso: el próximo cobro se hará con normalidad.")}
+    """
+    html = _plantilla_html("No hemos podido cobrar tu suscripción", cuerpo, emoji="⚠️")
+    _enviar(destinatario, "pago fallido", asunto=f"Problema con el pago de tu suscripción a {oposicion_nombre}", html=html)
 
 
 def enviar_email_racha_en_riesgo(destinatario, racha_actual, nombre=""):

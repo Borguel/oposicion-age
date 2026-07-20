@@ -158,8 +158,9 @@ def test_webhook_subscription_updated_sube_y_luego_baja_de_plan(client, db):
     assert db.leer(("usuarios", "u2"))["suscripciones"]["AGE"]["plan"] == "basico"
 
 
-def test_webhook_payment_failed_marca_past_due_sin_tocar_el_plan(client, db):
+def test_webhook_payment_failed_marca_past_due_y_avisa_por_email(client, db):
     db.sembrar(("usuarios", "u3"), {
+        "email": "u3@example.com",
         "stripe_customer_id": "cus_test_3",
         "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}},
     })
@@ -174,10 +175,17 @@ def test_webhook_payment_failed_marca_past_due_sin_tocar_el_plan(client, db):
         }},
     }
     mock_subscription = {"metadata": {"oposicion": "AGE"}}
-    with patch("blueprints.pagos.stripe.Subscription.retrieve", return_value=mock_subscription):
+    with patch("blueprints.pagos.stripe.Subscription.retrieve", return_value=mock_subscription), \
+         patch("blueprints.pagos.enviar_email_pago_fallido") as mock_email:
         resp = _post_evento(client, evento)
 
     assert resp.status_code == 200
     suscripcion = db.leer(("usuarios", "u3"))["suscripciones"]["AGE"]
     assert suscripcion["subscription_status"] == "past_due"
     assert suscripcion["plan"] == "premium"
+    # Hasta ahora este webhook solo actualizaba Firestore en silencio: el
+    # usuario no se enteraba de que Stripe no había podido cobrarle hasta
+    # perder el acceso. Ahora se le avisa de inmediato para que actualice
+    # su método de pago antes de que se agoten los reintentos de Stripe.
+    mock_email.assert_called_once()
+    assert mock_email.call_args.args[0] == "u3@example.com"

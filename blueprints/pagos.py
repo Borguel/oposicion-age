@@ -14,7 +14,11 @@ from auth_utils import requiere_login, obtener_oposicion_solicitada
 from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usuario
 from gestion_cuenta import exportar_datos_usuario, eliminar_cuenta_usuario
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida
-from email_utils import enviar_email_cancelacion_suscripcion
+from email_utils import (
+    enviar_email_cancelacion_suscripcion,
+    enviar_email_pago_fallido,
+    enviar_email_reactivacion_suscripcion,
+)
 from promociones import leer_promocion, promocion_vigente
 
 logger = logging.getLogger(__name__)
@@ -239,7 +243,7 @@ def cancelar_suscripcion():
     fecha_fin_iso = datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None
     fecha_fin_legible = datetime.utcfromtimestamp(periodo_fin).strftime("%d/%m/%Y") if periodo_fin else None
     oposicion_nombre = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
-    enviar_email_cancelacion_suscripcion(g.email, oposicion_nombre, fecha_fin=fecha_fin_legible)
+    enviar_email_cancelacion_suscripcion(g.email, oposicion_nombre, fecha_fin=fecha_fin_legible, motivo=motivo)
 
     return jsonify({
         "mensaje": "Tu suscripción se cancelará al final del periodo ya pagado.",
@@ -271,6 +275,8 @@ def reactivar_suscripcion():
         return jsonify({"error": str(e)}), 500
 
     actualizar_suscripcion(db, g.uid, oposicion, cancelar_al_final_periodo=False)
+    oposicion_nombre = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
+    enviar_email_reactivacion_suscripcion(g.email, oposicion_nombre)
     return jsonify({"mensaje": "Tu suscripción se ha reactivado."})
 
 
@@ -420,6 +426,9 @@ def webhook_stripe():
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
                 actualizar_suscripcion(db, docs[0].id, oposicion, subscription_status="past_due")
+                email_usuario = (docs[0].to_dict() or {}).get("email")
+                oposicion_nombre = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
+                enviar_email_pago_fallido(email_usuario, oposicion_nombre)
     except Exception:
         # logger.exception ya vuelca el traceback completo (y lo manda a
         # Sentry si está configurado). Se responde 500 sin el detalle interno
