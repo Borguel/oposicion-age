@@ -722,7 +722,7 @@
   {
     "parte": "primera",
     "numero": 49,
-    "pregunta": "49 a 54 (Tabla Ponencias). Según los datos anteriores de la tabla Ponencias, ¿cuántos alumnos hay para cada ponente en la ponencia comercial del segundo turno de tarde?",
+    "pregunta": "TABLA PONENCIAS:\nTurno | Sala | Tema | Tipo | Material | Alumnos | Ponentes\nMañana 1º | 1 | Comercial | Charla | Pdf | 41 | 4\nMañana 1º | 2 | Contabilidad | Mesa redonda | Word | 52 | 17\nMañana 2º | 1 | Recursos Humanos | Charla | Cd | 48 | 6\nMañana 2º | 3 | Administración | Laboratorio | Cd | 41 | 2\nMañana 3º | 3 | Comercial | Laboratorio | Pdf | 42 | 11\nTarde 1º | 1 | Administración | Charla | Pdf | 56 | 13\nTarde 1º | 2 | Contabilidad | Laboratorio | Cd | 39 | 9\nTarde 2º | 1 | Comercial | Laboratorio | Pdf | 48 | 2\nTarde 2º | 3 | Recursos Humanos | Laboratorio | Cd | 51 | 5\nTarde 3º | 3 | Administración | Charla | Pdf | 43 | 5\nTarde 3º | 2 | Contabilidad | Mesa redonda | Word | 54 | 15\nTarde 3º | 1 | Comercial | Charla | Pdf | 37 | 3\n\nEl material para cada ponencia es entregado a cada ponente y alumno. Los asistentes a cada ponencia son los ponentes y alumnos.\n\n¿Cuántos alumnos hay para cada ponente en la ponencia comercial del segundo turno de tarde?",
     "opciones": {
       "A": "13",
       "B": "24",
@@ -732,14 +732,12 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tabla Ponencias) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 50,
-    "pregunta": "Según los datos anteriores de la Tabla Ponencias, ¿cuántos ponentes del segundo turno en mañana y tarde donde el tema fue \"Recursos humanos\" tienen de material un Cd?",
+    "pregunta": "TABLA PONENCIAS:\nTurno | Sala | Tema | Tipo | Material | Alumnos | Ponentes\nMañana 1º | 1 | Comercial | Charla | Pdf | 41 | 4\nMañana 1º | 2 | Contabilidad | Mesa redonda | Word | 52 | 17\nMañana 2º | 1 | Recursos Humanos | Charla | Cd | 48 | 6\nMañana 2º | 3 | Administración | Laboratorio | Cd | 41 | 2\nMañana 3º | 3 | Comercial | Laboratorio | Pdf | 42 | 11\nTarde 1º | 1 | Administración | Charla | Pdf | 56 | 13\nTarde 1º | 2 | Contabilidad | Laboratorio | Cd | 39 | 9\nTarde 2º | 1 | Comercial | Laboratorio | Pdf | 48 | 2\nTarde 2º | 3 | Recursos Humanos | Laboratorio | Cd | 51 | 5\nTarde 3º | 3 | Administración | Charla | Pdf | 43 | 5\nTarde 3º | 2 | Contabilidad | Mesa redonda | Word | 54 | 15\nTarde 3º | 1 | Comercial | Charla | Pdf | 37 | 3\n\nEl material para cada ponencia es entregado a cada ponente y alumno. Los asistentes a cada ponencia son los ponentes y alumnos.\n\n¿Cuántos ponentes del segundo turno en mañana y tarde donde el tema fue \"Recursos humanos\" tienen de material un Cd?",
     "opciones": {
       "A": "11",
       "B": "5",
@@ -749,14 +747,12 @@
     "respuesta_correcta": "A",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tabla Ponencias) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 51,
-    "pregunta": "Según los datos anteriores de la Tabla Ponencias, ¿cuántos asistentes hay que requieren con material Pdf los turnos de tarde en la sala 1?",
+    "pregunta": "TABLA PONENCIAS:\nTurno | Sala | Tema | Tipo | Material | Alumnos | Ponentes\nMañana 1º | 1 | Comercial | Charla | Pdf | 41 | 4\nMañana 1º | 2 | Contabilidad | Mesa redonda | Word | 52 | 17\nMañana 2º | 1 | Recursos Humanos | Charla | Cd | 48 | 6\nMañana 2º | 3 | Administración | Laboratorio | Cd | 41 | 2\nMañana 3º | 3 | Comercial | Laboratorio | Pdf | 42 | 11\nTarde 1º | 1 | Administración | Charla | Pdf | 56 | 13\nTarde 1º | 2 | Contabilidad | Laboratorio | Cd | 39 | 9\nTarde 2º | 1 | Comercial | Laboratorio | Pdf | 48 | 2\nTarde 2º | 3 | Recursos Humanos | Laboratorio | Cd | 51 | 5\nTarde 3º | 3 | Administración | Charla | Pdf | 43 | 5\nTarde 3º | 2 | Contabilidad | Mesa redonda | Word | 54 | 15\nTarde 3º | 1 | Comercial | Charla | Pdf | 37 | 3\n\nEl material para cada ponencia es entregado a cada ponente y alumno. Los asistentes a cada ponencia son los ponentes y alumnos.\n\n¿Cuántos asistentes hay que requieren con material Pdf los turnos de tarde en la sala 1?",
     "opciones": {
       "A": "54",
       "B": "93",
@@ -766,14 +762,12 @@
     "respuesta_correcta": "D",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tabla Ponencias) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 52,
-    "pregunta": "Según los datos anteriores de la Tabla Ponencias, ¿cuál es el mínimo de asistentes por la tarde en ponencias de tipo charla?",
+    "pregunta": "TABLA PONENCIAS:\nTurno | Sala | Tema | Tipo | Material | Alumnos | Ponentes\nMañana 1º | 1 | Comercial | Charla | Pdf | 41 | 4\nMañana 1º | 2 | Contabilidad | Mesa redonda | Word | 52 | 17\nMañana 2º | 1 | Recursos Humanos | Charla | Cd | 48 | 6\nMañana 2º | 3 | Administración | Laboratorio | Cd | 41 | 2\nMañana 3º | 3 | Comercial | Laboratorio | Pdf | 42 | 11\nTarde 1º | 1 | Administración | Charla | Pdf | 56 | 13\nTarde 1º | 2 | Contabilidad | Laboratorio | Cd | 39 | 9\nTarde 2º | 1 | Comercial | Laboratorio | Pdf | 48 | 2\nTarde 2º | 3 | Recursos Humanos | Laboratorio | Cd | 51 | 5\nTarde 3º | 3 | Administración | Charla | Pdf | 43 | 5\nTarde 3º | 2 | Contabilidad | Mesa redonda | Word | 54 | 15\nTarde 3º | 1 | Comercial | Charla | Pdf | 37 | 3\n\nEl material para cada ponencia es entregado a cada ponente y alumno. Los asistentes a cada ponencia son los ponentes y alumnos.\n\n¿Cuál es el mínimo de asistentes por la tarde en ponencias de tipo charla?",
     "opciones": {
       "A": "48",
       "B": "40",
@@ -783,14 +777,12 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tabla Ponencias) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 53,
-    "pregunta": "Según los datos anteriores de la Tabla Ponencias, ¿cuál es el total de asistentes en el segundo turno de mañana o tarde en una ponencia de tipo Laboratorio donde el tema no fue Recursos Humanos?",
+    "pregunta": "TABLA PONENCIAS:\nTurno | Sala | Tema | Tipo | Material | Alumnos | Ponentes\nMañana 1º | 1 | Comercial | Charla | Pdf | 41 | 4\nMañana 1º | 2 | Contabilidad | Mesa redonda | Word | 52 | 17\nMañana 2º | 1 | Recursos Humanos | Charla | Cd | 48 | 6\nMañana 2º | 3 | Administración | Laboratorio | Cd | 41 | 2\nMañana 3º | 3 | Comercial | Laboratorio | Pdf | 42 | 11\nTarde 1º | 1 | Administración | Charla | Pdf | 56 | 13\nTarde 1º | 2 | Contabilidad | Laboratorio | Cd | 39 | 9\nTarde 2º | 1 | Comercial | Laboratorio | Pdf | 48 | 2\nTarde 2º | 3 | Recursos Humanos | Laboratorio | Cd | 51 | 5\nTarde 3º | 3 | Administración | Charla | Pdf | 43 | 5\nTarde 3º | 2 | Contabilidad | Mesa redonda | Word | 54 | 15\nTarde 3º | 1 | Comercial | Charla | Pdf | 37 | 3\n\nEl material para cada ponencia es entregado a cada ponente y alumno. Los asistentes a cada ponencia son los ponentes y alumnos.\n\n¿Cuál es el total de asistentes en el segundo turno de mañana o tarde en una ponencia de tipo Laboratorio donde el tema no fue Recursos Humanos?",
     "opciones": {
       "A": "43",
       "B": "50",
@@ -800,14 +792,12 @@
     "respuesta_correcta": "C",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tabla Ponencias) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 54,
-    "pregunta": "Según los datos anteriores de la Tabla Ponencias, ¿cuántos asistentes acuden en la tarde en la sala 1?",
+    "pregunta": "TABLA PONENCIAS:\nTurno | Sala | Tema | Tipo | Material | Alumnos | Ponentes\nMañana 1º | 1 | Comercial | Charla | Pdf | 41 | 4\nMañana 1º | 2 | Contabilidad | Mesa redonda | Word | 52 | 17\nMañana 2º | 1 | Recursos Humanos | Charla | Cd | 48 | 6\nMañana 2º | 3 | Administración | Laboratorio | Cd | 41 | 2\nMañana 3º | 3 | Comercial | Laboratorio | Pdf | 42 | 11\nTarde 1º | 1 | Administración | Charla | Pdf | 56 | 13\nTarde 1º | 2 | Contabilidad | Laboratorio | Cd | 39 | 9\nTarde 2º | 1 | Comercial | Laboratorio | Pdf | 48 | 2\nTarde 2º | 3 | Recursos Humanos | Laboratorio | Cd | 51 | 5\nTarde 3º | 3 | Administración | Charla | Pdf | 43 | 5\nTarde 3º | 2 | Contabilidad | Mesa redonda | Word | 54 | 15\nTarde 3º | 1 | Comercial | Charla | Pdf | 37 | 3\n\nEl material para cada ponencia es entregado a cada ponente y alumno. Los asistentes a cada ponencia son los ponentes y alumnos.\n\n¿Cuántos asistentes acuden en la tarde en la sala 1?",
     "opciones": {
       "A": "141",
       "B": "159",
@@ -817,14 +807,12 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tabla Ponencias) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 55,
-    "pregunta": "55 a 60 (Tablas Flores). Según las tablas Flores, ¿cuántas flores de color rosa están disponibles con entrega a domicilio en ramos de media docena?",
+    "pregunta": "TABLAS FLORES:\n\nFlor | Colores | Tipos de ramos (unidades)\nMargarita | blanco y amarillo | 3\nRosa | blanco, amarillo y rosa | 6\nClavel | amarillo y rosa | 3 y 6\nSalvia | rosa | 3, 6 y 12\nCrisantemo | blanco y rosa | 3, 6 y 12\nTulipán | amarillo | 3, 6 y 12\nCardo | blanco | 3\nLirio | blanco y amarillo | 6\nOrquídea | blanco y rosa | 3, 6 y 12\nGerbera | amarillo y rosa | 3 y 6\n\nFlor | Pétalos | Peso en gramos | Estambres | Precio unidad\nMargarita | 2 | 2 | 2 | 3\nRosa | 4 | 5 | 4 | 2\nClavel | 3 | 1 | 6 | 5\nSalvia | 1 | 6 | 3 | 2\nCrisantemo | 4 | 4 | 8 | 5\nTulipán | 5 | 5 | 5 | 4\nCardo | 4 | 1 | 4 | 5\nLirio | 3 | 5 | 6 | 4\nOrquídea | 4 | 6 | 8 | 3\nGerbera | 5 | 1 | 7 | 5\n\nFlor | Fragancia potente | Entrega domicilio | Pequeña | En promoción | Duradera\nMargarita | NO | SI | NO | SI | SI\nRosa | NO | NO | SI | SI | SI\nClavel | SI | NO | NO | NO | NO\nSalvia | SI | SI | SI | SI | NO\nCrisantemo | NO | NO | SI | SI | NO\nTulipán | SI | SI | NO | NO | SI\nCardo | NO | NO | SI | SI | NO\nLirio | SI | NO | NO | NO | SI\nOrquídea | NO | SI | NO | SI | NO\nGerbera | SI | NO | SI | SI | NO\n\n¿Cuántas flores de color rosa están disponibles con entrega a domicilio en ramos de media docena?",
     "opciones": {
       "A": "0",
       "B": "3",
@@ -834,14 +822,12 @@
     "respuesta_correcta": "D",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tablas Flores) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 56,
-    "pregunta": "Según las tablas Flores, ¿cuál de estas flores con fragancia potente se ofrece en ramos de una docena y es pequeña?",
+    "pregunta": "TABLAS FLORES:\n\nFlor | Colores | Tipos de ramos (unidades)\nMargarita | blanco y amarillo | 3\nRosa | blanco, amarillo y rosa | 6\nClavel | amarillo y rosa | 3 y 6\nSalvia | rosa | 3, 6 y 12\nCrisantemo | blanco y rosa | 3, 6 y 12\nTulipán | amarillo | 3, 6 y 12\nCardo | blanco | 3\nLirio | blanco y amarillo | 6\nOrquídea | blanco y rosa | 3, 6 y 12\nGerbera | amarillo y rosa | 3 y 6\n\nFlor | Pétalos | Peso en gramos | Estambres | Precio unidad\nMargarita | 2 | 2 | 2 | 3\nRosa | 4 | 5 | 4 | 2\nClavel | 3 | 1 | 6 | 5\nSalvia | 1 | 6 | 3 | 2\nCrisantemo | 4 | 4 | 8 | 5\nTulipán | 5 | 5 | 5 | 4\nCardo | 4 | 1 | 4 | 5\nLirio | 3 | 5 | 6 | 4\nOrquídea | 4 | 6 | 8 | 3\nGerbera | 5 | 1 | 7 | 5\n\nFlor | Fragancia potente | Entrega domicilio | Pequeña | En promoción | Duradera\nMargarita | NO | SI | NO | SI | SI\nRosa | NO | NO | SI | SI | SI\nClavel | SI | NO | NO | NO | NO\nSalvia | SI | SI | SI | SI | NO\nCrisantemo | NO | NO | SI | SI | NO\nTulipán | SI | SI | NO | NO | SI\nCardo | NO | NO | SI | SI | NO\nLirio | SI | NO | NO | NO | SI\nOrquídea | NO | SI | NO | SI | NO\nGerbera | SI | NO | SI | SI | NO\n\n¿Cuál de estas flores con fragancia potente se ofrece en ramos de una docena y es pequeña?",
     "opciones": {
       "A": "Salvia.",
       "B": "Margarita.",
@@ -851,14 +837,12 @@
     "respuesta_correcta": "A",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tablas Flores) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 57,
-    "pregunta": "Según las tablas Flores, ¿cuántas flores con más de dos pétalos están en promoción y no son duraderas?",
+    "pregunta": "TABLAS FLORES:\n\nFlor | Colores | Tipos de ramos (unidades)\nMargarita | blanco y amarillo | 3\nRosa | blanco, amarillo y rosa | 6\nClavel | amarillo y rosa | 3 y 6\nSalvia | rosa | 3, 6 y 12\nCrisantemo | blanco y rosa | 3, 6 y 12\nTulipán | amarillo | 3, 6 y 12\nCardo | blanco | 3\nLirio | blanco y amarillo | 6\nOrquídea | blanco y rosa | 3, 6 y 12\nGerbera | amarillo y rosa | 3 y 6\n\nFlor | Pétalos | Peso en gramos | Estambres | Precio unidad\nMargarita | 2 | 2 | 2 | 3\nRosa | 4 | 5 | 4 | 2\nClavel | 3 | 1 | 6 | 5\nSalvia | 1 | 6 | 3 | 2\nCrisantemo | 4 | 4 | 8 | 5\nTulipán | 5 | 5 | 5 | 4\nCardo | 4 | 1 | 4 | 5\nLirio | 3 | 5 | 6 | 4\nOrquídea | 4 | 6 | 8 | 3\nGerbera | 5 | 1 | 7 | 5\n\nFlor | Fragancia potente | Entrega domicilio | Pequeña | En promoción | Duradera\nMargarita | NO | SI | NO | SI | SI\nRosa | NO | NO | SI | SI | SI\nClavel | SI | NO | NO | NO | NO\nSalvia | SI | SI | SI | SI | NO\nCrisantemo | NO | NO | SI | SI | NO\nTulipán | SI | SI | NO | NO | SI\nCardo | NO | NO | SI | SI | NO\nLirio | SI | NO | NO | NO | SI\nOrquídea | NO | SI | NO | SI | NO\nGerbera | SI | NO | SI | SI | NO\n\n¿Cuántas flores con más de dos pétalos están en promoción y no son duraderas?",
     "opciones": {
       "A": "2",
       "B": "3",
@@ -868,14 +852,12 @@
     "respuesta_correcta": "C",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tablas Flores) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 58,
-    "pregunta": "Según las tablas Flores, ¿qué cantidad total de estambres poseen las flores que se ofrecen en color blanco y no poseen entrega en domicilio?",
+    "pregunta": "TABLAS FLORES:\n\nFlor | Colores | Tipos de ramos (unidades)\nMargarita | blanco y amarillo | 3\nRosa | blanco, amarillo y rosa | 6\nClavel | amarillo y rosa | 3 y 6\nSalvia | rosa | 3, 6 y 12\nCrisantemo | blanco y rosa | 3, 6 y 12\nTulipán | amarillo | 3, 6 y 12\nCardo | blanco | 3\nLirio | blanco y amarillo | 6\nOrquídea | blanco y rosa | 3, 6 y 12\nGerbera | amarillo y rosa | 3 y 6\n\nFlor | Pétalos | Peso en gramos | Estambres | Precio unidad\nMargarita | 2 | 2 | 2 | 3\nRosa | 4 | 5 | 4 | 2\nClavel | 3 | 1 | 6 | 5\nSalvia | 1 | 6 | 3 | 2\nCrisantemo | 4 | 4 | 8 | 5\nTulipán | 5 | 5 | 5 | 4\nCardo | 4 | 1 | 4 | 5\nLirio | 3 | 5 | 6 | 4\nOrquídea | 4 | 6 | 8 | 3\nGerbera | 5 | 1 | 7 | 5\n\nFlor | Fragancia potente | Entrega domicilio | Pequeña | En promoción | Duradera\nMargarita | NO | SI | NO | SI | SI\nRosa | NO | NO | SI | SI | SI\nClavel | SI | NO | NO | NO | NO\nSalvia | SI | SI | SI | SI | NO\nCrisantemo | NO | NO | SI | SI | NO\nTulipán | SI | SI | NO | NO | SI\nCardo | NO | NO | SI | SI | NO\nLirio | SI | NO | NO | NO | SI\nOrquídea | NO | SI | NO | SI | NO\nGerbera | SI | NO | SI | SI | NO\n\n¿Qué cantidad total de estambres poseen las flores que se ofrecen en color blanco y no poseen entrega en domicilio?",
     "opciones": {
       "A": "22",
       "B": "20",
@@ -885,14 +867,12 @@
     "respuesta_correcta": "A",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tablas Flores) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 59,
-    "pregunta": "Según las tablas Flores, ¿qué flor pequeña que no posee fragancia potente es más barata?",
+    "pregunta": "TABLAS FLORES:\n\nFlor | Colores | Tipos de ramos (unidades)\nMargarita | blanco y amarillo | 3\nRosa | blanco, amarillo y rosa | 6\nClavel | amarillo y rosa | 3 y 6\nSalvia | rosa | 3, 6 y 12\nCrisantemo | blanco y rosa | 3, 6 y 12\nTulipán | amarillo | 3, 6 y 12\nCardo | blanco | 3\nLirio | blanco y amarillo | 6\nOrquídea | blanco y rosa | 3, 6 y 12\nGerbera | amarillo y rosa | 3 y 6\n\nFlor | Pétalos | Peso en gramos | Estambres | Precio unidad\nMargarita | 2 | 2 | 2 | 3\nRosa | 4 | 5 | 4 | 2\nClavel | 3 | 1 | 6 | 5\nSalvia | 1 | 6 | 3 | 2\nCrisantemo | 4 | 4 | 8 | 5\nTulipán | 5 | 5 | 5 | 4\nCardo | 4 | 1 | 4 | 5\nLirio | 3 | 5 | 6 | 4\nOrquídea | 4 | 6 | 8 | 3\nGerbera | 5 | 1 | 7 | 5\n\nFlor | Fragancia potente | Entrega domicilio | Pequeña | En promoción | Duradera\nMargarita | NO | SI | NO | SI | SI\nRosa | NO | NO | SI | SI | SI\nClavel | SI | NO | NO | NO | NO\nSalvia | SI | SI | SI | SI | NO\nCrisantemo | NO | NO | SI | SI | NO\nTulipán | SI | SI | NO | NO | SI\nCardo | NO | NO | SI | SI | NO\nLirio | SI | NO | NO | NO | SI\nOrquídea | NO | SI | NO | SI | NO\nGerbera | SI | NO | SI | SI | NO\n\n¿Qué flor pequeña que no posee fragancia potente es más barata?",
     "opciones": {
       "A": "Crisantemo.",
       "B": "Rosa.",
@@ -902,14 +882,12 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tablas Flores) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 60,
-    "pregunta": "Según las tablas Flores, ¿qué pequeña flor de color rosa no es duradera, tiene más de tres pétalos y vale menos de 5?",
+    "pregunta": "TABLAS FLORES:\n\nFlor | Colores | Tipos de ramos (unidades)\nMargarita | blanco y amarillo | 3\nRosa | blanco, amarillo y rosa | 6\nClavel | amarillo y rosa | 3 y 6\nSalvia | rosa | 3, 6 y 12\nCrisantemo | blanco y rosa | 3, 6 y 12\nTulipán | amarillo | 3, 6 y 12\nCardo | blanco | 3\nLirio | blanco y amarillo | 6\nOrquídea | blanco y rosa | 3, 6 y 12\nGerbera | amarillo y rosa | 3 y 6\n\nFlor | Pétalos | Peso en gramos | Estambres | Precio unidad\nMargarita | 2 | 2 | 2 | 3\nRosa | 4 | 5 | 4 | 2\nClavel | 3 | 1 | 6 | 5\nSalvia | 1 | 6 | 3 | 2\nCrisantemo | 4 | 4 | 8 | 5\nTulipán | 5 | 5 | 5 | 4\nCardo | 4 | 1 | 4 | 5\nLirio | 3 | 5 | 6 | 4\nOrquídea | 4 | 6 | 8 | 3\nGerbera | 5 | 1 | 7 | 5\n\nFlor | Fragancia potente | Entrega domicilio | Pequeña | En promoción | Duradera\nMargarita | NO | SI | NO | SI | SI\nRosa | NO | NO | SI | SI | SI\nClavel | SI | NO | NO | NO | NO\nSalvia | SI | SI | SI | SI | NO\nCrisantemo | NO | NO | SI | SI | NO\nTulipán | SI | SI | NO | NO | SI\nCardo | NO | NO | SI | SI | NO\nLirio | SI | NO | NO | NO | SI\nOrquídea | NO | SI | NO | SI | NO\nGerbera | SI | NO | SI | SI | NO\n\n¿Qué pequeña flor de color rosa no es duradera, tiene más de tres pétalos y vale menos de 5?",
     "opciones": {
       "A": "Rosa.",
       "B": "Gerbera.",
@@ -919,9 +897,7 @@
     "respuesta_correcta": "D",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (Tablas Flores) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",

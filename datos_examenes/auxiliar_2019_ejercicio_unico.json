@@ -452,7 +452,7 @@
   {
     "parte": "primera",
     "numero": 31,
-    "pregunta": "31 a 36 (tabla de salas). ¿Cuántas salas disponen de proyector, tienen decoración estándar y cuentan con toma de red?",
+    "pregunta": "En la tabla siguiente se exponen las características principales de las salas de un edificio que se utilizan para la organización de cursos:\n\nSala | Tipo | Disponibilidad | Capacidad alumnos | Equipación | Toma de red | Equipos informáticos | Superficie (m²) | Decoración\nNueva York | Sala de reuniones | Mañanas | 6 | No | No | 8 | 15 | Estándar\nTokio | Sala de reuniones | Tardes | 17 | Proyector | Sí | 12 | 45 | Estándar\nTijuana | Sala de reuniones | Mañanas | 26 | Proyector y Megafonía | Sí | 12 | 50 | Ejecutiva\nDubái | Sala de reuniones | Mañanas | 28 | Megafonía | No | 13 | 52 | Ejecutiva\nMadrid | Sala de clases | Mañanas y Tardes | 9 | Proyector | No | 3 | 25 | Estándar\nLas Vegas | Sala de reuniones | Mañanas y Tardes | 10 | No | No | 14 | 28 | Estándar\nMúnich | Sala de clases | Tardes | 13 | Proyector | No | 7 | 30 | Estándar\nSeúl | Sala de clases | Mañanas y Tardes | 22 | Proyector | No | 15 | 48 | Ejecutiva\nLondres | Sala de clases | Mañanas y Tardes | 30 | Proyector | Sí | 30 | 53 | Ejecutiva\nBarcelona | Sala de reuniones | Tardes | 18 | Proyector y Megafonía | Sí | 7 | 47 | Ejecutiva\n\n¿Cuántas salas disponen de proyector, tienen decoración estándar y cuentan con toma de red?",
     "opciones": {
       "A": "3",
       "B": "1",
@@ -462,31 +462,27 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 32,
-    "pregunta": "¿Cuál de estas salas está disponible por las mañanas, con capacidad para más de 15 personas y tiene equipos informáticos suficientes para la capacidad máxima de alumnos de la sala?",
+    "pregunta": "Tabla de salas de un edificio utilizadas para la organización de cursos:\n\nSala | Tipo | Disponibilidad | Capacidad alumnos | Equipación | Toma de red | Equipos informáticos | Superficie (m²) | Decoración\nNueva York | Sala de reuniones | Mañanas | 6 | No | No | 8 | 15 | Estándar\nTokio | Sala de reuniones | Tardes | 17 | Proyector | Sí | 12 | 45 | Estándar\nTijuana | Sala de reuniones | Mañanas | 26 | Proyector y Megafonía | Sí | 12 | 50 | Ejecutiva\nDubái | Sala de reuniones | Mañanas | 28 | Megafonía | No | 13 | 52 | Ejecutiva\nMadrid | Sala de clases | Mañanas y Tardes | 9 | Proyector | No | 3 | 25 | Estándar\nLas Vegas | Sala de reuniones | Mañanas y Tardes | 10 | No | No | 14 | 28 | Estándar\nMúnich | Sala de clases | Tardes | 13 | Proyector | No | 7 | 30 | Estándar\nSeúl | Sala de clases | Mañanas y Tardes | 22 | Proyector | No | 15 | 48 | Ejecutiva\nLondres | Sala de clases | Mañanas y Tardes | 30 | Proyector | Sí | 30 | 53 | Ejecutiva\nBarcelona | Sala de reuniones | Tardes | 18 | Proyector y Megafonía | Sí | 7 | 47 | Ejecutiva\n\n¿Cuál de estas salas está disponible por las mañanas, con capacidad para más de 15 personas y tiene equipos informáticos suficientes para la capacidad máxima de alumnos de la sala?",
     "opciones": {
       "A": "La sala Las Vegas.",
       "B": "La sala Londres.",
       "C": "La sala Madrid.",
       "D": "La sala Seúl."
     },
-    "respuesta_correcta": "C",
+    "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 33,
-    "pregunta": "¿Cuántos metros cuadrados en total hay disponibles en salas con proyector y decoración tipo ejecutiva por las tardes?",
+    "pregunta": "Tabla de salas de un edificio utilizadas para la organización de cursos:\n\nSala | Tipo | Disponibilidad | Capacidad alumnos | Equipación | Toma de red | Equipos informáticos | Superficie (m²) | Decoración\nNueva York | Sala de reuniones | Mañanas | 6 | No | No | 8 | 15 | Estándar\nTokio | Sala de reuniones | Tardes | 17 | Proyector | Sí | 12 | 45 | Estándar\nTijuana | Sala de reuniones | Mañanas | 26 | Proyector y Megafonía | Sí | 12 | 50 | Ejecutiva\nDubái | Sala de reuniones | Mañanas | 28 | Megafonía | No | 13 | 52 | Ejecutiva\nMadrid | Sala de clases | Mañanas y Tardes | 9 | Proyector | No | 3 | 25 | Estándar\nLas Vegas | Sala de reuniones | Mañanas y Tardes | 10 | No | No | 14 | 28 | Estándar\nMúnich | Sala de clases | Tardes | 13 | Proyector | No | 7 | 30 | Estándar\nSeúl | Sala de clases | Mañanas y Tardes | 22 | Proyector | No | 15 | 48 | Ejecutiva\nLondres | Sala de clases | Mañanas y Tardes | 30 | Proyector | Sí | 30 | 53 | Ejecutiva\nBarcelona | Sala de reuniones | Tardes | 18 | Proyector y Megafonía | Sí | 7 | 47 | Ejecutiva\n\n¿Cuántos metros cuadrados en total hay disponibles en salas con proyector y decoración tipo ejecutiva por las tardes?",
     "opciones": {
       "A": "151 metros cuadrados.",
       "B": "100 metros cuadrados.",
@@ -496,14 +492,12 @@
     "respuesta_correcta": "D",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 34,
-    "pregunta": "De las salas de clases que cuentan con proyector y disponibilidad por las mañanas, ¿cuál tiene mayor capacidad de alumnos?",
+    "pregunta": "Tabla de salas de un edificio utilizadas para la organización de cursos:\n\nSala | Tipo | Disponibilidad | Capacidad alumnos | Equipación | Toma de red | Equipos informáticos | Superficie (m²) | Decoración\nNueva York | Sala de reuniones | Mañanas | 6 | No | No | 8 | 15 | Estándar\nTokio | Sala de reuniones | Tardes | 17 | Proyector | Sí | 12 | 45 | Estándar\nTijuana | Sala de reuniones | Mañanas | 26 | Proyector y Megafonía | Sí | 12 | 50 | Ejecutiva\nDubái | Sala de reuniones | Mañanas | 28 | Megafonía | No | 13 | 52 | Ejecutiva\nMadrid | Sala de clases | Mañanas y Tardes | 9 | Proyector | No | 3 | 25 | Estándar\nLas Vegas | Sala de reuniones | Mañanas y Tardes | 10 | No | No | 14 | 28 | Estándar\nMúnich | Sala de clases | Tardes | 13 | Proyector | No | 7 | 30 | Estándar\nSeúl | Sala de clases | Mañanas y Tardes | 22 | Proyector | No | 15 | 48 | Ejecutiva\nLondres | Sala de clases | Mañanas y Tardes | 30 | Proyector | Sí | 30 | 53 | Ejecutiva\nBarcelona | Sala de reuniones | Tardes | 18 | Proyector y Megafonía | Sí | 7 | 47 | Ejecutiva\n\nDe las salas de clases que cuentan con proyector y disponibilidad por las mañanas, ¿cuál tiene mayor capacidad de alumnos?",
     "opciones": {
       "A": "La sala Londres.",
       "B": "La sala Múnich.",
@@ -513,14 +507,12 @@
     "respuesta_correcta": "A",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 35,
-    "pregunta": "¿Qué media de capacidad de alumnos tienen las salas que cuentan con proyector y toma de red y tienen decoración tipo ejecutiva?",
+    "pregunta": "Tabla de salas de un edificio utilizadas para la organización de cursos:\n\nSala | Tipo | Disponibilidad | Capacidad alumnos | Equipación | Toma de red | Equipos informáticos | Superficie (m²) | Decoración\nNueva York | Sala de reuniones | Mañanas | 6 | No | No | 8 | 15 | Estándar\nTokio | Sala de reuniones | Tardes | 17 | Proyector | Sí | 12 | 45 | Estándar\nTijuana | Sala de reuniones | Mañanas | 26 | Proyector y Megafonía | Sí | 12 | 50 | Ejecutiva\nDubái | Sala de reuniones | Mañanas | 28 | Megafonía | No | 13 | 52 | Ejecutiva\nMadrid | Sala de clases | Mañanas y Tardes | 9 | Proyector | No | 3 | 25 | Estándar\nLas Vegas | Sala de reuniones | Mañanas y Tardes | 10 | No | No | 14 | 28 | Estándar\nMúnich | Sala de clases | Tardes | 13 | Proyector | No | 7 | 30 | Estándar\nSeúl | Sala de clases | Mañanas y Tardes | 22 | Proyector | No | 15 | 48 | Ejecutiva\nLondres | Sala de clases | Mañanas y Tardes | 30 | Proyector | Sí | 30 | 53 | Ejecutiva\nBarcelona | Sala de reuniones | Tardes | 18 | Proyector y Megafonía | Sí | 7 | 47 | Ejecutiva\n\n¿Qué media de capacidad de alumnos tienen las salas que cuentan con proyector y toma de red y tienen decoración tipo ejecutiva?",
     "opciones": {
       "A": "17,75 alumnos.",
       "B": "24,67 alumnos.",
@@ -530,14 +522,12 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 36,
-    "pregunta": "¿Cuál es la sala de reuniones, que no cuenta con toma de red, tiene disponibilidad por las mañanas y decoración tipo estándar?",
+    "pregunta": "Tabla de salas de un edificio utilizadas para la organización de cursos:\n\nSala | Tipo | Disponibilidad | Capacidad alumnos | Equipación | Toma de red | Equipos informáticos | Superficie (m²) | Decoración\nNueva York | Sala de reuniones | Mañanas | 6 | No | No | 8 | 15 | Estándar\nTokio | Sala de reuniones | Tardes | 17 | Proyector | Sí | 12 | 45 | Estándar\nTijuana | Sala de reuniones | Mañanas | 26 | Proyector y Megafonía | Sí | 12 | 50 | Ejecutiva\nDubái | Sala de reuniones | Mañanas | 28 | Megafonía | No | 13 | 52 | Ejecutiva\nMadrid | Sala de clases | Mañanas y Tardes | 9 | Proyector | No | 3 | 25 | Estándar\nLas Vegas | Sala de reuniones | Mañanas y Tardes | 10 | No | No | 14 | 28 | Estándar\nMúnich | Sala de clases | Tardes | 13 | Proyector | No | 7 | 30 | Estándar\nSeúl | Sala de clases | Mañanas y Tardes | 22 | Proyector | No | 15 | 48 | Ejecutiva\nLondres | Sala de clases | Mañanas y Tardes | 30 | Proyector | Sí | 30 | 53 | Ejecutiva\nBarcelona | Sala de reuniones | Tardes | 18 | Proyector y Megafonía | Sí | 7 | 47 | Ejecutiva\n\n¿Cuál es la sala de reuniones, que no cuenta con toma de red, tiene disponibilidad por las mañanas y decoración tipo estándar?",
     "opciones": {
       "A": "La sala Dubái.",
       "B": "La sala Tijuana.",
@@ -547,9 +537,7 @@
     "respuesta_correcta": "C",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
@@ -659,7 +647,7 @@
   {
     "parte": "primera",
     "numero": 44,
-    "pregunta": "44 a 49 (tabla academia idiomas). ¿En cuál de estos meses los estudiantes adolescentes de las clases de inglés han supuesto un mayor porcentaje con respecto al total de estudiantes del mes?",
+    "pregunta": "La siguiente tabla ofrece los datos de una academia de idiomas en cuanto al número de clases de inglés impartidas, la edad de los estudiantes y los libros que han vendido en diversos meses del año de su actividad económica:\n\nMes | Clases de inglés | Estudiantes adolescentes | Estudiantes adultos | Libros vendidos\nEnero | 7.150 | 407 | 531 | 843\nFebrero | 5.860 | 367 | 498 | 802\nMarzo | 4.865 | 320 | 462 | 732\nAbril | 6.108 | 323 | 528 | 835\nMayo | 5.744 | 289 | 429 | 654\nJunio | 4.500 | 220 | 405 | 539\nSeptiembre | 6.540 | 186 | 620 | 800\nOctubre | 8.390 | 189 | 587 | 738\nNoviembre | 9.120 | 194 | 553 | 720\nDiciembre | 9.640 | 158 | 560 | 698\n\n¿En cuál de estos meses los estudiantes adolescentes de las clases de inglés han supuesto un mayor porcentaje con respecto al total de estudiantes del mes?",
     "opciones": {
       "A": "Febrero.",
       "B": "Mayo.",
@@ -669,14 +657,12 @@
     "respuesta_correcta": "C",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 45,
-    "pregunta": "¿En qué mes de los siguientes se vendieron de media más libros a los estudiantes que tuvo ese mes?",
+    "pregunta": "Tabla de una academia de idiomas (clases de inglés, estudiantes y libros vendidos por mes):\n\nMes | Clases de inglés | Estudiantes adolescentes | Estudiantes adultos | Libros vendidos\nEnero | 7.150 | 407 | 531 | 843\nFebrero | 5.860 | 367 | 498 | 802\nMarzo | 4.865 | 320 | 462 | 732\nAbril | 6.108 | 323 | 528 | 835\nMayo | 5.744 | 289 | 429 | 654\nJunio | 4.500 | 220 | 405 | 539\nSeptiembre | 6.540 | 186 | 620 | 800\nOctubre | 8.390 | 189 | 587 | 738\nNoviembre | 9.120 | 194 | 553 | 720\nDiciembre | 9.640 | 158 | 560 | 698\n\n¿En qué mes de los siguientes se vendieron de media más libros a los estudiantes que tuvo ese mes?",
     "opciones": {
       "A": "Abril.",
       "B": "Septiembre.",
@@ -686,14 +672,12 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 46,
-    "pregunta": "¿Cuál de estos meses tiene una media menor de clases de inglés por estudiante?",
+    "pregunta": "Tabla de una academia de idiomas (clases de inglés, estudiantes y libros vendidos por mes):\n\nMes | Clases de inglés | Estudiantes adolescentes | Estudiantes adultos | Libros vendidos\nEnero | 7.150 | 407 | 531 | 843\nFebrero | 5.860 | 367 | 498 | 802\nMarzo | 4.865 | 320 | 462 | 732\nAbril | 6.108 | 323 | 528 | 835\nMayo | 5.744 | 289 | 429 | 654\nJunio | 4.500 | 220 | 405 | 539\nSeptiembre | 6.540 | 186 | 620 | 800\nOctubre | 8.390 | 189 | 587 | 738\nNoviembre | 9.120 | 194 | 553 | 720\nDiciembre | 9.640 | 158 | 560 | 698\n\n¿Cuál de estos meses tiene una media menor de clases de inglés por estudiante?",
     "opciones": {
       "A": "Junio.",
       "B": "Febrero.",
@@ -703,14 +687,12 @@
     "respuesta_correcta": "D",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 47,
-    "pregunta": "¿En qué mes hubo más estudiantes?",
+    "pregunta": "Tabla de una academia de idiomas (clases de inglés, estudiantes y libros vendidos por mes):\n\nMes | Clases de inglés | Estudiantes adolescentes | Estudiantes adultos | Libros vendidos\nEnero | 7.150 | 407 | 531 | 843\nFebrero | 5.860 | 367 | 498 | 802\nMarzo | 4.865 | 320 | 462 | 732\nAbril | 6.108 | 323 | 528 | 835\nMayo | 5.744 | 289 | 429 | 654\nJunio | 4.500 | 220 | 405 | 539\nSeptiembre | 6.540 | 186 | 620 | 800\nOctubre | 8.390 | 189 | 587 | 738\nNoviembre | 9.120 | 194 | 553 | 720\nDiciembre | 9.640 | 158 | 560 | 698\n\n¿En qué mes hubo más estudiantes?",
     "opciones": {
       "A": "Septiembre.",
       "B": "Enero.",
@@ -720,14 +702,12 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 48,
-    "pregunta": "¿Y en qué mes hubo menos estudiantes?",
+    "pregunta": "Tabla de una academia de idiomas (clases de inglés, estudiantes y libros vendidos por mes):\n\nMes | Clases de inglés | Estudiantes adolescentes | Estudiantes adultos | Libros vendidos\nEnero | 7.150 | 407 | 531 | 843\nFebrero | 5.860 | 367 | 498 | 802\nMarzo | 4.865 | 320 | 462 | 732\nAbril | 6.108 | 323 | 528 | 835\nMayo | 5.744 | 289 | 429 | 654\nJunio | 4.500 | 220 | 405 | 539\nSeptiembre | 6.540 | 186 | 620 | 800\nOctubre | 8.390 | 189 | 587 | 738\nNoviembre | 9.120 | 194 | 553 | 720\nDiciembre | 9.640 | 158 | 560 | 698\n\n¿Y en qué mes hubo menos estudiantes?",
     "opciones": {
       "A": "Mayo.",
       "B": "Marzo.",
@@ -737,14 +717,12 @@
     "respuesta_correcta": "D",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",
     "numero": 49,
-    "pregunta": "Si el 62% de los estudiantes adultos tiene menos de 40 años, ¿cuántos estudiantes adultos menores de 40 años tuvo la empresa en el ejercicio económico?",
+    "pregunta": "Tabla de una academia de idiomas (clases de inglés, estudiantes y libros vendidos por mes):\n\nMes | Clases de inglés | Estudiantes adolescentes | Estudiantes adultos | Libros vendidos\nEnero | 7.150 | 407 | 531 | 843\nFebrero | 5.860 | 367 | 498 | 802\nMarzo | 4.865 | 320 | 462 | 732\nAbril | 6.108 | 323 | 528 | 835\nMayo | 5.744 | 289 | 429 | 654\nJunio | 4.500 | 220 | 405 | 539\nSeptiembre | 6.540 | 186 | 620 | 800\nOctubre | 8.390 | 189 | 587 | 738\nNoviembre | 9.120 | 194 | 553 | 720\nDiciembre | 9.640 | 158 | 560 | 698\n\nSi el 62% de los estudiantes adultos tiene menos de 40 años, ¿cuántos estudiantes adultos menores de 40 años tuvo la empresa en el ejercicio económico?",
     "opciones": {
       "A": "3.722.",
       "B": "4.732.",
@@ -754,9 +732,7 @@
     "respuesta_correcta": "C",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "parte": "primera",

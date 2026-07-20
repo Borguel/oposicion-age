@@ -722,7 +722,7 @@
   {
     "numero": 49,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Préstamos\" (Título/Autor/Lugar de edición/Año/Editorial/Ejemplares disponibles/Ejemplares prestados/Préstamos realizados), ¿cuál de las siguientes editoriales acumula un mayor número de ejemplares disponibles?",
+    "pregunta": "Tabla \"Préstamos\":\n\nTítulo | Autor | Lugar edición | Año publicación | Editorial | Ejemplares disponibles | Ejemplares prestados | Préstamos realizados\nAranmanoth | Matute, Ana María | Barcelona | 2000 | Destino | 5 | 2 | 249\nContra Vosotros | Soriano, Mercedes | Madrid | 1998 | Alfaguara | 5 | 4 | 114\nMano de sombra | Marías, Javier | Madrid | 1997 | Santillana | 7 | 5 | 311\nAdiós a las novias | Puértolas, Soledad | Barcelona | 1998 | Anagrama | 14 | 6 | 201\nLa temporada de caza | Camilleri, Andrea | Barcelona | 2000 | Anagrama | 15 | 5 | 154\nEl equipaje del viajero | Saramago, José | Madrid | 1999 | Alfaguara | 11 | 3 | 248\nEl amante lesbiano | Sampedro, José Luis | Barcelona | 2000 | Plaza & Janés | 8 | 7 | 130\nEntre visillos | Martín Gaite, Carmen | Barcelona | 1998 | Destino | 10 | 3 | 268\nUn calor tan cercano | Torres, Maruja | Madrid | 1997 | Santillana | 15 | 5 | 290\nHija de la fortuna | Allende, Isabel | Barcelona | 1999 | Plaza & Janés | 13 | 7 | 206\n\n¿Cuál de las siguientes editoriales acumula un mayor número de ejemplares disponibles?",
     "opciones": {
       "A": "Plaza & Janés.",
       "B": "Destino.",
@@ -732,14 +732,12 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "D",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Préstamos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 50,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Préstamos\", ¿cuál de las siguientes editoriales acumula un mayor número de préstamos realizados?",
+    "pregunta": "Tabla \"Préstamos\":\n\nTítulo | Autor | Lugar edición | Año publicación | Editorial | Ejemplares disponibles | Ejemplares prestados | Préstamos realizados\nAranmanoth | Matute, Ana María | Barcelona | 2000 | Destino | 5 | 2 | 249\nContra Vosotros | Soriano, Mercedes | Madrid | 1998 | Alfaguara | 5 | 4 | 114\nMano de sombra | Marías, Javier | Madrid | 1997 | Santillana | 7 | 5 | 311\nAdiós a las novias | Puértolas, Soledad | Barcelona | 1998 | Anagrama | 14 | 6 | 201\nLa temporada de caza | Camilleri, Andrea | Barcelona | 2000 | Anagrama | 15 | 5 | 154\nEl equipaje del viajero | Saramago, José | Madrid | 1999 | Alfaguara | 11 | 3 | 248\nEl amante lesbiano | Sampedro, José Luis | Barcelona | 2000 | Plaza & Janés | 8 | 7 | 130\nEntre visillos | Martín Gaite, Carmen | Barcelona | 1998 | Destino | 10 | 3 | 268\nUn calor tan cercano | Torres, Maruja | Madrid | 1997 | Santillana | 15 | 5 | 290\nHija de la fortuna | Allende, Isabel | Barcelona | 1999 | Plaza & Janés | 13 | 7 | 206\n\n¿Cuál de las siguientes editoriales acumula un mayor número de préstamos realizados?",
     "opciones": {
       "A": "Destino.",
       "B": "Santillana.",
@@ -749,14 +747,12 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "B",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Préstamos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 51,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Préstamos\", ¿cuál de los siguientes títulos está publicado en una editorial de Barcelona, en un año posterior a 1998 y cuenta con más de 10 ejemplares disponibles?",
+    "pregunta": "Tabla \"Préstamos\":\n\nTítulo | Autor | Lugar edición | Año publicación | Editorial | Ejemplares disponibles | Ejemplares prestados | Préstamos realizados\nAranmanoth | Matute, Ana María | Barcelona | 2000 | Destino | 5 | 2 | 249\nContra Vosotros | Soriano, Mercedes | Madrid | 1998 | Alfaguara | 5 | 4 | 114\nMano de sombra | Marías, Javier | Madrid | 1997 | Santillana | 7 | 5 | 311\nAdiós a las novias | Puértolas, Soledad | Barcelona | 1998 | Anagrama | 14 | 6 | 201\nLa temporada de caza | Camilleri, Andrea | Barcelona | 2000 | Anagrama | 15 | 5 | 154\nEl equipaje del viajero | Saramago, José | Madrid | 1999 | Alfaguara | 11 | 3 | 248\nEl amante lesbiano | Sampedro, José Luis | Barcelona | 2000 | Plaza & Janés | 8 | 7 | 130\nEntre visillos | Martín Gaite, Carmen | Barcelona | 1998 | Destino | 10 | 3 | 268\nUn calor tan cercano | Torres, Maruja | Madrid | 1997 | Santillana | 15 | 5 | 290\nHija de la fortuna | Allende, Isabel | Barcelona | 1999 | Plaza & Janés | 13 | 7 | 206\n\n¿Cuál de los siguientes títulos está publicado en una editorial de Barcelona, en un año posterior a 1998 y cuenta con más de 10 ejemplares disponibles?",
     "opciones": {
       "A": "Entre visillos.",
       "B": "El amante lesbiano.",
@@ -766,14 +762,12 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "C",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Préstamos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 52,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Préstamos\", ¿cuál de las siguientes editoriales acumula un mayor número de ejemplares prestados?",
+    "pregunta": "Tabla \"Préstamos\":\n\nTítulo | Autor | Lugar edición | Año publicación | Editorial | Ejemplares disponibles | Ejemplares prestados | Préstamos realizados\nAranmanoth | Matute, Ana María | Barcelona | 2000 | Destino | 5 | 2 | 249\nContra Vosotros | Soriano, Mercedes | Madrid | 1998 | Alfaguara | 5 | 4 | 114\nMano de sombra | Marías, Javier | Madrid | 1997 | Santillana | 7 | 5 | 311\nAdiós a las novias | Puértolas, Soledad | Barcelona | 1998 | Anagrama | 14 | 6 | 201\nLa temporada de caza | Camilleri, Andrea | Barcelona | 2000 | Anagrama | 15 | 5 | 154\nEl equipaje del viajero | Saramago, José | Madrid | 1999 | Alfaguara | 11 | 3 | 248\nEl amante lesbiano | Sampedro, José Luis | Barcelona | 2000 | Plaza & Janés | 8 | 7 | 130\nEntre visillos | Martín Gaite, Carmen | Barcelona | 1998 | Destino | 10 | 3 | 268\nUn calor tan cercano | Torres, Maruja | Madrid | 1997 | Santillana | 15 | 5 | 290\nHija de la fortuna | Allende, Isabel | Barcelona | 1999 | Plaza & Janés | 13 | 7 | 206\n\n¿Cuál de las siguientes editoriales acumula un mayor número de ejemplares prestados?",
     "opciones": {
       "A": "Plaza & Janés.",
       "B": "Alfaguara.",
@@ -783,14 +777,12 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "A",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Préstamos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 53,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Préstamos\", ¿cuál de los siguientes títulos tiene un mayor porcentaje de ejemplares prestados con respecto a los disponibles?",
+    "pregunta": "Tabla \"Préstamos\":\n\nTítulo | Autor | Lugar edición | Año publicación | Editorial | Ejemplares disponibles | Ejemplares prestados | Préstamos realizados\nAranmanoth | Matute, Ana María | Barcelona | 2000 | Destino | 5 | 2 | 249\nContra Vosotros | Soriano, Mercedes | Madrid | 1998 | Alfaguara | 5 | 4 | 114\nMano de sombra | Marías, Javier | Madrid | 1997 | Santillana | 7 | 5 | 311\nAdiós a las novias | Puértolas, Soledad | Barcelona | 1998 | Anagrama | 14 | 6 | 201\nLa temporada de caza | Camilleri, Andrea | Barcelona | 2000 | Anagrama | 15 | 5 | 154\nEl equipaje del viajero | Saramago, José | Madrid | 1999 | Alfaguara | 11 | 3 | 248\nEl amante lesbiano | Sampedro, José Luis | Barcelona | 2000 | Plaza & Janés | 8 | 7 | 130\nEntre visillos | Martín Gaite, Carmen | Barcelona | 1998 | Destino | 10 | 3 | 268\nUn calor tan cercano | Torres, Maruja | Madrid | 1997 | Santillana | 15 | 5 | 290\nHija de la fortuna | Allende, Isabel | Barcelona | 1999 | Plaza & Janés | 13 | 7 | 206\n\n¿Cuál de los siguientes títulos tiene un mayor porcentaje de ejemplares prestados con respecto a los disponibles?",
     "opciones": {
       "A": "La temporada de caza.",
       "B": "Aranmanoth.",
@@ -800,14 +792,12 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "B",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Préstamos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 54,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Préstamos\", ¿cuál de los siguientes autores tiene un mayor porcentaje de ejemplares prestados con respecto al total de préstamos realizados?",
+    "pregunta": "Tabla \"Préstamos\":\n\nTítulo | Autor | Lugar edición | Año publicación | Editorial | Ejemplares disponibles | Ejemplares prestados | Préstamos realizados\nAranmanoth | Matute, Ana María | Barcelona | 2000 | Destino | 5 | 2 | 249\nContra Vosotros | Soriano, Mercedes | Madrid | 1998 | Alfaguara | 5 | 4 | 114\nMano de sombra | Marías, Javier | Madrid | 1997 | Santillana | 7 | 5 | 311\nAdiós a las novias | Puértolas, Soledad | Barcelona | 1998 | Anagrama | 14 | 6 | 201\nLa temporada de caza | Camilleri, Andrea | Barcelona | 2000 | Anagrama | 15 | 5 | 154\nEl equipaje del viajero | Saramago, José | Madrid | 1999 | Alfaguara | 11 | 3 | 248\nEl amante lesbiano | Sampedro, José Luis | Barcelona | 2000 | Plaza & Janés | 8 | 7 | 130\nEntre visillos | Martín Gaite, Carmen | Barcelona | 1998 | Destino | 10 | 3 | 268\nUn calor tan cercano | Torres, Maruja | Madrid | 1997 | Santillana | 15 | 5 | 290\nHija de la fortuna | Allende, Isabel | Barcelona | 1999 | Plaza & Janés | 13 | 7 | 206\n\n¿Cuál de los siguientes autores tiene un mayor porcentaje de ejemplares prestados con respecto al total de préstamos realizados?",
     "opciones": {
       "A": "Sampedro, José Luis.",
       "B": "Puértolas, Soledad.",
@@ -817,14 +807,12 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "A",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Préstamos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 55,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Desplazamientos\" (Proyecto/Departamento/Oficina/Duración días/Kilómetros/Peajes/Dieta/Combustible), ¿cuál de las siguientes oficinas ha realizado un mayor número de kilómetros?",
+    "pregunta": "Tabla \"Desplazamientos\":\n\nProyecto | Departamento | Oficina | Duración días | Kilómetros | Peajes (euros)\nA-115 | Administración | Zaragoza | 1 | 505 | 40,64\nM-254 | Marketing | Zaragoza | 0,5 | 721 | 16,60\nC-491 | Administración | Valencia | 2 | 678 | 10,84\nA-115 | Marketing | Tarragona | 1 | 1.425 | 38,90\nM-254 | Técnico | Bilbao | 2 | 1.250 | 30,40\nC-510 | Comercial | Valencia | 3 | 707 | 22,34\nC-510 | Marketing | Bilbao | 0,5 | 1.388 | 11,78\nM-254 | Técnico | Málaga | 3 | 962 | 35,87\nC-510 | Comercial | Tarragona | 2 | 1.104 | 5,97\nA-115 | Comercial | Málaga | 2 | 1.541 | 22,72\n\n¿Cuál de las siguientes oficinas ha realizado un mayor número de kilómetros?",
     "opciones": {
       "A": "Zaragoza.",
       "B": "Valencia.",
@@ -834,14 +822,12 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "D",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Desplazamientos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 56,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Desplazamientos\", ¿cuál de los siguientes departamentos tiene una media mayor de duración en días de sus desplazamientos?",
+    "pregunta": "Tabla \"Desplazamientos\":\n\nProyecto | Departamento | Oficina | Duración días | Kilómetros | Peajes (euros)\nA-115 | Administración | Zaragoza | 1 | 505 | 40,64\nM-254 | Marketing | Zaragoza | 0,5 | 721 | 16,60\nC-491 | Administración | Valencia | 2 | 678 | 10,84\nA-115 | Marketing | Tarragona | 1 | 1.425 | 38,90\nM-254 | Técnico | Bilbao | 2 | 1.250 | 30,40\nC-510 | Comercial | Valencia | 3 | 707 | 22,34\nC-510 | Marketing | Bilbao | 0,5 | 1.388 | 11,78\nM-254 | Técnico | Málaga | 3 | 962 | 35,87\nC-510 | Comercial | Tarragona | 2 | 1.104 | 5,97\nA-115 | Comercial | Málaga | 2 | 1.541 | 22,72\n\n¿Cuál de los siguientes departamentos tiene una media mayor de duración en días de sus desplazamientos?",
     "opciones": {
       "A": "Técnico.",
       "B": "Marketing.",
@@ -851,14 +837,12 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "A",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Desplazamientos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 57,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Desplazamientos\", ¿cuál de los siguientes departamentos tiene una media mayor de pago en euros por peaje?",
+    "pregunta": "Tabla \"Desplazamientos\":\n\nProyecto | Departamento | Oficina | Duración días | Kilómetros | Peajes (euros)\nA-115 | Administración | Zaragoza | 1 | 505 | 40,64\nM-254 | Marketing | Zaragoza | 0,5 | 721 | 16,60\nC-491 | Administración | Valencia | 2 | 678 | 10,84\nA-115 | Marketing | Tarragona | 1 | 1.425 | 38,90\nM-254 | Técnico | Bilbao | 2 | 1.250 | 30,40\nC-510 | Comercial | Valencia | 3 | 707 | 22,34\nC-510 | Marketing | Bilbao | 0,5 | 1.388 | 11,78\nM-254 | Técnico | Málaga | 3 | 962 | 35,87\nC-510 | Comercial | Tarragona | 2 | 1.104 | 5,97\nA-115 | Comercial | Málaga | 2 | 1.541 | 22,72\n\n¿Cuál de los siguientes departamentos tiene una media mayor de pago en euros por peaje?",
     "opciones": {
       "A": "Comercial.",
       "B": "Administración.",
@@ -868,14 +852,12 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "D",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Desplazamientos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 58,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Desplazamientos\", ¿cuál de los siguientes proyectos ha tenido un mayor pago de peajes por kilómetro realizado?",
+    "pregunta": "Tabla \"Desplazamientos\":\n\nProyecto | Departamento | Oficina | Duración días | Kilómetros | Peajes (euros)\nA-115 | Administración | Zaragoza | 1 | 505 | 40,64\nM-254 | Marketing | Zaragoza | 0,5 | 721 | 16,60\nC-491 | Administración | Valencia | 2 | 678 | 10,84\nA-115 | Marketing | Tarragona | 1 | 1.425 | 38,90\nM-254 | Técnico | Bilbao | 2 | 1.250 | 30,40\nC-510 | Comercial | Valencia | 3 | 707 | 22,34\nC-510 | Marketing | Bilbao | 0,5 | 1.388 | 11,78\nM-254 | Técnico | Málaga | 3 | 962 | 35,87\nC-510 | Comercial | Tarragona | 2 | 1.104 | 5,97\nA-115 | Comercial | Málaga | 2 | 1.541 | 22,72\n\n¿Cuál de los siguientes proyectos ha tenido un mayor pago de peajes por kilómetro realizado?",
     "opciones": {
       "A": "C-510",
       "B": "C-491",
@@ -885,14 +867,12 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "C",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Desplazamientos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 59,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Desplazamientos\", ¿cuál es el porcentaje de kilómetros realizados por la oficina de Tarragona con respecto al total de kilómetros realizado por todas las oficinas?",
+    "pregunta": "Tabla \"Desplazamientos\":\n\nProyecto | Departamento | Oficina | Duración días | Kilómetros | Peajes (euros)\nA-115 | Administración | Zaragoza | 1 | 505 | 40,64\nM-254 | Marketing | Zaragoza | 0,5 | 721 | 16,60\nC-491 | Administración | Valencia | 2 | 678 | 10,84\nA-115 | Marketing | Tarragona | 1 | 1.425 | 38,90\nM-254 | Técnico | Bilbao | 2 | 1.250 | 30,40\nC-510 | Comercial | Valencia | 3 | 707 | 22,34\nC-510 | Marketing | Bilbao | 0,5 | 1.388 | 11,78\nM-254 | Técnico | Málaga | 3 | 962 | 35,87\nC-510 | Comercial | Tarragona | 2 | 1.104 | 5,97\nA-115 | Comercial | Málaga | 2 | 1.541 | 22,72\n\n¿Cuál es el porcentaje de kilómetros realizados por la oficina de Tarragona con respecto al total de kilómetros realizado por todas las oficinas?",
     "opciones": {
       "A": "25,83 %",
       "B": "24,60 %",
@@ -902,14 +882,12 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "B",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Desplazamientos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 60,
     "parte": "primera",
-    "pregunta": "Según los datos de la tabla \"Desplazamientos\", ¿cuál de los siguientes es el porcentaje de kilómetros realizados en el proyecto A-115 con respecto al total de kilómetros de todos los proyectos?",
+    "pregunta": "Tabla \"Desplazamientos\":\n\nProyecto | Departamento | Oficina | Duración días | Kilómetros | Peajes (euros)\nA-115 | Administración | Zaragoza | 1 | 505 | 40,64\nM-254 | Marketing | Zaragoza | 0,5 | 721 | 16,60\nC-491 | Administración | Valencia | 2 | 678 | 10,84\nA-115 | Marketing | Tarragona | 1 | 1.425 | 38,90\nM-254 | Técnico | Bilbao | 2 | 1.250 | 30,40\nC-510 | Comercial | Valencia | 3 | 707 | 22,34\nC-510 | Marketing | Bilbao | 0,5 | 1.388 | 11,78\nM-254 | Técnico | Málaga | 3 | 962 | 35,87\nC-510 | Comercial | Tarragona | 2 | 1.104 | 5,97\nA-115 | Comercial | Málaga | 2 | 1.541 | 22,72\n\n¿Cuál de los siguientes es el porcentaje de kilómetros realizados en el proyecto A-115 con respecto al total de kilómetros de todos los proyectos?",
     "opciones": {
       "A": "34,51 %",
       "B": "32,82 %",
@@ -919,9 +897,7 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "C",
-    "psicotecnico": true,
-    "incompleta": true,
-    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla \"Desplazamientos\") que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
+    "psicotecnico": true
   },
   {
     "numero": 61,

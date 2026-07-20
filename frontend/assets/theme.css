@@ -1548,7 +1548,11 @@ body {
      en su propia fila debajo, para no estrechar el texto de la pregunta. */
   display: block;
 }
-.pregunta-en-negrita > span { display: block; }
+/* white-space: pre-wrap a propósito: algunas psicotécnicas de Auxiliar
+   (aptitud numérica sobre una tabla de datos) incrustan la tabla como texto
+   con saltos de línea dentro del propio enunciado -- sin esto, el navegador
+   los colapsaría y la tabla se leería como un párrafo corrido ilegible. */
+.pregunta-en-negrita > span { display: block; white-space: pre-wrap; }
 
 .btn-favorita {
   flex-shrink: 0;
