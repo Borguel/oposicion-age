@@ -462,7 +462,9 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",
@@ -477,7 +479,9 @@
     "respuesta_correcta": "C",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",
@@ -492,7 +496,9 @@
     "respuesta_correcta": "D",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",
@@ -507,7 +513,9 @@
     "respuesta_correcta": "A",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",
@@ -522,7 +530,9 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",
@@ -537,7 +547,9 @@
     "respuesta_correcta": "C",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de salas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",
@@ -657,7 +669,9 @@
     "respuesta_correcta": "C",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",
@@ -672,7 +686,9 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",
@@ -687,7 +703,9 @@
     "respuesta_correcta": "D",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",
@@ -702,7 +720,9 @@
     "respuesta_correcta": "B",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",
@@ -717,7 +737,9 @@
     "respuesta_correcta": "D",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",
@@ -732,7 +754,9 @@
     "respuesta_correcta": "C",
     "anulada": false,
     "reserva": false,
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (tabla de la academia de idiomas) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "parte": "primera",

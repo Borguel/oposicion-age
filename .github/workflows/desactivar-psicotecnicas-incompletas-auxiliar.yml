@@ -1,0 +1,47 @@
+name: Desactivar psicotécnicas de Auxiliar con tabla de datos no transcrita
+
+# 48 preguntas psicotécnicas de los 4 exámenes de Auxiliar ya subidos
+# (2019, 2022, 2024, 2025) remiten a una tabla de datos ("Tabla Ponencias",
+# "cuadro Biblioteca"...) que no se transcribió del examen original: la IA
+# no pudo localizarla al extraer el PDF, así que el usuario ve una pregunta
+# con opciones de respuesta pero sin la información necesaria para
+# resolverla. Se dispara a mano porque modifica Firestore (soft delete:
+# marca activa=false, igual que el botón "Desactivar" del panel admin).
+#
+# Ejecuta primero con accion=preview (no toca Firestore, solo lista las 48
+# preguntas objetivo) y revisa el resultado antes de volver a ejecutar con
+# accion=subir. accion=reactivar deshace el soft delete si más adelante se
+# completa el enunciado con la tabla real y se quiere volver a activar
+# alguna.
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "preview (solo lista, no toca Firestore), subir (desactiva de verdad) o reactivar (deshace el soft delete)"
+        required: true
+        default: "preview"
+        type: choice
+        options:
+          - preview
+          - subir
+          - reactivar
+
+jobs:
+  desactivar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Desactivar psicotécnicas incompletas de Auxiliar
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: python desactivar_psicotecnicas_incompletas_auxiliar.py --${{ github.event.inputs.accion }}

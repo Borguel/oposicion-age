@@ -100,6 +100,10 @@ def cargar_examen(anio):
             print(f"  Pregunta {clave}... ANULADA, se omite.")
             continue
 
+        if p.get("incompleta"):
+            print(f"  Pregunta {clave}... INCOMPLETA ({p.get('motivo_incompleta', 'ver JSON')}), se omite.")
+            continue
+
         print(f"  Pregunta {clave}...", end=" ", flush=True)
         explicacion = explicaciones.get(clave, "").strip()
         if not explicacion:

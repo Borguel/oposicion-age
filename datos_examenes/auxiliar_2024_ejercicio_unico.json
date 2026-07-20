@@ -732,7 +732,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "D",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Biblioteca) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 50,
@@ -747,7 +749,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "D",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Biblioteca) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 51,
@@ -762,7 +766,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "B",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Biblioteca) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 52,
@@ -777,7 +783,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "C",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Biblioteca) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 53,
@@ -792,7 +800,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "A",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Biblioteca) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 54,
@@ -807,7 +817,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "A",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Biblioteca) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 55,
@@ -822,7 +834,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "B",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Laboratorios) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 56,
@@ -837,7 +851,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "A",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Laboratorios) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 57,
@@ -852,7 +868,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "B",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Laboratorios) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 58,
@@ -867,7 +885,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "D",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Laboratorios) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 59,
@@ -882,7 +902,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "A",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Laboratorios) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 60,
@@ -897,7 +919,9 @@
     "reserva": false,
     "anulada": false,
     "respuesta_correcta": "C",
-    "psicotecnico": true
+    "psicotecnico": true,
+    "incompleta": true,
+    "motivo_incompleta": "Enunciado remite a una tabla de datos (cuadro Laboratorios) que no se transcribió del examen original: sin esos datos la pregunta no se puede responder con la información disponible."
   },
   {
     "numero": 61,
