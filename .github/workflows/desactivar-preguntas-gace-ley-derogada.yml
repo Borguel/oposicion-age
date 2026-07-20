@@ -1,0 +1,45 @@
+name: Desactivar preguntas de GACE sobre leyes ya derogadas
+
+# 40 preguntas del banco oficial de GACE (exámenes 2008-2013) preguntan
+# literalmente por artículos de la Ley 30/1992 (LRJPAC), la LOFAGE
+# (Ley 6/1997) o la Ley 30/2007 de Contratos del Sector Público, todas
+# derogadas y sustituidas por normas con numeración de artículos
+# completamente distinta. Se dispara a mano porque modifica Firestore
+# (soft delete: marca activa=false, igual que el botón "Desactivar" del
+# panel admin).
+#
+# Ejecuta primero con accion=preview (no toca Firestore, solo lista las 40
+# preguntas objetivo) y revisa el resultado antes de volver a ejecutar con
+# accion=subir. accion=reactivar deshace el soft delete si hiciera falta.
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "preview (solo lista, no toca Firestore), subir (desactiva de verdad) o reactivar (deshace el soft delete)"
+        required: true
+        default: "preview"
+        type: choice
+        options:
+          - preview
+          - subir
+          - reactivar
+
+jobs:
+  desactivar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Desactivar preguntas de GACE con ley derogada
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: python desactivar_preguntas_gace_ley_derogada.py --${{ github.event.inputs.accion }}
