@@ -215,8 +215,10 @@
 .admin-opcion-radio { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; white-space: nowrap; }
 .admin-opcion .age-input { flex: 1; }
 /* Editar pregunta: círculo (radio) + letra + texto, todo en una línea. El
-   radio lleva ancho fijo para no heredar el width:100% genérico del modal. */
-.admin-opcion-check { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; cursor: pointer; }
+   selector va prefijado con .admin-opcion (dos clases) para ganar en
+   especificidad a ".admin-modal input" (clase + tipo) y que el radio no
+   se estire al 100% del ancho, empujando la letra y el texto fuera de la vista. */
+.admin-opcion .admin-opcion-check { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; cursor: pointer; }
 .admin-opcion-letra { flex: 0 0 auto; width: 20px; text-align: center; font-weight: 800; margin: 0; cursor: pointer; color: var(--age-ink); }
 .admin-opcion-txt { flex: 1; min-width: 0; }
 .admin-rol-check { display: flex; align-items: flex-start; gap: 8px; margin: 6px 0; font-size: 14px; cursor: pointer; }
