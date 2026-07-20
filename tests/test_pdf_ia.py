@@ -188,11 +188,35 @@ class TestResumirPdfYGenerarTestDesdePdf:
         assert eventos[-1]["tipo"] == "fin"
         assert eventos[-1]["test"] == []
         assert "error" in eventos[-1]
+        # Fallo técnico real (no de verificación) -- se mantiene el mensaje
+        # genérico existente.
+        assert "Error técnico" in eventos[-1]["error"]
         # El uso se cobra por adelantado (antes de abrir el stream) y, como la
         # generación no produjo ni una pregunta, el hilo de fondo lo devuelve:
         # el neto debe quedar en 0 (no se consume cuota por una generación
         # fallida, pero el contador ya existe por el cobro+devolución).
         assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0
+
+    def test_generar_test_desde_pdf_documento_corto_da_mensaje_honesto(self, client, db, documento_sembrado):
+        # Si el PDF no tiene contenido suficiente para las preguntas pedidas,
+        # TODAS las candidatas pueden fallar la verificación de calidad sin
+        # que haya habido ningún fallo técnico de DeepSeek (ver
+        # test_generator.py, _pedir_lote_verificado) -- el mensaje debe
+        # explicar esto en vez de hablar de un "error técnico" de JSON.
+        errores_verificacion = ["Ninguna de las 15 preguntas candidatas de un lote superó la verificación de calidad"]
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_preguntas_ia_en_lotes", return_value=([], errores_verificacion)):
+                resp = client.post("/generar-test-desde-pdf", data={
+                    "documento_id": documento_sembrado, "num_preguntas": "40"
+                }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["test"] == []
+        assert "Error técnico" not in eventos[-1]["error"]
+        assert "40" in eventos[-1]["error"]
+        assert "demasiado corto" in eventos[-1]["error"]
 
 
 class TestGenerarEsquemaDesdePdf:

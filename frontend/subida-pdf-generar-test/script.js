@@ -43,6 +43,24 @@ async function obtenerAuthHeaders() {
       return tiempoTranscurridoBase + Math.floor((Date.now() - tiempoInicio) / 1000);
     }
 
+    // Aviso NO bloqueante para cuando se generaron menos preguntas de las
+    // pedidas (documento corto/repetitivo para tantas preguntas distintas,
+    // ver blueprints/pdf_ia.py) -- el test sigue arrancando con las que sí
+    // se generaron, pero el usuario debe saber que fueron menos de las
+    // solicitadas en vez de asumir que pidió menos.
+    function avisarSiPreguntasIncompletas(datosFinales) {
+      if (!datosFinales.advertencia) return;
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'info',
+        title: datosFinales.advertencia,
+        showConfirmButton: false,
+        timer: 6000,
+        timerProgressBar: true,
+      });
+    }
+
     function mostrarError(mensaje) {
       Swal.fire({
         icon: 'error',
@@ -307,6 +325,7 @@ async function obtenerAuthHeaders() {
       try {
         const datosFinales = await generarTestDesdePdfConProgreso(formData, authHeaders);
         documentoIdActual = datosFinales.documento_id || documentoIdActual;
+        avisarSiPreguntasIncompletas(datosFinales);
         iniciarTest(datosFinales.test);
       } catch (err) {
         mostrarError(err.message || "Error al generar el test.");
@@ -436,6 +455,7 @@ async function obtenerAuthHeaders() {
         const datosFinales = await generarTestDesdePdfConProgreso(formData, authHeaders);
         nombreArchivo = datosFinales.nombre_archivo || nombreArchivo;
         documentoIdActual = datosFinales.documento_id || documentoIdActual;
+        avisarSiPreguntasIncompletas(datosFinales);
         iniciarTest(datosFinales.test);
       } catch (err) {
         mostrarError(err.message);

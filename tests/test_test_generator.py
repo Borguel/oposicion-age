@@ -89,7 +89,12 @@ class TestGenerarPreguntasIaEnLotes:
             preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 1, "Texto de prueba.", tamano_lote=15)
 
         assert preguntas == []
-        assert errores == []  # no es un error de lote -- simplemente 0 supervivientes tras verificar
+        # 0 supervivientes tras verificar SÍ se reporta en errores (aunque no
+        # sea un fallo técnico de generación) para que el llamante pueda
+        # distinguir "documento sin contenido suficiente" de un fallo real de
+        # DeepSeek -- ver blueprints/pdf_ia.py.
+        assert len(errores) == 1
+        assert errores[0].startswith("Ninguna de las")
         # Como mucho MAX_INTENTOS_POR_PREGUNTA_PDF candidatas distintas probadas
         # en total (la del lote + las de recambio), nunca más.
         assert len(llamadas_generacion) == MAX_INTENTOS_POR_PREGUNTA_PDF

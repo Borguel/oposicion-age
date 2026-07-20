@@ -307,9 +307,25 @@ def generar_test_desde_pdf():
                     on_usage=acumulador_tokens.add,
                 )
                 if not preguntas:
+                    # Si TODOS los errores de lote son de verificación (no de
+                    # generación), ninguna pregunta llegó a fallar por un
+                    # problema técnico de DeepSeek: el documento sencillamente
+                    # no tenía suficiente contenido distinto para las
+                    # preguntas pedidas, y decirlo así evita el mensaje
+                    # confuso de "error técnico" (ver test_generator.py,
+                    # _pedir_lote_verificado).
+                    if errores_lotes and all(e.startswith("Ninguna de las") for e in errores_lotes):
+                        mensaje_error = (
+                            f"No se pudo generar ninguna pregunta que superase la verificación de calidad "
+                            f"a partir de este documento para las {num_preguntas} preguntas solicitadas. "
+                            f"El PDF puede ser demasiado corto o repetitivo para tantas preguntas distintas "
+                            f"-- prueba a pedir menos preguntas o sube un documento más extenso."
+                        )
+                    else:
+                        mensaje_error = "La IA no devolvió un JSON válido para las preguntas. Error técnico."
                     resultado = {
                         "test": [],
-                        "error": "La IA no devolvió un JSON válido para las preguntas. Error técnico.",
+                        "error": mensaje_error,
                         "respuesta_cruda": "; ".join(errores_lotes)[:500]
                     }
                 else:

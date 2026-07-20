@@ -189,7 +189,19 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
                 for candidata in candidatas
             ]
             verificadas = [f.result() for f in futuros]
-        return [p for p in verificadas if p], None
+        aceptadas = [p for p in verificadas if p]
+        if not aceptadas:
+            # Generación OK (hubo candidatas), pero NINGUNA superó la
+            # verificación de precisión -- normalmente indica que el
+            # documento no tiene suficiente contenido distinto para tantas
+            # preguntas, no un fallo técnico de DeepSeek. Se distingue este
+            # motivo (con un prefijo reconocible) de los "return" de arriba
+            # (sin respuesta / JSON inválido en la generación), para poder
+            # dar un mensaje honesto en vez de "error técnico" cuando
+            # ninguna pregunta llega a generarse en ningún lote (ver
+            # blueprints/pdf_ia.py).
+            return [], f"Ninguna de las {len(candidatas)} preguntas candidatas de un lote superó la verificación de calidad"
+        return aceptadas, None
 
     preguntas = []
     errores = []
