@@ -1,0 +1,1289 @@
+[
+  {
+    "numero": 1,
+    "pregunta": "Señale a quién corresponde la iniciativa de la reforma constitucional:",
+    "opciones": {
+      "A": "Al Gobierno y al Congreso.",
+      "B": "Al Congreso y al Senado.",
+      "C": "Al Gobierno, al Congreso y al Senado.",
+      "D": "Al Gobierno, al Congreso, al Senado y a las Asambleas de las Comunidades Autónomas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 2,
+    "pregunta": "Señale la afirmación correcta en relación con el procedimiento de \"habeas corpus\" previsto en el artículo 17.4 de la Constitución:",
+    "opciones": {
+      "A": "Produce la inmediata puesta a disposición judicial de toda persona detenida ilegalmente.",
+      "B": "Impide que la detención de las personas se prolongue más de 72 horas.",
+      "C": "Garantiza al detenido la asistencia de abogado en las diligencias policiales.",
+      "D": "Permite que la persona detenida no sea obligada a declarar."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 3,
+    "pregunta": "Señale la afirmación correcta. La responsabilidad criminal de los Magistrados del Tribunal Constitucional sólo será exigible ante:",
+    "opciones": {
+      "A": "El propio Tribunal Constitucional.",
+      "B": "La Sala de lo Penal del Tribunal Supremo.",
+      "C": "Las Cortes Generales.",
+      "D": "La Sala de lo Militar del Tribunal Supremo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 4,
+    "pregunta": "Señale la afirmación correcta en relación con el ejercicio de la tutela del Rey:",
+    "opciones": {
+      "A": "Es compatible únicamente con el cargo de Presidente del Gobierno.",
+      "B": "Es compatible únicamente con aquellos cargos políticos determinados por las Cortes por mayoría de dos tercios de cada Cámara.",
+      "C": "Es incompatible únicamente con todo cargo o representación política en las Comunidades Autónomas.",
+      "D": "Es incompatible con todo cargo o representación política."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 5,
+    "pregunta": "De acuerdo con la Constitución, señale cuál de las siguientes materias puede ser regulada a través de la iniciativa legislativa popular:",
+    "opciones": {
+      "A": "Materias de carácter internacional.",
+      "B": "Materias propias del régimen de Seguridad Social.",
+      "C": "El régimen electoral general.",
+      "D": "Materias tributarias."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 6,
+    "pregunta": "Según la Ley del Gobierno, señale cuáles son los órganos de colaboración y apoyo al Gobierno:",
+    "opciones": {
+      "A": "Los Ministros y Secretarios de Estado.",
+      "B": "Los Secretarios de Estado, la Comisión General de Secretarios de Estado y Subsecretarios, el Secretariado del Gobierno y los Gabinetes.",
+      "C": "Los Vicepresidentes del Gobierno.",
+      "D": "Los Subsecretarios y los Secretarios Generales Técnicos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 7,
+    "pregunta": "Señale la afirmación correcta. El Tribunal Supremo está integrado por:",
+    "opciones": {
+      "A": "3 Salas: Civil y Penal; Contencioso-Administrativo; Social",
+      "B": "3 Salas: Civil; Penal; Social",
+      "C": "4 Salas: Civil; Penal; Contencioso-Administrativo; Social",
+      "D": "5 Salas: Civil; Penal; Contencioso-Administrativo; Social; Militar"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 8,
+    "pregunta": "Señale la afirmación correcta. De acuerdo con la Ley 6/1997, de 14 de abril, los Ministerios contarán en todo caso con:",
+    "opciones": {
+      "A": "Una Secretaría de Estado y las Secretarías Generales que se estimen convenientes.",
+      "B": "Tres Direcciones Generales y las Subdirecciones Generales que se estimen convenientes.",
+      "C": "Una Subsecretaría y una Secretaría General Técnica dependiendo de ella.",
+      "D": "Una Secretaría General y, al menos, una Secretaría de Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 9,
+    "pregunta": "Señale la afirmación correcta. De acuerdo con la Ley del Gobierno, los Secretarios de Estado:",
+    "opciones": {
+      "A": "Dirigen los servicios comunes del Departamento ministerial.",
+      "B": "Examinan cuestiones de carácter general relacionadas con su Departamento ministerial.",
+      "C": "Son los titulares de los órganos directivos encargados de la gestión de las áreas del Ministerio correspondiente.",
+      "D": "Son órganos superiores directamente responsables de la ejecución de la acción del Gobierno en un sector de actividad específica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 10,
+    "pregunta": "Señale la afirmación correcta. De acuerdo con la Ley 6/1997, de 14 de abril, los Subdirectores generales serán nombrados y cesados por:",
+    "opciones": {
+      "A": "El Ministro o Secretario de Estado del que dependan.",
+      "B": "El Ministro de Administraciones Públicas.",
+      "C": "El Director General del que dependan.",
+      "D": "El Director General de la Función Pública."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 11,
+    "pregunta": "Señale a quién corresponde la representación ordinaria del Estado en una Comunidad Autónoma:",
+    "opciones": {
+      "A": "Al Delegado del Gobierno en la Comunidad Autónoma.",
+      "B": "Al Presidente de la Comunidad Autónoma.",
+      "C": "Al Subdelegado del Gobierno en la Comunidad Autónoma, si lo hubiere.",
+      "D": "Al Ministro de Administraciones Públicas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 12,
+    "pregunta": "Señale la afirmación correcta. Los Directores Insulares ejercen en su ámbito territorial las funciones que la Ley 6/1997, de 14 de abril, atribuye a:",
+    "opciones": {
+      "A": "Los Delegados del Gobierno.",
+      "B": "Los Subdelegados del Gobierno.",
+      "C": "Los Directores de las áreas funcionales.",
+      "D": "Los Cabildos y Consejos Insulares."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 13,
+    "pregunta": "Señale cómo se llevará acabo la modificación de la organización interna de un Organismo autónomo:",
+    "opciones": {
+      "A": "Por Ley aprobada por las Cortes Generales.",
+      "B": "Por Real Decreto aprobado en Consejo de Ministros, a propuesta conjunta de los Ministros de Administraciones Públicas y de Economía y Hacienda, y a iniciativa del Ministro de adscripción.",
+      "C": "Por Real Decreto aprobado en Consejo de Ministros, a iniciativa del Ministro de adscripción, y a propuesta del Ministro de Administraciones Públicas.",
+      "D": "Por Orden Ministerial del departamento de adscripción."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 14,
+    "pregunta": "Señale quién nombra a los Presidentes de las Agencias Estatales, previstas en la Ley 28/2006, de 18 de julio:",
+    "opciones": {
+      "A": "El órgano que así lo establezca el estatuto de la Agencia.",
+      "B": "El Ministro del cual dependa la Agencia.",
+      "C": "El Consejo de Ministros.",
+      "D": "El Consejo Rector de la Agencia."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 15,
+    "pregunta": "Señale qué deberán contener los Estatutos de Autonomía según el artículo 147 de la Constitución Española:",
+    "opciones": {
+      "A": "La denominación de la Comunidad Autónoma y las competencias que ejerce.",
+      "B": "La denominación de la Comunidad Autónoma, su territorio, las instituciones autonómicas, las competencias y las bases para el traspaso de los servicios.",
+      "C": "El régimen de las instituciones de autogobierno, el modelo de financiación autonómica y los símbolos distintivos de su identidad.",
+      "D": "La denominación de la Comunidad Autónoma, las formas de relación con el Gobierno del Estado y sus competencias."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 16,
+    "pregunta": "De acuerdo con la Constitución, señale quién ejerce el control de la actividad de los órganos de las Comunidades Autónomas:",
+    "opciones": {
+      "A": "El Senado, el Tribunal Constitucional y el Defensor del Pueblo.",
+      "B": "El Presidente del Gobierno, previa audiencia del presidente de la Comunidad Autónoma respectiva y las Cortes Generales.",
+      "C": "El Tribunal Constitucional, el Gobierno, en caso de funciones delegadas del artículo 150.2 CE, la jurisdicción contencioso-administrativa y el Tribunal de Cuentas.",
+      "D": "El Delegado del Gobierno en la Comunidad Autónoma, el Senado y el Tribunal de Cuentas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 17,
+    "pregunta": "Señale en cuál de las siguientes materias ostentan las Comunidades Autónomas potestades legislativas:",
+    "opciones": {
+      "A": "Inmigración y extranjería.",
+      "B": "Puertos de interés general.",
+      "C": "Protección del medio ambiente.",
+      "D": "Legislación laboral."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 18,
+    "pregunta": "Señale la respuesta correcta. ¿Es el derecho estatal supletorio del derecho de las Comunidades Autónomas?",
+    "opciones": {
+      "A": "No, en ningún caso.",
+      "B": "Sí, pero sólo en caso de competencias concurrentes y compartidas.",
+      "C": "Sí, pero sólo en caso de la legislación básica del Estado.",
+      "D": "Sí, en todo caso."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 19,
+    "pregunta": "Señale por quién habrá de ser aprobada la alteración de los límites provinciales:",
+    "opciones": {
+      "A": "Por mayoría de tres quintas partes de su población.",
+      "B": "Por las Cortes Generales mediante Ley Orgánica.",
+      "C": "Por el Senado por mayoría simple.",
+      "D": "Por el Consejo de Gobierno de la Comunidad Autónoma, previa comunicación al Senado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 20,
+    "pregunta": "De acuerdo con la Ley de Bases del Régimen Local señale a quién corresponde, en el régimen de concejo abierto, el gobierno y la administración del municipio:",
+    "opciones": {
+      "A": "Al alcalde y a la asamblea vecinal de la que forman parte todos los electores.",
+      "B": "Al alcalde y a la junta de gobierno local.",
+      "C": "Al alcalde y al consejo de gobierno.",
+      "D": "A todos los electores del municipio directamente."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 21,
+    "pregunta": "Señale cuándo entró en vigor el Tratado de Maastricht:",
+    "opciones": {
+      "A": "Febrero de 1992.",
+      "B": "Mayo de 1999.",
+      "C": "Noviembre de 1993.",
+      "D": "Enero de 1995."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 22,
+    "pregunta": "Señale a qué hacen referencia los \"criterios de Copenhague\":",
+    "opciones": {
+      "A": "A los requisitos para pertenecer a la zona Euro.",
+      "B": "A los requisitos de adhesión a la Unión Europea.",
+      "C": "A los requisitos de disciplina presupuestaria que deben cumplir los Estados miembros.",
+      "D": "A los criterios de convergencia para participar en la Unión Económica y Monetaria."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 23,
+    "pregunta": "Señale la afirmación correcta. Todo acto que sea adoptado mediante el procedimiento de codecisión requiere que sea firmado por:",
+    "opciones": {
+      "A": "El Presidente del Parlamento Europeo y el Presidente del Consejo.",
+      "B": "El Presidente del Parlamento Europeo y el Presidente de la Comisión.",
+      "C": "El Presidente de la Comisión y el Presidente del país que ejerza la Presidencia en ese momento.",
+      "D": "El Presidente del Consejo Europeo y el Presidente de la Comisión."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 24,
+    "pregunta": "Señale qué institución comunitaria ostenta la competencia de vigilar el cumplimiento de las disposiciones de los Tratados y del derecho derivado:",
+    "opciones": {
+      "A": "El Tribunal de Justicia.",
+      "B": "El Parlamento Europeo.",
+      "C": "El Consejo Europeo.",
+      "D": "La Comisión europea."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 25,
+    "pregunta": "Señale en aplicación de qué Tratado se creó el Tribunal de Primera Instancia:",
+    "opciones": {
+      "A": "El Tratado de Ámsterdam.",
+      "B": "El Tratado de Maastricht.",
+      "C": "El Acta Única Europea.",
+      "D": "El Tratado de Bruselas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 26,
+    "pregunta": "Señale cuál de los siguientes fondos comunitarios financia proyectos de inversión en los Estados de la Unión Europea con un PNB per cápita inferior al 90% de la media comunitaria:",
+    "opciones": {
+      "A": "El Fondo Europeo de Desarrollo Regional.",
+      "B": "El Fondo Social Europeo.",
+      "C": "El Fondo de Cohesión.",
+      "D": "El Fondo Europeo de Inversiones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 27,
+    "pregunta": "Señale la afirmación correcta respecto al Derecho comunitario derivado:",
+    "opciones": {
+      "A": "El reglamento tiene alcance general, pero no es directamente aplicable.",
+      "B": "La directiva es obligatoria en cuanto al resultado, la forma y los medios para conseguirlo.",
+      "C": "La decisión sólo es obligatoria para sus destinatarios, pero no es obligatoria en todos sus elementos.",
+      "D": "El reglamento tiene alcance general y es obligatorio en todos sus elementos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 28,
+    "pregunta": "Señale cual de los siguientes es un objetivo de la Política Agrícola Común:",
+    "opciones": {
+      "A": "Estabilizar la productividad agrícola.",
+      "B": "Garantizar la seguridad de los abastecimientos.",
+      "C": "Reducir los mercados.",
+      "D": "Incrementar el precio de los productos, para asegurar la renta de los agricultores."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 29,
+    "pregunta": "Señale qué es considerado lo más importante en la fase de elaboración de una política pública:",
+    "opciones": {
+      "A": "Tener una agenda política bien definida y estable.",
+      "B": "Tener un equipo de expertos y colaboradores.",
+      "C": "Tener garantizados los suficientes recursos.",
+      "D": "La identificación y definición del problema."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 30,
+    "pregunta": "De acuerdo con el Real Decreto 951/2005, de 29 de julio, señale para qué se utilizan los indicadores de gestión en las Cartas de servicios:",
+    "opciones": {
+      "A": "Para la evaluación de la calidad y específicamente para el seguimiento de los compromisos.",
+      "B": "Para medir y comparar la calidad de los servicios utilizados en la gestión.",
+      "C": "Para medir cuantitativa y cualitativamente la calidad utilizada en la ejecución de las tareas.",
+      "D": "Para medir cuantitativa y cualitativamente las herramientas de calidad utilizadas en el análisis de los procedimientos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 31,
+    "pregunta": "De acuerdo con la Ley 28/2006, de 18 de julio, señale qué tipo de gestión se establece para las Agencias estatales:",
+    "opciones": {
+      "A": "Gestión por objetivos.",
+      "B": "Gestión privada, con aspectos limitados de gestión pública.",
+      "C": "Gestión transparente por objetivos.",
+      "D": "Gestión basada en la administración por objetivos (APO)."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 32,
+    "pregunta": "De acuerdo con el Marco General para la Mejora de la Calidad en la Administración General del Estado, señale cuál de los siguientes programas está integrado entre los programas de calidad:",
+    "opciones": {
+      "A": "El programa de reconocimiento.",
+      "B": "El programa de evaluación del rendimiento de los empleados públicos.",
+      "C": "El programa de excelencia.",
+      "D": "El programa de mejores prácticas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 33,
+    "pregunta": "Señale la afirmación correcta en relación con las Cartas de servicios:",
+    "opciones": {
+      "A": "Son documentos internos de la Administración para la organización de un determinado servicio administrativo.",
+      "B": "Son documentos que constituyen el instrumento a través del cual los órganos de la Administración General del Estado informan sobre los compromisos de calidad de prestación de servicios.",
+      "C": "Su elaboración corresponde al Subsecretario del Ministerio de Administraciones Públicas.",
+      "D": "Se actualizarán obligatoriamente al menos cada 2 años."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 34,
+    "pregunta": "Señale la afirmación correcta. El Plan de Medidas 2006-2008 para la mejora de la Administración prevé, entre las medidas de mejora de la Función pública:",
+    "opciones": {
+      "A": "El Plan Simplifica.",
+      "B": "El Plan Familia.",
+      "C": "El Plan Integra.",
+      "D": "El Plan Evalúa."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 35,
+    "pregunta": "Señale la respuesta correcta en relación con el gasto público español:",
+    "opciones": {
+      "A": "Se encuentra significativamente por encima de la media de los Estados miembros de la Unión Económica y Monetaria.",
+      "B": "Se encuentra concentrado fundamentalmente en la Administración General del Estado.",
+      "C": "Se dedica aproximadamente un 60% al gasto en protección social y bienes públicos preferentes, fundamentalmente sanidad y educación.",
+      "D": "Viene generando déficits recurrentes desde el año 2002."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 36,
+    "pregunta": "Señale cuál de las siguientes medidas NO se incluye en el Plan de medidas de estímulo económico aprobado por el Consejo de Ministros de 18 de abril de 2008:",
+    "opciones": {
+      "A": "Nueva deducción de 400 € en el IRPF.",
+      "B": "Eliminación del gravamen en el Impuesto sobre el Patrimonio.",
+      "C": "Agilización de los contratos de suministro en la Administración Pública.",
+      "D": "Plan para la recolocación de trabajadores desempleados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 37,
+    "pregunta": "De acuerdo con el Plan Turismo 2020, señale sobre qué bases se tiene que asentar el desarrollo turístico de España:",
+    "opciones": {
+      "A": "Competitividad y sostenibilidad medioambiental, social y económica.",
+      "B": "Calidad, innovación y sostenibilidad medioambiental.",
+      "C": "Calidad, competitividad y sostenibilidad medioambiental y social.",
+      "D": "Calidad y competitividad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 38,
+    "pregunta": "De acuerdo con la Ley 34/2007 de calidad del aire y protección de la atmósfera, señale cuál de los siguientes NO es un instrumento de fomento de la protección de la atmósfera:",
+    "opciones": {
+      "A": "Auditorías ambientales.",
+      "B": "Formación.",
+      "C": "Contratación pública.",
+      "D": "Subvenciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 39,
+    "pregunta": "Señale qué rango tiene la Oficina Española del Cambio Climático:",
+    "opciones": {
+      "A": "Secretaría de Estado.",
+      "B": "Secretaría General.",
+      "C": "Subdirección General.",
+      "D": "Dirección General."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 40,
+    "pregunta": "Señale la afirmación correcta en relación al modelo de financiación del sistema español de la Seguridad Social:",
+    "opciones": {
+      "A": "Se trata de un sistema de capitalización.",
+      "B": "Se nutre únicamente de las cotizaciones de los empresarios.",
+      "C": "Se nutre únicamente de las cotizaciones de los trabajadores.",
+      "D": "Se financia, en parte, por transferencias del Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 41,
+    "pregunta": "Señale cómo se regulan las condiciones básicas de promoción de la autonomía personal y de atención a las personas en situación de dependencia de acuerdo con la Ley de Promoción de la Autonomía Personal y Atención a las personas en situación de dependencia:",
+    "opciones": {
+      "A": "Mediante la creación de un Sistema para la Autonomía y Atención a la Dependencia.",
+      "B": "Mediante la creación de un Catálogo de Grados de Dependencia y Atención a la Dependencia.",
+      "C": "Mediante la creación de un Consejo Territorial como elemento clave para la promoción y autonomía personal en todo el territorio nacional.",
+      "D": "Mediante la creación de un Sistema de Información exclusivo para los beneficiarios."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 42,
+    "pregunta": "Señale cuál de las siguientes enseñanzas tiene la consideración de enseñanza de régimen especial:",
+    "opciones": {
+      "A": "La educación infantil",
+      "B": "La enseñanza universitaria.",
+      "C": "Las enseñanzas deportivas.",
+      "D": "La educación de personas adultas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 43,
+    "pregunta": "Señale la afirmación correcta en relación con el número de alumnos en Enseñanzas de Régimen General durante el curso 2007-2008:",
+    "opciones": {
+      "A": "Se encuentra por encima de los 10 millones de alumnos.",
+      "B": "Se concentra mayoritariamente en centros privados y privados concertados.",
+      "C": "Se encuentra por debajo de los 5 millones de alumnos.",
+      "D": "Se concentra mayoritariamente en la educación no universitaria."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 44,
+    "pregunta": "Señale la afirmación correcta en relación con la Encuesta de Población Activa del primer trimestre del año 2008:",
+    "opciones": {
+      "A": "El número de parados se ha reducido en 120.300 personas.",
+      "B": "La tasa de actividad ha crecido situándose en el 53,35%.",
+      "C": "La tasa de temporalidad ha crecido en relación al trimestre precedente, situándose en el 40,2%.",
+      "D": "Las Comunidades Autónomas con mayores incrementos de ocupación en este trimestre son la Comunidad Valenciana, Asturias y Murcia."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 45,
+    "pregunta": "Señale en qué situaciones pueden encontrarse los extranjeros en España:",
+    "opciones": {
+      "A": "Estancia o residencia.",
+      "B": "Estancia, residencia o turismo.",
+      "C": "Estancia, residencia o asilo y refugio.",
+      "D": "Estancia, residencia, turismo o asilo y refugio."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 46,
+    "pregunta": "Señale la afirmación correcta. La naturalización por residencia implica la residencia legal y continuada en España durante un plazo de:",
+    "opciones": {
+      "A": "10 años, en cualquier caso.",
+      "B": "5 años, para quienes hayan obtenido la condición de refugiado y para los nacionales de países iberoamericanos.",
+      "C": "2 años, para los nacionales de países sefardíes.",
+      "D": "1 año, para los nacionales de Estados miembros de la Unión Europea."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 47,
+    "pregunta": "Señale cuál de las siguientes prioridades NO es definida como una prioridad horizontal del Plan Director de la Cooperación Española 2005-2008:",
+    "opciones": {
+      "A": "La lucha contra la pobreza.",
+      "B": "La cooperación al desarrollo.",
+      "C": "La defensa de los derechos humanos.",
+      "D": "La sostenibilidad medioambiental."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 48,
+    "pregunta": "Señale cuál de los siguientes países constituye un país prioritario de la cooperación española al desarrollo, de acuerdo con el Plan Director de la Cooperación Española 2005-2008:",
+    "opciones": {
+      "A": "Argentina.",
+      "B": "China.",
+      "C": "Cabo Verde.",
+      "D": "Santo Tomé y Príncipe."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 49,
+    "pregunta": "Señale la afirmación correcta en relación con la Ley para la Igualdad efectiva de mujeres y hombres:",
+    "opciones": {
+      "A": "Tiene carácter de ley orgánica, en su totalidad.",
+      "B": "Constituye, en su totalidad, legislación básica.",
+      "C": "Sólo determinados preceptos tienen carácter orgánico.",
+      "D": "No tiene carácter de ley orgánica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 50,
+    "pregunta": "Señale la respuesta FALSA. De acuerdo con la Ley Orgánica 3/2007, de 22 de marzo, son criterios generales de actuación de los poderes públicos para alcanzar la igualdad efectiva de mujeres y hombres:",
+    "opciones": {
+      "A": "La protección de la maternidad.",
+      "B": "La implantación de un lenguaje no sexista en el ámbito administrativo.",
+      "C": "El fomento de la corresponsabilidad en las labores domésticas y en la atención a la familia.",
+      "D": "La participación mayoritaria de las mujeres en las candidaturas electorales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 51,
+    "pregunta": "Señale cómo enfoca la violencia de género la Ley Orgánica 1/2004, de 28 de diciembre, de Medidas de Protección Integral contra la Violencia de Género:",
+    "opciones": {
+      "A": "De modo transversal, con especial énfasis en el papel de los medios de comunicación.",
+      "B": "De un modo integral y multidisciplinar, empezando por el proceso de socialización y educación.",
+      "C": "De forma prioritaria y universal, prestando especial atención al proceso de socialización y al papel de los medios de comunicación.",
+      "D": "De manera individualizada y personal, con especial énfasis en el papel de la educación y los medios de comunicación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 52,
+    "pregunta": "Señale la afirmación correcta. Los tratados internacionales, validamente celebrados, entran a formar parte de nuestro ordenamiento jurídico:",
+    "opciones": {
+      "A": "Desde el momento en que son celebrados.",
+      "B": "Desde el momento en que son ratificados.",
+      "C": "Una vez publicados oficialmente en España.",
+      "D": "Una vez autorizados por el Rey."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 53,
+    "pregunta": "Señale la respuesta correcta:",
+    "opciones": {
+      "A": "El ejercicio de la potestad legislativa y la potestad reglamentaria corresponde al Gobierno de acuerdo con la Constitución y las leyes.",
+      "B": "Ningún reglamento podrá vulnerar preceptos de otro de jerarquía superior.",
+      "C": "Los reglamentos pueden regular materias objeto de reserva de ley.",
+      "D": "Son anulables las resoluciones administrativas que vulneren lo establecido en un reglamento."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 54,
+    "pregunta": "Señale las normas de jerarquía a las que se tienen que ajustar los reglamentos del Gobierno:",
+    "opciones": {
+      "A": "1º Las disposiciones aprobadas por Real Decreto del Presidente del Gobierno, 2º las disposiciones aprobadas por Orden del Consejo de Ministros y 3º las disposiciones aprobadas por Orden Ministerial.",
+      "B": "1º Las disposiciones aprobadas por Real Decreto del Consejo de Ministros, 2º las disposiciones aprobadas por Real Decreto del Presidente del Gobierno y 3º las aprobadas por Orden Ministerial.",
+      "C": "1º Las disposiciones aprobadas por Real Decreto del Presidente del Gobierno o del Consejo de Ministros y 2º las disposiciones aprobadas por Orden Ministerial.",
+      "D": "1º Las disposiciones aprobadas por Real Decreto del Presidente del Gobierno, 2º las disposiciones aprobadas por Real Decreto del Consejo de Ministros y 3º las aprobadas por Orden Ministerial."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 55,
+    "pregunta": "Señale la afirmación correcta en relación con el precedente administrativo:",
+    "opciones": {
+      "A": "La Administración pública no puede apartarse en ningún caso del precedente administrativo.",
+      "B": "La Administración pública no puede apartarse en ningún caso del precedente administrativo, salvo por petición del interesado y aunque lesione el interés general",
+      "C": "La Administración pública puede apartarse del precedente administrativo pero motivando el acto administrativo.",
+      "D": "La Administración pública puede apartarse del precedente administrativo sin necesidad de motivar el acto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 56,
+    "pregunta": "Señale la afirmación correcta. De acuerdo con la Ley 30/1992, el defecto de forma de un acto administrativo produce:",
+    "opciones": {
+      "A": "La nulidad del acto.",
+      "B": "La anulabilidad, en todo caso.",
+      "C": "La anulabilidad del acto cuando dé lugar a indefensión de los interesados.",
+      "D": "La nulidad del acto cuando dé lugar a indefensión de los interesados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 57,
+    "pregunta": "De acuerdo con la Ley 30/1992, de 26 de noviembre, señale qué deberán notificarse a los interesados:",
+    "opciones": {
+      "A": "Los actos administrativos que deban motivarse.",
+      "B": "Las resoluciones y actos administrativos que afecten a los derechos susceptibles de amparo constitucional.",
+      "C": "Las resoluciones y actos administrativos en procedimientos en los que así lo establezca su norma reguladora.",
+      "D": "Las resoluciones y actos administrativos que afecten a los derechos e intereses de los interesados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 58,
+    "pregunta": "Señale la afirmación FALSA. De acuerdo con la Ley 30/2007 de Contratos del Sector Público:",
+    "opciones": {
+      "A": "Se añade un nuevo procedimiento de adjudicación denominado diálogo competitivo.",
+      "B": "Se sigue manteniendo la existencia de los contratos de obras, concesión de obras públicas, gestión de servicios públicos, suministros, consultoría y asistencia y servicios.",
+      "C": "Se añade un nuevo contrato, denominado de colaboración entre el sector público y el sector privado.",
+      "D": "El régimen de contratación del Tribunal Constitucional no está sujeto a la referida ley."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 59,
+    "pregunta": "Señale la afirmación correcta. De acuerdo con la Ley 30/2007 de Contratos del Sector Público, se consideran sujetos a regulación armonizada los contratos que tengan por objeto:",
+    "opciones": {
+      "A": "Permitir a los órganos de contratación la puesta a disposición o la explotación de redes públicas de telecomunicaciones.",
+      "B": "La concesión de obras públicas cuyo valor estimado sea igual o superior a 211.000 €.",
+      "C": "La satisfacción de finalidades públicas que no permitan otras formas de contratación pública.",
+      "D": "La colaboración entre el sector público y el sector privado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 60,
+    "pregunta": "De acuerdo con la Ley 30/2007 de Contratos del Sector Público señale la afirmación correcta. Los contratos de suministros serán considerados contratos menores si tienen un importe inferior a:",
+    "opciones": {
+      "A": "12.020 euros.",
+      "B": "15.000 euros.",
+      "C": "18.000 euros.",
+      "D": "30.000 euros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 61,
+    "pregunta": "Señale la modalidad de contratación que adoptará el contrato de gestión de servicios públicos cuando se contrate con persona natural o jurídica que venga realizando prestaciones análogas a las que constituyen el servicio público de que se trate:",
+    "opciones": {
+      "A": "Concesión.",
+      "B": "Gestión interesada.",
+      "C": "Concierto.",
+      "D": "Sociedad de economía mixta."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 62,
+    "pregunta": "Según el artículo 149.1 de la Constitución, señale en cuál de las siguientes materias tiene el Estado competencia exclusiva para su fomento y coordinación:",
+    "opciones": {
+      "A": "Aprovechamientos forestales.",
+      "B": "Museos, bibliotecas y archivos de titularidad estatal.",
+      "C": "Previsión social y asistencial.",
+      "D": "Investigación científica y técnica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 63,
+    "pregunta": "Señale la afirmación correcta. De acuerdo con la Ley 38/2003 General de Subvenciones será nula la resolución de una concesión que:",
+    "opciones": {
+      "A": "Sea constitutiva de infracción administrativa.",
+      "B": "Se otorgue a favor de persona que no haya justificado la entrega de los fondos percibidos.",
+      "C": "Adolezca de un defecto de forma que produzca indefensión a los interesados.",
+      "D": "Se otorgue a favor de persona que no esté al corriente de sus obligaciones tributarias."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 64,
+    "pregunta": "Señale la afirmación correcta de acuerdo con la Ley de Expropiación Forzosa:",
+    "opciones": {
+      "A": "La declaración de utilidad pública o interés social contendrá la enumeración y declaración de los bienes a expropiar.",
+      "B": "El acuerdo de necesidad de ocupación inicia el expediente expropiatorio.",
+      "C": "Tras el acuerdo de necesidad de ocupación se procede a la declaración de utilidad pública o interés social.",
+      "D": "El acuerdo de necesidad de ocupación deberá notificarse individualmente a cuantas personas aparezcan como interesados en el procedimiento expropiatorio, pudiendo publicarse adicionalmente si así lo estimase oportuno el Delegado del Gobierno."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 65,
+    "pregunta": "Señale la respuesta correcta sobre el Inventario General de Bienes y Derechos del Estado y los datos reflejados en el mismo:",
+    "opciones": {
+      "A": "El Inventario tendrá efectos frente a terceros.",
+      "B": "El Inventario no tendrá la consideración de registro público.",
+      "C": "Los datos del Inventario podrán ser utilizados para hacer valer derechos de particulares frente a la Administración General del Estado y sus organismos públicos.",
+      "D": "Los datos del Inventario podrán ser consultados en cualquier caso por terceros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 66,
+    "pregunta": "Señale la respuesta correcta en relación con la responsabilidad patrimonial de las Administraciones públicas:",
+    "opciones": {
+      "A": "La competencia para resolver los procedimientos de responsabilidad corresponde al Consejo de Ministros salvo que una ley la atribuya específicamente a un Ministro.",
+      "B": "El procedimiento de responsabilidad patrimonial caduca transcurrido un año desde su iniciación sin que haya recaído resolución expresa.",
+      "C": "La anulación de un acto administrativo en vía jurisdiccional no presupone derecho a indemnización.",
+      "D": "El procedimiento abreviado se seguirá cuando la cuantía de la indemnización solicitada sea inferior a 3.000 €."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 67,
+    "pregunta": "Según la Ley 30/1992, de 26 de noviembre, señale si es heredable la condición de interesado en el procedimiento administrativo:",
+    "opciones": {
+      "A": "No, porque los derechos del interesado concluyen con el fallecimiento.",
+      "B": "Sí, cualquiera que sea el estado del procedimiento.",
+      "C": "No, salvo en casos excepcionales.",
+      "D": "Sólo si el fallecido era titular de un derecho legítimo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 68,
+    "pregunta": "Señale cuál es el plazo que tiene la Administración para emitir el certificado acreditativo del silencio en los procedimientos administrativos:",
+    "opciones": {
+      "A": "15 días desde que cumple la fecha en que tendría que haber resuelto y notificado.",
+      "B": "15 días desde que el interesado lo solicita.",
+      "C": "10 días desde que el interesado lo solicita.",
+      "D": "10 días desde que lo solicita el interesado y prorrogable por 5 días más."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 69,
+    "pregunta": "Señale la afirmación correcta en relación a la revisión de oficio:",
+    "opciones": {
+      "A": "La declaración de lesividad podrá adoptarse en el plazo de dos años desde que se dictó el acto administrativo.",
+      "B": "La declaración de lesividad no podrá adoptarse una vez transcurridos dos años desde que se dictó el acto administrativo.",
+      "C": "Transcurrido el plazo de seis meses desde la iniciación del procedimiento sin que se hubiera declarado la lesividad se producirá la caducidad del mismo.",
+      "D": "Transcurrido el plazo de cuatro meses desde la iniciación del procedimiento sin que se hubiera declarado la lesividad se producirá la caducidad del mismo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 70,
+    "pregunta": "Señale el plazo para la interposición del recurso de alzada de un acto no expreso:",
+    "opciones": {
+      "A": "Veinte días.",
+      "B": "Un mes.",
+      "C": "Dos meses.",
+      "D": "Tres meses."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 71,
+    "pregunta": "De acuerdo con la Ley 29/1998, de 13 de julio, señale quién es competente para conocer de los recursos de casación en interés de la ley:",
+    "opciones": {
+      "A": "Los Juzgados Centrales de lo Contencioso-Administrativo.",
+      "B": "Las salas de lo contencioso-administrativo de los Tribunales Superiores de Justicia y el Tribunal Supremo.",
+      "C": "La Audiencia Nacional.",
+      "D": "El Tribunal Constitucional."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 72,
+    "pregunta": "Señale en cuál de los siguientes casos una Comunidad Autónoma está legitimada para impugnar jurisdiccionalmente un Real Decreto aprobado en Consejo de Ministros:",
+    "opciones": {
+      "A": "Sólo cuando afecte a las instituciones autonómicas.",
+      "B": "Nunca, sin perjuicio del planteamiento de un conflicto de competencias ante el Tribunal Constitucional.",
+      "C": "Sólo cuando afecte a su ámbito de autonomía.",
+      "D": "Siempre que se haya planteado el preceptivo requerimiento derogatorio previo y afecte a su ámbito de autonomía."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 73,
+    "pregunta": "Señale cuál de los siguientes capítulos del Estatuto Básico del Empleado Público producirá efectos a partir de la entrada en vigor de las Leyes de Función Pública de las Administraciones Públicas que se dicten en desarrollo de dicho Estatuto:",
+    "opciones": {
+      "A": "El Capítulo III del Título V \"Provisión de puestos de trabajo y movilidad\".",
+      "B": "El Capítulo I del Título V \"Planificación de los recursos humanos\".",
+      "C": "El Capítulo II del Título IV \"Pérdida de la relación de servicio\".",
+      "D": "El Capítulo I del Título IV \"Acceso al empleo público\"."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 74,
+    "pregunta": "Señale la afirmación FALSA. De acuerdo con el Estatuto Básico del Empleado Público, se justifica el nombramiento de funcionarios interinos en las siguientes circunstancias:",
+    "opciones": {
+      "A": "La cobertura de plazas vacantes que no sea posible cubrir con funcionarios de carrera.",
+      "B": "La sustitución transitoria de los titulares.",
+      "C": "La ejecución de obras o servicios temporales.",
+      "D": "El exceso o acumulación de tareas por plazo máximo de seis meses, dentro de un período de doce meses."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 75,
+    "pregunta": "Señale la afirmación correcta. Alcanzada la edad de la jubilación forzosa, el funcionario de carrera podrá solicitar la prolongación de la permanencia en el servicio activo:",
+    "opciones": {
+      "A": "Como máximo hasta que cumpla los 65 años de edad.",
+      "B": "Como máximo hasta que cumpla los 68 años de edad.",
+      "C": "Como máximo hasta que cumpla los 70 años de edad.",
+      "D": "Como máximo hasta que cumpla los 75 años de edad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 76,
+    "pregunta": "Señale la afirmación correcta. De acuerdo con el Estatuto Básico del Empleado Público, la ejecución de la Oferta de empleo público deberá desarrollarse dentro del plazo improrrogable de:",
+    "opciones": {
+      "A": "Un año.",
+      "B": "Dos años.",
+      "C": "Tres años.",
+      "D": "Cuatro años."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 77,
+    "pregunta": "Señale la respuesta correcta. De acuerdo con el Estatuto Básico del Empleado Público, los funcionarios que se encuentren en situación de servicios especiales tendrán derecho a:",
+    "opciones": {
+      "A": "La reserva del puesto de trabajo.",
+      "B": "Percibir las retribuciones que les correspondan como funcionarios de carrera.",
+      "C": "El cómputo del tiempo en dicha situación a efectos de trienios pero no de promoción interna.",
+      "D": "Reingresar al servicio activo en la misma localidad, en las condiciones y con las retribuciones correspondientes a la categoría, nivel o escalón de la carrera consolidada."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 78,
+    "pregunta": "Señale la afirmación correcta. De acuerdo con el Estatuto Básico del Empleado Público, la situación de excedencia por cuidado de familiares:",
+    "opciones": {
+      "A": "Tendrá una duración no superior a 5 años.",
+      "B": "El tiempo de permanencia en esta situación computa a efectos de trienios pero no de carrera.",
+      "C": "El período de excedencia es único por cada sujeto causante.",
+      "D": "El puesto de trabajo desempeñado se reservará, al menos, durante tres años."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 79,
+    "pregunta": "Señale la afirmación FALSA. De acuerdo con el Estatuto Básico del Empleado Público, son permisos por motivos de conciliación de la vida personal, familiar y laboral y por razón de violencia de género:",
+    "opciones": {
+      "A": "Permiso por adopción y acogimiento.",
+      "B": "Permiso de paternidad.",
+      "C": "Permiso por razón de violencia de género sobre los empleados públicos.",
+      "D": "Permiso de parto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 80,
+    "pregunta": "Señale la afirmación correcta. De conformidad con el Régimen Disciplinario de los funcionarios de la Administración General del Estado, constituye una falta disciplinaria grave:",
+    "opciones": {
+      "A": "El incumplimiento de las normas sobre incompatibilidades.",
+      "B": "La utilización indebida de secretos oficiales.",
+      "C": "El abuso de autoridad en el ejercicio del cargo.",
+      "D": "La negligencia en el ejercicio de las funciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 81,
+    "pregunta": "Señale cómo se retribuye la peligrosidad o penosidad de un puesto de trabajo:",
+    "opciones": {
+      "A": "Complemento de productividad.",
+      "B": "Complemento específico.",
+      "C": "Complemento de destino.",
+      "D": "Gratificación por servicios extraordinarios."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 82,
+    "pregunta": "De acuerdo con el Estatuto Básico del Empleado Público, señale qué materias quedan excluidas de la obligatoriedad de la negociación colectiva:",
+    "opciones": {
+      "A": "La determinación de las condiciones de trabajo del personal directivo.",
+      "B": "Los criterios generales sobre oferta de empleo público.",
+      "C": "La determinación y aplicación de las retribuciones complementarias de los funcionarios.",
+      "D": "Las normas que fijen los mecanismos generales de evaluación del desempeño."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 83,
+    "pregunta": "Señale quiénes quedan obligatoriamente incluidos en el campo de aplicación del Régimen Especial de la Seguridad Social de los Funcionarios Civiles del Estado:",
+    "opciones": {
+      "A": "Los funcionarios de carrera de la Administración Civil del Estado, los funcionarios de Organismos autónomos y los funcionarios en prácticas que aspiren a incorporarse a Cuerpos de la Administración Civil del Estado.",
+      "B": "Los funcionarios de carrera de la Administración Civil del Estado y los funcionarios en prácticas que aspiren a incorporarse a Cuerpos de la Administración Civil del Estado.",
+      "C": "Los funcionarios de carrera de la Administración Civil del Estado, los funcionarios de Organismos autónomos y los funcionarios de la Administración de la Seguridad Social.",
+      "D": "Los funcionarios de carrera de la Administración Civil del Estado, los funcionarios de Organismos autónomos y los funcionarios de la Administración Local."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 84,
+    "pregunta": "Señale cuál de las siguientes prestaciones está cubierta por el Régimen de Clases Pasivas del Estado:",
+    "opciones": {
+      "A": "Prestación recuperadora por incapacidad permanente total.",
+      "B": "Subsidio por incapacidad temporal para el servicio.",
+      "C": "Indemnización por mutilación.",
+      "D": "Pensión de orfandad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 85,
+    "pregunta": "Señale quién queda excluido del ámbito de aplicación del II Convenio Único para el personal laboral de la Administración General del Estado:",
+    "opciones": {
+      "A": "El personal laboral que presta servicios en el exterior.",
+      "B": "El personal laboral del Consejo de Seguridad Nuclear.",
+      "C": "El personal laboral de la Administración de la Seguridad Social.",
+      "D": "El personal laboral de la Agencia de Protección de Datos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 86,
+    "pregunta": "De acuerdo con el II Convenio Único para el personal laboral de la Administración General del Estado, señale qué sanción podrá imponerse por la comisión de una falta grave:",
+    "opciones": {
+      "A": "Tres meses de suspensión de empleo y sueldo.",
+      "B": "Inhabilitación para el ascenso por dos años.",
+      "C": "Despido.",
+      "D": "Traslado forzoso sin derecho a indemnización."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 87,
+    "pregunta": "De acuerdo con el II Convenio Único para el personal laboral de la Administración General del Estado, señale qué carácter tendrá la elección de Delegados de Personal y Comités de Empresa del personal laboral dentro de cada Ministerio u Organismo:",
+    "opciones": {
+      "A": "Nacional.",
+      "B": "Provincial.",
+      "C": "De centro de trabajo.",
+      "D": "De Comunidad autónoma."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 88,
+    "pregunta": "Señale la afirmación correcta. En las empresas encargadas de cualquier clase de servicio público, el preaviso del comienzo de huelga al empresario y a la autoridad laboral habrá de ser al menos de:",
+    "opciones": {
+      "A": "10 días hábiles.",
+      "B": "10 días naturales.",
+      "C": "15 días naturales.",
+      "D": "15 días hábiles."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 89,
+    "pregunta": "De acuerdo con la Ley General Presupuestaria, señale los principios por los que se regirá la programación presupuestaria:",
+    "opciones": {
+      "A": "Estabilidad presupuestaria, plurianualidad, neutralidad y unidad de caja.",
+      "B": "Estabilidad presupuestaria, plurianualidad, neutralidad y eficiencia en la asignación y utilización de los recursos públicos.",
+      "C": "Estabilidad presupuestaria, plurianualidad, transparencia y unidad de caja.",
+      "D": "Estabilidad presupuestaria, plurianualidad, transparencia y eficiencia en la asignación y utilización de los recursos públicos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 90,
+    "pregunta": "Señale quién confecciona los escenarios presupuestarios plurianuales en los que se enmarcan anualmente los Presupuestos Generales del Estado:",
+    "opciones": {
+      "A": "El Gobierno.",
+      "B": "Las Oficinas Presupuestarias de cada departamento ministerial.",
+      "C": "El Ministerio de Economía y Hacienda.",
+      "D": "La Comisión Delegada del Gobierno para Asuntos Económicos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 91,
+    "pregunta": "Señale, de acuerdo con la Ley General Presupuestaria, las fases que comprenden la gestión del presupuesto de gastos del Estado:",
+    "opciones": {
+      "A": "Aprobación del gasto, compromiso de gasto, reconocimiento de la obligación y propuesta de pago.",
+      "B": "Aprobación del gasto, compromiso de gasto, reconocimiento de la obligación, ordenación del pago y pago material.",
+      "C": "Retención de crédito, aprobación del gasto, compromiso de gasto, reconocimiento de la obligación, propuesta de pago, ordenación del pago y pago material.",
+      "D": "Aprobación del gasto, compromiso de gasto y reconocimiento de la obligación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 92,
+    "pregunta": "Señale la afirmación correcta. De acuerdo con la Ley General Presupuestaria, las incorporaciones de crédito suponen una excepción a:",
+    "opciones": {
+      "A": "La limitación de los compromisos de gastos.",
+      "B": "La especialidad de los créditos.",
+      "C": "La especificación de los créditos.",
+      "D": "La temporalidad de los créditos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 93,
+    "pregunta": "Señale la afirmación correcta respecto a la contabilidad del sector público administrativo:",
+    "opciones": {
+      "A": "En ningún caso se aplica la contabilidad privada.",
+      "B": "Las fundaciones públicas se rigen por la adaptación específica para las entidades sin fin de lucro.",
+      "C": "La información suministrada se dirigirá a órganos de dirección y gestión.",
+      "D": "Debe permitir el cumplimiento de distintos fines de gestión, de control y de análisis e información."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 94,
+    "pregunta": "Señale cuál es el régimen de fiscalización e intervención previa en gastos que deban ser aprobados por el Consejo de Ministros:",
+    "opciones": {
+      "A": "Fiscalización e intervención previa limitada.",
+      "B": "Fiscalización e intervención previa plena.",
+      "C": "Exento de fiscalización e intervención.",
+      "D": "Control financiero permanente y auditoría de cuentas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 95,
+    "pregunta": "De acuerdo con la Ley General Presupuestaria, señale cómo se denomina el acto mediante el que se declara la existencia de un crédito exigible contra la Hacienda Pública Estatal, derivado de un gasto aprobado y comprometido y que comporta la propuesta de pago correspondiente:",
+    "opciones": {
+      "A": "Ordenación de Pago.",
+      "B": "Ordenación del Gasto.",
+      "C": "Reconocimiento de la Obligación.",
+      "D": "Disposición del Gasto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 96,
+    "pregunta": "Señale cuál de los siguientes gastos NO se puede tramitar por el sistema de anticipo de caja fija:",
+    "opciones": {
+      "A": "Combustible por 35.000,00 euros.",
+      "B": "Agua por 3.500,00 euros.",
+      "C": "Indemnizaciones por destino en el extranjero por 5.500,00 euros.",
+      "D": "Atenciones protocolarias y representativas por 100,00 euros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 97,
+    "pregunta": "De acuerdo con la Ley General Tributaria, señale quiénes son sujetos pasivos:",
+    "opciones": {
+      "A": "El contribuyente y el sustituto del contribuyente.",
+      "B": "Los obligados a realizar pagos fraccionados.",
+      "C": "Los retenedores.",
+      "D": "Los obligados a practicar ingresos a cuenta."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 98,
+    "pregunta": "Señale cómo se distribuye, en el año 2008, el complemento específico anual de los funcionarios en servicio activo a los que resulte de aplicación el régimen retributivo previsto en la Ley 30/1984, de 2 de agosto:",
+    "opciones": {
+      "A": "En catorce pagas; doce iguales y de percepción mensual y las dos restantes por importe de 1/3 de la percibida mensualmente.",
+      "B": "En catorce pagas; doce iguales y de percepción mensual y las dos restantes por importe de 2/3 de la percibida mensualmente.",
+      "C": "En catorce pagas; doce iguales y de percepción mensual y las dos restantes por importe de ¾ de la percibida mensualmente.",
+      "D": "En catorce pagas iguales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 99,
+    "pregunta": "Señale cuándo prescribe la obligación de reintegro del importe de las prestaciones de la Seguridad Social indebidamente percibidas:",
+    "opciones": {
+      "A": "A los dos años desde la fecha de su cobro.",
+      "B": "A los tres años desde la fecha de su cobro.",
+      "C": "A los cuatro años desde la fecha de su cobro.",
+      "D": "A los cinco años desde la fecha de su cobro."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  }
+]

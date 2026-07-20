@@ -1,0 +1,52 @@
+name: Cargar examen oficial GACE a Firestore
+
+# Sube a Firestore las preguntas del Primer Ejercicio de una convocatoria del
+# Cuerpo de Gestión de la Administración Civil del Estado (GACE, Ingreso
+# Libre) ya transcritas en datos_examenes/gacel_<anio>_1er_ejercicio.json,
+# usando cargar_examen_oficial_gace.py y etiquetar_temas_examenes_gace.py. Se
+# dispara a mano (sin credenciales en el repo ni en el chat: la clave de
+# Firebase vive solo en el secreto FIREBASE_CREDENTIALS_JSON de este
+# repositorio) por el mismo motivo que cargar-examen-oficial-auxiliar.yml: el
+# sandbox de desarrollo no tiene clave-firebase.json a mano. Faltaba este
+# workflow pese a que el script de carga de GACE ya existía y se había usado
+# para 2022/2024/2025 -- se añade ahora para poder subir 2008 y 2009 sin
+# depender de credenciales locales.
+on:
+  workflow_dispatch:
+    inputs:
+      anio:
+        description: "Identificador del examen (debe existir datos_examenes/gacel_<anio>_1er_ejercicio.json), p. ej. 2008 o 2009"
+        required: true
+        default: "2009"
+      etiquetar_temas:
+        description: "Etiquetar también con tema_id tras la carga (requiere gacel_<anio>_1er_ejercicio_temas.json)"
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  cargar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Cargar preguntas del examen
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: python cargar_examen_oficial_gace.py "${{ github.event.inputs.anio }}"
+
+      - name: Etiquetar preguntas con tema_id
+        if: ${{ github.event.inputs.etiquetar_temas == 'true' }}
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: python etiquetar_temas_examenes_gace.py "${{ github.event.inputs.anio }}"

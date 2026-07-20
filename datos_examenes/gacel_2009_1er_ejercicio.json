@@ -1,0 +1,1302 @@
+[
+  {
+    "numero": 1,
+    "pregunta": "Será necesaria la disolución de las Cortes Generales cuando se proponga una reforma de la Constitución que afecte a:",
+    "opciones": {
+      "A": "La propia regulación de las Cortes Generales.",
+      "B": "La distribución competencial recogida en los artículos 148 y 149 de la Constitución.",
+      "C": "La regulación del refrendo de los actos del Rey.",
+      "D": "La regulación de los deberes de los ciudadanos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 2,
+    "pregunta": "Según el Título IV de la Constitución, el Gobierno se compone de:",
+    "opciones": {
+      "A": "Presidente, Vicepresidentes en su caso, Ministros y demás miembros que establezca la Ley.",
+      "B": "Presidente y Vicepresidentes, exclusivamente.",
+      "C": "Presidente, Vicepresidentes en su caso, y Ministros, exclusivamente.",
+      "D": "Presidente, Vicepresidentes en su caso, Ministros, Secretarios de Estado, y demás miembros que establezca la Ley."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 3,
+    "pregunta": "De acuerdo con la Constitución se exige que la declaración del estado de sitio se produzca:",
+    "opciones": {
+      "A": "Por mayoría absoluta del Congreso por un plazo máximo de 30 días.",
+      "B": "Por mayoría absoluta del Congreso a propuesta exclusiva del Gobierno.",
+      "C": "Por el Gobierno mediante Decreto aprobado en Consejo de Ministros previa autorización del Congreso de los Diputados.",
+      "D": "Por el Gobierno mediante Decreto aprobado en Consejo de Ministros por un plazo máximo de 15 días."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 4,
+    "pregunta": "De acuerdo con la Constitución, señale cuál de los siguientes derechos podrá ser objeto de suspensión cuando se declaren los estados de excepción o sitio:",
+    "opciones": {
+      "A": "Derecho a la inviolabilidad del domicilio (art 18.2 CE).",
+      "B": "Derecho a la producción y creación literaria (art 20.1.b CE).",
+      "C": "Derecho de asociación (art 22.1 CE).",
+      "D": "Derecho a la educación (art 27.1 CE)."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 5,
+    "pregunta": "El procedimiento preferente y sumario ante los Tribunales ordinarios podrá recabarse para la protección del siguiente derecho:",
+    "opciones": {
+      "A": "Derecho a contraer matrimonio.",
+      "B": "Derecho de petición.",
+      "C": "Derecho a la negociación colectiva laboral.",
+      "D": "Derecho a la propiedad privada y a la herencia."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 6,
+    "pregunta": "Está legitimado para interponer recurso de inconstitucionalidad:",
+    "opciones": {
+      "A": "El Presidente del Congreso de los Diputados.",
+      "B": "La Federación Española de Municipios y Provincias.",
+      "C": "Los órganos colegiados ejecutivos de las Comunidades Autónomas.",
+      "D": "30 Senadores."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 7,
+    "pregunta": "Según el Título II de la Constitución, señale la respuesta correcta sobre los actos del Rey que deben ser refrendados por el Presidente del Congreso:",
+    "opciones": {
+      "A": "La propuesta y nombramiento del Presidente del Gobierno.",
+      "B": "La declaración de la guerra y la paz.",
+      "C": "El nombramiento del personal civil y militar de su casa.",
+      "D": "La convocatoria de referéndum."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 8,
+    "pregunta": "Las sesiones plenarias de las Cámaras:",
+    "opciones": {
+      "A": "Serán públicas siempre sin posibilidad de restringir esta condición.",
+      "B": "Serán a puerta cerrada si así lo deciden el Presidente de la Cámara o lo aconseja el contenido de las sesiones.",
+      "C": "Serán públicas, salvo acuerdo en contrario adoptado por mayoría absoluta en cada Cámara o con arreglo al Reglamento.",
+      "D": "Serán públicas, salvo acuerdo en contrario adoptado por mayoría simple en cada Cámara o con arreglo al Reglamento."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 9,
+    "pregunta": "Si transcurridos dos meses a partir de la primera votación de investidura, ningún candidato hubiera obtenido la confianza del Congreso, el Rey debe, según la Constitución:",
+    "opciones": {
+      "A": "Disolver el Congreso y convocar nuevas elecciones.",
+      "B": "Designar, con el refrendo del Presidente del Congreso, al candidato del grupo político que ostente mayor representación parlamentaria.",
+      "C": "Iniciar un nuevo periodo de consultas con los grupos políticos con representación parlamentaria.",
+      "D": "Disolver ambas Cámaras y convocar nuevas elecciones, con el refrendo del Presidente del Congreso."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 10,
+    "pregunta": "Según la Ley 50/1997, de 27 de noviembre, los Gabinetes:",
+    "opciones": {
+      "A": "Son órganos de apoyo político y técnico del Presidente del Gobierno, de los Vicepresidentes, de los Ministros y de los Secretarios de Estado.",
+      "B": "Son órganos de apoyo político y técnico del Presidente del Gobierno, de los Vicepresidentes, de los Ministros, de los Secretarios de Estado, Subsecretarios, y Directores Generales.",
+      "C": "Son órganos de apoyo político y técnico del Presidente del Gobierno, de los Vicepresidentes, de los Ministros, de los Secretarios de Estado, Subsecretarios, Secretarios Generales y Directores Generales.",
+      "D": "Son órganos cuyos miembros realizan tareas de confianza y asesoramiento especial pudiendo además adoptar actos o resoluciones que correspondan a órganos de la Administración General del Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 11,
+    "pregunta": "Según la diferenciación que lleva a cabo la Ley 6/1997, de 14 de abril, tienen la consideración de órganos directivos de la Administración General del Estado, en el ámbito de la organización central:",
+    "opciones": {
+      "A": "Los Subsecretarios, Secretarios Generales, Secretarios Generales Técnicos, Directores Generales y Subdirectores Generales.",
+      "B": "Los Subsecretarios, Secretarios Generales y Secretarios Generales Técnicos.",
+      "C": "Los Subsecretarios, Secretarios Generales, Secretarios Generales Técnicos y Directores Generales.",
+      "D": "Todos los niveles 30 de la Administración General del Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 12,
+    "pregunta": "La Comisión General de Secretarios de Estado y Subsecretarios:",
+    "opciones": {
+      "A": "Está integrada por los titulares de las Secretarías de Estado y de los órganos que tengan rango de Subsecretario.",
+      "B": "Su Presidencia corresponde al Subsecretario de Presidencia.",
+      "C": "No puede adoptar decisiones por delegación del Gobierno.",
+      "D": "Es un órgano de Gobierno cuyo objeto es resolver los asuntos que, afectando a más de un Ministerio, no requieren ser elevados al Consejo de Ministros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 13,
+    "pregunta": "Entre las competencias que la Ley 6/1997, de 14 de abril, atribuye a los Delegados de Gobierno destaca:",
+    "opciones": {
+      "A": "Elevar, con carácter semestral un informe al Gobierno sobre el funcionamiento de los Servicios Públicos Estatales y Autonómicos.",
+      "B": "Realizar un informe bianual sobre el funcionamiento de las competencias propias que asume la Comunidad Autónoma.",
+      "C": "Elevar, con carácter anual, un informe al Gobierno sobre el funcionamiento de los Servicios Públicos Estatales.",
+      "D": "Realizar un informe anual sobre el funcionamiento de las competencias propias que asume la Comunidad Autónoma."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 14,
+    "pregunta": "El nombramiento y cese de los Directores insulares se hará:",
+    "opciones": {
+      "A": "Por Real Decreto del Consejo de Ministros.",
+      "B": "Por Orden del Delegado de Gobierno.",
+      "C": "Por Orden del Consejo de Ministros.",
+      "D": "Por Resolución del Delegado de Gobierno."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 15,
+    "pregunta": "Según el artículo 27.2 de la Ley 28/2006, de 18 de julio, de Agencias estatales, el presupuesto de gastos de las mismas, en lo referente a los gastos de personal, tiene en todo caso carácter, por su cuantía total, de:",
+    "opciones": {
+      "A": "Estimativo y vinculante.",
+      "B": "Limitativo y vinculante.",
+      "C": "Estimativo y no vinculante.",
+      "D": "Limitativo pero no vinculante."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 16,
+    "pregunta": "Según la Ley 28/2006, de 18 de julio, los Presidentes de las Agencias Estatales son nombrados y separados:",
+    "opciones": {
+      "A": "Por el Consejo Rector de la Agencia.",
+      "B": "Por el Consejo de Ministros.",
+      "C": "Por el Presidente del Gobierno.",
+      "D": "Por el Ministro de adscripción."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 17,
+    "pregunta": "Según la Constitución, la federación de Comunidades Autónomas:",
+    "opciones": {
+      "A": "No es admitida en ningún caso por la Constitución.",
+      "B": "Sólo será posible cuando las Comunidades Autónomas cuenten con lazos históricos comunes.",
+      "C": "Requiere una previa aprobación por Ley Orgánica.",
+      "D": "Requiere una previa aprobación por mayoría de tres quintos en el Senado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 18,
+    "pregunta": "Según los artículos 148 y 149 de la Constitución:",
+    "opciones": {
+      "A": "El Estado tiene competencia exclusiva sobre la gestión en materia de protección del medio ambiente.",
+      "B": "Las Comunidades Autónomas podrán asumir competencias en materia de legislación básica sobre protección del medio ambiente.",
+      "C": "Las Comunidades Autónomas podrán asumir competencias en materia de agricultura y ganadería, de acuerdo con la ordenación general de la economía.",
+      "D": "El Estado tiene competencia exclusiva sobre ordenación del territorio, urbanismo y vivienda."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 19,
+    "pregunta": "Cuando la iniciativa del proceso autonómico ha tenido lugar por la vía del artículo 143 de la Constitución:",
+    "opciones": {
+      "A": "La iniciativa corresponde, de manera conjunta, a las Cortes Generales y al equivalente de la provincia o provincias.",
+      "B": "Es necesaria la ratificación por referéndum.",
+      "C": "Es necesaria la creación de una Comisión Parlamentaria \"ad hoc\" para el estudio del texto.",
+      "D": "El proyecto de Estatuto deberá ser elaborado por una Asamblea compuesta por los miembros de las Diputaciones u órganos insulares afectados y por los Diputados y Senadores elegidos en ellas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 20,
+    "pregunta": "Según la Constitución, señale la afirmación correcta en relación con la delegación legislativa:",
+    "opciones": {
+      "A": "Se agota por el uso que de ella haga el Gobierno mediante la publicación de la norma correspondiente.",
+      "B": "Podrá permitir la subdelegación a autoridades distintas del propio Gobierno.",
+      "C": "Comprende la potestad de dictar normas con rango de ley sobre todas las materias excepto las que aprueben los Estatutos de Autonomía.",
+      "D": "Las leyes de delegación no podrán en ningún caso establecer fórmulas adicionales de control."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 21,
+    "pregunta": "Entre las atribuciones del Alcalde, contenidas en el artículo 21.1 de la Ley 7/1985, de 2 de abril, se encuentra la siguiente:",
+    "opciones": {
+      "A": "Dirigir, inspeccionar e impulsar los servicios y obras municipales.",
+      "B": "La aprobación del Reglamento Orgánico y de las ordenanzas.",
+      "C": "La declaración de lesividad de los actos del Ayuntamiento.",
+      "D": "La alteración de la calificación jurídica de los bienes de dominio público"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 22,
+    "pregunta": "La alteración de los límites territoriales de una provincia exige:",
+    "opciones": {
+      "A": "Su aprobación previa mediante Ley Orgánica.",
+      "B": "La previa modificación constitucional, de acuerdo con lo establecido en el artículo 167 de la Constitución.",
+      "C": "Su aprobación previa mediante Ley autonómica.",
+      "D": "La previa modificación de la Ley de Bases de Régimen Local."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 23,
+    "pregunta": "Las competencias de los municipios:",
+    "opciones": {
+      "A": "Quedan recogidas en el Título VIII de la Constitución.",
+      "B": "No aparecen desarrolladas en el texto constitucional.",
+      "C": "Se deducen de las competencias atribuidas a las Comunidades Autónomas.",
+      "D": "Quedan reguladas por Ley Orgánica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 24,
+    "pregunta": "Señale en qué año el Reino Unido firmó el Tratado de Adhesión a las Comunidades Europeas:",
+    "opciones": {
+      "A": "1969.",
+      "B": "1972.",
+      "C": "1979.",
+      "D": "1983."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 25,
+    "pregunta": "Según el artículo 17.2 del Tratado de la Unión Europea, la Política Exterior y de Seguridad Común de la Unión Europea incluye misiones humanitarias y de rescate, de mantenimiento de la paz y misiones en las que intervengan fuerzas de combate para la gestión de crisis. Las anteriores reciben el nombre conjunto de Misiones:",
+    "opciones": {
+      "A": "Petersberg.",
+      "B": "Spinelli.",
+      "C": "Van Gend-Loos.",
+      "D": "Simmenthal."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 26,
+    "pregunta": "¿En qué Tratado europeo se introduce la figura del Alto Representante de la Política Exterior y de Seguridad Común, que será el Secretario General del Consejo de la Unión Europea?",
+    "opciones": {
+      "A": "En el Tratado de Maastricht.",
+      "B": "En el Tratado de Niza.",
+      "C": "En el Tratado de Ámsterdam.",
+      "D": "En el Tratado de Lisboa."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 27,
+    "pregunta": "Para que el Consejo pueda modificar el número de miembros de la Comisión, el artículo 157 del Tratado constitutivo de la Comunidad Europea señala que se requiere:",
+    "opciones": {
+      "A": "Mayoría de 3/5 de sus miembros.",
+      "B": "Mayoría de 2/3 de sus miembros.",
+      "C": "Unanimidad.",
+      "D": "Mayoría absoluta de sus miembros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 28,
+    "pregunta": "El recurso por incumplimiento ante al Tribunal de Justicia de las Comunidades Europeas puede iniciarlo:",
+    "opciones": {
+      "A": "La Comisión o el Consejo.",
+      "B": "La Comisión o un Estado Miembro.",
+      "C": "Un Estado Miembro o el Parlamento.",
+      "D": "El Parlamento o el Consejo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 29,
+    "pregunta": "Señale que sentencia de las siguientes proclama la eficacia directa de las normas comunitarias, de manera que puedan ser alegadas y aplicadas en el ámbito interno como si fueran normas propias del Estado en cuestión:",
+    "opciones": {
+      "A": "Costa-ENEL, de 15 de julio de 1964.",
+      "B": "Van Gend-Loos, de 5 de febrero de 1963.",
+      "C": "Nonfrost, de 9 de marzo de 1978.",
+      "D": "Francovich-Boniface, de 19 de noviembre de 1991."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 30,
+    "pregunta": "Señale cuál de las siguientes políticas europeas fue introducida por el Tratado de Amsterdam:",
+    "opciones": {
+      "A": "La política de empleo.",
+      "B": "La política de transportes.",
+      "C": "La política comercial común.",
+      "D": "La política de salud pública."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 31,
+    "pregunta": "En el Consejo Europeo de Tampere, en 1999, se decidió la puesta en marcha de:",
+    "opciones": {
+      "A": "La política europea en materia de inmigración.",
+      "B": "La política común de transportes.",
+      "C": "La política europea de competencia.",
+      "D": "La política europea de industria y energía."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 32,
+    "pregunta": "¿Qué sistemas de firma electrónica deben ser admitidos por las Administraciones Públicas en sus relaciones con los ciudadanos según lo dispuesto en el artículo 13 de la Ley 11/2007?",
+    "opciones": {
+      "A": "Las Administraciones Públicas sólo están obligadas a admitir el DNI electrónico, aunque pueden admitir otras firmas electrónicas potestativamente.",
+      "B": "El DNI electrónico y el certificado electrónico de la Fábrica Nacional de Moneda y Timbre.",
+      "C": "Cualquiera que sea conforme a lo dispuesto en la Ley 59/2003, de firma electrónica.",
+      "D": "Sólo los certificados y firmas electrónicas declarados seguros por el Ministerio del Interior."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 33,
+    "pregunta": "¿Cuándo establece la Disposición Final 3ª de la Ley 11/2007, de 22 de junio, que el derecho de acceso por medios electrónicos a los servicios públicos podrá ser ejercido respecto a todos los procedimientos administrativos que son competencia de la Administración General del Estado y los organismos públicos vinculados o dependientes de ella?",
+    "opciones": {
+      "A": "El 1 de enero de 2012.",
+      "B": "Cuando lo permitan las disponibilidades presupuestarias.",
+      "C": "El 31 de diciembre de 2009.",
+      "D": "Cuando así lo acuerde el Consejo de Ministros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 34,
+    "pregunta": "Señale cuántos días han de transcurrir de acuerdo con la Ley 11/2007, de 22 de junio, para que se entienda rechazada una notificación practicada por medios electrónicos:",
+    "opciones": {
+      "A": "10 días hábiles.",
+      "B": "10 días naturales.",
+      "C": "20 días hábiles.",
+      "D": "20 días naturales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 35,
+    "pregunta": "Según la Ley 47/2003, de 22 noviembre, dentro de la clasificación económica del estado de gastos de los presupuestos, en los créditos para operaciones de capital, se distinguen:",
+    "opciones": {
+      "A": "Inversiones reales y gastos financieros.",
+      "B": "Inversiones de capital y transferencias corrientes.",
+      "C": "Inversiones de capital y transferencias de capital.",
+      "D": "Inversiones reales y transferencias de capital."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 36,
+    "pregunta": "El artículo 4 del Real Decreto 899/2009, de 22 de mayo, enumera los servicios que se incluyen en el denominado \"ámbito del servicio universal\". De las siguientes opciones sólo una responde al contenido de dicho artículo, señale cuál es:",
+    "opciones": {
+      "A": "En las localidades de menos de 200 habitantes habrá al menos un teléfono público de pago.",
+      "B": "Todos los municipios de España tienen derecho a recibir la señal de la Televisión Digital Terrestre.",
+      "C": "Los usuarios finales tienen derecho a obtener una conexión a la red telefónica desde una ubicación fija; dicha conexión deberá permitir el acceso de forma funcional a Internet.",
+      "D": "Los empresarios y particulares que así lo soliciten tendrán derecho a obtener conexiones ultrarrápidas vía satélite."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 37,
+    "pregunta": "El Real Decreto Legislativo 1302/1986, de 28 de julio, de evaluación del impacto ambiental:",
+    "opciones": {
+      "A": "Prevé exclusivamente un listado de actividades a las que se les requerirá la declaración de impacto ambiental.",
+      "B": "Prevé dos listados de actividades. A las primeras se les exige el sometimiento a una evaluación de impacto ambiental, mientras que a las segundas se les exime de tal requisito previendo una lista adicional que podrán requerir la declaración de impacto ambiental cuando así lo decida el órgano ambiental.",
+      "C": "Prevé dos listados de actividades. A las primeras se les exige el sometimiento a una evaluación de impacto ambiental, mientras que a la segunda se le exime de tal requisito.",
+      "D": "Prevé dos listados de actividades. A las primeras se le exige el sometimiento a una evaluación de impacto ambiental, mientras que a las segundas se les podrá requerir la declaración de impacto cuando así lo decida el órgano competente."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 38,
+    "pregunta": "La declaración de los Espacios Naturales Protegidos, definidos en la Ley 42/2007, de 13 de diciembre, del Patrimonio Natural y de la Biodiversidad, corresponde a:",
+    "opciones": {
+      "A": "Los Municipios.",
+      "B": "Las Comunidades Autónomas.",
+      "C": "El Ministerio de Medio Ambiente y Medio Rural y Marino.",
+      "D": "El Consejo de Ministros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 39,
+    "pregunta": "Según la Ley 14/1986, de 25 de abril, dentro de la estructura del Sistema Nacional de Salud, las áreas de salud se organizan geográficamente:",
+    "opciones": {
+      "A": "Una en cada Comunidad Autónoma.",
+      "B": "En demarcaciones territoriales entre 200.000 y 250.000 habitantes.",
+      "C": "En demarcaciones territoriales entre 5.000 y 25.000 habitantes.",
+      "D": "Una por cada 1.000 habitantes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 40,
+    "pregunta": "De acuerdo con la Ley 39/2006, de 14 de diciembre, la situación de dependencia en la que la persona necesita ayuda para realizar varias actividades básicas de la vida diaria dos o tres veces al día, pero no quiere el apoyo permanente de un cuidador o tiene necesidades de apoyo extenso para su autonomía personal se clasifica como:",
+    "opciones": {
+      "A": "Grado I. Dependencia moderada.",
+      "B": "Grado II. Dependencia severa.",
+      "C": "Grado III. Gran dependencia.",
+      "D": "Grado IV. Dependencia habitual."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 41,
+    "pregunta": "Señale cuál de los siguientes tiene la consideración de órgano consultivo de participación institucional del Sistema para la Autonomía y Atención a la Dependencia:",
+    "opciones": {
+      "A": "La Comisión Estatal de la Discapacidad.",
+      "B": "El Consejo Estatal de Personas Mayores.",
+      "C": "El Consejo General para la Dependencia.",
+      "D": "El Comité Consultivo para la Dependencia."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 42,
+    "pregunta": "De acuerdo con la Ley Orgánica 2/2006, de 3 de mayo, entre las modalidades de Bachillerato se encuentra la de:",
+    "opciones": {
+      "A": "Ciencias y Tecnología.",
+      "B": "Idiomas y Ciencias Sociales.",
+      "C": "Humanidades e Idiomas.",
+      "D": "Ciencias Sociales y Tecnología."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 43,
+    "pregunta": "De acuerdo con la Ley Orgánica 2/2006, de 3 de mayo, la enseñanza básica comprende:",
+    "opciones": {
+      "A": "9 años de escolaridad.",
+      "B": "5 años de escolaridad.",
+      "C": "8 años de escolaridad.",
+      "D": "10 años de escolaridad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 44,
+    "pregunta": "Según el Real Decreto 2128/2008, de 26 de diciembre, el Salario Mínimo Interprofesional para el año 2009 queda fijado en:",
+    "opciones": {
+      "A": "720 euros al mes.",
+      "B": "545 euros al mes.",
+      "C": "624 euros al mes.",
+      "D": "590 euros al mes."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 45,
+    "pregunta": "¿Qué nuevos principios transversales incluye el Plan África 2009-2012?:",
+    "opciones": {
+      "A": "Participación social, refuerzo de inversión en infraestructuras y diálogo social.",
+      "B": "Enfoque sectorial, restricciones migratorias y coordinación de actores.",
+      "C": "Derechos humanos, igualdad de género y sostenibilidad medioambiental y adaptación al cambio climático.",
+      "D": "Consolidación del Estado de Derecho, apuesta por los recursos energéticos y lucha contra el cambio climático."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 46,
+    "pregunta": "El actual Plan director para la cooperación española 2009-2012 propone como meta alcanzar:",
+    "opciones": {
+      "A": "El 0,56% del PIB en 2010.",
+      "B": "El 0,7% del PIB en 2010.",
+      "C": "El 0,6% del PIB en 2011.",
+      "D": "El 0,56% del PIB en 2012."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 47,
+    "pregunta": "El Programa Araucaria XXI es uno de los Programas de Cooperación al Desarrollo coordinado por la AECID, que tiene por objeto:",
+    "opciones": {
+      "A": "La armonización y coordinación de las políticas públicas encaminadas a un mayor desarrollo humano en Centroamérica.",
+      "B": "El desarrollo de los Pueblos Indígenas.",
+      "C": "Garantizar la sostenibilidad ambiental en América Latina a través de la conservación y utilización sostenible del capital natural.",
+      "D": "La capacitación técnica de recursos humanos de las administraciones públicas iberoamericanas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 48,
+    "pregunta": "Según la Ley Orgánica 4/2000, de 11 de enero, la residencia temporal es la situación que autoriza a permanecer en España por un período:",
+    "opciones": {
+      "A": "Superior a 90 días e inferior a diez años.",
+      "B": "Superior a 60 días e inferior a diez años.",
+      "C": "Superior a 60 días e inferior a cinco años.",
+      "D": "Superior a 90 días e inferior a cinco años."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 49,
+    "pregunta": "El tiempo necesario para la concesión de la nacionalidad española por residencia, para aquellos que hayan obtenido la condición de refugiado, será de:",
+    "opciones": {
+      "A": "10 años.",
+      "B": "5 años.",
+      "C": "2 años.",
+      "D": "1 año."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 50,
+    "pregunta": "Los Estatutos de Autonomía de las Comunidades Autónomas de Cataluña y Andalucía recogen como novedad entre sus competencias:",
+    "opciones": {
+      "A": "La autorización inicial de trabajo de los extranjeros cuya relación laboral se desarrolla en su territorio.",
+      "B": "La autorización inicial de residencia de los extranjeros cuyo domicilio se encuentra en su territorio.",
+      "C": "La autorización inicial de trabajo y de residencia de los extranjeros cuya relación laboral se desarrolla en su territorio.",
+      "D": "No asumen nuevas competencias en esta materia."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 51,
+    "pregunta": "Señale la respuesta correcta en relación con la Ley Orgánica 3/2007, de 22 de marzo:",
+    "opciones": {
+      "A": "Contempla el deber de negociar planes de igualdad en empresas de más de 250 trabajadores.",
+      "B": "Transpone al ordenamiento jurídico dos reglamentos comunitarios en materia de igualdad de trato.",
+      "C": "Consagra el permiso de paternidad de 15 días de duración para los supuestos de hijo o hija con discapacidad.",
+      "D": "Amplía a 1 año la duración máxima de la excedencia para el cuidado de familiares."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 52,
+    "pregunta": "De acuerdo con la Ley Orgánica 3/2007, de 22 de marzo, para la igualdad efectiva de mujeres y hombres se considera presencia o composición equilibrada:",
+    "opciones": {
+      "A": "La presencia de mujeres y hombres de forma que, en el conjunto a que se refiera, las personas de cada sexo no superen el sesenta por ciento ni sean menos del cuarenta por ciento.",
+      "B": "La presencia de mujeres y hombres de forma que, en el conjunto a que se refiera, las personas de cada sexo no superen el cincuenta por ciento ni sean menos del cuarenta por ciento.",
+      "C": "La presencia de mujeres y hombres de forma que, en el conjunto a que se refiera, las personas de cada sexo no superen el cuarenta por ciento.",
+      "D": "La Ley Orgánica 3/2007, de 22 de marzo, para la igualdad efectiva de mujeres y hombres no regula lo que debe considerarse presencia o composición equilibrada."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 53,
+    "pregunta": "Según la Ley 30/1992, de 26 de noviembre, el principio de inderogabilidad singular de las disposiciones administrativas, se formula del siguiente modo:",
+    "opciones": {
+      "A": "Ninguna disposición administrativa podrá vulnerar los preceptos de otra de rango superior.",
+      "B": "Las disposiciones administrativas se ajustarán al orden de jerarquía que establezcan las leyes.",
+      "C": "Las disposiciones administrativas no podrán vulnerar la Constitución ni las leyes.",
+      "D": "Las resoluciones administrativas de carácter particular no podrán vulnerar lo establecido en una disposición de carácter general, aunque aquéllas tengan igual o superior rango a éstas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 54,
+    "pregunta": "Según el artículo 150.1 de la Constitución, las Cortes Generales, en materias de competencia estatal, podrán atribuir a todas o a alguna de las Comunidades Autónomas la facultad de dictar, para sí mismas, normas legislativas en el marco de los principios, bases y directrices fijados por la Ley estatal. Para la aprobación de esta Ley se seguirá el procedimiento de:",
+    "opciones": {
+      "A": "Ley Orgánica.",
+      "B": "Ley de bases.",
+      "C": "Ley ordinaria.",
+      "D": "Ley de transferencia."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 55,
+    "pregunta": "Señale cuál de las siguientes afirmaciones es correcta en relación con los Decretos-Leyes, según la previsión constitucional:",
+    "opciones": {
+      "A": "Pueden regular materia electoral general en caso de urgente necesidad.",
+      "B": "Para dictar estas normas es necesaria la delegación previa de las Cortes Generales.",
+      "C": "Después de ser dictados deberán ser inmediatamente sometidos a debate y votación de totalidad al Congreso de los Diputados.",
+      "D": "La potestad para dictarlos la tiene el Presidente del Gobierno."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 56,
+    "pregunta": "Según la Ley 50/1997, de 27 de noviembre, los acuerdos adoptados en las Comisiones Delegadas del Gobierno revestirán la forma de:",
+    "opciones": {
+      "A": "Real Decreto Legislativo.",
+      "B": "Orden Ministerial.",
+      "C": "Acuerdos del Consejo de Ministros.",
+      "D": "Resolución."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 57,
+    "pregunta": "Señale en qué supuesto en materia de Tratados internacionales, según el texto constitucional, se requiere la previa autorización de las Cortes Generales para la prestación del consentimiento del Estado:",
+    "opciones": {
+      "A": "Los que exigen la previa revisión de la Constitución.",
+      "B": "Aquellos cuya constitucionalidad ha sido sometida al Tribunal Constitucional por el Gobierno.",
+      "C": "Los que han sido sometidos a revisión de constitucionalidad por el Congreso.",
+      "D": "Los que impliquen obligaciones financieras para la Hacienda Pública."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 58,
+    "pregunta": "Señale la afirmación correcta. La Ley 30/1992, de 26 de noviembre, determina, en relación con las notificaciones, que:",
+    "opciones": {
+      "A": "La notificación debe ser cursada por el mismo órgano que dictó el acto.",
+      "B": "Se deben notificar todos los actos de trámite y definitivos.",
+      "C": "La eficacia de los actos quedará demorada cuando esté supeditada a notificación.",
+      "D": "La notificación debe ser cursada en un plazo de un mes a partir de la fecha en que el acto haya sido dictado"
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 59,
+    "pregunta": "De acuerdo con la Ley 50/1997, de 27 de noviembre, los proyectos de reglamentos habrán de ser informados por la Secretaría General Técnica:",
+    "opciones": {
+      "A": "En todo caso.",
+      "B": "Sólo cuando la norma reglamentaria pudiera afectar a la distribución de las competencias entre el Estado y las Comunidades Autónomas.",
+      "C": "Cuando lo estime oportuno el Órgano Directivo que empezó su tramitación.",
+      "D": "Cuando no haya informe del Consejo de Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 60,
+    "pregunta": "Según la Ley 30/1992, de 26 de noviembre, señale la afirmación correcta en relación con los actos nulos:",
+    "opciones": {
+      "A": "La Administración podrá convalidar los actos nulos, subsanando los vicios de que adolezcan.",
+      "B": "Los actos nulos que contengan los elementos constitutivos de otro distinto producirán los efectos de éste.",
+      "C": "Son nulos los actos que incurran en desviación de poder.",
+      "D": "La realización de actuaciones administrativas fuera del tiempo establecido para ellas implicará la nulidad del acto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 61,
+    "pregunta": "La Fundación X se constituyó con aportaciones iniciales por valor de 40 millones de euros, de los cuales 15 millones fueron aportados por el Ministerio de Economía y Hacienda y 7 millones por la Sociedad Estatal de Gestión del Patrimonio. Señale la afirmación correcta:",
+    "opciones": {
+      "A": "Su contratación se rige por el derecho privado.",
+      "B": "Su contratación se rige por la Ley de Contratos del Sector Público.",
+      "C": "Su contratación adopta el tipo de contrato de colaboración sector público-sector privado, previsto en la Ley de Contratos del Sector Público.",
+      "D": "Al ser una fundación no puede celebrar contratos, sólo admitir donaciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 62,
+    "pregunta": "Señale la afirmación correcta. Una empresa de un Estado no perteneciente a la Unión Europea puede contratar con la Administración española:",
+    "opciones": {
+      "A": "Siempre, en virtud del principio constitucional de libertad de mercado.",
+      "B": "En ningún caso.",
+      "C": "Sólo si se compromete a realizar la obra o servicio contratando trabajadores de nacionalidad española.",
+      "D": "Sólo si en el Estado de procedencia se admite por la Administración la contratación de empresas españolas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 63,
+    "pregunta": "La contratación de una traducción por un Departamento Ministerial se realizará mediante:",
+    "opciones": {
+      "A": "Un contrato de asistencia técnica.",
+      "B": "Un contrato de servicios.",
+      "C": "Un contrato de suministro.",
+      "D": "Un contrato privado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 64,
+    "pregunta": "La creación de Renfe-Operadora para la prestación de servicios de transporte ferroviario, es un ejemplo de actividad:",
+    "opciones": {
+      "A": "De limitación.",
+      "B": "Arbitral.",
+      "C": "De servicio público.",
+      "D": "De fomento."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 65,
+    "pregunta": "Si el objeto de la expropiación forzosa estuviere constituido por valores mobiliarios, de acuerdo con el artículo 28 de la Ley de Expropiación Forzosa, de 16 de diciembre de 1954:",
+    "opciones": {
+      "A": "Se formarán tantas piezas separadas como clases de títulos hubiesen de expropiarse, atendiendo a las características que puedan influir en su valoración.",
+      "B": "Se harán lotes homogéneos y se valorará a tanto alzado, teniendo en cuenta el valor de los mismos en el momento de la adquisición.",
+      "C": "Se valorarán en su conjunto atendiendo al precio de mercado de los mismos en el momento de la valoración.",
+      "D": "Se valorarán en su conjunto, atendiendo al precio que tuvieron en el momento de la compra."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 66,
+    "pregunta": "Según la Ley Orgánica 6/1985, de 1 de julio, en el supuesto de error judicial:",
+    "opciones": {
+      "A": "El interesado dirigirá su petición indemnizatoria directamente al Ministerio de Justicia.",
+      "B": "La revocación de las resoluciones judiciales presupone derecho a indemnización.",
+      "C": "La acción judicial para el reconocimiento del error deberá instarse en el plazo de 1 mes.",
+      "D": "Serán partes en el procedimiento para sustanciar la pretensión el Ministerio Fiscal y el Consejo General del Poder Judicial."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 67,
+    "pregunta": "Según el artículo 143.1 de la Ley 30/1992, de 26 de noviembre, el plazo para reconocer el derecho a la indemnización en el procedimiento abreviado de petición de responsabilidad patrimonial es de:",
+    "opciones": {
+      "A": "Dos meses.",
+      "B": "Tres meses.",
+      "C": "Quince días.",
+      "D": "Treinta días."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 68,
+    "pregunta": "De conformidad con lo dispuesto en el artículo 111.3 de la Ley 30/1992, de 26 de noviembre, la ejecución del acto impugnado se entenderá suspendida si:",
+    "opciones": {
+      "A": "Transcurrido un mes desde que la solicitud de suspensión haya tenido entrada en el registro del órgano competente para decidir sobre la misma, éste no ha dictado resolución expresa al respecto.",
+      "B": "Transcurridos treinta días desde la fecha de la solicitud de suspensión, el órgano competente para decidir sobre la misma no ha dictado resolución expresa al respecto.",
+      "C": "Transcurridos dos meses desde que la solicitud de suspensión haya tenido entrada en el registro del órgano competente para decidir sobre la misma, éste no ha dictado resolución expresa al respecto.",
+      "D": "Transcurridos treinta días desde que la solicitud de suspensión haya tenido entrada en el registro del órgano competente para decidir sobre la misma, éste no ha dictado resolución expresa al respecto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 69,
+    "pregunta": "Según la Ley 30/1992, de 26 de noviembre, señale qué recurso cabe frente a las resoluciones de los recursos de reposición:",
+    "opciones": {
+      "A": "Recurso de alzada.",
+      "B": "Recurso contencioso-administrativo.",
+      "C": "Reclamación previa a la vía laboral.",
+      "D": "Reclamación previa a la vía civil."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 70,
+    "pregunta": "Según la Ley 30/1992, de 26 de noviembre, el recurso de alzada:",
+    "opciones": {
+      "A": "Se puede interponer en el plazo de tres meses desde la notificación del acto que se quiere impugnar.",
+      "B": "Tiene un plazo de interposición de un mes desde la notificación del acto administrativo que se quiera impugnar.",
+      "C": "Procede frente a actos definitivos en vía administrativa dictados por los órganos superiores.",
+      "D": "Su interposición suspende automáticamente la ejecutividad del acto impugnado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 71,
+    "pregunta": "La Ley 30/1992, al regular el procedimiento de revisión de oficio de los actos administrativos establece que:",
+    "opciones": {
+      "A": "Los actos anulables requieren del dictamen previo del Consejo de Estado.",
+      "B": "Los actos nulos sólo pueden revisarse si son desfavorables.",
+      "C": "El plazo para revisar actos nulos es de dos años.",
+      "D": "Las Administraciones Públicas podrán revocar en cualquier momento sus actos de gravamen."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 72,
+    "pregunta": "Según la Ley 29/1998, de 13 de julio, ¿qué órgano es el competente para resolver los recursos que se deduzcan en relación con los actos de los Ministros?:",
+    "opciones": {
+      "A": "La Sala de lo Contencioso-Administrativo del Tribunal Supremo.",
+      "B": "Los Juzgados Centrales de lo Contencioso Administrativo.",
+      "C": "La Sala de lo Contencioso-Administrativo de la Audiencia Nacional.",
+      "D": "Los Juzgados de lo Contencioso-Administrativo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 73,
+    "pregunta": "El plazo para impugnar un Real Decreto ante la Jurisdicción Contencioso-Administrativa es de:",
+    "opciones": {
+      "A": "1 mes.",
+      "B": "2 meses.",
+      "C": "3 meses.",
+      "D": "6 meses."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 74,
+    "pregunta": "El Estatuto Básico del Empleado Público se aplica:",
+    "opciones": {
+      "A": "Al personal funcionario, y en lo que proceda, al personal laboral de las Universidades, sean éstas públicas o privadas.",
+      "B": "No se aplica al personal de las Universidades, que se regirán por sus propias normas con autonomía.",
+      "C": "Al personal de las Universidades públicas.",
+      "D": "Al personal de Universidades sean éstas públicas o privadas, en defecto de normas autónomas o específicas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 75,
+    "pregunta": "Señale la afirmación correcta en relación con los tipos de personal previstos en el Estatuto Básico del Empleado Público:",
+    "opciones": {
+      "A": "El personal eventual es aquel nombrado, por razones de necesidad y urgencia, para sustituir transitoriamente a los titulares de plazas de funcionarios.",
+      "B": "El personal directivo es aquel que sólo realiza funciones expresamente calificadas como de confianza o asesoramiento especial.",
+      "C": "Los funcionarios interinos pueden ser nombrados para la ejecución de programas de carácter temporal.",
+      "D": "El ejercicio de las funciones que impliquen la participación directa o indirecta en el ejercicio de las potestades públicas corresponde exclusivamente a los funcionarios públicos o al personal laboral, estando prohibido para el personal eventual."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 76,
+    "pregunta": "Según el Estatuto Básico del Empleado Público, ¿cómo se clasifican los empleados públicos?:",
+    "opciones": {
+      "A": "Se clasifican en funcionarios de carrera, personal laboral, ya sea fijo, por tiempo indefinido o temporal, y personal eventual.",
+      "B": "Se clasifican en funcionarios de carrera, funcionarios interinos y personal laboral fijo.",
+      "C": "Se clasifican en funcionarios de carrera, funcionarios interinos, personal laboral, ya sea fijo, por tiempo indefinido o temporal.",
+      "D": "Se clasifican en funcionarios de carrera, funcionarios interinos, personal laboral, ya sea fijo, por tiempo indefinido o temporal, y personal eventual."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 77,
+    "pregunta": "La paridad requerida por el Estatuto Básico del Empleado Público en los tribunales y órganos de selección será:",
+    "opciones": {
+      "A": "Obligatoria e inexcusable.",
+      "B": "Obligatoria aunque excusable para determinados cuerpos y escalas.",
+      "C": "No obligatoria, aunque se tenderá a la misma.",
+      "D": "No obligatoria, salvo los casos establecidos por la Ley."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 78,
+    "pregunta": "Según el Estatuto Básico del Empleado Público, se podrá solicitar la rehabilitación de la condición de funcionario cuando la relación de servicios se haya extinguido por:",
+    "opciones": {
+      "A": "Renuncia.",
+      "B": "Jubilación por incapacidad permanente.",
+      "C": "Sanción disciplinaria de separación del servicio.",
+      "D": "Jubilación voluntaria."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 79,
+    "pregunta": "Según el Estatuto Básico del Empleado Público, el personal eventual:",
+    "opciones": {
+      "A": "No podrá alegar el tiempo de prestación de servicios a efectos de mérito para el acceso a la función pública o para la promoción interna.",
+      "B": "No podrá alegar el tiempo de prestación de servicios a efectos de mérito para el acceso a la función pública pero sí para la promoción interna.",
+      "C": "Podrá alegar el tiempo de prestación de servicios a efectos de mérito para el acceso a la función pública y para la promoción interna.",
+      "D": "Podrá alegar el tiempo de prestación de servicios solamente a efectos de promoción interna."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 80,
+    "pregunta": "El Estatuto Básico del Empleado Público prevé, en relación con las situaciones administrativas que:",
+    "opciones": {
+      "A": "Los funcionarios serán declarados en situación de servicios especiales siempre que, entre otros, accedan a cargos electivos de las Entidades Locales.",
+      "B": "El tiempo transcurrido en excedencia voluntaria por agrupación familiar tiene efectos sobre ascensos y trienios, pero no devenga retribuciones.",
+      "C": "La situación administrativa de excedencia por cuidado de familiares conllevará la reserva de puesto de trabajo durante, al menos, dos años.",
+      "D": "El régimen de situaciones administrativas se aplica por igual al personal funcionario y al personal laboral."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 81,
+    "pregunta": "Cuando finalizada la causa que determinó el pase a una situación distinta a la de servicio activo, los funcionarios incumplan la obligación de solicitar el reingreso en el plazo establecido reglamentariamente, quedarán en situación de:",
+    "opciones": {
+      "A": "Excedencia forzosa.",
+      "B": "Servicios especiales.",
+      "C": "Reasignación de efectivos.",
+      "D": "Excedencia voluntaria por interés particular."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 82,
+    "pregunta": "¿Cuál de las siguientes actividades queda exceptuada de la aplicación del régimen de incompatibilidades regulado por la Ley 53/1984, de 26 de diciembre?",
+    "opciones": {
+      "A": "Actividades privadas, sea cual sea su carácter, por cuenta propia.",
+      "B": "La pertenencia a Consejos de Administración de entidades privadas siempre que la actividad de las mismas esté directamente relacionada con las que gestione el Departamento en que presta sus servicios el personal afectado.",
+      "C": "Las derivadas de la administración del patrimonio familiar, formado por una empresa privada en la que la participación del empleado público sea superior al 10% del capital de esa empresa.",
+      "D": "La participación ocasional en coloquios y programas de cualquier medio de comunicación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 83,
+    "pregunta": "El Estatuto Básico del Empleado Público dispone que, en los casos de parto prematuro y en aquellos otros en que, por cualquier causa, el neonato deba permanecer hospitalizado a continuación del parto, el permiso se ampliará en tantos días como el neonato se encuentre hospitalizado con un máximo de:",
+    "opciones": {
+      "A": "Dieciséis semanas adicionales.",
+      "B": "Quince semanas adicionales.",
+      "C": "Ocho semanas adicionales.",
+      "D": "Trece semanas adicionales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 84,
+    "pregunta": "Según el sistema de clases pasivas en las pensiones extraordinarias que se causan por la muerte determinada por accidente en acto de servicio:",
+    "opciones": {
+      "A": "La base o haber regulador se multiplica por dos, tomándose como tiempo de servicios efectivos los que efectivamente hubiera cumplido el funcionario de haber alcanzado la edad de jubilación.",
+      "B": "La cuantía de la jubilación se multiplica en 25% de la pensión ordinaria para cada hijo menor de 21 años.",
+      "C": "La pensión consiste en un porcentaje creciente en función de los servicios efectivos prestados por el funcionario.",
+      "D": "La pensión se calcula con un porcentaje que oscila entre un 1,15% para un año de servicio y un 100% para 48 años o más."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 85,
+    "pregunta": "¿Cuáles son las áreas funcionales del personal laboral?",
+    "opciones": {
+      "A": "El área de gestión y servicios comunes, el área de investigación científica, tecnológica y sanitaria; y el área de actividades específicas asistenciales.",
+      "B": "El área de gestión y servicios comunes, el área tecnológica y sanitaria; y el área de grupos profesionales.",
+      "C": "El área de gestión y servicios comunes, el área técnica profesional y el área de actividades específicas.",
+      "D": "El personal laboral no se clasifica en áreas funcionales sino en cinco grupos profesionales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 86,
+    "pregunta": "En el caso de un contratado laboral, la designación o elección para un cargo público que imposibilite la asistencia al trabajo dará lugar a:",
+    "opciones": {
+      "A": "La extinción del contrato de trabajo.",
+      "B": "La suspensión del contrato de trabajo por excedencia forzosa.",
+      "C": "La excedencia voluntaria.",
+      "D": "El despido."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 87,
+    "pregunta": "De acuerdo con lo establecido en el Estatuto Básico del Empleado Público en relación con los derechos y deberes de los empleados públicos, ¿quién está legitimado para convocar una reunión, además de las Organizaciones Sindicales, directamente o a través de los Delegados sindicales?",
+    "opciones": {
+      "A": "Los delegados de personal y las juntas de personal.",
+      "B": "Los delegados de personal, los comités de empresa, los empleados públicos de las Administraciones respectivas en un número no inferior al 40% del colectivo convocado, y las juntas de personal.",
+      "C": "Los delegados de personal, los comités de empresa, y las juntas de personal.",
+      "D": "Los delegados de personal, los comités de empresa, los empleados públicos de las Administraciones respectivas en un número no inferior al 45% del colectivo convocado, y las juntas de personal."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 88,
+    "pregunta": "Cuando una huelga afecte a los servicios públicos, el preaviso se realizará en:",
+    "opciones": {
+      "A": "5 días naturales.",
+      "B": "10 días naturales.",
+      "C": "Un mes.",
+      "D": "5 días hábiles."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 89,
+    "pregunta": "El incumplimiento de los servicios mínimos en caso de huelga se considera:",
+    "opciones": {
+      "A": "Falta grave.",
+      "B": "Falta muy grave.",
+      "C": "Falta leve.",
+      "D": "Es un delito, y no constituye falta en el ámbito administrativo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 90,
+    "pregunta": "En el ámbito de la Administración General de Estado y sus Organismos Autónomos, se define la estabilidad presupuestaria como:",
+    "opciones": {
+      "A": "La situación de equilibrio anual entre ingresos y gastos en los Presupuestos Generales del Estado.",
+      "B": "La situación de equilibrio o superávit anual entre ingresos y gastos en los Presupuestos Generales del Estado.",
+      "C": "La situación de equilibrio a lo largo del ciclo económico, en términos de capacidad de financiación, de acuerdo con el Sistema Europeo de Cuentas Nacionales.",
+      "D": "La situación de equilibrio o superávit a lo largo del ciclo económico, en términos de capacidad de financiación, de acuerdo con el Sistema Europeo de Cuentas Nacionales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 91,
+    "pregunta": "¿Puede la Ley de Presupuestos Generales del Estado regular cualquier materia?:",
+    "opciones": {
+      "A": "En ningún caso, debe limitarse a regular los aspectos presupuestarios.",
+      "B": "Sí, por tratarse de una norma con rango de Ley.",
+      "C": "Sí, siempre y cuando la materia guarde relación directa con los ingresos y los gastos del Presupuesto y sea un complemento necesario para la mejor ejecución del Presupuesto o de la política económica del Gobierno.",
+      "D": "La única limitación es la creación de tributos prohibida por el artículo 134 de la Ley 47/2003, de 26 de noviembre."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 92,
+    "pregunta": "De acuerdo con la normativa presupuestaria actual, las generaciones de crédito:",
+    "opciones": {
+      "A": "Únicamente se pueden financiar con ingresos del propio ejercicio presupuestario.",
+      "B": "Pueden financiarse con ingresos procedentes del último trimestre del ejercicio anterior.",
+      "C": "Son traspasos de dotaciones entre créditos.",
+      "D": "Sólo pueden tramitarse como consecuencia de los sobrantes de los libramientos de pagos a justificar."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 93,
+    "pregunta": "Según la Ley 47/2003, de 26 de noviembre, el plazo que tienen las entidades del Sector Público Estatal para formular sus cuentas anuales desde el cierre del ejercicio económico, y para ponerlas a disposición de los correspondientes auditores es de:",
+    "opciones": {
+      "A": "Un mes.",
+      "B": "Tres meses.",
+      "C": "Seis meses.",
+      "D": "Nueve meses."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 94,
+    "pregunta": "Según la Ley 47/2003, de 26 de noviembre, qué gastos, de los indicados a continuación, no están sujetos a fiscalización previa:",
+    "opciones": {
+      "A": "Las órdenes de pago para la reposición de fondos de los anticipos de caja fija.",
+      "B": "Los contratos tramitados por procedimiento negociado por exclusividad.",
+      "C": "Las subvenciones con asignación nominativa.",
+      "D": "Los gastos referidos a convenios de colaboración con Comunidades Autónomas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 95,
+    "pregunta": "Según la Ley 38/2003, de 17 de noviembre, General de Subvenciones, deben concederse por concurrencia competitiva las subvenciones:",
+    "opciones": {
+      "A": "Con asignación nominal en los Presupuestos Generales del Estado.",
+      "B": "De cuantía impuesta por una norma de rango legal.",
+      "C": "Que se concedan con criterios de valoración previamente fijados.",
+      "D": "Que se justifiquen por razones de interés social."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 96,
+    "pregunta": "Según la Ley 47/2003, de 26 de noviembre, la competencia para establecer las normas que regulan los pagos satisfechos mediante anticipos de caja fija corresponde:",
+    "opciones": {
+      "A": "Al Interventor Delegado en el ámbito del Departamento donde ejerce su competencia.",
+      "B": "Al Ministro en el ámbito de su competencia.",
+      "C": "Al Director General del Tesoro con carácter general para toda la Administración General del Estado.",
+      "D": "Al Ministro de Economía y Hacienda."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 97,
+    "pregunta": "Según la Ley 8/1989, de 13 de abril, de tasas y precios públicos, ¿qué se entiende por el principio de equivalencia que debe regir el establecimiento de tasas?:",
+    "opciones": {
+      "A": "Que la fijación de su importe deberá tener en cuenta la capacidad económica de las personas que deban satisfacerlas.",
+      "B": "Que su importe deberá tender a cubrir el coste del servicio o actividad.",
+      "C": "Que deberán ser establecidos por norma con rango de Ley.",
+      "D": "Que podrán establecerse por la prestación de servicios o actividades en régimen de derecho público."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 98,
+    "pregunta": "Con carácter general, los créditos para gastos de personal de un Ministerio tienen carácter limitativo y vinculante a nivel de:",
+    "opciones": {
+      "A": "Capítulo.",
+      "B": "Artículo.",
+      "C": "Concepto.",
+      "D": "Subconcepto."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 99,
+    "pregunta": "Entre las siguientes prestaciones de la Seguridad Social, tienen naturaleza no contributiva:",
+    "opciones": {
+      "A": "Las prestaciones derivadas de accidentes de trabajo y enfermedades profesionales.",
+      "B": "Las prestaciones de asistencia sanitaria incluidas en la acción protectora de la Seguridad Social.",
+      "C": "Las prestaciones económicas derivadas de incapacidad temporal y maternidad.",
+      "D": "Las prestaciones económicas por desempleo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 100,
+    "pregunta": "El derecho al reconocimiento de las prestaciones de la Seguridad Social prescribirá:",
+    "opciones": {
+      "A": "A los cinco años, contados desde el día siguiente a aquél en que tenga lugar el hecho causante de la prestación de que se trate.",
+      "B": "A los cinco años, contados desde la fecha en que se presente la correspondiente solicitud.",
+      "C": "Al año, a contar desde el día siguiente al de haber sido notificada en forma al interesado su concesión.",
+      "D": "A los cuatro años, contados a partir de la fecha de su cobro."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  }
+]
