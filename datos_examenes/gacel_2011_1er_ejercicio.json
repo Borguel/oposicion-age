@@ -1,0 +1,1302 @@
+[
+  {
+    "numero": 1,
+    "pregunta": "El Título Preliminar de la Constitución Española de 1978 (en adelante Constitución Española) engloba una serie de preceptos entre los que se encuentra el relativo a:",
+    "opciones": {
+      "A": "La regulación sobre la adquisición de la nacionalidad española.",
+      "B": "La naturaleza, funcionamiento y estructura de los partidos políticos.",
+      "C": "La entrada en vigor de la propia Constitución.",
+      "D": "El reconocimiento de los derechos históricos de los territorios forales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 2,
+    "pregunta": "El derecho a la negociación colectiva laboral:",
+    "opciones": {
+      "A": "No aparece recogido entre los derechos y deberes del Título I de la Constitución.",
+      "B": "Viene regulado en la Sección 2ª del Capítulo 2º del Título I de la Constitución, así como la fuerza vinculante de los convenios.",
+      "C": "Aparece regulado en el Título VII de la Constitución, \"Economía y Hacienda\".",
+      "D": "Su tutela es susceptible de recurso de amparo ante el Tribunal Constitucional."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 3,
+    "pregunta": "Según la regulación constitucional del derecho de asociación:",
+    "opciones": {
+      "A": "Las asociaciones que se constituyan deben inscribirse en un registro a los efectos de publicidad.",
+      "B": "Las asociaciones pueden ser suspendidas en virtud de resolución administrativa motivada.",
+      "C": "Este derecho aparece regulado en el Título Preliminar de la Constitución.",
+      "D": "Este derecho aparece regulado en la Sección 2ª del Capítulo 2º del Título I de la Constitución."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 4,
+    "pregunta": "Según la Ley Orgánica 3/81, de 6 de abril, del Defensor del Pueblo:",
+    "opciones": {
+      "A": "Podrán ser hasta tres los Adjuntos que auxilien al Defensor del Pueblo en el ejercicio de sus funciones.",
+      "B": "El nombramiento de los Adjuntos será publicado en el Diario Oficial del Defensor del Pueblo.",
+      "C": "El Defensor del Pueblo podrá delegar sus funciones en los Adjuntos.",
+      "D": "No cabe la delegación de funciones en los Adjuntos sino tan solo la sustitución en los supuestos de imposibilidad temporal y de cese."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 5,
+    "pregunta": "Según la Ley Orgánica 2/79, de 3 de octubre, del Tribunal Constitucional, en la organización del Tribunal Constitucional:",
+    "opciones": {
+      "A": "Existe un Secretario General elegido por el Pleno y nombrado entre los letrados del propio Tribunal.",
+      "B": "Existe un Secretario General elegido por el Presidente del Tribunal y nombrado entre los letrados del propio Tribunal.",
+      "C": "Existe un Secretario General elegido por el Pleno y nombrado entre juristas de reconocida competencia con más de quince años de ejercicio profesional.",
+      "D": "Existe un Secretario General elegido por el Presidente del Tribunal y nombrado entre juristas de reconocida competencia con más de quince años de ejercicio profesional."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 6,
+    "pregunta": "Entre las competencias atribuidas constitucionalmente al Rey se encuentra:",
+    "opciones": {
+      "A": "Proponer el nombramiento de los miembros del Gobierno.",
+      "B": "Proponer la disolución de las Cortes Generales.",
+      "C": "La autorización de indultos generales.",
+      "D": "Expedir los decretos acordados en Consejo de Ministros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 7,
+    "pregunta": "Los Diputados del Congreso y los Diputados de las Asambleas de Comunidades Autónomas:",
+    "opciones": {
+      "A": "Pueden acumular el acta de una Asamblea de Comunidad Autónoma con la de Diputado al Congreso, en todo caso.",
+      "B": "Pueden acumular el acta de una Asamblea de Comunidad Autónoma con la de Diputado al Congreso, solo si lo permite expresamente el respectivo Estatuto de Autonomía.",
+      "C": "Pueden acumular el acta de una Asamblea de Comunidad Autónoma con la de Diputado al Congreso, solo si no lo prohíbe expresamente el respectivo Estatuto de Autonomía.",
+      "D": "No pueden acumular, en ningún caso, el acta de una Asamblea de Comunidad Autónoma con la de diputado al Congreso."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 8,
+    "pregunta": "Respecto de las relaciones que constitucionalmente se regulan entre los miembros del Gobierno y las Cortes Generales:",
+    "opciones": {
+      "A": "La comparecencia de los miembros del Gobierno ante las Cámaras y sus Comisiones puede extenderse también a los funcionarios de sus Departamentos.",
+      "B": "Los funcionarios sólo comparecerán si así lo solicitasen las propias Cámaras o sus Comisiones.",
+      "C": "Los funcionarios sólo comparecerán si así lo deciden los miembros del Gobierno.",
+      "D": "Los funcionarios no comparecerán en ningún caso."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 9,
+    "pregunta": "Señale cuál de los siguientes es un principio de funcionamiento de la Administración General del Estado, según dispone el artículo 3.2 de la Ley 6/1997, de 14 de abril, de Organización y Funcionamiento de la Administración General del Estado (en adelante LOFAGE):",
+    "opciones": {
+      "A": "Eficiencia en la asignación y utilización de los recursos públicos.",
+      "B": "Jerarquía.",
+      "C": "Coordinación.",
+      "D": "Economía, suficiencia y adecuación estricta de los medios a los fines institucionales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 10,
+    "pregunta": "Conforme a la Ley 28/2006, de 18 de julio, de Agencias Estatales para la mejora de los servicios públicos (en adelante Ley de Agencias Estatales), las convocatorias de selección del personal funcionario de las Agencias Estatales las realiza, salvo que excepcionalmente exista convenio al efecto:",
+    "opciones": {
+      "A": "El Ministerio de adscripción de la Agencia.",
+      "B": "El Ministerio al que estén adscritos los Cuerpos y Escalas correspondientes.",
+      "C": "El Ministerio de Política Territorial y Administración Pública.",
+      "D": "Conjuntamente, el Ministerio de Política Territorial y Administración Pública y el de Economía y Hacienda."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 11,
+    "pregunta": "¿A qué principios de los establecidos en el artículo 3 de la LOFAGE responde la creación de los Organismos Públicos?:",
+    "opciones": {
+      "A": "Desconcentración funcional y territorial.",
+      "B": "Eficacia en el cumplimiento de los objetivos fijados.",
+      "C": "Coordinación.",
+      "D": "Descentralización funcional."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 12,
+    "pregunta": "Según la Ley 50/2002, de 26 de diciembre, de Fundaciones, la constitución de una fundación pública estatal requiere de:",
+    "opciones": {
+      "A": "Autorización previa del Consejo de Ministros.",
+      "B": "Una ley que la autorice.",
+      "C": "Autorización previa del Ministerio de Economía y Hacienda.",
+      "D": "Autorización previa de la Dirección General de Patrimonio del Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 13,
+    "pregunta": "¿Pueden enajenar las Agencias Estatales sus bienes inmuebles propios?:",
+    "opciones": {
+      "A": "No, nunca.",
+      "B": "Sí, si así lo prevé su Estatuto, previa comunicación al Ministerio de Economía y Hacienda.",
+      "C": "Sí, si así lo prevé su Estatuto, previa autorización del Ministro de Economía y Hacienda.",
+      "D": "Sí, si así lo decide el Consejo Rector a petición del Director de la Agencia."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 14,
+    "pregunta": "Según el artículo 145 de la Constitución Española, ¿cuándo puede admitirse la federación de Comunidades Autónomas?:",
+    "opciones": {
+      "A": "En ningún caso.",
+      "B": "Cuando así lo disponga una Ley Orgánica.",
+      "C": "Cuando lo acuerden así las tres quintas partes de las Comunidades federadas.",
+      "D": "Cuando así lo aconseje el interés general, previo dictamen del Consejo de Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 15,
+    "pregunta": "Según el artículo 149 de la Constitución Española, ¿cuándo es el derecho estatal supletorio del de las CCAA?:",
+    "opciones": {
+      "A": "Cuando así lo reconozcan los Estatutos de las CCAA.",
+      "B": "Cuando así lo disponga la Ley Orgánica por la que, en su caso, transfiera del Estado a las CCAA facultades correspondientes a materia de titularidad estatal.",
+      "C": "En todo caso.",
+      "D": "Nunca."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 16,
+    "pregunta": "De acuerdo con el artículo 149.1 de la Constitución Española el Estado tiene competencia exclusiva sobre:",
+    "opciones": {
+      "A": "El régimen jurídico de las Administraciones públicas y el régimen estatutario de sus funcionarios.",
+      "B": "La legislación básica sobre montes, aprovechamientos forestales y vías pecuarias.",
+      "C": "El régimen jurídico de prensa, radio y televisión y, en general, de todos los medios de comunicación.",
+      "D": "Asistencia social."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 17,
+    "pregunta": "Respecto a las competencias municipales, ¿cuál de los siguientes servicios deberán prestar adicionalmente los Municipios con población superior a 5.000 habitantes?:",
+    "opciones": {
+      "A": "Biblioteca pública y protección civil.",
+      "B": "Parque público y prestación de servicios sociales.",
+      "C": "Mercado y protección civil.",
+      "D": "Biblioteca pública y tratamiento de residuos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 18,
+    "pregunta": "Indique cuáles de las siguientes son entidades locales territoriales, según lo dispuesto en el artículo 3 de la Ley 7/1985, de 2 de abril, Reguladora de las Bases del Régimen Local (en adelante Ley de Bases del Régimen Local):",
+    "opciones": {
+      "A": "Regiones históricas.",
+      "B": "Confederaciones hidrográficas.",
+      "C": "Agrupaciones comarcales.",
+      "D": "Áreas Metropolitanas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 19,
+    "pregunta": "Además de los sujetos legitimados en el régimen general del proceso contencioso-administrativo, ¿quiénes, de entre los siguientes, pueden impugnar los actos y acuerdos de las entidades locales que incurran en infracción del ordenamiento jurídico, según el artículo 63 de la Ley de Bases del Régimen Local?:",
+    "opciones": {
+      "A": "El Congreso de los Diputados.",
+      "B": "La Administración del Estado.",
+      "C": "El Defensor del Pueblo.",
+      "D": "El Consejo de Estado."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 20,
+    "pregunta": "Conforme a la Ley de Bases del Régimen Local, al Pleno de la Diputación Provincial le corresponde, entre otras competencias:",
+    "opciones": {
+      "A": "Dictar ordenanzas.",
+      "B": "Asegurar la gestión de los servicios propios de la Comunidad Autónoma cuya gestión ordinaria esté encomendada a la Diputación.",
+      "C": "Aprobar las bases de las pruebas para la selección del personal y para los concursos de provisión de puestos de trabajo.",
+      "D": "Aprobar la oferta de empleo público."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 21,
+    "pregunta": "Indique a quién corresponde la iniciativa para la institución o reconocimiento de entidades de ámbito territorial inferior al municipal con la condición de entidad local, según la Ley de Bases del Régimen Local:",
+    "opciones": {
+      "A": "A la Diputación provincial y en defecto de esta, a la Comunidad Autónoma a la que pertenezcan.",
+      "B": "A la población interesada o al Ayuntamiento correspondiente.",
+      "C": "Al Senado.",
+      "D": "Al Congreso de los Diputados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 22,
+    "pregunta": "¿Qué es el conocido como informe Spaak?:",
+    "opciones": {
+      "A": "Paul-Henri Spaak, Ministro de Asuntos Exteriores belga, presentó a sus colegas de la CECA un informe sobre los proyectos de tratados comunitarios que preven la creación de la CEE y del EURATOM.",
+      "B": "El Ministro francés de Asuntos Exteriores, Robert Spaak, presentó un informe para una mayor cooperación. En adelante, cada 9 de mayo se celebra el \"Día de Europa\".",
+      "C": "Impulsado por el informe de Spaak, se creó el movimiento Europa Unida. Este movimiento es contrario a los órganos supranacionales pero está a favor de una cooperación intergubernamental.",
+      "D": "Se anuncia el plan Spaak, creado para la reconstrucción económica de Europa."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 23,
+    "pregunta": "¿En cuál de los siguientes Tratados se adopta el procedimiento de codecisión para algunas materias de Justicia e Interior, tales como el control de fronteras exteriores, el asilo, la inmigración y cooperación judicial en materia civil?:",
+    "opciones": {
+      "A": "Tratado de Roma de 1957.",
+      "B": "Tratado de Ámsterdam de 1997.",
+      "C": "Acta Única Europea de 1986.",
+      "D": "Tratado de Maastricht de 1992."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 24,
+    "pregunta": "Según se establece en los artículos 20, apartado 2 del Tratado de la Unión Europea y 329 del Tratado de Funcionamiento de la Unión Europea, ¿cómo se adopta la decisión de autorizar una cooperación reforzada en el seno de la Unión Europea?:",
+    "opciones": {
+      "A": "La decisión de autorizar una cooperación reforzada será adoptada por la Comisión siempre que los Estados miembros, en un número no inferior a 6, lo soliciten en el marco de cualquiera de las competencias de la Unión.",
+      "B": "La decisión de autorizar una cooperación reforzada será adoptada por el Consejo como último recurso, y a condición de que participen en ella al menos nueve Estados miembros, exceptuándose los ámbitos de competencia exclusiva de la Unión.",
+      "C": "La decisión de autorizar una cooperación reforzada será adoptada conjuntamente por el Parlamento Europeo y el Consejo a propuesta de la Comisión. Esta decisión requerirá la mayoría cualificada de las dos instituciones para poder ser adoptada y la participación de un mínimo de 12 Estados miembros.",
+      "D": "La decisión de autorizar una cooperación reforzada será adoptada por el Alto Representante de la Unión para Asuntos Exteriores y Política de Seguridad ya que únicamente puede establecerse esta en el marco de la política exterior y de seguridad común de la Unión."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 25,
+    "pregunta": "Según se establece en el artículo 3 del Tratado de Funcionamiento de la Unión Europea ¿en cuál de los siguientes ámbitos dispondrá de competencia exclusiva la Unión Europea?:",
+    "opciones": {
+      "A": "Mercado interior, medio ambiente y transportes.",
+      "B": "Política social y protección de los consumidores.",
+      "C": "Unión aduanera, establecimiento de las normas sobre competencia necesarias para el funcionamiento del mercado interior y política comercial común.",
+      "D": "Redes transeuropeas y energía."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 26,
+    "pregunta": "¿Cuál es el orden correcto de las presidencias del Consejo Europeo en los años 2011 y 2012?:",
+    "opciones": {
+      "A": "España, Bélgica, Hungría y Polonia.",
+      "B": "Dinamarca, Chipre, Polonia y Hungría.",
+      "C": "Alemania, Francia, Dinamarca y Polonia.",
+      "D": "Hungría, Polonia, Dinamarca y Chipre."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 27,
+    "pregunta": "¿Qué puede hacer la Comisión para impugnar la adopción por un Estado miembro de una normativa contraria a derecho comunitario, una vez que ya le ha informado y emplazado a rectificar sin obtener resultados?:",
+    "opciones": {
+      "A": "Iniciar un recurso de incumplimiento de oficio o a iniciativa del Parlamento Europeo.",
+      "B": "Sólo puede iniciar un recurso de incumplimiento si lo solicita otro estado miembro que se vea perjudicado por la medida, nunca de oficio.",
+      "C": "Iniciar un recurso de incumplimiento, bien por iniciativa propia, bien a iniciativa de otro estado miembro.",
+      "D": "No hay un procedimiento jurídico específico y debe remitir la cuestión al Consejo de la Unión Europea para su estudio."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 28,
+    "pregunta": "El Tratado de la Unión Europea establece en su artículo 13 un marco institucional. Conforme a dicho artículo, las instituciones de la Unión son:",
+    "opciones": {
+      "A": "El Parlamento Europeo, el Consejo, la Comisión Europea.",
+      "B": "El Parlamento Europeo, el Consejo Europeo, el Consejo, la Comisión Europea, el Tribunal de Justicia de la Unión Europea, el Banco Central Europeo y el Tribunal de Cuentas.",
+      "C": "El Parlamento Europeo, el Consejo Europeo, el Consejo, la Comisión Europea, el Tribunal de Justicia de la Unión Europea, el Tribunal de Cuentas y el Defensor del Pueblo Europeo.",
+      "D": "El Parlamento Europeo, el Consejo Europeo, la Comisión Europea y el Tribunal de Justicia de la Unión Europea."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 29,
+    "pregunta": "¿Quiénes forman el Consejo de Gobierno del Banco Central Europeo?:",
+    "opciones": {
+      "A": "Está compuesto exclusivamente por el Presidente, el vicepresidente y otros cuatro miembros.",
+      "B": "Está compuesto por el Presidente del BCE, el Presidente del Consejo Europeo y el Presidente de la Comisión, además de un miembro por cada uno de los Estados miembros cuya moneda es el euro.",
+      "C": "Está formado por los miembros del Comité Ejecutivo del Banco Central Europeo, el economista-jefe del Banco Central Europeo y los gobernadores de los bancos centrales de los Estados miembros.",
+      "D": "Está formado por los miembros del Comité Ejecutivo del Banco Central Europeo y los gobernadores de los bancos centrales nacionales de los Estados miembros cuya moneda sea el euro."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 30,
+    "pregunta": "De conformidad con lo dispuesto en los artículos del 313 al 316 del Tratado de Funcionamiento de la Unión Europea, el Presupuesto anual de la Unión:",
+    "opciones": {
+      "A": "Se establecerá a propuesta de la Comisión por el Parlamento Europeo y el Consejo Europeo con arreglo al procedimiento legislativo ordinario.",
+      "B": "Se establecerá a propuesta de la Comisión por el Parlamento Europeo y el Consejo con arreglo a un procedimiento legislativo especial, conforme al cual y de no haber acuerdo entre las instituciones se convocará un Comité de Conciliación.",
+      "C": "Debe aprobarse obligatoriamente dentro del ejercicio presupuestario anual anterior del año que precede a su ejecución, sin que quepa la posibilidad de que el presupuesto prorrogue su vigencia más allá del ejercicio presupuestario para el que se apruebe.",
+      "D": "En las condiciones que se determinen en aplicación del artículo 322 del TFUE, los créditos que no correspondan a gastos de personal y que queden sin utilizar al final del ejercicio presupuestario podrán ser prorrogados en los ejercicios siguientes hasta su agotamiento."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 31,
+    "pregunta": "Según el artículo 107 del Tratado de Funcionamiento de la Unión Europea, ¿cuáles de estas ayudas son incompatibles con el mercado interior?:",
+    "opciones": {
+      "A": "Las ayudas de carácter social concedidas a los consumidores individuales, siempre que se otorguen sin discriminaciones basadas en el origen de los productos.",
+      "B": "Las ayudas destinadas a reparar los perjuicios causados por desastres naturales o por otros acontecimientos de carácter excepcional.",
+      "C": "Las ayudas otorgadas por los Estados miembros o mediante fondos estatales, bajo cualquier forma, que falseen o amenacen falsear la competencia, favoreciendo a determinadas empresas o producciones.",
+      "D": "Las ayudas concedidas con objeto de favorecer la economía de determinadas regiones de la República Federal de Alemania, afectadas por la división de Alemania, en la medida en que sean necesarias para compensar las desventajas económicas que resultaron de tal división."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 32,
+    "pregunta": "¿Qué órganos de la Administración General del Estado efectúan, entre otras tareas y bajo la superior dirección del Ministro correspondiente, el seguimiento de objetivos y el análisis de riesgos y debilidades de todas las unidades, órganos y organismos vinculados o dependientes de los Departamentos Ministeriales?:",
+    "opciones": {
+      "A": "Las inspecciones generales de servicios.",
+      "B": "Los observatorios de calidad de los servicios públicos.",
+      "C": "Las unidades de apoyo y seguimiento.",
+      "D": "Las inspecciones sectoriales de servicios."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 33,
+    "pregunta": "Indique, entre los modelos que a continuación se señalan, cuales son modelos de gestión de la calidad reconocidos por el Ministerio de Administraciones Públicas (en la actualidad Ministerio de Política Territorial y Administración Pública), conforme a los que se realizará la evaluación de los órganos u organismos de la Administración General del Estado:",
+    "opciones": {
+      "A": "Modelos EFQM de Excelencia y de Speyer.",
+      "B": "Modelos CAF y de Speyer.",
+      "C": "Modelos EFQM de Excelencia y EVAM.",
+      "D": "Modelos EFQM de Excelencia y Gerencial de Deming."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 34,
+    "pregunta": "¿Quién presentó en su obra \"Economía y sociedad\" a la burocracia como la forma típica de organización basada en la legitimidad racional o legal?:",
+    "opciones": {
+      "A": "Karl Marx.",
+      "B": "Max Weber.",
+      "C": "Mariano Baena del Alcázar.",
+      "D": "Adam Smith."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 35,
+    "pregunta": "El órgano colegiado encargado de la preparación, la elaboración, el desarrollo y la aplicación de la política y estrategia del Gobierno en materia de tecnologías de la información, así como del impulso e implantación de la Administración electrónica en la Administración General del Estado es:",
+    "opciones": {
+      "A": "El Comité Sectorial de Administración Electrónica.",
+      "B": "El Comité Nacional de Administración Electrónica.",
+      "C": "La Comisión Interministerial de Administración Electrónica.",
+      "D": "El Consejo Superior de Administración Electrónica."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 36,
+    "pregunta": "Según el artículo 1 del Real Decreto 3/2010, de 8 de enero, por el que se regula el Esquema Nacional de Seguridad en el ámbito de la Administración Electrónica, dicho Esquema será aplicado por las Administraciones Públicas para asegurar:",
+    "opciones": {
+      "A": "El acceso, integridad, disponibilidad, autenticidad, confidencialidad, trazabilidad y conservación de los datos, informaciones y servicios utilizados en medios electrónicos que gestionen en el ejercicio de sus competencias.",
+      "B": "El respeto a la protección de datos de carácter personal, el principio de igualdad de acceso al servicio electrónico y el principio de accesibilidad a la información y a los servicios.",
+      "C": "El principio de cooperación en la utilización de sus medios electrónicos y el principio de responsabilidad y calidad en la veracidad y autenticidad de sus informaciones y servicios ofrecidos.",
+      "D": "La simplificación administrativa, la transparencia y publicidad en el procedimiento electrónico y la difusión de las actuaciones administrativas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 37,
+    "pregunta": "De acuerdo con la Ley 11/2007, de 22 de junio, de acceso electrónico de los ciudadanos a los servicios públicos (en adelante Ley de Acceso Electrónico), se entenderá que la notificación ha sido rechazada cuando, existiendo constancia de la puesta a disposición:",
+    "opciones": {
+      "A": "Transcurrieran quince días naturales sin que se acceda a su contenido.",
+      "B": "Transcurrieran quince días hábiles sin que se acceda a su contenido.",
+      "C": "Transcurrieran diez días naturales sin que se acceda a su contenido.",
+      "D": "Transcurrieran veinte días hábiles sin que se acceda a su contenido."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 38,
+    "pregunta": "La Comisión Nacional del Mercado de Valores es:",
+    "opciones": {
+      "A": "Un ente de derecho privado, con personalidad jurídica propia y plena capacidad privada, que se rige por lo establecido en sus Estatutos de creación.",
+      "B": "Un ente de derecho europeo, con personalidad jurídica propia y plena capacidad privada, que se rige por lo establecido en el Tratado de Funcionamiento de la Unión Europea y en las disposiciones que lo completan o desarrollan.",
+      "C": "Un ente de derecho público, con personalidad jurídica propia y plena capacidad pública y privada, que se rige por lo establecido en la Ley 24/1988, de 28 de julio, del Mercado de Valores, y en las disposiciones que la completan o desarrollan.",
+      "D": "Un ente de derecho público, con personalidad jurídica propia y plena capacidad pública y privada, que se rige por lo establecido en el Real Decreto 24/1988, de 28 de julio, del Mercado de Valores, y en las disposiciones que lo completan o desarrollan."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 39,
+    "pregunta": "De acuerdo con la Ley 7/1996, de 15 de enero, de Ordenación del Comercio Minorista:",
+    "opciones": {
+      "A": "Con carácter general, la instalación de establecimientos comerciales no estará sujeta a régimen de autorización comercial.",
+      "B": "La instalación de establecimientos comerciales podrá quedar sometida a una autorización que se concederá por un plazo de seis meses cuando concurran razones imperiosas de interés general relacionadas con la distribución comercial.",
+      "C": "Podrán establecerse requisitos de naturaleza económica que supediten la concesión de la autorización en función de los efectos económicos de la actividad.",
+      "D": "La instalación de establecimientos comerciales podrá estar sujeta a autorización comercial cuando así se estime en la regulación autonómica o local correspondiente."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 40,
+    "pregunta": "El Comité Consultivo, como órgano de participación ciudadana y de asesoramiento del Consejo Estatal de Medios Audiovisuales, tendrá como facultades:",
+    "opciones": {
+      "A": "Velar por el mantenimiento de un mercado audiovisual, transparente y fiable en los sistemas de medición de audiencias, y plural.",
+      "B": "Emitir un informe previo sobre los proyectos y disposiciones que puedan afectar al sector audiovisual.",
+      "C": "Informar con carácter general sobre las orientaciones de la política audiovisual, la situación el sector y la oferta de programación de los servicios de comunicación audiovisual.",
+      "D": "Elaborar un informe anual sobre el nivel de alfabetización mediática, siguiendo los indicadores de medición utilizados por la Comisión europea u otros indicadores que el propio Consejo Estatal de Medio audiovisuales pueda considerar de interés."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 41,
+    "pregunta": "El objetivo nacional mínimo de participación de las energías renovables en el consumo de energía final bruto, es:",
+    "opciones": {
+      "A": "Del 50 por ciento en el año 2020. Este objetivo deberá alcanzarse con una cuota de energía procedente de energías renovables en todos los tipos de transporte en el año 2020 que sea como mínimo equivalente al 60 por ciento del consumo final de energía del sector transporte.",
+      "B": "Se fija anualmente en función de las cuotas de energía procedentes de energías renovables.",
+      "C": "Del 20 por ciento en el año 2015.",
+      "D": "Del 20 por ciento el en año 2020. Este objetivo deberá alcanzarse con una cuota de energía procedente de energías renovables en todos los tipos de transporte en el año 2020 que sea como mínimo equivalente al 10 por ciento del consumo final de energía del sector transporte."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 42,
+    "pregunta": "Según la Ley 10/1998, de 21 de abril, de Residuos, la autorización, vigilancia, inspección y sanción de las actividades de producción y gestión de residuos corresponde a:",
+    "opciones": {
+      "A": "El Estado.",
+      "B": "Las Comunidades Autónomas.",
+      "C": "El Estado o las Comunidades Autónomas, según las competencias asumidas.",
+      "D": "Las Entidades Locales."
+    },
+    "reserva": false,
+    "anulada": true,
+    "respuesta_correcta": ""
+  },
+  {
+    "numero": 43,
+    "pregunta": "Según la Ley 1/2005, de 9 de marzo, de Comercio de Derechos de Emisión de Gases de Efecto Invernadero:",
+    "opciones": {
+      "A": "La gestión de las autorizaciones individualizadas de derechos de emisión corresponde al Ministerio de Medio Ambiente, y Medio Rural y Marino.",
+      "B": "La autorización de emisión concedida a una instalación es un bien transferible y se puede comprar o vender.",
+      "C": "El Registro Nacional de Derechos de Emisión (RENADE), actúa como mercado de los derechos de emisión.",
+      "D": "El derecho de emisión tendrá carácter transmisible y será válido únicamente para el período de vigencia de cada plan nacional de asignación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 44,
+    "pregunta": "Los empresarios que ocupen trabajadores de manera irregular por no haber solicitado su afiliación inicial o alta en la Seguridad Social, podrán regularizar la situación de los mismos desde la entrada en vigor del Real Decreto-ley 5/2011, de 29 de abril:",
+    "opciones": {
+      "A": "Hasta el 31 de julio de 2011.",
+      "B": "Hasta el 30 de septiembre de 2011.",
+      "C": "Hasta el 1 de enero de 2012.",
+      "D": "Hasta el 29 de abril de 2012."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 45,
+    "pregunta": "De acuerdo con la Ley 14/1986, de 25 de abril, General de Sanidad, las competencias exclusivas del Estado en materia de sanidad son:",
+    "opciones": {
+      "A": "Únicamente la sanidad exterior, incluyendo todas las actividades que se realicen en materia de vigilancia y control de los posibles riesgos para la salud derivados de la importación, exportación o tránsito de mercancías y del tráfico internacional de viajeros.",
+      "B": "La competencia en materia de sanidad es totalmente exclusiva del Estado, aunque ha sido transferida a las Comunidades Autónomas.",
+      "C": "La sanidad exterior y las relaciones y acuerdos sanitarios internacionales, entendiéndose por sanidad exterior todas las actividades que se realicen en materia de vigilancia y control de los posibles riesgos para la salud derivados de la importación, exportación o tránsito de mercancías y del tráfico internacional de viajeros.",
+      "D": "Ninguna, por tratarse de una competencia exclusiva de las Comunidades Autónomas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 46,
+    "pregunta": "Según el artículo 20 de la Ley 14/2011, de 1 de junio, de la Ciencia, la Tecnología y la Innovación, una de las modalidades de contrato de trabajo específicas del personal investigador es:",
+    "opciones": {
+      "A": "El contrato de investigador acreditado.",
+      "B": "El contrato predoctoral.",
+      "C": "El contrato postdoctoral.",
+      "D": "El contrato de investigador senior."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 47,
+    "pregunta": "Conforme a la Ley Orgánica 2/2006, de 3 de mayo, de Educación, ¿a quien corresponde elaborar planes plurianuales de evaluación general del sistema educativo?:",
+    "opciones": {
+      "A": "Al Gobierno, en colaboración con las Administraciones educativas.",
+      "B": "Al Instituto de Evaluación, en colaboración con las Administraciones educativas.",
+      "C": "Al Ministerio de Educación y Ciencia, en colaboración con las Administraciones educativas.",
+      "D": "A las Administraciones locales y autonómicas educativas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 48,
+    "pregunta": "Según lo dispuesto en la Ley 12/2001, de 9 de julio, de medidas urgentes de reforma del mercado de trabajo para el incremento del empleo y la mejora de su calidad, el contrato de trabajo para el fomento de la contratación indefinida se aplica, entre otros, a las contrataciones de:",
+    "opciones": {
+      "A": "Cualquier persona puede ser contratada bajo esta modalidad contractual.",
+      "B": "Jóvenes desde dieciséis hasta treinta y cinco años de edad, ambos inclusive.",
+      "C": "Mayores de cuarenta y cinco años de edad.",
+      "D": "Parados que lleven, al menos, dos años inscritos ininterrumpidamente como demandantes de empleo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 49,
+    "pregunta": "Según el artículo 15 de la Ley 23/1998, de 7 de julio, de Cooperación Internacional para el Desarrollo, el establecimiento de las líneas generales y directrices básicas de la política española de cooperación internacional para el desarrollo corresponde a:",
+    "opciones": {
+      "A": "Las Cortes Generales.",
+      "B": "El Gobierno.",
+      "C": "El Ministerio de Asuntos Exteriores y de Cooperación.",
+      "D": "El Consejo de Cooperación al Desarrollo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 50,
+    "pregunta": "La reforma del Fondo de Ayuda al Desarrollo prevista en el III Plan Director de la Cooperación Española, dio lugar a la Ley 36/2010, de 22 de octubre, mediante la que se crea:",
+    "opciones": {
+      "A": "El Fondo de Cooperación para Agua y Saneamiento.",
+      "B": "El Fondo Español de Gestión de Resultados de Desarrollo y Evaluación de Impacto.",
+      "C": "El Fondo para la Promoción del Desarrollo.",
+      "D": "El Fondo para el Logro de los Objetivos de Desarrollo del Milenio."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 51,
+    "pregunta": "Tal y como se dispone en la Ley Orgánica 4/2000, de 11 de enero, sobre derechos y libertades de los extranjeros en España y su integración social (en adelante Ley Orgánica 4/2000), están exceptuados de obtener una autorización de trabajo en España, los extranjeros que vayan a desempeñar su actividad en un puesto:",
+    "opciones": {
+      "A": "De confianza o directivo de empresas.",
+      "B": "De corresponsal de un medio de comunicación, debidamente acreditado.",
+      "C": "De temporada o campaña.",
+      "D": "De personal laboral al servicio de las Administraciones Públicas."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 52,
+    "pregunta": "De acuerdo con lo dispuesto en la Ley Orgánica 4/2000 la imposición de sanciones por las infracciones administrativas establecidas en la mencionada Ley Orgánica corresponde:",
+    "opciones": {
+      "A": "A las Fuerzas y Cuerpos de Seguridad del Estado.",
+      "B": "A la Inspección de Trabajo y Seguridad Social.",
+      "C": "A los órganos judiciales.",
+      "D": "Al Subdelegado del Gobierno o al Delegado del Gobierno en las Comunidades Autónomas uniprovinciales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 53,
+    "pregunta": "Todo trato desfavorable a las mujeres relacionado con el embarazo o maternidad constituye, según la Ley Orgánica 3/2007, de 22 de marzo, para la igualdad efectiva de mujeres y hombres:",
+    "opciones": {
+      "A": "Discriminación directa por razón de sexo.",
+      "B": "Discriminación indirecta por razón de sexo.",
+      "C": "Acoso sexual en todo caso.",
+      "D": "Acoso laboral en todo caso."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 54,
+    "pregunta": "De conformidad con lo previsto en la Ley Orgánica 3/2007, de 22 de marzo, para la igualdad efectiva de mujeres y hombres, se entiende presencia o composición equilibrada de hombres y de mujeres:",
+    "opciones": {
+      "A": "Cuando las personas de alguno de los dos sexos no superen dos tercios del total.",
+      "B": "Cuando las personas de cada sexo no superen el sesenta por ciento ni sean menos del cuarenta por ciento.",
+      "C": "Cuando ni los hombres ni las mujeres superan el cincuenta por ciento.",
+      "D": "La ley Orgánica 3/2007 no contempla la presencia equilibrada de ambos sexos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 55,
+    "pregunta": "En relación con las fuentes del derecho administrativo, y de conformidad con lo establecido en el artículo 1 del Código Civil, señale cual de las siguientes opciones es la correcta:",
+    "opciones": {
+      "A": "La costumbre sólo regirá en defecto de ley aplicable, siempre que no sea contraria a la moral o al orden público y que resulte probada.",
+      "B": "Los principios generales del derecho no son fuente del derecho.",
+      "C": "Las normas jurídicas contenidas en los Tratados Internaciones siempre serán de aplicación directa en España.",
+      "D": "La jurisprudencia es una fuente del derecho administrativo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 56,
+    "pregunta": "En relación con los Decretos Legislativos regulados en la Constitución Española:",
+    "opciones": {
+      "A": "La delegación legislativa deberá otorgarse mediante una ley de bases cuando su objeto sea refundir varios textos legales o por una ley ordinaria cuando se trate de la formación de textos articulados.",
+      "B": "La delegación legislativa no se agota por el uso que de ella haga el Gobierno mediante la publicación de la norma correspondiente.",
+      "C": "Las leyes de delegación no podrán establecer formulas adicionales de control por ser competencia única de los Tribunales.",
+      "D": "Cuando una proposición de ley o una enmienda fuere contraria a una delegación legislativa en vigor, el Gobierno está facultado para oponerse a su tramitación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 57,
+    "pregunta": "De acuerdo con el artículo 90.3 de la Constitución Española, si el Gobierno o el Congreso de los Diputados declara urgente un proyecto de Ley, el Senado tiene un plazo para vetarlo o enmendarlo de:",
+    "opciones": {
+      "A": "Veinte días hábiles.",
+      "B": "Veinte días naturales.",
+      "C": "Treinta días naturales.",
+      "D": "Treinta días hábiles."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 58,
+    "pregunta": "Conforme a la Ley 50/97, de 27 de noviembre, del Gobierno, elaborado el texto de un reglamento que afecte a los derechos e intereses legítimos de los ciudadanos, se les dará audiencia, con carácter general, durante un plazo razonable y no inferior a:",
+    "opciones": {
+      "A": "10 días hábiles.",
+      "B": "15 días hábiles.",
+      "C": "10 días naturales.",
+      "D": "30 días hábiles."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 59,
+    "pregunta": "De acuerdo a la Ley 30/92, de 26 de noviembre, de Régimen Jurídico de las Administraciones Públicas y del Procedimiento Administrativo Común (en adelante Ley 30/92), ¿en cual de los siguientes supuestos podrá considerarse que el acto administrativo es anulable?:",
+    "opciones": {
+      "A": "El defecto de forma, en cualquier caso.",
+      "B": "Los actos que tengan un contenido imposible.",
+      "C": "Los actos dictados por un órgano manifiestamente incompetente por razón del territorio.",
+      "D": "Los dictados fuera de tiempo cuando así lo disponga la naturaleza del término o plazo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 60,
+    "pregunta": "Según lo dispuesto en los artículos 13 y 14 de la Ley 30/2007, de 30 de octubre, de Contratos del Sector Público (en adelante Ley de Contratos), cuál de los siguientes contratos es o son contratos sujetos a una regulación armonizada:",
+    "opciones": {
+      "A": "Los que tengan por objeto la compra, el desarrollo, la producción o la coproducción de programas destinados a la radiodifusión, por parte de los organismos de radiodifusión, así como los relativos al tiempo de radiodifusión.",
+      "B": "Los de investigación y desarrollo remunerados íntegramente por el órgano de contratación, siempre que sus resultados no se reserven para su utilización exclusiva por éste en el ejercicio de su actividad propia.",
+      "C": "Un contrato de colaboración entre el sector público y el sector privado por importe de 100.000 euros.",
+      "D": "Un contrato de concesión de obra pública cuyo valor estimado sea de 3.000.000 de euros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 61,
+    "pregunta": "Respecto a la formalización de los contratos, si el contrato es susceptible de recurso especial en materia de contratación, ¿en qué plazo deberá efectuarse, según lo dispuesto en la Ley de Contratos:",
+    "opciones": {
+      "A": "No podrá efectuarse antes de que transcurran diez días hábiles desde que se remita la notificación de la adjudicación definitiva a los licitadores y candidatos.",
+      "B": "No podrá efectuarse antes de que transcurran diez días hábiles desde que se remita la notificación de la adjudicación a los licitadores y candidatos.",
+      "C": "No podrá efectuarse antes de que transcurran quince días hábiles desde que se remita la notificación de la adjudicación provisional a los licitadores y candidatos.",
+      "D": "No podrá efectuarse antes de que transcurran quince días hábiles desde que se remita la notificación de la adjudicación a los licitadores y candidatos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 62,
+    "pregunta": "¿De qué plazo dispone el órgano de contratación para adjudicar un contrato cuando el único criterio a considerar para seleccionar al adjudicatario del contrato sea el del precio, según lo dispuesto en la Ley de Contratos?:",
+    "opciones": {
+      "A": "Quince días a contar desde el siguiente al de apertura de las proposiciones.",
+      "B": "Dos meses a contar desde la apertura de las proposiciones.",
+      "C": "Diez días a contar desde el siguiente al de apertura de las proposiciones.",
+      "D": "Un mes a contar desde la apertura de las proposiciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 63,
+    "pregunta": "La duración de un contrato de gestión de servicios públicos, según lo dispuesto en la Ley de Contratos:",
+    "opciones": {
+      "A": "No podrá ser superior a veinticinco años en los contratos que comprendan la ejecución de obras y la explotación de servicio público, salvo que éste sea de mercado o lonja central mayorista de artículos alimenticios gestionados por sociedad de economía mixta municipal, en cuyo caso podrá ser hasta 50 años.",
+      "B": "No podrá ser superior a veinte años en los contratos que comprendan la explotación de un servicio público no relacionado con la prestación de servicios sanitarios.",
+      "C": "No podrá tener carácter perpetuo o indefinido, fijándose necesariamente en el pliego de cláusulas administrativas particulares su duración y la de las prórrogas de que pueda ser objeto.",
+      "D": "No podrá ser superior a quince años en los contratos que comprendan la explotación de un servicio público cuyo objeto consista en la prestación de servicios sanitarios."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 64,
+    "pregunta": "Según lo dispuesto en la Ley de Contratos, es causa de resolución en un contrato de suministros:",
+    "opciones": {
+      "A": "La suspensión, por causa imputable a la Administración, de la iniciación del suministro por plazo superior a seis meses a partir de la fecha señalada en el contrato para la entrega, salvo que en el pliego se señale otro menor.",
+      "B": "La suspensión, por causa imputable a la Administración, de la iniciación del suministro por plazo superior a ocho meses a partir de la fecha señalada en el contrato para la entrega, salvo que en el pliego se señale otro menor.",
+      "C": "El desistimiento o la suspensión del suministro por un plazo superior a seis meses acordada por la Administración, salvo que en el pliego se señale otro menor.",
+      "D": "El desistimiento o la suspensión del suministro por un plazo superior a ocho meses acordada por la Administración, salvo que en el pliego se señale otro menor."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 65,
+    "pregunta": "Según la Ley 38/2003, de 17 de noviembre, General de Subvenciones (en adelante Ley General de Subvenciones), cuando proceda el reintegro de una subvención, se exigirá el interés de demora correspondiente calculado:",
+    "opciones": {
+      "A": "Desde el momento de concesión de la subvención hasta la fecha en que el interesado pague la obligación de reintegro.",
+      "B": "Desde el momento de pago de la subvención hasta la fecha en que se acuerde el reintegro.",
+      "C": "Desde el momento de concesión de la subvención hasta la fecha en que se inicie el procedimiento de reintegro.",
+      "D": "Desde el momento de pago de la subvención hasta la fecha en que se inicie el procedimiento de reintegro."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 66,
+    "pregunta": "Conforme a la Ley de 16 de diciembre de 1954 de Expropiación Forzosa (en adelante Ley de Expropiación Forzosa) y la Ley 29/98, de 13 de julio, reguladora de la Jurisdicción contencioso-administrativa (en adelante Ley de la Jurisdicción contencioso-administrativa), contra la resolución del Jurado de Expropiación Forzosa procederá:",
+    "opciones": {
+      "A": "Recurso de alzada cuando sea impugnada por un particular.",
+      "B": "Directamente recurso contencioso administrativo, cuando sea impugnada por la Administración General del Estado.",
+      "C": "Recurso de amparo si se impugna por un particular ante el Tribunal Constitucional.",
+      "D": "Declaración de lesividad previa cuando sea impugnada por la Administración General del Estado ante la jurisdicción contencioso-administrativa."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 67,
+    "pregunta": "Según la Ley de Expropiación Forzosa, las tasaciones de los bienes y derechos susceptibles de ser expropiados deberán referirse al valor que tuvieren:",
+    "opciones": {
+      "A": "Al tiempo de iniciarse el expediente de justiprecio.",
+      "B": "A la fecha de iniciación del expediente de expropiación.",
+      "C": "Al tiempo de constituirse el Jurado Provincial de Expropiación.",
+      "D": "A la fecha del acta de ocupación."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 68,
+    "pregunta": "Según el Decreto de 26 de abril de 1957, por el que se aprueba el Reglamento de la Ley de Expropiación Forzosa, el premio de afección a que tiene derecho el propietario de un bien expropiado, pero que, por la naturaleza de la expropiación, conserva el derecho de uso y disfrute del mismo, es:",
+    "opciones": {
+      "A": "El 2 por ciento del importe final del justiprecio.",
+      "B": "El 3 por ciento del importe final del justiprecio.",
+      "C": "El 5 por ciento del importe final del justiprecio.",
+      "D": "En este caso, el propietario no tiene derecho al premio de afección."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 69,
+    "pregunta": "La gestión, administración y explotación de los bienes y derechos del Patrimonio del Estado que sean de titularidad de la Administración General del Estado corresponderán, conforme a lo establecido en la Ley 33/2003, de 3 de noviembre, del Patrimonio de las Administraciones Públicas:",
+    "opciones": {
+      "A": "A cada Ministerio en función de su dedicación preferente.",
+      "B": "Al Ministerio de la Presidencia.",
+      "C": "Al Ministerio de Economía y Hacienda.",
+      "D": "Al Organismo Autónomo Patrimonio Nacional."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 70,
+    "pregunta": "Según la Ley 30/92, las Administraciones Públicas indemnizarán a los particulares por la aplicación de actos legislativos de naturaleza no expropiatoria de derechos y que éstos no tengan el deber jurídico de soportar:",
+    "opciones": {
+      "A": "Cuando lo estimen oportuno, atendiendo a las circunstancias y a los afectados.",
+      "B": "Cuando así se establezca en los propios actos legislativos y en los términos que especifiquen dichos actos.",
+      "C": "No les indemnizarán en ningún caso, pues son actos legislativos.",
+      "D": "Les debe indemnizar el Poder legislativo, pues son actos legislativos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 71,
+    "pregunta": "Contra el acuerdo de acumulación de procedimientos administrativos que guarden identidad sustancial o íntima conexión, según la Ley 30/92:",
+    "opciones": {
+      "A": "Procederá recurso de reposición.",
+      "B": "Procederá recurso de apelación.",
+      "C": "No se pueden acumular los procedimientos.",
+      "D": "No procederá recurso alguno."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 72,
+    "pregunta": "Señale, de conformidad con lo dispuesto en la Ley 30/92, cuál de los siguientes NO es motivo de abstención en un procedimiento:",
+    "opciones": {
+      "A": "Tener interés personal en el asunto de que se trate.",
+      "B": "Haber tenido intervención como testigo en el procedimiento de que se trate.",
+      "C": "Haber prestado en los dos últimos años servicios profesionales de cualquier tipo a una persona jurídica interesada directamente en el asunto.",
+      "D": "Tener parentesco de afinidad dentro del tercer grado con cualquiera de los interesados."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 73,
+    "pregunta": "Contra el acuerdo que declare la aplicación de la tramitación de urgencia a un procedimiento administrativo cabe interponer:",
+    "opciones": {
+      "A": "Recurso de alzada, en todo caso.",
+      "B": "Recurso extraordinario de revisión.",
+      "C": "Recurso potestativo de reposición, siempre y cuando ponga fin a la vía administrativa.",
+      "D": "No cabe interponer ningún recurso."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 74,
+    "pregunta": "En la reclamación previa a la vía judicial laboral, según la Ley 30/92, si no se ha notificado resolución alguna en el plazo de un mes deberá considerarse la reclamación:",
+    "opciones": {
+      "A": "Estimada.",
+      "B": "Desestimada.",
+      "C": "Caducada.",
+      "D": "Prescrita."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 75,
+    "pregunta": "Cual de los siguientes actos o resoluciones podrá ser recurrido mediante recurso potestativo de reposición, de acuerdo con la Ley 30/92:",
+    "opciones": {
+      "A": "Las resoluciones de los recursos de alzada.",
+      "B": "Las disposiciones administrativas de carácter general dictadas por órganos que carezcan de superior jerárquico.",
+      "C": "Los actos firmes en vía administrativa ante el mismo órgano que los dictó.",
+      "D": "Los actos adoptados por los Subsecretarios en materia de personal."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 76,
+    "pregunta": "¿A quién corresponde el conocimiento, en única instancia, de los recursos contencioso-administrativos que se deduzcan en relación con las disposiciones generales emanadas de una entidad local?:",
+    "opciones": {
+      "A": "A los Juzgados de lo Contencioso-Administrativo.",
+      "B": "A las Salas de lo Contencioso-Administrativo de los Tribunales Superiores de Justicia.",
+      "C": "A la Sala de lo Contencioso-Administrativo del Tribunal Supremo.",
+      "D": "A los Juzgados Centrales de lo Contencioso-Administrativo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 77,
+    "pregunta": "Conforme a la Ley de la Jurisdicción contencioso-administrativa, en los casos de inactividad de una Administración Pública, cuando esta esté obligada a realizar una prestación concreta, el interesado podrá:",
+    "opciones": {
+      "A": "Presentar el recurso contencioso-administrativo una vez transcurridos tres meses desde que hubiera reclamado a la Administración Pública el cumplimiento de su obligación.",
+      "B": "Contra la inactividad de una Administración Pública no es admisible el recurso contencioso-administrativo.",
+      "C": "Presentar el recurso contencioso-administrativo, sin que esté obligado a reclamar previamente a la Administración Pública el cumplimiento de su obligación.",
+      "D": "Formular requerimiento a la Administración Pública. Si en el plazo de 10 días no fuere atendido, podrá deducir directamente el recurso contencioso-administrativo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 78,
+    "pregunta": "¿Son los Decretos Legislativos susceptibles de recurso contencioso-administrativo?:",
+    "opciones": {
+      "A": "En todo caso.",
+      "B": "En ningún caso.",
+      "C": "Cuando excedan los límites de la delegación legislativa.",
+      "D": "Cuando se alegue contra los mismos algún motivo de inconstitucionalidad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 79,
+    "pregunta": "Según lo establecido en la Ley 7/2007, de 12 de abril, del Estatuto Básico del Empleado Público (en adelante EBEP), el funcionario tendrá derecho a la reducción de jornada de hasta un 50 por ciento por razones de enfermedad muy grave de un familiar de primer grado y la duración de la reducción de jornada será de un mes. Durante dicho período percibirá:",
+    "opciones": {
+      "A": "Sus retribuciones íntegras.",
+      "B": "Las retribuciones básicas.",
+      "C": "Las retribuciones proporcionales a su reducción de jornada.",
+      "D": "Las retribuciones básicas y el 75 por cien de las retribuciones complementarias."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 80,
+    "pregunta": "Según lo establecido en el EBEP, el funcionario suspendido provisionalmente tendrá derecho a percibir durante la suspensión:",
+    "opciones": {
+      "A": "El 75 por ciento de las retribuciones básicas.",
+      "B": "El 100 por cien de las retribuciones básicas y el 75 por cien de las retribuciones complementarias.",
+      "C": "Durante dicho período no percibirá retribución alguna.",
+      "D": "El 100 por cien de las retribuciones básicas y, en su caso, las prestaciones familiares por hijo a cargo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 81,
+    "pregunta": "Conforme al EBEP, Los extranjeros con residencia legal en España (ciudadanos no comunitarios) pueden acceder a las Administraciones Públicas en igualdad de condiciones que los españoles:",
+    "opciones": {
+      "A": "Sólo como personal laboral.",
+      "B": "Como funcionarios interinos y como personal laboral temporal.",
+      "C": "Como funcionarios de carrera.",
+      "D": "Como funcionarios de carrera y personal eventual."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 82,
+    "pregunta": "A los funcionarios de la Administración General del Estado destinados en Comunidades Autónomas por los procedimientos a los que se refiere el artículo 11 del Real Decreto 365/1995, de 10 de marzo, por el que se aprueba el Reglamento de Situaciones Administrativas de los Funcionarios Civiles de la Administración General del Estado, les serán aplicables, entre otras, las normas relativas al régimen disciplinario de la Administración pública en que se hallen destinados, a excepción de:",
+    "opciones": {
+      "A": "La separación del servicio, que se acordará por el Ministro del Departamento de adscripción del Cuerpo o Escala del funcionario sancionado, previa incoación de expediente disciplinario por la Administración de la Comunidad Autónoma de destino.",
+      "B": "La suspensión de funciones, que se acordará por el Ministro del Departamento de adscripción del Cuerpo o Escala del funcionario sancionado, previa incoación de expediente disciplinario por la Administración de la Comunidad Autónoma de destino.",
+      "C": "La separación del servicio, que se acordará por el Ministro del Departamento de adscripción del Cuerpo o Escala del funcionario sancionado, previa incoación de expediente disciplinario por dicho Departamento.",
+      "D": "La suspensión de funciones, que se acordará por el Ministro del Departamento de adscripción del Cuerpo o Escala del funcionario sancionado, previa incoación de expediente disciplinario por dicho Departamento."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 83,
+    "pregunta": "Según el EBEP, el período de permanencia en la situación de excedencia por cuidado de familiares:",
+    "opciones": {
+      "A": "Será computable a efectos de trienios, carrera y derechos en el régimen de Seguridad Social que sea de aplicación.",
+      "B": "Será computable, únicamente durante dos años, a efectos de trienios, carrera y derechos en el régimen de Seguridad Social que sea de aplicación.",
+      "C": "No será computable a efectos de trienios, carrera y derechos en el régimen de Seguridad Social que sea de aplicación.",
+      "D": "No será computable a efectos de trienios."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 84,
+    "pregunta": "De acuerdo con el EBEP, ¿qué calificación jurídica merecen las faltas disciplinarias consistentes en el incumplimiento de las normas sobre incompatibilidades cuando dieran lugar a una situación de incompatibilidad?:",
+    "opciones": {
+      "A": "Leve o grave, en función de la gravedad de los daños causados al interés público.",
+      "B": "Grave.",
+      "C": "Grave o muy grave, según el descrédito causado a la Administración pública.",
+      "D": "Muy grave."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 85,
+    "pregunta": "Según el EBEP, la potestad disciplinaria se ejercerá, entre otros, de acuerdo con los siguientes principios:",
+    "opciones": {
+      "A": "Principio de publicidad y tipicidad de las faltas y sanciones, a través de la predeterminación normativa o, en el caso del personal laboral, de los convenios colectivos.",
+      "B": "Principio de irretroactividad de las disposiciones sancionadoras favorables y de irretroactividad de las favorables al presunto infractor.",
+      "C": "Principio de proporcionalidad, aplicable solo a la clasificación de las infracciones",
+      "D": "Principio de culpabilidad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 86,
+    "pregunta": "De acuerdo con la Ley 53/1984, de 26 de diciembre, de incompatibilidades del personal al servicio de las Administraciones Públicas (en adelante Ley de Incompatibilidades), el Gobierno podrá determinar, con carácter general, las funciones, puestos o colectivos del sector público incompatibles con determinadas profesiones o actividades privadas que pudieran comprometer la imparcialidad o independencia del personal de que se trate, impedir o menoscabar el estricto cumplimiento de sus deberes o perjudicar los intereses generales, ¿a través de qué instrumento normativo?:",
+    "opciones": {
+      "A": "Resolución de la Secretaría de Estado para la Función Pública.",
+      "B": "Orden del Ministerio de la Política Territorial y Administración Pública.",
+      "C": "Orden conjunta de los Ministerios de Política Territorial y Administración Pública y Economía y Hacienda.",
+      "D": "Real Decreto del Consejo de Ministros."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 87,
+    "pregunta": "La Ley de Incompatibilidades, determina que, por excepción y sin perjuicio de las limitaciones establecidas en los artículos 1.3, 11, 12 y 13 de la misma, podrá reconocerse compatibilidad para el ejercicio de actividades privadas al personal que desempeñe puestos de trabajo que comporten la percepción de complementos específicos, o concepto equiparable, cuya cuantía no supere:",
+    "opciones": {
+      "A": "El 30 por cien de sus retribuciones básicas, excluidos los conceptos que tengan su origen en la antigüedad.",
+      "B": "El 33 por cien de sus retribuciones básicas, excluidos los conceptos que tengan su origen en la antigüedad.",
+      "C": "El 40 por cien de sus retribuciones básicas, excluidos los conceptos que tengan su origen en la antigüedad.",
+      "D": "El 50 por cien de sus retribuciones básicas, excluidos los conceptos que tengan su origen en la antigüedad."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 88,
+    "pregunta": "Según lo dispuesto en la Ley de Incompatibilidades, respecto de la compatibilidad de actividades públicas, los servicios prestados en el segundo puesto o actividad:",
+    "opciones": {
+      "A": "No se computarán a efectos de trienios ni de derechos pasivos, pudiendo suspenderse la cotización a este último efecto.",
+      "B": "No se computarán a efectos de trienios, pero sí a efectos de derechos pasivos.",
+      "C": "No se computarán a efectos de trienios ni de derechos pasivos, pudiendo escoger el funcionario por cuál de los puestos efectuar la cotización.",
+      "D": "No se computarán a efectos de trienios ni de derechos pasivos, si bien será posible realizar la cotización por las retribuciones percibidas conjuntamente."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 89,
+    "pregunta": "Conforme al EBEP, los Pactos y Acuerdos alcanzados en el seno de las Mesas de Negociación:",
+    "opciones": {
+      "A": "Se aplican directamente al personal del ámbito correspondiente de la Mesa.",
+      "B": "Sólo se aplican directamente los Pactos, ya que los Acuerdos requieren para su validez y eficacia la aprobación expresa de los correspondientes órganos de Gobierno.",
+      "C": "Sólo se aplican directamente los Acuerdos salvo que versen sobre materias sometidas a reserva de Ley.",
+      "D": "Ambos se aplican directamente pero en el caso de los Acuerdos tiene que haber habido ratificación y afectar a temas que puedan ser decididos definitivamente por los órganos de gobierno."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "D"
+  },
+  {
+    "numero": 90,
+    "pregunta": "El personal laboral al servicio de las Administraciones Públicas se rige, entre otras, por las siguientes normas:",
+    "opciones": {
+      "A": "Por el Estatuto de los Trabajadores.",
+      "B": "Sólo por el III Convenio Único de la Administración General del Estado.",
+      "C": "Sólo por el III Convenio Único de la Administración General del Estado y su contrato de trabajo.",
+      "D": "Sólo por su Convenio Colectivo o el que les sea de aplicación, por su contrato de trabajo y por los preceptos del Estatuto Básico del Empleado Público que les sean aplicables."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 91,
+    "pregunta": "De acuerdo con el III Convenio Colectivo Único para el personal laboral de la Administración General del Estado (en adelante III Convenio Único), los contratos que se autoricen para sustituir a los trabajadores que desean jubilarse voluntariamente al cumplir los 64 años de edad:",
+    "opciones": {
+      "A": "Sólo podrán celebrarse si el trabajador lo ha solicitado al menos con tres meses de antelación respecto a la fecha en que cumple 64 años.",
+      "B": "Incluirán una cláusula explicativa de la finalidad y duración del mismo.",
+      "C": "Tendrán una duración máxima de 1 año prorrogable durante un máximo de 6 meses en función de las necesidades de la producción.",
+      "D": "Serán para desempeñar el mismo puesto de trabajo que queda vacante u otro de análogas características y funciones."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 92,
+    "pregunta": "Conforme al EBEP, si se declara el despido improcedente de un trabajador fijo del ámbito del III Convenio Único por la comisión de una falta muy grave, la Administración:",
+    "opciones": {
+      "A": "Puede optar por la readmisión o la indemnización.",
+      "B": "Procederá a la readmisión del trabajador.",
+      "C": "Sólo se puede optar por la indemnización.",
+      "D": "En el ámbito de la Administración General del Estado, no se contempla la figura del despido improcedente de trabajador."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 93,
+    "pregunta": "De acuerdo con el Real Decreto Legislativo 2/2007, de 28 de diciembre, por el que se aprueba el texto refundido de la Ley General de Estabilidad Presupuestaria, en caso de apreciar un riesgo de incumplimiento del objetivo de estabilidad presupuestaria de un ayuntamiento:",
+    "opciones": {
+      "A": "El Gobierno de la Nación podrá formular una advertencia al Ayuntamiento y dará cuenta de la misma para su conocimiento a la Comisión Nacional de Administración Local.",
+      "B": "El Ministerio de Economía y Hacienda lo comunicará al Consejo de Política Fiscal y Financiera de las Comunidades Autónomas para que se ejerzan las medidas sancionatorias previstas en la Ley General de Estabilidad Presupuestaria.",
+      "C": "La Comisión Nacional de Administración Local establecerá un plan económico financiero a tres años para solventar el problema.",
+      "D": "El Gobierno impondrá las sanciones previstas en la Ley General de Estabilidad Presupuestaria."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 94,
+    "pregunta": "Conforme a la Ley 47/2003, de 26 de noviembre, General Presupuestaria (en adelante Ley General Presupuestaria), la aprobación de un suplemento de crédito en el Presupuesto del Estado para atender obligaciones de ejercicios anteriores cuando se financie con baja en el Fondo de Contingencia requiere:",
+    "opciones": {
+      "A": "La autorización del Consejo de Ministros.",
+      "B": "La Autorización del Ministro de Economía y Hacienda.",
+      "C": "Que el Ministro de Economía y Hacienda proponga al Consejo de Ministros la remisión de un proyecto de Ley a las Cortes Generales, previo informe de la Dirección General de Presupuestos y dictamen del Consejo de Estado.",
+      "D": "Que el Ministro de Economía y Hacienda proponga al Consejo de Ministros la remisión de un proyecto de Ley a las Cortes Generales."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  },
+  {
+    "numero": 95,
+    "pregunta": "De acuerdo con lo establecido en la Ley General Presupuestaria, durante el ejercicio presupuestario no es posible modificar la cuantía y/o finalidad de los créditos contenidos en los presupuestos de gastos mediante:",
+    "opciones": {
+      "A": "Transferencias de crédito.",
+      "B": "Imputaciones de crédito.",
+      "C": "Ampliaciones de crédito.",
+      "D": "Incorporaciones de crédito."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 96,
+    "pregunta": "Según la Ley General Presupuestaria, y en materia de contabilidad del sector público estatal, el reconocimiento de activos, pasivos y patrimonio neto, desde el punto de vista económico-patrimonial, debe realizarse:",
+    "opciones": {
+      "A": "De manera tal que muestre la ejecución de los presupuestos con la especificación aprobada por las Cortes Generales.",
+      "B": "En función de la corriente real de bienes y servicios que los mismos representan, sin perjuicio de los criterios que se deban seguir para su imputación presupuestaria.",
+      "C": "En función del principio de caja.",
+      "D": "En función de la compensación que se haya realizado de las partidas del activo y del pasivo."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "B"
+  },
+  {
+    "numero": 97,
+    "pregunta": "De acuerdo con la Ley General de Subvenciones, no tienen atribuida la competencia para la concesión de subvenciones:",
+    "opciones": {
+      "A": "Los Secretarios de Estado.",
+      "B": "Los Ministros.",
+      "C": "Los Subsecretarios.",
+      "D": "Los Presidentes o Directores de Organismos Autónomos."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 98,
+    "pregunta": "Según el Real Decreto 640/1987, de 8 de mayo, sobre pagos librados \"a justificar\", en cada Departamento Ministerial las normas que regulen la expedición de órdenes de pago \"a justificar\" con cargo a sus respectivos presupuestos de gastos se establecerán por:",
+    "opciones": {
+      "A": "El Cajero pagador.",
+      "B": "La Intervención General de la Administración del Estado.",
+      "C": "El Ministro.",
+      "D": "El Banco de España."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 99,
+    "pregunta": "Conforme a las Instrucciones para la confección de nóminas, aprobadas mediante Orden de 30 de julio de 1992 (Boletín Oficial del Estado de 13 de agosto), la hoja resumen de la nómina de un Centro o Dependencia debe ir firmada por:",
+    "opciones": {
+      "A": "El Habilitado y el Interventor.",
+      "B": "Sólo por el Habilitado.",
+      "C": "Por el Habilitado y el Jefe del Centro o Dependencia.",
+      "D": "Sólo por el Interventor."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "C"
+  },
+  {
+    "numero": 100,
+    "pregunta": "De acuerdo con lo dispuesto en el Real Decreto Legislativo 1/1994, de 20 de junio, por el que se aprueba el Texto Refundido de la Ley General de la Seguridad Social, cual de las siguientes es en la actualidad entidad gestora:",
+    "opciones": {
+      "A": "El Instituto Nacional de Seguridad Social.",
+      "B": "El Instituto Nacional de la Salud.",
+      "C": "El Instituto Nacional de Servicios Sociales.",
+      "D": "El Instituto Nacional de Previsión Social."
+    },
+    "reserva": false,
+    "anulada": false,
+    "respuesta_correcta": "A"
+  }
+]
