@@ -31,7 +31,10 @@
 
 <div id="estadisticas-container">
   <div id="estadisticas-header">
-    <h1>Estadísticas de tu estudio</h1>
+    <div class="estadisticas-header-titulo">
+      <h1>Estadísticas de tu estudio</h1>
+      <p class="estadisticas-subtitulo">Tu progreso real, test a test.</p>
+    </div>
     <div class="estadisticas-header-botones">
       <button id="estadisticas-refresh" type="button" aria-label="Actualizar" title="Actualizar">
         <svg class="icono-actualizar" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -104,9 +107,11 @@
        antes de las insignias, no enterrada a media página. -->
   <div class="tarjeta-estadistica neutra tarjeta-evolucion" id="tarjeta-evolucion">
     <div class="header">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4 20V10M10 20V4M16 20v-7M22 20V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
+      <span class="tarjeta-icono-chip">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 20V10M10 20V4M16 20v-7M22 20V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </span>
       <h4>Evolución de tu nota</h4>
     </div>
     <div class="evolucion-grafica" id="evolucion-grafica"></div>
@@ -119,9 +124,11 @@
        o saltando directamente a un mes/año concreto. -->
   <div class="tarjeta-estadistica neutra tarjeta-calendario" id="tarjeta-calendario" style="display:none;">
     <div class="header">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      </svg>
+      <span class="tarjeta-icono-chip">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </span>
       <h4>Calendario de estudio</h4>
     </div>
     <div class="calendario-nav">
@@ -154,15 +161,15 @@
   </section>
 
   <div id="estadisticas-usuario">
-    <div class="seccion-separador seccion-separador-primera">
-      <h3><span data-icon="diana" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Aciertos y fallos</h3>
-    </div>
+    <h3 class="estadisticas-seccion-titulo"><span data-icon="diana" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Aciertos y fallos</h3>
     <!-- Tiempo dedicado a hacer test: barra de ancho completo -->
     <div class="tarjeta-estadistica neutra tarjeta-tiempo-total">
       <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
-        </svg>
+        <span class="tarjeta-icono-chip">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
+          </svg>
+        </span>
         <h4>Tiempo dedicado a hacer test</h4>
       </div>
       <div class="tiempo-total-datos">
@@ -175,9 +182,11 @@
          sola barra apilada + leyenda -- mismo dato, un solo vistazo. -->
     <div class="tarjeta-estadistica tarjeta-respuestas">
       <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.06 14.53l-4.24-4.24 1.41-1.41 2.83 2.83 6.36-6.36 1.41 1.41-7.77 7.77z" fill="currentColor"/>
-        </svg>
+        <span class="tarjeta-icono-chip">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.06 14.53l-4.24-4.24 1.41-1.41 2.83 2.83 6.36-6.36 1.41 1.41-7.77 7.77z" fill="currentColor"/>
+          </svg>
+        </span>
         <h4>Respuestas</h4>
       </div>
       <div class="respuestas-barra">
@@ -207,9 +216,7 @@
       </div>
     </div>
 
-    <div class="seccion-separador">
-      <h3><span data-icon="libros" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Tus temas</h3>
-    </div>
+    <h3 class="estadisticas-seccion-titulo"><span data-icon="libros" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Tus temas</h3>
     <!-- Cobertura del temario: cuántos temas se han trabajado ya en total,
          para dar contexto a los números sueltos de las tarjetas de abajo. -->
     <div class="tarjeta-estadistica tarjeta-cobertura">
@@ -221,54 +228,72 @@
         <div class="cobertura-fill" id="cobertura-fill" style="width:0%"></div>
       </div>
     </div>
-    <!-- Temas Más Estudiados -->
-    <div class="tarjeta-estadistica tarjeta-temas" id="temas-top-container">
+    <!-- Antes eran dos tarjetas casi vacías (un número, una frase y un
+         botón cada una); ahora una sola tarjeta "Tus temas" con dos filas
+         densas, mismo patrón de fila icono+texto+botón que .zona-mis-cosas-item
+         en zona-opositor. Los IDs de dentro no cambian: script.js sigue
+         escribiendo en los mismos sitios. -->
+    <div class="tarjeta-estadistica tarjeta-temas-resumen" style="grid-column:1/-1;">
       <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill="currentColor"/>
-        </svg>
-        <h4>Temas más estudiados</h4>
+        <span class="tarjeta-icono-chip">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill="currentColor"/>
+          </svg>
+        </span>
+        <h4>Tus temas</h4>
       </div>
-      <div class="valor" id="temas-top-valor">—</div>
-      <div class="detalle" id="temas-top-detalle">Tus áreas de mayor enfoque</div>
-      <button class="btn-ver-temas" id="btn-ver-temas-top" type="button">Ver lista completa</button>
-    </div>
-    <!-- Temas No Estudiados -->
-    <div class="tarjeta-estadistica tarjeta-temas-nuevos" id="temas-nuevos-container">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z" fill="currentColor"/>
-        </svg>
-        <h4>Temas no estudiados</h4>
+      <div class="temas-resumen-fila" id="temas-top-container">
+        <span class="tarjeta-icono-chip pequeno">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill="currentColor"/>
+          </svg>
+        </span>
+        <div class="temas-resumen-texto">
+          <strong class="valor" id="temas-top-valor">—</strong>
+          <span id="temas-top-detalle">Tus áreas de mayor enfoque</span>
+        </div>
+        <button class="btn-ver-temas" id="btn-ver-temas-top" type="button">Ver lista</button>
       </div>
-      <div class="valor" id="temas-nuevos">—</div>
-      <div class="detalle">Temas pendientes por estudiar</div>
-      <button class="btn-ver-temas" id="btn-ver-nuevos" type="button">Ver lista completa</button>
+      <div class="temas-resumen-fila" id="temas-nuevos-container">
+        <span class="tarjeta-icono-chip pequeno">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z" fill="currentColor"/>
+          </svg>
+        </span>
+        <div class="temas-resumen-texto">
+          <strong class="valor" id="temas-nuevos">—</strong>
+          <span>Temas pendientes por estudiar</span>
+        </div>
+        <button class="btn-ver-temas" id="btn-ver-nuevos" type="button">Ver lista</button>
+      </div>
     </div>
-    <div class="seccion-separador">
-      <h3><span data-icon="reloj" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Otra actividad</h3>
-    </div>
+    <h3 class="estadisticas-seccion-titulo"><span data-icon="reloj" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Otra actividad</h3>
     <!-- Antes eran 6 tarjetas grandes casi vacías (la mayoría de usuarios
          tiene 0 en varias); ahora un solo bloque con mini-números. -->
     <div class="tarjeta-estadistica tarjeta-actividad-extra">
       <div class="actividad-extra-grid">
         <div class="actividad-extra-item">
+          <span class="tarjeta-icono-chip pequeno" data-icon="documento" data-icon-size="16"></span>
           <span class="actividad-extra-valor valor" id="total-archivos">—</span>
           <span class="actividad-extra-label">Documentos subidos</span>
         </div>
         <div class="actividad-extra-item">
+          <span class="tarjeta-icono-chip pequeno" data-icon="lapiz" data-icon-size="16"></span>
           <span class="actividad-extra-valor valor" id="total-tests-pdf">—</span>
           <span class="actividad-extra-label">Tests desde PDF</span>
         </div>
         <div class="actividad-extra-item">
+          <span class="tarjeta-icono-chip pequeno" data-icon="libro" data-icon-size="16"></span>
           <span class="actividad-extra-valor valor" id="total-resumenes-pdf">—</span>
           <span class="actividad-extra-label">Resúmenes PDF</span>
         </div>
         <div class="actividad-extra-item">
+          <span class="tarjeta-icono-chip pequeno" data-icon="esquema" data-icon-size="16"></span>
           <span class="actividad-extra-valor valor" id="total-esquemas-pdf">—</span>
           <span class="actividad-extra-label">Esquemas PDF</span>
         </div>
         <div class="actividad-extra-item">
+          <span class="tarjeta-icono-chip pequeno" data-icon="tarjeta" data-icon-size="16"></span>
           <span class="actividad-extra-valor valor" id="total-tarjetas-pdf">—</span>
           <span class="actividad-extra-label">Tarjetas PDF</span>
         </div>

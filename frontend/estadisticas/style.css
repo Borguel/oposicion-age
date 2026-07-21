@@ -72,10 +72,17 @@
     #estadisticas-header h1 {
       font-size: 1.8rem;
       font-weight: 800;
-      color: var(--theme-heading);
+      color: var(--age-ink);
       display: flex;
       align-items: center;
       gap: 12px;
+      margin: 0;
+    }
+
+    .estadisticas-subtitulo {
+      margin: 4px 0 0;
+      font-size: 0.95rem;
+      color: var(--age-ink-soft);
     }
 
     .estadisticas-header-botones {
@@ -320,19 +327,29 @@
       gap: 16px;
     }
 
+    /* Icono en la columna 1 (a lo alto de las 2 filas), valor y etiqueta
+       apiladas en la columna 2 -- antes era solo un número y una etiqueta
+       sin ningún icono ni color, la parte más plana de la página. */
     .actividad-extra-item {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      column-gap: 10px;
+      align-items: center;
+    }
+
+    .actividad-extra-item .tarjeta-icono-chip {
+      grid-row: 1 / 3;
     }
 
     .actividad-extra-valor {
+      grid-column: 2;
       font-size: 1.4rem;
       font-weight: 800;
       color: var(--age-primary-dark);
     }
 
     .actividad-extra-label {
+      grid-column: 2;
       font-size: 0.8rem;
       color: var(--age-ink-soft);
     }
@@ -559,16 +576,43 @@
 
     .tarjeta-estadistica .header {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
+      gap: 12px;
       margin-bottom: 16px;
+      text-align: left;
     }
 
     .tarjeta-estadistica .header svg {
-      width: 26px;
-      height: 26px;
-      margin-bottom: 8px;
+      width: 20px;
+      height: 20px;
+      margin-bottom: 0;
       fill: currentColor;
+    }
+
+    /* Icono en caja redondeada de color -- mismo patrón que .age-option-icon
+       (theme.css), en vez del icono suelto sin fondo de antes. */
+    .tarjeta-icono-chip {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      border-radius: var(--age-radius-md);
+      background: var(--age-primary-soft);
+      color: var(--age-primary-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tarjeta-icono-chip.pequeno {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--age-radius-sm);
+    }
+
+    .tarjeta-icono-chip.pequeno svg {
+      width: 16px;
+      height: 16px;
     }
 
     .tarjeta-estadistica h4 {
@@ -593,28 +637,23 @@
     .tendencia-down { color: var(--age-danger); font-weight: bold; }
     .tendencia-neutral { color: var(--age-primary-dark); }
 
-    .seccion-separador {
+    /* Título de sección: antes era una línea horizontal con el texto
+       "flotando" encima (recorte de fondo + top:-10px) -- un patrón que no
+       usa ninguna otra página del sitio. Ahora es un título normal, con
+       margen, igual que el resto de la app. */
+    .estadisticas-seccion-titulo {
       grid-column: 1 / -1;
-      text-align: center;
-      padding: 20px 0;
-      margin: 20px 0;
-      border-bottom: 2px solid var(--theme-border);
-      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--age-ink);
+      margin: 32px 0 4px;
     }
 
-    .seccion-separador-primera {
+    .estadisticas-seccion-titulo:first-child {
       margin-top: 0;
-    }
-
-    .seccion-separador h3 {
-      color: var(--theme-primary);
-      font-size: 1.4rem;
-      font-weight: 700;
-      display: inline-block;
-      padding: 0 20px;
-      background: var(--theme-bg);
-      position: relative;
-      top: -10px;
     }
 
     .tarjeta-tiempo-total {
@@ -627,24 +666,13 @@
       flex-wrap: wrap;
     }
 
-    .tarjeta-tiempo-total .header {
-      flex-direction: row;
-      margin-bottom: 0;
-    }
-
-    .tarjeta-tiempo-total .header svg {
-      margin-bottom: 0;
-      margin-right: 12px;
-    }
-
+    /* La fila ".header" ya es horizontal por defecto (ver
+       .tarjeta-estadistica .header); aquí solo hace falta quitar el margen
+       inferior, porque en estas dos tarjetas el header queda en línea con
+       los datos de la derecha, no apilado encima. */
+    .tarjeta-tiempo-total .header,
     .tarjeta-respuestas .header {
-      flex-direction: row;
       margin-bottom: 0;
-    }
-
-    .tarjeta-respuestas .header svg {
-      margin-bottom: 0;
-      margin-right: 12px;
     }
 
     .tiempo-total-datos {
@@ -937,19 +965,52 @@
     }
 
     .btn-ver-temas {
-      background: var(--theme-primary);
-      color: white;
+      background: var(--age-primary);
+      color: var(--age-navy);
       border: none;
       padding: 8px 16px;
-      border-radius: var(--btn-radius);
-      font-weight: 600;
+      border-radius: var(--age-radius-sm);
+      font-weight: 700;
+      font-size: 0.85rem;
       cursor: pointer;
-      transition: all 0.3s;
-      margin-top: 15px;
+      transition: background 0.2s var(--age-ease);
+      flex-shrink: 0;
     }
 
     .btn-ver-temas:hover {
-      background: var(--primary-dark);
+      background: var(--age-primary-dark);
+    }
+
+    /* "Tus temas": antes eran dos tarjetas casi vacías (un número, una
+       frase y un botón cada una); ahora una sola tarjeta con dos filas
+       densas -- icono + texto + botón en línea, mismo patrón que
+       .zona-mis-cosas-item en zona-opositor. */
+    .temas-resumen-fila {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0;
+      border-top: 1px solid var(--age-border);
+      text-align: left;
+    }
+
+    .temas-resumen-texto {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .temas-resumen-texto strong {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--age-primary-dark);
+    }
+
+    .temas-resumen-texto span {
+      font-size: 0.85rem;
+      color: var(--age-ink-soft);
     }
 
     /* Cobertura del temario: barra fina a todo lo ancho, mismo patrón que
@@ -1237,20 +1298,6 @@
       .tarjeta-tiempo-total {
         flex-direction: column;
         text-align: center;
-      }
-      .tarjeta-tiempo-total .header {
-        flex-direction: column;
-      }
-      .tarjeta-tiempo-total .header svg {
-        margin-right: 0;
-        margin-bottom: 10px;
-      }
-      .tarjeta-respuestas .header {
-        flex-direction: column;
-      }
-      .tarjeta-respuestas .header svg {
-        margin-right: 0;
-        margin-bottom: 10px;
       }
       .tiempo-total-datos {
         text-align: center;
