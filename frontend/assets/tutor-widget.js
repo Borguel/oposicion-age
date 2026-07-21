@@ -514,6 +514,14 @@ export function montarWidgetTutor() {
       ultimoEnunciado = contextoPagina.enunciado;
     }
 
+    // Si el contexto viene de una lectura en vivo de la pregunta en pantalla
+    // (no de un contextoOverride fijo, como el de "¿por qué he fallado esta?"
+    // desde resultados), se puede comprobar más adelante -- mientras dura el
+    // streaming -- si el usuario ha pasado a otra pregunta antes de que
+    // llegue la respuesta.
+    const veniaDePantalla = !contextoOverride && !!contextoPagina && contextoPagina.tipo === "test";
+    const enunciadoDeEstaPeticion = contextoPagina ? contextoPagina.enunciado : null;
+
     let respuesta;
     try {
       respuesta = await fetch(`${BACKEND_URL}/tu-tutor/stream`, {
@@ -567,6 +575,7 @@ export function montarWidgetTutor() {
     let buffer = "";
     let acumulado = "";
     let huboError = false;
+    let respuestaDesactualizada = false;
 
     try {
       while (true) {
@@ -580,7 +589,21 @@ export function montarWidgetTutor() {
           if (!linea.startsWith("data: ")) continue;
           let evento;
           try { evento = JSON.parse(linea.slice(6)); } catch { continue; }
-          if (evento.tipo === "delta") { acumulado += evento.texto; pintarBot(burbuja, acumulado); }
+          if (evento.tipo === "delta") {
+            acumulado += evento.texto;
+            pintarBot(burbuja, acumulado);
+            // El streaming tarda varios segundos: si el usuario ha pasado a
+            // otra pregunta mientras tanto, la respuesta que se está pintando
+            // ya no corresponde a lo que tiene delante -- se sigue pintando
+            // igual (ya ha consumido cupo y puede seguir siendo útil), pero
+            // se avisa al terminar.
+            if (veniaDePantalla && !respuestaDesactualizada) {
+              const preguntaActual = leerPreguntaEnPantalla();
+              if (!preguntaActual || preguntaActual.enunciado !== enunciadoDeEstaPeticion) {
+                respuestaDesactualizada = true;
+              }
+            }
+          }
           else if (evento.tipo === "fin") { chatId = evento.chat_id; }
           else if (evento.tipo === "error") { huboError = true; }
         }
@@ -594,6 +617,11 @@ export function montarWidgetTutor() {
       const aviso = document.createElement("div");
       aviso.className = "tw-aviso-cortada";
       aviso.innerHTML = `${icono("alerta", 15)} Respuesta incompleta`;
+      burbuja.div.appendChild(aviso);
+    } else if (respuestaDesactualizada) {
+      const aviso = document.createElement("div");
+      aviso.className = "tw-aviso-cortada";
+      aviso.innerHTML = `${icono("alerta", 15)} Esta respuesta era sobre la pregunta anterior -- si quieres ayuda con la que tienes ahora delante, vuelve a preguntar.`;
       burbuja.div.appendChild(aviso);
     }
     enviando = false;

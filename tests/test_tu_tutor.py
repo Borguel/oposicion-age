@@ -105,6 +105,57 @@ def test_pregunta_sin_relacion_con_el_turno_anterior_no_fuerza_rag(db):
     assert usar_rag2 is False
 
 
+# ============================================================
+# _temas_mencionados: heurística de detección de tema, casos reales del
+# temario que la versión anterior (umbral fijo de 2 palabras sobre el
+# título completo, sin trocear) no detectaba.
+# ============================================================
+
+def _catalogo(*titulos):
+    return [{"id": f"tema_{i}", "titulo": t} for i, t in enumerate(titulos)]
+
+
+def test_titulo_de_una_sola_palabra_significativa_activa_rag():
+    from chat_controller import _temas_mencionados
+    catalogo = _catalogo("El presupuesto.")
+    encontrados = _temas_mencionados("Explícame cómo se elabora el presupuesto del Estado", catalogo)
+    assert encontrados == ["tema_0"]
+
+
+def test_titulo_compuesto_separado_por_punto_y_dos_puntos_permite_coincidir_con_una_sola_parte():
+    from chat_controller import _temas_mencionados
+    catalogo = _catalogo("Las incompatibilidades. Régimen disciplinario: faltas, sanciones y procedimiento.")
+    encontrados = _temas_mencionados("¿qué son las incompatibilidades de los funcionarios?", catalogo)
+    assert encontrados == ["tema_0"]
+
+
+def test_titulo_con_dos_conceptos_unidos_por_y_permite_coincidir_con_uno_solo():
+    from chat_controller import _temas_mencionados
+    catalogo = _catalogo(
+        "Régimen especial de la Seguridad Social de los funcionarios civiles del Estado. "
+        "MUFACE y clases pasivas."
+    )
+    encontrados = _temas_mencionados("¿qué cubre MUFACE?", catalogo)
+    assert encontrados == ["tema_0"]
+
+
+def test_titulo_con_dos_conceptos_unidos_por_y_ambos_exclusivos_matchean_por_separado():
+    from chat_controller import _temas_mencionados
+    catalogo = _catalogo("Tribunal Constitucional y la Corona.")
+    assert _temas_mencionados("¿cómo se regula la Corona?", catalogo) == ["tema_0"]
+    assert _temas_mencionados("¿qué funciones tiene el Tribunal Constitucional?", catalogo) == ["tema_0"]
+
+
+def test_palabra_generica_compartida_por_dos_temas_no_dispara_por_si_sola():
+    from chat_controller import _temas_mencionados
+    catalogo = _catalogo(
+        "Las incompatibilidades. Régimen disciplinario: faltas, sanciones y procedimiento.",
+        "El procedimiento administrativo común.",
+    )
+    encontrados = _temas_mencionados("¿qué procedimiento sigo para presentar una reclamación?", catalogo)
+    assert "tema_0" not in encontrados
+
+
 def test_deteccion_de_pregunta_de_test():
     from chat_controller import _es_pregunta_de_test
     # Formato en que el frontend pega las opciones (letras sueltas en mayúscula).

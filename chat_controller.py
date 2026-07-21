@@ -2,6 +2,7 @@
 import logging
 import re
 import unicodedata
+from collections import defaultdict
 from datetime import datetime
 from firebase_admin import firestore
 
@@ -193,6 +194,9 @@ _PATRONES_TEMARIO = [
     re.compile(r"\bart(?:iculo|\.)?\s*\d+\b"),
 ]
 
+_SEPARADORES_SEGMENTO = re.compile(r"[.:;]")
+_SEPARADOR_CONJUNCION = re.compile(r"\s+(?:y|e)\s+")
+
 
 def _normalizar(texto):
     descompuesto = unicodedata.normalize("NFD", (texto or "").lower())
@@ -207,21 +211,76 @@ def _tokens(texto):
     return set(re.findall(r"\w+", _normalizar(texto)))
 
 
-def _palabras_significativas(titulo, minimo=5):
-    return [p for p in _normalizar(titulo).split() if len(p) >= minimo]
+def _palabras_significativas(texto_normalizado, minimo=5):
+    # \w+ (no .split()) para no arrastrar comas/dos puntos pegados a la
+    # palabra cuando el segmento viene de un título con listas ("faltas,
+    # sanciones y procedimiento") -- si no, "faltas," nunca coincide con
+    # un mensaje que escriba "faltas" sin la coma.
+    return [p for p in re.findall(r"\w+", texto_normalizado) if len(p) >= minimo]
+
+
+def _segmentos_titulo(titulo):
+    """Trocea el título de un tema en 'candidatos' de coincidencia, del más
+    específico (el título completo, dividido por '.'/':'/';') al más
+    granular (cada mitad de una conjunción 'y'/'e' dentro de un mismo
+    segmento) -- para que una pregunta sobre UN SOLO concepto de un título
+    compuesto también pueda marcar el tema como mencionado. P. ej.:
+    "Las incompatibilidades. Régimen disciplinario: faltas, sanciones y
+    procedimiento." da un segmento propio para "las incompatibilidades";
+    "Tribunal Constitucional y la Corona." da además los sub-segmentos
+    "tribunal constitucional" / "la corona".
+    Devuelve [(texto_segmento, es_subdivision_por_conjuncion), ...]."""
+    normalizado = _normalizar(titulo)
+    segmentos = [s.strip() for s in _SEPARADORES_SEGMENTO.split(normalizado) if s.strip()]
+    candidatos = [(s, False) for s in segmentos]
+    for segmento in segmentos:
+        partes = [p.strip() for p in _SEPARADOR_CONJUNCION.split(segmento) if p.strip()]
+        if len(partes) > 1:
+            candidatos.extend((p, True) for p in partes)
+    return candidatos
+
+
+def _indice_palabras_por_tema(catalogo):
+    """Palabra significativa del TÍTULO COMPLETO -> conjunto de ids de tema
+    que la tienen. Sirve de guarda: una coincidencia de una sola palabra
+    (solo puede darse tras dividir por conjunción, ver _temas_mencionados)
+    debe ser razonablemente exclusiva de ese tema, para no disparar con un
+    término genérico que también aparece en el título de otro tema (p. ej.
+    "procedimiento")."""
+    indice = defaultdict(set)
+    for tema in catalogo:
+        for palabra in _palabras_significativas(_normalizar(tema["titulo"])):
+            indice[palabra].add(tema["id"])
+    return indice
 
 
 def _temas_mencionados(mensaje, catalogo):
     """Compara el mensaje (normalizado, sin acentos) contra el título de
-    cada tema del catálogo: si al menos 2 palabras significativas del
-    título aparecen en el mensaje, se considera que ese tema fue
-    mencionado."""
+    cada tema del catálogo, troceado en segmentos (ver _segmentos_titulo):
+    si algún segmento alcanza su propio umbral adaptativo (2 palabras
+    significativas, o solo 1 si el segmento entero no tiene más), se
+    considera que el tema fue mencionado."""
     mensaje_norm = _normalizar(mensaje)
+    indice_palabras = _indice_palabras_por_tema(catalogo)
     encontrados = []
     for tema in catalogo:
-        palabras = _palabras_significativas(tema["titulo"])
-        if palabras and sum(1 for p in palabras if p in mensaje_norm) >= 2:
+        for segmento, es_subdivision in _segmentos_titulo(tema["titulo"]):
+            palabras = _palabras_significativas(segmento)
+            if not palabras:
+                continue
+            umbral = min(2, len(palabras))
+            coincidencias = sum(1 for p in palabras if p in mensaje_norm)
+            if coincidencias < umbral:
+                continue
+            # Si el match viene de dividir por conjunción y depende de UNA
+            # sola palabra, esa palabra tiene que ser razonablemente
+            # exclusiva de este tema -- si no, un término genérico
+            # ("procedimiento") dispararía cualquier tema que lo mencione
+            # de pasada.
+            if es_subdivision and len(palabras) == 1 and len(indice_palabras.get(palabras[0], ())) > 1:
+                continue
             encontrados.append(tema["id"])
+            break
     return encontrados
 
 
@@ -810,7 +869,7 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, c
         # quedarse sin contexto -- mejor un poco de contenido de más que
         # ninguno cuando ya se decidió que hace falta RAG.
         temas_para_buscar = temas_detectados or [tema["id"] for tema in catalogo]
-        contexto = obtener_contexto_por_temas_exactos(db, temas_para_buscar, coleccion=coleccion)
+        contexto, contexto_truncado = obtener_contexto_por_temas_exactos(db, temas_para_buscar, mensaje, coleccion=coleccion)
         # Mismo system prompt que el resto de respuestas (persona, tono y
         # reglas de honestidad de Tu Tutor) -- antes esta rama usaba uno
         # genérico aparte y perdía todo eso justo cuando respondía con
@@ -831,6 +890,14 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, c
                 partes.append(
                     "Cuando te apoyes en este contenido, menciona con naturalidad el tema del que "
                     "procede citando su título exacto: " + "; ".join(titulos_temas) + "."
+                )
+            if contexto_truncado:
+                partes.append(
+                    "OJO: el tema es más largo de lo que cabe aquí, así que esto es un EXTRACTO, no "
+                    "el temario completo de ese tema. Si la pregunta trata de una parte que no ves en "
+                    "este extracto, dilo explícitamente (\"esa parte concreta no la tengo cargada "
+                    "ahora mismo\") en vez de dar por hecho que lo que ves es todo lo que hay, o "
+                    "inventar lo que falta."
                 )
             if es_test:
                 partes.append(_INSTRUCCION_TEST)

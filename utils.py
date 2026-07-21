@@ -2,7 +2,7 @@ import random
 import re
 import time
 import tiktoken
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from google.cloud import firestore
 
 from oposiciones import coleccion_examenes_oficiales
@@ -204,23 +204,63 @@ def obtener_resumen_temario(db, coleccion="Temario AGE"):
 # (a diferencia de obtener_contexto_por_temas, que solo recibe el tema_id y
 # por tanto no distingue entre bloques distintos que reutilicen el mismo
 # tema_id). La usa el detector de temas mencionados de Tu Tutor.
-def obtener_contexto_por_temas_exactos(db, temas_combinados: List[str], token_limit=3000, coleccion="Temario AGE") -> str:
-    contexto_total = ""
+def _puntuar_relevancia_subbloque(texto, tokens_mensaje):
+    """Solapamiento de palabras significativas (>=4 letras, para que
+    "el"/"la"/"de" no infle por igual la puntuación de todos los
+    subbloques) entre el mensaje del usuario y el texto+título de un
+    subbloque -- sirve para incluir primero lo más relevante cuando no
+    cabe todo el tema en el presupuesto de tokens."""
+    if not tokens_mensaje:
+        return 0
+    palabras_texto = {p for p in _normalizar_enunciado(texto).split() if len(p) >= 4}
+    return len(palabras_texto & tokens_mensaje)
+
+
+def obtener_contexto_por_temas_exactos(
+    db, temas_combinados: List[str], mensaje: str = "", token_limit=4000, coleccion="Temario AGE"
+) -> Tuple[str, bool]:
+    """Devuelve (contexto, truncado). Los subbloques se incluyen por
+    relevancia respecto a `mensaje` (de mayor a menor solapamiento de
+    palabras), no por el orden arbitrario de Firestore -- así, si hay que
+    recortar por presupuesto de tokens, se descarta primero lo MENOS
+    relevante. `truncado=True` si NO cupo todo el contenido recuperado (para
+    que quien llame pueda avisar de que el contenido puede ser parcial, en
+    vez de tratarlo como si fuera el tema completo)."""
+    tokens_mensaje = {p for p in _normalizar_enunciado(mensaje).split() if len(p) >= 4} if mensaje else set()
+    candidatos = []  # (puntuacion, orden_original, fragmento)
+    orden = 0
     for tema_completo in temas_combinados:
         if "-" not in tema_completo:
             continue
         bloque_id, tema_id = tema_completo.split("-", 1)
-        subbloques = db.collection(coleccion).document(bloque_id).collection("temas") \
-                       .document(tema_id).collection("subbloques").stream()
+        subbloques = list(
+            db.collection(coleccion).document(bloque_id).collection("temas")
+              .document(tema_id).collection("subbloques").stream()
+        )
+        # Orden estable por id de documento (sub_div_001, sub_div_002...):
+        # Firestore no garantiza ningún orden en .stream(), y ese id nunca
+        # se guarda como campo consultable -- se ordena aquí en Python (no
+        # con .order_by(), que el FakeFirestore de los tests no implementa).
+        subbloques.sort(key=lambda s: s.id)
         for sub in subbloques:
             datos = sub.to_dict() or {}
             texto = datos.get("texto", "").strip()
             titulo = datos.get("titulo", "")
             fragmento = f"[{tema_completo}-{sub.id}]\n{titulo}\n{texto}\n"
-            if contar_tokens(contexto_total + fragmento) > token_limit:
-                return contexto_total.strip()
-            contexto_total += fragmento
-    return contexto_total.strip()
+            puntuacion = _puntuar_relevancia_subbloque(f"{titulo} {texto}", tokens_mensaje)
+            candidatos.append((puntuacion, orden, fragmento))
+            orden += 1
+
+    candidatos.sort(key=lambda c: (-c[0], c[1]))
+
+    contexto_total = ""
+    truncado = False
+    for _puntuacion, _orden, fragmento in candidatos:
+        if contar_tokens(contexto_total + fragmento) > token_limit:
+            truncado = True
+            continue  # puede que un fragmento más pequeño y menos relevante aún quepa
+        contexto_total += fragmento
+    return contexto_total.strip(), truncado
 
 # ✅ NUEVA: Extrae todos los subbloques de todos los temas sin límite de tokens acumulados
 def obtener_subbloques_individuales(db, temas: List[str], coleccion="Temario AGE") -> List[dict]:
