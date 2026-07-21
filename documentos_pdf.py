@@ -64,6 +64,15 @@ def obtener_o_crear_documento(db, uid, texto, nombre_archivo, num_paginas):
     }
     nuevo_ref = docs_ref.document()
     nuevo_ref.set(datos)
+    # Se suma aquí, no en las rutas /guardar-*-pdf: este punto solo se
+    # alcanza una vez por documento realmente nuevo (el "if existentes"
+    # de arriba evita pasar por aquí si el usuario reutiliza el mismo PDF
+    # en varias herramientas), así que las páginas no se cuentan varias
+    # veces por un mismo archivo.
+    from firebase_admin import firestore
+    db.collection("usuarios").document(uid).update({
+        "paginas_analizadas": firestore.Increment(num_paginas),
+    })
     return nuevo_ref.id, datos
 
 

@@ -81,27 +81,65 @@
     </div>
   </section>
 
-  <!-- Cuenta atrás al examen: mismo widget y misma lógica que Zona
-       Opositor (ver assets/cuenta-atras.js) -- aquí, justo al lado de los
-       temas flojos/cobertura del temario, es donde tiene más sentido el
-       "¿estoy listo?" con los días que quedan. -->
-  <section class="age-card zona-cuenta-atras-card" id="zona-cuenta-atras">
-    <div class="zona-cuenta-atras-icono" data-icon="calendario" data-icon-size="24"></div>
-    <div class="zona-cuenta-atras-info">
-      <div class="zona-cuenta-atras-numero" id="cuenta-atras-numero">—</div>
-      <div class="zona-cuenta-atras-mensaje" id="cuenta-atras-mensaje">Cargando…</div>
+  <!-- Aciertos y fallos: justo debajo de "de un vistazo", es el detalle
+       inmediato de esos mismos números (antes estaba enterrado más abajo,
+       después de evolución/calendario/insignias). La cuenta atrás al
+       examen vive solo en Zona Opositor -- aquí duplicaba el mismo
+       widget sin aportar nada nuevo. -->
+  <div class="seccion-separador seccion-separador-primera">
+    <h3><span data-icon="diana" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Aciertos y fallos</h3>
+  </div>
+  <!-- Tiempo dedicado a hacer test: barra de ancho completo -->
+  <div class="tarjeta-estadistica neutra tarjeta-tiempo-total">
+    <div class="header">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
+      </svg>
+      <h4>Tiempo dedicado a hacer test</h4>
     </div>
-    <button type="button" class="age-btn age-btn-outline zona-cuenta-atras-boton" id="cuenta-atras-boton">Configurar</button>
-    <form class="zona-cuenta-atras-form" id="cuenta-atras-form" style="display:none;">
-      <input type="date" id="cuenta-atras-input" required />
-      <button type="submit" class="age-btn age-btn-primary">Guardar</button>
-      <button type="button" class="zona-cuenta-atras-quitar" id="cuenta-atras-quitar" style="display:none;">Quitar fecha</button>
-    </form>
-  </section>
+    <div class="tiempo-total-datos">
+      <div class="valor" id="tiempo">—</div>
+      <div class="detalle">Dedicado a estudiar</div>
+    </div>
+  </div>
 
-  <!-- Evolución de la nota: gráfica de línea de los últimos tests. Es lo
-       más visual de la página, por eso va justo debajo del vistazo y
-       antes de las insignias, no enterrada a media página. -->
+  <!-- Aciertos/fallos/blancos: antes 3 tarjetas casi idénticas, ahora una
+       sola barra apilada + leyenda -- mismo dato, un solo vistazo. -->
+  <div class="tarjeta-estadistica tarjeta-respuestas">
+    <div class="header">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.06 14.53l-4.24-4.24 1.41-1.41 2.83 2.83 6.36-6.36 1.41 1.41-7.77 7.77z" fill="currentColor"/>
+      </svg>
+      <h4>Respuestas</h4>
+    </div>
+    <div class="respuestas-barra">
+      <div class="respuestas-segmento respuestas-acierto" id="barra-aciertos" style="width:0%"></div>
+      <div class="respuestas-segmento respuestas-fallo" id="barra-fallos" style="width:0%"></div>
+      <div class="respuestas-segmento respuestas-blanco" id="barra-blancos" style="width:0%"></div>
+    </div>
+    <div class="respuestas-leyenda">
+      <div class="respuestas-item">
+        <span class="respuestas-dot respuestas-dot-acierto"></span>
+        <span>Aciertos</span>
+        <strong class="valor" id="aciertos">—</strong>
+        <span class="respuestas-pct"><span id="aciertos-porcentaje">—</span>%</span>
+      </div>
+      <div class="respuestas-item">
+        <span class="respuestas-dot respuestas-dot-fallo"></span>
+        <span>Fallos</span>
+        <strong class="valor" id="fallos">—</strong>
+        <span class="respuestas-pct"><span id="fallos-porcentaje">—</span>%</span>
+      </div>
+      <div class="respuestas-item">
+        <span class="respuestas-dot respuestas-dot-blanco"></span>
+        <span>En blanco</span>
+        <strong class="valor" id="blancos">—</strong>
+        <span class="respuestas-pct"><span id="blancos-porcentaje">—</span>%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evolución de la nota: gráfica de línea de los últimos tests. -->
   <div class="tarjeta-estadistica neutra tarjeta-evolucion" id="tarjeta-evolucion">
     <div class="header">
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -155,59 +193,6 @@
 
   <div id="estadisticas-usuario">
     <div class="seccion-separador seccion-separador-primera">
-      <h3><span data-icon="diana" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Aciertos y fallos</h3>
-    </div>
-    <!-- Tiempo dedicado a hacer test: barra de ancho completo -->
-    <div class="tarjeta-estadistica neutra tarjeta-tiempo-total">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
-        </svg>
-        <h4>Tiempo dedicado a hacer test</h4>
-      </div>
-      <div class="tiempo-total-datos">
-        <div class="valor" id="tiempo">—</div>
-        <div class="detalle">Dedicado a estudiar</div>
-      </div>
-    </div>
-
-    <!-- Aciertos/fallos/blancos: antes 3 tarjetas casi idénticas, ahora una
-         sola barra apilada + leyenda -- mismo dato, un solo vistazo. -->
-    <div class="tarjeta-estadistica tarjeta-respuestas">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.06 14.53l-4.24-4.24 1.41-1.41 2.83 2.83 6.36-6.36 1.41 1.41-7.77 7.77z" fill="currentColor"/>
-        </svg>
-        <h4>Respuestas</h4>
-      </div>
-      <div class="respuestas-barra">
-        <div class="respuestas-segmento respuestas-acierto" id="barra-aciertos" style="width:0%"></div>
-        <div class="respuestas-segmento respuestas-fallo" id="barra-fallos" style="width:0%"></div>
-        <div class="respuestas-segmento respuestas-blanco" id="barra-blancos" style="width:0%"></div>
-      </div>
-      <div class="respuestas-leyenda">
-        <div class="respuestas-item">
-          <span class="respuestas-dot respuestas-dot-acierto"></span>
-          <span>Aciertos</span>
-          <strong class="valor" id="aciertos">—</strong>
-          <span class="respuestas-pct"><span id="aciertos-porcentaje">—</span>%</span>
-        </div>
-        <div class="respuestas-item">
-          <span class="respuestas-dot respuestas-dot-fallo"></span>
-          <span>Fallos</span>
-          <strong class="valor" id="fallos">—</strong>
-          <span class="respuestas-pct"><span id="fallos-porcentaje">—</span>%</span>
-        </div>
-        <div class="respuestas-item">
-          <span class="respuestas-dot respuestas-dot-blanco"></span>
-          <span>En blanco</span>
-          <strong class="valor" id="blancos">—</strong>
-          <span class="respuestas-pct"><span id="blancos-porcentaje">—</span>%</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="seccion-separador">
       <h3><span data-icon="libros" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Tus temas</h3>
     </div>
     <!-- Cobertura del temario: cuántos temas se han trabajado ya en total,
@@ -271,6 +256,10 @@
         <div class="actividad-extra-item">
           <span class="actividad-extra-valor valor" id="total-tarjetas-pdf">—</span>
           <span class="actividad-extra-label">Tarjetas PDF</span>
+        </div>
+        <div class="actividad-extra-item">
+          <span class="actividad-extra-valor valor" id="total-paginas">—</span>
+          <span class="actividad-extra-label">Hojas analizadas</span>
         </div>
       </div>
     </div>

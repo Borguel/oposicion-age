@@ -94,6 +94,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       fijarTexto("total-resumenes-pdf", '...');
       fijarTexto("total-esquemas-pdf", '...');
       fijarTexto("total-tarjetas-pdf", '...');
+      fijarTexto("total-paginas", '...');
       refreshBtn.classList.add('loading');
       refreshBtn.disabled = true;
 
@@ -154,6 +155,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const esquemasPdf = estadisticas.esquemas_pdf_realizados ?? estadisticas.total_esquemas_pdf ?? 0;
     const tarjetasPdf = estadisticas.tarjetas_pdf_realizados ?? estadisticas.total_tarjetas_pdf ?? 0;
     const totalArchivos = estadisticas.total_archivos_procesados ?? 0;
+    const totalPaginas = estadisticas.paginas_analizadas ?? 0;
 
     const horas = String(Math.floor(tiempoTotalSegundos / 3600)).padStart(2, '0');
     const minutos = String(Math.floor((tiempoTotalSegundos % 3600) / 60)).padStart(2, '0');
@@ -240,6 +242,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("total-resumenes-pdf").textContent = resumenesPdf;
     document.getElementById("total-esquemas-pdf").textContent = esquemasPdf;
     document.getElementById("total-tarjetas-pdf").textContent = tarjetasPdf;
+    document.getElementById("total-paginas").textContent = totalPaginas;
 
     actualizarTemas(topTemasEntries, todosTemas, rendimientoPorTema);
     temasFiltrados = noEstudiados;
@@ -645,7 +648,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             return `
               <li class="tema-item tema-item-con-datos">
                 <div class="tema-item-cabecera">
-                  <span class="tema-numero">Tema ${t.numeroTema}</span>
+                  <span class="tema-numero">Tema ${t.numeroTema}:</span>
                   <span class="tema-item-titulo">${t.titulo}</span>
                 </div>
                 <div class="tema-item-stats">
@@ -687,7 +690,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         <ul class="tema-bloque-lista">
           ${grupo.temas.map((t) => `
             <li class="tema-item">
-              <span class="tema-numero">Tema ${t.numeroTema}</span>
+              <span class="tema-numero">Tema ${t.numeroTema}:</span>
               <span class="tema-item-titulo">${t.titulo}</span>
             </li>
           `).join('')}
@@ -795,8 +798,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     busquedaInput.value = '';
     filtrarTemas();
   }
-
-  import("/assets/cuenta-atras.js").then(({ inicializarCuentaAtras }) => inicializarCuentaAtras());
 
   cargarDatos();
 });

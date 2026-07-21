@@ -253,6 +253,9 @@
     .tarjeta-respuestas {
       grid-column: 1 / -1;
       text-align: left;
+      /* Igual que .tarjeta-tiempo-total: ya no vive dentro de la rejilla,
+         así que necesita su propio margen antes de "Evolución de tu nota". */
+      margin-bottom: 28px;
     }
 
     .respuestas-barra {
@@ -625,6 +628,11 @@
       gap: 20px;
       text-align: left;
       flex-wrap: wrap;
+      /* Ya no vive dentro de la rejilla de #estadisticas-usuario (se movió
+         justo debajo de "de un vistazo"), así que el hueco hasta la
+         siguiente tarjeta hay que darlo aquí en vez de con el gap de esa
+         rejilla. */
+      margin-bottom: 18px;
     }
 
     .tarjeta-tiempo-total .header {
@@ -819,15 +827,16 @@
          fila ocupa todo el ancho de la tarjeta mientras que la rejilla de
          días de abajo tiene un ancho distinto, y las 7 columnas de cada
          una acaban en posiciones distintas (las letras L M X... no
-         quedan encima de su columna de números). Este tamaño de base es
-         para tablet/escritorio -- la tarjeta ocupa toda la fila del grid
-         (grid-column: 1/-1) y a 340px fijos quedaba minúscula rodeada de
-         hueco vacío; en móvil se reduce de vuelta más abajo. */
-      max-width: 520px;
+         quedan encima de su columna de números). Cualquier cambio de
+         tamaño aquí tiene que repetirse igual en .calendario-grafica (y en
+         su versión de @media más abajo) para que ambas filas seguen
+         alineadas -- este valor solo es un techo, no fuerza overflow en
+         pantallas más estrechas que él. */
+      max-width: 720px;
     }
 
     .calendario-dias-semana span {
-      font-size: 0.85rem;
+      font-size: 0.95rem;
       font-weight: 700;
       color: var(--age-ink-faint);
     }
@@ -837,35 +846,35 @@
       grid-template-columns: repeat(7, 1fr);
       gap: 8px;
       margin: 6px auto 0;
-      max-width: 520px;
+      max-width: 720px;
     }
 
     .calendario-celda {
       width: 100%;
       aspect-ratio: 1;
-      border-radius: 8px;
+      border-radius: 10px;
       background: var(--age-neutral-bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 15px;
+      font-size: 17px;
       color: var(--age-ink-faint);
     }
 
     @media (max-width: 640px) {
       .calendario-dias-semana,
       .calendario-grafica {
-        max-width: 340px;
-        gap: 5px;
+        max-width: 400px;
+        gap: 6px;
       }
 
       .calendario-dias-semana span {
-        font-size: 0.78rem;
+        font-size: 0.82rem;
       }
 
       .calendario-celda {
-        border-radius: 6px;
-        font-size: 13px;
+        border-radius: 7px;
+        font-size: 14px;
       }
     }
 
@@ -1171,6 +1180,8 @@
       flex-direction: column;
       align-items: stretch;
       gap: 6px;
+      background: var(--theme-content-alt-bg);
+      border: 1px solid var(--theme-border);
     }
 
     .tema-item-cabecera {
@@ -1189,11 +1200,8 @@
     .tema-numero {
       flex-shrink: 0;
       font-weight: 700;
-      font-size: 0.85rem;
-      color: white;
-      background: var(--theme-primary);
-      border-radius: 12px;
-      padding: 2px 10px;
+      font-size: 0.9rem;
+      color: var(--theme-heading);
     }
 
     .tema-item-titulo {
@@ -1289,78 +1297,3 @@
   --modal-radius: var(--age-radius-lg);
 }
 
-/* Cuenta atrás al examen -- mismas reglas que zona-opositor/style.css,
-   para que el widget compartido (assets/cuenta-atras.js) se vea igual en
-   ambas páginas. */
-.zona-cuenta-atras-card {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 22px 26px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-
-.zona-cuenta-atras-icono {
-  font-size: 2.6rem;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.zona-cuenta-atras-info {
-  min-width: 0;
-  flex: 1;
-}
-
-.zona-cuenta-atras-numero {
-  font-size: 1.2rem;
-  font-weight: 800;
-  margin-bottom: 4px;
-}
-
-.zona-cuenta-atras-mensaje {
-  color: var(--age-ink-soft);
-  font-size: 0.92rem;
-}
-
-.zona-cuenta-atras-boton {
-  flex-shrink: 0;
-}
-
-.zona-cuenta-atras-form {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-
-.zona-cuenta-atras-form input[type="date"] {
-  padding: 10px 14px;
-  border: 1px solid var(--age-border);
-  border-radius: var(--age-radius-sm);
-  font-family: var(--age-font);
-  background: var(--age-card);
-  color: var(--age-ink);
-}
-
-.zona-cuenta-atras-quitar {
-  border: none;
-  background: none;
-  color: var(--age-danger);
-  cursor: pointer;
-  font-size: 0.88rem;
-  text-decoration: underline;
-}
-
-@media (max-width: 480px) {
-  .zona-cuenta-atras-card {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .zona-cuenta-atras-form {
-    justify-content: center;
-  }
-}

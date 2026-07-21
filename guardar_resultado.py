@@ -241,6 +241,7 @@ def obtener_estadisticas_completas_usuario(db, usuario_id, oposicion=OPOSICION_P
             "esquemas_pdf_realizados": datos.get("esquemas_pdf_realizados", 0),
             "tarjetas_pdf_realizados": datos.get("tarjetas_pdf_realizados", 0),
             "total_archivos_procesados": datos.get("total_archivos_procesados", 0),
+            "paginas_analizadas": datos.get("paginas_analizadas", 0),
 
             # Conteos reales de documentos
             "total_tests_pdf": tests_pdf_count,

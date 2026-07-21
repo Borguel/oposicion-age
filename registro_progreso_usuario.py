@@ -64,6 +64,10 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None):
             "esquemas_pdf_realizados": 0,
             "tarjetas_pdf_realizados": 0,
             "total_archivos_procesados": 0,
+            # Suma de páginas de todos los PDF distintos que se han subido
+            # (se incrementa una sola vez por documento nuevo, en
+            # documentos_pdf.obtener_o_crear_documento, no aquí).
+            "paginas_analizadas": 0,
             "fecha_creacion": datetime.utcnow().isoformat(),
             # Prueba gratuita de acceso Premium, una única vez por cuenta (no
             # por oposición): pasados estos días, si no hay ninguna

@@ -35,3 +35,11 @@ def test_incluye_historial_tests_para_la_grafica_de_evolucion(db):
     estadisticas = obtener_estadisticas_completas_usuario(db, "u1", oposicion="age")
 
     assert estadisticas["historial_tests"] == historial
+
+
+def test_incluye_paginas_analizadas_para_otra_actividad(db):
+    db.sembrar(("usuarios", "u1"), {"estadisticas": {}, "paginas_analizadas": 37})
+
+    estadisticas = obtener_estadisticas_completas_usuario(db, "u1", oposicion="age")
+
+    assert estadisticas["paginas_analizadas"] == 37
