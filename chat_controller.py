@@ -440,13 +440,13 @@ def _bloque_explicar_fallo(contexto_pagina):
     segmentos = parsear_explicacion_por_opcion(explicacion) if explicacion else None
 
     partes = [
-        "El usuario está repasando una pregunta de un test que acaba de hacer y quiere entenderla. "
+        "El usuario está viendo una pregunta de test y quiere que se la expliques. "
         f"RESPUESTA CORRECTA VERIFICADA: la opción {correcta}."
     ]
     if marcada and marcada != correcta:
         partes.append(f"Él había marcado la opción {marcada} (falló).")
     elif not marcada:
-        partes.append("La dejó en blanco.")
+        partes.append("No consta que marcara ninguna opción (puede que la dejara en blanco al terminar, o que aún no la haya respondido).")
 
     if segmentos and correcta in segmentos:
         partes.append(f"Por qué la opción {correcta} es la CORRECTA: {segmentos[correcta]}")

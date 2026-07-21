@@ -502,6 +502,11 @@ async function obtenerAuthHeaders() {
 
       document.getElementById("contenedor-test").innerHTML = html;
       document.getElementById("contenedor-test").style.display = "block";
+      const bloquePregunta = document.querySelector("#form-pregunta .pregunta-en-negrita");
+      if (bloquePregunta) {
+        bloquePregunta.dataset.respuestaCorrecta = p.respuesta_correcta || "";
+        bloquePregunta.dataset.explicacion = p.explicacion || "";
+      }
       activarBotonFavorita(document.getElementById("contenedor-test"), p, oposicionActual, textosFavoritas);
 
       document.getElementById("btn-desmarcar").addEventListener("click", () => {

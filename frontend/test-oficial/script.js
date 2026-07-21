@@ -521,6 +521,11 @@ async function obtenerAuthHeaders() {
         </div>
       </form>`;
       document.getElementById("contenedor-test").innerHTML = html;
+      const bloquePregunta = document.querySelector("#form-pregunta .pregunta-en-negrita");
+      if (bloquePregunta) {
+        bloquePregunta.dataset.respuestaCorrecta = p.respuesta_correcta || "";
+        bloquePregunta.dataset.explicacion = p.explicacion || "";
+      }
       activarBotonFavorita(document.getElementById("contenedor-test"), p, oposicionActual, textosFavoritas);
       document.getElementById("btn-marcar-revision").addEventListener("click", function() {
         marcadasRevision[i] = !marcadasRevision[i];

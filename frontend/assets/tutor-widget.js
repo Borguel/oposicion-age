@@ -69,7 +69,18 @@ function leerPreguntaEnPantalla() {
     const texto = label.querySelector(".opcion-texto")?.textContent.trim();
     if (letra && texto) opciones[letra] = texto;
   });
-  return { tipo: "test", enunciado, opciones };
+  // La página de test ya guarda aquí (vía data-*) la respuesta correcta y la
+  // explicación que ya conoce desde que cargó/generó la pregunta -- así Tu
+  // Tutor puede darla como dato verificado en vez de razonarla desde cero.
+  const marcada = form.querySelector('input[name="respuesta"]:checked')?.value || "";
+  return {
+    tipo: "test",
+    enunciado,
+    opciones,
+    respuesta_correcta: bloque.dataset.respuestaCorrecta || "",
+    explicacion: bloque.dataset.explicacion || "",
+    respuesta_usuario: marcada,
+  };
 }
 
 let montado = false;
@@ -549,6 +560,15 @@ export function montarWidgetTutor() {
     // llegue la respuesta.
     const veniaDePantalla = !contextoOverride && !!contextoPagina && contextoPagina.tipo === "test";
     const enunciadoDeEstaPeticion = contextoPagina ? contextoPagina.enunciado : null;
+
+    // La pastilla "Hablando de..." también se muestra para la pregunta que
+    // el usuario tiene delante en un test EN CURSO, no solo para el
+    // contextoOverride fijado desde la pantalla de resultados.
+    if (veniaDePantalla) {
+      mostrarPin(contextoPagina.enunciado);
+    } else if (!contextoOverride) {
+      ocultarPin();
+    }
 
     let respuesta;
     try {

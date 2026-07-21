@@ -93,6 +93,11 @@ function mostrarPregunta(i) {
     </div>
   </form>`;
   contTest.innerHTML = html;
+  const bloquePregunta = document.querySelector("#form-pregunta .pregunta-en-negrita");
+  if (bloquePregunta) {
+    bloquePregunta.dataset.respuestaCorrecta = p.respuesta_correcta || "";
+    bloquePregunta.dataset.explicacion = p.explicacion || "";
+  }
 
   if (i > 0) {
     document.getElementById("btn-anterior").addEventListener("click", () => mostrarPregunta(i - 1));

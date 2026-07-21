@@ -469,6 +469,44 @@ def test_explicar_por_que_falle_con_explicacion_mal_formada_usa_bloque_plano(db)
     assert sistema.count("opción A") >= 2  # refuerzo de la correcta, incluso sin parseo
 
 
+def test_explicar_pregunta_de_test_en_curso_sin_respuesta_marcada_todavia(db):
+    # Bug real visto en producción: en "Repetir test" (y en general, en
+    # cualquier test EN CURSO, antes de que el usuario elija una opción), el
+    # navegador ya conoce la respuesta correcta desde que carga/genera la
+    # pregunta, pero antes no se mandaba a Tu Tutor -- ahora sí, vía
+    # leerPreguntaEnPantalla(), y sin "respuesta_usuario" porque aún no ha
+    # contestado. El bloque debe seguir dando la respuesta como dato
+    # verificado, con una redacción que no dé por hecho que el test ya
+    # terminó.
+    contexto = {
+        "tipo": "test",
+        "enunciado": "¿Cuál de las siguientes es correcta sobre el reintegro de prestaciones indebidas?",
+        "opciones": {
+            "A": "Se aplica apremio solo si hay mala fe",
+            "B": "No se exige revisión previa",
+            "C": "Responden solidariamente",
+            "D": "Puede reformarse en cualquier tiempo",
+        },
+        "respuesta_correcta": "D",
+        "respuesta_usuario": "",
+        "explicacion": (
+            "A) es incorrecta porque se prevé la aplicación del procedimiento de apremio sin "
+            "condicionarlo a la mala fe del perceptor. "
+            "B) es incorrecta porque se exige la previa revisión del acto en todo caso. "
+            "C) es incorrecta porque responden subsidiariamente, no solidariamente. "
+            "D) es correcta porque permite reformar en cualquier tiempo mediante acuerdo motivado."
+        ),
+    }
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock:
+        responder_tutor("Ayúdame con esta pregunta", db=db, usuario_id="u1", oposicion="AGE",
+                        coleccion="Temario AGE", contexto_pagina=contexto)
+    sistema = _texto_sistema(mock.call_args.kwargs["messages"])
+    assert "RESPUESTA CORRECTA VERIFICADA" in sistema
+    assert "opción D" in sistema
+    assert "La dejó en blanco." not in sistema
+    assert "que acaba de hacer" not in sistema
+
+
 def test_saludo_de_vuelta_y_sugerencias_de_examen_para_usuario_con_historia(db):
     db.sembrar(("Temario AGE", "b1"), {"titulo": "Bloque I"})
     db.sembrar(("Temario AGE", "b1", "temas", "t1"), {"titulo": "La Corona"})
