@@ -190,6 +190,73 @@ def test_pregunta_de_test_no_oficial_no_inventa_dato_verificado(db):
     assert "DATO VERIFICADO" not in sistema
 
 
+def test_pregunta_de_test_personalizado_usa_la_respuesta_del_banco_ia(db):
+    # Bug real visto en producción: el tutor le dio al usuario una respuesta
+    # distinta a la que marcaba como correcta la propia pregunta de un Test
+    # Personalizado (no está en ningún examen oficial, así que
+    # buscar_pregunta_oficial no la encontraba y el tutor la razonaba desde
+    # cero, contradiciendo el resultado que el usuario ya tenía delante).
+    # banco_preguntas_ia_<oposicion> guarda las preguntas de Test
+    # Personalizado ya generadas y VERIFICADAS -- debe usarse igual que el
+    # banco de exámenes oficiales.
+    db.sembrar(("banco_preguntas_ia_AGE", "p1"), {
+        "pregunta": (
+            "Según el articulo 13 del IV Convenio Colectivo Unico para el personal laboral de la AGE, "
+            "cuantos miembros componen la Comision Negociadora?"
+        ),
+        "opciones": {"A": "Veinticinco", "B": "Treinta y cinco", "C": "Veinte", "D": "Treinta"},
+        "respuesta_correcta": "D",
+        "explicacion": "El articulo 13.1 establece que la Comision Negociadora estara compuesta por treinta miembros.",
+    })
+    mcq = (
+        "Según el artículo 13 del IV Convenio Colectivo Único para el personal laboral de la AGE, "
+        "¿cuántos miembros componen la Comisión Negociadora? "
+        "A) Veinticinco B) Treinta y cinco C) Veinte D) Treinta"
+    )
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor(mcq, db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+    sistema = _texto_sistema(mock_llamada.call_args.kwargs["messages"])
+    assert "DATO VERIFICADO" in sistema
+    assert "opción D" in sistema
+    assert "treinta miembros" in sistema
+
+
+def test_pregunta_de_test_oficial_tiene_prioridad_sobre_el_banco_ia(db):
+    # Si la misma pregunta (por texto) existiera en ambos bancos, gana el
+    # examen oficial -- es la fuente más autoritativa (con nombre de examen).
+    db.sembrar(("examenes_oficiales_AGE", "of1"), {
+        "tipo": "pregunta",
+        "pregunta": "El plazo para interponer recurso de alzada es de un mes desde la notificacion",
+        "opciones": {"A": "Un mes", "B": "Tres meses", "C": "Quince dias", "D": "Dos meses"},
+        "respuesta_correcta": "A",
+        "examen": "AGE 2025",
+    })
+    db.sembrar(("banco_preguntas_ia_AGE", "p1"), {
+        "pregunta": "El plazo para interponer recurso de alzada es de un mes desde la notificacion",
+        "opciones": {"A": "Un mes", "B": "Tres meses", "C": "Quince dias", "D": "Dos meses"},
+        "respuesta_correcta": "B",  # a propósito distinta, para comprobar cuál gana
+    })
+    mcq = ("El plazo para interponer recurso de alzada es de un mes desde la notificación. "
+           "A Un mes B Tres meses C Quince días D Dos meses")
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+        responder_tutor(mcq, db=db, usuario_id="u1", oposicion="AGE", coleccion="Temario AGE")
+    sistema = _texto_sistema(mock_llamada.call_args.kwargs["messages"])
+    assert "examen oficial AGE 2025" in sistema
+    assert "opción A" in sistema
+
+
+def test_buscar_pregunta_banco_ia_por_contencion_del_enunciado(db):
+    from utils import buscar_pregunta_banco_ia
+    db.sembrar(("banco_preguntas_ia_AGE", "p1"), {
+        "pregunta": "La soberania nacional reside en el pueblo español",
+        "respuesta_correcta": "A",
+    })
+    encontrada = buscar_pregunta_banco_ia(db, "AGE", "La soberanía nacional reside en el pueblo español. A ... B ...")
+    assert encontrada is not None
+    assert encontrada["respuesta_correcta"] == "A"
+    assert buscar_pregunta_banco_ia(db, "AGE", "¿Cuántos ríos hay en España?") is None
+
+
 def test_contexto_de_pagina_pasa_la_pregunta_en_pantalla(db):
     # El widget manda la pregunta que el usuario tiene delante en un test; el
     # tutor debe recibirla para resolver "¿cuál es la correcta?" sin pegarla.

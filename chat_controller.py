@@ -6,7 +6,7 @@ from datetime import datetime
 from firebase_admin import firestore
 
 logger = logging.getLogger(__name__)
-from utils import buscar_pregunta_oficial, calcular_resultado_test, obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
+from utils import buscar_pregunta_oficial, buscar_pregunta_banco_ia, calcular_resultado_test, obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
 from deepseek_utils import call_deepseek_api, call_deepseek_api_stream
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
@@ -278,8 +278,11 @@ _INSTRUCCION_TEST = (
     "Dile con claridad cuál es la opción correcta (indica la letra) y explica de forma breve por qué "
     "lo es y, si ayuda, por qué las demás no. Resuélvela tú directamente: NO le pidas que te diga de "
     "qué tema es, y NO le digas que la pregunta no corresponde al temario o que no puedes ayudarle "
-    "con ella. Si no tienes plena certeza, dilo con honestidad pero dale igualmente tu mejor opción "
-    "razonada."
+    "con ella. Si no tienes plena certeza -- sobre todo con datos muy concretos (números, plazos, "
+    "nombres de artículos) que no vengan citados en el contenido del temario que se te ha pasado -- "
+    "dilo explícitamente ('no tengo el dato 100% verificado, pero...') en vez de sonar tan seguro "
+    "como si fuera un hecho comprobado, y anímale a contrastarlo con la explicación de la propia "
+    "pregunta si la tiene delante."
 )
 
 
@@ -732,22 +735,21 @@ def _texto_pregunta_en_pantalla(contexto_pagina):
     return "\n".join(lineas) if len(lineas) > 1 or enunciado else None
 
 
-def _bloque_respuesta_oficial(pregunta_oficial):
-    """Mensaje de sistema con la respuesta OFICIAL ya corregida de una
-    pregunta del banco de exámenes, para que el tutor la dé como correcta con
-    seguridad en vez de razonarla desde cero (y no la contradiga)."""
-    letra = (pregunta_oficial.get("respuesta_correcta") or "").upper()
-    explicacion = (pregunta_oficial.get("explicacion") or "").strip()
-    examen = (pregunta_oficial.get("examen") or "").strip()
-    fuente = f" (examen oficial {examen})" if examen else " (examen oficial)"
+def _bloque_respuesta_verificada(pregunta, fuente_descripcion):
+    """Mensaje de sistema con la respuesta YA CORREGIDA de una pregunta (de
+    examen oficial o del banco de Test Personalizado ya verificado), para
+    que el tutor la dé como correcta con seguridad en vez de razonarla desde
+    cero (y no la contradiga)."""
+    letra = (pregunta.get("respuesta_correcta") or "").upper()
+    explicacion = (pregunta.get("explicacion") or "").strip()
     partes = [
-        "DATO VERIFICADO: la pregunta que plantea el usuario coincide con una pregunta de examen "
-        f"oficial ya corregida{fuente}. La respuesta correcta OFICIAL es la opción {letra}. "
+        "DATO VERIFICADO: la pregunta que plantea el usuario coincide con una pregunta de "
+        f"{fuente_descripcion} ya corregida. La respuesta correcta es la opción {letra}. "
         "Dásela como correcta con seguridad y explícala con tus palabras; no la pongas en duda ni "
         "propongas otra letra distinta."
     ]
     if explicacion:
-        partes.append("Explicación oficial de referencia: " + explicacion)
+        partes.append("Explicación de referencia: " + explicacion)
     return " ".join(partes)
 
 
@@ -911,15 +913,30 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, c
             )
         })
 
-    # Respuesta oficial verificada: si la pregunta (la pegada en el mensaje o
-    # la que tiene en pantalla) coincide con una del banco de exámenes
-    # oficiales, se le da la respuesta correcta ya corregida. Se salta si ya
-    # tenemos la respuesta correcta desde la pantalla de resultados.
+    # Respuesta ya verificada: si la pregunta (la pegada en el mensaje o la
+    # que tiene en pantalla) coincide con una del banco de exámenes
+    # oficiales O con una ya generada y verificada de Test Personalizado, se
+    # le da la respuesta correcta ya corregida en vez de dejar que el tutor
+    # la razone desde cero (y pueda contradecir el resultado que ya vio en
+    # su propio test -- visto en producción con una pregunta de Test
+    # Personalizado que no está en ningún examen oficial). Se salta si ya
+    # tenemos la respuesta correcta desde la pantalla de resultados. Se
+    # prueba primero el banco oficial (más autoritativo, con nombre de
+    # examen) y solo si no encaja ahí se prueba el banco de IA verificado.
     texto_para_banco = mensaje if es_test else (pregunta_en_pantalla or "")
     if texto_para_banco and not explicar_fallo:
         pregunta_oficial = buscar_pregunta_oficial(db, oposicion, texto_para_banco)
         if pregunta_oficial:
-            mensajes.append({"role": "system", "content": _bloque_respuesta_oficial(pregunta_oficial)})
+            examen = (pregunta_oficial.get("examen") or "").strip()
+            fuente = f"examen oficial {examen}" if examen else "examen oficial"
+            mensajes.append({"role": "system", "content": _bloque_respuesta_verificada(pregunta_oficial, fuente)})
+        else:
+            pregunta_banco_ia = buscar_pregunta_banco_ia(db, oposicion, texto_para_banco)
+            if pregunta_banco_ia:
+                mensajes.append({
+                    "role": "system",
+                    "content": _bloque_respuesta_verificada(pregunta_banco_ia, "Test Personalizado ya verificada"),
+                })
 
     # Una pregunta de test pegada es autocontenida: NO se le mete el historial
     # de la conversación, para que el tutor no responda sobre una pregunta

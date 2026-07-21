@@ -6,6 +6,7 @@ from typing import List, Dict
 from google.cloud import firestore
 
 from oposiciones import coleccion_examenes_oficiales
+from banco_preguntas_ia import coleccion_banco_preguntas
 
 # ✅ Cuenta los tokens de un texto
 def contar_tokens(texto: str, modelo="gpt-3.5-turbo") -> int:
@@ -358,25 +359,14 @@ def _normalizar_enunciado(texto):
     return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", sin_acentos)).strip()
 
 
-def buscar_pregunta_oficial(db, oposicion, texto):
-    """Busca en el banco de exámenes oficiales de la oposición una pregunta
-    cuyo enunciado esté contenido en `texto` (lo que el usuario pega en el
-    chat suele traer el enunciado + las opciones). Devuelve el dict de la
-    pregunta oficial (con respuesta_correcta y explicacion) o None.
-
-    Sirve para que Tu Tutor responda con la respuesta OFICIAL ya corregida
-    cuando el usuario pega una pregunta de un test oficial, en vez de
-    razonarla desde cero (más fiable y coherente con lo que marca el test).
-    El emparejamiento es por contención del enunciado normalizado: exige que
-    el enunciado oficial (>= 20 caracteres para no casar con fragmentos
-    triviales) aparezca íntegro dentro del texto pegado. Si varios encajan,
-    gana el enunciado más largo (el más específico)."""
+def _mejor_coincidencia_por_enunciado(candidatas, texto):
+    """Emparejamiento común de buscar_pregunta_oficial y
+    buscar_pregunta_banco_ia: por contención del enunciado normalizado
+    (exige que el enunciado candidato, >= 20 caracteres para no casar con
+    fragmentos triviales, aparezca íntegro dentro del texto pegado). Si
+    varios encajan, gana el enunciado más largo (el más específico)."""
     consulta = _normalizar_enunciado(texto)
     if len(consulta) < 20:
-        return None
-    try:
-        candidatas = obtener_preguntas_examenes_oficiales(db, oposicion)
-    except Exception:
         return None
     mejor = None
     mejor_longitud = 0
@@ -390,6 +380,57 @@ def buscar_pregunta_oficial(db, oposicion, texto):
             mejor = d
             mejor_longitud = len(enunciado)
     return mejor
+
+
+def buscar_pregunta_oficial(db, oposicion, texto):
+    """Busca en el banco de exámenes oficiales de la oposición una pregunta
+    cuyo enunciado esté contenido en `texto` (lo que el usuario pega en el
+    chat suele traer el enunciado + las opciones). Devuelve el dict de la
+    pregunta oficial (con respuesta_correcta y explicacion) o None.
+
+    Sirve para que Tu Tutor responda con la respuesta OFICIAL ya corregida
+    cuando el usuario pega una pregunta de un test oficial, en vez de
+    razonarla desde cero (más fiable y coherente con lo que marca el test)."""
+    if len(_normalizar_enunciado(texto)) < 20:
+        return None
+    try:
+        candidatas = obtener_preguntas_examenes_oficiales(db, oposicion)
+    except Exception:
+        return None
+    return _mejor_coincidencia_por_enunciado(candidatas, texto)
+
+
+def obtener_preguntas_banco_ia(db, oposicion):
+    """Todas las preguntas guardadas en banco_preguntas_ia_<oposicion>
+    (preguntas de Test Personalizado ya generadas y VERIFICADAS -- ver
+    generador_preguntas_verificado.py). Mismo patrón de caché (TTL largo)
+    que obtener_preguntas_examenes_oficiales y por el mismo motivo: la
+    recorre entera buscar_pregunta_banco_ia en cada mensaje de Tu Tutor que
+    parezca una pregunta de test."""
+    def _calcular():
+        return [
+            doc.to_dict() or {}
+            for doc in db.collection(coleccion_banco_preguntas(oposicion)).stream()
+        ]
+    return _desde_cache_o_calcular(("preguntas_banco_ia", oposicion), _calcular, ttl_segundos=1800)
+
+
+def buscar_pregunta_banco_ia(db, oposicion, texto):
+    """Como buscar_pregunta_oficial pero sobre el banco de preguntas de Test
+    Personalizado ya verificadas, en vez de exámenes oficiales reales.
+    Cubre el hueco que deja buscar_pregunta_oficial: si el usuario pega en
+    Tu Tutor una pregunta de un test personalizado/generado por IA (que no
+    existe en ningún examen oficial), sin esto el tutor la razona desde
+    cero -- y puede contradecir la respuesta ya verificada de la propia
+    pregunta (visto en producción: dio una respuesta distinta a la que
+    marcaba como correcta la explicación ya guardada de esa pregunta)."""
+    if len(_normalizar_enunciado(texto)) < 20:
+        return None
+    try:
+        candidatas = obtener_preguntas_banco_ia(db, oposicion)
+    except Exception:
+        return None
+    return _mejor_coincidencia_por_enunciado(candidatas, texto)
 
 
 def tiene_preguntas_psicotecnicas(db, oposicion):
