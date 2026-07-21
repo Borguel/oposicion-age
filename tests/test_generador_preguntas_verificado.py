@@ -19,6 +19,7 @@ from generador_preguntas_verificado import (
     generar_test_verificado,
 )
 from limites_uso import _clave_periodo
+from utils import buscar_pregunta_banco_ia
 
 
 def test_contenido_normativo_usa_prompts_juridicos():
@@ -233,6 +234,39 @@ def test_generar_test_verificado_reparte_cupo_y_reporta_progreso(db):
     assert len(guardadas) == 4
     assert {p["pregunta"] for p in guardadas} == {p["pregunta"] for p in resultado["test"]}
     assert all(p["tema_id"] for p in guardadas)
+
+
+def test_pregunta_recien_generada_se_encuentra_de_inmediato_en_tu_tutor(db):
+    # Bug real visto en producción: la caché de obtener_preguntas_banco_ia
+    # ya estaba "caliente" (p. ej. de un mensaje anterior a Tu Tutor) ANTES
+    # de que el test personalizado generase esta pregunta -- sin la
+    # invalidación tras guardar_pregunta_generada, buscar_pregunta_banco_ia
+    # seguiría viendo el banco vacío hasta que venciera el TTL, y Tu Tutor no
+    # podría dar el "DATO VERIFICADO" de una pregunta de su propio test recién
+    # generado.
+    relleno = " ".join(["palabra"] * 30)
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del subbloque. {relleno}"
+    })
+
+    # Primer barrido: cachea el banco vacío (como si Tu Tutor ya se hubiera
+    # usado para esta oposición antes de generar este test).
+    buscar_pregunta_banco_ia(db, "AGE", "cualquier texto de prueba ya suficientemente largo para buscar")
+
+    contador = itertools.count()
+    lock_contador = threading.Lock()
+    with patch("generador_preguntas_verificado.call_deepseek_api",
+               side_effect=_mock_deepseek_siempre_valido(contador, lock_contador)), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        resultado = generar_test_verificado(
+            db, temas=["bloque_01-tema_01"], num_preguntas=1,
+            coleccion="Temario AGE", oposicion="AGE",
+        )
+
+    pregunta_generada = resultado["test"][0]
+    encontrada = buscar_pregunta_banco_ia(db, "AGE", pregunta_generada["pregunta"])
+    assert encontrada is not None
+    assert encontrada["pregunta"] == pregunta_generada["pregunta"]
 
 
 def test_generar_test_verificado_sobrevive_a_un_fallo_inesperado_de_un_hueco(db):

@@ -128,6 +128,35 @@ def _limpiar_cache_temario():
     _CACHE_TEMARIO.clear()
 
 
+def invalidar_cache(clave):
+    """Elimina UNA entrada concreta de la caché en memoria compartida (ver
+    _desde_cache_o_calcular) sin tocar el resto -- para cuando solo hace
+    falta invalidar lo que acaba de cambiar (p. ej. el banco de preguntas
+    IA de una oposición) sin forzar un recálculo innecesario de todo lo
+    demás cacheado (temario, pesos por bloque, exámenes oficiales de otras
+    oposiciones...), que es lo que haría _limpiar_cache_temario()."""
+    _CACHE_TEMARIO.pop(clave, None)
+
+
+def limpiar_cache_preguntas_banco_ia(oposicion):
+    """Invalida en ESTE proceso la caché de obtener_preguntas_banco_ia para
+    `oposicion`. Se llama justo después de guardar una pregunta nueva en el
+    banco (ver generador_preguntas_verificado.py) para que la siguiente
+    consulta de Tu Tutor (buscar_pregunta_banco_ia) la vea sin esperar al
+    TTL -- antes de esto, un test personalizado recién generado no era
+    encontrado por su propio Tu Tutor durante hasta 30 min (bug real visto
+    en producción).
+
+    Limitación conocida y aceptada: esta caché es un dict en memoria POR
+    PROCESO. Con varios workers de Gunicorn, esto solo limpia la copia del
+    proceso donde corrió la generación -- los demás workers seguirán
+    sirviendo su copia cacheada hasta que venza su propio TTL. Por eso el
+    TTL de obtener_preguntas_banco_ia se ha acortado (ver más abajo) en vez
+    de asumir que esta invalidación por sí sola resuelve el problema en
+    todos los workers."""
+    invalidar_cache(("preguntas_banco_ia", oposicion))
+
+
 def _desde_cache_o_calcular(clave, calcular, ttl_segundos=None):
     ttl = ttl_segundos if ttl_segundos is not None else _TTL_CACHE_TEMARIO_SEGUNDOS
     ahora = time.time()
@@ -452,16 +481,21 @@ def buscar_pregunta_oficial(db, oposicion, texto):
 def obtener_preguntas_banco_ia(db, oposicion):
     """Todas las preguntas guardadas en banco_preguntas_ia_<oposicion>
     (preguntas de Test Personalizado ya generadas y VERIFICADAS -- ver
-    generador_preguntas_verificado.py). Mismo patrón de caché (TTL largo)
-    que obtener_preguntas_examenes_oficiales y por el mismo motivo: la
-    recorre entera buscar_pregunta_banco_ia en cada mensaje de Tu Tutor que
-    parezca una pregunta de test."""
+    generador_preguntas_verificado.py). TTL corto (a diferencia de
+    obtener_preguntas_examenes_oficiales, que sí usa uno largo): esta
+    colección recibe escrituras en vivo cada vez que alguien genera un
+    test nuevo, y aunque generador_preguntas_verificado.py invalida esta
+    caché en el proceso donde generó (ver limpiar_cache_preguntas_banco_ia),
+    con varios workers de Gunicorn los demás procesos no se enteran -- el
+    TTL corto acota su desfase a como mucho estos 90s en vez de los 30 min
+    de antes. La recorre entera buscar_pregunta_banco_ia en cada mensaje de
+    Tu Tutor que parezca una pregunta de test."""
     def _calcular():
         return [
             doc.to_dict() or {}
             for doc in db.collection(coleccion_banco_preguntas(oposicion)).stream()
         ]
-    return _desde_cache_o_calcular(("preguntas_banco_ia", oposicion), _calcular, ttl_segundos=1800)
+    return _desde_cache_o_calcular(("preguntas_banco_ia", oposicion), _calcular, ttl_segundos=90)
 
 
 def buscar_pregunta_banco_ia(db, oposicion, texto):

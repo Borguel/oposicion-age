@@ -5,7 +5,9 @@ opciones tras generarlas (y remapear "respuesta_correcta" y la explicación
 para que sigan señalando a la opción correcta)."""
 from utils import (
     barajar_opciones_pregunta,
+    limpiar_cache_preguntas_banco_ia,
     obtener_catalogo_temas,
+    obtener_preguntas_banco_ia,
     obtener_titulos_temas_reales,
     parsear_explicacion_por_opcion,
     _limpiar_cache_temario,
@@ -127,6 +129,32 @@ def test_obtener_catalogo_temas_usa_cache_hasta_que_se_limpia(db):
     # la siguiente llamada sí debe recalcular y ver el dato fresco.
     _limpiar_cache_temario()
     tercera_llamada = obtener_catalogo_temas(db, "Test")
+    assert len(tercera_llamada) == 2
+
+
+def test_obtener_preguntas_banco_ia_usa_cache_hasta_que_se_invalida(db):
+    # Bug real visto en producción: una pregunta de Test Personalizado
+    # recién generada no aparecía para Tu Tutor (buscar_pregunta_banco_ia)
+    # hasta que venciera el TTL de 30 min de esta caché, porque
+    # generador_preguntas_verificado.py no invalidaba nada tras guardarla.
+    db.collection("banco_preguntas_ia_AGE").document("p1").set({"pregunta": "Pregunta uno", "respuesta_correcta": "A"})
+
+    primera_llamada = obtener_preguntas_banco_ia(db, "AGE")
+    assert len(primera_llamada) == 1
+
+    # Se añade una segunda pregunta directamente en Firestore, sin pasar por
+    # guardar_pregunta_generada (simula una caché ya caliente de antes) --
+    # la siguiente llamada debe seguir viendo el resultado cacheado (1), no
+    # el dato fresco (2), porque el TTL todavía no ha vencido.
+    db.collection("banco_preguntas_ia_AGE").document("p2").set({"pregunta": "Pregunta dos", "respuesta_correcta": "B"})
+    segunda_llamada = obtener_preguntas_banco_ia(db, "AGE")
+    assert len(segunda_llamada) == 1
+
+    # Al invalidar solo esta clave (lo que hace guardar_pregunta_generada tras
+    # cada pregunta nueva vía generador_preguntas_verificado.py), la próxima
+    # llamada sí debe recalcular y ver el dato fresco.
+    limpiar_cache_preguntas_banco_ia("AGE")
+    tercera_llamada = obtener_preguntas_banco_ia(db, "AGE")
     assert len(tercera_llamada) == 2
 
 

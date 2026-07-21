@@ -33,7 +33,7 @@ from deepseek_utils import call_deepseek_api
 from utils import (
     obtener_subbloques_individuales, repartir_cupos_por_tema,
     repartir_cupos_por_tema_realista, calcular_pesos_reales_por_bloque,
-    barajar_opciones_pregunta,
+    barajar_opciones_pregunta, limpiar_cache_preguntas_banco_ia,
 )
 from validador_preguntas import validar_pregunta
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
@@ -504,6 +504,11 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                 # respuesta ya corregida en vez de razonarla de nuevo cuando
                 # el usuario le pega una de estas preguntas.
                 guardar_pregunta_generada(db, oposicion, resultado)
+                # Invalida en este proceso la caché de Tu Tutor sobre el
+                # banco de IA -- si no, buscar_pregunta_banco_ia podía tardar
+                # hasta 30 min (TTL) en ver esta misma pregunta recién
+                # generada (bug real visto en producción).
+                limpiar_cache_preguntas_banco_ia(oposicion)
             else:
                 descartadas += 1
             if on_progreso:
