@@ -827,16 +827,22 @@
       overflow: hidden;
       margin: 14px auto 0;
       text-align: center;
-      /* Mismo max-width, gap y márgenes que .calendario-grafica -- si no, esta
-         fila ocupa todo el ancho de la tarjeta mientras que la rejilla de
-         días de abajo tiene un ancho distinto, y las 7 columnas de cada
-         una acaban en posiciones distintas (las letras L M X... no
-         quedan encima de su columna de números). Cualquier cambio de
-         tamaño aquí tiene que repetirse igual en .calendario-grafica (y en
-         su versión de @media más abajo) para que ambas filas seguen
-         alineadas -- este valor solo es un techo, no fuerza overflow en
+      /* width:100% es imprescindible, no cosmético: .tarjeta-calendario es
+         flex-direction:column, y el margin "... auto 0" (para centrar
+         cuando max-width sí llega a limitar el ancho) anula el stretch por
+         defecto de flexbox en el eje cruzado. Sin un ancho explícito, el
+         contenedor se encogía a su contenido (shrink-to-fit) en vez de
+         llenar la tarjeta -- y como aquí el contenido son <span> sin ancho
+         propio (a diferencia de .calendario-celda, que sí declara
+         width:100%), este encogimiento daba un ancho DISTINTO al de
+         .calendario-grafica, desalineando L M X J V S D de sus columnas de
+         números. Mismo max-width, gap y márgenes que .calendario-grafica --
+         cualquier cambio de tamaño aquí tiene que repetirse igual allí (y
+         en su versión de @media más abajo) para que ambas filas sigan
+         alineadas -- max-width solo es un techo, no fuerza overflow en
          pantallas más estrechas que él. */
-      max-width: 720px;
+      width: 100%;
+      max-width: 900px;
     }
 
     .calendario-dias-semana span {
@@ -856,7 +862,8 @@
       border-radius: var(--age-radius-sm);
       overflow: hidden;
       margin: 8px auto 0;
-      max-width: 720px;
+      width: 100%;
+      max-width: 900px;
     }
 
     /* Cuadrícula real de calendario de pared: el fondo del contenedor hace
