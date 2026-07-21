@@ -858,17 +858,45 @@ def _bloque_respuesta_verificada(pregunta, fuente_descripcion):
     """Mensaje de sistema con la respuesta YA CORREGIDA de una pregunta (de
     examen oficial o del banco de Test Personalizado ya verificado), para
     que el tutor la dé como correcta con seguridad en vez de razonarla desde
-    cero (y no la contradiga)."""
+    cero (y no la contradiga).
+
+    Mismo riesgo que _bloque_explicar_fallo (visto en producción): la
+    explicación suele venir como una única cadena "A) ... B) ... C) ... D)
+    ...", y con negaciones dobles el modelo puede acabar citando el
+    razonamiento de una opción incorrecta como si fuera la correcta. Por
+    eso, igual que allí, se separa primero el razonamiento de la opción
+    correcta cuando se puede trocear por letra."""
     letra = (pregunta.get("respuesta_correcta") or "").upper()
     explicacion = (pregunta.get("explicacion") or "").strip()
+    segmentos = parsear_explicacion_por_opcion(explicacion) if explicacion else None
+
     partes = [
         "DATO VERIFICADO: la pregunta que plantea el usuario coincide con una pregunta de "
-        f"{fuente_descripcion} ya corregida. La respuesta correcta es la opción {letra}. "
+        f"{fuente_descripcion} ya corregida. RESPUESTA CORRECTA VERIFICADA: la opción {letra}. "
         "Dásela como correcta con seguridad y explícala con tus palabras; no la pongas en duda ni "
         "propongas otra letra distinta."
     ]
-    if explicacion:
+    if segmentos and letra in segmentos:
+        partes.append(f"Por qué la opción {letra} es la CORRECTA: {segmentos[letra]}")
+        otras = [
+            f"{letra_otra}) {segmentos[letra_otra]}"
+            for letra_otra in _LETRAS_OPCION_TUTOR
+            if letra_otra != letra and letra_otra in segmentos
+        ]
+        if otras:
+            partes.append("Las demás opciones son incorrectas: " + " ".join(otras))
+        partes.append(
+            f"Resumen: la ÚNICA opción correcta es la {letra}. No inviertas esta conclusión ni la "
+            "contradigas aunque el texto de arriba use dobles negaciones u otras construcciones "
+            "difíciles de leer -- interpreta cada frase literalmente, letra por letra."
+        )
+    elif explicacion:
         partes.append("Explicación de referencia: " + explicacion)
+        partes.append(f"Recuerda: la respuesta correcta es la opción {letra}, no la des por incorrecta.")
+        logger.warning(
+            "respuesta_verificada: explicacion no sigue el formato A)/B)/C)/D); se manda como bloque "
+            "plano sin resaltar por separado la opción correcta (fuente=%s)", fuente_descripcion,
+        )
     return " ".join(partes)
 
 

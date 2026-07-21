@@ -272,6 +272,58 @@ def test_pregunta_de_test_personalizado_usa_la_respuesta_del_banco_ia(db):
     assert "treinta miembros" in sistema
 
 
+def test_dato_verificado_con_pregunta_en_pantalla_no_invierte_opcion_con_doble_negacion(db):
+    # Mismo bug que _bloque_explicar_fallo, pero en el flujo de un test EN
+    # CURSO (pregunta en pantalla, sin respuesta del usuario todavía): visto
+    # en producción, con una explicación por opción de doble negación
+    # parecida entre la correcta y una incorrecta, el tutor confirmó la
+    # incorrecta como si fuera la buena.
+    db.sembrar(("banco_preguntas_ia_GACE", "p1"), {
+        "pregunta": (
+            "Según el articulo 55 del Reglamento General del Mutualismo Administrativo, cual de las "
+            "siguientes afirmaciones es correcta en relacion con el reintegro de prestaciones indebidas?"
+        ),
+        "opciones": {
+            "A": "Se aplica apremio solo si hay mala fe",
+            "B": "No se exige revisión previa",
+            "C": "Responden solidariamente",
+            "D": "Puede reformarse en cualquier tiempo",
+        },
+        "respuesta_correcta": "D",
+        "explicacion": (
+            "A) es incorrecta porque se prevé la aplicación del procedimiento de apremio sin "
+            "condicionarlo a la mala fe del perceptor. "
+            "B) es incorrecta porque se exige la previa revisión del acto en todo caso. "
+            "C) es incorrecta porque responden subsidiariamente, no solidariamente. "
+            "D) es correcta porque permite reformar en cualquier tiempo mediante acuerdo motivado."
+        ),
+    })
+    contexto = {
+        "tipo": "test",
+        "enunciado": (
+            "Según el artículo 55 del Reglamento General del Mutualismo Administrativo, ¿cuál de las "
+            "siguientes afirmaciones es correcta en relación con el reintegro de prestaciones indebidas?"
+        ),
+        "opciones": {
+            "A": "Se aplica apremio solo si hay mala fe",
+            "B": "No se exige revisión previa",
+            "C": "Responden solidariamente",
+            "D": "Puede reformarse en cualquier tiempo",
+        },
+    }
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock:
+        responder_tutor("¿cuál es la correcta?", db=db, usuario_id="u1", oposicion="GACE",
+                        coleccion="Temario GACE", contexto_pagina=contexto)
+    sistema = _texto_sistema(mock.call_args.kwargs["messages"])
+    assert "DATO VERIFICADO" in sistema
+    assert sistema.count("opción D") >= 2
+    texto_correcta = "permite reformar en cualquier tiempo"
+    texto_incorrecta_a = "sin condicionarlo a la mala fe"
+    assert texto_correcta in sistema
+    assert texto_incorrecta_a in sistema
+    assert sistema.index(texto_correcta) < sistema.index(texto_incorrecta_a)
+
+
 def test_pregunta_de_test_oficial_tiene_prioridad_sobre_el_banco_ia(db):
     # Si la misma pregunta (por texto) existiera en ambos bancos, gana el
     # examen oficial -- es la fuente más autoritativa (con nombre de examen).
