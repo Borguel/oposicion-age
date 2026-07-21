@@ -7,7 +7,7 @@ from datetime import datetime
 from firebase_admin import firestore
 
 logger = logging.getLogger(__name__)
-from utils import buscar_pregunta_oficial, buscar_pregunta_banco_ia, calcular_resultado_test, obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario
+from utils import buscar_pregunta_oficial, buscar_pregunta_banco_ia, calcular_resultado_test, obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario, parsear_explicacion_por_opcion
 from deepseek_utils import call_deepseek_api, call_deepseek_api_stream
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
@@ -413,29 +413,76 @@ _INSTRUCCION_PLAN = (
 )
 
 
+_LETRAS_OPCION_TUTOR = ["A", "B", "C", "D"]
+
+
 def _bloque_explicar_fallo(contexto_pagina):
     """Bloque autoritativo para \"¿por qué he fallado esta?\": la pantalla de
     resultados manda la respuesta correcta, la explicación y (si la hay) la
     opción que marcó el usuario. Sirve para CUALQUIER test (también los
-    generados por IA, que no están en el banco oficial)."""
+    generados por IA, que no están en el banco oficial).
+
+    La explicación suele venir como una única cadena con el patrón
+    "A) ... B) ... C) ... D) ...", mezclando en el mismo bloque el porqué de
+    la correcta y el porqué de las otras tres -- con negaciones dobles
+    ("sin condicionarlo a...") ese texto es fácil de malinterpretar y el
+    modelo puede acabar citando el razonamiento de una opción incorrecta
+    como si fuera la respuesta buena (visto en producción). Por eso, cuando
+    se puede trocear por opción, se saca primero y por separado el
+    razonamiento de la opción correcta, se marca sin ambigüedad el de la
+    que marcó el usuario como incorrecto, y se repite la letra correcta al
+    principio y al final."""
     correcta = str(contexto_pagina.get("respuesta_correcta") or "").upper()
     if not correcta:
         return None
     explicacion = str(contexto_pagina.get("explicacion") or "").strip()
     marcada = str(contexto_pagina.get("respuesta_usuario") or "").upper()
+    segmentos = parsear_explicacion_por_opcion(explicacion) if explicacion else None
+
     partes = [
         "El usuario está repasando una pregunta de un test que acaba de hacer y quiere entenderla. "
-        f"La respuesta CORRECTA es la opción {correcta}."
+        f"RESPUESTA CORRECTA VERIFICADA: la opción {correcta}."
     ]
     if marcada and marcada != correcta:
         partes.append(f"Él había marcado la opción {marcada} (falló).")
     elif not marcada:
         partes.append("La dejó en blanco.")
-    if explicacion:
-        partes.append("Explicación de referencia de la propia pregunta: " + explicacion)
+
+    if segmentos and correcta in segmentos:
+        partes.append(f"Por qué la opción {correcta} es la CORRECTA: {segmentos[correcta]}")
+        if marcada and marcada != correcta and marcada in segmentos:
+            partes.append(
+                f"Por qué la opción {marcada} (la que marcó el usuario) es INCORRECTA -- no la "
+                f"confirmes como buena bajo ningún concepto: {segmentos[marcada]}"
+            )
+        otras = [
+            f"{letra}) {segmentos[letra]}"
+            for letra in _LETRAS_OPCION_TUTOR
+            if letra != correcta and letra != marcada and letra in segmentos
+        ]
+        if otras:
+            partes.append("También incorrectas: " + " ".join(otras))
+        partes.append(
+            f"Resumen: la ÚNICA opción correcta es la {correcta}. No inviertas esta conclusión ni la "
+            "contradigas aunque el texto de arriba use dobles negaciones u otras construcciones "
+            "difíciles de leer -- interpreta cada frase literalmente, letra por letra."
+        )
+    else:
+        if explicacion:
+            partes.append("Explicación de referencia de la propia pregunta: " + explicacion)
+            logger.warning(
+                "explicar_fallo: explicacion no sigue el formato A)/B)/C)/D); se manda como bloque "
+                "plano sin resaltar por separado la opción correcta"
+            )
+        partes.append(f"Recuerda: la respuesta correcta es la opción {correcta}, no la des por incorrecta.")
+
     partes.append(
         "Explícale con claridad y de forma didáctica por qué la correcta es esa y, si marcó otra, por "
         "qué la suya no lo era. Dale la respuesta con seguridad; no la pongas en duda ni propongas otra."
+    )
+    logger.info(
+        "explicar_fallo: correcta=%s marcada=%s explicacion_parseada=%s",
+        correcta, marcada or None, segmentos is not None,
     )
     return " ".join(partes)
 

@@ -109,6 +109,10 @@ export function montarWidgetTutor() {
           <button type="button" class="tutor-widget-accion tutor-widget-cerrar" aria-label="Cerrar">${icono("cruz", 16)}</button>
         </div>
       </header>
+      <div class="tutor-widget-pin" hidden>
+        <span class="tutor-widget-pin-texto"></span>
+        <button type="button" class="tutor-widget-pin-quitar" aria-label="Quitar pregunta fijada" title="Dejar de hablar de esta pregunta">×</button>
+      </div>
       <div class="tutor-widget-mensajes" id="tutor-widget-mensajes"></div>
       <div class="tutor-widget-typing" hidden><span></span><span></span><span></span></div>
       <div class="tutor-widget-historial-panel" hidden>
@@ -140,6 +144,9 @@ export function montarWidgetTutor() {
   const panelHistorial = raiz.querySelector(".tutor-widget-historial-panel");
   const listaHistorial = raiz.querySelector(".tutor-widget-historial-lista");
   const btnVolverHistorial = raiz.querySelector(".tutor-widget-historial-volver");
+  const pin = raiz.querySelector(".tutor-widget-pin");
+  const pinTexto = raiz.querySelector(".tutor-widget-pin-texto");
+  const btnQuitarPin = raiz.querySelector(".tutor-widget-pin-quitar");
 
   // Cada apertura del widget arranca en una conversación NUEVA (no se
   // restaura la última): así, al abrirlo mientras haces un test, no se cuela
@@ -190,6 +197,25 @@ export function montarWidgetTutor() {
       maxH: Math.max(380, window.innerHeight - 90),
     };
   }
+  // Pastilla visible en la cabecera mientras contextoOverride está fijado
+  // (p. ej. viniendo del botón "Pregúntale a Tu Tutor" de una pregunta de
+  // resultados): así, si el tutor alguna vez se queda "enganchado" a una
+  // pregunta antigua, es fácil detectarlo a simple vista -- y quitarlo con
+  // el botón "×" en vez de tener que abrir una conversación nueva.
+  function mostrarPin(enunciado) {
+    const extracto = (enunciado || "").slice(0, 60) + (enunciado.length > 60 ? "…" : "");
+    pinTexto.textContent = "Hablando de: " + extracto;
+    pin.hidden = false;
+  }
+  function ocultarPin() {
+    pin.hidden = true;
+    pinTexto.textContent = "";
+  }
+  btnQuitarPin.addEventListener("click", () => {
+    contextoOverride = null;
+    ocultarPin();
+  });
+
   function aplicarTamano() {
     if (window.innerWidth <= 560) { panel.style.width = ""; panel.style.height = ""; return; }
     const { minW, minH, maxW, maxH } = limitesTam();
@@ -341,6 +367,7 @@ export function montarWidgetTutor() {
     chatId = null;
     enviando = false;
     contextoOverride = null;
+    ocultarPin();
     ultimoEnunciado = null;
     mensajesEl.innerHTML = "";
     sugerenciaPedida = true;
@@ -384,6 +411,7 @@ export function montarWidgetTutor() {
   async function cargarConversacion(id) {
     cerrarHistorial();
     contextoOverride = null;
+    ocultarPin();
     ultimoEnunciado = null;
     mensajesEl.innerHTML = `<div class="tw-msg tw-msg-bot"><div class="tw-msg-bot-contenido"><p>Cargando…</p></div></div>`;
     const authHeaders = await obtenerAuthHeaders();
@@ -647,6 +675,7 @@ export function montarWidgetTutor() {
       ultimoEnunciado = contextoOverride.enunciado;
       sugerenciaPedida = true;   // no meter el saludo proactivo encima
       mensajesEl.innerHTML = "";
+      mostrarPin(contextoOverride.enunciado);
       abrir();
       if (pregunta.mensajeInicial) {
         input.value = pregunta.mensajeInicial;

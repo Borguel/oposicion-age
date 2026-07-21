@@ -7,6 +7,7 @@ from utils import (
     barajar_opciones_pregunta,
     obtener_catalogo_temas,
     obtener_titulos_temas_reales,
+    parsear_explicacion_por_opcion,
     _limpiar_cache_temario,
 )
 
@@ -78,6 +79,33 @@ def test_no_toca_explicacion_que_no_sigue_el_formato_por_letra():
     original["explicacion"] = "La respuesta correcta es la A porque así lo dice la ley."
     resultado = barajar_opciones_pregunta(dict(original, opciones=dict(original["opciones"])))
     assert resultado["explicacion"] == "La respuesta correcta es la A porque así lo dice la ley."
+
+
+def test_parsear_explicacion_por_opcion_bien_formada():
+    explicacion = (
+        "A) es correcta porque el artículo 62 CE lo establece. "
+        "B) es incorrecta porque el Congreso solo lo propone. "
+        "C) es incorrecta porque el Senado no interviene. "
+        "D) es incorrecta porque no tiene esa función."
+    )
+    segmentos = parsear_explicacion_por_opcion(explicacion)
+    assert segmentos == {
+        "A": "es correcta porque el artículo 62 CE lo establece.",
+        "B": "es incorrecta porque el Congreso solo lo propone.",
+        "C": "es incorrecta porque el Senado no interviene.",
+        "D": "es incorrecta porque no tiene esa función.",
+    }
+
+
+def test_parsear_explicacion_por_opcion_devuelve_none_si_falta_una_letra():
+    explicacion = "A) es correcta. B) es incorrecta. C) es incorrecta."
+    assert parsear_explicacion_por_opcion(explicacion) is None
+
+
+def test_parsear_explicacion_por_opcion_devuelve_none_sin_prefijo_de_letra():
+    assert parsear_explicacion_por_opcion("La respuesta correcta es la A porque sí.") is None
+    assert parsear_explicacion_por_opcion("") is None
+    assert parsear_explicacion_por_opcion(None) is None
 
 
 def test_obtener_catalogo_temas_usa_cache_hasta_que_se_limpia(db):

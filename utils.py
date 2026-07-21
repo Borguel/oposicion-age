@@ -1,3 +1,4 @@
+import logging
 import random
 import re
 import time
@@ -7,6 +8,8 @@ from google.cloud import firestore
 
 from oposiciones import coleccion_examenes_oficiales
 from banco_preguntas_ia import coleccion_banco_preguntas
+
+logger = logging.getLogger(__name__)
 
 # ✅ Cuenta los tokens de un texto
 def contar_tokens(texto: str, modelo="gpt-3.5-turbo") -> int:
@@ -437,7 +440,13 @@ def buscar_pregunta_oficial(db, oposicion, texto):
         candidatas = obtener_preguntas_examenes_oficiales(db, oposicion)
     except Exception:
         return None
-    return _mejor_coincidencia_por_enunciado(candidatas, texto)
+    coincidencia = _mejor_coincidencia_por_enunciado(candidatas, texto)
+    if coincidencia is None:
+        logger.info(
+            "buscar_pregunta_oficial: sin coincidencia (oposicion=%s, candidatas=%d)",
+            oposicion, len(candidatas),
+        )
+    return coincidencia
 
 
 def obtener_preguntas_banco_ia(db, oposicion):
@@ -470,7 +479,13 @@ def buscar_pregunta_banco_ia(db, oposicion, texto):
         candidatas = obtener_preguntas_banco_ia(db, oposicion)
     except Exception:
         return None
-    return _mejor_coincidencia_por_enunciado(candidatas, texto)
+    coincidencia = _mejor_coincidencia_por_enunciado(candidatas, texto)
+    if coincidencia is None:
+        logger.info(
+            "buscar_pregunta_banco_ia: sin coincidencia (oposicion=%s, candidatas=%d)",
+            oposicion, len(candidatas),
+        )
+    return coincidencia
 
 
 def tiene_preguntas_psicotecnicas(db, oposicion):
@@ -626,6 +641,27 @@ def obtener_titulos_temas_reales(db, coleccion, lista_codigos):
 _LETRAS_OPCION = ["A", "B", "C", "D"]
 
 
+def parsear_explicacion_por_opcion(explicacion):
+    """Parsea una explicación con el patrón "A) ... B) ... C) ... D) ..." en
+    un dict {letra: texto}. Devuelve None si el texto no sigue ese formato
+    exacto (nunca arriesga a inventar/cortar mal un segmento) -- usado tanto
+    para remapear letras tras barajar opciones como para que Tu Tutor pueda
+    citar por separado el razonamiento de la opción correcta."""
+    texto = (explicacion or "").strip()
+    if not re.match(r"^[A-D]\)\s", texto):
+        return None  # no sigue el formato esperado
+    partes = re.split(r"\s(?=[A-D]\)\s)", texto)
+    segmentos = {}
+    for parte in partes:
+        m = re.match(r"^([A-D])\)\s*(.*)$", parte, re.DOTALL)
+        if not m:
+            return None  # forma inesperada: no arriesgar a corromper el texto
+        segmentos[m.group(1)] = m.group(2)
+    if set(segmentos) != set(_LETRAS_OPCION):
+        return None
+    return segmentos
+
+
 def _remapear_explicacion_por_letra(explicacion, mapa_original_a_nueva):
     """La explicación de una pregunta de test se pide con el patrón
     "A) ... B) ... C) ... D) ...", una línea por opción en el orden
@@ -633,18 +669,9 @@ def _remapear_explicacion_por_letra(explicacion, mapa_original_a_nueva):
     esos prefijos de letra para que sigan señalando a la opción correcta --
     si no, tras barajar, la explicación podría decir "B) es correcta" sobre
     una opción que ahora es la C."""
-    texto = (explicacion or "").strip()
-    if not re.match(r"^[A-D]\)\s", texto):
+    segmentos = parsear_explicacion_por_opcion(explicacion)
+    if segmentos is None:
         return explicacion  # no sigue el formato esperado: se deja tal cual
-    partes = re.split(r"\s(?=[A-D]\)\s)", texto)
-    segmentos = {}
-    for parte in partes:
-        m = re.match(r"^([A-D])\)\s*(.*)$", parte, re.DOTALL)
-        if not m:
-            return explicacion  # forma inesperada: no arriesgar a corromper el texto
-        segmentos[m.group(1)] = m.group(2)
-    if set(segmentos) != set(_LETRAS_OPCION):
-        return explicacion
     inversa = {nueva: original for original, nueva in mapa_original_a_nueva.items()}
     return " ".join(f"{letra}) {segmentos[inversa[letra]]}" for letra in _LETRAS_OPCION)
 

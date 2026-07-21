@@ -357,6 +357,66 @@ def test_explicar_por_que_falle_usa_la_respuesta_pasada(db):
     assert "art. 62.a CE" in sistema    # explicación de referencia
 
 
+def test_explicar_por_que_falle_no_invierte_opcion_con_doble_negacion(db):
+    # Bug real visto en producción: con una explicación por opción (formato
+    # "A) ... B) ... C) ... D) ...") con doble negación en el texto de la
+    # opción marcada, el tutor llegó a decir que la opción marcada (incorrecta)
+    # era la buena. La explicación de la correcta debe salir destacada y
+    # ANTES que la de la marcada, y esta debe quedar etiquetada sin ambigüedad
+    # como incorrecta.
+    contexto = {
+        "tipo": "test",
+        "enunciado": "¿Cuál de las siguientes es correcta sobre el reintegro de prestaciones indebidas?",
+        "opciones": {
+            "A": "Se aplica apremio solo si hay mala fe",
+            "B": "No se exige revisión previa",
+            "C": "Responden solidariamente",
+            "D": "Puede reformarse en cualquier tiempo",
+        },
+        "respuesta_correcta": "D",
+        "respuesta_usuario": "A",
+        "explicacion": (
+            "A) es incorrecta porque se prevé la aplicación del procedimiento de apremio sin "
+            "condicionarlo a la mala fe del perceptor. "
+            "B) es incorrecta porque se exige la previa revisión del acto en todo caso. "
+            "C) es incorrecta porque responden subsidiariamente, no solidariamente. "
+            "D) es correcta porque permite reformar en cualquier tiempo mediante acuerdo motivado."
+        ),
+    }
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock:
+        responder_tutor("¿Por qué me he equivocado?", db=db, usuario_id="u1", oposicion="AGE",
+                        coleccion="Temario AGE", contexto_pagina=contexto)
+    sistema = _texto_sistema(mock.call_args.kwargs["messages"])
+    assert sistema.count("opción D") >= 2  # la correcta se repite (refuerzo)
+    texto_correcta = "permite reformar en cualquier tiempo"
+    texto_marcada = "sin condicionarlo a la mala fe"
+    assert texto_correcta in sistema
+    assert texto_marcada in sistema
+    # la explicación de la correcta va destacada y ANTES que la de la marcada
+    assert sistema.index(texto_correcta) < sistema.index(texto_marcada)
+    # la opción marcada queda etiquetada sin ambigüedad como incorrecta
+    assert "INCORRECTA" in sistema
+
+
+def test_explicar_por_que_falle_con_explicacion_mal_formada_usa_bloque_plano(db):
+    # Si la explicación no sigue el patrón "A) ... B) ... C) ... D) ...", se
+    # conserva el comportamiento de siempre: mandarla completa tal cual.
+    contexto = {
+        "tipo": "test",
+        "enunciado": "¿Quién sanciona las leyes?",
+        "opciones": {"A": "El Rey", "B": "El Congreso"},
+        "respuesta_correcta": "A",
+        "respuesta_usuario": "B",
+        "explicacion": "El Rey sanciona y promulga las leyes, no el Congreso, que solo las aprueba.",
+    }
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock:
+        responder_tutor("¿Por qué me he equivocado?", db=db, usuario_id="u1", oposicion="AGE",
+                        coleccion="Temario AGE", contexto_pagina=contexto)
+    sistema = _texto_sistema(mock.call_args.kwargs["messages"])
+    assert "El Rey sanciona y promulga las leyes, no el Congreso, que solo las aprueba." in sistema
+    assert sistema.count("opción A") >= 2  # refuerzo de la correcta, incluso sin parseo
+
+
 def test_saludo_de_vuelta_y_sugerencias_de_examen_para_usuario_con_historia(db):
     db.sembrar(("Temario AGE", "b1"), {"titulo": "Bloque I"})
     db.sembrar(("Temario AGE", "b1", "temas", "t1"), {"titulo": "La Corona"})

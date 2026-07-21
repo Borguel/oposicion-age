@@ -1909,6 +1909,36 @@ body {
 .tutor-widget-expandir:hover,
 .tutor-widget-cerrar:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
+.tutor-widget-pin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--age-primary-soft);
+  border-bottom: 1px solid var(--age-border);
+  font-size: 12px;
+  color: var(--age-ink-soft);
+  flex-shrink: 0;
+}
+.tutor-widget-pin-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tutor-widget-pin-quitar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tutor-widget-pin-quitar:hover { background: rgba(0,0,0,0.08); }
+
 .tutor-widget-mensajes {
   flex: 1;
   overflow-y: auto;
