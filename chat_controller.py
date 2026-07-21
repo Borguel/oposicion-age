@@ -159,6 +159,13 @@ def _instrucciones_asistente_examen(oposicion):
         "puede variar según la convocatoria; consúltalo en la última publicada en el BOE\") en vez "
         "de inventar cifras concretas con aparente seguridad. Nunca cites una fecha, un número de "
         "Resolución o una cifra de puntuación exacta como si fuera un hecho verificado si no lo es.\n\n"
+        "Esta misma cautela vale para CUALQUIER dato muy concreto de una norma (un número exacto de "
+        "miembros, un plazo en días/meses, un porcentaje, el número de un artículo) que no venga "
+        "citado literalmente en contenido que se te haya pasado o cargado en este mensaje: si no lo "
+        "tienes con una fuente delante ahora mismo, no lo afirmes como un hecho comprobado. Da tu "
+        "mejor respuesta razonada igualmente (no te niegues a contestar), pero dilo con honestidad "
+        "(\"no tengo este dato exacto verificado, pero...\") en vez de sonar tan seguro como si lo "
+        "estuvieras citando de la norma.\n\n"
         "Sobre el formato: estructura la respuesta con markdown ligero (## para algún encabezado "
         "si hay varias secciones claras, **negrita** para lo importante, listas con - cuando ayude "
         "a leer mejor), pero sin abusar -- para preguntas sencillas basta con un párrafo o dos bien "
@@ -310,7 +317,13 @@ _INSTRUCCION_EXAMEN = (
     "seguir: no te des tú mismo la solución en el mismo mensaje. Cuando conteste, dile si ha acertado, da "
     "una explicación breve de por qué, y a continuación hazle la siguiente pregunta. Ve numerando "
     "(\"Pregunta 2 de 5\") y, al terminar la tanda, resume cómo lo ha hecho y en qué conviene que insista. "
-    "Empieza ahora con la primera pregunta."
+    "Estas preguntas las generas tú mismo al vuelo, sin pasar por el verificador que sí usa el generador "
+    "de Test Personalizado: por eso, si tienes contenido del temario cargado en este mensaje, básate en "
+    "él para la pregunta; si no lo tienes, prioriza preguntas de concepto/definición (donde tu conocimiento "
+    "es fiable) sobre preguntas de dato muy concreto (un número exacto de días, de miembros, un porcentaje "
+    "concreto...) que no puedas verificar aquí mismo -- y si aun así haces una de dato concreto, dilo "
+    "junto con la corrección (\"este dato concreto no lo tengo 100% verificado, pero...\") en vez de "
+    "darlo por hecho con total seguridad. Empieza ahora con la primera pregunta."
 )
 
 
@@ -909,7 +922,11 @@ def _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, c
                 "o similar, SIEMPRE se refiere a ESTA pregunta en pantalla, nunca a una pregunta anterior "
                 "de la conversación (aunque antes hayáis hablado de otra pregunta distinta). Resuélvela "
                 "directamente indicando la opción correcta y por qué. Solo si su mensaje va claramente de "
-                "otra cosa, ignórala.\n\nPREGUNTA EN PANTALLA:\n" + pregunta_en_pantalla
+                "otra cosa, ignórala. Si más abajo hay un mensaje de \"DATO VERIFICADO\" para esta misma "
+                "pregunta, esa es la respuesta correcta real -- dala tal cual, sin dudar. Si NO hay ningún "
+                "\"DATO VERIFICADO\" (la estás razonando tú desde cero) y no tienes plena certeza, dilo "
+                "explícitamente en vez de sonar tan seguro como si fuera un hecho comprobado.\n\n"
+                "PREGUNTA EN PANTALLA:\n" + pregunta_en_pantalla
             )
         })
 
