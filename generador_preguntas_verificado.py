@@ -499,9 +499,10 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
             if resultado:
                 preguntas.append(resultado)
                 # Se acumula aparte, por oposición, un banco de preguntas ya
-                # verificadas (ver banco_preguntas_ia.py) -- de momento solo
-                # para tener un repositorio propio de cara al futuro, no se
-                # usa todavía en ninguna ruta pública.
+                # verificadas (ver banco_preguntas_ia.py) -- Tu Tutor lo
+                # consulta (utils.buscar_pregunta_banco_ia) para dar la
+                # respuesta ya corregida en vez de razonarla de nuevo cuando
+                # el usuario le pega una de estas preguntas.
                 guardar_pregunta_generada(db, oposicion, resultado)
             else:
                 descartadas += 1
