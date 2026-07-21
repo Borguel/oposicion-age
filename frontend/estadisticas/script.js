@@ -542,8 +542,10 @@ document.addEventListener("DOMContentLoaded", async function () {
   function renderizarCalendarioRacha(historial) {
     historialCalendario = historial || [];
     const tarjeta = document.getElementById("tarjeta-calendario");
+    const titulo = document.getElementById("calendario-titulo");
     if (historialCalendario.length === 0) {
       tarjeta.style.display = "none";
+      titulo.style.display = "none";
       return;
     }
     if (!mesCalendarioActual) {
@@ -551,6 +553,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       mesCalendarioActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
     }
     tarjeta.style.display = "flex";
+    titulo.style.display = "block";
     pintarCalendarioMes();
   }
 

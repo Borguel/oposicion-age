@@ -749,7 +749,7 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      margin-top: 12px;
+      margin-top: 0;
       flex-wrap: wrap;
     }
 
@@ -820,10 +820,14 @@
     .calendario-dias-semana {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 8px;
+      gap: 1px;
+      background: var(--age-border);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-sm);
+      overflow: hidden;
       margin: 14px auto 0;
       text-align: center;
-      /* Mismo max-width y márgenes que .calendario-grafica -- si no, esta
+      /* Mismo max-width, gap y márgenes que .calendario-grafica -- si no, esta
          fila ocupa todo el ancho de la tarjeta mientras que la rejilla de
          días de abajo tiene un ancho distinto, y las 7 columnas de cada
          una acaban en posiciones distintas (las letras L M X... no
@@ -836,6 +840,8 @@
     }
 
     .calendario-dias-semana span {
+      background: var(--age-card);
+      padding: 6px 0;
       font-size: 0.95rem;
       font-weight: 700;
       color: var(--age-ink-faint);
@@ -844,42 +850,55 @@
     .calendario-grafica {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 8px;
-      margin: 6px auto 0;
+      gap: 1px;
+      background: var(--age-border);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-sm);
+      overflow: hidden;
+      margin: 8px auto 0;
       max-width: 720px;
     }
 
+    /* Cuadrícula real de calendario de pared: el fondo del contenedor hace
+       de color de línea y el gap de 1px deja verlo entre celdas, en vez de
+       un borde por celda (que duplicaría el grosor en cada unión). Número
+       del día en la esquina superior izquierda, como en un calendario real. */
     .calendario-celda {
       width: 100%;
-      aspect-ratio: 1;
-      border-radius: 10px;
+      aspect-ratio: 5 / 4;
       background: var(--age-neutral-bg);
       display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 17px;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 5px 0 0 7px;
+      font-size: 13px;
+      font-weight: 600;
       color: var(--age-ink-faint);
     }
 
     @media (max-width: 640px) {
       .calendario-dias-semana,
       .calendario-grafica {
-        max-width: 400px;
-        gap: 6px;
+        max-width: 100%;
       }
 
       .calendario-dias-semana span {
         font-size: 0.82rem;
+        padding: 5px 0;
       }
 
       .calendario-celda {
-        border-radius: 7px;
-        font-size: 14px;
+        font-size: 11px;
+        padding: 4px 0 0 5px;
       }
     }
 
     .calendario-celda.vacia {
-      background: transparent;
+      /* Con el fondo var(--age-border) del contenedor haciendo de línea de
+         rejilla, "transparent" dejaría pasar ese gris como relleno sólido
+         de toda la celda -- se usa el color de la tarjeta para que las
+         celdas vacías se vean como huecos en blanco, no como bloques grises. */
+      background: var(--age-card);
     }
 
     /* Escala de intensidad por actividad del día (1 test = verde claro,
