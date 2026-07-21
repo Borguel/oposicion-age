@@ -1921,6 +1921,7 @@ body {
   color: var(--age-ink-soft);
   flex-shrink: 0;
 }
+.tutor-widget-pin[hidden] { display: none; }
 .tutor-widget-pin-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tutor-widget-pin-quitar {
   flex-shrink: 0;
