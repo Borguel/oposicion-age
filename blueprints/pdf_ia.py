@@ -15,11 +15,11 @@ from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 from PyPDF2 import PdfReader
 
 from firebase_setup import db
-from auth_utils import requiere_plan
+from auth_utils import requiere_plan, obtener_oposicion_solicitada
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso, devolver_uso
 from documentos_pdf import (
     obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta,
-    listar_carpetas, crear_carpeta, eliminar_carpeta
+    listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo
 )
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import generar_preguntas_ia_en_lotes
@@ -566,7 +566,22 @@ def guardar_test_pdf():
         data = request.get_json()
         test_data = data.get('test_data', {})
         preguntas = test_data.get('preguntas', [])
+        respuestas = test_data.get('respuestas', [])
+        metadatos_entrada = test_data.get('metadatos', {})
         nombre_archivo = data.get('nombre_archivo', 'documento.pdf')
+        documento_id = data.get('documento_id')
+
+        # Se guarda en dos sitios con propósitos distintos:
+        # - "test_pdf" (colección tests_pdf): el banco de preguntas ya
+        #   generadas de este documento, para "Generar más"/"Ver" desde Mis
+        #   Documentos sin volver a llamar a la IA. Ya existía.
+        # - "test" (colección tests, mismo tipo que usan test-personalizado/
+        #   test-oficial/etc.): el INTENTO en sí -- respuestas del usuario,
+        #   aciertos/fallos, nota -- que antes no se guardaba en absoluto
+        #   para tests desde PDF, así que nunca aparecían en Mis Tests ni en
+        #   las estadísticas. Reutiliza el mismo test_id que el autoguardado
+        #   "en_progreso" de la propia página, así el borrador se convierte
+        #   en el registro final en vez de quedar duplicado o huérfano.
         guardar_resultado_en_firestore(
             db=db,
             tipo="test_pdf",
@@ -574,21 +589,25 @@ def guardar_test_pdf():
             usuario_id=g.uid,
             metadatos={
                 'nombre_archivo': nombre_archivo,
-                'documento_id': data.get('documento_id'),
+                'documento_id': documento_id,
                 'num_preguntas': len(preguntas),
                 'fecha_procesamiento': datetime.utcnow().isoformat()
             }
         )
-        # Si este test se autoguardó "en_progreso" mientras se hacía (mismo
-        # mecanismo que usan test-generator/repetir-test/preguntas-falladas),
-        # se borra ese borrador -- ya quedó guardado como test_pdf de verdad,
-        # no debe seguir apareciendo como "en progreso" en ningún sitio.
-        test_id = data.get('test_id')
-        if test_id:
-            try:
-                db.collection("usuarios").document(g.uid).collection("tests").document(test_id).delete()
-            except Exception as e:
-                logger.warning("No se pudo borrar el borrador de test en progreso %s: %s", test_id, e)
+        guardar_resultado_en_firestore(
+            db=db,
+            tipo="test",
+            contenido=preguntas,
+            usuario_id=g.uid,
+            metadatos={
+                "tipo": "test_pdf",
+                "respuestas": respuestas,
+                "tiempo": metadatos_entrada.get("tiempo", 0),
+            },
+            oposicion=obtener_oposicion_solicitada(),
+            test_id=data.get('test_id'),
+            marcadas_duda=data.get('marcadas_duda', []),
+        )
         return jsonify({'mensaje': 'Test desde PDF guardado correctamente'})
     except Exception as e:
         logger.exception("Error en /guardar-test-pdf")
@@ -710,6 +729,19 @@ def documento_carpeta(documento_id):
     if not ok:
         return jsonify({"error": "No se encontró el documento indicado."}), 404
     return jsonify({"mensaje": "Carpeta actualizada"})
+
+
+@bp.route('/documento/<documento_id>/titulo', methods=['POST'])
+@requiere_plan(db, "premium", global_check=True)
+def documento_titulo(documento_id):
+    datos = request.get_json(silent=True) or {}
+    titulo = (datos.get("titulo") or "").strip()
+    if not titulo:
+        return jsonify({"error": "El nombre no puede estar vacío."}), 400
+    ok = actualizar_titulo(db, g.uid, documento_id, titulo)
+    if not ok:
+        return jsonify({"error": "No se encontró el documento indicado."}), 404
+    return jsonify({"mensaje": "Nombre actualizado", "titulo": titulo[:120]})
 
 
 def _ultimo_por_documento(coleccion, documento_id, uid):

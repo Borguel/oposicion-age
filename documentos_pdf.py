@@ -133,6 +133,19 @@ def actualizar_carpeta(db, uid, documento_id, carpeta):
     return True
 
 
+def actualizar_titulo(db, uid, documento_id, titulo):
+    """Deja que el usuario le ponga a un documento un nombre distinto del
+    que se extrajo automáticamente al subirlo (ver extraer_titulo)."""
+    ref = db.collection("usuarios").document(uid).collection("documentos").document(documento_id)
+    if not ref.get().exists:
+        return False
+    titulo = (titulo or "").strip()[:120]
+    if not titulo:
+        return False
+    ref.update({"titulo": titulo})
+    return True
+
+
 def listar_carpetas(db, uid):
     """Catálogo de carpetas del usuario: las creadas explícitamente con
     crear_carpeta() más cualquier nombre que ya tuviera asignado algún

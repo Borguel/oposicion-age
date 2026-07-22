@@ -67,17 +67,43 @@ class TestRutasGuardarPdf:
     usuario vía guardar_resultado_en_firestore."""
 
     def test_guardar_test_pdf(self, client, db, documento_sembrado):
+        # Bug real: el intento (respuestas del usuario, aciertos/fallos) no
+        # se guardaba en ningún sitio -- solo se incrementaba el contador de
+        # uso de la herramienta -- así que un test desde PDF nunca aparecía
+        # en Mis Tests ni en las estadísticas. Ahora debe quedar guardado en
+        # la MISMA colección "tests" que usan test-personalizado/oficial/etc,
+        # con las respuestas y el acierto ya calculado por pregunta.
         parche = _con_sesion(client)
         try:
             resp = client.post("/guardar-test-pdf", json={
-                "preguntas": [{"pregunta": "?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"}, "respuesta_correcta": "A"}],
+                "test_data": {
+                    "preguntas": [
+                        {"pregunta": "?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"}, "respuesta_correcta": "A"},
+                        {"pregunta": "??", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"}, "respuesta_correcta": "B"},
+                    ],
+                    "respuestas": ["A", "C"],
+                    "metadatos": {"tiempo": 42},
+                },
                 "documento_id": documento_sembrado,
                 "nombre_archivo": "doc.pdf",
+                "oposicion": "AGE",
+                "test_id": "t1",
             }, headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
         assert resp.status_code == 200
         assert db.leer(("usuarios", "u1"))["tests_pdf_realizados"] == 1
+
+        test_guardado = db.leer(("usuarios", "u1", "tests", "t1"))
+        assert test_guardado is not None
+        assert test_guardado["tipo"] == "test_pdf"
+        assert test_guardado["estado"] == "finalizado"
+        assert test_guardado["aciertos"] == 1
+        assert test_guardado["fallos"] == 1
+        assert test_guardado["preguntas"][0]["respuesta_usuario"] == "A"
+        assert test_guardado["preguntas"][0]["acierto"] is True
+        assert test_guardado["preguntas"][1]["respuesta_usuario"] == "C"
+        assert test_guardado["preguntas"][1]["acierto"] is False
 
     def test_guardar_resumen_pdf(self, client, db, documento_sembrado):
         parche = _con_sesion(client)

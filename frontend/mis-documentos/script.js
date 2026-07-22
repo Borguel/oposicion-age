@@ -127,7 +127,10 @@ function tarjetaDocumento(doc, modoCarpeta) {
       <div class="documento-card-header">
         <div class="documento-card-icon">${icono("libro", 26)}</div>
         <div>
-          <p class="documento-card-titulo">${escaparHtml(nombreCorto)}</p>
+          <p class="documento-card-titulo">
+            ${escaparHtml(nombreCorto)}
+            <button type="button" class="documento-card-renombrar" data-id="${doc.id}" aria-label="Renombrar documento" title="Renombrar documento">${icono("lapiz", 14)}</button>
+          </p>
           <p class="documento-card-meta">${escaparHtml(meta)}</p>
         </div>
       </div>
@@ -147,18 +150,32 @@ function tarjetaCarpeta(idCarpeta, nombreMostrado, cantidad, esEspecial) {
   `;
 }
 
+// Un documento sin carpeta se muestra directamente con su propio nombre
+// (no agrupado detrás de una única tarjeta genérica "Sin carpeta"), con
+// "Sin carpeta" como subtítulo -- así se ve de un vistazo de qué documento
+// se trata sin tener que entrar. Sigue llevando a la misma vista de "Sin
+// carpeta" al pulsarlo (donde puede moverse a una carpeta real).
+function tarjetaDocumentoSuelto(doc) {
+  const nombre = (doc.titulo || doc.nombre_archivo || "Documento").slice(0, 60);
+  return `
+    <button type="button" class="carpeta-tile carpeta-tile-especial" data-carpeta="${SIN_CARPETA}">
+      <span class="carpeta-tile-icono">${icono("documento", 26)}</span>
+      <span class="carpeta-tile-nombre">${escaparHtml(nombre)}</span>
+      <span class="carpeta-tile-contador">Sin carpeta</span>
+    </button>
+  `;
+}
+
 function renderizarCarpetas() {
   const grid = document.getElementById("carpetas-grid");
-  const sinCarpetaCount = documentos.filter((d) => !d.carpeta).length;
+  const sinCarpetaDocs = documentos.filter((d) => !d.carpeta);
 
   const tiles = carpetas.map((nombre) => {
     const cantidad = documentos.filter((d) => d.carpeta === nombre).length;
     return tarjetaCarpeta(nombre, nombre, cantidad, false);
   });
 
-  if (sinCarpetaCount > 0 || carpetas.length === 0) {
-    tiles.push(tarjetaCarpeta(SIN_CARPETA, "Sin carpeta", sinCarpetaCount, true));
-  }
+  sinCarpetaDocs.forEach((doc) => tiles.push(tarjetaDocumentoSuelto(doc)));
 
   grid.innerHTML = tiles.join("");
   grid.querySelectorAll("[data-carpeta]").forEach((boton) => {
@@ -186,6 +203,34 @@ function renderizarDocumentosDeCarpeta() {
     contenedor.querySelectorAll(".documento-card-quitar").forEach((boton) => {
       boton.addEventListener("click", () => quitarDeCarpeta(boton.dataset.id));
     });
+  }
+  contenedor.querySelectorAll(".documento-card-renombrar").forEach((boton) => {
+    boton.addEventListener("click", () => renombrarDocumento(boton.dataset.id));
+  });
+}
+
+async function renombrarDocumento(documentoId) {
+  const doc = documentos.find((d) => d.id === documentoId);
+  if (!doc) return;
+  const nuevoNombre = prompt("Nuevo nombre del documento:", doc.titulo || doc.nombre_archivo || "");
+  if (nuevoNombre === null) return;
+  const limpio = nuevoNombre.trim();
+  if (!limpio) return;
+  try {
+    const token = await idToken();
+    const res = await fetch(`${BACKEND_URL}/documento/${documentoId}/titulo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ titulo: limpio })
+    });
+    const datos = await res.json();
+    if (!res.ok) throw new Error(datos.error || "No se pudo renombrar el documento.");
+    doc.titulo = datos.titulo || limpio;
+    if (carpetaActual !== null) renderizarDocumentosDeCarpeta();
+    const query = document.getElementById("filtro-busqueda")?.value;
+    if (query) renderizarBusqueda(query);
+  } catch (e) {
+    mostrarErrorGlobal(e.message || "No se pudo renombrar el documento.");
   }
 }
 
@@ -229,6 +274,9 @@ function renderizarBusqueda(query) {
     return;
   }
   resultados.innerHTML = encontrados.map((d) => tarjetaDocumento(d, "etiqueta")).join("");
+  resultados.querySelectorAll(".documento-card-renombrar").forEach((boton) => {
+    boton.addEventListener("click", () => renombrarDocumento(boton.dataset.id));
+  });
 }
 
 async function asignarCarpeta(documentoId, carpeta) {

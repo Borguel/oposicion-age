@@ -158,9 +158,12 @@ async function obtenerAuthHeaders() {
             },
             nombre_archivo: nombreArchivo,
             documento_id: documentoIdActual,
-            // Si este test se autoguardó "en_progreso" mientras se hacía, el
-            // backend borra ese borrador en cuanto queda guardado de verdad
-            // como test_pdf -- no debe quedar como "en progreso" en ningún sitio.
+            oposicion: oposicionActual,
+            marcadas_duda: marcadasDuda,
+            // Este mismo test_id ya se autoguardó "en_progreso" mientras se
+            // hacía el test -- el backend lo reutiliza para convertirlo en
+            // el registro final (con respuestas, aciertos y nota), igual
+            // que el resto de tipos de test, en vez de un borrador aparte.
             test_id: testIdEnCurso()
           })
         });
