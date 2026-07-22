@@ -99,7 +99,12 @@ class TestGenerarPreguntasIaEnLotes:
         # en total (la del lote + las de recambio), nunca más.
         assert len(llamadas_generacion) == MAX_INTENTOS_POR_PREGUNTA_PDF
 
-    def test_on_progreso_se_llama_una_vez_por_lote(self):
+    def test_on_progreso_se_llama_una_vez_por_pregunta_no_por_lote(self):
+        # Con este mock cada lote (independientemente de las n preguntas que
+        # pida) solo genera 1 candidata -- así, con 20 preguntas y lotes de
+        # 15 (2 lotes: 15 + 5), hay exactamente 2 candidatas verificadas en
+        # total, y "total" en cada evento debe ser num_preguntas (20), no el
+        # número de lotes (2) -- la granularidad ahora es por pregunta.
         construir_prompt = _construir_prompt_fabrica(None)
 
         def fake_call(messages, **kwargs):
@@ -117,10 +122,39 @@ class TestGenerarPreguntasIaEnLotes:
                 on_progreso=lambda e: eventos.append(e),
             )
 
-        # 20 preguntas con lotes de 15 -> 2 lotes (15 + 5).
         assert len(eventos) == 2
-        assert {e["total"] for e in eventos} == {2}
+        assert {e["total"] for e in eventos} == {20}
         assert {e["completadas"] for e in eventos} == {1, 2}
+
+    def test_on_progreso_se_llama_por_cada_candidata_dentro_de_un_mismo_lote(self):
+        # El caso real que antes se perdía: un ÚNICO lote (num_preguntas <=
+        # tamano_lote) que genera VARIAS candidatas -- antes solo llegaba un
+        # evento de progreso al final del lote entero; ahora debe llegar uno
+        # por cada candidata verificada dentro de ese mismo lote.
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            return json.dumps([
+                {"pregunta": "¿Pregunta 1?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."},
+                {"pregunta": "¿Pregunta 2?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "B", "explicacion": "..."},
+                {"pregunta": "¿Pregunta 3?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "C", "explicacion": "..."},
+            ])
+
+        eventos = []
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            generar_preguntas_ia_en_lotes(
+                construir_prompt, 3, "Texto de prueba.", tamano_lote=15,
+                on_progreso=lambda e: eventos.append(e),
+            )
+
+        assert len(eventos) == 3
+        assert {e["total"] for e in eventos} == {3}
+        assert {e["completadas"] for e in eventos} == {1, 2, 3}
 
     def test_on_usage_recibe_generacion_y_verificacion(self):
         construir_prompt = _construir_prompt_fabrica(None)

@@ -227,15 +227,12 @@ async function obtenerAuthHeaders() {
     });
 
     // Consume el stream SSE de /generar-test-desde-pdf (progreso real por
-    // lote, ver blueprints/pdf_ia.py) y devuelve el evento "fin" -- usado
-    // tanto al subir un PDF nuevo como al generar un test desde un
-    // documento ya guardado en "Mis documentos" (ambos llaman a la misma
-    // ruta). Con pocas preguntas (un único lote) solo llega UN evento de
-    // progreso real, justo al final -- para que la barra no se quede
-    // "pillada" ese rato, avanza mediante un "techo" que solo sube (por
-    // eventos reales o, si no llega ninguno, muy despacio con el tiempo) y
-    // un carrusel de mensajes de la fase actual, en vez de saltar en seco de
-    // 0% al resultado.
+    // PREGUNTA verificada, no por lote -- ver test_generator.py) y devuelve
+    // el evento "fin" -- usado tanto al subir un PDF nuevo como al generar
+    // un test desde un documento ya guardado en "Mis documentos" (ambos
+    // llaman a la misma ruta). Mismo grano que el test personalizado
+    // (/assets/progreso-conversador.js rellena además los huecos entre
+    // eventos reales para que la barra no se quede "pillada").
     async function generarTestDesdePdfConProgreso(formData, authHeaders) {
       const { crearProgresoConversador } = await import("/assets/progreso-conversador.js");
       const progreso = crearProgresoConversador({
@@ -295,7 +292,7 @@ async function obtenerAuthHeaders() {
               continue;
             }
             if (evento.tipo === "progreso") {
-              progreso.avanzar(evento, `Generando preguntas (lote ${evento.completadas} de ${evento.total})…`);
+              progreso.avanzar(evento, `Generando y verificando pregunta ${evento.completadas} de ${evento.total}…`);
             } else if (evento.tipo === "fin") {
               datosFinales = evento;
             }

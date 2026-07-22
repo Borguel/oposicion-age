@@ -1,5 +1,6 @@
 import re
 import json
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from deepseek_utils import call_deepseek_api
 
@@ -116,13 +117,18 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     se añade un generador basado solo en el conocimiento general del
     modelo, sin PDF ni temario anclado).
 
-    on_progreso(evento), si se pasa, se llama cada vez que un LOTE termina
-    de generarse Y VERIFICARSE por completo (con éxito o error), con
-    {"completadas": i, "total": n_lotes} -- pensado para retransmitir
-    progreso real por SSE en vez de mensajes rotativos cosméticos (ver
-    /generar-test-desde-pdf en blueprints/pdf_ia.py). El contrato no
-    cambia por la verificación: "completadas" ahora significa "lotes ya
-    verificados", que es justo el objetivo.
+    on_progreso(evento), si se pasa, se llama cada vez que UNA PREGUNTA
+    individual termina de verificarse (con éxito o descarte definitivo,
+    tras agotar sus reintentos de recambio si hiciera falta), con
+    {"completadas": i, "total": num_preguntas} -- mismo grano que
+    generador_preguntas_verificado.py usa para el temario oficial (por
+    pregunta, no por lote), para que el progreso retransmitido por SSE se
+    sienta igual de vivo en /generar-test-desde-pdf (blueprints/pdf_ia.py)
+    que en el test personalizado, en vez de dar un único salto al final
+    cuando el lote entero (hasta 15 preguntas) termina de golpe. Con lotes
+    que devuelven menos candidatas de las pedidas (fallo parcial de
+    DeepSeek), "completadas" puede quedarse por debajo de "total" al
+    acabar -- el llamante ya remata la barra al 100% con el evento "fin".
 
     on_usage, si se pasa, recibe el usage de cada llamada a DeepSeek (de
     generación Y de verificación) -- esta función corre siempre dentro de
@@ -155,6 +161,21 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         lotes.append(n)
         restante -= n
 
+    # Contador compartido entre TODOS los hilos (los de cada lote y, dentro
+    # de cada uno, los de verificación de cada candidata): un lock evita que
+    # dos hilos incrementen a la vez y pisen el número que se manda por SSE.
+    completadas_preguntas = 0
+    lock_progreso = threading.Lock()
+
+    def _reportar_avance_pregunta():
+        nonlocal completadas_preguntas
+        if not on_progreso:
+            return
+        with lock_progreso:
+            completadas_preguntas += 1
+            valor = completadas_preguntas
+        on_progreso({"completadas": valor, "total": num_preguntas})
+
     def _pedir_lote_verificado(n):
         prompt = construir_prompt(n)
         generado = call_deepseek_api(
@@ -178,17 +199,25 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         if texto_fuente is None:
             # Sin documento contra el que verificar: se acepta la candidata
             # tal cual, igual que antes de añadir la verificación.
+            for _ in candidatas:
+                _reportar_avance_pregunta()
             return candidatas, None
 
         # Se verifica cada candidata del lote EN PARALELO -- en serie
         # multiplicaría por hasta 'tamano_lote' el tiempo de este lote, y
-        # una pregunta con problemas no debe frenar a las demás.
+        # una pregunta con problemas no debe frenar a las demás. Se reporta
+        # el avance por 'as_completed' (una por una, según van resolviéndose,
+        # con éxito o descarte) en vez de esperar a que TODAS terminen --
+        # así el progreso real llega pregunta a pregunta, no lote a lote.
         with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(candidatas))) as executor:
             futuros = [
                 executor.submit(_asegurar_pregunta_valida, candidata, construir_prompt, texto_fuente, on_usage)
                 for candidata in candidatas
             ]
-            verificadas = [f.result() for f in futuros]
+            verificadas = []
+            for futuro in as_completed(futuros):
+                verificadas.append(futuro.result())
+                _reportar_avance_pregunta()
         aceptadas = [p for p in verificadas if p]
         if not aceptadas:
             # Generación OK (hubo candidatas), pero NINGUNA superó la
@@ -205,18 +234,14 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
 
     preguntas = []
     errores = []
-    completadas = 0
     with ThreadPoolExecutor(max_workers=min(5, len(lotes))) as executor:
         futuros = [executor.submit(_pedir_lote_verificado, n) for n in lotes]
         for futuro in as_completed(futuros):
             lote_preguntas, error = futuro.result()
-            completadas += 1
             if error:
                 errores.append(error)
             else:
                 preguntas.extend(lote_preguntas)
-            if on_progreso:
-                on_progreso({"completadas": completadas, "total": len(lotes)})
 
     vistas = set()
     preguntas_unicas = []

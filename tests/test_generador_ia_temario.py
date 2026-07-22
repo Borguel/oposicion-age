@@ -69,7 +69,12 @@ def test_lote_con_json_invalido_no_bloquea_los_demas():
     assert len(errores) == 1
 
 
-def test_on_progreso_se_llama_una_vez_por_lote():
+def test_on_progreso_se_llama_una_vez_por_pregunta():
+    # Con este mock cada lote (sea cual sea la n pedida) devuelve una única
+    # candidata -- así, con 22 preguntas y tamano_lote=15 (2 lotes: 15 + 7),
+    # hay 2 candidatas en total, y "total" debe ser num_preguntas (22), no
+    # el número de lotes (2) -- ver test_test_generator.py para el mismo
+    # contrato con verificación (texto_fuente) activada.
     eventos_progreso = []
     with patch("test_generator.call_deepseek_api", side_effect=lambda **kw: _pregunta_json("¿P?")):
         generar_preguntas_ia_en_lotes(
@@ -77,9 +82,8 @@ def test_on_progreso_se_llama_una_vez_por_lote():
             on_progreso=lambda evento: eventos_progreso.append(evento)
         )
 
-    # 22 preguntas con tamano_lote=15 -> 2 lotes (15 + 7), un evento por lote.
     assert len(eventos_progreso) == 2
-    assert {e["total"] for e in eventos_progreso} == {2}
+    assert {e["total"] for e in eventos_progreso} == {22}
     assert sorted(e["completadas"] for e in eventos_progreso) == [1, 2]
 
 
