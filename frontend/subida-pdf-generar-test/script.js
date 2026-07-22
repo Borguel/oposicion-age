@@ -16,6 +16,13 @@ async function obtenerAuthHeaders() {
     let preguntas = [];
     let indicePreguntaActual = 0;
     let respuestasUsuario = [];
+    // Preguntas marcadas con la banderita "revisar más tarde" y "duda", y
+    // preguntas ya visitadas en esta sesión (para distinguir en el
+    // navegador el gris de "no visitada" del rojo de "visitada pero sin
+    // responder") -- mismo mecanismo que el resto de páginas de test.
+    let marcadasRevision = [];
+    let marcadasDuda = [];
+    let visitadas = [];
     let tiempoInicio;
     let intervaloTemporizador;
     let aciertos = 0;
@@ -107,13 +114,20 @@ async function obtenerAuthHeaders() {
       }, 1000);
     }
 
-    // === PROGRESO DE PREGUNTAS ===
-    function actualizarBarraProgresoPreguntas() {
-      const vistas = indicePreguntaActual + 1;
-      const porcentaje = (vistas / preguntas.length) * 100;
-      document.getElementById("progreso-preguntas").style.width = `${porcentaje}%`;
-      document.getElementById("texto-progreso-preguntas").textContent = `${Math.round(porcentaje)}% (${vistas}/${preguntas.length})`;
-      document.getElementById("barra-progreso-preguntas").style.display = "block";
+    // === MAPA DE PREGUNTAS (mismo componente compartido que el resto de tests) ===
+    function actualizarNavegadorPreguntas() {
+      const contenedor = document.getElementById("navegador-preguntas");
+      if (!contenedor) return;
+      import("/assets/navegador-preguntas.js").then(({ renderizarNavegadorPreguntas }) => {
+        renderizarNavegadorPreguntas(contenedor, {
+          total: preguntas.length,
+          respuestasUsuario,
+          visitadas,
+          marcadasRevision,
+          indiceActual: indicePreguntaActual,
+          onSaltar: (idx) => mostrarPregunta(idx)
+        });
+      });
     }
 
     // === GUARDADO EN FIRESTORE VIA BACKEND ===
@@ -340,6 +354,9 @@ async function obtenerAuthHeaders() {
       }
 
       respuestasUsuario = Array(preguntas.length).fill(null);
+      marcadasRevision = Array(preguntas.length).fill(false);
+      marcadasDuda = Array(preguntas.length).fill(false);
+      visitadas = Array(preguntas.length).fill(false);
       indicePreguntaActual = 0;
       document.getElementById('contenedor-carga').style.display = 'none';
 
@@ -355,18 +372,22 @@ async function obtenerAuthHeaders() {
         oposicion: oposicionActual, tipo: "test_pdf", temas: [],
         contenido: preguntas,
         respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
         indice_actual: indicePreguntaActual,
         pagina_origen: "/subida-pdf-generar-test/",
         documento_id: documentoIdActual
       });
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
         indice_actual: indicePreguntaActual,
         tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
 
       iniciarTemporizador();
-      actualizarBarraProgresoPreguntas();
+      document.getElementById("navegador-preguntas").style.display = "flex";
       mostrarPregunta(indicePreguntaActual);
       document.getElementById('btn-finalizar').style.display = 'block';
     }
@@ -395,7 +416,18 @@ async function obtenerAuthHeaders() {
       respuestasUsuario = Array.isArray(guardado.respuestas_usuario) && guardado.respuestas_usuario.length === preguntas.length
         ? guardado.respuestas_usuario
         : Array(preguntas.length).fill(null);
+      marcadasRevision = Array.isArray(guardado.marcadas_revision) && guardado.marcadas_revision.length === preguntas.length
+        ? guardado.marcadas_revision
+        : Array(preguntas.length).fill(false);
+      marcadasDuda = Array.isArray(guardado.marcadas_duda) && guardado.marcadas_duda.length === preguntas.length
+        ? guardado.marcadas_duda
+        : Array(preguntas.length).fill(false);
       indicePreguntaActual = guardado.indice_actual || 0;
+      // No se guarda un historial de "visitadas" -- se asume que se llegó
+      // hasta indice_actual avanzando en orden, así que se marcan como
+      // visitadas todas las preguntas hasta ahí.
+      visitadas = Array(preguntas.length).fill(false);
+      for (let k = 0; k <= indicePreguntaActual && k < visitadas.length; k++) visitadas[k] = true;
       const { obtenerOposicionActual } = await import("/assets/oposicion.js");
       oposicionActual = guardado.oposicion || obtenerOposicionActual();
       const favoritasApi = await import("/assets/favoritas.js");
@@ -405,11 +437,13 @@ async function obtenerAuthHeaders() {
 
       document.getElementById('contenedor-carga').style.display = 'none';
       iniciarTemporizador(guardado.tiempo_transcurrido_segundos || 0);
-      actualizarBarraProgresoPreguntas();
+      document.getElementById("navegador-preguntas").style.display = "flex";
       mostrarPregunta(indicePreguntaActual);
       document.getElementById('btn-finalizar').style.display = 'block';
       activarGuardadoAlSalir(() => ({
         respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
         indice_actual: indicePreguntaActual,
         tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
@@ -469,14 +503,19 @@ async function obtenerAuthHeaders() {
       // usa la pantalla de resultados, ver assets/resultados-test.js).
       const { escaparHtml } = await import("/assets/resultados-test.js");
       indicePreguntaActual = i;
-      actualizarBarraProgresoPreguntas();
+      visitadas[i] = true;
+      actualizarNavegadorPreguntas();
 
       const p = preguntas[i];
       let textoPregunta = escaparHtml(p.pregunta.replace(/^\s*\d+\s*[\.\)]\s*/, ""));
       let html = `<form id="form-pregunta">
         <div class="pregunta-en-negrita">
           <span>${i + 1}. ${textoPregunta}</span>
-          ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
+          <div class="pregunta-acciones-header">
+            ${botonFavoritaHTML(textosFavoritas.has(p.pregunta))}
+            <button type="button" id="btn-marcar-revision" class="btn-marcar-revision${marcadasRevision[i] ? " activa" : ""} icono-inline" aria-label="Marcar para revisión" title="Marcar esta pregunta para revisarla antes de terminar el test (queda resaltada en el mapa de preguntas)">${icono("marcador", 16)}</button>
+            <button type="button" id="btn-marcar-duda" class="btn-marcar-duda${marcadasDuda[i] ? " activa" : ""} icono-inline" aria-label="Marcar como duda" title="Marcar esta pregunta como duda: al terminar el test verás la nota contándola y sin contarla">${icono("pregunta", 16)}</button>
+          </div>
         </div>`;
 
       for (const letra in p.opciones) {
@@ -493,11 +532,10 @@ async function obtenerAuthHeaders() {
       html += `
         <div class="botones-navegacion-test">
           ${i > 0 ? '<button type="button" id="btn-anterior" class="age-btn age-btn-outline">← Anterior</button>' : ''}
-          <button type="button" id="btn-desmarcar" class="age-btn age-btn-outline">Desmarcar</button>
+          <button type="submit" class="age-btn age-btn-primary">
+            ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
+          </button>
         </div>
-        <button type="submit" class="age-btn age-btn-primary age-btn-block" style="margin-top:12px;">
-          ${i + 1 < preguntas.length ? 'Siguiente →' : 'Finalizar test'}
-        </button>
       </form>`;
 
       document.getElementById("contenedor-test").innerHTML = html;
@@ -508,11 +546,47 @@ async function obtenerAuthHeaders() {
         bloquePregunta.dataset.explicacion = p.explicacion || "";
       }
       activarBotonFavorita(document.getElementById("contenedor-test"), p, oposicionActual, textosFavoritas);
-
-      document.getElementById("btn-desmarcar").addEventListener("click", () => {
-        const marcadas = document.querySelectorAll('input[name="respuesta"]:checked');
-        marcadas.forEach(m => m.checked = false);
-        respuestasUsuario[i] = null;
+      document.getElementById("btn-marcar-revision").addEventListener("click", function() {
+        marcadasRevision[i] = !marcadasRevision[i];
+        this.classList.toggle("activa", marcadasRevision[i]);
+        actualizarNavegadorPreguntas();
+        import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+          autoguardarProgreso({
+            respuestas_usuario: respuestasUsuario,
+            marcadas_revision: marcadasRevision,
+            marcadas_duda: marcadasDuda,
+            indice_actual: i
+          });
+        });
+      });
+      document.getElementById("btn-marcar-duda").addEventListener("click", function() {
+        if (!marcadasDuda[i] && (respuestasUsuario[i] === null || respuestasUsuario[i] === undefined)) {
+          Swal.fire({ icon: "info", title: "Responde antes de marcarla", text: "Debes contestar esta pregunta antes de poder marcarla como duda." });
+          return;
+        }
+        marcadasDuda[i] = !marcadasDuda[i];
+        this.classList.toggle("activa", marcadasDuda[i]);
+        import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+          autoguardarProgreso({
+            respuestas_usuario: respuestasUsuario,
+            marcadas_revision: marcadasRevision,
+            marcadas_duda: marcadasDuda,
+            indice_actual: i
+          });
+        });
+      });
+      document.querySelectorAll('input[name="respuesta"]').forEach((radio) => {
+        radio.addEventListener("click", function() {
+          // Un segundo clic sobre la misma opción la desmarca y deja la
+          // pregunta en blanco, igual que en el resto de tests.
+          if (respuestasUsuario[i] === this.value) {
+            this.checked = false;
+            respuestasUsuario[i] = null;
+          } else {
+            respuestasUsuario[i] = this.value;
+          }
+          actualizarNavegadorPreguntas();
+        });
       });
 
       const botonGuardarSalir = document.getElementById("btn-guardar-salir");
@@ -526,6 +600,8 @@ async function obtenerAuthHeaders() {
         const { guardarProgresoInmediato } = await import("/assets/test-progreso.js");
         await guardarProgresoInmediato({
           respuestas_usuario: respuestasUsuario,
+          marcadas_revision: marcadasRevision,
+          marcadas_duda: marcadasDuda,
           indice_actual: indicePreguntaActual,
           tiempo_transcurrido_segundos: tiempoTranscurridoActual()
         });
@@ -545,6 +621,8 @@ async function obtenerAuthHeaders() {
         import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
           autoguardarProgreso({
             respuestas_usuario: respuestasUsuario,
+            marcadas_revision: marcadasRevision,
+            marcadas_duda: marcadasDuda,
             indice_actual: i + 1 < preguntas.length ? i + 1 : i,
             tiempo_transcurrido_segundos: tiempoTranscurridoActual()
           });
@@ -553,8 +631,12 @@ async function obtenerAuthHeaders() {
           mostrarPregunta(i + 1);
         } else {
           const sinContestar = respuestasUsuario.filter(r => r === null).length;
-          let mensaje = sinContestar > 0
-            ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+          const numDudasSinResolver = marcadasDuda.filter(Boolean).length;
+          const avisos = [];
+          if (sinContestar > 0) avisos.push(`has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar`);
+          if (numDudasSinResolver > 0) avisos.push(`has marcado ${numDudasSinResolver} pregunta${numDudasSinResolver > 1 ? 's' : ''} como duda${numDudasSinResolver > 1 ? 's' : ''}`);
+          let mensaje = avisos.length
+            ? avisos.join(' y ').replace(/^./, (c) => c.toUpperCase()) + '.'
             : '¿Quieres finalizar el test y ver los resultados?';
           Swal.fire({
             icon: 'question',
@@ -578,7 +660,7 @@ async function obtenerAuthHeaders() {
     async function mostrarResultados() {
       clearInterval(intervaloTemporizador);
       document.getElementById("temporizador").style.display = "none";
-      document.getElementById("barra-progreso-preguntas").style.display = "none";
+      document.getElementById("navegador-preguntas").style.display = "none";
       document.getElementById("contenedor-test").innerHTML = "";
       document.getElementById("contenedor-test").style.display = "none";
       document.getElementById("btn-finalizar").style.display = "none";
@@ -592,7 +674,8 @@ async function obtenerAuthHeaders() {
         contenedor: cont,
         preguntas,
         respuestasUsuario,
-        listaTemas: []
+        listaTemas: [],
+        marcadasDuda
       });
       aciertos = ultimasEstadisticas.aciertos;
       fallos = ultimasEstadisticas.fallos;
@@ -615,8 +698,12 @@ async function obtenerAuthHeaders() {
     // === FINALIZAR TEST ===
     document.getElementById("btn-finalizar").addEventListener("click", () => {
       const sinContestar = respuestasUsuario.filter(r => r === null).length;
-      let mensaje = sinContestar > 0
-        ? `Has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar.`
+      const numDudasSinResolver = marcadasDuda.filter(Boolean).length;
+      const avisos = [];
+      if (sinContestar > 0) avisos.push(`has dejado ${sinContestar} pregunta${sinContestar > 1 ? 's' : ''} sin contestar`);
+      if (numDudasSinResolver > 0) avisos.push(`has marcado ${numDudasSinResolver} pregunta${numDudasSinResolver > 1 ? 's' : ''} como duda${numDudasSinResolver > 1 ? 's' : ''}`);
+      let mensaje = avisos.length
+        ? avisos.join(' y ').replace(/^./, (c) => c.toUpperCase()) + '.'
         : '¿Quieres finalizar el test y ver los resultados?';
       Swal.fire({
         icon: 'question',

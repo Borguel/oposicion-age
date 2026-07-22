@@ -22,6 +22,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
   <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/test-generator/style.css" />
   <link rel="stylesheet" href="/assets/pdf-tools.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -82,11 +83,8 @@
     <!-- Temporizador -->
     <div id="temporizador" style="display:none;"></div>
 
-    <!-- Barra de progreso de preguntas -->
-    <div id="barra-progreso-preguntas" class="progress-container" style="display:none;">
-      <div id="progreso-preguntas" class="progress-bar"></div>
-      <div id="texto-progreso-preguntas" class="progress-text"></div>
-    </div>
+    <!-- Mapa de preguntas (mismo componente compartido que el resto de tests) -->
+    <div id="navegador-preguntas" class="navegador-preguntas" style="display:none;"></div>
 
     <!-- Contenedor de test -->
     <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
@@ -95,9 +93,9 @@
     <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
 
     <!-- Botones finales -->
-    <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico" style="display:none;"><span data-icon="guardar" data-icon-size="16"></span> Guardar y salir</button>
-    <button id="btn-finalizar" class="btn btn-danger btn-full" style="display:none;">Finalizar Test</button>
-    <button id="btn-descargar-pdf" class="btn btn-secondary btn-full" style="display:none;">Descargar PDF del test</button>
+    <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico icono-inline" style="display:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v6h8V4"/><path d="M8 21v-7h8v7"/></svg> Guardar y salir</button>
+    <button id="btn-finalizar" class="age-btn age-btn-danger-outline age-btn-block" style="display:none;">Finalizar Test</button>
+    <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
     <div id="otras-herramientas-bloque" class="otras-herramientas-bloque hidden"></div>
   </div>
 
