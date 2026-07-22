@@ -157,9 +157,12 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     if (seleccion === correcta) clase = "acierto";
     else if (seleccion === null || seleccion === undefined) clase = "blanco";
     const claseCompleta = marcadasDuda[i] ? `${clase} duda` : clase;
+    const avisoDudaHTML = marcadasDuda[i]
+      ? ` <span class="aviso-pregunta-duda">${icono("pregunta", 14)} Pregunta marcada como dudosa</span>`
+      : "";
 
     detalleHTML += `<div class="${claseCompleta}">
-      <div class="pregunta-en-negrita">${i + 1}. ${escaparHtml(quitarNumeracion(p.pregunta))}</div>`;
+      <div class="pregunta-en-negrita">${i + 1}. ${escaparHtml(quitarNumeracion(p.pregunta))}${avisoDudaHTML}</div>`;
     for (const letra in p.opciones) {
       let tipoRespuesta = "detalle-opcion";
       let iconoOpcion = "";

@@ -595,3 +595,84 @@ body {
 .zona-reabrir-onboarding:hover {
   color: var(--age-ink);
 }
+
+/* "Más herramientas": un acento de color distinto por tarjeta (mismo
+   patrón --accent/--accent-soft/--accent-dark que ya usan las tarjetas de
+   Herramientas IA en subida-pdf-pagina-principal/style.css), para que se
+   diferencien de un vistazo en vez de verse todas iguales. */
+.zona-herramientas-grid .age-option-card {
+  --accent: var(--age-primary);
+  --accent-soft: var(--age-primary-soft);
+  --accent-dark: var(--age-primary-dark);
+  position: relative;
+  overflow: hidden;
+}
+
+.zona-herramientas-grid .age-option-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s var(--age-ease);
+}
+
+.zona-herramientas-grid .age-option-card:hover::before {
+  opacity: 1;
+}
+
+.zona-herramientas-grid .age-option-card:hover {
+  border-color: var(--accent);
+}
+
+.zona-herramientas-grid .age-option-icon {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
+
+.zona-herramientas-grid .age-option-card--pdf {
+  --accent: #3b82f6;
+  --accent-soft: rgba(59, 130, 246, 0.14);
+  --accent-dark: #2563eb;
+}
+
+.zona-herramientas-grid .age-option-card--tutor {
+  --accent: #8b5cf6;
+  --accent-soft: rgba(139, 92, 246, 0.14);
+  --accent-dark: #7c3aed;
+}
+
+.zona-herramientas-grid .age-option-card--stats {
+  --accent: #14b8a6;
+  --accent-soft: rgba(20, 184, 166, 0.14);
+  --accent-dark: #0d9488;
+}
+
+.zona-herramientas-grid .age-option-card--ranking {
+  --accent: #ec4899;
+  --accent-soft: rgba(236, 72, 153, 0.14);
+  --accent-dark: #db2777;
+}
+
+:root[data-theme="dark"] .zona-herramientas-grid .age-option-card--pdf {
+  --accent-soft: rgba(59, 130, 246, 0.2);
+  --accent-dark: #93c5fd;
+}
+
+:root[data-theme="dark"] .zona-herramientas-grid .age-option-card--tutor {
+  --accent-soft: rgba(139, 92, 246, 0.22);
+  --accent-dark: #c4b5fd;
+}
+
+:root[data-theme="dark"] .zona-herramientas-grid .age-option-card--stats {
+  --accent-soft: rgba(20, 184, 166, 0.22);
+  --accent-dark: #5eead4;
+}
+
+:root[data-theme="dark"] .zona-herramientas-grid .age-option-card--ranking {
+  --accent-soft: rgba(236, 72, 153, 0.2);
+  --accent-dark: #f9a8d4;
+}

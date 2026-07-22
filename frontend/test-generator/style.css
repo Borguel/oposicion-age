@@ -546,6 +546,25 @@ h1, h2, h3 {
   background: var(--age-info-bg);
 }
 
+/* Aviso en la pantalla de resultados, al final del enunciado de cada
+   pregunta que se marcó como "duda" durante el test -- mismo azul que el
+   botón de marcar duda (.btn-marcar-duda.activa), para que se reconozca de
+   un vistazo sin tener que usar el filtro "Dudosas". */
+.aviso-pregunta-duda {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-info-bg);
+  color: var(--age-info);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 /* ========== Navegador de preguntas (mapa de progreso del examen) ==========
    Un cuadradito por pregunta, coloreado según su estado, para ver de un
    vistazo cuánto queda y saltar directamente a cualquiera sin tener que
