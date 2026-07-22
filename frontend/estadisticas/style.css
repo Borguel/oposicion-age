@@ -620,6 +620,115 @@
       top: -10px;
     }
 
+    /* Mapa de tu temario: bloques x temas coloreados por % de acierto real
+       (no solo si el tema se ha "tocado", como Cobertura/Temas estudiados
+       más abajo) -- el dato más accionable de la página, así que vive en
+       su propia tarjeta ancha justo debajo de "de un vistazo". */
+    .tarjeta-mapa-temario {
+      grid-column: 1 / -1;
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    .mapa-temario-intro {
+      color: var(--age-ink-soft);
+      font-size: 0.92rem;
+      margin: 0 0 14px;
+      line-height: 1.5;
+    }
+
+    .mapa-temario-leyenda {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 18px;
+      font-size: 0.82rem;
+      color: var(--age-ink-soft);
+    }
+
+    .mapa-temario-leyenda-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mapa-temario-muestra {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .mapa-temario-muestra.sin-datos { background: var(--age-neutral-bg); border: 1.5px dashed var(--age-border); }
+    .mapa-temario-muestra.nivel-1 { background: var(--age-danger); }
+    .mapa-temario-muestra.nivel-2 { background: color-mix(in srgb, var(--age-danger) 45%, var(--age-warning) 55%); }
+    .mapa-temario-muestra.nivel-3 { background: color-mix(in srgb, var(--age-warning) 45%, var(--age-success) 55%); }
+    .mapa-temario-muestra.nivel-4 { background: var(--age-success); }
+
+    .mapa-temario-bloques {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .mapa-temario-bloque-titulo {
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: var(--age-ink);
+      margin-bottom: 8px;
+    }
+
+    .mapa-temario-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .mapa-temario-celda {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--age-radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform 0.15s var(--age-ease), box-shadow 0.15s var(--age-ease);
+    }
+
+    .mapa-temario-celda:hover {
+      transform: translateY(-2px) scale(1.06);
+      box-shadow: var(--age-shadow-hover);
+    }
+
+    .mapa-temario-celda.sin-datos {
+      background: var(--age-neutral-bg);
+      border: 1.5px dashed var(--age-border);
+      color: var(--age-ink-faint);
+    }
+
+    .mapa-temario-celda.nivel-1 { background: var(--age-danger); color: #fff; }
+    .mapa-temario-celda.nivel-2 { background: color-mix(in srgb, var(--age-danger) 45%, var(--age-warning) 55%); color: #fff; }
+    .mapa-temario-celda.nivel-3 { background: color-mix(in srgb, var(--age-warning) 45%, var(--age-success) 55%); color: #fff; }
+    .mapa-temario-celda.nivel-4 { background: var(--age-success); color: #fff; }
+
+    /* Muestra insuficiente (menos de 3 preguntas respondidas): mismo color
+       de nivel para no perder la señal, pero con un aro punteado en vez de
+       relleno sólido, indicando que el dato todavía es poco fiable. */
+    .mapa-temario-celda.pocas-preguntas {
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
+      opacity: 0.85;
+    }
+
+    @media (max-width: 640px) {
+      .mapa-temario-celda {
+        width: 28px;
+        height: 28px;
+        font-size: 0.74rem;
+      }
+    }
+
     .tarjeta-tiempo-total {
       grid-column: 1 / -1;
       display: flex;

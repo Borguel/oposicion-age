@@ -81,12 +81,32 @@
     </div>
   </section>
 
-  <!-- Aciertos y fallos: justo debajo de "de un vistazo", es el detalle
-       inmediato de esos mismos números (antes estaba enterrado más abajo,
-       después de evolución/calendario/insignias). La cuenta atrás al
-       examen vive solo en Zona Opositor -- aquí duplicaba el mismo
-       widget sin aportar nada nuevo. -->
-  <div class="seccion-separador seccion-separador-primera">
+  <!-- Mapa de tu temario: justo debajo de "de un vistazo", antes de
+       cualquier otra cosa -- es el dato más accionable de toda la página
+       (qué temas dominas de verdad, no solo cuáles has "tocado" como
+       Cobertura/Temas estudiados de más abajo), así que va lo primero. -->
+  <div class="seccion-separador seccion-separador-primera" id="mapa-temario-titulo">
+    <h3><span data-icon="brujula" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Mapa de tu temario</h3>
+  </div>
+  <div class="tarjeta-estadistica neutra tarjeta-mapa-temario" id="tarjeta-mapa-temario">
+    <p class="mapa-temario-intro">Cada casilla es un tema del temario oficial; el color indica tu % de acierto real en las preguntas que has respondido de ese tema. Pulsa una casilla para repasar ese tema.</p>
+    <div class="mapa-temario-leyenda">
+      <span class="mapa-temario-leyenda-item"><span class="mapa-temario-muestra sin-datos"></span> Sin estudiar</span>
+      <span class="mapa-temario-leyenda-item"><span class="mapa-temario-muestra nivel-1"></span> &lt;50%</span>
+      <span class="mapa-temario-leyenda-item"><span class="mapa-temario-muestra nivel-2"></span> 50-64%</span>
+      <span class="mapa-temario-leyenda-item"><span class="mapa-temario-muestra nivel-3"></span> 65-79%</span>
+      <span class="mapa-temario-leyenda-item"><span class="mapa-temario-muestra nivel-4"></span> 80% o más</span>
+    </div>
+    <div class="mapa-temario-bloques" id="mapa-temario-bloques"></div>
+    <p class="mapa-temario-vacio" id="mapa-temario-vacio" style="display:none;">Haz algunas preguntas para ver aquí el mapa de tu temario.</p>
+  </div>
+
+  <!-- Aciertos y fallos: el detalle inmediato de los números de "de un
+       vistazo" (antes estaba enterrado más abajo, después de
+       evolución/calendario/insignias). La cuenta atrás al examen vive
+       solo en Zona Opositor -- aquí duplicaba el mismo widget sin aportar
+       nada nuevo. -->
+  <div class="seccion-separador">
     <h3><span data-icon="diana" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Aciertos y fallos</h3>
   </div>
   <!-- Tiempo dedicado a hacer test: barra de ancho completo -->

@@ -249,6 +249,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     todosLosTemas = todosTemas;
     mostrarTemasNoEstudiados(noEstudiados, todosTemas);
     mostrarTemasFlojos(rendimientoPorTema, todosTemas);
+    pintarMapaTemario(todosTemas, rendimientoPorTema);
     renderizarCoberturaTemario(temasTocados.size, todosLosTemasIds.length);
     renderizarEvolucion(historial);
     renderizarCalendarioRacha(historial);
@@ -522,6 +523,55 @@ document.addEventListener("DOMContentLoaded", async function () {
       lista.appendChild(li);
     });
     tarjeta.style.display = "flex";
+  }
+
+  // Mapa de temario: bloques x temas coloreados por % de acierto real,
+  // en vez de solo "estudiado sí/no" (que es lo que ya cuentan Cobertura
+  // y Temas no estudiados/más estudiados). Mismos umbrales que
+  // mostrarTemasFlojos (>=3 preguntas para tener confianza en el %),
+  // pero aquí en vez de ocultar los temas con pocas preguntas se pintan
+  // igual (con menor énfasis) para no dejar huecos raros en el mapa.
+  async function pintarMapaTemario(todosTemas, rendimientoPorTema) {
+    const contenedor = document.getElementById("mapa-temario-bloques");
+    const vacio = document.getElementById("mapa-temario-vacio");
+    if (!contenedor) return;
+    if (!todosTemas || todosTemas.length === 0) {
+      contenedor.innerHTML = "";
+      if (vacio) vacio.style.display = "block";
+      return;
+    }
+    if (vacio) vacio.style.display = "none";
+
+    const { agruparTemasPorBloque } = await import("/assets/temas-numeracion.js");
+    const grupos = agruparTemasPorBloque(todosTemas);
+
+    contenedor.innerHTML = grupos.map((grupo) => {
+      const celdas = grupo.temas.map((t) => {
+        const r = (rendimientoPorTema || {})[t.id];
+        const respondidas = r ? (r.aciertos || 0) + (r.fallos || 0) : 0;
+        const porcentaje = respondidas > 0 ? Math.round((r.aciertos / respondidas) * 100) : null;
+        const pocasPreguntas = respondidas > 0 && respondidas < MINIMO_PREGUNTAS_FLOJO;
+
+        let nivel = "sin-datos";
+        if (porcentaje !== null) {
+          nivel = porcentaje < 50 ? "nivel-1" : porcentaje < 65 ? "nivel-2" : porcentaje < 80 ? "nivel-3" : "nivel-4";
+        }
+
+        const detalle = porcentaje === null
+          ? "Todavía sin preguntas respondidas"
+          : `${porcentaje}% de acierto (${respondidas} pregunta${respondidas === 1 ? "" : "s"})${pocasPreguntas ? " -- pocas preguntas todavía" : ""}`;
+        const clases = ["mapa-temario-celda", nivel, pocasPreguntas ? "pocas-preguntas" : ""].filter(Boolean).join(" ");
+
+        return `<a class="${clases}" href="/test-personalizado/?temas=${encodeURIComponent(t.id)}" title="Tema ${t.numeroTema}: ${t.titulo} — ${detalle}">${t.numeroTema}</a>`;
+      }).join("");
+
+      return `
+        <div class="mapa-temario-bloque">
+          <div class="mapa-temario-bloque-titulo">Bloque ${grupo.numeroRomano}: ${grupo.titulo}</div>
+          <div class="mapa-temario-grid">${celdas}</div>
+        </div>
+      `;
+    }).join("");
   }
 
   function renderizarCoberturaTemario(totalTocados, totalTemas) {
