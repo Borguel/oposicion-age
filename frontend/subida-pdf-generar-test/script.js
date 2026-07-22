@@ -230,27 +230,31 @@ async function obtenerAuthHeaders() {
     // lote, ver blueprints/pdf_ia.py) y devuelve el evento "fin" -- usado
     // tanto al subir un PDF nuevo como al generar un test desde un
     // documento ya guardado en "Mis documentos" (ambos llaman a la misma
-    // ruta). Antes de que llegue el primer evento real sube el % de forma
-    // cosmética (igual que en test-personalizado) para que no parezca que
-    // la página se ha colgado mientras el backend lee el PDF/reparte lotes.
+    // ruta). Con pocas preguntas (un único lote) solo llega UN evento de
+    // progreso real, justo al final -- para que la barra no se quede
+    // "pillada" ese rato, avanza mediante un "techo" que solo sube (por
+    // eventos reales o, si no llega ninguno, muy despacio con el tiempo) y
+    // un carrusel de mensajes de la fase actual, en vez de saltar en seco de
+    // 0% al resultado.
     async function generarTestDesdePdfConProgreso(formData, authHeaders) {
-      const textoEstado = document.getElementById('texto-estado');
-      const aiIcon = document.getElementById('ai-icon');
-
-      let progresoCosmetico = 0;
-      let intervaloCosmetico = setInterval(() => {
-        progresoCosmetico = Math.min(progresoCosmetico + Math.random() * 3, 15);
-        const elBarraCosmetica = document.getElementById("progreso-generacion-pdf");
-        const elTextoBarraCosmetica = document.getElementById("texto-progreso-generacion-pdf");
-        if (elBarraCosmetica) elBarraCosmetica.style.width = `${progresoCosmetico}%`;
-        if (elTextoBarraCosmetica) elTextoBarraCosmetica.textContent = `${Math.round(progresoCosmetico)}%`;
-      }, 400);
-      const pararProgresoCosmetico = () => {
-        if (intervaloCosmetico) {
-          clearInterval(intervaloCosmetico);
-          intervaloCosmetico = null;
-        }
-      };
+      const { crearProgresoConversador } = await import("/assets/progreso-conversador.js");
+      const progreso = crearProgresoConversador({
+        elBarra: document.getElementById("progreso-generacion-pdf"),
+        elTextoBarra: document.getElementById("texto-progreso-generacion-pdf"),
+        elTexto: document.getElementById("texto-estado"),
+        elIcono: document.getElementById("ai-icon"),
+        etapasLeyendo: [
+          { mensaje: "Leyendo el PDF…", icono: "documento" },
+          { mensaje: "Localizando los conceptos clave del documento…", icono: "buscar" },
+          { mensaje: "Preparando la generación de preguntas…", icono: "cerebro" },
+        ],
+        etapasGenerando: [
+          { mensaje: "Redactando las preguntas con IA…", icono: "cerebro" },
+          { mensaje: "Comprobando que cada respuesta sea correcta…", icono: "buscar" },
+          { mensaje: "Verificando la calidad de los distractores…", icono: "grafico" },
+          { mensaje: "Puliendo la explicación de cada pregunta…", icono: "check" },
+        ],
+      });
 
       try {
         const res = await fetch("https://oposicion-age.onrender.com/generar-test-desde-pdf", {
@@ -290,15 +294,8 @@ async function obtenerAuthHeaders() {
             } catch {
               continue;
             }
-            pararProgresoCosmetico();
             if (evento.tipo === "progreso") {
-              const porcentaje = evento.total ? Math.round((evento.completadas / evento.total) * 100) : 0;
-              const elBarra = document.getElementById("progreso-generacion-pdf");
-              const elTextoBarra = document.getElementById("texto-progreso-generacion-pdf");
-              if (elBarra) elBarra.style.width = `${porcentaje}%`;
-              if (elTextoBarra) elTextoBarra.textContent = `${porcentaje}%`;
-              if (textoEstado) textoEstado.textContent = `Generando preguntas (lote ${evento.completadas} de ${evento.total})…`;
-              if (aiIcon) aiIcon.innerHTML = icono("cerebro", 32);
+              progreso.avanzar(evento, `Generando preguntas (lote ${evento.completadas} de ${evento.total})…`);
             } else if (evento.tipo === "fin") {
               datosFinales = evento;
             }
@@ -311,9 +308,10 @@ async function obtenerAuthHeaders() {
         if (!datosFinales.test || datosFinales.test.length === 0) {
           throw new Error(datosFinales.error || "No se pudieron generar preguntas válidas desde el PDF.");
         }
+        progreso.completar();
         return datosFinales;
       } finally {
-        pararProgresoCosmetico();
+        progreso.detener();
       }
     }
 

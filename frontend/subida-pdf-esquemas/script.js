@@ -412,28 +412,32 @@ async function obtenerAuthHeaders() {
     // Consume el stream SSE de /generar-esquema-desde-pdf (progreso real por
     // fragmento del map-reduce, ver deepseek_utils.generar_documento_largo_por_partes)
     // y devuelve el evento "fin" -- usado tanto al subir un PDF nuevo como al
-    // generar desde un documento ya guardado en "Mis documentos". Antes de
-    // que llegue el primer evento real sube el % de forma cosmética (igual
-    // que en test-personalizado) para que no parezca que la página se ha
-    // colgado mientras el backend extrae y trocea el texto.
+    // generar desde un documento ya guardado en "Mis documentos". Con un
+    // documento corto (un único fragmento) solo llega UN evento de progreso
+    // real, justo al final -- ver /assets/progreso-conversador.js para cómo
+    // se evita que la barra se quede "pillada" ese rato.
     async function generarEsquemaConProgreso(url, formData, authHeaders) {
-      const textoEstado = document.getElementById('texto-estado');
-      const aiIcon = document.getElementById('ai-icon');
-      const elBarra = document.getElementById('progreso-generacion-pdf');
-      const elTextoBarra = document.getElementById('texto-progreso-generacion-pdf');
-
-      let progresoCosmetico = 0;
-      let intervaloCosmetico = setInterval(() => {
-        progresoCosmetico = Math.min(progresoCosmetico + Math.random() * 3, 15);
-        if (elBarra) elBarra.style.width = `${progresoCosmetico}%`;
-        if (elTextoBarra) elTextoBarra.textContent = `${Math.round(progresoCosmetico)}%`;
-      }, 400);
-      const pararProgresoCosmetico = () => {
-        if (intervaloCosmetico) {
-          clearInterval(intervaloCosmetico);
-          intervaloCosmetico = null;
-        }
-      };
+      const { crearProgresoConversador } = await import("/assets/progreso-conversador.js");
+      const progreso = crearProgresoConversador({
+        elBarra: document.getElementById('progreso-generacion-pdf'),
+        elTextoBarra: document.getElementById('texto-progreso-generacion-pdf'),
+        elTexto: document.getElementById('texto-estado'),
+        elIcono: document.getElementById('ai-icon'),
+        etapasLeyendo: [
+          { mensaje: "Leyendo el texto del PDF…", icono: "documento" },
+          { mensaje: "Detectando la estructura del documento…", icono: "buscar" },
+        ],
+        etapasGenerando: [
+          { mensaje: "Identificando temas y subtemas…", icono: "buscar" },
+          { mensaje: "Organizando la jerarquía de conceptos…", icono: "cerebro" },
+          { mensaje: "Construyendo el árbol del esquema…", icono: "cerebro" },
+          { mensaje: "Revisando que no se repita ningún epígrafe…", icono: "check" },
+        ],
+        etapasFusionando: [
+          { mensaje: "Uniendo las partes en un esquema final…", icono: "cerebro" },
+          { mensaje: "Comprobando que la jerarquía quede equilibrada…", icono: "check" },
+        ],
+      });
 
       try {
         const res = await fetch(url, { method: "POST", headers: authHeaders, body: formData });
@@ -469,17 +473,11 @@ async function obtenerAuthHeaders() {
             } catch {
               continue;
             }
-            pararProgresoCosmetico();
             if (evento.tipo === "progreso") {
-              const porcentaje = evento.total ? Math.round((evento.completadas / evento.total) * 100) : 0;
-              if (elBarra) elBarra.style.width = `${porcentaje}%`;
-              if (elTextoBarra) elTextoBarra.textContent = `${porcentaje}%`;
-              if (textoEstado) {
-                textoEstado.textContent = evento.fase === "fusionando"
-                  ? "Uniendo las partes en un esquema final…"
-                  : `Analizando el documento (parte ${evento.completadas} de ${evento.total})…`;
-              }
-              if (aiIcon) aiIcon.innerHTML = icono("cerebro", 32);
+              const mensajeExacto = evento.fase === "fusionando"
+                ? null
+                : `Analizando el documento (parte ${evento.completadas} de ${evento.total})…`;
+              progreso.avanzar(evento, mensajeExacto);
             } else if (evento.tipo === "fin") {
               datosFinales = evento;
             }
@@ -492,9 +490,10 @@ async function obtenerAuthHeaders() {
         if (!datosFinales.esquema) {
           throw new Error(datosFinales.error || "No se pudo generar el esquema.");
         }
+        progreso.completar();
         return datosFinales;
       } finally {
-        pararProgresoCosmetico();
+        progreso.detener();
       }
     }
 
