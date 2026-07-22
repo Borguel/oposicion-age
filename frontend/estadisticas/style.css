@@ -721,6 +721,12 @@
       opacity: 0.85;
     }
 
+    .mapa-temario-nota {
+      color: var(--age-ink-faint);
+      font-size: 0.8rem;
+      margin: 14px 0 0;
+    }
+
     @media (max-width: 640px) {
       .mapa-temario-celda {
         width: 28px;
