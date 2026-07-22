@@ -3,7 +3,7 @@ import time
 import logging
 import requests
 import json
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
@@ -268,7 +268,7 @@ def _trocear_en_parrafos(texto, tamano=TAMANO_CHUNK_CARACTERES):
     return fragmentos
 
 
-def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096, instrucciones_fusion_extra=None, on_usage=None):
+def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096, instrucciones_fusion_extra=None, on_usage=None, on_progreso=None):
     """Para documentos largos, en vez de meter todo el texto de golpe en un
     único prompt (peor calidad: el modelo tiene que abarcar decenas de
     miles de palabras a la vez, y es más fácil que se pierda o mezcle
@@ -295,10 +295,20 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
     on_usage, si se pasa, recibe el usage de cada llamada (MAP y fusión)
     para contabilizar coste desde fuera de flask.g -- ver AcumuladorTokens
     en coste_ia.py. Imprescindible cuando el documento se trocea, porque el
-    paso MAP corre en un ThreadPoolExecutor sin contexto de petición."""
+    paso MAP corre en un ThreadPoolExecutor sin contexto de petición.
+
+    on_progreso(evento), si se pasa, se llama con {"completadas": i,
+    "total": n_fragmentos, "fase": "generando"|"fusionando"} a medida que
+    cada fragmento del MAP termina, y una última vez al empezar la fusión --
+    pensado para retransmitir progreso real por SSE (ver /resumir-documento,
+    /generar-esquema-desde-pdf en blueprints/pdf_ia.py) en vez de los
+    mensajes rotativos cosméticos que tenían antes."""
     fragmentos = _trocear_en_parrafos(texto)
     if len(fragmentos) == 1:
-        return generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens, on_usage=on_usage)
+        resultado = generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens, on_usage=on_usage)
+        if on_progreso:
+            on_progreso({"completadas": 1, "total": 1, "fase": "generando"})
+        return resultado
 
     def _generar_parcial(indice_fragmento):
         indice, fragmento = indice_fragmento
@@ -314,14 +324,24 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
         # TODAS las llamadas del MAP se perdería en silencio.
         return generar_con_continuacion(system_prompt, mensaje, max_tokens=max_tokens, on_usage=on_usage)
 
+    parciales_por_indice = {}
+    completadas = 0
     with ThreadPoolExecutor(max_workers=min(4, len(fragmentos))) as executor:
-        parciales = list(executor.map(_generar_parcial, enumerate(fragmentos)))
-    parciales = [p for p in parciales if p]
+        futuro_a_indice = {executor.submit(_generar_parcial, item): item[0] for item in enumerate(fragmentos)}
+        for futuro in as_completed(futuro_a_indice):
+            indice = futuro_a_indice[futuro]
+            parciales_por_indice[indice] = futuro.result()
+            completadas += 1
+            if on_progreso:
+                on_progreso({"completadas": completadas, "total": len(fragmentos), "fase": "generando"})
+    parciales = [parciales_por_indice[i] for i in range(len(fragmentos)) if parciales_por_indice.get(i)]
     if not parciales:
         return None
     if len(parciales) == 1:
         return parciales[0]
 
+    if on_progreso:
+        on_progreso({"completadas": len(fragmentos), "total": len(fragmentos), "fase": "fusionando"})
     prompt_fusion = (
         f"{system_prompt}\n\n"
         "A continuación tienes varios resultados YA generados a partir de distintos fragmentos "

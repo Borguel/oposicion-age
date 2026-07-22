@@ -188,12 +188,18 @@ def _asegurar_tarjeta_valida(candidata, fragmento, dedup_lock, claves_vistas, on
     return None
 
 
-def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None):
+def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso=None):
     """Genera hasta num_tarjetas tarjetas de memoria verificadas a partir de
     texto (ya extraído de un PDF). on_usage, si se pasa, recibe el usage de
     cada llamada a DeepSeek (ver AcumuladorTokens en coste_ia.py) -- esta
     función corre siempre dentro de ThreadPoolExecutor, sin flask.g
     disponible.
+
+    on_progreso(evento), si se pasa, se llama con {"completadas": i,
+    "total": n_candidatas} a medida que cada tarjeta candidata termina de
+    verificarse (aceptada o descartada) -- pensado para retransmitir
+    progreso real por SSE en vez de mensajes rotativos cosméticos (ver
+    /generar-tarjetas-desde-pdf en blueprints/pdf_ia.py).
 
     Devuelve {"tarjetas": [...], "descartadas": int, "advertencia": str
     opcional si se generaron menos tarjetas de las pedidas}."""
@@ -225,6 +231,8 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None):
     claves_vistas = set()
     tarjetas = []
     descartadas = 0
+    total_candidatas = len(pares_candidata_fragmento)
+    verificadas = 0
 
     with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION, len(pares_candidata_fragmento))) as executor:
         futuros = [
@@ -237,6 +245,9 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None):
                 tarjetas.append(resultado)
             else:
                 descartadas += 1
+            verificadas += 1
+            if on_progreso:
+                on_progreso({"completadas": verificadas, "total": total_candidatas})
 
     resultado_final = {"tarjetas": tarjetas, "descartadas": descartadas}
     if len(tarjetas) < num_tarjetas:

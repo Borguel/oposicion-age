@@ -281,6 +281,95 @@ async function obtenerAuthHeaders() {
 
       doc.save(`resumen_${nombreArchivo.replace('.pdf', '')}.pdf`);
     }
+    // Consume el stream SSE de /resumir-documento (progreso real por
+    // fragmento del map-reduce, ver deepseek_utils.generar_documento_largo_por_partes)
+    // y devuelve el evento "fin" -- usado tanto al subir un PDF nuevo como al
+    // generar desde un documento ya guardado en "Mis documentos". Antes de
+    // que llegue el primer evento real sube el % de forma cosmética (igual
+    // que en test-personalizado) para que no parezca que la página se ha
+    // colgado mientras el backend extrae y trocea el texto.
+    async function generarResumenConProgreso(url, formData, authHeaders) {
+      const textoEstado = document.getElementById('texto-estado');
+      const aiIcon = document.getElementById('ai-icon');
+      const elBarra = document.getElementById('progreso-generacion-pdf');
+      const elTextoBarra = document.getElementById('texto-progreso-generacion-pdf');
+
+      let progresoCosmetico = 0;
+      let intervaloCosmetico = setInterval(() => {
+        progresoCosmetico = Math.min(progresoCosmetico + Math.random() * 3, 15);
+        if (elBarra) elBarra.style.width = `${progresoCosmetico}%`;
+        if (elTextoBarra) elTextoBarra.textContent = `${Math.round(progresoCosmetico)}%`;
+      }, 400);
+      const pararProgresoCosmetico = () => {
+        if (intervaloCosmetico) {
+          clearInterval(intervaloCosmetico);
+          intervaloCosmetico = null;
+        }
+      };
+
+      try {
+        const res = await fetch(url, { method: "POST", headers: authHeaders, body: formData });
+        if (res.status === 403) {
+          throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
+        }
+        if (res.status === 429) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
+        }
+        if (!res.ok || !res.body) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+        }
+
+        const lector = res.body.getReader();
+        const decodificador = new TextDecoder();
+        let buffer = "";
+        let datosFinales = null;
+
+        while (true) {
+          const { done, value } = await lector.read();
+          if (done) break;
+          buffer += decodificador.decode(value, { stream: true });
+          const bloques = buffer.split("\n\n");
+          buffer = bloques.pop(); // el último trozo puede venir incompleto
+          for (const bloque of bloques) {
+            const linea = bloque.trim();
+            if (!linea.startsWith("data: ")) continue;
+            let evento;
+            try {
+              evento = JSON.parse(linea.slice(6));
+            } catch {
+              continue;
+            }
+            pararProgresoCosmetico();
+            if (evento.tipo === "progreso") {
+              const porcentaje = evento.total ? Math.round((evento.completadas / evento.total) * 100) : 0;
+              if (elBarra) elBarra.style.width = `${porcentaje}%`;
+              if (elTextoBarra) elTextoBarra.textContent = `${porcentaje}%`;
+              if (textoEstado) {
+                textoEstado.textContent = evento.fase === "fusionando"
+                  ? "Uniendo las partes en un resumen final…"
+                  : `Analizando el documento (parte ${evento.completadas} de ${evento.total})…`;
+              }
+              if (aiIcon) aiIcon.innerHTML = icono("cerebro", 32);
+            } else if (evento.tipo === "fin") {
+              datosFinales = evento;
+            }
+          }
+        }
+
+        if (!datosFinales) {
+          throw new Error("Error al generar el resumen. Vuelve a intentarlo.");
+        }
+        if (!datosFinales.resumen) {
+          throw new Error(datosFinales.error || "No se pudo generar el resumen.");
+        }
+        return datosFinales;
+      } finally {
+        pararProgresoCosmetico();
+      }
+    }
+
     // === Eventos ===
     selectFileBtn.addEventListener('click', () => archivoPdfInput.click());
     archivoPdfInput.addEventListener('change', () => {
@@ -369,60 +458,19 @@ async function obtenerAuthHeaders() {
       alertaPreguntas.classList.add('hidden');
       formularioCard.classList.add('hidden');
       contenedorCarga.classList.remove('hidden');
-      // Cargar estado
-      const textoEstado = document.getElementById('texto-estado');
-      const aiIcon = document.getElementById('ai-icon');
-      const etapas = [
-        { mensaje: "Leyendo texto del PDF…", icono: "documento" },
-        { mensaje: "Analizando estructura del documento…", icono: "buscar" },
-        { mensaje: "Identificando conceptos clave…", icono: "grafico" },
-        { mensaje: "Sintetizando información relevante…", icono: "cerebro" },
-        { mensaje: "Preparando resumen final…", icono: "check" }
-      ];
-      let indiceEtapa = 0;
-      aiIcon.innerHTML = icono(etapas[0].icono, 32);
-      textoEstado.textContent = etapas[0].mensaje;
-      const intervaloEtapas = setInterval(() => {
-        indiceEtapa = (indiceEtapa + 1) % etapas.length;
-        aiIcon.innerHTML = icono(etapas[indiceEtapa].icono, 32);
-        textoEstado.textContent = etapas[indiceEtapa].mensaje;
-      }, 2200);
+      document.getElementById('texto-estado').textContent = "Leyendo texto del PDF…";
+      document.getElementById('ai-icon').innerHTML = icono("documento", 32);
 
-      let datosIA = null;
-      let errorIA = null;
       const authHeaders = await obtenerAuthHeaders();
-      if (!authHeaders) { clearInterval(intervaloEtapas); return; }
+      if (!authHeaders) return;
+
       try {
-        const res = await fetch("https://oposicion-age.onrender.com/resumir-documento", {
-          method: "POST",
-          headers: authHeaders,
-          body: formData
-        });
-        if (res.status === 403) {
-          throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
-        }
-        if (res.status === 429) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
-        }
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
-        }
-        const datos = await res.json();
-        if (!datos.resumen) throw new Error(datos.error || "No se pudo generar el resumen.");
-        datosIA = datos;
+        const datosIA = await generarResumenConProgreso("https://oposicion-age.onrender.com/resumir-documento", formData, authHeaders);
+        documentoIdActual = datosIA.documento_id || documentoIdActual;
+        mostrarResumenResultado(datosIA.resumen, true);
       } catch (err) {
-        errorIA = err;
+        mostrarError(err.message || "Error al generar el resumen.");
       }
-      clearInterval(intervaloEtapas);
-      if (errorIA) {
-        mostrarError(errorIA.message);
-        return;
-      }
-      // Mostrar resumen
-      documentoIdActual = datosIA.documento_id || documentoIdActual;
-      mostrarResumenResultado(datosIA.resumen, true);
     });
 
     // El resumen lo genera la IA a partir de un PDF subido por el usuario:
@@ -528,18 +576,7 @@ async function obtenerAuthHeaders() {
       try {
         const formData = new FormData();
         formData.append('documento_id', documentoId);
-        const res = await fetch("https://oposicion-age.onrender.com/resumir-documento", {
-          method: "POST",
-          headers: authHeaders,
-          body: formData
-        });
-        if (res.status === 403) throw new Error("Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. Ve a /planes/ para más información.");
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
-        }
-        const datos = await res.json();
-        if (!datos.resumen) throw new Error(datos.error || "No se pudo generar el resumen.");
+        const datos = await generarResumenConProgreso("https://oposicion-age.onrender.com/resumir-documento", formData, authHeaders);
         nombreArchivo = datos.nombre_archivo || nombreArchivo;
         mostrarResumenResultado(datos.resumen, true);
       } catch (err) {

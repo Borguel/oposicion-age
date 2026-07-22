@@ -91,57 +91,91 @@ def _extraer_json_array(texto):
 @bp.route('/resumir-pdf', methods=['POST'])
 @requiere_plan(db, "premium", global_check=True)
 def resumir_pdf():
+    # En streaming (SSE, mismo patrón que /generar-test-desde-pdf) para dar
+    # progreso real por fragmento en vez de los mensajes rotativos
+    # cosméticos que tenía antes.
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
     text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
     if error:
         return error
-    try:
-        max_length = 300000
-        if len(text) > max_length:
-            text = text[:max_length]
-        system_prompt = (
-            "Eres un experto en oposiciones. Crea un resumen de estudio claro y bien "
-            "estructurado a partir del siguiente documento, destacando conceptos "
-            "fundamentales, leyes importantes y fechas relevantes. Usa EXACTAMENTE este "
-            "formato Markdown, sin desviarte de él:\n"
-            "- Encabezados de nivel 1 con \"# \" para los bloques temáticos principales.\n"
-            "- Encabezados de nivel 2 con \"## \" para subapartados.\n"
-            "- Texto en **negrita** para términos clave, leyes, artículos o fechas, la "
-            "primera vez que aparecen.\n"
-            "- Listas con \"- \" para viñetas normales.\n"
-            "- Listas numeradas con \"1. \", \"2. \", etc. cuando el orden importe (por "
-            "ejemplo, fases de un procedimiento).\n"
-            "- Cuando definas formalmente un concepto clave, usa el prefijo \"> \" para esa "
-            "línea, de forma que se pueda destacar como una caja de definición aparte.\n"
-            "No uses tablas, bloques de código, ni HTML. Cada línea de texto debe ir en su "
-            "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga. El "
-            "resumen debe ser útil para un opositor.\n"
-            "IMPORTANTE -- fidelidad al documento: basa el resumen ÚNICAMENTE en el "
-            "contenido del documento proporcionado. No añadas información externa, no "
-            "completes huecos con conocimiento propio, y no inventes datos, fechas, "
-            "artículos, cifras o nombres que no aparezcan literalmente en el texto. Si el "
-            "documento no aporta un dato que normalmente se esperaría, no lo inventes: "
-            "sencillamente no lo incluyas. Antes de dar tu respuesta por buena, revisa "
-            "mentalmente que cada dato concreto que has escrito (fecha, cifra, ley, "
-            "artículo, plazo) aparezca efectivamente en el documento que se te ha dado."
-        )
-        if not os.getenv("DEEPSEEK_API_KEY"):
-            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
+    if not os.getenv("DEEPSEEK_API_KEY"):
+        return jsonify({"error": "API key de DeepSeek no configurada"}), 500
+
+    max_length = 300000
+    if len(text) > max_length:
+        text = text[:max_length]
+    system_prompt = (
+        "Eres un experto en oposiciones. Crea un resumen de estudio claro y bien "
+        "estructurado a partir del siguiente documento, destacando conceptos "
+        "fundamentales, leyes importantes y fechas relevantes. Usa EXACTAMENTE este "
+        "formato Markdown, sin desviarte de él:\n"
+        "- Encabezados de nivel 1 con \"# \" para los bloques temáticos principales.\n"
+        "- Encabezados de nivel 2 con \"## \" para subapartados.\n"
+        "- Texto en **negrita** para términos clave, leyes, artículos o fechas, la "
+        "primera vez que aparecen.\n"
+        "- Listas con \"- \" para viñetas normales.\n"
+        "- Listas numeradas con \"1. \", \"2. \", etc. cuando el orden importe (por "
+        "ejemplo, fases de un procedimiento).\n"
+        "- Cuando definas formalmente un concepto clave, usa el prefijo \"> \" para esa "
+        "línea, de forma que se pueda destacar como una caja de definición aparte.\n"
+        "No uses tablas, bloques de código, ni HTML. Cada línea de texto debe ir en su "
+        "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga. El "
+        "resumen debe ser útil para un opositor.\n"
+        "IMPORTANTE -- fidelidad al documento: basa el resumen ÚNICAMENTE en el "
+        "contenido del documento proporcionado. No añadas información externa, no "
+        "completes huecos con conocimiento propio, y no inventes datos, fechas, "
+        "artículos, cifras o nombres que no aparezcan literalmente en el texto. Si el "
+        "documento no aporta un dato que normalmente se esperaría, no lo inventes: "
+        "sencillamente no lo incluyas. Antes de dar tu respuesta por buena, revisa "
+        "mentalmente que cada dato concreto que has escrito (fecha, cifra, ley, "
+        "artículo, plazo) aparezca efectivamente en el documento que se te ha dado."
+    )
+
+    uid = g.uid
+    plan_actual = g.plan_actual
+    # Uso cobrado por adelantado (no al llegar "fin"): el hilo de fondo sigue
+    # generando y gastando en DeepSeek aunque el cliente corte la conexión
+    # SSE (mismo motivo que /generar-test-desde-pdf).
+    registrar_uso(db, uid, "pdf_ia", plan_actual)
+
+    def generar():
+        eventos = queue.Queue()
         acumulador_tokens = AcumuladorTokens()
-        resumen = generar_documento_largo_por_partes(
-            system_prompt, text, etiqueta_documento="Documento para resumir",
-            on_usage=acumulador_tokens.add,
-        )
-        acumulador_tokens.volcar_a_peticion()
-        if not resumen:
-            return jsonify({"error": "Error en DeepSeek API"}), 500
-        registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
-        return jsonify({"resumen": resumen, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
-    except Exception as e:
-        logger.exception("Error en /resumir-pdf")
-        return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
+
+        def _en_hilo_de_fondo():
+            def on_progreso(evento_progreso):
+                eventos.put({"tipo": "progreso", **evento_progreso})
+            try:
+                resumen = generar_documento_largo_por_partes(
+                    system_prompt, text, etiqueta_documento="Documento para resumir",
+                    on_usage=acumulador_tokens.add, on_progreso=on_progreso,
+                )
+                resultado = {"resumen": resumen, "documento_id": documento_id, "nombre_archivo": nombre_archivo} if resumen \
+                    else {"error": "Error en DeepSeek API"}
+            except Exception:
+                logger.exception("Error en /resumir-pdf")
+                resultado = {"error": "Error al procesar el PDF."}
+            if not resultado.get("resumen"):
+                devolver_uso(db, uid, "pdf_ia", plan_actual)
+            acumulador_tokens.volcar_directo(db, uid)
+            eventos.put({"tipo": "fin", **resultado})
+
+        hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
+        hilo.start()
+
+        while True:
+            evento = eventos.get()
+            yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
+            if evento["tipo"] == "fin":
+                break
+
+    return Response(
+        stream_with_context(generar()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
 
 
 # ✅ NUEVA RUTA: alias para compatibilidad con frontend
@@ -154,93 +188,124 @@ def resumir_documento():
 @bp.route('/generar-esquema-desde-pdf', methods=['POST'])
 @requiere_plan(db, "premium", global_check=True)
 def generar_esquema_desde_pdf():
+    # En streaming (SSE, mismo patrón que /generar-test-desde-pdf/
+    # /resumir-pdf) para dar progreso real por fragmento.
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
     text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
     if error:
         return error
-    try:
-        max_length = 300000
-        if len(text) > max_length:
-            text = text[:max_length]
-        system_prompt = (
-            "Eres un experto en oposiciones. Crea un ESQUEMA de estudio: no es un resumen "
-            "en prosa, es un árbol jerárquico de epígrafes y sub-epígrafes que refleje la "
-            "estructura real del documento (título > capítulo > artículo > apartado, o el "
-            "equivalente en el documento dado), pensado para repasar de un vistazo. Usa "
-            "EXACTAMENTE este formato Markdown, sin desviarte de él:\n"
-            "- Encabezados de nivel 1 con \"# \" para las secciones principales del temario "
-            "(p. ej. cada título o bloque grande).\n"
-            "- Encabezados de nivel 2 con \"## \" para subsecciones dentro de cada sección "
-            "(p. ej. cada capítulo o epígrafe).\n"
-            "- Encabezados de nivel 3 con \"### \" cuando dentro de una subsección haya que "
-            "bajar un nivel más (p. ej. cada artículo o punto concreto dentro de un "
-            "capítulo). Usa este tercer nivel siempre que el documento tenga esa "
-            "profundidad real: NO lo omitas ni lo aplanes al nivel 2 de forma artificial.\n"
-            "- Texto en **negrita** para términos clave, nombres de leyes o artículos, la "
-            "primera vez que aparecen.\n"
-            "- Listas con \"- \" para viñetas normales. IMPORTANTE: anida las viñetas todo lo "
-            "que haga falta para reflejar la jerarquía real (una idea que detalla o depende "
-            "de la viñeta anterior va debajo de ella, indentada con 2 espacios más por cada "
-            "nivel de profundidad, exactamente igual que una lista anidada de Markdown). Un "
-            "esquema con viñetas anidadas es MEJOR que uno plano: no limites la profundidad "
-            "de anidación.\n"
-            "- Listas numeradas con \"1. \", \"2. \", etc. cuando el orden importe (por "
-            "ejemplo, pasos de un procedimiento o fases de un proceso). También pueden "
-            "anidarse igual que las viñetas.\n"
-            "- Cuando definas formalmente un concepto, usa el prefijo \"> \" para esa línea, "
-            "de forma que se pueda destacar como una caja de definición aparte.\n"
-            "REGLA CLAVE contra la duplicación: cada tema o epígrafe del documento debe "
-            "aparecer UNA SOLA VEZ en el esquema, en el nivel de profundidad que le "
-            "corresponda. Si el documento vuelve a tratar el mismo epígrafe más adelante con "
-            "más detalle (por ejemplo, un índice o resumen inicial y luego un desarrollo "
-            "artículo por artículo del mismo título), NO crees una segunda sección "
-            "independiente para ese mismo epígrafe: integra ese detalle como sub-viñetas "
-            "anidadas bajo el encabezado ya existente de ese epígrafe. Todas las secciones "
-            "del esquema deben acabar con un nivel de detalle similar entre sí -- evita que "
-            "una sección quede muy desarrollada y las demás apenas esbozadas.\n"
-            "No uses tablas, bloques de código, ni HTML. Cada línea de texto debe ir en su "
-            "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga.\n"
-            "IMPORTANTE -- fidelidad al documento: basa el esquema ÚNICAMENTE en el "
-            "contenido del documento proporcionado. No añadas información externa, no "
-            "completes huecos con conocimiento propio, y no inventes datos, fechas, "
-            "artículos, cifras o nombres que no aparezcan literalmente en el texto. Si el "
-            "documento no aporta un dato que normalmente se esperaría, no lo inventes: "
-            "sencillamente no lo incluyas. Antes de dar tu respuesta por buena, revisa "
-            "mentalmente que cada dato concreto que has escrito (fecha, cifra, ley, "
-            "artículo, plazo) aparezca efectivamente en el documento que se te ha dado."
-        )
-        if not os.getenv("DEEPSEEK_API_KEY"):
-            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
-        instrucciones_fusion_esquema = (
-            "Al fusionar los fragmentos, presta especial atención a que un mismo epígrafe o "
-            "sección del documento no aparezca dos veces a distinta profundidad (por "
-            "ejemplo, una versión breve tipo índice en un fragmento y luego un desarrollo "
-            "mucho más detallado del MISMO epígrafe en otro fragmento): en ese caso, fusiona "
-            "ambas versiones en una única sección, usando la más detallada como base y "
-            "anidando el resto como sub-viñetas, en vez de dejar las dos como secciones "
-            "independientes. Vigila también que la profundidad de detalle quede equilibrada "
-            "entre secciones -- si una sección terminó mucho más desarrollada que el resto "
-            "por venir de un fragmento distinto, resúmela ligeramente para igualar el nivel "
-            "de detalle general del esquema."
-        )
+    if not os.getenv("DEEPSEEK_API_KEY"):
+        return jsonify({"error": "API key de DeepSeek no configurada"}), 500
+
+    max_length = 300000
+    if len(text) > max_length:
+        text = text[:max_length]
+    system_prompt = (
+        "Eres un experto en oposiciones. Crea un ESQUEMA de estudio: no es un resumen "
+        "en prosa, es un árbol jerárquico de epígrafes y sub-epígrafes que refleje la "
+        "estructura real del documento (título > capítulo > artículo > apartado, o el "
+        "equivalente en el documento dado), pensado para repasar de un vistazo. Usa "
+        "EXACTAMENTE este formato Markdown, sin desviarte de él:\n"
+        "- Encabezados de nivel 1 con \"# \" para las secciones principales del temario "
+        "(p. ej. cada título o bloque grande).\n"
+        "- Encabezados de nivel 2 con \"## \" para subsecciones dentro de cada sección "
+        "(p. ej. cada capítulo o epígrafe).\n"
+        "- Encabezados de nivel 3 con \"### \" cuando dentro de una subsección haya que "
+        "bajar un nivel más (p. ej. cada artículo o punto concreto dentro de un "
+        "capítulo). Usa este tercer nivel siempre que el documento tenga esa "
+        "profundidad real: NO lo omitas ni lo aplanes al nivel 2 de forma artificial.\n"
+        "- Texto en **negrita** para términos clave, nombres de leyes o artículos, la "
+        "primera vez que aparecen.\n"
+        "- Listas con \"- \" para viñetas normales. IMPORTANTE: anida las viñetas todo lo "
+        "que haga falta para reflejar la jerarquía real (una idea que detalla o depende "
+        "de la viñeta anterior va debajo de ella, indentada con 2 espacios más por cada "
+        "nivel de profundidad, exactamente igual que una lista anidada de Markdown). Un "
+        "esquema con viñetas anidadas es MEJOR que uno plano: no limites la profundidad "
+        "de anidación.\n"
+        "- Listas numeradas con \"1. \", \"2. \", etc. cuando el orden importe (por "
+        "ejemplo, pasos de un procedimiento o fases de un proceso). También pueden "
+        "anidarse igual que las viñetas.\n"
+        "- Cuando definas formalmente un concepto, usa el prefijo \"> \" para esa línea, "
+        "de forma que se pueda destacar como una caja de definición aparte.\n"
+        "REGLA CLAVE contra la duplicación: cada tema o epígrafe del documento debe "
+        "aparecer UNA SOLA VEZ en el esquema, en el nivel de profundidad que le "
+        "corresponda. Si el documento vuelve a tratar el mismo epígrafe más adelante con "
+        "más detalle (por ejemplo, un índice o resumen inicial y luego un desarrollo "
+        "artículo por artículo del mismo título), NO crees una segunda sección "
+        "independiente para ese mismo epígrafe: integra ese detalle como sub-viñetas "
+        "anidadas bajo el encabezado ya existente de ese epígrafe. Todas las secciones "
+        "del esquema deben acabar con un nivel de detalle similar entre sí -- evita que "
+        "una sección quede muy desarrollada y las demás apenas esbozadas.\n"
+        "No uses tablas, bloques de código, ni HTML. Cada línea de texto debe ir en su "
+        "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga.\n"
+        "IMPORTANTE -- fidelidad al documento: basa el esquema ÚNICAMENTE en el "
+        "contenido del documento proporcionado. No añadas información externa, no "
+        "completes huecos con conocimiento propio, y no inventes datos, fechas, "
+        "artículos, cifras o nombres que no aparezcan literalmente en el texto. Si el "
+        "documento no aporta un dato que normalmente se esperaría, no lo inventes: "
+        "sencillamente no lo incluyas. Antes de dar tu respuesta por buena, revisa "
+        "mentalmente que cada dato concreto que has escrito (fecha, cifra, ley, "
+        "artículo, plazo) aparezca efectivamente en el documento que se te ha dado."
+    )
+    instrucciones_fusion_esquema = (
+        "Al fusionar los fragmentos, presta especial atención a que un mismo epígrafe o "
+        "sección del documento no aparezca dos veces a distinta profundidad (por "
+        "ejemplo, una versión breve tipo índice en un fragmento y luego un desarrollo "
+        "mucho más detallado del MISMO epígrafe en otro fragmento): en ese caso, fusiona "
+        "ambas versiones en una única sección, usando la más detallada como base y "
+        "anidando el resto como sub-viñetas, en vez de dejar las dos como secciones "
+        "independientes. Vigila también que la profundidad de detalle quede equilibrada "
+        "entre secciones -- si una sección terminó mucho más desarrollada que el resto "
+        "por venir de un fragmento distinto, resúmela ligeramente para igualar el nivel "
+        "de detalle general del esquema."
+    )
+
+    uid = g.uid
+    plan_actual = g.plan_actual
+    registrar_uso(db, uid, "pdf_ia", plan_actual)
+
+    def generar():
+        eventos = queue.Queue()
         acumulador_tokens = AcumuladorTokens()
-        esquema = generar_documento_largo_por_partes(
-            system_prompt,
-            text,
-            etiqueta_documento="Documento para crear esquema",
-            instrucciones_fusion_extra=instrucciones_fusion_esquema,
-            on_usage=acumulador_tokens.add,
-        )
-        acumulador_tokens.volcar_a_peticion()
-        if not esquema:
-            return jsonify({"error": "Error en DeepSeek API"}), 500
-        registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
-        return jsonify({"esquema": esquema, "documento_id": documento_id, "nombre_archivo": nombre_archivo})
-    except Exception as e:
-        logger.exception("Error en /generar-esquema-desde-pdf")
-        return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
+
+        def _en_hilo_de_fondo():
+            def on_progreso(evento_progreso):
+                eventos.put({"tipo": "progreso", **evento_progreso})
+            try:
+                esquema = generar_documento_largo_por_partes(
+                    system_prompt,
+                    text,
+                    etiqueta_documento="Documento para crear esquema",
+                    instrucciones_fusion_extra=instrucciones_fusion_esquema,
+                    on_usage=acumulador_tokens.add,
+                    on_progreso=on_progreso,
+                )
+                resultado = {"esquema": esquema, "documento_id": documento_id, "nombre_archivo": nombre_archivo} if esquema \
+                    else {"error": "Error en DeepSeek API"}
+            except Exception:
+                logger.exception("Error en /generar-esquema-desde-pdf")
+                resultado = {"error": "Error al procesar el PDF."}
+            if not resultado.get("esquema"):
+                devolver_uso(db, uid, "pdf_ia", plan_actual)
+            acumulador_tokens.volcar_directo(db, uid)
+            eventos.put({"tipo": "fin", **resultado})
+
+        hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
+        hilo.start()
+
+        while True:
+            evento = eventos.get()
+            yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
+            if evento["tipo"] == "fin":
+                break
+
+    return Response(
+        stream_with_context(generar()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
 
 
 @bp.route('/generar-test-desde-pdf', methods=['POST'])
@@ -379,41 +444,79 @@ def generar_test_desde_pdf():
 @bp.route('/generar-tarjetas-desde-pdf', methods=['POST'])
 @requiere_plan(db, "premium", global_check=True)
 def generar_tarjetas_desde_pdf():
+    # En streaming (SSE, mismo patrón que /generar-test-desde-pdf/
+    # /resumir-pdf/generar-esquema-desde-pdf) para dar progreso real por
+    # tarjeta verificada en vez de mensajes rotativos cosméticos.
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
     text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
     if error:
         return error
+    if not os.getenv("DEEPSEEK_API_KEY"):
+        return jsonify({"error": "API key de DeepSeek no configurada"}), 500
+
+    max_length = 150000
+    if len(text) > max_length:
+        text = text[:max_length]
     try:
-        max_length = 150000
-        if len(text) > max_length:
-            text = text[:max_length]
-        try:
-            num_tarjetas = int(request.form.get("num_tarjetas", 10))
-        except (TypeError, ValueError):
-            num_tarjetas = 10
-        num_tarjetas = max(1, min(num_tarjetas, 50))
-        if not os.getenv("DEEPSEEK_API_KEY"):
-            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
+        num_tarjetas = int(request.form.get("num_tarjetas", 10))
+    except (TypeError, ValueError):
+        num_tarjetas = 10
+    num_tarjetas = max(1, min(num_tarjetas, 50))
+
+    uid = g.uid
+    plan_actual = g.plan_actual
+    # Se cobra por adelantado (mismo motivo que /generar-test-desde-pdf: el
+    # hilo de fondo sigue gastando en DeepSeek aunque el cliente corte la
+    # conexión SSE, así que cobrar solo al final permitiría saltarse la
+    # cuota abortando la petición en bucle) y se devuelve si no se genera
+    # ninguna tarjeta válida.
+    registrar_uso(db, uid, "pdf_ia", plan_actual)
+
+    def generar():
+        eventos = queue.Queue()
         acumulador_tokens = AcumuladorTokens()
-        resultado = generar_tarjetas_verificadas(text, num_tarjetas, on_usage=acumulador_tokens.add)
-        acumulador_tokens.volcar_a_peticion()
-        if not resultado["tarjetas"]:
-            return jsonify({
-                "error": "La IA no generó ninguna tarjeta válida a partir del documento.",
-            }), 500
-        # A diferencia del "cobrar en cuanto DeepSeek responde 200" de antes
-        # (que gastaba cupo aunque el JSON resultara ilegible), aquí solo se
-        # factura una vez hay al menos una tarjeta ya verificada.
-        registrar_uso(db, g.uid, "pdf_ia", g.plan_actual)
-        respuesta = {"tarjetas": resultado["tarjetas"], "documento_id": documento_id, "nombre_archivo": nombre_archivo}
-        if "advertencia" in resultado:
-            respuesta["advertencia"] = resultado["advertencia"]
-        return jsonify(respuesta)
-    except Exception as e:
-        logger.exception("Error en /generar-tarjetas-desde-pdf")
-        return jsonify({"error": f"Error al procesar el PDF o generar tarjetas: {str(e)}"}), 500
+
+        def _en_hilo_de_fondo():
+            def on_progreso(evento_progreso):
+                eventos.put({"tipo": "progreso", **evento_progreso})
+            try:
+                resultado_generacion = generar_tarjetas_verificadas(
+                    text, num_tarjetas, on_usage=acumulador_tokens.add, on_progreso=on_progreso,
+                )
+                if not resultado_generacion["tarjetas"]:
+                    resultado = {"error": "La IA no generó ninguna tarjeta válida a partir del documento."}
+                else:
+                    resultado = {
+                        "tarjetas": resultado_generacion["tarjetas"],
+                        "documento_id": documento_id,
+                        "nombre_archivo": nombre_archivo,
+                    }
+                    if "advertencia" in resultado_generacion:
+                        resultado["advertencia"] = resultado_generacion["advertencia"]
+            except Exception:
+                logger.exception("Error en /generar-tarjetas-desde-pdf")
+                resultado = {"error": "Error al procesar el PDF o generar tarjetas."}
+            if not resultado.get("tarjetas"):
+                devolver_uso(db, uid, "pdf_ia", plan_actual)
+            acumulador_tokens.volcar_directo(db, uid)
+            eventos.put({"tipo": "fin", **resultado})
+
+        hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
+        hilo.start()
+
+        while True:
+            evento = eventos.get()
+            yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
+            if evento["tipo"] == "fin":
+                break
+
+    return Response(
+        stream_with_context(generar()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
 
 
 # Nº de caracteres del PDF que se guardan para poder chatear sobre él. Se

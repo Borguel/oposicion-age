@@ -155,6 +155,8 @@ class TestResumirPdfYGenerarTestDesdePdf:
     lógica interna de deepseek_utils (ya cubierta en test_deepseek_utils.py)."""
 
     def test_resumir_pdf(self, client, documento_sembrado):
+        # En streaming (SSE, mismo patrón que /generar-test-desde-pdf): el
+        # resultado llega en el evento "fin" del cuerpo, no como JSON directo.
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
@@ -164,7 +166,9 @@ class TestResumirPdfYGenerarTestDesdePdf:
         finally:
             parche.stop()
         assert resp.status_code == 200
-        assert resp.get_json()["resumen"] == "# Resumen generado"
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo"] == "fin"
+        assert eventos[-1]["resumen"] == "# Resumen generado"
 
     def test_resumir_pdf_sin_api_key_da_error_500(self, client, documento_sembrado, monkeypatch):
         monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
@@ -250,6 +254,7 @@ class TestGenerarEsquemaDesdePdf:
     hasta ahora esta ruta no tenía ningún test."""
 
     def test_generar_esquema_desde_pdf(self, client, db, documento_sembrado):
+        # En streaming (SSE): el resultado llega en el evento "fin".
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
@@ -259,7 +264,9 @@ class TestGenerarEsquemaDesdePdf:
         finally:
             parche.stop()
         assert resp.status_code == 200
-        assert resp.get_json()["esquema"] == "# Esquema generado"
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo"] == "fin"
+        assert eventos[-1]["esquema"] == "# Esquema generado"
         assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
 
     def test_generar_esquema_desde_pdf_sin_api_key_da_error_500(self, client, documento_sembrado, monkeypatch):
@@ -272,7 +279,12 @@ class TestGenerarEsquemaDesdePdf:
             parche.stop()
         assert resp.status_code == 500
 
-    def test_generar_esquema_desde_pdf_error_deepseek_da_500_y_no_factura(self, client, db, documento_sembrado):
+    def test_generar_esquema_desde_pdf_error_deepseek_no_factura_uso(self, client, db, documento_sembrado):
+        # Ahora en streaming: un fallo de generación llega como evento "fin"
+        # con error, con status HTTP 200 igual que en éxito (ver
+        # test_generar_test_desde_pdf_sin_preguntas_no_factura_uso). El uso
+        # se cobra por adelantado y se devuelve al fallar, así que el
+        # contador neto queda en 0 (no ausente).
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value=None), \
@@ -281,9 +293,11 @@ class TestGenerarEsquemaDesdePdf:
                                     headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
-        assert resp.status_code == 500
-        # No se llegó a registrar_uso, así que ni siquiera existe el contador.
-        assert "limites_uso" not in db.leer(("usuarios", "u1"))
+        assert resp.status_code == 200
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo"] == "fin"
+        assert "error" in eventos[-1]
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0
 
 
 class TestGenerarTarjetasDesdePdf:
@@ -295,6 +309,7 @@ class TestGenerarTarjetasDesdePdf:
     manejo de errores)."""
 
     def test_generar_tarjetas_desde_pdf(self, client, db, documento_sembrado):
+        # En streaming (SSE): el resultado llega en el evento "fin".
         resultado = {"tarjetas": [{"pregunta": "¿?", "respuesta": "!"}], "descartadas": 0}
         parche = _con_sesion(client)
         try:
@@ -306,7 +321,9 @@ class TestGenerarTarjetasDesdePdf:
         finally:
             parche.stop()
         assert resp.status_code == 200
-        datos = resp.get_json()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        datos = eventos[-1]
+        assert datos["tipo"] == "fin"
         assert datos["tarjetas"] == [{"pregunta": "¿?", "respuesta": "!"}]
         assert "advertencia" not in datos
         assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
@@ -324,9 +341,13 @@ class TestGenerarTarjetasDesdePdf:
         finally:
             parche.stop()
         assert resp.status_code == 200
-        assert resp.get_json()["advertencia"] == resultado["advertencia"]
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["advertencia"] == resultado["advertencia"]
 
-    def test_generar_tarjetas_desde_pdf_sin_tarjetas_da_error_500_y_no_factura(self, client, db, documento_sembrado):
+    def test_generar_tarjetas_desde_pdf_sin_tarjetas_no_factura_uso(self, client, db, documento_sembrado):
+        # Ahora en streaming: fallo real llega como evento "fin" con error,
+        # con status HTTP 200 (no 500). El uso se cobra por adelantado y se
+        # devuelve al fallar, así que el contador neto queda en 0 (no ausente).
         resultado = {"tarjetas": [], "descartadas": 1, "advertencia": "No se pudo verificar ninguna tarjeta."}
         parche = _con_sesion(client)
         try:
@@ -336,8 +357,10 @@ class TestGenerarTarjetasDesdePdf:
                                     headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
-        assert resp.status_code == 500
-        assert "limites_uso" not in db.leer(("usuarios", "u1"))
+        assert resp.status_code == 200
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert "error" in eventos[-1]
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0
 
     def test_generar_tarjetas_desde_pdf_sin_api_key_da_error_500(self, client, documento_sembrado, monkeypatch):
         monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
@@ -355,9 +378,12 @@ class TestGenerarTarjetasDesdePdf:
             with patch("blueprints.pdf_ia.generar_tarjetas_verificadas",
                        return_value={"tarjetas": [], "descartadas": 0}) as mock_generar, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
-                client.post("/generar-tarjetas-desde-pdf",
-                            data={"documento_id": documento_sembrado, "num_tarjetas": "500"},
-                            headers={"Authorization": "Bearer x"})
+                resp = client.post("/generar-tarjetas-desde-pdf",
+                                    data={"documento_id": documento_sembrado, "num_tarjetas": "500"},
+                                    headers={"Authorization": "Bearer x"})
+                # Drena el stream SSE (dentro del "with patch") para asegurar
+                # que el hilo de fondo ya llamó al mock antes de comprobarlo.
+                resp.get_data()
         finally:
             parche.stop()
         assert mock_generar.call_args.args[1] == 50
@@ -411,6 +437,11 @@ class TestCosteIaEnHerramientasPdf:
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": "d1"},
                                     headers={"Authorization": "Bearer x"})
+                # /resumir-pdf va en streaming SSE: hay que drenar el cuerpo
+                # (dentro del "with patch") para asegurar que el hilo de
+                # fondo ya terminó antes de leer los costes de Firestore
+                # (mismo motivo que test_generar_test_desde_pdf_con_varios_lotes_registra_coste).
+                resp.get_data()
         finally:
             parche.stop()
 
@@ -479,6 +510,10 @@ class TestCosteIaEnHerramientasPdf:
                 resp = client.post("/generar-tarjetas-desde-pdf",
                                     data={"documento_id": documento_sembrado, "num_tarjetas": "1"},
                                     headers={"Authorization": "Bearer x"})
+                # /generar-tarjetas-desde-pdf va en streaming SSE: hay que
+                # drenar el cuerpo (dentro del "with patch") para asegurar
+                # que el hilo de fondo ya terminó antes de leer los costes.
+                resp.get_data()
         finally:
             parche.stop()
 
