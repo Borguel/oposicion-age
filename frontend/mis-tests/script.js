@@ -9,6 +9,7 @@ const TIPO_INFO = {
   repetido: { iconoHtml: icono("repetir", 28), label: "Repetido" },
   falladas: { iconoHtml: icono("cruz", 28), label: "Preguntas falladas" },
   favoritas: { iconoHtml: icono("estrella", 28), label: "Preguntas favoritas" },
+  test_pdf: { iconoHtml: icono("subir", 28), label: "Desde un PDF" },
 };
 
 const PAGINA_POR_TIPO = {
@@ -64,7 +65,11 @@ function pillsTemas(temaIds, testId) {
 
 function tarjetaTest(t) {
   const info = tipoInfo(t.tipo);
-  const pagina = PAGINA_POR_TIPO[t.tipo] || "/test-generator/";
+  // pagina_origen es el dato preciso que cada página de test ya guarda al
+  // autoguardar el progreso (la ruta exacta desde la que se generó); se usa
+  // como fuente principal en vez del mapa PAGINA_POR_TIPO (que no cubre
+  // todos los tipos, p. ej. "test_pdf") para no desincronizarse de nuevo.
+  const pagina = t.pagina_origen || PAGINA_POR_TIPO[t.tipo] || "/test-generator/";
   const partes = [`${t.num_preguntas || 0} pregunta${(t.num_preguntas || 0) !== 1 ? "s" : ""}`];
   if (t.fecha) partes.push(formatearFecha(t.fecha));
 
