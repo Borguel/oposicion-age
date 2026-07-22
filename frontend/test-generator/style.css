@@ -1005,27 +1005,150 @@ body {
   margin-top: 40px;
 }
 
+/* Título de cada grupo (Practica / Repasa lo que ya has hecho): antes un
+   simple texto en negrita del mismo tamaño que el resto, se subía poco de
+   un vistazo entre el hero y las tarjetas. Ahora más grande, con el icono
+   del grupo y una barra de color a la izquierda a modo de "separador"
+   visual claro entre ambos bloques. */
 .tg-grupo-titulo {
-  font-size: 1.05rem;
-  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
   color: var(--age-ink);
   /* El grupo entero sube 34px para que las tarjetas se solapen con el
      borde inferior de la cabecera navy -- este margen compensa esa subida
      solo para el título, que debe quedarse donde estaría sin el solape. */
-  margin: 34px 0 14px;
-  padding-left: 2px;
+  margin: 34px 0 16px;
+  padding-left: 14px;
+  position: relative;
+}
+
+.tg-grupo-titulo::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1px;
+  bottom: 1px;
+  width: 5px;
+  border-radius: 3px;
+  background: var(--age-primary);
+}
+
+.tg-grupo-titulo [data-icon] {
+  display: inline-flex;
+  color: var(--age-primary-dark);
+}
+
+.tg-grupo-titulo--repaso::before {
+  background: var(--age-ink-faint);
+}
+
+.tg-grupo-titulo--repaso [data-icon] {
+  color: var(--age-ink-soft);
 }
 
 .tg-grupo-repaso .tg-grupo-titulo {
   margin-top: 0;
 }
 
-.tg-grupo-practica .test-type-card {
-  border-top: 3px solid var(--age-primary);
+/* Acento de color por tarjeta (mismo patrón --accent/--accent-soft/
+   --accent-dark que las tarjetas de Herramientas IA en
+   subida-pdf-pagina-principal/style.css): antes todas las tarjetas del hub
+   compartían el mismo naranja de marca en el icono y solo se diferenciaban
+   por un borde superior de color fijo POR GRUPO (no por tarjeta), sin
+   ayudar a distinguir de un vistazo cada tipo de test. IMPORTANTE: todo
+   esto va scoped bajo .test-type-container-hub porque .test-type-card
+   también se reutiliza para las opciones de respuesta (A/B/C/D) durante el
+   test en sí, fuera del hub. */
+.test-type-container-hub .test-type-card {
+  --accent: var(--age-primary);
+  --accent-soft: var(--age-primary-soft);
+  --accent-dark: var(--age-primary-dark);
+  position: relative;
+  overflow: hidden;
 }
 
-.tg-grupo-repasa .test-type-card {
-  border-top: 3px solid var(--age-border);
+.test-type-container-hub .test-type-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s var(--age-ease);
+}
+
+.test-type-container-hub .test-type-card:hover::before {
+  opacity: 1;
+}
+
+.test-type-container-hub .test-type-card:hover {
+  border-color: var(--accent);
+}
+
+.test-type-container-hub .test-type-card .icon {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
+
+.test-type-container-hub .test-type-card--oficial {
+  --accent: #6366f1;
+  --accent-soft: rgba(99, 102, 241, 0.14);
+  --accent-dark: #4338ca;
+}
+
+.test-type-container-hub .test-type-card--repetir {
+  --accent: #06b6d4;
+  --accent-soft: rgba(6, 182, 212, 0.14);
+  --accent-dark: #0e7490;
+}
+
+.test-type-container-hub .test-type-card--falladas {
+  --accent: #b45309;
+  --accent-soft: rgba(180, 83, 9, 0.14);
+  --accent-dark: #92400e;
+}
+
+.test-type-container-hub .test-type-card--favoritas {
+  --accent: #eab308;
+  --accent-soft: rgba(234, 179, 8, 0.16);
+  --accent-dark: #a16207;
+}
+
+.test-type-container-hub .test-type-card--repasar {
+  --accent: #64748b;
+  --accent-soft: rgba(100, 116, 139, 0.14);
+  --accent-dark: #475569;
+}
+
+:root[data-theme="dark"] .test-type-container-hub .test-type-card--oficial {
+  --accent-soft: rgba(99, 102, 241, 0.22);
+  --accent-dark: #a5b4fc;
+}
+
+:root[data-theme="dark"] .test-type-container-hub .test-type-card--repetir {
+  --accent-soft: rgba(6, 182, 212, 0.22);
+  --accent-dark: #67e8f9;
+}
+
+:root[data-theme="dark"] .test-type-container-hub .test-type-card--falladas {
+  --accent-soft: rgba(180, 83, 9, 0.24);
+  --accent-dark: #fbbf24;
+}
+
+:root[data-theme="dark"] .test-type-container-hub .test-type-card--favoritas {
+  --accent-soft: rgba(234, 179, 8, 0.22);
+  --accent-dark: #fde047;
+}
+
+:root[data-theme="dark"] .test-type-container-hub .test-type-card--repasar {
+  --accent-soft: rgba(100, 116, 139, 0.24);
+  --accent-dark: #cbd5e1;
 }
 
 .test-type-card-badge {
@@ -1168,9 +1291,6 @@ body {
   min-height: 190px;
   padding: 26px 24px;
   justify-content: flex-start;
-}
-.test-type-container-hub .test-type-card:hover {
-  border-color: var(--tutor-accent, var(--age-primary));
 }
 .test-type-container-hub .icon {
   width: 52px;
