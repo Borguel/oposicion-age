@@ -930,7 +930,9 @@ body {
   font-family: var(--age-font), 'Inter', sans-serif;
 }
 
-#form-generar-test > label {
+#form-generar-test > label,
+#form-falladas > label,
+#form-favoritas > label {
   display: block;
   font-weight: 700;
   margin-bottom: 8px;
@@ -963,7 +965,7 @@ body {
 .tg-hero {
   background: linear-gradient(160deg, var(--age-navy), var(--age-navy-soft));
   color: #fff;
-  padding: 40px 20px 60px;
+  padding: 40px 20px 44px;
   text-align: center;
 }
 
@@ -997,19 +999,28 @@ body {
   margin: 0;
 }
 
+/* Cada grupo (Practica / Repasa lo que ya has hecho) vive dentro de su
+   propio "panel" -- un recuadro redondeado con un tinte de color muy suave
+   a juego con la temática del grupo -- para separar visualmente ambas
+   zonas con claridad, en vez de solo un margen entre ellas. */
 .tg-grupo {
-  margin-top: -34px;
+  margin-top: 32px;
+  padding: 24px 22px 30px;
+  border-radius: var(--age-radius-lg);
+  background: var(--age-primary-soft);
 }
 
 .tg-grupo-repaso {
-  margin-top: 40px;
+  margin-top: 48px;
+  background: rgba(100, 116, 139, 0.1);
 }
 
-/* Título de cada grupo (Practica / Repasa lo que ya has hecho): antes un
-   simple texto en negrita del mismo tamaño que el resto, se subía poco de
-   un vistazo entre el hero y las tarjetas. Ahora más grande, con el icono
-   del grupo y una barra de color a la izquierda a modo de "separador"
-   visual claro entre ambos bloques. */
+:root[data-theme="dark"] .tg-grupo-repaso {
+  background: rgba(100, 116, 139, 0.18);
+}
+
+/* Título de cada grupo: con el icono del grupo y una barra de color a la
+   izquierda a modo de "separador" visual claro entre ambos bloques. */
 .tg-grupo-titulo {
   display: flex;
   align-items: center;
@@ -1018,10 +1029,7 @@ body {
   font-weight: 900;
   letter-spacing: -0.01em;
   color: var(--age-ink);
-  /* El grupo entero sube 34px para que las tarjetas se solapen con el
-     borde inferior de la cabecera navy -- este margen compensa esa subida
-     solo para el título, que debe quedarse donde estaría sin el solape. */
-  margin: 34px 0 16px;
+  margin: 0 0 16px;
   padding-left: 14px;
   position: relative;
 }
@@ -1048,10 +1056,6 @@ body {
 
 .tg-grupo-titulo--repaso [data-icon] {
   color: var(--age-ink-soft);
-}
-
-.tg-grupo-repaso .tg-grupo-titulo {
-  margin-top: 0;
 }
 
 /* Acento de color por tarjeta (mismo patrón --accent/--accent-soft/
@@ -1166,19 +1170,16 @@ body {
 
 @media (max-width: 640px) {
   .tg-hero {
-    padding: 32px 18px 48px;
+    padding: 32px 18px 40px;
   }
 
   .tg-grupo {
-    margin-top: -26px;
+    margin-top: 22px;
+    padding: 18px 16px 22px;
   }
 
-  .tg-grupo-titulo {
-    margin-top: 26px;
-  }
-
-  .tg-grupo-repaso .tg-grupo-titulo {
-    margin-top: 0;
+  .tg-grupo-repaso {
+    margin-top: 34px;
   }
 
   .test-type-card-badge {
