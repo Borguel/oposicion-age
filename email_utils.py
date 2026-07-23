@@ -483,7 +483,7 @@ def enviar_email_aviso_oficial(destinatario, titulo, tipo_legible, url_boe, url_
       <p style="margin:0;">{saludo}, se ha publicado una novedad oficial para tu oposición
       (<strong>{oposicion_nombre}</strong>):</p>
       <p><strong>{tipo_legible}:</strong> {titulo}</p>
-      {_boton("Ver en el BOE", url_boe)}
+      {_boton("Ver la resolución oficial", url_boe)}
       <p style="margin:14px 0 0; font-size:13.5px;"><a href="{url_inap}" style="color:{_COLOR_INK_SOFT};">Ver también en INAP →</a></p>
     """
     html = _plantilla_html(f"{tipo_legible}: {oposicion_nombre}", cuerpo, emoji="📢")

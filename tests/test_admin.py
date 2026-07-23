@@ -949,6 +949,70 @@ def test_avisos_oficiales_requiere_permiso_reportes(client, db):
         assert client.get("/admin/api/avisos-oficiales?estado=pendiente", headers=_AUTH).status_code == 403
 
 
+def test_avisos_oficiales_crear_manual_requiere_permiso_reportes(client, db):
+    with _como(admin=False, uid="mod1", permisos=["temario"]):
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "AGE", "tipo": "fecha_examen", "titulo": "x",
+        }, headers=_AUTH)
+    assert resp.status_code == 403
+
+
+def test_avisos_oficiales_crear_manual_ok(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "AGE", "tipo": "fecha_examen",
+            "titulo": "Llamamiento extraordinario del ejercicio único",
+            "resumen": "Repesca para aspirantes convocados el 24 de julio.",
+            "url_boe": "https://run.gob.es/hsblF8yLcR",
+            "fecha_boe": "20260715",
+        }, headers=_AUTH)
+    assert resp.status_code == 201
+    aid = resp.get_json()["id"]
+    d = db.leer(("avisos_oficiales", aid))
+    assert d["oposicion"] == "AGE"
+    assert d["tipo"] == "fecha_examen"
+    assert d["titulo"] == "Llamamiento extraordinario del ejercicio único"
+    assert d["url_boe"] == "https://run.gob.es/hsblF8yLcR"
+    assert d["fecha_boe"] == "20260715"
+    assert d["estado"] == "pendiente"
+    assert d["creado_manualmente_por"] == "admin1"
+
+
+def test_avisos_oficiales_crear_manual_rellena_resumen_y_fecha_por_defecto(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "GACE", "tipo": "convocatoria", "titulo": "Título sin resumen",
+        }, headers=_AUTH)
+    assert resp.status_code == 201
+    d = db.leer(("avisos_oficiales", resp.get_json()["id"]))
+    assert d["resumen"] == "Título sin resumen"
+    assert d["fecha_boe"]  # se rellena con la fecha de hoy
+
+
+def test_avisos_oficiales_crear_manual_rechaza_oposicion_invalida(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "NO_EXISTE", "tipo": "convocatoria", "titulo": "x",
+        }, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_avisos_oficiales_crear_manual_rechaza_tipo_invalido(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "AGE", "tipo": "lo-que-sea", "titulo": "x",
+        }, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_avisos_oficiales_crear_manual_rechaza_titulo_vacio(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "AGE", "tipo": "convocatoria", "titulo": "   ",
+        }, headers=_AUTH)
+    assert resp.status_code == 400
+
+
 def test_avisos_oficiales_publicar_y_descartar(client, db):
     db.sembrar(("avisos_oficiales", "a1"), {
         "oposicion": "GACE", "tipo": "convocatoria", "titulo": "Convocatoria GACE 2026",

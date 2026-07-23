@@ -1656,6 +1656,44 @@ def avisos_oficiales_listar():
     return jsonify({"avisos": avisos})
 
 
+@bp.route("/admin/api/avisos-oficiales", methods=["POST"])
+@requiere_permiso("reportes")
+def avisos_oficiales_crear():
+    """Alta manual de un aviso oficial -- para lo que vigilancia_boe.py no
+    puede detectar solo porque no viene del sumario del BOE (p. ej. una
+    resolución publicada solo en el portal de firma del INAP). Se crea
+    "pendiente" igual que los detectados automáticamente, así que sigue el
+    mismo circuito de aprobación (nunca se publica nada sin que alguien con
+    permiso "reportes" le dé al botón)."""
+    from publicacion_estatica_boe import ETIQUETA_TIPO_AVISO
+
+    data = request.get_json(silent=True) or {}
+    oposicion = data.get("oposicion", "")
+    tipo = data.get("tipo", "")
+    titulo = (data.get("titulo") or "").strip()
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    if tipo not in ETIQUETA_TIPO_AVISO:
+        return jsonify({"error": "Tipo no válido"}), 400
+    if not titulo:
+        return jsonify({"error": "Falta el título"}), 400
+
+    ref = db.collection("avisos_oficiales").document()
+    ref.set({
+        "oposicion": oposicion,
+        "tipo": tipo,
+        "titulo": titulo[:300],
+        "resumen": (data.get("resumen") or titulo)[:500],
+        "url_boe": data.get("url_boe", ""),
+        "fecha_boe": data.get("fecha_boe") or datetime.utcnow().strftime("%Y%m%d"),
+        "fecha_deteccion": datetime.utcnow().isoformat(),
+        "estado": "pendiente",
+        "creado_manualmente_por": g.uid,
+    })
+    _registrar_auditoria("aviso_oficial_manual_creado", ref.id, titulo)
+    return jsonify({"mensaje": "Aviso creado", "id": ref.id}), 201
+
+
 @bp.route("/admin/api/avisos-oficiales/<aid>", methods=["PATCH"])
 @requiere_permiso("reportes")
 def avisos_oficiales_actualizar(aid):

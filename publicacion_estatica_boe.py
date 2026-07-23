@@ -125,7 +125,7 @@ def generar_html_avisos(avisos):
         <span class="guia-avisos-oficiales-tipo">{tipo_legible}</span>
         <p class="guia-avisos-oficiales-titulo">{aviso.get("titulo", "")}</p>
         <div class="guia-avisos-oficiales-enlaces">
-          <a href="{aviso.get("url_boe", "")}" target="_blank" rel="noopener">Ver en el BOE ↗</a>
+          <a href="{aviso.get("url_boe", "")}" target="_blank" rel="noopener">Ver la resolución oficial ↗</a>
           <a href="{url_inap}" target="_blank" rel="noopener">Ver en INAP ↗</a>
         </div>
       </div>""")

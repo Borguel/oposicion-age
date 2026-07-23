@@ -1282,15 +1282,77 @@ async function _cargarSaludVigilancia() {
   cont.innerHTML = _avisoTemasFaltantesHtml(d.temas_faltantes);
 }
 
+// Tipos reconocidos por publicacion_estatica_boe.ETIQUETA_TIPO_AVISO -- si
+// se amplía esa lista en Python, hay que reflejarlo aquí también.
+const ETIQUETA_TIPO_AVISO_MANUAL = {
+  convocatoria: "Convocatoria", lista_admitidos: "Lista de admitidos", tribunal: "Tribunal calificador",
+  fecha_examen: "Fecha de examen", aprobados: "Relación de aprobados", otro: "Aviso oficial",
+};
+
+function _formAvisoManualHtml() {
+  const opcionesTipo = Object.entries(ETIQUETA_TIPO_AVISO_MANUAL).map(([v, t]) => `<option value="${v}">${t}</option>`).join("");
+  return `
+    <div class="age-card" id="boe-form-manual" hidden style="margin-bottom:14px;">
+      <p class="admin-seccion-titulo" style="margin-top:0;">Añadir aviso manual</p>
+      <p class="admin-reporte-meta" style="margin-bottom:14px;">Para lo que la vigilancia automática del BOE no puede detectar sola -- p. ej. una resolución publicada solo en el portal del INAP, no en el BOE. Se crea "pendiente", igual que los detectados solos: hay que aprobarlo para que se publique.</p>
+      <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr;">
+        <label style="font-size:13px;font-weight:600;">Oposición
+          <select id="bfm-oposicion" class="age-input"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
+        </label>
+        <label style="font-size:13px;font-weight:600;">Tipo
+          <select id="bfm-tipo" class="age-input">${opcionesTipo}</select>
+        </label>
+      </div>
+      <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;">Título
+        <input type="text" id="bfm-titulo" class="age-input" placeholder="Ej: Llamamiento extraordinario del ejercicio único (AGE)" />
+      </label>
+      <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;">Resumen (opcional)
+        <textarea id="bfm-resumen" class="age-input" rows="2"></textarea>
+      </label>
+      <div style="display:grid;gap:10px;grid-template-columns:2fr 1fr;margin-top:10px;">
+        <label style="font-size:13px;font-weight:600;">Enlace a la resolución
+          <input type="url" id="bfm-url" class="age-input" placeholder="https://..." />
+        </label>
+        <label style="font-size:13px;font-weight:600;">Fecha (AAAAMMDD)
+          <input type="text" id="bfm-fecha" class="age-input" placeholder="20260715" />
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button type="button" class="age-btn age-btn-primary admin-mini" id="bfm-crear">Crear aviso pendiente</button>
+        <button type="button" class="age-btn age-btn-outline admin-mini" id="bfm-cancelar">Cancelar</button>
+      </div>
+    </div>`;
+}
+
+async function _crearAvisoManual() {
+  const datos = {
+    oposicion: document.getElementById("bfm-oposicion").value,
+    tipo: document.getElementById("bfm-tipo").value,
+    titulo: document.getElementById("bfm-titulo").value.trim(),
+    resumen: document.getElementById("bfm-resumen").value.trim(),
+    url_boe: document.getElementById("bfm-url").value.trim(),
+    fecha_boe: document.getElementById("bfm-fecha").value.trim(),
+  };
+  if (!datos.titulo) { toast("Falta el título."); return; }
+  const r = await api("POST", "/admin/api/avisos-oficiales", datos);
+  if (r) {
+    toast("Aviso creado como pendiente.");
+    document.getElementById("boe-form-manual").hidden = true;
+    estadoBoe = "pendiente";
+    cargarAvisosOficiales();
+  }
+}
+
 async function renderBoe() {
   const panel = document.getElementById("panel-boe");
   panel.innerHTML = `
     ${_avisoTokenGithubHtml()}
     <div id="boe-salud"></div>
     <div class="age-card admin-filtros">
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <button type="button" class="age-btn ${vistaBoe === "cambios" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="boe-vista-cambios">Cambios de temario</button>
         <button type="button" class="age-btn ${vistaBoe === "avisos" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="boe-vista-avisos">Avisos oficiales</button>
+        ${vistaBoe === "avisos" ? `<button type="button" class="age-btn age-btn-outline admin-mini" id="boe-mostrar-form-manual" style="margin-left:auto;">+ Añadir aviso manual</button>` : ""}
       </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">Estado
         <select id="boe-estado" class="age-input" style="max-width:180px;">
@@ -1301,7 +1363,17 @@ async function renderBoe() {
         </select>
       </label>
     </div>
+    ${vistaBoe === "avisos" ? _formAvisoManualHtml() : ""}
     <div class="age-card"><div id="boe-lista"><p class="admin-cargando">Cargando…</p></div></div>`;
+  if (vistaBoe === "avisos") {
+    panel.querySelector("#boe-mostrar-form-manual").addEventListener("click", () => {
+      panel.querySelector("#boe-form-manual").hidden = false;
+    });
+    panel.querySelector("#bfm-cancelar").addEventListener("click", () => {
+      panel.querySelector("#boe-form-manual").hidden = true;
+    });
+    panel.querySelector("#bfm-crear").addEventListener("click", _crearAvisoManual);
+  }
   const sel = panel.querySelector("#boe-estado");
   sel.value = estadoBoe;
   const cargarVistaActual = () => (vistaBoe === "avisos" ? cargarAvisosOficiales() : cargarCambiosTemario());
@@ -1378,7 +1450,7 @@ async function cargarAvisosOficiales() {
       </div>
       <p class="admin-reporte-preg">${escapeHtml(a.titulo)}</p>
       ${a.resumen ? `<p class="admin-reporte-motivo">${escapeHtml(a.resumen)}</p>` : ""}
-      ${a.url_boe ? `<p class="admin-reporte-meta"><a href="${escapeHtml(a.url_boe)}" target="_blank" rel="noopener">Ver en el BOE ↗</a></p>` : ""}
+      ${a.url_boe ? `<p class="admin-reporte-meta"><a href="${escapeHtml(a.url_boe)}" target="_blank" rel="noopener">Ver la resolución ↗</a></p>` : ""}
       <div class="admin-reporte-acciones">
         ${a.estado !== "publicado" ? `<button class="age-btn age-btn-primary admin-mini" data-publicar="${escapeHtml(a.id)}">Publicar</button>` : ""}
         ${a.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-descartar-aviso="${escapeHtml(a.id)}">Descartar</button>` : ""}

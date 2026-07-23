@@ -260,6 +260,7 @@ _PALABRAS_TIPO_AVISO = (
     "convocatoria", "lista de admitidos", "lista provisional", "lista definitiva",
     "admitidos y excluidos", "tribunal calificador", "fecha del ejercicio",
     "fecha de examen", "relación de aprobados", "listas de aprobados",
+    "llamamiento extraordinario",
 )
 
 _TIPO_POR_PALABRA_CLAVE = {
@@ -273,6 +274,13 @@ _TIPO_POR_PALABRA_CLAVE = {
     "fecha de examen": "fecha_examen",
     "relación de aprobados": "aprobados",
     "listas de aprobados": "aprobados",
+    # Visto en la práctica en una resolución de la Comisión Permanente de
+    # Selección (llamamiento a un grupo reducido de aspirantes a un
+    # examen de repesca) -- esa concreta se publica solo en el portal de
+    # firma/validación del INAP (run.gob.es), no en el BOE, así que esta
+    # palabra clave solo ayuda si algún día un caso similar sí llega a
+    # publicarse en el sumario del BOE.
+    "llamamiento extraordinario": "fecha_examen",
 }
 
 
