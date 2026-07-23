@@ -65,6 +65,17 @@ def validar_pregunta(pregunta):
     if any(frase in texto_total for frase in frases_prohibidas):
         return False
 
+    # ❌ Filtro de siglas de normas -- los exámenes oficiales de estas
+    # oposiciones siempre escriben el nombre completo de la ley (nunca "CE"
+    # en vez de "Constitución Española", ni "TREBEP", "LPAC"...). Se compara
+    # contra el texto ORIGINAL (no en minúsculas): las siglas se escriben en
+    # mayúsculas, así que con \b de por medio no coincide con una palabra
+    # normal que contenga esas letras (p. ej. "acerca" no matchea "CE").
+    texto_original = pregunta["pregunta"] + " " + pregunta["explicacion"]
+    siglas_prohibidas = ["CE", "TREBEP", "LPAC", "LRJSP", "LOTC", "LOPJ", "LGP", "LJCA", "LOFAGE", "LOREG"]
+    if any(re.search(rf"\b{re.escape(sigla)}\b", texto_original) for sigla in siglas_prohibidas):
+        return False
+
     # ❌ Filtro de explicaciones demasiado cortas
     if len(pregunta["explicacion"].strip()) < 15:
         return False

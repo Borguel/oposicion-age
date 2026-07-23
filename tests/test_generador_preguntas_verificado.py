@@ -84,6 +84,20 @@ def test_prompt_descriptivo_prohibe_remitir_al_contenido_invisible():
     assert "mencionados en el contenido" in system_ver.lower()
 
 
+def test_prompt_normativo_prohibe_abreviar_el_nombre_de_la_norma():
+    # Los exámenes oficiales nunca abrevian ("CE" en vez de "Constitución
+    # Española", "TREBEP", "LPAC"...) -- el prompt de generación y el de
+    # verificación deben exigir el nombre completo.
+    anclas = [{"norma": "Constitución Española", "articulo": "Artículo 24",
+               "texto_legal": "Artículo 24. Todas las personas tienen derecho a la tutela judicial efectiva.",
+               "etiqueta_subbloque": "s1"}]
+    system_gen, _user_gen = _prompt_generacion(anclas, "memoria_literal", "AGE")
+    system_ver, _user_ver = _prompt_verificacion({"pregunta": "x"}, anclas)
+    assert "sigla" in system_gen.lower()
+    assert '"ce"' in system_gen.lower()
+    assert "sigla" in system_ver.lower()
+
+
 def _pregunta_valida(texto_pregunta="¿Pregunta de ejemplo?"):
     return json.dumps({
         "norma": "Ley 39/2015",

@@ -74,10 +74,35 @@ def test_rechaza_variantes_de_remision_a_contenido_documento_o_texto():
 
 
 def test_no_rechaza_contenido_esencial_como_termino_juridico_legitimo():
-    # "contenido esencial" es terminología constitucional real (art. 53.1
-    # CE) -- no debe confundirse con una remisión al material de origen.
+    # "contenido esencial" es terminología constitucional real (artículo
+    # 53.1 de la Constitución Española) -- no debe confundirse con una
+    # remisión al material de origen.
     assert validar_pregunta(_pregunta_valida(
-        explicacion="El artículo 53.1 CE protege el contenido esencial de los derechos fundamentales."
+        explicacion="El artículo 53.1 de la Constitución Española protege el contenido esencial de los "
+                    "derechos fundamentales."
+    )) is True
+
+
+def test_rechaza_sigla_ce_en_vez_del_nombre_completo():
+    # Regresión: los exámenes oficiales de estas oposiciones nunca abrevian
+    # -- una pregunta que diga "según la CE" en vez de "según la
+    # Constitución Española" debe descartarse.
+    assert validar_pregunta(_pregunta_valida(
+        pregunta="¿Qué artículo de la CE regula el derecho a la tutela judicial efectiva?"
+    )) is False
+
+
+def test_rechaza_otras_siglas_habituales_de_normas():
+    for sigla in ["TREBEP", "LPAC", "LRJSP", "LOTC"]:
+        explicacion = f"El artículo 1 de la {sigla} establece esta obligación de forma clara y suficiente."
+        assert validar_pregunta(_pregunta_valida(explicacion=explicacion)) is False, sigla
+
+
+def test_no_rechaza_palabras_que_contienen_las_letras_de_una_sigla():
+    # "CE" no debe dispararse sobre palabras normales que solo contienen esas
+    # letras seguidas (p. ej. "acerca de"), gracias al \b de la regex.
+    assert validar_pregunta(_pregunta_valida(
+        explicacion="El artículo 62 de la Constitución Española trata acerca de esta competencia del Rey."
     )) is True
 
 

@@ -31,7 +31,10 @@ def _prompt_verificacion(pregunta_candidata, texto_fuente):
         "8. La pregunta o la explicación remiten a \"el documento\", \"el contenido\", \"el texto\" o "
         "\"lo mencionado/anterior\" en vez de nombrar directamente de qué elementos concretos habla -- "
         "quien responde el test nunca ve el documento de origen, solo la pregunta, así que una remisión "
-        "de ese tipo la deja sin sentido.\n\n"
+        "de ese tipo la deja sin sentido.\n"
+        "9. Se usa una sigla o abreviatura (\"CE\", \"TREBEP\", \"LPAC\", \"art.\" en vez de "
+        "\"artículo\"...) para nombrar una ley o norma en vez de su nombre completo tal como aparece en "
+        "el documento -- los exámenes oficiales de esta oposición nunca abrevian.\n\n"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
         '{"valido": true, "problemas": []}\n'
         "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo."
