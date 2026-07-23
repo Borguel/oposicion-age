@@ -163,10 +163,12 @@
       margin-bottom: 40px;
     }
 
-    /* "De un vistazo": lo primero que se ve al entrar, antes de bajar nada. */
+    /* "De un vistazo": lo primero que se ve al entrar, antes de bajar nada.
+       5 números (el 5º, Tiempo dedicado, vivía antes en su propia tarjeta
+       ancha más abajo). */
     .resumen-vistazo {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 14px;
       margin-bottom: 24px;
     }
@@ -254,16 +256,11 @@
     }
 
     /* Respuestas: barra apilada + leyenda en vez de 3 tarjetas sueltas.
-       A todo lo ancho, como Tiempo dedicado, para que la barra y la
-       leyenda respiren en una sola fila en vez de apretarse en una
-       columna estrecha de la rejilla. (El override de ".header" a fila
-       vive más abajo, junto a ".tarjeta-tiempo-total", para ganar en la
-       cascada a la regla genérica ".tarjeta-estadistica .header".) */
+       A todo lo ancho, para que la barra y la leyenda respiren en una sola
+       fila en vez de apretarse en una columna estrecha de la rejilla. */
     .tarjeta-respuestas {
       grid-column: 1 / -1;
       text-align: left;
-      /* Igual que .tarjeta-tiempo-total: ya no vive dentro de la rejilla,
-         así que necesita su propio margen antes de "Evolución de tu nota". */
       margin-bottom: 28px;
     }
 
@@ -744,31 +741,6 @@
       }
     }
 
-    .tarjeta-tiempo-total {
-      grid-column: 1 / -1;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      text-align: left;
-      flex-wrap: wrap;
-      /* Ya no vive dentro de la rejilla de #estadisticas-usuario (se movió
-         justo debajo de "de un vistazo"), así que el hueco hasta la
-         siguiente tarjeta hay que darlo aquí en vez de con el gap de esa
-         rejilla. */
-      margin-bottom: 18px;
-    }
-
-    .tarjeta-tiempo-total .header {
-      flex-direction: row;
-      margin-bottom: 0;
-    }
-
-    .tarjeta-tiempo-total .header svg {
-      margin-bottom: 0;
-      margin-right: 12px;
-    }
-
     .tarjeta-respuestas .header {
       flex-direction: row;
       margin-bottom: 0;
@@ -777,27 +749,6 @@
     .tarjeta-respuestas .header svg {
       margin-bottom: 0;
       margin-right: 12px;
-    }
-
-    .tiempo-total-datos {
-      text-align: right;
-    }
-
-    .tiempo-total-datos .valor {
-      margin: 0;
-    }
-
-    .tiempo-total-datos .detalle {
-      margin: 0;
-    }
-
-    .tema-count {
-      background: var(--theme-primary);
-      color: white;
-      border-radius: 12px;
-      padding: 2px 8px;
-      font-size: 0.8rem;
-      font-weight: 600;
     }
 
     .tarjeta-evolucion {
@@ -1086,33 +1037,7 @@
     .calendario-leyenda-celda.nivel-2 { background: color-mix(in srgb, var(--age-success) 55%, var(--age-success-bg)); }
     .calendario-leyenda-celda.nivel-3 { background: var(--age-success); }
 
-    .tema-acierto {
-      background: var(--secondary);
-      color: white;
-      border-radius: 12px;
-      padding: 2px 8px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-
-    .btn-ver-temas {
-      background: var(--theme-primary);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: var(--btn-radius);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      margin-top: 15px;
-    }
-
-    .btn-ver-temas:hover {
-      background: var(--primary-dark);
-    }
-
-    /* Cobertura del temario: barra fina a todo lo ancho, mismo patrón que
-       Tiempo dedicado/Respuestas, contexto para las tarjetas de abajo. */
+    /* Cobertura del temario: barra fina a todo lo ancho. */
     .tarjeta-cobertura {
       grid-column: 1 / -1;
       text-align: left;
@@ -1172,218 +1097,6 @@
       color: var(--age-primary-dark);
     }
 
-    .modal-temas {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(5px);
-      animation: fadeIn 0.3s ease-out;
-    }
-
-    .modal-temas.show {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .modal-contenido {
-      background: var(--theme-bg);
-      border-radius: var(--modal-radius);
-      padding: 30px;
-      box-shadow: 0 10px 30px var(--shadow);
-      max-width: 800px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-      position: relative;
-      animation: slideIn 0.3s ease-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    @keyframes slideIn {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-
-    .modal-cerrar {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: transparent;
-      border: none;
-      font-size: 2rem;
-      color: var(--theme-text);
-      cursor: pointer;
-      transition: color 0.2s;
-      z-index: 1001;
-    }
-
-    .modal-cerrar:hover {
-      color: var(--danger);
-    }
-
-    .modal-titulo {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--theme-heading);
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .modal-titulo svg {
-      width: 26px;
-      height: 26px;
-      flex-shrink: 0;
-      fill: var(--theme-primary);
-    }
-
-    .modal-busqueda {
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-      position: relative;
-    }
-
-    .modal-busqueda input {
-      flex: 1;
-      padding: 12px 15px;
-      border: 1px solid var(--theme-border);
-      border-radius: var(--btn-radius);
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .modal-busqueda input:focus {
-      border-color: var(--theme-primary);
-    }
-
-    .modal-busqueda svg {
-      width: 20px;
-      height: 20px;
-      fill: var(--theme-text);
-      position: absolute;
-      right: 15px;
-      pointer-events: none;
-    }
-
-    .lista-temas {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    .tema-bloque-grupo {
-      padding: 14px 15px;
-      border-bottom: 1px solid var(--theme-border);
-    }
-
-    .tema-bloque-grupo:last-child {
-      border-bottom: none;
-    }
-
-    .tema-bloque-header {
-      font-weight: 700;
-      color: var(--theme-heading);
-      border-left: 3px solid var(--theme-primary);
-      padding-left: 10px;
-      margin-bottom: 10px;
-    }
-
-    .tema-bloque-lista {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .tema-item {
-      display: flex;
-      align-items: baseline;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 8px 10px;
-      border-radius: 6px;
-      transition: background 0.2s;
-    }
-
-    .tema-item:hover {
-      background: var(--theme-content-alt-bg);
-    }
-
-    .tema-item-con-datos {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 6px;
-      background: var(--theme-content-alt-bg);
-      border: 1px solid var(--theme-border);
-    }
-
-    .tema-item-cabecera {
-      display: flex;
-      align-items: baseline;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .tema-item-stats {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .tema-numero {
-      flex-shrink: 0;
-      font-weight: 700;
-      font-size: 0.9rem;
-      color: var(--theme-heading);
-    }
-
-    .tema-item-titulo {
-      color: var(--theme-text);
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 20px;
-      gap: 10px;
-    }
-
-    .modal-btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: var(--btn-radius);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .modal-btn-secondary {
-      background: var(--theme-content-alt-bg);
-      color: var(--theme-text);
-      border: 1px solid var(--theme-border);
-    }
-
-    .modal-btn-secondary:hover {
-      background: var(--theme-border);
-    }
-
     @media (max-width: 768px) {
       #estadisticas-header {
         flex-direction: column;
@@ -1392,31 +1105,12 @@
       #estadisticas-usuario {
         grid-template-columns: 1fr;
       }
-      .tarjeta-tiempo-total {
-        flex-direction: column;
-        text-align: center;
-      }
-      .tarjeta-tiempo-total .header {
-        flex-direction: column;
-      }
-      .tarjeta-tiempo-total .header svg {
-        margin-right: 0;
-        margin-bottom: 10px;
-      }
       .tarjeta-respuestas .header {
         flex-direction: column;
       }
       .tarjeta-respuestas .header svg {
         margin-right: 0;
         margin-bottom: 10px;
-      }
-      .tiempo-total-datos {
-        text-align: center;
-      }
-      .modal-contenido {
-        width: 95%;
-        margin: 20px;
-        padding: 20px;
       }
     }
 
