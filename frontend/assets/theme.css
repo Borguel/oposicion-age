@@ -1539,6 +1539,16 @@ body {
   gap: 20px;
 }
 
+/* Cada pregunta en su propio recuadro (fondo gris clarito), para que se
+   vea con claridad dónde acaba una y empieza la siguiente en vez de un
+   bloque continuo. */
+.lista-detalle-preguntas > div {
+  background: var(--age-neutral-bg);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  padding: 18px 20px;
+}
+
 .pregunta-en-negrita {
   font-weight: 800;
   font-size: 1.05rem;
@@ -1655,7 +1665,8 @@ body {
 .detalle-explicacion-panel {
   margin-top: 10px;
   padding: 14px 16px;
-  background: var(--age-neutral-bg);
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
   border-radius: var(--age-radius-md);
   font-size: 0.92rem;
   line-height: 1.55;

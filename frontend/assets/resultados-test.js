@@ -138,15 +138,21 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
   const mejorRacha = calcularMejorRacha(preguntas, respuestasUsuario);
   const mensajeRacha = mensajeMotivacional(mejorRacha);
 
-  // Nota alternativa sin las preguntas marcadas como "duda" -- solo se
-  // calcula/muestra si se ha marcado al menos una, para no cambiar la
-  // pantalla de resultados en el caso común de que nadie use la función.
+  // Las preguntas marcadas como "duda" no cuentan para la nota principal
+  // (como una pregunta anulada en un examen oficial: ni acierto ni fallo,
+  // ni en el numerador ni en el denominador) -- solo se recalcula si se ha
+  // marcado al menos una, para no cambiar la pantalla de resultados en el
+  // caso común de que nadie use la función. Si se han marcado TODAS, no
+  // queda ninguna con la que calcular nada y se usa la nota con todas
+  // contando, para no mostrar un resultado vacío.
   const numDudas = marcadasDuda.filter(Boolean).length;
   let statsSinDudas = null;
   if (numDudas > 0) {
     const { stats: statsFiltradas, numRestantes } = calcularEstadisticasSinDudas(preguntas, respuestasUsuario, marcadasDuda);
     statsSinDudas = { ...statsFiltradas, numDudas, numRestantes };
   }
+  const usaStatsSinDudas = !!(statsSinDudas && statsSinDudas.numRestantes > 0);
+  const statsPrincipales = usaStatsSinDudas ? statsSinDudas : stats;
 
   let detalleHTML = "";
   preguntas.forEach((p, i) => {
@@ -179,10 +185,9 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     const idExp = `exp-${i}-${Math.random().toString(36).slice(2, 6)}`;
     detalleHTML += `<div class="detalle-acciones-fila">`;
     detalleHTML += `<button type="button" class="detalle-explicacion-btn" data-toggle-target="${idExp}">${icono("libro", 15)} Mostrar/Ocultar Explicación</button>`;
-    // Solo en las que no ha acertado: pedirle al tutor que se lo explique.
-    if (clase !== "acierto") {
-      detalleHTML += `<button type="button" class="detalle-tutor-btn" data-tutor="${i}" title="Que Tu Tutor te explique esta pregunta">${icono("graduacion", 15)} Pregúntale a Tu Tutor</button>`;
-    }
+    // En todas las preguntas, acierte o no -- también en las acertadas se
+    // puede querer pedir una aclaración adicional al tutor.
+    detalleHTML += `<button type="button" class="detalle-tutor-btn" data-tutor="${i}" title="Que Tu Tutor te explique esta pregunta">${icono("graduacion", 15)} Pregúntale a Tu Tutor</button>`;
     detalleHTML += `<button type="button" class="detalle-reportar-btn" data-reportar="${i}" title="Avisar de un error en esta pregunta">${icono("alerta", 15)} Reportar error</button>`;
     detalleHTML += `</div>`;
     detalleHTML += `<div id="${idExp}" class="detalle-explicacion-panel" style="display:none;"><strong>Explicación:</strong>${formatearExplicacionHTML(explicacion)}</div></div>`;
@@ -215,51 +220,56 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     ? `<div class="mensaje-racha-test">${mensajeRacha}</div>`
     : "";
 
-  const notaSinDudasHTML = statsSinDudas ? `
+  // La nota principal ya excluye las preguntas marcadas como duda (ver
+  // statsPrincipales más arriba); aquí solo se muestra, como dato aparte, lo
+  // que habría dado la nota si esas preguntas SÍ contaran -- o un aviso si
+  // se han marcado todas y no ha quedado más remedio que contarlas.
+  const notaAlternativaHTML = usaStatsSinDudas ? `
     <div class="resultado-nota-box">
-      <span class="resultado-nota-label">Nota sin las dudas</span>
-      <span class="resultado-nota-valor">${statsSinDudas.numRestantes ? statsSinDudas.notaOficial100 : "—"}<small> / 100</small></span>
-      <span class="resultado-nota-aclaracion">${
-        statsSinDudas.numRestantes
-          ? `Sin ${statsSinDudas.numDudas === 1 ? "esa pregunta" : `esas ${statsSinDudas.numDudas} preguntas`} marcada${statsSinDudas.numDudas === 1 ? "" : "s"} como duda, ${statsSinDudas.apto ? "seguirías aprobando" : "no aprobarías"}.`
-          : "Has marcado todas las preguntas como duda: no queda ninguna con la que calcular una nota alternativa."
-      }</span>
-    </div>` : "";
+      <span class="resultado-nota-label">Nota si esas preguntas contaran</span>
+      <span class="resultado-nota-valor">${stats.notaOficial100}<small> / 100</small></span>
+      <span class="resultado-nota-aclaracion">Contando también ${statsSinDudas.numDudas === 1 ? "la pregunta marcada" : `las ${statsSinDudas.numDudas} preguntas marcadas`} como duda, tu nota sería esta -- ${stats.apto ? "seguirías aprobando" : "no aprobarías"}.</span>
+    </div>` : (numDudas > 0 ? `
+    <div class="resultado-nota-box">
+      <span class="resultado-nota-label">Preguntas marcadas como duda</span>
+      <span class="resultado-nota-valor">${numDudas}<small> de ${preguntas.length}</small></span>
+      <span class="resultado-nota-aclaracion">Las has marcado todas como duda: no queda ninguna otra con la que calcular la nota, así que se cuentan igualmente.</span>
+    </div>` : "");
 
   contenedor.innerHTML = `
     <div class="resultado-resumen-card">
-      <div class="resultado-veredicto ${stats.apto ? "aprobado" : "suspendido"}">
-        <span class="resultado-veredicto-texto">${stats.apto ? icono("check", 16) + " Aprobado" : icono("cruz", 16) + " Suspendido"}</span>
+      <div class="resultado-veredicto ${statsPrincipales.apto ? "aprobado" : "suspendido"}">
+        <span class="resultado-veredicto-texto">${statsPrincipales.apto ? icono("check", 16) + " Aprobado" : icono("cruz", 16) + " Suspendido"}</span>
       </div>
 
       <div class="resultado-notas-grid">
         <div class="resultado-nota-box">
           <span class="resultado-nota-label">Nota de este test</span>
-          <span class="resultado-nota-valor">${stats.nota}<small> / ${preguntas.length}</small></span>
+          <span class="resultado-nota-valor">${statsPrincipales.nota}<small> / ${usaStatsSinDudas ? statsSinDudas.numRestantes : preguntas.length}</small></span>
         </div>
         <div class="resultado-nota-box">
           <span class="resultado-nota-label">Nota examen oficial</span>
-          <span class="resultado-nota-valor">${stats.notaOficial100}<small> / 100</small></span>
+          <span class="resultado-nota-valor">${statsPrincipales.notaOficial100}<small> / 100</small></span>
         </div>
-        ${notaSinDudasHTML}
+        ${notaAlternativaHTML}
       </div>
 
       <div class="resultado-resumen-grid">
         <div class="resultado-resumen-tile tile-acierto">
           <span class="tile-info"><span class="tile-icono">${icono("check", 16)}</span>Aciertos</span>
-          <span class="tile-valor">${stats.aciertos}</span>
+          <span class="tile-valor">${statsPrincipales.aciertos}</span>
         </div>
         <div class="resultado-resumen-tile tile-fallo">
           <span class="tile-info"><span class="tile-icono">${icono("cruz", 16)}</span>Fallos</span>
-          <span class="tile-valor">${stats.fallos}</span>
+          <span class="tile-valor">${statsPrincipales.fallos}</span>
         </div>
         <div class="resultado-resumen-tile tile-blanco">
           <span class="tile-info"><span class="tile-icono">${icono("pausa", 16)}</span>En blanco</span>
-          <span class="tile-valor">${stats.sinResponder}</span>
+          <span class="tile-valor">${statsPrincipales.sinResponder}</span>
         </div>
         <div class="resultado-resumen-tile tile-porcentaje">
           <span class="tile-info"><span class="tile-icono">${icono("diana", 16)}</span>Acierto</span>
-          <span class="tile-valor">${stats.porcentaje}%</span>
+          <span class="tile-valor">${statsPrincipales.porcentaje}%</span>
         </div>
       </div>
       ${rachaHTML}
@@ -367,22 +377,28 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
   });
 
   // "Pregúntale a Tu Tutor": abre la burbuja flotante ya cargada con esta
-  // pregunta y su respuesta correcta, y le pide que explique por qué fallaste.
+  // pregunta y su respuesta correcta. Disponible en todas las preguntas, no
+  // solo en las falladas -- el mensaje inicial se adapta según se haya
+  // acertado o no, para no dar por hecho un fallo que no existe.
   contenedor.querySelectorAll("[data-tutor]").forEach((boton) => {
     boton.addEventListener("click", () => {
-      const p = preguntas[Number(boton.dataset.tutor)];
+      const indice = Number(boton.dataset.tutor);
+      const p = preguntas[indice];
       if (!p) return;
       if (!window.tutorWidget || typeof window.tutorWidget.abrirConPregunta !== "function") {
         // El widget aún no ha montado (raro en esta pantalla): no romper nada.
         return;
       }
+      const acerto = respuestasUsuario[indice] === p.respuesta_correcta;
       window.tutorWidget.abrirConPregunta({
         enunciado: quitarNumeracion(p.pregunta || ""),
         opciones: p.opciones || {},
         respuestaCorrecta: p.respuesta_correcta || "",
-        respuestaUsuario: respuestasUsuario[Number(boton.dataset.tutor)],
+        respuestaUsuario: respuestasUsuario[indice],
         explicacion: p.explicacion || "",
-        mensajeInicial: "¿Puedes explicarme esta pregunta? Quiero entender por qué me he equivocado.",
+        mensajeInicial: acerto
+          ? "¿Puedes explicarme mejor esta pregunta? La he acertado pero quiero entenderla del todo."
+          : "¿Puedes explicarme esta pregunta? Quiero entender por qué me he equivocado.",
       });
     });
   });
@@ -446,7 +462,17 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     });
   }
 
-  return { ...stats, sinDudas: statsSinDudas };
+  // Lo que se devuelve (y lo que se manda a descargarResultadosPDF) usa la
+  // nota principal, que ya excluye las dudas -- "conDudas" lleva la cifra
+  // alternativa de "si contaran" para que el PDF pueda mostrar la misma
+  // aclaración que ya se ve en pantalla.
+  return {
+    ...statsPrincipales,
+    totalPreguntas: usaStatsSinDudas ? statsSinDudas.numRestantes : preguntas.length,
+    numDudas,
+    conDudas: usaStatsSinDudas ? stats : null,
+    todasDudas: numDudas > 0 && !usaStatsSinDudas,
+  };
 }
 
 function limpiarTextoPDF(texto) {
@@ -528,11 +554,16 @@ export function descargarResultadosPDF({ preguntas, respuestasUsuario, stats, ti
   doc.text(resumen, pageWidth / 2, yPos, { align: "center" });
   yPos += 8;
   doc.setFont("helvetica", "normal");
-  doc.text(`Nota de este test: ${stats.nota} / ${preguntas.length}   ·   Nota examen oficial: ${stats.notaOficial100} / 100 (${stats.apto ? "Aprobado" : "Suspendido"})`, pageWidth / 2, yPos, { align: "center" });
+  doc.text(`Nota de este test: ${stats.nota} / ${stats.totalPreguntas ?? preguntas.length}   ·   Nota examen oficial: ${stats.notaOficial100} / 100 (${stats.apto ? "Aprobado" : "Suspendido"})`, pageWidth / 2, yPos, { align: "center" });
   yPos += 8;
-  if (stats.sinDudas) {
+  if (stats.conDudas) {
     doc.setTextColor(110);
-    doc.text(`Nota sin las ${stats.sinDudas.numDudas} en duda: ${stats.sinDudas.numRestantes ? stats.sinDudas.notaOficial100 + " / 100" : "—"}`, pageWidth / 2, yPos, { align: "center" });
+    doc.text(`Si ${stats.numDudas === 1 ? "esa pregunta" : `esas ${stats.numDudas} preguntas`} marcada${stats.numDudas === 1 ? "" : "s"} como duda contara${stats.numDudas === 1 ? "" : "n"}: ${stats.conDudas.notaOficial100} / 100`, pageWidth / 2, yPos, { align: "center" });
+    doc.setTextColor(0);
+    yPos += 8;
+  } else if (stats.todasDudas) {
+    doc.setTextColor(110);
+    doc.text(`Todas las preguntas se marcaron como duda: se cuentan igualmente para la nota.`, pageWidth / 2, yPos, { align: "center" });
     doc.setTextColor(0);
     yPos += 8;
   }

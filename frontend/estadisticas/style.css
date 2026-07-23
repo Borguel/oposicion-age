@@ -677,6 +677,15 @@
       gap: 16px;
     }
 
+    /* Cada bloque en su propio recuadro, para que se vea con claridad dónde
+       acaba uno y empieza el siguiente en vez de una rejilla continua. */
+    .mapa-temario-bloque {
+      background: var(--age-neutral-bg);
+      border: 1px solid var(--age-border);
+      border-radius: var(--age-radius-md);
+      padding: 14px 16px;
+    }
+
     .mapa-temario-bloque-titulo {
       font-weight: 700;
       font-size: 0.88rem;
@@ -709,7 +718,7 @@
     }
 
     .mapa-temario-celda.sin-datos {
-      background: var(--age-neutral-bg);
+      background: var(--age-card);
       border: 1.5px dashed var(--age-border);
       color: var(--age-ink-faint);
     }
