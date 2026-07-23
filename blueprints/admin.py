@@ -1692,6 +1692,21 @@ def avisos_oficiales_actualizar(aid):
     return jsonify({"mensaje": "Aviso actualizado"})
 
 
+@bp.route("/admin/api/vigilancia-boe-salud", methods=["GET"])
+@requiere_permiso("reportes")
+def vigilancia_boe_salud():
+    """Resultado del último chequeo de salud de LEYES_VIGILADAS (ver
+    vigilancia_boe.verificar_bloque_temas_referenciados, que se ejecuta
+    cada día dentro de /tareas/vigilar-boe): qué (oposicion, bloque_id,
+    tema_id) referenciados ya no existen en el temario -- por ejemplo si
+    se reestructuró y renumeró algún bloque/tema."""
+    estado = db.collection("config").document("vigilancia_boe").get().to_dict() or {}
+    return jsonify({
+        "temas_faltantes": estado.get("temas_faltantes") or [],
+        "fecha": estado.get("temas_faltantes_fecha", ""),
+    })
+
+
 # ============================================================
 # Mensajes de soporte (consultas/problemas generales desde Mi Cuenta,
 # sin pregunta asociada -- reusan el mismo permiso "reportes" que los

@@ -171,3 +171,56 @@ def test_detectar_cambios_leyes_vigiladas_no_hace_nada_si_la_ley_no_cambio(db):
     # Sin cambio de fecha, solo se llama a /metadatos (nunca se piden
     # índice/bloques de una ley que no ha cambiado).
     assert all("metadatos" in c.args[0] for c in mock_get.call_args_list)
+
+
+def test_verificar_bloque_temas_referenciados_sin_faltantes_si_todo_existe(db):
+    ley = {
+        "nombre": "Ley de prueba",
+        "bloque_tema": [("AGE", "bloque_01", "tema_01")],
+    }
+    db.sembrar(
+        (coleccion_temario("AGE"), "bloque_01", "temas", "tema_01", "subbloques", "c1"),
+        {"titulo": "x", "texto": "algo de contenido"},
+    )
+
+    with patch("vigilancia_boe.LEYES_VIGILADAS", {"BOE-A-TEST": ley}):
+        faltantes = vigilancia_boe.verificar_bloque_temas_referenciados(db)
+
+    assert faltantes == []
+    estado = db.leer(("config", "vigilancia_boe"))
+    assert estado["temas_faltantes"] == []
+    assert estado["temas_faltantes_fecha"]
+
+
+def test_verificar_bloque_temas_referenciados_detecta_tema_inexistente(db):
+    ley = {
+        "nombre": "Ley de prueba",
+        "bloque_tema": [
+            ("AGE", "bloque_01", "tema_01"),
+            ("GACE", "bloque_09", "tema_99"),  # no existe en el temario
+        ],
+    }
+    db.sembrar(
+        (coleccion_temario("AGE"), "bloque_01", "temas", "tema_01", "subbloques", "c1"),
+        {"titulo": "x", "texto": "algo de contenido"},
+    )
+
+    with patch("vigilancia_boe.LEYES_VIGILADAS", {"BOE-A-TEST": ley}):
+        faltantes = vigilancia_boe.verificar_bloque_temas_referenciados(db)
+
+    assert faltantes == [{"oposicion": "GACE", "bloque_id": "bloque_09", "tema_id": "tema_99"}]
+    estado = db.leer(("config", "vigilancia_boe"))
+    assert estado["temas_faltantes"] == faltantes
+
+
+def test_verificar_bloque_temas_referenciados_no_duplica_entre_leyes(db):
+    # La misma (oposicion, bloque_id, tema_id) referenciada por 2 leyes
+    # distintas solo debe contarse una vez en el resultado.
+    leyes = {
+        "BOE-A-UNO": {"nombre": "Ley uno", "bloque_tema": [("AGE", "bloque_09", "tema_99")]},
+        "BOE-A-DOS": {"nombre": "Ley dos", "bloque_tema": [("AGE", "bloque_09", "tema_99")]},
+    }
+    with patch("vigilancia_boe.LEYES_VIGILADAS", leyes):
+        faltantes = vigilancia_boe.verificar_bloque_temas_referenciados(db)
+
+    assert faltantes == [{"oposicion": "AGE", "bloque_id": "bloque_09", "tema_id": "tema_99"}]

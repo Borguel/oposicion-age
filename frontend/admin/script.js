@@ -1266,10 +1266,27 @@ function _avisoTokenGithubHtml() {
   return `<div class="admin-aviso" style="${estilo}">${mensaje}</div>`;
 }
 
+function _avisoTemasFaltantesHtml(temasFaltantes) {
+  if (!temasFaltantes || !temasFaltantes.length) return "";
+  const lista = temasFaltantes.map((t) => `${escapeHtml(t.oposicion)} ${escapeHtml(t.bloque_id)}/${escapeHtml(t.tema_id)}`).join(", ");
+  return `<div class="admin-aviso" style="background:var(--age-danger-bg);border-left-color:var(--age-danger);">
+    ⚠️ ${temasFaltantes.length === 1 ? "Hay un tema" : `Hay ${temasFaltantes.length} temas`} referenciado${temasFaltantes.length === 1 ? "" : "s"} en <code>LEYES_VIGILADAS</code> que ya no existe${temasFaltantes.length === 1 ? "" : "n"} en el temario (${lista}) -- esa ley ha dejado de vigilarse en silencio para esos temas. Revisa <code>vigilancia_boe.py</code> y actualiza el bloque/tema.
+  </div>`;
+}
+
+async function _cargarSaludVigilancia() {
+  const cont = document.getElementById("boe-salud");
+  if (!cont) return;
+  const d = await apiGet("/admin/api/vigilancia-boe-salud");
+  if (!d) return;
+  cont.innerHTML = _avisoTemasFaltantesHtml(d.temas_faltantes);
+}
+
 async function renderBoe() {
   const panel = document.getElementById("panel-boe");
   panel.innerHTML = `
     ${_avisoTokenGithubHtml()}
+    <div id="boe-salud"></div>
     <div class="age-card admin-filtros">
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button type="button" class="age-btn ${vistaBoe === "cambios" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="boe-vista-cambios">Cambios de temario</button>
@@ -1292,6 +1309,7 @@ async function renderBoe() {
   panel.querySelector("#boe-vista-cambios").addEventListener("click", () => { vistaBoe = "cambios"; estadoBoe = "pendiente"; renderBoe(); });
   panel.querySelector("#boe-vista-avisos").addEventListener("click", () => { vistaBoe = "avisos"; estadoBoe = "pendiente"; renderBoe(); });
   cargarVistaActual();
+  _cargarSaludVigilancia();
 }
 
 function _diffHtml(texto_eliminar, texto_anadir) {

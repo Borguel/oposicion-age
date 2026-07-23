@@ -504,3 +504,37 @@ def detectar_cambios_leyes_vigiladas(db):
         ref_estado.set({"leyes_fecha_vista": fechas_vistas_actualizadas}, merge=True)
     logger.info("Vigilancia BOE (cambios de temario): %s propuestas nuevas creadas", propuestas_creadas)
     return propuestas_creadas
+
+
+def verificar_bloque_temas_referenciados(db):
+    """Chequeo de salud de LEYES_VIGILADAS: comprueba que cada
+    (oposicion, bloque_id, tema_id) referenciado sigue existiendo en el
+    temario con contenido real. Si algún día se reestructura el temario
+    (se renumeran o se borran bloques/temas) esas entradas dejarían de
+    generar propuestas para siempre sin que nadie se entere -- no fallan,
+    simplemente `_subbloques_de_tema` empieza a devolver una lista vacía y
+    `detectar_cambios_leyes_vigiladas` las salta en silencio. Este chequeo
+    lo detecta y lo deja guardado para poder avisar desde el panel de
+    admin, sin tener que repetir la comprobación en cada carga de esa
+    pestaña. No modifica el temario ni LEYES_VIGILADAS, solo lee."""
+    from oposiciones import coleccion_temario
+
+    faltantes = []
+    vistos = set()
+    for config_ley in LEYES_VIGILADAS.values():
+        for oposicion, bloque_id, tema_id in config_ley["bloque_tema"]:
+            clave = (oposicion, bloque_id, tema_id)
+            if clave in vistos:
+                continue
+            vistos.add(clave)
+            subbloques = _subbloques_de_tema(db, coleccion_temario(oposicion), bloque_id, tema_id)
+            if not subbloques:
+                faltantes.append({"oposicion": oposicion, "bloque_id": bloque_id, "tema_id": tema_id})
+
+    _doc_estado(db).set({
+        "temas_faltantes": faltantes,
+        "temas_faltantes_fecha": datetime.utcnow().isoformat(),
+    }, merge=True)
+    if faltantes:
+        logger.warning("Vigilancia BOE: %s temas referenciados en LEYES_VIGILADAS ya no existen: %s", len(faltantes), faltantes)
+    return faltantes

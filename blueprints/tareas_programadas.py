@@ -19,7 +19,11 @@ from email_utils import (
 from planes import ORDEN_PLANES, mejor_plan
 from push_utils import enviar_push
 from coste_ia import resumen_coste_usuario
-from vigilancia_boe import detectar_avisos_oficiales, detectar_cambios_leyes_vigiladas
+from vigilancia_boe import (
+    detectar_avisos_oficiales,
+    detectar_cambios_leyes_vigiladas,
+    verificar_bloque_temas_referenciados,
+)
 
 logger = logging.getLogger(__name__)
 bp = Blueprint("tareas_programadas", __name__)
@@ -199,9 +203,16 @@ def vigilar_boe():
 
     avisos_creados = detectar_avisos_oficiales(db)
     cambios_propuestos = detectar_cambios_leyes_vigiladas(db)
+    # Chequeo de salud, no de vigilancia -- barato (solo lee Firestore, sin
+    # llamadas al BOE ni a DeepSeek) así que se hace en cada ciclo diario.
+    temas_faltantes = verificar_bloque_temas_referenciados(db)
 
     logger.info(
-        "Vigilancia BOE: %s avisos oficiales nuevos, %s propuestas de cambio de temario",
-        avisos_creados, cambios_propuestos,
+        "Vigilancia BOE: %s avisos oficiales nuevos, %s propuestas de cambio de temario, %s temas referenciados que ya no existen",
+        avisos_creados, cambios_propuestos, len(temas_faltantes),
     )
-    return jsonify({"avisos_creados": avisos_creados, "cambios_propuestos": cambios_propuestos})
+    return jsonify({
+        "avisos_creados": avisos_creados,
+        "cambios_propuestos": cambios_propuestos,
+        "temas_faltantes": len(temas_faltantes),
+    })

@@ -1018,6 +1018,31 @@ def test_avisos_oficiales_descartar_no_dispara_pagina_ni_email(client, db):
     mock_notificar.assert_not_called()
 
 
+def test_vigilancia_boe_salud_devuelve_lo_guardado_por_el_chequeo(client, db):
+    db.sembrar(("config", "vigilancia_boe"), {
+        "temas_faltantes": [{"oposicion": "GACE", "bloque_id": "bloque_09", "tema_id": "tema_99"}],
+        "temas_faltantes_fecha": "2026-07-23T00:00:00",
+    })
+    with _como():
+        resp = client.get("/admin/api/vigilancia-boe-salud", headers=_AUTH)
+    assert resp.status_code == 200
+    d = resp.get_json()
+    assert d["temas_faltantes"] == [{"oposicion": "GACE", "bloque_id": "bloque_09", "tema_id": "tema_99"}]
+    assert d["fecha"] == "2026-07-23T00:00:00"
+
+
+def test_vigilancia_boe_salud_sin_datos_previos_devuelve_vacio(client, db):
+    with _como():
+        resp = client.get("/admin/api/vigilancia-boe-salud", headers=_AUTH)
+    assert resp.status_code == 200
+    assert resp.get_json() == {"temas_faltantes": [], "fecha": ""}
+
+
+def test_vigilancia_boe_salud_requiere_permiso_reportes(client, db):
+    with _como(admin=False, uid="mod1", permisos=["temario"]):
+        assert client.get("/admin/api/vigilancia-boe-salud", headers=_AUTH).status_code == 403
+
+
 def test_resumen_incluye_pendientes_de_vigilancia_boe(client, db):
     db.sembrar(("cambios_temario_propuestos", "c1"), {"estado": "pendiente"})
     db.sembrar(("avisos_oficiales", "a1"), {"estado": "pendiente"})
