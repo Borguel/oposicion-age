@@ -403,18 +403,22 @@ def detectar_avisos_oficiales(db):
         if tipo == "otro":
             continue  # menciona el cuerpo pero no parece un aviso de convocatoria/lista/examen
 
-        for oposicion in oposiciones_afectadas:
-            db.collection("avisos_oficiales").document().set({
-                "oposicion": oposicion,
-                "tipo": tipo,
-                "titulo": titulo[:300],
-                "resumen": titulo[:500],
-                "url_boe": _buscar_clave(item, "url_html") or _buscar_clave(item, "url_pdf") or "",
-                "fecha_boe": hoy,
-                "fecha_deteccion": datetime.utcnow().isoformat(),
-                "estado": "pendiente",
-            })
-            creados += 1
+        # Un único aviso con TODAS las oposiciones afectadas (p. ej. una
+        # resolución que menciona a la vez al Cuerpo General Administrativo
+        # y al de Gestión) -- así solo hace falta aprobarlo una vez y llega
+        # a las páginas/usuarios de cada oposición, en vez de crear un
+        # documento duplicado por oposición.
+        db.collection("avisos_oficiales").document().set({
+            "oposiciones": oposiciones_afectadas,
+            "tipo": tipo,
+            "titulo": titulo[:300],
+            "resumen": titulo[:500],
+            "url_boe": _buscar_clave(item, "url_html") or _buscar_clave(item, "url_pdf") or "",
+            "fecha_boe": hoy,
+            "fecha_deteccion": datetime.utcnow().isoformat(),
+            "estado": "pendiente",
+        })
+        creados += 1
         ids_nuevos.add(item_id)
 
     if ids_nuevos:

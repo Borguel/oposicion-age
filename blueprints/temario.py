@@ -90,11 +90,15 @@ def avisos_oficiales():
     fechas de examen...) para la oposición pedida -- detectados por la
     vigilancia del BOE y aprobados a mano desde el panel de admin (ver
     vigilancia_boe.py); nunca llegan aquí sin ese OK previo."""
+    from publicacion_estatica_boe import _oposiciones_de
+
     oposicion = obtener_oposicion_solicitada()
     avisos = []
-    consulta = db.collection("avisos_oficiales").where("oposicion", "==", oposicion).where("estado", "==", "publicado")
+    consulta = db.collection("avisos_oficiales").where("estado", "==", "publicado")
     for doc in consulta.stream():
         d = doc.to_dict() or {}
+        if oposicion not in _oposiciones_de(d):
+            continue
         avisos.append({
             "tipo": d.get("tipo", ""),
             "titulo": d.get("titulo", ""),

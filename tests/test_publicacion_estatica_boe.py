@@ -91,6 +91,82 @@ def test_generar_html_avisos_sin_url_boe_no_muestra_enlace_roto():
     assert pub._URL_INAP_GENERAL in html  # el de INAP, siempre fijo, sigue apareciendo
 
 
+def test_generar_html_avisos_incluye_enlace_a_la_pagina_comun():
+    html = pub.generar_html_avisos([])
+    assert "/avisos-oficiales/" in html
+
+
+def test_oposiciones_de_prioriza_lista_nueva_sobre_singular_antiguo():
+    assert pub._oposiciones_de({"oposiciones": ["AGE", "GACE"]}) == ["AGE", "GACE"]
+    assert pub._oposiciones_de({"oposicion": "AGE"}) == ["AGE"]  # documentos antiguos
+    assert pub._oposiciones_de({"oposiciones": ["AGE"], "oposicion": "GACE"}) == ["AGE"]
+    assert pub._oposiciones_de({}) == []
+
+
+def test_generar_html_avisos_hub_vacio_muestra_mensaje():
+    html = pub.generar_html_avisos_hub([])
+    assert "Todavía no hay avisos oficiales publicados" in html
+
+
+def test_generar_html_avisos_hub_incluye_resumen_completo_y_etiquetas_de_oposicion():
+    avisos = [{
+        "oposiciones": ["AGE", "GACE"], "tipo": "llamamiento_extraordinario",
+        "titulo": "Llamamiento extraordinario", "resumen": "Repesca para aspirantes convocados el 24 de julio.",
+        "url_boe": "https://run.gob.es/x",
+    }]
+    html = pub.generar_html_avisos_hub(avisos)
+    assert "Repesca para aspirantes convocados el 24 de julio." in html
+    assert ">AGE<" in html
+    assert ">GACE<" in html
+
+
+def test_generar_html_avisos_hub_no_repite_resumen_si_es_igual_al_titulo():
+    avisos = [{"oposiciones": ["AGE"], "tipo": "convocatoria", "titulo": "x", "resumen": "x"}]
+    html = pub.generar_html_avisos_hub(avisos)
+    assert html.count(">x<") == 1  # el título aparece, el resumen no se duplica
+
+
+def test_actualizar_pagina_avisos_general_comitea_a_su_propia_ruta(monkeypatch, db):
+    monkeypatch.setenv("GITHUB_TOKEN", "token-de-prueba")
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposiciones": ["AGE", "GACE"], "tipo": "convocatoria", "titulo": "Convocatoria 2026",
+        "resumen": "Resumen completo de la convocatoria.", "estado": "publicado", "fecha_boe": "2026-07-20",
+    })
+    html_actual = _html_con_marcadores()
+
+    with patch("publicacion_estatica_boe.requests.get", return_value=_respuesta_contenido(html_actual)) as mock_get, \
+         patch("publicacion_estatica_boe.requests.put", return_value=_fake_response()) as mock_put:
+        resultado = pub.actualizar_pagina_avisos_general(db)
+
+    assert resultado is True
+    assert mock_get.call_args.kwargs["params"] == {"ref": pub._RAMA}
+    assert pub.RUTA_PAGINA_AVISOS_GENERAL in mock_get.call_args.args[0]
+    html_nuevo = base64.b64decode(mock_put.call_args.kwargs["json"]["content"]).decode("utf-8")
+    assert "Resumen completo de la convocatoria." in html_nuevo
+
+
+def test_consultar_avisos_publicados_filtra_por_oposicion_entre_los_de_varias(db):
+    db.sembrar(("avisos_oficiales", "a1"), {"oposiciones": ["AGE", "GACE"], "estado": "publicado", "fecha_boe": "2026-07-01"})
+    db.sembrar(("avisos_oficiales", "a2"), {"oposiciones": ["AUXILIAR"], "estado": "publicado", "fecha_boe": "2026-07-02"})
+    assert len(pub._consultar_avisos_publicados(db, "AGE")) == 1
+    assert len(pub._consultar_avisos_publicados(db, "AUXILIAR")) == 1
+    assert len(pub._consultar_avisos_publicados(db, "GACE")) == 1
+
+
+def test_notificar_usuarios_con_varias_oposiciones_no_duplica_al_que_coincide_en_las_dos(db):
+    db.sembrar(("usuarios", "u1"), {"email": "solo_age@example.com", "suscripciones": {"AGE": {"plan": "premium"}}})
+    db.sembrar(("usuarios", "u2"), {"email": "las_dos@example.com", "suscripciones": {"AGE": {"plan": "premium"}, "GACE": {"plan": "premium"}}})
+    db.sembrar(("usuarios", "u3"), {"email": "ninguna@example.com", "suscripciones": {"AUXILIAR": {"plan": "premium"}}})
+
+    aviso = {"oposiciones": ["AGE", "GACE"], "tipo": "llamamiento_extraordinario", "titulo": "x"}
+    with patch("publicacion_estatica_boe.enviar_email_aviso_oficial") as mock_enviar:
+        enviados = pub.notificar_usuarios_aviso_oficial(db, aviso)
+
+    assert enviados == 2  # las_dos@ solo una vez, no dos
+    destinatarios = [c.args[0] for c in mock_enviar.call_args_list]
+    assert sorted(destinatarios) == ["las_dos@example.com", "solo_age@example.com"]
+
+
 def test_actualizar_pagina_sin_github_token_no_llama_a_requests(monkeypatch, db):
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     with patch("publicacion_estatica_boe.requests.get") as mock_get:

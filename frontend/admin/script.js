@@ -1296,16 +1296,23 @@ const ETIQUETA_TIPO_AVISO_MANUAL = {
 function _formCamposAvisoHtml(prefix, v = {}) {
   const opcionesTipo = Object.entries(ETIQUETA_TIPO_AVISO_MANUAL)
     .map(([val, t]) => `<option value="${val}" ${v.tipo === val ? "selected" : ""}>${t}</option>`).join("");
-  const op = (val) => (v.oposicion === val ? "selected" : "");
+  // Checkboxes, no un desplegable: una misma resolución (p. ej. un
+  // llamamiento extraordinario) puede afectar a varias oposiciones a la
+  // vez -- se publica una sola vez y llega a las páginas/usuarios de
+  // todas las marcadas.
+  const oposicionesMarcadas = v.oposiciones || (v.oposicion ? [v.oposicion] : []);
+  const checkboxesOposicion = [["AGE", "AGE"], ["GACE", "GACE"], ["AUXILIAR", "Auxiliar"]]
+    .map(([val, etiqueta]) => `
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-right:16px;">
+          <input type="checkbox" class="${prefix}-oposicion" value="${val}" ${oposicionesMarcadas.includes(val) ? "checked" : ""} />
+          ${etiqueta}
+        </label>`).join("");
   return `
     <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr;">
-      <label style="font-size:13px;font-weight:600;">Oposición
-        <select id="${prefix}-oposicion" class="age-input">
-          <option value="AGE" ${op("AGE")}>AGE</option>
-          <option value="GACE" ${op("GACE")}>GACE</option>
-          <option value="AUXILIAR" ${op("AUXILIAR")}>Auxiliar</option>
-        </select>
-      </label>
+      <div>
+        <span style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Oposiciones afectadas</span>
+        ${checkboxesOposicion}
+      </div>
       <label style="font-size:13px;font-weight:600;">Tipo
         <select id="${prefix}-tipo" class="age-input">${opcionesTipo}</select>
       </label>
@@ -1337,8 +1344,9 @@ function _formCamposAvisoHtml(prefix, v = {}) {
 }
 
 function _leerCamposAviso(prefix) {
+  const oposiciones = Array.from(document.querySelectorAll(`.${prefix}-oposicion:checked`)).map((c) => c.value);
   return {
-    oposicion: document.getElementById(`${prefix}-oposicion`).value,
+    oposiciones,
     tipo: document.getElementById(`${prefix}-tipo`).value,
     tipo_personalizado: document.getElementById(`${prefix}-tipo-personalizado`).value.trim(),
     titulo: document.getElementById(`${prefix}-titulo`).value.trim(),
@@ -1484,7 +1492,7 @@ async function cargarAvisosOficiales() {
     <div class="admin-reporte">
       <div class="admin-reporte-cab">
         <span class="admin-reporte-estado ${clase(a.estado)}">${escapeHtml(a.estado)}</span>
-        <span class="admin-reporte-meta">${escapeHtml(a.oposicion || "-")} · ${escapeHtml(a.tipo_personalizado || ETIQUETA_TIPO_AVISO_MANUAL[a.tipo] || a.tipo || "")} · ${escapeHtml(fechaCorta(a.fecha_deteccion))}</span>
+        <span class="admin-reporte-meta">${escapeHtml((a.oposiciones || []).join(" + ") || "-")} · ${escapeHtml(a.tipo_personalizado || ETIQUETA_TIPO_AVISO_MANUAL[a.tipo] || a.tipo || "")} · ${escapeHtml(fechaCorta(a.fecha_deteccion))}</span>
       </div>
       <p class="admin-reporte-preg">${escapeHtml(a.titulo)}</p>
       ${a.resumen ? `<p class="admin-reporte-motivo">${escapeHtml(a.resumen)}</p>` : ""}

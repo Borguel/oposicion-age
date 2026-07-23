@@ -1638,12 +1638,14 @@ def avisos_oficiales_listar():
     consulta = db.collection("avisos_oficiales")
     if estado and estado != "todos":
         consulta = consulta.where("estado", "==", estado)
+    from publicacion_estatica_boe import _oposiciones_de
+
     avisos = []
     for doc in consulta.stream():
         d = doc.to_dict() or {}
         avisos.append({
             "id": doc.id,
-            "oposicion": d.get("oposicion", ""),
+            "oposiciones": _oposiciones_de(d),
             "tipo": d.get("tipo", ""),
             "tipo_personalizado": d.get("tipo_personalizado", ""),
             "titulo": d.get("titulo", ""),
@@ -1658,6 +1660,17 @@ def avisos_oficiales_listar():
     return jsonify({"avisos": avisos})
 
 
+def _leer_oposiciones_de_datos(data):
+    """Lista de oposiciones de un payload de alta/edición de aviso --
+    "oposiciones": [...] es lo normal (checkboxes en el admin), pero se
+    acepta también un único "oposicion" suelto por si algún cliente
+    antiguo lo manda así todavía."""
+    lista = data.get("oposiciones")
+    if lista is None and data.get("oposicion"):
+        lista = [data["oposicion"]]
+    return [op for op in (lista or []) if op]
+
+
 @bp.route("/admin/api/avisos-oficiales", methods=["POST"])
 @requiere_permiso("reportes")
 def avisos_oficiales_crear():
@@ -1666,15 +1679,18 @@ def avisos_oficiales_crear():
     resolución publicada solo en el portal de firma del INAP). Se crea
     "pendiente" igual que los detectados automáticamente, así que sigue el
     mismo circuito de aprobación (nunca se publica nada sin que alguien con
-    permiso "reportes" le dé al botón)."""
+    permiso "reportes" le dé al botón). Puede afectar a varias oposiciones
+    a la vez (p. ej. un llamamiento extraordinario que menciona a AGE y
+    GACE): se publica una sola vez y llega a las páginas/usuarios de
+    todas, en vez de tener que darlo de alta una vez por oposición."""
     from publicacion_estatica_boe import ETIQUETA_TIPO_AVISO
 
     data = request.get_json(silent=True) or {}
-    oposicion = data.get("oposicion", "")
+    oposiciones = _leer_oposiciones_de_datos(data)
     tipo = data.get("tipo", "")
     titulo = (data.get("titulo") or "").strip()
-    if not oposicion_valida(oposicion):
-        return jsonify({"error": "Oposición no válida"}), 400
+    if not oposiciones or not all(oposicion_valida(op) for op in oposiciones):
+        return jsonify({"error": "Selecciona al menos una oposición válida"}), 400
     if tipo not in ETIQUETA_TIPO_AVISO:
         return jsonify({"error": "Tipo no válido"}), 400
     if not titulo:
@@ -1682,7 +1698,7 @@ def avisos_oficiales_crear():
 
     ref = db.collection("avisos_oficiales").document()
     ref.set({
-        "oposicion": oposicion,
+        "oposiciones": oposiciones,
         "tipo": tipo,
         "tipo_personalizado": (data.get("tipo_personalizado") or "").strip()[:100],
         "titulo": titulo[:300],
@@ -1718,17 +1734,23 @@ def avisos_oficiales_actualizar(aid):
     }, merge=True)
     _registrar_auditoria("aviso_oficial_" + estado, aid)
 
-    # Publicar la página estática + avisar por email solo la PRIMERA vez que
-    # pasa a "publicado" (si ya estaba publicado y se vuelve a guardar, no
-    # hace falta repetir el commit ni volver a mandar el email a todo el
-    # mundo). Ninguna de las dos cosas debe romper esta respuesta si falla
-    # -- ver publicacion_estatica_boe.py.
+    # Publicar la(s) página(s) estática(s) + avisar por email solo la
+    # PRIMERA vez que pasa a "publicado" (si ya estaba publicado y se
+    # vuelve a guardar, no hace falta repetir el commit ni volver a mandar
+    # el email a todo el mundo). Ninguna de las dos cosas debe romper esta
+    # respuesta si falla -- ver publicacion_estatica_boe.py.
     if estado == "publicado" and aviso_antes.get("estado") != "publicado":
-        # Ninguna de las dos falla nunca hacia arriba -- ver docstring de
-        # publicacion_estatica_boe.py (capturan y registran su propio fallo).
-        from publicacion_estatica_boe import actualizar_pagina_estatica_avisos, notificar_usuarios_aviso_oficial
+        # Ninguna de las llamadas falla nunca hacia arriba -- ver docstring
+        # de publicacion_estatica_boe.py (capturan y registran su propio
+        # fallo por separado, así que un commit fallido no frena a los otros).
+        from publicacion_estatica_boe import (
+            _oposiciones_de, actualizar_pagina_avisos_general,
+            actualizar_pagina_estatica_avisos, notificar_usuarios_aviso_oficial,
+        )
         aviso_completo = {**aviso_antes, "estado": estado}
-        actualizar_pagina_estatica_avisos(db, aviso_completo.get("oposicion"))
+        for op in _oposiciones_de(aviso_completo):
+            actualizar_pagina_estatica_avisos(db, op)
+        actualizar_pagina_avisos_general(db)
         notificar_usuarios_aviso_oficial(db, aviso_completo)
 
     return jsonify({"mensaje": "Aviso actualizado"})
@@ -1737,14 +1759,16 @@ def avisos_oficiales_actualizar(aid):
 @bp.route("/admin/api/avisos-oficiales/<aid>", methods=["PUT"])
 @requiere_permiso("reportes")
 def avisos_oficiales_editar(aid):
-    """Corrige el CONTENIDO de un aviso ya creado -- título, tipo, enlaces...
-    -- por si hubo un error al darlo de alta (enlace mal pegado, etc.), a
-    diferencia del PATCH de arriba que solo cambia el estado. Se puede
-    editar en cualquier estado, incluido uno ya "publicado": si lo está,
-    se regenera la página estática con el contenido corregido, pero
-    DELIBERADAMENTE no se vuelve a mandar el email a los usuarios (ya lo
-    recibieron; reenviarlo por corregir una errata sería spam)."""
-    from publicacion_estatica_boe import ETIQUETA_TIPO_AVISO
+    """Corrige el CONTENIDO de un aviso ya creado -- título, tipo, enlaces,
+    oposiciones afectadas... -- por si hubo un error al darlo de alta
+    (enlace mal pegado, etc.), a diferencia del PATCH de arriba que solo
+    cambia el estado. Se puede editar en cualquier estado, incluido uno ya
+    "publicado": si lo está, se regenera la página estática (la propia de
+    cada oposición afectada -- antes Y después del cambio, por si se quitó
+    o añadió alguna -- más la página común) con el contenido corregido,
+    pero DELIBERADAMENTE no se vuelve a mandar el email a los usuarios (ya
+    lo recibieron; reenviarlo por corregir una errata sería spam)."""
+    from publicacion_estatica_boe import ETIQUETA_TIPO_AVISO, _oposiciones_de
 
     data = request.get_json(silent=True) or {}
     ref = db.collection("avisos_oficiales").document(aid)
@@ -1753,18 +1777,19 @@ def avisos_oficiales_editar(aid):
         return jsonify({"error": "Aviso no encontrado"}), 404
     aviso_antes = doc.to_dict() or {}
 
-    oposicion = data.get("oposicion", aviso_antes.get("oposicion", ""))
+    oposiciones_antes = _oposiciones_de(aviso_antes)
+    oposiciones = _leer_oposiciones_de_datos(data) if "oposiciones" in data or "oposicion" in data else oposiciones_antes
     tipo = data.get("tipo", aviso_antes.get("tipo", ""))
     titulo = (data.get("titulo") if "titulo" in data else aviso_antes.get("titulo", "")).strip()
-    if not oposicion_valida(oposicion):
-        return jsonify({"error": "Oposición no válida"}), 400
+    if not oposiciones or not all(oposicion_valida(op) for op in oposiciones):
+        return jsonify({"error": "Selecciona al menos una oposición válida"}), 400
     if tipo not in ETIQUETA_TIPO_AVISO:
         return jsonify({"error": "Tipo no válido"}), 400
     if not titulo:
         return jsonify({"error": "Falta el título"}), 400
 
     cambios = {
-        "oposicion": oposicion,
+        "oposiciones": oposiciones,
         "tipo": tipo,
         "tipo_personalizado": (data.get("tipo_personalizado", aviso_antes.get("tipo_personalizado", "")) or "").strip()[:100],
         "titulo": titulo[:300],
@@ -1779,8 +1804,13 @@ def avisos_oficiales_editar(aid):
     _registrar_auditoria("aviso_oficial_editado", aid, titulo)
 
     if aviso_antes.get("estado") == "publicado":
-        from publicacion_estatica_boe import actualizar_pagina_estatica_avisos
-        actualizar_pagina_estatica_avisos(db, oposicion)
+        from publicacion_estatica_boe import actualizar_pagina_avisos_general, actualizar_pagina_estatica_avisos
+        # Unión de antes/después: si se quitó una oposición de la lista,
+        # su página también tiene que regenerarse para que el aviso
+        # desaparezca de ahí.
+        for op in set(oposiciones) | set(oposiciones_antes):
+            actualizar_pagina_estatica_avisos(db, op)
+        actualizar_pagina_avisos_general(db)
 
     return jsonify({"mensaje": "Aviso actualizado"})
 

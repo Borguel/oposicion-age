@@ -94,6 +94,64 @@ def test_temas_disponibles_usa_la_coleccion_de_la_oposicion_pedida(client, db):
     assert len(resp.get_json()["temas"]) == 1
 
 
+def test_avisos_oficiales_requiere_login(client):
+    resp = client.get("/avisos-oficiales?oposicion=AGE")
+    assert resp.status_code == 401
+
+
+def test_avisos_oficiales_devuelve_los_de_esa_oposicion(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposiciones": ["AGE"], "tipo": "convocatoria", "titulo": "Convocatoria AGE 2026",
+        "estado": "publicado", "fecha_boe": "20260701",
+    })
+    db.sembrar(("avisos_oficiales", "a2"), {
+        "oposiciones": ["GACE"], "tipo": "convocatoria", "titulo": "Convocatoria GACE 2026",
+        "estado": "publicado", "fecha_boe": "20260702",
+    })
+    parche = _con_sesion(client)
+    try:
+        resp = client.get("/avisos-oficiales?oposicion=AGE", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+
+    assert resp.status_code == 200
+    avisos = resp.get_json()["avisos"]
+    assert len(avisos) == 1
+    assert avisos[0]["titulo"] == "Convocatoria AGE 2026"
+
+
+def test_avisos_oficiales_incluye_uno_que_afecta_a_varias_oposiciones(client, db):
+    # Regresión: un aviso guardado con "oposiciones": ["AGE", "GACE"] (el
+    # nuevo formato, que permite publicar una vez para varias oposiciones)
+    # tiene que seguir apareciendo para cada una de ellas por separado.
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposiciones": ["AGE", "GACE"], "tipo": "llamamiento_extraordinario",
+        "titulo": "Llamamiento extraordinario (AGE y GACE)", "estado": "publicado", "fecha_boe": "20260701",
+    })
+    parche = _con_sesion(client)
+    try:
+        resp_age = client.get("/avisos-oficiales?oposicion=AGE", headers={"Authorization": "Bearer x"})
+        resp_gace = client.get("/avisos-oficiales?oposicion=GACE", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+
+    assert len(resp_age.get_json()["avisos"]) == 1
+    assert len(resp_gace.get_json()["avisos"]) == 1
+
+
+def test_avisos_oficiales_ignora_los_de_otra_oposicion(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposiciones": ["AUXILIAR"], "tipo": "convocatoria", "titulo": "x", "estado": "publicado", "fecha_boe": "20260701",
+    })
+    parche = _con_sesion(client)
+    try:
+        resp = client.get("/avisos-oficiales?oposicion=AGE", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+
+    assert resp.get_json()["avisos"] == []
+
+
 def test_progreso_usuario_requiere_login(client):
     resp = client.get("/progreso-usuario")
     assert resp.status_code == 401

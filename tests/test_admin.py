@@ -969,7 +969,7 @@ def test_avisos_oficiales_crear_manual_ok(client, db):
     assert resp.status_code == 201
     aid = resp.get_json()["id"]
     d = db.leer(("avisos_oficiales", aid))
-    assert d["oposicion"] == "AGE"
+    assert d["oposiciones"] == ["AGE"]
     assert d["tipo"] == "fecha_examen"
     assert d["titulo"] == "Llamamiento extraordinario del ejercicio único"
     assert d["url_boe"] == "https://run.gob.es/hsblF8yLcR"
@@ -987,6 +987,25 @@ def test_avisos_oficiales_crear_manual_rellena_resumen_y_fecha_por_defecto(clien
     d = db.leer(("avisos_oficiales", resp.get_json()["id"]))
     assert d["resumen"] == "Título sin resumen"
     assert d["fecha_boe"]  # se rellena con la fecha de hoy
+
+
+def test_avisos_oficiales_crear_manual_con_varias_oposiciones(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposiciones": ["AGE", "GACE"], "tipo": "llamamiento_extraordinario",
+            "titulo": "Llamamiento extraordinario (AGE y GACE)",
+        }, headers=_AUTH)
+    assert resp.status_code == 201
+    d = db.leer(("avisos_oficiales", resp.get_json()["id"]))
+    assert d["oposiciones"] == ["AGE", "GACE"]
+
+
+def test_avisos_oficiales_crear_manual_rechaza_sin_ninguna_oposicion(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposiciones": [], "tipo": "convocatoria", "titulo": "x",
+        }, headers=_AUTH)
+    assert resp.status_code == 400
 
 
 def test_avisos_oficiales_crear_manual_rechaza_oposicion_invalida(client, db):
@@ -1040,16 +1059,35 @@ def test_avisos_oficiales_publicar_dispara_pagina_estatica_y_email(client, db):
         "url_boe": "https://boe.es/x", "estado": "pendiente",
     })
     with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.actualizar_pagina_avisos_general") as mock_hub, \
          patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
          _como():
         resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "publicado"}, headers=_AUTH)
 
     assert resp.status_code == 200
     mock_pagina.assert_called_once_with(db, "AGE")
+    mock_hub.assert_called_once_with(db)
     mock_notificar.assert_called_once()
     aviso_pasado = mock_notificar.call_args.args[1]
     assert aviso_pasado["titulo"] == "Convocatoria AGE 2026"
     assert aviso_pasado["estado"] == "publicado"
+
+
+def test_avisos_oficiales_publicar_con_varias_oposiciones_regenera_las_paginas_de_todas(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposiciones": ["AGE", "GACE"], "tipo": "llamamiento_extraordinario",
+        "titulo": "Llamamiento extraordinario (AGE y GACE)", "estado": "pendiente",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.actualizar_pagina_avisos_general") as mock_hub, \
+         patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
+         _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "publicado"}, headers=_AUTH)
+
+    assert resp.status_code == 200
+    assert {c.args[1] for c in mock_pagina.call_args_list} == {"AGE", "GACE"}
+    mock_hub.assert_called_once_with(db)
+    mock_notificar.assert_called_once()  # una sola vez, no una por oposición
 
 
 def test_avisos_oficiales_no_redispara_al_volver_a_guardar_publicado(client, db):
@@ -1137,6 +1175,7 @@ def test_avisos_oficiales_editar_uno_ya_publicado_regenera_pagina_pero_no_reenvi
         "url_boe": "https://boe.es/mal", "estado": "publicado",
     })
     with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.actualizar_pagina_avisos_general") as mock_hub, \
          patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
          _como():
         resp = client.put("/admin/api/avisos-oficiales/a1", json={
@@ -1145,7 +1184,26 @@ def test_avisos_oficiales_editar_uno_ya_publicado_regenera_pagina_pero_no_reenvi
         }, headers=_AUTH)
     assert resp.status_code == 200
     mock_pagina.assert_called_once_with(db, "AGE")
+    mock_hub.assert_called_once_with(db)
     mock_notificar.assert_not_called()
+
+
+def test_avisos_oficiales_editar_quitando_una_oposicion_regenera_tambien_su_pagina(client, db):
+    # Si se quita GACE de la lista, su página tiene que regenerarse para
+    # que el aviso desaparezca de ahí (no solo la de las que quedan).
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposiciones": ["AGE", "GACE"], "tipo": "convocatoria", "titulo": "x", "estado": "publicado",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.actualizar_pagina_avisos_general") as mock_hub, \
+         _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={
+            "oposiciones": ["AGE"], "titulo": "x",
+        }, headers=_AUTH)
+    assert resp.status_code == 200
+    assert {c.args[1] for c in mock_pagina.call_args_list} == {"AGE", "GACE"}
+    mock_hub.assert_called_once_with(db)
+    assert db.leer(("avisos_oficiales", "a1"))["oposiciones"] == ["AGE"]
 
 
 def test_avisos_oficiales_editar_uno_pendiente_no_regenera_pagina(client, db):

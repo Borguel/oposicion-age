@@ -37,10 +37,27 @@ def test_detectar_avisos_oficiales_crea_aviso_pendiente(db):
     avisos = list(db.collection("avisos_oficiales").stream())
     assert len(avisos) == 1
     d = avisos[0].to_dict()
-    assert d["oposicion"] == "AGE"
+    assert d["oposiciones"] == ["AGE"]
     assert d["tipo"] == "convocatoria"
     assert d["estado"] == "pendiente"
     assert d["titulo"] == titulo
+
+
+def test_detectar_avisos_oficiales_una_resolucion_para_varios_cuerpos_crea_un_solo_aviso(db):
+    # Menciona a la vez al Cuerpo General Administrativo (AGE) y al de
+    # Gestión (GACE) -- debe quedar en UN solo aviso con las dos
+    # oposiciones, no en dos avisos duplicados (uno por oposición).
+    titulo = (
+        "Resolución conjunta por la que se publica el llamamiento extraordinario del ejercicio único del "
+        "Cuerpo General Administrativo del Estado y del Cuerpo de Gestión de la Administración Civil del Estado"
+    )
+    with patch("vigilancia_boe.requests.get", return_value=_fake_response(_sumario_con_item("BOE-A-2026-200", titulo))):
+        creados = vigilancia_boe.detectar_avisos_oficiales(db)
+
+    assert creados == 1
+    avisos = list(db.collection("avisos_oficiales").stream())
+    assert len(avisos) == 1
+    assert avisos[0].to_dict()["oposiciones"] == ["AGE", "GACE"]
 
 
 def test_detectar_avisos_oficiales_no_duplica_uno_ya_visto(db):

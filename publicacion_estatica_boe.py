@@ -45,6 +45,25 @@ RUTA_PAGINA_POR_OPOSICION = {
     "AUXILIAR": "frontend/oposicion-auxiliar-administrativo-estado/index.html",
 }
 
+# Página común a las 3 oposiciones, con el histórico completo (resumen
+# entero, no solo el título) -- para que un aviso no se "pierda" dentro de
+# la página de una sola oposición, sobre todo los que afectan a varias.
+RUTA_PAGINA_AVISOS_GENERAL = "frontend/avisos-oficiales/index.html"
+
+
+def _oposiciones_de(aviso):
+    """Oposiciones a las que afecta un aviso. Un aviso puede afectar a
+    varias a la vez (p. ej. un llamamiente extraordinario que menciona al
+    Cuerpo General Administrativo Y al de Gestión) -- se guarda como lista
+    en "oposiciones". Los documentos antiguos, de antes de que existiera
+    ese campo, solo tienen "oposicion" (una sola, en singular): se siguen
+    leyendo igual de bien envolviéndola en una lista de un elemento."""
+    lista = aviso.get("oposiciones")
+    if lista:
+        return list(lista)
+    oposicion = aviso.get("oposicion")
+    return [oposicion] if oposicion else []
+
 # INAP no tiene API ni un esquema de URL estable por convocatoria concreta
 # -- se enlaza a su página general de procesos selectivos como "ver en
 # INAP", no a un enlace específico de este aviso.
@@ -80,11 +99,23 @@ def etiqueta_tipo_aviso(aviso):
 
 def url_inap_aviso(aviso):
     """URL de "ver en INAP" para este aviso: si se indicó una a mano (alta
-    o edición manual) tiene prioridad sobre la genérica por oposición."""
+    o edición manual) tiene prioridad sobre la genérica por oposición (que
+    hoy es la misma para las 3, así que da igual cuál de las oposiciones
+    afectadas se use para mirarla)."""
     propia = (aviso.get("url_inap") or "").strip()
     if propia:
         return propia
-    return URL_INAP_POR_OPOSICION.get(aviso.get("oposicion"), _URL_INAP_GENERAL)
+    oposiciones = _oposiciones_de(aviso)
+    primera = oposiciones[0] if oposiciones else None
+    return URL_INAP_POR_OPOSICION.get(primera, _URL_INAP_GENERAL)
+
+
+def etiquetas_oposiciones_aviso(aviso):
+    """Siglas ("AGE", "GACE"...) de las oposiciones a las que afecta el
+    aviso, para mostrar como etiquetas -- solo hace falta en la página
+    común a las 3 (en la página de una sola oposición ya es obvio en qué
+    oposición estás)."""
+    return _oposiciones_de(aviso)
 
 
 def _cabeceras():
@@ -140,56 +171,98 @@ def _escribir_archivo_github(ruta, sha, contenido, mensaje):
         return False
 
 
-def generar_html_avisos(avisos):
-    if not avisos:
-        return '<p class="guia-avisos-oficiales-vacio">Todavía no hay avisos recientes para esta oposición.</p>'
-    partes = []
-    for aviso in avisos:
-        tipo_legible = etiqueta_tipo_aviso(aviso)
-        url_inap = url_inap_aviso(aviso)
-        # Sin URL no hay enlace que valga -- un href="" parece un botón
-        # roto en vez de simplemente no estar.
-        enlace_boe = (
-            f'<a href="{aviso.get("url_boe")}" target="_blank" rel="noopener">Ver la resolución oficial ↗</a>'
-            if aviso.get("url_boe") else ""
+def _tarjeta_aviso_html(aviso, mostrar_etiquetas_oposicion=False, mostrar_resumen=False):
+    tipo_legible = etiqueta_tipo_aviso(aviso)
+    url_inap = url_inap_aviso(aviso)
+    # Sin URL no hay enlace que valga -- un href="" parece un botón roto
+    # en vez de simplemente no estar.
+    enlace_boe = (
+        f'<a href="{aviso.get("url_boe")}" target="_blank" rel="noopener">Ver la resolución oficial ↗</a>'
+        if aviso.get("url_boe") else ""
+    )
+    enlace_inap = (
+        f'<a href="{url_inap}" target="_blank" rel="noopener">Ver en INAP ↗</a>'
+        if url_inap else ""
+    )
+    etiquetas_op = ""
+    if mostrar_etiquetas_oposicion:
+        etiquetas_op = "".join(
+            f'<span class="guia-avisos-oficiales-op">{op}</span>' for op in etiquetas_oposiciones_aviso(aviso)
         )
-        enlace_inap = (
-            f'<a href="{url_inap}" target="_blank" rel="noopener">Ver en INAP ↗</a>'
-            if url_inap else ""
-        )
-        partes.append(f"""      <div class="guia-avisos-oficiales-item">
-        <span class="guia-avisos-oficiales-tipo">{tipo_legible}</span>
+    resumen_html = ""
+    if mostrar_resumen:
+        resumen = (aviso.get("resumen") or "").strip()
+        titulo = (aviso.get("titulo") or "").strip()
+        # Si el resumen es literalmente el título (lo por defecto cuando no
+        # se rellenó ninguno propio) no aporta nada repetirlo aparte.
+        if resumen and resumen != titulo:
+            resumen_html = f'<p class="guia-avisos-oficiales-resumen">{resumen}</p>'
+    return f"""      <div class="guia-avisos-oficiales-item">
+        <div class="guia-avisos-oficiales-cab">
+          <span class="guia-avisos-oficiales-tipo">{tipo_legible}</span>
+          {etiquetas_op}
+        </div>
         <p class="guia-avisos-oficiales-titulo">{aviso.get("titulo", "")}</p>
+        {resumen_html}
         <div class="guia-avisos-oficiales-enlaces">
           {enlace_boe}
           {enlace_inap}
         </div>
-      </div>""")
-    return "\n".join(partes)
+      </div>"""
+
+
+def generar_html_avisos(avisos):
+    """Sección de avisos dentro de la página de UNA oposición concreta:
+    solo título + enlaces (el resumen completo y las etiquetas de qué
+    oposiciones afecta viven en la página común, ver
+    generar_html_avisos_hub) y un enlace a esa página común al final."""
+    cuerpo = (
+        "\n".join(_tarjeta_aviso_html(a) for a in avisos)
+        if avisos
+        else '<p class="guia-avisos-oficiales-vacio">Todavía no hay avisos recientes para esta oposición.</p>'
+    )
+    enlace_hub = (
+        '<p class="guia-avisos-oficiales-vertodos">'
+        '<a href="/avisos-oficiales/">Ver todos los avisos oficiales ↗</a></p>'
+    )
+    return f"{cuerpo}\n      {enlace_hub}"
+
+
+def generar_html_avisos_hub(avisos):
+    """Página común a las 3 oposiciones: mismas tarjetas pero con el
+    resumen completo y una etiqueta por cada oposición afectada (aquí sí
+    hace falta, a diferencia de la página de una sola oposición)."""
+    if not avisos:
+        return '<p class="guia-avisos-oficiales-vacio">Todavía no hay avisos oficiales publicados.</p>'
+    return "\n".join(
+        _tarjeta_aviso_html(a, mostrar_etiquetas_oposicion=True, mostrar_resumen=True) for a in avisos
+    )
 
 
 def _consultar_avisos_publicados(db, oposicion, tope=5):
-    avisos = []
-    consulta = (
-        db.collection("avisos_oficiales")
-        .where("oposicion", "==", oposicion)
-        .where("estado", "==", "publicado")
-    )
-    for doc in consulta.stream():
-        avisos.append(doc.to_dict() or {})
+    """Los "publicado" en Firestore no se pueden filtrar por oposición en
+    la propia consulta (no hay índice de array-contains configurado, y la
+    colección es pequeña) -- se trae todo lo publicado y se filtra aquí."""
+    avisos = [
+        d for d in (
+            (doc.to_dict() or {}) for doc in db.collection("avisos_oficiales").where("estado", "==", "publicado").stream()
+        )
+        if oposicion in _oposiciones_de(d)
+    ]
     avisos.sort(key=lambda a: a.get("fecha_boe", ""), reverse=True)
     return avisos[:tope]
 
 
-def actualizar_pagina_estatica_avisos(db, oposicion):
-    """Regenera la sección de avisos oficiales de la página pública de esa
-    oposición a partir de lo que hay publicado en Firestore ahora mismo.
-    Nunca lanza excepción -- ver docstring del módulo (incluye la propia
-    consulta a Firestore, no solo las llamadas a GitHub)."""
-    ruta = RUTA_PAGINA_POR_OPOSICION.get(oposicion)
-    if not ruta:
-        return False
+def _consultar_avisos_publicados_todos(db, tope=30):
+    avisos = [doc.to_dict() or {} for doc in db.collection("avisos_oficiales").where("estado", "==", "publicado").stream()]
+    avisos.sort(key=lambda a: a.get("fecha_boe", ""), reverse=True)
+    return avisos[:tope]
 
+
+def _regenerar_pagina(ruta, avisos, generador_html, mensaje):
+    """Lee, sustituye entre marcadores y comitea si hace falta -- usado
+    tanto por la página de una oposición como por la página común. Nunca
+    lanza excepción -- ver docstring del módulo."""
     try:
         sha, html_actual = _leer_archivo_github(ruta)
         if sha is None:
@@ -198,9 +271,7 @@ def actualizar_pagina_estatica_avisos(db, oposicion):
             logger.warning("No se encontraron los marcadores de avisos oficiales en %s", ruta)
             return False
 
-        avisos = _consultar_avisos_publicados(db, oposicion)
-        bloque_nuevo = f"{_MARCADOR_INICIO}\n{generar_html_avisos(avisos)}\n      {_MARCADOR_FIN}"
-
+        bloque_nuevo = f"{_MARCADOR_INICIO}\n{generador_html(avisos)}\n      {_MARCADOR_FIN}"
         antes, resto = html_actual.split(_MARCADOR_INICIO, 1)
         _, despues = resto.split(_MARCADOR_FIN, 1)
         html_nuevo = antes + bloque_nuevo + despues
@@ -208,23 +279,47 @@ def actualizar_pagina_estatica_avisos(db, oposicion):
         if html_nuevo == html_actual:
             return True  # ya estaba al día, no hace falta commitear nada
 
-        return _escribir_archivo_github(
-            ruta, sha, html_nuevo,
-            f"Actualizar avisos oficiales publicados ({oposicion}) [automático]",
-        )
+        return _escribir_archivo_github(ruta, sha, html_nuevo, mensaje)
     except Exception:
-        logger.warning("Fallo inesperado actualizando la página estática de %s", oposicion, exc_info=True)
+        logger.warning("Fallo inesperado actualizando la página estática %s", ruta, exc_info=True)
         return False
 
 
+def actualizar_pagina_estatica_avisos(db, oposicion):
+    """Regenera la sección de avisos oficiales de la página pública de esa
+    oposición a partir de lo que hay publicado en Firestore ahora mismo."""
+    ruta = RUTA_PAGINA_POR_OPOSICION.get(oposicion)
+    if not ruta:
+        return False
+    avisos = _consultar_avisos_publicados(db, oposicion)
+    return _regenerar_pagina(
+        ruta, avisos, generar_html_avisos,
+        f"Actualizar avisos oficiales publicados ({oposicion}) [automático]",
+    )
+
+
+def actualizar_pagina_avisos_general(db):
+    """Regenera la página común a las 3 oposiciones (histórico completo,
+    con el resumen entero de cada aviso) -- se llama junto a
+    actualizar_pagina_estatica_avisos cada vez que se publica o corrige un
+    aviso, para que nunca se quede desactualizada respecto a las 3
+    páginas por oposición."""
+    avisos = _consultar_avisos_publicados_todos(db)
+    return _regenerar_pagina(
+        RUTA_PAGINA_AVISOS_GENERAL, avisos, generar_html_avisos_hub,
+        "Actualizar página de avisos oficiales [automático]",
+    )
+
+
 def notificar_usuarios_aviso_oficial(db, aviso):
-    """Manda el email de aviso oficial a cada usuario que tiene esta
-    oposición entre sus suscripciones o su actividad ya registrada. Nunca
-    lanza excepción -- ver docstring del módulo."""
-    oposicion = aviso.get("oposicion")
-    if not oposicion:
+    """Manda el email de aviso oficial a cada usuario que tiene CUALQUIERA
+    de las oposiciones afectadas entre sus suscripciones o su actividad ya
+    registrada (una sola vez por usuario, aunque coincida en varias).
+    Nunca lanza excepción -- ver docstring del módulo."""
+    oposiciones = _oposiciones_de(aviso)
+    if not oposiciones:
         return 0
-    nombre_oposicion = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
+    nombre_oposicion = " y ".join(OPOSICIONES.get(op, {}).get("nombre", op) for op in oposiciones)
     url_inap = url_inap_aviso(aviso)
     tipo_legible = etiqueta_tipo_aviso(aviso)
 
@@ -235,7 +330,10 @@ def notificar_usuarios_aviso_oficial(db, aviso):
             email = datos.get("email")
             if not email:
                 continue
-            le_afecta = oposicion in (datos.get("suscripciones") or {}) or oposicion in (datos.get("estadisticas") or {})
+            le_afecta = any(
+                op in (datos.get("suscripciones") or {}) or op in (datos.get("estadisticas") or {})
+                for op in oposiciones
+            )
             if not le_afecta:
                 continue
             enviar_email_aviso_oficial(
@@ -244,5 +342,5 @@ def notificar_usuarios_aviso_oficial(db, aviso):
             )
             enviados += 1
     except Exception:
-        logger.warning("Fallo inesperado notificando el aviso oficial de %s", oposicion, exc_info=True)
+        logger.warning("Fallo inesperado notificando el aviso oficial de %s", oposiciones, exc_info=True)
     return enviados
