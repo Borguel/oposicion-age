@@ -11,7 +11,7 @@
 // código fuente o llamar al backend directamente saltándose esta
 // comprobación. La única protección real son los decoradores
 // @requiere_plan del backend (ver auth_utils.py).
-import { idToken, esperarUsuario, enviarVerificacionEmail } from "/assets/auth.js";
+import { idToken, esperarUsuario } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { obtenerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
@@ -123,6 +123,12 @@ export function mostrarPantallaBloqueo(planMinimo, perfil) {
       boton.disabled = true;
       boton.textContent = "Enviando…";
       try {
+        // Import perezoso (no en el import estático de arriba): así una
+        // página que sustituya /assets/auth.js por un stub mínimo en
+        // pruebas (sin este export en concreto) no rompe el resto de
+        // plan.js -- el mismo motivo por el que auth.js ya importa
+        // plan.js de forma perezosa en su propio banner de prueba.
+        const { enviarVerificacionEmail } = await import("/assets/auth.js");
         await enviarVerificacionEmail();
         boton.textContent = "Correo enviado";
       } catch {
