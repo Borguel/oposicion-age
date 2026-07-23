@@ -52,6 +52,35 @@ def test_rechaza_frase_prohibida_en_mayusculas_o_minusculas_mezcladas():
     )) is False
 
 
+def test_rechaza_pregunta_que_remite_al_contenido_invisible():
+    # Regresión: "¿Qué tienen en común todas las escalas y auxiliares
+    # mencionados en el contenido?" -- quien responde el test nunca ve el
+    # material de origen, solo la pregunta, así que remitir a "el
+    # contenido" la deja sin sentido.
+    assert validar_pregunta(_pregunta_valida(
+        pregunta="¿Qué tienen en común todas las escalas y auxiliares mencionados en el contenido?"
+    )) is False
+
+
+def test_rechaza_variantes_de_remision_a_contenido_documento_o_texto():
+    variantes = [
+        "los órganos mencionados en el documento tienen esto en común.",
+        "las funciones mencionadas en el texto comparten este rasgo.",
+        "como se explicó arriba mencionado, el plazo es de un mes.",
+        "según lo anteriormente mencionado, el órgano competente decide.",
+    ]
+    for explicacion in variantes:
+        assert validar_pregunta(_pregunta_valida(explicacion=explicacion)) is False, explicacion
+
+
+def test_no_rechaza_contenido_esencial_como_termino_juridico_legitimo():
+    # "contenido esencial" es terminología constitucional real (art. 53.1
+    # CE) -- no debe confundirse con una remisión al material de origen.
+    assert validar_pregunta(_pregunta_valida(
+        explicacion="El artículo 53.1 CE protege el contenido esencial de los derechos fundamentales."
+    )) is True
+
+
 def test_rechaza_explicacion_demasiado_corta():
     assert validar_pregunta(_pregunta_valida(explicacion="Porque sí.")) is False
 

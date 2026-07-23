@@ -41,11 +41,26 @@ def validar_pregunta(pregunta):
     if not isinstance(pregunta["pregunta"], str) or not isinstance(pregunta["explicacion"], str):
         return False
 
-    # ❌ Filtro de frases prohibidas
+    # ❌ Filtro de frases prohibidas -- referencias a "el contenido"/"el
+    # documento"/"el texto" como si quien hace el test pudiera verlo: solo ve
+    # la pregunta, nunca el material de origen, así que una pregunta que
+    # remita a él ("¿qué tienen en común... mencionados en el contenido?")
+    # queda sin sentido para quien la responde.
     texto_total = (pregunta["pregunta"] + " " + pregunta["explicacion"]).lower()
     frases_prohibidas = [
         "según el contenido", "según el texto", "en el contenido proporcionado",
-        "de acuerdo con lo anterior", "según lo anterior", "tal como se indica", "como se ha dicho"
+        "de acuerdo con lo anterior", "según lo anterior", "tal como se indica", "como se ha dicho",
+        "del contenido proporcionado", "en el documento proporcionado",
+        "en el texto proporcionado", "en el fragmento proporcionado",
+        "mencionado en el contenido", "mencionada en el contenido",
+        "mencionados en el contenido", "mencionadas en el contenido",
+        "mencionado en el documento", "mencionada en el documento",
+        "mencionados en el documento", "mencionadas en el documento",
+        "mencionado en el texto", "mencionada en el texto",
+        "mencionados en el texto", "mencionadas en el texto",
+        "arriba mencionado", "arriba mencionada", "arriba mencionados", "arriba mencionadas",
+        "anteriormente mencionado", "anteriormente mencionada",
+        "anteriormente mencionados", "anteriormente mencionadas", "mencionado anteriormente",
     ]
     if any(frase in texto_total for frase in frases_prohibidas):
         return False

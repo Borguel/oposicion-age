@@ -70,6 +70,20 @@ def test_contenido_descriptivo_sin_articulos_usa_prompts_descriptivos():
     assert "no exijas artículos" in system_ver.lower()
 
 
+def test_prompt_descriptivo_prohibe_remitir_al_contenido_invisible():
+    # Regresión: "¿Qué tienen en común todas las escalas y auxiliares
+    # mencionados en el contenido?" -- quien responde el test nunca ve el
+    # material de origen, así que el prompt de generación y el de
+    # verificación deben prohibir explícitamente ese tipo de remisión.
+    anclas = [{"norma": "Organización de la Administración", "articulo": None,
+               "texto_legal": "La escala de gestión y la escala auxiliar tienen funciones distintas.",
+               "etiqueta_subbloque": "s1"}]
+    system_gen, _user_gen = _prompt_generacion(anclas, "memoria_literal", "AGE")
+    system_ver, _user_ver = _prompt_verificacion({"pregunta": "x"}, anclas)
+    assert "mencionados en el contenido" in system_gen.lower()
+    assert "mencionados en el contenido" in system_ver.lower()
+
+
 def _pregunta_valida(texto_pregunta="¿Pregunta de ejemplo?"):
     return json.dumps({
         "norma": "Ley 39/2015",

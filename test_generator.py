@@ -27,7 +27,11 @@ def _prompt_verificacion(pregunta_candidata, texto_fuente):
         "proporcionado (posible alucinación).\n"
         "7. La pregunta o la explicación citan un número de artículo sin decir en la misma frase de qué "
         "ley o norma es (tal como aparece en el documento) -- un artículo mencionado sin decir de qué "
-        "norma es deja a quien lo lee sin poder ubicarlo.\n\n"
+        "norma es deja a quien lo lee sin poder ubicarlo.\n"
+        "8. La pregunta o la explicación remiten a \"el documento\", \"el contenido\", \"el texto\" o "
+        "\"lo mencionado/anterior\" en vez de nombrar directamente de qué elementos concretos habla -- "
+        "quien responde el test nunca ve el documento de origen, solo la pregunta, así que una remisión "
+        "de ese tipo la deja sin sentido.\n\n"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
         '{"valido": true, "problemas": []}\n'
         "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo."
