@@ -2086,7 +2086,10 @@ body {
   border-radius: var(--age-radius-md);
   padding: 9px 12px;
   font-family: var(--age-font);
-  font-size: 14px;
+  /* 16px y no menos: por debajo de eso, Safari en iOS hace zoom automático
+     de toda la página al enfocar el campo -- eso es lo que hacía que el
+     chat "se viera con más zoom" justo al ponerse a escribir. */
+  font-size: 16px;
   color: var(--age-ink);
   background: var(--age-bg);
   max-height: 90px;

@@ -260,6 +260,11 @@ export function montarWidgetTutor() {
   }
 
   const scrollAbajo = () => { mensajesEl.scrollTop = mensajesEl.scrollHeight; };
+  // Mientras el bot está escribiendo en streaming, solo se sigue bajando el
+  // scroll automáticamente si el usuario ya estaba abajo del todo -- si ha
+  // subido a leer desde el principio de la respuesta, no se le fuerza hacia
+  // abajo con cada trocito de texto que va llegando (dejaría de poder leer).
+  const yaEstabaAbajo = () => mensajesEl.scrollHeight - mensajesEl.scrollTop - mensajesEl.clientHeight < 60;
 
   function abrir() {
     panel.classList.add("abierto");
@@ -472,8 +477,9 @@ export function montarWidgetTutor() {
   }
 
   function pintarBot(burbuja, texto) {
+    const seguirAbajo = yaEstabaAbajo();
     burbuja.contenido.innerHTML = formatearMensajeBot(texto);
-    scrollAbajo();
+    if (seguirAbajo) scrollAbajo();
   }
 
   // iconoPrefijo (opcional): nombre de icono de /assets/icons.js que se
