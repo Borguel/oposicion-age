@@ -233,6 +233,24 @@ export async function obtenerPermisos() {
 export async function idToken() {
   const user = await esperarUsuario();
   if (!user) return null;
+  // Justo tras confirmar el correo (clic en el enlace de verificación),
+  // user.emailVerified (dato local, ya al día) puede pasar a true mientras
+  // el token en caché sigue siendo el que se emitió al registrarse --con
+  // el claim email_verified todavía en false-- porque un token de Firebase
+  // no se remite solo con los datos nuevos hasta que expira (hasta 1h) o se
+  // fuerza su refresco. Sin este chequeo, el backend seguiría viendo el
+  // correo como no verificado y no arrancaría la prueba gratuita ya
+  // confirmada hasta que el token expirase por su cuenta.
+  if (user.emailVerified) {
+    try {
+      const { claims } = await user.getIdTokenResult();
+      if (claims.email_verified === false) {
+        return conLimiteDeTiempo(user.getIdToken(true), 8000, null);
+      }
+    } catch {
+      // Si esto falla seguimos con el camino normal de abajo.
+    }
+  }
   return conLimiteDeTiempo(user.getIdToken(), 8000, null);
 }
 
