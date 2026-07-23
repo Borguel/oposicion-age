@@ -1290,34 +1290,71 @@ const ETIQUETA_TIPO_AVISO_MANUAL = {
   aprobados: "Relación de aprobados", otro: "Aviso oficial",
 };
 
+// Campos compartidos entre "Añadir aviso manual" y "Editar aviso" -- misma
+// forma en los dos sitios, con ids prefijados para poder repetirla varias
+// veces en la misma página (una por tarjeta al editar).
+function _formCamposAvisoHtml(prefix, v = {}) {
+  const opcionesTipo = Object.entries(ETIQUETA_TIPO_AVISO_MANUAL)
+    .map(([val, t]) => `<option value="${val}" ${v.tipo === val ? "selected" : ""}>${t}</option>`).join("");
+  const op = (val) => (v.oposicion === val ? "selected" : "");
+  return `
+    <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr;">
+      <label style="font-size:13px;font-weight:600;">Oposición
+        <select id="${prefix}-oposicion" class="age-input">
+          <option value="AGE" ${op("AGE")}>AGE</option>
+          <option value="GACE" ${op("GACE")}>GACE</option>
+          <option value="AUXILIAR" ${op("AUXILIAR")}>Auxiliar</option>
+        </select>
+      </label>
+      <label style="font-size:13px;font-weight:600;">Tipo
+        <select id="${prefix}-tipo" class="age-input">${opcionesTipo}</select>
+      </label>
+    </div>
+    <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;">Texto del tipo, a mano (opcional)
+      <input type="text" id="${prefix}-tipo-personalizado" class="age-input"
+             placeholder="Si ninguna opción de Tipo encaja, escribe aquí y se mostrará esto en su lugar"
+             value="${escapeHtml(v.tipo_personalizado || "")}" />
+    </label>
+    <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;">Título
+      <input type="text" id="${prefix}-titulo" class="age-input"
+             placeholder="Ej: Llamamiento extraordinario del ejercicio único (AGE)" value="${escapeHtml(v.titulo || "")}" />
+    </label>
+    <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;">Resumen (opcional)
+      <textarea id="${prefix}-resumen" class="age-input" rows="2">${escapeHtml(v.resumen || "")}</textarea>
+    </label>
+    <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr;margin-top:10px;">
+      <label style="font-size:13px;font-weight:600;">Enlace a la resolución
+        <input type="url" id="${prefix}-url" class="age-input" placeholder="https://..." value="${escapeHtml(v.url_boe || "")}" />
+      </label>
+      <label style="font-size:13px;font-weight:600;">Enlace a INAP (opcional)
+        <input type="url" id="${prefix}-url-inap" class="age-input"
+               placeholder="Si se deja vacío, se usa el genérico de procesos selectivos de INAP" value="${escapeHtml(v.url_inap || "")}" />
+      </label>
+    </div>
+    <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;max-width:220px;">Fecha (AAAAMMDD)
+      <input type="text" id="${prefix}-fecha" class="age-input" placeholder="20260715" value="${escapeHtml(v.fecha_boe || "")}" />
+    </label>`;
+}
+
+function _leerCamposAviso(prefix) {
+  return {
+    oposicion: document.getElementById(`${prefix}-oposicion`).value,
+    tipo: document.getElementById(`${prefix}-tipo`).value,
+    tipo_personalizado: document.getElementById(`${prefix}-tipo-personalizado`).value.trim(),
+    titulo: document.getElementById(`${prefix}-titulo`).value.trim(),
+    resumen: document.getElementById(`${prefix}-resumen`).value.trim(),
+    url_boe: document.getElementById(`${prefix}-url`).value.trim(),
+    url_inap: document.getElementById(`${prefix}-url-inap`).value.trim(),
+    fecha_boe: document.getElementById(`${prefix}-fecha`).value.trim(),
+  };
+}
+
 function _formAvisoManualHtml() {
-  const opcionesTipo = Object.entries(ETIQUETA_TIPO_AVISO_MANUAL).map(([v, t]) => `<option value="${v}">${t}</option>`).join("");
   return `
     <div class="age-card" id="boe-form-manual" hidden style="margin-bottom:14px;">
       <p class="admin-seccion-titulo" style="margin-top:0;">Añadir aviso manual</p>
       <p class="admin-reporte-meta" style="margin-bottom:14px;">Para lo que la vigilancia automática del BOE no puede detectar sola -- p. ej. una resolución publicada solo en el portal del INAP, no en el BOE. Se crea "pendiente", igual que los detectados solos: hay que aprobarlo para que se publique.</p>
-      <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr;">
-        <label style="font-size:13px;font-weight:600;">Oposición
-          <select id="bfm-oposicion" class="age-input"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
-        </label>
-        <label style="font-size:13px;font-weight:600;">Tipo
-          <select id="bfm-tipo" class="age-input">${opcionesTipo}</select>
-        </label>
-      </div>
-      <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;">Título
-        <input type="text" id="bfm-titulo" class="age-input" placeholder="Ej: Llamamiento extraordinario del ejercicio único (AGE)" />
-      </label>
-      <label style="font-size:13px;font-weight:600;display:block;margin-top:10px;">Resumen (opcional)
-        <textarea id="bfm-resumen" class="age-input" rows="2"></textarea>
-      </label>
-      <div style="display:grid;gap:10px;grid-template-columns:2fr 1fr;margin-top:10px;">
-        <label style="font-size:13px;font-weight:600;">Enlace a la resolución
-          <input type="url" id="bfm-url" class="age-input" placeholder="https://..." />
-        </label>
-        <label style="font-size:13px;font-weight:600;">Fecha (AAAAMMDD)
-          <input type="text" id="bfm-fecha" class="age-input" placeholder="20260715" />
-        </label>
-      </div>
+      ${_formCamposAvisoHtml("bfm")}
       <div style="display:flex;gap:8px;margin-top:14px;">
         <button type="button" class="age-btn age-btn-primary admin-mini" id="bfm-crear">Crear aviso pendiente</button>
         <button type="button" class="age-btn age-btn-outline admin-mini" id="bfm-cancelar">Cancelar</button>
@@ -1326,14 +1363,7 @@ function _formAvisoManualHtml() {
 }
 
 async function _crearAvisoManual() {
-  const datos = {
-    oposicion: document.getElementById("bfm-oposicion").value,
-    tipo: document.getElementById("bfm-tipo").value,
-    titulo: document.getElementById("bfm-titulo").value.trim(),
-    resumen: document.getElementById("bfm-resumen").value.trim(),
-    url_boe: document.getElementById("bfm-url").value.trim(),
-    fecha_boe: document.getElementById("bfm-fecha").value.trim(),
-  };
+  const datos = _leerCamposAviso("bfm");
   if (!datos.titulo) { toast("Falta el título."); return; }
   const r = await api("POST", "/admin/api/avisos-oficiales", datos);
   if (r) {
@@ -1342,6 +1372,13 @@ async function _crearAvisoManual() {
     estadoBoe = "pendiente";
     cargarAvisosOficiales();
   }
+}
+
+async function _guardarEdicionAviso(id) {
+  const datos = _leerCamposAviso(`edit-${id}`);
+  if (!datos.titulo) { toast("Falta el título."); return; }
+  const r = await api("PUT", `/admin/api/avisos-oficiales/${id}`, datos);
+  if (r) { toast("Aviso corregido."); cargarAvisosOficiales(); }
 }
 
 async function renderBoe() {
@@ -1447,7 +1484,7 @@ async function cargarAvisosOficiales() {
     <div class="admin-reporte">
       <div class="admin-reporte-cab">
         <span class="admin-reporte-estado ${clase(a.estado)}">${escapeHtml(a.estado)}</span>
-        <span class="admin-reporte-meta">${escapeHtml(a.oposicion || "-")} · ${escapeHtml(a.tipo || "")} · ${escapeHtml(fechaCorta(a.fecha_deteccion))}</span>
+        <span class="admin-reporte-meta">${escapeHtml(a.oposicion || "-")} · ${escapeHtml(a.tipo_personalizado || ETIQUETA_TIPO_AVISO_MANUAL[a.tipo] || a.tipo || "")} · ${escapeHtml(fechaCorta(a.fecha_deteccion))}</span>
       </div>
       <p class="admin-reporte-preg">${escapeHtml(a.titulo)}</p>
       ${a.resumen ? `<p class="admin-reporte-motivo">${escapeHtml(a.resumen)}</p>` : ""}
@@ -1455,10 +1492,31 @@ async function cargarAvisosOficiales() {
       <div class="admin-reporte-acciones">
         ${a.estado !== "publicado" ? `<button class="age-btn age-btn-primary admin-mini" data-publicar="${escapeHtml(a.id)}">Publicar</button>` : ""}
         ${a.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-descartar-aviso="${escapeHtml(a.id)}">Descartar</button>` : ""}
+        <button class="age-btn age-btn-outline admin-mini" data-editar="${escapeHtml(a.id)}">Editar</button>
+      </div>
+      <div class="age-card" id="editar-${escapeHtml(a.id)}" hidden style="margin-top:10px;">
+        <p class="admin-seccion-titulo" style="margin-top:0;">Corregir aviso</p>
+        <p class="admin-reporte-meta" style="margin-bottom:14px;">
+          ${a.estado === "publicado"
+            ? "Este aviso ya está publicado: al guardar se corrige también la página pública, pero NO se vuelve a avisar por email (ya se envió)."
+            : "Se corrige el contenido guardado; el estado (pendiente/publicado/descartado) no cambia aquí."}
+        </p>
+        ${_formCamposAvisoHtml(`edit-${escapeHtml(a.id)}`, a)}
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button type="button" class="age-btn age-btn-primary admin-mini" data-guardar-edicion="${escapeHtml(a.id)}">Guardar cambios</button>
+          <button type="button" class="age-btn age-btn-outline admin-mini" data-cancelar-edicion="${escapeHtml(a.id)}">Cancelar</button>
+        </div>
       </div>
     </div>`).join("");
   cont.querySelectorAll("[data-publicar]").forEach((b) => b.addEventListener("click", () => cambiarEstadoAvisoOficial(b.dataset.publicar, "publicado")));
   cont.querySelectorAll("[data-descartar-aviso]").forEach((b) => b.addEventListener("click", () => cambiarEstadoAvisoOficial(b.dataset.descartarAviso, "descartado")));
+  cont.querySelectorAll("[data-editar]").forEach((b) => b.addEventListener("click", () => {
+    document.getElementById(`editar-${b.dataset.editar}`).hidden = false;
+  }));
+  cont.querySelectorAll("[data-cancelar-edicion]").forEach((b) => b.addEventListener("click", () => {
+    document.getElementById(`editar-${b.dataset.cancelarEdicion}`).hidden = true;
+  }));
+  cont.querySelectorAll("[data-guardar-edicion]").forEach((b) => b.addEventListener("click", () => _guardarEdicionAviso(b.dataset.guardarEdicion)));
 }
 
 async function cambiarEstadoAvisoOficial(id, estado) {

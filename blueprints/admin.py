@@ -1645,9 +1645,11 @@ def avisos_oficiales_listar():
             "id": doc.id,
             "oposicion": d.get("oposicion", ""),
             "tipo": d.get("tipo", ""),
+            "tipo_personalizado": d.get("tipo_personalizado", ""),
             "titulo": d.get("titulo", ""),
             "resumen": d.get("resumen", ""),
             "url_boe": d.get("url_boe", ""),
+            "url_inap": d.get("url_inap", ""),
             "fecha_boe": d.get("fecha_boe", ""),
             "estado": d.get("estado", "pendiente"),
             "fecha_deteccion": d.get("fecha_deteccion", ""),
@@ -1682,9 +1684,11 @@ def avisos_oficiales_crear():
     ref.set({
         "oposicion": oposicion,
         "tipo": tipo,
+        "tipo_personalizado": (data.get("tipo_personalizado") or "").strip()[:100],
         "titulo": titulo[:300],
         "resumen": (data.get("resumen") or titulo)[:500],
         "url_boe": data.get("url_boe", ""),
+        "url_inap": data.get("url_inap", ""),
         "fecha_boe": data.get("fecha_boe") or datetime.utcnow().strftime("%Y%m%d"),
         "fecha_deteccion": datetime.utcnow().isoformat(),
         "estado": "pendiente",
@@ -1726,6 +1730,57 @@ def avisos_oficiales_actualizar(aid):
         aviso_completo = {**aviso_antes, "estado": estado}
         actualizar_pagina_estatica_avisos(db, aviso_completo.get("oposicion"))
         notificar_usuarios_aviso_oficial(db, aviso_completo)
+
+    return jsonify({"mensaje": "Aviso actualizado"})
+
+
+@bp.route("/admin/api/avisos-oficiales/<aid>", methods=["PUT"])
+@requiere_permiso("reportes")
+def avisos_oficiales_editar(aid):
+    """Corrige el CONTENIDO de un aviso ya creado -- título, tipo, enlaces...
+    -- por si hubo un error al darlo de alta (enlace mal pegado, etc.), a
+    diferencia del PATCH de arriba que solo cambia el estado. Se puede
+    editar en cualquier estado, incluido uno ya "publicado": si lo está,
+    se regenera la página estática con el contenido corregido, pero
+    DELIBERADAMENTE no se vuelve a mandar el email a los usuarios (ya lo
+    recibieron; reenviarlo por corregir una errata sería spam)."""
+    from publicacion_estatica_boe import ETIQUETA_TIPO_AVISO
+
+    data = request.get_json(silent=True) or {}
+    ref = db.collection("avisos_oficiales").document(aid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "Aviso no encontrado"}), 404
+    aviso_antes = doc.to_dict() or {}
+
+    oposicion = data.get("oposicion", aviso_antes.get("oposicion", ""))
+    tipo = data.get("tipo", aviso_antes.get("tipo", ""))
+    titulo = (data.get("titulo") if "titulo" in data else aviso_antes.get("titulo", "")).strip()
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    if tipo not in ETIQUETA_TIPO_AVISO:
+        return jsonify({"error": "Tipo no válido"}), 400
+    if not titulo:
+        return jsonify({"error": "Falta el título"}), 400
+
+    cambios = {
+        "oposicion": oposicion,
+        "tipo": tipo,
+        "tipo_personalizado": (data.get("tipo_personalizado", aviso_antes.get("tipo_personalizado", "")) or "").strip()[:100],
+        "titulo": titulo[:300],
+        "resumen": (data.get("resumen", aviso_antes.get("resumen", "")) or titulo)[:500],
+        "url_boe": data.get("url_boe", aviso_antes.get("url_boe", "")),
+        "url_inap": data.get("url_inap", aviso_antes.get("url_inap", "")),
+        "fecha_boe": data.get("fecha_boe", aviso_antes.get("fecha_boe", "")),
+        "editado_por": g.uid,
+        "fecha_edicion": datetime.utcnow().isoformat(),
+    }
+    ref.set(cambios, merge=True)
+    _registrar_auditoria("aviso_oficial_editado", aid, titulo)
+
+    if aviso_antes.get("estado") == "publicado":
+        from publicacion_estatica_boe import actualizar_pagina_estatica_avisos
+        actualizar_pagina_estatica_avisos(db, oposicion)
 
     return jsonify({"mensaje": "Aviso actualizado"})
 

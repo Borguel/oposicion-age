@@ -1082,6 +1082,104 @@ def test_avisos_oficiales_descartar_no_dispara_pagina_ni_email(client, db):
     mock_notificar.assert_not_called()
 
 
+def test_avisos_oficiales_crear_manual_con_tipo_personalizado_y_url_inap(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "AGE", "tipo": "otro", "tipo_personalizado": "Repesca especial",
+            "titulo": "x", "url_inap": "https://run.gob.es/algo-concreto",
+        }, headers=_AUTH)
+    assert resp.status_code == 201
+    d = db.leer(("avisos_oficiales", resp.get_json()["id"]))
+    assert d["tipo_personalizado"] == "Repesca especial"
+    assert d["url_inap"] == "https://run.gob.es/algo-concreto"
+
+
+def test_avisos_oficiales_listar_incluye_tipo_personalizado_y_url_inap(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "otro", "tipo_personalizado": "Repesca especial",
+        "titulo": "x", "url_inap": "https://run.gob.es/algo", "estado": "pendiente",
+    })
+    with _como():
+        d = client.get("/admin/api/avisos-oficiales?estado=pendiente", headers=_AUTH).get_json()
+    assert d["avisos"][0]["tipo_personalizado"] == "Repesca especial"
+    assert d["avisos"][0]["url_inap"] == "https://run.gob.es/algo"
+
+
+def test_avisos_oficiales_editar_requiere_permiso_reportes(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {"oposicion": "AGE", "tipo": "convocatoria", "titulo": "x", "estado": "pendiente"})
+    with _como(admin=False, uid="mod1", permisos=["temario"]):
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={"titulo": "y"}, headers=_AUTH)
+    assert resp.status_code == 403
+
+
+def test_avisos_oficiales_editar_corrige_contenido(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Título con typo",
+        "url_boe": "https://boe.es/mal", "estado": "pendiente",
+    })
+    with _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={
+            "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Título corregido",
+            "url_boe": "https://boe.es/bien", "url_inap": "https://run.gob.es/x",
+        }, headers=_AUTH)
+    assert resp.status_code == 200
+    d = db.leer(("avisos_oficiales", "a1"))
+    assert d["titulo"] == "Título corregido"
+    assert d["url_boe"] == "https://boe.es/bien"
+    assert d["url_inap"] == "https://run.gob.es/x"
+    assert d["estado"] == "pendiente"  # el PUT no toca el estado
+    assert d["editado_por"] == "admin1"
+
+
+def test_avisos_oficiales_editar_uno_ya_publicado_regenera_pagina_pero_no_reenvia_email(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Título con typo",
+        "url_boe": "https://boe.es/mal", "estado": "publicado",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
+         _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={
+            "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Título corregido",
+            "url_boe": "https://boe.es/bien",
+        }, headers=_AUTH)
+    assert resp.status_code == 200
+    mock_pagina.assert_called_once_with(db, "AGE")
+    mock_notificar.assert_not_called()
+
+
+def test_avisos_oficiales_editar_uno_pendiente_no_regenera_pagina(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "x", "estado": "pendiente",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={
+            "oposicion": "AGE", "tipo": "convocatoria", "titulo": "y",
+        }, headers=_AUTH)
+    assert resp.status_code == 200
+    mock_pagina.assert_not_called()
+
+
+def test_avisos_oficiales_editar_no_encontrado(client, db):
+    with _como():
+        resp = client.put("/admin/api/avisos-oficiales/no-existe", json={"titulo": "y"}, headers=_AUTH)
+    assert resp.status_code == 404
+
+
+def test_avisos_oficiales_editar_rechaza_titulo_vacio(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {"oposicion": "AGE", "tipo": "convocatoria", "titulo": "x", "estado": "pendiente"})
+    with _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={"titulo": "   "}, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_avisos_oficiales_editar_rechaza_tipo_invalido(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {"oposicion": "AGE", "tipo": "convocatoria", "titulo": "x", "estado": "pendiente"})
+    with _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={"tipo": "lo-que-sea"}, headers=_AUTH)
+    assert resp.status_code == 400
+
+
 def test_vigilancia_boe_salud_devuelve_lo_guardado_por_el_chequeo(client, db):
     db.sembrar(("config", "vigilancia_boe"), {
         "temas_faltantes": [{"oposicion": "GACE", "bloque_id": "bloque_09", "tema_id": "tema_99"}],

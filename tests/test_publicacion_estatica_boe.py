@@ -52,6 +52,36 @@ def test_generar_html_avisos_incluye_tipo_titulo_y_enlaces():
     assert pub._URL_INAP_GENERAL in html
 
 
+def test_generar_html_avisos_usa_tipo_personalizado_si_esta_relleno():
+    avisos = [{
+        "oposicion": "AGE", "tipo": "otro", "tipo_personalizado": "Repesca especial",
+        "titulo": "x",
+    }]
+    html = pub.generar_html_avisos(avisos)
+    assert "Repesca especial" in html
+    assert ">Aviso oficial<" not in html  # no se cuela la etiqueta fija de "otro"
+
+
+def test_generar_html_avisos_usa_url_inap_propia_si_esta_rellena():
+    avisos = [{
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "x",
+        "url_inap": "https://run.gob.es/algo-concreto",
+    }]
+    html = pub.generar_html_avisos(avisos)
+    assert "https://run.gob.es/algo-concreto" in html
+    assert pub._URL_INAP_GENERAL not in html
+
+
+def test_etiqueta_tipo_aviso_sin_personalizado_cae_a_la_fija():
+    assert pub.etiqueta_tipo_aviso({"tipo": "convocatoria"}) == "Convocatoria"
+    assert pub.etiqueta_tipo_aviso({"tipo": "convocatoria", "tipo_personalizado": "  "}) == "Convocatoria"
+
+
+def test_url_inap_aviso_sin_propia_cae_a_la_generica_por_oposicion():
+    assert pub.url_inap_aviso({"oposicion": "AGE"}) == pub._URL_INAP_GENERAL
+    assert pub.url_inap_aviso({"oposicion": "AGE", "url_inap": "  "}) == pub._URL_INAP_GENERAL
+
+
 def test_generar_html_avisos_sin_url_boe_no_muestra_enlace_roto():
     # Sin url_boe, mejor no mostrar el enlace "Ver la resolución oficial"
     # que uno con href="" que da la sensación de estar roto.

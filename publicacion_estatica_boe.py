@@ -68,6 +68,25 @@ ETIQUETA_TIPO_AVISO = {
 }
 
 
+def etiqueta_tipo_aviso(aviso):
+    """Texto a mostrar como "tipo" del aviso: si se rellenó un tipo
+    personalizado a mano (alta manual, cuando ninguna de las opciones fijas
+    encajaba) tiene prioridad sobre la etiqueta fija de ETIQUETA_TIPO_AVISO."""
+    personalizado = (aviso.get("tipo_personalizado") or "").strip()
+    if personalizado:
+        return personalizado
+    return ETIQUETA_TIPO_AVISO.get(aviso.get("tipo"), ETIQUETA_TIPO_AVISO["otro"])
+
+
+def url_inap_aviso(aviso):
+    """URL de "ver en INAP" para este aviso: si se indicó una a mano (alta
+    o edición manual) tiene prioridad sobre la genérica por oposición."""
+    propia = (aviso.get("url_inap") or "").strip()
+    if propia:
+        return propia
+    return URL_INAP_POR_OPOSICION.get(aviso.get("oposicion"), _URL_INAP_GENERAL)
+
+
 def _cabeceras():
     token = os.getenv("GITHUB_TOKEN")
     return {
@@ -126,20 +145,24 @@ def generar_html_avisos(avisos):
         return '<p class="guia-avisos-oficiales-vacio">Todavía no hay avisos recientes para esta oposición.</p>'
     partes = []
     for aviso in avisos:
-        tipo_legible = ETIQUETA_TIPO_AVISO.get(aviso.get("tipo"), ETIQUETA_TIPO_AVISO["otro"])
-        url_inap = URL_INAP_POR_OPOSICION.get(aviso.get("oposicion"), _URL_INAP_GENERAL)
+        tipo_legible = etiqueta_tipo_aviso(aviso)
+        url_inap = url_inap_aviso(aviso)
         # Sin URL no hay enlace que valga -- un href="" parece un botón
         # roto en vez de simplemente no estar.
         enlace_boe = (
             f'<a href="{aviso.get("url_boe")}" target="_blank" rel="noopener">Ver la resolución oficial ↗</a>'
             if aviso.get("url_boe") else ""
         )
+        enlace_inap = (
+            f'<a href="{url_inap}" target="_blank" rel="noopener">Ver en INAP ↗</a>'
+            if url_inap else ""
+        )
         partes.append(f"""      <div class="guia-avisos-oficiales-item">
         <span class="guia-avisos-oficiales-tipo">{tipo_legible}</span>
         <p class="guia-avisos-oficiales-titulo">{aviso.get("titulo", "")}</p>
         <div class="guia-avisos-oficiales-enlaces">
           {enlace_boe}
-          <a href="{url_inap}" target="_blank" rel="noopener">Ver en INAP ↗</a>
+          {enlace_inap}
         </div>
       </div>""")
     return "\n".join(partes)
@@ -202,8 +225,8 @@ def notificar_usuarios_aviso_oficial(db, aviso):
     if not oposicion:
         return 0
     nombre_oposicion = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
-    url_inap = URL_INAP_POR_OPOSICION.get(oposicion, _URL_INAP_GENERAL)
-    tipo_legible = ETIQUETA_TIPO_AVISO.get(aviso.get("tipo"), ETIQUETA_TIPO_AVISO["otro"])
+    url_inap = url_inap_aviso(aviso)
+    tipo_legible = etiqueta_tipo_aviso(aviso)
 
     enviados = 0
     try:
