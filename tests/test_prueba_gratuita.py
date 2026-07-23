@@ -10,8 +10,9 @@ import pytest
 from flask import Flask, g, jsonify
 
 from dominios_desechables import es_dominio_email_desechable
-from registro_progreso_usuario import inicializar_estadisticas_usuario
+from registro_progreso_usuario import inicializar_estadisticas_usuario, obtener_perfil_usuario
 from auth_utils import requiere_login, requiere_plan
+from planes import resolver_plan_efectivo, tiene_plan_de_pago_activo
 
 
 def test_dominio_desechable_conocido_se_detecta():
@@ -119,3 +120,58 @@ def test_requiere_plan_deja_pasar_a_quien_entra_con_google_sin_el_claim_explicit
         cliente = mini_app.test_client()
         resp = cliente.get("/solo-basico", headers={"Authorization": "Bearer x"})
     assert resp.status_code == 200
+
+
+# Quien ya paga por una oposición no debe seguir recibiendo el "empujón" de
+# la prueba gratuita de 7 días al mirar otra que todavía no ha contratado --
+# ese regalo es para captar cuentas nuevas, no un extra permanente para
+# quien ya es cliente (ver planes.tiene_plan_de_pago_activo). El bug real
+# reportado: un administrador con planes básico/premium contratados en
+# otras oposiciones veía "te quedan X días de prueba" (o, peor, "tu prueba
+# ha terminado") al mirar una oposición sin contratar.
+
+def test_tiene_plan_de_pago_activo_detecta_cualquier_suscripcion_de_pago():
+    assert tiene_plan_de_pago_activo({
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
+    }) is True
+
+
+def test_tiene_plan_de_pago_activo_ignora_planes_gratis_o_inactivos():
+    assert tiene_plan_de_pago_activo({"suscripciones": {"AGE": {"plan": "gratis"}}}) is False
+    assert tiene_plan_de_pago_activo({
+        "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "past_due"}}
+    }) is False
+    assert tiene_plan_de_pago_activo({}) is False
+
+
+def test_resolver_plan_efectivo_no_da_prueba_a_quien_ya_paga_otra_oposicion():
+    fin_prueba = (datetime.utcnow() + timedelta(days=5)).isoformat()
+    datos = {
+        "prueba_fin": fin_prueba,
+        "suscripciones": {
+            "AGE": {"plan": "premium", "subscription_status": "active"},
+            "AUXILIAR": {"plan": "gratis"},
+        },
+    }
+    plan, sub = resolver_plan_efectivo(datos, oposicion="AUXILIAR")
+    assert plan == "gratis"
+    assert sub.get("subscription_status") != "trialing"
+
+
+def test_resolver_plan_efectivo_da_prueba_a_quien_nunca_ha_pagado_nada():
+    # Mismo escenario pero sin ninguna suscripción de pago -- la prueba
+    # gratuita de la cuenta nueva debe seguir funcionando igual que antes.
+    fin_prueba = (datetime.utcnow() + timedelta(days=5)).isoformat()
+    datos = {"prueba_fin": fin_prueba, "suscripciones": {"AUXILIAR": {"plan": "gratis"}}}
+    plan, sub = resolver_plan_efectivo(datos, oposicion="AUXILIAR")
+    assert plan == "premium"
+    assert sub.get("subscription_status") == "trialing"
+
+
+def test_perfil_usuario_expone_tiene_plan_de_pago(db):
+    db.sembrar(("usuarios", "u1"), {
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}},
+    })
+    perfil = obtener_perfil_usuario(db, "u1", oposicion="AUXILIAR")
+    assert perfil["tiene_plan_de_pago"] is True
+    assert perfil["plan"] == "gratis"

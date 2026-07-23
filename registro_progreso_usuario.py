@@ -3,7 +3,7 @@ from google.cloud import firestore
 
 from oposiciones import OPOSICION_POR_DEFECTO
 from email_utils import enviar_email_bienvenida
-from planes import DURACION_PRUEBA_DIAS, prueba_activa, resolver_plan_efectivo
+from planes import DURACION_PRUEBA_DIAS, prueba_activa, resolver_plan_efectivo, tiene_plan_de_pago_activo
 from dominios_desechables import es_dominio_email_desechable
 from utils import calcular_resultado_test, ejecutar_en_transaccion
 
@@ -337,7 +337,7 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
     if not doc.exists:
         perfil = {
             "suscripciones": {}, "email": None, "nombre": "", "apellidos": "", "telefono": "", "direccion": "",
-            "prueba_activa": False, "prueba_fin": None,
+            "prueba_activa": False, "prueba_fin": None, "tiene_plan_de_pago": False,
         }
         if oposicion:
             perfil.update({
@@ -361,6 +361,11 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
         # si tiene que bloquear la página (ver assets/plan.js).
         "prueba_activa": prueba_activa(datos),
         "prueba_fin": datos.get("prueba_fin"),
+        # Si ya paga por otra oposición, el frontend no debe hablarle de
+        # "prueba" (ni cuenta atrás ni "ha terminado") al mirar una que
+        # todavía no ha contratado -- ver tiene_plan_de_pago_activo en
+        # planes.py y su uso en assets/plan.js / assets/auth.js.
+        "tiene_plan_de_pago": tiene_plan_de_pago_activo(datos),
     }
     if oposicion:
         if es_admin:

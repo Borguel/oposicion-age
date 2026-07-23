@@ -87,16 +87,27 @@ export function mostrarPantallaBloqueo(planMinimo, perfil) {
   // auth_utils.requiere_login), así que el mensaje debe ser "confirma tu
   // correo", no "tu prueba ha terminado" (sonaría a que la perdió).
   const pruebaPendienteDeVerificar = sinNingunPlan && !perfil.prueba_fin;
+  // Alguien que YA paga por otra oposición (perfil.tiene_plan_de_pago) no
+  // ha "perdido ninguna prueba" al mirar una oposición que sencillamente
+  // todavía no ha contratado -- decirle "tu prueba ha terminado" (pensado
+  // para quien nunca ha pagado nada) sonaría a que se le acabó algo que en
+  // realidad nunca llegó a empezar aquí. Ver tiene_plan_de_pago_activo en
+  // planes.py.
+  const yaEsClienteDeOtraOposicion = sinNingunPlan && !pruebaPendienteDeVerificar && perfil.tiene_plan_de_pago;
   const titulo = pruebaPendienteDeVerificar
     ? "Confirma tu correo para empezar tu prueba gratuita"
-    : sinNingunPlan
-      ? "Tu prueba gratuita ha terminado"
-      : `Esta herramienta requiere el plan ${nombrePlan}`;
+    : yaEsClienteDeOtraOposicion
+      ? "Añade esta oposición a tu plan"
+      : sinNingunPlan
+        ? "Tu prueba gratuita ha terminado"
+        : `Esta herramienta requiere el plan ${nombrePlan}`;
   const cuerpo = pruebaPendienteDeVerificar
     ? "En cuanto confirmes tu correo electrónico se activarán tus 7 días de prueba con acceso Premium. Revisa tu bandeja de entrada (y la carpeta de spam), o pide que te lo reenviemos."
-    : sinNingunPlan
-      ? "Elige un plan para seguir usando Domina tu Opo. Tu progreso y tus datos siguen a salvo, y podrás retomarlo en cuanto te suscribas."
-      : `Tu plan actual (${NOMBRE_PLAN[perfil.plan] || perfil.plan}) no incluye esta herramienta.`;
+    : yaEsClienteDeOtraOposicion
+      ? "Ya tienes un plan activo en Domina tu Opo, pero todavía no incluye esta oposición. Añádela desde Planes para acceder a esta herramienta aquí también."
+      : sinNingunPlan
+        ? "Elige un plan para seguir usando Domina tu Opo. Tu progreso y tus datos siguen a salvo, y podrás retomarlo en cuanto te suscribas."
+        : `Tu plan actual (${NOMBRE_PLAN[perfil.plan] || perfil.plan}) no incluye esta herramienta.`;
   const botones = pruebaPendienteDeVerificar
     ? `<button type="button" class="age-btn age-btn-primary" id="age-bloqueo-reenviar">Reenviar correo de confirmación</button>
        <a class="age-btn age-btn-outline" href="/zona-opositor/">Volver a Zona Opositor</a>`

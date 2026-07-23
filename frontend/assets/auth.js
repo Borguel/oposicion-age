@@ -795,6 +795,15 @@ async function inyectarBannerPrueba(user) {
   const { obtenerPlan } = await import("/assets/plan.js");
   const perfil = await obtenerPlan(true);
 
+  // Quien ya paga por otra oposición no necesita que se le siga hablando
+  // de "prueba" al mirar una que todavía no ha contratado -- ni la cuenta
+  // atrás (esa oposición en concreto ya no recibe el empujón de prueba,
+  // ver tiene_plan_de_pago_activo en planes.py) ni el "tu prueba ha
+  // terminado" (nunca llegó a empezar aquí, así que no puede haber
+  // "terminado"). El aviso real de que le falta contratar ESTA oposición
+  // ya lo da la pantalla de bloqueo de la propia herramienta (plan.js).
+  if (perfil.tiene_plan_de_pago) return;
+
   const banner = document.createElement("div");
   banner.className = "age-banner-prueba";
 
