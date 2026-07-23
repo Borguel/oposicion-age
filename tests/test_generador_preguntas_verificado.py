@@ -305,7 +305,9 @@ def test_generar_test_verificado_sobrevive_a_un_fallo_inesperado_de_un_hueco(db)
     # directamente sobre _generar_pregunta_verificada, simulando por ejemplo
     # una forma de respuesta de DeepSeek que ningún "continue" contemplaba),
     # las preguntas que los OTROS hilos ya habían aceptado no deben perderse
-    # ni propagar el error hacia arriba -- se cuenta como una más descartada.
+    # ni propagar el error hacia arriba -- se cuenta como una más descartada,
+    # pero el relleno (ver test siguiente) le da una oportunidad más y
+    # recupera igualmente el número de preguntas pedido.
     relleno = " ".join(["palabra"] * 30)
     db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
         "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del subbloque. {relleno}"
@@ -338,9 +340,79 @@ def test_generar_test_verificado_sobrevive_a_un_fallo_inesperado_de_un_hueco(db)
         )
 
     # Las 2 preguntas de los huecos que SÍ funcionaron llegan igual, en vez
-    # de perderse todas por el fallo del tercero.
+    # de perderse todas por el fallo del tercero, y el relleno recupera la
+    # tercera que faltaba -- las 3 pedidas llegan igual.
+    assert len(resultado["test"]) == 3
+    assert resultado["descartadas"] == 1
+
+
+def test_generar_test_verificado_rellena_hueco_agotado_con_otro_tema(db):
+    # Caso real reportado: pedir 100 preguntas de AGE con temario de sobra y
+    # recibir 99 -- un hueco concreto agotó sus MAX_INTENTOS_POR_PREGUNTA
+    # (aquí forzado devolviendo None, como cuando la verificación rechaza la
+    # pregunta las 4 veces) no debe traducirse en menos preguntas de las
+    # pedidas si otro tema todavía tiene contenido disponible.
+    relleno = " ".join(["palabra"] * 30)
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del tema 1. {relleno}"
+    })
+    db.sembrar(("Temario AGE", "bloque_02", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 19/2013", "texto": f"Artículo 3. Contenido del tema 2. {relleno}"
+    })
+
+    contador = itertools.count()
+    lock_contador = threading.Lock()
+
+    def _falla_siempre_el_tema_2(subbloques_tema, tema_id, oposicion, subbloques_ya_usados,
+                                  preguntas_ya_aceptadas, lock, on_usage=None, max_intentos=4):
+        if tema_id == "bloque_02-tema_01":
+            return None  # agotó sus intentos "de verdad" -- ninguna superó la verificación
+        with lock_contador:
+            n = next(contador)
+        return {
+            "pregunta": f"¿Pregunta {n}?", "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"},
+            "respuesta_correcta": "A", "explicacion": "Explicación suficientemente larga para pasar.",
+            "tema_id": tema_id, "tipo_pregunta": "memoria_literal",
+        }
+
+    with patch("generador_preguntas_verificado._generar_pregunta_verificada",
+               side_effect=_falla_siempre_el_tema_2), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        resultado = generar_test_verificado(
+            db, temas=["bloque_01-tema_01", "bloque_02-tema_01"], num_preguntas=2,
+            coleccion="Temario AGE", oposicion="AGE"
+        )
+
+    # Las 2 preguntas pedidas llegan igual: la del tema 2 se pierde, pero el
+    # relleno la recupera generando otra en el tema 1 (que sí tiene cupo).
     assert len(resultado["test"]) == 2
     assert resultado["descartadas"] == 1
+    assert "advertencia" not in resultado
+
+
+def test_generar_test_verificado_si_el_relleno_tambien_falla_avisa_del_numero_real(db):
+    # Si NINGÚN tema tiene ya más contenido que dé preguntas válidas (aquí
+    # forzado para que todo falle), el relleno no debe insistir sin límite
+    # ni fingir que llegó al número pedido -- se entrega lo que haya y se
+    # avisa, igual que antes de que existiera el relleno.
+    relleno = " ".join(["palabra"] * 30)
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del tema. {relleno}"
+    })
+
+    with patch("generador_preguntas_verificado._generar_pregunta_verificada", return_value=None), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        resultado = generar_test_verificado(
+            db, temas=["bloque_01-tema_01"], num_preguntas=3,
+            coleccion="Temario AGE", oposicion="AGE"
+        )
+
+    assert len(resultado["test"]) == 0
+    # 3 huecos originales + 3 intentos de relleno (uno por hueco que faltaba)
+    # -- el relleno también cuenta como descartada cuando falla de verdad.
+    assert resultado["descartadas"] == 6
+    assert "advertencia" in resultado
+    assert "0 de 3" in resultado["advertencia"]
 
 
 def test_generar_test_verificado_modo_realista_pondera_por_bloque(db):

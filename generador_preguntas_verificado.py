@@ -19,9 +19,14 @@ ya retirado): aquí,
      se corrige/parchea) y se reintenta desde cero -- nueva elección de
      artículo, nuevo tipo de pregunta, nueva generación, nueva
      verificación -- hasta MAX_INTENTOS_POR_PREGUNTA veces. Si se agotan,
-     ese hueco se pierde (se avisa al final) en vez de bloquear el resto
-     del test para siempre.
+     ese hueco NO se da por perdido todavía: se le da una oportunidad más
+     en otro tema con contenido disponible (ver el relleno al final de
+     generar_test_verificado) -- con temario de sobra, que a un hueco
+     concreto le toque mala suerte con sus intentos no debería traducirse
+     en menos preguntas de las pedidas. Solo si también esa oportunidad
+     falla se pierde de verdad (se avisa al final).
 """
+import itertools
 import json
 import logging
 import random
@@ -535,6 +540,37 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                     "pregunta": resultado,
                 })
 
+    # Relleno: si algún hueco agotó sus MAX_INTENTOS_POR_PREGUNTA honestamente
+    # (nunca se relaja la verificación para llegar al número pedido), se le da
+    # una oportunidad más por cada uno que falte, en OTRO tema con contenido
+    # disponible (rotando entre los elegidos) -- para que "hay temario de
+    # sobra" no se traduzca en menos preguntas de las pedidas solo porque a
+    # un hueco concreto le tocó mala suerte con sus intentos. Secuencial (no
+    # merece la pena otro ThreadPoolExecutor para lo que normalmente es 1-2
+    # preguntas) y sin llamar a on_progreso (el "total" ya se anunció al
+    # frontend; el resultado final de todas formas reconcilia cualquier
+    # pregunta que falte, ver test-personalizado/script.js).
+    if len(preguntas) < num_preguntas and temas_con_contenido:
+        faltan = num_preguntas - len(preguntas)
+        ciclo_temas = itertools.cycle(temas_con_contenido)
+        for _ in range(faltan):
+            tid = next(ciclo_temas)
+            try:
+                resultado = _generar_pregunta_verificada(
+                    subbloques_por_tema[tid], tid, oposicion,
+                    subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add,
+                )
+            except Exception:
+                logger.exception("Fallo inesperado en el relleno de un hueco del test personalizado")
+                resultado = None
+            completadas += 1
+            if resultado:
+                preguntas.append(resultado)
+                guardar_pregunta_generada(db, oposicion, resultado)
+                limpiar_cache_preguntas_banco_ia(oposicion)
+            else:
+                descartadas += 1
+
     # Con uid (Test Personalizado): la generación corre en un hilo de fondo
     # desligado de la petición, así que se vuelca DIRECTO a Firestore. Sin uid
     # (llamadas dentro del propio hilo de la petición): se vuelca a flask.g y
@@ -547,6 +583,7 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     if len(preguntas) < num_preguntas:
         resultado_final["advertencia"] = (
             f"Se generaron {len(preguntas)} de {num_preguntas} preguntas -- el resto no llegó a superar "
-            "la verificación jurídica tras varios intentos y se descartó en vez de entregarse sin validar."
+            "la verificación de calidad tras varios intentos (incluyendo un intento de relleno en otro "
+            "tema) y se descartó en vez de entregarse sin validar."
         )
     return resultado_final
