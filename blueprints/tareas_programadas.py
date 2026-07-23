@@ -19,6 +19,7 @@ from email_utils import (
 from planes import ORDEN_PLANES, mejor_plan
 from push_utils import enviar_push
 from coste_ia import resumen_coste_usuario
+from vigilancia_boe import detectar_avisos_oficiales, detectar_cambios_leyes_vigiladas
 
 logger = logging.getLogger(__name__)
 bp = Blueprint("tareas_programadas", __name__)
@@ -185,3 +186,22 @@ def vigilar_gasto_ia():
 
     logger.info("Vigilancia de gasto en IA: hoy=%s€, aviso_enviado=%s", gasto_hoy, aviso_enviado)
     return jsonify({"gasto_hoy": gasto_hoy, "aviso_enviado": aviso_enviado})
+
+
+@bp.route("/tareas/vigilar-boe", methods=["POST"])
+def vigilar_boe():
+    """Revisa el BOE (leyes vigiladas + sumario diario) y deja en Firestore
+    propuestas/avisos PENDIENTES de revisión -- nunca publica nada solo, el
+    dueño tiene que aprobarlos desde el panel de admin (ver vigilancia_boe.py
+    y blueprints/admin.py)."""
+    if not _clave_cron_valida():
+        return jsonify({"error": "No autorizado"}), 401
+
+    avisos_creados = detectar_avisos_oficiales(db)
+    cambios_propuestos = detectar_cambios_leyes_vigiladas(db)
+
+    logger.info(
+        "Vigilancia BOE: %s avisos oficiales nuevos, %s propuestas de cambio de temario",
+        avisos_creados, cambios_propuestos,
+    )
+    return jsonify({"avisos_creados": avisos_creados, "cambios_propuestos": cambios_propuestos})

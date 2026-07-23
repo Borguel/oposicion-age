@@ -307,6 +307,56 @@ async function cargarRepasoPendiente() {
   }
 }
 
+// El título y el enlace de un aviso oficial vienen del BOE (vía la
+// vigilancia automática) y se interpolan en innerHTML -- se escapan para
+// que un carácter "<" o similar en el texto real de una disposición no se
+// interprete como HTML, mismo motivo que resultados-test.js:escaparHtml.
+function escapeHtml(texto) {
+  const div = document.createElement("div");
+  div.textContent = texto ?? "";
+  return div.innerHTML;
+}
+
+// Avisos oficiales reales (convocatorias, listas de admitidos, fechas de
+// examen...) para la oposición actual, detectados por la vigilancia del
+// BOE y ya aprobados a mano por el dueño desde el panel de admin (ver
+// blueprints/temario.py:avisos_oficiales) -- no confundir con AVISOS de
+// abajo, que son consejos de uso estáticos, no contenido real.
+const ETIQUETA_TIPO_AVISO = {
+  convocatoria: "Convocatoria",
+  lista_admitidos: "Lista de admitidos",
+  tribunal: "Tribunal calificador",
+  fecha_examen: "Fecha de examen",
+  aprobados: "Relación de aprobados",
+  otro: "Aviso oficial",
+};
+
+async function cargarAvisosOficiales() {
+  try {
+    const token = await idToken();
+    const oposicion = obtenerOposicionActual();
+    const res = await fetch(`${BACKEND_URL}/avisos-oficiales?oposicion=${encodeURIComponent(oposicion)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const { avisos } = await res.json();
+    const seccion = document.getElementById("zona-avisos-oficiales");
+    const lista = document.getElementById("zona-avisos-oficiales-lista");
+    if (!seccion || !lista || !avisos || !avisos.length) return;
+
+    lista.innerHTML = avisos.map((a) => `
+      <div class="zona-aviso-oficial-item">
+        <span class="zona-aviso-oficial-tipo">${ETIQUETA_TIPO_AVISO[a.tipo] || ETIQUETA_TIPO_AVISO.otro}</span>
+        <p class="zona-aviso-oficial-titulo">${escapeHtml(a.titulo)}</p>
+        ${a.url_boe ? `<a class="zona-aviso-oficial-link" href="${escapeHtml(a.url_boe)}" target="_blank" rel="noopener">Ver en el BOE ↗</a>` : ""}
+      </div>
+    `).join("");
+    seccion.style.display = "";
+  } catch (e) {
+    console.error("Error cargando avisos oficiales:", e);
+  }
+}
+
 // Avisos rotativos con recomendaciones de uso, inspirados en el panel de
 // inicio de la competencia (aula.opositatest.com): cada uno enlaza a una
 // herramienta real de la web, no son solo texto decorativo.
@@ -474,6 +524,7 @@ async function iniciar() {
   cargarProgresoInsignias();
   cargarTestEnProgreso();
   cargarRepasoPendiente();
+  cargarAvisosOficiales();
   iniciarBotonNotificaciones();
   inicializarCuentaAtras();
   renderAviso();

@@ -1,0 +1,18 @@
+name: Vigilar BOE (avisos oficiales y cambios de temario)
+
+on:
+  schedule:
+    # 06:00 UTC todos los días: el BOE se publica por la mañana, así que a
+    # esta hora ya está disponible el sumario/actualización del día.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  vigilar-boe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al backend
+        run: |
+          curl -sS -X POST "${{ vars.BACKEND_URL || 'https://oposicion-age.onrender.com' }}/tareas/vigilar-boe" \
+            -H "X-Cron-Key: ${{ secrets.CRON_SECRET_KEY }}" \
+            --fail-with-body

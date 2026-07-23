@@ -268,6 +268,11 @@
 .admin-op-linea { padding: 2px 0; }
 .admin-op-correcta { color: var(--age-success, #1e7e34); font-weight: 700; }
 
+/* Vigilancia BOE: diff de un cambio de temario propuesto */
+.admin-boe-diff { margin: 8px 0 10px; font-size: 13.5px; border-radius: 8px; overflow: hidden; }
+.admin-boe-diff-quita { background: var(--age-danger-bg); color: var(--age-danger, #b02a37); text-decoration: line-through; padding: 8px 10px; margin: 0; }
+.admin-boe-diff-pon { background: var(--age-success-bg); color: var(--age-success, #1e7e34); padding: 8px 10px; margin: 0; }
+
 /* Analítica */
 .admin-analitica-fila { display: grid; grid-template-columns: 1fr 120px 74px; align-items: center; gap: 10px; margin: 8px 0; }
 .admin-analitica-tema { font-size: 13.5px; }

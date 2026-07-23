@@ -417,6 +417,12 @@ def resumen():
     ) + sum(
         1 for _ in db.collection("mensajes_soporte").where("estado", "==", "pendiente").stream()
     )
+    cambios_temario_pendientes = sum(
+        1 for _ in db.collection("cambios_temario_propuestos").where("estado", "==", "pendiente").stream()
+    )
+    avisos_oficiales_pendientes = sum(
+        1 for _ in db.collection("avisos_oficiales").where("estado", "==", "pendiente").stream()
+    )
     return jsonify({
         "usuarios_totales": total_usuarios,
         "usuarios_por_plan": por_plan,
@@ -432,6 +438,8 @@ def resumen():
         "tests_total": tests_total,
         "top_temas_fallados": top_temas,
         "reportes_pendientes": reportes_pendientes,
+        "cambios_temario_pendientes": cambios_temario_pendientes,
+        "avisos_oficiales_pendientes": avisos_oficiales_pendientes,
         "oposicion": oposicion,
         "salud_contenido": _salud_contenido(oposicion),
         "preguntas_stats": _preguntas_stats(oposicion),
@@ -1535,6 +1543,136 @@ def reportes_actualizar(rid):
     }, merge=True)
     _registrar_auditoria("reporte_" + estado, rid)
     return jsonify({"mensaje": "Reporte actualizado"})
+
+
+# ============================================================
+# Cambios de temario propuestos por la vigilancia del BOE (ver
+# vigilancia_boe.py + generador_diff_temario.py) -- nunca se aplican solos,
+# alguien con permiso "temario" tiene que aprobarlos aquí.
+# ============================================================
+@bp.route("/admin/api/cambios-temario", methods=["GET"])
+@requiere_permiso("temario")
+def cambios_temario_listar():
+    estado = request.args.get("estado", "pendiente")
+    consulta = db.collection("cambios_temario_propuestos")
+    if estado and estado != "todos":
+        consulta = consulta.where("estado", "==", estado)
+    cambios = []
+    for doc in consulta.stream():
+        d = doc.to_dict() or {}
+        cambios.append({
+            "id": doc.id,
+            "oposicion": d.get("oposicion", ""),
+            "bloque_id": d.get("bloque_id", ""),
+            "tema_id": d.get("tema_id", ""),
+            "subbloque_id": d.get("subbloque_id", ""),
+            "ley_nombre": d.get("ley_nombre", ""),
+            "boe_id": d.get("boe_id", ""),
+            "resumen": d.get("resumen", ""),
+            "texto_eliminar": d.get("texto_eliminar", ""),
+            "texto_anadir": d.get("texto_anadir", ""),
+            "estado": d.get("estado", "pendiente"),
+            "fecha_deteccion": d.get("fecha_deteccion", ""),
+        })
+    cambios.sort(key=lambda c: c.get("fecha_deteccion", ""), reverse=True)
+    return jsonify({"cambios": cambios})
+
+
+@bp.route("/admin/api/cambios-temario/<cid>", methods=["PATCH"])
+@requiere_permiso("temario")
+def cambios_temario_actualizar(cid):
+    data = request.get_json(silent=True) or {}
+    estado = data.get("estado")
+    if estado not in ("pendiente", "aprobado", "descartado"):
+        return jsonify({"error": "Estado no válido"}), 400
+    ref = db.collection("cambios_temario_propuestos").document(cid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "Propuesta no encontrada"}), 404
+    d = doc.to_dict() or {}
+
+    if estado == "aprobado":
+        if not oposicion_valida(d.get("oposicion")):
+            return jsonify({"error": "Oposición no válida en la propuesta"}), 400
+        chunk_ref = (
+            db.collection(coleccion_temario(d["oposicion"])).document(d["bloque_id"])
+            .collection("temas").document(d["tema_id"])
+            .collection("subbloques").document(d["subbloque_id"])
+        )
+        chunk_doc = chunk_ref.get()
+        if not chunk_doc.exists:
+            return jsonify({"error": "El chunk de temario ya no existe"}), 409
+        texto_actual = (chunk_doc.to_dict() or {}).get("texto", "")
+        texto_eliminar = d.get("texto_eliminar", "")
+        if texto_eliminar not in texto_actual:
+            # El chunk cambió desde que se detectó la propuesta (alguien lo
+            # editó a mano, u otra propuesta ya se aplicó antes) -- aplicar
+            # a ciegas podría corromper el texto o no hacer nada; mejor
+            # pedir revisión manual que arriesgarse.
+            return jsonify({
+                "error": "El texto a eliminar ya no coincide con el chunk actual (puede haber cambiado "
+                         "desde que se detectó). Revisa y edita el chunk manualmente desde Temario."
+            }), 409
+        nuevo_texto = texto_actual.replace(texto_eliminar, d.get("texto_anadir", ""), 1)
+        chunk_ref.update({"texto": nuevo_texto})
+        _limpiar_cache_temario()
+
+    ref.set({
+        "estado": estado,
+        "revisado_por": g.uid,
+        "fecha_revision": datetime.utcnow().isoformat(),
+    }, merge=True)
+    _registrar_auditoria("cambio_temario_" + estado, cid, d.get("resumen", ""))
+    return jsonify({"mensaje": "Propuesta actualizada"})
+
+
+# ============================================================
+# Avisos oficiales detectados en el sumario del BOE (ver vigilancia_boe.py)
+# -- nunca se muestran a los usuarios hasta que alguien con permiso
+# "reportes" los publica aquí.
+# ============================================================
+@bp.route("/admin/api/avisos-oficiales", methods=["GET"])
+@requiere_permiso("reportes")
+def avisos_oficiales_listar():
+    estado = request.args.get("estado", "pendiente")
+    consulta = db.collection("avisos_oficiales")
+    if estado and estado != "todos":
+        consulta = consulta.where("estado", "==", estado)
+    avisos = []
+    for doc in consulta.stream():
+        d = doc.to_dict() or {}
+        avisos.append({
+            "id": doc.id,
+            "oposicion": d.get("oposicion", ""),
+            "tipo": d.get("tipo", ""),
+            "titulo": d.get("titulo", ""),
+            "resumen": d.get("resumen", ""),
+            "url_boe": d.get("url_boe", ""),
+            "fecha_boe": d.get("fecha_boe", ""),
+            "estado": d.get("estado", "pendiente"),
+            "fecha_deteccion": d.get("fecha_deteccion", ""),
+        })
+    avisos.sort(key=lambda a: a.get("fecha_deteccion", ""), reverse=True)
+    return jsonify({"avisos": avisos})
+
+
+@bp.route("/admin/api/avisos-oficiales/<aid>", methods=["PATCH"])
+@requiere_permiso("reportes")
+def avisos_oficiales_actualizar(aid):
+    data = request.get_json(silent=True) or {}
+    estado = data.get("estado")
+    if estado not in ("pendiente", "publicado", "descartado"):
+        return jsonify({"error": "Estado no válido"}), 400
+    ref = db.collection("avisos_oficiales").document(aid)
+    if not ref.get().exists:
+        return jsonify({"error": "Aviso no encontrado"}), 404
+    ref.set({
+        "estado": estado,
+        "revisado_por": g.uid,
+        "fecha_revision": datetime.utcnow().isoformat(),
+    }, merge=True)
+    _registrar_auditoria("aviso_oficial_" + estado, aid)
+    return jsonify({"mensaje": "Aviso actualizado"})
 
 
 # ============================================================

@@ -16,7 +16,7 @@ function inyectarIconosEstaticos() {
 // Qué permiso necesita cada pestaña. Las de 'admin' solo las ve el super-admin.
 const PERMISO_POR_PESTANA = {
   dashboard: "cualquiera", temario: "temario", preguntas: "temario", analitica: "temario",
-  usuarios: "usuarios", reportes: "reportes", bajas: "reportes", limites: "admin", auditoria: "admin", sistema: "admin",
+  usuarios: "usuarios", reportes: "reportes", boe: "temario", bajas: "reportes", limites: "admin", auditoria: "admin", sistema: "admin",
 };
 let _permisos = { admin: false, permisos: [] };
 function puedeVer(pestana) {
@@ -169,6 +169,7 @@ const RENDERS = {
   analitica: renderAnalitica,
   usuarios: renderUsuarios,
   reportes: renderReportes,
+  boe: renderBoe,
   bajas: renderBajas,
   limites: renderLimites,
   auditoria: renderAuditoria,
@@ -176,7 +177,7 @@ const RENDERS = {
 };
 const TITULO_POR_PESTANA = {
   dashboard: "Dashboard", temario: "Temario", preguntas: "Preguntas", analitica: "Analítica",
-  usuarios: "Usuarios", reportes: "Reportes", bajas: "Bajas", limites: "Límites", auditoria: "Auditoría", sistema: "Sistema",
+  usuarios: "Usuarios", reportes: "Reportes", boe: "Vigilancia BOE", bajas: "Bajas", limites: "Límites", auditoria: "Auditoría", sistema: "Sistema",
 };
 let pestanaActual = "dashboard";
 
@@ -221,6 +222,13 @@ function actualizarBadgeReportes(n) {
   badge.hidden = !n;
 }
 
+function actualizarBadgeBoe(n) {
+  const badge = document.getElementById("badge-boe");
+  if (!badge) return;
+  badge.textContent = n;
+  badge.hidden = !n;
+}
+
 // ===== Dashboard =====
 async function renderDashboard() {
   const panel = document.getElementById("panel-dashboard");
@@ -228,6 +236,7 @@ async function renderDashboard() {
   const d = await apiGet(`/admin/api/resumen?oposicion=${oposicionActual()}`);
   if (!d) return;
   actualizarBadgeReportes(d.reportes_pendientes || 0);
+  actualizarBadgeBoe((d.cambios_temario_pendientes || 0) + (d.avisos_oficiales_pendientes || 0));
 
   const planes = Object.entries(d.usuarios_por_plan || {})
     .map(([plan, n]) => `<span class="admin-chip">${escapeHtml(plan)}: <strong>${n}</strong></span>`).join("");
@@ -1225,6 +1234,120 @@ async function cargarReportes() {
 async function cambiarEstadoReporte(id, estado) {
   const r = await api("PATCH", `/admin/api/reportes/${id}`, { estado });
   if (r) { toast(estado === "revisado" ? "Reporte marcado como revisado." : "Reporte descartado."); cargarReportes(); }
+}
+
+// ===== Vigilancia BOE: cambios de temario propuestos + avisos oficiales =====
+// Nunca se aplican/publican solos -- el dueño los aprueba/descarta aquí
+// (ver vigilancia_boe.py). Mismo patrón que Reportes: filtro por estado +
+// dos vistas dentro de la misma pestaña.
+let estadoBoe = "pendiente";
+let vistaBoe = "cambios";
+async function renderBoe() {
+  const panel = document.getElementById("panel-boe");
+  panel.innerHTML = `
+    <div class="age-card admin-filtros">
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button type="button" class="age-btn ${vistaBoe === "cambios" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="boe-vista-cambios">Cambios de temario</button>
+        <button type="button" class="age-btn ${vistaBoe === "avisos" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="boe-vista-avisos">Avisos oficiales</button>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">Estado
+        <select id="boe-estado" class="age-input" style="max-width:180px;">
+          <option value="pendiente">Pendientes</option>
+          <option value="${vistaBoe === "cambios" ? "aprobado" : "publicado"}">${vistaBoe === "cambios" ? "Aprobados" : "Publicados"}</option>
+          <option value="descartado">Descartados</option>
+          <option value="todos">Todos</option>
+        </select>
+      </label>
+    </div>
+    <div class="age-card"><div id="boe-lista"><p class="admin-cargando">Cargando…</p></div></div>`;
+  const sel = panel.querySelector("#boe-estado");
+  sel.value = estadoBoe;
+  const cargarVistaActual = () => (vistaBoe === "avisos" ? cargarAvisosOficiales() : cargarCambiosTemario());
+  sel.addEventListener("change", () => { estadoBoe = sel.value; cargarVistaActual(); });
+  panel.querySelector("#boe-vista-cambios").addEventListener("click", () => { vistaBoe = "cambios"; estadoBoe = "pendiente"; renderBoe(); });
+  panel.querySelector("#boe-vista-avisos").addEventListener("click", () => { vistaBoe = "avisos"; estadoBoe = "pendiente"; renderBoe(); });
+  cargarVistaActual();
+}
+
+function _diffHtml(texto_eliminar, texto_anadir) {
+  return `
+    <div class="admin-boe-diff">
+      <p class="admin-boe-diff-quita">${escapeHtml(texto_eliminar)}</p>
+      <p class="admin-boe-diff-pon">${escapeHtml(texto_anadir)}</p>
+    </div>`;
+}
+
+async function cargarCambiosTemario() {
+  const cont = document.getElementById("boe-lista");
+  if (!cont) return;
+  cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
+  const d = await apiGet(`/admin/api/cambios-temario?estado=${estadoBoe}`);
+  if (!d) return;
+  const pendientes = (d.cambios || []).filter((c) => c.estado === "pendiente").length;
+  if (estadoBoe === "pendiente") actualizarBadgeBoe(pendientes + _avisosPendientesCache);
+  if (!(d.cambios || []).length) {
+    cont.innerHTML = `<p class="admin-vacio">No hay cambios de temario en este estado. ${icono("check", 14)}</p>`;
+    return;
+  }
+  const clase = (e) => e === "aprobado" ? "admin-estado-revisado" : e === "descartado" ? "admin-estado-descartado" : "admin-estado-pendiente";
+  cont.innerHTML = d.cambios.map((c) => `
+    <div class="admin-reporte">
+      <div class="admin-reporte-cab">
+        <span class="admin-reporte-estado ${clase(c.estado)}">${escapeHtml(c.estado)}</span>
+        <span class="admin-reporte-meta">${escapeHtml(c.oposicion || "-")} · ${escapeHtml(c.bloque_id || "")}/${escapeHtml(c.tema_id || "")} · ${escapeHtml(fechaCorta(c.fecha_deteccion))}</span>
+      </div>
+      <p class="admin-reporte-preg">${escapeHtml(c.resumen)}</p>
+      <p class="admin-reporte-meta"><strong>Ley:</strong> ${escapeHtml(c.ley_nombre || "-")}</p>
+      ${_diffHtml(c.texto_eliminar, c.texto_anadir)}
+      <div class="admin-reporte-acciones">
+        ${c.estado !== "aprobado" ? `<button class="age-btn age-btn-primary admin-mini" data-aprobar="${escapeHtml(c.id)}">Aprobar y publicar</button>` : ""}
+        ${c.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-descartar-cambio="${escapeHtml(c.id)}">Descartar</button>` : ""}
+      </div>
+    </div>`).join("");
+  cont.querySelectorAll("[data-aprobar]").forEach((b) => b.addEventListener("click", () => cambiarEstadoCambioTemario(b.dataset.aprobar, "aprobado")));
+  cont.querySelectorAll("[data-descartar-cambio]").forEach((b) => b.addEventListener("click", () => cambiarEstadoCambioTemario(b.dataset.descartarCambio, "descartado")));
+}
+
+async function cambiarEstadoCambioTemario(id, estado) {
+  const r = await api("PATCH", `/admin/api/cambios-temario/${id}`, { estado });
+  if (r) { toast(estado === "aprobado" ? "Cambio aplicado al temario." : "Propuesta descartada."); cargarCambiosTemario(); }
+}
+
+let _avisosPendientesCache = 0;
+async function cargarAvisosOficiales() {
+  const cont = document.getElementById("boe-lista");
+  if (!cont) return;
+  cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
+  const d = await apiGet(`/admin/api/avisos-oficiales?estado=${estadoBoe}`);
+  if (!d) return;
+  const pendientes = (d.avisos || []).filter((a) => a.estado === "pendiente").length;
+  if (estadoBoe === "pendiente") { _avisosPendientesCache = pendientes; actualizarBadgeBoe(pendientes); }
+  if (!(d.avisos || []).length) {
+    cont.innerHTML = `<p class="admin-vacio">No hay avisos oficiales en este estado. ${icono("check", 14)}</p>`;
+    return;
+  }
+  const clase = (e) => e === "publicado" ? "admin-estado-revisado" : e === "descartado" ? "admin-estado-descartado" : "admin-estado-pendiente";
+  cont.innerHTML = d.avisos.map((a) => `
+    <div class="admin-reporte">
+      <div class="admin-reporte-cab">
+        <span class="admin-reporte-estado ${clase(a.estado)}">${escapeHtml(a.estado)}</span>
+        <span class="admin-reporte-meta">${escapeHtml(a.oposicion || "-")} · ${escapeHtml(a.tipo || "")} · ${escapeHtml(fechaCorta(a.fecha_deteccion))}</span>
+      </div>
+      <p class="admin-reporte-preg">${escapeHtml(a.titulo)}</p>
+      ${a.resumen ? `<p class="admin-reporte-motivo">${escapeHtml(a.resumen)}</p>` : ""}
+      ${a.url_boe ? `<p class="admin-reporte-meta"><a href="${escapeHtml(a.url_boe)}" target="_blank" rel="noopener">Ver en el BOE ↗</a></p>` : ""}
+      <div class="admin-reporte-acciones">
+        ${a.estado !== "publicado" ? `<button class="age-btn age-btn-primary admin-mini" data-publicar="${escapeHtml(a.id)}">Publicar</button>` : ""}
+        ${a.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-descartar-aviso="${escapeHtml(a.id)}">Descartar</button>` : ""}
+      </div>
+    </div>`).join("");
+  cont.querySelectorAll("[data-publicar]").forEach((b) => b.addEventListener("click", () => cambiarEstadoAvisoOficial(b.dataset.publicar, "publicado")));
+  cont.querySelectorAll("[data-descartar-aviso]").forEach((b) => b.addEventListener("click", () => cambiarEstadoAvisoOficial(b.dataset.descartarAviso, "descartado")));
+}
+
+async function cambiarEstadoAvisoOficial(id, estado) {
+  const r = await api("PATCH", `/admin/api/avisos-oficiales/${id}`, { estado });
+  if (r) { toast(estado === "publicado" ? "Aviso publicado." : "Aviso descartado."); cargarAvisosOficiales(); }
 }
 
 async function cargarSoporte() {

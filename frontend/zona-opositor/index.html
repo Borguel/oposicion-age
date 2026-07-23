@@ -58,6 +58,16 @@
       <div class="zona-mis-cosas-card" id="zona-hacer-ahora-lista"></div>
     </section>
 
+    <!-- Avisos oficiales (convocatorias, listas de admitidos, fechas de
+         examen...) detectados por la vigilancia del BOE y aprobados a mano
+         desde el panel de admin -- ver blueprints/temario.py:avisos_oficiales.
+         Oculta por defecto: solo se muestra si hay al menos un aviso
+         publicado para la oposición actual. -->
+    <section class="age-card zona-avisos-oficiales-card" id="zona-avisos-oficiales" style="display:none;">
+      <h3><span data-icon="bandera" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Avisos oficiales</h3>
+      <div id="zona-avisos-oficiales-lista"></div>
+    </section>
+
     <section class="age-card zona-onboarding-card" id="zona-onboarding" style="display:none;">
       <div class="zona-onboarding-cabecera">
         <h3>Primeros pasos</h3>

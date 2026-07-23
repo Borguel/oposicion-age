@@ -874,3 +874,107 @@ def test_bajas_sin_ninguna_no_falla(client, db):
         d = client.get("/admin/api/bajas", headers=_AUTH).get_json()
     assert d["total"] == 0
     assert d["comentarios_recientes"] == []
+
+
+# ---------- Vigilancia BOE: cambios de temario propuestos ----------
+def test_cambios_temario_requiere_permiso_temario(client, db):
+    with _como(admin=False, uid="mod1", permisos=["reportes"]):
+        assert client.get("/admin/api/cambios-temario?estado=pendiente", headers=_AUTH).status_code == 403
+
+
+def test_cambios_temario_lista_solo_el_estado_pedido(client, db):
+    db.sembrar(("cambios_temario_propuestos", "c1"), {
+        "oposicion": "AGE", "bloque_id": "bloque_01", "tema_id": "tema_01", "subbloque_id": "sub_1",
+        "ley_nombre": "TREBEP", "resumen": "El plazo cambia.", "texto_eliminar": "quince días",
+        "texto_anadir": "veinte días", "estado": "pendiente", "fecha_deteccion": "2026-01-01T00:00:00",
+    })
+    db.sembrar(("cambios_temario_propuestos", "c2"), {"estado": "descartado", "fecha_deteccion": "2026-01-01T00:00:00"})
+    with _como():
+        d = client.get("/admin/api/cambios-temario?estado=pendiente", headers=_AUTH).get_json()
+    assert len(d["cambios"]) == 1
+    assert d["cambios"][0]["id"] == "c1"
+    assert d["cambios"][0]["resumen"] == "El plazo cambia."
+
+
+def test_cambios_temario_aprobar_aplica_el_cambio_al_chunk(client, db):
+    _sembrar_tema(db)  # texto = "Texto del chunk 1."
+    db.sembrar(("cambios_temario_propuestos", "c1"), {
+        "oposicion": "AGE", "bloque_id": "bloque_01", "tema_id": "tema_01", "subbloque_id": "sub_1",
+        "resumen": "Cambia el chunk", "texto_eliminar": "chunk 1", "texto_anadir": "chunk actualizado",
+        "estado": "pendiente",
+    })
+    with _como():
+        resp = client.patch("/admin/api/cambios-temario/c1", json={"estado": "aprobado"}, headers=_AUTH)
+    assert resp.status_code == 200
+    chunk = db.leer(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"))
+    assert chunk["texto"] == "Texto del chunk actualizado."
+    propuesta = db.leer(("cambios_temario_propuestos", "c1"))
+    assert propuesta["estado"] == "aprobado"
+    assert propuesta["revisado_por"] == "admin1"
+
+
+def test_cambios_temario_aprobar_falla_si_el_chunk_ya_no_coincide(client, db):
+    _sembrar_tema(db)
+    db.sembrar(("cambios_temario_propuestos", "c1"), {
+        "oposicion": "AGE", "bloque_id": "bloque_01", "tema_id": "tema_01", "subbloque_id": "sub_1",
+        "resumen": "Cambia el chunk", "texto_eliminar": "un texto que ya no está", "texto_anadir": "nuevo",
+        "estado": "pendiente",
+    })
+    with _como():
+        resp = client.patch("/admin/api/cambios-temario/c1", json={"estado": "aprobado"}, headers=_AUTH)
+    assert resp.status_code == 409
+    # No se ha tocado el chunk ni el estado de la propuesta.
+    chunk = db.leer(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"))
+    assert chunk["texto"] == "Texto del chunk 1."
+    assert db.leer(("cambios_temario_propuestos", "c1"))["estado"] == "pendiente"
+
+
+def test_cambios_temario_descartar_no_toca_el_chunk(client, db):
+    _sembrar_tema(db)
+    db.sembrar(("cambios_temario_propuestos", "c1"), {
+        "oposicion": "AGE", "bloque_id": "bloque_01", "tema_id": "tema_01", "subbloque_id": "sub_1",
+        "texto_eliminar": "chunk 1", "texto_anadir": "chunk actualizado", "estado": "pendiente",
+    })
+    with _como():
+        resp = client.patch("/admin/api/cambios-temario/c1", json={"estado": "descartado"}, headers=_AUTH)
+    assert resp.status_code == 200
+    chunk = db.leer(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"))
+    assert chunk["texto"] == "Texto del chunk 1."
+    assert db.leer(("cambios_temario_propuestos", "c1"))["estado"] == "descartado"
+
+
+# ---------- Vigilancia BOE: avisos oficiales ----------
+def test_avisos_oficiales_requiere_permiso_reportes(client, db):
+    with _como(admin=False, uid="mod1", permisos=["temario"]):
+        assert client.get("/admin/api/avisos-oficiales?estado=pendiente", headers=_AUTH).status_code == 403
+
+
+def test_avisos_oficiales_publicar_y_descartar(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "GACE", "tipo": "convocatoria", "titulo": "Convocatoria GACE 2026",
+        "resumen": "Nueva convocatoria.", "url_boe": "https://boe.es/x", "estado": "pendiente",
+    })
+    with _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "publicado"}, headers=_AUTH)
+        assert resp.status_code == 200
+        d = client.get("/admin/api/avisos-oficiales?estado=publicado", headers=_AUTH).get_json()
+    assert len(d["avisos"]) == 1
+    assert d["avisos"][0]["titulo"] == "Convocatoria GACE 2026"
+    assert db.leer(("avisos_oficiales", "a1"))["revisado_por"] == "admin1"
+
+
+def test_avisos_oficiales_estado_invalido_rechaza(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {"estado": "pendiente"})
+    with _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "lo-que-sea"}, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_resumen_incluye_pendientes_de_vigilancia_boe(client, db):
+    db.sembrar(("cambios_temario_propuestos", "c1"), {"estado": "pendiente"})
+    db.sembrar(("avisos_oficiales", "a1"), {"estado": "pendiente"})
+    db.sembrar(("avisos_oficiales", "a2"), {"estado": "publicado"})
+    with _como():
+        d = client.get("/admin/api/resumen", headers=_AUTH).get_json()
+    assert d["cambios_temario_pendientes"] == 1
+    assert d["avisos_oficiales_pendientes"] == 1
