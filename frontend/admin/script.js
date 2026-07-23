@@ -1286,7 +1286,8 @@ async function _cargarSaludVigilancia() {
 // se amplía esa lista en Python, hay que reflejarlo aquí también.
 const ETIQUETA_TIPO_AVISO_MANUAL = {
   convocatoria: "Convocatoria", lista_admitidos: "Lista de admitidos", tribunal: "Tribunal calificador",
-  fecha_examen: "Fecha de examen", aprobados: "Relación de aprobados", otro: "Aviso oficial",
+  fecha_examen: "Fecha de examen", llamamiento_extraordinario: "Llamamiento extraordinario",
+  aprobados: "Relación de aprobados", otro: "Aviso oficial",
 };
 
 function _formAvisoManualHtml() {

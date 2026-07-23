@@ -56,6 +56,13 @@ ETIQUETA_TIPO_AVISO = {
     "lista_admitidos": "Lista de admitidos",
     "tribunal": "Tribunal calificador",
     "fecha_examen": "Fecha de examen",
+    # Distinto de "fecha_examen" a propósito: ese se reserva para la fecha
+    # del ejercicio de la convocatoria oficial, mientras que un llamamiento
+    # extraordinario es una repesca para un grupo reducido de aspirantes
+    # concretos (ver el caso real que motivó esto: resolución de la
+    # Comisión Permanente de Selección publicada solo en el INAP, no en el
+    # BOE).
+    "llamamiento_extraordinario": "Llamamiento extraordinario",
     "aprobados": "Relación de aprobados",
     "otro": "Aviso oficial",
 }
@@ -121,11 +128,17 @@ def generar_html_avisos(avisos):
     for aviso in avisos:
         tipo_legible = ETIQUETA_TIPO_AVISO.get(aviso.get("tipo"), ETIQUETA_TIPO_AVISO["otro"])
         url_inap = URL_INAP_POR_OPOSICION.get(aviso.get("oposicion"), _URL_INAP_GENERAL)
+        # Sin URL no hay enlace que valga -- un href="" parece un botón
+        # roto en vez de simplemente no estar.
+        enlace_boe = (
+            f'<a href="{aviso.get("url_boe")}" target="_blank" rel="noopener">Ver la resolución oficial ↗</a>'
+            if aviso.get("url_boe") else ""
+        )
         partes.append(f"""      <div class="guia-avisos-oficiales-item">
         <span class="guia-avisos-oficiales-tipo">{tipo_legible}</span>
         <p class="guia-avisos-oficiales-titulo">{aviso.get("titulo", "")}</p>
         <div class="guia-avisos-oficiales-enlaces">
-          <a href="{aviso.get("url_boe", "")}" target="_blank" rel="noopener">Ver la resolución oficial ↗</a>
+          {enlace_boe}
           <a href="{url_inap}" target="_blank" rel="noopener">Ver en INAP ↗</a>
         </div>
       </div>""")

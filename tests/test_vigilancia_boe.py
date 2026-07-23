@@ -61,6 +61,17 @@ def test_detectar_avisos_oficiales_ignora_mencion_sin_tipo_de_aviso_reconocible(
     assert creados == 0
 
 
+def test_clasificar_aviso_llamamiento_extraordinario_no_es_fecha_examen():
+    # Un llamamiento extraordinario (repesca a un grupo reducido de
+    # aspirantes) es distinto de la fecha del ejercicio de la convocatoria
+    # oficial -- tipos separados a propósito, ver ETIQUETA_TIPO_AVISO.
+    titulo = "Resolución por la que se publica el llamamiento extraordinario del ejercicio único"
+    assert vigilancia_boe._clasificar_aviso(titulo) == "llamamiento_extraordinario"
+
+    titulo_normal = "Resolución por la que se fija la fecha de examen del Cuerpo General Administrativo"
+    assert vigilancia_boe._clasificar_aviso(titulo_normal) == "fecha_examen"
+
+
 def test_detectar_avisos_oficiales_ignora_lo_irrelevante_para_las_3_oposiciones(db):
     titulo = "Convocatoria de becas de investigación para el Cuerpo de Ingenieros de Montes"
     with patch("vigilancia_boe.requests.get", return_value=_fake_response(_sumario_con_item("BOE-A-2026-100", titulo))):

@@ -479,12 +479,19 @@ def enviar_email_aviso_oficial(destinatario, titulo, tipo_legible, url_boe, url_
         })
         return
 
+    # Sin URL no hay botón que valga -- un href="" solo parece un botón
+    # roto ("no deja pinchar en nada"), así que mejor no mostrarlo.
+    boton_resolucion = _boton("Ver la resolución oficial", url_boe) if url_boe else ""
+    enlace_inap = (
+        f'<p style="margin:14px 0 0; font-size:13.5px;"><a href="{url_inap}" style="color:{_COLOR_INK_SOFT};">Ver también en INAP →</a></p>'
+        if url_inap else ""
+    )
     cuerpo = f"""
       <p style="margin:0;">{saludo}, se ha publicado una novedad oficial para tu oposición
       (<strong>{oposicion_nombre}</strong>):</p>
       <p><strong>{tipo_legible}:</strong> {titulo}</p>
-      {_boton("Ver la resolución oficial", url_boe)}
-      <p style="margin:14px 0 0; font-size:13.5px;"><a href="{url_inap}" style="color:{_COLOR_INK_SOFT};">Ver también en INAP →</a></p>
+      {boton_resolucion}
+      {enlace_inap}
     """
     html = _plantilla_html(f"{tipo_legible}: {oposicion_nombre}", cuerpo, emoji="📢")
     _enviar(destinatario, "aviso oficial", asunto=f"{tipo_legible} publicada para {oposicion_nombre}", html=html)

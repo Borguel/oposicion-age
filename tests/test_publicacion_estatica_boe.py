@@ -52,6 +52,15 @@ def test_generar_html_avisos_incluye_tipo_titulo_y_enlaces():
     assert pub._URL_INAP_GENERAL in html
 
 
+def test_generar_html_avisos_sin_url_boe_no_muestra_enlace_roto():
+    # Sin url_boe, mejor no mostrar el enlace "Ver la resolución oficial"
+    # que uno con href="" que da la sensación de estar roto.
+    avisos = [{"oposicion": "AGE", "tipo": "llamamiento_extraordinario", "titulo": "Repesca"}]
+    html = pub.generar_html_avisos(avisos)
+    assert 'href=""' not in html
+    assert pub._URL_INAP_GENERAL in html  # el de INAP, siempre fijo, sigue apareciendo
+
+
 def test_actualizar_pagina_sin_github_token_no_llama_a_requests(monkeypatch, db):
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     with patch("publicacion_estatica_boe.requests.get") as mock_get:

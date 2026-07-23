@@ -279,8 +279,10 @@ _TIPO_POR_PALABRA_CLAVE = {
     # examen de repesca) -- esa concreta se publica solo en el portal de
     # firma/validación del INAP (run.gob.es), no en el BOE, así que esta
     # palabra clave solo ayuda si algún día un caso similar sí llega a
-    # publicarse en el sumario del BOE.
-    "llamamiento extraordinario": "fecha_examen",
+    # publicarse en el sumario del BOE. Tipo propio (no "fecha_examen"):
+    # ese se reserva para la fecha del ejercicio de la convocatoria
+    # oficial, un llamamiento extraordinario es otra cosa (repesca).
+    "llamamiento extraordinario": "llamamiento_extraordinario",
 }
 
 
