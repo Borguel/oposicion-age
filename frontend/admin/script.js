@@ -1242,9 +1242,34 @@ async function cambiarEstadoReporte(id, estado) {
 // dos vistas dentro de la misma pestaña.
 let estadoBoe = "pendiente";
 let vistaBoe = "cambios";
+
+// Recordatorio manual del token de GitHub (GITHUB_TOKEN en Render) que usa
+// publicacion_estatica_boe.py para publicar los avisos en las páginas
+// públicas -- un token fine-grained caduca sí o sí (aquí se generó el
+// 23/07/2026 con caducidad de 90 días), y GitHub no lo renueva solo: hay
+// que generar uno nuevo a mano y pegarlo en Render antes de esa fecha, o
+// la publicación en las páginas públicas empezará a fallar en silencio
+// (Firestore + email siguen funcionando igualmente, ver docstring del
+// módulo). Fecha fija a mano porque no hay forma de leer la caducidad real
+// del token desde la propia web.
+const _GITHUB_TOKEN_CADUCA = new Date("2026-10-21T00:00:00");
+
+function _avisoTokenGithubHtml() {
+  const msPorDia = 24 * 60 * 60 * 1000;
+  const diasRestantes = Math.ceil((_GITHUB_TOKEN_CADUCA - new Date()) / msPorDia);
+  const fechaLegible = _GITHUB_TOKEN_CADUCA.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const urgente = diasRestantes <= 14;
+  const estilo = urgente ? "background:var(--age-danger-bg);border-left-color:var(--age-danger);" : "";
+  const mensaje = diasRestantes < 0
+    ? `⚠️ El token de GitHub caducó el <strong>${fechaLegible}</strong>: la publicación automática en las páginas públicas puede estar fallando. Genera uno nuevo (GitHub → Settings → Developer settings → Fine-grained tokens, permiso Contents: Read and write) y actualiza <code>GITHUB_TOKEN</code> en Render.`
+    : `El token de GitHub (<code>GITHUB_TOKEN</code> en Render) caduca el <strong>${fechaLegible}</strong> (quedan ${diasRestantes} días). Antes de esa fecha, genera uno nuevo y actualízalo en Render para que la publicación en las páginas públicas no deje de funcionar.`;
+  return `<div class="admin-aviso" style="${estilo}">${mensaje}</div>`;
+}
+
 async function renderBoe() {
   const panel = document.getElementById("panel-boe");
   panel.innerHTML = `
+    ${_avisoTokenGithubHtml()}
     <div class="age-card admin-filtros">
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button type="button" class="age-btn ${vistaBoe === "cambios" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="boe-vista-cambios">Cambios de temario</button>
