@@ -17,13 +17,41 @@ import {
   updatePassword,
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { firebaseConfig, BACKEND_URL } from "/assets/firebase-config.js";
+import { firebaseConfig, BACKEND_URL, RECAPTCHA_SITE_KEY } from "/assets/firebase-config.js";
 import { inyectarSelectorOposicion, obtenerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
 import { iniciarAnalitica, CLAVE_COOKIES_ACEPTADAS } from "/assets/analytics.js";
 import { activarPopover } from "/assets/popover.js";
 
 const app = initializeApp(firebaseConfig);
+
+// App Check (reCAPTCHA v3, invisible -- no le pide al usuario resolver
+// nada): certifica ante Firebase que quien llama es de verdad esta web, no
+// un script saltándose el navegador. Aplica solo a Authentication/Firestore
+// desde la consola de Firebase (App Check → modo "Monitorizar" primero,
+// "Aplicar" después de comprobar que no bloquea tráfico real).
+//
+// Import DINÁMICO a propósito (no junto a los de arriba): auth.js se carga
+// en TODAS las páginas y construye la nav -- un import estático de un script
+// de terceros (gstatic.com) que no cargase (red, extensión del navegador
+// bloqueando reCAPTCHA, o un test que sustituye firebase-app.js/-auth.js
+// pero no este) rompería la carga de todo el módulo de golpe. Así, si falla,
+// solo se deja de mandar el token de App Check -- el resto de la web sigue
+// funcionando igual que hasta ahora.
+(async () => {
+  try {
+    const { initializeAppCheck, ReCaptchaV3Provider } = await import(
+      "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js"
+    );
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } catch (e) {
+    console.error("No se pudo inicializar App Check:", e);
+  }
+})();
+
 export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
