@@ -64,14 +64,15 @@ _TIMEOUT_SEGUNDOS = 15
 # realidad "la Constitución Española", no el TREBEP -- así que llevaba
 # tiempo vigilando el tema equivocado. Ya corregido abajo.
 #
-# Todos los BOE-A de esta lista están verificados contra el propio "Código
-# electrónico" oficial del BOE -- "Normativa para ingreso en el Cuerpo de
-# Gestión de la Administración Civil del Estado" (código BOE-443, edición
-# actualizada a 24 de junio de 2026; el PDF de ~3.800 páginas está en la
-# raíz del repo, junto con su equivalente para AGE -código 442- y Auxiliar
-# -código 435-, ya usado antes para cargar el Bloque I de Auxiliar). Ese
-# código trae el sumario oficial completo de todas las normas del temario
-# de GACE y el texto consolidado de cada una con su propia "Referencia:
+# Todos los BOE-A de esta lista están verificados contra los "Códigos
+# electrónicos" oficiales del BOE -- "Normativa para ingreso en el Cuerpo
+# de Gestión de la Administración Civil del Estado" (código 443, GACE),
+# "...en el Cuerpo General Administrativo..." (código 442, AGE) y "...en el
+# Cuerpo General Auxiliar..." (código 435, Auxiliar; este último ya se
+# había usado antes para cargar el Bloque I de Auxiliar). Los 3 PDF están
+# en la raíz del repo, edición actualizada entre mayo y junio de 2026. Cada
+# uno trae el sumario oficial completo de las normas del temario de esa
+# oposición y el texto consolidado de cada una con su propia "Referencia:
 # BOE-A-..." -- de ahí se han extraído y contrastado uno a uno los BOE-A de
 # abajo (no de memoria, como en una revisión anterior de este archivo).
 # Aun así, esta lista NO agota el temario entero: cubre las leyes troncales
@@ -98,7 +99,7 @@ LEYES_VIGILADAS = {
     "BOE-A-2015-10566": {
         "nombre": "Ley 40/2015, de Régimen Jurídico del Sector Público (LRJSP)",
         "bloque_tema": [
-            ("AGE", "bloque_01", "tema_08"),
+            ("AGE", "bloque_01", "tema_08"), ("AGE", "bloque_03", "tema_06"),
             ("GACE", "bloque_01", "tema_08"), ("GACE", "bloque_01", "tema_09"),
             ("AUXILIAR", "bloque_01", "tema_08"), ("AUXILIAR", "bloque_01", "tema_11"),
         ],
@@ -108,6 +109,7 @@ LEYES_VIGILADAS = {
         "bloque_tema": [
             ("AGE", "bloque_03", "tema_03"),
             ("GACE", "bloque_04", "tema_11"),
+            ("AUXILIAR", "bloque_01", "tema_11"),
         ],
     },
     "BOE-A-2017-12902": {
@@ -186,6 +188,7 @@ LEYES_VIGILADAS = {
     "BOE-A-2004-21760": {
         "nombre": "Ley Orgánica 1/2004, de Medidas de Protección Integral contra la Violencia de Género",
         "bloque_tema": [
+            ("AGE", "bloque_03", "tema_07"),
             ("GACE", "bloque_03", "tema_09"),
         ],
     },
@@ -205,6 +208,38 @@ LEYES_VIGILADAS = {
         "nombre": "Ley 29/1998, reguladora de la Jurisdicción Contencioso-Administrativa",
         "bloque_tema": [
             ("GACE", "bloque_04", "tema_13"),
+        ],
+    },
+    "BOE-A-2007-19814": {
+        "nombre": "Ley 37/2007, sobre reutilización de la información del sector público",
+        "bloque_tema": [
+            ("AGE", "bloque_01", "tema_06"),
+            ("AUXILIAR", "bloque_01", "tema_06"),
+        ],
+    },
+    "BOE-A-1985-151": {
+        "nombre": "Ley 53/1984, de Incompatibilidades del personal al servicio de las Administraciones Públicas",
+        "bloque_tema": [
+            ("AGE", "bloque_04", "tema_06"),
+        ],
+    },
+    "BOE-A-2000-12140": {
+        "nombre": "Real Decreto Legislativo 4/2000, texto refundido de la Ley sobre Seguridad Social de los Funcionarios Civiles del Estado (MUFACE)",
+        "bloque_tema": [
+            ("AGE", "bloque_04", "tema_07"),
+            ("GACE", "bloque_05", "tema_09"),
+        ],
+    },
+    "BOE-A-2012-5730": {
+        "nombre": "Ley Orgánica 2/2012, de Estabilidad Presupuestaria y Sostenibilidad Financiera",
+        "bloque_tema": [
+            ("AGE", "bloque_05", "tema_01"),
+        ],
+    },
+    "BOE-A-1982-11584": {
+        "nombre": "Ley Orgánica 2/1982, del Tribunal de Cuentas",
+        "bloque_tema": [
+            ("GACE", "bloque_06", "tema_04"),
         ],
     },
 }
