@@ -64,14 +64,22 @@ _TIMEOUT_SEGUNDOS = 15
 # realidad "la Constitución Española", no el TREBEP -- así que llevaba
 # tiempo vigilando el tema equivocado. Ya corregido abajo.
 #
-# Los BOE-A de las leyes NUEVAS de esta revisión (todo salvo el TREBEP, la
-# LGP y la LGSS, verificadas contra el propio PDF fuente en el repo) son de
-# memoria, sin poder verificarlos contra la API real del BOE (bloqueada
-# desde este entorno de desarrollo) -- si alguno fuera incorrecto, el efecto
-# es inofensivo: obtener_metadatos_ley() simplemente no encuentra la ley y
-# esa entrada no genera nunca ninguna propuesta (nunca lanza excepción ni
-# rompe el resto), así que conviene revisar el ID la primera vez que se
-# quiera confiar en que esa ley concreta esté realmente vigilada.
+# Todos los BOE-A de esta lista están verificados contra el propio "Código
+# electrónico" oficial del BOE -- "Normativa para ingreso en el Cuerpo de
+# Gestión de la Administración Civil del Estado" (código BOE-443, edición
+# actualizada a 24 de junio de 2026; el PDF de ~3.800 páginas está en la
+# raíz del repo, junto con su equivalente para AGE -código 442- y Auxiliar
+# -código 435-, ya usado antes para cargar el Bloque I de Auxiliar). Ese
+# código trae el sumario oficial completo de todas las normas del temario
+# de GACE y el texto consolidado de cada una con su propia "Referencia:
+# BOE-A-..." -- de ahí se han extraído y contrastado uno a uno los BOE-A de
+# abajo (no de memoria, como en una revisión anterior de este archivo).
+# Aun así, esta lista NO agota el temario entero: cubre las leyes troncales
+# de mayor peso identificadas hasta ahora, no cada Orden/Resolución menor
+# que también aparece en el código. Si alguna referencia fuera incorrecta
+# de todos modos, el efecto sigue siendo inofensivo: obtener_metadatos_ley()
+# simplemente no encuentra la ley y esa entrada no genera nunca ninguna
+# propuesta (nunca lanza excepción ni rompe el resto).
 LEYES_VIGILADAS = {
     "BOE-A-2015-11719": {
         "nombre": "Real Decreto Legislativo 5/2015, Estatuto Básico del Empleado Público (TREBEP)",
@@ -114,6 +122,89 @@ LEYES_VIGILADAS = {
         "bloque_tema": [
             ("AGE", "bloque_01", "tema_07"),
             ("AUXILIAR", "bloque_01", "tema_07"),
+        ],
+    },
+    "BOE-A-1981-10325": {
+        "nombre": "Ley Orgánica 3/1981, del Defensor del Pueblo",
+        "bloque_tema": [
+            ("GACE", "bloque_01", "tema_02"),
+        ],
+    },
+    "BOE-A-1979-23709": {
+        "nombre": "Ley Orgánica 2/1979, del Tribunal Constitucional",
+        "bloque_tema": [
+            ("GACE", "bloque_01", "tema_03"),
+            ("AUXILIAR", "bloque_01", "tema_02"),
+        ],
+    },
+    "BOE-A-1997-25336": {
+        "nombre": "Ley 50/1997, del Gobierno",
+        "bloque_tema": [
+            ("AGE", "bloque_01", "tema_05"),
+            ("GACE", "bloque_01", "tema_06"),
+            ("AUXILIAR", "bloque_01", "tema_05"),
+        ],
+    },
+    "BOE-A-1985-12666": {
+        "nombre": "Ley Orgánica 6/1985, del Poder Judicial",
+        "bloque_tema": [
+            ("AGE", "bloque_01", "tema_04"),
+            ("GACE", "bloque_01", "tema_07"),
+            ("AUXILIAR", "bloque_01", "tema_04"),
+        ],
+    },
+    "BOE-A-1985-5392": {
+        "nombre": "Ley 7/1985, Reguladora de las Bases del Régimen Local (LRBRL)",
+        "bloque_tema": [
+            ("AGE", "bloque_01", "tema_10"),
+            ("GACE", "bloque_01", "tema_11"),
+            ("AUXILIAR", "bloque_01", "tema_09"),
+        ],
+    },
+    "BOE-A-2000-544": {
+        "nombre": "Ley Orgánica 4/2000, sobre derechos y libertades de los extranjeros en España",
+        "bloque_tema": [
+            ("GACE", "bloque_03", "tema_06"),
+        ],
+    },
+    "BOE-A-2018-16673": {
+        "nombre": "Ley Orgánica 3/2018, de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD)",
+        "bloque_tema": [
+            ("AGE", "bloque_02", "tema_04"),
+            ("GACE", "bloque_03", "tema_08"),
+            ("AUXILIAR", "bloque_01", "tema_12"),
+        ],
+    },
+    "BOE-A-2007-6115": {
+        "nombre": "Ley Orgánica 3/2007, para la igualdad efectiva de mujeres y hombres",
+        "bloque_tema": [
+            ("AGE", "bloque_03", "tema_07"),
+            ("GACE", "bloque_03", "tema_09"),
+            ("AUXILIAR", "bloque_01", "tema_16"),
+        ],
+    },
+    "BOE-A-2004-21760": {
+        "nombre": "Ley Orgánica 1/2004, de Medidas de Protección Integral contra la Violencia de Género",
+        "bloque_tema": [
+            ("GACE", "bloque_03", "tema_09"),
+        ],
+    },
+    "BOE-A-1954-15431": {
+        "nombre": "Ley de Expropiación Forzosa, de 16 de diciembre de 1954",
+        "bloque_tema": [
+            ("GACE", "bloque_04", "tema_08"),
+        ],
+    },
+    "BOE-A-2003-20254": {
+        "nombre": "Ley 33/2003, del Patrimonio de las Administraciones Públicas",
+        "bloque_tema": [
+            ("GACE", "bloque_04", "tema_09"),
+        ],
+    },
+    "BOE-A-1998-16718": {
+        "nombre": "Ley 29/1998, reguladora de la Jurisdicción Contencioso-Administrativa",
+        "bloque_tema": [
+            ("GACE", "bloque_04", "tema_13"),
         ],
     },
 }
