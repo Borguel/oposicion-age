@@ -68,6 +68,23 @@ def test_detectar_avisos_oficiales_ignora_lo_irrelevante_para_las_3_oposiciones(
     assert creados == 0
 
 
+def test_leyes_vigiladas_bloque_tema_bien_formado():
+    # Guarda mínima contra erratas al ampliar LEYES_VIGILADAS a mano: cada
+    # entrada debe apuntar a una de las 3 oposiciones reales, sin ids
+    # repetidos dentro de la misma ley (repetir (oposicion, bloque, tema)
+    # generaría la misma propuesta dos veces).
+    oposiciones_validas = {"AGE", "GACE", "AUXILIAR"}
+    for boe_id, config_ley in vigilancia_boe.LEYES_VIGILADAS.items():
+        assert config_ley["nombre"]
+        vistos = set()
+        for oposicion, bloque_id, tema_id in config_ley["bloque_tema"]:
+            assert oposicion in oposiciones_validas, f"{boe_id}: oposición desconocida {oposicion!r}"
+            assert bloque_id and tema_id, f"{boe_id}: bloque/tema vacío para {oposicion!r}"
+            clave = (oposicion, bloque_id, tema_id)
+            assert clave not in vistos, f"{boe_id}: entrada duplicada {clave!r}"
+            vistos.add(clave)
+
+
 def _metadatos(fecha):
     return {"data": {"metadatos": {"fecha_actualizacion": fecha}}}
 
@@ -81,9 +98,13 @@ def _bloque(fecha_publicacion, texto):
 
 
 def test_detectar_cambios_leyes_vigiladas_crea_propuesta_pendiente(db):
+    # Aislado del resto de LEYES_VIGILADAS reales (que van creciendo con el
+    # tiempo) para que este test compruebe solo el filtrado de bloques de
+    # artículo vs. disposición, sin acoplarse a cuántas leyes haya
+    # configuradas en producción en cada momento.
     boe_id = "BOE-A-2015-11719"
-    assert boe_id in vigilancia_boe.LEYES_VIGILADAS
-    oposicion, bloque_id, tema_id = vigilancia_boe.LEYES_VIGILADAS[boe_id]["bloque_tema"][0]
+    ley_trebep = vigilancia_boe.LEYES_VIGILADAS[boe_id]
+    oposicion, bloque_id, tema_id = ley_trebep["bloque_tema"][0]
     db.sembrar(
         (coleccion_temario(oposicion), bloque_id, "temas", tema_id, "subbloques", "c1"),
         {"titulo": "TREBEP", "texto": "El plazo es de quince días hábiles."},
@@ -105,7 +126,8 @@ def test_detectar_cambios_leyes_vigiladas_crea_propuesta_pendiente(db):
             return _fake_response(_bloque("2026-01-10", "El plazo es de veinte días hábiles."))
         raise AssertionError(f"URL inesperada: {url}")
 
-    with patch("vigilancia_boe.requests.get", side_effect=_get), \
+    with patch("vigilancia_boe.LEYES_VIGILADAS", {boe_id: ley_trebep}), \
+         patch("vigilancia_boe.requests.get", side_effect=_get), \
          patch("generador_diff_temario.generar_propuesta_cambio", return_value={
              "chunk_id_afectado": "c1",
              "resumen": "El plazo pasa de quince a veinte días hábiles.",
@@ -133,10 +155,14 @@ def test_detectar_cambios_leyes_vigiladas_crea_propuesta_pendiente(db):
 
 
 def test_detectar_cambios_leyes_vigiladas_no_hace_nada_si_la_ley_no_cambio(db):
+    # Mismo aislamiento que el test anterior -- solo importa que, para UNA
+    # ley cuya fecha ya está vista, no se pida más que /metadatos.
     boe_id = "BOE-A-2015-11719"
+    ley_trebep = vigilancia_boe.LEYES_VIGILADAS[boe_id]
     db.sembrar(("config", "vigilancia_boe"), {"leyes_fecha_vista": {boe_id: "2026-01-15"}})
 
-    with patch("vigilancia_boe.requests.get", return_value=_fake_response(_metadatos("2026-01-15"))) as mock_get, \
+    with patch("vigilancia_boe.LEYES_VIGILADAS", {boe_id: ley_trebep}), \
+         patch("vigilancia_boe.requests.get", return_value=_fake_response(_metadatos("2026-01-15"))) as mock_get, \
          patch("generador_diff_temario.generar_propuesta_cambio") as mock_generar:
         creadas = vigilancia_boe.detectar_cambios_leyes_vigiladas(db)
 

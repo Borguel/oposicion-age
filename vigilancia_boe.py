@@ -56,14 +56,64 @@ _TIMEOUT_SEGUNDOS = 15
 # nada de la lógica de abajo.
 #
 # bloque_tema: en qué sitios del temario (oposición, bloque_id, tema_id) se
-# debe buscar el artículo afectado cuando esta ley cambia.
+# debe buscar el artículo afectado cuando esta ley cambia -- confirmado
+# contra los títulos reales de Firestore (workflow "Listar temas vacíos del
+# temario", que además de temas vacíos imprime bloque_id/tema_id + título de
+# las 3 colecciones). ¡Ojo! Hasta esta revisión, el TREBEP estaba mal
+# ubicado en bloque_01/tema_01 en las 3 oposiciones -- ese tema es en
+# realidad "la Constitución Española", no el TREBEP -- así que llevaba
+# tiempo vigilando el tema equivocado. Ya corregido abajo.
+#
+# Los BOE-A de las leyes NUEVAS de esta revisión (todo salvo el TREBEP, la
+# LGP y la LGSS, verificadas contra el propio PDF fuente en el repo) son de
+# memoria, sin poder verificarlos contra la API real del BOE (bloqueada
+# desde este entorno de desarrollo) -- si alguno fuera incorrecto, el efecto
+# es inofensivo: obtener_metadatos_ley() simplemente no encuentra la ley y
+# esa entrada no genera nunca ninguna propuesta (nunca lanza excepción ni
+# rompe el resto), así que conviene revisar el ID la primera vez que se
+# quiera confiar en que esa ley concreta esté realmente vigilada.
 LEYES_VIGILADAS = {
     "BOE-A-2015-11719": {
         "nombre": "Real Decreto Legislativo 5/2015, Estatuto Básico del Empleado Público (TREBEP)",
         "bloque_tema": [
-            ("AGE", "bloque_01", "tema_01"),
-            ("GACE", "bloque_01", "tema_01"),
-            ("AUXILIAR", "bloque_01", "tema_01"),
+            ("AGE", "bloque_04", "tema_01"), ("AGE", "bloque_04", "tema_02"),
+            ("AGE", "bloque_04", "tema_03"), ("AGE", "bloque_04", "tema_04"),
+            ("AGE", "bloque_04", "tema_05"), ("AGE", "bloque_04", "tema_06"),
+            ("AGE", "bloque_04", "tema_08"),
+            ("GACE", "bloque_05", "tema_01"), ("GACE", "bloque_05", "tema_02"),
+            ("GACE", "bloque_05", "tema_03"), ("GACE", "bloque_05", "tema_04"),
+            ("GACE", "bloque_05", "tema_05"), ("GACE", "bloque_05", "tema_06"),
+            ("GACE", "bloque_05", "tema_07"), ("GACE", "bloque_05", "tema_08"),
+            ("AUXILIAR", "bloque_01", "tema_13"),
+        ],
+    },
+    "BOE-A-2015-10566": {
+        "nombre": "Ley 40/2015, de Régimen Jurídico del Sector Público (LRJSP)",
+        "bloque_tema": [
+            ("AGE", "bloque_01", "tema_08"),
+            ("GACE", "bloque_01", "tema_08"), ("GACE", "bloque_01", "tema_09"),
+            ("AUXILIAR", "bloque_01", "tema_08"), ("AUXILIAR", "bloque_01", "tema_11"),
+        ],
+    },
+    "BOE-A-2015-10565": {
+        "nombre": "Ley 39/2015, del Procedimiento Administrativo Común de las Administraciones Públicas (LPACAP)",
+        "bloque_tema": [
+            ("AGE", "bloque_03", "tema_03"),
+            ("GACE", "bloque_04", "tema_11"),
+        ],
+    },
+    "BOE-A-2017-12902": {
+        "nombre": "Ley 9/2017, de Contratos del Sector Público (LCSP)",
+        "bloque_tema": [
+            ("AGE", "bloque_03", "tema_04"),
+            ("GACE", "bloque_04", "tema_05"), ("GACE", "bloque_04", "tema_06"),
+        ],
+    },
+    "BOE-A-2013-12887": {
+        "nombre": "Ley 19/2013, de transparencia, acceso a la información pública y buen gobierno",
+        "bloque_tema": [
+            ("AGE", "bloque_01", "tema_07"),
+            ("AUXILIAR", "bloque_01", "tema_07"),
         ],
     },
 }
