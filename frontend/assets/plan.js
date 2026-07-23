@@ -11,7 +11,7 @@
 // código fuente o llamar al backend directamente saltándose esta
 // comprobación. La única protección real son los decoradores
 // @requiere_plan del backend (ver auth_utils.py).
-import { idToken, esperarUsuario } from "/assets/auth.js";
+import { idToken, esperarUsuario, enviarVerificacionEmail } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { obtenerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
@@ -81,10 +81,27 @@ export function mostrarPantallaBloqueo(planMinimo, perfil) {
   if (document.querySelector(".age-bloqueo-overlay")) return;
   const nombrePlan = NOMBRE_PLAN[planMinimo] || planMinimo;
   const sinNingunPlan = perfil.plan === "gratis";
-  const titulo = sinNingunPlan ? "Tu prueba gratuita ha terminado" : `Esta herramienta requiere el plan ${nombrePlan}`;
-  const cuerpo = sinNingunPlan
-    ? "Elige un plan para seguir usando Domina tu Opo. Tu progreso y tus datos siguen a salvo, y podrás retomarlo en cuanto te suscribas."
-    : `Tu plan actual (${NOMBRE_PLAN[perfil.plan] || perfil.plan}) no incluye esta herramienta.`;
+  // "gratis" con prueba_fin todavía sin fijar (null, no una fecha ya
+  // pasada) es un registro por email+contraseña que aún no ha confirmado
+  // su correo -- la prueba de 7 días arranca en cuanto lo confirme (ver
+  // auth_utils.requiere_login), así que el mensaje debe ser "confirma tu
+  // correo", no "tu prueba ha terminado" (sonaría a que la perdió).
+  const pruebaPendienteDeVerificar = sinNingunPlan && !perfil.prueba_fin;
+  const titulo = pruebaPendienteDeVerificar
+    ? "Confirma tu correo para empezar tu prueba gratuita"
+    : sinNingunPlan
+      ? "Tu prueba gratuita ha terminado"
+      : `Esta herramienta requiere el plan ${nombrePlan}`;
+  const cuerpo = pruebaPendienteDeVerificar
+    ? "En cuanto confirmes tu correo electrónico se activarán tus 7 días de prueba con acceso Premium. Revisa tu bandeja de entrada (y la carpeta de spam), o pide que te lo reenviemos."
+    : sinNingunPlan
+      ? "Elige un plan para seguir usando Domina tu Opo. Tu progreso y tus datos siguen a salvo, y podrás retomarlo en cuanto te suscribas."
+      : `Tu plan actual (${NOMBRE_PLAN[perfil.plan] || perfil.plan}) no incluye esta herramienta.`;
+  const botones = pruebaPendienteDeVerificar
+    ? `<button type="button" class="age-btn age-btn-primary" id="age-bloqueo-reenviar">Reenviar correo de confirmación</button>
+       <a class="age-btn age-btn-outline" href="/zona-opositor/">Volver a Zona Opositor</a>`
+    : `<a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>
+       <a class="age-btn age-btn-outline" href="/zona-opositor/">Volver a Zona Opositor</a>`;
 
   const overlay = document.createElement("div");
   overlay.className = "age-bloqueo-overlay";
@@ -94,10 +111,24 @@ export function mostrarPantallaBloqueo(planMinimo, perfil) {
       <h1>${titulo}</h1>
       <p>${cuerpo}</p>
       <div class="age-bloqueo-botones">
-        <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>
-        <a class="age-btn age-btn-outline" href="/zona-opositor/">Volver a Zona Opositor</a>
+        ${botones}
       </div>
     </div>
   `;
   document.body.appendChild(overlay);
+
+  if (pruebaPendienteDeVerificar) {
+    const boton = document.getElementById("age-bloqueo-reenviar");
+    boton.addEventListener("click", async () => {
+      boton.disabled = true;
+      boton.textContent = "Enviando…";
+      try {
+        await enviarVerificacionEmail();
+        boton.textContent = "Correo enviado";
+      } catch {
+        boton.textContent = "Reenviar correo de confirmación";
+        boton.disabled = false;
+      }
+    });
+  }
 }

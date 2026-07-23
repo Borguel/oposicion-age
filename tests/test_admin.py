@@ -406,7 +406,7 @@ def test_temario_publicar_borrador_oculta_de_navegacion(client, db):
         client.patch("/admin/api/temario/AGE/bloque_01/publicado",
                      json={"publicado": False}, headers=_AUTH)
     # Ahora un usuario normal no debe ver ese bloque en /temas-disponibles.
-    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}):
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com", "email_verified": True}):
         temas = client.get("/temas-disponibles?oposicion=AGE", headers=_AUTH).get_json()["temas"]
     assert temas == []
 
@@ -820,7 +820,7 @@ def test_auditoria_ordena_reciente_primero(client, db):
 # ---------- Reportes ----------
 def test_usuario_reporta_y_admin_lo_revisa(client, db):
     # Un usuario normal reporta.
-    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}):
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com", "email_verified": True}):
         r = client.post("/reportar-pregunta",
                         json={"pregunta_texto": "¿Pregunta con error?", "motivo": "La B también es correcta", "oposicion": "AGE"},
                         headers=_AUTH)
