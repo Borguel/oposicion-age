@@ -98,13 +98,21 @@
   </script>
   <script>
     // Filtro por oposición: puramente en el navegador, sobre las tarjetas
-    // ya generadas (cada una trae su data-oposiciones, ver
-    // publicacion_estatica_boe._tarjeta_aviso_html) -- no hace ninguna
-    // petición nueva, solo muestra/oculta lo que ya está en la página.
+    // ya generadas -- no hace ninguna petición nueva, solo muestra/oculta
+    // lo que ya está en la página. Cada tarjeta trae su data-oposiciones
+    // (ver publicacion_estatica_boe._tarjeta_aviso_html), pero por si la
+    // página se regeneró con una versión anterior del backend que todavía
+    // no lo incluía, si falta se recae en leer las propias etiquetas de
+    // oposición visibles (.guia-avisos-oficiales-op) de esa tarjeta.
     (function () {
       const botones = document.querySelectorAll("[data-filtro-oposicion]");
       const vacio = document.getElementById("avisos-filtro-vacio");
       if (!botones.length) return;
+      function oposicionesDeTarjeta(t) {
+        const dato = (t.dataset.oposiciones || "").trim();
+        if (dato) return dato.split(" ");
+        return Array.from(t.querySelectorAll(".guia-avisos-oficiales-op")).map((el) => el.textContent.trim());
+      }
       botones.forEach((boton) => {
         boton.addEventListener("click", () => {
           botones.forEach((b) => b.classList.remove("is-activo"));
@@ -113,7 +121,7 @@
           const tarjetas = document.querySelectorAll(".guia-avisos-oficiales-item");
           let visibles = 0;
           tarjetas.forEach((t) => {
-            const coincide = !oposicion || (t.dataset.oposiciones || "").split(" ").includes(oposicion);
+            const coincide = !oposicion || oposicionesDeTarjeta(t).includes(oposicion);
             t.hidden = !coincide;
             if (coincide) visibles += 1;
           });
