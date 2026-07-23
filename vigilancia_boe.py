@@ -28,6 +28,7 @@ nivel de anidamiento en vez de asumir una ruta fija, y por eso conviene una
 llamada de humo real antes de fiarse del todo en producción."""
 import logging
 import os
+import re
 from datetime import datetime
 
 import requests
@@ -35,6 +36,15 @@ import requests
 from oposiciones import OPOSICIONES
 
 logger = logging.getLogger(__name__)
+
+# El índice de una ley trae bloques de artículo ("a1", "a2"...) MEZCLADOS con
+# disposiciones (transitorias "dt*", derogatorias "dd*", finales "df*",
+# preámbulo "pr"...). Confirmado en producción: /texto/bloque/{id} devuelve
+# 400 para esos ids de disposición -- y da igual, porque el temario nunca
+# está anclado a una "disposición", solo a "Artículo N." (ver
+# generador_preguntas_verificado._PATRON_ARTICULO), así que no hace falta
+# pedirlas: se descartan aquí, antes de llamar a la API por cada una.
+_PATRON_ID_BLOQUE_ARTICULO = re.compile(r"^a\d")
 
 _BASE_URL = "https://www.boe.es/datosabiertos/api"
 _TIMEOUT_SEGUNDOS = 15
@@ -277,8 +287,8 @@ def detectar_cambios_leyes_vigiladas(db):
         bloques_indice = obtener_indice_texto_ley(boe_id)
         for bloque in bloques_indice:
             id_bloque = _buscar_clave(bloque, "id")
-            if not id_bloque:
-                continue
+            if not id_bloque or not _PATRON_ID_BLOQUE_ARTICULO.match(id_bloque):
+                continue  # disposición u otro bloque que no es un artículo -- ver nota arriba
             versiones = obtener_bloque_texto_ley(boe_id, id_bloque)
             if not versiones:
                 continue

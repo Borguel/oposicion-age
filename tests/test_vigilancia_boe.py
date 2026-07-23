@@ -89,12 +89,19 @@ def test_detectar_cambios_leyes_vigiladas_crea_propuesta_pendiente(db):
         {"titulo": "TREBEP", "texto": "El plazo es de quince días hábiles."},
     )
 
+    llamadas_bloque = []
+
     def _get(url, headers=None, timeout=None):
         if "metadatos" in url:
             return _fake_response(_metadatos("2026-01-15"))
         if "texto/indice" in url:
-            return _fake_response(_indice(["a1"]))
+            # Mezcla real vista en producción: artículos + disposiciones
+            # (transitoria/derogatoria/final) -- las disposiciones deben
+            # descartarse ANTES de pedir su texto (la API del BOE devuelve
+            # 400 para ellas, y el temario nunca las usa).
+            return _fake_response(_indice(["a1", "dttercera", "ddunica", "dfprimera"]))
         if "texto/bloque" in url:
+            llamadas_bloque.append(url)
             return _fake_response(_bloque("2026-01-10", "El plazo es de veinte días hábiles."))
         raise AssertionError(f"URL inesperada: {url}")
 
@@ -108,6 +115,9 @@ def test_detectar_cambios_leyes_vigiladas_crea_propuesta_pendiente(db):
         creadas = vigilancia_boe.detectar_cambios_leyes_vigiladas(db)
 
     assert creadas == 1
+    # Solo se pidió el texto del bloque de artículo -- las 3 disposiciones
+    # ("dttercera", "ddunica", "dfprimera") se descartaron sin llamar a la API.
+    assert llamadas_bloque == ["https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-11719/texto/bloque/a1"]
     propuestas = list(db.collection("cambios_temario_propuestos").stream())
     assert len(propuestas) == creadas
     d = propuestas[0].to_dict()
