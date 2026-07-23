@@ -697,7 +697,16 @@ export function montarWidgetTutor() {
         respuesta_usuario: pregunta.respuestaUsuario || pregunta.respuesta_usuario || "",
         explicacion: pregunta.explicacion || "",
       };
-      chatId = null;             // conversación nueva, sin arrastrar nada
+      // No se reinicia chatId: si ya se venía hablando de otra pregunta en
+      // esta misma sesión (sin recargar la página), esta también se guarda
+      // en la MISMA conversación -- así en "Tus conversaciones" no aparece
+      // una entrada nueva por cada pregunta del test, sino una sola con
+      // todo lo hablado. Esto es seguro porque el backend ya trata cada
+      // pregunta de test como autocontenida (no le mete el historial de
+      // mensajes anteriores al construir la respuesta, ver chat_controller
+      // "Una pregunta de test pegada es autocontenida"), así que el tutor
+      // no arrastra ni se confunde con la pregunta anterior aunque
+      // compartan chat_id.
       ultimoEnunciado = contextoOverride.enunciado;
       sugerenciaPedida = true;   // no meter el saludo proactivo encima
       mensajesEl.innerHTML = "";
