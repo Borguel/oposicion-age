@@ -52,9 +52,13 @@ services:
         sync: false
       - key: BREVO_TEMPLATE_REENGAGEMENT
         sync: false
+      - key: BREVO_TEMPLATE_AVISO_OFICIAL
+        sync: false
       - key: SENTRY_DSN
         sync: false
       - key: CRON_SECRET_KEY
+        sync: false
+      - key: GITHUB_TOKEN
         sync: false
 
   - type: web

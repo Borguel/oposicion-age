@@ -970,6 +970,54 @@ def test_avisos_oficiales_estado_invalido_rechaza(client, db):
     assert resp.status_code == 400
 
 
+def test_avisos_oficiales_publicar_dispara_pagina_estatica_y_email(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Convocatoria AGE 2026",
+        "url_boe": "https://boe.es/x", "estado": "pendiente",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
+         _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "publicado"}, headers=_AUTH)
+
+    assert resp.status_code == 200
+    mock_pagina.assert_called_once_with(db, "AGE")
+    mock_notificar.assert_called_once()
+    aviso_pasado = mock_notificar.call_args.args[1]
+    assert aviso_pasado["titulo"] == "Convocatoria AGE 2026"
+    assert aviso_pasado["estado"] == "publicado"
+
+
+def test_avisos_oficiales_no_redispara_al_volver_a_guardar_publicado(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Convocatoria AGE 2026",
+        "url_boe": "https://boe.es/x", "estado": "publicado",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
+         _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "publicado"}, headers=_AUTH)
+
+    assert resp.status_code == 200
+    mock_pagina.assert_not_called()
+    mock_notificar.assert_not_called()
+
+
+def test_avisos_oficiales_descartar_no_dispara_pagina_ni_email(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Convocatoria AGE 2026",
+        "url_boe": "https://boe.es/x", "estado": "pendiente",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
+         _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "descartado"}, headers=_AUTH)
+
+    assert resp.status_code == 200
+    mock_pagina.assert_not_called()
+    mock_notificar.assert_not_called()
+
+
 def test_resumen_incluye_pendientes_de_vigilancia_boe(client, db):
     db.sembrar(("cambios_temario_propuestos", "c1"), {"estado": "pendiente"})
     db.sembrar(("avisos_oficiales", "a1"), {"estado": "pendiente"})

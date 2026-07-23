@@ -1664,14 +1664,31 @@ def avisos_oficiales_actualizar(aid):
     if estado not in ("pendiente", "publicado", "descartado"):
         return jsonify({"error": "Estado no válido"}), 400
     ref = db.collection("avisos_oficiales").document(aid)
-    if not ref.get().exists:
+    doc = ref.get()
+    if not doc.exists:
         return jsonify({"error": "Aviso no encontrado"}), 404
+    aviso_antes = doc.to_dict() or {}
+
     ref.set({
         "estado": estado,
         "revisado_por": g.uid,
         "fecha_revision": datetime.utcnow().isoformat(),
     }, merge=True)
     _registrar_auditoria("aviso_oficial_" + estado, aid)
+
+    # Publicar la página estática + avisar por email solo la PRIMERA vez que
+    # pasa a "publicado" (si ya estaba publicado y se vuelve a guardar, no
+    # hace falta repetir el commit ni volver a mandar el email a todo el
+    # mundo). Ninguna de las dos cosas debe romper esta respuesta si falla
+    # -- ver publicacion_estatica_boe.py.
+    if estado == "publicado" and aviso_antes.get("estado") != "publicado":
+        # Ninguna de las dos falla nunca hacia arriba -- ver docstring de
+        # publicacion_estatica_boe.py (capturan y registran su propio fallo).
+        from publicacion_estatica_boe import actualizar_pagina_estatica_avisos, notificar_usuarios_aviso_oficial
+        aviso_completo = {**aviso_antes, "estado": estado}
+        actualizar_pagina_estatica_avisos(db, aviso_completo.get("oposicion"))
+        notificar_usuarios_aviso_oficial(db, aviso_completo)
+
     return jsonify({"mensaje": "Aviso actualizado"})
 
 

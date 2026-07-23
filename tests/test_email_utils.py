@@ -131,6 +131,43 @@ def test_pago_fallido_incluye_oposicion_y_cta_de_actualizar_pago(monkeypatch):
     assert "AGE" in payload["subject"]
 
 
+def test_aviso_oficial_manda_html_de_reserva_con_enlaces_boe_e_inap(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_AVISO_OFICIAL", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_aviso_oficial(
+            "u@example.com", "Convocatoria del Cuerpo General Administrativo del Estado",
+            "Convocatoria", "https://www.boe.es/x", "https://www.inap.es/y", "AGE", nombre="Ana",
+        )
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert "templateId" not in payload
+    assert "Convocatoria del Cuerpo General Administrativo del Estado" in payload["htmlContent"]
+    assert "https://www.boe.es/x" in payload["htmlContent"]
+    assert "https://www.inap.es/y" in payload["htmlContent"]
+    assert "AGE" in payload["htmlContent"]
+    assert "AGE" in payload["subject"]
+    assert "Convocatoria" in payload["subject"]
+
+
+def test_aviso_oficial_usa_plantilla_de_brevo_si_esta_configurada(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.setenv("BREVO_TEMPLATE_AVISO_OFICIAL", "77")
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_aviso_oficial(
+            "u@example.com", "Lista de admitidos", "Lista de admitidos",
+            "https://www.boe.es/x", "https://www.inap.es/y", "GACE",
+        )
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["templateId"] == 77
+    assert payload["params"]["titulo"] == "Lista de admitidos"
+    assert payload["params"]["url_boe"] == "https://www.boe.es/x"
+    assert payload["params"]["url_inap"] == "https://www.inap.es/y"
+    assert payload["params"]["oposicion_nombre"] == "GACE"
+    assert "subject" not in payload
+
+
 def test_error_http_de_brevo_no_lanza_excepcion(monkeypatch):
     monkeypatch.setenv("BREVO_API_KEY", "clave")
     mock_error = MagicMock()
