@@ -24,7 +24,10 @@ def _prompt_verificacion(pregunta_candidata, texto_fuente):
         "5. Cualquier plazo, cifra, porcentaje, artículo, órgano competente o fecha no coincide "
         "EXACTAMENTE con el documento.\n"
         "6. Hay cualquier dato o afirmación que no puedas verificar literalmente en el documento "
-        "proporcionado (posible alucinación).\n\n"
+        "proporcionado (posible alucinación).\n"
+        "7. La pregunta o la explicación citan un número de artículo sin decir en la misma frase de qué "
+        "ley o norma es (tal como aparece en el documento) -- un artículo mencionado sin decir de qué "
+        "norma es deja a quien lo lee sin poder ubicarlo.\n\n"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
         '{"valido": true, "problemas": []}\n'
         "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo."

@@ -35,6 +35,22 @@ def test_contenido_normativo_usa_prompts_juridicos():
     assert "jurídic" in system_ver.lower()
 
 
+def test_prompt_normativo_exige_nombrar_la_norma_al_citar_un_articulo():
+    # Regresión: una pregunta generada decía "Según el artículo 52.1..." sin
+    # decir de qué ley -- el opositor no tenía forma de saber de qué norma
+    # hablaba. El prompt de generación y el de verificación deben exigir
+    # explícitamente que toda mención a un artículo vaya acompañada del
+    # nombre de la norma.
+    anclas = [{"norma": "Ley 29/1998, reguladora de la Jurisdicción Contencioso-Administrativa",
+               "articulo": "Artículo 52.1",
+               "texto_legal": "Artículo 52.1. Plazo común de vista a las partes.",
+               "etiqueta_subbloque": "s1"}]
+    system_gen, _user_gen = _prompt_generacion(anclas, "memoria_literal", "AGE")
+    system_ver, _user_ver = _prompt_verificacion({"pregunta": "x"}, anclas)
+    assert "nombre de la norma" in system_gen
+    assert "nombre de la norma" in system_ver
+
+
 def test_contenido_descriptivo_sin_articulos_usa_prompts_descriptivos():
     # Contenido de ofimática (sin "Artículo N.") -> prompts descriptivos: no
     # deben exigir artículos ni lenguaje jurídico, que es lo que hacía que se

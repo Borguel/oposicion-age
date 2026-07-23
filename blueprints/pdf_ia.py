@@ -339,7 +339,7 @@ def generar_test_desde_pdf():
             f"Tu tarea es generar EXACTAMENTE {n} preguntas de opción múltiple de alta calidad, "
             f"basadas únicamente en el documento proporcionado. Cada pregunta debe cumplir lo siguiente:\n"
             f"1. **Formato**: pregunta clara y directa, seguida de cuatro opciones (A, B, C, D).\n"
-            f"2. **Precisión**: si el documento menciona leyes, artículos, plazos, funciones, definiciones, principios o procedimientos, la pregunta debe reflejarlos con exactitud.\n"
+            f"2. **Precisión**: si el documento menciona leyes, artículos, plazos, funciones, definiciones, principios o procedimientos, la pregunta debe reflejarlos con exactitud. Si citas un número de artículo, di TAMBIÉN en la misma frase el nombre de la ley o norma a la que pertenece (tal como aparece en el documento) -- un artículo mencionado sin decir de qué norma es deja a quien lo lee sin poder ubicarlo.\n"
             f"3. **Respuesta correcta**: debe ser inequívoca y extraída directamente del texto.\n"
             f"4. **Distractores**: deben ser técnicamente plausibles, basados en confusiones comunes, errores típicos o elementos similares del propio documento.\n"
             f"5. **Neutralidad**: evita lenguaje coloquial, ambigüedades, opiniones o preguntas triviales.\n"
