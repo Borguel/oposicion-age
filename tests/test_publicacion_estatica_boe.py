@@ -72,6 +72,12 @@ def test_generar_html_avisos_usa_url_inap_propia_si_esta_rellena():
     assert pub._URL_INAP_GENERAL not in html
 
 
+def test_generar_html_avisos_hub_incluye_data_oposiciones_para_el_filtro_js():
+    avisos = [{"oposiciones": ["AGE", "GACE"], "tipo": "convocatoria", "titulo": "x"}]
+    html = pub.generar_html_avisos_hub(avisos)
+    assert 'data-oposiciones="AGE GACE"' in html
+
+
 def test_etiqueta_tipo_aviso_sin_personalizado_cae_a_la_fija():
     assert pub.etiqueta_tipo_aviso({"tipo": "convocatoria"}) == "Convocatoria"
     assert pub.etiqueta_tipo_aviso({"tipo": "convocatoria", "tipo_personalizado": "  "}) == "Convocatoria"

@@ -197,7 +197,11 @@ def _tarjeta_aviso_html(aviso, mostrar_etiquetas_oposicion=False, mostrar_resume
         # se rellenó ninguno propio) no aporta nada repetirlo aparte.
         if resumen and resumen != titulo:
             resumen_html = f'<p class="guia-avisos-oficiales-resumen">{resumen}</p>'
-    return f"""      <div class="guia-avisos-oficiales-item">
+    # data-oposiciones: para el filtro por oposición de la página común
+    # (ver /avisos-oficiales/) -- en las páginas de una sola oposición no
+    # se usa, pero no estorba tenerlo siempre.
+    oposiciones_dato = " ".join(_oposiciones_de(aviso))
+    return f"""      <div class="guia-avisos-oficiales-item" data-oposiciones="{oposiciones_dato}">
         <div class="guia-avisos-oficiales-cab">
           <span class="guia-avisos-oficiales-tipo">{tipo_legible}</span>
           {etiquetas_op}

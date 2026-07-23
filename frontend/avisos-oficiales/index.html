@@ -57,7 +57,14 @@
       llamamientos extraordinarios, con el enlace a la resolución original.
     </p>
 
-    <div class="guia-avisos-oficiales">
+    <div class="guia-avisos-filtro" role="group" aria-label="Filtrar por oposición">
+      <button type="button" class="guia-avisos-filtro-btn is-activo" data-filtro-oposicion="">Todas</button>
+      <button type="button" class="guia-avisos-filtro-btn" data-filtro-oposicion="AGE">AGE</button>
+      <button type="button" class="guia-avisos-filtro-btn" data-filtro-oposicion="GACE">GACE</button>
+      <button type="button" class="guia-avisos-filtro-btn" data-filtro-oposicion="AUXILIAR">Auxiliar</button>
+    </div>
+
+    <div class="guia-avisos-oficiales" id="avisos-lista">
       <!-- AVISOS_OFICIALES_INICIO -->
       <div class="guia-avisos-oficiales-item">
         <div class="guia-avisos-oficiales-cab">
@@ -73,6 +80,7 @@
       </div>
       <!-- AVISOS_OFICIALES_FIN -->
     </div>
+    <p class="guia-avisos-oficiales-vacio" id="avisos-filtro-vacio" hidden>No hay avisos de esta oposición todavía.</p>
 
     <div class="guia-cta-final">
       <h2>¿Preparando alguna de estas oposiciones?</h2>
@@ -87,6 +95,32 @@
     document.querySelectorAll("[data-icon]").forEach((el) => {
       el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 20));
     });
+  </script>
+  <script>
+    // Filtro por oposición: puramente en el navegador, sobre las tarjetas
+    // ya generadas (cada una trae su data-oposiciones, ver
+    // publicacion_estatica_boe._tarjeta_aviso_html) -- no hace ninguna
+    // petición nueva, solo muestra/oculta lo que ya está en la página.
+    (function () {
+      const botones = document.querySelectorAll("[data-filtro-oposicion]");
+      const vacio = document.getElementById("avisos-filtro-vacio");
+      if (!botones.length) return;
+      botones.forEach((boton) => {
+        boton.addEventListener("click", () => {
+          botones.forEach((b) => b.classList.remove("is-activo"));
+          boton.classList.add("is-activo");
+          const oposicion = boton.dataset.filtroOposicion;
+          const tarjetas = document.querySelectorAll(".guia-avisos-oficiales-item");
+          let visibles = 0;
+          tarjetas.forEach((t) => {
+            const coincide = !oposicion || (t.dataset.oposiciones || "").split(" ").includes(oposicion);
+            t.hidden = !coincide;
+            if (coincide) visibles += 1;
+          });
+          if (vacio) vacio.hidden = !(tarjetas.length && visibles === 0);
+        });
+      });
+    })();
   </script>
 </body>
 </html>
