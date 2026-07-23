@@ -221,19 +221,31 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     : "";
 
   // La nota principal ya excluye las preguntas marcadas como duda (ver
-  // statsPrincipales más arriba); aquí solo se muestra, como dato aparte, lo
-  // que habría dado la nota si esas preguntas SÍ contaran -- o un aviso si
-  // se han marcado todas y no ha quedado más remedio que contarlas.
+  // statsPrincipales más arriba); aparte, en su propio bloque (no como una
+  // tercera casilla más del mismo grid -- así se evita que una etiqueta
+  // larga se salga de su caja en móvil), se explica con una frase qué nota
+  // habría salido si esas preguntas SÍ contaran, con el mismo formato
+  // "nota de este test / nota examen oficial" que arriba para que se lea
+  // igual de claro. Si se han marcado TODAS las preguntas como duda no hay
+  // con qué calcular esa alternativa, así que solo se avisa de que se han
+  // contado igualmente.
   const notaAlternativaHTML = usaStatsSinDudas ? `
-    <div class="resultado-nota-box">
-      <span class="resultado-nota-label">Nota si esas preguntas contaran</span>
-      <span class="resultado-nota-valor">${stats.notaOficial100}<small> / 100</small></span>
-      <span class="resultado-nota-aclaracion">Contando también ${statsSinDudas.numDudas === 1 ? "la pregunta marcada" : `las ${statsSinDudas.numDudas} preguntas marcadas`} como duda, tu nota sería esta -- ${stats.apto ? "seguirías aprobando" : "no aprobarías"}.</span>
+    <div class="resultado-nota-alternativa">
+      <p class="resultado-nota-alternativa-texto">Teniendo en cuenta ${statsSinDudas.numDudas === 1 ? "la pregunta marcada" : `las ${statsSinDudas.numDudas} preguntas marcadas`} como dudosa${statsSinDudas.numDudas === 1 ? "" : "s"}, tu nota sería:</p>
+      <div class="resultado-notas-grid resultado-notas-grid-alt">
+        <div class="resultado-nota-box">
+          <span class="resultado-nota-label">Nota de este test</span>
+          <span class="resultado-nota-valor">${stats.nota}<small> / ${preguntas.length}</small></span>
+        </div>
+        <div class="resultado-nota-box">
+          <span class="resultado-nota-label">Nota examen oficial</span>
+          <span class="resultado-nota-valor">${stats.notaOficial100}<small> / 100</small></span>
+        </div>
+      </div>
+      <p class="resultado-nota-alternativa-pie">${stats.apto ? "Seguirías aprobando." : "No aprobarías."}</p>
     </div>` : (numDudas > 0 ? `
-    <div class="resultado-nota-box">
-      <span class="resultado-nota-label">Preguntas marcadas como duda</span>
-      <span class="resultado-nota-valor">${numDudas}<small> de ${preguntas.length}</small></span>
-      <span class="resultado-nota-aclaracion">Las has marcado todas como duda: no queda ninguna otra con la que calcular la nota, así que se cuentan igualmente.</span>
+    <div class="resultado-nota-alternativa">
+      <p class="resultado-nota-alternativa-texto">Has marcado como duda las ${numDudas} preguntas del test: no queda ninguna otra con la que calcular una nota alternativa, así que se cuentan igualmente en la nota de arriba.</p>
     </div>` : "");
 
   contenedor.innerHTML = `
@@ -251,8 +263,8 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
           <span class="resultado-nota-label">Nota examen oficial</span>
           <span class="resultado-nota-valor">${statsPrincipales.notaOficial100}<small> / 100</small></span>
         </div>
-        ${notaAlternativaHTML}
       </div>
+      ${notaAlternativaHTML}
 
       <div class="resultado-resumen-grid">
         <div class="resultado-resumen-tile tile-acierto">

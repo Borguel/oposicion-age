@@ -1357,7 +1357,11 @@ body {
   color: var(--age-ink-soft);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  white-space: nowrap;
+  text-align: center;
+  /* Normal en vez de nowrap: una etiqueta larga en una caja estrecha (p.
+     ej. en móvil, cuando el grid pasa a una sola columna) debe partirse en
+     dos líneas dentro de la caja, no desbordar por fuera de la tarjeta. */
+  white-space: normal;
 }
 
 .resultado-nota-valor {
@@ -1373,12 +1377,37 @@ body {
   color: var(--age-ink-soft);
 }
 
-.resultado-nota-aclaracion {
-  display: block;
-  font-size: 0.78rem;
+/* Bloque aparte (no una casilla más de .resultado-notas-grid) con la nota
+   alternativa "si esas preguntas dudosas contaran", en el mismo formato de
+   dos casillas que la nota principal para que se lea igual de claro. */
+.resultado-nota-alternativa {
+  margin: 0 0 18px;
+  padding: 14px 16px 16px;
+  border: 1px dashed var(--age-border);
+  border-radius: var(--age-radius-md);
+  background: var(--age-neutral-bg);
+}
+
+.resultado-nota-alternativa-texto {
+  margin: 0 0 12px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--age-ink-soft);
+  text-align: center;
+}
+
+.resultado-notas-grid-alt {
+  margin-bottom: 0;
+}
+
+.resultado-notas-grid-alt .resultado-nota-box {
+  background: var(--age-card);
+}
+
+.resultado-nota-alternativa-pie {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
   color: var(--age-ink-faint);
-  margin-top: 2px;
-  white-space: normal;
   text-align: center;
 }
 
