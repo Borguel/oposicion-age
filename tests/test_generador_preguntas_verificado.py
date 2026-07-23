@@ -98,6 +98,20 @@ def test_prompt_normativo_prohibe_abreviar_el_nombre_de_la_norma():
     assert "sigla" in system_ver.lower()
 
 
+def test_prompt_normativo_prohibe_abreviar_tipo_de_norma_con_numero():
+    # Regresión: "Según la LO 3/2007..." abrevia "Ley Orgánica 3/2007" con el
+    # tipo de norma + número en vez del nombre completo -- un patrón distinto
+    # de las siglas fijas ("CE", "TREBEP"...) que el prompt debe cubrir
+    # también, tanto en generación como en verificación.
+    anclas = [{"norma": "Ley Orgánica 3/2007", "articulo": "Artículo 1",
+               "texto_legal": "Artículo 1. Las mujeres y los hombres son iguales en dignidad humana.",
+               "etiqueta_subbloque": "s1"}]
+    system_gen, _user_gen = _prompt_generacion(anclas, "memoria_literal", "AGE")
+    system_ver, _user_ver = _prompt_verificacion({"pregunta": "x"}, anclas)
+    assert "lo 3/2007" in system_gen.lower()
+    assert "lo 3/2007" in system_ver.lower()
+
+
 def _pregunta_valida(texto_pregunta="¿Pregunta de ejemplo?"):
     return json.dumps({
         "norma": "Ley 39/2015",

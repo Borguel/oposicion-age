@@ -76,6 +76,15 @@ def validar_pregunta(pregunta):
     if any(re.search(rf"\b{re.escape(sigla)}\b", texto_original) for sigla in siglas_prohibidas):
         return False
 
+    # ❌ Filtro de "LO 3/2007" / "RD 203/2021" / "RDL 5/2015" -- otra forma
+    # habitual de abreviar (aquí "Ley Orgánica"/"Real Decreto"/"Real
+    # Decreto-ley" en vez del nombre completo) que no pilla la lista de
+    # arriba porque va seguida de un número, no sola. Exigir el número
+    # X/YYYY justo detrás evita falsos positivos con "LO" u otras letras
+    # sueltas que no estén citando una norma.
+    if re.search(r"\b(LO|RDL|RDLeg|RD)\s*\d+/\d{2,4}\b", texto_original):
+        return False
+
     # ❌ Filtro de explicaciones demasiado cortas
     if len(pregunta["explicacion"].strip()) < 15:
         return False

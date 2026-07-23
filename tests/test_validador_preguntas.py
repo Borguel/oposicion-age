@@ -106,6 +106,23 @@ def test_no_rechaza_palabras_que_contienen_las_letras_de_una_sigla():
     )) is True
 
 
+def test_rechaza_abreviatura_de_tipo_de_norma_con_numero():
+    # Regresión: "Según la LO 3/2007, ¿cuál es la diferencia..." -- abrevia
+    # "Ley Orgánica 3/2007" con el tipo de norma + número en vez del nombre
+    # completo. No lo pilla la lista de siglas fijas (no es una palabra
+    # suelta, va seguida de un número), hace falta un patrón aparte.
+    for texto in ["LO 3/2007", "RD 203/2021", "RDL 5/2015", "RDLeg 5/2015"]:
+        assert validar_pregunta(_pregunta_valida(pregunta=f"Según la {texto}, ¿qué establece?")) is False, texto
+
+
+def test_no_rechaza_lo_o_rd_sueltos_sin_numero_de_norma_detras():
+    # El patrón exige el número X/YYYY justo detrás para evitar falsos
+    # positivos con letras sueltas que no estén citando ninguna norma.
+    assert validar_pregunta(_pregunta_valida(
+        explicacion="El artículo 62 de la Constitución Española lo regula de forma clara y directa."
+    )) is True
+
+
 def test_rechaza_explicacion_demasiado_corta():
     assert validar_pregunta(_pregunta_valida(explicacion="Porque sí.")) is False
 

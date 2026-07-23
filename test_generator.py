@@ -34,7 +34,9 @@ def _prompt_verificacion(pregunta_candidata, texto_fuente):
         "de ese tipo la deja sin sentido.\n"
         "9. Se usa una sigla o abreviatura (\"CE\", \"TREBEP\", \"LPAC\", \"art.\" en vez de "
         "\"artículo\"...) para nombrar una ley o norma en vez de su nombre completo tal como aparece en "
-        "el documento -- los exámenes oficiales de esta oposición nunca abrevian.\n\n"
+        "el documento -- los exámenes oficiales de esta oposición nunca abrevian. Esto incluye también "
+        "abreviar el tipo de norma delante de su número (\"LO 3/2007\", \"RD 203/2021\"...) en vez de "
+        "escribirlo entero (\"Ley Orgánica 3/2007\", \"Real Decreto 203/2021\").\n\n"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
         '{"valido": true, "problemas": []}\n'
         "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo."
