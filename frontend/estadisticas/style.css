@@ -85,6 +85,15 @@
       flex-wrap: wrap;
     }
 
+    /* Exportar PDF: vivía junto al botón de actualizar en la cabecera; se
+       mueve al final de la página (después de "Otra actividad") para que
+       sea lo último que se hace, ya con todos los datos delante, en vez de
+       competir por atención con el título nada más entrar. */
+    .estadisticas-exportar-pdf-final {
+      max-width: 320px;
+      margin: 0 auto;
+    }
+
     #estadisticas-refresh {
       background: var(--theme-primary);
       color: white;
