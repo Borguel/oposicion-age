@@ -20,7 +20,7 @@ Variables de entorno necesarias (las mismas que usa el resto del proyecto):
   DEEPSEEK_API_KEY
   FIREBASE_KEY_PATH (o FIREBASE_CREDENTIALS_JSON)
 
-Requiere: PyPDF2, tiktoken, requests, firebase-admin (ya están en requirements.txt)
+Requiere: pypdf, tiktoken, requests, firebase-admin (ya están en requirements.txt)
 """
 
 import argparse
@@ -32,7 +32,7 @@ import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from utils import contar_tokens
 from deepseek_utils import call_deepseek_api
@@ -274,7 +274,7 @@ PATRON_ARTICULO = re.compile(r"Art[íi]culo\s+(\d+)\s*(?:bis|ter)?\.")
 
 
 def _trocear_por_parrafos_o_lineas(texto, max_tokens):
-    # PyPDF2 extrae el texto línea a línea sin líneas en blanco entre
+    # pypdf extrae el texto línea a línea sin líneas en blanco entre
     # párrafos, así que re.split(r"\n\s*\n", ...) casi nunca encuentra un
     # corte y una norma entera (a veces cientos de miles de caracteres)
     # acababa como un único "subbloque". Si no hay párrafos reales, se

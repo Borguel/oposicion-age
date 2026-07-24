@@ -149,6 +149,41 @@ class TestRutasGuardarPdf:
         assert resp.status_code == 401
 
 
+class TestSubidaArchivoInvalido:
+    """Un archivo que no es un PDF real (p. ej. un ejecutable renombrado a
+    .pdf) debe rechazarse con un 400 y un mensaje claro para el usuario --
+    antes reventaba el parseo y salía un 500 genérico (y en el chat-PDF,
+    con el texto interno de la excepción filtrado al cliente)."""
+
+    ARCHIVO_FALSO = b"MZ\x90\x00\x03esto no es un PDF de verdad"
+
+    def test_resumir_pdf_con_archivo_no_pdf_da_400_claro(self, client, documento_sembrado):
+        from io import BytesIO
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/resumir-pdf",
+                                data={"pdf": (BytesIO(self.ARCHIVO_FALSO), "falso.pdf")},
+                                headers={"Authorization": "Bearer x"},
+                                content_type="multipart/form-data")
+        finally:
+            parche.stop()
+        assert resp.status_code == 400
+        assert "no es un PDF válido" in resp.get_json()["error"]
+
+    def test_subir_pdf_chat_con_archivo_no_pdf_da_400_claro(self, client, documento_sembrado):
+        from io import BytesIO
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/subir-pdf-chat",
+                                data={"pdf": (BytesIO(self.ARCHIVO_FALSO), "falso.pdf")},
+                                headers={"Authorization": "Bearer x"},
+                                content_type="multipart/form-data")
+        finally:
+            parche.stop()
+        assert resp.status_code == 400
+        assert "no es un PDF válido" in resp.get_json()["error"]
+
+
 class TestResumirPdfYGenerarTestDesdePdf:
     """Test de humo: la ruta llega hasta el punto de generación con IA
     (mockeada) y devuelve el resultado esperado, sin ejercer aquí toda la

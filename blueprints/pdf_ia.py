@@ -12,7 +12,7 @@ from io import BytesIO
 
 import requests
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from firebase_setup import db
 from auth_utils import requiere_plan, obtener_oposicion_solicitada
@@ -51,18 +51,27 @@ def _resolver_texto_documento(plan_actual):
     pdf_file = request.files['pdf']
     if pdf_file.filename == '':
         return None, None, None, (jsonify({"error": "Nombre de archivo inválido"}), 400)
-    pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+    try:
+        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+        numero_paginas = len(pdf_reader.pages)
+    except Exception:
+        return None, None, None, (jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400)
     limite_paginas = max_paginas_para_plan(plan_actual, db)
-    if len(pdf_reader.pages) > limite_paginas:
+    if numero_paginas > limite_paginas:
         return None, None, None, (jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400)
-    text = ""
-    for page in pdf_reader.pages:
-        page_text = page.extract_text()
-        if page_text:
-            text += page_text + "\n"
+    # La extracción también va protegida: un PDF estructuralmente válido puede
+    # tener páginas con contenido corrupto que revientan extract_text().
+    try:
+        text = ""
+        for page in pdf_reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+    except Exception:
+        return None, None, None, (jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400)
     if not text.strip():
         return None, None, None, (jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400)
-    documento_id, documento = obtener_o_crear_documento(db, g.uid, text, pdf_file.filename, len(pdf_reader.pages))
+    documento_id, documento = obtener_o_crear_documento(db, g.uid, text, pdf_file.filename, numero_paginas)
     return text, documento_id, pdf_file.filename, None
 
 
@@ -536,18 +545,28 @@ def subir_pdf_chat():
     pdf_file = request.files['pdf']
     if pdf_file.filename == '':
         return jsonify({"error": "Nombre de archivo inválido"}), 400
+    # Parseo y extracción separados del resto: un archivo que no sea un PDF
+    # de verdad es un error del usuario (400 con mensaje claro), no un error
+    # del servidor (500), y su mensaje interno no debe llegar al cliente.
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        limite_paginas = max_paginas_para_plan(g.plan_actual, db)
-        if len(pdf_reader.pages) > limite_paginas:
-            return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
+        numero_paginas = len(pdf_reader.pages)
+    except Exception:
+        return jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400
+    limite_paginas = max_paginas_para_plan(g.plan_actual, db)
+    if numero_paginas > limite_paginas:
+        return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
+    try:
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
             if page_text:
                 text += page_text + "\n"
-        if not text.strip():
-            return jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400
+    except Exception:
+        return jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400
+    if not text.strip():
+        return jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400
+    try:
         db.collection("usuarios").document(g.uid).update({
             "chat_pdf_activo": {
                 "texto": text[:MAX_CARACTERES_CHAT_PDF],
@@ -558,11 +577,11 @@ def subir_pdf_chat():
         return jsonify({
             "mensaje": "PDF cargado correctamente",
             "nombre_archivo": pdf_file.filename,
-            "paginas": len(pdf_reader.pages)
+            "paginas": numero_paginas
         })
-    except Exception as e:
+    except Exception:
         logger.exception("Error en /subir-pdf-chat")
-        return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
+        return jsonify({"error": "No se pudo guardar el documento. Inténtalo de nuevo en unos segundos."}), 500
 
 
 @bp.route('/chat-pdf-mensaje', methods=['POST'])

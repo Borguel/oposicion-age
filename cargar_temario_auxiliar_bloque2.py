@@ -45,7 +45,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from deepseek_utils import call_deepseek_api
 
@@ -244,7 +244,7 @@ def dividir_en_subbloques_por_epigrafe(texto, max_tokens=MAX_TOKENS_SUBBLOQUE):
 
 
 def reparar_espaciado(texto_subbloque):
-    """El PDF fuente usa una fuente con un tracking que PyPDF2 extrae como
+    """El PDF fuente usa una fuente con un tracking que pypdf extrae como
     espacios sueltos dentro de palabras (p. ej. "nor mativo", "R eal
     Decr eto"). DeepSeek corrige solo eso, sin resumir ni tocar el
     contenido."""
