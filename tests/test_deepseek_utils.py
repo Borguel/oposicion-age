@@ -43,6 +43,22 @@ def test_sin_response_format_json_no_se_incluye_el_campo(monkeypatch):
     assert "response_format" not in payload_enviado
 
 
+def test_call_deepseek_api_usa_deepseek_chat_por_defecto(monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
+    assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-chat"
+
+
+def test_call_deepseek_api_permite_pedir_otro_modelo(monkeypatch):
+    # Usado por Tu Tutor para poder probar deepseek-reasoner sin afectar al
+    # resto de la app (ver chat_controller._modelo_tutor).
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], model="deepseek-reasoner")
+    assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-reasoner"
+
+
 def test_reintenta_ante_timeout_y_acaba_devolviendo_la_respuesta(monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
     with patch("deepseek_utils.requests.post", side_effect=[
@@ -207,6 +223,32 @@ class TestCallDeepseekApiStream:
             fragmentos = list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}]))
         assert fragmentos == []
         assert mock_post.call_count == 1
+
+    def test_usa_deepseek_chat_por_defecto(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
+            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}]))
+        assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-chat"
+
+    def test_permite_pedir_otro_modelo(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
+            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], model="deepseek-reasoner"))
+        assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-reasoner"
+
+    def test_ignora_reasoning_content_y_solo_cede_content(self, monkeypatch):
+        # deepseek-reasoner emite primero tokens en delta.reasoning_content
+        # (el razonamiento interno) antes de delta.content (la respuesta
+        # final) -- solo debe llegar al llamante lo segundo.
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        lineas = [
+            'data: {"choices": [{"delta": {"reasoning_content": "pensando..."}}]}',
+            'data: {"choices": [{"delta": {"content": "Respuesta"}}]}',
+            "data: [DONE]",
+        ]
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, lineas)):
+            fragmentos = list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}]))
+        assert fragmentos == ["Respuesta"]
 
 
 class TestTrocearEnParrafos:
