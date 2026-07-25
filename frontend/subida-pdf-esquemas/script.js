@@ -459,7 +459,12 @@ async function obtenerAuthHeaders() {
         let buffer = "";
         let datosFinales = null;
 
-        while (true) {
+        // "fin" es SIEMPRE el último evento del stream (el backend termina
+        // justo después de emitirlo): en cuanto llega (queda en datosFinales)
+        // se sale sin esperar al cierre de la conexión (done) -- en
+        // iPhone/WebKit esa señal a veces no llega nunca aunque todo esté ya
+        // recibido, y quedarse esperándola dejaba la pantalla congelada.
+        while (!datosFinales) {
           const { done, value } = await leerStreamConTimeout(lector);
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
@@ -484,6 +489,8 @@ async function obtenerAuthHeaders() {
             }
           }
         }
+
+        lector.cancel().catch(() => {});
 
         if (!datosFinales) {
           throw new Error("Error al generar el esquema. Vuelve a intentarlo.");

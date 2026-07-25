@@ -633,7 +633,12 @@ export function montarWidgetTutor() {
     let respuestaDesactualizada = false;
 
     try {
-      while (true) {
+      // "fin" y "error" son SIEMPRE el último evento del stream (el backend
+      // termina justo después de emitirlos), así que en cuanto llega uno se
+      // sale sin esperar al cierre de la conexión (done) -- en iPhone/WebKit
+      // esa señal a veces no llega nunca aunque todo esté ya recibido.
+      let terminado = false;
+      while (!terminado) {
         const { done, value } = await leerStreamConTimeout(lector);
         if (done) break;
         buffer += decodificador.decode(value, { stream: true });
@@ -659,10 +664,11 @@ export function montarWidgetTutor() {
               }
             }
           }
-          else if (evento.tipo === "fin") { chatId = evento.chat_id; }
-          else if (evento.tipo === "error") { huboError = true; }
+          else if (evento.tipo === "fin") { chatId = evento.chat_id; terminado = true; }
+          else if (evento.tipo === "error") { huboError = true; terminado = true; }
         }
       }
+      lector.cancel().catch(() => {});
     } catch { huboError = true; }
 
     if (huboError && !acumulado) {

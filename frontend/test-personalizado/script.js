@@ -514,7 +514,17 @@ async function obtenerAuthHeaders() {
         let ultimoCompletadas = 0;
         let ultimoTotal = num_preguntas;
 
-        while (true) {
+        // El backend garantiza que "fin" es SIEMPRE el último evento del
+        // stream (su generador termina justo después de emitirlo), así que
+        // en cuanto llega se sale del bucle sin esperar a que el navegador
+        // señale el cierre de la conexión (done) -- en iPhone/WebKit esa
+        // señal a veces no llega nunca aunque todos los datos ya estén
+        // recibidos, y quedarse esperándola dejaba la pantalla congelada en
+        // "10 de 10" con el test completo ya en la mano (visto en
+        // producción: el servidor había respondido 200 con todo enviado y
+        // la página seguía "generando" hasta saltar el timeout).
+        let finRecibido = false;
+        while (!finRecibido) {
           const { done, value } = await leerStreamConTimeout(lector, TIMEOUT_SIN_EVENTOS_STREAM_MS);
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
@@ -565,9 +575,11 @@ async function obtenerAuthHeaders() {
               }
             } else if (evento.tipo === "fin") {
               datosFinales = evento;
+              finRecibido = true;
             }
           }
         }
+        lector.cancel().catch(() => {});
 
         if (transicionadoATest) {
           // El usuario ya está haciendo el test -- "fin" solo sirve para
