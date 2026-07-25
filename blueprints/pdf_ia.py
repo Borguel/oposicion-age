@@ -183,7 +183,7 @@ def resumir_pdf():
     return Response(
         stream_with_context(generar()),
         mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
     )
 
 
@@ -313,7 +313,7 @@ def generar_esquema_desde_pdf():
     return Response(
         stream_with_context(generar()),
         mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
     )
 
 
@@ -448,7 +448,7 @@ def generar_test_desde_pdf():
     return Response(
         stream_with_context(generar()),
         mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
     )
 
 
@@ -526,7 +526,7 @@ def generar_tarjetas_desde_pdf():
     return Response(
         stream_with_context(generar()),
         mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
     )
 
 
