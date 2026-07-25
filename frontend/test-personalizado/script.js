@@ -524,7 +524,8 @@ async function obtenerAuthHeaders() {
         // producción: el servidor había respondido 200 con todo enviado y
         // la página seguía "generando" hasta saltar el timeout).
         let finRecibido = false;
-        while (!finRecibido) {
+        try {
+          while (!finRecibido) {
           const { done, value } = await leerStreamConTimeout(lector, TIMEOUT_SIN_EVENTOS_STREAM_MS);
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
@@ -578,8 +579,32 @@ async function obtenerAuthHeaders() {
               finRecibido = true;
             }
           }
+          }
+        } catch (errorStream) {
+          // El stream se cortó (timeout o error de red) ANTES de llegar
+          // "fin". Pero cada pregunta aceptada ya llegó como evento
+          // "pregunta" individual, así que si hay preguntas en la mano el
+          // test puede empezar igualmente con ellas -- perder el cierre de
+          // la conexión no debe tirar a la basura un test ya recibido.
+          // Solo si no llegó NINGUNA pregunta se propaga el error de verdad.
+          if (preguntasRecibidas.length === 0 && !transicionadoATest) {
+            throw errorStream;
+          }
         }
         lector.cancel().catch(() => {});
+
+        if (!datosFinales && !transicionadoATest && preguntasRecibidas.length > 0) {
+          // El final del stream se perdió pero las preguntas ya están aquí:
+          // se empieza el test con lo recibido, avisando sin bloquear si
+          // faltó alguna respecto a lo pedido.
+          if (preguntasRecibidas.length < num_preguntas) {
+            mostrarErrorGlobalNoBloqueante(
+              `La conexión se cortó al final: el test empieza con ${preguntasRecibidas.length} de ${num_preguntas} preguntas.`
+            );
+          }
+          await entrarEnModoTest(preguntasRecibidas, oposicion, temas);
+          return;
+        }
 
         if (transicionadoATest) {
           // El usuario ya está haciendo el test -- "fin" solo sirve para
