@@ -62,7 +62,10 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     generación de tests, resúmenes, esquemas...). "deepseek-reasoner" es el
     modelo de razonamiento (más lento y caro, pero más capaz en preguntas de
     varios pasos) -- de momento solo lo usa Tu Tutor, de forma opcional (ver
-    TUTOR_MODELO_IA en chat_controller.py).
+    TUTOR_MODELO_IA en chat_controller.py). deepseek-reasoner RECHAZA (HTTP
+    400, no lo ignora en silencio pese a lo que dice la documentación oficial)
+    parámetros de muestreo como temperature -- por eso no se incluye en el
+    payload para ese modelo.
     """
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
@@ -78,10 +81,11 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     payload = {
         "model": model,
         "messages": messages,
-        "temperature": temperature,
         "max_tokens": max_tokens,
         "stream": False
     }
+    if model != "deepseek-reasoner":
+        payload["temperature"] = temperature
     if response_format_json:
         payload["response_format"] = {"type": "json_object"}
 
@@ -378,7 +382,9 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7, model="
     respuesta final -- como abajo solo se cede `delta.content`, esos tokens de
     razonamiento quedan descartados automáticamente (nunca llegan al
     frontend), pero sí se facturan: puede haber un silencio inicial más largo
-    antes de que empiece a aparecer texto."""
+    antes de que empiece a aparecer texto. Tampoco se manda temperature con
+    este modelo -- deepseek-reasoner responde HTTP 400 si se incluye (no lo
+    ignora en silencio pese a lo que dice la documentación oficial)."""
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
     if not api_key:
@@ -393,7 +399,6 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7, model="
     payload = {
         "model": model,
         "messages": messages,
-        "temperature": temperature,
         "max_tokens": max_tokens,
         "stream": True,
         # Pide que el último chunk del stream incluya el consumo de tokens,
@@ -401,6 +406,8 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7, model="
         # streaming (Tu Tutor, test personalizado).
         "stream_options": {"include_usage": True},
     }
+    if model != "deepseek-reasoner":
+        payload["temperature"] = temperature
 
     try:
         # Solo se reintenta la CONEXIÓN inicial (antes de que se haya

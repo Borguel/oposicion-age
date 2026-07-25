@@ -59,6 +59,25 @@ def test_call_deepseek_api_permite_pedir_otro_modelo(monkeypatch):
     assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-reasoner"
 
 
+def test_call_deepseek_api_incluye_temperature_con_deepseek_chat(monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], temperature=0.5)
+    assert mock_post.call_args.kwargs["json"]["temperature"] == 0.5
+
+
+def test_call_deepseek_api_no_incluye_temperature_con_deepseek_reasoner(monkeypatch):
+    # Regresión: deepseek-reasoner responde HTTP 400 ("does not support the
+    # parameter temperature") si se incluye este campo -- no lo ignora en
+    # silencio pese a lo que dice la documentación oficial de DeepSeek. Esto
+    # rompía Tu Tutor en cuanto se activaba TUTOR_MODELO_IA=deepseek-reasoner
+    # (todas las respuestas caían al mensaje genérico de error).
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], model="deepseek-reasoner")
+    assert "temperature" not in mock_post.call_args.kwargs["json"]
+
+
 def test_reintenta_ante_timeout_y_acaba_devolviendo_la_respuesta(monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
     with patch("deepseek_utils.requests.post", side_effect=[
@@ -235,6 +254,20 @@ class TestCallDeepseekApiStream:
         with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
             list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], model="deepseek-reasoner"))
         assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-reasoner"
+
+    def test_incluye_temperature_con_deepseek_chat(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
+            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], temperature=0.5))
+        assert mock_post.call_args.kwargs["json"]["temperature"] == 0.5
+
+    def test_no_incluye_temperature_con_deepseek_reasoner(self, monkeypatch):
+        # Misma regresión que en call_deepseek_api: deepseek-reasoner
+        # responde HTTP 400 si se incluye temperature en el payload.
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
+            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], model="deepseek-reasoner"))
+        assert "temperature" not in mock_post.call_args.kwargs["json"]
 
     def test_ignora_reasoning_content_y_solo_cede_content(self, monkeypatch):
         # deepseek-reasoner emite primero tokens en delta.reasoning_content
