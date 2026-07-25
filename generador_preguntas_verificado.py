@@ -49,17 +49,18 @@ logger = logging.getLogger(__name__)
 MAX_INTENTOS_POR_PREGUNTA = 4
 _MAX_WORKERS = 6
 
-# deepseek-v4-pro (razonamiento) en vez del deepseek-v4-flash por defecto de
-# call_deepseek_api: visto en producción tras la migración de modelos del
-# 24/07/2026 (ver deepseek_utils.py) que flash sigue peor las reglas
-# estrictas de este módulo (nombrar la norma completa, formato exacto de la
-# explicación...) -- un test de 10 preguntas llegó a descartar 14 candidatas
-# para aceptar solo 5 (74% de descarte, registrado en el log de
-# generar_test_verificado). Más lento y más caro por pregunta que flash,
-# pero un modelo de razonamiento debería seguir instrucciones estrictas de
-# varios pasos con más fiabilidad -- el mismo cambio que ya funciona bien en
-# Tu Tutor vía TUTOR_MODELO_IA.
-_MODELO = "deepseek-v4-pro"
+# REVERTIDO a deepseek-v4-flash (25/07/2026): se probó deepseek-v4-pro
+# (razonamiento) porque flash descartaba el 74% de las preguntas candidatas
+# por no seguir las reglas estrictas de este módulo -- pero en producción
+# deepseek-v4-pro dio fallos de conexión reales y persistentes
+# ("Error de conexión: no se pudo conectar a DeepSeek API" repetido durante
+# minutos, incluso en un intento limpio tras esperar), probablemente por ser
+# un modelo recién lanzado bajo mucha demanda tras la migración forzosa del
+# 24/07/2026. Un fallo de conexión deja el test sin NINGUNA pregunta, peor
+# que el descarte alto de flash (que al menos entrega algunas) -- se
+# vuelve a flash mientras se decide una solución de fondo (más reintentos,
+# otro proveedor de IA, etc.).
+_MODELO = "deepseek-v4-flash"
 
 # Mismo patrón que cargar_temario_boe.py usa al trocear el temario en
 # subbloques -- nunca corta un artículo a mitad -- para poder recuperar en
