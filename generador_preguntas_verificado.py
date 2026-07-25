@@ -49,6 +49,18 @@ logger = logging.getLogger(__name__)
 MAX_INTENTOS_POR_PREGUNTA = 4
 _MAX_WORKERS = 6
 
+# deepseek-v4-pro (razonamiento) en vez del deepseek-v4-flash por defecto de
+# call_deepseek_api: visto en producción tras la migración de modelos del
+# 24/07/2026 (ver deepseek_utils.py) que flash sigue peor las reglas
+# estrictas de este módulo (nombrar la norma completa, formato exacto de la
+# explicación...) -- un test de 10 preguntas llegó a descartar 14 candidatas
+# para aceptar solo 5 (74% de descarte, registrado en el log de
+# generar_test_verificado). Más lento y más caro por pregunta que flash,
+# pero un modelo de razonamiento debería seguir instrucciones estrictas de
+# varios pasos con más fiabilidad -- el mismo cambio que ya funciona bien en
+# Tu Tutor vía TUTOR_MODELO_IA.
+_MODELO = "deepseek-v4-pro"
+
 # Mismo patrón que cargar_temario_boe.py usa al trocear el temario en
 # subbloques -- nunca corta un artículo a mitad -- para poder recuperar en
 # tiempo de lectura el texto exacto de UN artículo dentro de un subbloque
@@ -392,9 +404,19 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             generado = call_deepseek_api(
                 messages=[{"role": "system", "content": system_gen}, {"role": "user", "content": user_gen}],
                 temperature=0.5,
-                max_tokens=1000,
+                # max_tokens generoso: _MODELO es un modelo de razonamiento,
+                # que gasta tokens en pensar internamente (reasoning_content)
+                # ANTES de escribir la respuesta final -- ese razonamiento
+                # cuenta contra el mismo max_tokens. Con un tope ajustado
+                # (pensado para un modelo sin razonamiento) se arriesga a
+                # cortar la respuesta a mitad del razonamiento, sin llegar
+                # nunca al JSON final -- eso aumentaría los descartes en vez
+                # de reducirlos, justo lo contrario de por qué se cambió de
+                # modelo.
+                max_tokens=3000,
                 response_format_json=True,
                 on_usage=on_usage,
+                model=_MODELO,
             )
             if not generado:
                 continue
@@ -417,9 +439,10 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             verificacion_raw = call_deepseek_api(
                 messages=[{"role": "system", "content": system_ver}, {"role": "user", "content": user_ver}],
                 temperature=0.0,
-                max_tokens=400,
+                max_tokens=2000,  # ver comentario de max_tokens en la llamada de generación de arriba
                 response_format_json=True,
                 on_usage=on_usage,
+                model=_MODELO,
             )
             if not verificacion_raw:
                 continue

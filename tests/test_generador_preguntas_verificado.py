@@ -233,7 +233,7 @@ def test_fallo_inesperado_en_un_intento_consume_solo_ese_intento():
 
 
 def _mock_deepseek_siempre_valido(contador, lock_contador):
-    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None):
+    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None, model=None):
         contenido_usuario = messages[-1]["content"]
         if "PREGUNTA A VERIFICAR" in contenido_usuario:
             return json.dumps({"valido": True, "problemas": []})
