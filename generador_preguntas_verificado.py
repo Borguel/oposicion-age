@@ -560,9 +560,13 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     # sobra" no se traduzca en menos preguntas de las pedidas solo porque a
     # un hueco concreto le tocó mala suerte con sus intentos. Secuencial (no
     # merece la pena otro ThreadPoolExecutor para lo que normalmente es 1-2
-    # preguntas) y sin llamar a on_progreso (el "total" ya se anunció al
-    # frontend; el resultado final de todas formas reconcilia cualquier
-    # pregunta que falte, ver test-personalizado/script.js).
+    # preguntas). SÍ llama a on_progreso igual que el bucle principal: cada
+    # intento aquí puede suponer dos llamadas a DeepSeek de hasta 30s cada
+    # una, y con varios huecos por rellenar esta fase puede tardar bastante
+    # -- sin ningún evento durante todo ese tramo, quien consume el streaming
+    # SSE (ver /generar-test-avanzado) se queda sin ninguna señal de que
+    # sigue en marcha, tiempo de silencio real que un cliente o proxy
+    # intermedio puede llegar a interpretar como conexión muerta.
     if len(preguntas) < num_preguntas and temas_con_contenido:
         faltan = num_preguntas - len(preguntas)
         ciclo_temas = itertools.cycle(temas_con_contenido)
@@ -583,6 +587,11 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                 limpiar_cache_preguntas_banco_ia(oposicion)
             else:
                 descartadas += 1
+            if on_progreso:
+                on_progreso({
+                    "completadas": completadas, "total": total, "aceptadas": len(preguntas),
+                    "pregunta": resultado,
+                })
 
     # Con uid (Test Personalizado): la generación corre en un hilo de fondo
     # desligado de la petición, así que se vuelca DIRECTO a Firestore. Sin uid

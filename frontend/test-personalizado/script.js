@@ -549,7 +549,11 @@ async function obtenerAuthHeaders() {
                 const elMensajeCarga = document.getElementById("mensaje-carga");
                 const elBarra = document.getElementById("progreso-generacion");
                 const elTextoBarra = document.getElementById("texto-progreso-generacion");
-                const fraccionReal = evento.total ? (evento.completadas / evento.total) : 0;
+                // Math.min: durante el relleno de huecos fallidos (ver
+                // generador_preguntas_verificado.py) "completadas" puede
+                // superar "total" -- sin este tope se vería una barra por
+                // encima del 100% y un mensaje tipo "pregunta 11 de 10".
+                const fraccionReal = evento.total ? Math.min(1, evento.completadas / evento.total) : 0;
                 // El progreso real se remapea al tramo que queda por encima
                 // del cosmético, para que la barra continúe sin saltar hacia
                 // atrás (el conteo honesto "X de Y" ya va en el mensaje de abajo).
@@ -557,7 +561,7 @@ async function obtenerAuthHeaders() {
                 if (elBarra) elBarra.style.width = `${porcentaje}%`;
                 if (elTextoBarra) elTextoBarra.textContent = `${porcentaje}%`;
                 if (elMensajeCarga) {
-                  elMensajeCarga.textContent = `Generando y verificando pregunta ${evento.completadas} de ${evento.total}...`;
+                  elMensajeCarga.textContent = `Generando y verificando pregunta ${Math.min(evento.completadas, evento.total)} de ${evento.total}...`;
                 }
               } else {
                 mostrarIndicadorGenerandoFondo(evento.completadas, evento.total);
