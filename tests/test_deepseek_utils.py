@@ -43,35 +43,47 @@ def test_sin_response_format_json_no_se_incluye_el_campo(monkeypatch):
     assert "response_format" not in payload_enviado
 
 
-def test_call_deepseek_api_usa_deepseek_chat_por_defecto(monkeypatch):
+def test_call_deepseek_api_usa_deepseek_v4_flash_por_defecto(monkeypatch):
+    # deepseek-chat/deepseek-reasoner se retiraron el 24/07/2026 sin periodo
+    # de gracia; los nombres actuales son deepseek-v4-flash/deepseek-v4-pro.
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
     with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
         deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
-    assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-chat"
+    assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-v4-flash"
 
 
 def test_call_deepseek_api_permite_pedir_otro_modelo(monkeypatch):
-    # Usado por Tu Tutor para poder probar deepseek-reasoner sin afectar al
+    # Usado por Tu Tutor para poder probar deepseek-v4-pro sin afectar al
     # resto de la app (ver chat_controller._modelo_tutor).
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
     with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
-        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], model="deepseek-reasoner")
-    assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-reasoner"
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], model="deepseek-v4-pro")
+    assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-v4-pro"
 
 
-def test_call_deepseek_api_incluye_temperature_con_deepseek_chat(monkeypatch):
+def test_call_deepseek_api_incluye_temperature_con_deepseek_v4_flash(monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
     with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
         deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], temperature=0.5)
     assert mock_post.call_args.kwargs["json"]["temperature"] == 0.5
 
 
-def test_call_deepseek_api_no_incluye_temperature_con_deepseek_reasoner(monkeypatch):
-    # Regresión: deepseek-reasoner responde HTTP 400 ("does not support the
-    # parameter temperature") si se incluye este campo -- no lo ignora en
-    # silencio pese a lo que dice la documentación oficial de DeepSeek. Esto
-    # rompía Tu Tutor en cuanto se activaba TUTOR_MODELO_IA=deepseek-reasoner
-    # (todas las respuestas caían al mensaje genérico de error).
+def test_call_deepseek_api_incluye_temperature_con_deepseek_v4_pro(monkeypatch):
+    # A diferencia del antiguo deepseek-reasoner (retirado), deepseek-v4-pro
+    # sí admite temperature con normalidad.
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], model="deepseek-v4-pro", temperature=0.5)
+    assert mock_post.call_args.kwargs["json"]["temperature"] == 0.5
+
+
+def test_call_deepseek_api_no_incluye_temperature_con_el_nombre_retirado(monkeypatch):
+    # Legado: el antiguo deepseek-reasoner (retirado el 24/07/2026) rechazaba
+    # con HTTP 400 ("does not support the parameter temperature") si se
+    # incluía este campo -- no lo ignoraba en silencio pese a lo que decía
+    # la documentación oficial. Se mantiene esta exclusión por si quedara
+    # algún sitio con el nombre antiguo todavía configurado, aunque con los
+    # nombres actuales (deepseek-v4-flash/deepseek-v4-pro) nunca se activa.
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
     with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
         deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], model="deepseek-reasoner")
@@ -243,27 +255,34 @@ class TestCallDeepseekApiStream:
         assert fragmentos == []
         assert mock_post.call_count == 1
 
-    def test_usa_deepseek_chat_por_defecto(self, monkeypatch):
+    def test_usa_deepseek_v4_flash_por_defecto(self, monkeypatch):
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
         with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
             list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}]))
-        assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-chat"
+        assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-v4-flash"
 
     def test_permite_pedir_otro_modelo(self, monkeypatch):
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
         with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
-            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], model="deepseek-reasoner"))
-        assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-reasoner"
+            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], model="deepseek-v4-pro"))
+        assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-v4-pro"
 
-    def test_incluye_temperature_con_deepseek_chat(self, monkeypatch):
+    def test_incluye_temperature_con_deepseek_v4_flash(self, monkeypatch):
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
         with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
             list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], temperature=0.5))
         assert mock_post.call_args.kwargs["json"]["temperature"] == 0.5
 
-    def test_no_incluye_temperature_con_deepseek_reasoner(self, monkeypatch):
-        # Misma regresión que en call_deepseek_api: deepseek-reasoner
-        # responde HTTP 400 si se incluye temperature en el payload.
+    def test_incluye_temperature_con_deepseek_v4_pro(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
+            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], model="deepseek-v4-pro", temperature=0.5))
+        assert mock_post.call_args.kwargs["json"]["temperature"] == 0.5
+
+    def test_no_incluye_temperature_con_el_nombre_retirado(self, monkeypatch):
+        # Legado (ver test equivalente en call_deepseek_api): el antiguo
+        # deepseek-reasoner, retirado el 24/07/2026, respondía HTTP 400 si
+        # se incluía temperature en el payload.
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
         with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
             list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], model="deepseek-reasoner"))

@@ -627,7 +627,7 @@ def chat_pdf_mensaje():
 
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         payload = {
-            "model": "deepseek-chat",
+            "model": "deepseek-v4-flash",
             "messages": mensajes,
             "temperature": 0.4,
             "max_tokens": 800
@@ -660,7 +660,7 @@ def chat_deepseek():
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         payload = {
-            "model": "deepseek-chat",
+            "model": "deepseek-v4-flash",
             "messages": [
                 {"role": "system", "content": "Eres un asistente especializado en oposiciones. Responde de manera clara, concisa y útil."},
                 {"role": "user", "content": mensaje}

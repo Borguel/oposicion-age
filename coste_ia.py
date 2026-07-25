@@ -29,13 +29,15 @@ def _precio(env, defecto):
 
 
 # € por cada 1.000.000 de tokens. Valores por defecto según las tarifas
-# oficiales de DeepSeek (deepseek-chat -> gama "flash"), convertidas de
-# dólares a euros al cambio aproximado (~0,92 €/$):
+# oficiales de DeepSeek para deepseek-v4-flash (el modelo usado en toda la
+# app salvo que TUTOR_MODELO_IA diga lo contrario -- ver chat_controller.py),
+# convertidas de dólares a euros al cambio aproximado (~0,92 €/$):
 #   entrada cache miss $0,14/M -> ~0,13 €/M   (usamos el precio caro, sin
 #     descuento de caché, para que la estimación quede siempre por lo alto)
 #   salida            $0,28/M -> ~0,26 €/M
 # Se pueden ajustar sin tocar código con las variables de entorno de abajo
-# (p. ej. si tu cuenta factura como "pro": salida $0,87/M -> ~0,80 €/M).
+# (p. ej. si se usa deepseek-v4-pro, más caro: revisa el precio real vigente
+# en la documentación de DeepSeek antes de ajustar estas dos variables).
 PRECIO_INPUT_EUR_MILLON = _precio("IA_PRECIO_INPUT_EUR_MILLON", 0.13)
 PRECIO_OUTPUT_EUR_MILLON = _precio("IA_PRECIO_OUTPUT_EUR_MILLON", 0.26)
 

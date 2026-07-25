@@ -47,25 +47,27 @@ def _es_error_transitorio(exc):
     return False
 
 
-def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-chat"):
+def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash"):
     """
     Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.
 
     response_format_json=True activa el modo JSON nativo de la API
     (`response_format: {"type": "json_object"}`, soportado por DeepSeek pero
     no usado hasta ahora) -- reduce fallos de parseo cuando se espera JSON,
-    frente a depender solo de instrucciones en el prompt. OJO: deepseek-reasoner
-    no soporta este modo -- no combinar model="deepseek-reasoner" con
-    response_format_json=True.
+    frente a depender solo de instrucciones en el prompt.
 
-    model por defecto "deepseek-chat" (el usado en todo el resto de la app:
-    generación de tests, resúmenes, esquemas...). "deepseek-reasoner" es el
-    modelo de razonamiento (más lento y caro, pero más capaz en preguntas de
-    varios pasos) -- de momento solo lo usa Tu Tutor, de forma opcional (ver
-    TUTOR_MODELO_IA en chat_controller.py). deepseek-reasoner RECHAZA (HTTP
-    400, no lo ignora en silencio pese a lo que dice la documentación oficial)
-    parámetros de muestreo como temperature -- por eso no se incluye en el
-    payload para ese modelo.
+    model por defecto "deepseek-v4-flash" (el usado en todo el resto de la
+    app: generación de tests, resúmenes, esquemas...). "deepseek-v4-pro" es
+    el modelo de razonamiento (más lento y caro, pero más capaz en preguntas
+    de varios pasos) -- de momento solo lo usa Tu Tutor, de forma opcional
+    (ver TUTOR_MODELO_IA en chat_controller.py). NOTA: hasta el 24/07/2026
+    estos modelos se llamaban "deepseek-chat" y "deepseek-reasoner" -- esos
+    dos nombres se retiraron ese día sin periodo de gracia (cualquier
+    llamada con el nombre antiguo devuelve error). El antiguo
+    "deepseek-reasoner" rechazaba con HTTP 400 el parámetro temperature; el
+    "deepseek-v4-pro" actual sí lo admite con normalidad -- se mantiene la
+    exclusión de abajo solo por si quedara algún sitio con el nombre
+    retirado todavía configurado, nunca se activa con los nombres actuales.
     """
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
@@ -130,14 +132,15 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
 
         except requests.exceptions.HTTPError as e:
             status = e.response.status_code if e.response is not None else None
+            cuerpo = e.response.text[:500] if e.response is not None else ""
             if status == 401:
-                logger.error("Error HTTP 401 de DeepSeek: verifica que la API key sea válida (%s)", e)
+                logger.error("Error HTTP 401 de DeepSeek: verifica que la API key sea válida (%s) -- %s", e, cuerpo)
             elif status == 429:
-                logger.warning("Error HTTP 429 de DeepSeek: límite de tasa excedido (%s)", e)
+                logger.warning("Error HTTP 429 de DeepSeek: límite de tasa excedido (%s) -- %s", e, cuerpo)
             elif status is not None and status >= 500:
-                logger.warning("Error HTTP %s del servidor de DeepSeek (%s)", status, e)
+                logger.warning("Error HTTP %s del servidor de DeepSeek (%s) -- %s", status, e, cuerpo)
             else:
-                logger.error("Error HTTP %s de DeepSeek: %s", status, e)
+                logger.error("Error HTTP %s de DeepSeek: %s -- %s", status, e, cuerpo)
             transitorio = _es_error_transitorio(e)
 
         except requests.exceptions.RequestException as e:
@@ -217,7 +220,7 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
     texto_completo = ""
     for _ in range(max_continuaciones + 1):
         payload = {
-            "model": "deepseek-chat",
+            "model": "deepseek-v4-flash",
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
@@ -375,16 +378,15 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
 # DeepSeek (protocolo SSE, "data: {...}" por línea, terminado en "data:
 # [DONE]"), para poder mostrarlo en el frontend con efecto de escritura en
 # vez de esperar a que termine toda la respuesta.
-def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7, model="deepseek-chat"):
-    """model por defecto "deepseek-chat" (ver call_deepseek_api). Con
-    "deepseek-reasoner" el modelo emite primero tokens de razonamiento
-    internos (campo `delta.reasoning_content`, no `delta.content`) antes de la
-    respuesta final -- como abajo solo se cede `delta.content`, esos tokens de
-    razonamiento quedan descartados automáticamente (nunca llegan al
-    frontend), pero sí se facturan: puede haber un silencio inicial más largo
-    antes de que empiece a aparecer texto. Tampoco se manda temperature con
-    este modelo -- deepseek-reasoner responde HTTP 400 si se incluye (no lo
-    ignora en silencio pese a lo que dice la documentación oficial)."""
+def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7, model="deepseek-v4-flash"):
+    """model por defecto "deepseek-v4-flash" (ver call_deepseek_api). Con
+    "deepseek-v4-pro" (el modelo de razonamiento) emite primero tokens de
+    razonamiento internos (campo `delta.reasoning_content`, no
+    `delta.content`) antes de la respuesta final -- como abajo solo se cede
+    `delta.content`, esos tokens de razonamiento quedan descartados
+    automáticamente (nunca llegan al frontend), pero sí se facturan: puede
+    haber un silencio inicial más largo antes de que empiece a aparecer
+    texto."""
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
     if not api_key:
@@ -439,6 +441,9 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7, model="
         logger.warning("Timeout: la API de DeepSeek no respondió a tiempo (streaming)")
     except requests.exceptions.ConnectionError:
         logger.warning("Error de conexión: no se pudo conectar a DeepSeek API (streaming)")
+    except requests.exceptions.HTTPError as e:
+        cuerpo = e.response.text[:500] if e.response is not None else ""
+        logger.warning("Error en streaming de DeepSeek: %s -- %s", e, cuerpo)
     except requests.exceptions.RequestException as e:
         logger.warning("Error en streaming de DeepSeek: %s", e)
 

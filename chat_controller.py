@@ -13,12 +13,15 @@ from deepseek_utils import call_deepseek_api, call_deepseek_api_stream
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 
 # Modelo de DeepSeek para Tu Tutor, configurable sin redeploy de código: por
-# defecto el mismo "deepseek-chat" que usa el resto de la app, pero se puede
-# probar "deepseek-reasoner" (más lento y caro, pero más capaz en preguntas de
-# varios pasos) poniendo TUTOR_MODELO_IA=deepseek-reasoner en el entorno --
-# basta con quitar la variable (o volver a "deepseek-chat") para revertir.
+# defecto el mismo "deepseek-v4-flash" que usa el resto de la app, pero se
+# puede probar "deepseek-v4-pro" (el modelo de razonamiento -- más lento y
+# caro, pero más capaz en preguntas de varios pasos) poniendo
+# TUTOR_MODELO_IA=deepseek-v4-pro en el entorno -- basta con quitar la
+# variable (o volver a "deepseek-v4-flash") para revertir. NOTA: hasta el
+# 24/07/2026 estos modelos se llamaban "deepseek-chat"/"deepseek-reasoner";
+# esos nombres se retiraron ese día sin periodo de gracia.
 def _modelo_tutor():
-    return os.getenv("TUTOR_MODELO_IA", "deepseek-chat")
+    return os.getenv("TUTOR_MODELO_IA", "deepseek-v4-flash")
 
 # ✅ Crear conversación con título y mensajes en subcolección por usuario
 
