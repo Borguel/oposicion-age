@@ -11,6 +11,7 @@ import { BACKEND_URL } from "/assets/firebase-config.js";
 import { obtenerAuthHeaders } from "/assets/auth.js";
 import { obtenerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
+import { leerStreamConTimeout } from "/assets/stream-utils.js";
 
 const ERROR_TECNICO = "El tutor ha tenido un problema técnico. Vuelve a intentarlo en unos segundos.";
 
@@ -633,7 +634,7 @@ export function montarWidgetTutor() {
 
     try {
       while (true) {
-        const { done, value } = await lector.read();
+        const { done, value } = await leerStreamConTimeout(lector);
         if (done) break;
         buffer += decodificador.decode(value, { stream: true });
         const bloques = buffer.split("\n\n");

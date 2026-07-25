@@ -1,4 +1,5 @@
 import { icono } from "/assets/icons.js";
+import { leerStreamConTimeout } from "/assets/stream-utils.js";
 
 // Se resuelve aquí, en el nivel superior del módulo (que se ejecuta
 // "deferred" pero SIEMPRE antes de DOMContentLoaded), y no dentro del
@@ -357,7 +358,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     try {
       while (true) {
-        const { done, value } = await lector.read();
+        const { done, value } = await leerStreamConTimeout(lector);
         if (done) break;
         buffer += decodificador.decode(value, { stream: true });
         const bloques = buffer.split("\n\n");

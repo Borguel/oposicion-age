@@ -4,6 +4,7 @@
 // separada en su propia página para no mezclar el
 // selector de tipo de test con el propio formulario de generación.
 import { icono } from "/assets/icons.js";
+import { leerStreamConTimeout, TIMEOUT_SIN_EVENTOS_STREAM_MS } from "/assets/stream-utils.js";
 
 const TIPO_TEST = "personalizado";
 const ENDPOINT_GENERAR = "/generar-test-avanzado";
@@ -514,7 +515,7 @@ async function obtenerAuthHeaders() {
         let ultimoTotal = num_preguntas;
 
         while (true) {
-          const { done, value } = await lector.read();
+          const { done, value } = await leerStreamConTimeout(lector, TIMEOUT_SIN_EVENTOS_STREAM_MS);
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
           const bloques = buffer.split("\n\n");

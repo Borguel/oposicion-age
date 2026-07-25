@@ -1,4 +1,5 @@
 import { icono } from "/assets/icons.js";
+import { leerStreamConTimeout } from "/assets/stream-utils.js";
 
 import("/assets/plan.js").then(({ protegerPagina }) => protegerPagina("premium"));
 
@@ -331,7 +332,7 @@ async function obtenerAuthHeaders() {
         let datosFinales = null;
 
         while (true) {
-          const { done, value } = await lector.read();
+          const { done, value } = await leerStreamConTimeout(lector);
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
           const bloques = buffer.split("\n\n");
