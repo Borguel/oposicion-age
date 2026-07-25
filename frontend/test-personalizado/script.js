@@ -644,6 +644,15 @@ async function obtenerAuthHeaders() {
           return;
         }
         await entrarEnModoTest(datos.test, oposicion, temas);
+        // El backend puede entregar menos preguntas de las pedidas (algunas
+        // no superaron la verificación de calidad ni siquiera con el
+        // relleno, ver generador_preguntas_verificado.py) sin que eso sea un
+        // error -- test.length > 0 así que el bloque de arriba no salta,
+        // pero el usuario debe enterarse de que el test es más corto de lo
+        // pedido en vez de encontrarse con menos preguntas sin explicación.
+        if (datos.advertencia) {
+          mostrarErrorGlobalNoBloqueante(datos.advertencia);
+        }
       } catch (error) {
         pararProgresoCosmetico();
         const contenedorTest = document.getElementById('contenedor-test');

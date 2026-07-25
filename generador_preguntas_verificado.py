@@ -608,4 +608,14 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
             "la verificación de calidad tras varios intentos (incluyendo un intento de relleno en otro "
             "tema) y se descartó en vez de entregarse sin validar."
         )
+    # Sin este log, un test que entrega menos preguntas de las pedidas no
+    # deja NINGÚN rastro en los logs (los descartes por no superar la
+    # verificación no son un error, así que no pasan por logger.exception) --
+    # visto en producción: sin esta línea no había forma de saber, a partir
+    # de los logs de Render, si una tasa de descarte alta era el motivo real
+    # de una generación lenta o incompleta.
+    logger.info(
+        "Test personalizado generado: %s/%s aceptadas, %s descartadas (temas: %s)",
+        len(preguntas), num_preguntas, descartadas, temas_unicos,
+    )
     return resultado_final
