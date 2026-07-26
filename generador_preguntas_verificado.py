@@ -265,7 +265,15 @@ def _prompt_generacion_normativo(anclas, tipo_pregunta, oposicion):
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin bloques de código ni texto adicional:\n"
         '{"norma": "...", "articulo": "...", "tipo_pregunta": "...", "pregunta": "...", '
         '"opciones": {"A": "...", "B": "...", "C": "...", "D": "..."}, "respuesta_correcta": "A", '
-        '"explicacion": "...", "referencia_legal": "..."}'
+        '"explicacion": "..."}'
+        # Nota: se pedía también "referencia_legal" hasta ahora, pero ese
+        # campo no lo lee ni lo usa nadie (ni el frontend, ni
+        # validador_preguntas.py, ni la propia verificación posterior) --
+        # la exigencia real de citar artículo+norma ya vive dentro de
+        # "explicacion" (reglas 4 y 5 de arriba). Quitarlo del esquema
+        # ahorra tokens de salida (y por tanto tiempo, ver el log "DeepSeek
+        # respondió en Xs... tokens_salida=..." en deepseek_utils.py) sin
+        # tocar la calidad de la explicación real que sí se muestra.
     )
     user = f"{contenido}\n\nGenera la pregunta a partir de este texto legal."
     return system, user
