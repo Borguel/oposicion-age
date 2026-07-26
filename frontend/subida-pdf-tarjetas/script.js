@@ -384,7 +384,7 @@ async function obtenerAuthHeaders() {
               continue;
             }
             if (evento.tipo === "progreso") {
-              progreso.avanzar(evento, `Verificando tarjetas (${evento.completadas} de ${evento.total})…`);
+              progreso.avanzar(evento, `Verificando tarjetas (${Math.min(evento.completadas, evento.total)} de ${evento.total})…`);
             } else if (evento.tipo === "fin") {
               datosFinales = evento;
             }

@@ -88,7 +88,10 @@ class TestGenerarTarjetasVerificadas:
     def test_tope_de_intentos_agotado_descarta_la_tarjeta(self):
         # La verificación SIEMPRE falla -- tras MAX_INTENTOS_POR_TARJETA
         # regeneraciones fallidas, la tarjeta se descarta y no aparece en
-        # el resultado (nunca se entrega sin validar).
+        # el resultado (nunca se entrega sin validar). Con un único
+        # fragmento disponible, el paso de relleno también lo intenta ahí
+        # y también agota sus intentos -- 2 descartes en total (el hueco
+        # original + el intento de relleno), no 1.
         def fake_call(messages, **kwargs):
             if _es_prompt_generacion(messages):
                 return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta única?", "respuesta": "Respuesta"}]})
@@ -100,8 +103,69 @@ class TestGenerarTarjetasVerificadas:
             resultado = generar_tarjetas_verificadas("Texto corto del documento.", 1)
 
         assert resultado["tarjetas"] == []
-        assert resultado["descartadas"] == 1
+        assert resultado["descartadas"] == 2
         assert "advertencia" in resultado
+
+    def test_relleno_completa_deficit_de_generacion_inicial(self):
+        # El fragmento A nunca entrega ninguna candidata (el modelo ignoró
+        # el "Genera EXACTAMENTE 1 tarjeta") mientras que el B sí -- sin
+        # relleno el resultado sería 1/2. itertools.cycle(fragmentos)
+        # arranca siempre por el primero, así que se pone B primero para
+        # que el único hueco de relleno recaiga en el fragmento que sí
+        # produce candidatas; un contador evita que la tarjeta de relleno
+        # sea idéntica (y por tanto descartada como duplicada) a la ya
+        # aceptada del mismo fragmento.
+        contador_b = {"n": 0}
+
+        def fake_call(messages, **kwargs):
+            contenido = messages[0]["content"] + messages[1]["content"]
+            if _es_prompt_generacion(messages):
+                if "Fragmento A" in contenido:
+                    return json.dumps({"tarjetas": []})
+                contador_b["n"] += 1
+                return json.dumps({"tarjetas": [{"pregunta": f"¿Pregunta B{contador_b['n']}?", "respuesta": "Respuesta"}]})
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            raise AssertionError("prompt inesperado")
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento B", "Fragmento A"]):
+            resultado = generar_tarjetas_verificadas("Documento con dos fragmentos.", 2)
+
+        assert len(resultado["tarjetas"]) == 2
+        assert "advertencia" not in resultado
+
+    def test_relleno_completa_descarte_agotado_usando_otro_fragmento(self):
+        # La tarjeta del fragmento A siempre falla verificación (se agota,
+        # como hoy); la del B es válida a la primera. Sin relleno: 1/2 con
+        # advertencia. Con relleno, como B sigue teniendo contenido
+        # disponible, produce una segunda tarjeta válida y distinta (B
+        # primero en la lista de fragmentos, igual que en el test anterior,
+        # para que itertools.cycle recaiga en él; un contador evita que la
+        # tarjeta de relleno sea idéntica a la ya aceptada).
+        contador_b = {"n": 0}
+
+        def fake_call(messages, **kwargs):
+            contenido = messages[0]["content"] + messages[1]["content"]
+            if _es_prompt_generacion(messages):
+                if "Fragmento A" in contenido:
+                    return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta A?", "respuesta": "Respuesta A"}]})
+                contador_b["n"] += 1
+                return json.dumps({"tarjetas": [{"pregunta": f"¿Pregunta B{contador_b['n']}?", "respuesta": "Respuesta B"}]})
+            if _es_prompt_verificacion(messages):
+                candidata = json.loads(messages[1]["content"].split("TARJETA A VERIFICAR:\n")[1])
+                valido = candidata["pregunta"] != "¿Pregunta A?"
+                return json.dumps({"valido": valido, "problemas": [] if valido else ["dato inventado"]})
+            raise AssertionError("prompt inesperado")
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento B", "Fragmento A"]):
+            resultado = generar_tarjetas_verificadas("Documento con dos fragmentos.", 2)
+
+        assert len(resultado["tarjetas"]) == 2
+        preguntas = {t["pregunta"] for t in resultado["tarjetas"]}
+        assert "¿Pregunta A?" not in preguntas
+        assert "advertencia" not in resultado
 
     def test_sin_candidatas_generadas_da_advertencia(self):
         with patch("tarjetas_generator.call_deepseek_api", return_value=None):

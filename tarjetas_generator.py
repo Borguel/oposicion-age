@@ -15,8 +15,15 @@ Personalizado, adaptado a un array de tarjetas en vez de un test):
      aceptada), se descarta POR COMPLETO -- nunca se corrige/parchea -- y
      se pide una de recambio sobre el mismo fragmento evitando su tema,
      hasta MAX_INTENTOS_POR_TARJETA veces. Si se agotan, esa tarjeta se
-     pierde (se avisa al final) en vez de entregarse sin validar.
+     pierde para ese hueco.
+  4. Si al terminar la fase anterior siguen faltando tarjetas (por huecos
+     perdidos en el paso 3, o porque algún fragmento devolvió menos
+     candidatas de las pedidas en su generación inicial), se rellenan
+     ciclando entre los fragmentos disponibles, con la misma verificación
+     sin relajar -- solo si ni así se completa el número pedido se avisa
+     al final en vez de entregarse sin validar.
 """
+import itertools
 import json
 import logging
 import re
@@ -246,6 +253,35 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
             else:
                 descartadas += 1
             verificadas += 1
+            if on_progreso:
+                on_progreso({"completadas": verificadas, "total": total_candidatas})
+
+    # Relleno: si tras la fase normal siguen faltando tarjetas -- ya sea
+    # porque algún fragmento devolvió menos candidatas de las pedidas en su
+    # generación inicial, o porque alguna se descartó tras agotar sus
+    # MAX_INTENTOS_POR_TARJETA -- se da una oportunidad más por cada hueco,
+    # ciclando entre los fragmentos disponibles (mismo patrón que el
+    # "relleno" de generador_preguntas_verificado.py para Test
+    # Personalizado). Nunca se relaja la verificación: cada intento pasa
+    # por el mismo verificador independiente y el mismo dedup por
+    # claves_vistas; si sigue sin conseguirse, se cuenta como descartada
+    # igual que hoy. Secuencial: no compensa un ThreadPoolExecutor para lo
+    # que normalmente son 1-4 tarjetas de hueco.
+    if len(tarjetas) < num_tarjetas and fragmentos:
+        faltan = num_tarjetas - len(tarjetas)
+        ciclo_fragmentos = itertools.cycle(fragmentos)
+        for _ in range(faltan):
+            fragmento = next(ciclo_fragmentos)
+            candidatas = _generar_candidatas_fragmento(fragmento, 1, on_usage)
+            resultado = (
+                _asegurar_tarjeta_valida(candidatas[0], fragmento, dedup_lock, claves_vistas, on_usage)
+                if candidatas else None
+            )
+            verificadas += 1
+            if resultado:
+                tarjetas.append(resultado)
+            else:
+                descartadas += 1
             if on_progreso:
                 on_progreso({"completadas": verificadas, "total": total_candidatas})
 
