@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import threading
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -15,6 +16,29 @@ logger = logging.getLogger(__name__)
 # verificación jurídica en generador_preguntas_verificado.py).
 _REINTENTOS_TRANSITORIOS = 2
 _ESPERA_ENTRE_REINTENTOS_SEGUNDOS = 1.5
+
+# Tope global de peticiones EN VUELO a DeepSeek en todo el proceso (app.py
+# corre un único proceso Flask con threaded=True, así que un semáforo a
+# nivel de módulo sí representa el límite real, no uno por worker). Sin
+# esto, generar un test de 30 preguntas desde PDF puede disparar hasta ~48
+# llamadas en paralelo (8 lotes x 6 verificaciones cada uno, ver
+# test_generator.py), y si en ese momento hay más herramientas u otros
+# usuarios llamando a la vez, el conjunto parece saturar al proveedor: en
+# logs de producción se vieron llamadas colgadas ~94s (3 intentos de 30s
+# de timeout cada uno) antes de fallar con "Error de conexión", justo en
+# las ráfagas de mayor concurrencia -- ver el mismo bug ya corregido de
+# max_tokens en test_generator.py/tarjetas_generator.py, que redujo mucho
+# el número de llamadas pero no elimina que a veces coincidan muchas a la
+# vez. Frenar aquí (el único punto por el que pasan TODAS las llamadas a
+# la API, sea cual sea la herramienta que las dispare) es más simple y más
+# fiable que ajustar cada ThreadPoolExecutor por separado uno a uno. Una
+# llamada que no consigue hueco espera en cola (barato, ver
+# _MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK más abajo) en vez de sumarse a la
+# sobrecarga real del proveedor -- si 16 resulta demasiado bajo o
+# demasiado alto, ajustar con datos reales de los logs
+# ("DeepSeek respondió en Xs...").
+_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK = 16
+_semaforo_deepseek = threading.Semaphore(_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK)
 
 
 def _registrar_coste(usage):
@@ -101,12 +125,13 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     intentos_restantes = _REINTENTOS_TRANSITORIOS
     while True:
         try:
-            response = requests.post(
-                "https://api.deepseek.com/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=30  # 30 segundos de timeout
-            )
+            with _semaforo_deepseek:
+                response = requests.post(
+                    "https://api.deepseek.com/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=30  # 30 segundos de timeout
+                )
 
             response.raise_for_status()  # Lanza excepción para códigos HTTP 4xx/5xx
 
@@ -194,10 +219,11 @@ def _post_deepseek_con_reintentos(headers, payload, timeout, stream=False):
     intentos_restantes = _REINTENTOS_TRANSITORIOS
     while True:
         try:
-            response = requests.post(
-                "https://api.deepseek.com/chat/completions",
-                headers=headers, json=payload, timeout=timeout, stream=stream,
-            )
+            with _semaforo_deepseek:
+                response = requests.post(
+                    "https://api.deepseek.com/chat/completions",
+                    headers=headers, json=payload, timeout=timeout, stream=stream,
+                )
         except requests.exceptions.RequestException as e:
             if _es_error_transitorio(e) and intentos_restantes > 0:
                 intentos_restantes -= 1

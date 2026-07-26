@@ -132,6 +132,50 @@ def test_reintenta_ante_error_5xx(monkeypatch):
     assert mock_post.call_count == 2
 
 
+def test_limita_las_llamadas_simultaneas_a_deepseek(monkeypatch):
+    # Bug real de producción: sin límite compartido, generar un test de 30
+    # preguntas desde PDF puede disparar hasta ~48 llamadas en paralelo (8
+    # lotes x 6 verificaciones cada uno, ver test_generator.py), y bajo
+    # carga eso parecía saturar a DeepSeek -- en logs reales se vieron
+    # llamadas colgadas ~94s (3 intentos de 30s de timeout) antes de fallar
+    # con "Error de conexión", justo en las ráfagas de mayor concurrencia.
+    # _semaforo_deepseek debe frenar esto sea cual sea el número de hilos
+    # que lo intenten a la vez, sin importar qué función de este módulo lo
+    # dispare.
+    import threading
+    import time as time_module
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    monkeypatch.setattr(deepseek_utils, "_semaforo_deepseek", threading.Semaphore(2))
+
+    en_curso = {"actual": 0, "maximo": 0}
+    lock = threading.Lock()
+
+    def fake_post(*args, **kwargs):
+        with lock:
+            en_curso["actual"] += 1
+            en_curso["maximo"] = max(en_curso["maximo"], en_curso["actual"])
+        time_module.sleep(0.05)
+        with lock:
+            en_curso["actual"] -= 1
+        return _respuesta_ok()
+
+    with patch("deepseek_utils.requests.post", side_effect=fake_post):
+        hilos = [
+            threading.Thread(
+                target=deepseek_utils.call_deepseek_api,
+                kwargs={"messages": [{"role": "user", "content": "hola"}]},
+            )
+            for _ in range(8)
+        ]
+        for hilo in hilos:
+            hilo.start()
+        for hilo in hilos:
+            hilo.join()
+
+    assert en_curso["maximo"] <= 2
+
+
 def _respuesta_con_status(contenido, finish_reason, status_code=200):
     mock = MagicMock()
     mock.status_code = status_code
