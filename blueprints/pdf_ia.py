@@ -342,7 +342,8 @@ def generar_test_desde_pdf():
     if len(text) > max_length:
         text = text[:max_length]
 
-    def construir_prompt(n):
+    def construir_prompt(n, fragmento=None):
+        documento = fragmento if fragmento is not None else text
         system_prompt = (
             f"Eres un experto en la elaboración de preguntas tipo test para oposiciones oficiales en España. "
             f"Tu tarea es generar EXACTAMENTE {n} preguntas de opción múltiple de alta calidad, "
@@ -355,11 +356,19 @@ def generar_test_desde_pdf():
             f"6. **Explicación**: repasa TODAS las opciones, una por línea y en orden, con este formato exacto: \"A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) ...\", citando o basándote en el contenido del documento.\n"
             f"7. **Autocontenida**: quien responde el test NUNCA ve el documento de origen, solo la pregunta. Nunca remitas a \"el documento\", \"el contenido\", \"el texto\" o \"lo mencionado/anterior\" (p. ej. \"¿qué tienen en común los X mencionados en el contenido?\") -- nombra tú mismo, explícitamente, de qué elementos concretos hablas.\n"
             f"8. **Sin siglas**: nunca abrevies el nombre de una ley o norma con siglas (\"CE\", \"TREBEP\", \"LPAC\"...) ni escribas \"art.\" en vez de \"artículo\" -- los exámenes oficiales de esta oposición escriben siempre el nombre completo, tal como aparece en el documento. Esto incluye también abreviar el tipo de norma delante de su número (\"LO 3/2007\", \"RD 203/2021\"...) en vez de escribirlo entero (\"Ley Orgánica 3/2007\", \"Real Decreto 203/2021\").\n"
+            f"9. **Diversidad**: las {n} preguntas deben tratar {n} hechos, artículos, plazos o cifras DISTINTOS entre sí -- si el documento repite el mismo dato en varios sitios, pregúntalo como mucho una vez; no reformules la misma pregunta con otro enunciado ni dediques dos preguntas al mismo hecho central.\n"
             f"Devuelve SOLO un array JSON válido con este formato exacto:\n"
             f"[{{\"pregunta\": \"...\", \"opciones\": {{\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}}]\n"
             f"NO añadas texto adicional antes ni después del array JSON."
         )
-        return f"{system_prompt}\n\nDocumento para crear preguntas test:\n{text}"
+        if fragmento is not None:
+            system_prompt += (
+                "\n\nIMPORTANTE: el documento de abajo es SOLO UNA PARTE del documento completo -- hay más "
+                "contenido en otras partes que no ves aquí (ya se están generando preguntas sobre ellas por "
+                "separado). Basa tus preguntas ÚNICAMENTE en lo que aparece en este fragmento, sin dar por "
+                "hecho ni inventar contenido de las partes que no ves."
+            )
+        return f"{system_prompt}\n\nDocumento para crear preguntas test:\n{documento}"
 
     uid = g.uid
     plan_actual = g.plan_actual

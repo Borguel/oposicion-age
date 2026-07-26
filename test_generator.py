@@ -62,6 +62,42 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
         return False
 
 
+def _fragmentos_por_lote(texto_fuente, n_lotes):
+    """Devuelve una lista de n_lotes fragmentos del documento, uno por lote,
+    para que cada llamada de generación en paralelo se apoye en una parte
+    DISTINTA del documento en vez de que todos los lotes reciban el mismo
+    texto completo. Sin esto, varios lotes independientes (no se ven entre
+    sí, corren en paralelo) tienden a convertir el mismo hecho más citable
+    del documento en varias preguntas con enunciados distintos -- el dedup
+    de generar_preguntas_ia_en_lotes solo detecta coincidencia de texto
+    normalizado, no reformulaciones de la misma información (bug real:
+    "duración del mandato del Presidente..." repetida en 8 de 20 preguntas
+    de un mismo test).
+
+    Con documentos cortos, un solo lote, o sin texto_fuente, dividir no
+    compensa (puede dejar algún fragmento sin contenido suficiente para
+    generar preguntas de calidad): se devuelve None en cada posición, y el
+    llamante entonces usa el documento completo tal cual (sin pasar
+    'fragmento' a construir_prompt, para no romper compatibilidad con
+    construir_prompt(n) de un solo argumento)."""
+    if not texto_fuente or n_lotes <= 1 or len(texto_fuente) < n_lotes * 400:
+        return [None] * n_lotes
+    longitud_objetivo = len(texto_fuente) // n_lotes
+    fragmentos = []
+    resto = texto_fuente
+    for _ in range(n_lotes - 1):
+        corte = min(longitud_objetivo, len(resto))
+        salto = resto.find("\n\n", corte)
+        if salto == -1:
+            salto = resto.find("\n", corte)
+        if salto == -1:
+            salto = corte
+        fragmentos.append(resto[:salto])
+        resto = resto[salto:]
+    fragmentos.append(resto)
+    return fragmentos
+
+
 def _pedir_una_pregunta_de_recambio(construir_prompt, pregunta_descartada, on_usage):
     """Pide UNA pregunta de recambio para sustituir a una que no superó la
     verificación, evitando repetir su tema -- nunca se "corrige" la
@@ -166,6 +202,16 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
 
     construir_prompt(n) debe devolver el prompt completo pidiendo EXACTAMENTE
     n preguntas, en el mismo formato de array JSON que ya usa esa ruta.
+    Opcionalmente puede aceptar un segundo argumento, construir_prompt(n,
+    fragmento) -- si el documento es lo bastante largo y hay más de un
+    lote, cada lote recibe un FRAGMENTO distinto del documento (ver
+    _fragmentos_por_lote más abajo) para repartir la generación entre
+    partes distintas en vez de que todos los lotes vean el documento
+    completo y converjan en los mismos hechos más citables (bug real:
+    la misma pregunta reformulada varias veces en un test de 20). Solo se
+    llama con 2 argumentos cuando de verdad hay un fragmento que pasar;
+    en caso contrario (documento corto, un solo lote, o sin texto_fuente)
+    se llama como construir_prompt(n), igual que antes.
 
     Devuelve (preguntas, errores): preguntas ya verificadas y deduplicadas
     por texto de pregunta normalizado (pedir el mismo tema en varios lotes
@@ -205,8 +251,8 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             evento["pregunta"] = pregunta_aceptada
         on_progreso(evento)
 
-    def _pedir_lote_verificado(n):
-        prompt = construir_prompt(n)
+    def _pedir_lote_verificado(n, fragmento=None):
+        prompt = construir_prompt(n, fragmento) if fragmento is not None else construir_prompt(n)
         generado = call_deepseek_api(
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
@@ -262,10 +308,15 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             return [], f"Ninguna de las {len(candidatas)} preguntas candidatas de un lote superó la verificación de calidad"
         return aceptadas, None
 
+    fragmentos = _fragmentos_por_lote(texto_fuente, len(lotes))
+
     preguntas = []
     errores = []
     with ThreadPoolExecutor(max_workers=min(5, len(lotes))) as executor:
-        futuros = [executor.submit(_pedir_lote_verificado, n) for n in lotes]
+        futuros = [
+            executor.submit(_pedir_lote_verificado, n, fragmentos[i])
+            for i, n in enumerate(lotes)
+        ]
         for futuro in as_completed(futuros):
             lote_preguntas, error = futuro.result()
             if error:

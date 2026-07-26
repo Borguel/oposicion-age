@@ -288,6 +288,55 @@ class TestGenerarPreguntasIaEnLotes:
         preguntas_texto = {p["pregunta"] for p in preguntas}
         assert all("Mala" not in t for t in preguntas_texto)
 
+    def test_fragmenta_el_documento_entre_lotes_en_paralelo(self):
+        # Bug real: con num_preguntas=20 sobre un PDF de 11 páginas, 8 de
+        # las 20 preguntas recibidas acabaron siendo la misma pregunta
+        # reformulada ("¿cuál es la duración del mandato del Presidente de
+        # la Autoridad...?") porque los 4 lotes en paralelo recibían el
+        # documento COMPLETO y convergían todos en el mismo hecho más
+        # citable del texto -- el dedup por texto normalizado no detecta
+        # reformulaciones de la misma información. Con un documento largo
+        # y más de un lote, cada lote debe recibir un FRAGMENTO distinto
+        # (ver _fragmentos_por_lote en test_generator.py) para repartir la
+        # generación entre partes distintas del documento.
+        parrafo = "Frase de relleno para simular contenido real del documento. " * 10
+        texto_largo = "\n\n".join(f"SECCION {i}. {parrafo}" for i in range(4))
+        assert len(texto_largo) >= 2 * 400  # por encima del umbral de fragmentación
+
+        fragmentos_recibidos = []
+        contador = itertools.count()
+
+        def construir_prompt(n, fragmento=None):
+            fragmentos_recibidos.append(fragmento)
+            documento = fragmento if fragmento is not None else texto_largo
+            return f"Genera {n} preguntas.\n\nDocumento para crear preguntas test:\n{documento}"
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            return json.dumps([{
+                "pregunta": f"¿Pregunta {next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "respuesta_correcta": "A", "explicacion": "..."
+            } for _ in range(2)])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(
+                construir_prompt, 4, texto_largo, tamano_lote=2,
+            )
+
+        assert len(preguntas) == 4
+        assert errores == []
+        # 2 lotes, cada uno pide su generación una sola vez (todo se acepta
+        # a la primera, sin recambios ni relleno): 2 llamadas a
+        # construir_prompt, cada una con un fragmento no vacío, DISTINTO
+        # entre sí, ninguno el documento completo, y ambos contenidos
+        # dentro del documento original.
+        assert len(fragmentos_recibidos) == 2
+        assert all(f is not None for f in fragmentos_recibidos)
+        assert fragmentos_recibidos[0] != fragmentos_recibidos[1]
+        assert all(f != texto_largo for f in fragmentos_recibidos)
+        assert all(f in texto_largo for f in fragmentos_recibidos)
+
     def test_max_tokens_del_lote_sigue_la_formula_1500_por_pregunta(self):
         # Regresión del bug real: con la fórmula antigua (min(4000, 300*n)),
         # un lote de 10 preguntas pedía max_tokens=3000 y DeepSeek lo
