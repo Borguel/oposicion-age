@@ -158,6 +158,46 @@ class TestGenerarPreguntasIaEnLotes:
         assert {e["total"] for e in eventos} == {3}
         assert {e["completadas"] for e in eventos} == {1, 2, 3}
 
+    def test_evento_progreso_incluye_la_pregunta_aceptada(self):
+        # blueprints/pdf_ia.py separa este campo en un evento SSE "pregunta"
+        # aparte (mismo patrón que blueprints/test_ia.py para Test
+        # Personalizado) para que el frontend pueda empezar el test en
+        # cuanto lleguen las primeras N, sin esperar a que termine todo el
+        # test. Una pregunta descartada (falla verificación y agota sus
+        # recambios) NO debe llevar "pregunta" en su evento -- nunca se
+        # anuncia algo que no va a estar en el test final.
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                candidata = json.loads(messages[1]["content"].split("PREGUNTA A VERIFICAR:\n")[1])
+                valido = candidata["pregunta"] != "¿Mala?"
+                return json.dumps({"valido": valido, "problemas": [] if valido else ["dato inventado"]})
+            if "No repitas esta pregunta" in messages[0]["content"]:
+                return json.dumps([{
+                    "pregunta": "¿Mala?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                    "respuesta_correcta": "A", "explicacion": "..."
+                }])
+            return json.dumps([
+                {"pregunta": "¿Buena?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."},
+                {"pregunta": "¿Mala?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."},
+            ])
+
+        eventos = []
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            generar_preguntas_ia_en_lotes(
+                construir_prompt, 2, "Texto de prueba.", tamano_lote=15,
+                on_progreso=lambda e: eventos.append(e),
+            )
+
+        con_pregunta = [e for e in eventos if "pregunta" in e]
+        sin_pregunta = [e for e in eventos if "pregunta" not in e]
+        assert len(con_pregunta) == 1
+        assert con_pregunta[0]["pregunta"]["pregunta"] == "¿Buena?"
+        assert len(sin_pregunta) >= 1
+
     def test_on_usage_recibe_generacion_y_verificacion(self):
         construir_prompt = _construir_prompt_fabrica(None)
 

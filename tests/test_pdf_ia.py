@@ -542,6 +542,13 @@ class TestCosteIaEnHerramientasPdf:
         assert coste["tokens_in"] == 480
         assert coste["tokens_out"] == 240
         assert coste["llamadas"] == 24
+        # Las preguntas aceptadas se retransmiten individualmente en un
+        # evento "pregunta" aparte según van llegando, para que el
+        # frontend pueda empezar el test en cuanto tenga las primeras N
+        # sin esperar a que termine todo el streaming.
+        eventos_pregunta = [e for e in eventos if e["tipo"] == "pregunta"]
+        assert len(eventos_pregunta) == 20
+        assert all("pregunta" in e and "opciones" in e["pregunta"] for e in eventos_pregunta)
 
     def test_generar_tarjetas_desde_pdf_registra_coste(self, client, db, documento_sembrado):
         def fake_call(messages, on_usage=None, **kwargs):

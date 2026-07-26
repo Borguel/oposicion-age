@@ -376,7 +376,19 @@ def generar_test_desde_pdf():
 
         def _en_hilo_de_fondo():
             def on_progreso(evento_progreso):
+                # "pregunta" se manda como evento aparte (no como parte de
+                # "progreso") para que el frontend pueda empezar el test en
+                # cuanto lleguen las primeras N preguntas aceptadas, sin
+                # esperar a que termine todo el test -- mismo patrón que
+                # /generar-test-avanzado usa para Test Personalizado (ver
+                # blueprints/test_ia.py).
+                pregunta = evento_progreso.pop("pregunta", None)
                 eventos.put({"tipo": "progreso", **evento_progreso})
+                if pregunta:
+                    eventos.put({
+                        "tipo": "pregunta", "pregunta": pregunta,
+                        "completadas": evento_progreso["completadas"], "total": evento_progreso["total"],
+                    })
             try:
                 preguntas, errores_lotes = generar_preguntas_ia_en_lotes(
                     construir_prompt, num_preguntas, text, on_progreso=on_progreso,

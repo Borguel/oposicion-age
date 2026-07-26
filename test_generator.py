@@ -186,14 +186,24 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     completadas_preguntas = 0
     lock_progreso = threading.Lock()
 
-    def _reportar_avance_pregunta():
+    def _reportar_avance_pregunta(pregunta_aceptada=None):
+        """pregunta_aceptada: si se pasa (una pregunta que YA ha superado
+        la verificación, o que se acepta sin verificar por no haber
+        texto_fuente), se incluye en el evento como "pregunta" -- el
+        llamante (ver blueprints/pdf_ia.py) la manda como un evento SSE
+        aparte para que el frontend pueda empezar el test en cuanto
+        lleguen las primeras N, igual que ya hace Test Personalizado
+        (generador_preguntas_verificado.py)."""
         nonlocal completadas_preguntas
         if not on_progreso:
             return
         with lock_progreso:
             completadas_preguntas += 1
             valor = completadas_preguntas
-        on_progreso({"completadas": valor, "total": num_preguntas})
+        evento = {"completadas": valor, "total": num_preguntas}
+        if pregunta_aceptada:
+            evento["pregunta"] = pregunta_aceptada
+        on_progreso(evento)
 
     def _pedir_lote_verificado(n):
         prompt = construir_prompt(n)
@@ -218,8 +228,8 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         if texto_fuente is None:
             # Sin documento contra el que verificar: se acepta la candidata
             # tal cual, igual que antes de añadir la verificación.
-            for _ in candidatas:
-                _reportar_avance_pregunta()
+            for candidata in candidatas:
+                _reportar_avance_pregunta(candidata)
             return candidatas, None
 
         # Se verifica cada candidata del lote EN PARALELO -- en serie
@@ -235,8 +245,9 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             ]
             verificadas = []
             for futuro in as_completed(futuros):
-                verificadas.append(futuro.result())
-                _reportar_avance_pregunta()
+                resultado = futuro.result()
+                verificadas.append(resultado)
+                _reportar_avance_pregunta(resultado)
         aceptadas = [p for p in verificadas if p]
         if not aceptadas:
             # Generación OK (hubo candidatas), pero NINGUNA superó la
@@ -291,14 +302,18 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             _asegurar_pregunta_valida(candidata, construir_prompt, texto_fuente, on_usage)
             if candidata and texto_fuente is not None else candidata
         )
-        _reportar_avance_pregunta()
-        if not pregunta:
-            continue
-        clave = re.sub(r"\s+", " ", str(pregunta.get("pregunta", "")).strip().lower())
-        if not clave or clave in vistas:
-            continue
-        vistas.add(clave)
-        preguntas_unicas.append(pregunta)
+        aceptada = None
+        if pregunta:
+            clave = re.sub(r"\s+", " ", str(pregunta.get("pregunta", "")).strip().lower())
+            if clave and clave not in vistas:
+                vistas.add(clave)
+                preguntas_unicas.append(pregunta)
+                aceptada = pregunta
+        # Solo se incluye en el evento si de verdad se aceptó (no si era
+        # un duplicado que se descarta) -- el "pregunta" del evento SSE
+        # representa una pregunta genuinamente nueva del test final, no
+        # un intento cualquiera.
+        _reportar_avance_pregunta(aceptada)
 
     faltan_final = num_preguntas - len(preguntas_unicas)
     if faltan_final > 0:
