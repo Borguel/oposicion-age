@@ -325,7 +325,7 @@ async function obtenerAuthHeaders() {
     }
 
     // Añade una pregunta que ha terminado de generarse/verificarse DESPUÉS
-    // de que el usuario ya haya empezado a responder (test de N>10
+    // de que el usuario ya haya empezado a responder (test de N>5
     // preguntas, ver entrarEnModoTest) -- siempre al final, para no
     // desalinear las respuestas ya dadas a las preguntas anteriores.
     function agregarPreguntaEnCurso(pregunta, temas) {
@@ -342,8 +342,8 @@ async function obtenerAuthHeaders() {
 
     // Arranca la pantalla de test con las preguntas ya disponibles --
     // llamada tanto en el camino "normal" (todas las preguntas listas, al
-    // llegar "fin") como en el camino de inicio temprano (N>10, en cuanto
-    // hay min(10, N) preguntas, ver el bucle de lectura del stream SSE más
+    // llegar "fin") como en el camino de inicio temprano (N>5, en cuanto
+    // hay min(5, N) preguntas, ver el bucle de lectura del stream SSE más
     // abajo). A partir de aquí el stream puede seguir corriendo en segundo
     // plano sin que esto se vuelva a llamar.
     async function entrarEnModoTest(preguntasIniciales, oposicion, temas) {
@@ -503,14 +503,19 @@ async function obtenerAuthHeaders() {
         let buffer = "";
         let datosFinales = null;
 
-        // Punto 2: para peticiones de más de 10 preguntas, en cuanto
-        // llegan las primeras min(10, num_preguntas) ya aceptadas se deja
+        // Punto 2: para peticiones de más de 5 preguntas, en cuanto
+        // llegan las primeras min(5, num_preguntas) ya aceptadas se deja
         // al usuario empezar a responder mientras el resto se sigue
         // generando en segundo plano -- la lectura del stream NO se
-        // interrumpe al transicionar, sigue drenándose hasta "fin".
+        // interrumpe al transicionar, sigue drenándose hasta "fin". Bajado
+        // de 10 a 5 (26/07/2026): con DeepSeek respondiendo más lento de lo
+        // normal estos días, esperar a las 10 completas para el caso más
+        // común (justo 10 preguntas pedidas) significaba no aprovechar
+        // nunca este arranque temprano -- con 5 empieza antes también en
+        // ese caso habitual.
         let transicionadoATest = false;
         let preguntasRecibidas = [];
-        const umbralInicioTemprano = Math.min(10, num_preguntas);
+        const umbralInicioTemprano = Math.min(5, num_preguntas);
         let ultimoCompletadas = 0;
         let ultimoTotal = num_preguntas;
 
@@ -569,7 +574,7 @@ async function obtenerAuthHeaders() {
             } else if (evento.tipo === "pregunta" && evento.pregunta) {
               if (!transicionadoATest) {
                 preguntasRecibidas.push(evento.pregunta);
-                if (num_preguntas > 10 && preguntasRecibidas.length >= umbralInicioTemprano) {
+                if (num_preguntas > umbralInicioTemprano && preguntasRecibidas.length >= umbralInicioTemprano) {
                   transicionadoATest = true;
                   entrarEnModoTest(preguntasRecibidas, oposicion, temas).then(() => {
                     mostrarIndicadorGenerandoFondo(ultimoCompletadas, ultimoTotal);
