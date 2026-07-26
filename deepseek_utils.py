@@ -124,7 +124,18 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
 
             # Verificar que la respuesta tiene la estructura esperada
             if 'choices' in data and len(data['choices']) > 0:
-                logger.info("DeepSeek respondió en %.2fs (modelo=%s)", time.monotonic() - inicio, model)
+                # finish_reason/tokens_salida: para comprobar con datos reales
+                # (no adivinando) si max_tokens se está quedando corto --
+                # "length" significa que la respuesta se cortó antes de que
+                # el modelo terminara por sí solo, candidato real a JSON
+                # incompleto/descartado; "stop" significa que el modelo
+                # terminó por su cuenta bien dentro del límite.
+                logger.info(
+                    "DeepSeek respondió en %.2fs (modelo=%s, finish_reason=%s, tokens_salida=%s)",
+                    time.monotonic() - inicio, model,
+                    data['choices'][0].get('finish_reason'),
+                    (data.get('usage') or {}).get('completion_tokens'),
+                )
                 return data['choices'][0]['message']['content']
             else:
                 logger.error("Respuesta inesperada de DeepSeek API: %s", data)

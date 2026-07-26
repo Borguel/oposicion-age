@@ -415,16 +415,17 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             generado = call_deepseek_api(
                 messages=[{"role": "system", "content": system_gen}, {"role": "user", "content": user_gen}],
                 temperature=0.5,
-                # max_tokens generoso: _MODELO es un modelo de razonamiento,
-                # que gasta tokens en pensar internamente (reasoning_content)
-                # ANTES de escribir la respuesta final -- ese razonamiento
-                # cuenta contra el mismo max_tokens. Con un tope ajustado
-                # (pensado para un modelo sin razonamiento) se arriesga a
-                # cortar la respuesta a mitad del razonamiento, sin llegar
-                # nunca al JSON final -- eso aumentaría los descartes en vez
-                # de reducirlos, justo lo contrario de por qué se cambió de
-                # modelo.
-                max_tokens=3000,
+                # max_tokens=1000: valor normal para _MODELO = deepseek-v4-flash
+                # (no es un modelo de razonamiento, así que no necesita el
+                # margen extra para "pensar" antes de responder). Se llegó a
+                # subir a 3000 al probar deepseek-v4-pro (que sí razona y
+                # consume tokens en ello antes del JSON final) pero se
+                # revierte aquí al volver a flash -- ver el log "DeepSeek
+                # respondió en Xs (... finish_reason=...)" en
+                # deepseek_utils.py para comprobar con datos reales si
+                # finish_reason == "length" alguna vez (señal de que este
+                # tope se ha quedado corto) antes de volver a subirlo.
+                max_tokens=1000,
                 response_format_json=True,
                 on_usage=on_usage,
                 model=_MODELO,
@@ -450,7 +451,7 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             verificacion_raw = call_deepseek_api(
                 messages=[{"role": "system", "content": system_ver}, {"role": "user", "content": user_ver}],
                 temperature=0.0,
-                max_tokens=2000,  # ver comentario de max_tokens en la llamada de generación de arriba
+                max_tokens=400,  # ver comentario de max_tokens en la llamada de generación de arriba
                 response_format_json=True,
                 on_usage=on_usage,
                 model=_MODELO,
