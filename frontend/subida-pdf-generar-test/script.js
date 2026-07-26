@@ -321,23 +321,33 @@ async function obtenerAuthHeaders() {
     }
 
     // === ENVÍO DE FORMULARIO ===
+    // Si documentoIdActual ya está fijado (llegada desde "Mis documentos"
+    // para generar un test NUEVO, ver inicializarDesdeDocumento más abajo)
+    // no hace falta volver a subir el PDF -- se manda el documento_id ya
+    // existente, y el formulario solo sirve para elegir cuántas preguntas
+    // generar en vez de asumir siempre el valor por defecto sin preguntar.
     document.getElementById('form-subir-pdf').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const archivo = document.getElementById('archivo-pdf').files[0];
       const num_preguntas = parseInt(document.getElementById('num_preguntas').value);
-
-      if (!archivo) return mostrarError('Selecciona un archivo PDF.');
-      if (archivo.type !== 'application/pdf') return mostrarError('El archivo debe ser un PDF.');
-
-      nombreArchivo = archivo.name;
       const formData = new FormData();
-      formData.append('pdf', archivo);
+
+      if (documentoIdActual) {
+        formData.append('documento_id', documentoIdActual);
+      } else {
+        const archivo = document.getElementById('archivo-pdf').files[0];
+        if (!archivo) return mostrarError('Selecciona un archivo PDF.');
+        if (archivo.type !== 'application/pdf') return mostrarError('El archivo debe ser un PDF.');
+        nombreArchivo = archivo.name;
+        formData.append('pdf', archivo);
+      }
       formData.append('num_preguntas', num_preguntas);
 
       document.getElementById('tarjeta-formulario').style.display = 'none';
       document.getElementById('contenedor-carga').style.display = 'block';
-      document.getElementById('texto-estado').textContent = "Leyendo el PDF y preparando la generación…";
-      document.getElementById('ai-icon').innerHTML = icono("documento", 32);
+      document.getElementById('texto-estado').textContent = documentoIdActual
+        ? "Generando test desde tu documento…"
+        : "Leyendo el PDF y preparando la generación…";
+      document.getElementById('ai-icon').innerHTML = icono(documentoIdActual ? "cerebro" : "documento", 32);
 
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
@@ -345,6 +355,7 @@ async function obtenerAuthHeaders() {
       try {
         const datosFinales = await generarTestDesdePdfConProgreso(formData, authHeaders);
         documentoIdActual = datosFinales.documento_id || documentoIdActual;
+        nombreArchivo = datosFinales.nombre_archivo || nombreArchivo;
         avisarSiPreguntasIncompletas(datosFinales);
         iniciarTest(datosFinales.test);
       } catch (err) {
@@ -463,16 +474,13 @@ async function obtenerAuthHeaders() {
       if (!documentoId) return;
 
       documentoIdActual = documentoId;
-      document.getElementById('tarjeta-formulario').style.display = 'none';
-      document.getElementById('contenedor-carga').style.display = 'block';
-      const textoEstado = document.getElementById('texto-estado');
-      const aiIcon = document.getElementById('ai-icon');
-
-      const authHeaders = await obtenerAuthHeaders();
-      if (!authHeaders) return;
 
       if (ver === 'test') {
-        textoEstado.textContent = 'Cargando tu test guardado…';
+        document.getElementById('tarjeta-formulario').style.display = 'none';
+        document.getElementById('contenedor-carga').style.display = 'block';
+        document.getElementById('texto-estado').textContent = 'Cargando tu test guardado…';
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
         try {
           const res = await fetch(`https://oposicion-age.onrender.com/documento/${documentoId}/test`, { headers: authHeaders });
           const datos = await res.json();
@@ -485,21 +493,16 @@ async function obtenerAuthHeaders() {
         return;
       }
 
-      textoEstado.textContent = 'Generando test desde tu documento…';
-      aiIcon.innerHTML = icono('cerebro', 32);
-      try {
-        const numPreguntas = parseInt(params.get('num_preguntas')) || 10;
-        const formData = new FormData();
-        formData.append('documento_id', documentoId);
-        formData.append('num_preguntas', numPreguntas);
-        const datosFinales = await generarTestDesdePdfConProgreso(formData, authHeaders);
-        nombreArchivo = datosFinales.nombre_archivo || nombreArchivo;
-        documentoIdActual = datosFinales.documento_id || documentoIdActual;
-        avisarSiPreguntasIncompletas(datosFinales);
-        iniciarTest(datosFinales.test);
-      } catch (err) {
-        mostrarError(err.message);
-      }
+      // Generar un test NUEVO desde un documento ya subido: se deja el
+      // formulario visible (sin pedir de nuevo el PDF) para que el
+      // usuario elija cuántas preguntas quiere, en vez de generar
+      // siempre con el valor por defecto (10) sin preguntar.
+      const grupoArchivo = document.getElementById('grupo-archivo');
+      if (grupoArchivo) grupoArchivo.style.display = 'none';
+      const archivoInput = document.getElementById('archivo-pdf');
+      if (archivoInput) archivoInput.required = false;
+      const aviso = document.getElementById('aviso-documento-existente');
+      if (aviso) aviso.classList.remove('hidden');
     })();
 
     // === RENDERIZADO DE PREGUNTAS ===
