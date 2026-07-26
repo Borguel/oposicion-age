@@ -411,6 +411,15 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             vistas.update(claves)
             preguntas_unicas.append(p)
 
+    # Nunca se acepta más preguntas de las pedidas: un lote puede ignorar el
+    # "EXACTAMENTE n" del prompt y devolver más candidatas de las
+    # solicitadas -- bug real: pedir 20 preguntas y recibir 22, porque
+    # ninguna comprobación recortaba el exceso antes de esto. Se recorta
+    # aquí (tras deduplicar, no lote a lote) porque el exceso puede venir de
+    # la SUMA de varios lotes, no necesariamente de uno solo que se pasara.
+    if len(preguntas_unicas) > num_preguntas:
+        preguntas_unicas = preguntas_unicas[:num_preguntas]
+
     # Relleno: si tras los lotes normales (con verificación y reintento por
     # pregunta ya agotados) sigue faltando alguna respecto a num_preguntas
     # -- por descartes que agotaron sus intentos, o por deduplicar entre

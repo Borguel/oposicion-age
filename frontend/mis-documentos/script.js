@@ -36,16 +36,26 @@ function formatearFecha(iso) {
   }
 }
 
-function filaContenido({ label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar }) {
+function filaContenido({ label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar, urlContinuar }) {
   const acciones = [];
+  // "Continuar" (test autoguardado sin terminar, ver
+  // obtener_tests_en_progreso_por_documento en documentos_pdf.py) se
+  // ofrece SIEMPRE que exista, incluso si todavía no hay ningún test
+  // finalizado de este documento -- antes, un test empezado y no acabado
+  // no aparecía por ningún sitio en la biblioteca, solo "Ver"/"Generar
+  // más" (que dependen de haber finalizado al menos uno) o "Generar test"
+  // desde cero.
+  if (urlContinuar) {
+    acciones.push(`<a class="documento-card-btn principal" href="${urlContinuar}">Continuar</a>`);
+  }
   if (existe) {
-    acciones.push(`<a class="documento-card-btn principal" href="${urlVer}">Ver</a>`);
+    acciones.push(`<a class="documento-card-btn${urlContinuar ? "" : " principal"}" href="${urlVer}">Ver</a>`);
     if (urlAleatorias) {
       acciones.push(`<a class="documento-card-btn" href="${urlAleatorias}">10 aleatorias</a>`);
     }
     acciones.push(`<a class="documento-card-btn" href="${urlGenerar}">Generar más</a>`);
   } else {
-    acciones.push(`<a class="documento-card-btn principal" href="${urlGenerar}">${textoGenerar}</a>`);
+    acciones.push(`<a class="documento-card-btn${urlContinuar ? "" : " principal"}" href="${urlGenerar}">${textoGenerar}</a>`);
   }
   const etiquetaCantidad = existe && cantidad ? ` (${cantidad})` : "";
   return `
@@ -118,6 +128,7 @@ function tarjetaDocumento(doc, modoCarpeta) {
       cantidad: doc.num_tests ? `${doc.num_tests} intento${doc.num_tests > 1 ? "s" : ""}` : null,
       urlVer: `/subida-pdf-generar-test/?documento_id=${doc.id}&ver=test`,
       urlGenerar: `/subida-pdf-generar-test/?documento_id=${doc.id}`,
+      urlContinuar: doc.test_en_progreso ? `/subida-pdf-generar-test/?resume=${doc.test_en_progreso}` : null,
       textoGenerar: "Generar test"
     })
   ].join("");

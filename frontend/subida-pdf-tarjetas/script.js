@@ -514,34 +514,47 @@ async function obtenerAuthHeaders() {
       limpiarEstado();
     });
     // === Envío del formulario con carga mejorada ===
+    // Si documentoIdActual ya está fijado (llegada desde "Mis documentos"
+    // para generar tarjetas NUEVAS, ver inicializarDesdeDocumento más abajo)
+    // no hace falta volver a subir el PDF -- se manda el documento_id ya
+    // existente, y el formulario solo sirve para elegir cuántas tarjetas
+    // generar en vez de asumir siempre el valor por defecto (10) sin
+    // preguntar (mismo patrón que /subida-pdf-generar-test/).
     formularioPdf.addEventListener('submit', async function(e) {
       e.preventDefault();
-      const archivoInput = document.getElementById('archivo-pdf');
       const numTarjetas = parseInt(numTarjetasInput.value);
-      if (!archivoInput.files.length) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Selecciona un archivo',
-          text: 'Debes seleccionar un archivo PDF para continuar.',
-          confirmButtonText: 'Entendido'
-        });
-        return;
-      }
-      const archivo = archivoInput.files[0];
-      if (archivo.type !== 'application/pdf') {
-        mostrarError('El archivo seleccionado no es un PDF válido.');
-        return;
-      }
-      nombreArchivo = archivo.name;
       const formData = new FormData();
-      formData.append('pdf', archivo);
+
+      if (documentoIdActual) {
+        formData.append('documento_id', documentoIdActual);
+      } else {
+        const archivoInput = document.getElementById('archivo-pdf');
+        if (!archivoInput.files.length) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Selecciona un archivo',
+            text: 'Debes seleccionar un archivo PDF para continuar.',
+            confirmButtonText: 'Entendido'
+          });
+          return;
+        }
+        const archivo = archivoInput.files[0];
+        if (archivo.type !== 'application/pdf') {
+          mostrarError('El archivo seleccionado no es un PDF válido.');
+          return;
+        }
+        nombreArchivo = archivo.name;
+        formData.append('pdf', archivo);
+      }
       formData.append('num_tarjetas', numTarjetasInput.value || 10);
       mensajeError.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
       formularioCard.classList.add('hidden');
       contenedorCarga.classList.remove('hidden');
-      document.getElementById('texto-estado').textContent = "Leyendo texto del PDF…";
-      document.getElementById('ai-icon').innerHTML = icono("documento", 32);
+      document.getElementById('texto-estado').textContent = documentoIdActual
+        ? "Generando tarjetas desde tu documento…"
+        : "Leyendo texto del PDF…";
+      document.getElementById('ai-icon').innerHTML = icono(documentoIdActual ? "cerebro" : "documento", 32);
 
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
@@ -604,15 +617,13 @@ async function obtenerAuthHeaders() {
       if (!documentoId) return;
 
       documentoIdActual = documentoId;
-      formularioCard.classList.add('hidden');
-      contenedorCarga.classList.remove('hidden');
-      const textoEstado = document.getElementById('texto-estado');
-      const aiIcon = document.getElementById('ai-icon');
-
-      const authHeaders = await obtenerAuthHeaders();
-      if (!authHeaders) return;
 
       if (ver === 'tarjetas') {
+        formularioCard.classList.add('hidden');
+        contenedorCarga.classList.remove('hidden');
+        const textoEstado = document.getElementById('texto-estado');
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
         const modo = params.get('modo') || 'todas';
         const cantidad = params.get('cantidad') || '10';
         textoEstado.textContent = 'Cargando tus tarjetas guardadas…';
@@ -628,18 +639,18 @@ async function obtenerAuthHeaders() {
         return;
       }
 
-      textoEstado.textContent = 'Generando tarjetas desde tu documento…';
-      aiIcon.innerHTML = icono('cerebro', 32);
-      try {
-        const formData = new FormData();
-        formData.append('documento_id', documentoId);
-        formData.append('num_tarjetas', numTarjetasInput.value || 10);
-        const datos = await generarTarjetasConProgreso("https://oposicion-age.onrender.com/generar-tarjetas-desde-pdf", formData, authHeaders);
-        documentoIdActual = datos.documento_id || documentoIdActual;
-        iniciarModoEstudio(datos.tarjetas, true, datos.advertencia, datos.sugerencia);
-      } catch (err) {
-        mostrarError(err.message);
-      }
+      // Generar tarjetas NUEVAS desde un documento ya subido: se deja el
+      // formulario visible (sin pedir de nuevo el PDF) para que el usuario
+      // elija cuántas tarjetas quiere, en vez de generar siempre con el
+      // valor por defecto (10) sin preguntar -- antes se disparaba la
+      // generación aquí mismo, de forma automática, ignorando lo que
+      // hubiera en el campo "Número de tarjetas".
+      const grupoArchivo = document.getElementById('grupo-archivo');
+      if (grupoArchivo) grupoArchivo.style.display = 'none';
+      const archivoInput = document.getElementById('archivo-pdf');
+      if (archivoInput) archivoInput.required = false;
+      const aviso = document.getElementById('aviso-documento-existente');
+      if (aviso) aviso.classList.remove('hidden');
     })();
 
     // === Inicialización - Cargar estado guardado al inicio (solo si no se

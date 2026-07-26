@@ -510,3 +510,27 @@ class TestGenerarPreguntasIaEnLotes:
             generar_preguntas_ia_en_lotes(construir_prompt, 6, "Texto de prueba.", tamano_lote=6)
 
         assert max_tokens_recibidos == [8000]  # min(8000, 1500*6=9000) -> 8000
+
+    def test_nunca_devuelve_mas_preguntas_de_las_pedidas(self):
+        # Bug real reportado: pedir 20 preguntas y recibir 22 -- un lote
+        # puede ignorar el "EXACTAMENTE n" del prompt y devolver más
+        # candidatas de las solicitadas (aquí, 2 lotes de 2 devuelven 3
+        # candidatas cada uno, las 6 válidas y distintas). Antes nada
+        # recortaba el exceso.
+        construir_prompt = _construir_prompt_fabrica(None)
+        contador = itertools.count()
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            return json.dumps([
+                {"pregunta": f"¿Pregunta {next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."}
+                for _ in range(3)
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 4, "Texto de prueba.", tamano_lote=2)
+
+        assert len(preguntas) == 4
+        assert errores == []

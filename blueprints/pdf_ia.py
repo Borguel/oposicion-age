@@ -19,7 +19,8 @@ from auth_utils import requiere_plan, obtener_oposicion_solicitada
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso, devolver_uso
 from documentos_pdf import (
     obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta,
-    listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo, obtener_preguntas_previas
+    listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo, obtener_preguntas_previas,
+    obtener_tests_en_progreso_por_documento
 )
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import generar_preguntas_ia_en_lotes
@@ -850,8 +851,12 @@ def guardar_tarjetas_pdf():
 @bp.route('/mis-documentos', methods=['GET'])
 @requiere_plan(db, "premium", global_check=True)
 def mis_documentos():
+    documentos = listar_documentos(db, g.uid)
+    tests_en_progreso = obtener_tests_en_progreso_por_documento(db, g.uid)
+    for documento in documentos:
+        documento["test_en_progreso"] = tests_en_progreso.get(documento["id"])
     return jsonify({
-        "documentos": listar_documentos(db, g.uid),
+        "documentos": documentos,
         "carpetas": listar_carpetas(db, g.uid),
     })
 

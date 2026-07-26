@@ -116,6 +116,35 @@ def obtener_documento(db, uid, documento_id):
     return datos
 
 
+def obtener_tests_en_progreso_por_documento(db, uid):
+    """{documento_id: test_id} de los tests desde PDF que quedaron
+    "en_progreso" (autoguardados sin terminar, ver rutas_progreso.py
+    autosave_test) -- para que "Mis documentos" pueda ofrecer "Continuar"
+    en vez de solo "Ver"/"Generar más" (que antes solo aparecían cuando ya
+    había al menos un test FINALIZADO, ver marcar_generado/num_tests: un
+    test empezado y no acabado no incrementa num_tests, así que no tenía
+    ninguna forma de retomarse desde la biblioteca). Si un documento tiene
+    más de un test en_progreso a la vez, se queda con el más reciente."""
+    docs = (
+        db.collection("usuarios").document(uid).collection("tests")
+        .where("estado", "==", "en_progreso")
+        .stream()
+    )
+    por_documento = {}
+    for doc in docs:
+        datos = doc.to_dict() or {}
+        if datos.get("tipo") != "test_pdf":
+            continue
+        documento_id = datos.get("documento_id")
+        if not documento_id:
+            continue
+        fecha = datos.get("fecha") or ""
+        actual = por_documento.get(documento_id)
+        if not actual or fecha > actual[1]:
+            por_documento[documento_id] = (doc.id, fecha)
+    return {documento_id: test_id for documento_id, (test_id, _fecha) in por_documento.items()}
+
+
 def marcar_generado(db, uid, documento_id, tipo, num_tarjetas_nuevas=0):
     """Actualiza los indicadores del documento tras guardar contenido nuevo
     generado a partir de él (se llama desde las rutas /guardar-*-pdf)."""

@@ -167,6 +167,38 @@ class TestGenerarTarjetasVerificadas:
         assert "¿Pregunta A?" not in preguntas
         assert "advertencia" not in resultado
 
+    def test_relleno_prueba_otro_fragmento_si_el_primero_agota_intentos_dentro_del_mismo_hueco(self):
+        # Bug real reportado en un documento extenso: pedir 10 tarjetas y
+        # recibir solo 7. Antes, un hueco de relleno tenía asignado un
+        # ÚNICO fragmento fijo -- si ese fragmento concreto no daba una
+        # tarjeta válida tras MAX_INTENTOS_POR_TARJETA intentos, el hueco se
+        # perdía aunque el documento tuviera de sobra contenido sin usar en
+        # OTROS fragmentos. Con num_tarjetas=1 y 2 fragmentos, el reparto de
+        # cupos ([1, 0]) hace que solo el fragmento A reciba intento
+        # inicial (y siempre falla verificación); el B queda sin usar en la
+        # fase normal. El MISMO hueco de relleno debe, tras agotar A,
+        # probar con B y conseguir la tarjeta -- antes se habría perdido
+        # ahí, con 0/1 y advertencia.
+        def fake_call(messages, **kwargs):
+            contenido = messages[0]["content"] + messages[1]["content"]
+            if _es_prompt_generacion(messages):
+                if "Fragmento A" in contenido:
+                    return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta A?", "respuesta": "Respuesta A"}]})
+                return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta B?", "respuesta": "Respuesta B"}]})
+            if _es_prompt_verificacion(messages):
+                candidata = json.loads(messages[1]["content"].split("TARJETA A VERIFICAR:\n")[1])
+                valido = candidata["pregunta"] == "¿Pregunta B?"
+                return json.dumps({"valido": valido, "problemas": [] if valido else ["dato inventado"]})
+            raise AssertionError("prompt inesperado")
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento A", "Fragmento B"]):
+            resultado = generar_tarjetas_verificadas("Documento con dos fragmentos.", 1)
+
+        assert len(resultado["tarjetas"]) == 1
+        assert resultado["tarjetas"][0]["pregunta"] == "¿Pregunta B?"
+        assert "advertencia" not in resultado
+
     def test_sin_candidatas_generadas_da_advertencia(self):
         with patch("tarjetas_generator.call_deepseek_api", return_value=None):
             resultado = generar_tarjetas_verificadas("Texto corto.", 3)

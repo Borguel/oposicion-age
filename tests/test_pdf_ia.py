@@ -580,3 +580,33 @@ class TestCosteIaEnHerramientasPdf:
         assert coste["tokens_in"] == 30
         assert coste["tokens_out"] == 16
         assert coste["llamadas"] == 2
+
+
+class TestMisDocumentos:
+    # "Continuar" en la biblioteca: antes, un test desde PDF empezado y no
+    # terminado no aparecía por ningún sitio (solo "Ver"/"Generar más" si ya
+    # había uno finalizado) -- /mis-documentos debe exponer el test_id
+    # en_progreso de cada documento para que el frontend pueda ofrecerlo.
+
+    def test_documento_con_test_en_progreso(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "tests", "t1"), {
+            "estado": "en_progreso", "tipo": "test_pdf", "documento_id": documento_sembrado, "fecha": "2026-01-01",
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.get("/mis-documentos", headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        documentos = {d["id"]: d for d in resp.get_json()["documentos"]}
+        assert documentos[documento_sembrado]["test_en_progreso"] == "t1"
+
+    def test_documento_sin_test_en_progreso(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.get("/mis-documentos", headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        documentos = {d["id"]: d for d in resp.get_json()["documentos"]}
+        assert documentos[documento_sembrado]["test_en_progreso"] is None
