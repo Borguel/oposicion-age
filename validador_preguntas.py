@@ -61,6 +61,8 @@ def validar_pregunta(pregunta):
         "arriba mencionado", "arriba mencionada", "arriba mencionados", "arriba mencionadas",
         "anteriormente mencionado", "anteriormente mencionada",
         "anteriormente mencionados", "anteriormente mencionadas", "mencionado anteriormente",
+        "de acuerdo con el contenido", "de acuerdo con el texto",
+        "de acuerdo con el documento", "de acuerdo con el fragmento",
     ]
     if any(frase in texto_total for frase in frases_prohibidas):
         return False

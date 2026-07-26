@@ -73,6 +73,25 @@ def test_rechaza_variantes_de_remision_a_contenido_documento_o_texto():
         assert validar_pregunta(_pregunta_valida(explicacion=explicacion)) is False, explicacion
 
 
+def test_rechaza_pregunta_de_acuerdo_con_el_contenido():
+    # Regresión real: "¿De acuerdo con el contenido, el Permalink ELI de
+    # las versiones consolidadas se construye siguiendo el estándar
+    # europeo?" se coló en un test personalizado porque "de acuerdo con"
+    # no estaba en frases_prohibidas (solo "según"/"del"/"en el"/"mencionado
+    # en el"), pese a ser la misma remisión al material de origen invisible
+    # para quien responde el test.
+    assert validar_pregunta(_pregunta_valida(
+        pregunta="¿De acuerdo con el contenido, cómo se construye el Permalink?"
+    )) is False
+    for variante in [
+        "de acuerdo con el contenido, el órgano competente decide.",
+        "de acuerdo con el texto, el plazo es de un mes.",
+        "de acuerdo con el documento, la competencia es del Rey.",
+        "de acuerdo con el fragmento, la norma aplicable es esta.",
+    ]:
+        assert validar_pregunta(_pregunta_valida(explicacion=variante)) is False, variante
+
+
 def test_no_rechaza_contenido_esencial_como_termino_juridico_legitimo():
     # "contenido esencial" es terminología constitucional real (artículo
     # 53.1 de la Constitución Española) -- no debe confundirse con una
