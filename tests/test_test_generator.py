@@ -4,6 +4,7 @@ generador_preguntas_verificado.py, aquí sobre un documento libre en vez de
 un artículo anclado en Firestore). DeepSeek se mockea por CONTENIDO del
 mensaje (no por orden de llamada), porque la generación y verificación de
 un lote corren en paralelo."""
+import itertools
 import json
 from unittest.mock import patch
 
@@ -89,41 +90,42 @@ class TestGenerarPreguntasIaEnLotes:
             preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 1, "Texto de prueba.", tamano_lote=15)
 
         assert preguntas == []
-        # 0 supervivientes tras verificar SÍ se reporta en errores (aunque no
-        # sea un fallo técnico de generación) para que el llamante pueda
-        # distinguir "documento sin contenido suficiente" de un fallo real de
-        # DeepSeek -- ver blueprints/pdf_ia.py.
-        assert len(errores) == 1
+        # El error de "ninguna superó la verificación" del lote original,
+        # más el aviso de que el relleno tampoco pudo completar el único
+        # hueco que faltaba (la verificación sigue fallando siempre).
+        assert len(errores) == 2
         assert errores[0].startswith("Ninguna de las")
-        # Como mucho MAX_INTENTOS_POR_PREGUNTA_PDF candidatas distintas probadas
-        # en total (la del lote + las de recambio), nunca más.
-        assert len(llamadas_generacion) == MAX_INTENTOS_POR_PREGUNTA_PDF
+        # El hueco original agota MAX_INTENTOS_POR_PREGUNTA_PDF candidatas
+        # (la del lote + los recambios); el relleno le da al mismo hueco
+        # que sigue faltando una segunda tanda completa del mismo tamaño
+        # -- el doble en total, nunca más.
+        assert len(llamadas_generacion) == MAX_INTENTOS_POR_PREGUNTA_PDF * 2
 
     def test_on_progreso_se_llama_una_vez_por_pregunta_no_por_lote(self):
-        # Con este mock cada lote (independientemente de las n preguntas que
-        # pida) solo genera 1 candidata -- así, con 20 preguntas y lotes de
-        # 15 (2 lotes: 15 + 5), hay exactamente 2 candidatas verificadas en
-        # total, y "total" en cada evento debe ser num_preguntas (20), no el
-        # número de lotes (2) -- la granularidad ahora es por pregunta.
+        # Con num_preguntas=2 y tamano_lote=1 hay 2 lotes, cada uno con su
+        # propia candidata única -- se completan las 2 sin relleno, y
+        # "total" en cada evento debe ser num_preguntas (2), no el número
+        # de lotes -- la granularidad es por pregunta, no por lote.
         construir_prompt = _construir_prompt_fabrica(None)
+        contador = itertools.count()
 
         def fake_call(messages, **kwargs):
             if _es_llamada_verificacion(messages):
                 return json.dumps({"valido": True, "problemas": []})
             return json.dumps([{
-                "pregunta": "¿Pregunta?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "pregunta": f"¿Pregunta {next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
                 "respuesta_correcta": "A", "explicacion": "..."
             }])
 
         eventos = []
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
             generar_preguntas_ia_en_lotes(
-                construir_prompt, 20, "Texto de prueba.", tamano_lote=15,
+                construir_prompt, 2, "Texto de prueba.", tamano_lote=1,
                 on_progreso=lambda e: eventos.append(e),
             )
 
         assert len(eventos) == 2
-        assert {e["total"] for e in eventos} == {20}
+        assert {e["total"] for e in eventos} == {2}
         assert {e["completadas"] for e in eventos} == {1, 2}
 
     def test_on_progreso_se_llama_por_cada_candidata_dentro_de_un_mismo_lote(self):
@@ -184,7 +186,67 @@ class TestGenerarPreguntasIaEnLotes:
         with patch("test_generator.call_deepseek_api", return_value=None):
             preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 1, "Texto de prueba.", tamano_lote=15)
         assert preguntas == []
-        assert len(errores) == 1
+        # El error del lote sin respuesta, más el aviso de que el relleno
+        # tampoco pudo completar el hueco (DeepSeek sigue sin responder).
+        assert len(errores) == 2
+
+    def test_relleno_completa_el_hueco_que_deja_una_verificacion_fallida(self):
+        # Regresión real: un usuario pidió 10 preguntas desde un PDF y
+        # recibió solo 7 -- 3 candidatas del lote inicial no superaron la
+        # verificación y, al agotar sus MAX_INTENTOS_POR_PREGUNTA_PDF
+        # recambios (que aquí siguen siendo "malos" a propósito, para que
+        # el hueco se pierda de verdad dentro del lote), se perdían para
+        # siempre sin ningún intento de compensarlas. Las otras 7
+        # candidatas del lote son válidas a la primera. El relleno FINAL
+        # (fuera del lote, se reconoce porque pide 1 pregunta sin "No
+        # repitas") debe generar 3 preguntas nuevas y válidas para llegar
+        # a las 10 pedidas.
+        construir_prompt = _construir_prompt_fabrica(None)
+        contador_mala = itertools.count()
+        contador_relleno = itertools.count()
+
+        def fake_call(messages, **kwargs):
+            contenido = messages[0]["content"]
+            if _es_llamada_verificacion(messages):
+                candidata = json.loads(messages[1]["content"].split("PREGUNTA A VERIFICAR:\n")[1])
+                valido = not candidata["pregunta"].startswith("¿Mala")
+                return json.dumps({"valido": valido, "problemas": [] if valido else ["dato inventado"]})
+            if "No repitas esta pregunta" in contenido:
+                # Recambio INTERNO del lote (sustituye una "Mala" ya
+                # descartada) -- sigue siendo inválido a propósito, para
+                # que el lote agote de verdad sus intentos y pierda el
+                # hueco (el relleno final es quien debe cerrarlo).
+                return json.dumps([{
+                    "pregunta": f"¿Mala recambio {next(contador_mala)}?",
+                    "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                    "respuesta_correcta": "A", "explicacion": "..."
+                }])
+            if "Genera 1 preguntas" in contenido:
+                # Relleno FINAL: pide 1 pregunta nueva sin evitar nada --
+                # solo puede venir de fuera del lote, tras agotarlo.
+                return json.dumps([{
+                    "pregunta": f"¿Relleno {next(contador_relleno)}?",
+                    "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                    "respuesta_correcta": "A", "explicacion": "..."
+                }])
+            # Generación inicial del lote completo (10 preguntas pedidas).
+            return json.dumps([
+                {"pregunta": f"¿Mala {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."}
+                for i in range(3)
+            ] + [
+                {"pregunta": f"¿Buena {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."}
+                for i in range(7)
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 10, "Texto de prueba.", tamano_lote=10)
+
+        assert len(preguntas) == 10
+        assert errores == []
+        preguntas_texto = {p["pregunta"] for p in preguntas}
+        assert all("Mala" not in t for t in preguntas_texto)
 
     def test_max_tokens_del_lote_sigue_la_formula_1500_por_pregunta(self):
         # Regresión del bug real: con la fórmula antigua (min(4000, 300*n)),

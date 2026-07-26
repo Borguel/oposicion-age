@@ -270,4 +270,38 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             vistas.add(clave)
             preguntas_unicas.append(p)
 
+    # Relleno: si tras los lotes normales (con verificación y reintento por
+    # pregunta ya agotados) sigue faltando alguna respecto a num_preguntas
+    # -- por descartes que agotaron sus intentos, o por deduplicar entre
+    # lotes en paralelo -- se da un hueco más por cada una que falte, con
+    # el mismo principio que ya usan generador_preguntas_verificado.py y
+    # tarjetas_generator.py para no dejar "pedí N, me dieron menos" como
+    # respuesta por defecto. Se itera exactamente 'faltan' veces (no
+    # 'faltan * MAX_INTENTOS'): cada iteración ya lleva su propio
+    # presupuesto completo de reintentos dentro de _asegurar_pregunta_valida
+    # (genera un candidato + hasta max_intentos-1 recambios si la
+    # verificación falla), así que un hueco de relleno recibe el mismo
+    # presupuesto que un hueco normal, no un múltiplo. Nunca relaja la
+    # verificación. Secuencial: no compensa un ThreadPoolExecutor para lo
+    # que normalmente son 1-3 preguntas de hueco.
+    faltan = num_preguntas - len(preguntas_unicas)
+    for _ in range(faltan):
+        candidata = _pedir_una_pregunta_de_recambio(construir_prompt, None, on_usage)
+        pregunta = (
+            _asegurar_pregunta_valida(candidata, construir_prompt, texto_fuente, on_usage)
+            if candidata and texto_fuente is not None else candidata
+        )
+        _reportar_avance_pregunta()
+        if not pregunta:
+            continue
+        clave = re.sub(r"\s+", " ", str(pregunta.get("pregunta", "")).strip().lower())
+        if not clave or clave in vistas:
+            continue
+        vistas.add(clave)
+        preguntas_unicas.append(pregunta)
+
+    faltan_final = num_preguntas - len(preguntas_unicas)
+    if faltan_final > 0:
+        errores.append(f"No se pudieron generar {faltan_final} pregunta(s) adicionales tras varios intentos de relleno")
+
     return preguntas_unicas, errores

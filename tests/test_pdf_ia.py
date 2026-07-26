@@ -4,7 +4,9 @@ más críticas -- las 4 de /guardar-*-pdf (persisten contenido y actualizan
 estadísticas) y un test de humo de /resumir-pdf y /generar-test-desde-pdf
 con DeepSeek mockeado. El resto de las ~20 rutas de este blueprint queda
 fuera de esta tanda (desproporcionado para el alcance aprobado)."""
+import itertools
 import json
+import re
 import pytest
 from unittest.mock import patch
 
@@ -489,15 +491,25 @@ class TestCosteIaEnHerramientasPdf:
         assert coste["llamadas"] == 4
 
     def test_generar_test_desde_pdf_con_varios_lotes_registra_coste(self, client, db, documento_sembrado):
+        contador = itertools.count()
+
         def fake_call(messages, on_usage=None, **kwargs):
             if on_usage:
                 on_usage({"prompt_tokens": 20, "completion_tokens": 10})
             if len(messages) == 2 and messages[0]["role"] == "system":
                 return json.dumps({"valido": True, "problemas": []})
-            return json.dumps([{
-                "pregunta": "¿P?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                "respuesta_correcta": "A", "explicacion": "..."
-            }])
+            # Cada lote genera tantas preguntas (únicas) como se le pidieron
+            # -- así se completan las 20 solicitadas sin relleno, que
+            # multiplicaría las llamadas de forma impredecible para este
+            # test de conteo de coste (ver test_test_generator.py para el
+            # comportamiento de relleno en sí).
+            match = re.search(r"generar EXACTAMENTE (\d+) preguntas", messages[0]["content"])
+            n = int(match.group(1)) if match else 1
+            return json.dumps([
+                {"pregunta": f"¿P{next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."}
+                for _ in range(n)
+            ])
 
         parche = _con_sesion(client)
         try:
@@ -521,14 +533,15 @@ class TestCosteIaEnHerramientasPdf:
         assert resp.status_code == 200
         assert eventos[-1]["tipo"] == "fin"
         # num_preguntas=20 con tamano_lote=5 (valor por defecto) -> 4 lotes
-        # (5+5+5+5); cada lote hace 1 llamada de generación + 1 de
-        # verificación = 8 llamadas en total. Este hilo de fondo vuelca
-        # DIRECTO a Firestore (volcar_directo), sin depender de flask.g --
-        # el caso que antes perdía el coste por completo.
+        # (5+5+5+5); cada lote hace 1 llamada de generación + 5 de
+        # verificación (una por candidata) = 6 llamadas por lote, 24 en
+        # total. Este hilo de fondo vuelca DIRECTO a Firestore
+        # (volcar_directo), sin depender de flask.g -- el caso que antes
+        # perdía el coste por completo.
         coste = db.leer(("usuarios", "u1"))["coste_ia"][self._mes_actual()]
-        assert coste["tokens_in"] == 160
-        assert coste["tokens_out"] == 80
-        assert coste["llamadas"] == 8
+        assert coste["tokens_in"] == 480
+        assert coste["tokens_out"] == 240
+        assert coste["llamadas"] == 24
 
     def test_generar_tarjetas_desde_pdf_registra_coste(self, client, db, documento_sembrado):
         def fake_call(messages, on_usage=None, **kwargs):
