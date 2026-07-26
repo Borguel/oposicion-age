@@ -91,6 +91,13 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     if response_format_json:
         payload["response_format"] = {"type": "json_object"}
 
+    # Cronómetro de TODA la llamada (incluidos los reintentos internos de
+    # abajo): permite ver en los logs de Render cuánto tarda de verdad
+    # DeepSeek en responder, para distinguir "el proveedor va lento" de "hay
+    # algo nuestro atascado" sin tener que adivinar -- ver también el mismo
+    # patrón en call_deepseek_api_stream.
+    inicio = time.monotonic()
+
     intentos_restantes = _REINTENTOS_TRANSITORIOS
     while True:
         try:
@@ -117,6 +124,7 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
 
             # Verificar que la respuesta tiene la estructura esperada
             if 'choices' in data and len(data['choices']) > 0:
+                logger.info("DeepSeek respondió en %.2fs (modelo=%s)", time.monotonic() - inicio, model)
                 return data['choices'][0]['message']['content']
             else:
                 logger.error("Respuesta inesperada de DeepSeek API: %s", data)
@@ -159,6 +167,7 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
             intentos_restantes -= 1
             time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
             continue
+        logger.warning("DeepSeek falló tras %.2fs (modelo=%s)", time.monotonic() - inicio, model)
         return None
 
 def _post_deepseek_con_reintentos(headers, payload, timeout, stream=False):
