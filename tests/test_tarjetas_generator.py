@@ -222,6 +222,24 @@ class TestGenerarTarjetasVerificadas:
         # 1 llamada de generación + 1 de verificación = 2 avisos de usage.
         assert len(recibidos) == 2
 
+    def test_verificacion_pide_2000_tokens_no_400(self):
+        # Mismo bug real que en test_generator.py: con max_tokens=400,
+        # deepseek-v4-flash podía truncar la respuesta de verificación al
+        # detallar varios problemas, y el JSON cortado se trataba como
+        # tarjeta inválida aunque no lo fuera.
+        max_tokens_verificacion = []
+
+        def fake_call(messages, max_tokens=None, **kwargs):
+            if _es_prompt_generacion(messages):
+                return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta?", "respuesta": "Respuesta"}]})
+            max_tokens_verificacion.append(max_tokens)
+            return json.dumps({"valido": True, "problemas": []})
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call):
+            generar_tarjetas_verificadas("Texto corto.", 1)
+
+        assert max_tokens_verificacion == [2000]
+
     def test_relleno_de_varios_huecos_se_ejecuta_en_paralelo(self):
         # Regresión de lentitud: el relleno era un "for" secuencial, así que
         # con varios huecos pendientes (documento difícil que necesita

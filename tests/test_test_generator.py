@@ -511,6 +511,30 @@ class TestGenerarPreguntasIaEnLotes:
 
         assert max_tokens_recibidos == [8000]  # min(8000, 1500*6=9000) -> 8000
 
+    def test_verificacion_pide_2000_tokens_no_400(self):
+        # Bug real de producción: con max_tokens=400, deepseek-v4-flash
+        # truncaba la respuesta de verificación (finish_reason="length")
+        # cuando detallaba varios problemas, y el JSON cortado se trataba
+        # como pregunta inválida aunque no lo fuera -- multiplicando las
+        # llamadas totales (una verificación truncada dispara una
+        # regeneración de más) y dejando el test por debajo de lo pedido.
+        construir_prompt = _construir_prompt_fabrica(None)
+        max_tokens_verificacion = []
+
+        def fake_call(messages, max_tokens=None, **kwargs):
+            if _es_llamada_verificacion(messages):
+                max_tokens_verificacion.append(max_tokens)
+                return json.dumps({"valido": True, "problemas": []})
+            return json.dumps([{
+                "pregunta": "¿Pregunta?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "respuesta_correcta": "A", "explicacion": "..."
+            }])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            generar_preguntas_ia_en_lotes(construir_prompt, 1, "Texto de prueba.", tamano_lote=1)
+
+        assert max_tokens_verificacion == [2000]
+
     def test_nunca_devuelve_mas_preguntas_de_las_pedidas(self):
         # Bug real reportado: pedir 20 preguntas y recibir 22 -- un lote
         # puede ignorar el "EXACTAMENTE n" del prompt y devolver más

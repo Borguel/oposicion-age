@@ -144,7 +144,13 @@ def _verificar_tarjeta(tarjeta, fragmento, on_usage):
     raw = call_deepseek_api(
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         temperature=0.0,
-        max_tokens=400,
+        # Mismo margen que test_generator.py._verificar_pregunta (ver su
+        # comentario): con 400 tokens, deepseek-v4-flash puede truncar la
+        # respuesta si detalla varios problemas en "problemas", y un JSON
+        # cortado se trata como tarjeta inválida aunque no lo fuera,
+        # disparando una regeneración de más. No tiene coste extra si no
+        # hace falta (se cobra por tokens generados, no por el tope).
+        max_tokens=2000,
         response_format_json=True,
         on_usage=on_usage,
     )

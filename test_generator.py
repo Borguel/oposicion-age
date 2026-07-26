@@ -88,7 +88,22 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
     raw = call_deepseek_api(
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         temperature=0.0,
-        max_tokens=400,
+        # Bug real de producción: con 400 tokens, deepseek-v4-flash trunca
+        # la respuesta (finish_reason="length") cuando la verificación
+        # encuentra varios problemas y los detalla en "problemas" -- un JSON
+        # cortado a mitad no parsea (json.loads falla más abajo), así que la
+        # pregunta se trata como inválida AUNQUE la IA la hubiera dado por
+        # buena, disparando una regeneración innecesaria. Eso multiplica las
+        # llamadas totales (una verificación truncada cuenta como fallo, lo
+        # que pide una pregunta de recambio Y su propia verificación) y deja
+        # el test por debajo de lo pedido cuando se agotan los reintentos.
+        # 2000 iguala el margen que generador_preguntas_verificado.py ya usa
+        # para el mismo modelo y el mismo tipo de verificación, con la misma
+        # razón documentada ahí: deepseek-v4-flash es más verboso de lo que
+        # parece necesario. Subir max_tokens no encarece nada por sí solo
+        # (DeepSeek cobra por los tokens que de verdad genera, no por el
+        # tope): solo evita el corte cuando de verdad hacen falta más de 400.
+        max_tokens=2000,
         response_format_json=True,
         on_usage=on_usage,
     )
