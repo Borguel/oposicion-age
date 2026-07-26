@@ -478,6 +478,10 @@ body {
   pointer-events: none;
 }
 
+.age-notificaciones-badge[hidden] {
+  display: none;
+}
+
 .age-notificaciones-panel {
   width: min(340px, 90vw);
 }
