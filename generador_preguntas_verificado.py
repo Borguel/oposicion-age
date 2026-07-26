@@ -613,40 +613,53 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     # una oportunidad más por cada uno que falte, en OTRO tema con contenido
     # disponible (rotando entre los elegidos) -- para que "hay temario de
     # sobra" no se traduzca en menos preguntas de las pedidas solo porque a
-    # un hueco concreto le tocó mala suerte con sus intentos. Secuencial (no
-    # merece la pena otro ThreadPoolExecutor para lo que normalmente es 1-2
-    # preguntas). SÍ llama a on_progreso igual que el bucle principal: cada
-    # intento aquí puede suponer dos llamadas a DeepSeek de hasta 30s cada
-    # una, y con varios huecos por rellenar esta fase puede tardar bastante
-    # -- sin ningún evento durante todo ese tramo, quien consume el streaming
-    # SSE (ver /generar-test-avanzado) se queda sin ninguna señal de que
-    # sigue en marcha, tiempo de silencio real que un cliente o proxy
-    # intermedio puede llegar a interpretar como conexión muerta.
+    # un hueco concreto le tocó mala suerte con sus intentos.
+    #
+    # EN PARALELO (antes era un "for" secuencial, con el mismo razonamiento
+    # de "no merece la pena otro ThreadPoolExecutor para 1-2 preguntas" que
+    # resultó no aguantar en la práctica): con varios huecos, cada uno hasta
+    # MAX_INTENTOS_POR_PREGUNTA rondas de generación+verificación (~15-20s
+    # por llamada a DeepSeek), rellenarlos uno detrás de otro podía sumar
+    # minutos SOLO en esta fase -- el mismo cuello de botella real ya
+    # detectado y corregido en test_generator.py (generar_preguntas_ia_en_lotes)
+    # para /generar-test-desde-pdf. Se reutiliza exactamente el mismo patrón
+    # que ya usa el bucle principal de arriba (ThreadPoolExecutor +
+    # as_completed): _generar_pregunta_verificada ya recibe y usa 'lock' para
+    # proteger 'subbloques_ya_usados'/'preguntas_ya_aceptadas', así que no
+    # hace falta ningún lock nuevo -- solo las mutaciones de 'preguntas'/
+    # 'descartadas'/'completadas' y la llamada a on_progreso, que se hacen
+    # aquí en el hilo principal según van llegando los resultados (as_completed),
+    # nunca dentro de los hilos del pool.
     if len(preguntas) < num_preguntas and temas_con_contenido:
         faltan = num_preguntas - len(preguntas)
         ciclo_temas = itertools.cycle(temas_con_contenido)
-        for _ in range(faltan):
-            tid = next(ciclo_temas)
-            try:
-                resultado = _generar_pregunta_verificada(
-                    subbloques_por_tema[tid], tid, oposicion,
+        tids_relleno = [next(ciclo_temas) for _ in range(faltan)]
+        with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS, faltan)) as executor:
+            futuros = [
+                executor.submit(
+                    _generar_pregunta_verificada, subbloques_por_tema[tid], tid, oposicion,
                     subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add,
                 )
-            except Exception:
-                logger.exception("Fallo inesperado en el relleno de un hueco del test personalizado")
-                resultado = None
-            completadas += 1
-            if resultado:
-                preguntas.append(resultado)
-                guardar_pregunta_generada(db, oposicion, resultado)
-                limpiar_cache_preguntas_banco_ia(oposicion)
-            else:
-                descartadas += 1
-            if on_progreso:
-                on_progreso({
-                    "completadas": completadas, "total": total, "aceptadas": len(preguntas),
-                    "pregunta": resultado,
-                })
+                for tid in tids_relleno
+            ]
+            for futuro in as_completed(futuros):
+                try:
+                    resultado = futuro.result()
+                except Exception:
+                    logger.exception("Fallo inesperado en el relleno de un hueco del test personalizado")
+                    resultado = None
+                completadas += 1
+                if resultado:
+                    preguntas.append(resultado)
+                    guardar_pregunta_generada(db, oposicion, resultado)
+                    limpiar_cache_preguntas_banco_ia(oposicion)
+                else:
+                    descartadas += 1
+                if on_progreso:
+                    on_progreso({
+                        "completadas": completadas, "total": total, "aceptadas": len(preguntas),
+                        "pregunta": resultado,
+                    })
 
     # Con uid (Test Personalizado): la generación corre en un hilo de fondo
     # desligado de la petición, así que se vuelca DIRECTO a Firestore. Sin uid

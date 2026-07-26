@@ -312,7 +312,15 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
 
     preguntas = []
     errores = []
-    with ThreadPoolExecutor(max_workers=min(5, len(lotes))) as executor:
+    # max_workers=8 (no 15, como generador_preguntas_verificado.py): cada
+    # lote de aquí dispara además hasta _MAX_WORKERS_VERIFICACION_LOTE
+    # verificaciones propias en paralelo, así que 8 lotes a la vez ya
+    # supone picos de hasta 48 llamadas simultáneas a DeepSeek -- subir
+    # más sin evidencia de que la API lo soporta bien sería imprudente.
+    # Sirve sobre todo para peticiones grandes (30-100 preguntas, varios
+    # lotes): con num_preguntas pequeño ya cabían todos los lotes en una
+    # sola tanda incluso con el límite anterior de 5.
+    with ThreadPoolExecutor(max_workers=min(8, len(lotes))) as executor:
         futuros = [
             executor.submit(_pedir_lote_verificado, n, fragmentos[i])
             for i, n in enumerate(lotes)
@@ -338,33 +346,49 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     # lotes en paralelo -- se da un hueco más por cada una que falte, con
     # el mismo principio que ya usan generador_preguntas_verificado.py y
     # tarjetas_generator.py para no dejar "pedí N, me dieron menos" como
-    # respuesta por defecto. Se itera exactamente 'faltan' veces (no
-    # 'faltan * MAX_INTENTOS'): cada iteración ya lleva su propio
-    # presupuesto completo de reintentos dentro de _asegurar_pregunta_valida
-    # (genera un candidato + hasta max_intentos-1 recambios si la
-    # verificación falla), así que un hueco de relleno recibe el mismo
-    # presupuesto que un hueco normal, no un múltiplo. Nunca relaja la
-    # verificación. Secuencial: no compensa un ThreadPoolExecutor para lo
-    # que normalmente son 1-3 preguntas de hueco.
+    # respuesta por defecto. Cada hueco lleva su propio presupuesto
+    # completo de reintentos dentro de _asegurar_pregunta_valida (genera
+    # un candidato + hasta max_intentos-1 recambios si la verificación
+    # falla), así que un hueco de relleno recibe el mismo presupuesto que
+    # un hueco normal, no un múltiplo. Nunca relaja la verificación.
+    #
+    # EN PARALELO (antes era un "for" secuencial): con varios huecos, cada
+    # uno tardando hasta 3 rondas de generación+verificación (~15-20s por
+    # llamada a DeepSeek), rellenarlos uno detrás de otro podía sumar
+    # 1-3 minutos SOLO en esta fase (bug real reportado: 16 preguntas
+    # tardando 5-6 minutos) -- el cuello de botella dominante no eran los
+    # lotes (ya paralelos) sino este relleno puramente secuencial. Al
+    # tratarse de huecos independientes entre sí, paralelizarlos no
+    # cambia en nada la verificación ni el resultado final, solo el
+    # tiempo. Se protege con un lock el check-then-add sobre 'vistas' /
+    # 'preguntas_unicas' (antes era seguro por ser secuencial; en
+    # paralelo, dos hilos podrían aceptar el mismo tema a la vez sin él).
     faltan = num_preguntas - len(preguntas_unicas)
-    for _ in range(faltan):
-        candidata = _pedir_una_pregunta_de_recambio(construir_prompt, None, on_usage)
-        pregunta = (
-            _asegurar_pregunta_valida(candidata, construir_prompt, texto_fuente, on_usage)
-            if candidata and texto_fuente is not None else candidata
-        )
-        aceptada = None
-        if pregunta:
-            clave = re.sub(r"\s+", " ", str(pregunta.get("pregunta", "")).strip().lower())
-            if clave and clave not in vistas:
-                vistas.add(clave)
-                preguntas_unicas.append(pregunta)
-                aceptada = pregunta
-        # Solo se incluye en el evento si de verdad se aceptó (no si era
-        # un duplicado que se descarta) -- el "pregunta" del evento SSE
-        # representa una pregunta genuinamente nueva del test final, no
-        # un intento cualquiera.
-        _reportar_avance_pregunta(aceptada)
+    if faltan > 0:
+        lock_relleno = threading.Lock()
+
+        def _rellenar_un_hueco(_indice):
+            candidata = _pedir_una_pregunta_de_recambio(construir_prompt, None, on_usage)
+            pregunta = (
+                _asegurar_pregunta_valida(candidata, construir_prompt, texto_fuente, on_usage)
+                if candidata and texto_fuente is not None else candidata
+            )
+            aceptada = None
+            if pregunta:
+                clave = re.sub(r"\s+", " ", str(pregunta.get("pregunta", "")).strip().lower())
+                with lock_relleno:
+                    if clave and clave not in vistas:
+                        vistas.add(clave)
+                        preguntas_unicas.append(pregunta)
+                        aceptada = pregunta
+            # Solo se incluye en el evento si de verdad se aceptó (no si
+            # era un duplicado que se descarta) -- el "pregunta" del
+            # evento SSE representa una pregunta genuinamente nueva del
+            # test final, no un intento cualquiera.
+            _reportar_avance_pregunta(aceptada)
+
+        with ThreadPoolExecutor(max_workers=min(10, faltan)) as executor:
+            list(executor.map(_rellenar_un_hueco, range(faltan)))
 
     faltan_final = num_preguntas - len(preguntas_unicas)
     if faltan_final > 0:
