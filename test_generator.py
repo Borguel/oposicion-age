@@ -75,7 +75,7 @@ def _pedir_una_pregunta_de_recambio(construir_prompt, pregunta_descartada, on_us
     generado = call_deepseek_api(
         messages=[{"role": "user", "content": prompt}],
         temperature=0.6,
-        max_tokens=600,
+        max_tokens=3000,
         on_usage=on_usage,
     )
     if not generado:
@@ -111,7 +111,7 @@ def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente
     return None
 
 
-def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=None, tamano_lote=15,
+def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=None, tamano_lote=5,
                                    temperature=0.4, on_progreso=None, on_usage=None):
     """Genera 'num_preguntas' preguntas pidiéndolas a DeepSeek en varios lotes
     en paralelo (ThreadPoolExecutor). Si se pasa texto_fuente, cada
@@ -149,13 +149,20 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     está disponible, así que sin on_usage el coste de estas llamadas se
     pierde en silencio (ver AcumuladorTokens en coste_ia.py).
 
-    /generar-test-desde-pdf antes pedía todo el test de golpe con
-    max_tokens=min(4000, 300*num_preguntas): a partir de ~13-14 preguntas ese
-    tope de 4000 tokens ya se queda corto para el JSON completo
-    (pregunta+opciones+explicación ronda 400-600 tokens cada una), y la
-    respuesta se corta a medio JSON. Pedir lotes de como mucho 'tamano_lote'
-    preguntas mantiene cada llamada individual muy por debajo del límite,
-    sea cual sea el total pedido.
+    /generar-test-desde-pdf antes pedía todo el test de golpe; el primer
+    intento de arreglarlo con lotes asumía ~400-600 tokens por pregunta
+    (max_tokens=min(4000, 300*n)), pero la investigación de rendimiento de
+    Test Personalizado (mismo modelo deepseek-v4-flash, mismo formato de
+    pregunta+4 opciones+explicación con cita de artículo, verificable con
+    el log "finish_reason=%s, tokens_salida=%s" de deepseek_utils.py) mostró
+    que una sola pregunta de este tipo puede necesitar hasta 3000 tokens y
+    que la media real ronda 1200-1350 -- ya se veía JSON truncado
+    (finish_reason="length") con lotes de solo 10 preguntas, no a partir de
+    13-14. Por eso 'tamano_lote' se quedó en 5 (no 15) y el presupuesto de
+    tokens por pregunta subió a la par (ver _pedir_lote_verificado más
+    abajo): con menos preguntas por lote y más margen por pregunta, un lote
+    lleno deja holgura real aunque alguna pregunta salga más verbosa de lo
+    normal, en vez de agotar el tope a mitad del JSON.
 
     construir_prompt(n) debe devolver el prompt completo pidiendo EXACTAMENTE
     n preguntas, en el mismo formato de array JSON que ya usa esa ruta.
@@ -193,7 +200,7 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         generado = call_deepseek_api(
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
-            max_tokens=min(4000, 300 * n),
+            max_tokens=min(8000, 1500 * n),
             on_usage=on_usage
         )
         if not generado:

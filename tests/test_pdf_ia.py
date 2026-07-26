@@ -520,15 +520,15 @@ class TestCosteIaEnHerramientasPdf:
 
         assert resp.status_code == 200
         assert eventos[-1]["tipo"] == "fin"
-        # num_preguntas=20 con tamano_lote=15 -> 2 lotes; cada lote hace 1
-        # llamada de generación + 1 de verificación = 4 llamadas en total.
-        # Este hilo de fondo vuelca DIRECTO a Firestore (volcar_directo),
-        # sin depender de flask.g -- el caso que antes perdía el coste por
-        # completo.
+        # num_preguntas=20 con tamano_lote=5 (valor por defecto) -> 4 lotes
+        # (5+5+5+5); cada lote hace 1 llamada de generación + 1 de
+        # verificación = 8 llamadas en total. Este hilo de fondo vuelca
+        # DIRECTO a Firestore (volcar_directo), sin depender de flask.g --
+        # el caso que antes perdía el coste por completo.
         coste = db.leer(("usuarios", "u1"))["coste_ia"][self._mes_actual()]
-        assert coste["tokens_in"] == 80
-        assert coste["tokens_out"] == 40
-        assert coste["llamadas"] == 4
+        assert coste["tokens_in"] == 160
+        assert coste["tokens_out"] == 80
+        assert coste["llamadas"] == 8
 
     def test_generar_tarjetas_desde_pdf_registra_coste(self, client, db, documento_sembrado):
         def fake_call(messages, on_usage=None, **kwargs):

@@ -185,3 +185,46 @@ class TestGenerarPreguntasIaEnLotes:
             preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 1, "Texto de prueba.", tamano_lote=15)
         assert preguntas == []
         assert len(errores) == 1
+
+    def test_max_tokens_del_lote_sigue_la_formula_1500_por_pregunta(self):
+        # Regresión del bug real: con la fórmula antigua (min(4000, 300*n)),
+        # un lote de 10 preguntas pedía max_tokens=3000 y DeepSeek lo
+        # truncaba a mitad de JSON (finish_reason="length") -- ver el log
+        # real citado en test_generator.py. Este test fija la fórmula nueva
+        # para que un cambio futuro no la vuelva a bajar sin darse cuenta.
+        construir_prompt = _construir_prompt_fabrica(None)
+        max_tokens_recibidos = []
+
+        def fake_call(messages, max_tokens=None, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            max_tokens_recibidos.append(max_tokens)
+            return json.dumps([
+                {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."}
+                for i in range(4)
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            generar_preguntas_ia_en_lotes(construir_prompt, 4, "Texto de prueba.", tamano_lote=4)
+
+        assert max_tokens_recibidos == [6000]  # min(8000, 1500*4)
+
+    def test_max_tokens_del_lote_se_limita_a_8000(self):
+        construir_prompt = _construir_prompt_fabrica(None)
+        max_tokens_recibidos = []
+
+        def fake_call(messages, max_tokens=None, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            max_tokens_recibidos.append(max_tokens)
+            return json.dumps([
+                {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."}
+                for i in range(6)
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            generar_preguntas_ia_en_lotes(construir_prompt, 6, "Texto de prueba.", tamano_lote=6)
+
+        assert max_tokens_recibidos == [8000]  # min(8000, 1500*6=9000) -> 8000
