@@ -457,10 +457,23 @@ class TestCosteIaEnHerramientasPdf:
         def fake_call(messages, on_usage=None, **kwargs):
             if on_usage:
                 on_usage({"prompt_tokens": 20, "completion_tokens": 10})
+            if len(messages) == 2 and messages[1]["content"].startswith("PREGUNTAS:"):
+                # Detección de duplicados semánticos (test_generator.py,
+                # _detectar_indices_duplicados): se llama siempre que hay más
+                # de 1 pregunta aceptada, aparte de haber o no duplicados.
+                return json.dumps({"duplicados": []})
             if len(messages) == 2 and messages[0]["role"] == "system":
                 return json.dumps({"valido": True, "problemas": []})
+            # Generación de lote: cada lote (15 y 5 preguntas) debe devolver
+            # un enunciado DISTINTO -- si coincidieran, la deduplicación por
+            # texto exacto descartaría uno y pediría un recambio (una
+            # llamada de generación + una de verificación de más), lo que
+            # descuadraría el recuento de coste que este test comprueba (la
+            # reposición de duplicados en sí se cubre en
+            # test_test_generator.py).
+            etiqueta = "15" if "EXACTAMENTE 15" in messages[0]["content"] else "5"
             return json.dumps([{
-                "pregunta": "¿P?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "pregunta": f"¿P{etiqueta}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
                 "respuesta_correcta": "A", "explicacion": "..."
             }])
 
@@ -486,14 +499,15 @@ class TestCosteIaEnHerramientasPdf:
         assert resp.status_code == 200
         assert eventos[-1]["tipo"] == "fin"
         # num_preguntas=20 con tamano_lote=15 -> 2 lotes; cada lote hace 1
-        # llamada de generación + 1 de verificación = 4 llamadas en total.
-        # Este hilo de fondo vuelca DIRECTO a Firestore (volcar_directo),
-        # sin depender de flask.g -- el caso que antes perdía el coste por
-        # completo.
+        # llamada de generación + 1 de verificación (4 llamadas), más 1
+        # llamada de detección de duplicados semánticos al final (2
+        # preguntas aceptadas) = 5 llamadas en total. Este hilo de fondo
+        # vuelca DIRECTO a Firestore (volcar_directo), sin depender de
+        # flask.g -- el caso que antes perdía el coste por completo.
         coste = db.leer(("usuarios", "u1"))["coste_ia"][self._mes_actual()]
-        assert coste["tokens_in"] == 80
-        assert coste["tokens_out"] == 40
-        assert coste["llamadas"] == 4
+        assert coste["tokens_in"] == 100
+        assert coste["tokens_out"] == 50
+        assert coste["llamadas"] == 5
 
     def test_generar_tarjetas_desde_pdf_registra_coste(self, client, db, documento_sembrado):
         def fake_call(messages, on_usage=None, **kwargs):

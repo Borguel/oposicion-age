@@ -223,6 +223,37 @@ class TestGenerarPreguntasIaEnLotes:
         assert "¿Cuál es la duración del cargo?" not in textos
         assert "¿Pregunta distinta?" in textos
 
+    def test_duplicado_literal_entre_lotes_se_repone_en_vez_de_perderse(self):
+        # Caso real reportado: pedir 20 preguntas y recibir solo 18 -- dos
+        # lotes en paralelo pueden generar el MISMO enunciado exacto para el
+        # mismo documento, y antes ese duplicado se descartaba sin pedir
+        # sustituto, dejando el test por debajo de lo pedido.
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            if len(messages) == 2 and messages[1]["content"].startswith("PREGUNTAS:"):
+                return json.dumps({"duplicados": []})
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            if "Estas preguntas ya existen" in messages[0]["content"]:
+                return json.dumps([{
+                    "pregunta": "¿Pregunta de recambio?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                    "respuesta_correcta": "A", "explicacion": "..."
+                }])
+            # Ambos lotes (tamano_lote=1, 2 lotes) generan el MISMO enunciado.
+            return json.dumps([{
+                "pregunta": "¿Pregunta repetida?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "respuesta_correcta": "A", "explicacion": "..."
+            }])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 2, "Texto de prueba.", tamano_lote=1)
+
+        assert errores == []
+        assert len(preguntas) == 2
+        textos = {p["pregunta"] for p in preguntas}
+        assert textos == {"¿Pregunta repetida?", "¿Pregunta de recambio?"}
+
     def test_preguntas_a_evitar_se_incluyen_en_el_prompt_de_cada_lote(self):
         # "Generar más" desde un documento ya subido antes debe avisar a la
         # IA de las preguntas de tests anteriores para no repetirlas (ver

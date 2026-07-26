@@ -176,21 +176,26 @@ def _pedir_y_verificar_recambio(construir_prompt, texto_fuente, preguntas_a_evit
     return _asegurar_pregunta_valida(candidata, construir_prompt, texto_fuente, on_usage, preguntas_a_evitar)
 
 
-def _reemplazar_duplicadas(preguntas, indices_duplicados, construir_prompt, texto_fuente,
-                            preguntas_a_evitar, on_usage):
-    """Quita las preguntas marcadas como duplicado semántico y pide, EN
-    PARALELO, una de recambio por cada una eliminada -- mismo mecanismo de
-    recambio que ya usa _asegurar_pregunta_valida para las que no superan la
-    verificación, aquí reutilizado para las que sí la superan pero repiten
-    el dato de otra. Si no se consigue recambio para alguna, simplemente se
-    queda con menos preguntas (igual que ya ocurre hoy cuando un lote no
-    llega al número pedido)."""
-    conservadas = [p for i, p in enumerate(preguntas) if i not in indices_duplicados]
-    evitar = list(preguntas_a_evitar or []) + [p.get("pregunta", "") for p in conservadas]
-    with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(indices_duplicados))) as executor:
+def _reemplazar_faltantes(preguntas, num_faltantes, construir_prompt, texto_fuente,
+                           preguntas_a_evitar, on_usage):
+    """Pide, EN PARALELO, 'num_faltantes' preguntas de recambio para compensar
+    preguntas ya descartadas por ser duplicadas (por texto exacto o por
+    significado) -- mismo mecanismo de recambio que ya usa
+    _asegurar_pregunta_valida para las que no superan la verificación, aquí
+    reutilizado para cuando la pregunta sí la supera pero sobra por repetir
+    el dato de otra. Antes, tanto los duplicados de texto exacto (dos lotes
+    en paralelo pueden generar la misma pregunta) como los semánticos se
+    descartaban sin más, reduciendo el total por debajo de lo pedido -- caso
+    real: pedir 20 preguntas y recibir solo 18. Si no se consigue recambio
+    para alguna, simplemente se queda con menos preguntas de las pedidas."""
+    if num_faltantes <= 0:
+        return preguntas
+    evitar = list(preguntas_a_evitar or []) + [p.get("pregunta", "") for p in preguntas]
+    conservadas = list(preguntas)
+    with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, num_faltantes)) as executor:
         futuros = [
             executor.submit(_pedir_y_verificar_recambio, construir_prompt, texto_fuente, evitar, on_usage)
-            for _ in indices_duplicados
+            for _ in range(num_faltantes)
         ]
         for futuro in as_completed(futuros):
             candidata = futuro.result()
@@ -357,18 +362,32 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
 
     vistas = set()
     preguntas_unicas = []
+    duplicados_literales = 0
     for p in preguntas:
         clave = re.sub(r"\s+", " ", str(p.get("pregunta", "")).strip().lower())
-        if clave and clave not in vistas:
-            vistas.add(clave)
-            preguntas_unicas.append(p)
+        if not clave:
+            continue
+        if clave in vistas:
+            # Dos lotes en paralelo pidiendo sobre el mismo documento pueden
+            # generar la pregunta EXACTA (mismo enunciado) -- se descarta
+            # aquí, pero se cuenta para intentar reponerla más abajo en vez
+            # de dejar el test con menos preguntas de las pedidas.
+            duplicados_literales += 1
+            continue
+        vistas.add(clave)
+        preguntas_unicas.append(p)
 
+    duplicados_semanticos = 0
     if texto_fuente is not None and len(preguntas_unicas) > 1:
         indices_duplicados = _detectar_indices_duplicados(preguntas_unicas, on_usage)
         if indices_duplicados:
-            preguntas_unicas = _reemplazar_duplicadas(
-                preguntas_unicas, indices_duplicados, construir_prompt, texto_fuente,
-                preguntas_a_evitar, on_usage,
-            )
+            duplicados_semanticos = len(indices_duplicados)
+            preguntas_unicas = [p for i, p in enumerate(preguntas_unicas) if i not in indices_duplicados]
+
+    num_faltantes = duplicados_literales + duplicados_semanticos
+    if num_faltantes and texto_fuente is not None:
+        preguntas_unicas = _reemplazar_faltantes(
+            preguntas_unicas, num_faltantes, construir_prompt, texto_fuente, preguntas_a_evitar, on_usage,
+        )
 
     return preguntas_unicas, errores
