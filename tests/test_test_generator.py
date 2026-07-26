@@ -337,6 +337,75 @@ class TestGenerarPreguntasIaEnLotes:
         assert all(f != texto_largo for f in fragmentos_recibidos)
         assert all(f in texto_largo for f in fragmentos_recibidos)
 
+    def test_dedupe_tambien_por_respuesta_correcta_larga(self):
+        # Bug real: 4 preguntas sobre "la duración del mandato del
+        # Presidente..." con el enunciado reformulado de 4 formas
+        # distintas pero la MISMA respuesta correcta larga ("6 años, no
+        # renovable.") pasaban el dedup anterior (que solo comparaba el
+        # texto de la pregunta) como si fueran 4 preguntas distintas.
+        # Aquí, dos candidatas con textos de pregunta completamente
+        # distintos pero la misma respuesta correcta larga deben
+        # deduplicarse a 1 sola.
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            return json.dumps([
+                {"pregunta": "¿Cuánto dura el mandato del Presidente?",
+                 "opciones": {"A": "4 años", "B": "5 años", "C": "6 años, no renovable.", "D": "7 años"},
+                 "respuesta_correcta": "C", "explicacion": "..."},
+                {"pregunta": "¿Es renovable el cargo del Presidente y por cuánto tiempo se ejerce?",
+                 "opciones": {"A": "6 años, no renovable.", "B": "5 años", "C": "4 años", "D": "7 años"},
+                 "respuesta_correcta": "A", "explicacion": "..."},
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(
+                construir_prompt, 2, "Texto de prueba.", tamano_lote=15,
+            )
+
+        assert len(preguntas) == 1
+
+    def test_relleno_evita_repetir_preguntas_ya_aceptadas(self):
+        # El relleno debe conocer lo que YA está aceptado en el resto del
+        # test para no volver a generar el mismo hecho sobreexplotado del
+        # documento -- antes, un hueco de relleno solo sabía evitar LA
+        # candidata que él mismo acababa de descartar en su propio
+        # intento, sin ninguna noción de las preguntas ya aceptadas de
+        # los lotes o de otros huecos.
+        construir_prompt = _construir_prompt_fabrica(None)
+        prompts_relleno = []
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            contenido = messages[0]["content"]
+            if "Genera 1 preguntas" in contenido:
+                prompts_relleno.append(contenido)
+                return json.dumps([{
+                    "pregunta": "¿Pregunta de relleno?",
+                    "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                    "respuesta_correcta": "A", "explicacion": "..."
+                }])
+            # Lote inicial: pide 2 preguntas pero solo devuelve 1 (deja un
+            # hueco que el relleno debe rellenar).
+            return json.dumps([{
+                "pregunta": "¿Cuánto dura el mandato del Presidente?",
+                "opciones": {"A": "1", "B": "2", "C": "6 años, no renovable.", "D": "4"},
+                "respuesta_correcta": "C", "explicacion": "..."
+            }])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(
+                construir_prompt, 2, "Texto de prueba.", tamano_lote=2,
+            )
+
+        assert len(preguntas) == 2
+        assert len(prompts_relleno) >= 1
+        assert any("6 años, no renovable." in p for p in prompts_relleno)
+        assert any("No repitas ninguno de estos temas" in p for p in prompts_relleno)
+
     def test_max_tokens_del_lote_sigue_la_formula_1500_por_pregunta(self):
         # Regresión del bug real: con la fórmula antigua (min(4000, 300*n)),
         # un lote de 10 preguntas pedía max_tokens=3000 y DeepSeek lo

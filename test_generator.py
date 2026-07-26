@@ -7,6 +7,44 @@ from deepseek_utils import call_deepseek_api
 MAX_INTENTOS_POR_PREGUNTA_PDF = 3
 _MAX_WORKERS_VERIFICACION_LOTE = 6
 
+# Umbral de longitud para usar el texto de la respuesta correcta como
+# clave adicional de deduplicación (ver _claves_dedup): por debajo de
+# este tamaño no se usa, para no dar falsos positivos con cifras o
+# respuestas muy cortas (p.ej. "3%", "20 días") que varias preguntas
+# LEGÍTIMAMENTE distintas pueden compartir por casualidad -- ni con las
+# opciones de relleno tipo "1"/"2"/"3"/"4" que usan los tests. Las
+# respuestas que SÍ se repiten en la práctica cuando el documento tiene
+# un dato muy citable ("6 años, no renovable.", "A mediados de octubre
+# de cada año.") están muy por encima de este umbral.
+_LONGITUD_MINIMA_DEDUP_RESPUESTA = 10
+
+
+def _normalizar(texto):
+    return re.sub(r"\s+", " ", str(texto or "").strip().lower())
+
+
+def _claves_dedup(pregunta):
+    """Claves de deduplicación de una pregunta ya aceptada: siempre el
+    texto de la pregunta normalizado, y ADEMÁS el texto de la respuesta
+    correcta normalizado si es lo bastante largo (ver
+    _LONGITUD_MINIMA_DEDUP_RESPUESTA). Dos preguntas con el ENUNCIADO
+    reformulado de forma completamente distinta pero que citan el mismo
+    dato con la misma respuesta correcta se detectan así como duplicadas
+    aunque el texto de la pregunta no coincida en nada -- bug real: la
+    misma pregunta sobre la duración de un mandato, repetida 4 veces con
+    4 redacciones distintas, escapaba al dedup anterior (que solo
+    comparaba el texto de la pregunta)."""
+    claves = set()
+    clave_pregunta = _normalizar(pregunta.get("pregunta", ""))
+    if clave_pregunta:
+        claves.add(f"p:{clave_pregunta}")
+    opciones = pregunta.get("opciones") or {}
+    letra_respuesta = str(pregunta.get("respuesta_correcta", "")).upper()
+    clave_respuesta = _normalizar(opciones.get(letra_respuesta, ""))
+    if len(clave_respuesta) >= _LONGITUD_MINIMA_DEDUP_RESPUESTA:
+        claves.add(f"r:{clave_respuesta}")
+    return claves
+
 
 def _prompt_verificacion(pregunta_candidata, texto_fuente):
     system = (
@@ -335,9 +373,9 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     vistas = set()
     preguntas_unicas = []
     for p in preguntas:
-        clave = re.sub(r"\s+", " ", str(p.get("pregunta", "")).strip().lower())
-        if clave and clave not in vistas:
-            vistas.add(clave)
+        claves = _claves_dedup(p)
+        if claves and not (claves & vistas):
+            vistas.update(claves)
             preguntas_unicas.append(p)
 
     # Relleno: si tras los lotes normales (con verificación y reintento por
@@ -367,18 +405,43 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     if faltan > 0:
         lock_relleno = threading.Lock()
 
+        def construir_prompt_evitando_repetidas(n):
+            # Envuelve construir_prompt con un aviso de qué temas/datos ya
+            # están cubiertos por el resto del test (snapshot de
+            # preguntas_unicas en el momento de la llamada, incluyendo lo
+            # que otros huecos de relleno ya hayan ido aceptando) -- sin
+            # esto, un hueco podía regenerar a ciegas el mismo dato
+            # sobreexplotado del documento una y otra vez hasta agotar sus
+            # intentos, sin llegar nunca a rellenarse de verdad (bug real:
+            # "pedí 10, recibí 9" con el hueco perdido siendo justo el que
+            # intentaba repetir un hecho ya cubierto 3 veces en el resto
+            # del test).
+            with lock_relleno:
+                cubiertas = [
+                    f"{p.get('pregunta', '')} (respuesta: "
+                    f"{(p.get('opciones') or {}).get(str(p.get('respuesta_correcta', '')).upper(), '')})"
+                    for p in preguntas_unicas
+                ]
+            prompt = construir_prompt(n)
+            if cubiertas:
+                prompt += (
+                    "\n\nNo repitas ninguno de estos temas/datos, ya cubiertos por otras preguntas de este "
+                    f"mismo test: {'; '.join(cubiertas)}. Aborda un aspecto distinto del documento."
+                )
+            return prompt
+
         def _rellenar_un_hueco(_indice):
-            candidata = _pedir_una_pregunta_de_recambio(construir_prompt, None, on_usage)
+            candidata = _pedir_una_pregunta_de_recambio(construir_prompt_evitando_repetidas, None, on_usage)
             pregunta = (
-                _asegurar_pregunta_valida(candidata, construir_prompt, texto_fuente, on_usage)
+                _asegurar_pregunta_valida(candidata, construir_prompt_evitando_repetidas, texto_fuente, on_usage)
                 if candidata and texto_fuente is not None else candidata
             )
             aceptada = None
             if pregunta:
-                clave = re.sub(r"\s+", " ", str(pregunta.get("pregunta", "")).strip().lower())
+                claves = _claves_dedup(pregunta)
                 with lock_relleno:
-                    if clave and clave not in vistas:
-                        vistas.add(clave)
+                    if claves and not (claves & vistas):
+                        vistas.update(claves)
                         preguntas_unicas.append(pregunta)
                         aceptada = pregunta
             # Solo se incluye en el evento si de verdad se aceptó (no si

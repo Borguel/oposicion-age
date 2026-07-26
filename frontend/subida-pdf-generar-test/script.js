@@ -294,12 +294,22 @@ async function obtenerAuthHeaders() {
     // datosFinales} si el llamante debe iniciar el test él mismo con el
     // resultado completo.
     async function generarTestDesdePdfConProgreso(formData, authHeaders, num_preguntas) {
+      // No se pasan elTexto/elIcono: el carrusel de mensajes genéricos
+      // (Redactando..., Comprobando..., Verificando...) sobrescribía cada
+      // 2.2s el conteo real "Generando y verificando pregunta X de Y..."
+      // en cuanto tocaba turno, dando la sensación de progreso "aleatorio"
+      // en vez de real. Igual que test-personalizado/script.js (que no usa
+      // este carrusel en absoluto para su texto de estado), aquí se deja
+      // el texto estático inicial ("Leyendo texto del PDF...", ya en el
+      // HTML) hasta que llega el primer evento real, y a partir de ahí se
+      // escribe directamente y de forma persistente el conteo real (ver
+      // más abajo). etapasLeyendo/etapasGenerando se siguen pasando porque
+      // el módulo los necesita internamente (pintarEtapa() los indexa
+      // siempre), pero ya no pintan nada al no haber elTexto/elIcono.
       const { crearProgresoConversador } = await import("/assets/progreso-conversador.js");
       const progreso = crearProgresoConversador({
         elBarra: document.getElementById("progreso-generacion-pdf"),
         elTextoBarra: document.getElementById("texto-progreso-generacion-pdf"),
-        elTexto: document.getElementById("texto-estado"),
-        elIcono: document.getElementById("ai-icon"),
         etapasLeyendo: [
           { mensaje: "Leyendo el PDF…", icono: "documento" },
           { mensaje: "Localizando los conceptos clave del documento…", icono: "buscar" },
@@ -362,9 +372,15 @@ async function obtenerAuthHeaders() {
             }
             if (evento.tipo === "progreso") {
               if (!transicionadoATest) {
+                progreso.avanzar(evento);
                 // Math.min: durante el relleno de huecos (ver
                 // test_generator.py) "completadas" puede superar "total".
-                progreso.avanzar(evento, `Generando y verificando pregunta ${Math.min(evento.completadas, evento.total)} de ${evento.total}…`);
+                // Persistente (no vía el carrusel): mismo patrón que
+                // test-personalizado/script.js, que escribe este mismo
+                // mensaje directamente en cada evento real sin que nada
+                // lo sobrescriba después.
+                document.getElementById("texto-estado").textContent =
+                  `Generando y verificando pregunta ${Math.min(evento.completadas, evento.total)} de ${evento.total}…`;
               } else {
                 mostrarIndicadorGenerandoFondo(evento.completadas, evento.total);
               }

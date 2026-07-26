@@ -302,17 +302,41 @@
 
 /* Barra de progreso NUMÉRICA (p. ej. "3 de 10 preguntas"), distinta de la
    indeterminada de arriba: aquí el ancho lo fija JS con un % real. */
+/* max-width/box-shadow: "none" explícito -- subida-pdf-generar-test/
+   carga además /test-generator/style.css (para su pantalla de preguntas
+   y resultados), que define SIN ningún prefijo/ámbito sus propias
+   reglas .progress-container/.progress-bar con OTRO propósito (la barra
+   de tiempo transcurrido). Como el CSS se aplica propiedad por
+   propiedad, esas reglas "ganan" en cualquier propiedad que esta clase
+   no declare explícitamente -- max-width:460px y box-shadow se colaban
+   sin que nada los contradijera. */
 .pdfherr-body .progress-container {
   position: relative;
   margin: 20px 0;
+  max-width: none;
   background: var(--age-neutral-bg);
   border-radius: var(--age-radius-pill);
   overflow: hidden;
   height: 22px;
+  box-shadow: none;
 }
+/* width:100% explícito -- por el mismo motivo de arriba, la regla sin
+   ámbito de /test-generator/style.css pone width:0 en CUALQUIER
+   ".progress-bar" de la página (pensada para que el propio JS de esa
+   otra barra le ponga un ancho en tiempo real). Sin este override, el
+   envoltorio se quedaba con ancho CERO, y el .progress-fill hijo
+   calculaba su X% sobre esos 0px -- relleno invisible siempre, aunque
+   el texto del porcentaje (un elemento hermano) se viera bien. Bug real
+   reportado: la barra nunca mostraba color aunque el % subiera. */
 .pdfherr-body .progress-bar {
   height: 100%;
+  width: 100%;
   position: relative;
+}
+.pdfherr-body .progress-bar::after {
+  /* Anula el brillo animado que esa otra regla añade a CUALQUIER
+     ".progress-bar" -- este diseño es un relleno plano, sin brillo. */
+  content: none;
 }
 .pdfherr-body .progress-fill {
   height: 100%;
