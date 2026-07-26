@@ -35,7 +35,14 @@ export function crearProgresoConversador({ elBarra, elTextoBarra, elTexto, elIco
     if (elTextoBarra) elTextoBarra.textContent = `${Math.round(mostrado)}%`;
   }
   function pintarEtapa() {
-    const etapa = etapasActuales[indiceEtapa % etapasActuales.length];
+    // Sin módulo: al llegar al último mensaje de la fase se queda ahí en
+    // vez de reiniciar desde el primero. Con generaciones largas (70-100s
+    // no es raro en Test Personalizado/generar test desde PDF) el
+    // carrusel llegaba a repetir la misma tanda de 3-4 mensajes 2-3
+    // veces seguidas, dando la sensación de que la barra "no sabe" en qué
+    // fase está -- quedarse en el último mensaje de la fase transmite que
+    // se sigue trabajando sin parecer que se ha reiniciado o atascado.
+    const etapa = etapasActuales[Math.min(indiceEtapa, etapasActuales.length - 1)];
     if (elTexto) elTexto.textContent = etapa.mensaje;
     if (elIcono) elIcono.innerHTML = icono(etapa.icono, 32);
   }
