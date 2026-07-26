@@ -50,16 +50,33 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
         return False
 
 
-def _pedir_una_pregunta_de_recambio(construir_prompt, pregunta_descartada, on_usage):
+def _prompt_con_exclusion(prompt, preguntas_a_evitar):
+    """Añade al prompt de generación la lista de preguntas que NO debe
+    repetir (ya generadas antes, descartadas por verificación, o ya
+    aceptadas en este mismo lote), avisando de que reformular el mismo dato
+    con otras palabras también cuenta como repetir -- así se ataca
+    directamente el caso real observado: un documento corto con pocos datos
+    verificables acaba generando varias preguntas sobre el MISMO hecho
+    (p. ej. la misma duración de mandato) con enunciados distintos, que la
+    comprobación por texto exacto no detecta."""
+    preguntas_a_evitar = [p for p in (preguntas_a_evitar or []) if p]
+    if not preguntas_a_evitar:
+        return prompt
+    listado = "\n".join(f"- {p}" for p in preguntas_a_evitar[:40])
+    return prompt + (
+        f"\n\nEstas preguntas ya existen (generadas antes a partir de este mismo documento, o ya "
+        f"aceptadas en esta misma tanda) -- NO generes ninguna que repita su mismo dato o hecho "
+        f"concreto, aunque la redactes con otras palabras distintas:\n{listado}\n"
+        f"Aborda aspectos del documento no cubiertos por esas preguntas."
+    )
+
+
+def _pedir_una_pregunta_de_recambio(construir_prompt, preguntas_a_evitar, on_usage):
     """Pide UNA pregunta de recambio para sustituir a una que no superó la
-    verificación, evitando repetir su tema -- nunca se "corrige" la
-    pregunta descartada, se pide una completamente nueva."""
-    prompt = construir_prompt(1)
-    if pregunta_descartada:
-        prompt += (
-            f"\n\nNo repitas esta pregunta, ya descartada por no superar una verificación de precisión: "
-            f"{pregunta_descartada!r}. Aborda un aspecto distinto del documento."
-        )
+    verificación (o que resultó ser un duplicado semántico de otra ya
+    aceptada), evitando repetir el tema de todas las indicadas -- nunca se
+    "corrige" la pregunta descartada, se pide una completamente nueva."""
+    prompt = _prompt_con_exclusion(construir_prompt(1), preguntas_a_evitar)
     generado = call_deepseek_api(
         messages=[{"role": "user", "content": prompt}],
         temperature=0.6,
@@ -80,12 +97,14 @@ def _pedir_una_pregunta_de_recambio(construir_prompt, pregunta_descartada, on_us
 
 
 def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente, on_usage,
-                               max_intentos=MAX_INTENTOS_POR_PREGUNTA_PDF):
+                               preguntas_a_evitar=None, max_intentos=MAX_INTENTOS_POR_PREGUNTA_PDF):
     """Verifica una pregunta candidata contra el documento de origen y, si
     no supera la verificación, la descarta POR COMPLETO y pide una de
-    recambio evitando su tema, hasta max_intentos veces -- mismo principio
-    que generador_preguntas_verificado.py aplica al temario oficial."""
+    recambio evitando su tema (y los de 'preguntas_a_evitar', si se pasan),
+    hasta max_intentos veces -- mismo principio que
+    generador_preguntas_verificado.py aplica al temario oficial."""
     pregunta = pregunta_candidata
+    evitar = list(preguntas_a_evitar or [])
     intentos_restantes = max_intentos
     while intentos_restantes > 0:
         if _verificar_pregunta(pregunta, texto_fuente, on_usage):
@@ -93,14 +112,96 @@ def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente
         intentos_restantes -= 1
         if intentos_restantes <= 0:
             return None
-        pregunta = _pedir_una_pregunta_de_recambio(construir_prompt, pregunta.get("pregunta", ""), on_usage)
+        evitar.append(pregunta.get("pregunta", ""))
+        pregunta = _pedir_una_pregunta_de_recambio(construir_prompt, evitar, on_usage)
         if not pregunta:
             return None
     return None
 
 
+def _prompt_deteccion_duplicados(preguntas):
+    listado = "\n".join(
+        f"{i}. Pregunta: {p.get('pregunta', '')} | Respuesta correcta: "
+        f"{(p.get('opciones') or {}).get(p.get('respuesta_correcta', ''), '')}"
+        for i, p in enumerate(preguntas)
+    )
+    system = (
+        "Eres un revisor de calidad de tests para oposiciones. Te llega una lista numerada de "
+        "preguntas ya generadas y verificadas a partir de un mismo documento. El documento puede "
+        "ser corto o tener pocos datos concretos, y a veces varias preguntas acaban preguntando "
+        "por el MISMO hecho o dato exacto (la misma ley, el mismo plazo, la misma cifra, el mismo "
+        "cargo...) aunque estén redactadas con palabras distintas -- eso cuenta como duplicado y "
+        "hay que detectarlo, aunque el enunciado no sea idéntico.\n\n"
+        "Para cada grupo de preguntas que traten el mismo hecho concreto, conserva SOLO la de "
+        "menor número y marca como duplicadas todas las demás del mismo grupo.\n\n"
+        "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
+        '{"duplicados": [<números de las preguntas duplicadas a eliminar>]}\n'
+        "Si ninguna pregunta se repite, devuelve {\"duplicados\": []}."
+    )
+    user = f"PREGUNTAS:\n{listado}"
+    return system, user
+
+
+def _detectar_indices_duplicados(preguntas, on_usage):
+    """Detecta, dentro de una lista de preguntas ya verificadas
+    individualmente contra el documento, cuáles preguntan por el mismo dato
+    concreto que otra anterior de la lista -- la deduplicación por texto
+    exacto de generar_preguntas_ia_en_lotes no detecta esto porque cada
+    pregunta puede estar redactada de forma distinta aunque verse sobre el
+    mismo hecho (caso real: un documento corto generando 4 variantes de la
+    pregunta sobre la misma duración de mandato)."""
+    if len(preguntas) < 2:
+        return set()
+    system, user = _prompt_deteccion_duplicados(preguntas)
+    raw = call_deepseek_api(
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+        temperature=0.0,
+        max_tokens=300,
+        response_format_json=True,
+        on_usage=on_usage,
+    )
+    if not raw:
+        return set()
+    try:
+        indices = json.loads(raw).get("duplicados") or []
+    except (json.JSONDecodeError, AttributeError, TypeError):
+        return set()
+    return {i for i in indices if isinstance(i, int) and 0 <= i < len(preguntas)}
+
+
+def _pedir_y_verificar_recambio(construir_prompt, texto_fuente, preguntas_a_evitar, on_usage):
+    candidata = _pedir_una_pregunta_de_recambio(construir_prompt, preguntas_a_evitar, on_usage)
+    if not candidata:
+        return None
+    return _asegurar_pregunta_valida(candidata, construir_prompt, texto_fuente, on_usage, preguntas_a_evitar)
+
+
+def _reemplazar_duplicadas(preguntas, indices_duplicados, construir_prompt, texto_fuente,
+                            preguntas_a_evitar, on_usage):
+    """Quita las preguntas marcadas como duplicado semántico y pide, EN
+    PARALELO, una de recambio por cada una eliminada -- mismo mecanismo de
+    recambio que ya usa _asegurar_pregunta_valida para las que no superan la
+    verificación, aquí reutilizado para las que sí la superan pero repiten
+    el dato de otra. Si no se consigue recambio para alguna, simplemente se
+    queda con menos preguntas (igual que ya ocurre hoy cuando un lote no
+    llega al número pedido)."""
+    conservadas = [p for i, p in enumerate(preguntas) if i not in indices_duplicados]
+    evitar = list(preguntas_a_evitar or []) + [p.get("pregunta", "") for p in conservadas]
+    with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(indices_duplicados))) as executor:
+        futuros = [
+            executor.submit(_pedir_y_verificar_recambio, construir_prompt, texto_fuente, evitar, on_usage)
+            for _ in indices_duplicados
+        ]
+        for futuro in as_completed(futuros):
+            candidata = futuro.result()
+            if candidata:
+                conservadas.append(candidata)
+    return conservadas
+
+
 def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=None, tamano_lote=15,
-                                   temperature=0.4, on_progreso=None, on_usage=None):
+                                   temperature=0.4, on_progreso=None, on_usage=None,
+                                   preguntas_a_evitar=None):
     """Genera 'num_preguntas' preguntas pidiéndolas a DeepSeek en varios lotes
     en paralelo (ThreadPoolExecutor). Si se pasa texto_fuente, cada
     candidata se verifica además con una segunda llamada independiente
@@ -148,11 +249,22 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     construir_prompt(n) debe devolver el prompt completo pidiendo EXACTAMENTE
     n preguntas, en el mismo formato de array JSON que ya usa esa ruta.
 
-    Devuelve (preguntas, errores): preguntas ya verificadas y deduplicadas
-    por texto de pregunta normalizado (pedir el mismo tema en varios lotes
-    en paralelo puede repetir alguna), errores es una lista de motivos de
-    fallo por lote (vacía si todo fue bien) para poder avisar si faltan
-    preguntas respecto a las pedidas.
+    preguntas_a_evitar (opcional): textos de preguntas ya generadas en
+    ocasiones ANTERIORES para este mismo documento (p. ej. al pulsar
+    "generar más" desde la biblioteca de "Mis documentos") -- se incluyen
+    como exclusión en cada lote para que la IA no vuelva a preguntar por los
+    mismos datos ya cubiertos, además de usarse como base para la
+    deduplicación semántica de más abajo.
+
+    Devuelve (preguntas, errores): preguntas ya verificadas y deduplicadas,
+    tanto por texto de pregunta normalizado (pedir el mismo tema en varios
+    lotes en paralelo puede repetir alguna con el mismo enunciado) como por
+    significado (si texto_fuente no es None: varias preguntas pueden acabar
+    versando sobre el mismo dato concreto del documento aunque estén
+    redactadas de forma distinta -- típico en documentos cortos con pocos
+    datos verificables, ver _detectar_indices_duplicados). errores es una
+    lista de motivos de fallo por lote (vacía si todo fue bien) para poder
+    avisar si faltan preguntas respecto a las pedidas.
     """
     lotes = []
     restante = num_preguntas
@@ -177,7 +289,7 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         on_progreso({"completadas": valor, "total": num_preguntas})
 
     def _pedir_lote_verificado(n):
-        prompt = construir_prompt(n)
+        prompt = _prompt_con_exclusion(construir_prompt(n), preguntas_a_evitar)
         generado = call_deepseek_api(
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
@@ -250,5 +362,13 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         if clave and clave not in vistas:
             vistas.add(clave)
             preguntas_unicas.append(p)
+
+    if texto_fuente is not None and len(preguntas_unicas) > 1:
+        indices_duplicados = _detectar_indices_duplicados(preguntas_unicas, on_usage)
+        if indices_duplicados:
+            preguntas_unicas = _reemplazar_duplicadas(
+                preguntas_unicas, indices_duplicados, construir_prompt, texto_fuente,
+                preguntas_a_evitar, on_usage,
+            )
 
     return preguntas_unicas, errores

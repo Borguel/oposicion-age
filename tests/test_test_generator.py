@@ -53,8 +53,8 @@ class TestGenerarPreguntasIaEnLotes:
                 valido = candidata["pregunta"] != "¿Pregunta mala?"
                 return json.dumps({"valido": valido, "problemas": [] if valido else ["dato inventado"]})
             # Generación del lote inicial (1 candidata mala) vs. de recambio
-            # (pedida con "No repitas esta pregunta").
-            if "No repitas esta pregunta" in messages[0]["content"]:
+            # (pedida con la exclusión de la pregunta ya descartada).
+            if "Estas preguntas ya existen" in messages[0]["content"]:
                 return json.dumps([{
                     "pregunta": "¿Pregunta buena?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
                     "respuesta_correcta": "A", "explicacion": "..."
@@ -185,3 +185,64 @@ class TestGenerarPreguntasIaEnLotes:
             preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 1, "Texto de prueba.", tamano_lote=15)
         assert preguntas == []
         assert len(errores) == 1
+
+    def test_duplicado_semantico_se_sustituye_por_una_pregunta_distinta(self):
+        # Caso real reportado: dos preguntas con enunciados distintos que en
+        # realidad preguntan por el mismo dato del documento (aquí, "misma
+        # pregunta reformulada") -- la deduplicación por texto exacto no las
+        # detecta, así que debe entrar en juego la deduplicación semántica
+        # (_detectar_indices_duplicados) y pedir una de recambio.
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            if len(messages) == 2 and messages[1]["content"].startswith("PREGUNTAS:"):
+                # Llamada de detección de duplicados semánticos: la pregunta
+                # 1 (índice 1) se marca como duplicada de la 0.
+                return json.dumps({"duplicados": [1]})
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            if "Estas preguntas ya existen" in messages[0]["content"]:
+                return json.dumps([{
+                    "pregunta": "¿Pregunta distinta?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                    "respuesta_correcta": "A", "explicacion": "..."
+                }])
+            return json.dumps([
+                {"pregunta": "¿Cuánto dura el mandato?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."},
+                {"pregunta": "¿Cuál es la duración del cargo?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."},
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 2, "Texto de prueba.", tamano_lote=15)
+
+        assert errores == []
+        assert len(preguntas) == 2
+        textos = {p["pregunta"] for p in preguntas}
+        assert "¿Cuánto dura el mandato?" in textos
+        assert "¿Cuál es la duración del cargo?" not in textos
+        assert "¿Pregunta distinta?" in textos
+
+    def test_preguntas_a_evitar_se_incluyen_en_el_prompt_de_cada_lote(self):
+        # "Generar más" desde un documento ya subido antes debe avisar a la
+        # IA de las preguntas de tests anteriores para no repetirlas (ver
+        # blueprints/pdf_ia.py, obtener_preguntas_previas).
+        construir_prompt = _construir_prompt_fabrica(None)
+        prompts_recibidos = []
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            prompts_recibidos.append(messages[0]["content"])
+            return json.dumps([{
+                "pregunta": "¿Pregunta nueva?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "respuesta_correcta": "A", "explicacion": "..."
+            }])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            generar_preguntas_ia_en_lotes(
+                construir_prompt, 1, "Texto de prueba.", tamano_lote=15,
+                preguntas_a_evitar=["¿Pregunta ya usada en un test anterior?"],
+            )
+
+        assert any("¿Pregunta ya usada en un test anterior?" in p for p in prompts_recibidos)

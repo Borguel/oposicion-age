@@ -76,6 +76,27 @@ def obtener_o_crear_documento(db, uid, texto, nombre_archivo, num_paginas):
     return nuevo_ref.id, datos
 
 
+def obtener_preguntas_previas(db, uid, documento_id):
+    """Textos de las preguntas ya generadas en tests anteriores de este
+    mismo documento (colección tests_pdf, ver guardar_resultado.py) -- se
+    usan para que "Generar más" (test_generator.py) no repita el mismo dato
+    ya preguntado antes, aunque lo redacte con otras palabras."""
+    if not documento_id:
+        return []
+    docs = (
+        db.collection("usuarios").document(uid).collection("tests_pdf")
+        .where("documento_id", "==", documento_id)
+        .stream()
+    )
+    preguntas = []
+    for doc in docs:
+        for p in (doc.to_dict() or {}).get("preguntas", []):
+            texto = (p or {}).get("pregunta")
+            if texto:
+                preguntas.append(str(texto))
+    return preguntas
+
+
 def obtener_documento(db, uid, documento_id):
     doc = db.collection("usuarios").document(uid).collection("documentos").document(documento_id).get()
     if not doc.exists:
