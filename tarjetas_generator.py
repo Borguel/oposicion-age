@@ -149,8 +149,10 @@ def _verificar_tarjeta(tarjeta, fragmento, on_usage):
         # respuesta si detalla varios problemas en "problemas", y un JSON
         # cortado se trata como tarjeta inválida aunque no lo fuera,
         # disparando una regeneración de más. No tiene coste extra si no
-        # hace falta (se cobra por tokens generados, no por el tope).
-        max_tokens=2000,
+        # hace falta (se cobra por tokens generados, no por el tope). Subido
+        # a 4000 (igual que en test_generator.py) tras ver en producción que
+        # 2000 seguía cortándose alguna vez para la verificación de test.
+        max_tokens=4000,
         response_format_json=True,
         on_usage=on_usage,
     )

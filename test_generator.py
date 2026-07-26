@@ -103,7 +103,12 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
         # parece necesario. Subir max_tokens no encarece nada por sí solo
         # (DeepSeek cobra por los tokens que de verdad genera, no por el
         # tope): solo evita el corte cuando de verdad hacen falta más de 400.
-        max_tokens=2000,
+        # Actualización: en producción, con el margen ya en 2000, todavía se
+        # vieron un par de verificaciones con finish_reason="length" justo
+        # en ese tope -- 2000 redujo muchísimo los cortes pero no los quitó
+        # del todo. Subido a 4000 con el mismo razonamiento (sin coste si no
+        # hace falta).
+        max_tokens=4000,
         response_format_json=True,
         on_usage=on_usage,
     )
@@ -186,7 +191,12 @@ def _pedir_una_pregunta_de_recambio(construir_prompt, pregunta_descartada, on_us
     generado = call_deepseek_api(
         messages=[{"role": "user", "content": prompt}],
         temperature=0.6,
-        max_tokens=3000,
+        # 4500 (no 3000): en producción se vio un caso real con
+        # finish_reason="length" justo en el tope de 3000 -- una única
+        # pregunta con explicación detallada de las 4 opciones puede
+        # necesitar más de eso puntualmente. Igual que en _verificar_pregunta,
+        # subir el margen no cuesta nada si no hace falta.
+        max_tokens=4500,
         on_usage=on_usage,
     )
     if not generado:
