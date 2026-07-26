@@ -265,25 +265,46 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
     # Personalizado). Nunca se relaja la verificación: cada intento pasa
     # por el mismo verificador independiente y el mismo dedup por
     # claves_vistas; si sigue sin conseguirse, se cuenta como descartada
-    # igual que hoy. Secuencial: no compensa un ThreadPoolExecutor para lo
-    # que normalmente son 1-4 tarjetas de hueco.
+    # igual que hoy.
+    #
+    # EN PARALELO (antes era un "for" secuencial, con el comentario "no
+    # compensa un ThreadPoolExecutor para lo que normalmente son 1-4
+    # tarjetas de hueco"): con un documento corto/difícil que necesite
+    # muchos huecos, cada uno con hasta MAX_INTENTOS_POR_TARJETA rondas de
+    # generación+verificación, rellenarlos uno detrás de otro puede sumar
+    # varios minutos solo en esta fase -- el mismo problema real que ya se
+    # detectó y arregló para Generar Test desde PDF (ver
+    # test_generator.py). Al ser huecos independientes entre sí,
+    # paralelizarlos no cambia la verificación ni el resultado final, solo
+    # el tiempo. "verificadas"/"tarjetas"/"descartadas" se protegen con un
+    # lock (antes eran seguros por ser secuencial); dedup_lock ya protegía
+    # claves_vistas incluso en la fase anterior, así que _asegurar_tarjeta_valida
+    # sigue siendo segura sin cambios.
     if len(tarjetas) < num_tarjetas and fragmentos:
         faltan = num_tarjetas - len(tarjetas)
         ciclo_fragmentos = itertools.cycle(fragmentos)
-        for _ in range(faltan):
-            fragmento = next(ciclo_fragmentos)
+        fragmentos_huecos = [next(ciclo_fragmentos) for _ in range(faltan)]
+        lock_relleno = threading.Lock()
+
+        def _rellenar_un_hueco(fragmento):
+            nonlocal verificadas, descartadas
             candidatas = _generar_candidatas_fragmento(fragmento, 1, on_usage)
             resultado = (
                 _asegurar_tarjeta_valida(candidatas[0], fragmento, dedup_lock, claves_vistas, on_usage)
                 if candidatas else None
             )
-            verificadas += 1
-            if resultado:
-                tarjetas.append(resultado)
-            else:
-                descartadas += 1
+            with lock_relleno:
+                verificadas += 1
+                if resultado:
+                    tarjetas.append(resultado)
+                else:
+                    descartadas += 1
+                valor = verificadas
             if on_progreso:
-                on_progreso({"completadas": verificadas, "total": total_candidatas})
+                on_progreso({"completadas": valor, "total": total_candidatas})
+
+        with ThreadPoolExecutor(max_workers=min(10, faltan)) as executor:
+            list(executor.map(_rellenar_un_hueco, fragmentos_huecos))
 
     resultado_final = {"tarjetas": tarjetas, "descartadas": descartadas}
     if len(tarjetas) < num_tarjetas:

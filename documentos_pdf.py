@@ -76,6 +76,37 @@ def obtener_o_crear_documento(db, uid, texto, nombre_archivo, num_paginas):
     return nuevo_ref.id, datos
 
 
+def obtener_preguntas_previas(db, uid, documento_id, limite=60):
+    """Preguntas (con su respuesta correcta) de tests ANTERIORES ya
+    generados para este mismo documento (colección tests_pdf, ver
+    guardar_resultado.py) -- se usan para que una nueva generación desde
+    la biblioteca ("generar test" otra vez sobre el mismo documento) no
+    repita el mismo dato ya preguntado, aunque lo redacte con otras
+    palabras (ver test_generator.py, preguntas_a_evitar). Sin esto, cada
+    generación parte de cero: la deduplicación existente (fragmentar el
+    documento por lote, relleno de huecos evitando "lo ya cubierto en
+    este test") solo actúa DENTRO de una misma llamada, así que dos tests
+    sucesivos del mismo PDF podían acabar compartiendo preguntas."""
+    if not documento_id:
+        return []
+    docs = (
+        db.collection("usuarios").document(uid).collection("tests_pdf")
+        .where("documento_id", "==", documento_id)
+        .stream()
+    )
+    formateadas = []
+    for doc in docs:
+        for p in (doc.to_dict() or {}).get("preguntas", []):
+            texto = (p or {}).get("pregunta")
+            if not texto:
+                continue
+            opciones = (p or {}).get("opciones") or {}
+            letra = str((p or {}).get("respuesta_correcta", "")).upper()
+            respuesta = opciones.get(letra, "")
+            formateadas.append(f"{texto} (respuesta: {respuesta})" if respuesta else str(texto))
+    return formateadas[:limite]
+
+
 def obtener_documento(db, uid, documento_id):
     doc = db.collection("usuarios").document(uid).collection("documentos").document(documento_id).get()
     if not doc.exists:

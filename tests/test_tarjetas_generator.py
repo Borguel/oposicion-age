@@ -189,3 +189,46 @@ class TestGenerarTarjetasVerificadas:
 
         # 1 llamada de generación + 1 de verificación = 2 avisos de usage.
         assert len(recibidos) == 2
+
+    def test_relleno_de_varios_huecos_se_ejecuta_en_paralelo(self):
+        # Regresión de lentitud: el relleno era un "for" secuencial, así que
+        # con varios huecos pendientes (documento difícil que necesita
+        # muchas tarjetas de recambio) el tiempo total crecía linealmente
+        # con el número de huecos -- el mismo problema real ya detectado y
+        # corregido en test_generator.py para Generar Test desde PDF (ver
+        # ahí "bug real reportado: 16 preguntas tardando 5-6 minutos").
+        # Aquí se comprueba que varios huecos tardan bastante menos que la
+        # suma de sus tiempos individuales, es decir, que corren solapados
+        # en vez de uno detrás de otro.
+        import time
+        import threading
+
+        RETRASO = 0.05
+        NUM_HUECOS = 5
+
+        def fake_call(messages, **kwargs):
+            time.sleep(RETRASO)
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            contenido = messages[0]["content"] + messages[1]["content"]
+            if "Genera EXACTAMENTE 1 tarjeta" in contenido:
+                # Enunciado único por hilo para no colisionar con el dedup
+                # (que descartaría el resto como duplicados de la primera).
+                return json.dumps({"tarjetas": [
+                    {"pregunta": f"¿Pregunta de relleno {threading.get_ident()}?", "respuesta": "R"}
+                ]})
+            # Generación inicial: entrega solo 1 de las NUM_HUECOS + 1
+            # pedidas, dejando NUM_HUECOS huecos para el relleno.
+            return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta inicial?", "respuesta": "R"}]})
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
+            inicio = time.perf_counter()
+            resultado = generar_tarjetas_verificadas("Documento.", NUM_HUECOS + 1)
+            duracion = time.perf_counter() - inicio
+
+        assert len(resultado["tarjetas"]) == NUM_HUECOS + 1
+        # Secuencial habría tardado NUM_HUECOS * 2 llamadas * RETRASO; en
+        # paralelo debe quedar muy por debajo (cota floja pero suficiente
+        # para distinguir "en paralelo" de "uno detrás de otro").
+        assert duracion < RETRASO * NUM_HUECOS

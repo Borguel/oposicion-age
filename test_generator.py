@@ -136,6 +136,28 @@ def _fragmentos_por_lote(texto_fuente, n_lotes):
     return fragmentos
 
 
+def _prompt_con_exclusion(prompt, preguntas_a_evitar):
+    """Añade al prompt de generación la lista de preguntas que NO debe
+    repetir -- ya generadas en tests ANTERIORES de este mismo documento
+    (ver blueprints/pdf_ia.py, obtener_preguntas_previas en
+    documentos_pdf.py). Sin esto, cada llamada a /generar-test-desde-pdf
+    parte de cero: dentro de una misma generación _fragmentos_por_lote ya
+    evita que los lotes converjan en el mismo dato, pero un usuario que
+    pulsa "generar test" varias veces seguidas sobre el mismo documento de
+    su biblioteca podía acabar recibiendo la misma pregunta (reformulada o
+    no) en dos tests distintos, porque ninguno de los dos sabía de la
+    existencia del otro."""
+    preguntas_a_evitar = [p for p in (preguntas_a_evitar or []) if p]
+    if not preguntas_a_evitar:
+        return prompt
+    listado = "; ".join(preguntas_a_evitar[:60])
+    return prompt + (
+        "\n\nEstas preguntas ya se hicieron en tests ANTERIORES de este mismo documento -- no "
+        f"repitas ninguna, ni siquiera redactada con otras palabras: {listado}. Aborda aspectos "
+        "del documento no cubiertos por esas preguntas."
+    )
+
+
 def _pedir_una_pregunta_de_recambio(construir_prompt, pregunta_descartada, on_usage):
     """Pide UNA pregunta de recambio para sustituir a una que no superó la
     verificación, evitando repetir su tema -- nunca se "corrige" la
@@ -186,7 +208,8 @@ def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente
 
 
 def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=None, tamano_lote=5,
-                                   temperature=0.4, on_progreso=None, on_usage=None):
+                                   temperature=0.4, on_progreso=None, on_usage=None,
+                                   preguntas_a_evitar=None):
     """Genera 'num_preguntas' preguntas pidiéndolas a DeepSeek en varios lotes
     en paralelo (ThreadPoolExecutor). Si se pasa texto_fuente, cada
     candidata se verifica además con una segunda llamada independiente
@@ -251,6 +274,15 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     en caso contrario (documento corto, un solo lote, o sin texto_fuente)
     se llama como construir_prompt(n), igual que antes.
 
+    preguntas_a_evitar (opcional): textos de preguntas de tests ANTERIORES
+    de este mismo documento (ver documentos_pdf.obtener_preguntas_previas,
+    llamado desde blueprints/pdf_ia.py cuando se reusa un documento de la
+    biblioteca) -- se añaden como exclusión tanto en los lotes iniciales
+    como en el relleno de huecos, para que "generar test" varias veces
+    sobre el mismo documento no repita lo ya preguntado en una generación
+    previa (_fragmentos_por_lote y el relleno de más abajo solo evitan
+    duplicados DENTRO de una misma llamada).
+
     Devuelve (preguntas, errores): preguntas ya verificadas y deduplicadas
     por texto de pregunta normalizado (pedir el mismo tema en varios lotes
     en paralelo puede repetir alguna), errores es una lista de motivos de
@@ -291,6 +323,7 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
 
     def _pedir_lote_verificado(n, fragmento=None):
         prompt = construir_prompt(n, fragmento) if fragmento is not None else construir_prompt(n)
+        prompt = _prompt_con_exclusion(prompt, preguntas_a_evitar)
         generado = call_deepseek_api(
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
@@ -428,7 +461,11 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
                     "\n\nNo repitas ninguno de estos temas/datos, ya cubiertos por otras preguntas de este "
                     f"mismo test: {'; '.join(cubiertas)}. Aborda un aspecto distinto del documento."
                 )
-            return prompt
+            # También se evitan aquí las de tests ANTERIORES del mismo
+            # documento (ver preguntas_a_evitar más arriba) -- un hueco de
+            # relleno es, igual que un lote normal, una oportunidad más de
+            # acabar repitiendo lo ya preguntado en una generación previa.
+            return _prompt_con_exclusion(prompt, preguntas_a_evitar)
 
         def _rellenar_un_hueco(_indice):
             candidata = _pedir_una_pregunta_de_recambio(construir_prompt_evitando_repetidas, None, on_usage)

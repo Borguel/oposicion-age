@@ -406,6 +406,68 @@ class TestGenerarPreguntasIaEnLotes:
         assert any("6 años, no renovable." in p for p in prompts_relleno)
         assert any("No repitas ninguno de estos temas" in p for p in prompts_relleno)
 
+    def test_preguntas_a_evitar_se_incluyen_en_el_lote_inicial(self):
+        # "generar test" otra vez sobre un documento ya subido antes debe
+        # avisar a la IA de las preguntas de tests ANTERIORES para no
+        # repetirlas (ver blueprints/pdf_ia.py, obtener_preguntas_previas
+        # en documentos_pdf.py) -- sin esto, cada llamada a
+        # generar_preguntas_ia_en_lotes parte de cero, sin memoria de lo ya
+        # preguntado en una generación previa del mismo documento.
+        construir_prompt = _construir_prompt_fabrica(None)
+        prompts_recibidos = []
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            prompts_recibidos.append(messages[0]["content"])
+            return json.dumps([{
+                "pregunta": "¿Pregunta nueva?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "respuesta_correcta": "A", "explicacion": "..."
+            }])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            generar_preguntas_ia_en_lotes(
+                construir_prompt, 1, "Texto de prueba.", tamano_lote=1,
+                preguntas_a_evitar=["¿Pregunta ya usada en un test anterior? (respuesta: 6 años)"],
+            )
+
+        assert any(
+            "¿Pregunta ya usada en un test anterior? (respuesta: 6 años)" in p and "tests ANTERIORES" in p
+            for p in prompts_recibidos
+        )
+
+    def test_preguntas_a_evitar_tambien_llegan_al_relleno(self):
+        construir_prompt = _construir_prompt_fabrica(None)
+        prompts_relleno = []
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            contenido = messages[0]["content"]
+            if "Genera 1 preguntas" in contenido:
+                prompts_relleno.append(contenido)
+                return json.dumps([{
+                    "pregunta": "¿Pregunta de relleno?",
+                    "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                    "respuesta_correcta": "A", "explicacion": "..."
+                }])
+            # Lote inicial: pide 2 preguntas pero solo devuelve 1 (deja un
+            # hueco que el relleno debe rellenar).
+            return json.dumps([{
+                "pregunta": "¿Pregunta del lote?",
+                "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "respuesta_correcta": "A", "explicacion": "..."
+            }])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(
+                construir_prompt, 2, "Texto de prueba.", tamano_lote=2,
+                preguntas_a_evitar=["¿Pregunta de un test anterior?"],
+            )
+
+        assert len(preguntas) == 2
+        assert any("¿Pregunta de un test anterior?" in p for p in prompts_relleno)
+
     def test_max_tokens_del_lote_sigue_la_formula_1500_por_pregunta(self):
         # Regresión del bug real: con la fórmula antigua (min(4000, 300*n)),
         # un lote de 10 preguntas pedía max_tokens=3000 y DeepSeek lo

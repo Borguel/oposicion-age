@@ -19,7 +19,7 @@ from auth_utils import requiere_plan, obtener_oposicion_solicitada
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso, devolver_uso
 from documentos_pdf import (
     obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta,
-    listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo
+    listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo, obtener_preguntas_previas
 )
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import generar_preguntas_ia_en_lotes
@@ -342,6 +342,14 @@ def generar_test_desde_pdf():
     if len(text) > max_length:
         text = text[:max_length]
 
+    # Al pulsar "generar test" otra vez sobre un documento ya subido antes
+    # (viene con documento_id), se recuperan las preguntas de sus tests
+    # anteriores para que el nuevo test no vuelva a preguntar por los
+    # mismos datos -- la deduplicación existente (fragmentar el documento
+    # por lote, relleno evitando "lo ya cubierto en este test") solo actúa
+    # dentro de una misma llamada (ver test_generator.py, preguntas_a_evitar).
+    preguntas_previas = obtener_preguntas_previas(db, g.uid, documento_id)
+
     def construir_prompt(n, fragmento=None):
         documento = fragmento if fragmento is not None else text
         system_prompt = (
@@ -401,7 +409,7 @@ def generar_test_desde_pdf():
             try:
                 preguntas, errores_lotes = generar_preguntas_ia_en_lotes(
                     construir_prompt, num_preguntas, text, on_progreso=on_progreso,
-                    on_usage=acumulador_tokens.add,
+                    on_usage=acumulador_tokens.add, preguntas_a_evitar=preguntas_previas,
                 )
                 if not preguntas:
                     # Si TODOS los errores de lote son de verificación (no de
