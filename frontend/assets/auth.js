@@ -671,7 +671,13 @@ function construirNotificaciones(user) {
   }).catch(() => []);
 
   activarPopover(cont, {
-    onAbrir: async () => renderizarNotificaciones(lista, await promesaNotis),
+    // badge.hidden aquí: el aviso en rojo debe desaparecer en cuanto el
+    // usuario abre el panel y ve los avisos, no quedarse encendido de
+    // forma permanente hasta recargar la página.
+    onAbrir: async () => {
+      badge.hidden = true;
+      renderizarNotificaciones(lista, await promesaNotis);
+    },
   });
 }
 
