@@ -415,17 +415,19 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             generado = call_deepseek_api(
                 messages=[{"role": "system", "content": system_gen}, {"role": "user", "content": user_gen}],
                 temperature=0.5,
-                # max_tokens=1000: valor normal para _MODELO = deepseek-v4-flash
-                # (no es un modelo de razonamiento, así que no necesita el
-                # margen extra para "pensar" antes de responder). Se llegó a
-                # subir a 3000 al probar deepseek-v4-pro (que sí razona y
-                # consume tokens en ello antes del JSON final) pero se
-                # revierte aquí al volver a flash -- ver el log "DeepSeek
-                # respondió en Xs (... finish_reason=...)" en
-                # deepseek_utils.py para comprobar con datos reales si
-                # finish_reason == "length" alguna vez (señal de que este
-                # tope se ha quedado corto) antes de volver a subirlo.
-                max_tokens=1000,
+                # max_tokens=3000: no es por razonamiento (deepseek-v4-flash
+                # no razona) -- se bajó a 1000 pensando que ya no hacía falta
+                # el margen usado para probar deepseek-v4-pro, pero eso
+                # causó una regresión real: los únicos tests que salieron
+                # limpios hoy (10/10 aceptadas, 0 descartes) se generaron
+                # con flash Y este margen alto, nunca con 1000. La hipótesis
+                # es que deepseek-v4-flash es simplemente más verboso que el
+                # antiguo deepseek-chat para el que 1000 se pensó
+                # originalmente. Ver el log "DeepSeek respondió en Xs (...
+                # finish_reason=...)" en deepseek_utils.py -- si nunca sale
+                # finish_reason == "length" con este margen, se puede volver
+                # a bajar con datos reales en vez de a ciegas.
+                max_tokens=3000,
                 response_format_json=True,
                 on_usage=on_usage,
                 model=_MODELO,
@@ -451,7 +453,7 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             verificacion_raw = call_deepseek_api(
                 messages=[{"role": "system", "content": system_ver}, {"role": "user", "content": user_ver}],
                 temperature=0.0,
-                max_tokens=400,  # ver comentario de max_tokens en la llamada de generación de arriba
+                max_tokens=2000,  # ver comentario de max_tokens en la llamada de generación de arriba
                 response_format_json=True,
                 on_usage=on_usage,
                 model=_MODELO,
