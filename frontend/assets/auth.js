@@ -578,6 +578,34 @@ function construirBusquedaGlobal(user) {
 // racha, ver /tareas/recordatorios-racha). Nada de esto es una colección
 // nueva en Firestore -- es solo una lectura distinta de perfiles/cupos ya
 // existentes, calculada de nuevo en cada carga de página.
+// Avisos ya vistos por el usuario: se guardan en localStorage (no en
+// Firestore, no hace falta ir al servidor por esto) por "id" ESTABLE de
+// cada aviso -- no por su texto completo, que cambia cada día ("termina en
+// 2 días" vs "termina en 1 día" son el mismo aviso de fondo). Así, una vez
+// que el usuario abre la campanita y lo ve, ese aviso concreto no se
+// vuelve a marcar en rojo -- ni recargando la página, ni cerrando sesión y
+// volviendo a entrar en el mismo navegador (localStorage sobrevive a
+// cerrar sesión, a diferencia de un simple `hidden` en el DOM). Si en el
+// futuro aparece un aviso realmente distinto (otro id), sí se notifica.
+const CLAVE_NOTIFICACIONES_VISTAS = "age_notificaciones_vistas";
+
+function obtenerNotificacionesVistas() {
+  try {
+    const guardado = JSON.parse(localStorage.getItem(CLAVE_NOTIFICACIONES_VISTAS));
+    return new Set(Array.isArray(guardado) ? guardado : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function marcarNotificacionesComoVistas(ids) {
+  try {
+    const vistas = obtenerNotificacionesVistas();
+    ids.forEach((id) => vistas.add(id));
+    localStorage.setItem(CLAVE_NOTIFICACIONES_VISTAS, JSON.stringify([...vistas]));
+  } catch { /* localStorage no disponible (modo privado, cuota llena...): no bloquea nada */ }
+}
+
 async function calcularNotificaciones() {
   const notis = [];
   try {
@@ -587,6 +615,7 @@ async function calcularNotificaciones() {
       const dias = Math.ceil((new Date(perfil.prueba_fin) - new Date()) / (1000 * 60 * 60 * 24));
       if (dias <= 2) {
         notis.push({
+          id: "prueba",
           iconoNombre: "reloj",
           texto: dias <= 0 ? "Tu prueba gratuita termina hoy." : `Tu prueba gratuita termina en ${dias} día${dias === 1 ? "" : "s"}.`,
           href: "/planes/",
@@ -599,6 +628,7 @@ async function calcularNotificaciones() {
         if (dias <= 3) {
           const fecha = new Date(sub.current_period_end).toLocaleDateString("es-ES", { day: "numeric", month: "long" });
           notis.push({
+            id: `baja_${op}`,
             iconoNombre: dias <= 1 ? "alerta" : "salir",
             texto: dias <= 1
               ? `Tu plan en ${op} se cancela mañana. Reactívalo si quieres seguir con acceso.`
@@ -621,6 +651,7 @@ async function calcularNotificaciones() {
       if (total_pendientes) {
         const plural = total_pendientes === 1 ? "" : "s";
         notis.push({
+          id: "falladas",
           iconoNombre: "estrella",
           texto: `Tienes ${total_pendientes} pregunta${plural} fallada${plural} sin repasar.`,
           href: "/repasar-preguntas/",
@@ -663,20 +694,25 @@ function construirNotificaciones(user) {
   const badge = cont.querySelector(".age-notificaciones-badge");
   const lista = cont.querySelector(".age-notificaciones-lista");
   const promesaNotis = calcularNotificaciones().then((notis) => {
-    if (notis.length) {
+    const vistas = obtenerNotificacionesVistas();
+    const nuevas = notis.filter((n) => !vistas.has(n.id));
+    if (nuevas.length) {
       badge.hidden = false;
-      badge.textContent = String(notis.length);
+      badge.textContent = String(nuevas.length);
     }
     return notis;
   }).catch(() => []);
 
   activarPopover(cont, {
-    // badge.hidden aquí: el aviso en rojo debe desaparecer en cuanto el
-    // usuario abre el panel y ve los avisos, no quedarse encendido de
-    // forma permanente hasta recargar la página.
+    // Al abrir el panel se oculta el aviso y se recuerda (en localStorage,
+    // por id de notificación) que el usuario ya la ha visto -- así no
+    // vuelve a salir en rojo aunque cierre sesión y vuelva a entrar, salvo
+    // que surja un aviso nuevo (id distinto) que aún no haya visto.
     onAbrir: async () => {
       badge.hidden = true;
-      renderizarNotificaciones(lista, await promesaNotis);
+      const notis = await promesaNotis;
+      renderizarNotificaciones(lista, notis);
+      marcarNotificacionesComoVistas(notis.map((n) => n.id));
     },
   });
 }
