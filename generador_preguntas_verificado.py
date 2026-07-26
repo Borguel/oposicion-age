@@ -243,7 +243,9 @@ def _prompt_generacion_normativo(anclas, tipo_pregunta, oposicion):
         "exacto: \"A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) "
         "...\", citando el artículo en la línea de la respuesta correcta, usando la terminología oficial "
         "de la norma (no sinónimos) y limitándose al contenido normativo: nunca inventar doctrina ni "
-        "interpretar la ley.\n"
+        "interpretar la ley. Cada línea debe ser UNA sola frase breve (máximo 25-30 palabras) que vaya "
+        "directa al motivo -- nunca repitas el enunciado de la pregunta ni el texto de las demás "
+        "opciones, ni añadas relleno o contexto que no aporte nada nuevo.\n"
         "5. Si la pregunta o la explicación citan un número de artículo (\"el artículo 52.1\", \"según "
         "el art. 24\"...), esa misma frase debe decir TAMBIÉN el nombre de la norma a la que pertenece, "
         "copiado tal cual aparece en TEXTO LEGAL más abajo (p. ej. \"el artículo 52.1 de la Ley 29/1998, "
@@ -300,7 +302,10 @@ def _prompt_generacion_descriptivo(anclas, tipo_pregunta, oposicion):
         "claro (un dato cambiado) -- nunca absurdas, ninguna defendible como parcialmente correcta.\n"
         "4. La explicación debe repasar TODAS las opciones, una por línea y en orden, con este formato "
         "exacto: \"A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) "
-        "...\", limitándose al contenido proporcionado.\n"
+        "...\", limitándose al contenido proporcionado. Cada línea debe ser UNA sola frase breve "
+        "(máximo 25-30 palabras) que vaya directa al motivo -- nunca repitas el enunciado de la "
+        "pregunta ni el texto de las demás opciones, ni añadas relleno o contexto que no aporte nada "
+        "nuevo.\n"
         "5. Afirma cada dato DIRECTAMENTE. NO uses muletillas como \"según el contenido\", \"según el "
         "texto\", \"en el contenido proporcionado\", \"tal como se indica\" ni similares -- están "
         "prohibidas y harían que la pregunta se descarte. Esto incluye también remitir a \"lo "
@@ -364,7 +369,9 @@ def _prompt_verificacion_normativo(pregunta_candidata, anclas):
         "de escribirlo entero (\"Ley Orgánica 3/2007\", \"Real Decreto 203/2021\").\n\n"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
         '{"valido": true, "problemas": []}\n'
-        "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo."
+        "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo "
+        "-- cada elemento de \"problemas\" debe ser UNA sola frase breve (máximo 20-25 palabras), no un "
+        "párrafo explicativo."
     )
     user = f"{contenido}\n\nPREGUNTA A VERIFICAR:\n{json.dumps(pregunta_candidata, ensure_ascii=False)}"
     return system, user
@@ -397,7 +404,9 @@ def _prompt_verificacion_descriptivo(pregunta_candidata, anclas):
         "nunca ve el material de origen, así que una pregunta así queda sin sentido para quien la lee.\n\n"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
         '{"valido": true, "problemas": []}\n'
-        "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo."
+        "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo "
+        "-- cada elemento de \"problemas\" debe ser UNA sola frase breve (máximo 20-25 palabras), no un "
+        "párrafo explicativo."
     )
     user = f"{contenido}\n\nPREGUNTA A VERIFICAR:\n{json.dumps(pregunta_candidata, ensure_ascii=False)}"
     return system, user
