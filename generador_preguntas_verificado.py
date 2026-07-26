@@ -47,13 +47,17 @@ from banco_preguntas_ia import guardar_pregunta_generada
 logger = logging.getLogger(__name__)
 
 MAX_INTENTOS_POR_PREGUNTA = 4
-# Subido de 6 a 10 (25/07/2026): deepseek-v4-flash es barato por token, así
-# que más llamadas en paralelo reduce el tiempo total de generación sin
-# encarecerla apenas -- el cuello de botella es la LATENCIA de cada llamada
-# (ver el log "DeepSeek respondió en Xs" en deepseek_utils.py), no el coste.
-# Subida moderada (no un salto grande) para no arriesgarse a un límite de
-# tasa no documentado de la API; se puede ajustar más a partir de esos logs.
-_MAX_WORKERS = 10
+# Subido de 6 a 10 (25/07/2026) y a 15 (26/07/2026): deepseek-v4-flash es
+# barato por token, así que más llamadas en paralelo reduce el tiempo total
+# de generación sin encarecerla apenas -- el cuello de botella es la
+# LATENCIA de cada llamada (ver el log "DeepSeek respondió en Xs" en
+# deepseek_utils.py, media de ~12.5s con 10 hilos), no el coste. Subida
+# incremental (no un salto grande) para poder comparar esa misma media
+# antes/después: si se mantiene parecida, DeepSeek todavía tiene margen y
+# se puede seguir subiendo; si empieza a subir (o aparecen errores de
+# conexión/429), es que ya se está saturando su capacidad por cuenta y
+# subir más empeora las cosas en vez de ayudar.
+_MAX_WORKERS = 15
 
 # REVERTIDO a deepseek-v4-flash (25/07/2026): se probó deepseek-v4-pro
 # (razonamiento) porque flash descartaba el 74% de las preguntas candidatas
