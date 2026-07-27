@@ -83,6 +83,13 @@ ETIQUETA_TIPO_AVISO = {
     # BOE).
     "llamamiento_extraordinario": "Llamamiento extraordinario",
     "aprobados": "Relación de aprobados",
+    # A diferencia de los demás tipos (detectados por el nombre literal del
+    # cuerpo en el título), este lo genera la IA a partir de un título que
+    # NO menciona ningún cuerpo pero sí términos genéricos de Administración
+    # / empleo público (ver vigilancia_boe._clasificar_relevancia_temario_con_ia)
+    # -- se etiqueta distinto para que el dueño sepa que necesita más
+    # revisión que un aviso detectado por palabra clave exacta.
+    "posible_relevancia_temario": "Posible novedad (revisar)",
     "otro": "Aviso oficial",
 }
 

@@ -1,10 +1,15 @@
 """Pruebas de vigilancia_boe.py: nunca publica/aplica nada sola -- solo
 crea documentos "pendiente" en avisos_oficiales / cambios_temario_propuestos
 para que el dueño los revise desde el panel de admin."""
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import vigilancia_boe
 from oposiciones import coleccion_temario
+
+
+def _fecha_hace(dias):
+    return (datetime.utcnow().date() - timedelta(days=dias)).strftime("%Y%m%d")
 
 
 def _fake_response(dato_json):
@@ -252,3 +257,162 @@ def test_verificar_bloque_temas_referenciados_no_duplica_entre_leyes(db):
         faltantes = vigilancia_boe.verificar_bloque_temas_referenciados(db)
 
     assert faltantes == [{"oposicion": "AGE", "bloque_id": "bloque_09", "tema_id": "tema_99"}]
+
+
+class TestFechasARevisar:
+    # _fechas_a_revisar es lo que decide qué días de sumario del BOE se
+    # miran en cada ejecución -- antes de esto, detectar_avisos_oficiales
+    # solo miraba "hoy", y cualquier publicación de un día en que el cron
+    # no corrió (el caso real: el workflow se activó el 23/07/2026, un día
+    # DESPUÉS del RD 606/2026 del 22/07/2026) se perdía para siempre.
+
+    def test_sin_estado_previo_hace_backfill_maximo(self):
+        fechas = vigilancia_boe._fechas_a_revisar({})
+        assert len(fechas) == vigilancia_boe._DIAS_MAX_BACKFILL
+        assert fechas[-1] == datetime.utcnow().strftime("%Y%m%d")
+
+    def test_con_ultima_fecha_revisada_ayer_solo_devuelve_hoy(self):
+        estado = {"avisos_ultima_fecha_revisada": _fecha_hace(1)}
+        assert vigilancia_boe._fechas_a_revisar(estado) == [datetime.utcnow().strftime("%Y%m%d")]
+
+    def test_con_hueco_revisa_los_dias_intermedios_sin_pasarse(self):
+        # 3 días sin revisar (hace 3, hace 2, hace 1) + hoy = 4 fechas.
+        estado = {"avisos_ultima_fecha_revisada": _fecha_hace(4)}
+        fechas = vigilancia_boe._fechas_a_revisar(estado)
+        assert fechas == [_fecha_hace(3), _fecha_hace(2), _fecha_hace(1), _fecha_hace(0)]
+
+    def test_ya_revisado_hoy_no_devuelve_lista_vacia(self):
+        # Una segunda ejecución manual el mismo día no debe romper (ni dejar
+        # de revisar hoy) aunque "última revisada" ya sea hoy.
+        estado = {"avisos_ultima_fecha_revisada": _fecha_hace(0)}
+        assert vigilancia_boe._fechas_a_revisar(estado) == [_fecha_hace(0)]
+
+    def test_backfill_nunca_supera_el_maximo_aunque_el_hueco_sea_enorme(self):
+        estado = {"avisos_ultima_fecha_revisada": _fecha_hace(100)}
+        fechas = vigilancia_boe._fechas_a_revisar(estado)
+        assert len(fechas) == vigilancia_boe._DIAS_MAX_BACKFILL
+
+
+class TestDetectarAvisosOficialesBackfillYEstado:
+
+    def test_revisa_los_dias_sin_revisar_desde_la_ultima_ejecucion(self, db):
+        db.sembrar(("config", "vigilancia_boe"), {"avisos_ultima_fecha_revisada": _fecha_hace(2)})
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=[]) as mock_sumario:
+            vigilancia_boe.detectar_avisos_oficiales(db)
+
+        fechas_llamadas = [c.args[0] for c in mock_sumario.call_args_list]
+        assert fechas_llamadas == [_fecha_hace(1), _fecha_hace(0)]
+
+    def test_actualiza_fecha_revisada_aunque_no_haya_avisos_nuevos(self, db):
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=[]):
+            creados = vigilancia_boe.detectar_avisos_oficiales(db)
+
+        assert creados == 0
+        estado = db.leer(("config", "vigilancia_boe"))
+        assert estado["avisos_ultima_fecha_revisada"] == _fecha_hace(0)
+
+    def test_no_repite_el_mismo_dia_en_la_siguiente_ejecucion(self, db):
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=[]):
+            vigilancia_boe.detectar_avisos_oficiales(db)  # 1ª ejecución: fija "ultima revisada" a hoy
+
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=[]) as mock_sumario:
+            vigilancia_boe.detectar_avisos_oficiales(db)  # 2ª ejecución, mismo día
+
+        # La 2ª ejecución solo debe volver a mirar HOY, no repetir todo el
+        # backfill máximo otra vez.
+        assert mock_sumario.call_count == 1
+        assert mock_sumario.call_args.args[0] == _fecha_hace(0)
+
+
+class TestRelevanciaTemarioConIA:
+    # Segunda vía de detección: títulos que NO nombran ningún cuerpo
+    # literalmente pero sí un término genérico de Administración/empleo
+    # público -- ver _PALABRAS_POSIBLE_RELEVANCIA_TEMARIO. Caso real que la
+    # motivó: el RD 606/2026 (Estatuto de la Autoridad Independiente para
+    # la Igualdad de Trato y la No Discriminación) modificó el temario de
+    # las 3 oposiciones sin mencionar ningún cuerpo en su título.
+
+    def _item(self, identificador, titulo):
+        return {"identificador": identificador, "titulo": titulo, "url_html": "https://www.boe.es/x"}
+
+    def test_titulo_sin_cuerpo_ni_termino_generico_no_llega_a_la_ia(self, db):
+        item = self._item("BOE-A-2026-1", "Anuncio de licitación de obras de reforma de un edificio")
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=[item]), \
+             patch("vigilancia_boe.call_deepseek_api") as mock_ia:
+            creados = vigilancia_boe.detectar_avisos_oficiales(db)
+
+        assert creados == 0
+        mock_ia.assert_not_called()
+
+    def test_titulo_con_termino_generico_y_la_ia_lo_marca_relevante_crea_aviso(self, db):
+        titulo = (
+            "Real Decreto 606/2026, de 22 de julio, por el que se aprueba el Estatuto de la Autoridad "
+            "Independiente para la Igualdad de Trato y la No Discriminación, A.A.I."
+        )
+        item = self._item("BOE-A-2026-606", titulo)
+        respuesta_ia = (
+            '{"resultados": [{"indice": 0, "relevante": true, "oposiciones": ["AGE", "GACE"], '
+            '"motivo": "Modifica el régimen de un organismo estudiado en el temario"}]}'
+        )
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=[item]), \
+             patch("vigilancia_boe.call_deepseek_api", return_value=respuesta_ia) as mock_ia:
+            creados = vigilancia_boe.detectar_avisos_oficiales(db)
+
+        assert creados == 1
+        mock_ia.assert_called_once()  # una sola llamada para todo el lote del día, no una por título
+        avisos = list(db.collection("avisos_oficiales").stream())
+        assert len(avisos) == 1
+        d = avisos[0].to_dict()
+        assert d["tipo"] == "posible_relevancia_temario"
+        assert d["oposiciones"] == ["AGE", "GACE"]
+        assert d["estado"] == "pendiente"
+        assert "Modifica el régimen" in d["resumen"]
+
+    def test_titulo_con_termino_generico_y_la_ia_lo_descarta_no_crea_aviso(self, db):
+        titulo = "Resolución sobre subvenciones al sector público en materia de innovación"
+        item = self._item("BOE-A-2026-700", titulo)
+        respuesta_ia = '{"resultados": [{"indice": 0, "relevante": false}]}'
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=[item]), \
+             patch("vigilancia_boe.call_deepseek_api", return_value=respuesta_ia):
+            creados = vigilancia_boe.detectar_avisos_oficiales(db)
+
+        assert creados == 0
+        assert list(db.collection("avisos_oficiales").stream()) == []
+
+    def test_varios_candidatos_en_un_solo_dia_se_agrupan_en_una_unica_llamada(self, db):
+        items = [
+            self._item("BOE-A-2026-1", "Real Decreto sobre el Estatuto Básico del empleado público autonómico"),
+            self._item("BOE-A-2026-2", "Orden por la que se regula la función pública sanitaria"),
+        ]
+        respuesta_ia = '{"resultados": []}'
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=items), \
+             patch("vigilancia_boe.call_deepseek_api", return_value=respuesta_ia) as mock_ia:
+            vigilancia_boe.detectar_avisos_oficiales(db)
+
+        assert mock_ia.call_count == 1
+        # Los 2 títulos candidatos deben ir en el mismo prompt de la única llamada.
+        mensajes = mock_ia.call_args.kwargs["messages"]
+        contenido_user = mensajes[1]["content"]
+        assert "Estatuto Básico del empleado público autonómico" in contenido_user
+        assert "función pública sanitaria" in contenido_user
+
+    def test_ia_sin_respuesta_no_rompe_el_ciclo(self, db):
+        item = self._item("BOE-A-2026-1", "Real Decreto sobre el Estatuto Básico del empleado público")
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=[item]), \
+             patch("vigilancia_boe.call_deepseek_api", return_value=None):
+            creados = vigilancia_boe.detectar_avisos_oficiales(db)
+
+        assert creados == 0
+        assert list(db.collection("avisos_oficiales").stream()) == []
+
+    def test_titulo_con_cuerpo_literal_no_pasa_por_la_ia(self, db):
+        # Si ya lo detecta la vía barata (nombre del cuerpo en el título),
+        # no hace falta gastar una llamada a la IA para ese título.
+        titulo = "Convocatoria del Cuerpo General Administrativo del Estado"
+        item = self._item("BOE-A-2026-1", titulo)
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=[item]), \
+             patch("vigilancia_boe.call_deepseek_api") as mock_ia:
+            creados = vigilancia_boe.detectar_avisos_oficiales(db)
+
+        assert creados == 1
+        mock_ia.assert_not_called()

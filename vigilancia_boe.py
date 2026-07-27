@@ -10,7 +10,13 @@ OK desde /admin/ antes de que llegue a un usuario real o al temario:
    generador_diff_temario.py para cómo se redacta esa propuesta).
 2. detectar_avisos_oficiales: publicaciones del BOE relevantes para AGE,
    GACE o Auxiliar (convocatorias, listas de admitidos/excluidos, fechas de
-   examen...) -> aviso en avisos_oficiales.
+   examen...) -> aviso en avisos_oficiales. Revisa también días anteriores
+   sin ejecución (backfill acotado, ver _DIAS_MAX_BACKFILL) y usa la IA como
+   segunda pasada para títulos que no nombran ningún cuerpo literalmente
+   pero sí términos genéricos de Administración/empleo público (ver
+   _clasificar_relevancia_temario_con_ia) -- caso real que motivó esto: el
+   RD 606/2026 modificó el temario de las 3 oposiciones sin nombrar ningún
+   cuerpo en su título.
 
 API usada, sin clave y solo GET (https://www.boe.es/datosabiertos/):
 - legislacion-consolidada/id/{id}/metadatos -> fecha_actualizacion de la ley.
@@ -26,13 +32,15 @@ documentación pública del BOE, no de una llamada real verificada byte a
 byte -- por eso _buscar_clave() busca las claves por NOMBRE en cualquier
 nivel de anidamiento en vez de asumir una ruta fija, y por eso conviene una
 llamada de humo real antes de fiarse del todo en producción."""
+import json
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 
+from deepseek_utils import call_deepseek_api
 from oposiciones import OPOSICIONES
 
 logger = logging.getLogger(__name__)
@@ -285,6 +293,130 @@ _TIPO_POR_PALABRA_CLAVE = {
     "llamamiento extraordinario": "llamamiento_extraordinario",
 }
 
+# Términos genéricos (sin nombrar ningún cuerpo) que pueden indicar que una
+# disposición del BOE afecta igualmente al temario o a las convocatorias --
+# visto en producción: el Real Decreto 606/2026, de 22 de julio (Estatuto de
+# la Autoridad Independiente para la Igualdad de Trato y la No
+# Discriminación) modificó el temario de Turno Libre de GACE/AGE/AUXILIAR
+# sin mencionar ningún cuerpo en su título, así que PALABRAS_CLAVE_OPOSICION
+# nunca lo habría detectado. Estas palabras NO clasifican nada por sí solas
+# -- son deliberadamente genéricas y, usadas solas, darían decenas de falsos
+# positivos al día (cualquier nombramiento o subvención menciona "sector
+# público") -- solo sirven para preseleccionar del sumario del día un
+# puñado de titulares candidatos que luego sí se le pasan a la IA (ver
+# _clasificar_relevancia_temario_con_ia) para que decida con criterio real.
+_PALABRAS_POSIBLE_RELEVANCIA_TEMARIO = (
+    "empleado público", "empleados públicos", "función pública", "empleo público",
+    "administración general del estado", "administración pública", "administraciones públicas",
+    "sector público", "estatuto básico", "autoridad independiente", "organismo autónomo",
+    "personal al servicio",
+)
+
+# Cuántos días hacia atrás se revisa como máximo si el ciclo diario se ha
+# saltado alguno (cron caído, primer despliegue del workflow...) -- sin
+# esto, detectar_avisos_oficiales solo miraba el sumario de "hoy" y
+# cualquier publicación de un día sin ejecución se perdía para siempre, sin
+# ninguna forma de recuperarla (así se perdió el RD 606/2026, publicado un
+# día antes de que este workflow se activara por primera vez). Acotado (no
+# "desde el principio de los tiempos") para no lanzar un backfill sin
+# límite si el estado se resetea alguna vez o esto no se ha ejecutado nunca.
+_DIAS_MAX_BACKFILL = 5
+
+
+def _fechas_a_revisar(estado):
+    """Normalmente devuelve solo [hoy]; si quedan días sin revisar desde la
+    última ejecución (ver _DIAS_MAX_BACKFILL de arriba), los añade también,
+    en orden cronológico. Siempre incluye HOY, aunque el estado diga que ya
+    se revisó (p. ej. una segunda ejecución manual el mismo día) -- así
+    "desde" nunca queda por delante de "hoy" y la lista jamás sale vacía;
+    volver a mirar el sumario de hoy es idempotente gracias al deduplicado
+    por avisos_ids_vistos."""
+    hoy = datetime.utcnow().date()
+    minimo = hoy - timedelta(days=_DIAS_MAX_BACKFILL - 1)
+    desde = minimo
+    ultima_str = estado.get("avisos_ultima_fecha_revisada")
+    if ultima_str:
+        try:
+            desde = max(minimo, datetime.strptime(ultima_str, "%Y%m%d").date() + timedelta(days=1))
+        except ValueError:
+            pass
+    desde = min(desde, hoy)
+    fechas = []
+    fecha = desde
+    while fecha <= hoy:
+        fechas.append(fecha.strftime("%Y%m%d"))
+        fecha += timedelta(days=1)
+    return fechas
+
+
+def _prompt_relevancia_temario(titulos):
+    listado = "\n".join(f"{i}: {t}" for i, t in enumerate(titulos))
+    system = (
+        "Eres un analista que vigila el BOE para una web de preparación de oposiciones a 3 cuerpos de "
+        "la Administración General del Estado por turno libre: AGE (Cuerpo General Administrativo), "
+        "GACE (Cuerpo de Gestión de la Administración Civil del Estado) y AUXILIAR (Cuerpo General "
+        "Auxiliar). Te llega una lista de títulos de disposiciones publicadas en el BOE que mencionan "
+        "de forma genérica la Administración o el empleo público, pero SIN nombrar literalmente ninguno "
+        "de esos 3 cuerpos -- por eso no las ha detectado ya el filtro automático de palabras clave, y "
+        "hace falta tu criterio.\n\n"
+        "Para cada título, decide si es RAZONABLE PENSAR que puede afectar al TEMARIO o a las "
+        "CONVOCATORIAS de esos 3 cuerpos -- por ejemplo, crea o reforma un organismo, ley o estatuto "
+        "que se estudia en un temario de oposición a la Administración General del Estado, o afecta de "
+        "forma directa a un proceso selectivo, aunque sea indirectamente. Sé conservador: NO marques "
+        "como relevante una disposición que solo menciona la Administración Pública de pasada "
+        "(nombramientos concretos, subvenciones puntuales, convenios de colaboración...) sin relación "
+        "real con el contenido de un temario de oposición. Indica también a qué cuerpo(s) -- de AGE, "
+        "GACE, AUXILIAR -- afecta probablemente; si no puedes distinguirlo, incluye los 3.\n\n"
+        "Devuelve ÚNICAMENTE un JSON con esta forma exacta, con una entrada por cada título recibido "
+        "(mismo índice que en el enunciado), sin texto adicional:\n"
+        '{"resultados": [{"indice": 0, "relevante": true, "oposiciones": ["AGE"], "motivo": "una frase breve"}]}'
+    )
+    user = f"TÍTULOS:\n{listado}"
+    return system, user
+
+
+def _clasificar_relevancia_temario_con_ia(titulos):
+    """Una sola llamada a DeepSeek para TODOS los títulos candidatos del
+    ciclo (nunca una por título -- mismo principio de coste que
+    test_generator._verificar_lote). Devuelve {indice: {"oposiciones": [...],
+    "motivo": "..."}} solo para los índices que la IA considera relevantes;
+    ante cualquier fallo (sin respuesta, JSON inválido) devuelve {} -- un
+    ciclo sin esta clasificación extra no es peor que el comportamiento
+    anterior a esta función, así que nunca merece romper el resto de
+    detectar_avisos_oficiales."""
+    if not titulos:
+        return {}
+    system, user = _prompt_relevancia_temario(titulos)
+    raw = call_deepseek_api(
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+        temperature=0.0,
+        max_tokens=min(4000, 200 + 150 * len(titulos)),
+        response_format_json=True,
+    )
+    if not raw:
+        return {}
+    try:
+        datos = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(datos, dict):
+        return {}
+    oposiciones_validas = set(PALABRAS_CLAVE_OPOSICION.keys())
+    resultados = {}
+    for entrada in (datos.get("resultados") or []):
+        if not isinstance(entrada, dict) or entrada.get("relevante") is not True:
+            continue
+        try:
+            indice = int(entrada.get("indice"))
+        except (TypeError, ValueError):
+            continue
+        oposiciones = [o for o in (entrada.get("oposiciones") or []) if o in oposiciones_validas]
+        resultados[indice] = {
+            "oposiciones": oposiciones or list(oposiciones_validas),
+            "motivo": str(entrada.get("motivo") or "").strip()[:300],
+        }
+    return resultados
+
 
 def _get_json(url):
     """GET simple con timeout corto -- no es una ruta de usuario, un fallo
@@ -375,60 +507,105 @@ def _clasificar_aviso(titulo):
     return "otro"
 
 
+def _guardar_aviso_oficial(db, item, titulo, oposiciones, tipo, fecha_boe, motivo_ia=None):
+    # Un único aviso con TODAS las oposiciones afectadas (p. ej. una
+    # resolución que menciona a la vez al Cuerpo General Administrativo y
+    # al de Gestión) -- así solo hace falta aprobarlo una vez y llega a las
+    # páginas/usuarios de cada oposición, en vez de crear un documento
+    # duplicado por oposición.
+    resumen = titulo[:500]
+    if motivo_ia:
+        resumen = f"{titulo[:400]} — {motivo_ia}"[:500]
+    db.collection("avisos_oficiales").document().set({
+        "oposiciones": oposiciones,
+        "tipo": tipo,
+        "titulo": titulo[:300],
+        "resumen": resumen,
+        "url_boe": _buscar_clave(item, "url_html") or _buscar_clave(item, "url_pdf") or "",
+        "fecha_boe": fecha_boe,
+        "fecha_deteccion": datetime.utcnow().isoformat(),
+        "estado": "pendiente",
+    })
+
+
 def detectar_avisos_oficiales(db):
-    """Revisa el sumario del BOE de hoy y crea un aviso pendiente de
-    revisión por cada publicación relevante para AGE, GACE o Auxiliar que
-    no se haya visto ya (deduplicado por id de la disposición en el
-    BOE)."""
-    hoy = datetime.utcnow().strftime("%Y%m%d")
+    """Revisa el sumario del BOE de hoy (y de cualquier día sin revisar
+    desde la última ejecución, ver _fechas_a_revisar) y crea un aviso
+    pendiente de revisión por cada publicación relevante para AGE, GACE o
+    Auxiliar que no se haya visto ya (deduplicado por id de la disposición
+    en el BOE).
+
+    Dos vías de detección, en este orden:
+    1. Coincidencia literal del nombre de un cuerpo en el título (rápida,
+       gratis, la de siempre) -- ver PALABRAS_CLAVE_OPOSICION.
+    2. Para los títulos que NO mencionan ningún cuerpo pero sí un término
+       genérico de Administración/empleo público (ver
+       _PALABRAS_POSIBLE_RELEVANCIA_TEMARIO), una única llamada a la IA por
+       ejecución que decide con más criterio si de verdad puede afectar al
+       temario -- pensada para casos como el RD 606/2026, que modificó el
+       temario de las 3 oposiciones sin nombrar ningún cuerpo en su
+       título."""
     ref_estado = _doc_estado(db)
     estado = ref_estado.get().to_dict() or {}
     ids_ya_vistos = set(estado.get("avisos_ids_vistos") or [])
+    fechas = _fechas_a_revisar(estado)
 
-    items = obtener_sumario_dia(hoy)
     creados = 0
     ids_nuevos = set()
-    for item in items:
-        item_id = _buscar_clave(item, "identificador") or _buscar_clave(item, "id")
-        titulo = _buscar_clave(item, "titulo") or ""
-        if not item_id or item_id in ids_ya_vistos:
-            continue
+    candidatos_relevancia = []  # [(item_id, titulo, item, fecha)]
 
-        oposiciones_afectadas = [
-            op for op, nombre_cuerpo in PALABRAS_CLAVE_OPOSICION.items() if nombre_cuerpo.lower() in titulo.lower()
-        ]
-        if not oposiciones_afectadas:
-            continue
-        tipo = _clasificar_aviso(titulo)
-        if tipo == "otro":
-            continue  # menciona el cuerpo pero no parece un aviso de convocatoria/lista/examen
+    for fecha in fechas:
+        for item in obtener_sumario_dia(fecha):
+            item_id = _buscar_clave(item, "identificador") or _buscar_clave(item, "id")
+            titulo = _buscar_clave(item, "titulo") or ""
+            if not item_id or item_id in ids_ya_vistos or item_id in ids_nuevos:
+                continue
 
-        # Un único aviso con TODAS las oposiciones afectadas (p. ej. una
-        # resolución que menciona a la vez al Cuerpo General Administrativo
-        # y al de Gestión) -- así solo hace falta aprobarlo una vez y llega
-        # a las páginas/usuarios de cada oposición, en vez de crear un
-        # documento duplicado por oposición.
-        db.collection("avisos_oficiales").document().set({
-            "oposiciones": oposiciones_afectadas,
-            "tipo": tipo,
-            "titulo": titulo[:300],
-            "resumen": titulo[:500],
-            "url_boe": _buscar_clave(item, "url_html") or _buscar_clave(item, "url_pdf") or "",
-            "fecha_boe": hoy,
-            "fecha_deteccion": datetime.utcnow().isoformat(),
-            "estado": "pendiente",
-        })
-        creados += 1
-        ids_nuevos.add(item_id)
+            oposiciones_afectadas = [
+                op for op, nombre_cuerpo in PALABRAS_CLAVE_OPOSICION.items()
+                if nombre_cuerpo.lower() in titulo.lower()
+            ]
+            if oposiciones_afectadas:
+                tipo = _clasificar_aviso(titulo)
+                if tipo == "otro":
+                    continue  # menciona el cuerpo pero no parece un aviso de convocatoria/lista/examen
+                _guardar_aviso_oficial(db, item, titulo, oposiciones_afectadas, tipo, fecha)
+                creados += 1
+                ids_nuevos.add(item_id)
+                continue
+
+            titulo_norm = titulo.lower()
+            if any(palabra in titulo_norm for palabra in _PALABRAS_POSIBLE_RELEVANCIA_TEMARIO):
+                candidatos_relevancia.append((item_id, titulo, item, fecha))
+
+    if candidatos_relevancia:
+        resultados_ia = _clasificar_relevancia_temario_con_ia([c[1] for c in candidatos_relevancia])
+        for indice, (item_id, titulo, item, fecha) in enumerate(candidatos_relevancia):
+            resultado = resultados_ia.get(indice)
+            if not resultado:
+                continue
+            _guardar_aviso_oficial(
+                db, item, titulo, resultado["oposiciones"], "posible_relevancia_temario", fecha,
+                motivo_ia=resultado["motivo"],
+            )
+            creados += 1
+            ids_nuevos.add(item_id)
 
     if ids_nuevos:
         # Se guarda un histórico acotado (no crecer sin límite) de los
         # últimos IDs vistos, suficiente para deduplicar entre ejecuciones
         # diarias consecutivas.
-        ref_estado.set(
-            {"avisos_ids_vistos": list((ids_ya_vistos | ids_nuevos))[-500:]}, merge=True
-        )
-    logger.info("Vigilancia BOE (avisos oficiales): %s avisos nuevos creados", creados)
+        ids_ya_vistos = ids_ya_vistos | ids_nuevos
+    # avisos_ultima_fecha_revisada avanza SIEMPRE (haya o no avisos nuevos)
+    # para que el backfill de la próxima ejecución no vuelva a mirar estos
+    # mismos días -- si se guardara solo dentro del "if ids_nuevos" de
+    # arriba, un día sin ninguna novedad relevante se reintentaría cada día
+    # siguiente para siempre.
+    ref_estado.set({
+        "avisos_ids_vistos": list(ids_ya_vistos)[-500:],
+        "avisos_ultima_fecha_revisada": fechas[-1],
+    }, merge=True)
+    logger.info("Vigilancia BOE (avisos oficiales): %s avisos nuevos creados (%s días revisados)", creados, len(fechas))
     return creados
 
 
