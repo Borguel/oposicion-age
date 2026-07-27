@@ -1,11 +1,14 @@
 """Pruebas de test_generator.py: generar_preguntas_ia_en_lotes con su
-pipeline de verificación por pregunta (mismo principio que
+pipeline de verificación EN BLOQUE por lote (una sola llamada juzga todas
+las candidatas del lote a la vez, ver _verificar_lote) y su mecanismo de
+recambio individual para las que no pasan (mismo principio que
 generador_preguntas_verificado.py, aquí sobre un documento libre en vez de
 un artículo anclado en Firestore). DeepSeek se mockea por CONTENIDO del
 mensaje (no por orden de llamada), porque la generación y verificación de
 un lote corren en paralelo."""
 import itertools
 import json
+import re
 from unittest.mock import patch
 
 from test_generator import generar_preguntas_ia_en_lotes, MAX_INTENTOS_POR_PREGUNTA_PDF
@@ -15,14 +18,37 @@ def _construir_prompt_fabrica(preguntas_por_llamada):
     """Devuelve un construir_prompt(n) de prueba que siempre pide n=1 (los
     tests aquí usan lotes pequeños) y cuyo texto de prompt no contiene
     'system' -- la generación en este módulo va toda en un único mensaje
-    'user', a diferencia de la verificación que sí usa 'system'."""
+    'user', a diferencia de la verificación (individual o en bloque) que sí
+    usa 'system'."""
     def construir_prompt(n):
         return f"Genera {n} preguntas.\n\nDocumento para crear preguntas test:\nTexto de prueba."
     return construir_prompt
 
 
+def _es_llamada_verificacion_lote(messages):
+    return (
+        len(messages) == 2 and messages[0]["role"] == "system"
+        and "PREGUNTAS A VERIFICAR:" in messages[1]["content"]
+    )
+
+
 def _es_llamada_verificacion(messages):
-    return len(messages) == 2 and messages[0]["role"] == "system"
+    """Verificación INDIVIDUAL de una candidata de recambio -- excluye la
+    verificación en bloque de un lote entero (_es_llamada_verificacion_lote),
+    que también es un mensaje system+user pero con un enunciado en plural
+    ('PREGUNTAS A VERIFICAR', no 'PREGUNTA A VERIFICAR')."""
+    return (
+        len(messages) == 2 and messages[0]["role"] == "system"
+        and "PREGUNTAS A VERIFICAR:" not in messages[1]["content"]
+    )
+
+
+def _preguntas_del_lote_desde_mensaje(messages):
+    """Extrae, en el mismo orden en que se listaron, el texto 'pregunta' de
+    cada candidata dentro de una llamada de verificación en bloque -- para
+    poder responder con el veredicto correcto por índice sin acoplar el
+    test al formato exacto del prompt."""
+    return re.findall(r'"pregunta":\s*"([^"]*)"', messages[1]["content"])
 
 
 class TestGenerarPreguntasIaEnLotes:
@@ -49,6 +75,12 @@ class TestGenerarPreguntasIaEnLotes:
         construir_prompt = _construir_prompt_fabrica(None)
 
         def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion_lote(messages):
+                textos = _preguntas_del_lote_desde_mensaje(messages)
+                return json.dumps({"resultados": [
+                    {"indice": i, "valido": t != "¿Pregunta mala?", "problemas": [] if t != "¿Pregunta mala?" else ["dato inventado"]}
+                    for i, t in enumerate(textos)
+                ]})
             if _es_llamada_verificacion(messages):
                 candidata = json.loads(messages[1]["content"].split("PREGUNTA A VERIFICAR:\n")[1])
                 valido = candidata["pregunta"] != "¿Pregunta mala?"
@@ -77,6 +109,8 @@ class TestGenerarPreguntasIaEnLotes:
         llamadas_generacion = []
 
         def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion_lote(messages):
+                return json.dumps({"resultados": [{"indice": 0, "valido": False, "problemas": ["dato inventado"]}]})
             if _es_llamada_verificacion(messages):
                 return json.dumps({"valido": False, "problemas": ["dato inventado"]})
             llamadas_generacion.append(1)
@@ -169,6 +203,12 @@ class TestGenerarPreguntasIaEnLotes:
         construir_prompt = _construir_prompt_fabrica(None)
 
         def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion_lote(messages):
+                textos = _preguntas_del_lote_desde_mensaje(messages)
+                return json.dumps({"resultados": [
+                    {"indice": i, "valido": t != "¿Mala?", "problemas": [] if t != "¿Mala?" else ["dato inventado"]}
+                    for i, t in enumerate(textos)
+                ]})
             if _es_llamada_verificacion(messages):
                 candidata = json.loads(messages[1]["content"].split("PREGUNTA A VERIFICAR:\n")[1])
                 valido = candidata["pregunta"] != "¿Mala?"
@@ -204,6 +244,8 @@ class TestGenerarPreguntasIaEnLotes:
         def fake_call(messages, on_usage=None, **kwargs):
             if on_usage:
                 on_usage({"prompt_tokens": 10, "completion_tokens": 5})
+            if _es_llamada_verificacion_lote(messages):
+                return json.dumps({"resultados": [{"indice": 0, "valido": True, "problemas": []}]})
             if _es_llamada_verificacion(messages):
                 return json.dumps({"valido": True, "problemas": []})
             return json.dumps([{
@@ -218,7 +260,9 @@ class TestGenerarPreguntasIaEnLotes:
                 on_usage=lambda u: recibidos.append(u),
             )
 
-        # 1 llamada de generación + 1 de verificación = 2 avisos de usage.
+        # 1 llamada de generación + 1 de verificación EN BLOQUE (sin
+        # candidatas inválidas, no hace falta ningún recambio individual)
+        # = 2 avisos de usage.
         assert len(recibidos) == 2
 
     def test_sin_respuesta_de_deepseek_da_error_de_lote(self):
@@ -247,6 +291,12 @@ class TestGenerarPreguntasIaEnLotes:
 
         def fake_call(messages, **kwargs):
             contenido = messages[0]["content"]
+            if _es_llamada_verificacion_lote(messages):
+                textos = _preguntas_del_lote_desde_mensaje(messages)
+                return json.dumps({"resultados": [
+                    {"indice": i, "valido": not t.startswith("¿Mala"), "problemas": [] if not t.startswith("¿Mala") else ["dato inventado"]}
+                    for i, t in enumerate(textos)
+                ]})
             if _es_llamada_verificacion(messages):
                 candidata = json.loads(messages[1]["content"].split("PREGUNTA A VERIFICAR:\n")[1])
                 valido = not candidata["pregunta"].startswith("¿Mala")
@@ -478,6 +528,11 @@ class TestGenerarPreguntasIaEnLotes:
         max_tokens_recibidos = []
 
         def fake_call(messages, max_tokens=None, **kwargs):
+            if _es_llamada_verificacion_lote(messages):
+                textos = _preguntas_del_lote_desde_mensaje(messages)
+                return json.dumps({"resultados": [
+                    {"indice": i, "valido": True, "problemas": []} for i in range(len(textos))
+                ]})
             if _es_llamada_verificacion(messages):
                 return json.dumps({"valido": True, "problemas": []})
             max_tokens_recibidos.append(max_tokens)
@@ -497,6 +552,11 @@ class TestGenerarPreguntasIaEnLotes:
         max_tokens_recibidos = []
 
         def fake_call(messages, max_tokens=None, **kwargs):
+            if _es_llamada_verificacion_lote(messages):
+                textos = _preguntas_del_lote_desde_mensaje(messages)
+                return json.dumps({"resultados": [
+                    {"indice": i, "valido": True, "problemas": []} for i in range(len(textos))
+                ]})
             if _es_llamada_verificacion(messages):
                 return json.dumps({"valido": True, "problemas": []})
             max_tokens_recibidos.append(max_tokens)
@@ -511,21 +571,52 @@ class TestGenerarPreguntasIaEnLotes:
 
         assert max_tokens_recibidos == [8000]  # min(8000, 1500*6=9000) -> 8000
 
-    def test_verificacion_pide_4000_tokens_no_400(self):
+    def test_verificacion_en_bloque_escala_los_tokens_con_el_tamano_del_lote(self):
+        # La verificación en bloque (_verificar_lote) sustituyó a una
+        # llamada de verificación por pregunta -- su presupuesto de tokens
+        # debe escalar con cuántas preguntas lleva el lote, no quedarse
+        # fijo como si siempre verificara una sola (ver la fórmula en
+        # test_generator.py).
+        construir_prompt = _construir_prompt_fabrica(None)
+        max_tokens_lote = []
+
+        def fake_call(messages, max_tokens=None, **kwargs):
+            if _es_llamada_verificacion_lote(messages):
+                textos = _preguntas_del_lote_desde_mensaje(messages)
+                max_tokens_lote.append(max_tokens)
+                return json.dumps({"resultados": [
+                    {"indice": i, "valido": True, "problemas": []} for i in range(len(textos))
+                ]})
+            return json.dumps([
+                {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."}
+                for i in range(4)
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            generar_preguntas_ia_en_lotes(construir_prompt, 4, "Texto de prueba.", tamano_lote=4)
+
+        assert max_tokens_lote == [min(8000, 500 + 700 * 4)]
+
+    def test_verificacion_individual_de_recambio_sigue_pidiendo_4000_tokens(self):
         # Bug real de producción: con max_tokens=400, deepseek-v4-flash
         # truncaba la respuesta de verificación (finish_reason="length")
         # cuando detallaba varios problemas, y el JSON cortado se trataba
         # como pregunta inválida aunque no lo fuera -- multiplicando las
-        # llamadas totales (una verificación truncada dispara una
-        # regeneración de más) y dejando el test por debajo de lo pedido.
-        # Subir a 2000 redujo mucho los cortes, pero producción aún vio
-        # alguno justo en ese tope -- de ahí subir otra vez, a 4000.
+        # llamadas totales y dejando el test por debajo de lo pedido. Ese
+        # margen (ya corregido a 4000, ver _verificar_pregunta) se sigue
+        # usando cuando la verificación en bloque marca una candidata como
+        # inválida y hay que verificar su recambio de una en una
+        # (_asegurar_pregunta_valida no cambió con la verificación en
+        # bloque).
         construir_prompt = _construir_prompt_fabrica(None)
-        max_tokens_verificacion = []
+        max_tokens_individual = []
 
         def fake_call(messages, max_tokens=None, **kwargs):
+            if _es_llamada_verificacion_lote(messages):
+                return json.dumps({"resultados": [{"indice": 0, "valido": False, "problemas": ["dato inventado"]}]})
             if _es_llamada_verificacion(messages):
-                max_tokens_verificacion.append(max_tokens)
+                max_tokens_individual.append(max_tokens)
                 return json.dumps({"valido": True, "problemas": []})
             return json.dumps([{
                 "pregunta": "¿Pregunta?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
@@ -535,7 +626,7 @@ class TestGenerarPreguntasIaEnLotes:
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
             generar_preguntas_ia_en_lotes(construir_prompt, 1, "Texto de prueba.", tamano_lote=1)
 
-        assert max_tokens_verificacion == [4000]
+        assert max_tokens_individual == [4000]
 
     def test_nunca_devuelve_mas_preguntas_de_las_pedidas(self):
         # Bug real reportado: pedir 20 preguntas y recibir 22 -- un lote
@@ -560,3 +651,33 @@ class TestGenerarPreguntasIaEnLotes:
 
         assert len(preguntas) == 4
         assert errores == []
+
+    def test_verificacion_en_bloque_reduce_las_llamadas_totales(self):
+        # El objetivo real de la verificación en bloque: bug reportado en
+        # producción, generar un test de 30 preguntas podía disparar más
+        # de 50 llamadas a DeepSeek en total (1 generación + 1 verificación
+        # POR PREGUNTA). Con un lote de 5 preguntas todas válidas a la
+        # primera, el total debe ser 2 llamadas (1 generación + 1
+        # verificación en bloque), no 6 (1 + 5).
+        construir_prompt = _construir_prompt_fabrica(None)
+        llamadas = {"total": 0}
+
+        def fake_call(messages, **kwargs):
+            llamadas["total"] += 1
+            if _es_llamada_verificacion_lote(messages):
+                textos = _preguntas_del_lote_desde_mensaje(messages)
+                return json.dumps({"resultados": [
+                    {"indice": i, "valido": True, "problemas": []} for i in range(len(textos))
+                ]})
+            return json.dumps([
+                {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."}
+                for i in range(5)
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 5, "Texto de prueba.", tamano_lote=5)
+
+        assert len(preguntas) == 5
+        assert errores == []
+        assert llamadas["total"] == 2

@@ -356,7 +356,27 @@ async function obtenerAuthHeaders() {
         // iPhone/WebKit esa señal a veces no llega nunca aunque todo esté ya
         // recibido, y quedarse esperándola dejaba la pantalla congelada.
         while (!datosFinales) {
-          const { done, value } = await leerStreamConTimeout(lector);
+          let done, value;
+          try {
+            ({ done, value } = await leerStreamConTimeout(lector));
+          } catch (errorTimeout) {
+            // "El servidor está tardando demasiado..." (ver
+            // stream-utils.js) puede saltar DESPUÉS de que el test ya haya
+            // arrancado con las primeras preguntas (umbralInicioTemprano
+            // más arriba) -- una única llamada a DeepSeek lenta o con
+            // reintentos puede tardar bastante más de lo que este aviso
+            // tarda en saltar. Si ya se transicionó al test, NO hay que
+            // romper la sesión del usuario: se trata igual que llegar a
+            // "done" sin "fin" (bug real: el test quedaba visible con
+            // preguntas ya respondidas y el formulario de subir PDF volvía
+            // a aparecer encima, porque esta excepción llegaba sin pasar
+            // por el tramo de abajo y acababa en mostrarError). Si
+            // TODAVÍA no se había transicionado, se deja propagar el error
+            // tal cual (el formulario nunca llegó a ocultarse por un test
+            // en marcha, así que mostrarError sigue siendo lo correcto).
+            if (transicionadoATest) break;
+            throw errorTimeout;
+          }
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
           const bloques = buffer.split("\n\n");

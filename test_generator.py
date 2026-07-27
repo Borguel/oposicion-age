@@ -120,6 +120,104 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
         return False
 
 
+def _prompt_verificacion_lote(preguntas, texto_fuente):
+    listado = "\n\n".join(
+        f"PREGUNTA {i}:\n{json.dumps(p, ensure_ascii=False)}"
+        for i, p in enumerate(preguntas)
+    )
+    system = (
+        "Eres un verificador independiente. Te llegan varias preguntas tipo test YA REDACTADAS por "
+        "otro proceso, y el ÚNICO documento del que deberían haber salido. No des por hecho que son "
+        "correctas solo porque parecen bien escritas: comprueba cada afirmación de CADA pregunta contra "
+        "el documento, como si las vieras por primera vez y no supieras nada más. Evalúa cada pregunta "
+        "de forma INDEPENDIENTE de las demás -- que unas sean válidas no debe influir en el juicio sobre "
+        "el resto.\n\n"
+        "Marca una pregunta como inválida si detectas CUALQUIERA de estos problemas EN ELLA:\n"
+        "1. El contenido de la pregunta no coincide con lo que dice el documento.\n"
+        "2. La respuesta marcada como correcta no es completamente correcta según el documento.\n"
+        "3. Alguna de las otras tres opciones podría considerarse también correcta o parcialmente "
+        "correcta -- ninguna debe ser defendible.\n"
+        "4. La explicación no repasa las 4 opciones en el formato \"A) ... B) ... C) ... D) ...\", o no "
+        "coincide exactamente con la respuesta marcada como correcta.\n"
+        "5. Cualquier plazo, cifra, porcentaje, artículo, órgano competente o fecha no coincide "
+        "EXACTAMENTE con el documento.\n"
+        "6. Hay cualquier dato o afirmación que no puedas verificar literalmente en el documento "
+        "proporcionado (posible alucinación).\n"
+        "7. La pregunta o la explicación citan un número de artículo sin decir en la misma frase de qué "
+        "ley o norma es (tal como aparece en el documento) -- un artículo mencionado sin decir de qué "
+        "norma es deja a quien lo lee sin poder ubicarlo.\n"
+        "8. La pregunta o la explicación remiten a \"el documento\", \"el contenido\", \"el texto\" o "
+        "\"lo mencionado/anterior\" en vez de nombrar directamente de qué elementos concretos habla -- "
+        "quien responde el test nunca ve el documento de origen, solo la pregunta, así que una remisión "
+        "de ese tipo la deja sin sentido.\n"
+        "9. Se usa una sigla o abreviatura (\"CE\", \"TREBEP\", \"LPAC\", \"art.\" en vez de "
+        "\"artículo\"...) para nombrar una ley o norma en vez de su nombre completo tal como aparece en "
+        "el documento -- los exámenes oficiales de esta oposición nunca abrevian. Esto incluye también "
+        "abreviar el tipo de norma delante de su número (\"LO 3/2007\", \"RD 203/2021\"...) en vez de "
+        "escribirlo entero (\"Ley Orgánica 3/2007\", \"Real Decreto 203/2021\").\n\n"
+        "Devuelve ÚNICAMENTE un JSON con esta forma exacta, con UNA entrada por cada pregunta recibida "
+        "(el mismo número que en el enunciado, empezando en 0), sin texto adicional:\n"
+        '{"resultados": [{"indice": 0, "valido": true, "problemas": []}]}'
+    )
+    user = f"DOCUMENTO:\n{texto_fuente}\n\nPREGUNTAS A VERIFICAR:\n{listado}"
+    return system, user
+
+
+def _verificar_lote(preguntas, texto_fuente, on_usage):
+    """Verifica TODAS las preguntas candidatas de un lote en UNA sola
+    llamada, en vez de una llamada de verificación por pregunta (ver
+    _verificar_pregunta) -- bug real reportado: generar un test de 30
+    preguntas podía disparar más de 50 llamadas a DeepSeek en total, cada
+    una compitiendo por el mismo cupo de conexiones simultáneas (ver
+    deepseek_utils._semaforo_deepseek) y aumentando el riesgo de que
+    alguna se quedara colgada varios segundos. Verificar el lote entero de
+    una vez reduce las llamadas de generación+verificación de este lote de
+    (1 + n) a 2 en el caso normal, sin perder rigor: el modelo sigue
+    mirando cada pregunta contra el documento, solo que dentro de la misma
+    llamada en vez de una por separado -- las que no pasan se descartan
+    igual que antes y se piden de recambio de una en una
+    (_asegurar_pregunta_valida no cambia).
+
+    Devuelve {indice: bool}. Los índices ausentes de la respuesta (por un
+    JSON no parseable, sin respuesta de DeepSeek, o que el modelo se dejó
+    fuera) se tratan como NO válidos por el llamante -- nunca se asume
+    válida una pregunta que no se pudo confirmar."""
+    if not preguntas:
+        return {}
+    system, user = _prompt_verificacion_lote(preguntas, texto_fuente)
+    raw = call_deepseek_api(
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+        temperature=0.0,
+        # Escala con el tamaño del lote: la mayoría de preguntas solo
+        # necesitan un veredicto corto ({"valido": true, "problemas": []}),
+        # pero si varias resultan inválidas a la vez y el modelo detalla
+        # los motivos de cada una, el conjunto puede pesar bastante más que
+        # una sola verificación individual (tope 4000, ver
+        # _verificar_pregunta). Sin coste extra si no hace falta.
+        max_tokens=min(8000, 500 + 700 * len(preguntas)),
+        response_format_json=True,
+        on_usage=on_usage,
+    )
+    if not raw:
+        return {}
+    try:
+        datos = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(datos, dict):
+        return {}
+    resultados = {}
+    for item in (datos.get("resultados") or []):
+        if not isinstance(item, dict):
+            continue
+        try:
+            indice = int(item.get("indice"))
+        except (TypeError, ValueError):
+            continue
+        resultados[indice] = item.get("valido") is True
+    return resultados
+
+
 def _fragmentos_por_lote(texto_fuente, n_lotes):
     """Devuelve una lista de n_lotes fragmentos del documento, uno por lote,
     para que cada llamada de generación en paralelo se apoye en una parte
@@ -263,6 +361,11 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     que devuelven menos candidatas de las pedidas (fallo parcial de
     DeepSeek), "completadas" puede quedarse por debajo de "total" al
     acabar -- el llamante ya remata la barra al 100% con el evento "fin".
+    Con la verificación EN BLOQUE (ver _verificar_lote más abajo), las
+    candidatas que sí pasan llegan casi todas a la vez (justo tras la única
+    llamada de verificación del lote) en vez de una a una según se iban
+    verificando por separado -- progreso-conversador.js ya rellena huecos
+    entre eventos reales para que la barra no se note a saltos.
 
     on_usage, si se pasa, recibe el usage de cada llamada a DeepSeek (de
     generación Y de verificación) -- esta función corre siempre dentro de
@@ -374,23 +477,37 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
                 _reportar_avance_pregunta(candidata)
             return candidatas, None
 
-        # Se verifica cada candidata del lote EN PARALELO -- en serie
-        # multiplicaría por hasta 'tamano_lote' el tiempo de este lote, y
-        # una pregunta con problemas no debe frenar a las demás. Se reporta
-        # el avance por 'as_completed' (una por una, según van resolviéndose,
-        # con éxito o descarte) en vez de esperar a que TODAS terminen --
-        # así el progreso real llega pregunta a pregunta, no lote a lote.
-        with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(candidatas))) as executor:
-            futuros = [
-                executor.submit(_asegurar_pregunta_valida, candidata, construir_prompt, texto_fuente, on_usage)
-                for candidata in candidatas
-            ]
-            verificadas = []
-            for futuro in as_completed(futuros):
-                resultado = futuro.result()
-                verificadas.append(resultado)
-                _reportar_avance_pregunta(resultado)
-        aceptadas = [p for p in verificadas if p]
+        # Verificación EN BLOQUE (ver _verificar_lote): una sola llamada
+        # juzga TODAS las candidatas de este lote a la vez, en vez de una
+        # llamada de verificación por candidata -- reduce las llamadas de
+        # este lote de (1 generación + n verificaciones) a (1 + 1) en el
+        # caso normal. Las que no pasan se descartan POR COMPLETO y se
+        # piden de recambio evitando su tema, de una en una y en paralelo,
+        # exactamente igual que antes (_asegurar_pregunta_valida no
+        # cambia): el ahorro de llamadas está en esta primera pasada, no en
+        # el rigor del reintento sobre las que fallan.
+        resultados_lote = _verificar_lote(candidatas, texto_fuente, on_usage)
+        aceptadas = []
+        pendientes = []
+        for i, candidata in enumerate(candidatas):
+            if resultados_lote.get(i):
+                aceptadas.append(candidata)
+                _reportar_avance_pregunta(candidata)
+            else:
+                pendientes.append(candidata)
+
+        if pendientes:
+            with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(pendientes))) as executor:
+                futuros = [
+                    executor.submit(_asegurar_pregunta_valida, candidata, construir_prompt, texto_fuente, on_usage)
+                    for candidata in pendientes
+                ]
+                for futuro in as_completed(futuros):
+                    resultado = futuro.result()
+                    _reportar_avance_pregunta(resultado)
+                    if resultado:
+                        aceptadas.append(resultado)
+
         if not aceptadas:
             # Generación OK (hubo candidatas), pero NINGUNA superó la
             # verificación de precisión -- normalmente indica que el

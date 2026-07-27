@@ -9,7 +9,14 @@
 // el último evento de progreso). Sin esto, quien lo sufre se queda mirando
 // una barra de progreso parada para siempre, sin ningún error ni forma de
 // reintentar salvo recargar a ciegas.
-export const TIMEOUT_SIN_EVENTOS_STREAM_MS = 60000;
+//
+// 90s (antes 60s): logs reales de /generar-test-desde-pdf muestran llamadas
+// individuales a DeepSeek de hasta 62-95s (con reintentos ante fallos
+// transitorios, ver deepseek_utils.py) mientras el backend no tiene ningún
+// evento nuevo que emitir para esa pregunta concreta -- con 60s, ese único
+// hueco ya bastaba para disparar este aviso aunque el backend siguiera
+// trabajando con normalidad, no colgado de verdad.
+export const TIMEOUT_SIN_EVENTOS_STREAM_MS = 90000;
 
 export function leerStreamConTimeout(lector, ms = TIMEOUT_SIN_EVENTOS_STREAM_MS) {
   return Promise.race([
