@@ -10,7 +10,38 @@ services:
     # requirements-dev.txt ya incluye "-r requirements.txt", así que
     # instala todo lo necesario en un solo paso.
     buildCommand: pip install -r requirements-dev.txt && python -m pytest -q
-    startCommand: python app.py
+    # Antes "python app.py" (servidor de desarrollo de Flask/Werkzeug,
+    # threaded=True) -- sin proceso maestro ni timeout propio, una petición
+    # realmente atascada podía dejar sin respuesta a TODA la web (ver el
+    # aviso que ya dejaba app.py sobre esto mismo). gunicorn con workers de
+    # hilos (gthread) sí vigila y reinicia un worker que deje de responder.
+    #
+    # --workers 1 a propósito, no por límite técnico: tanto el limiter de
+    # peticiones por IP (Limiter(storage_uri="memory://") en app.py) como
+    # el tope de llamadas simultáneas a DeepSeek (_semaforo_deepseek en
+    # deepseek_utils.py) son estado en memoria de UN solo proceso -- con
+    # 2+ workers, cada uno tendría su propia copia y ambos límites se
+    # volverían N veces más permisivos sin que nadie lo note. Subir
+    # --workers en el futuro exige antes mover esas dos cosas a un backend
+    # compartido (p. ej. Redis).
+    #
+    # --threads 16: punto de partida (sin datos de pico de concurrencia
+    # real todavía) para varias peticiones cortas más varias conexiones SSE
+    # de generación larga a la vez, con un número acotado de hilos en vez
+    # de la creación sin límite del servidor de desarrollo.
+    #
+    # --timeout 300 (5 min): con gthread este timeout es del WORKER, no de
+    # cada petición individual (el worker sigue "vivo" mientras cualquiera
+    # de sus hilos esté trabajando) -- se deja generoso a propósito porque
+    # el coste de un timeout demasiado bajo es asimétrico: mataría el
+    # worker entero (cortando TODAS las conexiones que estuviera
+    # atendiendo en ese momento, de cualquier usuario) justo en el peor
+    # momento (mucha carga). Si algún día aparece "WORKER TIMEOUT" en los
+    # logs de Render, la señal es subirlo más, no bajarlo -- ninguna
+    # llamada individual a DeepSeek puede colgarse más de ~94s (ver
+    # deepseek_utils.py), así que un worker sano nunca debería necesitar
+    # tanto margen en circunstancias normales.
+    startCommand: gunicorn app:app --worker-class gthread --workers 1 --threads 16 --timeout 300
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.0
