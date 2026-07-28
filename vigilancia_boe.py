@@ -35,7 +35,9 @@ llamada de humo real antes de fiarse del todo en producción."""
 import json
 import logging
 import os
+import random
 import re
+import time
 from datetime import datetime, timedelta
 
 import requests
@@ -322,6 +324,13 @@ _PALABRAS_POSIBLE_RELEVANCIA_TEMARIO = (
 # límite si el estado se resetea alguna vez o esto no se ha ejecutado nunca.
 _DIAS_MAX_BACKFILL = 5
 
+# Tope de títulos candidatos que se le pasan a _clasificar_relevancia_temario_con_ia
+# en una sola ejecución -- control de coste: un día atípico con muchos
+# títulos que rozan los términos genéricos de _PALABRAS_POSIBLE_RELEVANCIA_TEMARIO
+# (o varios días de backfill acumulados) no debe traducirse en un prompt
+# sin límite ni en una llamada desproporcionadamente cara.
+_MAX_CANDIDATOS_RELEVANCIA_IA_POR_CICLO = 30
+
 
 def _fechas_a_revisar(estado):
     """Normalmente devuelve solo [hoy]; si quedan días sin revisar desde la
@@ -418,17 +427,41 @@ def _clasificar_relevancia_temario_con_ia(titulos):
     return resultados
 
 
+# Antes se asumía que un fallo puntual "se reintenta al día siguiente" y
+# no merecía reintentos agresivos -- pero eso ya no es del todo cierto
+# desde que detectar_avisos_oficiales hace backfill: si el BOE devuelve un
+# 502/503/504 transitorio (caída momentánea, no un día completo caído),
+# unos pocos reintentos con espera evitan perder ese día del todo, sin
+# tener que esperar a la siguiente ejecución. Solo se reintenta en esos
+# códigos -- un 4xx (URL mal formada, recurso que no existe) no se arregla
+# reintentando, así que falla directo como antes.
+_REINTENTOS_TRANSITORIOS_BOE = 3
+_CODIGOS_HTTP_REINTENTABLES_BOE = {502, 503, 504}
+
+
 def _get_json(url):
-    """GET simple con timeout corto -- no es una ruta de usuario, un fallo
-    puntual (red, BOE caído un rato) simplemente se reintenta al día
-    siguiente, así que no merece reintentos agresivos aquí."""
-    try:
-        resp = requests.get(url, headers={"Accept": "application/json"}, timeout=_TIMEOUT_SEGUNDOS)
-        resp.raise_for_status()
-        return resp.json()
-    except Exception:
-        logger.warning("Fallo llamando a la API del BOE: %s", url, exc_info=True)
-        return None
+    for intento in range(_REINTENTOS_TRANSITORIOS_BOE):
+        try:
+            resp = requests.get(url, headers={"Accept": "application/json"}, timeout=_TIMEOUT_SEGUNDOS)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.exceptions.HTTPError as e:
+            codigo = e.response.status_code if e.response is not None else None
+            si_ultimo_intento = intento == _REINTENTOS_TRANSITORIOS_BOE - 1
+            if codigo in _CODIGOS_HTTP_REINTENTABLES_BOE and not si_ultimo_intento:
+                espera = (2 ** intento) + random.uniform(0, 1)
+                logger.warning(
+                    "BOE devolvió %s (intento %s/%s), reintentando en %.1fs: %s",
+                    codigo, intento + 1, _REINTENTOS_TRANSITORIOS_BOE, espera, url,
+                )
+                time.sleep(espera)
+                continue
+            logger.warning("Fallo llamando a la API del BOE: %s", url, exc_info=True)
+            return None
+        except Exception:
+            logger.warning("Fallo llamando a la API del BOE: %s", url, exc_info=True)
+            return None
+    return None
 
 
 def _buscar_clave(dato, clave):
@@ -489,9 +522,16 @@ def obtener_bloque_texto_ley(boe_id, id_bloque):
 
 
 def obtener_sumario_dia(fecha_aaaammdd):
+    """A diferencia de las demás funciones obtener_*, distingue "la consulta
+    falló" (None) de "la consulta fue bien pero no hay items" ([]) -- lo
+    necesita detectar_avisos_oficiales para no marcar como revisado un día
+    cuyo sumario en realidad no se ha podido consultar (ver
+    _DIAS_MAX_BACKFILL más abajo: si un fallo se tratara igual que "sin
+    items", ese día se perdería para siempre en vez de reintentarse en la
+    siguiente ejecución)."""
     dato = _get_json(f"{_BASE_URL}/boe/sumario/{fecha_aaaammdd}")
     if dato is None:
-        return []
+        return None
     return _buscar_lista(dato, "item")
 
 
@@ -553,9 +593,24 @@ def detectar_avisos_oficiales(db):
     creados = 0
     ids_nuevos = set()
     candidatos_relevancia = []  # [(item_id, titulo, item, fecha)]
+    ultima_fecha_ok = None
 
     for fecha in fechas:
-        for item in obtener_sumario_dia(fecha):
+        items_dia = obtener_sumario_dia(fecha)
+        if items_dia is None:
+            # La consulta de este día falló (incluso tras los reintentos de
+            # _get_json) -- se corta aquí SIN avanzar avisos_ultima_fecha_revisada
+            # más allá del último día que sí se pudo consultar, para que la
+            # siguiente ejecución reintente este día por el backfill en vez
+            # de darlo por revisado sin haberlo mirado de verdad.
+            logger.warning(
+                "Vigilancia BOE: no se pudo obtener el sumario de %s tras los reintentos, se reintentará en la próxima ejecución",
+                fecha,
+            )
+            break
+        ultima_fecha_ok = fecha
+
+        for item in items_dia:
             item_id = _buscar_clave(item, "identificador") or _buscar_clave(item, "id")
             titulo = _buscar_clave(item, "titulo") or ""
             if not item_id or item_id in ids_ya_vistos or item_id in ids_nuevos:
@@ -578,6 +633,17 @@ def detectar_avisos_oficiales(db):
             if any(palabra in titulo_norm for palabra in _PALABRAS_POSIBLE_RELEVANCIA_TEMARIO):
                 candidatos_relevancia.append((item_id, titulo, item, fecha))
 
+    if len(candidatos_relevancia) > _MAX_CANDIDATOS_RELEVANCIA_IA_POR_CICLO:
+        # Tope de coste: un día con muchos títulos que rozan los términos
+        # genéricos (ver _PALABRAS_POSIBLE_RELEVANCIA_TEMARIO) no debe
+        # traducirse en un prompt sin límite -- se recorta sin más
+        # (orden del sumario, no merece la complejidad de "priorizar").
+        logger.warning(
+            "Vigilancia BOE: %s candidatos para la IA de relevancia, se trunca a %s para controlar el coste",
+            len(candidatos_relevancia), _MAX_CANDIDATOS_RELEVANCIA_IA_POR_CICLO,
+        )
+        candidatos_relevancia = candidatos_relevancia[:_MAX_CANDIDATOS_RELEVANCIA_IA_POR_CICLO]
+
     if candidatos_relevancia:
         resultados_ia = _clasificar_relevancia_temario_con_ia([c[1] for c in candidatos_relevancia])
         for indice, (item_id, titulo, item, fecha) in enumerate(candidatos_relevancia):
@@ -591,21 +657,29 @@ def detectar_avisos_oficiales(db):
             creados += 1
             ids_nuevos.add(item_id)
 
+    if ultima_fecha_ok is None:
+        # Ni siquiera el primer día de la ventana se pudo consultar --
+        # nada que guardar, la próxima ejecución reintentará esta misma
+        # ventana desde el estado actual (sin tocarlo).
+        logger.info("Vigilancia BOE (avisos oficiales): 0 avisos nuevos creados (0 días revisados, fallo de consulta)")
+        return 0
+
     if ids_nuevos:
         # Se guarda un histórico acotado (no crecer sin límite) de los
         # últimos IDs vistos, suficiente para deduplicar entre ejecuciones
         # diarias consecutivas.
         ids_ya_vistos = ids_ya_vistos | ids_nuevos
-    # avisos_ultima_fecha_revisada avanza SIEMPRE (haya o no avisos nuevos)
-    # para que el backfill de la próxima ejecución no vuelva a mirar estos
-    # mismos días -- si se guardara solo dentro del "if ids_nuevos" de
-    # arriba, un día sin ninguna novedad relevante se reintentaría cada día
-    # siguiente para siempre.
+    # avisos_ultima_fecha_revisada avanza hasta el último día que SÍ se
+    # pudo consultar (haya o no avisos nuevos en él) para que el backfill
+    # de la próxima ejecución no vuelva a mirar estos mismos días -- si se
+    # guardara solo dentro del "if ids_nuevos" de arriba, un día sin
+    # ninguna novedad relevante se reintentaría cada día siguiente para
+    # siempre.
     ref_estado.set({
         "avisos_ids_vistos": list(ids_ya_vistos)[-500:],
-        "avisos_ultima_fecha_revisada": fechas[-1],
+        "avisos_ultima_fecha_revisada": ultima_fecha_ok,
     }, merge=True)
-    logger.info("Vigilancia BOE (avisos oficiales): %s avisos nuevos creados (%s días revisados)", creados, len(fechas))
+    logger.info("Vigilancia BOE (avisos oficiales): %s avisos nuevos creados (hasta %s)", creados, ultima_fecha_ok)
     return creados
 
 
@@ -623,6 +697,49 @@ def _subbloques_de_tema(db, coleccion, bloque_id, tema_id):
             continue
         subbloques.append({"chunk_id": doc.id, "titulo": datos.get("titulo", ""), "texto": datos["texto"]})
     return subbloques
+
+
+# Ventana de deduplicación de _existe_propuesta_pendiente_reciente: si el
+# workflow se dispara dos veces seguidas para el mismo cambio (p. ej. un
+# reintento manual mientras la ejecución anterior sigue en curso, antes de
+# que leyes_fecha_vista se actualice al final), la segunda pasada volvería
+# a generar la MISMA propuesta -- 48h es margen de sobra para cualquier
+# solape real sin arriesgarse a ocultar un cambio genuino y posterior del
+# mismo artículo (fecha_version ya filtra eso por su cuenta; esto es solo
+# para el solape entre dos ejecuciones del mismo ciclo).
+_HORAS_DEDUP_PROPUESTA_TEMARIO = 48
+
+
+def _existe_propuesta_pendiente_reciente(db, boe_id, subbloque_id):
+    """True si ya hay una propuesta pendiente reciente para este mismo
+    artículo (boe_id) y este mismo subbloque de temario -- para no crear un
+    duplicado en cambios_temario_propuestos si dos ejecuciones se solapan.
+    Requiere un índice compuesto en Firestore (boe_id Asc + subbloque_id
+    Asc + estado Asc + fecha_deteccion Desc) que hay que crear a mano en la
+    consola de Firebase -- ante CUALQUIER fallo de la consulta (incluido
+    "falta el índice"), se asume que NO hay duplicado y se deja crear la
+    propuesta igual: esta comprobación es una mejora sobre el
+    comportamiento anterior, nunca debe poder romper el ciclo completo de
+    vigilancia."""
+    try:
+        limite = (datetime.utcnow() - timedelta(hours=_HORAS_DEDUP_PROPUESTA_TEMARIO)).isoformat()
+        coincidencias = list(
+            db.collection("cambios_temario_propuestos")
+            .where("boe_id", "==", boe_id)
+            .where("subbloque_id", "==", subbloque_id)
+            .where("estado", "==", "pendiente")
+            .where("fecha_deteccion", ">", limite)
+            .limit(1)
+            .get()
+        )
+        return bool(coincidencias)
+    except Exception:
+        logger.warning(
+            "No se pudo comprobar si ya existe una propuesta pendiente para boe_id=%s subbloque_id=%s "
+            "(¿falta el índice compuesto en Firestore?) -- se crea la propuesta igual",
+            boe_id, subbloque_id, exc_info=True,
+        )
+        return False
 
 
 def detectar_cambios_leyes_vigiladas(db):
@@ -663,8 +780,14 @@ def detectar_cambios_leyes_vigiladas(db):
             fecha_version = _buscar_clave(ultima_version, "fecha_publicacion") or ""
             if fecha_vista and fecha_version <= fecha_vista:
                 continue  # este bloque en concreto no cambió, aunque la ley sí
-            texto_nuevo = _buscar_clave(ultima_version, "texto") or ""
+            texto_nuevo = (_buscar_clave(ultima_version, "texto") or "").strip()
             if not texto_nuevo:
+                # or "" solo protege contra ausencia/None -- un texto que
+                # sea solo espacios o saltos de línea (visto como
+                # posibilidad real en una API cuyo formato exacto no se ha
+                # podido verificar byte a byte, ver nota al principio del
+                # módulo) pasaría ese filtro sin el strip().
+                logger.warning("Bloque %s de %s sin texto útil en su última versión, se salta", id_bloque, boe_id)
                 continue
 
             for oposicion, bloque_id, tema_id in config_ley["bloque_tema"]:
@@ -673,6 +796,8 @@ def detectar_cambios_leyes_vigiladas(db):
                     continue
                 propuesta = generar_propuesta_cambio(texto_nuevo, subbloques)
                 if not propuesta:
+                    continue
+                if _existe_propuesta_pendiente_reciente(db, boe_id, propuesta["chunk_id_afectado"]):
                     continue
                 db.collection("cambios_temario_propuestos").document().set({
                     "oposicion": oposicion,

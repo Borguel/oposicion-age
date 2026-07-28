@@ -4,6 +4,8 @@ para que el dueño los revise desde el panel de admin."""
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
+import requests
+
 import vigilancia_boe
 from oposiciones import coleccion_temario
 
@@ -28,6 +30,46 @@ def _sumario_con_item(identificador, titulo, url_html="https://www.boe.es/x"):
             "item": [{"identificador": identificador, "titulo": titulo, "url_html": url_html}]
         }]}]}}
     }
+
+
+def _respuesta_http_error(status_code):
+    resp = MagicMock()
+    resp.status_code = status_code
+    error = requests.exceptions.HTTPError(response=resp)
+    resp.raise_for_status = MagicMock(side_effect=error)
+    return resp
+
+
+class TestGetJsonReintentos:
+    # _get_json antes fallaba directo ante cualquier error -- un 502/503/504
+    # transitorio del BOE perdía el día entero. Ahora reintenta unas pocas
+    # veces con backoff, solo para esos códigos.
+
+    def test_reintenta_en_502_y_acaba_devolviendo_el_resultado_bueno(self):
+        respuestas = [_respuesta_http_error(502), _respuesta_http_error(502), _fake_response({"ok": True})]
+        with patch("vigilancia_boe.requests.get", side_effect=respuestas), \
+             patch("vigilancia_boe.time.sleep") as mock_sleep:
+            resultado = vigilancia_boe._get_json("https://www.boe.es/x")
+
+        assert resultado == {"ok": True}
+        assert mock_sleep.call_count == 2  # una espera antes de cada reintento
+
+    def test_agota_los_reintentos_y_devuelve_none(self):
+        respuestas = [_respuesta_http_error(503)] * vigilancia_boe._REINTENTOS_TRANSITORIOS_BOE
+        with patch("vigilancia_boe.requests.get", side_effect=respuestas), \
+             patch("vigilancia_boe.time.sleep"):
+            resultado = vigilancia_boe._get_json("https://www.boe.es/x")
+
+        assert resultado is None
+
+    def test_un_404_no_se_reintenta(self):
+        with patch("vigilancia_boe.requests.get", return_value=_respuesta_http_error(404)) as mock_get, \
+             patch("vigilancia_boe.time.sleep") as mock_sleep:
+            resultado = vigilancia_boe._get_json("https://www.boe.es/x")
+
+        assert resultado is None
+        mock_get.assert_called_once()  # sin reintentos para un error no transitorio
+        mock_sleep.assert_not_called()
 
 
 def test_detectar_avisos_oficiales_crea_aviso_pendiente(db):
@@ -206,6 +248,119 @@ def test_detectar_cambios_leyes_vigiladas_no_hace_nada_si_la_ley_no_cambio(db):
     assert all("metadatos" in c.args[0] for c in mock_get.call_args_list)
 
 
+def test_bloque_con_texto_solo_espacios_se_descarta(db):
+    # or "" en _buscar_clave(...) solo protege contra ausencia/None -- un
+    # texto que sea solo espacios/saltos de línea pasaría el filtro
+    # "if not texto_nuevo" sin el .strip().
+    boe_id = "BOE-A-2015-11719"
+    ley_trebep = vigilancia_boe.LEYES_VIGILADAS[boe_id]
+    oposicion, bloque_id, tema_id = ley_trebep["bloque_tema"][0]
+    db.sembrar(
+        (coleccion_temario(oposicion), bloque_id, "temas", tema_id, "subbloques", "c1"),
+        {"titulo": "TREBEP", "texto": "El plazo es de quince días hábiles."},
+    )
+
+    def _get(url, headers=None, timeout=None):
+        if "metadatos" in url:
+            return _fake_response(_metadatos("2026-01-15"))
+        if "texto/indice" in url:
+            return _fake_response(_indice(["a1"]))
+        if "texto/bloque" in url:
+            return _fake_response(_bloque("2026-01-10", "   \n   "))
+        raise AssertionError(f"URL inesperada: {url}")
+
+    with patch("vigilancia_boe.LEYES_VIGILADAS", {boe_id: ley_trebep}), \
+         patch("vigilancia_boe.requests.get", side_effect=_get), \
+         patch("generador_diff_temario.generar_propuesta_cambio") as mock_generar:
+        creadas = vigilancia_boe.detectar_cambios_leyes_vigiladas(db)
+
+    assert creadas == 0
+    mock_generar.assert_not_called()
+
+
+class TestExistePropuestaPendienteReciente:
+    # Dedup de cambios_temario_propuestos: evita generar la misma
+    # propuesta dos veces si el workflow se dispara dos veces seguidas
+    # (p. ej. un reintento manual mientras la ejecución anterior sigue en
+    # curso, antes de que leyes_fecha_vista se actualice al final).
+
+    def test_true_si_ya_hay_una_pendiente_reciente(self, db):
+        db.sembrar(("cambios_temario_propuestos", "p1"), {
+            "boe_id": "BOE-A-X", "subbloque_id": "c1", "estado": "pendiente",
+            "fecha_deteccion": datetime.utcnow().isoformat(),
+        })
+        assert vigilancia_boe._existe_propuesta_pendiente_reciente(db, "BOE-A-X", "c1") is True
+
+    def test_false_si_no_hay_ninguna(self, db):
+        assert vigilancia_boe._existe_propuesta_pendiente_reciente(db, "BOE-A-X", "c1") is False
+
+    def test_false_si_la_unica_pendiente_es_de_otro_subbloque(self, db):
+        db.sembrar(("cambios_temario_propuestos", "p1"), {
+            "boe_id": "BOE-A-X", "subbloque_id": "c2", "estado": "pendiente",
+            "fecha_deteccion": datetime.utcnow().isoformat(),
+        })
+        assert vigilancia_boe._existe_propuesta_pendiente_reciente(db, "BOE-A-X", "c1") is False
+
+    def test_ignora_una_ya_antigua_fuera_de_la_ventana(self, db):
+        db.sembrar(("cambios_temario_propuestos", "p1"), {
+            "boe_id": "BOE-A-X", "subbloque_id": "c1", "estado": "pendiente",
+            "fecha_deteccion": (datetime.utcnow() - timedelta(hours=72)).isoformat(),
+        })
+        assert vigilancia_boe._existe_propuesta_pendiente_reciente(db, "BOE-A-X", "c1") is False
+
+    def test_ignora_una_ya_no_pendiente(self, db):
+        db.sembrar(("cambios_temario_propuestos", "p1"), {
+            "boe_id": "BOE-A-X", "subbloque_id": "c1", "estado": "aprobado",
+            "fecha_deteccion": datetime.utcnow().isoformat(),
+        })
+        assert vigilancia_boe._existe_propuesta_pendiente_reciente(db, "BOE-A-X", "c1") is False
+
+    def test_si_la_consulta_falla_no_rompe_y_asume_que_no_hay_duplicado(self):
+        # Simula, por ejemplo, que el índice compuesto de Firestore
+        # todavía no se ha creado en la consola -- nunca debe reventar el
+        # ciclo completo de vigilancia por esto.
+        db_roto = MagicMock()
+        db_roto.collection.side_effect = Exception("The query requires an index")
+        assert vigilancia_boe._existe_propuesta_pendiente_reciente(db_roto, "BOE-A-X", "c1") is False
+
+
+def test_detectar_cambios_leyes_vigiladas_no_duplica_si_ya_hay_propuesta_pendiente_reciente(db):
+    boe_id = "BOE-A-2015-11719"
+    ley_trebep = vigilancia_boe.LEYES_VIGILADAS[boe_id]
+    oposicion, bloque_id, tema_id = ley_trebep["bloque_tema"][0]
+    db.sembrar(
+        (coleccion_temario(oposicion), bloque_id, "temas", tema_id, "subbloques", "c1"),
+        {"titulo": "TREBEP", "texto": "El plazo es de quince días hábiles."},
+    )
+    db.sembrar(("cambios_temario_propuestos", "ya_existe"), {
+        "boe_id": boe_id, "subbloque_id": "c1", "estado": "pendiente",
+        "fecha_deteccion": datetime.utcnow().isoformat(),
+    })
+
+    def _get(url, headers=None, timeout=None):
+        if "metadatos" in url:
+            return _fake_response(_metadatos("2026-01-15"))
+        if "texto/indice" in url:
+            return _fake_response(_indice(["a1"]))
+        if "texto/bloque" in url:
+            return _fake_response(_bloque("2026-01-10", "El plazo es de veinte días hábiles."))
+        raise AssertionError(f"URL inesperada: {url}")
+
+    with patch("vigilancia_boe.LEYES_VIGILADAS", {boe_id: ley_trebep}), \
+         patch("vigilancia_boe.requests.get", side_effect=_get), \
+         patch("generador_diff_temario.generar_propuesta_cambio", return_value={
+             "chunk_id_afectado": "c1",
+             "resumen": "El plazo pasa de quince a veinte días hábiles.",
+             "texto_eliminar": "quince días hábiles",
+             "texto_anadir": "veinte días hábiles",
+         }):
+        creadas = vigilancia_boe.detectar_cambios_leyes_vigiladas(db)
+
+    assert creadas == 0
+    propuestas = list(db.collection("cambios_temario_propuestos").stream())
+    assert len(propuestas) == 1  # solo la ya sembrada, no se duplicó
+
+
 def test_verificar_bloque_temas_referenciados_sin_faltantes_si_todo_existe(db):
     ley = {
         "nombre": "Ley de prueba",
@@ -323,6 +478,36 @@ class TestDetectarAvisosOficialesBackfillYEstado:
         assert mock_sumario.call_count == 1
         assert mock_sumario.call_args.args[0] == _fecha_hace(0)
 
+    def test_dia_con_fallo_de_consulta_no_avanza_la_fecha_revisada_mas_alla_de_el(self, db):
+        # obtener_sumario_dia devuelve None (no []) cuando la consulta falló
+        # de verdad (tras agotar los reintentos de _get_json) -- si se
+        # tratara como "sin items" se perdería ese día para siempre en vez
+        # de reintentarse la próxima vez, el mismo problema que motivó el
+        # backfill. hace_hace(2) y hace_hace(1) tienen sumario; "hoy" falla.
+        db.sembrar(("config", "vigilancia_boe"), {"avisos_ultima_fecha_revisada": _fecha_hace(3)})
+        titulo = "Convocatoria del Cuerpo General Administrativo del Estado"
+
+        def _sumario(fecha):
+            if fecha == _fecha_hace(0):
+                return None
+            return [{"identificador": f"BOE-A-{fecha}", "titulo": titulo, "url_html": "https://www.boe.es/x"}]
+
+        with patch("vigilancia_boe.obtener_sumario_dia", side_effect=_sumario):
+            creados = vigilancia_boe.detectar_avisos_oficiales(db)
+
+        # Los avisos de los días que sí se pudieron consultar (hace 2 y
+        # hace 1) se guardan igual.
+        assert creados == 2
+        estado = db.leer(("config", "vigilancia_boe"))
+        assert estado["avisos_ultima_fecha_revisada"] == _fecha_hace(1)
+
+    def test_fallo_de_consulta_en_el_primer_dia_no_toca_el_estado(self, db):
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=None):
+            creados = vigilancia_boe.detectar_avisos_oficiales(db)
+
+        assert creados == 0
+        assert db.leer(("config", "vigilancia_boe")) is None
+
 
 class TestRelevanciaTemarioConIA:
     # Segunda vía de detección: títulos que NO nombran ningún cuerpo
@@ -416,3 +601,17 @@ class TestRelevanciaTemarioConIA:
 
         assert creados == 1
         mock_ia.assert_not_called()
+
+    def test_mas_de_30_candidatos_se_trunca_para_controlar_el_coste(self, db):
+        items = [
+            self._item(f"BOE-A-2026-{i}", f"Real Decreto {i} sobre el Estatuto Básico del empleado público")
+            for i in range(40)
+        ]
+        with patch("vigilancia_boe.obtener_sumario_dia", return_value=items), \
+             patch("vigilancia_boe.call_deepseek_api", return_value='{"resultados": []}') as mock_ia:
+            vigilancia_boe.detectar_avisos_oficiales(db)
+
+        assert mock_ia.call_count == 1
+        contenido_user = mock_ia.call_args.kwargs["messages"][1]["content"]
+        titulos_en_prompt = contenido_user.count("Estatuto Básico del empleado público")
+        assert titulos_en_prompt == vigilancia_boe._MAX_CANDIDATOS_RELEVANCIA_IA_POR_CICLO
