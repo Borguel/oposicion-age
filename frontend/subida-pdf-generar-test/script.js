@@ -446,6 +446,16 @@ async function obtenerAuthHeaders() {
           // alguna pregunta que agregarPreguntaEnCurso no llegó a procesar
           // antes de que llegara "fin") y avisar sin interrumpir la
           // pregunta que se esté viendo.
+          //
+          // documento_id: con el arranque temprano, iniciarTest() ya guardó
+          // el borrador ANTES de que el backend mandara el documento_id real
+          // (solo viaja aquí, en "fin") -- documentoIdActual seguía siendo
+          // null hasta este punto. Bug real: sin esto, el borrador se
+          // quedaba con documento_id nulo para siempre y "Mis documentos"
+          // nunca podía ofrecer "Continuar" para este documento.
+          if (datosFinales && datosFinales.documento_id) {
+            documentoIdActual = datosFinales.documento_id;
+          }
           if (datosFinales && Array.isArray(datosFinales.test)) {
             for (let i = preguntas.length; i < datosFinales.test.length; i++) {
               agregarPreguntaEnCurso(datosFinales.test[i]);
@@ -456,6 +466,11 @@ async function obtenerAuthHeaders() {
               advertencia: (datosFinales && datosFinales.error) || "Ha ocurrido un error terminando de generar el resto de preguntas."
             });
           }
+          // Asegura que el documento_id corregido (arriba) se guarda
+          // aunque no hubiera ninguna pregunta nueva que reconciliar (el
+          // bucle de arriba, si no añade nada, no dispara ningún guardado
+          // por su cuenta).
+          guardarContenidoEnSegundoPlano();
           return { transicionadoATest: true };
         }
 

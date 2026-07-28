@@ -58,6 +58,56 @@ def test_autosave_posterior_no_borra_el_contenido_ya_guardado(client, db):
         parche.stop()
 
 
+def test_autosave_corrige_documento_id_en_un_guardado_posterior(client, db):
+    # Bug real: con el arranque temprano de un test grande desde PDF, el
+    # borrador se crea con documento_id=None (todavía no se conoce el
+    # real, que solo llega en el evento SSE "fin") y se quedaba así para
+    # siempre -- "Mis documentos" nunca podía ofrecer "Continuar" para ese
+    # documento. Un autoguardado posterior que SÍ incluya documento_id
+    # debe poder corregirlo.
+    parche = _con_sesion(client)
+    try:
+        preguntas = [{"pregunta": "¿Qué es X?", "opciones": {"A": "1", "B": "2"}, "respuesta_correcta": "A"}]
+        client.post("/autosave-test", json={
+            "test_id": "t1", "oposicion": "AGE", "tipo": "test_pdf", "contenido": preguntas,
+            "respuestas_usuario": [None], "indice_actual": 0, "documento_id": None,
+        }, headers={"Authorization": "Bearer x"})
+        assert db.leer(("usuarios", "u1", "tests", "t1")).get("documento_id") is None
+
+        resp = client.post("/autosave-test", json={
+            "test_id": "t1", "respuestas_usuario": ["A"], "indice_actual": 1, "documento_id": "doc123",
+        }, headers={"Authorization": "Bearer x"})
+        assert resp.status_code == 200
+
+        guardado = db.leer(("usuarios", "u1", "tests", "t1"))
+        assert guardado["documento_id"] == "doc123"
+        assert guardado["contenido"] == preguntas  # no se pierde por la corrección
+    finally:
+        parche.stop()
+
+
+def test_autosave_sin_documento_id_no_borra_el_ya_guardado(client, db):
+    # Los autoguardados de cada respuesta/tick nunca mandan documento_id
+    # (ver frontend/subida-pdf-generar-test/script.js, autoguardarProgreso)
+    # -- no debe interpretarse como "ponlo a nulo".
+    parche = _con_sesion(client)
+    try:
+        preguntas = [{"pregunta": "¿Qué es X?", "opciones": {"A": "1", "B": "2"}, "respuesta_correcta": "A"}]
+        client.post("/autosave-test", json={
+            "test_id": "t1", "oposicion": "AGE", "tipo": "test_pdf", "contenido": preguntas,
+            "respuestas_usuario": [None], "indice_actual": 0, "documento_id": "doc123",
+        }, headers={"Authorization": "Bearer x"})
+
+        client.post("/autosave-test", json={
+            "test_id": "t1", "respuestas_usuario": ["A"], "indice_actual": 1,
+        }, headers={"Authorization": "Bearer x"})
+
+        guardado = db.leer(("usuarios", "u1", "tests", "t1"))
+        assert guardado["documento_id"] == "doc123"
+    finally:
+        parche.stop()
+
+
 def test_autosave_sin_test_id_devuelve_error(client):
     parche = _con_sesion(client)
     try:
