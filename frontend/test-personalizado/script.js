@@ -548,17 +548,24 @@ async function obtenerAuthHeaders() {
             pararProgresoCosmetico();
 
             if (evento.tipo === "progreso") {
-              ultimoCompletadas = evento.completadas;
+              // Math.max: "completadas" no cuenta "preguntas únicas ya en
+              // el test final" sino candidatas procesadas (aceptadas o
+              // descartadas, de un hueco normal o de relleno, ver
+              // generador_preguntas_verificado.py), así que puede no
+              // llegar a coincidir justo con el total -- y además dos
+              // hilos pueden mandar su evento en orden distinto al que lo
+              // generaron, así que un valor más bajo podría llegar
+              // DESPUÉS de uno más alto. ultimoCompletadas nunca baja para
+              // que nada de esto haga retroceder lo ya mostrado (bug real
+              // reportado: el mensaje se quedaba en "39 de 40" con un test
+              // que sí tenía 40 preguntas).
+              ultimoCompletadas = Math.max(ultimoCompletadas, evento.completadas);
               ultimoTotal = evento.total;
               if (!transicionadoATest) {
                 const elMensajeCarga = document.getElementById("mensaje-carga");
                 const elBarra = document.getElementById("progreso-generacion");
                 const elTextoBarra = document.getElementById("texto-progreso-generacion");
-                // Math.min: durante el relleno de huecos fallidos (ver
-                // generador_preguntas_verificado.py) "completadas" puede
-                // superar "total" -- sin este tope se vería una barra por
-                // encima del 100% y un mensaje tipo "pregunta 11 de 10".
-                const fraccionReal = evento.total ? Math.min(1, evento.completadas / evento.total) : 0;
+                const fraccionReal = ultimoTotal ? Math.min(1, ultimoCompletadas / ultimoTotal) : 0;
                 // El progreso real se remapea al tramo que queda por encima
                 // del cosmético, para que la barra continúe sin saltar hacia
                 // atrás (el conteo honesto "X de Y" ya va en el mensaje de abajo).
@@ -566,10 +573,16 @@ async function obtenerAuthHeaders() {
                 if (elBarra) elBarra.style.width = `${porcentaje}%`;
                 if (elTextoBarra) elTextoBarra.textContent = `${porcentaje}%`;
                 if (elMensajeCarga) {
-                  elMensajeCarga.textContent = `Generando y verificando pregunta ${Math.min(evento.completadas, evento.total)} de ${evento.total}...`;
+                  // Con el total ya alcanzado (o superado, por el relleno
+                  // de huecos) se deja de mostrar un número concreto
+                  // (podría no llegar nunca a coincidir justo con
+                  // num_preguntas) y se pasa a un mensaje de cierre.
+                  elMensajeCarga.textContent = ultimoCompletadas >= ultimoTotal
+                    ? "Terminando de generar y verificar las últimas preguntas..."
+                    : `Generando y verificando pregunta ${ultimoCompletadas} de ${ultimoTotal}...`;
                 }
               } else {
-                mostrarIndicadorGenerandoFondo(evento.completadas, evento.total);
+                mostrarIndicadorGenerandoFondo(ultimoCompletadas, ultimoTotal);
               }
             } else if (evento.tipo === "pregunta" && evento.pregunta) {
               if (!transicionadoATest) {

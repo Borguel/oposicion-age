@@ -325,6 +325,18 @@ async function obtenerAuthHeaders() {
 
       let transicionadoATest = false;
       const umbralInicioTemprano = Math.min(5, num_preguntas);
+      // Techo monótono de "completadas" (nunca baja) -- el contador que
+      // manda cada evento SSE no cuenta "preguntas únicas ya en el test
+      // final" sino candidatas procesadas (aceptadas o descartadas, de un
+      // lote normal o de un hueco de relleno, ver test_generator.py), así
+      // que puede no llegar a coincidir justo con num_preguntas antes del
+      // evento "fin" -- y además dos hilos pueden mandar sus eventos en
+      // orden distinto al que los generó (el incremento va dentro de un
+      // lock pero el envío del evento no), así que un valor más bajo
+      // podría llegar DESPUÉS de uno más alto. Sin este techo, el texto
+      // podía quedarse congelado en un número por debajo del total real
+      // (bug real reportado: "39 de 40" con un test que sí tenía 40).
+      let techoCompletadas = 0;
 
       try {
         const res = await fetch("https://oposicion-age.onrender.com/generar-test-desde-pdf", {
@@ -391,18 +403,23 @@ async function obtenerAuthHeaders() {
               continue;
             }
             if (evento.tipo === "progreso") {
+              techoCompletadas = Math.max(techoCompletadas, evento.completadas);
               if (!transicionadoATest) {
                 progreso.avanzar(evento);
-                // Math.min: durante el relleno de huecos (ver
-                // test_generator.py) "completadas" puede superar "total".
                 // Persistente (no vía el carrusel): mismo patrón que
                 // test-personalizado/script.js, que escribe este mismo
                 // mensaje directamente en cada evento real sin que nada
-                // lo sobrescriba después.
+                // lo sobrescriba después. Con el total ya alcanzado (o
+                // superado, por el relleno de huecos -- ver
+                // test_generator.py) se deja de mostrar un número
+                // concreto (podría no llegar nunca a coincidir justo con
+                // num_preguntas) y se pasa a un mensaje de cierre.
                 document.getElementById("texto-estado").textContent =
-                  `Generando y verificando pregunta ${Math.min(evento.completadas, evento.total)} de ${evento.total}…`;
+                  techoCompletadas >= evento.total
+                    ? "Terminando de generar y verificar las últimas preguntas…"
+                    : `Generando y verificando pregunta ${techoCompletadas} de ${evento.total}…`;
               } else {
-                mostrarIndicadorGenerandoFondo(evento.completadas, evento.total);
+                mostrarIndicadorGenerandoFondo(techoCompletadas, evento.total);
               }
             } else if (evento.tipo === "pregunta" && evento.pregunta) {
               if (!transicionadoATest) {

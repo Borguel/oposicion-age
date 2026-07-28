@@ -18,26 +18,30 @@ _REINTENTOS_TRANSITORIOS = 2
 _ESPERA_ENTRE_REINTENTOS_SEGUNDOS = 1.5
 
 # Tope global de peticiones EN VUELO a DeepSeek en todo el proceso (app.py
-# corre un único proceso Flask con threaded=True, así que un semáforo a
-# nivel de módulo sí representa el límite real, no uno por worker). Sin
-# esto, generar un test de 30 preguntas desde PDF puede disparar hasta ~48
-# llamadas en paralelo (8 lotes x 6 verificaciones cada uno, ver
-# test_generator.py), y si en ese momento hay más herramientas u otros
-# usuarios llamando a la vez, el conjunto parece saturar al proveedor: en
-# logs de producción se vieron llamadas colgadas ~94s (3 intentos de 30s
-# de timeout cada uno) antes de fallar con "Error de conexión", justo en
-# las ráfagas de mayor concurrencia -- ver el mismo bug ya corregido de
-# max_tokens en test_generator.py/tarjetas_generator.py, que redujo mucho
-# el número de llamadas pero no elimina que a veces coincidan muchas a la
-# vez. Frenar aquí (el único punto por el que pasan TODAS las llamadas a
-# la API, sea cual sea la herramienta que las dispare) es más simple y más
-# fiable que ajustar cada ThreadPoolExecutor por separado uno a uno. Una
-# llamada que no consigue hueco espera en cola (barato, ver
-# _MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK más abajo) en vez de sumarse a la
-# sobrecarga real del proveedor -- si 16 resulta demasiado bajo o
-# demasiado alto, ajustar con datos reales de los logs
+# corre un único proceso -- ver --workers 1 en render.yaml, a propósito
+# porque este semáforo y el rate-limiter de app.py son estado en memoria
+# de un solo proceso -- así que un semáforo a nivel de módulo sí
+# representa el límite real, no uno por worker). Sin esto, generar un
+# test de 30 preguntas desde PDF puede disparar hasta ~48 llamadas en
+# paralelo (8 lotes x 6 verificaciones cada uno, ver test_generator.py), y
+# si en ese momento hay más herramientas u otros usuarios llamando a la
+# vez, el conjunto parece saturar al proveedor.
+#
+# Empezó en 16, pero la misma firma de fallo (avisos de "Error de
+# conexión" y tiempos de respuesta crecientes hasta ~94s -- 3 intentos de
+# 30s cada uno) se ha seguido viendo en producción con ese tope, incluso
+# DESPUÉS de pasar de "python app.py" a gunicorn (ver render.yaml): eso
+# descarta que fuera un cuello de botella del servidor de aplicación y
+# confirma que 16 llamadas a la vez ya basta para que la propia API de
+# DeepSeek se sature bajo nuestra cuenta. Bajado a 8. Frenar aquí (el
+# único punto por el que pasan TODAS las llamadas a la API, sea cual sea
+# la herramienta que las dispare) es más simple y más fiable que ajustar
+# cada ThreadPoolExecutor por separado uno a uno. Una llamada que no
+# consigue hueco espera en cola (barato) en vez de sumarse a la
+# sobrecarga real del proveedor -- si 8 sigue resultando demasiado alto o
+# ya se puede subir de nuevo, ajustar con datos reales de los logs
 # ("DeepSeek respondió en Xs...").
-_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK = 16
+_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK = 8
 _semaforo_deepseek = threading.Semaphore(_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK)
 
 
