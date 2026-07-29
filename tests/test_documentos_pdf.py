@@ -3,7 +3,8 @@ páginas del documento al contador global paginas_analizadas del usuario
 UNA sola vez -- si el mismo PDF se reutiliza en otra herramienta (mismo
 texto, mismo hash), no debe volver a sumarse."""
 from documentos_pdf import (
-    obtener_o_crear_documento, actualizar_titulo, obtener_tests_en_progreso_por_documento
+    obtener_o_crear_documento, actualizar_titulo, obtener_tests_en_progreso_por_documento,
+    eliminar_documento,
 )
 
 
@@ -54,6 +55,48 @@ def test_actualizar_titulo_vacio_no_hace_nada(db):
 
 def test_actualizar_titulo_documento_inexistente_devuelve_false(db):
     assert actualizar_titulo(db, "u1", "no_existe", "Nuevo nombre") is False
+
+
+class TestEliminarDocumento:
+    # Pensado sobre todo para poder quitar una subida duplicada de la
+    # biblioteca -- borra el documento y descuenta del contador
+    # paginas_analizadas del usuario las páginas que había sumado al
+    # crearse (ver obtener_o_crear_documento).
+
+    def test_elimina_el_documento_y_descuenta_sus_paginas(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 20})
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Apuntes", "num_paginas": 12})
+
+        ok = eliminar_documento(db, "u1", "d1")
+
+        assert ok is True
+        assert db.leer(("usuarios", "u1", "documentos", "d1")) is None
+        assert db.leer(("usuarios", "u1"))["paginas_analizadas"] == 8
+
+    def test_documento_inexistente_devuelve_false(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 20})
+        assert eliminar_documento(db, "u1", "no_existe") is False
+        assert db.leer(("usuarios", "u1"))["paginas_analizadas"] == 20
+
+    def test_no_afecta_a_otros_documentos_del_usuario(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 20})
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Duplicado", "num_paginas": 5})
+        db.sembrar(("usuarios", "u1", "documentos", "d2"), {"titulo": "Bueno", "num_paginas": 15})
+
+        eliminar_documento(db, "u1", "d1")
+
+        assert db.leer(("usuarios", "u1", "documentos", "d1")) is None
+        assert db.leer(("usuarios", "u1", "documentos", "d2")) is not None
+        assert db.leer(("usuarios", "u1"))["paginas_analizadas"] == 15
+
+    def test_documento_sin_num_paginas_no_rompe(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 3})
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Sin páginas registradas"})
+
+        ok = eliminar_documento(db, "u1", "d1")
+
+        assert ok is True
+        assert db.leer(("usuarios", "u1"))["paginas_analizadas"] == 3
 
 
 class TestObtenerTestsEnProgresoPorDocumento:

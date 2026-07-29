@@ -206,6 +206,34 @@ def actualizar_titulo(db, uid, documento_id, titulo):
     return True
 
 
+def eliminar_documento(db, uid, documento_id):
+    """Borra un documento de la biblioteca -- pensado sobre todo para poder
+    quitar una subida duplicada o ya no deseada. Descuenta del contador
+    paginas_analizadas del usuario las páginas que había aportado al
+    crearse (ver obtener_o_crear_documento), para que ese contador siga
+    reflejando la realidad tras el borrado.
+
+    NO borra el contenido ya generado a partir de él (resúmenes/esquemas/
+    tarjetas/tests en sus propias colecciones, cada uno etiquetado con este
+    documento_id) -- sigue accesible donde ya estuviera (p. ej. "Mis
+    Tests"), solo deja de aparecer como documento de origen en la
+    biblioteca. Borrar en cascada todo lo generado sería mucho más
+    destructivo de lo que pide "quitar un duplicado de la lista", y esos
+    contenidos no dependen de que el documento siga existiendo."""
+    ref = db.collection("usuarios").document(uid).collection("documentos").document(documento_id)
+    doc = ref.get()
+    if not doc.exists:
+        return False
+    num_paginas = (doc.to_dict() or {}).get("num_paginas") or 0
+    ref.delete()
+    if num_paginas:
+        from firebase_admin import firestore
+        db.collection("usuarios").document(uid).update({
+            "paginas_analizadas": firestore.Increment(-num_paginas),
+        })
+    return True
+
+
 def listar_carpetas(db, uid):
     """Catálogo de carpetas del usuario: las creadas explícitamente con
     crear_carpeta() más cualquier nombre que ya tuviera asignado algún

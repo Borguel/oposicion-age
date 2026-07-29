@@ -20,7 +20,7 @@ from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_u
 from documentos_pdf import (
     obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta,
     listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo, obtener_preguntas_previas,
-    obtener_tests_en_progreso_por_documento
+    obtener_tests_en_progreso_por_documento, eliminar_documento
 )
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import generar_preguntas_ia_en_lotes
@@ -900,6 +900,15 @@ def documento_titulo(documento_id):
     if not ok:
         return jsonify({"error": "No se encontró el documento indicado."}), 404
     return jsonify({"mensaje": "Nombre actualizado", "titulo": titulo[:120]})
+
+
+@bp.route('/documento/<documento_id>', methods=['DELETE'])
+@requiere_plan(db, "premium", global_check=True)
+def eliminar_documento_route(documento_id):
+    ok = eliminar_documento(db, g.uid, documento_id)
+    if not ok:
+        return jsonify({"error": "No se encontró el documento indicado."}), 404
+    return jsonify({"mensaje": "Documento eliminado"})
 
 
 def _ultimo_por_documento(coleccion, documento_id, uid):
