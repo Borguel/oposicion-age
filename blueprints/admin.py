@@ -1162,8 +1162,17 @@ def usuarios_detalle(uid):
             ultima_nota = historial[-1].get("nota", ultima_nota)
 
     racha = datos.get("racha") or {}
-    _cim, _cit, _tit = resumen_coste_usuario(datos)
     contenido, rendimiento, coste_historico, uso_actual = _ficha_actividad(ref, datos)
+    # El coste en € de IA (a diferencia de contenido/rendimiento, que no son
+    # datos monetarios y sirven para dar soporte sin más) se oculta a un
+    # admin con permiso parcial "usuarios" -- solo lo ve el admin TOTAL
+    # (g.es_admin, no el "es_admin" de más abajo, que es del usuario
+    # consultado, no de quien consulta).
+    if g.es_admin:
+        _cim, _cit, _tit = resumen_coste_usuario(datos)
+    else:
+        _cim = _cit = _tit = None
+        coste_historico = None
     bloqueado = False
     try:
         registro = firebase_auth.get_user(uid)
@@ -1482,6 +1491,11 @@ def usuarios_eliminar(uid):
 @requiere_permiso("reportes")
 def reportes_listar():
     estado = request.args.get("estado", "pendiente")
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    por_pagina = 20
     reportes = []
     consulta = db.collection("reportes_preguntas")
     if estado and estado != "todos":
@@ -1498,10 +1512,15 @@ def reportes_listar():
             "fecha": d.get("fecha", ""),
         })
     reportes.sort(key=lambda r: r.get("fecha", ""), reverse=True)
+    total = len(reportes)
+    inicio = (pagina - 1) * por_pagina
+    reportes = reportes[inicio:inicio + por_pagina]
 
     # Adjuntar la pregunta oficial (opciones + correcta) si se localiza, para
     # poder juzgar el reporte sin salir de la pantalla. Se carga el banco de
-    # cada oposición implicada una sola vez (no una consulta por reporte).
+    # cada oposición implicada una sola vez (no una consulta por reporte) --
+    # y solo de las oposiciones que aparecen en ESTA página, no en todos los
+    # reportes que existan.
     oposiciones_impl = {r["oposicion"] for r in reportes if r.get("oposicion")}
     bancos = {}
     for op in oposiciones_impl:
@@ -1523,7 +1542,7 @@ def reportes_listar():
         encontrada = bancos.get(r.get("oposicion"), {}).get((r.get("pregunta_texto") or "").strip())
         r["pregunta_oficial"] = encontrada  # None si no está en el banco
 
-    return jsonify({"reportes": reportes})
+    return jsonify({"reportes": reportes, "total": total, "pagina": pagina, "por_pagina": por_pagina})
 
 
 @bp.route("/admin/api/reportes/<rid>", methods=["PATCH"])
@@ -2075,11 +2094,18 @@ def limites_guardar():
 @requiere_admin
 def auditoria_listar():
     """Últimas acciones de administración, de la más reciente a la más
-    antigua."""
+    antigua, paginadas (mismo patrón que /admin/api/usuarios): antes solo
+    se veían las últimas 100-200 sin ninguna forma de consultar entradas
+    más antiguas. Nota: la lectura sigue siendo de TODA la colección (el
+    fake de Firestore de los tests no soporta order_by/cursores, y este
+    panel no tiene tanto volumen todavía como para justificar esa
+    complejidad) -- lo que arregla la paginación es poder navegar el
+    historial completo desde la UI, no el coste de lectura en Firestore."""
     try:
-        limite = min(200, max(1, int(request.args.get("limite", 100))))
+        pagina = max(1, int(request.args.get("pagina", 1)))
     except (TypeError, ValueError):
-        limite = 100
+        pagina = 1
+    por_pagina = 50
     entradas = []
     for doc in db.collection("admin_auditoria").stream():
         d = doc.to_dict() or {}
@@ -2091,7 +2117,12 @@ def auditoria_listar():
             "fecha": d.get("fecha", ""),
         })
     entradas.sort(key=lambda e: e.get("fecha", ""), reverse=True)
-    return jsonify({"entradas": entradas[:limite], "total": len(entradas)})
+    total = len(entradas)
+    inicio = (pagina - 1) * por_pagina
+    return jsonify({
+        "entradas": entradas[inicio:inicio + por_pagina],
+        "total": total, "pagina": pagina, "por_pagina": por_pagina,
+    })
 
 
 # ============================================================

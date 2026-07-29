@@ -42,6 +42,38 @@ function fechaCorta(valor) {
   return (valor || "").slice(0, 10) || "-";
 }
 
+// Controles "anterior/siguiente" reutilizables para listas paginadas por el
+// backend (usuarios, reportes, auditoría -- todas devuelven {total,
+// pagina, por_pagina}). clasePrefijo evita colisiones de id cuando hay más
+// de una lista paginada en la misma pantalla.
+function paginacionHtml(d, etiqueta, clasePrefijo) {
+  const totalPaginas = Math.max(1, Math.ceil((d.total || 0) / (d.por_pagina || 20)));
+  return `
+    <div class="admin-paginacion">
+      <button class="age-btn age-btn-outline admin-mini" id="${clasePrefijo}-prev" ${d.pagina <= 1 ? "disabled" : ""}>◀ Anterior</button>
+      <span>Página ${d.pagina} de ${totalPaginas} · ${d.total} ${etiqueta}</span>
+      <button class="age-btn age-btn-outline admin-mini" id="${clasePrefijo}-next" ${d.pagina >= totalPaginas ? "disabled" : ""}>Siguiente ▶</button>
+    </div>`;
+}
+// Selector "segmentado" (grupo de pastillas, una activa a la vez) --
+// componente compartido para no montar cada vez a mano la misma fila de
+// botones sueltos que antes se repetía en Reportes, Vigilancia BOE y
+// ahora también en el selector de grupo de la barra lateral. Cada botón
+// admite un data-tab opcional (lo usa el selector de grupo genérico);
+// Reportes/BOE, que ya tenían su propio cableado por id, simplemente
+// mantienen los mismos ids que antes.
+function segmentoHtml(botones) {
+  return `<div class="admin-segmentado" role="tablist">${botones.map((b) => {
+    const dataTab = b.tab ? ` data-tab="${escapeHtml(b.tab)}"` : "";
+    return `<button type="button" class="admin-segmento${b.activo ? " active" : ""}" id="${b.id}" role="tab" aria-selected="${b.activo ? "true" : "false"}"${dataTab}>${escapeHtml(b.label)}</button>`;
+  }).join("")}</div>`;
+}
+
+function wirePaginacion(cont, clasePrefijo, onCambiarPagina) {
+  cont.querySelector(`#${clasePrefijo}-prev`)?.addEventListener("click", () => onCambiarPagina(-1));
+  cont.querySelector(`#${clasePrefijo}-next`)?.addEventListener("click", () => onCambiarPagina(1));
+}
+
 // ===== toasts (avisos flotantes, sustituyen a alert) =====
 function toast(mensaje, tipo = "ok") {
   const cont = document.getElementById("admin-toasts");
@@ -161,7 +193,25 @@ document.addEventListener("keydown", (e) => {
   atraparTabEnModal(e);
 });
 
-// ===== pestañas =====
+// ===== pestañas, agrupadas en la barra lateral =====
+// Los botones de la barra representan GRUPOS, no cada vista suelta -- con
+// 11 vistas en una lista plana la barra se quedaba larga (había que
+// desplazarla para ver las últimas). Cada grupo declara cómo se elige su
+// vista activa:
+// - "switcher": selector de pastillas arriba del propio panel (mismo
+//   patrón que ya usaban Reportes y Vigilancia BOE para alternar entre
+//   sus dos vistas internas, ahora reutilizado también a nivel de grupo).
+// - "submenu": desplegable dentro de la barra lateral (Configuración: se
+//   usa con menos frecuencia que Contenido/Usuarios, no merece ocupar
+//   sitio siempre visible en el panel).
+// - "simple": el grupo es una única vista (Dashboard, Vigilancia BOE).
+const GRUPOS = {
+  dashboard: { label: "Dashboard", pestanas: ["dashboard"], tipo: "simple" },
+  contenido: { label: "Contenido", pestanas: ["temario", "preguntas", "analitica"], tipo: "switcher" },
+  usuarios: { label: "Usuarios", pestanas: ["usuarios", "bajas", "reportes"], tipo: "switcher" },
+  boe: { label: "Vigilancia BOE", pestanas: ["boe"], tipo: "simple" },
+  configuracion: { label: "Configuración", pestanas: ["limites", "sistema", "auditoria"], tipo: "submenu" },
+};
 const RENDERS = {
   dashboard: renderDashboard,
   temario: renderTemario,
@@ -179,12 +229,61 @@ const TITULO_POR_PESTANA = {
   dashboard: "Dashboard", temario: "Temario", preguntas: "Preguntas", analitica: "Analítica",
   usuarios: "Usuarios", reportes: "Reportes", boe: "Vigilancia BOE", bajas: "Bajas", limites: "Límites", auditoria: "Auditoría", sistema: "Sistema",
 };
+const LABEL_SUBTAB = {
+  temario: "Temario", preguntas: "Preguntas", analitica: "Analítica",
+  usuarios: "Usuarios", bajas: "Bajas", reportes: "Reportes",
+  limites: "Límites", sistema: "Sistema", auditoria: "Auditoría",
+};
+function grupoDePestana(pestana) {
+  return Object.keys(GRUPOS).find((g) => GRUPOS[g].pestanas.includes(pestana)) || null;
+}
 let pestanaActual = "dashboard";
+// Recuerda la última subvista visitada de cada grupo (p. ej. si entraste
+// por "Bajas", volver ahí y no siempre a "Usuarios" al pulsar el grupo).
+let ultimaPestanaPorGrupo = {};
+
+// Selector de pastillas para un grupo "switcher", pintado arriba del
+// panel activo -- se oculta solo si el grupo no lo necesita (tipo
+// distinto) o si este admin en concreto solo tiene permiso para ver una
+// de sus vistas (no tiene sentido un selector de una sola opción).
+function renderSelectorGrupo(grupoId) {
+  const cont = document.getElementById("admin-subtabs");
+  if (!cont) return;
+  const grupo = GRUPOS[grupoId];
+  const visibles = grupo && grupo.tipo === "switcher" ? grupo.pestanas.filter((p) => puedeVer(p)) : [];
+  if (visibles.length <= 1) { cont.hidden = true; cont.innerHTML = ""; return; }
+  cont.hidden = false;
+  cont.innerHTML = segmentoHtml(visibles.map((p) => ({ id: `subtab-${p}`, tab: p, label: LABEL_SUBTAB[p], activo: p === pestanaActual })));
+  cont.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => activarPestana(b.dataset.tab)));
+}
+
+function pintarSubmenuConfiguracion() {
+  const cont = document.getElementById("admin-submenu-configuracion");
+  if (!cont) return;
+  const visibles = GRUPOS.configuracion.pestanas.filter((p) => puedeVer(p));
+  cont.innerHTML = visibles.map((p) => `<button type="button" class="admin-subtab" data-tab="${p}">${LABEL_SUBTAB[p]}</button>`).join("");
+  cont.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => activarPestana(b.dataset.tab)));
+}
+function alternarSubmenuConfiguracion(forzarAbierto) {
+  const cont = document.getElementById("admin-submenu-configuracion");
+  const boton = document.querySelector('.admin-tab[data-grupo="configuracion"]');
+  if (!cont || !boton) return;
+  const abrir = forzarAbierto != null ? forzarAbierto : cont.hidden;
+  cont.hidden = !abrir;
+  boton.setAttribute("aria-expanded", String(abrir));
+}
 
 function activarPestana(nombre) {
   if (!puedeVer(nombre)) return;
   pestanaActual = nombre;
-  document.querySelectorAll(".admin-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === nombre));
+  const grupoId = grupoDePestana(nombre);
+  if (grupoId) ultimaPestanaPorGrupo[grupoId] = nombre;
+
+  document.querySelectorAll(".admin-tab[data-grupo]").forEach((b) => b.classList.toggle("active", b.dataset.grupo === grupoId));
+  document.querySelectorAll(".admin-subtab").forEach((b) => b.classList.toggle("active", b.dataset.tab === nombre));
+  if (grupoId === "configuracion") alternarSubmenuConfiguracion(true);
+  renderSelectorGrupo(grupoId);
+
   document.querySelectorAll(".admin-panel").forEach((p) => { p.hidden = p.id !== `panel-${nombre}`; });
   const titulo = document.getElementById("admin-titulo");
   if (titulo) titulo.textContent = TITULO_POR_PESTANA[nombre] || nombre;
@@ -224,9 +323,14 @@ function actualizarBadgeReportes(n) {
 
 function actualizarBadgeBoe(n) {
   const badge = document.getElementById("badge-boe");
-  if (!badge) return;
-  badge.textContent = n;
-  badge.hidden = !n;
+  if (badge) { badge.textContent = n; badge.hidden = !n; }
+  // La pestaña entera es condicional: solo aparece en la barra si hay algo
+  // pendiente (avisos/cambios de temario), para no ocupar sitio siempre
+  // visible por una herramienta que se usa poco -- salvo que ya se esté
+  // viendo, para no hacerla desaparecer de golpe debajo del admin justo
+  // al aprobar/descartar el último pendiente.
+  const tab = document.getElementById("tab-boe");
+  if (tab) tab.hidden = !(puedeVer("boe") && (n > 0 || pestanaActual === "boe"));
 }
 
 // ===== Dashboard =====
@@ -915,6 +1019,7 @@ async function abrirUsuario(uid) {
       <div class="ficha-cols">
         <div class="ficha-panel ficha-coste">
           <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("robot", 17)}</span><h3>Gasto en IA</h3></div>
+          ${_permisos.admin ? `
           <div class="ficha-coste-cifras">
             <div class="ficha-coste-grande"><span class="ficha-coste-num">${fichaEuros(u.coste_ia_mes)}</span><span class="ficha-coste-lbl">este mes</span></div>
             <div class="ficha-coste-sec">
@@ -934,7 +1039,7 @@ async function abrirUsuario(uid) {
               </div>
               <div class="ficha-rango-res" id="up-rango-res"></div>
             </div>
-          </details>` : ""}
+          </details>` : ""}` : `<p class="ficha-vacio">Solo visible para administradores totales.</p>`}
         </div>
 
         <div class="ficha-panel">
@@ -1161,15 +1266,16 @@ async function abrirUsuario(uid) {
 // misma lista con campos tan distintos.
 let estadoReportes = "pendiente";
 let vistaReportes = "preguntas";
+let paginaReportes = 1;
 async function renderReportes() {
   const panel = document.getElementById("panel-reportes");
   panel.innerHTML = `
     <div class="age-card admin-filtros">
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button type="button" class="age-btn ${vistaReportes === "preguntas" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="r-vista-preguntas">Preguntas reportadas</button>
-        <button type="button" class="age-btn ${vistaReportes === "soporte" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="r-vista-soporte">Mensajes de soporte</button>
-      </div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">Estado
+      ${segmentoHtml([
+        { id: "r-vista-preguntas", label: "Preguntas reportadas", activo: vistaReportes === "preguntas" },
+        { id: "r-vista-soporte", label: "Mensajes de soporte", activo: vistaReportes === "soporte" },
+      ])}
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-top:12px;">Estado
         <select id="r-estado" class="age-input" style="max-width:180px;">
           <option value="pendiente">Pendientes</option>
           <option value="revisado">Revisados</option>
@@ -1182,9 +1288,9 @@ async function renderReportes() {
   const sel = panel.querySelector("#r-estado");
   sel.value = estadoReportes;
   const cargarVistaActual = () => (vistaReportes === "soporte" ? cargarSoporte() : cargarReportes());
-  sel.addEventListener("change", () => { estadoReportes = sel.value; cargarVistaActual(); });
-  panel.querySelector("#r-vista-preguntas").addEventListener("click", () => { vistaReportes = "preguntas"; renderReportes(); });
-  panel.querySelector("#r-vista-soporte").addEventListener("click", () => { vistaReportes = "soporte"; renderReportes(); });
+  sel.addEventListener("change", () => { estadoReportes = sel.value; paginaReportes = 1; cargarVistaActual(); });
+  panel.querySelector("#r-vista-preguntas").addEventListener("click", () => { vistaReportes = "preguntas"; paginaReportes = 1; renderReportes(); });
+  panel.querySelector("#r-vista-soporte").addEventListener("click", () => { vistaReportes = "soporte"; paginaReportes = 1; renderReportes(); });
   cargarVistaActual();
 }
 
@@ -1192,10 +1298,12 @@ async function cargarReportes() {
   const cont = document.getElementById("reportes-lista");
   if (!cont) return;
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
-  const d = await apiGet(`/admin/api/reportes?estado=${estadoReportes}`);
+  const d = await apiGet(`/admin/api/reportes?estado=${estadoReportes}&pagina=${paginaReportes}`);
   if (!d) return;
-  const pendientes = (d.reportes || []).filter((r) => r.estado === "pendiente").length;
-  if (estadoReportes === "pendiente") actualizarBadgeReportes(pendientes);
+  // d.total (no la longitud de esta página) -- el backend ya filtra por
+  // "pendiente" en la consulta, así que es el recuento real, no solo el de
+  // la página actual.
+  if (estadoReportes === "pendiente") actualizarBadgeReportes(d.total || 0);
   if (!(d.reportes || []).length) {
     cont.innerHTML = `<p class="admin-vacio">No hay reportes en este estado. ${icono("check", 14)}</p>`;
     return;
@@ -1225,10 +1333,11 @@ async function cargarReportes() {
         ${r.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-descartar="${escapeHtml(r.id)}">Descartar</button>` : ""}
       </div>
     </div>`;
-  }).join("");
+  }).join("") + paginacionHtml(d, "reportes", "rep-pag");
   cont.querySelectorAll("[data-revisado]").forEach((b) => b.addEventListener("click", () => cambiarEstadoReporte(b.dataset.revisado, "revisado")));
   cont.querySelectorAll("[data-descartar]").forEach((b) => b.addEventListener("click", () => cambiarEstadoReporte(b.dataset.descartar, "descartado")));
   cont.querySelectorAll("[data-editar-preg]").forEach((b) => b.addEventListener("click", () => buscarYEditarPregunta(b.dataset.editarPreg)));
+  wirePaginacion(cont, "rep-pag", (delta) => { paginaReportes += delta; cargarReportes(); });
 }
 
 async function cambiarEstadoReporte(id, estado) {
@@ -1395,9 +1504,11 @@ async function renderBoe() {
     ${_avisoTokenGithubHtml()}
     <div id="boe-salud"></div>
     <div class="age-card admin-filtros">
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <button type="button" class="age-btn ${vistaBoe === "cambios" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="boe-vista-cambios">Cambios de temario</button>
-        <button type="button" class="age-btn ${vistaBoe === "avisos" ? "age-btn-primary" : "age-btn-outline"} admin-mini" id="boe-vista-avisos">Avisos oficiales</button>
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+        ${segmentoHtml([
+          { id: "boe-vista-cambios", label: "Cambios de temario", activo: vistaBoe === "cambios" },
+          { id: "boe-vista-avisos", label: "Avisos oficiales", activo: vistaBoe === "avisos" },
+        ])}
         ${vistaBoe === "avisos" ? `<button type="button" class="age-btn age-btn-outline admin-mini" id="boe-mostrar-form-manual" style="margin-left:auto;">+ Añadir aviso manual</button>` : ""}
       </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">Estado
@@ -1594,11 +1705,17 @@ function _etiquetaAccionMapa() {
 }
 function etiquetaAccion(a) { return _etiquetaAccionMapa()[a] || a; }
 
+let paginaAuditoria = 1;
 async function renderAuditoria() {
   const panel = document.getElementById("panel-auditoria");
   panel.innerHTML = `<div class="age-card"><div id="auditoria-lista"><p class="admin-cargando">Cargando…</p></div></div>`;
-  const d = await apiGet("/admin/api/auditoria?limite=150");
+  await cargarAuditoria();
+}
+async function cargarAuditoria() {
   const cont = document.getElementById("auditoria-lista");
+  if (!cont) return;
+  cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
+  const d = await apiGet(`/admin/api/auditoria?pagina=${paginaAuditoria}`);
   if (!d) return;
   if (!(d.entradas || []).length) {
     cont.innerHTML = `<p class="admin-vacio">Aún no hay acciones registradas.</p>`;
@@ -1614,8 +1731,9 @@ async function renderAuditoria() {
     </tr>`;
   }).join("");
   cont.innerHTML = `
-    <p class="admin-reporte-meta" style="margin-bottom:8px;">Últimas ${d.entradas.length} de ${d.total} acciones</p>
-    <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Fecha (UTC)</th><th>Acción</th><th>Sobre</th><th>Admin</th></tr></thead><tbody>${filas}</tbody></table></div>`;
+    <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Fecha (UTC)</th><th>Acción</th><th>Sobre</th><th>Admin</th></tr></thead><tbody>${filas}</tbody></table></div>
+    ${paginacionHtml(d, "acciones", "aud-pag")}`;
+  wirePaginacion(cont, "aud-pag", (delta) => { paginaAuditoria += delta; cargarAuditoria(); });
 }
 
 // ===== Sistema (salud + banner) =====
@@ -1803,17 +1921,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
   document.getElementById("admin-contenido").style.display = "flex";
-  // Ocultar las pestañas para las que no se tiene permiso y quedarnos con la
-  // primera visible.
-  let primera = null;
-  document.querySelectorAll(".admin-tab").forEach((b) => {
-    if (puedeVer(b.dataset.tab)) {
-      b.addEventListener("click", () => activarPestana(b.dataset.tab));
-      if (!primera) primera = b.dataset.tab;
-    } else {
+
+  pintarSubmenuConfiguracion();
+
+  // Oculta grupos enteros sin NINGUNA vista visible para este admin (según
+  // su permiso), y deja el resto cableado -- dentro de un grupo visible,
+  // sus subvistas sin permiso ya se filtran solas al pintar el selector
+  // (renderSelectorGrupo/pintarSubmenuConfiguracion). Vigilancia BOE es
+  // aparte: puede tener permiso y aun así empezar oculta (ver
+  // actualizarBadgeBoe), así que aquí solo se la oculta del todo si NI
+  // siquiera hay permiso.
+  let primeraPestanaVisible = null;
+  document.querySelectorAll(".admin-tab[data-grupo]").forEach((b) => {
+    const grupoId = b.dataset.grupo;
+    const grupo = GRUPOS[grupoId];
+    const visibles = grupo.pestanas.filter((p) => puedeVer(p));
+    if (visibles.length === 0) {
       b.hidden = true;
+      const contenedor = b.closest("[data-grupo-contenedor]");
+      if (contenedor) contenedor.hidden = true;
+      return;
+    }
+    if (!primeraPestanaVisible) primeraPestanaVisible = visibles[0];
+    if (grupo.tipo === "submenu") {
+      b.addEventListener("click", () => alternarSubmenuConfiguracion());
+    } else {
+      b.addEventListener("click", () => activarPestana(ultimaPestanaPorGrupo[grupoId] || visibles[0]));
     }
   });
+
   document.getElementById("admin-oposicion").addEventListener("change", () => { temaSeleccionado = null; RENDERS[pestanaActual](); });
-  activarPestana(primera || "dashboard");
+  activarPestana(primeraPestanaVisible || "dashboard");
 });

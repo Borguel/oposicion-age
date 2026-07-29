@@ -73,6 +73,33 @@
   flex: 0 0 auto;
 }
 
+/* Grupo "Configuración": submenú desplegable dentro de la propia barra
+   lateral (Límites/Sistema/Auditoría se usan con menos frecuencia que
+   Contenido/Usuarios, no merece la pena que ocupen un selector siempre
+   visible arriba del panel). */
+.admin-tab-grupo { display: flex; flex-direction: column; }
+.admin-tab-chevron {
+  margin-left: auto; font-size: 1.1rem; line-height: 1; color: var(--age-ink-soft);
+  transition: transform 0.18s var(--age-ease);
+}
+.admin-tab-grupo-toggle[aria-expanded="true"] .admin-tab-chevron {
+  transform: rotate(90deg);
+}
+.admin-tab-grupo-toggle[aria-expanded="true"] { color: var(--age-ink); }
+.admin-submenu {
+  display: flex; flex-direction: column; gap: 1px;
+  margin: 2px 0 4px 14px; padding-left: 18px;
+  border-left: 2px solid var(--age-border);
+}
+.admin-subtab {
+  background: none; border: none; border-radius: var(--age-radius-sm);
+  padding: 8px 10px; cursor: pointer; text-align: left;
+  font-size: 13px; font-weight: 600; color: var(--age-ink-soft);
+  font-family: var(--age-font);
+}
+.admin-subtab:hover { background: var(--age-primary-soft); color: var(--age-ink); }
+.admin-subtab.active { color: var(--age-primary-dark); font-weight: 800; }
+
 .admin-sidebar-salir {
   display: flex; align-items: center; gap: 8px; flex: 0 0 auto;
   padding: 14px 18px; border-top: 1px solid var(--age-border);
@@ -95,6 +122,33 @@
 /* Contenido */
 .admin-content { flex: 1 1 auto; min-width: 0; }
 .admin-content-inner { max-width: 1120px; margin: 0 auto; padding: 22px 24px 72px; }
+
+/* Selector de grupo ("switcher"): pastillas para alternar entre las
+   subvistas de Contenido/Usuarios, pintado arriba del panel activo. */
+.admin-subtabs { margin-bottom: 16px; }
+
+/* Selector "segmentado" reutilizable: antes cada sitio (Reportes, BOE)
+   montaba su propia fila de botones age-btn-primary/outline sueltos; ahora
+   comparten este mismo componente visual -- una única pastilla con fondo
+   propio en vez de botones independientes, para que se lea como una sola
+   pieza de UI en vez de una lista de botones cualquiera. */
+.admin-segmentado {
+  display: inline-flex; gap: 2px; padding: 3px;
+  background: var(--age-bg); border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-pill); flex-wrap: wrap;
+}
+.admin-segmento {
+  border: none; background: none; border-radius: var(--age-radius-pill);
+  padding: 7px 16px; cursor: pointer; font-family: var(--age-font);
+  font-size: 13px; font-weight: 700; color: var(--age-ink-soft);
+  transition: background 0.15s var(--age-ease), color 0.15s var(--age-ease);
+  white-space: nowrap;
+}
+.admin-segmento:hover { color: var(--age-ink); }
+.admin-segmento.active {
+  background: var(--age-primary); color: #1b1f2e;
+  box-shadow: var(--age-shadow);
+}
 
 /* Cabecera */
 .admin-header {

@@ -576,6 +576,28 @@ def test_detalle_usuario_incluye_coste_ia(client, db):
     assert d["tokens_ia_total"] == 1500
 
 
+def test_detalle_usuario_oculta_coste_ia_a_admin_parcial(client, db):
+    # Un admin con solo el permiso "usuarios" (soporte) puede ver y
+    # gestionar la ficha, pero no cuánto gasta la web en IA por ese
+    # usuario -- eso queda reservado al admin TOTAL.
+    from datetime import datetime
+    mes = datetime.utcnow().strftime("%Y-%m")
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {mes: {"tokens_in": 1000, "tokens_out": 500, "coste": 0.02}}})
+    with _como(admin=False, uid="soporte1", permisos=["usuarios"]):
+        resp = client.get("/admin/api/usuarios/u1", headers=_AUTH)
+        d = resp.get_json()
+    assert resp.status_code == 200
+    assert d["coste_ia_mes"] is None
+    assert d["coste_ia_total"] is None
+    assert d["tokens_ia_total"] is None
+    assert d["coste_ia_historico"] is None
+    # El contenido creado y el rendimiento NO son datos monetarios -- un
+    # admin de soporte sí los necesita para ayudar al usuario, así que
+    # siguen viéndose con normalidad.
+    assert d["contenido_creado"] is not None
+    assert d["rendimiento"] is not None
+
+
 def test_resumen_calcula_mrr(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "a@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})
     db.sembrar(("usuarios", "u2"), {"email": "b@x.com", "suscripciones": {"AGE": {"plan": "basico"}, "GACE": {"plan": "premium"}}})
@@ -630,6 +652,29 @@ def test_reportes_adjuntan_pregunta_oficial(client, db):
     with _como():
         reportes = client.get("/admin/api/reportes?estado=pendiente", headers=_AUTH).get_json()["reportes"]
     assert reportes[0]["pregunta_oficial"]["respuesta_correcta"] == "C"
+
+
+def test_reportes_paginados(client, db):
+    # Antes traía TODOS los reportes de golpe sin límite -- con muchos
+    # acumulados, cada carga del panel iba leyendo (y facturando) cada vez
+    # más documentos de Firestore. 25 reportes -> 2 páginas de 20.
+    for i in range(25):
+        db.sembrar(("reportes_preguntas", f"r{i}"), {
+            "pregunta_texto": f"Pregunta {i}", "oposicion": "AGE", "motivo": "dudosa",
+            "estado": "pendiente", "fecha": f"2026-01-{i + 1:02d}",
+        })
+    with _como():
+        pagina1 = client.get("/admin/api/reportes?estado=pendiente", headers=_AUTH).get_json()
+        pagina2 = client.get("/admin/api/reportes?estado=pendiente&pagina=2", headers=_AUTH).get_json()
+
+    assert pagina1["total"] == 25
+    assert pagina1["pagina"] == 1
+    assert len(pagina1["reportes"]) == 20
+    assert len(pagina2["reportes"]) == 5
+    # Sin solape entre páginas.
+    ids_pagina1 = {r["id"] for r in pagina1["reportes"]}
+    ids_pagina2 = {r["id"] for r in pagina2["reportes"]}
+    assert not (ids_pagina1 & ids_pagina2)
 
 
 # ---------- Editor temario, import, sistema, banner, notas ----------
@@ -815,6 +860,24 @@ def test_auditoria_ordena_reciente_primero(client, db):
         entradas = client.get("/admin/api/auditoria", headers=_AUTH).get_json()["entradas"]
     assert len(entradas) == 2
     assert entradas[0]["fecha"] >= entradas[1]["fecha"]
+
+
+def test_auditoria_paginada(client, db):
+    for i in range(60):
+        db.sembrar(("admin_auditoria", f"a{i}"), {
+            "accion": "algo", "objetivo": str(i), "email_admin": "admin@x.com",
+            "fecha": f"2026-01-{(i % 28) + 1:02d}T00:00:0{i % 10}",
+        })
+    with _como():
+        pagina1 = client.get("/admin/api/auditoria", headers=_AUTH).get_json()
+        pagina2 = client.get("/admin/api/auditoria?pagina=2", headers=_AUTH).get_json()
+
+    assert pagina1["total"] == 60
+    assert len(pagina1["entradas"]) == 50
+    assert len(pagina2["entradas"]) == 10
+    objetivos_pagina1 = {e["objetivo"] for e in pagina1["entradas"]}
+    objetivos_pagina2 = {e["objetivo"] for e in pagina2["entradas"]}
+    assert not (objetivos_pagina1 & objetivos_pagina2)
 
 
 # ---------- Reportes ----------
