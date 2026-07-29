@@ -117,6 +117,12 @@ async function api(metodo, ruta, cuerpo) {
 
 const apiGet = (ruta) => api("GET", ruta);
 
+// Mismo criterio que _id_valido en blueprints/admin.py: evita el viaje al
+// servidor para el caso típico (espacios, barras) antes de crear la ruta.
+function _idValido(valor) {
+  return Boolean(valor) && !valor.includes("/") && valor.length <= 60;
+}
+
 // Descarga un CSV protegido (manda el token, recibe el fichero y fuerza la
 // descarga desde un blob local).
 async function descargarCSV(ruta, nombre) {
@@ -467,22 +473,24 @@ async function renderTemario() {
     </div>`;
 
   panel.querySelector("#t-nuevo-bloque").addEventListener("click", async () => {
-    const id = prompt("Id del nuevo bloque (ej. bloque_07):");
+    const id = (prompt("Id del nuevo bloque (ej. bloque_07):") || "").trim();
     if (!id) return;
-    const titulo = prompt("Título del bloque:", "") || id;
-    const r = await api("POST", `/admin/api/temario/${op}/nuevo-bloque`, { id: id.trim(), titulo });
+    if (!_idValido(id)) { toast("Id no válido: sin espacios ni barras, máximo 60 caracteres.", "error"); return; }
+    const titulo = (prompt("Título del bloque:", "") || "").trim() || id;
+    const r = await api("POST", `/admin/api/temario/${op}/nuevo-bloque`, { id, titulo });
     if (r) { toast("Bloque creado."); renderTemario(); }
   });
   panel.querySelectorAll(".admin-nuevo-tema").forEach((btn) => btn.addEventListener("click", async () => {
-    const id = prompt("Id del nuevo tema (ej. tema_03):");
+    const id = (prompt("Id del nuevo tema (ej. tema_03):") || "").trim();
     if (!id) return;
-    const titulo = prompt("Título del tema:", "") || id;
-    const r = await api("POST", `/admin/api/temario/${op}/${btn.dataset.bloque}/nuevo-tema`, { id: id.trim(), titulo });
+    if (!_idValido(id)) { toast("Id no válido: sin espacios ni barras, máximo 60 caracteres.", "error"); return; }
+    const titulo = (prompt("Título del tema:", "") || "").trim() || id;
+    const r = await api("POST", `/admin/api/temario/${op}/${btn.dataset.bloque}/nuevo-tema`, { id, titulo });
     if (r) { toast("Tema creado."); renderTemario(); }
   }));
   panel.querySelectorAll("[data-renombrar-bloque]").forEach((btn) => btn.addEventListener("click", async (e) => {
     e.stopPropagation();
-    const titulo = prompt("Nuevo título del bloque:");
+    const titulo = (prompt("Nuevo título del bloque:") || "").trim();
     if (!titulo) return;
     const r = await api("PATCH", `/admin/api/temario/${op}/${btn.dataset.renombrarBloque}`, { titulo });
     if (r) { toast("Bloque renombrado."); renderTemario(); }
@@ -490,7 +498,7 @@ async function renderTemario() {
   panel.querySelectorAll("[data-renombrar-tema]").forEach((btn) => btn.addEventListener("click", async (e) => {
     e.stopPropagation();
     const [bloque, tema, actual] = btn.dataset.renombrarTema.split("|");
-    const titulo = prompt("Nuevo título del tema:", actual);
+    const titulo = (prompt("Nuevo título del tema:", actual) || "").trim();
     if (!titulo || titulo === actual) return;
     const r = await api("PATCH", `/admin/api/temario/${op}/${bloque}/${tema}/titulo`, { titulo });
     if (r) { toast("Tema renombrado."); renderTemario(); }
@@ -645,6 +653,12 @@ function modalPregunta(p) {
     <button class="age-btn age-btn-primary" id="q-guardar" style="margin-top:14px;">Guardar</button>`);
 
   document.getElementById("q-guardar").addEventListener("click", async () => {
+    const elEnunciado = document.getElementById("q-enunciado");
+    if (!elEnunciado.value.trim()) { toast("Falta el enunciado de la pregunta.", "error"); elEnunciado.focus(); return; }
+    for (const k of ["A", "B", "C", "D"]) {
+      const elOpcion = document.getElementById(`op-${k}`);
+      if (!elOpcion.value.trim()) { toast(`Falta el texto de la opción ${k}.`, "error"); elOpcion.focus(); return; }
+    }
     const cuerpo = {
       oposicion: oposicionActual(),
       pregunta: document.getElementById("q-enunciado").value,
@@ -894,6 +908,10 @@ function modalCrearUsuario() {
       <label class="admin-rol-check"><input type="checkbox" class="nu-permiso" value="${p}"> <span>${p === "temario" ? "Temario y preguntas" : p === "reportes" ? "Reportes" : "Usuarios y planes"}</span></label>`).join("")}
     <button class="age-btn age-btn-primary" id="nu-crear" style="margin-top:14px;">Crear usuario</button>`);
   document.getElementById("nu-crear").addEventListener("click", async () => {
+    const elEmail = document.getElementById("nu-email");
+    const elPass = document.getElementById("nu-pass");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(elEmail.value.trim())) { toast("Email no válido.", "error"); elEmail.focus(); return; }
+    if (elPass.value.length < 6) { toast("La contraseña debe tener al menos 6 caracteres.", "error"); elPass.focus(); return; }
     const cuerpo = {
       email: document.getElementById("nu-email").value,
       password: document.getElementById("nu-pass").value,
