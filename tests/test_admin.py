@@ -576,13 +576,31 @@ def test_detalle_usuario_incluye_coste_ia(client, db):
     assert d["tokens_ia_total"] == 1500
 
 
+def test_detalle_usuario_incluye_coste_ia_diario(client, db):
+    from datetime import datetime
+    hoy = datetime.utcnow().strftime("%Y-%m-%d")
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia_dias": {
+        hoy: {"tokens_in": 200, "tokens_out": 100, "llamadas": 3, "coste": 0.004},
+    }})
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["coste_ia_historico_diario"] == [
+        {"dia": hoy, "coste": 0.004, "tokens": 300, "tokens_in": 200, "tokens_out": 100, "llamadas": 3},
+    ]
+
+
 def test_detalle_usuario_oculta_coste_ia_a_admin_parcial(client, db):
     # Un admin con solo el permiso "usuarios" (soporte) puede ver y
     # gestionar la ficha, pero no cuánto gasta la web en IA por ese
     # usuario -- eso queda reservado al admin TOTAL.
     from datetime import datetime
     mes = datetime.utcnow().strftime("%Y-%m")
-    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {mes: {"tokens_in": 1000, "tokens_out": 500, "coste": 0.02}}})
+    hoy = datetime.utcnow().strftime("%Y-%m-%d")
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com",
+        "coste_ia": {mes: {"tokens_in": 1000, "tokens_out": 500, "coste": 0.02}},
+        "coste_ia_dias": {hoy: {"tokens_in": 100, "tokens_out": 50, "llamadas": 1, "coste": 0.002}},
+    })
     with _como(admin=False, uid="soporte1", permisos=["usuarios"]):
         resp = client.get("/admin/api/usuarios/u1", headers=_AUTH)
         d = resp.get_json()
@@ -591,6 +609,7 @@ def test_detalle_usuario_oculta_coste_ia_a_admin_parcial(client, db):
     assert d["coste_ia_total"] is None
     assert d["tokens_ia_total"] is None
     assert d["coste_ia_historico"] is None
+    assert d["coste_ia_historico_diario"] is None
     # El contenido creado y el rendimiento NO son datos monetarios -- un
     # admin de soporte sí los necesita para ayudar al usuario, así que
     # siguen viéndose con normalidad.

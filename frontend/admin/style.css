@@ -246,6 +246,17 @@
 .tem-bloque-cuerpo { padding: 4px 14px 14px; border-top: 1px solid var(--age-border); }
 .tem-bloque-acciones { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 4px; flex-wrap: wrap; }
 .tem-bloque-acciones .admin-icono { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; }
+
+/* Preguntas por bloque (misma estructura .tem-bloque que Temario) */
+.preg-tema-grupo { margin: 12px 0; }
+.preg-tema-titulo { font-weight: 700; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.02em; color: var(--age-ink-soft, var(--age-ink)); margin: 0 0 6px; }
+.preg-fila {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border: 1px solid var(--age-border); border-radius: 8px; padding: 8px 10px; margin: 4px 0;
+}
+.preg-fila-inactiva { opacity: 0.55; }
+.preg-fila-txt { flex: 1 1 auto; min-width: 0; font-size: 13px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.preg-fila-meta { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; }
 .admin-tema-item {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
   width: 100%; text-align: left; background: none;
@@ -523,11 +534,17 @@ tr.sis-opt .sis-punto { background: #d9a300; }
 .ficha-kpi-lbl { order: -1; display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--age-ink-soft, var(--age-ink)); }
 .ficha-kpi-num { display: block; font-size: 1.5rem; font-weight: 800; color: var(--age-primary); line-height: 1.2; margin-top: 4px; }
 
-.ficha-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
-.ficha-panel { background: var(--age-card); border: 1px solid var(--age-border); border-radius: 14px; padding: 14px 16px; }
+.ficha-selector { display: flex; }
+.ficha-selector .admin-segmentado { width: 100%; }
+.ficha-selector .admin-segmento { flex: 1; text-align: center; }
+.ficha-panel { background: var(--age-card); border: 1px solid var(--age-border); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+.ficha-panel:last-child { margin-bottom: 0; }
+.ficha-panel-peligro { border-color: var(--age-danger, #dc3545); }
 .ficha-panel-cab { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .ficha-panel-cab h3 { margin: 0; font-size: 0.98rem; }
 .ficha-panel-ico { font-size: 1.05rem; }
+.ficha-panel-cab-fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.ficha-panel-cab-fila .ficha-panel-cab { margin-bottom: 0; }
 
 .ficha-coste { background: linear-gradient(180deg, var(--age-primary-soft), var(--age-card)); }
 .ficha-coste-cifras { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -573,18 +590,6 @@ tr.sis-opt .sis-punto { background: #d9a300; }
 .ficha-uso-off .ficha-uso-val { font-style: italic; }
 .ficha-uso-nota { font-size: 11.5px; color: var(--age-ink-soft, var(--age-ink)); margin: 10px 0 0; }
 
-/* Acordeones de acciones */
-.ficha-acordeon { border: 1px solid var(--age-border); border-radius: 14px; overflow: hidden; }
-.ficha-acordeon > summary {
-  list-style: none; cursor: pointer; padding: 13px 16px; font-weight: 700; font-size: 0.95rem;
-  display: flex; align-items: center; gap: 8px; user-select: none;
-}
-.ficha-acordeon > summary::-webkit-details-marker { display: none; }
-.ficha-acordeon > summary::after { content: "▾"; margin-left: auto; transition: transform .18s ease; color: var(--age-ink-soft, var(--age-ink)); }
-.ficha-acordeon[open] > summary::after { transform: rotate(180deg); }
-.ficha-acordeon[open] > summary { border-bottom: 1px solid var(--age-border); }
-.ficha-acordeon-cuerpo { padding: 14px 16px; }
-.ficha-acordeon-peligro > summary { color: var(--age-danger, #b02a37); }
 
 .ficha-roles-intro { font-size: 13px; color: var(--age-ink-soft, var(--age-ink)); margin: 0 0 10px; }
 .ficha-roles { display: flex; flex-direction: column; gap: 8px; }
@@ -642,7 +647,6 @@ tr.sis-opt .sis-punto { background: #d9a300; }
 .ficha-btn-soporte:hover { background: var(--age-info, #1e56b0); color: #fff; border-color: var(--age-info, #1e56b0); }
 
 @media (max-width: 560px) {
-  .ficha-cols { grid-template-columns: 1fr; }
   .ficha-kpis { grid-template-columns: repeat(2, 1fr); }
   .ficha-datos { grid-template-columns: 1fr; }
   .ficha-avatar { width: 44px; height: 44px; font-size: 1.25rem; }

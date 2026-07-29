@@ -167,13 +167,27 @@ def _ficha_actividad(ref, datos):
             "llamadas": (m or {}).get("llamadas", 0) or 0,
         })
 
+    # Histórico diario -- coste_ia.py solo conserva los últimos
+    # LIMITE_DIAS_HISTORICO días (ver ese módulo), a diferencia del mensual
+    # de arriba, que se guarda para siempre.
+    hist_diario = []
+    for dia, m in sorted((datos.get("coste_ia_dias") or {}).items()):
+        hist_diario.append({
+            "dia": dia,
+            "coste": round((m or {}).get("coste", 0) or 0, 4),
+            "tokens": ((m or {}).get("tokens_in", 0) or 0) + ((m or {}).get("tokens_out", 0) or 0),
+            "tokens_in": (m or {}).get("tokens_in", 0) or 0,
+            "tokens_out": (m or {}).get("tokens_out", 0) or 0,
+            "llamadas": (m or {}).get("llamadas", 0) or 0,
+        })
+
     # Consumo del periodo actual por herramienta (limites_uso) -- para ver de
     # un vistazo cuánta IA está gastando ahora mismo.
     uso = {}
     for tipo, u in (datos.get("limites_uso") or {}).items():
         uso[tipo] = (u or {}).get("contador", 0) or 0
 
-    return contenido, rendimiento, hist, uso
+    return contenido, rendimiento, hist, hist_diario, uso
 
 
 def _uso_herramientas(datos):
@@ -1162,7 +1176,7 @@ def usuarios_detalle(uid):
             ultima_nota = historial[-1].get("nota", ultima_nota)
 
     racha = datos.get("racha") or {}
-    contenido, rendimiento, coste_historico, uso_actual = _ficha_actividad(ref, datos)
+    contenido, rendimiento, coste_historico, coste_historico_diario, uso_actual = _ficha_actividad(ref, datos)
     # El coste en € de IA (a diferencia de contenido/rendimiento, que no son
     # datos monetarios y sirven para dar soporte sin más) se oculta a un
     # admin con permiso parcial "usuarios" -- solo lo ve el admin TOTAL
@@ -1173,6 +1187,7 @@ def usuarios_detalle(uid):
     else:
         _cim = _cit = _tit = None
         coste_historico = None
+        coste_historico_diario = None
     bloqueado = False
     try:
         registro = firebase_auth.get_user(uid)
@@ -1210,6 +1225,7 @@ def usuarios_detalle(uid):
         "coste_ia_total": _cit,
         "tokens_ia_total": _tit,
         "coste_ia_historico": coste_historico,
+        "coste_ia_historico_diario": coste_historico_diario,
         "contenido_creado": contenido,
         "rendimiento": rendimiento,
         "uso_actual": uso_actual,
