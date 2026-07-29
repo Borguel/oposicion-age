@@ -435,33 +435,58 @@ async function renderDashboard() {
 
 // ===== Temario =====
 let temaSeleccionado = null;
+// Qué bloques están desplegados en la lista -- persiste entre renderTemario()
+// (p. ej. tras renombrar algo) para no cerrar de golpe lo que el admin ya
+// tenía abierto.
+const bloquesAbiertos = new Set();
 async function renderTemario() {
   const panel = document.getElementById("panel-temario");
   panel.innerHTML = `<p class="admin-cargando">Cargando temario…</p>`;
   const d = await apiGet(`/admin/api/temario/${oposicionActual()}`);
   if (!d) return;
   const op = oposicionActual();
-  const arbol = (d.bloques || []).map((b) => `
-    <div class="admin-bloque-arbol">
-      <div class="admin-bloque-cab">
-        <span class="admin-bloque-titulo">${escapeHtml(b.titulo)}
-          <button class="admin-icono" data-renombrar-bloque="${escapeHtml(b.id)}" title="Renombrar bloque">${icono("lapiz", 14)}</button>
-        </span>
-        <label class="admin-toggle" title="Publicado / borrador">
-          <input type="checkbox" data-bloque-pub="${escapeHtml(b.id)}" ${b.publicado ? "checked" : ""}>
-          <span>${b.publicado ? "Publicado" : "Borrador"}</span>
-        </label>
-      </div>
-      ${b.temas.map((t) => `
-        <div class="admin-tema-fila">
-          <button type="button" class="admin-tema-item ${t.num_chunks ? "" : "sin-contenido"}" data-bloque="${escapeHtml(b.id)}" data-tema="${escapeHtml(t.id)}">
-            <span>${escapeHtml(t.titulo)}${t.publicado ? "" : ' <span class="admin-badge-alerta">borrador</span>'}</span>
-            <span class="admin-badge">${t.num_chunks}</span>
-          </button>
-          <button class="admin-icono" data-renombrar-tema="${escapeHtml(b.id)}|${escapeHtml(t.id)}|${escapeHtml(t.titulo)}" title="Renombrar tema">${icono("lapiz", 14)}</button>
-        </div>`).join("")}
-      <button class="age-btn age-btn-outline admin-mini admin-nuevo-tema" data-bloque="${escapeHtml(b.id)}" style="margin-top:6px;">+ Tema</button>
-    </div>`).join("") || '<p class="admin-vacio">Sin bloques todavía.</p>';
+  const bloques = d.bloques || [];
+  if (temaSeleccionado) bloquesAbiertos.add(temaSeleccionado.bloque);
+  const totalTemas = bloques.reduce((n, b) => n + b.temas.length, 0);
+  const arbol = `
+    <div class="tem-cab">
+      <span>Estructura del programa</span>
+      <span class="ficha-badge">${totalTemas} tema${totalTemas === 1 ? "" : "s"} en total</span>
+    </div>
+    ${bloques.map((b) => {
+      const abierto = bloquesAbiertos.has(b.id);
+      const totalChunks = b.temas.reduce((n, t) => n + (t.num_chunks || 0), 0);
+      return `
+      <div class="tem-bloque">
+        <button type="button" class="tem-bloque-cab" data-toggle-bloque="${escapeHtml(b.id)}" aria-expanded="${abierto}">
+          <span class="tem-bloque-chevron">›</span>
+          <span class="tem-bloque-ico" aria-hidden="true">${icono("carpeta", 20)}</span>
+          <span class="tem-bloque-info">
+            <span class="tem-bloque-titulo">${escapeHtml(b.titulo)}</span>
+            <span class="tem-bloque-meta">${b.temas.length} tema${b.temas.length === 1 ? "" : "s"} · ${totalChunks} ficha${totalChunks === 1 ? "" : "s"}</span>
+          </span>
+          <span class="ficha-badge ${b.publicado ? "ficha-badge-ok" : "ficha-badge-gratis"}">${b.publicado ? "Publicado" : "Borrador"}</span>
+        </button>
+        <div class="tem-bloque-cuerpo" ${abierto ? "" : "hidden"}>
+          <div class="tem-bloque-acciones">
+            <button type="button" class="admin-icono" data-renombrar-bloque="${escapeHtml(b.id)}" title="Renombrar bloque">${icono("lapiz", 14)} Renombrar</button>
+            <label class="admin-toggle" title="Publicado / borrador">
+              <input type="checkbox" data-bloque-pub="${escapeHtml(b.id)}" ${b.publicado ? "checked" : ""}>
+              <span>${b.publicado ? "Publicado" : "Borrador"}</span>
+            </label>
+          </div>
+          ${b.temas.map((t) => `
+            <div class="admin-tema-fila">
+              <button type="button" class="admin-tema-item ${t.num_chunks ? "" : "sin-contenido"}" data-bloque="${escapeHtml(b.id)}" data-tema="${escapeHtml(t.id)}">
+                <span>${escapeHtml(t.titulo)}${t.publicado ? "" : ' <span class="admin-badge-alerta">borrador</span>'}</span>
+                <span class="admin-badge">${t.num_chunks}</span>
+              </button>
+              <button class="admin-icono" data-renombrar-tema="${escapeHtml(b.id)}|${escapeHtml(t.id)}|${escapeHtml(t.titulo)}" title="Renombrar tema">${icono("lapiz", 14)}</button>
+            </div>`).join("")}
+          <button class="age-btn age-btn-outline admin-mini admin-nuevo-tema" data-bloque="${escapeHtml(b.id)}" style="margin-top:6px;">+ Tema</button>
+        </div>
+      </div>`;
+    }).join("") || '<p class="admin-vacio">Sin bloques todavía.</p>'}`;
 
   panel.innerHTML = `
     <div class="admin-filtros">
@@ -472,6 +497,14 @@ async function renderTemario() {
       <div class="age-card admin-chunks" id="admin-chunks"><p class="admin-vacio">Elige un tema para ver y editar sus fichas.</p></div>
     </div>`;
 
+  panel.querySelectorAll("[data-toggle-bloque]").forEach((btn) => btn.addEventListener("click", () => {
+    const id = btn.dataset.toggleBloque;
+    const cuerpo = btn.nextElementSibling;
+    const abrir = cuerpo.hidden;
+    cuerpo.hidden = !abrir;
+    btn.setAttribute("aria-expanded", String(abrir));
+    if (abrir) bloquesAbiertos.add(id); else bloquesAbiertos.delete(id);
+  }));
   panel.querySelector("#t-nuevo-bloque").addEventListener("click", async () => {
     const id = (prompt("Id del nuevo bloque (ej. bloque_07):") || "").trim();
     if (!id) return;
@@ -1570,12 +1603,25 @@ async function renderBoe() {
   panel.innerHTML = `
     ${_avisoTokenGithubHtml()}
     <div id="boe-salud"></div>
+    <div class="age-card boe-hero">
+      <h3>Filtros de vigilancia</h3>
+      <p class="admin-reporte-meta">Supervisión automática de cambios legislativos y publicaciones oficiales.</p>
+      <div class="boe-hero-botones">
+        <button type="button" class="boe-hero-btn ${vistaBoe === "cambios" ? "activo" : ""}" id="boe-vista-cambios">${icono("documento", 18)} Cambios de temario</button>
+        <button type="button" class="boe-hero-btn ${vistaBoe === "avisos" ? "activo" : ""}" id="boe-vista-avisos">${icono("megafono", 18)} Avisos oficiales</button>
+      </div>
+    </div>
+
+    <div class="boe-stat">
+      <div class="boe-stat-cab"><span>Alertas pendientes</span><span class="boe-stat-ico">${icono("campana", 18)}</span></div>
+      <div class="boe-stat-num" id="boe-stat-num">${_cambiosPendientesCache + _avisosPendientesCache}</div>
+      <div class="boe-stat-sub" id="boe-stat-sub">${_cambiosPendientesCache} cambio${_cambiosPendientesCache === 1 ? "" : "s"} de temario · ${_avisosPendientesCache} aviso${_avisosPendientesCache === 1 ? "" : "s"} oficial${_avisosPendientesCache === 1 ? "" : "es"}</div>
+      <div class="boe-stat-barra" id="boe-stat-barra"></div>
+    </div>
+
     <div class="age-card admin-filtros">
       <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
-        ${segmentoHtml([
-          { id: "boe-vista-cambios", label: "Cambios de temario", activo: vistaBoe === "cambios" },
-          { id: "boe-vista-avisos", label: "Avisos oficiales", activo: vistaBoe === "avisos" },
-        ])}
+        <h3 style="margin:0;">Propuestas de actualización</h3>
         ${vistaBoe === "avisos" ? `<button type="button" class="age-btn age-btn-outline admin-mini" id="boe-mostrar-form-manual" style="margin-left:auto;">+ Añadir aviso manual</button>` : ""}
       </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">Estado
@@ -1588,7 +1634,8 @@ async function renderBoe() {
       </label>
     </div>
     ${vistaBoe === "avisos" ? _formAvisoManualHtml() : ""}
-    <div class="age-card"><div id="boe-lista"><p class="admin-cargando">Cargando…</p></div></div>`;
+    <div id="boe-lista"><p class="admin-cargando">Cargando…</p></div>`;
+  _actualizarStatBoe();
   if (vistaBoe === "avisos") {
     panel.querySelector("#boe-mostrar-form-manual").addEventListener("click", () => {
       panel.querySelector("#boe-form-manual").hidden = false;
@@ -1608,11 +1655,27 @@ async function renderBoe() {
   _cargarSaludVigilancia();
 }
 
+// Composición de la tarjeta "Alertas pendientes": nº de cambios de temario +
+// avisos oficiales pendientes (cacheados por la última vez que se cargó esa
+// lista en estado "pendiente", igual que ya hace el badge de la pestaña).
+function _actualizarStatBoe() {
+  const num = document.getElementById("boe-stat-num");
+  const sub = document.getElementById("boe-stat-sub");
+  const barra = document.getElementById("boe-stat-barra");
+  if (!num) return;
+  const total = _cambiosPendientesCache + _avisosPendientesCache;
+  num.textContent = total;
+  sub.textContent = `${_cambiosPendientesCache} cambio${_cambiosPendientesCache === 1 ? "" : "s"} de temario · ${_avisosPendientesCache} aviso${_avisosPendientesCache === 1 ? "" : "s"} oficial${_avisosPendientesCache === 1 ? "" : "es"}`;
+  barra.innerHTML = total
+    ? `<span class="boe-stat-seg boe-stat-seg-cambios" style="width:${(_cambiosPendientesCache / total) * 100}%"></span><span class="boe-stat-seg boe-stat-seg-avisos" style="width:${(_avisosPendientesCache / total) * 100}%"></span>`
+    : `<span class="boe-stat-seg boe-stat-seg-avisos" style="width:100%"></span>`;
+}
+
 function _diffHtml(texto_eliminar, texto_anadir) {
   return `
     <div class="admin-boe-diff">
-      <p class="admin-boe-diff-quita">${escapeHtml(texto_eliminar)}</p>
-      <p class="admin-boe-diff-pon">${escapeHtml(texto_anadir)}</p>
+      <p class="admin-boe-diff-quita">− ${escapeHtml(texto_eliminar)}</p>
+      <p class="admin-boe-diff-pon">+ ${escapeHtml(texto_anadir)}</p>
     </div>`;
 }
 
@@ -1623,7 +1686,7 @@ async function cargarCambiosTemario() {
   const d = await apiGet(`/admin/api/cambios-temario?estado=${estadoBoe}`);
   if (!d) return;
   const pendientes = (d.cambios || []).filter((c) => c.estado === "pendiente").length;
-  if (estadoBoe === "pendiente") actualizarBadgeBoe(pendientes + _avisosPendientesCache);
+  if (estadoBoe === "pendiente") { _cambiosPendientesCache = pendientes; actualizarBadgeBoe(pendientes + _avisosPendientesCache); _actualizarStatBoe(); }
   if (!(d.cambios || []).length) {
     cont.innerHTML = `<p class="admin-vacio">No hay cambios de temario en este estado. ${icono("check", 14)}</p>`;
     return;
@@ -1633,14 +1696,16 @@ async function cargarCambiosTemario() {
     <div class="admin-reporte">
       <div class="admin-reporte-cab">
         <span class="admin-reporte-estado ${clase(c.estado)}">${escapeHtml(c.estado)}</span>
+        ${c.boe_id ? `<span class="admin-reporte-meta boe-ref">Ref: ${escapeHtml(c.boe_id)}</span>` : ""}
         <span class="admin-reporte-meta">${escapeHtml(c.oposicion || "-")} · ${escapeHtml(c.bloque_id || "")}/${escapeHtml(c.tema_id || "")} · ${escapeHtml(fechaCorta(c.fecha_deteccion))}</span>
       </div>
-      <p class="admin-reporte-preg">${escapeHtml(c.resumen)}</p>
-      <p class="admin-reporte-meta"><strong>Ley:</strong> ${escapeHtml(c.ley_nombre || "-")}</p>
+      <p class="admin-reporte-preg">${escapeHtml(c.ley_nombre || c.resumen)}</p>
+      ${c.ley_nombre ? `<p class="admin-reporte-meta">${escapeHtml(c.resumen)}</p>` : ""}
       ${_diffHtml(c.texto_eliminar, c.texto_anadir)}
-      <div class="admin-reporte-acciones">
-        ${c.estado !== "aprobado" ? `<button class="age-btn age-btn-primary admin-mini" data-aprobar="${escapeHtml(c.id)}">Aprobar y publicar</button>` : ""}
-        ${c.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-descartar-cambio="${escapeHtml(c.id)}">Descartar</button>` : ""}
+      ${c.revisado_por_email ? `<p class="admin-reporte-meta boe-revisado">Aplicado por: ${escapeHtml(c.revisado_por_email)} · Fecha: ${escapeHtml(fechaCorta(c.fecha_revision))}</p>` : ""}
+      <div class="boe-card-acciones">
+        ${c.estado !== "aprobado" ? `<button class="age-btn age-btn-primary" data-aprobar="${escapeHtml(c.id)}">Aprobar cambio</button>` : ""}
+        ${c.estado !== "descartado" ? `<button class="age-btn age-btn-outline" data-descartar-cambio="${escapeHtml(c.id)}">Ignorar</button>` : ""}
       </div>
     </div>`).join("");
   cont.querySelectorAll("[data-aprobar]").forEach((b) => b.addEventListener("click", () => cambiarEstadoCambioTemario(b.dataset.aprobar, "aprobado")));
@@ -1652,6 +1717,7 @@ async function cambiarEstadoCambioTemario(id, estado) {
   if (r) { toast(estado === "aprobado" ? "Cambio aplicado al temario." : "Propuesta descartada."); cargarCambiosTemario(); }
 }
 
+let _cambiosPendientesCache = 0;
 let _avisosPendientesCache = 0;
 async function cargarAvisosOficiales() {
   const cont = document.getElementById("boe-lista");
@@ -1660,7 +1726,7 @@ async function cargarAvisosOficiales() {
   const d = await apiGet(`/admin/api/avisos-oficiales?estado=${estadoBoe}`);
   if (!d) return;
   const pendientes = (d.avisos || []).filter((a) => a.estado === "pendiente").length;
-  if (estadoBoe === "pendiente") { _avisosPendientesCache = pendientes; actualizarBadgeBoe(pendientes); }
+  if (estadoBoe === "pendiente") { _avisosPendientesCache = pendientes; actualizarBadgeBoe(pendientes); _actualizarStatBoe(); }
   if (!(d.avisos || []).length) {
     cont.innerHTML = `<p class="admin-vacio">No hay avisos oficiales en este estado. ${icono("check", 14)}</p>`;
     return;
@@ -1675,6 +1741,7 @@ async function cargarAvisosOficiales() {
       <p class="admin-reporte-preg">${escapeHtml(a.titulo)}</p>
       ${a.resumen ? `<p class="admin-reporte-motivo">${escapeHtml(a.resumen)}</p>` : ""}
       ${a.url_boe ? `<p class="admin-reporte-meta"><a href="${escapeHtml(a.url_boe)}" target="_blank" rel="noopener">Ver la resolución ↗</a></p>` : ""}
+      ${a.revisado_por_email ? `<p class="admin-reporte-meta boe-revisado">Aplicado por: ${escapeHtml(a.revisado_por_email)} · Fecha: ${escapeHtml(fechaCorta(a.fecha_revision))}</p>` : ""}
       <div class="admin-reporte-acciones">
         ${a.estado !== "publicado" ? `<button class="age-btn age-btn-primary admin-mini" data-publicar="${escapeHtml(a.id)}">Publicar</button>` : ""}
         ${a.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-descartar-aviso="${escapeHtml(a.id)}">Descartar</button>` : ""}

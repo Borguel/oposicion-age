@@ -1592,6 +1592,8 @@ def cambios_temario_listar():
             "texto_anadir": d.get("texto_anadir", ""),
             "estado": d.get("estado", "pendiente"),
             "fecha_deteccion": d.get("fecha_deteccion", ""),
+            "revisado_por_email": d.get("revisado_por_email", ""),
+            "fecha_revision": d.get("fecha_revision", ""),
         })
     cambios.sort(key=lambda c: c.get("fecha_deteccion", ""), reverse=True)
     return jsonify({"cambios": cambios})
@@ -1639,6 +1641,7 @@ def cambios_temario_actualizar(cid):
     ref.set({
         "estado": estado,
         "revisado_por": g.uid,
+        "revisado_por_email": g.email,
         "fecha_revision": datetime.utcnow().isoformat(),
     }, merge=True)
     _registrar_auditoria("cambio_temario_" + estado, cid, d.get("resumen", ""))
@@ -1674,6 +1677,8 @@ def avisos_oficiales_listar():
             "fecha_boe": d.get("fecha_boe", ""),
             "estado": d.get("estado", "pendiente"),
             "fecha_deteccion": d.get("fecha_deteccion", ""),
+            "revisado_por_email": d.get("revisado_por_email", ""),
+            "fecha_revision": d.get("fecha_revision", ""),
         })
     avisos.sort(key=lambda a: a.get("fecha_deteccion", ""), reverse=True)
     return jsonify({"avisos": avisos})
@@ -1749,6 +1754,7 @@ def avisos_oficiales_actualizar(aid):
     ref.set({
         "estado": estado,
         "revisado_por": g.uid,
+        "revisado_por_email": g.email,
         "fecha_revision": datetime.utcnow().isoformat(),
     }, merge=True)
     _registrar_auditoria("aviso_oficial_" + estado, aid)

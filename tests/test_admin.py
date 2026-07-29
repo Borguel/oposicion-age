@@ -974,6 +974,11 @@ def test_cambios_temario_aprobar_aplica_el_cambio_al_chunk(client, db):
     propuesta = db.leer(("cambios_temario_propuestos", "c1"))
     assert propuesta["estado"] == "aprobado"
     assert propuesta["revisado_por"] == "admin1"
+    assert propuesta["revisado_por_email"] == "admin@example.com"
+    with _como():
+        d = client.get("/admin/api/cambios-temario?estado=aprobado", headers=_AUTH).get_json()
+    assert d["cambios"][0]["revisado_por_email"] == "admin@example.com"
+    assert d["cambios"][0]["fecha_revision"]
 
 
 def test_cambios_temario_aprobar_falla_si_el_chunk_ya_no_coincide(client, db):
@@ -1106,6 +1111,7 @@ def test_avisos_oficiales_publicar_y_descartar(client, db):
         d = client.get("/admin/api/avisos-oficiales?estado=publicado", headers=_AUTH).get_json()
     assert len(d["avisos"]) == 1
     assert d["avisos"][0]["titulo"] == "Convocatoria GACE 2026"
+    assert d["avisos"][0]["revisado_por_email"] == "admin@example.com"
     assert db.leer(("avisos_oficiales", "a1"))["revisado_por"] == "admin1"
 
 
