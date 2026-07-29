@@ -39,9 +39,22 @@
       <nav class="admin-tabs" role="tablist">
         <button class="admin-tab active" data-grupo="dashboard" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="grafico"></span><span>Dashboard</span></button>
 
-        <button class="admin-tab" data-grupo="contenido" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="libros"></span><span>Contenido</span></button>
+        <div class="admin-tab-grupo" data-grupo-contenedor="contenido">
+          <button class="admin-tab admin-tab-grupo-toggle" data-grupo="contenido" role="tab" aria-expanded="false" aria-controls="admin-submenu-contenido">
+            <span class="admin-tab-ico" aria-hidden="true" data-icon="libros"></span><span>Contenido</span>
+            <span class="admin-tab-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="admin-submenu" id="admin-submenu-contenido" hidden></div>
+        </div>
 
-        <button class="admin-tab" data-grupo="usuarios" role="tab"><span class="admin-tab-ico" aria-hidden="true" data-icon="usuarios"></span><span>Usuarios</span><span class="admin-tab-badge" id="badge-reportes" hidden>0</span></button>
+        <div class="admin-tab-grupo" data-grupo-contenedor="usuarios">
+          <button class="admin-tab admin-tab-grupo-toggle" data-grupo="usuarios" role="tab" aria-expanded="false" aria-controls="admin-submenu-usuarios">
+            <span class="admin-tab-ico" aria-hidden="true" data-icon="usuarios"></span><span>Usuarios</span>
+            <span class="admin-tab-badge" id="badge-reportes" hidden>0</span>
+            <span class="admin-tab-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="admin-submenu" id="admin-submenu-usuarios" hidden></div>
+        </div>
 
         <button class="admin-tab" data-grupo="boe" role="tab" id="tab-boe" hidden><span class="admin-tab-ico" aria-hidden="true" data-icon="edificio"></span><span>Vigilancia BOE</span><span class="admin-tab-badge" id="badge-boe" hidden>0</span></button>
 

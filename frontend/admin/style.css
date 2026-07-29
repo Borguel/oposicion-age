@@ -73,10 +73,9 @@
   flex: 0 0 auto;
 }
 
-/* Grupo "Configuración": submenú desplegable dentro de la propia barra
-   lateral (Límites/Sistema/Auditoría se usan con menos frecuencia que
-   Contenido/Usuarios, no merece la pena que ocupen un selector siempre
-   visible arriba del panel). */
+/* Desplegable de un grupo (Contenido/Usuarios/Configuración) dentro de la
+   propia barra lateral, para ir directo a una vista concreta sin pasar
+   antes por el panel. */
 .admin-tab-grupo { display: flex; flex-direction: column; }
 .admin-tab-chevron {
   margin-left: auto; font-size: 1.1rem; line-height: 1; color: var(--age-ink-soft);
@@ -91,6 +90,13 @@
   margin: 2px 0 4px 14px; padding-left: 18px;
   border-left: 2px solid var(--age-border);
 }
+/* [hidden] por sí solo ya lo ocultaría (regla del user-agent), pero el
+   ".admin-submenu { display: flex }" de arriba es una regla de AUTOR y las
+   reglas de autor ganan siempre a las del user-agent aunque el atributo
+   [hidden] esté puesto -- sin esto de más especificidad, el desplegable se
+   quedaba SIEMPRE visible en vez de empezar cerrado (bug real: "no
+   funciona el desplegar" en Configuración). */
+.admin-submenu[hidden] { display: none; }
 .admin-subtab {
   background: none; border: none; border-radius: var(--age-radius-sm);
   padding: 8px 10px; cursor: pointer; text-align: left;

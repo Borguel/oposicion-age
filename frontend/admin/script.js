@@ -196,21 +196,25 @@ document.addEventListener("keydown", (e) => {
 // ===== pestañas, agrupadas en la barra lateral =====
 // Los botones de la barra representan GRUPOS, no cada vista suelta -- con
 // 11 vistas en una lista plana la barra se quedaba larga (había que
-// desplazarla para ver las últimas). Cada grupo declara cómo se elige su
-// vista activa:
-// - "switcher": selector de pastillas arriba del propio panel (mismo
-//   patrón que ya usaban Reportes y Vigilancia BOE para alternar entre
-//   sus dos vistas internas, ahora reutilizado también a nivel de grupo).
-// - "submenu": desplegable dentro de la barra lateral (Configuración: se
-//   usa con menos frecuencia que Contenido/Usuarios, no merece ocupar
-//   sitio siempre visible en el panel).
-// - "simple": el grupo es una única vista (Dashboard, Vigilancia BOE).
+// desplazarla para ver las últimas). Cada grupo con más de una vista
+// ofrece DOS formas de elegirla, no una u otra:
+// - enSidebar: desplegable en la propia barra lateral, para poder ir
+//   directo a una vista concreta sin pasar antes por el panel (p. ej.
+//   abrir "Contenido" y pulsar "Analítica" directamente).
+// - enPanel: además, un selector de pastillas arriba del propio panel
+//   (mismo patrón que ya usaban Reportes y Vigilancia BOE para sus dos
+//   vistas internas) -- útil sobre todo en móvil, donde la barra lateral
+//   se cierra sola al navegar (ver cerrarSidebar en activarPestana) y
+//   este selector queda como la única forma de cambiar de vista sin
+//   volver a abrir el menú.
+// Los grupos de una sola vista (Dashboard, Vigilancia BOE) no llevan
+// ninguno de los dos -- pulsar el botón ya lleva directo a su única vista.
 const GRUPOS = {
-  dashboard: { label: "Dashboard", pestanas: ["dashboard"], tipo: "simple" },
-  contenido: { label: "Contenido", pestanas: ["temario", "preguntas", "analitica"], tipo: "switcher" },
-  usuarios: { label: "Usuarios", pestanas: ["usuarios", "bajas", "reportes"], tipo: "switcher" },
-  boe: { label: "Vigilancia BOE", pestanas: ["boe"], tipo: "simple" },
-  configuracion: { label: "Configuración", pestanas: ["limites", "sistema", "auditoria"], tipo: "submenu" },
+  dashboard: { label: "Dashboard", pestanas: ["dashboard"], enPanel: false, enSidebar: false },
+  contenido: { label: "Contenido", pestanas: ["temario", "preguntas", "analitica"], enPanel: true, enSidebar: true },
+  usuarios: { label: "Usuarios", pestanas: ["usuarios", "bajas", "reportes"], enPanel: true, enSidebar: true },
+  boe: { label: "Vigilancia BOE", pestanas: ["boe"], enPanel: false, enSidebar: false },
+  configuracion: { label: "Configuración", pestanas: ["limites", "sistema", "auditoria"], enPanel: false, enSidebar: true },
 };
 const RENDERS = {
   dashboard: renderDashboard,
@@ -242,33 +246,41 @@ let pestanaActual = "dashboard";
 // por "Bajas", volver ahí y no siempre a "Usuarios" al pulsar el grupo).
 let ultimaPestanaPorGrupo = {};
 
-// Selector de pastillas para un grupo "switcher", pintado arriba del
-// panel activo -- se oculta solo si el grupo no lo necesita (tipo
-// distinto) o si este admin en concreto solo tiene permiso para ver una
-// de sus vistas (no tiene sentido un selector de una sola opción).
+// Selector de pastillas arriba del panel activo (grupos con enPanel) --
+// se oculta si el grupo no lo usa o si este admin en concreto solo tiene
+// permiso para ver una de sus vistas (no tiene sentido un selector de una
+// sola opción).
 function renderSelectorGrupo(grupoId) {
   const cont = document.getElementById("admin-subtabs");
   if (!cont) return;
   const grupo = GRUPOS[grupoId];
-  const visibles = grupo && grupo.tipo === "switcher" ? grupo.pestanas.filter((p) => puedeVer(p)) : [];
+  const visibles = grupo && grupo.enPanel ? grupo.pestanas.filter((p) => puedeVer(p)) : [];
   if (visibles.length <= 1) { cont.hidden = true; cont.innerHTML = ""; return; }
   cont.hidden = false;
   cont.innerHTML = segmentoHtml(visibles.map((p) => ({ id: `subtab-${p}`, tab: p, label: LABEL_SUBTAB[p], activo: p === pestanaActual })));
   cont.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => activarPestana(b.dataset.tab)));
 }
 
-function pintarSubmenuConfiguracion() {
-  const cont = document.getElementById("admin-submenu-configuracion");
+// Desplegable de un grupo en la propia barra lateral (grupos con
+// enSidebar) -- pinta sus botones una vez al arrancar (con las vistas que
+// este admin puede ver) y se abre/cierra sin volver a pintarlos.
+function pintarSubmenuSidebar(grupoId) {
+  const cont = document.getElementById(`admin-submenu-${grupoId}`);
   if (!cont) return;
-  const visibles = GRUPOS.configuracion.pestanas.filter((p) => puedeVer(p));
+  const visibles = GRUPOS[grupoId].pestanas.filter((p) => puedeVer(p));
   cont.innerHTML = visibles.map((p) => `<button type="button" class="admin-subtab" data-tab="${p}">${LABEL_SUBTAB[p]}</button>`).join("");
   cont.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => activarPestana(b.dataset.tab)));
 }
-function alternarSubmenuConfiguracion(forzarAbierto) {
-  const cont = document.getElementById("admin-submenu-configuracion");
-  const boton = document.querySelector('.admin-tab[data-grupo="configuracion"]');
+// Acordeón exclusivo: abrir un desplegable cierra los demás, para que la
+// barra lateral no acumule varios abiertos a la vez.
+function alternarSubmenuSidebar(grupoId, forzarAbierto) {
+  const cont = document.getElementById(`admin-submenu-${grupoId}`);
+  const boton = document.querySelector(`.admin-tab[data-grupo="${grupoId}"]`);
   if (!cont || !boton) return;
   const abrir = forzarAbierto != null ? forzarAbierto : cont.hidden;
+  if (abrir) {
+    Object.keys(GRUPOS).forEach((g) => { if (g !== grupoId && GRUPOS[g].enSidebar) alternarSubmenuSidebar(g, false); });
+  }
   cont.hidden = !abrir;
   boton.setAttribute("aria-expanded", String(abrir));
 }
@@ -281,7 +293,7 @@ function activarPestana(nombre) {
 
   document.querySelectorAll(".admin-tab[data-grupo]").forEach((b) => b.classList.toggle("active", b.dataset.grupo === grupoId));
   document.querySelectorAll(".admin-subtab").forEach((b) => b.classList.toggle("active", b.dataset.tab === nombre));
-  if (grupoId === "configuracion") alternarSubmenuConfiguracion(true);
+  if (grupoId && GRUPOS[grupoId].enSidebar) alternarSubmenuSidebar(grupoId, true);
   renderSelectorGrupo(grupoId);
 
   document.querySelectorAll(".admin-panel").forEach((p) => { p.hidden = p.id !== `panel-${nombre}`; });
@@ -1922,15 +1934,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   document.getElementById("admin-contenido").style.display = "flex";
 
-  pintarSubmenuConfiguracion();
+  Object.keys(GRUPOS).filter((g) => GRUPOS[g].enSidebar).forEach(pintarSubmenuSidebar);
 
   // Oculta grupos enteros sin NINGUNA vista visible para este admin (según
   // su permiso), y deja el resto cableado -- dentro de un grupo visible,
-  // sus subvistas sin permiso ya se filtran solas al pintar el selector
-  // (renderSelectorGrupo/pintarSubmenuConfiguracion). Vigilancia BOE es
-  // aparte: puede tener permiso y aun así empezar oculta (ver
+  // sus subvistas sin permiso ya se filtran solas al pintar el selector/
+  // desplegable (renderSelectorGrupo/pintarSubmenuSidebar). Vigilancia BOE
+  // es aparte: puede tener permiso y aun así empezar oculta (ver
   // actualizarBadgeBoe), así que aquí solo se la oculta del todo si NI
-  // siquiera hay permiso.
+  // siquiera hay permiso. Un solo clic en cualquier grupo lleva a su
+  // última vista visitada (o a la primera visible la primera vez) --
+  // activarPestana ya se encarga de desplegar el submenú de ese grupo si
+  // lo tiene, no hace falta un manejador aparte solo para desplegar.
   let primeraPestanaVisible = null;
   document.querySelectorAll(".admin-tab[data-grupo]").forEach((b) => {
     const grupoId = b.dataset.grupo;
@@ -1943,11 +1958,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
     if (!primeraPestanaVisible) primeraPestanaVisible = visibles[0];
-    if (grupo.tipo === "submenu") {
-      b.addEventListener("click", () => alternarSubmenuConfiguracion());
-    } else {
-      b.addEventListener("click", () => activarPestana(ultimaPestanaPorGrupo[grupoId] || visibles[0]));
-    }
+    b.addEventListener("click", () => activarPestana(ultimaPestanaPorGrupo[grupoId] || visibles[0]));
   });
 
   document.getElementById("admin-oposicion").addEventListener("change", () => { temaSeleccionado = null; RENDERS[pestanaActual](); });
