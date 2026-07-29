@@ -650,6 +650,12 @@ tr.sis-opt .sis-punto { background: #d9a300; }
   .ficha-kpis { grid-template-columns: repeat(2, 1fr); }
   .ficha-datos { grid-template-columns: 1fr; }
   .ficha-avatar { width: 44px; height: 44px; font-size: 1.25rem; }
+  /* Con 4 pestañas ("Administración" incluida) el selector no cabe en una
+     fila en móvil -- el texto (nowrap) se salía de su pastilla y se veía
+     cortado/solapado. En rejilla 2x2, con el texto pudiendo partirse en
+     dos líneas dentro de cada celda, se lee entero. */
+  .ficha-selector .admin-segmentado { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; }
+  .ficha-selector .admin-segmento { white-space: normal; padding: 8px 6px; font-size: 12px; line-height: 1.25; }
 }
 
 /* Responsive */
