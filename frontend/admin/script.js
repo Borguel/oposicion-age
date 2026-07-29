@@ -866,11 +866,9 @@ async function renderUsuarios() {
       <select id="u-plan" class="age-input"><option value="">Todos los planes</option><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
       <button class="age-btn age-btn-primary admin-filtros-btn" id="u-aplicar">Buscar</button>
       <button class="age-btn age-btn-outline admin-filtros-btn" id="u-csv">${icono("descargar", 15)} CSV</button>
-      ${_permisos.admin ? '<button class="age-btn age-btn-outline admin-filtros-btn" id="u-crear">+ Crear usuario</button>' : ""}
     </div>
-    <div class="age-card"><div id="usuarios-tabla"><p class="admin-cargando">Cargando…</p></div></div>`;
+    <div id="usuarios-tabla"><p class="admin-cargando">Cargando…</p></div>`;
   panel.querySelector("#u-aplicar").addEventListener("click", () => { paginaUsuarios = 1; cargarUsuarios(); });
-  panel.querySelector("#u-crear")?.addEventListener("click", modalCrearUsuario);
   panel.querySelector("#u-csv").addEventListener("click", () => {
     const params = new URLSearchParams();
     const b = document.getElementById("u-busqueda")?.value.trim();
@@ -939,29 +937,37 @@ async function cargarUsuarios() {
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/usuarios?${params.toString()}`);
   if (!d) return;
-  const celdaUso = (u) => {
-    const pct = u.uso_pct || 0;
-    const cls = pct >= 100 ? "u-uso-alto" : (pct >= 80 ? "u-uso-medio" : (pct > 0 ? "u-uso-ok" : "u-uso-cero"));
-    const titulo = u.uso_tool ? `${u.uso_tool}: ${pct}% de su cupo` : "Sin uso este periodo";
-    return `<span class="u-uso ${cls}" title="${escapeHtml(titulo)}"><span class="u-uso-punto"></span>${pct}%</span>`;
-  };
-  const filas = (d.usuarios || []).map((u) => `
-    <tr class="admin-fila-click" data-uid="${escapeHtml(u.uid)}">
-      <td>${escapeHtml(u.email || "(sin email)")}</td><td><span class="admin-chip">${escapeHtml(u.plan)}</span>${u.en_prueba ? ' <span class="admin-chip admin-chip-prueba">en prueba</span>' : ""}</td>
-      <td>${(u.oposiciones_activas || []).map(escapeHtml).join(", ") || "-"}</td>
-      <td>${celdaUso(u)}</td>
-      <td class="admin-num">${fechaCorta(u.ultima_actividad)}</td></tr>`).join("")
-    || `<tr><td colspan="5" class="admin-vacio">Sin usuarios.</td></tr>`;
   const totalPaginas = Math.max(1, Math.ceil((d.total || 0) / (d.por_pagina || 20)));
   const flechaUso = ordenUsuarios === "uso" ? " ▼" : "";
+  const tarjetaAnadir = _permisos.admin ? `
+    <button type="button" class="u-card u-card-anadir" id="u-anadir">
+      <span class="u-card-anadir-ico">${icono("mas", 22)}</span>
+      <span>Añadir usuario</span>
+    </button>` : "";
   cont.innerHTML = `
-    <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Email</th><th>Plan</th><th>Oposiciones</th><th><button class="admin-orden-btn" id="u-orden-uso" title="Ordenar por mayor uso">Uso${flechaUso}</button></th><th class="admin-num">Últ. act.</th></tr></thead><tbody>${filas}</tbody></table></div>
+    <div class="u-grid-cab">
+      <span>${d.total} usuario${d.total === 1 ? "" : "s"}</span>
+      <button class="admin-orden-btn" id="u-orden-uso" title="Ordenar por mayor uso">Ordenar por uso${flechaUso}</button>
+    </div>
+    <div class="u-grid">${(d.usuarios || []).map(tarjetaUsuario).join("") || '<p class="admin-vacio">Sin usuarios.</p>'}${tarjetaAnadir}</div>
     <div class="admin-paginacion">
       <button class="age-btn age-btn-outline admin-mini" id="u-prev" ${paginaUsuarios <= 1 ? "disabled" : ""}>◀ Anterior</button>
       <span>Página ${d.pagina} de ${totalPaginas} · ${d.total} usuarios</span>
       <button class="age-btn age-btn-outline admin-mini" id="u-next" ${paginaUsuarios >= totalPaginas ? "disabled" : ""}>Siguiente ▶</button>
     </div>`;
-  cont.querySelectorAll(".admin-fila-click").forEach((tr) => tr.addEventListener("click", () => abrirUsuario(tr.dataset.uid)));
+  cont.querySelectorAll(".u-card[data-uid]").forEach((card) => card.addEventListener("click", (e) => {
+    if (e.target.closest("[data-eliminar]")) return;
+    abrirUsuario(card.dataset.uid);
+  }));
+  cont.querySelector("#u-anadir")?.addEventListener("click", modalCrearUsuario);
+  cont.querySelectorAll("[data-eliminar]").forEach((btn) => btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const email = btn.dataset.email;
+    if (!confirm(`Vas a ELIMINAR por completo la cuenta de ${email}. Es IRREVERSIBLE (se borran todos sus datos y su suscripción). ¿Continuar?`)) return;
+    if (!confirm("Confirma otra vez: esta acción no se puede deshacer.")) return;
+    const r = await api("DELETE", `/admin/api/usuarios/${btn.dataset.eliminar}`);
+    if (r) { toast("Cuenta eliminada."); cargarUsuarios(); }
+  }));
   cont.querySelector("#u-prev")?.addEventListener("click", () => { paginaUsuarios--; cargarUsuarios(); });
   cont.querySelector("#u-next")?.addEventListener("click", () => { paginaUsuarios++; cargarUsuarios(); });
   cont.querySelector("#u-orden-uso")?.addEventListener("click", () => {
@@ -969,6 +975,37 @@ async function cargarUsuarios() {
     paginaUsuarios = 1;
     cargarUsuarios();
   });
+}
+
+function tarjetaUsuario(u) {
+  const inicial = (u.nombre || u.email || "?").trim().charAt(0).toUpperCase() || "?";
+  const pct = u.uso_pct || 0;
+  const cls = pct >= 100 ? "u-card-uso-alto" : (pct >= 80 ? "u-card-uso-medio" : "");
+  const usoTitulo = u.uso_tool ? `${u.uso_tool} · ${pct}% de su cupo` : "Sin uso este periodo";
+  const oposiciones = (u.oposiciones_activas || []).map(escapeHtml).join(", ") || "Sin oposición activa";
+  return `
+    <div class="u-card" data-uid="${escapeHtml(u.uid)}">
+      <div class="u-card-cab">
+        <div class="u-card-avatar">${escapeHtml(inicial)}</div>
+        <div class="u-card-id">
+          <h3 class="u-card-nombre" title="${escapeHtml(u.nombre || u.email || "")}">${escapeHtml(u.nombre || u.email || "(sin email)")}</h3>
+          <p class="u-card-email" title="${escapeHtml(u.email || "")}">${escapeHtml(u.email || "(sin email)")}</p>
+        </div>
+        ${fichaPlanBadge(u.plan, u.en_prueba)}
+      </div>
+      <div class="u-card-fila"><span class="u-card-fila-ico">${icono("diana", 15)}</span><span class="u-card-fila-lbl">${oposiciones}</span></div>
+      <div class="u-card-uso">
+        <div class="u-card-uso-cab"><span>Uso${u.uso_tool ? " · " + escapeHtml(u.uso_tool) : ""}</span><span title="${escapeHtml(usoTitulo)}">${pct}%</span></div>
+        <div class="u-card-uso-barra"><span class="u-card-uso-relleno ${cls}" style="width:${Math.min(100, pct)}%"></span></div>
+      </div>
+      <div class="u-card-pie">
+        <span class="u-card-actividad">Últ. actividad: ${fechaCorta(u.ultima_actividad)}</span>
+        <div class="u-card-acciones">
+          <button type="button" class="u-card-btn" title="Ver ficha">${icono("lapiz", 15)}</button>
+          ${_permisos.admin ? `<button type="button" class="u-card-btn u-card-btn-peligro" data-eliminar="${escapeHtml(u.uid)}" data-email="${escapeHtml(u.email || "")}" title="Eliminar cuenta">${icono("papelera", 15)}</button>` : ""}
+        </div>
+      </div>
+    </div>`;
 }
 
 // ---- Ficha de cliente: piezas visuales reutilizables ----
