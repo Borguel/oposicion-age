@@ -679,8 +679,11 @@ async function cargarPreguntas() {
   const bloquesConocidos = (temario?.bloques || []).map((b) => {
     const porTema = porBloque.get(b.id) || new Map();
     porBloque.delete(b.id);
-    const temas = b.temas.map((t) => ({ id: t.id, titulo: t.titulo, preguntas: porTema.get(t.id) || [] }));
-    porTema.forEach((preguntas, temaId) => { if (!b.temas.some((t) => t.id === temaId)) temas.push({ id: temaId, titulo: temaId, preguntas }); });
+    // Las preguntas guardan el tema_id completo ("bloque_01-tema_01"), pero
+    // el temario identifica cada tema solo por su id corto ("tema_01") --
+    // hay que reconstruir la clave completa para que casen.
+    const temas = b.temas.map((t) => ({ id: t.id, titulo: t.titulo, preguntas: porTema.get(`${b.id}-${t.id}`) || [] }));
+    porTema.forEach((preguntas, temaId) => { if (!b.temas.some((t) => `${b.id}-${t.id}` === temaId)) temas.push({ id: temaId, titulo: temaId, preguntas }); });
     return { id: b.id, titulo: b.titulo, temas, desconocido: false };
   });
   // Bloques con preguntas cuyo id ya no existe en el temario actual (borrado
