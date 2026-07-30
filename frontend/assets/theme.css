@@ -1027,6 +1027,25 @@ body {
 .age-banner-aviso { background: #d98324; }
 .age-banner-urgente { background: #c0392b; }
 
+/* Fuente y animación configurables desde el panel admin (Configuración
+   → Sistema) para el aviso global y la promoción -- ver
+   frontend/assets/auth.js, aplicarEstiloAviso(). "Deslizante" es una
+   cinta continua (la interpretación más literal de "letras en
+   movimiento"); el resto son animaciones sutiles. Ninguna se aplica
+   si el aviso usa los valores por defecto ("default"/"ninguna"). */
+@keyframes ageBannerParpadeo { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes ageBannerRebote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes ageBannerDeslizante { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+
+.age-anim-parpadeo { animation: ageBannerParpadeo 1.8s ease-in-out infinite; }
+.age-anim-rebote { animation: ageBannerRebote 1.4s ease-in-out infinite; }
+.age-anim-deslizante { display: inline-block; animation: ageBannerDeslizante 10s linear infinite; }
+.age-banner-scroll { overflow: hidden; white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .age-anim-parpadeo, .age-anim-rebote, .age-anim-deslizante { animation: none; }
+}
+
 /* ---------- Aviso de cookies ---------- */
 .age-cookies-banner {
   position: fixed;
@@ -1192,6 +1211,19 @@ body {
 }
 
 .age-banner-promo-texto strong { color: var(--age-primary-light, #ffb84d); }
+
+/* Envoltorio interior: cuando la animación es "deslizante", el
+   overflow:hidden (age-banner-scroll) va en .age-banner-promo-texto (la
+   "ventana", que se queda quieta en su sitio en la fila) y la animación va
+   en este interior (lo único que se traslada) -- si ambas cosas fueran el
+   mismo elemento, el texto se solaparía con la cuenta atrás y el botón al
+   deslizarse, porque transform no afecta a la posición de sus hermanos. */
+.age-banner-promo-texto-int {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
 
 .age-banner-promo-cuenta {
   display: inline-flex;

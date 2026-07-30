@@ -1984,6 +1984,13 @@ def sistema_estado():
 # ============================================================
 # Banner / aviso global del sitio
 # ============================================================
+# Valores admitidos para personalizar la letra/animación de avisos y
+# promociones (ver frontend/assets/auth.js, FUENTES_AVISO -- son solo
+# pilas de fuentes de sistema, sin cargar ningún webfont externo).
+FUENTES_AVISO_VALIDAS = ("default", "redondeada", "elegante", "impacto")
+ANIMACIONES_AVISO_VALIDAS = ("ninguna", "parpadeo", "deslizante", "rebote")
+
+
 def _leer_banner():
     doc = db.collection("config").document("banner").get()
     d = doc.to_dict() or {} if doc.exists else {}
@@ -1991,6 +1998,8 @@ def _leer_banner():
         "activo": bool(d.get("activo", False)),
         "texto": d.get("texto", ""),
         "tipo": d.get("tipo", "info"),
+        "fuente": d.get("fuente", "default"),
+        "animacion": d.get("animacion", "ninguna"),
     }
 
 
@@ -2007,10 +2016,18 @@ def banner_guardar():
     tipo = data.get("tipo", "info")
     if tipo not in ("info", "aviso", "urgente"):
         tipo = "info"
+    fuente = data.get("fuente", "default")
+    if fuente not in FUENTES_AVISO_VALIDAS:
+        fuente = "default"
+    animacion = data.get("animacion", "ninguna")
+    if animacion not in ANIMACIONES_AVISO_VALIDAS:
+        animacion = "ninguna"
     banner = {
         "activo": bool(data.get("activo", False)),
         "texto": str(data.get("texto", "")).strip()[:300],
         "tipo": tipo,
+        "fuente": fuente,
+        "animacion": animacion,
     }
     db.collection("config").document("banner").set(banner)
     _registrar_auditoria("banner", "", ("ON: " if banner["activo"] else "OFF: ") + banner["texto"][:80])
@@ -2054,6 +2071,12 @@ def promocion_guardar():
             datetime.fromisoformat(fecha_fin)
         except ValueError:
             return jsonify({"error": "Fecha de fin no válida (usa formato ISO, ej. 2026-08-01T23:59:00)"}), 400
+    fuente = data.get("fuente", "default")
+    if fuente not in FUENTES_AVISO_VALIDAS:
+        fuente = "default"
+    animacion = data.get("animacion", "ninguna")
+    if animacion not in ANIMACIONES_AVISO_VALIDAS:
+        animacion = "ninguna"
     promo = {
         "activo": bool(data.get("activo", False)),
         "plan": plan,
@@ -2062,6 +2085,8 @@ def promocion_guardar():
         "fecha_fin": fecha_fin,
         "stripe_promotion_code": str(data.get("stripe_promotion_code", "")).strip()[:80],
         "mensaje": str(data.get("mensaje", "")).strip()[:200],
+        "fuente": fuente,
+        "animacion": animacion,
     }
     db.collection("config").document("promocion").set(promo)
     _registrar_auditoria(

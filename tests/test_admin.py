@@ -794,14 +794,31 @@ def test_limites_solo_admin_total(client, db):
 
 def test_banner_guardar_y_lectura_publica(client, db):
     with _como():
-        client.put("/admin/api/banner", json={"activo": True, "texto": "Hola", "tipo": "aviso"}, headers=_AUTH)
+        client.put(
+            "/admin/api/banner",
+            json={"activo": True, "texto": "Hola", "tipo": "aviso", "fuente": "elegante", "animacion": "parpadeo"},
+            headers=_AUTH,
+        )
     # Lectura pública sin token.
     pub = client.get("/banner-global").get_json()
     assert pub["activo"] is True and pub["texto"] == "Hola" and pub["tipo"] == "aviso"
+    assert pub["fuente"] == "elegante" and pub["animacion"] == "parpadeo"
     # Desactivado -> no expone el texto.
     with _como():
         client.put("/admin/api/banner", json={"activo": False, "texto": "Hola"}, headers=_AUTH)
     assert client.get("/banner-global").get_json() == {"activo": False}
+
+
+def test_banner_fuente_animacion_invalidas_caen_a_valor_por_defecto(client, db):
+    with _como():
+        r = client.put(
+            "/admin/api/banner",
+            json={"activo": True, "texto": "Hola", "fuente": "no-existe", "animacion": "no-existe"},
+            headers=_AUTH,
+        )
+    assert r.status_code == 200
+    d = r.get_json()
+    assert d["fuente"] == "default" and d["animacion"] == "ninguna"
 
 
 def test_promocion_guardar_y_lectura_publica(client, db):
@@ -812,6 +829,7 @@ def test_promocion_guardar_y_lectura_publica(client, db):
                 "activo": True, "plan": "premium", "descuento_pct": 20,
                 "duracion_texto": "2 meses", "fecha_fin": "2099-01-01T00:00:00",
                 "stripe_promotion_code": "promo_abc123", "mensaje": "Oferta especial",
+                "fuente": "impacto", "animacion": "deslizante",
             },
             headers=_AUTH,
         )
@@ -821,6 +839,19 @@ def test_promocion_guardar_y_lectura_publica(client, db):
     assert pub["plan"] == "premium"
     assert pub["descuento_pct"] == 20
     assert pub["stripe_promotion_code"] == "promo_abc123"
+    assert pub["fuente"] == "impacto" and pub["animacion"] == "deslizante"
+
+
+def test_promocion_fuente_animacion_invalidas_caen_a_valor_por_defecto(client, db):
+    with _como():
+        r = client.put(
+            "/admin/api/promocion",
+            json={"activo": True, "plan": "premium", "fuente": "no-existe", "animacion": "no-existe"},
+            headers=_AUTH,
+        )
+    assert r.status_code == 200
+    d = r.get_json()
+    assert d["fuente"] == "default" and d["animacion"] == "ninguna"
 
 
 def test_promocion_caducada_no_se_expone_aunque_siga_activa(client, db):

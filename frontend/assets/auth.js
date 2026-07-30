@@ -894,6 +894,27 @@ async function inyectarBannerPrueba(user) {
 const CLAVE_BANNER_PROMO_CERRADO = "age_banner_promo_cerrado";
 let _promoIntervalo = null;
 
+// Fuente/animación configurables desde el panel admin para el aviso global
+// y la promoción (ver blueprints/admin.py, FUENTES_AVISO_VALIDAS /
+// ANIMACIONES_AVISO_VALIDAS -- deben coincidir con estas claves). Solo
+// pilas de fuentes ya instaladas en el sistema, sin cargar ningún webfont
+// externo (decisión deliberada: evita peticiones a terceros y las dudas de
+// privacidad que eso conlleva en una web pensada para la UE).
+const FUENTES_AVISO = {
+  redondeada: "'Trebuchet MS', Verdana, sans-serif",
+  elegante: "Georgia, 'Times New Roman', serif",
+  impacto: "Impact, 'Arial Black', sans-serif",
+  // "default" no se aplica: se deja la fuente heredada (--age-font).
+};
+
+function aplicarEstiloAviso(elTexto, fuente, animacion, contenedor) {
+  if (FUENTES_AVISO[fuente]) elTexto.style.fontFamily = FUENTES_AVISO[fuente];
+  if (animacion && animacion !== "ninguna") {
+    elTexto.classList.add(`age-anim-${animacion}`);
+    if (animacion === "deslizante" && contenedor) contenedor.classList.add("age-banner-scroll");
+  }
+}
+
 function formatearCuentaAtrasPromo(msRestantes) {
   const totalSeg = Math.max(0, Math.floor(msRestantes / 1000));
   const d = Math.floor(totalSeg / 86400);
@@ -934,7 +955,7 @@ async function inyectarBannerPromocion(user) {
   banner.className = "age-banner-promo";
   banner.setAttribute("role", "status");
   banner.innerHTML = `
-    <span class="age-banner-promo-texto">${icono("destellos", 16)} <strong>${escapeHtmlBuscador(mensaje)}</strong></span>
+    <span class="age-banner-promo-texto"><span class="age-banner-promo-texto-int">${icono("destellos", 16)} <strong>${escapeHtmlBuscador(mensaje)}</strong></span></span>
     <span class="age-banner-promo-cuenta" id="age-promo-cuenta" aria-hidden="true"></span>
     <div class="age-banner-promo-acciones">
       <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>
@@ -942,6 +963,9 @@ async function inyectarBannerPromocion(user) {
     </div>
   `;
   document.body.prepend(banner);
+  const contenedorTexto = banner.querySelector(".age-banner-promo-texto");
+  const interiorTexto = banner.querySelector(".age-banner-promo-texto-int");
+  if (interiorTexto) aplicarEstiloAviso(interiorTexto, promo.fuente, promo.animacion, contenedorTexto);
 
   document.getElementById("age-promo-cerrar").addEventListener("click", () => {
     sessionStorage.setItem(CLAVE_BANNER_PROMO_CERRADO, "1");
@@ -1095,7 +1119,11 @@ async function inyectarBannerGlobal() {
     const barra = document.createElement("div");
     barra.className = `age-banner-global age-banner-${b.tipo || "info"}`;
     barra.setAttribute("role", "status");
-    barra.textContent = b.texto;
+    const texto = document.createElement("span");
+    texto.className = "age-banner-global-texto";
+    texto.textContent = b.texto;
+    barra.appendChild(texto);
+    aplicarEstiloAviso(texto, b.fuente, b.animacion, barra);
     document.body.insertBefore(barra, document.body.firstChild);
   } catch (e) { /* si falla, no pasa nada: la web sigue igual */ }
 }

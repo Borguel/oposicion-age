@@ -2207,8 +2207,32 @@ async function renderSistema() {
       <td class="admin-reporte-meta">${escapeHtml(s.detalle)}</td>
     </tr>`;
   }).join("");
-  const b = banner || { activo: false, texto: "", tipo: "info" };
-  const p = promo || { activo: false, plan: "premium", descuento_pct: 0, duracion_texto: "", fecha_fin: "", stripe_promotion_code: "", mensaje: "" };
+  const b = banner || { activo: false, texto: "", tipo: "info", fuente: "default", animacion: "ninguna" };
+  const p = promo || { activo: false, plan: "premium", descuento_pct: 0, duracion_texto: "", fecha_fin: "", stripe_promotion_code: "", mensaje: "", fuente: "default", animacion: "ninguna" };
+  // Fuente/animación: mismas claves que FUENTES_AVISO_VALIDAS/ANIMACIONES_AVISO_VALIDAS
+  // en blueprints/admin.py y FUENTES_AVISO en frontend/assets/auth.js -- se
+  // duplica aquí (en vez de importar auth.js) para no acoplar el bundle del
+  // admin a los efectos secundarios que auth.js dispara al cargarse (inyecta
+  // banners reales en cualquier página que lo importe).
+  const OPCIONES_FUENTE = [
+    ["default", "Predeterminada"],
+    ["redondeada", "Redondeada"],
+    ["elegante", "Elegante"],
+    ["impacto", "Llamativa (Impacto)"],
+  ];
+  const OPCIONES_ANIMACION = [
+    ["ninguna", "Ninguna (estático)"],
+    ["parpadeo", "Parpadeo suave"],
+    ["deslizante", "Deslizante (cinta en movimiento)"],
+    ["rebote", "Rebote sutil"],
+  ];
+  const FUENTES_CSS = {
+    redondeada: "'Trebuchet MS', Verdana, sans-serif",
+    elegante: "Georgia, 'Times New Roman', serif",
+    impacto: "Impact, 'Arial Black', sans-serif",
+  };
+  const opcionesSelect = (opciones, actual) => opciones.map(([v, lbl]) =>
+    `<option value="${v}" ${actual === v ? "selected" : ""}>${escapeHtml(lbl)}</option>`).join("");
   // Panel de diagnóstico: semáforo global + cosas a vigilar.
   const todoOk = diag.todo_ok !== false;
   const avisos = [];
@@ -2227,46 +2251,141 @@ async function renderSistema() {
       <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Servicio</th><th>Estado</th><th>Para qué</th></tr></thead><tbody>${servicios}</tbody></table></div>
     </div>
     <div class="age-card admin-bloque">
-      <h3>Aviso global del sitio</h3>
+      <h3>${icono("megafono", 17)} Aviso global del sitio</h3>
       <p class="admin-reporte-meta">Se muestra a todos los usuarios en la parte superior de la web.</p>
       <label class="admin-toggle" style="margin:8px 0;"><input type="checkbox" id="ban-activo" ${b.activo ? "checked" : ""}> <span>Mostrar el aviso</span></label>
       <label>Texto</label>
       <input class="age-input" id="ban-texto" maxlength="300" value="${escapeHtml(b.texto)}" placeholder="Ej. Mantenimiento programado el viernes de 22h a 23h.">
-      <label>Tipo</label>
-      <select class="age-input" id="ban-tipo">
-        <option value="info" ${b.tipo === "info" ? "selected" : ""}>Info (azul)</option>
-        <option value="aviso" ${b.tipo === "aviso" ? "selected" : ""}>Aviso (naranja)</option>
-        <option value="urgente" ${b.tipo === "urgente" ? "selected" : ""}>Urgente (rojo)</option>
-      </select>
+      <div class="admin-form-fila" style="margin-top:10px;">
+        <div>
+          <label>Tipo</label>
+          <select class="age-input" id="ban-tipo">
+            <option value="info" ${b.tipo === "info" ? "selected" : ""}>Info (azul)</option>
+            <option value="aviso" ${b.tipo === "aviso" ? "selected" : ""}>Aviso (naranja)</option>
+            <option value="urgente" ${b.tipo === "urgente" ? "selected" : ""}>Urgente (rojo)</option>
+          </select>
+        </div>
+        <div>
+          <label>Letra</label>
+          <select class="age-input" id="ban-fuente">${opcionesSelect(OPCIONES_FUENTE, b.fuente)}</select>
+        </div>
+        <div>
+          <label>Animación</label>
+          <select class="age-input" id="ban-animacion">${opcionesSelect(OPCIONES_ANIMACION, b.animacion)}</select>
+        </div>
+      </div>
+      <div class="sis-preview">
+        <p class="sis-preview-lbl">Vista previa</p>
+        <div id="ban-preview"></div>
+      </div>
       <button class="age-btn age-btn-primary" id="ban-guardar" style="margin-top:12px;">Guardar aviso</button>
     </div>
     <div class="age-card admin-bloque">
       <h3>${icono("destellos", 17)} Promoción / descuento temporal</h3>
       <p class="admin-reporte-meta">Muestra un banner con cuenta atrás a quien todavía NO tenga el plan elegido (visitantes sin cuenta incluidos). A quien ya lo tenga activo no le sale nada.</p>
       <label class="admin-toggle" style="margin:8px 0;"><input type="checkbox" id="promo-activo" ${p.activo ? "checked" : ""}> <span>Activar promoción</span></label>
-      <label>Plan al que aplica</label>
-      <select class="age-input" id="promo-plan">
-        <option value="basico" ${p.plan === "basico" ? "selected" : ""}>Básico</option>
-        <option value="premium" ${p.plan === "premium" ? "selected" : ""}>Premium</option>
-      </select>
-      <label>% de descuento (solo para el texto del aviso)</label>
-      <input class="age-input" id="promo-descuento" type="number" min="0" max="100" value="${p.descuento_pct || 0}">
-      <label>Duración del descuento (texto libre, ej. "2 meses")</label>
-      <input class="age-input" id="promo-duracion" maxlength="60" value="${escapeHtml(p.duracion_texto)}" placeholder="Ej. 2 meses">
-      <label>Termina el</label>
-      <input class="age-input" id="promo-fecha-fin" type="datetime-local" value="${isoAInputLocal(p.fecha_fin)}">
+      <div class="admin-form-fila">
+        <div>
+          <label>Plan al que aplica</label>
+          <select class="age-input" id="promo-plan">
+            <option value="basico" ${p.plan === "basico" ? "selected" : ""}>Básico</option>
+            <option value="premium" ${p.plan === "premium" ? "selected" : ""}>Premium</option>
+          </select>
+        </div>
+        <div>
+          <label>% de descuento (solo para el texto del aviso)</label>
+          <input class="age-input" id="promo-descuento" type="number" min="0" max="100" value="${p.descuento_pct || 0}">
+        </div>
+      </div>
+      <div class="admin-form-fila">
+        <div>
+          <label>Duración del descuento (texto libre, ej. "2 meses")</label>
+          <input class="age-input" id="promo-duracion" maxlength="60" value="${escapeHtml(p.duracion_texto)}" placeholder="Ej. 2 meses">
+        </div>
+        <div>
+          <label>Termina el</label>
+          <input class="age-input" id="promo-fecha-fin" type="datetime-local" value="${isoAInputLocal(p.fecha_fin)}">
+        </div>
+      </div>
+      <div class="admin-form-fila">
+        <div>
+          <label>Letra</label>
+          <select class="age-input" id="promo-fuente">${opcionesSelect(OPCIONES_FUENTE, p.fuente)}</select>
+        </div>
+        <div>
+          <label>Animación</label>
+          <select class="age-input" id="promo-animacion">${opcionesSelect(OPCIONES_ANIMACION, p.animacion)}</select>
+        </div>
+      </div>
       <label>Código de promoción de Stripe</label>
       <input class="age-input" id="promo-codigo" maxlength="80" value="${escapeHtml(p.stripe_promotion_code)}" placeholder="Ej. promo_1AbCdE...">
       <p class="admin-reporte-meta">Créalo antes en el Dashboard de Stripe (Productos → Cupones → Código promocional) y pega aquí su ID: al activarlo, se aplica solo al comprar el plan elegido arriba. Si lo dejas vacío, el aviso se muestra igualmente pero sin descuento automático en el pago.</p>
       <label>Mensaje del aviso (opcional, si lo dejas vacío se genera uno automático)</label>
       <input class="age-input" id="promo-mensaje" maxlength="200" value="${escapeHtml(p.mensaje)}" placeholder="Ej. 20% de descuento en Premium durante 2 meses">
+      <div class="sis-preview">
+        <p class="sis-preview-lbl">Vista previa</p>
+        <div id="promo-preview"></div>
+      </div>
       <button class="age-btn age-btn-primary" id="promo-guardar" style="margin-top:12px;">Guardar promoción</button>
     </div>`;
+  // Vista previa en vivo: reutiliza las clases públicas reales
+  // (age-banner-global/age-banner-promo, ya cargadas vía theme.css en el
+  // propio admin) para que se vea pixel-a-pixel igual que en la web.
+  const aplicarFuenteAnimacion = (elTexto, contenedor, fuente, animacion) => {
+    elTexto.style.fontFamily = FUENTES_CSS[fuente] || "";
+    elTexto.classList.remove("age-anim-parpadeo", "age-anim-deslizante", "age-anim-rebote");
+    contenedor.classList.remove("age-banner-scroll");
+    if (animacion && animacion !== "ninguna") {
+      elTexto.classList.add(`age-anim-${animacion}`);
+      if (animacion === "deslizante") contenedor.classList.add("age-banner-scroll");
+    }
+  };
+  const pintarPreviewBanner = () => {
+    const cont = panel.querySelector("#ban-preview");
+    if (!cont) return;
+    const texto = panel.querySelector("#ban-texto").value.trim() || "Así se verá tu aviso.";
+    const tipo = panel.querySelector("#ban-tipo").value;
+    cont.innerHTML = `<div class="age-banner-global age-banner-${tipo}"><span class="age-banner-global-texto">${escapeHtml(texto)}</span></div>`;
+    aplicarFuenteAnimacion(
+      cont.querySelector(".age-banner-global-texto"), cont.querySelector(".age-banner-global"),
+      panel.querySelector("#ban-fuente").value, panel.querySelector("#ban-animacion").value
+    );
+  };
+  const pintarPreviewPromo = () => {
+    const cont = panel.querySelector("#promo-preview");
+    if (!cont) return;
+    const nombrePlan = panel.querySelector("#promo-plan").value === "premium" ? "Premium" : "Básico";
+    const descuento = parseInt(panel.querySelector("#promo-descuento").value, 10) || 0;
+    const duracion = panel.querySelector("#promo-duracion").value.trim();
+    const mensaje = panel.querySelector("#promo-mensaje").value.trim()
+      || `${descuento}% de descuento en el plan ${nombrePlan}${duracion ? " durante " + duracion : ""}`;
+    cont.innerHTML = `<div class="age-banner-promo">
+      <span class="age-banner-promo-texto"><span class="age-banner-promo-texto-int">${icono("destellos", 16)} <strong>${escapeHtml(mensaje)}</strong></span></span>
+      <span class="age-banner-promo-cuenta">
+        <span class="age-banner-promo-chip">02d</span><span class="age-banner-promo-sep">:</span><span class="age-banner-promo-chip">14h</span><span class="age-banner-promo-sep">:</span><span class="age-banner-promo-chip">33m</span><span class="age-banner-promo-sep">:</span><span class="age-banner-promo-chip">10s</span>
+      </span>
+    </div>`;
+    aplicarFuenteAnimacion(
+      cont.querySelector(".age-banner-promo-texto-int"), cont.querySelector(".age-banner-promo-texto"),
+      panel.querySelector("#promo-fuente").value, panel.querySelector("#promo-animacion").value
+    );
+  };
+  pintarPreviewBanner();
+  pintarPreviewPromo();
+  ["ban-texto", "ban-tipo", "ban-fuente", "ban-animacion"].forEach((id) => {
+    panel.querySelector(`#${id}`).addEventListener("input", pintarPreviewBanner);
+  });
+  ["promo-plan", "promo-descuento", "promo-duracion", "promo-mensaje", "promo-fuente", "promo-animacion"].forEach((id) => {
+    panel.querySelector(`#${id}`).addEventListener("input", pintarPreviewPromo);
+  });
+
   panel.querySelector("#ban-guardar").addEventListener("click", async () => {
     const r = await api("PUT", "/admin/api/banner", {
       activo: panel.querySelector("#ban-activo").checked,
       texto: panel.querySelector("#ban-texto").value,
       tipo: panel.querySelector("#ban-tipo").value,
+      fuente: panel.querySelector("#ban-fuente").value,
+      animacion: panel.querySelector("#ban-animacion").value,
     });
     if (r) toast(r.activo ? "Aviso activado." : "Aviso guardado (oculto).");
   });
@@ -2280,6 +2399,8 @@ async function renderSistema() {
       fecha_fin: inputLocalAIso(fechaFin),
       stripe_promotion_code: panel.querySelector("#promo-codigo").value,
       mensaje: panel.querySelector("#promo-mensaje").value,
+      fuente: panel.querySelector("#promo-fuente").value,
+      animacion: panel.querySelector("#promo-animacion").value,
     });
     if (r) toast(r.activo ? "Promoción activada." : "Promoción guardada (oculta).");
   });
