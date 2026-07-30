@@ -299,18 +299,45 @@ function esEnlaceActivo(match, ruta) {
   return match.some((prefijo) => (prefijo === "/" ? ruta === "/" : ruta.startsWith(prefijo)));
 }
 
+// Modo oscuro: a nivel de módulo (no closures dentro de construirEsqueletoNav)
+// porque hay que poder engancharlo desde más de un sitio -- la fila del
+// cajón móvil (construirEsqueletoNav) Y la fila del menú de cuenta en
+// escritorio (construirMenuCuenta). Cualquier elemento con la clase
+// age-tema-toggle se pinta/engancha igual; localStorage["age-theme"] sigue
+// siendo la única fuente de verdad persistida (igual que antes).
+function actualizarIconoTema() {
+  const oscuro = document.documentElement.dataset.theme === "dark";
+  document.querySelectorAll(".age-tema-toggle").forEach((btn) => {
+    btn.innerHTML = `${icono(oscuro ? "sol" : "luna", 18)}<span>${oscuro ? "Modo claro" : "Modo oscuro"}</span>`;
+    btn.setAttribute("aria-label", oscuro ? "Activar modo claro" : "Activar modo oscuro");
+  });
+}
+
+function alternarTema() {
+  const oscuro = document.documentElement.dataset.theme === "dark";
+  if (oscuro) {
+    delete document.documentElement.dataset.theme;
+    localStorage.setItem("age-theme", "light");
+  } else {
+    document.documentElement.dataset.theme = "dark";
+    localStorage.setItem("age-theme", "dark");
+  }
+  actualizarIconoTema();
+}
+
 // Construye el esqueleto de la nav una sola vez (guardado por
 // nav.dataset.built). El resto de funciones (selector de oposición,
 // buscador, cuenta) se reconstruyen en cada onAuthStateChanged y se
 // insertan DENTRO de piezas de este esqueleto (.age-nav-utilidades,
 // .age-nav-links) que persisten entre esas reconstrucciones.
 //
-// En escritorio, buscador + oposición + modo oscuro viven agrupados en
-// el "pill" .age-nav-utilidades, separado del avatar de cuenta. En móvil
-// ese grupo se oculta entero y sus piezas (más el selector de oposición
-// y una fila de modo oscuro) se pintan en su lugar dentro del cajón que
-// abre el menú hamburguesa (.age-nav-links) -- ver inyectarSelectorOposicion
-// y construirBusquedaGlobal para la parte que insertan ellas mismas.
+// En escritorio, buscador + oposición viven agrupados en el "pill"
+// .age-nav-utilidades, separado del avatar de cuenta (el modo oscuro vive
+// dentro del propio menú de cuenta, ver construirMenuCuenta). En móvil ese
+// grupo se oculta entero y sus piezas (más el selector de oposición y una
+// fila de modo oscuro) se pintan en su lugar dentro del cajón que abre el
+// menú hamburguesa (.age-nav-links) -- ver inyectarSelectorOposicion y
+// construirBusquedaGlobal para la parte que insertan ellas mismas.
 function construirEsqueletoNav() {
   const nav = document.querySelector(".age-nav");
   if (!nav || nav.dataset.built) return;
@@ -353,7 +380,8 @@ function construirEsqueletoNav() {
 
   const temaBtnMovil = document.createElement("button");
   temaBtnMovil.type = "button";
-  temaBtnMovil.className = "age-tema-movil";
+  temaBtnMovil.className = "age-tema-movil age-tema-toggle";
+  temaBtnMovil.addEventListener("click", alternarTema);
   links.appendChild(temaBtnMovil);
 
   const right = document.createElement("div");
@@ -363,33 +391,6 @@ function construirEsqueletoNav() {
   const utilidades = document.createElement("div");
   utilidades.className = "age-nav-utilidades";
   right.appendChild(utilidades);
-
-  const temaBtn = document.createElement("button");
-  temaBtn.type = "button";
-  temaBtn.className = "age-nav-icon-btn age-tema-btn";
-  temaBtn.id = "age-tema-btn";
-  utilidades.appendChild(temaBtn);
-
-  const actualizarIconoTema = () => {
-    const oscuro = document.documentElement.dataset.theme === "dark";
-    temaBtn.innerHTML = icono(oscuro ? "sol" : "luna", 18);
-    temaBtn.setAttribute("aria-label", oscuro ? "Activar modo claro" : "Activar modo oscuro");
-    temaBtnMovil.innerHTML = `${icono(oscuro ? "sol" : "luna", 18)}<span>${oscuro ? "Modo claro" : "Modo oscuro"}</span>`;
-  };
-  actualizarIconoTema();
-  const alternarTema = () => {
-    const oscuro = document.documentElement.dataset.theme === "dark";
-    if (oscuro) {
-      delete document.documentElement.dataset.theme;
-      localStorage.setItem("age-theme", "light");
-    } else {
-      document.documentElement.dataset.theme = "dark";
-      localStorage.setItem("age-theme", "dark");
-    }
-    actualizarIconoTema();
-  };
-  temaBtn.addEventListener("click", alternarTema);
-  temaBtnMovil.addEventListener("click", alternarTema);
 
   const burger = document.createElement("button");
   burger.type = "button";
@@ -407,6 +408,12 @@ function construirEsqueletoNav() {
   inner.appendChild(right);
   inner.appendChild(burger);
   nav.appendChild(inner);
+
+  // Solo ahora (con el esqueleto ya insertado en el documento real) tiene
+  // sentido pintar los botones de tema: actualizarIconoTema() los busca con
+  // querySelectorAll sobre el documento, así que antes de este appendChild
+  // no encontraría nada.
+  actualizarIconoTema();
 }
 
 // Repinta los enlaces principales según haya sesión o no. A diferencia del
@@ -676,47 +683,6 @@ function renderizarNotificaciones(lista, notis) {
   `).join("");
 }
 
-function construirNotificaciones(user) {
-  const utilidades = document.querySelector(".age-nav-utilidades");
-  utilidades?.querySelector(".age-notificaciones")?.remove();
-  if (!utilidades || !user) return;
-
-  const cont = document.createElement("div");
-  cont.className = "age-notificaciones";
-  cont.innerHTML = `
-    <button type="button" class="age-nav-icon-btn" data-popover-toggle aria-label="Notificaciones">${icono("campana", 18)}<span class="age-notificaciones-badge" hidden></span></button>
-    <div class="age-popover age-notificaciones-panel" data-popover-panel>
-      <div class="age-notificaciones-lista"><p class="age-buscador-vacio">Cargando…</p></div>
-    </div>
-  `;
-  utilidades.appendChild(cont);
-
-  const badge = cont.querySelector(".age-notificaciones-badge");
-  const lista = cont.querySelector(".age-notificaciones-lista");
-  const promesaNotis = calcularNotificaciones().then((notis) => {
-    const vistas = obtenerNotificacionesVistas();
-    const nuevas = notis.filter((n) => !vistas.has(n.id));
-    if (nuevas.length) {
-      badge.hidden = false;
-      badge.textContent = String(nuevas.length);
-    }
-    return notis;
-  }).catch(() => []);
-
-  activarPopover(cont, {
-    // Al abrir el panel se oculta el aviso y se recuerda (en localStorage,
-    // por id de notificación) que el usuario ya la ha visto -- así no
-    // vuelve a salir en rojo aunque cierre sesión y vuelva a entrar, salvo
-    // que surja un aviso nuevo (id distinto) que aún no haya visto.
-    onAbrir: async () => {
-      badge.hidden = true;
-      const notis = await promesaNotis;
-      renderizarNotificaciones(lista, notis);
-      marcarNotificacionesComoVistas(notis.map((n) => n.id));
-    },
-  });
-}
-
 function construirMenuCuenta(user) {
   const right = document.getElementById("age-nav-right");
   if (!right) return;
@@ -731,11 +697,16 @@ function construirMenuCuenta(user) {
     const inicial = (user.email || "?").trim().charAt(0).toUpperCase();
     acc.innerHTML = `
       <button type="button" class="age-account-btn" data-popover-toggle>
-        <span class="age-account-avatar">${inicial}</span>
+        <span class="age-account-avatar">${inicial}<span class="age-account-badge-dot" id="age-account-badge-dot" hidden></span></span>
         <span class="age-account-nombre" id="age-account-nombre"></span>
         <span class="age-account-caret">▾</span>
       </button>
       <div class="age-popover age-account-menu" data-popover-panel>
+        <div class="age-account-notis" id="age-account-notis" hidden>
+          <p class="age-account-menu-titulo">Avisos</p>
+          <div class="age-notificaciones-lista"></div>
+          <div class="age-account-menu-divider"></div>
+        </div>
         <a href="/zona-opositor/">${icono("diana")} Zona opositor</a>
         <a href="/mi-cuenta/">${icono("usuario")} Mi cuenta</a>
         <a href="/planes/">${icono("tarjeta")} Planes</a>
@@ -743,10 +714,40 @@ function construirMenuCuenta(user) {
         <a href="/oposiciones/">${icono("brujula")} Oposiciones y convocatorias</a>
         <a href="/como-funciona/">${icono("pregunta")} Cómo funciona</a>
         <div class="age-account-menu-divider"></div>
+        <button type="button" class="age-tema-toggle"></button>
+        <div class="age-account-menu-divider"></div>
         <button type="button" data-account-logout>${icono("salir")} Cerrar sesión</button>
       </div>
     `;
-    activarPopover(acc);
+
+    // Avisos: antes vivían en su propia campanita suelta en escritorio; se
+    // reutiliza la misma lógica de datos (calcularNotificaciones) y de
+    // "visto" (obtenerNotificacionesVistas/marcarNotificacionesComoVistas),
+    // solo que ahora el indicador es un punto en el avatar (sin número) y
+    // la lista se pinta dentro de este mismo menú en vez de un popover
+    // aparte -- una cosa menos suelta en la barra.
+    const dot = acc.querySelector("#age-account-badge-dot");
+    const notisSeccion = acc.querySelector("#age-account-notis");
+    const notisLista = notisSeccion.querySelector(".age-notificaciones-lista");
+    const promesaNotis = calcularNotificaciones().then((notis) => {
+      if (notis.length) notisSeccion.hidden = false;
+      const vistas = obtenerNotificacionesVistas();
+      if (notis.some((n) => !vistas.has(n.id))) dot.hidden = false;
+      return notis;
+    }).catch(() => []);
+
+    activarPopover(acc, {
+      onAbrir: async () => {
+        dot.hidden = true;
+        const notis = await promesaNotis;
+        renderizarNotificaciones(notisLista, notis);
+        marcarNotificacionesComoVistas(notis.map((n) => n.id));
+      },
+    });
+
+    acc.querySelector(".age-tema-toggle").addEventListener("click", alternarTema);
+    actualizarIconoTema();
+
     acc.querySelector("[data-account-logout]").addEventListener("click", async () => {
       await signOut();
       window.location.href = "/";
@@ -991,40 +992,6 @@ async function inyectarBannerPromocion(user) {
   }
 }
 
-// Páginas a las que solo se llega pinchando algo dentro de Zona Opositor
-// (generar test, herramientas IA, mis tests...) -- en todas ellas se ofrece
-// un enlace directo de vuelta, para no depender de la navegación principal
-// (colapsada tras el menú hamburguesa en móvil).
-const PAGINAS_CON_VOLVER_ZONA_OPOSITOR = [
-  "/test-generator/", "/test-personalizado/", "/test-oficial/",
-  "/repetir-test/", "/preguntas-falladas/", "/preguntas-favoritas/",
-  "/mis-tests/", "/mis-documentos/",
-  "/subida-pdf-",
-  "/tu-tutor/",
-  "/estadisticas/",
-  "/ranking/",
-  "/mi-cuenta/"
-];
-
-function inyectarVolverZonaOpositor(user) {
-  const right = document.getElementById("age-nav-right");
-  if (!right) return;
-  const existente = right.querySelector(".age-volver-zona-btn");
-  if (existente) existente.remove();
-  if (!user) return;
-
-  const ruta = window.location.pathname;
-  if (!PAGINAS_CON_VOLVER_ZONA_OPOSITOR.some((prefijo) => ruta.startsWith(prefijo))) return;
-
-  const enlace = document.createElement("a");
-  enlace.className = "age-nav-icon-btn age-volver-zona-btn";
-  enlace.href = "/zona-opositor/";
-  enlace.setAttribute("aria-label", "Volver a Zona opositor");
-  enlace.title = "Volver a Zona opositor";
-  enlace.innerHTML = icono("atras", 18);
-  right.insertBefore(enlace, right.firstChild);
-}
-
 // Enlace "Panel Admin" en la barra de navegación, visible solo si el
 // usuario tiene el claim admin. Se añade de forma asíncrona (esAdmin lee el
 // token) y es puramente cosmético: el backend rechaza igualmente a quien no
@@ -1073,11 +1040,9 @@ function inyectarNav(user) {
   actualizarEnlacesNav(user);
   inyectarSelectorOposicion(!!user);
   construirBusquedaGlobal(user);
-  construirNotificaciones(user);
   construirMenuCuenta(user);
   inyectarBannerVerificacion(user);
   inyectarBannerPrueba(user);
-  inyectarVolverZonaOpositor(user);
   inyectarEnlaceAdmin(user);
   inyectarBannerGlobal();
   inyectarBannerPromocion(user);
