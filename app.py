@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_talisman import Talisman
 from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.exceptions import HTTPException
 from dotenv import load_dotenv
 
 from rate_limiter import limiter
@@ -91,6 +92,19 @@ app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 @app.errorhandler(413)
 def fichero_demasiado_grande(_error):
     return jsonify({"error": "El archivo es demasiado grande (máximo 20 MB)."}), 413
+
+
+@app.errorhandler(Exception)
+def manejar_error_no_controlado(error):
+    # Flask ya prioriza el handler más específico registrado para cada
+    # excepción (p. ej. el 413 de arriba sigue yendo a su propio handler);
+    # este solo atrapa lo que se escape sin su propio try/except. HTTPException
+    # (404, 405...) se deja pasar tal cual -- son respuestas normales de la
+    # API, no errores que haya que registrar como excepción no controlada.
+    if isinstance(error, HTTPException):
+        return error
+    logger.exception("Error no controlado")
+    return jsonify({"error": "Error interno del servidor"}), 500
 
 # Protección por API key: se activa automáticamente en cuanto se defina
 # API_SECRET_KEY en el entorno. Mientras no exista, el comportamiento no
