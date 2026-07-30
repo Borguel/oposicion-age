@@ -227,6 +227,106 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
 }
 .guia-aviso-fuente a { font-weight: 600; }
 
+/* Avisos oficiales recientes (convocatoria, listas, fechas de examen...):
+   se regeneran automáticamente en cuanto el dueño aprueba un aviso nuevo en
+   el panel de admin -- ver publicacion_estatica_boe.py. */
+.guia-avisos-oficiales {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+}
+.guia-avisos-oficiales-item {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 14px 18px;
+}
+.guia-avisos-oficiales-cab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.guia-avisos-oficiales-tipo {
+  display: inline-block;
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark, var(--age-ink));
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+/* Etiqueta de oposición (AGE/GACE/Auxiliar) -- solo aparece en la página
+   común a las 3 (ver publicacion_estatica_boe.generar_html_avisos_hub),
+   distinta visualmente del "tipo" para no confundir las dos cosas. */
+.guia-avisos-oficiales-op {
+  display: inline-block;
+  background: transparent;
+  border: 1px solid var(--age-border);
+  color: var(--age-ink-soft);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+.guia-avisos-oficiales-titulo {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.guia-avisos-oficiales-resumen {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  color: var(--age-ink-soft);
+  line-height: 1.6;
+}
+.guia-avisos-oficiales-enlaces {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.guia-avisos-oficiales-enlaces a { font-size: 13.5px; font-weight: 600; }
+.guia-avisos-oficiales-vacio {
+  color: var(--age-ink-soft);
+  font-size: 13.5px;
+  font-style: italic;
+}
+.guia-avisos-oficiales-vertodos {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+}
+.guia-avisos-oficiales-vertodos a { font-weight: 600; }
+
+/* Filtro por oposición de /avisos-oficiales/ (ver el <script> al final de
+   esa página): botones simples, sin backend detrás -- solo muestran u
+   ocultan las tarjetas ya generadas. */
+.guia-avisos-filtro {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 20px 0 16px;
+}
+.guia-avisos-filtro-btn {
+  border: 1px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.guia-avisos-filtro-btn:hover { border-color: var(--age-primary); }
+.guia-avisos-filtro-btn.is-activo {
+  background: var(--age-primary);
+  border-color: var(--age-primary);
+  color: #fff;
+}
+
 .guia-cta-final {
   margin-top: 48px;
   padding: 32px;

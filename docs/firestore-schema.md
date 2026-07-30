@@ -133,10 +133,32 @@ primera vez no llegara a tiempo).
 
 ## Notas
 
-- No hay backup/exportación automatizada -- ver
-  `.github/workflows/backup-firestore.yml` (requiere que se configure un
-  bucket de GCS y una cuenta de servicio antes de que funcione de
-  verdad).
+- Backups: usar los backups nativos gestionados de Firestore ("Backup
+  schedules"), no un export manual a GCS. Se activan una sola vez con
+  `gcloud`, autenticado contra el proyecto de Firebase/GCP:
+
+  ```
+  gcloud firestore backups schedules create \
+    --database='(default)' \
+    --recurrence=weekly \
+    --retention=6w \
+    --project=TU_PROJECT_ID
+
+  # Verificar que quedó creado:
+  gcloud firestore backups schedules list \
+    --database='(default)' --project=TU_PROJECT_ID
+
+  # Ver los backups ya generados (aparecen tras la primera ejecución):
+  gcloud firestore backups list --project=TU_PROJECT_ID
+  ```
+
+  Estos comandos no se han podido verificar contra un proyecto real
+  (requieren credenciales de GCP que no están disponibles aquí); si
+  algún flag no existe en la versión de `gcloud` instalada, comprobar
+  primero con `gcloud firestore backups schedules create --help`. Para
+  restaurar ante un desastre real, consultar
+  `gcloud firestore databases restore --help` en ese momento en vez de
+  fiarse de una sintaxis memorizada de antemano.
 - No hay reglas de seguridad de Firestore documentadas aquí porque todo
   el acceso pasa por el backend (con su propia verificación de token +
   gating por plan en `auth_utils.py`), no por el SDK cliente de

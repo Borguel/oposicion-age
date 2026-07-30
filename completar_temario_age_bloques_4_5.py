@@ -30,7 +30,7 @@ USO:
 Variables de entorno necesarias:
   FIREBASE_KEY_PATH (o FIREBASE_CREDENTIALS_JSON)
 
-Requiere: PyPDF2, tiktoken, firebase-admin (ya están en requirements.txt)
+Requiere: pypdf, tiktoken, firebase-admin (ya están en requirements.txt)
 """
 import argparse
 import json

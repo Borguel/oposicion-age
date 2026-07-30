@@ -167,13 +167,27 @@ def _ficha_actividad(ref, datos):
             "llamadas": (m or {}).get("llamadas", 0) or 0,
         })
 
+    # Histórico diario -- coste_ia.py solo conserva los últimos
+    # LIMITE_DIAS_HISTORICO días (ver ese módulo), a diferencia del mensual
+    # de arriba, que se guarda para siempre.
+    hist_diario = []
+    for dia, m in sorted((datos.get("coste_ia_dias") or {}).items()):
+        hist_diario.append({
+            "dia": dia,
+            "coste": round((m or {}).get("coste", 0) or 0, 4),
+            "tokens": ((m or {}).get("tokens_in", 0) or 0) + ((m or {}).get("tokens_out", 0) or 0),
+            "tokens_in": (m or {}).get("tokens_in", 0) or 0,
+            "tokens_out": (m or {}).get("tokens_out", 0) or 0,
+            "llamadas": (m or {}).get("llamadas", 0) or 0,
+        })
+
     # Consumo del periodo actual por herramienta (limites_uso) -- para ver de
     # un vistazo cuánta IA está gastando ahora mismo.
     uso = {}
     for tipo, u in (datos.get("limites_uso") or {}).items():
         uso[tipo] = (u or {}).get("contador", 0) or 0
 
-    return contenido, rendimiento, hist, uso
+    return contenido, rendimiento, hist, hist_diario, uso
 
 
 def _uso_herramientas(datos):
@@ -417,6 +431,12 @@ def resumen():
     ) + sum(
         1 for _ in db.collection("mensajes_soporte").where("estado", "==", "pendiente").stream()
     )
+    cambios_temario_pendientes = sum(
+        1 for _ in db.collection("cambios_temario_propuestos").where("estado", "==", "pendiente").stream()
+    )
+    avisos_oficiales_pendientes = sum(
+        1 for _ in db.collection("avisos_oficiales").where("estado", "==", "pendiente").stream()
+    )
     return jsonify({
         "usuarios_totales": total_usuarios,
         "usuarios_por_plan": por_plan,
@@ -432,6 +452,8 @@ def resumen():
         "tests_total": tests_total,
         "top_temas_fallados": top_temas,
         "reportes_pendientes": reportes_pendientes,
+        "cambios_temario_pendientes": cambios_temario_pendientes,
+        "avisos_oficiales_pendientes": avisos_oficiales_pendientes,
         "oposicion": oposicion,
         "salud_contenido": _salud_contenido(oposicion),
         "preguntas_stats": _preguntas_stats(oposicion),
@@ -1154,8 +1176,18 @@ def usuarios_detalle(uid):
             ultima_nota = historial[-1].get("nota", ultima_nota)
 
     racha = datos.get("racha") or {}
-    _cim, _cit, _tit = resumen_coste_usuario(datos)
-    contenido, rendimiento, coste_historico, uso_actual = _ficha_actividad(ref, datos)
+    contenido, rendimiento, coste_historico, coste_historico_diario, uso_actual = _ficha_actividad(ref, datos)
+    # El coste en € de IA (a diferencia de contenido/rendimiento, que no son
+    # datos monetarios y sirven para dar soporte sin más) se oculta a un
+    # admin con permiso parcial "usuarios" -- solo lo ve el admin TOTAL
+    # (g.es_admin, no el "es_admin" de más abajo, que es del usuario
+    # consultado, no de quien consulta).
+    if g.es_admin:
+        _cim, _cit, _tit = resumen_coste_usuario(datos)
+    else:
+        _cim = _cit = _tit = None
+        coste_historico = None
+        coste_historico_diario = None
     bloqueado = False
     try:
         registro = firebase_auth.get_user(uid)
@@ -1193,6 +1225,7 @@ def usuarios_detalle(uid):
         "coste_ia_total": _cit,
         "tokens_ia_total": _tit,
         "coste_ia_historico": coste_historico,
+        "coste_ia_historico_diario": coste_historico_diario,
         "contenido_creado": contenido,
         "rendimiento": rendimiento,
         "uso_actual": uso_actual,
@@ -1474,6 +1507,11 @@ def usuarios_eliminar(uid):
 @requiere_permiso("reportes")
 def reportes_listar():
     estado = request.args.get("estado", "pendiente")
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    por_pagina = 20
     reportes = []
     consulta = db.collection("reportes_preguntas")
     if estado and estado != "todos":
@@ -1490,10 +1528,15 @@ def reportes_listar():
             "fecha": d.get("fecha", ""),
         })
     reportes.sort(key=lambda r: r.get("fecha", ""), reverse=True)
+    total = len(reportes)
+    inicio = (pagina - 1) * por_pagina
+    reportes = reportes[inicio:inicio + por_pagina]
 
     # Adjuntar la pregunta oficial (opciones + correcta) si se localiza, para
     # poder juzgar el reporte sin salir de la pantalla. Se carga el banco de
-    # cada oposición implicada una sola vez (no una consulta por reporte).
+    # cada oposición implicada una sola vez (no una consulta por reporte) --
+    # y solo de las oposiciones que aparecen en ESTA página, no en todos los
+    # reportes que existan.
     oposiciones_impl = {r["oposicion"] for r in reportes if r.get("oposicion")}
     bancos = {}
     for op in oposiciones_impl:
@@ -1515,7 +1558,7 @@ def reportes_listar():
         encontrada = bancos.get(r.get("oposicion"), {}).get((r.get("pregunta_texto") or "").strip())
         r["pregunta_oficial"] = encontrada  # None si no está en el banco
 
-    return jsonify({"reportes": reportes})
+    return jsonify({"reportes": reportes, "total": total, "pagina": pagina, "por_pagina": por_pagina})
 
 
 @bp.route("/admin/api/reportes/<rid>", methods=["PATCH"])
@@ -1535,6 +1578,297 @@ def reportes_actualizar(rid):
     }, merge=True)
     _registrar_auditoria("reporte_" + estado, rid)
     return jsonify({"mensaje": "Reporte actualizado"})
+
+
+# ============================================================
+# Cambios de temario propuestos por la vigilancia del BOE (ver
+# vigilancia_boe.py + generador_diff_temario.py) -- nunca se aplican solos,
+# alguien con permiso "temario" tiene que aprobarlos aquí.
+# ============================================================
+@bp.route("/admin/api/cambios-temario", methods=["GET"])
+@requiere_permiso("temario")
+def cambios_temario_listar():
+    estado = request.args.get("estado", "pendiente")
+    consulta = db.collection("cambios_temario_propuestos")
+    if estado and estado != "todos":
+        consulta = consulta.where("estado", "==", estado)
+    cambios = []
+    for doc in consulta.stream():
+        d = doc.to_dict() or {}
+        cambios.append({
+            "id": doc.id,
+            "oposicion": d.get("oposicion", ""),
+            "bloque_id": d.get("bloque_id", ""),
+            "tema_id": d.get("tema_id", ""),
+            "subbloque_id": d.get("subbloque_id", ""),
+            "ley_nombre": d.get("ley_nombre", ""),
+            "boe_id": d.get("boe_id", ""),
+            "resumen": d.get("resumen", ""),
+            "texto_eliminar": d.get("texto_eliminar", ""),
+            "texto_anadir": d.get("texto_anadir", ""),
+            "estado": d.get("estado", "pendiente"),
+            "fecha_deteccion": d.get("fecha_deteccion", ""),
+            "revisado_por_email": d.get("revisado_por_email", ""),
+            "fecha_revision": d.get("fecha_revision", ""),
+        })
+    cambios.sort(key=lambda c: c.get("fecha_deteccion", ""), reverse=True)
+    return jsonify({"cambios": cambios})
+
+
+@bp.route("/admin/api/cambios-temario/<cid>", methods=["PATCH"])
+@requiere_permiso("temario")
+def cambios_temario_actualizar(cid):
+    data = request.get_json(silent=True) or {}
+    estado = data.get("estado")
+    if estado not in ("pendiente", "aprobado", "descartado"):
+        return jsonify({"error": "Estado no válido"}), 400
+    ref = db.collection("cambios_temario_propuestos").document(cid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "Propuesta no encontrada"}), 404
+    d = doc.to_dict() or {}
+
+    if estado == "aprobado":
+        if not oposicion_valida(d.get("oposicion")):
+            return jsonify({"error": "Oposición no válida en la propuesta"}), 400
+        chunk_ref = (
+            db.collection(coleccion_temario(d["oposicion"])).document(d["bloque_id"])
+            .collection("temas").document(d["tema_id"])
+            .collection("subbloques").document(d["subbloque_id"])
+        )
+        chunk_doc = chunk_ref.get()
+        if not chunk_doc.exists:
+            return jsonify({"error": "El chunk de temario ya no existe"}), 409
+        texto_actual = (chunk_doc.to_dict() or {}).get("texto", "")
+        texto_eliminar = d.get("texto_eliminar", "")
+        if texto_eliminar not in texto_actual:
+            # El chunk cambió desde que se detectó la propuesta (alguien lo
+            # editó a mano, u otra propuesta ya se aplicó antes) -- aplicar
+            # a ciegas podría corromper el texto o no hacer nada; mejor
+            # pedir revisión manual que arriesgarse.
+            return jsonify({
+                "error": "El texto a eliminar ya no coincide con el chunk actual (puede haber cambiado "
+                         "desde que se detectó). Revisa y edita el chunk manualmente desde Temario."
+            }), 409
+        nuevo_texto = texto_actual.replace(texto_eliminar, d.get("texto_anadir", ""), 1)
+        chunk_ref.update({"texto": nuevo_texto})
+        _limpiar_cache_temario()
+
+    ref.set({
+        "estado": estado,
+        "revisado_por": g.uid,
+        "revisado_por_email": g.email,
+        "fecha_revision": datetime.utcnow().isoformat(),
+    }, merge=True)
+    _registrar_auditoria("cambio_temario_" + estado, cid, d.get("resumen", ""))
+    return jsonify({"mensaje": "Propuesta actualizada"})
+
+
+# ============================================================
+# Avisos oficiales detectados en el sumario del BOE (ver vigilancia_boe.py)
+# -- nunca se muestran a los usuarios hasta que alguien con permiso
+# "reportes" los publica aquí.
+# ============================================================
+@bp.route("/admin/api/avisos-oficiales", methods=["GET"])
+@requiere_permiso("reportes")
+def avisos_oficiales_listar():
+    estado = request.args.get("estado", "pendiente")
+    consulta = db.collection("avisos_oficiales")
+    if estado and estado != "todos":
+        consulta = consulta.where("estado", "==", estado)
+    from publicacion_estatica_boe import _oposiciones_de
+
+    avisos = []
+    for doc in consulta.stream():
+        d = doc.to_dict() or {}
+        avisos.append({
+            "id": doc.id,
+            "oposiciones": _oposiciones_de(d),
+            "tipo": d.get("tipo", ""),
+            "tipo_personalizado": d.get("tipo_personalizado", ""),
+            "titulo": d.get("titulo", ""),
+            "resumen": d.get("resumen", ""),
+            "url_boe": d.get("url_boe", ""),
+            "url_inap": d.get("url_inap", ""),
+            "fecha_boe": d.get("fecha_boe", ""),
+            "estado": d.get("estado", "pendiente"),
+            "fecha_deteccion": d.get("fecha_deteccion", ""),
+            "revisado_por_email": d.get("revisado_por_email", ""),
+            "fecha_revision": d.get("fecha_revision", ""),
+        })
+    avisos.sort(key=lambda a: a.get("fecha_deteccion", ""), reverse=True)
+    return jsonify({"avisos": avisos})
+
+
+def _leer_oposiciones_de_datos(data):
+    """Lista de oposiciones de un payload de alta/edición de aviso --
+    "oposiciones": [...] es lo normal (checkboxes en el admin), pero se
+    acepta también un único "oposicion" suelto por si algún cliente
+    antiguo lo manda así todavía."""
+    lista = data.get("oposiciones")
+    if lista is None and data.get("oposicion"):
+        lista = [data["oposicion"]]
+    return [op for op in (lista or []) if op]
+
+
+@bp.route("/admin/api/avisos-oficiales", methods=["POST"])
+@requiere_permiso("reportes")
+def avisos_oficiales_crear():
+    """Alta manual de un aviso oficial -- para lo que vigilancia_boe.py no
+    puede detectar solo porque no viene del sumario del BOE (p. ej. una
+    resolución publicada solo en el portal de firma del INAP). Se crea
+    "pendiente" igual que los detectados automáticamente, así que sigue el
+    mismo circuito de aprobación (nunca se publica nada sin que alguien con
+    permiso "reportes" le dé al botón). Puede afectar a varias oposiciones
+    a la vez (p. ej. un llamamiento extraordinario que menciona a AGE y
+    GACE): se publica una sola vez y llega a las páginas/usuarios de
+    todas, en vez de tener que darlo de alta una vez por oposición."""
+    from publicacion_estatica_boe import ETIQUETA_TIPO_AVISO
+
+    data = request.get_json(silent=True) or {}
+    oposiciones = _leer_oposiciones_de_datos(data)
+    tipo = data.get("tipo", "")
+    titulo = (data.get("titulo") or "").strip()
+    if not oposiciones or not all(oposicion_valida(op) for op in oposiciones):
+        return jsonify({"error": "Selecciona al menos una oposición válida"}), 400
+    if tipo not in ETIQUETA_TIPO_AVISO:
+        return jsonify({"error": "Tipo no válido"}), 400
+    if not titulo:
+        return jsonify({"error": "Falta el título"}), 400
+
+    ref = db.collection("avisos_oficiales").document()
+    ref.set({
+        "oposiciones": oposiciones,
+        "tipo": tipo,
+        "tipo_personalizado": (data.get("tipo_personalizado") or "").strip()[:100],
+        "titulo": titulo[:300],
+        "resumen": (data.get("resumen") or titulo)[:500],
+        "url_boe": data.get("url_boe", ""),
+        "url_inap": data.get("url_inap", ""),
+        "fecha_boe": data.get("fecha_boe") or datetime.utcnow().strftime("%Y%m%d"),
+        "fecha_deteccion": datetime.utcnow().isoformat(),
+        "estado": "pendiente",
+        "creado_manualmente_por": g.uid,
+    })
+    _registrar_auditoria("aviso_oficial_manual_creado", ref.id, titulo)
+    return jsonify({"mensaje": "Aviso creado", "id": ref.id}), 201
+
+
+@bp.route("/admin/api/avisos-oficiales/<aid>", methods=["PATCH"])
+@requiere_permiso("reportes")
+def avisos_oficiales_actualizar(aid):
+    data = request.get_json(silent=True) or {}
+    estado = data.get("estado")
+    if estado not in ("pendiente", "publicado", "descartado"):
+        return jsonify({"error": "Estado no válido"}), 400
+    ref = db.collection("avisos_oficiales").document(aid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "Aviso no encontrado"}), 404
+    aviso_antes = doc.to_dict() or {}
+
+    ref.set({
+        "estado": estado,
+        "revisado_por": g.uid,
+        "revisado_por_email": g.email,
+        "fecha_revision": datetime.utcnow().isoformat(),
+    }, merge=True)
+    _registrar_auditoria("aviso_oficial_" + estado, aid)
+
+    # Publicar la(s) página(s) estática(s) + avisar por email solo la
+    # PRIMERA vez que pasa a "publicado" (si ya estaba publicado y se
+    # vuelve a guardar, no hace falta repetir el commit ni volver a mandar
+    # el email a todo el mundo). Ninguna de las dos cosas debe romper esta
+    # respuesta si falla -- ver publicacion_estatica_boe.py.
+    if estado == "publicado" and aviso_antes.get("estado") != "publicado":
+        # Ninguna de las llamadas falla nunca hacia arriba -- ver docstring
+        # de publicacion_estatica_boe.py (capturan y registran su propio
+        # fallo por separado, así que un commit fallido no frena a los otros).
+        from publicacion_estatica_boe import (
+            _oposiciones_de, actualizar_pagina_avisos_general,
+            actualizar_pagina_estatica_avisos, notificar_usuarios_aviso_oficial,
+        )
+        aviso_completo = {**aviso_antes, "estado": estado}
+        for op in _oposiciones_de(aviso_completo):
+            actualizar_pagina_estatica_avisos(db, op)
+        actualizar_pagina_avisos_general(db)
+        notificar_usuarios_aviso_oficial(db, aviso_completo)
+
+    return jsonify({"mensaje": "Aviso actualizado"})
+
+
+@bp.route("/admin/api/avisos-oficiales/<aid>", methods=["PUT"])
+@requiere_permiso("reportes")
+def avisos_oficiales_editar(aid):
+    """Corrige el CONTENIDO de un aviso ya creado -- título, tipo, enlaces,
+    oposiciones afectadas... -- por si hubo un error al darlo de alta
+    (enlace mal pegado, etc.), a diferencia del PATCH de arriba que solo
+    cambia el estado. Se puede editar en cualquier estado, incluido uno ya
+    "publicado": si lo está, se regenera la página estática (la propia de
+    cada oposición afectada -- antes Y después del cambio, por si se quitó
+    o añadió alguna -- más la página común) con el contenido corregido,
+    pero DELIBERADAMENTE no se vuelve a mandar el email a los usuarios (ya
+    lo recibieron; reenviarlo por corregir una errata sería spam)."""
+    from publicacion_estatica_boe import ETIQUETA_TIPO_AVISO, _oposiciones_de
+
+    data = request.get_json(silent=True) or {}
+    ref = db.collection("avisos_oficiales").document(aid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "Aviso no encontrado"}), 404
+    aviso_antes = doc.to_dict() or {}
+
+    oposiciones_antes = _oposiciones_de(aviso_antes)
+    oposiciones = _leer_oposiciones_de_datos(data) if "oposiciones" in data or "oposicion" in data else oposiciones_antes
+    tipo = data.get("tipo", aviso_antes.get("tipo", ""))
+    titulo = (data.get("titulo") if "titulo" in data else aviso_antes.get("titulo", "")).strip()
+    if not oposiciones or not all(oposicion_valida(op) for op in oposiciones):
+        return jsonify({"error": "Selecciona al menos una oposición válida"}), 400
+    if tipo not in ETIQUETA_TIPO_AVISO:
+        return jsonify({"error": "Tipo no válido"}), 400
+    if not titulo:
+        return jsonify({"error": "Falta el título"}), 400
+
+    cambios = {
+        "oposiciones": oposiciones,
+        "tipo": tipo,
+        "tipo_personalizado": (data.get("tipo_personalizado", aviso_antes.get("tipo_personalizado", "")) or "").strip()[:100],
+        "titulo": titulo[:300],
+        "resumen": (data.get("resumen", aviso_antes.get("resumen", "")) or titulo)[:500],
+        "url_boe": data.get("url_boe", aviso_antes.get("url_boe", "")),
+        "url_inap": data.get("url_inap", aviso_antes.get("url_inap", "")),
+        "fecha_boe": data.get("fecha_boe", aviso_antes.get("fecha_boe", "")),
+        "editado_por": g.uid,
+        "fecha_edicion": datetime.utcnow().isoformat(),
+    }
+    ref.set(cambios, merge=True)
+    _registrar_auditoria("aviso_oficial_editado", aid, titulo)
+
+    if aviso_antes.get("estado") == "publicado":
+        from publicacion_estatica_boe import actualizar_pagina_avisos_general, actualizar_pagina_estatica_avisos
+        # Unión de antes/después: si se quitó una oposición de la lista,
+        # su página también tiene que regenerarse para que el aviso
+        # desaparezca de ahí.
+        for op in set(oposiciones) | set(oposiciones_antes):
+            actualizar_pagina_estatica_avisos(db, op)
+        actualizar_pagina_avisos_general(db)
+
+    return jsonify({"mensaje": "Aviso actualizado"})
+
+
+@bp.route("/admin/api/vigilancia-boe-salud", methods=["GET"])
+@requiere_permiso("reportes")
+def vigilancia_boe_salud():
+    """Resultado del último chequeo de salud de LEYES_VIGILADAS (ver
+    vigilancia_boe.verificar_bloque_temas_referenciados, que se ejecuta
+    cada día dentro de /tareas/vigilar-boe): qué (oposicion, bloque_id,
+    tema_id) referenciados ya no existen en el temario -- por ejemplo si
+    se reestructuró y renumeró algún bloque/tema."""
+    estado = db.collection("config").document("vigilancia_boe").get().to_dict() or {}
+    return jsonify({
+        "temas_faltantes": estado.get("temas_faltantes") or [],
+        "fecha": estado.get("temas_faltantes_fecha", ""),
+    })
 
 
 # ============================================================
@@ -1650,6 +1984,13 @@ def sistema_estado():
 # ============================================================
 # Banner / aviso global del sitio
 # ============================================================
+# Valores admitidos para personalizar la letra/animación de avisos y
+# promociones (ver frontend/assets/auth.js, FUENTES_AVISO -- son solo
+# pilas de fuentes de sistema, sin cargar ningún webfont externo).
+FUENTES_AVISO_VALIDAS = ("default", "redondeada", "elegante", "impacto")
+ANIMACIONES_AVISO_VALIDAS = ("ninguna", "parpadeo", "deslizante", "rebote")
+
+
 def _leer_banner():
     doc = db.collection("config").document("banner").get()
     d = doc.to_dict() or {} if doc.exists else {}
@@ -1657,6 +1998,8 @@ def _leer_banner():
         "activo": bool(d.get("activo", False)),
         "texto": d.get("texto", ""),
         "tipo": d.get("tipo", "info"),
+        "fuente": d.get("fuente", "default"),
+        "animacion": d.get("animacion", "ninguna"),
     }
 
 
@@ -1673,10 +2016,18 @@ def banner_guardar():
     tipo = data.get("tipo", "info")
     if tipo not in ("info", "aviso", "urgente"):
         tipo = "info"
+    fuente = data.get("fuente", "default")
+    if fuente not in FUENTES_AVISO_VALIDAS:
+        fuente = "default"
+    animacion = data.get("animacion", "ninguna")
+    if animacion not in ANIMACIONES_AVISO_VALIDAS:
+        animacion = "ninguna"
     banner = {
         "activo": bool(data.get("activo", False)),
         "texto": str(data.get("texto", "")).strip()[:300],
         "tipo": tipo,
+        "fuente": fuente,
+        "animacion": animacion,
     }
     db.collection("config").document("banner").set(banner)
     _registrar_auditoria("banner", "", ("ON: " if banner["activo"] else "OFF: ") + banner["texto"][:80])
@@ -1720,6 +2071,12 @@ def promocion_guardar():
             datetime.fromisoformat(fecha_fin)
         except ValueError:
             return jsonify({"error": "Fecha de fin no válida (usa formato ISO, ej. 2026-08-01T23:59:00)"}), 400
+    fuente = data.get("fuente", "default")
+    if fuente not in FUENTES_AVISO_VALIDAS:
+        fuente = "default"
+    animacion = data.get("animacion", "ninguna")
+    if animacion not in ANIMACIONES_AVISO_VALIDAS:
+        animacion = "ninguna"
     promo = {
         "activo": bool(data.get("activo", False)),
         "plan": plan,
@@ -1728,6 +2085,8 @@ def promocion_guardar():
         "fecha_fin": fecha_fin,
         "stripe_promotion_code": str(data.get("stripe_promotion_code", "")).strip()[:80],
         "mensaje": str(data.get("mensaje", "")).strip()[:200],
+        "fuente": fuente,
+        "animacion": animacion,
     }
     db.collection("config").document("promocion").set(promo)
     _registrar_auditoria(
@@ -1782,11 +2141,18 @@ def limites_guardar():
 @requiere_admin
 def auditoria_listar():
     """Últimas acciones de administración, de la más reciente a la más
-    antigua."""
+    antigua, paginadas (mismo patrón que /admin/api/usuarios): antes solo
+    se veían las últimas 100-200 sin ninguna forma de consultar entradas
+    más antiguas. Nota: la lectura sigue siendo de TODA la colección (el
+    fake de Firestore de los tests no soporta order_by/cursores, y este
+    panel no tiene tanto volumen todavía como para justificar esa
+    complejidad) -- lo que arregla la paginación es poder navegar el
+    historial completo desde la UI, no el coste de lectura en Firestore."""
     try:
-        limite = min(200, max(1, int(request.args.get("limite", 100))))
+        pagina = max(1, int(request.args.get("pagina", 1)))
     except (TypeError, ValueError):
-        limite = 100
+        pagina = 1
+    por_pagina = 50
     entradas = []
     for doc in db.collection("admin_auditoria").stream():
         d = doc.to_dict() or {}
@@ -1798,7 +2164,12 @@ def auditoria_listar():
             "fecha": d.get("fecha", ""),
         })
     entradas.sort(key=lambda e: e.get("fecha", ""), reverse=True)
-    return jsonify({"entradas": entradas[:limite], "total": len(entradas)})
+    total = len(entradas)
+    inicio = (pagina - 1) * por_pagina
+    return jsonify({
+        "entradas": entradas[inicio:inicio + por_pagina],
+        "total": total, "pagina": pagina, "por_pagina": por_pagina,
+    })
 
 
 # ============================================================

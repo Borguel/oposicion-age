@@ -59,18 +59,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   localStorage.setItem("age_visito_estadisticas", "1");
 
   const refreshBtn = document.getElementById("estadisticas-refresh");
-  const modal = document.getElementById("modal-temas");
-  const modalCerrar = document.getElementById("modal-cerrar");
-  const modalCerrarBtn = document.getElementById("modal-cerrar-btn");
-  const modalTop = document.getElementById("modal-temas-top");
-  const modalTopCerrar = document.getElementById("modal-temas-top-cerrar");
-  const modalTopCerrarBtn = document.getElementById("modal-temas-top-cerrar-btn");
-  const btnVerNuevos = document.getElementById("btn-ver-nuevos");
-  const btnVerTemasTop = document.getElementById("btn-ver-temas-top");
-  const busquedaInput = document.getElementById("modal-busqueda-input");
   const exportarPdfBtn = document.getElementById("estadisticas-exportar-pdf");
-  let temasFiltrados = [];
-  let todosLosTemas = [];
   let temasTest = [];
   let temasTocados = new Set();
   let datosParaExportarPDF = null;
@@ -173,27 +162,8 @@ document.addEventListener("DOMContentLoaded", async function () {
       ? Math.round((totalBlancos / totalRespuestas) * 100)
       : 0;
 
-    // "Más estudiado" = tema con más preguntas realmente contestadas
-    // (rendimiento_por_tema, que cuenta preguntas de verdad), y si un tema no
-    // tiene ese detalle (tests antiguos sin tema_id por pregunta) se cae al
-    // conteo antiguo por nº de tests que lo incluían entre sus temas.
-    const contadorPreguntas = {};
-    Object.entries(rendimientoPorTema).forEach(([id, r]) => {
-      contadorPreguntas[id] = (r.aciertos || 0) + (r.fallos || 0) + (r.blancos || 0);
-    });
-    historial.forEach(test => {
-      (test.temas || []).forEach(t => {
-        if (!(t in contadorPreguntas)) contadorPreguntas[t] = (contadorPreguntas[t] || 0) + 1;
-      });
-    });
-
-    const topTemasEntries = Object.entries(contadorPreguntas)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
-
     const todosLosTemasIds = todosTemas.map(t => t.id);
     temasTocados = new Set([...temasTest, ...Object.keys(rendimientoPorTema)]);
-    const noEstudiados = todosLosTemasIds.filter(t => !temasTocados.has(t));
 
     // Actualizar estadísticas principales
     document.getElementById("vistazo-tests").textContent = totalTests;
@@ -218,7 +188,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("fallos").textContent = totalFallos;
     document.getElementById("blancos").textContent = totalBlancos;
     document.getElementById("tiempo").textContent = `${horas}h ${minutos}m`;
-    document.getElementById("temas-nuevos").textContent = noEstudiados.length;
 
     document.getElementById("aciertos-porcentaje").textContent = porcentajeAciertos;
     document.getElementById("fallos-porcentaje").textContent = porcentajeFallos;
@@ -244,10 +213,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("total-tarjetas-pdf").textContent = tarjetasPdf;
     document.getElementById("total-paginas").textContent = totalPaginas;
 
-    actualizarTemas(topTemasEntries, todosTemas, rendimientoPorTema);
-    temasFiltrados = noEstudiados;
-    todosLosTemas = todosTemas;
-    mostrarTemasNoEstudiados(noEstudiados, todosTemas);
     mostrarTemasFlojos(rendimientoPorTema, todosTemas);
     pintarMapaTemario(todosTemas, rendimientoPorTema);
     renderizarCoberturaTemario(temasTocados.size, todosLosTemasIds.length);
@@ -655,153 +620,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     contenedor.innerHTML = celdas.join("");
   }
 
-  async function actualizarTemas(temasEntries, todosTemas, rendimientoPorTema) {
-    const listaTemas = document.getElementById("lista-temas-top");
-    const valorTop = document.getElementById("temas-top-valor");
-    const detalleTop = document.getElementById("temas-top-detalle");
-    listaTemas.innerHTML = '';
-    if (temasEntries.length === 0) {
-      valorTop.textContent = '0';
-      detalleTop.textContent = 'Aún no has estudiado ningún tema';
-      const li = document.createElement('li');
-      li.textContent = 'No hay temas estudiados aún.';
-      li.style.color = '#777';
-      li.style.fontStyle = 'italic';
-      listaTemas.appendChild(li);
-      return;
-    }
-    const [idTop, countTop] = temasEntries[0];
-    const temaTop = todosTemas.find(t => t.id === idTop);
-    valorTop.textContent = countTop;
-    detalleTop.textContent = `Preguntas en tu tema más estudiado: ${temaTop ? temaTop.titulo : `Tema ${idTop}`}`;
-
-    // Mismo formato agrupado por bloque que "Temas no estudiados", pero aquí
-    // añadiendo el % de acierto y las preguntas respondidas de cada tema.
-    const datosPorId = new Map();
-    temasEntries.forEach(([id, count]) => {
-      const r = (rendimientoPorTema || {})[id];
-      const totalRespondidas = r ? (r.aciertos || 0) + (r.fallos || 0) : 0;
-      const porcentaje = totalRespondidas > 0 ? Math.round((r.aciertos / totalRespondidas) * 100) : null;
-      datosPorId.set(id, { count, porcentaje });
-    });
-
-    const { agruparTemasPorBloque } = await import("/assets/temas-numeracion.js");
-    const grupos = agruparTemasPorBloque(todosTemas)
-      .map((grupo) => ({ ...grupo, temas: grupo.temas.filter((t) => datosPorId.has(t.id)) }))
-      .filter((grupo) => grupo.temas.length > 0);
-
-    grupos.forEach((grupo) => {
-      const liBloque = document.createElement('li');
-      liBloque.className = 'tema-bloque-grupo';
-      liBloque.innerHTML = `
-        <div class="tema-bloque-header">Bloque ${grupo.numeroRomano}: ${grupo.titulo}</div>
-        <ul class="tema-bloque-lista">
-          ${grupo.temas.map((t) => {
-            const { count, porcentaje } = datosPorId.get(t.id);
-            return `
-              <li class="tema-item tema-item-con-datos">
-                <div class="tema-item-cabecera">
-                  <span class="tema-numero">Tema ${t.numeroTema}:</span>
-                  <span class="tema-item-titulo">${t.titulo}</span>
-                </div>
-                <div class="tema-item-stats">
-                  ${porcentaje !== null ? `<span class="tema-acierto">${porcentaje}% acierto</span>` : ''}
-                  <span class="tema-count">${count} pregunta${count === 1 ? '' : 's'} respondida${count === 1 ? '' : 's'}</span>
-                </div>
-              </li>
-            `;
-          }).join('')}
-        </ul>
-      `;
-      listaTemas.appendChild(liBloque);
-    });
-  }
-
-  async function mostrarTemasNoEstudiados(temasIds, todosTemas) {
-    const listaTemas = document.getElementById("lista-temas-nuevos");
-    listaTemas.innerHTML = '';
-    if (temasIds.length === 0) {
-      const li = document.createElement('li');
-      li.textContent = '¡Enhorabuena! Has estudiado todos los temas disponibles.';
-      li.style.color = '#777';
-      li.style.fontStyle = 'italic';
-      li.style.textAlign = 'center';
-      listaTemas.appendChild(li);
-      return;
-    }
-    const { agruparTemasPorBloque } = await import("/assets/temas-numeracion.js");
-    const idsPendientes = new Set(temasIds);
-    const grupos = agruparTemasPorBloque(todosTemas)
-      .map((grupo) => ({ ...grupo, temas: grupo.temas.filter((t) => idsPendientes.has(t.id)) }))
-      .filter((grupo) => grupo.temas.length > 0);
-
-    grupos.forEach((grupo) => {
-      const liBloque = document.createElement('li');
-      liBloque.className = 'tema-bloque-grupo';
-      liBloque.innerHTML = `
-        <div class="tema-bloque-header">Bloque ${grupo.numeroRomano}: ${grupo.titulo}</div>
-        <ul class="tema-bloque-lista">
-          ${grupo.temas.map((t) => `
-            <li class="tema-item">
-              <span class="tema-numero">Tema ${t.numeroTema}:</span>
-              <span class="tema-item-titulo">${t.titulo}</span>
-            </li>
-          `).join('')}
-        </ul>
-      `;
-      listaTemas.appendChild(liBloque);
-    });
-  }
-
-  function filtrarTemas() {
-    const filtro = busquedaInput.value.toLowerCase().trim();
-    const temasFiltradosLocal = todosLosTemas
-      .filter(t => !temasTocados.has(t.id))
-      .filter(t => t.titulo.toLowerCase().includes(filtro) || t.id.toString().includes(filtro));
-    mostrarTemasNoEstudiados(temasFiltradosLocal.map(t => t.id), todosLosTemas);
-  }
-
-  // Eventos interactivos
-  function abrirModalGenerico(modalEl) {
-    modalEl.classList.add('show');
-    void modalEl.offsetWidth;
-    document.body.style.overflow = 'hidden';
-  }
-
-  function cerrarModalGenerico(modalEl) {
-    modalEl.classList.remove('show');
-    document.body.style.overflow = '';
-  }
-
-  btnVerTemasTop.addEventListener('click', function(e) {
-    e.preventDefault();
-    abrirModalGenerico(modalTop);
-  });
-
-  modalTopCerrar.addEventListener('click', () => cerrarModalGenerico(modalTop));
-  modalTopCerrarBtn.addEventListener('click', () => cerrarModalGenerico(modalTop));
-  modalTop.addEventListener('click', (e) => {
-    if (e.target === modalTop) cerrarModalGenerico(modalTop);
-  });
-
-  btnVerNuevos.addEventListener('click', function() {
-    abrirModalGenerico(modal);
-  });
-
-  modalCerrar.addEventListener('click', cerrarModal);
-  modalCerrarBtn.addEventListener('click', cerrarModal);
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) cerrarModal();
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    if (modal.classList.contains('show')) cerrarModal();
-    if (modalTop.classList.contains('show')) cerrarModalGenerico(modalTop);
-  });
-
-  busquedaInput.addEventListener('input', filtrarTemas);
-
   // Cierre sin persistencia: si el usuario se va a otra página y vuelve
   // (o simplemente recarga), el aviso vuelve a aparecer si sigue habiendo
   // temas con margen de mejora -- a diferencia del onboarding, aquí no
@@ -845,12 +663,6 @@ document.addEventListener("DOMContentLoaded", async function () {
       exportarPdfBtn.textContent = textoOriginal;
     }
   });
-
-  function cerrarModal() {
-    cerrarModalGenerico(modal);
-    busquedaInput.value = '';
-    filtrarTemas();
-  }
 
   cargarDatos();
 });

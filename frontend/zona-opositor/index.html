@@ -46,22 +46,26 @@
   </div>
 
   <div class="age-container zona-wrap">
-    <section class="age-card zona-continuar-card" id="zona-continuar" style="display:none;">
-      <div class="zona-continuar-icono" data-icon="reproducir" data-icon-size="24"></div>
-      <div class="zona-continuar-info">
-        <div class="zona-continuar-titulo">Tienes un test a medias</div>
-        <div class="zona-continuar-detalle" id="zona-continuar-detalle">Cargando…</div>
-      </div>
-      <a href="#" class="age-btn age-btn-primary zona-continuar-boton" id="zona-continuar-boton">Continuar</a>
+    <!-- Qué hacer ahora: fusiona lo que antes eran 3 tarjetas sueltas
+         (continuar test a medias, preguntas falladas pendientes, tema de
+         hoy/tema flojo) en una sola, con el mismo patrón de fila que "Tu
+         progreso"/"Lo tuyo" -- antes "tema de hoy" y "tu tema más flojo"
+         eran literalmente la misma recomendación mostrada dos veces en
+         sitios distintos de la página. -->
+    <section class="age-card zona-hacer-ahora-card" id="zona-hacer-ahora" style="display:none;">
+      <h3><span data-icon="rayo" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Qué hacer ahora</h3>
+      <p class="zona-plan-ritmo" id="zona-plan-ritmo" style="display:none;"></p>
+      <div class="zona-mis-cosas-card" id="zona-hacer-ahora-lista"></div>
     </section>
 
-    <section class="age-card zona-continuar-card zona-repaso-card" id="zona-repaso" style="display:none;">
-      <div class="zona-continuar-icono" data-icon="cerebro" data-icon-size="24"></div>
-      <div class="zona-continuar-info">
-        <div class="zona-continuar-titulo">Tienes preguntas pendientes de repasar</div>
-        <div class="zona-continuar-detalle" id="zona-repaso-detalle">Cargando…</div>
-      </div>
-      <a href="/preguntas-falladas/" class="age-btn age-btn-primary zona-continuar-boton">Repasar ahora</a>
+    <!-- Avisos oficiales (convocatorias, listas de admitidos, fechas de
+         examen...) detectados por la vigilancia del BOE y aprobados a mano
+         desde el panel de admin -- ver blueprints/temario.py:avisos_oficiales.
+         Oculta por defecto: solo se muestra si hay al menos un aviso
+         publicado para la oposición actual. -->
+    <section class="age-card zona-avisos-oficiales-card" id="zona-avisos-oficiales" style="display:none;">
+      <h3><span data-icon="bandera" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Avisos oficiales</h3>
+      <div id="zona-avisos-oficiales-lista"></div>
     </section>
 
     <section class="age-card zona-onboarding-card" id="zona-onboarding" style="display:none;">
@@ -97,33 +101,18 @@
       </form>
     </section>
 
-    <section class="age-card zona-plan-card" id="zona-plan-estudio" style="display:none;">
-      <h3><span data-icon="lista" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Tu plan de estudio</h3>
-      <p class="zona-plan-ritmo" id="zona-plan-ritmo"></p>
-      <div class="zona-plan-hoy" id="zona-plan-hoy"></div>
-    </section>
-
+    <!-- Tu progreso: antes eran 2 enlaces separados a /estadisticas/
+         (insignias y nota media); ahora es una sola tarjeta con los dos
+         números, mismo patrón de color que su gemela en "Más
+         herramientas" (teal, --stats) ya que llevan al mismo sitio. -->
     <section class="zona-accesos" id="zona-progreso" style="display:none;">
       <h2>Tu progreso</h2>
-      <div class="age-card zona-mis-cosas-card">
-        <a class="zona-mis-cosas-item" href="/estadisticas/">
-          <span class="zona-mis-cosas-icono"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 5H4a3 3 0 0 0 3 4"/><path d="M17 5h3a3 3 0 0 1-3 4"/><path d="M12 14v3"/><path d="M9 20h6"/><path d="M10 17h4v3h-4z"/></svg></span>
-          <span class="zona-mis-cosas-texto">
-            <strong><span id="zona-progreso-insignias">0/10</span> insignias</strong>
-            <small>Sigue así para desbloquear más</small>
-          </span>
-          <span class="zona-mis-cosas-flecha">→</span>
+      <div class="age-option-grid zona-herramientas-grid">
+        <a class="age-option-card age-option-card--stats" href="/estadisticas/">
+          <span class="age-option-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="14" width="3" height="6"/><rect x="11" y="10" width="3" height="10"/><rect x="16" y="6" width="3" height="14"/></svg></span>
+          <span class="age-option-title">Ver tus estadísticas</span>
+          <span class="age-option-desc"><strong id="zona-progreso-insignias">0/10</strong> insignias · nota media <strong id="zona-progreso-nota">—</strong></span>
         </a>
-        <div class="zona-mis-cosas-divisor"></div>
-        <a class="zona-mis-cosas-item" href="/estadisticas/">
-          <span class="zona-mis-cosas-icono"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="14" width="3" height="6"/><rect x="11" y="10" width="3" height="10"/><rect x="16" y="6" width="3" height="14"/></svg></span>
-          <span class="zona-mis-cosas-texto">
-            <strong>Nota media: <span id="zona-progreso-nota">—</span></strong>
-            <small>Basada en tus últimos tests</small>
-          </span>
-          <span class="zona-mis-cosas-flecha">→</span>
-        </a>
-        <div id="zona-tema-flojo" style="display:none;"></div>
       </div>
     </section>
 
@@ -131,32 +120,21 @@
 
     <section class="zona-accesos">
       <h2>Lo tuyo</h2>
-      <div class="age-card zona-mis-cosas-card">
-        <a class="zona-mis-cosas-item" href="/mis-tests/">
-          <span class="zona-mis-cosas-icono"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6l-5.5 9a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/><path d="M7.5 15h9"/></svg></span>
-          <span class="zona-mis-cosas-texto">
-            <strong>Mis tests</strong>
-            <small>Continúa, repite o revisa todos los tests que has hecho</small>
-          </span>
-          <span class="zona-mis-cosas-flecha">→</span>
+      <div class="age-option-grid zona-herramientas-grid">
+        <a class="age-option-card" href="/mis-tests/">
+          <span class="age-option-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6l-5.5 9a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/><path d="M7.5 15h9"/></svg></span>
+          <span class="age-option-title">Mis tests</span>
+          <span class="age-option-desc">Continúa, repite o revisa todos los tests que has hecho.</span>
         </a>
-        <div class="zona-mis-cosas-divisor"></div>
-        <a class="zona-mis-cosas-item" href="/mis-documentos/">
-          <span class="zona-mis-cosas-icono"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></span>
-          <span class="zona-mis-cosas-texto">
-            <strong>Mis documentos</strong>
-            <small>Todo lo que has generado a partir de tus PDF</small>
-          </span>
-          <span class="zona-mis-cosas-flecha">→</span>
+        <a class="age-option-card age-option-card--pdf" href="/mis-documentos/">
+          <span class="age-option-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></span>
+          <span class="age-option-title">Mis documentos</span>
+          <span class="age-option-desc">Todo lo que has generado a partir de tus PDF.</span>
         </a>
-        <div class="zona-mis-cosas-divisor"></div>
-        <a class="zona-mis-cosas-item" href="/repasar-preguntas/">
-          <span class="zona-mis-cosas-icono"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
-          <span class="zona-mis-cosas-texto">
-            <strong>Repasar preguntas</strong>
-            <small>Tus favoritas y falladas, con respuesta y explicación</small>
-          </span>
-          <span class="zona-mis-cosas-flecha">→</span>
+        <a class="age-option-card age-option-card--repasar" href="/repasar-preguntas/">
+          <span class="age-option-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <span class="age-option-title">Repasar preguntas</span>
+          <span class="age-option-desc">Tus favoritas y falladas, con respuesta y explicación, sin hacer un test nuevo.</span>
         </a>
       </div>
 

@@ -24,6 +24,8 @@ def leer_promocion():
         "fecha_fin": d.get("fecha_fin", ""),
         "stripe_promotion_code": d.get("stripe_promotion_code", ""),
         "mensaje": d.get("mensaje", ""),
+        "fuente": d.get("fuente", "default"),
+        "animacion": d.get("animacion", "ninguna"),
     }
 
 

@@ -259,14 +259,17 @@ body {
   margin-left: 8px;
 }
 
-/* ---------- Grupo de utilidades (buscador + oposición + modo oscuro) ----------
-   Los tres controles comparten el mismo lenguaje visual (icono circular de
-   38px, popover con position:absolute) y se agrupan en un "pill" con fondo
-   sutil para que se lean como un conjunto en vez de piezas sueltas junto al
-   avatar de cuenta -- que queda separado por un borde a la izquierda, como
-   elemento de identidad distinto de las utilidades. En móvil este grupo
-   entero se oculta (ver @media 900px) y sus piezas se pintan dentro del
-   cajón del menú hamburguesa en su lugar. */
+/* ---------- Grupo de utilidades (buscador + oposición) ----------
+   Los dos controles comparten el mismo lenguaje visual (icono/pastilla de
+   38px de alto, popover con position:absolute) y se agrupan en un "pill"
+   con fondo sutil para que se lean como un conjunto en vez de piezas
+   sueltas junto al avatar de cuenta -- que queda separado por un borde a
+   la izquierda, como elemento de identidad distinto de las utilidades. El
+   modo oscuro y las notificaciones viven dentro del propio menú de cuenta
+   (ver .age-account-menu más abajo), no aquí -- antes cada uno era un
+   icono suelto más, y era demasiado para leer de un vistazo. En móvil
+   este grupo entero se oculta (ver @media 900px) y sus piezas se pintan
+   dentro del cajón del menú hamburguesa en su lugar. */
 .age-nav-utilidades {
   display: flex;
   align-items: center;
@@ -282,9 +285,9 @@ body {
   border-left: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-/* Botón-icono circular compartido por buscador, selector de oposición,
-   modo oscuro y "volver a zona opositor" -- antes cada uno duplicaba el
-   mismo bloque de 38x38px con su propio hover. */
+/* Botón-icono circular compartido por el buscador -- antes también lo
+   compartían el selector de oposición, el modo oscuro y "volver a zona
+   opositor", ya retirados de la barra (ver comentario de arriba). */
 .age-nav-icon-btn {
   width: 38px;
   height: 38px;
@@ -304,18 +307,37 @@ body {
   background: rgba(255, 255, 255, 0.12);
 }
 
-/* ---------- Botón "Zona opositor" en páginas alcanzadas desde ahí ----------
-   Vive dentro de .age-nav-right, con el mismo tratamiento circular que el
-   resto de iconos de la nav pero en un tono cálido propio, para
-   distinguirlo como un atajo contextual en vez de una utilidad global.
-   Siempre visible (a diferencia de los enlaces de .age-nav-links, que en
-   móvil quedan ocultos tras el menú hamburguesa). */
-.age-volver-zona-btn {
-  color: var(--age-primary-light);
+/* Botón del selector de oposición: mismo lenguaje visual que
+   .age-nav-icon-btn (fondo/borde/hover), pero con ancho automático y
+   texto -- muestra la sigla de la oposición actual (ej. "AGE") en vez de
+   un icono sin etiquetar, para que se sepa de un vistazo en cuál se está
+   sin tener que abrir nada (igual que ya pasa en el <select> de móvil). */
+.age-nav-op-btn {
+  height: 38px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: var(--age-radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-family: var(--age-font);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: background 0.2s var(--age-ease);
 }
 
-.age-volver-zona-btn:hover {
-  color: #fff;
+.age-nav-op-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.age-nav-op-caret {
+  font-size: 9px;
+  opacity: 0.7;
 }
 
 /* ---------- Popover compartido (buscador, selector de oposición, cuenta) ----------
@@ -454,34 +476,11 @@ body {
   text-transform: uppercase;
 }
 
-/* ---------- Centro de notificaciones (campanita) ---------- */
-.age-notificaciones {
-  position: relative;
-}
-
-.age-notificaciones-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 15px;
-  height: 15px;
-  padding: 0 3px;
-  border-radius: var(--age-radius-pill);
-  background: var(--age-danger);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  pointer-events: none;
-}
-
-.age-notificaciones-panel {
-  width: min(340px, 90vw);
-}
-
+/* ---------- Avisos (lista reutilizada dentro del menú de cuenta) ----------
+   Antes tenían su propia campanita suelta en la barra; ahora viven dentro
+   de .age-account-menu (ver más abajo, .age-account-notis) y el aviso de
+   "hay algo nuevo" es el punto rojo sobre el avatar
+   (.age-account-badge-dot), sin número. */
 .age-notificaciones-lista {
   max-height: 340px;
   overflow-y: auto;
@@ -537,6 +536,7 @@ body {
 }
 
 .age-account-avatar {
+  position: relative;
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -548,6 +548,20 @@ body {
   font-weight: 800;
   font-size: 12.5px;
   flex-shrink: 0;
+}
+
+/* Punto de aviso -- sustituye al número que antes llevaba la campanita
+   suelta: solo dice "hay algo nuevo", sin cantidad, ya que el detalle está
+   a un clic dentro del propio menú (.age-account-notis). */
+.age-account-badge-dot {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--age-danger);
+  border: 2px solid var(--age-navy);
 }
 
 .age-account-nombre {
@@ -594,6 +608,17 @@ body {
   height: 1px;
   background: var(--age-border);
   margin: 6px 4px;
+}
+
+/* Sección de avisos dentro del menú de cuenta (ver auth.js,
+   construirMenuCuenta) -- oculta por completo si no hay ninguno. */
+.age-account-menu-titulo {
+  margin: 4px 12px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--age-ink-soft, var(--age-ink));
 }
 
 /* ---------- Menú hamburguesa (móvil) ---------- */
@@ -859,6 +884,7 @@ body {
 .age-nav-links a:focus-visible,
 .age-account-btn:focus-visible,
 .age-nav-icon-btn:focus-visible,
+.age-nav-op-btn:focus-visible,
 .age-popover-opcion:focus-visible,
 .age-tema-movil:focus-visible {
   outline: 2px solid var(--age-primary);
@@ -1022,6 +1048,25 @@ body {
 }
 .age-banner-aviso { background: #d98324; }
 .age-banner-urgente { background: #c0392b; }
+
+/* Fuente y animación configurables desde el panel admin (Configuración
+   → Sistema) para el aviso global y la promoción -- ver
+   frontend/assets/auth.js, aplicarEstiloAviso(). "Deslizante" es una
+   cinta continua (la interpretación más literal de "letras en
+   movimiento"); el resto son animaciones sutiles. Ninguna se aplica
+   si el aviso usa los valores por defecto ("default"/"ninguna"). */
+@keyframes ageBannerParpadeo { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes ageBannerRebote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes ageBannerDeslizante { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+
+.age-anim-parpadeo { animation: ageBannerParpadeo 1.8s ease-in-out infinite; }
+.age-anim-rebote { animation: ageBannerRebote 1.4s ease-in-out infinite; }
+.age-anim-deslizante { display: inline-block; animation: ageBannerDeslizante 10s linear infinite; }
+.age-banner-scroll { overflow: hidden; white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .age-anim-parpadeo, .age-anim-rebote, .age-anim-deslizante { animation: none; }
+}
 
 /* ---------- Aviso de cookies ---------- */
 .age-cookies-banner {
@@ -1188,6 +1233,19 @@ body {
 }
 
 .age-banner-promo-texto strong { color: var(--age-primary-light, #ffb84d); }
+
+/* Envoltorio interior: cuando la animación es "deslizante", el
+   overflow:hidden (age-banner-scroll) va en .age-banner-promo-texto (la
+   "ventana", que se queda quieta en su sitio en la fila) y la animación va
+   en este interior (lo único que se traslada) -- si ambas cosas fueran el
+   mismo elemento, el texto se solaparía con la cuenta atrás y el botón al
+   deslizarse, porque transform no afecta a la posición de sus hermanos. */
+.age-banner-promo-texto-int {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
 
 .age-banner-promo-cuenta {
   display: inline-flex;
@@ -1357,7 +1415,11 @@ body {
   color: var(--age-ink-soft);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  white-space: nowrap;
+  text-align: center;
+  /* Normal en vez de nowrap: una etiqueta larga en una caja estrecha (p.
+     ej. en móvil, cuando el grid pasa a una sola columna) debe partirse en
+     dos líneas dentro de la caja, no desbordar por fuera de la tarjeta. */
+  white-space: normal;
 }
 
 .resultado-nota-valor {
@@ -1373,12 +1435,37 @@ body {
   color: var(--age-ink-soft);
 }
 
-.resultado-nota-aclaracion {
-  display: block;
-  font-size: 0.78rem;
+/* Bloque aparte (no una casilla más de .resultado-notas-grid) con la nota
+   alternativa "si esas preguntas dudosas contaran", en el mismo formato de
+   dos casillas que la nota principal para que se lea igual de claro. */
+.resultado-nota-alternativa {
+  margin: 0 0 18px;
+  padding: 14px 16px 16px;
+  border: 1px dashed var(--age-border);
+  border-radius: var(--age-radius-md);
+  background: var(--age-neutral-bg);
+}
+
+.resultado-nota-alternativa-texto {
+  margin: 0 0 12px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--age-ink-soft);
+  text-align: center;
+}
+
+.resultado-notas-grid-alt {
+  margin-bottom: 0;
+}
+
+.resultado-notas-grid-alt .resultado-nota-box {
+  background: var(--age-card);
+}
+
+.resultado-nota-alternativa-pie {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
   color: var(--age-ink-faint);
-  margin-top: 2px;
-  white-space: normal;
   text-align: center;
 }
 
@@ -1539,6 +1626,16 @@ body {
   gap: 20px;
 }
 
+/* Cada pregunta en su propio recuadro (fondo gris clarito), para que se
+   vea con claridad dónde acaba una y empieza la siguiente en vez de un
+   bloque continuo. */
+.lista-detalle-preguntas > div {
+  background: var(--age-neutral-bg);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  padding: 18px 20px;
+}
+
 .pregunta-en-negrita {
   font-weight: 800;
   font-size: 1.05rem;
@@ -1655,7 +1752,8 @@ body {
 .detalle-explicacion-panel {
   margin-top: 10px;
   padding: 14px 16px;
-  background: var(--age-neutral-bg);
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
   border-radius: var(--age-radius-md);
   font-size: 0.92rem;
   line-height: 1.55;
@@ -2046,7 +2144,10 @@ body {
   border-radius: var(--age-radius-md);
   padding: 9px 12px;
   font-family: var(--age-font);
-  font-size: 14px;
+  /* 16px y no menos: por debajo de eso, Safari en iOS hace zoom automático
+     de toda la página al enfocar el campo -- eso es lo que hacía que el
+     chat "se viera con más zoom" justo al ponerse a escribir. */
+  font-size: 16px;
   color: var(--age-ink);
   background: var(--age-bg);
   max-height: 90px;

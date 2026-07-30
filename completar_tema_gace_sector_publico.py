@@ -36,7 +36,7 @@ USO:
 Variables de entorno necesarias:
   FIREBASE_KEY_PATH (o FIREBASE_CREDENTIALS_JSON)
 
-Requiere: PyPDF2, firebase-admin (ya están en requirements.txt)
+Requiere: pypdf, firebase-admin (ya están en requirements.txt)
 """
 import argparse
 import json
@@ -62,7 +62,7 @@ TITULO_NORMA = (
 
 # Encabezados literales del propio documento que delimitan el Título II -- se busca
 # por contenido, no por número de página fijo, para que siga funcionando aunque
-# PyPDF2 extraiga el texto con un salto de línea ligeramente distinto a como se vio
+# pypdf extraiga el texto con un salto de línea ligeramente distinto a como se vio
 # al investigar el documento con PyMuPDF. Ancla en el título exacto del Título II
 # ("Organización y funcionamiento del sector público institucional") para no
 # confundirlo con un "TÍTULO II" de cualquier otra norma del documento (3792

@@ -30,6 +30,8 @@ def _cumple_filtro(datos, filtro):
     actual = datos.get(campo)
     if operador == "==":
         return actual == valor
+    if operador == ">":
+        return actual is not None and actual > valor
     raise NotImplementedError(f"Operador de filtro no soportado en el fake: {operador}")
 
 
@@ -135,6 +137,14 @@ class FakeCollectionRef:
                 if all(_cumple_filtro(datos, f) for f in self._filtros):
                     vistos += 1
                     yield FakeDocumentSnapshot(path[-1], datos, self._store, path)
+
+    def get(self, **kwargs):
+        # Firestore real: query.get() devuelve una lista de DocumentSnapshot
+        # (a diferencia de .stream(), que devuelve un generador) -- algunas
+        # rutas (ver vigilancia_boe._existe_propuesta_pendiente_reciente)
+        # usan .get() en vez de .stream() para consultas puntuales de
+        # "¿existe ya?".
+        return list(self.stream(**kwargs))
 
     def count(self):
         return FakeAggregationQuery(self)

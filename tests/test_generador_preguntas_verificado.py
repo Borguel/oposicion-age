@@ -35,6 +35,22 @@ def test_contenido_normativo_usa_prompts_juridicos():
     assert "jurídic" in system_ver.lower()
 
 
+def test_prompt_normativo_exige_nombrar_la_norma_al_citar_un_articulo():
+    # Regresión: una pregunta generada decía "Según el artículo 52.1..." sin
+    # decir de qué ley -- el opositor no tenía forma de saber de qué norma
+    # hablaba. El prompt de generación y el de verificación deben exigir
+    # explícitamente que toda mención a un artículo vaya acompañada del
+    # nombre de la norma.
+    anclas = [{"norma": "Ley 29/1998, reguladora de la Jurisdicción Contencioso-Administrativa",
+               "articulo": "Artículo 52.1",
+               "texto_legal": "Artículo 52.1. Plazo común de vista a las partes.",
+               "etiqueta_subbloque": "s1"}]
+    system_gen, _user_gen = _prompt_generacion(anclas, "memoria_literal", "AGE")
+    system_ver, _user_ver = _prompt_verificacion({"pregunta": "x"}, anclas)
+    assert "nombre de la norma" in system_gen
+    assert "nombre de la norma" in system_ver
+
+
 def test_contenido_descriptivo_sin_articulos_usa_prompts_descriptivos():
     # Contenido de ofimática (sin "Artículo N.") -> prompts descriptivos: no
     # deben exigir artículos ni lenguaje jurídico, que es lo que hacía que se
@@ -52,6 +68,48 @@ def test_contenido_descriptivo_sin_articulos_usa_prompts_descriptivos():
     # artículos ni lenguaje legal (esa exigencia era la que descartaba las
     # preguntas de temas no normativos como ofimática).
     assert "no exijas artículos" in system_ver.lower()
+
+
+def test_prompt_descriptivo_prohibe_remitir_al_contenido_invisible():
+    # Regresión: "¿Qué tienen en común todas las escalas y auxiliares
+    # mencionados en el contenido?" -- quien responde el test nunca ve el
+    # material de origen, así que el prompt de generación y el de
+    # verificación deben prohibir explícitamente ese tipo de remisión.
+    anclas = [{"norma": "Organización de la Administración", "articulo": None,
+               "texto_legal": "La escala de gestión y la escala auxiliar tienen funciones distintas.",
+               "etiqueta_subbloque": "s1"}]
+    system_gen, _user_gen = _prompt_generacion(anclas, "memoria_literal", "AGE")
+    system_ver, _user_ver = _prompt_verificacion({"pregunta": "x"}, anclas)
+    assert "mencionados en el contenido" in system_gen.lower()
+    assert "mencionados en el contenido" in system_ver.lower()
+
+
+def test_prompt_normativo_prohibe_abreviar_el_nombre_de_la_norma():
+    # Los exámenes oficiales nunca abrevian ("CE" en vez de "Constitución
+    # Española", "TREBEP", "LPAC"...) -- el prompt de generación y el de
+    # verificación deben exigir el nombre completo.
+    anclas = [{"norma": "Constitución Española", "articulo": "Artículo 24",
+               "texto_legal": "Artículo 24. Todas las personas tienen derecho a la tutela judicial efectiva.",
+               "etiqueta_subbloque": "s1"}]
+    system_gen, _user_gen = _prompt_generacion(anclas, "memoria_literal", "AGE")
+    system_ver, _user_ver = _prompt_verificacion({"pregunta": "x"}, anclas)
+    assert "sigla" in system_gen.lower()
+    assert '"ce"' in system_gen.lower()
+    assert "sigla" in system_ver.lower()
+
+
+def test_prompt_normativo_prohibe_abreviar_tipo_de_norma_con_numero():
+    # Regresión: "Según la LO 3/2007..." abrevia "Ley Orgánica 3/2007" con el
+    # tipo de norma + número en vez del nombre completo -- un patrón distinto
+    # de las siglas fijas ("CE", "TREBEP"...) que el prompt debe cubrir
+    # también, tanto en generación como en verificación.
+    anclas = [{"norma": "Ley Orgánica 3/2007", "articulo": "Artículo 1",
+               "texto_legal": "Artículo 1. Las mujeres y los hombres son iguales en dignidad humana.",
+               "etiqueta_subbloque": "s1"}]
+    system_gen, _user_gen = _prompt_generacion(anclas, "memoria_literal", "AGE")
+    system_ver, _user_ver = _prompt_verificacion({"pregunta": "x"}, anclas)
+    assert "lo 3/2007" in system_gen.lower()
+    assert "lo 3/2007" in system_ver.lower()
 
 
 def _pregunta_valida(texto_pregunta="¿Pregunta de ejemplo?"):
@@ -175,7 +233,7 @@ def test_fallo_inesperado_en_un_intento_consume_solo_ese_intento():
 
 
 def _mock_deepseek_siempre_valido(contador, lock_contador):
-    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None):
+    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None, model=None):
         contenido_usuario = messages[-1]["content"]
         if "PREGUNTA A VERIFICAR" in contenido_usuario:
             return json.dumps({"valido": True, "problemas": []})
@@ -275,7 +333,9 @@ def test_generar_test_verificado_sobrevive_a_un_fallo_inesperado_de_un_hueco(db)
     # directamente sobre _generar_pregunta_verificada, simulando por ejemplo
     # una forma de respuesta de DeepSeek que ningún "continue" contemplaba),
     # las preguntas que los OTROS hilos ya habían aceptado no deben perderse
-    # ni propagar el error hacia arriba -- se cuenta como una más descartada.
+    # ni propagar el error hacia arriba -- se cuenta como una más descartada,
+    # pero el relleno (ver test siguiente) le da una oportunidad más y
+    # recupera igualmente el número de preguntas pedido.
     relleno = " ".join(["palabra"] * 30)
     db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
         "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del subbloque. {relleno}"
@@ -308,9 +368,79 @@ def test_generar_test_verificado_sobrevive_a_un_fallo_inesperado_de_un_hueco(db)
         )
 
     # Las 2 preguntas de los huecos que SÍ funcionaron llegan igual, en vez
-    # de perderse todas por el fallo del tercero.
+    # de perderse todas por el fallo del tercero, y el relleno recupera la
+    # tercera que faltaba -- las 3 pedidas llegan igual.
+    assert len(resultado["test"]) == 3
+    assert resultado["descartadas"] == 1
+
+
+def test_generar_test_verificado_rellena_hueco_agotado_con_otro_tema(db):
+    # Caso real reportado: pedir 100 preguntas de AGE con temario de sobra y
+    # recibir 99 -- un hueco concreto agotó sus MAX_INTENTOS_POR_PREGUNTA
+    # (aquí forzado devolviendo None, como cuando la verificación rechaza la
+    # pregunta las 4 veces) no debe traducirse en menos preguntas de las
+    # pedidas si otro tema todavía tiene contenido disponible.
+    relleno = " ".join(["palabra"] * 30)
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del tema 1. {relleno}"
+    })
+    db.sembrar(("Temario AGE", "bloque_02", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 19/2013", "texto": f"Artículo 3. Contenido del tema 2. {relleno}"
+    })
+
+    contador = itertools.count()
+    lock_contador = threading.Lock()
+
+    def _falla_siempre_el_tema_2(subbloques_tema, tema_id, oposicion, subbloques_ya_usados,
+                                  preguntas_ya_aceptadas, lock, on_usage=None, max_intentos=4):
+        if tema_id == "bloque_02-tema_01":
+            return None  # agotó sus intentos "de verdad" -- ninguna superó la verificación
+        with lock_contador:
+            n = next(contador)
+        return {
+            "pregunta": f"¿Pregunta {n}?", "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"},
+            "respuesta_correcta": "A", "explicacion": "Explicación suficientemente larga para pasar.",
+            "tema_id": tema_id, "tipo_pregunta": "memoria_literal",
+        }
+
+    with patch("generador_preguntas_verificado._generar_pregunta_verificada",
+               side_effect=_falla_siempre_el_tema_2), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        resultado = generar_test_verificado(
+            db, temas=["bloque_01-tema_01", "bloque_02-tema_01"], num_preguntas=2,
+            coleccion="Temario AGE", oposicion="AGE"
+        )
+
+    # Las 2 preguntas pedidas llegan igual: la del tema 2 se pierde, pero el
+    # relleno la recupera generando otra en el tema 1 (que sí tiene cupo).
     assert len(resultado["test"]) == 2
     assert resultado["descartadas"] == 1
+    assert "advertencia" not in resultado
+
+
+def test_generar_test_verificado_si_el_relleno_tambien_falla_avisa_del_numero_real(db):
+    # Si NINGÚN tema tiene ya más contenido que dé preguntas válidas (aquí
+    # forzado para que todo falle), el relleno no debe insistir sin límite
+    # ni fingir que llegó al número pedido -- se entrega lo que haya y se
+    # avisa, igual que antes de que existiera el relleno.
+    relleno = " ".join(["palabra"] * 30)
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del tema. {relleno}"
+    })
+
+    with patch("generador_preguntas_verificado._generar_pregunta_verificada", return_value=None), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        resultado = generar_test_verificado(
+            db, temas=["bloque_01-tema_01"], num_preguntas=3,
+            coleccion="Temario AGE", oposicion="AGE"
+        )
+
+    assert len(resultado["test"]) == 0
+    # 3 huecos originales + 3 intentos de relleno (uno por hueco que faltaba)
+    # -- el relleno también cuenta como descartada cuando falla de verdad.
+    assert resultado["descartadas"] == 6
+    assert "advertencia" in resultado
+    assert "0 de 3" in resultado["advertencia"]
 
 
 def test_generar_test_verificado_modo_realista_pondera_por_bloque(db):

@@ -242,6 +242,26 @@ body {
   color: var(--age-primary-dark);
 }
 
+.documento-card-eliminar {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--age-radius-sm);
+  background: transparent;
+  color: var(--age-ink-soft);
+  cursor: pointer;
+}
+
+.documento-card-eliminar:hover {
+  background: var(--age-danger-bg);
+  color: var(--age-danger);
+}
+
 .documento-card-meta {
   color: var(--age-ink-soft);
   font-size: 0.82rem;

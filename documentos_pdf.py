@@ -76,11 +76,17 @@ def obtener_o_crear_documento(db, uid, texto, nombre_archivo, num_paginas):
     return nuevo_ref.id, datos
 
 
-def obtener_preguntas_previas(db, uid, documento_id):
-    """Textos de las preguntas ya generadas en tests anteriores de este
-    mismo documento (colección tests_pdf, ver guardar_resultado.py) -- se
-    usan para que "Generar más" (test_generator.py) no repita el mismo dato
-    ya preguntado antes, aunque lo redacte con otras palabras."""
+def obtener_preguntas_previas(db, uid, documento_id, limite=60):
+    """Preguntas (con su respuesta correcta) de tests ANTERIORES ya
+    generados para este mismo documento (colección tests_pdf, ver
+    guardar_resultado.py) -- se usan para que una nueva generación desde
+    la biblioteca ("generar test" otra vez sobre el mismo documento) no
+    repita el mismo dato ya preguntado, aunque lo redacte con otras
+    palabras (ver test_generator.py, preguntas_a_evitar). Sin esto, cada
+    generación parte de cero: la deduplicación existente (fragmentar el
+    documento por lote, relleno de huecos evitando "lo ya cubierto en
+    este test") solo actúa DENTRO de una misma llamada, así que dos tests
+    sucesivos del mismo PDF podían acabar compartiendo preguntas."""
     if not documento_id:
         return []
     docs = (
@@ -88,13 +94,17 @@ def obtener_preguntas_previas(db, uid, documento_id):
         .where("documento_id", "==", documento_id)
         .stream()
     )
-    preguntas = []
+    formateadas = []
     for doc in docs:
         for p in (doc.to_dict() or {}).get("preguntas", []):
             texto = (p or {}).get("pregunta")
-            if texto:
-                preguntas.append(str(texto))
-    return preguntas
+            if not texto:
+                continue
+            opciones = (p or {}).get("opciones") or {}
+            letra = str((p or {}).get("respuesta_correcta", "")).upper()
+            respuesta = opciones.get(letra, "")
+            formateadas.append(f"{texto} (respuesta: {respuesta})" if respuesta else str(texto))
+    return formateadas[:limite]
 
 
 def obtener_documento(db, uid, documento_id):
@@ -104,6 +114,35 @@ def obtener_documento(db, uid, documento_id):
     datos = doc.to_dict()
     datos["id"] = doc.id
     return datos
+
+
+def obtener_tests_en_progreso_por_documento(db, uid):
+    """{documento_id: test_id} de los tests desde PDF que quedaron
+    "en_progreso" (autoguardados sin terminar, ver rutas_progreso.py
+    autosave_test) -- para que "Mis documentos" pueda ofrecer "Continuar"
+    en vez de solo "Ver"/"Generar más" (que antes solo aparecían cuando ya
+    había al menos un test FINALIZADO, ver marcar_generado/num_tests: un
+    test empezado y no acabado no incrementa num_tests, así que no tenía
+    ninguna forma de retomarse desde la biblioteca). Si un documento tiene
+    más de un test en_progreso a la vez, se queda con el más reciente."""
+    docs = (
+        db.collection("usuarios").document(uid).collection("tests")
+        .where("estado", "==", "en_progreso")
+        .stream()
+    )
+    por_documento = {}
+    for doc in docs:
+        datos = doc.to_dict() or {}
+        if datos.get("tipo") != "test_pdf":
+            continue
+        documento_id = datos.get("documento_id")
+        if not documento_id:
+            continue
+        fecha = datos.get("fecha") or ""
+        actual = por_documento.get(documento_id)
+        if not actual or fecha > actual[1]:
+            por_documento[documento_id] = (doc.id, fecha)
+    return {documento_id: test_id for documento_id, (test_id, _fecha) in por_documento.items()}
 
 
 def marcar_generado(db, uid, documento_id, tipo, num_tarjetas_nuevas=0):
@@ -164,6 +203,34 @@ def actualizar_titulo(db, uid, documento_id, titulo):
     if not titulo:
         return False
     ref.update({"titulo": titulo})
+    return True
+
+
+def eliminar_documento(db, uid, documento_id):
+    """Borra un documento de la biblioteca -- pensado sobre todo para poder
+    quitar una subida duplicada o ya no deseada. Descuenta del contador
+    paginas_analizadas del usuario las páginas que había aportado al
+    crearse (ver obtener_o_crear_documento), para que ese contador siga
+    reflejando la realidad tras el borrado.
+
+    NO borra el contenido ya generado a partir de él (resúmenes/esquemas/
+    tarjetas/tests en sus propias colecciones, cada uno etiquetado con este
+    documento_id) -- sigue accesible donde ya estuviera (p. ej. "Mis
+    Tests"), solo deja de aparecer como documento de origen en la
+    biblioteca. Borrar en cascada todo lo generado sería mucho más
+    destructivo de lo que pide "quitar un duplicado de la lista", y esos
+    contenidos no dependen de que el documento siga existiendo."""
+    ref = db.collection("usuarios").document(uid).collection("documentos").document(documento_id)
+    doc = ref.get()
+    if not doc.exists:
+        return False
+    num_paginas = (doc.to_dict() or {}).get("num_paginas") or 0
+    ref.delete()
+    if num_paginas:
+        from firebase_admin import firestore
+        db.collection("usuarios").document(uid).update({
+            "paginas_analizadas": firestore.Increment(-num_paginas),
+        })
     return True
 
 

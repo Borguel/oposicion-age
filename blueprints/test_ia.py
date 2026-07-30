@@ -10,6 +10,7 @@ from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
 from firebase_setup import db
 from auth_utils import requiere_plan, obtener_oposicion_solicitada
+from rate_limiter import limiter
 from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
 from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales
@@ -41,6 +42,7 @@ TIPOS_CUOTA_TEST_PERSONALIZADO = ("test_avanzado_verificado", "test_avanzado_ver
 # ejecuta en paralelo con un ThreadPoolExecutor) en vez de ser un
 # generador Python en sí.
 @bp.route("/generar-test-avanzado", methods=["POST"])
+@limiter.limit("5 per minute")
 @requiere_plan(db, "basico")
 def generar_test_avanzado_route():
     data = request.get_json()
@@ -126,7 +128,7 @@ def generar_test_avanzado_route():
     return Response(
         stream_with_context(generar()),
         mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
     )
 
 
@@ -250,6 +252,7 @@ def guardar_test_oficial():
 
 
 @bp.route("/analisis-rendimiento", methods=["GET"])
+@limiter.limit("10 per minute")
 @requiere_plan(db, "basico")
 def analisis_rendimiento():
     """Análisis breve generado por IA a partir del rendimiento POR TEMA

@@ -235,6 +235,21 @@ def registrar_rutas_progreso(app, db):
             "tiempo_transcurrido_segundos": datos.get("tiempo_transcurrido_segundos"),
             "fecha_actualizacion": ahora,
         }
+        # documento_id puede llegar más tarde que la creación del borrador:
+        # con el arranque temprano de un test grande desde PDF (ver
+        # frontend/subida-pdf-generar-test/script.js), el test se crea en
+        # cuanto llegan las primeras preguntas, ANTES de que el backend
+        # termine de generar el resto y por tanto antes de que el frontend
+        # conozca el documento_id real (solo viaja en el evento SSE "fin")
+        # -- bug real: el borrador se creaba con documento_id nulo para
+        # siempre, así que "Mis documentos" nunca podía ofrecer "Continuar"
+        # para ese documento. Se admite corregirlo en CUALQUIER
+        # autoguardado posterior, no solo en la creación; condicionado a
+        # que venga en la petición para no borrar el que ya hubiera si un
+        # autoguardado de otro punto (que nunca lo manda, como el de cada
+        # respuesta) no lo incluye.
+        if datos.get("documento_id") is not None:
+            campos_variables["documento_id"] = datos.get("documento_id")
 
         try:
             # "contenido" (las preguntas en sí) solo se manda una vez, en el
@@ -261,7 +276,6 @@ def registrar_rutas_progreso(app, db):
                     "contenido": datos.get("contenido", []),
                     "tiempo_total_asignado_segundos": datos.get("tiempo_total_asignado_segundos"),
                     "pagina_origen": datos.get("pagina_origen", ""),
-                    "documento_id": datos.get("documento_id"),
                     **campos_variables,
                 })
             else:

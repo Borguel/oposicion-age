@@ -10,6 +10,31 @@ from chat_controller import responder_tutor, responder_tutor_stream, sugerencia_
 from utils import obtener_catalogo_temas
 
 
+class TestModeloConfigurable:
+    """El modelo de DeepSeek que usa Tu Tutor es configurable sin redeploy
+    vía TUTOR_MODELO_IA (ver chat_controller._modelo_tutor) -- por defecto
+    "deepseek-v4-flash", igual que el resto de la app, pero se puede probar
+    "deepseek-v4-pro" (el modelo de razonamiento) sin tocar código."""
+
+    def test_responder_tutor_usa_deepseek_v4_flash_por_defecto(self, db, monkeypatch):
+        monkeypatch.delenv("TUTOR_MODELO_IA", raising=False)
+        with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+            responder_tutor("¿Qué consejos me das?", db=db, usuario_id="u1")
+        assert mock_llamada.call_args.kwargs["model"] == "deepseek-v4-flash"
+
+    def test_responder_tutor_respeta_la_variable_de_entorno(self, db, monkeypatch):
+        monkeypatch.setenv("TUTOR_MODELO_IA", "deepseek-v4-pro")
+        with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada:
+            responder_tutor("¿Qué consejos me das?", db=db, usuario_id="u1")
+        assert mock_llamada.call_args.kwargs["model"] == "deepseek-v4-pro"
+
+    def test_responder_tutor_stream_respeta_la_variable_de_entorno(self, db, monkeypatch):
+        monkeypatch.setenv("TUTOR_MODELO_IA", "deepseek-v4-pro")
+        with patch("chat_controller.call_deepseek_api_stream", return_value=iter(["ok"])) as mock_llamada:
+            list(responder_tutor_stream("¿Qué consejos me das?", db=db, usuario_id="u1"))
+        assert mock_llamada.call_args.kwargs["model"] == "deepseek-v4-pro"
+
+
 def _sembrar_tema(db, coleccion="Temario AGE"):
     db.sembrar((coleccion, "bloque_01"), {"titulo": "Bloque I"})
     db.sembrar((coleccion, "bloque_01", "temas", "tema_01"), {"titulo": "La Constitución Española de 1978"})

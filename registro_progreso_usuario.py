@@ -3,7 +3,8 @@ from google.cloud import firestore
 
 from oposiciones import OPOSICION_POR_DEFECTO
 from email_utils import enviar_email_bienvenida
-from planes import DURACION_PRUEBA_DIAS, prueba_activa, resolver_plan_efectivo
+from planes import DURACION_PRUEBA_DIAS, prueba_activa, resolver_plan_efectivo, tiene_plan_de_pago_activo
+from dominios_desechables import es_dominio_email_desechable
 from utils import calcular_resultado_test, ejecutar_en_transaccion
 
 
@@ -43,9 +44,28 @@ def registrar_actividad_racha(db, usuario_id):
         }
     })
 
-def inicializar_estadisticas_usuario(db, usuario_id, email=None):
+def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificado=True):
+    """Crea el documento usuarios/{uid} la primera vez que se ve a este
+    usuario (se llama en cada petición autenticada, ver
+    auth_utils.requiere_login, así que en el resto de peticiones no hace
+    nada más que la comprobación de existencia).
+
+    `email_verificado` (calculado por auth_utils.requiere_login a partir
+    del claim email_verified del token de Firebase -- True para Google, que
+    ya verifica la dirección por su cuenta; el valor real del token para
+    email+contraseña) decide, junto con que el dominio del email no sea de
+    correo desechable conocido (ver dominios_desechables.py), si esta
+    primera creación arranca ya la prueba gratuita de 7 días o la deja sin
+    activar (prueba_fin=None, cuenta tratada como "gratis" hasta entonces --
+    prueba_activa() en planes.py ya trata None como "sin prueba"). Así una
+    cuenta creada solo para farmear el acceso Premium gratuito no lo
+    consigue con solo rellenar un formulario. Si más tarde el email SÍ se
+    verifica, la siguiente petición autenticada arranca la prueba en ese
+    momento (ver más abajo, rama "ya existe")."""
+    permite_prueba = bool(email_verificado) and not es_dominio_email_desechable(email)
     doc_ref = db.collection("usuarios").document(usuario_id)
-    if not doc_ref.get().exists:
+    snap = doc_ref.get()
+    if not snap.exists:
         doc_ref.set({
             # Estadísticas de tests/esquemas del temario oficial, UNA POR
             # OPOSICIÓN (un usuario que estudia AGE y GACE a la vez quiere ver
@@ -72,7 +92,9 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None):
             # Prueba gratuita de acceso Premium, una única vez por cuenta (no
             # por oposición): pasados estos días, si no hay ninguna
             # suscripción de pago, el usuario queda bloqueado (ver planes.py).
-            "prueba_fin": (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat(),
+            # None si todavía no procede (email sin verificar, o dominio
+            # desechable) -- se arranca más abajo en cuanto proceda.
+            "prueba_fin": (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat() if permite_prueba else None,
             # CAMPOS DE IDENTIDAD Y SUSCRIPCIÓN (Firebase Auth + Stripe)
             "email": email,
             "nombre": "",
@@ -88,6 +110,17 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None):
             "suscripciones": {},
         })
         enviar_email_bienvenida(email)
+        return
+
+    # El documento ya existía: si el email se acaba de verificar (o, más
+    # raro, se detecta ahora que su dominio no era desechable) y la prueba
+    # todavía no se había activado, arrancarla en este momento -- no se
+    # pierde por no haberse verificado el email en la primera petición.
+    datos = snap.to_dict() or {}
+    if permite_prueba and datos.get("prueba_fin") is None:
+        doc_ref.update({
+            "prueba_fin": (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat(),
+        })
 
 def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None, rendimiento_temas=None, blancos=0):
     # Lectura + cálculo + escritura van dentro de una única transacción de
@@ -304,7 +337,7 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
     if not doc.exists:
         perfil = {
             "suscripciones": {}, "email": None, "nombre": "", "apellidos": "", "telefono": "", "direccion": "",
-            "prueba_activa": False, "prueba_fin": None,
+            "prueba_activa": False, "prueba_fin": None, "tiene_plan_de_pago": False,
         }
         if oposicion:
             perfil.update({
@@ -328,6 +361,11 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
         # si tiene que bloquear la página (ver assets/plan.js).
         "prueba_activa": prueba_activa(datos),
         "prueba_fin": datos.get("prueba_fin"),
+        # Si ya paga por otra oposición, el frontend no debe hablarle de
+        # "prueba" (ni cuenta atrás ni "ha terminado") al mirar una que
+        # todavía no ha contratado -- ver tiene_plan_de_pago_activo en
+        # planes.py y su uso en assets/plan.js / assets/auth.js.
+        "tiene_plan_de_pago": tiene_plan_de_pago_activo(datos),
     }
     if oposicion:
         if es_admin:

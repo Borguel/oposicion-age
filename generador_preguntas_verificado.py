@@ -19,9 +19,14 @@ ya retirado): aquí,
      se corrige/parchea) y se reintenta desde cero -- nueva elección de
      artículo, nuevo tipo de pregunta, nueva generación, nueva
      verificación -- hasta MAX_INTENTOS_POR_PREGUNTA veces. Si se agotan,
-     ese hueco se pierde (se avisa al final) en vez de bloquear el resto
-     del test para siempre.
+     ese hueco NO se da por perdido todavía: se le da una oportunidad más
+     en otro tema con contenido disponible (ver el relleno al final de
+     generar_test_verificado) -- con temario de sobra, que a un hueco
+     concreto le toque mala suerte con sus intentos no debería traducirse
+     en menos preguntas de las pedidas. Solo si también esa oportunidad
+     falla se pierde de verdad (se avisa al final).
 """
+import itertools
 import json
 import logging
 import random
@@ -42,7 +47,30 @@ from banco_preguntas_ia import guardar_pregunta_generada
 logger = logging.getLogger(__name__)
 
 MAX_INTENTOS_POR_PREGUNTA = 4
-_MAX_WORKERS = 6
+# Subido de 6 a 10 (25/07/2026) y a 15 (26/07/2026): deepseek-v4-flash es
+# barato por token, así que más llamadas en paralelo reduce el tiempo total
+# de generación sin encarecerla apenas -- el cuello de botella es la
+# LATENCIA de cada llamada (ver el log "DeepSeek respondió en Xs" en
+# deepseek_utils.py, media de ~12.5s con 10 hilos), no el coste. Subida
+# incremental (no un salto grande) para poder comparar esa misma media
+# antes/después: si se mantiene parecida, DeepSeek todavía tiene margen y
+# se puede seguir subiendo; si empieza a subir (o aparecen errores de
+# conexión/429), es que ya se está saturando su capacidad por cuenta y
+# subir más empeora las cosas en vez de ayudar.
+_MAX_WORKERS = 15
+
+# REVERTIDO a deepseek-v4-flash (25/07/2026): se probó deepseek-v4-pro
+# (razonamiento) porque flash descartaba el 74% de las preguntas candidatas
+# por no seguir las reglas estrictas de este módulo -- pero en producción
+# deepseek-v4-pro dio fallos de conexión reales y persistentes
+# ("Error de conexión: no se pudo conectar a DeepSeek API" repetido durante
+# minutos, incluso en un intento limpio tras esperar), probablemente por ser
+# un modelo recién lanzado bajo mucha demanda tras la migración forzosa del
+# 24/07/2026. Un fallo de conexión deja el test sin NINGUNA pregunta, peor
+# que el descarte alto de flash (que al menos entrega algunas) -- se
+# vuelve a flash mientras se decide una solución de fondo (más reintentos,
+# otro proveedor de IA, etc.).
+_MODELO = "deepseek-v4-flash"
 
 # Mismo patrón que cargar_temario_boe.py usa al trocear el temario en
 # subbloques -- nunca corta un artículo a mitad -- para poder recuperar en
@@ -215,15 +243,39 @@ def _prompt_generacion_normativo(anclas, tipo_pregunta, oposicion):
         "exacto: \"A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) "
         "...\", citando el artículo en la línea de la respuesta correcta, usando la terminología oficial "
         "de la norma (no sinónimos) y limitándose al contenido normativo: nunca inventar doctrina ni "
-        "interpretar la ley.\n"
-        f"5. Tipo de pregunta a construir: {descripcion_tipo}\n\n"
+        "interpretar la ley. Cada línea debe ser UNA sola frase breve (máximo 25-30 palabras) que vaya "
+        "directa al motivo -- nunca repitas el enunciado de la pregunta ni el texto de las demás "
+        "opciones, ni añadas relleno o contexto que no aporte nada nuevo.\n"
+        "5. Si la pregunta o la explicación citan un número de artículo (\"el artículo 52.1\", \"según "
+        "el art. 24\"...), esa misma frase debe decir TAMBIÉN el nombre de la norma a la que pertenece, "
+        "copiado tal cual aparece en TEXTO LEGAL más abajo (p. ej. \"el artículo 52.1 de la Ley 29/1998, "
+        "reguladora de la Jurisdicción Contencioso-Administrativa\", o \"el artículo 24 de la "
+        "Constitución Española\") -- un artículo mencionado sin decir de qué norma es deja a quien "
+        "estudia sin poder ubicarlo ni repasarlo, y no es válido.\n"
+        "6. Nunca abrevies el nombre de la norma con siglas (CE, TREBEP, LPAC, LRJSP, LOTC, LOPJ, LGP, "
+        "LJCA...) ni con \"art.\" en vez de \"artículo\" -- los exámenes oficiales de esta oposición "
+        "escriben el nombre completo cada vez que citan una norma, nunca una sigla. Escribe siempre el "
+        "nombre entero tal como aparece en TEXTO LEGAL (p. ej. \"Constitución Española\", nunca \"CE\"; "
+        "\"Ley 39/2015, del Procedimiento Administrativo Común de las Administraciones Públicas\", nunca "
+        "\"LPAC\"). Esto incluye también el tipo de norma delante del número: nunca \"LO 3/2007\" ni "
+        "\"RD 203/2021\", sino \"Ley Orgánica 3/2007, de 22 de marzo, para la igualdad efectiva de "
+        "mujeres y hombres\" o \"Real Decreto 203/2021\" enteros, tal como aparecen en TEXTO LEGAL.\n"
+        f"7. Tipo de pregunta a construir: {descripcion_tipo}\n\n"
         "Antes de responder, comprueba internamente: ¿existe una única respuesta correcta? ¿podría "
         "defenderse otra opción como correcta? ¿todos los datos coinciden EXACTAMENTE con el texto "
         "legal? Si tienes cualquier duda, ajusta la pregunta antes de responder.\n\n"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin bloques de código ni texto adicional:\n"
         '{"norma": "...", "articulo": "...", "tipo_pregunta": "...", "pregunta": "...", '
         '"opciones": {"A": "...", "B": "...", "C": "...", "D": "..."}, "respuesta_correcta": "A", '
-        '"explicacion": "...", "referencia_legal": "..."}'
+        '"explicacion": "..."}'
+        # Nota: se pedía también "referencia_legal" hasta ahora, pero ese
+        # campo no lo lee ni lo usa nadie (ni el frontend, ni
+        # validador_preguntas.py, ni la propia verificación posterior) --
+        # la exigencia real de citar artículo+norma ya vive dentro de
+        # "explicacion" (reglas 4 y 5 de arriba). Quitarlo del esquema
+        # ahorra tokens de salida (y por tanto tiempo, ver el log "DeepSeek
+        # respondió en Xs... tokens_salida=..." en deepseek_utils.py) sin
+        # tocar la calidad de la explicación real que sí se muestra.
     )
     user = f"{contenido}\n\nGenera la pregunta a partir de este texto legal."
     return system, user
@@ -250,10 +302,18 @@ def _prompt_generacion_descriptivo(anclas, tipo_pregunta, oposicion):
         "claro (un dato cambiado) -- nunca absurdas, ninguna defendible como parcialmente correcta.\n"
         "4. La explicación debe repasar TODAS las opciones, una por línea y en orden, con este formato "
         "exacto: \"A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) "
-        "...\", limitándose al contenido proporcionado.\n"
+        "...\", limitándose al contenido proporcionado. Cada línea debe ser UNA sola frase breve "
+        "(máximo 25-30 palabras) que vaya directa al motivo -- nunca repitas el enunciado de la "
+        "pregunta ni el texto de las demás opciones, ni añadas relleno o contexto que no aporte nada "
+        "nuevo.\n"
         "5. Afirma cada dato DIRECTAMENTE. NO uses muletillas como \"según el contenido\", \"según el "
-        "texto\", \"en el contenido proporcionado\", \"tal como se indica\" ni similares -- están "
-        "prohibidas y harían que la pregunta se descarte.\n"
+        "texto\", \"en el contenido proporcionado\", \"tal como se indica\", \"de acuerdo con el "
+        "contenido\" ni similares -- están prohibidas y harían que la pregunta se descarte. Esto "
+        "incluye también remitir a \"lo "
+        "mencionado\" o \"lo anterior\" (p. ej. \"¿qué tienen en común los X mencionados en el "
+        "contenido?\"): quien responde el test NUNCA ve el contenido de origen, solo la pregunta -- "
+        "nombra tú mismo, explícitamente, de qué elementos concretos hablas (p. ej. \"¿qué tienen en "
+        "común la escala de gestión y la escala auxiliar?\", nunca \"los mencionados en el contenido\").\n"
         f"6. Tipo de pregunta a construir: {descripcion_tipo}\n\n"
         "Antes de responder, comprueba internamente: ¿existe una única respuesta correcta? ¿podría "
         "defenderse otra opción? ¿todos los datos coinciden EXACTAMENTE con el contenido? Si tienes "
@@ -298,10 +358,21 @@ def _prompt_verificacion_normativo(pregunta_candidata, anclas):
         "10. Hay cualquier dato o afirmación que no puedas verificar literalmente en el texto legal "
         "proporcionado (posible alucinación).\n"
         "11. Un tribunal de oposición podría razonablemente considerar correcta una opción distinta a "
-        "la marcada.\n\n"
+        "la marcada.\n"
+        "12. La pregunta o la explicación mencionan un número de artículo (\"el artículo 52.1\"...) sin "
+        "decir en la misma frase de qué norma es -- toda mención a un artículo debe ir acompañada del "
+        "nombre de la norma (el que aparece en TEXTO LEGAL), para que quien lo lea sepa sin ambigüedad "
+        "de qué ley se habla.\n"
+        "13. Se usa una sigla o abreviatura para nombrar la norma (\"CE\", \"TREBEP\", \"LPAC\", "
+        "\"LRJSP\", \"LOTC\", \"art.\" en vez de \"artículo\"...) en vez del nombre completo tal como "
+        "aparece en TEXTO LEGAL -- los exámenes oficiales de esta oposición nunca abrevian. Esto incluye "
+        "también abreviar el tipo de norma delante de su número (\"LO 3/2007\", \"RD 203/2021\"...) en vez "
+        "de escribirlo entero (\"Ley Orgánica 3/2007\", \"Real Decreto 203/2021\").\n\n"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
         '{"valido": true, "problemas": []}\n'
-        "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo."
+        "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo "
+        "-- cada elemento de \"problemas\" debe ser UNA sola frase breve (máximo 20-25 palabras), no un "
+        "párrafo explicativo."
     )
     user = f"{contenido}\n\nPREGUNTA A VERIFICAR:\n{json.dumps(pregunta_candidata, ensure_ascii=False)}"
     return system, user
@@ -327,10 +398,16 @@ def _prompt_verificacion_descriptivo(pregunta_candidata, anclas):
         "6. Se mezcla información de partes distintas del contenido de forma que resulte incorrecta.\n"
         "7. Existe alguna contradicción interna entre la pregunta, las opciones y la explicación.\n"
         "8. Hay cualquier dato o afirmación que no puedas verificar en el contenido proporcionado "
-        "(posible invención).\n\n"
+        "(posible invención).\n"
+        "9. La pregunta o la explicación remiten a \"el contenido\", \"el texto\", \"el documento\" o "
+        "\"lo mencionado/anterior\" en vez de nombrar directamente de qué elementos concretos habla "
+        "(p. ej. \"¿qué tienen en común los X mencionados en el contenido?\") -- quien responde el test "
+        "nunca ve el material de origen, así que una pregunta así queda sin sentido para quien la lee.\n\n"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
         '{"valido": true, "problemas": []}\n'
-        "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo."
+        "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo "
+        "-- cada elemento de \"problemas\" debe ser UNA sola frase breve (máximo 20-25 palabras), no un "
+        "párrafo explicativo."
     )
     user = f"{contenido}\n\nPREGUNTA A VERIFICAR:\n{json.dumps(pregunta_candidata, ensure_ascii=False)}"
     return system, user
@@ -356,9 +433,22 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             generado = call_deepseek_api(
                 messages=[{"role": "system", "content": system_gen}, {"role": "user", "content": user_gen}],
                 temperature=0.5,
-                max_tokens=1000,
+                # max_tokens=3000: no es por razonamiento (deepseek-v4-flash
+                # no razona) -- se bajó a 1000 pensando que ya no hacía falta
+                # el margen usado para probar deepseek-v4-pro, pero eso
+                # causó una regresión real: los únicos tests que salieron
+                # limpios hoy (10/10 aceptadas, 0 descartes) se generaron
+                # con flash Y este margen alto, nunca con 1000. La hipótesis
+                # es que deepseek-v4-flash es simplemente más verboso que el
+                # antiguo deepseek-chat para el que 1000 se pensó
+                # originalmente. Ver el log "DeepSeek respondió en Xs (...
+                # finish_reason=...)" en deepseek_utils.py -- si nunca sale
+                # finish_reason == "length" con este margen, se puede volver
+                # a bajar con datos reales en vez de a ciegas.
+                max_tokens=3000,
                 response_format_json=True,
                 on_usage=on_usage,
+                model=_MODELO,
             )
             if not generado:
                 continue
@@ -381,9 +471,10 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             verificacion_raw = call_deepseek_api(
                 messages=[{"role": "system", "content": system_ver}, {"role": "user", "content": user_ver}],
                 temperature=0.0,
-                max_tokens=400,
+                max_tokens=2000,  # ver comentario de max_tokens en la llamada de generación de arriba
                 response_format_json=True,
                 on_usage=on_usage,
+                model=_MODELO,
             )
             if not verificacion_raw:
                 continue
@@ -517,6 +608,59 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                     "pregunta": resultado,
                 })
 
+    # Relleno: si algún hueco agotó sus MAX_INTENTOS_POR_PREGUNTA honestamente
+    # (nunca se relaja la verificación para llegar al número pedido), se le da
+    # una oportunidad más por cada uno que falte, en OTRO tema con contenido
+    # disponible (rotando entre los elegidos) -- para que "hay temario de
+    # sobra" no se traduzca en menos preguntas de las pedidas solo porque a
+    # un hueco concreto le tocó mala suerte con sus intentos.
+    #
+    # EN PARALELO (antes era un "for" secuencial, con el mismo razonamiento
+    # de "no merece la pena otro ThreadPoolExecutor para 1-2 preguntas" que
+    # resultó no aguantar en la práctica): con varios huecos, cada uno hasta
+    # MAX_INTENTOS_POR_PREGUNTA rondas de generación+verificación (~15-20s
+    # por llamada a DeepSeek), rellenarlos uno detrás de otro podía sumar
+    # minutos SOLO en esta fase -- el mismo cuello de botella real ya
+    # detectado y corregido en test_generator.py (generar_preguntas_ia_en_lotes)
+    # para /generar-test-desde-pdf. Se reutiliza exactamente el mismo patrón
+    # que ya usa el bucle principal de arriba (ThreadPoolExecutor +
+    # as_completed): _generar_pregunta_verificada ya recibe y usa 'lock' para
+    # proteger 'subbloques_ya_usados'/'preguntas_ya_aceptadas', así que no
+    # hace falta ningún lock nuevo -- solo las mutaciones de 'preguntas'/
+    # 'descartadas'/'completadas' y la llamada a on_progreso, que se hacen
+    # aquí en el hilo principal según van llegando los resultados (as_completed),
+    # nunca dentro de los hilos del pool.
+    if len(preguntas) < num_preguntas and temas_con_contenido:
+        faltan = num_preguntas - len(preguntas)
+        ciclo_temas = itertools.cycle(temas_con_contenido)
+        tids_relleno = [next(ciclo_temas) for _ in range(faltan)]
+        with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS, faltan)) as executor:
+            futuros = [
+                executor.submit(
+                    _generar_pregunta_verificada, subbloques_por_tema[tid], tid, oposicion,
+                    subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add,
+                )
+                for tid in tids_relleno
+            ]
+            for futuro in as_completed(futuros):
+                try:
+                    resultado = futuro.result()
+                except Exception:
+                    logger.exception("Fallo inesperado en el relleno de un hueco del test personalizado")
+                    resultado = None
+                completadas += 1
+                if resultado:
+                    preguntas.append(resultado)
+                    guardar_pregunta_generada(db, oposicion, resultado)
+                    limpiar_cache_preguntas_banco_ia(oposicion)
+                else:
+                    descartadas += 1
+                if on_progreso:
+                    on_progreso({
+                        "completadas": completadas, "total": total, "aceptadas": len(preguntas),
+                        "pregunta": resultado,
+                    })
+
     # Con uid (Test Personalizado): la generación corre en un hilo de fondo
     # desligado de la petición, así que se vuelca DIRECTO a Firestore. Sin uid
     # (llamadas dentro del propio hilo de la petición): se vuelca a flask.g y
@@ -529,6 +673,17 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     if len(preguntas) < num_preguntas:
         resultado_final["advertencia"] = (
             f"Se generaron {len(preguntas)} de {num_preguntas} preguntas -- el resto no llegó a superar "
-            "la verificación jurídica tras varios intentos y se descartó en vez de entregarse sin validar."
+            "la verificación de calidad tras varios intentos (incluyendo un intento de relleno en otro "
+            "tema) y se descartó en vez de entregarse sin validar."
         )
+    # Sin este log, un test que entrega menos preguntas de las pedidas no
+    # deja NINGÚN rastro en los logs (los descartes por no superar la
+    # verificación no son un error, así que no pasan por logger.exception) --
+    # visto en producción: sin esta línea no había forma de saber, a partir
+    # de los logs de Render, si una tasa de descarte alta era el motivo real
+    # de una generación lenta o incompleta.
+    logger.info(
+        "Test personalizado generado: %s/%s aceptadas, %s descartadas (temas: %s)",
+        len(preguntas), num_preguntas, descartadas, temas_unicos,
+    )
     return resultado_final

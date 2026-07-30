@@ -43,6 +43,53 @@ def test_sin_response_format_json_no_se_incluye_el_campo(monkeypatch):
     assert "response_format" not in payload_enviado
 
 
+def test_call_deepseek_api_usa_deepseek_v4_flash_por_defecto(monkeypatch):
+    # deepseek-chat/deepseek-reasoner se retiraron el 24/07/2026 sin periodo
+    # de gracia; los nombres actuales son deepseek-v4-flash/deepseek-v4-pro.
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
+    assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-v4-flash"
+
+
+def test_call_deepseek_api_permite_pedir_otro_modelo(monkeypatch):
+    # Usado por Tu Tutor para poder probar deepseek-v4-pro sin afectar al
+    # resto de la app (ver chat_controller._modelo_tutor).
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], model="deepseek-v4-pro")
+    assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-v4-pro"
+
+
+def test_call_deepseek_api_incluye_temperature_con_deepseek_v4_flash(monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], temperature=0.5)
+    assert mock_post.call_args.kwargs["json"]["temperature"] == 0.5
+
+
+def test_call_deepseek_api_incluye_temperature_con_deepseek_v4_pro(monkeypatch):
+    # A diferencia del antiguo deepseek-reasoner (retirado), deepseek-v4-pro
+    # sí admite temperature con normalidad.
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], model="deepseek-v4-pro", temperature=0.5)
+    assert mock_post.call_args.kwargs["json"]["temperature"] == 0.5
+
+
+def test_call_deepseek_api_no_incluye_temperature_con_el_nombre_retirado(monkeypatch):
+    # Legado: el antiguo deepseek-reasoner (retirado el 24/07/2026) rechazaba
+    # con HTTP 400 ("does not support the parameter temperature") si se
+    # incluía este campo -- no lo ignoraba en silencio pese a lo que decía
+    # la documentación oficial. Se mantiene esta exclusión por si quedara
+    # algún sitio con el nombre antiguo todavía configurado, aunque con los
+    # nombres actuales (deepseek-v4-flash/deepseek-v4-pro) nunca se activa.
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], model="deepseek-reasoner")
+    assert "temperature" not in mock_post.call_args.kwargs["json"]
+
+
 def test_reintenta_ante_timeout_y_acaba_devolviendo_la_respuesta(monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
     with patch("deepseek_utils.requests.post", side_effect=[
@@ -83,6 +130,50 @@ def test_reintenta_ante_error_5xx(monkeypatch):
         resultado = deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
     assert resultado == "recuperado"
     assert mock_post.call_count == 2
+
+
+def test_limita_las_llamadas_simultaneas_a_deepseek(monkeypatch):
+    # Bug real de producción: sin límite compartido, generar un test de 30
+    # preguntas desde PDF puede disparar hasta ~48 llamadas en paralelo (8
+    # lotes x 6 verificaciones cada uno, ver test_generator.py), y bajo
+    # carga eso parecía saturar a DeepSeek -- en logs reales se vieron
+    # llamadas colgadas ~94s (3 intentos de 30s de timeout) antes de fallar
+    # con "Error de conexión", justo en las ráfagas de mayor concurrencia.
+    # _semaforo_deepseek debe frenar esto sea cual sea el número de hilos
+    # que lo intenten a la vez, sin importar qué función de este módulo lo
+    # dispare.
+    import threading
+    import time as time_module
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    monkeypatch.setattr(deepseek_utils, "_semaforo_deepseek", threading.Semaphore(2))
+
+    en_curso = {"actual": 0, "maximo": 0}
+    lock = threading.Lock()
+
+    def fake_post(*args, **kwargs):
+        with lock:
+            en_curso["actual"] += 1
+            en_curso["maximo"] = max(en_curso["maximo"], en_curso["actual"])
+        time_module.sleep(0.05)
+        with lock:
+            en_curso["actual"] -= 1
+        return _respuesta_ok()
+
+    with patch("deepseek_utils.requests.post", side_effect=fake_post):
+        hilos = [
+            threading.Thread(
+                target=deepseek_utils.call_deepseek_api,
+                kwargs={"messages": [{"role": "user", "content": "hola"}]},
+            )
+            for _ in range(8)
+        ]
+        for hilo in hilos:
+            hilo.start()
+        for hilo in hilos:
+            hilo.join()
+
+    assert en_curso["maximo"] <= 2
 
 
 def _respuesta_con_status(contenido, finish_reason, status_code=200):
@@ -207,6 +298,53 @@ class TestCallDeepseekApiStream:
             fragmentos = list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}]))
         assert fragmentos == []
         assert mock_post.call_count == 1
+
+    def test_usa_deepseek_v4_flash_por_defecto(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
+            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}]))
+        assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-v4-flash"
+
+    def test_permite_pedir_otro_modelo(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
+            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], model="deepseek-v4-pro"))
+        assert mock_post.call_args.kwargs["json"]["model"] == "deepseek-v4-pro"
+
+    def test_incluye_temperature_con_deepseek_v4_flash(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
+            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], temperature=0.5))
+        assert mock_post.call_args.kwargs["json"]["temperature"] == 0.5
+
+    def test_incluye_temperature_con_deepseek_v4_pro(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
+            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], model="deepseek-v4-pro", temperature=0.5))
+        assert mock_post.call_args.kwargs["json"]["temperature"] == 0.5
+
+    def test_no_incluye_temperature_con_el_nombre_retirado(self, monkeypatch):
+        # Legado (ver test equivalente en call_deepseek_api): el antiguo
+        # deepseek-reasoner, retirado el 24/07/2026, respondía HTTP 400 si
+        # se incluía temperature en el payload.
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, ["data: [DONE]"])) as mock_post:
+            list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}], model="deepseek-reasoner"))
+        assert "temperature" not in mock_post.call_args.kwargs["json"]
+
+    def test_ignora_reasoning_content_y_solo_cede_content(self, monkeypatch):
+        # deepseek-reasoner emite primero tokens en delta.reasoning_content
+        # (el razonamiento interno) antes de delta.content (la respuesta
+        # final) -- solo debe llegar al llamante lo segundo.
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        lineas = [
+            'data: {"choices": [{"delta": {"reasoning_content": "pensando..."}}]}',
+            'data: {"choices": [{"delta": {"content": "Respuesta"}}]}',
+            "data: [DONE]",
+        ]
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_stream(200, lineas)):
+            fragmentos = list(deepseek_utils.call_deepseek_api_stream([{"role": "user", "content": "hola"}]))
+        assert fragmentos == ["Respuesta"]
 
 
 class TestTrocearEnParrafos:

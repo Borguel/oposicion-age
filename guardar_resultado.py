@@ -17,8 +17,26 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
         respuestas = metadatos.get("respuestas", [])
         tipo_test = metadatos.get("tipo", "personalizado")
         actualizar_banco_fallos(db, usuario_id, oposicion, tipo_test, contenido, respuestas)
+
+        marcadas_duda = marcadas_duda or []
+
+        def es_duda(i):
+            return bool(marcadas_duda[i]) if i < len(marcadas_duda) else False
+
+        # Una pregunta marcada como "duda" no cuenta para la nota final (como
+        # una pregunta anulada en un examen oficial: ni acierto ni fallo, ni
+        # en el numerador ni en el denominador) -- salvo que se hayan marcado
+        # TODAS las del test, en cuyo caso no queda ninguna con la que
+        # calcular nada y se cuentan todas para no guardar un resultado vacío.
+        hay_alguna_duda = any(es_duda(i) for i in range(len(contenido)))
+        excluir_dudas = hay_alguna_duda and any(not es_duda(i) for i in range(len(contenido)))
+        if hay_alguna_duda and not excluir_dudas:
+            logger.warning("guardar_resultado: todas las preguntas se marcaron como duda, se cuentan igualmente para la nota (usuario=%s)", usuario_id)
+
         aciertos, fallos, blancos = 0, 0, 0
         for i, p in enumerate(contenido):
+            if excluir_dudas and es_duda(i):
+                continue
             correcta = p.get("respuesta_correcta")
             seleccion = respuestas[i] if i < len(respuestas) else None
             if seleccion == correcta:
@@ -47,6 +65,8 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
         # acierta más o menos -- útil para futuras recomendaciones de estudio.
         rendimiento_temas = {}
         for i, p in enumerate(contenido):
+            if excluir_dudas and es_duda(i):
+                continue
             tema_id = p.get("tema_id")
             if not tema_id:
                 continue

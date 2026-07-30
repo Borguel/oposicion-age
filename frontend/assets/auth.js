@@ -17,13 +17,41 @@ import {
   updatePassword,
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { firebaseConfig, BACKEND_URL } from "/assets/firebase-config.js";
+import { firebaseConfig, BACKEND_URL, RECAPTCHA_SITE_KEY } from "/assets/firebase-config.js";
 import { inyectarSelectorOposicion, obtenerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
 import { iniciarAnalitica, CLAVE_COOKIES_ACEPTADAS } from "/assets/analytics.js";
 import { activarPopover } from "/assets/popover.js";
 
 const app = initializeApp(firebaseConfig);
+
+// App Check (reCAPTCHA v3, invisible -- no le pide al usuario resolver
+// nada): certifica ante Firebase que quien llama es de verdad esta web, no
+// un script saltándose el navegador. Aplica solo a Authentication/Firestore
+// desde la consola de Firebase (App Check → modo "Monitorizar" primero,
+// "Aplicar" después de comprobar que no bloquea tráfico real).
+//
+// Import DINÁMICO a propósito (no junto a los de arriba): auth.js se carga
+// en TODAS las páginas y construye la nav -- un import estático de un script
+// de terceros (gstatic.com) que no cargase (red, extensión del navegador
+// bloqueando reCAPTCHA, o un test que sustituye firebase-app.js/-auth.js
+// pero no este) rompería la carga de todo el módulo de golpe. Así, si falla,
+// solo se deja de mandar el token de App Check -- el resto de la web sigue
+// funcionando igual que hasta ahora.
+(async () => {
+  try {
+    const { initializeAppCheck, ReCaptchaV3Provider } = await import(
+      "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js"
+    );
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } catch (e) {
+    console.error("No se pudo inicializar App Check:", e);
+  }
+})();
+
 export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
@@ -205,6 +233,24 @@ export async function obtenerPermisos() {
 export async function idToken() {
   const user = await esperarUsuario();
   if (!user) return null;
+  // Justo tras confirmar el correo (clic en el enlace de verificación),
+  // user.emailVerified (dato local, ya al día) puede pasar a true mientras
+  // el token en caché sigue siendo el que se emitió al registrarse --con
+  // el claim email_verified todavía en false-- porque un token de Firebase
+  // no se remite solo con los datos nuevos hasta que expira (hasta 1h) o se
+  // fuerza su refresco. Sin este chequeo, el backend seguiría viendo el
+  // correo como no verificado y no arrancaría la prueba gratuita ya
+  // confirmada hasta que el token expirase por su cuenta.
+  if (user.emailVerified) {
+    try {
+      const { claims } = await user.getIdTokenResult();
+      if (claims.email_verified === false) {
+        return conLimiteDeTiempo(user.getIdToken(true), 8000, null);
+      }
+    } catch {
+      // Si esto falla seguimos con el camino normal de abajo.
+    }
+  }
   return conLimiteDeTiempo(user.getIdToken(), 8000, null);
 }
 
@@ -253,18 +299,45 @@ function esEnlaceActivo(match, ruta) {
   return match.some((prefijo) => (prefijo === "/" ? ruta === "/" : ruta.startsWith(prefijo)));
 }
 
+// Modo oscuro: a nivel de módulo (no closures dentro de construirEsqueletoNav)
+// porque hay que poder engancharlo desde más de un sitio -- la fila del
+// cajón móvil (construirEsqueletoNav) Y la fila del menú de cuenta en
+// escritorio (construirMenuCuenta). Cualquier elemento con la clase
+// age-tema-toggle se pinta/engancha igual; localStorage["age-theme"] sigue
+// siendo la única fuente de verdad persistida (igual que antes).
+function actualizarIconoTema() {
+  const oscuro = document.documentElement.dataset.theme === "dark";
+  document.querySelectorAll(".age-tema-toggle").forEach((btn) => {
+    btn.innerHTML = `${icono(oscuro ? "sol" : "luna", 18)}<span>${oscuro ? "Modo claro" : "Modo oscuro"}</span>`;
+    btn.setAttribute("aria-label", oscuro ? "Activar modo claro" : "Activar modo oscuro");
+  });
+}
+
+function alternarTema() {
+  const oscuro = document.documentElement.dataset.theme === "dark";
+  if (oscuro) {
+    delete document.documentElement.dataset.theme;
+    localStorage.setItem("age-theme", "light");
+  } else {
+    document.documentElement.dataset.theme = "dark";
+    localStorage.setItem("age-theme", "dark");
+  }
+  actualizarIconoTema();
+}
+
 // Construye el esqueleto de la nav una sola vez (guardado por
 // nav.dataset.built). El resto de funciones (selector de oposición,
 // buscador, cuenta) se reconstruyen en cada onAuthStateChanged y se
 // insertan DENTRO de piezas de este esqueleto (.age-nav-utilidades,
 // .age-nav-links) que persisten entre esas reconstrucciones.
 //
-// En escritorio, buscador + oposición + modo oscuro viven agrupados en
-// el "pill" .age-nav-utilidades, separado del avatar de cuenta. En móvil
-// ese grupo se oculta entero y sus piezas (más el selector de oposición
-// y una fila de modo oscuro) se pintan en su lugar dentro del cajón que
-// abre el menú hamburguesa (.age-nav-links) -- ver inyectarSelectorOposicion
-// y construirBusquedaGlobal para la parte que insertan ellas mismas.
+// En escritorio, buscador + oposición viven agrupados en el "pill"
+// .age-nav-utilidades, separado del avatar de cuenta (el modo oscuro vive
+// dentro del propio menú de cuenta, ver construirMenuCuenta). En móvil ese
+// grupo se oculta entero y sus piezas (más el selector de oposición y una
+// fila de modo oscuro) se pintan en su lugar dentro del cajón que abre el
+// menú hamburguesa (.age-nav-links) -- ver inyectarSelectorOposicion y
+// construirBusquedaGlobal para la parte que insertan ellas mismas.
 function construirEsqueletoNav() {
   const nav = document.querySelector(".age-nav");
   if (!nav || nav.dataset.built) return;
@@ -307,7 +380,8 @@ function construirEsqueletoNav() {
 
   const temaBtnMovil = document.createElement("button");
   temaBtnMovil.type = "button";
-  temaBtnMovil.className = "age-tema-movil";
+  temaBtnMovil.className = "age-tema-movil age-tema-toggle";
+  temaBtnMovil.addEventListener("click", alternarTema);
   links.appendChild(temaBtnMovil);
 
   const right = document.createElement("div");
@@ -317,33 +391,6 @@ function construirEsqueletoNav() {
   const utilidades = document.createElement("div");
   utilidades.className = "age-nav-utilidades";
   right.appendChild(utilidades);
-
-  const temaBtn = document.createElement("button");
-  temaBtn.type = "button";
-  temaBtn.className = "age-nav-icon-btn age-tema-btn";
-  temaBtn.id = "age-tema-btn";
-  utilidades.appendChild(temaBtn);
-
-  const actualizarIconoTema = () => {
-    const oscuro = document.documentElement.dataset.theme === "dark";
-    temaBtn.innerHTML = icono(oscuro ? "sol" : "luna", 18);
-    temaBtn.setAttribute("aria-label", oscuro ? "Activar modo claro" : "Activar modo oscuro");
-    temaBtnMovil.innerHTML = `${icono(oscuro ? "sol" : "luna", 18)}<span>${oscuro ? "Modo claro" : "Modo oscuro"}</span>`;
-  };
-  actualizarIconoTema();
-  const alternarTema = () => {
-    const oscuro = document.documentElement.dataset.theme === "dark";
-    if (oscuro) {
-      delete document.documentElement.dataset.theme;
-      localStorage.setItem("age-theme", "light");
-    } else {
-      document.documentElement.dataset.theme = "dark";
-      localStorage.setItem("age-theme", "dark");
-    }
-    actualizarIconoTema();
-  };
-  temaBtn.addEventListener("click", alternarTema);
-  temaBtnMovil.addEventListener("click", alternarTema);
 
   const burger = document.createElement("button");
   burger.type = "button";
@@ -361,6 +408,12 @@ function construirEsqueletoNav() {
   inner.appendChild(right);
   inner.appendChild(burger);
   nav.appendChild(inner);
+
+  // Solo ahora (con el esqueleto ya insertado en el documento real) tiene
+  // sentido pintar los botones de tema: actualizarIconoTema() los busca con
+  // querySelectorAll sobre el documento, así que antes de este appendChild
+  // no encontraría nada.
+  actualizarIconoTema();
 }
 
 // Repinta los enlaces principales según haya sesión o no. A diferencia del
@@ -532,6 +585,34 @@ function construirBusquedaGlobal(user) {
 // racha, ver /tareas/recordatorios-racha). Nada de esto es una colección
 // nueva en Firestore -- es solo una lectura distinta de perfiles/cupos ya
 // existentes, calculada de nuevo en cada carga de página.
+// Avisos ya vistos por el usuario: se guardan en localStorage (no en
+// Firestore, no hace falta ir al servidor por esto) por "id" ESTABLE de
+// cada aviso -- no por su texto completo, que cambia cada día ("termina en
+// 2 días" vs "termina en 1 día" son el mismo aviso de fondo). Así, una vez
+// que el usuario abre la campanita y lo ve, ese aviso concreto no se
+// vuelve a marcar en rojo -- ni recargando la página, ni cerrando sesión y
+// volviendo a entrar en el mismo navegador (localStorage sobrevive a
+// cerrar sesión, a diferencia de un simple `hidden` en el DOM). Si en el
+// futuro aparece un aviso realmente distinto (otro id), sí se notifica.
+const CLAVE_NOTIFICACIONES_VISTAS = "age_notificaciones_vistas";
+
+function obtenerNotificacionesVistas() {
+  try {
+    const guardado = JSON.parse(localStorage.getItem(CLAVE_NOTIFICACIONES_VISTAS));
+    return new Set(Array.isArray(guardado) ? guardado : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function marcarNotificacionesComoVistas(ids) {
+  try {
+    const vistas = obtenerNotificacionesVistas();
+    ids.forEach((id) => vistas.add(id));
+    localStorage.setItem(CLAVE_NOTIFICACIONES_VISTAS, JSON.stringify([...vistas]));
+  } catch { /* localStorage no disponible (modo privado, cuota llena...): no bloquea nada */ }
+}
+
 async function calcularNotificaciones() {
   const notis = [];
   try {
@@ -541,6 +622,7 @@ async function calcularNotificaciones() {
       const dias = Math.ceil((new Date(perfil.prueba_fin) - new Date()) / (1000 * 60 * 60 * 24));
       if (dias <= 2) {
         notis.push({
+          id: "prueba",
           iconoNombre: "reloj",
           texto: dias <= 0 ? "Tu prueba gratuita termina hoy." : `Tu prueba gratuita termina en ${dias} día${dias === 1 ? "" : "s"}.`,
           href: "/planes/",
@@ -553,6 +635,7 @@ async function calcularNotificaciones() {
         if (dias <= 3) {
           const fecha = new Date(sub.current_period_end).toLocaleDateString("es-ES", { day: "numeric", month: "long" });
           notis.push({
+            id: `baja_${op}`,
             iconoNombre: dias <= 1 ? "alerta" : "salir",
             texto: dias <= 1
               ? `Tu plan en ${op} se cancela mañana. Reactívalo si quieres seguir con acceso.`
@@ -575,6 +658,7 @@ async function calcularNotificaciones() {
       if (total_pendientes) {
         const plural = total_pendientes === 1 ? "" : "s";
         notis.push({
+          id: "falladas",
           iconoNombre: "estrella",
           texto: `Tienes ${total_pendientes} pregunta${plural} fallada${plural} sin repasar.`,
           href: "/repasar-preguntas/",
@@ -599,36 +683,6 @@ function renderizarNotificaciones(lista, notis) {
   `).join("");
 }
 
-function construirNotificaciones(user) {
-  const utilidades = document.querySelector(".age-nav-utilidades");
-  utilidades?.querySelector(".age-notificaciones")?.remove();
-  if (!utilidades || !user) return;
-
-  const cont = document.createElement("div");
-  cont.className = "age-notificaciones";
-  cont.innerHTML = `
-    <button type="button" class="age-nav-icon-btn" data-popover-toggle aria-label="Notificaciones">${icono("campana", 18)}<span class="age-notificaciones-badge" hidden></span></button>
-    <div class="age-popover age-notificaciones-panel" data-popover-panel>
-      <div class="age-notificaciones-lista"><p class="age-buscador-vacio">Cargando…</p></div>
-    </div>
-  `;
-  utilidades.appendChild(cont);
-
-  const badge = cont.querySelector(".age-notificaciones-badge");
-  const lista = cont.querySelector(".age-notificaciones-lista");
-  const promesaNotis = calcularNotificaciones().then((notis) => {
-    if (notis.length) {
-      badge.hidden = false;
-      badge.textContent = String(notis.length);
-    }
-    return notis;
-  }).catch(() => []);
-
-  activarPopover(cont, {
-    onAbrir: async () => renderizarNotificaciones(lista, await promesaNotis),
-  });
-}
-
 function construirMenuCuenta(user) {
   const right = document.getElementById("age-nav-right");
   if (!right) return;
@@ -643,11 +697,16 @@ function construirMenuCuenta(user) {
     const inicial = (user.email || "?").trim().charAt(0).toUpperCase();
     acc.innerHTML = `
       <button type="button" class="age-account-btn" data-popover-toggle>
-        <span class="age-account-avatar">${inicial}</span>
+        <span class="age-account-avatar">${inicial}<span class="age-account-badge-dot" id="age-account-badge-dot" hidden></span></span>
         <span class="age-account-nombre" id="age-account-nombre"></span>
         <span class="age-account-caret">▾</span>
       </button>
       <div class="age-popover age-account-menu" data-popover-panel>
+        <div class="age-account-notis" id="age-account-notis" hidden>
+          <p class="age-account-menu-titulo">Avisos</p>
+          <div class="age-notificaciones-lista"></div>
+          <div class="age-account-menu-divider"></div>
+        </div>
         <a href="/zona-opositor/">${icono("diana")} Zona opositor</a>
         <a href="/mi-cuenta/">${icono("usuario")} Mi cuenta</a>
         <a href="/planes/">${icono("tarjeta")} Planes</a>
@@ -655,10 +714,40 @@ function construirMenuCuenta(user) {
         <a href="/oposiciones/">${icono("brujula")} Oposiciones y convocatorias</a>
         <a href="/como-funciona/">${icono("pregunta")} Cómo funciona</a>
         <div class="age-account-menu-divider"></div>
+        <button type="button" class="age-tema-toggle"></button>
+        <div class="age-account-menu-divider"></div>
         <button type="button" data-account-logout>${icono("salir")} Cerrar sesión</button>
       </div>
     `;
-    activarPopover(acc);
+
+    // Avisos: antes vivían en su propia campanita suelta en escritorio; se
+    // reutiliza la misma lógica de datos (calcularNotificaciones) y de
+    // "visto" (obtenerNotificacionesVistas/marcarNotificacionesComoVistas),
+    // solo que ahora el indicador es un punto en el avatar (sin número) y
+    // la lista se pinta dentro de este mismo menú en vez de un popover
+    // aparte -- una cosa menos suelta en la barra.
+    const dot = acc.querySelector("#age-account-badge-dot");
+    const notisSeccion = acc.querySelector("#age-account-notis");
+    const notisLista = notisSeccion.querySelector(".age-notificaciones-lista");
+    const promesaNotis = calcularNotificaciones().then((notis) => {
+      if (notis.length) notisSeccion.hidden = false;
+      const vistas = obtenerNotificacionesVistas();
+      if (notis.some((n) => !vistas.has(n.id))) dot.hidden = false;
+      return notis;
+    }).catch(() => []);
+
+    activarPopover(acc, {
+      onAbrir: async () => {
+        dot.hidden = true;
+        const notis = await promesaNotis;
+        renderizarNotificaciones(notisLista, notis);
+        marcarNotificacionesComoVistas(notis.map((n) => n.id));
+      },
+    });
+
+    acc.querySelector(".age-tema-toggle").addEventListener("click", alternarTema);
+    actualizarIconoTema();
+
     acc.querySelector("[data-account-logout]").addEventListener("click", async () => {
       await signOut();
       window.location.href = "/";
@@ -749,6 +838,15 @@ async function inyectarBannerPrueba(user) {
   const { obtenerPlan } = await import("/assets/plan.js");
   const perfil = await obtenerPlan(true);
 
+  // Quien ya paga por otra oposición no necesita que se le siga hablando
+  // de "prueba" al mirar una que todavía no ha contratado -- ni la cuenta
+  // atrás (esa oposición en concreto ya no recibe el empujón de prueba,
+  // ver tiene_plan_de_pago_activo en planes.py) ni el "tu prueba ha
+  // terminado" (nunca llegó a empezar aquí, así que no puede haber
+  // "terminado"). El aviso real de que le falta contratar ESTA oposición
+  // ya lo da la pantalla de bloqueo de la propia herramienta (plan.js).
+  if (perfil.tiene_plan_de_pago) return;
+
   const banner = document.createElement("div");
   banner.className = "age-banner-prueba";
 
@@ -797,6 +895,27 @@ async function inyectarBannerPrueba(user) {
 const CLAVE_BANNER_PROMO_CERRADO = "age_banner_promo_cerrado";
 let _promoIntervalo = null;
 
+// Fuente/animación configurables desde el panel admin para el aviso global
+// y la promoción (ver blueprints/admin.py, FUENTES_AVISO_VALIDAS /
+// ANIMACIONES_AVISO_VALIDAS -- deben coincidir con estas claves). Solo
+// pilas de fuentes ya instaladas en el sistema, sin cargar ningún webfont
+// externo (decisión deliberada: evita peticiones a terceros y las dudas de
+// privacidad que eso conlleva en una web pensada para la UE).
+const FUENTES_AVISO = {
+  redondeada: "'Trebuchet MS', Verdana, sans-serif",
+  elegante: "Georgia, 'Times New Roman', serif",
+  impacto: "Impact, 'Arial Black', sans-serif",
+  // "default" no se aplica: se deja la fuente heredada (--age-font).
+};
+
+function aplicarEstiloAviso(elTexto, fuente, animacion, contenedor) {
+  if (FUENTES_AVISO[fuente]) elTexto.style.fontFamily = FUENTES_AVISO[fuente];
+  if (animacion && animacion !== "ninguna") {
+    elTexto.classList.add(`age-anim-${animacion}`);
+    if (animacion === "deslizante" && contenedor) contenedor.classList.add("age-banner-scroll");
+  }
+}
+
 function formatearCuentaAtrasPromo(msRestantes) {
   const totalSeg = Math.max(0, Math.floor(msRestantes / 1000));
   const d = Math.floor(totalSeg / 86400);
@@ -837,7 +956,7 @@ async function inyectarBannerPromocion(user) {
   banner.className = "age-banner-promo";
   banner.setAttribute("role", "status");
   banner.innerHTML = `
-    <span class="age-banner-promo-texto">${icono("destellos", 16)} <strong>${escapeHtmlBuscador(mensaje)}</strong></span>
+    <span class="age-banner-promo-texto"><span class="age-banner-promo-texto-int">${icono("destellos", 16)} <strong>${escapeHtmlBuscador(mensaje)}</strong></span></span>
     <span class="age-banner-promo-cuenta" id="age-promo-cuenta" aria-hidden="true"></span>
     <div class="age-banner-promo-acciones">
       <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>
@@ -845,6 +964,9 @@ async function inyectarBannerPromocion(user) {
     </div>
   `;
   document.body.prepend(banner);
+  const contenedorTexto = banner.querySelector(".age-banner-promo-texto");
+  const interiorTexto = banner.querySelector(".age-banner-promo-texto-int");
+  if (interiorTexto) aplicarEstiloAviso(interiorTexto, promo.fuente, promo.animacion, contenedorTexto);
 
   document.getElementById("age-promo-cerrar").addEventListener("click", () => {
     sessionStorage.setItem(CLAVE_BANNER_PROMO_CERRADO, "1");
@@ -868,40 +990,6 @@ async function inyectarBannerPromocion(user) {
     actualizar();
     _promoIntervalo = setInterval(actualizar, 1000);
   }
-}
-
-// Páginas a las que solo se llega pinchando algo dentro de Zona Opositor
-// (generar test, herramientas IA, mis tests...) -- en todas ellas se ofrece
-// un enlace directo de vuelta, para no depender de la navegación principal
-// (colapsada tras el menú hamburguesa en móvil).
-const PAGINAS_CON_VOLVER_ZONA_OPOSITOR = [
-  "/test-generator/", "/test-personalizado/", "/test-oficial/",
-  "/repetir-test/", "/preguntas-falladas/", "/preguntas-favoritas/",
-  "/mis-tests/", "/mis-documentos/",
-  "/subida-pdf-",
-  "/tu-tutor/",
-  "/estadisticas/",
-  "/ranking/",
-  "/mi-cuenta/"
-];
-
-function inyectarVolverZonaOpositor(user) {
-  const right = document.getElementById("age-nav-right");
-  if (!right) return;
-  const existente = right.querySelector(".age-volver-zona-btn");
-  if (existente) existente.remove();
-  if (!user) return;
-
-  const ruta = window.location.pathname;
-  if (!PAGINAS_CON_VOLVER_ZONA_OPOSITOR.some((prefijo) => ruta.startsWith(prefijo))) return;
-
-  const enlace = document.createElement("a");
-  enlace.className = "age-nav-icon-btn age-volver-zona-btn";
-  enlace.href = "/zona-opositor/";
-  enlace.setAttribute("aria-label", "Volver a Zona opositor");
-  enlace.title = "Volver a Zona opositor";
-  enlace.innerHTML = icono("atras", 18);
-  right.insertBefore(enlace, right.firstChild);
 }
 
 // Enlace "Panel Admin" en la barra de navegación, visible solo si el
@@ -952,11 +1040,9 @@ function inyectarNav(user) {
   actualizarEnlacesNav(user);
   inyectarSelectorOposicion(!!user);
   construirBusquedaGlobal(user);
-  construirNotificaciones(user);
   construirMenuCuenta(user);
   inyectarBannerVerificacion(user);
   inyectarBannerPrueba(user);
-  inyectarVolverZonaOpositor(user);
   inyectarEnlaceAdmin(user);
   inyectarBannerGlobal();
   inyectarBannerPromocion(user);
@@ -998,7 +1084,11 @@ async function inyectarBannerGlobal() {
     const barra = document.createElement("div");
     barra.className = `age-banner-global age-banner-${b.tipo || "info"}`;
     barra.setAttribute("role", "status");
-    barra.textContent = b.texto;
+    const texto = document.createElement("span");
+    texto.className = "age-banner-global-texto";
+    texto.textContent = b.texto;
+    barra.appendChild(texto);
+    aplicarEstiloAviso(texto, b.fuente, b.animacion, barra);
     document.body.insertBefore(barra, document.body.firstChild);
   } catch (e) { /* si falla, no pasa nada: la web sigue igual */ }
 }
@@ -1010,6 +1100,7 @@ function inyectarFooter() {
   const anio = new Date().getFullYear();
   footer.innerHTML = `
     <span>© ${anio} Domina tu Opo</span>
+    <a href="/avisos-oficiales/">Avisos oficiales</a>
     <a href="/aviso-legal/">Aviso legal</a>
     <a href="/terminos/">Términos y condiciones</a>
     <a href="/privacidad/">Privacidad</a>

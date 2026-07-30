@@ -45,7 +45,7 @@
         <h2 class="card-title">Subir Documento PDF</h2>
       </div>
       <form id="form-subir-pdf">
-        <div class="form-group">
+        <div class="form-group" id="grupo-archivo">
           <label for="archivo-pdf"><span data-icon="documento" data-icon-size="16"></span> Sube tu documento PDF (máx. 10 MB)</label>
           <p class="limite-paginas-nota hidden" id="limite-paginas-nota"></p>
           <div class="file-upload-area" id="upload-area">
@@ -58,6 +58,7 @@
           </div>
           <div id="file-name" class="file-name"></div>
         </div>
+        <p class="limite-paginas-nota hidden" id="aviso-documento-existente">Vas a generar un test a partir del documento ya subido.</p>
         <div class="form-group">
           <label for="num_preguntas">Número de preguntas (1–100):</label>
           <input type="number" id="num_preguntas" min="1" max="100" value="10" required>
@@ -74,7 +75,7 @@
           <span id="texto-estado">Leyendo texto del PDF…</span>
         </div>
         <div class="progress-container">
-          <div id="progreso-generacion-pdf" class="progress-bar" style="background: linear-gradient(90deg, var(--age-primary), var(--age-primary-dark, var(--age-primary)));"></div>
+          <div class="progress-bar"><div id="progreso-generacion-pdf" class="progress-fill" style="width:0%"></div></div>
           <div id="texto-progreso-generacion-pdf" class="progress-text">0%</div>
         </div>
       </div>

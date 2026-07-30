@@ -1,5 +1,6 @@
 
 import logging
+import os
 import re
 import unicodedata
 from collections import defaultdict
@@ -10,6 +11,17 @@ logger = logging.getLogger(__name__)
 from utils import buscar_pregunta_oficial, buscar_pregunta_banco_ia, calcular_resultado_test, obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario, parsear_explicacion_por_opcion
 from deepseek_utils import call_deepseek_api, call_deepseek_api_stream
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
+
+# Modelo de DeepSeek para Tu Tutor, configurable sin redeploy de código: por
+# defecto el mismo "deepseek-v4-flash" que usa el resto de la app, pero se
+# puede probar "deepseek-v4-pro" (el modelo de razonamiento -- más lento y
+# caro, pero más capaz en preguntas de varios pasos) poniendo
+# TUTOR_MODELO_IA=deepseek-v4-pro en el entorno -- basta con quitar la
+# variable (o volver a "deepseek-v4-flash") para revertir. NOTA: hasta el
+# 24/07/2026 estos modelos se llamaban "deepseek-chat"/"deepseek-reasoner";
+# esos nombres se retiraron ese día sin periodo de gracia.
+def _modelo_tutor():
+    return os.getenv("TUTOR_MODELO_IA", "deepseek-v4-flash")
 
 # ✅ Crear conversación con título y mensajes en subcolección por usuario
 
@@ -1187,7 +1199,7 @@ def _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta):
 # /tu-tutor) es quien decide qué mostrarle al usuario en ese caso.
 def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO, contexto_pagina=None):
     mensajes, usar_rag, _temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
-    respuesta = call_deepseek_api(messages=mensajes, temperature=0.7, max_tokens=1500)
+    respuesta = call_deepseek_api(messages=mensajes, temperature=0.7, max_tokens=1500, model=_modelo_tutor())
     if not respuesta:
         return None, chat_id, usar_rag
 
@@ -1206,7 +1218,7 @@ def responder_tutor_stream(mensaje, db, usuario_id="anonimo", chat_id=None, cole
     mensajes, usar_rag, temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
 
     fragmentos = []
-    for fragmento in call_deepseek_api_stream(messages=mensajes, temperature=0.7, max_tokens=1500):
+    for fragmento in call_deepseek_api_stream(messages=mensajes, temperature=0.7, max_tokens=1500, model=_modelo_tutor()):
         if not fragmento:
             continue
         fragmentos.append(fragmento)

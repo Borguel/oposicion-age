@@ -7,6 +7,44 @@ from deepseek_utils import call_deepseek_api
 MAX_INTENTOS_POR_PREGUNTA_PDF = 3
 _MAX_WORKERS_VERIFICACION_LOTE = 6
 
+# Umbral de longitud para usar el texto de la respuesta correcta como
+# clave adicional de deduplicación (ver _claves_dedup): por debajo de
+# este tamaño no se usa, para no dar falsos positivos con cifras o
+# respuestas muy cortas (p.ej. "3%", "20 días") que varias preguntas
+# LEGÍTIMAMENTE distintas pueden compartir por casualidad -- ni con las
+# opciones de relleno tipo "1"/"2"/"3"/"4" que usan los tests. Las
+# respuestas que SÍ se repiten en la práctica cuando el documento tiene
+# un dato muy citable ("6 años, no renovable.", "A mediados de octubre
+# de cada año.") están muy por encima de este umbral.
+_LONGITUD_MINIMA_DEDUP_RESPUESTA = 10
+
+
+def _normalizar(texto):
+    return re.sub(r"\s+", " ", str(texto or "").strip().lower())
+
+
+def _claves_dedup(pregunta):
+    """Claves de deduplicación de una pregunta ya aceptada: siempre el
+    texto de la pregunta normalizado, y ADEMÁS el texto de la respuesta
+    correcta normalizado si es lo bastante largo (ver
+    _LONGITUD_MINIMA_DEDUP_RESPUESTA). Dos preguntas con el ENUNCIADO
+    reformulado de forma completamente distinta pero que citan el mismo
+    dato con la misma respuesta correcta se detectan así como duplicadas
+    aunque el texto de la pregunta no coincida en nada -- bug real: la
+    misma pregunta sobre la duración de un mandato, repetida 4 veces con
+    4 redacciones distintas, escapaba al dedup anterior (que solo
+    comparaba el texto de la pregunta)."""
+    claves = set()
+    clave_pregunta = _normalizar(pregunta.get("pregunta", ""))
+    if clave_pregunta:
+        claves.add(f"p:{clave_pregunta}")
+    opciones = pregunta.get("opciones") or {}
+    letra_respuesta = str(pregunta.get("respuesta_correcta", "")).upper()
+    clave_respuesta = _normalizar(opciones.get(letra_respuesta, ""))
+    if len(clave_respuesta) >= _LONGITUD_MINIMA_DEDUP_RESPUESTA:
+        claves.add(f"r:{clave_respuesta}")
+    return claves
+
 
 def _prompt_verificacion(pregunta_candidata, texto_fuente):
     system = (
@@ -24,7 +62,19 @@ def _prompt_verificacion(pregunta_candidata, texto_fuente):
         "5. Cualquier plazo, cifra, porcentaje, artículo, órgano competente o fecha no coincide "
         "EXACTAMENTE con el documento.\n"
         "6. Hay cualquier dato o afirmación que no puedas verificar literalmente en el documento "
-        "proporcionado (posible alucinación).\n\n"
+        "proporcionado (posible alucinación).\n"
+        "7. La pregunta o la explicación citan un número de artículo sin decir en la misma frase de qué "
+        "ley o norma es (tal como aparece en el documento) -- un artículo mencionado sin decir de qué "
+        "norma es deja a quien lo lee sin poder ubicarlo.\n"
+        "8. La pregunta o la explicación remiten a \"el documento\", \"el contenido\", \"el texto\" o "
+        "\"lo mencionado/anterior\" en vez de nombrar directamente de qué elementos concretos habla -- "
+        "quien responde el test nunca ve el documento de origen, solo la pregunta, así que una remisión "
+        "de ese tipo la deja sin sentido.\n"
+        "9. Se usa una sigla o abreviatura (\"CE\", \"TREBEP\", \"LPAC\", \"art.\" en vez de "
+        "\"artículo\"...) para nombrar una ley o norma en vez de su nombre completo tal como aparece en "
+        "el documento -- los exámenes oficiales de esta oposición nunca abrevian. Esto incluye también "
+        "abreviar el tipo de norma delante de su número (\"LO 3/2007\", \"RD 203/2021\"...) en vez de "
+        "escribirlo entero (\"Ley Orgánica 3/2007\", \"Real Decreto 203/2021\").\n\n"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
         '{"valido": true, "problemas": []}\n'
         "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada motivo."
@@ -38,7 +88,27 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
     raw = call_deepseek_api(
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         temperature=0.0,
-        max_tokens=400,
+        # Bug real de producción: con 400 tokens, deepseek-v4-flash trunca
+        # la respuesta (finish_reason="length") cuando la verificación
+        # encuentra varios problemas y los detalla en "problemas" -- un JSON
+        # cortado a mitad no parsea (json.loads falla más abajo), así que la
+        # pregunta se trata como inválida AUNQUE la IA la hubiera dado por
+        # buena, disparando una regeneración innecesaria. Eso multiplica las
+        # llamadas totales (una verificación truncada cuenta como fallo, lo
+        # que pide una pregunta de recambio Y su propia verificación) y deja
+        # el test por debajo de lo pedido cuando se agotan los reintentos.
+        # 2000 iguala el margen que generador_preguntas_verificado.py ya usa
+        # para el mismo modelo y el mismo tipo de verificación, con la misma
+        # razón documentada ahí: deepseek-v4-flash es más verboso de lo que
+        # parece necesario. Subir max_tokens no encarece nada por sí solo
+        # (DeepSeek cobra por los tokens que de verdad genera, no por el
+        # tope): solo evita el corte cuando de verdad hacen falta más de 400.
+        # Actualización: en producción, con el margen ya en 2000, todavía se
+        # vieron un par de verificaciones con finish_reason="length" justo
+        # en ese tope -- 2000 redujo muchísimo los cortes pero no los quitó
+        # del todo. Subido a 4000 con el mismo razonamiento (sin coste si no
+        # hace falta).
+        max_tokens=4000,
         response_format_json=True,
         on_usage=on_usage,
     )
@@ -50,37 +120,181 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
         return False
 
 
+def _prompt_verificacion_lote(preguntas, texto_fuente):
+    listado = "\n\n".join(
+        f"PREGUNTA {i}:\n{json.dumps(p, ensure_ascii=False)}"
+        for i, p in enumerate(preguntas)
+    )
+    system = (
+        "Eres un verificador independiente. Te llegan varias preguntas tipo test YA REDACTADAS por "
+        "otro proceso, y el ÚNICO documento del que deberían haber salido. No des por hecho que son "
+        "correctas solo porque parecen bien escritas: comprueba cada afirmación de CADA pregunta contra "
+        "el documento, como si las vieras por primera vez y no supieras nada más. Evalúa cada pregunta "
+        "de forma INDEPENDIENTE de las demás -- que unas sean válidas no debe influir en el juicio sobre "
+        "el resto.\n\n"
+        "Marca una pregunta como inválida si detectas CUALQUIERA de estos problemas EN ELLA:\n"
+        "1. El contenido de la pregunta no coincide con lo que dice el documento.\n"
+        "2. La respuesta marcada como correcta no es completamente correcta según el documento.\n"
+        "3. Alguna de las otras tres opciones podría considerarse también correcta o parcialmente "
+        "correcta -- ninguna debe ser defendible.\n"
+        "4. La explicación no repasa las 4 opciones en el formato \"A) ... B) ... C) ... D) ...\", o no "
+        "coincide exactamente con la respuesta marcada como correcta.\n"
+        "5. Cualquier plazo, cifra, porcentaje, artículo, órgano competente o fecha no coincide "
+        "EXACTAMENTE con el documento.\n"
+        "6. Hay cualquier dato o afirmación que no puedas verificar literalmente en el documento "
+        "proporcionado (posible alucinación).\n"
+        "7. La pregunta o la explicación citan un número de artículo sin decir en la misma frase de qué "
+        "ley o norma es (tal como aparece en el documento) -- un artículo mencionado sin decir de qué "
+        "norma es deja a quien lo lee sin poder ubicarlo.\n"
+        "8. La pregunta o la explicación remiten a \"el documento\", \"el contenido\", \"el texto\" o "
+        "\"lo mencionado/anterior\" en vez de nombrar directamente de qué elementos concretos habla -- "
+        "quien responde el test nunca ve el documento de origen, solo la pregunta, así que una remisión "
+        "de ese tipo la deja sin sentido.\n"
+        "9. Se usa una sigla o abreviatura (\"CE\", \"TREBEP\", \"LPAC\", \"art.\" en vez de "
+        "\"artículo\"...) para nombrar una ley o norma en vez de su nombre completo tal como aparece en "
+        "el documento -- los exámenes oficiales de esta oposición nunca abrevian. Esto incluye también "
+        "abreviar el tipo de norma delante de su número (\"LO 3/2007\", \"RD 203/2021\"...) en vez de "
+        "escribirlo entero (\"Ley Orgánica 3/2007\", \"Real Decreto 203/2021\").\n\n"
+        "Devuelve ÚNICAMENTE un JSON con esta forma exacta, con UNA entrada por cada pregunta recibida "
+        "(el mismo número que en el enunciado, empezando en 0), sin texto adicional:\n"
+        '{"resultados": [{"indice": 0, "valido": true, "problemas": []}]}'
+    )
+    user = f"DOCUMENTO:\n{texto_fuente}\n\nPREGUNTAS A VERIFICAR:\n{listado}"
+    return system, user
+
+
+def _verificar_lote(preguntas, texto_fuente, on_usage):
+    """Verifica TODAS las preguntas candidatas de un lote en UNA sola
+    llamada, en vez de una llamada de verificación por pregunta (ver
+    _verificar_pregunta) -- bug real reportado: generar un test de 30
+    preguntas podía disparar más de 50 llamadas a DeepSeek en total, cada
+    una compitiendo por el mismo cupo de conexiones simultáneas (ver
+    deepseek_utils._semaforo_deepseek) y aumentando el riesgo de que
+    alguna se quedara colgada varios segundos. Verificar el lote entero de
+    una vez reduce las llamadas de generación+verificación de este lote de
+    (1 + n) a 2 en el caso normal, sin perder rigor: el modelo sigue
+    mirando cada pregunta contra el documento, solo que dentro de la misma
+    llamada en vez de una por separado -- las que no pasan se descartan
+    igual que antes y se piden de recambio de una en una
+    (_asegurar_pregunta_valida no cambia).
+
+    Devuelve {indice: bool}. Los índices ausentes de la respuesta (por un
+    JSON no parseable, sin respuesta de DeepSeek, o que el modelo se dejó
+    fuera) se tratan como NO válidos por el llamante -- nunca se asume
+    válida una pregunta que no se pudo confirmar."""
+    if not preguntas:
+        return {}
+    system, user = _prompt_verificacion_lote(preguntas, texto_fuente)
+    raw = call_deepseek_api(
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+        temperature=0.0,
+        # Escala con el tamaño del lote: la mayoría de preguntas solo
+        # necesitan un veredicto corto ({"valido": true, "problemas": []}),
+        # pero si varias resultan inválidas a la vez y el modelo detalla
+        # los motivos de cada una, el conjunto puede pesar bastante más que
+        # una sola verificación individual (tope 4000, ver
+        # _verificar_pregunta). Sin coste extra si no hace falta.
+        max_tokens=min(8000, 500 + 700 * len(preguntas)),
+        response_format_json=True,
+        on_usage=on_usage,
+    )
+    if not raw:
+        return {}
+    try:
+        datos = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(datos, dict):
+        return {}
+    resultados = {}
+    for item in (datos.get("resultados") or []):
+        if not isinstance(item, dict):
+            continue
+        try:
+            indice = int(item.get("indice"))
+        except (TypeError, ValueError):
+            continue
+        resultados[indice] = item.get("valido") is True
+    return resultados
+
+
+def _fragmentos_por_lote(texto_fuente, n_lotes):
+    """Devuelve una lista de n_lotes fragmentos del documento, uno por lote,
+    para que cada llamada de generación en paralelo se apoye en una parte
+    DISTINTA del documento en vez de que todos los lotes reciban el mismo
+    texto completo. Sin esto, varios lotes independientes (no se ven entre
+    sí, corren en paralelo) tienden a convertir el mismo hecho más citable
+    del documento en varias preguntas con enunciados distintos -- el dedup
+    de generar_preguntas_ia_en_lotes solo detecta coincidencia de texto
+    normalizado, no reformulaciones de la misma información (bug real:
+    "duración del mandato del Presidente..." repetida en 8 de 20 preguntas
+    de un mismo test).
+
+    Con documentos cortos, un solo lote, o sin texto_fuente, dividir no
+    compensa (puede dejar algún fragmento sin contenido suficiente para
+    generar preguntas de calidad): se devuelve None en cada posición, y el
+    llamante entonces usa el documento completo tal cual (sin pasar
+    'fragmento' a construir_prompt, para no romper compatibilidad con
+    construir_prompt(n) de un solo argumento)."""
+    if not texto_fuente or n_lotes <= 1 or len(texto_fuente) < n_lotes * 400:
+        return [None] * n_lotes
+    longitud_objetivo = len(texto_fuente) // n_lotes
+    fragmentos = []
+    resto = texto_fuente
+    for _ in range(n_lotes - 1):
+        corte = min(longitud_objetivo, len(resto))
+        salto = resto.find("\n\n", corte)
+        if salto == -1:
+            salto = resto.find("\n", corte)
+        if salto == -1:
+            salto = corte
+        fragmentos.append(resto[:salto])
+        resto = resto[salto:]
+    fragmentos.append(resto)
+    return fragmentos
+
+
 def _prompt_con_exclusion(prompt, preguntas_a_evitar):
     """Añade al prompt de generación la lista de preguntas que NO debe
-    repetir (ya generadas antes, descartadas por verificación, o ya
-    aceptadas en este mismo lote), avisando de que reformular el mismo dato
-    con otras palabras también cuenta como repetir -- así se ataca
-    directamente el caso real observado: un documento corto con pocos datos
-    verificables acaba generando varias preguntas sobre el MISMO hecho
-    (p. ej. la misma duración de mandato) con enunciados distintos, que la
-    comprobación por texto exacto no detecta."""
+    repetir -- ya generadas en tests ANTERIORES de este mismo documento
+    (ver blueprints/pdf_ia.py, obtener_preguntas_previas en
+    documentos_pdf.py). Sin esto, cada llamada a /generar-test-desde-pdf
+    parte de cero: dentro de una misma generación _fragmentos_por_lote ya
+    evita que los lotes converjan en el mismo dato, pero un usuario que
+    pulsa "generar test" varias veces seguidas sobre el mismo documento de
+    su biblioteca podía acabar recibiendo la misma pregunta (reformulada o
+    no) en dos tests distintos, porque ninguno de los dos sabía de la
+    existencia del otro."""
     preguntas_a_evitar = [p for p in (preguntas_a_evitar or []) if p]
     if not preguntas_a_evitar:
         return prompt
-    listado = "\n".join(f"- {p}" for p in preguntas_a_evitar[:40])
+    listado = "; ".join(preguntas_a_evitar[:60])
     return prompt + (
-        f"\n\nEstas preguntas ya existen (generadas antes a partir de este mismo documento, o ya "
-        f"aceptadas en esta misma tanda) -- NO generes ninguna que repita su mismo dato o hecho "
-        f"concreto, aunque la redactes con otras palabras distintas:\n{listado}\n"
-        f"Aborda aspectos del documento no cubiertos por esas preguntas."
+        "\n\nEstas preguntas ya se hicieron en tests ANTERIORES de este mismo documento -- no "
+        f"repitas ninguna, ni siquiera redactada con otras palabras: {listado}. Aborda aspectos "
+        "del documento no cubiertos por esas preguntas."
     )
 
 
-def _pedir_una_pregunta_de_recambio(construir_prompt, preguntas_a_evitar, on_usage):
+def _pedir_una_pregunta_de_recambio(construir_prompt, pregunta_descartada, on_usage):
     """Pide UNA pregunta de recambio para sustituir a una que no superó la
-    verificación (o que resultó ser un duplicado semántico de otra ya
-    aceptada), evitando repetir el tema de todas las indicadas -- nunca se
-    "corrige" la pregunta descartada, se pide una completamente nueva."""
-    prompt = _prompt_con_exclusion(construir_prompt(1), preguntas_a_evitar)
+    verificación, evitando repetir su tema -- nunca se "corrige" la
+    pregunta descartada, se pide una completamente nueva."""
+    prompt = construir_prompt(1)
+    if pregunta_descartada:
+        prompt += (
+            f"\n\nNo repitas esta pregunta, ya descartada por no superar una verificación de precisión: "
+            f"{pregunta_descartada!r}. Aborda un aspecto distinto del documento."
+        )
     generado = call_deepseek_api(
         messages=[{"role": "user", "content": prompt}],
         temperature=0.6,
-        max_tokens=600,
+        # 4500 (no 3000): en producción se vio un caso real con
+        # finish_reason="length" justo en el tope de 3000 -- una única
+        # pregunta con explicación detallada de las 4 opciones puede
+        # necesitar más de eso puntualmente. Igual que en _verificar_pregunta,
+        # subir el margen no cuesta nada si no hace falta.
+        max_tokens=4500,
         on_usage=on_usage,
     )
     if not generado:
@@ -97,14 +311,12 @@ def _pedir_una_pregunta_de_recambio(construir_prompt, preguntas_a_evitar, on_usa
 
 
 def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente, on_usage,
-                               preguntas_a_evitar=None, max_intentos=MAX_INTENTOS_POR_PREGUNTA_PDF):
+                               max_intentos=MAX_INTENTOS_POR_PREGUNTA_PDF):
     """Verifica una pregunta candidata contra el documento de origen y, si
     no supera la verificación, la descarta POR COMPLETO y pide una de
-    recambio evitando su tema (y los de 'preguntas_a_evitar', si se pasan),
-    hasta max_intentos veces -- mismo principio que
-    generador_preguntas_verificado.py aplica al temario oficial."""
+    recambio evitando su tema, hasta max_intentos veces -- mismo principio
+    que generador_preguntas_verificado.py aplica al temario oficial."""
     pregunta = pregunta_candidata
-    evitar = list(preguntas_a_evitar or [])
     intentos_restantes = max_intentos
     while intentos_restantes > 0:
         if _verificar_pregunta(pregunta, texto_fuente, on_usage):
@@ -112,99 +324,13 @@ def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente
         intentos_restantes -= 1
         if intentos_restantes <= 0:
             return None
-        evitar.append(pregunta.get("pregunta", ""))
-        pregunta = _pedir_una_pregunta_de_recambio(construir_prompt, evitar, on_usage)
+        pregunta = _pedir_una_pregunta_de_recambio(construir_prompt, pregunta.get("pregunta", ""), on_usage)
         if not pregunta:
             return None
     return None
 
 
-def _prompt_deteccion_duplicados(preguntas):
-    listado = "\n".join(
-        f"{i}. Pregunta: {p.get('pregunta', '')} | Respuesta correcta: "
-        f"{(p.get('opciones') or {}).get(p.get('respuesta_correcta', ''), '')}"
-        for i, p in enumerate(preguntas)
-    )
-    system = (
-        "Eres un revisor de calidad de tests para oposiciones. Te llega una lista numerada de "
-        "preguntas ya generadas y verificadas a partir de un mismo documento. El documento puede "
-        "ser corto o tener pocos datos concretos, y a veces varias preguntas acaban preguntando "
-        "por el MISMO hecho o dato exacto (la misma ley, el mismo plazo, la misma cifra, el mismo "
-        "cargo...) aunque estén redactadas con palabras distintas -- eso cuenta como duplicado y "
-        "hay que detectarlo, aunque el enunciado no sea idéntico.\n\n"
-        "Para cada grupo de preguntas que traten el mismo hecho concreto, conserva SOLO la de "
-        "menor número y marca como duplicadas todas las demás del mismo grupo.\n\n"
-        "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
-        '{"duplicados": [<números de las preguntas duplicadas a eliminar>]}\n'
-        "Si ninguna pregunta se repite, devuelve {\"duplicados\": []}."
-    )
-    user = f"PREGUNTAS:\n{listado}"
-    return system, user
-
-
-def _detectar_indices_duplicados(preguntas, on_usage):
-    """Detecta, dentro de una lista de preguntas ya verificadas
-    individualmente contra el documento, cuáles preguntan por el mismo dato
-    concreto que otra anterior de la lista -- la deduplicación por texto
-    exacto de generar_preguntas_ia_en_lotes no detecta esto porque cada
-    pregunta puede estar redactada de forma distinta aunque verse sobre el
-    mismo hecho (caso real: un documento corto generando 4 variantes de la
-    pregunta sobre la misma duración de mandato)."""
-    if len(preguntas) < 2:
-        return set()
-    system, user = _prompt_deteccion_duplicados(preguntas)
-    raw = call_deepseek_api(
-        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-        temperature=0.0,
-        max_tokens=300,
-        response_format_json=True,
-        on_usage=on_usage,
-    )
-    if not raw:
-        return set()
-    try:
-        indices = json.loads(raw).get("duplicados") or []
-    except (json.JSONDecodeError, AttributeError, TypeError):
-        return set()
-    return {i for i in indices if isinstance(i, int) and 0 <= i < len(preguntas)}
-
-
-def _pedir_y_verificar_recambio(construir_prompt, texto_fuente, preguntas_a_evitar, on_usage):
-    candidata = _pedir_una_pregunta_de_recambio(construir_prompt, preguntas_a_evitar, on_usage)
-    if not candidata:
-        return None
-    return _asegurar_pregunta_valida(candidata, construir_prompt, texto_fuente, on_usage, preguntas_a_evitar)
-
-
-def _reemplazar_faltantes(preguntas, num_faltantes, construir_prompt, texto_fuente,
-                           preguntas_a_evitar, on_usage):
-    """Pide, EN PARALELO, 'num_faltantes' preguntas de recambio para compensar
-    preguntas ya descartadas por ser duplicadas (por texto exacto o por
-    significado) -- mismo mecanismo de recambio que ya usa
-    _asegurar_pregunta_valida para las que no superan la verificación, aquí
-    reutilizado para cuando la pregunta sí la supera pero sobra por repetir
-    el dato de otra. Antes, tanto los duplicados de texto exacto (dos lotes
-    en paralelo pueden generar la misma pregunta) como los semánticos se
-    descartaban sin más, reduciendo el total por debajo de lo pedido -- caso
-    real: pedir 20 preguntas y recibir solo 18. Si no se consigue recambio
-    para alguna, simplemente se queda con menos preguntas de las pedidas."""
-    if num_faltantes <= 0:
-        return preguntas
-    evitar = list(preguntas_a_evitar or []) + [p.get("pregunta", "") for p in preguntas]
-    conservadas = list(preguntas)
-    with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, num_faltantes)) as executor:
-        futuros = [
-            executor.submit(_pedir_y_verificar_recambio, construir_prompt, texto_fuente, evitar, on_usage)
-            for _ in range(num_faltantes)
-        ]
-        for futuro in as_completed(futuros):
-            candidata = futuro.result()
-            if candidata:
-                conservadas.append(candidata)
-    return conservadas
-
-
-def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=None, tamano_lote=15,
+def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=None, tamano_lote=5,
                                    temperature=0.4, on_progreso=None, on_usage=None,
                                    preguntas_a_evitar=None):
     """Genera 'num_preguntas' preguntas pidiéndolas a DeepSeek en varios lotes
@@ -235,6 +361,11 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     que devuelven menos candidatas de las pedidas (fallo parcial de
     DeepSeek), "completadas" puede quedarse por debajo de "total" al
     acabar -- el llamante ya remata la barra al 100% con el evento "fin".
+    Con la verificación EN BLOQUE (ver _verificar_lote más abajo), las
+    candidatas que sí pasan llegan casi todas a la vez (justo tras la única
+    llamada de verificación del lote) en vez de una a una según se iban
+    verificando por separado -- progreso-conversador.js ya rellena huecos
+    entre eventos reales para que la barra no se note a saltos.
 
     on_usage, si se pasa, recibe el usage de cada llamada a DeepSeek (de
     generación Y de verificación) -- esta función corre siempre dentro de
@@ -243,33 +374,48 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     está disponible, así que sin on_usage el coste de estas llamadas se
     pierde en silencio (ver AcumuladorTokens en coste_ia.py).
 
-    /generar-test-desde-pdf antes pedía todo el test de golpe con
-    max_tokens=min(4000, 300*num_preguntas): a partir de ~13-14 preguntas ese
-    tope de 4000 tokens ya se queda corto para el JSON completo
-    (pregunta+opciones+explicación ronda 400-600 tokens cada una), y la
-    respuesta se corta a medio JSON. Pedir lotes de como mucho 'tamano_lote'
-    preguntas mantiene cada llamada individual muy por debajo del límite,
-    sea cual sea el total pedido.
+    /generar-test-desde-pdf antes pedía todo el test de golpe; el primer
+    intento de arreglarlo con lotes asumía ~400-600 tokens por pregunta
+    (max_tokens=min(4000, 300*n)), pero la investigación de rendimiento de
+    Test Personalizado (mismo modelo deepseek-v4-flash, mismo formato de
+    pregunta+4 opciones+explicación con cita de artículo, verificable con
+    el log "finish_reason=%s, tokens_salida=%s" de deepseek_utils.py) mostró
+    que una sola pregunta de este tipo puede necesitar hasta 3000 tokens y
+    que la media real ronda 1200-1350 -- ya se veía JSON truncado
+    (finish_reason="length") con lotes de solo 10 preguntas, no a partir de
+    13-14. Por eso 'tamano_lote' se quedó en 5 (no 15) y el presupuesto de
+    tokens por pregunta subió a la par (ver _pedir_lote_verificado más
+    abajo): con menos preguntas por lote y más margen por pregunta, un lote
+    lleno deja holgura real aunque alguna pregunta salga más verbosa de lo
+    normal, en vez de agotar el tope a mitad del JSON.
 
     construir_prompt(n) debe devolver el prompt completo pidiendo EXACTAMENTE
     n preguntas, en el mismo formato de array JSON que ya usa esa ruta.
+    Opcionalmente puede aceptar un segundo argumento, construir_prompt(n,
+    fragmento) -- si el documento es lo bastante largo y hay más de un
+    lote, cada lote recibe un FRAGMENTO distinto del documento (ver
+    _fragmentos_por_lote más abajo) para repartir la generación entre
+    partes distintas en vez de que todos los lotes vean el documento
+    completo y converjan en los mismos hechos más citables (bug real:
+    la misma pregunta reformulada varias veces en un test de 20). Solo se
+    llama con 2 argumentos cuando de verdad hay un fragmento que pasar;
+    en caso contrario (documento corto, un solo lote, o sin texto_fuente)
+    se llama como construir_prompt(n), igual que antes.
 
-    preguntas_a_evitar (opcional): textos de preguntas ya generadas en
-    ocasiones ANTERIORES para este mismo documento (p. ej. al pulsar
-    "generar más" desde la biblioteca de "Mis documentos") -- se incluyen
-    como exclusión en cada lote para que la IA no vuelva a preguntar por los
-    mismos datos ya cubiertos, además de usarse como base para la
-    deduplicación semántica de más abajo.
+    preguntas_a_evitar (opcional): textos de preguntas de tests ANTERIORES
+    de este mismo documento (ver documentos_pdf.obtener_preguntas_previas,
+    llamado desde blueprints/pdf_ia.py cuando se reusa un documento de la
+    biblioteca) -- se añaden como exclusión tanto en los lotes iniciales
+    como en el relleno de huecos, para que "generar test" varias veces
+    sobre el mismo documento no repita lo ya preguntado en una generación
+    previa (_fragmentos_por_lote y el relleno de más abajo solo evitan
+    duplicados DENTRO de una misma llamada).
 
-    Devuelve (preguntas, errores): preguntas ya verificadas y deduplicadas,
-    tanto por texto de pregunta normalizado (pedir el mismo tema en varios
-    lotes en paralelo puede repetir alguna con el mismo enunciado) como por
-    significado (si texto_fuente no es None: varias preguntas pueden acabar
-    versando sobre el mismo dato concreto del documento aunque estén
-    redactadas de forma distinta -- típico en documentos cortos con pocos
-    datos verificables, ver _detectar_indices_duplicados). errores es una
-    lista de motivos de fallo por lote (vacía si todo fue bien) para poder
-    avisar si faltan preguntas respecto a las pedidas.
+    Devuelve (preguntas, errores): preguntas ya verificadas y deduplicadas
+    por texto de pregunta normalizado (pedir el mismo tema en varios lotes
+    en paralelo puede repetir alguna), errores es una lista de motivos de
+    fallo por lote (vacía si todo fue bien) para poder avisar si faltan
+    preguntas respecto a las pedidas.
     """
     lotes = []
     restante = num_preguntas
@@ -284,21 +430,32 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     completadas_preguntas = 0
     lock_progreso = threading.Lock()
 
-    def _reportar_avance_pregunta():
+    def _reportar_avance_pregunta(pregunta_aceptada=None):
+        """pregunta_aceptada: si se pasa (una pregunta que YA ha superado
+        la verificación, o que se acepta sin verificar por no haber
+        texto_fuente), se incluye en el evento como "pregunta" -- el
+        llamante (ver blueprints/pdf_ia.py) la manda como un evento SSE
+        aparte para que el frontend pueda empezar el test en cuanto
+        lleguen las primeras N, igual que ya hace Test Personalizado
+        (generador_preguntas_verificado.py)."""
         nonlocal completadas_preguntas
         if not on_progreso:
             return
         with lock_progreso:
             completadas_preguntas += 1
             valor = completadas_preguntas
-        on_progreso({"completadas": valor, "total": num_preguntas})
+        evento = {"completadas": valor, "total": num_preguntas}
+        if pregunta_aceptada:
+            evento["pregunta"] = pregunta_aceptada
+        on_progreso(evento)
 
-    def _pedir_lote_verificado(n):
-        prompt = _prompt_con_exclusion(construir_prompt(n), preguntas_a_evitar)
+    def _pedir_lote_verificado(n, fragmento=None):
+        prompt = construir_prompt(n, fragmento) if fragmento is not None else construir_prompt(n)
+        prompt = _prompt_con_exclusion(prompt, preguntas_a_evitar)
         generado = call_deepseek_api(
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
-            max_tokens=min(4000, 300 * n),
+            max_tokens=min(8000, 1500 * n),
             on_usage=on_usage
         )
         if not generado:
@@ -316,26 +473,41 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         if texto_fuente is None:
             # Sin documento contra el que verificar: se acepta la candidata
             # tal cual, igual que antes de añadir la verificación.
-            for _ in candidatas:
-                _reportar_avance_pregunta()
+            for candidata in candidatas:
+                _reportar_avance_pregunta(candidata)
             return candidatas, None
 
-        # Se verifica cada candidata del lote EN PARALELO -- en serie
-        # multiplicaría por hasta 'tamano_lote' el tiempo de este lote, y
-        # una pregunta con problemas no debe frenar a las demás. Se reporta
-        # el avance por 'as_completed' (una por una, según van resolviéndose,
-        # con éxito o descarte) en vez de esperar a que TODAS terminen --
-        # así el progreso real llega pregunta a pregunta, no lote a lote.
-        with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(candidatas))) as executor:
-            futuros = [
-                executor.submit(_asegurar_pregunta_valida, candidata, construir_prompt, texto_fuente, on_usage)
-                for candidata in candidatas
-            ]
-            verificadas = []
-            for futuro in as_completed(futuros):
-                verificadas.append(futuro.result())
-                _reportar_avance_pregunta()
-        aceptadas = [p for p in verificadas if p]
+        # Verificación EN BLOQUE (ver _verificar_lote): una sola llamada
+        # juzga TODAS las candidatas de este lote a la vez, en vez de una
+        # llamada de verificación por candidata -- reduce las llamadas de
+        # este lote de (1 generación + n verificaciones) a (1 + 1) en el
+        # caso normal. Las que no pasan se descartan POR COMPLETO y se
+        # piden de recambio evitando su tema, de una en una y en paralelo,
+        # exactamente igual que antes (_asegurar_pregunta_valida no
+        # cambia): el ahorro de llamadas está en esta primera pasada, no en
+        # el rigor del reintento sobre las que fallan.
+        resultados_lote = _verificar_lote(candidatas, texto_fuente, on_usage)
+        aceptadas = []
+        pendientes = []
+        for i, candidata in enumerate(candidatas):
+            if resultados_lote.get(i):
+                aceptadas.append(candidata)
+                _reportar_avance_pregunta(candidata)
+            else:
+                pendientes.append(candidata)
+
+        if pendientes:
+            with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(pendientes))) as executor:
+                futuros = [
+                    executor.submit(_asegurar_pregunta_valida, candidata, construir_prompt, texto_fuente, on_usage)
+                    for candidata in pendientes
+                ]
+                for futuro in as_completed(futuros):
+                    resultado = futuro.result()
+                    _reportar_avance_pregunta(resultado)
+                    if resultado:
+                        aceptadas.append(resultado)
+
         if not aceptadas:
             # Generación OK (hubo candidatas), pero NINGUNA superó la
             # verificación de precisión -- normalmente indica que el
@@ -349,10 +521,23 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             return [], f"Ninguna de las {len(candidatas)} preguntas candidatas de un lote superó la verificación de calidad"
         return aceptadas, None
 
+    fragmentos = _fragmentos_por_lote(texto_fuente, len(lotes))
+
     preguntas = []
     errores = []
-    with ThreadPoolExecutor(max_workers=min(5, len(lotes))) as executor:
-        futuros = [executor.submit(_pedir_lote_verificado, n) for n in lotes]
+    # max_workers=8 (no 15, como generador_preguntas_verificado.py): cada
+    # lote de aquí dispara además hasta _MAX_WORKERS_VERIFICACION_LOTE
+    # verificaciones propias en paralelo, así que 8 lotes a la vez ya
+    # supone picos de hasta 48 llamadas simultáneas a DeepSeek -- subir
+    # más sin evidencia de que la API lo soporta bien sería imprudente.
+    # Sirve sobre todo para peticiones grandes (30-100 preguntas, varios
+    # lotes): con num_preguntas pequeño ya cabían todos los lotes en una
+    # sola tanda incluso con el límite anterior de 5.
+    with ThreadPoolExecutor(max_workers=min(8, len(lotes))) as executor:
+        futuros = [
+            executor.submit(_pedir_lote_verificado, n, fragmentos[i])
+            for i, n in enumerate(lotes)
+        ]
         for futuro in as_completed(futuros):
             lote_preguntas, error = futuro.result()
             if error:
@@ -362,32 +547,102 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
 
     vistas = set()
     preguntas_unicas = []
-    duplicados_literales = 0
     for p in preguntas:
-        clave = re.sub(r"\s+", " ", str(p.get("pregunta", "")).strip().lower())
-        if not clave:
-            continue
-        if clave in vistas:
-            # Dos lotes en paralelo pidiendo sobre el mismo documento pueden
-            # generar la pregunta EXACTA (mismo enunciado) -- se descarta
-            # aquí, pero se cuenta para intentar reponerla más abajo en vez
-            # de dejar el test con menos preguntas de las pedidas.
-            duplicados_literales += 1
-            continue
-        vistas.add(clave)
-        preguntas_unicas.append(p)
+        claves = _claves_dedup(p)
+        if claves and not (claves & vistas):
+            vistas.update(claves)
+            preguntas_unicas.append(p)
 
-    duplicados_semanticos = 0
-    if texto_fuente is not None and len(preguntas_unicas) > 1:
-        indices_duplicados = _detectar_indices_duplicados(preguntas_unicas, on_usage)
-        if indices_duplicados:
-            duplicados_semanticos = len(indices_duplicados)
-            preguntas_unicas = [p for i, p in enumerate(preguntas_unicas) if i not in indices_duplicados]
+    # Nunca se acepta más preguntas de las pedidas: un lote puede ignorar el
+    # "EXACTAMENTE n" del prompt y devolver más candidatas de las
+    # solicitadas -- bug real: pedir 20 preguntas y recibir 22, porque
+    # ninguna comprobación recortaba el exceso antes de esto. Se recorta
+    # aquí (tras deduplicar, no lote a lote) porque el exceso puede venir de
+    # la SUMA de varios lotes, no necesariamente de uno solo que se pasara.
+    if len(preguntas_unicas) > num_preguntas:
+        preguntas_unicas = preguntas_unicas[:num_preguntas]
 
-    num_faltantes = duplicados_literales + duplicados_semanticos
-    if num_faltantes and texto_fuente is not None:
-        preguntas_unicas = _reemplazar_faltantes(
-            preguntas_unicas, num_faltantes, construir_prompt, texto_fuente, preguntas_a_evitar, on_usage,
-        )
+    # Relleno: si tras los lotes normales (con verificación y reintento por
+    # pregunta ya agotados) sigue faltando alguna respecto a num_preguntas
+    # -- por descartes que agotaron sus intentos, o por deduplicar entre
+    # lotes en paralelo -- se da un hueco más por cada una que falte, con
+    # el mismo principio que ya usan generador_preguntas_verificado.py y
+    # tarjetas_generator.py para no dejar "pedí N, me dieron menos" como
+    # respuesta por defecto. Cada hueco lleva su propio presupuesto
+    # completo de reintentos dentro de _asegurar_pregunta_valida (genera
+    # un candidato + hasta max_intentos-1 recambios si la verificación
+    # falla), así que un hueco de relleno recibe el mismo presupuesto que
+    # un hueco normal, no un múltiplo. Nunca relaja la verificación.
+    #
+    # EN PARALELO (antes era un "for" secuencial): con varios huecos, cada
+    # uno tardando hasta 3 rondas de generación+verificación (~15-20s por
+    # llamada a DeepSeek), rellenarlos uno detrás de otro podía sumar
+    # 1-3 minutos SOLO en esta fase (bug real reportado: 16 preguntas
+    # tardando 5-6 minutos) -- el cuello de botella dominante no eran los
+    # lotes (ya paralelos) sino este relleno puramente secuencial. Al
+    # tratarse de huecos independientes entre sí, paralelizarlos no
+    # cambia en nada la verificación ni el resultado final, solo el
+    # tiempo. Se protege con un lock el check-then-add sobre 'vistas' /
+    # 'preguntas_unicas' (antes era seguro por ser secuencial; en
+    # paralelo, dos hilos podrían aceptar el mismo tema a la vez sin él).
+    faltan = num_preguntas - len(preguntas_unicas)
+    if faltan > 0:
+        lock_relleno = threading.Lock()
+
+        def construir_prompt_evitando_repetidas(n):
+            # Envuelve construir_prompt con un aviso de qué temas/datos ya
+            # están cubiertos por el resto del test (snapshot de
+            # preguntas_unicas en el momento de la llamada, incluyendo lo
+            # que otros huecos de relleno ya hayan ido aceptando) -- sin
+            # esto, un hueco podía regenerar a ciegas el mismo dato
+            # sobreexplotado del documento una y otra vez hasta agotar sus
+            # intentos, sin llegar nunca a rellenarse de verdad (bug real:
+            # "pedí 10, recibí 9" con el hueco perdido siendo justo el que
+            # intentaba repetir un hecho ya cubierto 3 veces en el resto
+            # del test).
+            with lock_relleno:
+                cubiertas = [
+                    f"{p.get('pregunta', '')} (respuesta: "
+                    f"{(p.get('opciones') or {}).get(str(p.get('respuesta_correcta', '')).upper(), '')})"
+                    for p in preguntas_unicas
+                ]
+            prompt = construir_prompt(n)
+            if cubiertas:
+                prompt += (
+                    "\n\nNo repitas ninguno de estos temas/datos, ya cubiertos por otras preguntas de este "
+                    f"mismo test: {'; '.join(cubiertas)}. Aborda un aspecto distinto del documento."
+                )
+            # También se evitan aquí las de tests ANTERIORES del mismo
+            # documento (ver preguntas_a_evitar más arriba) -- un hueco de
+            # relleno es, igual que un lote normal, una oportunidad más de
+            # acabar repitiendo lo ya preguntado en una generación previa.
+            return _prompt_con_exclusion(prompt, preguntas_a_evitar)
+
+        def _rellenar_un_hueco(_indice):
+            candidata = _pedir_una_pregunta_de_recambio(construir_prompt_evitando_repetidas, None, on_usage)
+            pregunta = (
+                _asegurar_pregunta_valida(candidata, construir_prompt_evitando_repetidas, texto_fuente, on_usage)
+                if candidata and texto_fuente is not None else candidata
+            )
+            aceptada = None
+            if pregunta:
+                claves = _claves_dedup(pregunta)
+                with lock_relleno:
+                    if claves and not (claves & vistas):
+                        vistas.update(claves)
+                        preguntas_unicas.append(pregunta)
+                        aceptada = pregunta
+            # Solo se incluye en el evento si de verdad se aceptó (no si
+            # era un duplicado que se descarta) -- el "pregunta" del
+            # evento SSE representa una pregunta genuinamente nueva del
+            # test final, no un intento cualquiera.
+            _reportar_avance_pregunta(aceptada)
+
+        with ThreadPoolExecutor(max_workers=min(10, faltan)) as executor:
+            list(executor.map(_rellenar_un_hueco, range(faltan)))
+
+    faltan_final = num_preguntas - len(preguntas_unicas)
+    if faltan_final > 0:
+        errores.append(f"No se pudieron generar {faltan_final} pregunta(s) adicionales tras varios intentos de relleno")
 
     return preguntas_unicas, errores

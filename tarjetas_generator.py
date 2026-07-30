@@ -15,8 +15,15 @@ Personalizado, adaptado a un array de tarjetas en vez de un test):
      aceptada), se descarta POR COMPLETO -- nunca se corrige/parchea -- y
      se pide una de recambio sobre el mismo fragmento evitando su tema,
      hasta MAX_INTENTOS_POR_TARJETA veces. Si se agotan, esa tarjeta se
-     pierde (se avisa al final) en vez de entregarse sin validar.
+     pierde para ese hueco.
+  4. Si al terminar la fase anterior siguen faltando tarjetas (por huecos
+     perdidos en el paso 3, o porque algún fragmento devolvió menos
+     candidatas de las pedidas en su generación inicial), se rellenan
+     ciclando entre los fragmentos disponibles, con la misma verificación
+     sin relajar -- solo si ni así se completa el número pedido se avisa
+     al final en vez de entregarse sin validar.
 """
+import itertools
 import json
 import logging
 import re
@@ -24,6 +31,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from deepseek_utils import call_deepseek_api, _trocear_en_parrafos
+from validador_preguntas import FRASES_PROHIBIDAS
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +94,11 @@ def _prompt_generacion(fragmento, cupo, evitar=None):
         "6. **Fidelidad al fragmento**: basa cada tarjeta ÚNICAMENTE en el fragmento proporcionado. No "
         "completes huecos con conocimiento propio ni inventes datos, cifras, fechas o artículos que no "
         "aparezcan en el texto.\n"
+        "7. **Autonomía de la tarjeta**: quien repasa la tarjeta más adelante NO tiene el documento "
+        "delante, solo la pregunta -- así que nunca remitas a él. Prohibido \"según el texto\", "
+        "\"según el documento\", \"en el fragmento proporcionado\", \"lo que has subido\", \"lo "
+        "mencionado\"/\"lo anterior\" ni similares. Afirma cada dato directamente, como si fuera "
+        "conocimiento general de la materia.\n"
         f"Genera EXACTAMENTE {cupo} tarjeta{'s' if cupo != 1 else ''} (ni más ni menos)."
         + (f" No repitas esta pregunta, ya descartada: {evitar!r}. Aborda un aspecto distinto del fragmento." if evitar else "")
         + "\nDevuelve ÚNICAMENTE un JSON con esta forma exacta, sin bloques de código ni texto adicional:\n"
@@ -137,7 +150,15 @@ def _verificar_tarjeta(tarjeta, fragmento, on_usage):
     raw = call_deepseek_api(
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         temperature=0.0,
-        max_tokens=400,
+        # Mismo margen que test_generator.py._verificar_pregunta (ver su
+        # comentario): con 400 tokens, deepseek-v4-flash puede truncar la
+        # respuesta si detalla varios problemas en "problemas", y un JSON
+        # cortado se trata como tarjeta inválida aunque no lo fuera,
+        # disparando una regeneración de más. No tiene coste extra si no
+        # hace falta (se cobra por tokens generados, no por el tope). Subido
+        # a 4000 (igual que en test_generator.py) tras ver en producción que
+        # 2000 seguía cortándose alguna vez para la verificación de test.
+        max_tokens=4000,
         response_format_json=True,
         on_usage=on_usage,
     )
@@ -147,6 +168,15 @@ def _verificar_tarjeta(tarjeta, fragmento, on_usage):
         return json.loads(raw).get("valido") is True
     except json.JSONDecodeError:
         return False
+
+
+def _contiene_frase_prohibida(tarjeta):
+    """Filtro determinista (no depende de que la IA de verificación lo
+    detecte): igual que validador_preguntas.validar_pregunta hace para el
+    Test Personalizado, comprueba localmente antes de gastar una llamada de
+    verificación en una tarjeta que se va a descartar de todos modos."""
+    texto = (tarjeta["pregunta"] + " " + tarjeta["respuesta"]).lower()
+    return any(frase in texto for frase in FRASES_PROHIBIDAS)
 
 
 def _regenerar_una_tarjeta(fragmento, pregunta_descartada, on_usage):
@@ -172,7 +202,8 @@ def _asegurar_tarjeta_valida(candidata, fragmento, dedup_lock, claves_vistas, on
         clave = _normalizar(tarjeta["pregunta"])
         with dedup_lock:
             es_duplicada = clave in claves_vistas
-        if not es_duplicada and _verificar_tarjeta(tarjeta, fragmento, on_usage):
+        if (not es_duplicada and not _contiene_frase_prohibida(tarjeta)
+                and _verificar_tarjeta(tarjeta, fragmento, on_usage)):
             with dedup_lock:
                 if clave in claves_vistas:
                     es_duplicada = True  # otro hilo aceptó lo mismo mientras se verificaba esta
@@ -248,6 +279,73 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
             verificadas += 1
             if on_progreso:
                 on_progreso({"completadas": verificadas, "total": total_candidatas})
+
+    # Relleno: si tras la fase normal siguen faltando tarjetas -- ya sea
+    # porque algún fragmento devolvió menos candidatas de las pedidas en su
+    # generación inicial, o porque alguna se descartó tras agotar sus
+    # MAX_INTENTOS_POR_TARJETA -- se da una oportunidad más por cada hueco,
+    # ciclando entre los fragmentos disponibles (mismo patrón que el
+    # "relleno" de generador_preguntas_verificado.py para Test
+    # Personalizado). Nunca se relaja la verificación: cada intento pasa
+    # por el mismo verificador independiente y el mismo dedup por
+    # claves_vistas; si sigue sin conseguirse, se cuenta como descartada
+    # igual que hoy.
+    #
+    # EN PARALELO (antes era un "for" secuencial, con el comentario "no
+    # compensa un ThreadPoolExecutor para lo que normalmente son 1-4
+    # tarjetas de hueco"): con un documento corto/difícil que necesite
+    # muchos huecos, cada uno con hasta MAX_INTENTOS_POR_TARJETA rondas de
+    # generación+verificación, rellenarlos uno detrás de otro puede sumar
+    # varios minutos solo en esta fase -- el mismo problema real que ya se
+    # detectó y arregló para Generar Test desde PDF (ver
+    # test_generator.py). Al ser huecos independientes entre sí,
+    # paralelizarlos no cambia la verificación ni el resultado final, solo
+    # el tiempo. "verificadas"/"tarjetas"/"descartadas" se protegen con un
+    # lock (antes eran seguros por ser secuencial); dedup_lock ya protegía
+    # claves_vistas incluso en la fase anterior, así que _asegurar_tarjeta_valida
+    # sigue siendo segura sin cambios.
+    if len(tarjetas) < num_tarjetas and fragmentos:
+        faltan = num_tarjetas - len(tarjetas)
+        ciclo_fragmentos = itertools.cycle(fragmentos)
+        # A cada hueco se le asignan varios fragmentos candidatos (no solo
+        # uno) -- bug real reportado en un documento extenso: pedir 10
+        # tarjetas y recibir solo 7, porque un hueco que caía en un
+        # fragmento ya "exprimido" (sus datos distintos ya se habían
+        # convertido en tarjetas antes) agotaba sus MAX_INTENTOS_POR_TARJETA
+        # intentos siempre sobre ESE MISMO fragmento y se daba por perdido,
+        # aunque el documento tuviera de sobra contenido sin usar en OTROS
+        # fragmentos. Ahora, si el primer fragmento no da una tarjeta
+        # válida, se prueba con el siguiente de la lista antes de rendirse.
+        _FRAGMENTOS_POR_HUECO = min(3, len(fragmentos))
+        listas_fragmentos_huecos = [
+            [next(ciclo_fragmentos) for _ in range(_FRAGMENTOS_POR_HUECO)]
+            for _ in range(faltan)
+        ]
+        lock_relleno = threading.Lock()
+
+        def _rellenar_un_hueco(fragmentos_candidatos):
+            nonlocal verificadas, descartadas
+            resultado = None
+            for fragmento in fragmentos_candidatos:
+                candidatas = _generar_candidatas_fragmento(fragmento, 1, on_usage)
+                resultado = (
+                    _asegurar_tarjeta_valida(candidatas[0], fragmento, dedup_lock, claves_vistas, on_usage)
+                    if candidatas else None
+                )
+                if resultado:
+                    break
+            with lock_relleno:
+                verificadas += 1
+                if resultado:
+                    tarjetas.append(resultado)
+                else:
+                    descartadas += 1
+                valor = verificadas
+            if on_progreso:
+                on_progreso({"completadas": valor, "total": total_candidatas})
+
+        with ThreadPoolExecutor(max_workers=min(10, faltan)) as executor:
+            list(executor.map(_rellenar_un_hueco, listas_fragmentos_huecos))
 
     resultado_final = {"tarjetas": tarjetas, "descartadas": descartadas}
     if len(tarjetas) < num_tarjetas:

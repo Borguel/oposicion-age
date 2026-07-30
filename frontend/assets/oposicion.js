@@ -3,7 +3,6 @@
 // cuál está estudiando el usuario ahora mismo. Se guarda en localStorage
 // (no en la cuenta) porque es solo "qué estoy mirando ahora", no depende
 // de qué oposiciones tenga contratadas -- eso lo dice /mi-perfil.
-import { icono } from "/assets/icons.js";
 import { activarPopover } from "/assets/popover.js";
 
 export const OPOSICIONES = [
@@ -34,13 +33,14 @@ function cambiarOposicionYRecargar(id) {
 // navegación compartida -- dos versiones, mostradas o no según el
 // breakpoint por CSS (no por JS, ya que cambiar de oposición siempre
 // recarga la página, así que no hay estado que sincronizar entre las
-// dos): un botón-icono con popover dentro de .age-nav-utilidades para
-// escritorio (mismo lenguaje visual que el buscador y la cuenta), y un
-// <select> nativo inline dentro del cajón del menú hamburguesa
-// (.age-nav-links) para móvil, más cómodo al tacto que un popover
-// anidado dentro de otro cajón. Solo tiene sentido con sesión iniciada
-// (sin cuenta no hay temario/tests que cambiar de oposición), así que si
-// no hay usuario se quita si ya estuviera puesto.
+// dos): un botón con la sigla de la oposición actual + popover dentro de
+// .age-nav-utilidades para escritorio (así el usuario ve todo el rato en
+// qué oposición está, sin abrir nada -- antes era solo un icono de
+// edificio sin texto), y un <select> nativo inline dentro del cajón del
+// menú hamburguesa (.age-nav-links) para móvil, más cómodo al tacto que
+// un popover anidado dentro de otro cajón. Solo tiene sentido con sesión
+// iniciada (sin cuenta no hay temario/tests que cambiar de oposición),
+// así que si no hay usuario se quita si ya estuviera puesto.
 export function inyectarSelectorOposicion(haySesion) {
   const utilidades = document.querySelector(".age-nav-utilidades");
   const drawer = document.querySelector(".age-nav-links");
@@ -54,10 +54,14 @@ export function inyectarSelectorOposicion(haySesion) {
   const actual = obtenerOposicionActual();
 
   if (utilidades && !utilidades.querySelector(".age-oposicion-popover")) {
+    const sigla = OPOSICIONES.find((o) => o.id === actual)?.siglas || actual;
     const popover = document.createElement("div");
     popover.className = "age-oposicion-popover";
     popover.innerHTML = `
-      <button type="button" class="age-nav-icon-btn" data-popover-toggle aria-label="Cambiar de oposición" title="Oposición que estás estudiando">${icono("edificio", 18)}</button>
+      <button type="button" class="age-nav-op-btn" data-popover-toggle aria-label="Cambiar de oposición" title="Oposición que estás estudiando">
+        <span>${sigla}</span>
+        <span class="age-nav-op-caret">▾</span>
+      </button>
       <div class="age-popover age-popover-menu" data-popover-panel>
         ${OPOSICIONES.map((o) => `<button type="button" class="age-popover-opcion${o.id === actual ? " age-popover-opcion-actual" : ""}" data-op="${o.id}">${o.nombre}</button>`).join("")}
       </div>

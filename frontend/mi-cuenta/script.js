@@ -33,7 +33,12 @@ function formatearFecha(iso) {
 
 function renderizarEstadoPrueba(pruebaActiva, pruebaFin, algunaDePago) {
   const contenedor = document.getElementById("cuenta-prueba");
-  if (!pruebaFin || (!pruebaActiva && algunaDePago)) {
+  // Si ya paga por alguna oposición no tiene sentido seguir hablándole de
+  // la prueba de 7 días (ni en marcha ni terminada) -- es un aviso pensado
+  // para captar a quien todavía no se ha suscrito a nada, no para alguien
+  // que ya es cliente (ver tiene_plan_de_pago_activo en planes.py, que
+  // ahora tampoco le da el empujón de prueba a una oposición nueva).
+  if (!pruebaFin || algunaDePago) {
     contenedor.style.display = "none";
     return;
   }

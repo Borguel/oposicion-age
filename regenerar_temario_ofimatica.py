@@ -59,7 +59,7 @@ import os
 import re
 import sys
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from cargar_temario_auxiliar_bloque2 import (
     _limpiar_pagina, PATRON_EPIGRAFE, dividir_en_subbloques_por_epigrafe, _estimar_tokens,

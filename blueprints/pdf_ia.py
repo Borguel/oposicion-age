@@ -12,14 +12,16 @@ from io import BytesIO
 
 import requests
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from firebase_setup import db
 from auth_utils import requiere_plan, obtener_oposicion_solicitada
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso, devolver_uso
+from rate_limiter import limiter
 from documentos_pdf import (
     obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta,
-    listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo, obtener_preguntas_previas
+    listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo, obtener_preguntas_previas,
+    obtener_tests_en_progreso_por_documento, eliminar_documento
 )
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import generar_preguntas_ia_en_lotes
@@ -51,18 +53,27 @@ def _resolver_texto_documento(plan_actual):
     pdf_file = request.files['pdf']
     if pdf_file.filename == '':
         return None, None, None, (jsonify({"error": "Nombre de archivo inválido"}), 400)
-    pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+    try:
+        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
+        numero_paginas = len(pdf_reader.pages)
+    except Exception:
+        return None, None, None, (jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400)
     limite_paginas = max_paginas_para_plan(plan_actual, db)
-    if len(pdf_reader.pages) > limite_paginas:
+    if numero_paginas > limite_paginas:
         return None, None, None, (jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400)
-    text = ""
-    for page in pdf_reader.pages:
-        page_text = page.extract_text()
-        if page_text:
-            text += page_text + "\n"
+    # La extracción también va protegida: un PDF estructuralmente válido puede
+    # tener páginas con contenido corrupto que revientan extract_text().
+    try:
+        text = ""
+        for page in pdf_reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+    except Exception:
+        return None, None, None, (jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400)
     if not text.strip():
         return None, None, None, (jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400)
-    documento_id, documento = obtener_o_crear_documento(db, g.uid, text, pdf_file.filename, len(pdf_reader.pages))
+    documento_id, documento = obtener_o_crear_documento(db, g.uid, text, pdf_file.filename, numero_paginas)
     return text, documento_id, pdf_file.filename, None
 
 
@@ -89,6 +100,7 @@ def _extraer_json_array(texto):
 
 
 @bp.route('/resumir-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def resumir_pdf():
     # En streaming (SSE, mismo patrón que /generar-test-desde-pdf) para dar
@@ -174,7 +186,7 @@ def resumir_pdf():
     return Response(
         stream_with_context(generar()),
         mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
     )
 
 
@@ -186,6 +198,7 @@ def resumir_documento():
 
 
 @bp.route('/generar-esquema-desde-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def generar_esquema_desde_pdf():
     # En streaming (SSE, mismo patrón que /generar-test-desde-pdf/
@@ -304,11 +317,12 @@ def generar_esquema_desde_pdf():
     return Response(
         stream_with_context(generar()),
         mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
     )
 
 
 @bp.route('/generar-test-desde-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def generar_test_desde_pdf():
     # En streaming (SSE, mismo patrón que /generar-test-avanzado en
@@ -333,30 +347,41 @@ def generar_test_desde_pdf():
     if len(text) > max_length:
         text = text[:max_length]
 
-    # Al pulsar "Generar más" sobre un documento ya subido antes (viene con
-    # documento_id), se recuperan las preguntas de sus tests anteriores para
-    # que el nuevo test no vuelva a preguntar por los mismos datos -- sin
-    # esto, cada generación parte de cero y, en documentos cortos con pocos
-    # datos verificables, tiende a repetir las mismas preguntas reformuladas
-    # (ver test_generator.py, preguntas_a_evitar).
+    # Al pulsar "generar test" otra vez sobre un documento ya subido antes
+    # (viene con documento_id), se recuperan las preguntas de sus tests
+    # anteriores para que el nuevo test no vuelva a preguntar por los
+    # mismos datos -- la deduplicación existente (fragmentar el documento
+    # por lote, relleno evitando "lo ya cubierto en este test") solo actúa
+    # dentro de una misma llamada (ver test_generator.py, preguntas_a_evitar).
     preguntas_previas = obtener_preguntas_previas(db, g.uid, documento_id)
 
-    def construir_prompt(n):
+    def construir_prompt(n, fragmento=None):
+        documento = fragmento if fragmento is not None else text
         system_prompt = (
             f"Eres un experto en la elaboración de preguntas tipo test para oposiciones oficiales en España. "
             f"Tu tarea es generar EXACTAMENTE {n} preguntas de opción múltiple de alta calidad, "
             f"basadas únicamente en el documento proporcionado. Cada pregunta debe cumplir lo siguiente:\n"
             f"1. **Formato**: pregunta clara y directa, seguida de cuatro opciones (A, B, C, D).\n"
-            f"2. **Precisión**: si el documento menciona leyes, artículos, plazos, funciones, definiciones, principios o procedimientos, la pregunta debe reflejarlos con exactitud.\n"
+            f"2. **Precisión**: si el documento menciona leyes, artículos, plazos, funciones, definiciones, principios o procedimientos, la pregunta debe reflejarlos con exactitud. Si citas un número de artículo, di TAMBIÉN en la misma frase el nombre de la ley o norma a la que pertenece (tal como aparece en el documento) -- un artículo mencionado sin decir de qué norma es deja a quien lo lee sin poder ubicarlo.\n"
             f"3. **Respuesta correcta**: debe ser inequívoca y extraída directamente del texto.\n"
             f"4. **Distractores**: deben ser técnicamente plausibles, basados en confusiones comunes, errores típicos o elementos similares del propio documento.\n"
             f"5. **Neutralidad**: evita lenguaje coloquial, ambigüedades, opiniones o preguntas triviales.\n"
             f"6. **Explicación**: repasa TODAS las opciones, una por línea y en orden, con este formato exacto: \"A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) ...\", citando o basándote en el contenido del documento.\n"
+            f"7. **Autocontenida**: quien responde el test NUNCA ve el documento de origen, solo la pregunta. Nunca remitas a \"el documento\", \"el contenido\", \"el texto\" o \"lo mencionado/anterior\" (p. ej. \"¿qué tienen en común los X mencionados en el contenido?\") -- nombra tú mismo, explícitamente, de qué elementos concretos hablas.\n"
+            f"8. **Sin siglas**: nunca abrevies el nombre de una ley o norma con siglas (\"CE\", \"TREBEP\", \"LPAC\"...) ni escribas \"art.\" en vez de \"artículo\" -- los exámenes oficiales de esta oposición escriben siempre el nombre completo, tal como aparece en el documento. Esto incluye también abreviar el tipo de norma delante de su número (\"LO 3/2007\", \"RD 203/2021\"...) en vez de escribirlo entero (\"Ley Orgánica 3/2007\", \"Real Decreto 203/2021\").\n"
+            f"9. **Diversidad**: las {n} preguntas deben tratar {n} hechos, artículos, plazos o cifras DISTINTOS entre sí -- si el documento repite el mismo dato en varios sitios, pregúntalo como mucho una vez; no reformules la misma pregunta con otro enunciado ni dediques dos preguntas al mismo hecho central.\n"
             f"Devuelve SOLO un array JSON válido con este formato exacto:\n"
             f"[{{\"pregunta\": \"...\", \"opciones\": {{\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}}]\n"
             f"NO añadas texto adicional antes ni después del array JSON."
         )
-        return f"{system_prompt}\n\nDocumento para crear preguntas test:\n{text}"
+        if fragmento is not None:
+            system_prompt += (
+                "\n\nIMPORTANTE: el documento de abajo es SOLO UNA PARTE del documento completo -- hay más "
+                "contenido en otras partes que no ves aquí (ya se están generando preguntas sobre ellas por "
+                "separado). Basa tus preguntas ÚNICAMENTE en lo que aparece en este fragmento, sin dar por "
+                "hecho ni inventar contenido de las partes que no ves."
+            )
+        return f"{system_prompt}\n\nDocumento para crear preguntas test:\n{documento}"
 
     uid = g.uid
     plan_actual = g.plan_actual
@@ -373,7 +398,19 @@ def generar_test_desde_pdf():
 
         def _en_hilo_de_fondo():
             def on_progreso(evento_progreso):
+                # "pregunta" se manda como evento aparte (no como parte de
+                # "progreso") para que el frontend pueda empezar el test en
+                # cuanto lleguen las primeras N preguntas aceptadas, sin
+                # esperar a que termine todo el test -- mismo patrón que
+                # /generar-test-avanzado usa para Test Personalizado (ver
+                # blueprints/test_ia.py).
+                pregunta = evento_progreso.pop("pregunta", None)
                 eventos.put({"tipo": "progreso", **evento_progreso})
+                if pregunta:
+                    eventos.put({
+                        "tipo": "pregunta", "pregunta": pregunta,
+                        "completadas": evento_progreso["completadas"], "total": evento_progreso["total"],
+                    })
             try:
                 preguntas, errores_lotes = generar_preguntas_ia_en_lotes(
                     construir_prompt, num_preguntas, text, on_progreso=on_progreso,
@@ -445,11 +482,12 @@ def generar_test_desde_pdf():
     return Response(
         stream_with_context(generar()),
         mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
     )
 
 
 @bp.route('/generar-tarjetas-desde-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def generar_tarjetas_desde_pdf():
     # En streaming (SSE, mismo patrón que /generar-test-desde-pdf/
@@ -523,7 +561,7 @@ def generar_tarjetas_desde_pdf():
     return Response(
         stream_with_context(generar()),
         mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
     )
 
 
@@ -542,18 +580,28 @@ def subir_pdf_chat():
     pdf_file = request.files['pdf']
     if pdf_file.filename == '':
         return jsonify({"error": "Nombre de archivo inválido"}), 400
+    # Parseo y extracción separados del resto: un archivo que no sea un PDF
+    # de verdad es un error del usuario (400 con mensaje claro), no un error
+    # del servidor (500), y su mensaje interno no debe llegar al cliente.
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        limite_paginas = max_paginas_para_plan(g.plan_actual, db)
-        if len(pdf_reader.pages) > limite_paginas:
-            return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
+        numero_paginas = len(pdf_reader.pages)
+    except Exception:
+        return jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400
+    limite_paginas = max_paginas_para_plan(g.plan_actual, db)
+    if numero_paginas > limite_paginas:
+        return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
+    try:
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
             if page_text:
                 text += page_text + "\n"
-        if not text.strip():
-            return jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400
+    except Exception:
+        return jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400
+    if not text.strip():
+        return jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400
+    try:
         db.collection("usuarios").document(g.uid).update({
             "chat_pdf_activo": {
                 "texto": text[:MAX_CARACTERES_CHAT_PDF],
@@ -564,14 +612,15 @@ def subir_pdf_chat():
         return jsonify({
             "mensaje": "PDF cargado correctamente",
             "nombre_archivo": pdf_file.filename,
-            "paginas": len(pdf_reader.pages)
+            "paginas": numero_paginas
         })
-    except Exception as e:
+    except Exception:
         logger.exception("Error en /subir-pdf-chat")
-        return jsonify({"error": f"Error al procesar el PDF: {str(e)}"}), 500
+        return jsonify({"error": "No se pudo guardar el documento. Inténtalo de nuevo en unos segundos."}), 500
 
 
 @bp.route('/chat-pdf-mensaje', methods=['POST'])
+@limiter.limit("20 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def chat_pdf_mensaje():
     datos = request.get_json(silent=True) or {}
@@ -614,7 +663,7 @@ def chat_pdf_mensaje():
 
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         payload = {
-            "model": "deepseek-chat",
+            "model": "deepseek-v4-flash",
             "messages": mensajes,
             "temperature": 0.4,
             "max_tokens": 800
@@ -632,6 +681,7 @@ def chat_pdf_mensaje():
 
 
 @bp.route("/chat-deepseek", methods=["POST"])
+@limiter.limit("20 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def chat_deepseek():
     data = request.get_json()
@@ -647,7 +697,7 @@ def chat_deepseek():
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         payload = {
-            "model": "deepseek-chat",
+            "model": "deepseek-v4-flash",
             "messages": [
                 {"role": "system", "content": "Eres un asistente especializado en oposiciones. Responde de manera clara, concisa y útil."},
                 {"role": "user", "content": mensaje}
@@ -808,8 +858,12 @@ def guardar_tarjetas_pdf():
 @bp.route('/mis-documentos', methods=['GET'])
 @requiere_plan(db, "premium", global_check=True)
 def mis_documentos():
+    documentos = listar_documentos(db, g.uid)
+    tests_en_progreso = obtener_tests_en_progreso_por_documento(db, g.uid)
+    for documento in documentos:
+        documento["test_en_progreso"] = tests_en_progreso.get(documento["id"])
     return jsonify({
-        "documentos": listar_documentos(db, g.uid),
+        "documentos": documentos,
         "carpetas": listar_carpetas(db, g.uid),
     })
 
@@ -853,6 +907,15 @@ def documento_titulo(documento_id):
     if not ok:
         return jsonify({"error": "No se encontró el documento indicado."}), 404
     return jsonify({"mensaje": "Nombre actualizado", "titulo": titulo[:120]})
+
+
+@bp.route('/documento/<documento_id>', methods=['DELETE'])
+@requiere_plan(db, "premium", global_check=True)
+def eliminar_documento_route(documento_id):
+    ok = eliminar_documento(db, g.uid, documento_id)
+    if not ok:
+        return jsonify({"error": "No se encontró el documento indicado."}), 404
+    return jsonify({"mensaje": "Documento eliminado"})
 
 
 def _ultimo_por_documento(coleccion, documento_id, uid):

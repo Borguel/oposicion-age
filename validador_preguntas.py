@@ -1,6 +1,30 @@
 import re
 from collections import Counter
 
+# Frases que delatan que la pregunta/respuesta remite al documento de origen
+# en vez de tener sentido por sí sola (p. ej. "¿Qué tipos de costumbre
+# existen SEGÚN EL TEXTO...?") -- inútiles para quien responde sin ver ese
+# documento, sea un test (validar_pregunta, abajo) o una tarjeta de memoria
+# suelta (tarjetas_generator.py, que reutiliza esta misma lista).
+FRASES_PROHIBIDAS = [
+    "según el contenido", "según el texto", "según el documento", "en el contenido proporcionado",
+    "de acuerdo con lo anterior", "según lo anterior", "tal como se indica", "como se ha dicho",
+    "del contenido proporcionado", "en el documento proporcionado",
+    "en el texto proporcionado", "en el fragmento proporcionado",
+    "mencionado en el contenido", "mencionada en el contenido",
+    "mencionados en el contenido", "mencionadas en el contenido",
+    "mencionado en el documento", "mencionada en el documento",
+    "mencionados en el documento", "mencionadas en el documento",
+    "mencionado en el texto", "mencionada en el texto",
+    "mencionados en el texto", "mencionadas en el texto",
+    "arriba mencionado", "arriba mencionada", "arriba mencionados", "arriba mencionadas",
+    "anteriormente mencionado", "anteriormente mencionada",
+    "anteriormente mencionados", "anteriormente mencionadas", "mencionado anteriormente",
+    "de acuerdo con el contenido", "de acuerdo con el texto",
+    "de acuerdo con el documento", "de acuerdo con el fragmento",
+    "lo que has subido", "el documento que has subido", "el pdf que has subido",
+]
+
 # ✅ Detección de conceptos repetidos
 def detectar_repeticiones(preguntas, max_repeticiones=2):
     referencias = []
@@ -41,13 +65,33 @@ def validar_pregunta(pregunta):
     if not isinstance(pregunta["pregunta"], str) or not isinstance(pregunta["explicacion"], str):
         return False
 
-    # ❌ Filtro de frases prohibidas
+    # ❌ Filtro de frases prohibidas -- referencias a "el contenido"/"el
+    # documento"/"el texto" como si quien hace el test pudiera verlo: solo ve
+    # la pregunta, nunca el material de origen, así que una pregunta que
+    # remita a él ("¿qué tienen en común... mencionados en el contenido?")
+    # queda sin sentido para quien la responde.
     texto_total = (pregunta["pregunta"] + " " + pregunta["explicacion"]).lower()
-    frases_prohibidas = [
-        "según el contenido", "según el texto", "en el contenido proporcionado",
-        "de acuerdo con lo anterior", "según lo anterior", "tal como se indica", "como se ha dicho"
-    ]
-    if any(frase in texto_total for frase in frases_prohibidas):
+    if any(frase in texto_total for frase in FRASES_PROHIBIDAS):
+        return False
+
+    # ❌ Filtro de siglas de normas -- los exámenes oficiales de estas
+    # oposiciones siempre escriben el nombre completo de la ley (nunca "CE"
+    # en vez de "Constitución Española", ni "TREBEP", "LPAC"...). Se compara
+    # contra el texto ORIGINAL (no en minúsculas): las siglas se escriben en
+    # mayúsculas, así que con \b de por medio no coincide con una palabra
+    # normal que contenga esas letras (p. ej. "acerca" no matchea "CE").
+    texto_original = pregunta["pregunta"] + " " + pregunta["explicacion"]
+    siglas_prohibidas = ["CE", "TREBEP", "LPAC", "LRJSP", "LOTC", "LOPJ", "LGP", "LJCA", "LOFAGE", "LOREG"]
+    if any(re.search(rf"\b{re.escape(sigla)}\b", texto_original) for sigla in siglas_prohibidas):
+        return False
+
+    # ❌ Filtro de "LO 3/2007" / "RD 203/2021" / "RDL 5/2015" -- otra forma
+    # habitual de abreviar (aquí "Ley Orgánica"/"Real Decreto"/"Real
+    # Decreto-ley" en vez del nombre completo) que no pilla la lista de
+    # arriba porque va seguida de un número, no sola. Exigir el número
+    # X/YYYY justo detrás evita falsos positivos con "LO" u otras letras
+    # sueltas que no estén citando una norma.
+    if re.search(r"\b(LO|RDL|RDLeg|RD)\s*\d+/\d{2,4}\b", texto_original):
         return False
 
     # ❌ Filtro de explicaciones demasiado cortas

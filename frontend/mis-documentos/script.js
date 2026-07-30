@@ -36,16 +36,26 @@ function formatearFecha(iso) {
   }
 }
 
-function filaContenido({ label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar }) {
+function filaContenido({ label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar, urlContinuar }) {
   const acciones = [];
+  // "Continuar" (test autoguardado sin terminar, ver
+  // obtener_tests_en_progreso_por_documento en documentos_pdf.py) se
+  // ofrece SIEMPRE que exista, incluso si todavía no hay ningún test
+  // finalizado de este documento -- antes, un test empezado y no acabado
+  // no aparecía por ningún sitio en la biblioteca, solo "Ver"/"Generar
+  // más" (que dependen de haber finalizado al menos uno) o "Generar test"
+  // desde cero.
+  if (urlContinuar) {
+    acciones.push(`<a class="documento-card-btn principal" href="${urlContinuar}">Continuar</a>`);
+  }
   if (existe) {
-    acciones.push(`<a class="documento-card-btn principal" href="${urlVer}">Ver</a>`);
+    acciones.push(`<a class="documento-card-btn${urlContinuar ? "" : " principal"}" href="${urlVer}">Ver</a>`);
     if (urlAleatorias) {
       acciones.push(`<a class="documento-card-btn" href="${urlAleatorias}">10 aleatorias</a>`);
     }
     acciones.push(`<a class="documento-card-btn" href="${urlGenerar}">Generar más</a>`);
   } else {
-    acciones.push(`<a class="documento-card-btn principal" href="${urlGenerar}">${textoGenerar}</a>`);
+    acciones.push(`<a class="documento-card-btn${urlContinuar ? "" : " principal"}" href="${urlGenerar}">${textoGenerar}</a>`);
   }
   const etiquetaCantidad = existe && cantidad ? ` (${cantidad})` : "";
   return `
@@ -118,6 +128,7 @@ function tarjetaDocumento(doc, modoCarpeta) {
       cantidad: doc.num_tests ? `${doc.num_tests} intento${doc.num_tests > 1 ? "s" : ""}` : null,
       urlVer: `/subida-pdf-generar-test/?documento_id=${doc.id}&ver=test`,
       urlGenerar: `/subida-pdf-generar-test/?documento_id=${doc.id}`,
+      urlContinuar: doc.test_en_progreso ? `/subida-pdf-generar-test/?resume=${doc.test_en_progreso}` : null,
       textoGenerar: "Generar test"
     })
   ].join("");
@@ -130,6 +141,7 @@ function tarjetaDocumento(doc, modoCarpeta) {
           <p class="documento-card-titulo">
             ${escaparHtml(nombreCorto)}
             <button type="button" class="documento-card-renombrar" data-id="${doc.id}" aria-label="Renombrar documento" title="Renombrar documento">${icono("lapiz", 14)}</button>
+            <button type="button" class="documento-card-eliminar" data-id="${doc.id}" aria-label="Eliminar documento" title="Eliminar documento">${icono("papelera", 14)}</button>
           </p>
           <p class="documento-card-meta">${escaparHtml(meta)}</p>
         </div>
@@ -207,6 +219,9 @@ function renderizarDocumentosDeCarpeta() {
   contenedor.querySelectorAll(".documento-card-renombrar").forEach((boton) => {
     boton.addEventListener("click", () => renombrarDocumento(boton.dataset.id));
   });
+  contenedor.querySelectorAll(".documento-card-eliminar").forEach((boton) => {
+    boton.addEventListener("click", () => eliminarDocumento(boton.dataset.id));
+  });
 }
 
 async function renombrarDocumento(documentoId) {
@@ -231,6 +246,34 @@ async function renombrarDocumento(documentoId) {
     if (query) renderizarBusqueda(query);
   } catch (e) {
     mostrarErrorGlobal(e.message || "No se pudo renombrar el documento.");
+  }
+}
+
+async function eliminarDocumento(documentoId) {
+  const doc = documentos.find((d) => d.id === documentoId);
+  if (!doc) return;
+  const nombre = doc.titulo || doc.nombre_archivo || "este documento";
+  // No borra en cascada lo ya generado a partir de él (ver
+  // documentos_pdf.eliminar_documento) -- se avisa para que no se
+  // interprete como "esto borra también mis tests/resúmenes".
+  const confirmado = confirm(
+    `¿Eliminar "${nombre}" de tu biblioteca? Los resúmenes, esquemas, tarjetas o tests que ya hubieras generado a partir de él no se borran, pero dejarán de aparecer agrupados aquí.`
+  );
+  if (!confirmado) return;
+  try {
+    const token = await idToken();
+    const res = await fetch(`${BACKEND_URL}/documento/${documentoId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const datos = await res.json();
+    if (!res.ok) throw new Error(datos.error || "No se pudo eliminar el documento.");
+    documentos = documentos.filter((d) => d.id !== documentoId);
+    if (carpetaActual !== null) renderizarDocumentosDeCarpeta();
+    const query = document.getElementById("filtro-busqueda")?.value;
+    if (query) renderizarBusqueda(query);
+  } catch (e) {
+    mostrarErrorGlobal(e.message || "No se pudo eliminar el documento.");
   }
 }
 
@@ -276,6 +319,9 @@ function renderizarBusqueda(query) {
   resultados.innerHTML = encontrados.map((d) => tarjetaDocumento(d, "etiqueta")).join("");
   resultados.querySelectorAll(".documento-card-renombrar").forEach((boton) => {
     boton.addEventListener("click", () => renombrarDocumento(boton.dataset.id));
+  });
+  resultados.querySelectorAll(".documento-card-eliminar").forEach((boton) => {
+    boton.addEventListener("click", () => eliminarDocumento(boton.dataset.id));
   });
 }
 

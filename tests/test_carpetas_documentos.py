@@ -8,7 +8,7 @@ from documentos_pdf import listar_carpetas, crear_carpeta, eliminar_carpeta
 
 
 def _con_sesion(cliente, uid="u1", email="u1@example.com"):
-    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
+    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email, "email_verified": True})
     parche.start()
     return parche
 

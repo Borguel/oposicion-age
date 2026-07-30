@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import threading
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -15,6 +16,33 @@ logger = logging.getLogger(__name__)
 # verificación jurídica en generador_preguntas_verificado.py).
 _REINTENTOS_TRANSITORIOS = 2
 _ESPERA_ENTRE_REINTENTOS_SEGUNDOS = 1.5
+
+# Tope global de peticiones EN VUELO a DeepSeek en todo el proceso (app.py
+# corre un único proceso -- ver --workers 1 en render.yaml, a propósito
+# porque este semáforo y el rate-limiter de app.py son estado en memoria
+# de un solo proceso -- así que un semáforo a nivel de módulo sí
+# representa el límite real, no uno por worker). Sin esto, generar un
+# test de 30 preguntas desde PDF puede disparar hasta ~48 llamadas en
+# paralelo (8 lotes x 6 verificaciones cada uno, ver test_generator.py), y
+# si en ese momento hay más herramientas u otros usuarios llamando a la
+# vez, el conjunto parece saturar al proveedor.
+#
+# Empezó en 16, pero la misma firma de fallo (avisos de "Error de
+# conexión" y tiempos de respuesta crecientes hasta ~94s -- 3 intentos de
+# 30s cada uno) se ha seguido viendo en producción con ese tope, incluso
+# DESPUÉS de pasar de "python app.py" a gunicorn (ver render.yaml): eso
+# descarta que fuera un cuello de botella del servidor de aplicación y
+# confirma que 16 llamadas a la vez ya basta para que la propia API de
+# DeepSeek se sature bajo nuestra cuenta. Bajado a 8. Frenar aquí (el
+# único punto por el que pasan TODAS las llamadas a la API, sea cual sea
+# la herramienta que las dispare) es más simple y más fiable que ajustar
+# cada ThreadPoolExecutor por separado uno a uno. Una llamada que no
+# consigue hueco espera en cola (barato) en vez de sumarse a la
+# sobrecarga real del proveedor -- si 8 sigue resultando demasiado alto o
+# ya se puede subir de nuevo, ajustar con datos reales de los logs
+# ("DeepSeek respondió en Xs...").
+_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK = 8
+_semaforo_deepseek = threading.Semaphore(_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK)
 
 
 def _registrar_coste(usage):
@@ -47,7 +75,7 @@ def _es_error_transitorio(exc):
     return False
 
 
-def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None):
+def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash"):
     """
     Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.
 
@@ -55,6 +83,19 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     (`response_format: {"type": "json_object"}`, soportado por DeepSeek pero
     no usado hasta ahora) -- reduce fallos de parseo cuando se espera JSON,
     frente a depender solo de instrucciones en el prompt.
+
+    model por defecto "deepseek-v4-flash" (el usado en todo el resto de la
+    app: generación de tests, resúmenes, esquemas...). "deepseek-v4-pro" es
+    el modelo de razonamiento (más lento y caro, pero más capaz en preguntas
+    de varios pasos) -- de momento solo lo usa Tu Tutor, de forma opcional
+    (ver TUTOR_MODELO_IA en chat_controller.py). NOTA: hasta el 24/07/2026
+    estos modelos se llamaban "deepseek-chat" y "deepseek-reasoner" -- esos
+    dos nombres se retiraron ese día sin periodo de gracia (cualquier
+    llamada con el nombre antiguo devuelve error). El antiguo
+    "deepseek-reasoner" rechazaba con HTTP 400 el parámetro temperature; el
+    "deepseek-v4-pro" actual sí lo admite con normalidad -- se mantiene la
+    exclusión de abajo solo por si quedara algún sitio con el nombre
+    retirado todavía configurado, nunca se activa con los nombres actuales.
     """
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
@@ -68,24 +109,33 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     }
 
     payload = {
-        "model": "deepseek-chat",
+        "model": model,
         "messages": messages,
-        "temperature": temperature,
         "max_tokens": max_tokens,
         "stream": False
     }
+    if model != "deepseek-reasoner":
+        payload["temperature"] = temperature
     if response_format_json:
         payload["response_format"] = {"type": "json_object"}
+
+    # Cronómetro de TODA la llamada (incluidos los reintentos internos de
+    # abajo): permite ver en los logs de Render cuánto tarda de verdad
+    # DeepSeek en responder, para distinguir "el proveedor va lento" de "hay
+    # algo nuestro atascado" sin tener que adivinar -- ver también el mismo
+    # patrón en call_deepseek_api_stream.
+    inicio = time.monotonic()
 
     intentos_restantes = _REINTENTOS_TRANSITORIOS
     while True:
         try:
-            response = requests.post(
-                "https://api.deepseek.com/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=30  # 30 segundos de timeout
-            )
+            with _semaforo_deepseek:
+                response = requests.post(
+                    "https://api.deepseek.com/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=30  # 30 segundos de timeout
+                )
 
             response.raise_for_status()  # Lanza excepción para códigos HTTP 4xx/5xx
 
@@ -103,6 +153,18 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
 
             # Verificar que la respuesta tiene la estructura esperada
             if 'choices' in data and len(data['choices']) > 0:
+                # finish_reason/tokens_salida: para comprobar con datos reales
+                # (no adivinando) si max_tokens se está quedando corto --
+                # "length" significa que la respuesta se cortó antes de que
+                # el modelo terminara por sí solo, candidato real a JSON
+                # incompleto/descartado; "stop" significa que el modelo
+                # terminó por su cuenta bien dentro del límite.
+                logger.info(
+                    "DeepSeek respondió en %.2fs (modelo=%s, finish_reason=%s, tokens_salida=%s)",
+                    time.monotonic() - inicio, model,
+                    data['choices'][0].get('finish_reason'),
+                    (data.get('usage') or {}).get('completion_tokens'),
+                )
                 return data['choices'][0]['message']['content']
             else:
                 logger.error("Respuesta inesperada de DeepSeek API: %s", data)
@@ -118,14 +180,15 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
 
         except requests.exceptions.HTTPError as e:
             status = e.response.status_code if e.response is not None else None
+            cuerpo = e.response.text[:500] if e.response is not None else ""
             if status == 401:
-                logger.error("Error HTTP 401 de DeepSeek: verifica que la API key sea válida (%s)", e)
+                logger.error("Error HTTP 401 de DeepSeek: verifica que la API key sea válida (%s) -- %s", e, cuerpo)
             elif status == 429:
-                logger.warning("Error HTTP 429 de DeepSeek: límite de tasa excedido (%s)", e)
+                logger.warning("Error HTTP 429 de DeepSeek: límite de tasa excedido (%s) -- %s", e, cuerpo)
             elif status is not None and status >= 500:
-                logger.warning("Error HTTP %s del servidor de DeepSeek (%s)", status, e)
+                logger.warning("Error HTTP %s del servidor de DeepSeek (%s) -- %s", status, e, cuerpo)
             else:
-                logger.error("Error HTTP %s de DeepSeek: %s", status, e)
+                logger.error("Error HTTP %s de DeepSeek: %s -- %s", status, e, cuerpo)
             transitorio = _es_error_transitorio(e)
 
         except requests.exceptions.RequestException as e:
@@ -144,6 +207,7 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
             intentos_restantes -= 1
             time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
             continue
+        logger.warning("DeepSeek falló tras %.2fs (modelo=%s)", time.monotonic() - inicio, model)
         return None
 
 def _post_deepseek_con_reintentos(headers, payload, timeout, stream=False):
@@ -159,10 +223,11 @@ def _post_deepseek_con_reintentos(headers, payload, timeout, stream=False):
     intentos_restantes = _REINTENTOS_TRANSITORIOS
     while True:
         try:
-            response = requests.post(
-                "https://api.deepseek.com/chat/completions",
-                headers=headers, json=payload, timeout=timeout, stream=stream,
-            )
+            with _semaforo_deepseek:
+                response = requests.post(
+                    "https://api.deepseek.com/chat/completions",
+                    headers=headers, json=payload, timeout=timeout, stream=stream,
+                )
         except requests.exceptions.RequestException as e:
             if _es_error_transitorio(e) and intentos_restantes > 0:
                 intentos_restantes -= 1
@@ -205,7 +270,7 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
     texto_completo = ""
     for _ in range(max_continuaciones + 1):
         payload = {
-            "model": "deepseek-chat",
+            "model": "deepseek-v4-flash",
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
@@ -363,7 +428,15 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
 # DeepSeek (protocolo SSE, "data: {...}" por línea, terminado en "data:
 # [DONE]"), para poder mostrarlo en el frontend con efecto de escritura en
 # vez de esperar a que termine toda la respuesta.
-def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7):
+def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7, model="deepseek-v4-flash"):
+    """model por defecto "deepseek-v4-flash" (ver call_deepseek_api). Con
+    "deepseek-v4-pro" (el modelo de razonamiento) emite primero tokens de
+    razonamiento internos (campo `delta.reasoning_content`, no
+    `delta.content`) antes de la respuesta final -- como abajo solo se cede
+    `delta.content`, esos tokens de razonamiento quedan descartados
+    automáticamente (nunca llegan al frontend), pero sí se facturan: puede
+    haber un silencio inicial más largo antes de que empiece a aparecer
+    texto."""
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
     if not api_key:
@@ -376,9 +449,8 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7):
     }
 
     payload = {
-        "model": "deepseek-chat",
+        "model": model,
         "messages": messages,
-        "temperature": temperature,
         "max_tokens": max_tokens,
         "stream": True,
         # Pide que el último chunk del stream incluya el consumo de tokens,
@@ -386,6 +458,8 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7):
         # streaming (Tu Tutor, test personalizado).
         "stream_options": {"include_usage": True},
     }
+    if model != "deepseek-reasoner":
+        payload["temperature"] = temperature
 
     try:
         # Solo se reintenta la CONEXIÓN inicial (antes de que se haya
@@ -417,6 +491,9 @@ def call_deepseek_api_stream(messages, max_tokens=1500, temperature=0.7):
         logger.warning("Timeout: la API de DeepSeek no respondió a tiempo (streaming)")
     except requests.exceptions.ConnectionError:
         logger.warning("Error de conexión: no se pudo conectar a DeepSeek API (streaming)")
+    except requests.exceptions.HTTPError as e:
+        cuerpo = e.response.text[:500] if e.response is not None else ""
+        logger.warning("Error en streaming de DeepSeek: %s -- %s", e, cuerpo)
     except requests.exceptions.RequestException as e:
         logger.warning("Error en streaming de DeepSeek: %s", e)
 

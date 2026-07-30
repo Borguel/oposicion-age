@@ -4,7 +4,9 @@ más críticas -- las 4 de /guardar-*-pdf (persisten contenido y actualizan
 estadísticas) y un test de humo de /resumir-pdf y /generar-test-desde-pdf
 con DeepSeek mockeado. El resto de las ~20 rutas de este blueprint queda
 fuera de esta tanda (desproporcionado para el alcance aprobado)."""
+import itertools
 import json
+import re
 import pytest
 from unittest.mock import patch
 
@@ -147,6 +149,41 @@ class TestRutasGuardarPdf:
     def test_guardar_resumen_pdf_requiere_login(self, client):
         resp = client.post("/guardar-resumen-pdf", json={"resumen": "x"})
         assert resp.status_code == 401
+
+
+class TestSubidaArchivoInvalido:
+    """Un archivo que no es un PDF real (p. ej. un ejecutable renombrado a
+    .pdf) debe rechazarse con un 400 y un mensaje claro para el usuario --
+    antes reventaba el parseo y salía un 500 genérico (y en el chat-PDF,
+    con el texto interno de la excepción filtrado al cliente)."""
+
+    ARCHIVO_FALSO = b"MZ\x90\x00\x03esto no es un PDF de verdad"
+
+    def test_resumir_pdf_con_archivo_no_pdf_da_400_claro(self, client, documento_sembrado):
+        from io import BytesIO
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/resumir-pdf",
+                                data={"pdf": (BytesIO(self.ARCHIVO_FALSO), "falso.pdf")},
+                                headers={"Authorization": "Bearer x"},
+                                content_type="multipart/form-data")
+        finally:
+            parche.stop()
+        assert resp.status_code == 400
+        assert "no es un PDF válido" in resp.get_json()["error"]
+
+    def test_subir_pdf_chat_con_archivo_no_pdf_da_400_claro(self, client, documento_sembrado):
+        from io import BytesIO
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/subir-pdf-chat",
+                                data={"pdf": (BytesIO(self.ARCHIVO_FALSO), "falso.pdf")},
+                                headers={"Authorization": "Bearer x"},
+                                content_type="multipart/form-data")
+        finally:
+            parche.stop()
+        assert resp.status_code == 400
+        assert "no es un PDF válido" in resp.get_json()["error"]
 
 
 class TestResumirPdfYGenerarTestDesdePdf:
@@ -454,28 +491,31 @@ class TestCosteIaEnHerramientasPdf:
         assert coste["llamadas"] == 4
 
     def test_generar_test_desde_pdf_con_varios_lotes_registra_coste(self, client, db, documento_sembrado):
+        contador = itertools.count()
+
         def fake_call(messages, on_usage=None, **kwargs):
             if on_usage:
                 on_usage({"prompt_tokens": 20, "completion_tokens": 10})
-            if len(messages) == 2 and messages[1]["content"].startswith("PREGUNTAS:"):
-                # Detección de duplicados semánticos (test_generator.py,
-                # _detectar_indices_duplicados): se llama siempre que hay más
-                # de 1 pregunta aceptada, aparte de haber o no duplicados.
-                return json.dumps({"duplicados": []})
+            # La verificación EN BLOQUE (ver test_generator._verificar_lote)
+            # manda system+user con "PREGUNTAS A VERIFICAR:" (plural) --
+            # se distingue así de la generación (un único mensaje "user").
             if len(messages) == 2 and messages[0]["role"] == "system":
-                return json.dumps({"valido": True, "problemas": []})
-            # Generación de lote: cada lote (15 y 5 preguntas) debe devolver
-            # un enunciado DISTINTO -- si coincidieran, la deduplicación por
-            # texto exacto descartaría uno y pediría un recambio (una
-            # llamada de generación + una de verificación de más), lo que
-            # descuadraría el recuento de coste que este test comprueba (la
-            # reposición de duplicados en sí se cubre en
-            # test_test_generator.py).
-            etiqueta = "15" if "EXACTAMENTE 15" in messages[0]["content"] else "5"
-            return json.dumps([{
-                "pregunta": f"¿P{etiqueta}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                "respuesta_correcta": "A", "explicacion": "..."
-            }])
+                textos = re.findall(r'"pregunta":\s*"([^"]*)"', messages[1]["content"])
+                return json.dumps({"resultados": [
+                    {"indice": i, "valido": True, "problemas": []} for i in range(len(textos))
+                ]})
+            # Cada lote genera tantas preguntas (únicas) como se le pidieron
+            # -- así se completan las 20 solicitadas sin relleno, que
+            # multiplicaría las llamadas de forma impredecible para este
+            # test de conteo de coste (ver test_test_generator.py para el
+            # comportamiento de relleno en sí).
+            match = re.search(r"generar EXACTAMENTE (\d+) preguntas", messages[0]["content"])
+            n = int(match.group(1)) if match else 1
+            return json.dumps([
+                {"pregunta": f"¿P{next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "..."}
+                for _ in range(n)
+            ])
 
         parche = _con_sesion(client)
         try:
@@ -498,16 +538,27 @@ class TestCosteIaEnHerramientasPdf:
 
         assert resp.status_code == 200
         assert eventos[-1]["tipo"] == "fin"
-        # num_preguntas=20 con tamano_lote=15 -> 2 lotes; cada lote hace 1
-        # llamada de generación + 1 de verificación (4 llamadas), más 1
-        # llamada de detección de duplicados semánticos al final (2
-        # preguntas aceptadas) = 5 llamadas en total. Este hilo de fondo
-        # vuelca DIRECTO a Firestore (volcar_directo), sin depender de
-        # flask.g -- el caso que antes perdía el coste por completo.
+        # num_preguntas=20 con tamano_lote=5 (valor por defecto) -> 4 lotes
+        # (5+5+5+5); cada lote hace 1 llamada de generación + 1 de
+        # verificación EN BLOQUE (todas las candidatas del lote de una vez,
+        # ver test_generator._verificar_lote) = 2 llamadas por lote, 8 en
+        # total -- antes de la verificación en bloque eran 6 por lote (24
+        # en total): la reducción de llamadas es el propio objetivo de este
+        # cambio (bug real: un test de 30 preguntas podía disparar más de
+        # 50 llamadas). Este hilo de fondo vuelca DIRECTO a Firestore
+        # (volcar_directo), sin depender de flask.g -- el caso que antes
+        # perdía el coste por completo.
         coste = db.leer(("usuarios", "u1"))["coste_ia"][self._mes_actual()]
-        assert coste["tokens_in"] == 100
-        assert coste["tokens_out"] == 50
-        assert coste["llamadas"] == 5
+        assert coste["tokens_in"] == 160
+        assert coste["tokens_out"] == 80
+        assert coste["llamadas"] == 8
+        # Las preguntas aceptadas se retransmiten individualmente en un
+        # evento "pregunta" aparte según van llegando, para que el
+        # frontend pueda empezar el test en cuanto tenga las primeras N
+        # sin esperar a que termine todo el streaming.
+        eventos_pregunta = [e for e in eventos if e["tipo"] == "pregunta"]
+        assert len(eventos_pregunta) == 20
+        assert all("pregunta" in e and "opciones" in e["pregunta"] for e in eventos_pregunta)
 
     def test_generar_tarjetas_desde_pdf_registra_coste(self, client, db, documento_sembrado):
         def fake_call(messages, on_usage=None, **kwargs):
@@ -539,3 +590,33 @@ class TestCosteIaEnHerramientasPdf:
         assert coste["tokens_in"] == 30
         assert coste["tokens_out"] == 16
         assert coste["llamadas"] == 2
+
+
+class TestMisDocumentos:
+    # "Continuar" en la biblioteca: antes, un test desde PDF empezado y no
+    # terminado no aparecía por ningún sitio (solo "Ver"/"Generar más" si ya
+    # había uno finalizado) -- /mis-documentos debe exponer el test_id
+    # en_progreso de cada documento para que el frontend pueda ofrecerlo.
+
+    def test_documento_con_test_en_progreso(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "tests", "t1"), {
+            "estado": "en_progreso", "tipo": "test_pdf", "documento_id": documento_sembrado, "fecha": "2026-01-01",
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.get("/mis-documentos", headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        documentos = {d["id"]: d for d in resp.get_json()["documentos"]}
+        assert documentos[documento_sembrado]["test_en_progreso"] == "t1"
+
+    def test_documento_sin_test_en_progreso(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.get("/mis-documentos", headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        documentos = {d["id"]: d for d in resp.get_json()["documentos"]}
+        assert documentos[documento_sembrado]["test_en_progreso"] is None

@@ -460,6 +460,43 @@ def enviar_email_reengagement(destinatario, dias_inactivo, nombre=""):
     _enviar(destinatario, "reengagement", asunto="Retoma tu preparación de la oposición", html=html)
 
 
+def enviar_email_aviso_oficial(destinatario, titulo, tipo_legible, url_boe, url_inap, oposicion_nombre, nombre=""):
+    """Aviso de que se ha publicado algo oficial relevante (convocatoria,
+    lista de admitidos, fecha de examen...) para una oposición concreta --
+    ver vigilancia_boe.py + publicacion_estatica_boe.py. Se manda solo a
+    quien ya tiene esa oposición entre sus suscripciones o su actividad."""
+    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+
+    template_id = os.getenv("BREVO_TEMPLATE_AVISO_OFICIAL")
+    if template_id:
+        _enviar(destinatario, "aviso oficial", template_id=template_id, datos={
+            "saludo": saludo,
+            "titulo": titulo,
+            "tipo_legible": tipo_legible,
+            "url_boe": url_boe,
+            "url_inap": url_inap,
+            "oposicion_nombre": oposicion_nombre,
+        })
+        return
+
+    # Sin URL no hay botón que valga -- un href="" solo parece un botón
+    # roto ("no deja pinchar en nada"), así que mejor no mostrarlo.
+    boton_resolucion = _boton("Ver la resolución oficial", url_boe) if url_boe else ""
+    enlace_inap = (
+        f'<p style="margin:14px 0 0; font-size:13.5px;"><a href="{url_inap}" style="color:{_COLOR_INK_SOFT};">Ver también en INAP →</a></p>'
+        if url_inap else ""
+    )
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, se ha publicado una novedad oficial para tu oposición
+      (<strong>{oposicion_nombre}</strong>):</p>
+      <p><strong>{tipo_legible}:</strong> {titulo}</p>
+      {boton_resolucion}
+      {enlace_inap}
+    """
+    html = _plantilla_html(f"{tipo_legible}: {oposicion_nombre}", cuerpo, emoji="📢")
+    _enviar(destinatario, "aviso oficial", asunto=f"{tipo_legible} publicada para {oposicion_nombre}", html=html)
+
+
 def enviar_email_alerta_coste_ia(destinatario, gasto_hoy, media_historica):
     """Aviso interno (no es un email de marca para un usuario) de que el
     gasto en IA de hoy se ha disparado respecto a la media reciente --

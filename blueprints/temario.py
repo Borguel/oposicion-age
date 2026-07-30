@@ -1,8 +1,8 @@
 """Rutas de consulta del catálogo de oposiciones y su temario."""
-from flask import Blueprint, g, jsonify
+from flask import Blueprint, g, jsonify, request
 
 from firebase_setup import db
-from auth_utils import requiere_plan, obtener_oposicion_solicitada
+from auth_utils import requiere_plan, requiere_login, obtener_oposicion_solicitada
 from oposiciones import OPOSICIONES, coleccion_temario
 from utils import calcular_pesos_reales_por_bloque, tiene_preguntas_psicotecnicas
 
@@ -81,3 +81,30 @@ def progreso_usuario():
         "total_aciertos": progreso.get("total_aciertos", 0),
         "esquemas_generados": progreso.get("esquemas_generados", 0)
     })
+
+
+@bp.route("/avisos-oficiales", methods=["GET"])
+@requiere_login(db)
+def avisos_oficiales():
+    """Avisos oficiales ya publicados (convocatorias, listas de admitidos,
+    fechas de examen...) para la oposición pedida -- detectados por la
+    vigilancia del BOE y aprobados a mano desde el panel de admin (ver
+    vigilancia_boe.py); nunca llegan aquí sin ese OK previo."""
+    from publicacion_estatica_boe import _oposiciones_de
+
+    oposicion = obtener_oposicion_solicitada()
+    avisos = []
+    consulta = db.collection("avisos_oficiales").where("estado", "==", "publicado")
+    for doc in consulta.stream():
+        d = doc.to_dict() or {}
+        if oposicion not in _oposiciones_de(d):
+            continue
+        avisos.append({
+            "tipo": d.get("tipo", ""),
+            "titulo": d.get("titulo", ""),
+            "resumen": d.get("resumen", ""),
+            "url_boe": d.get("url_boe", ""),
+            "fecha_boe": d.get("fecha_boe", ""),
+        })
+    avisos.sort(key=lambda a: a.get("fecha_boe", ""), reverse=True)
+    return jsonify({"avisos": avisos[:5]})

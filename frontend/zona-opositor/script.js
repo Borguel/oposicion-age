@@ -96,7 +96,6 @@ async function cargarProgresoInsignias() {
     fijarTexto("zona-progreso-nota", datos.puntuacionMedia.toFixed(1));
     const elProgreso = document.getElementById("zona-progreso");
     if (elProgreso) elProgreso.style.display = "";
-    renderTemaFlojo(estadisticas.rendimiento_por_tema ?? {}, temas);
   } catch (e) {
     console.error("Error cargando progreso de insignias:", e);
   }
@@ -119,29 +118,25 @@ function peorTemaFlojo(rendimientoPorTema) {
     .sort((a, b) => a.porcentaje - b.porcentaje)[0];
 }
 
-function renderTemaFlojo(rendimientoPorTema, todosTemas) {
-  const contenedor = document.getElementById("zona-tema-flojo");
-  const peor = peorTemaFlojo(rendimientoPorTema);
+// "Qué hacer ahora": antes eran 3 tarjetas independientes (continuar test,
+// preguntas falladas pendientes, tema de hoy/tema flojo) que se mostraban
+// u ocultaban cada una por su cuenta según llegaban sus propias respuestas
+// async, en cualquier orden. Aquí se guarda cada fila en un estado
+// compartido y se repinta la tarjeta entera cada vez que cambia una pieza,
+// así el orden de llegada de red no afecta al orden final (continuar >
+// repaso pendiente > tema recomendado) ni dejan huecos en blanco.
+const ESTADO_HACER_AHORA = { continuar: null, repaso: null, tema: null };
 
-  if (!peor) {
-    contenedor.style.display = "none";
+function renderizarQueHacerAhora() {
+  const tarjeta = document.getElementById("zona-hacer-ahora");
+  const lista = document.getElementById("zona-hacer-ahora-lista");
+  const filas = [ESTADO_HACER_AHORA.continuar, ESTADO_HACER_AHORA.repaso, ESTADO_HACER_AHORA.tema].filter(Boolean);
+  if (filas.length === 0) {
+    tarjeta.style.display = "none";
     return;
   }
-
-  const tema = todosTemas.find((t) => t.id === peor.id);
-  const nombre = tema ? tema.titulo : `Tema ${peor.id}`;
-  contenedor.innerHTML = `
-    <div class="zona-mis-cosas-divisor"></div>
-    <a class="zona-mis-cosas-item" href="/test-personalizado/?temas=${encodeURIComponent(peor.id)}">
-      <span class="zona-mis-cosas-icono">${icono("diana", 26)}</span>
-      <span class="zona-mis-cosas-texto">
-        <strong>Tu tema más flojo: <span title="${nombre}">${nombre}</span></strong>
-        <small>${peor.porcentaje}% de acierto · repásalo ahora</small>
-      </span>
-      <span class="zona-mis-cosas-flecha">→</span>
-    </a>
-  `;
-  contenedor.style.display = "";
+  lista.innerHTML = filas.map((fila, i) => (i === 0 ? fila : `<div class="zona-mis-cosas-divisor"></div>${fila}`)).join("");
+  tarjeta.style.display = "";
 }
 
 // Planificador de estudio: combina la fecha de examen configurada (ver
@@ -153,9 +148,11 @@ function renderTemaFlojo(rendimientoPorTema, todosTemas) {
 // esto -- si se necesitase la definición exacta de Estadísticas
 // (temas.some) habría que traer también /mis-tests aquí.
 function renderPlanEstudio(rendimientoPorTema, todosTemas, fechaExamenISO) {
-  const seccion = document.getElementById("zona-plan-estudio");
+  const ritmoEl = document.getElementById("zona-plan-ritmo");
   if (!todosTemas.length) {
-    seccion.style.display = "none";
+    ritmoEl.style.display = "none";
+    ESTADO_HACER_AHORA.tema = null;
+    renderizarQueHacerAhora();
     return;
   }
 
@@ -181,8 +178,8 @@ function renderPlanEstudio(rendimientoPorTema, todosTemas, fechaExamenISO) {
     }
   }
   fijarTexto("zona-plan-ritmo", ritmo);
+  ritmoEl.style.display = "block";
 
-  const contenedorHoy = document.getElementById("zona-plan-hoy");
   const siguienteNuevo = pendientes[0];
   const peorFlojo = peorTemaFlojo(rendimientoPorTema);
   let sugerido = null;
@@ -195,21 +192,17 @@ function renderPlanEstudio(rendimientoPorTema, todosTemas, fechaExamenISO) {
     motivo = `${peorFlojo.porcentaje}% de acierto todavía`;
   }
 
-  if (!sugerido) {
-    contenedorHoy.innerHTML = "";
-  } else {
-    contenedorHoy.innerHTML = `
-      <a class="zona-mis-cosas-item" href="/test-personalizado/?temas=${encodeURIComponent(sugerido.id)}">
-        <span class="zona-mis-cosas-icono">${icono("diana", 26)}</span>
-        <span class="zona-mis-cosas-texto">
-          <strong>Tema de hoy: <span title="${sugerido.titulo}">${sugerido.titulo}</span></strong>
-          <small>${motivo}</small>
-        </span>
-        <span class="zona-mis-cosas-flecha">→</span>
-      </a>
-    `;
-  }
-  seccion.style.display = "";
+  ESTADO_HACER_AHORA.tema = !sugerido ? null : `
+    <a class="zona-mis-cosas-item" href="/test-personalizado/?temas=${encodeURIComponent(sugerido.id)}">
+      <span class="zona-mis-cosas-icono">${icono("diana", 26)}</span>
+      <span class="zona-mis-cosas-texto">
+        <strong>Tema de hoy: <span title="${sugerido.titulo}">${sugerido.titulo}</span></strong>
+        <small>${motivo}</small>
+      </span>
+      <span class="zona-mis-cosas-flecha">→</span>
+    </a>
+  `;
+  renderizarQueHacerAhora();
 }
 
 async function iniciarBotonNotificaciones() {
@@ -264,11 +257,17 @@ async function cargarTestEnProgreso() {
     const test = tests[0]; // ya viene ordenado por fecha descendente
     const pagina = PAGINA_POR_TIPO_TEST[test.tipo] || "/test-generator/";
     const vista = (test.indice_actual || 0) + 1;
-    fijarTexto("zona-continuar-detalle", `Ibas por la pregunta ${vista} de ${test.num_preguntas || "?"}. Retómalo donde lo dejaste.`);
-    const elBoton = document.getElementById("zona-continuar-boton");
-    if (elBoton) elBoton.href = `${pagina}?resume=${test.id}`;
-    const elContinuar = document.getElementById("zona-continuar");
-    if (elContinuar) elContinuar.style.display = "";
+    ESTADO_HACER_AHORA.continuar = `
+      <a class="zona-mis-cosas-item" href="${pagina}?resume=${test.id}">
+        <span class="zona-mis-cosas-icono">${icono("reproducir", 26)}</span>
+        <span class="zona-mis-cosas-texto">
+          <strong>Continuar tu test a medias</strong>
+          <small>Ibas por la pregunta ${vista} de ${test.num_preguntas || "?"}. Retómalo donde lo dejaste.</small>
+        </span>
+        <span class="zona-mis-cosas-flecha">→</span>
+      </a>
+    `;
+    renderizarQueHacerAhora();
   } catch (e) {
     console.error("Error cargando test en progreso:", e);
   }
@@ -277,6 +276,9 @@ async function cargarTestEnProgreso() {
 // Repaso espaciado proactivo: en vez de esperar a que el usuario recuerde
 // entrar en /preguntas-falladas/, se avisa aquí en cuanto tiene alguna
 // pendiente para esta oposición (banco persistente de banco_fallos.py).
+// Ojo con el texto: distinto de "Repasar preguntas" (repaso pasivo, en "Lo
+// tuyo") -- esto lleva a HACER UN TEST de las falladas, no a repasarlas sin
+// más, así que se evita la palabra "repasar" aquí para no confundir ambas.
 async function cargarRepasoPendiente() {
   try {
     const token = await idToken();
@@ -289,11 +291,69 @@ async function cargarRepasoPendiente() {
     if (!total_pendientes) return;
 
     const plural = total_pendientes !== 1 ? "s" : "";
-    fijarTexto("zona-repaso-detalle", `Tienes ${total_pendientes} pregunta${plural} fallada${plural} sin repasar todavía.`);
-    const elRepaso = document.getElementById("zona-repaso");
-    if (elRepaso) elRepaso.style.display = "";
+    ESTADO_HACER_AHORA.repaso = `
+      <a class="zona-mis-cosas-item" href="/preguntas-falladas/">
+        <span class="zona-mis-cosas-icono">${icono("cerebro", 26)}</span>
+        <span class="zona-mis-cosas-texto">
+          <strong>Preguntas falladas pendientes</strong>
+          <small>Tienes ${total_pendientes} pregunta${plural} fallada${plural} sin trabajar -- hazte un test centrado en ellas</small>
+        </span>
+        <span class="zona-mis-cosas-flecha">→</span>
+      </a>
+    `;
+    renderizarQueHacerAhora();
   } catch (e) {
     console.error("Error cargando preguntas pendientes de repaso:", e);
+  }
+}
+
+// El título y el enlace de un aviso oficial vienen del BOE (vía la
+// vigilancia automática) y se interpolan en innerHTML -- se escapan para
+// que un carácter "<" o similar en el texto real de una disposición no se
+// interprete como HTML, mismo motivo que resultados-test.js:escaparHtml.
+function escapeHtml(texto) {
+  const div = document.createElement("div");
+  div.textContent = texto ?? "";
+  return div.innerHTML;
+}
+
+// Avisos oficiales reales (convocatorias, listas de admitidos, fechas de
+// examen...) para la oposición actual, detectados por la vigilancia del
+// BOE y ya aprobados a mano por el dueño desde el panel de admin (ver
+// blueprints/temario.py:avisos_oficiales) -- no confundir con AVISOS de
+// abajo, que son consejos de uso estáticos, no contenido real.
+const ETIQUETA_TIPO_AVISO = {
+  convocatoria: "Convocatoria",
+  lista_admitidos: "Lista de admitidos",
+  tribunal: "Tribunal calificador",
+  fecha_examen: "Fecha de examen",
+  aprobados: "Relación de aprobados",
+  otro: "Aviso oficial",
+};
+
+async function cargarAvisosOficiales() {
+  try {
+    const token = await idToken();
+    const oposicion = obtenerOposicionActual();
+    const res = await fetch(`${BACKEND_URL}/avisos-oficiales?oposicion=${encodeURIComponent(oposicion)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const { avisos } = await res.json();
+    const seccion = document.getElementById("zona-avisos-oficiales");
+    const lista = document.getElementById("zona-avisos-oficiales-lista");
+    if (!seccion || !lista || !avisos || !avisos.length) return;
+
+    lista.innerHTML = avisos.map((a) => `
+      <div class="zona-aviso-oficial-item">
+        <span class="zona-aviso-oficial-tipo">${ETIQUETA_TIPO_AVISO[a.tipo] || ETIQUETA_TIPO_AVISO.otro}</span>
+        <p class="zona-aviso-oficial-titulo">${escapeHtml(a.titulo)}</p>
+        ${a.url_boe ? `<a class="zona-aviso-oficial-link" href="${escapeHtml(a.url_boe)}" target="_blank" rel="noopener">Ver en el BOE ↗</a>` : ""}
+      </div>
+    `).join("");
+    seccion.style.display = "";
+  } catch (e) {
+    console.error("Error cargando avisos oficiales:", e);
   }
 }
 
@@ -464,6 +524,7 @@ async function iniciar() {
   cargarProgresoInsignias();
   cargarTestEnProgreso();
   cargarRepasoPendiente();
+  cargarAvisosOficiales();
   iniciarBotonNotificaciones();
   inicializarCuentaAtras();
   renderAviso();

@@ -45,16 +45,24 @@ def _verificar_id_token(token, log_prefix=""):
     return None
 
 
-def obtener_identidad_desde_token(req):
-    """Verifica el Firebase ID token del header Authorization: Bearer <token>.
-    Devuelve (uid, email, es_admin) o None si falta o es inválido."""
+def _decodificar_token_peticion(req):
+    """Header Authorization: Bearer <token> ya verificado -- el dict crudo
+    que devuelve Firebase (o None si falta la cabecera o el token no es
+    válido), para que cada llamador saque los claims que necesite sin
+    volver a verificar el token contra Firebase."""
     header = req.headers.get("Authorization", "")
     if not header.startswith("Bearer "):
         return None
     token = header[len("Bearer "):].strip()
     if not token:
         return None
-    decoded = _verificar_id_token(token)
+    return _verificar_id_token(token)
+
+
+def obtener_identidad_desde_token(req):
+    """Verifica el Firebase ID token del header Authorization: Bearer <token>.
+    Devuelve (uid, email, es_admin) o None si falta o es inválido."""
+    decoded = _decodificar_token_peticion(req)
     if decoded is None:
         return None
     return decoded.get("uid"), decoded.get("email"), decoded.get("admin") is True
@@ -83,11 +91,19 @@ def requiere_login(db):
     def decorador(f):
         @wraps(f)
         def envoltura(*args, **kwargs):
-            ident = obtener_identidad_desde_token(request)
-            if not ident or not ident[0]:
+            decoded = _decodificar_token_peticion(request)
+            if not decoded or not decoded.get("uid"):
                 return jsonify({"error": "No autenticado"}), 401
-            uid, email, es_admin = ident
-            inicializar_estadisticas_usuario(db, uid, email=email)
+            uid = decoded.get("uid")
+            email = decoded.get("email")
+            es_admin = decoded.get("admin") is True
+            # email_verified: True de fábrica para Google (ya verifica la
+            # dirección), el valor real del token para email+contraseña --
+            # inicializar_estadisticas_usuario decide con esto (y con si el
+            # dominio es de correo desechable) si la prueba gratuita de 7
+            # días arranca ya o se queda pendiente de confirmar el correo.
+            email_verificado = bool(decoded.get("email_verified"))
+            inicializar_estadisticas_usuario(db, uid, email=email, email_verificado=email_verificado)
             g.uid = uid
             g.email = email
             g.es_admin = es_admin

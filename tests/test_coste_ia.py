@@ -94,3 +94,33 @@ def test_flush_coste_incrementa_el_mes(client, db):
     assert doc["tokens_out"] == 500
     assert doc["llamadas"] == 2
     assert doc["coste"] == coste_ia.coste_estimado(1500, 500)
+
+
+def test_guardar_coste_directo_acumula_tambien_el_dia(db):
+    from datetime import datetime
+    hoy = datetime.utcnow().strftime("%Y-%m-%d")
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    coste_ia.guardar_coste_directo(db, "u1", 300, 100, 2)
+    coste_ia.guardar_coste_directo(db, "u1", 100, 50, 1)
+    dia = db.leer(("usuarios", "u1"))["coste_ia_dias"][hoy]
+    assert dia["tokens_in"] == 400
+    assert dia["tokens_out"] == 150
+    assert dia["llamadas"] == 3
+    assert dia["coste"] == coste_ia.coste_estimado(400, 150)
+
+
+def test_incrementar_mes_poda_dias_mas_viejos_que_el_limite(db):
+    from datetime import datetime, timedelta
+    ahora = datetime.utcnow()
+    hoy = ahora.strftime("%Y-%m-%d")
+    dia_viejo = (ahora - timedelta(days=coste_ia.LIMITE_DIAS_HISTORICO + 5)).strftime("%Y-%m-%d")
+    dia_reciente = (ahora - timedelta(days=2)).strftime("%Y-%m-%d")
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia_dias": {
+        dia_viejo: {"tokens_in": 10, "tokens_out": 5, "llamadas": 1, "coste": 0.001},
+        dia_reciente: {"tokens_in": 20, "tokens_out": 10, "llamadas": 1, "coste": 0.002},
+    }})
+    coste_ia.guardar_coste_directo(db, "u1", 5, 2, 1)
+    dias = db.leer(("usuarios", "u1"))["coste_ia_dias"]
+    assert dia_viejo not in dias
+    assert dia_reciente in dias
+    assert hoy in dias

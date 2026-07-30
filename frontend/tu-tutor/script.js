@@ -1,4 +1,5 @@
 import { icono } from "/assets/icons.js";
+import { leerStreamConTimeout } from "/assets/stream-utils.js";
 
 // Se resuelve aquí, en el nivel superior del módulo (que se ejecuta
 // "deferred" pero SIEMPRE antes de DOMContentLoaded), y no dentro del
@@ -356,8 +357,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     let huboError = false;
 
     try {
-      while (true) {
-        const { done, value } = await lector.read();
+      // "fin" y "error" son SIEMPRE el último evento del stream (el backend
+      // termina justo después de emitirlos), así que en cuanto llega uno se
+      // sale sin esperar al cierre de la conexión (done) -- en iPhone/WebKit
+      // esa señal a veces no llega nunca aunque todo esté ya recibido.
+      let terminado = false;
+      while (!terminado) {
+        const { done, value } = await leerStreamConTimeout(lector);
         if (done) break;
         buffer += decodificador.decode(value, { stream: true });
         const bloques = buffer.split("\n\n");
@@ -377,11 +383,14 @@ document.addEventListener("DOMContentLoaded", async function () {
           } else if (evento.tipo === "fin") {
             chatIdActual = evento.chat_id;
             temasRelacionados = evento.temas_relacionados || [];
+            terminado = true;
           } else if (evento.tipo === "error") {
             huboError = true;
+            terminado = true;
           }
         }
       }
+      lector.cancel().catch(() => {});
     } catch {
       huboError = true;
     }

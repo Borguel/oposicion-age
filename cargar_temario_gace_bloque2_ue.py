@@ -43,7 +43,7 @@ Variables de entorno necesarias:
   DEEPSEEK_API_KEY (para clasificar el articulado de los Tratados)
   FIREBASE_KEY_PATH (o FIREBASE_CREDENTIALS_JSON)
 
-Requiere: PyPDF2, firebase-admin (ya están en requirements.txt)
+Requiere: pypdf, firebase-admin (ya están en requirements.txt)
 """
 import argparse
 import json
@@ -53,7 +53,7 @@ import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from cargar_temario_boe import TEMARIO, extraer_paginas, clasificar_subbloque
 

@@ -2,157 +2,163 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.dominatuopo.com/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.dominatuopo.com/planes/</loc>
-    <lastmod>2026-07-17</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.dominatuopo.com/demo/</loc>
-    <lastmod>2026-07-19</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.dominatuopo.com/login/</loc>
-    <lastmod>2026-07-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://www.dominatuopo.com/oposiciones/</loc>
-    <lastmod>2026-07-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.dominatuopo.com/oposicion-administrativo-estado-c1/</loc>
-    <lastmod>2026-07-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.dominatuopo.com/oposicion-gace/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.dominatuopo.com/oposicion-auxiliar-administrativo-estado/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.dominatuopo.com/comparativa-oposiciones-estado/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <loc>https://www.dominatuopo.com/oposicion-gace/</loc>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.dominatuopo.com/sueldo-funcionario-administracion-estado/</loc>
-    <lastmod>2026-07-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.dominatuopo.com/como-estudiar-oposicion-trabajando/</loc>
-    <lastmod>2026-07-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.dominatuopo.com/estudiar-oposiciones-con-inteligencia-artificial/</loc>
-    <lastmod>2026-07-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.dominatuopo.com/como-funciona/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.dominatuopo.com/como-funciona/tu-tutor/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <loc>https://www.dominatuopo.com/comparativa-oposiciones-estado/</loc>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.dominatuopo.com/como-funciona/test-personalizado/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <loc>https://www.dominatuopo.com/estudiar-oposiciones-con-inteligencia-artificial/</loc>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.dominatuopo.com/como-funciona/test-oficial/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <loc>https://www.dominatuopo.com/oposiciones/</loc>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.dominatuopo.com/como-funciona/herramientas-ia/</loc>
-    <lastmod>2026-07-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.dominatuopo.com/como-funciona/zona-opositor/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <loc>https://www.dominatuopo.com/como-estudiar-oposicion-trabajando/</loc>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.dominatuopo.com/como-funciona/estadisticas/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.dominatuopo.com/como-funciona/mis-tests/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <loc>https://www.dominatuopo.com/como-funciona/herramientas-ia/</loc>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.dominatuopo.com/como-funciona/mis-documentos/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/como-funciona/mis-tests/</loc>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.dominatuopo.com/como-funciona/repasar-preguntas/</loc>
-    <lastmod>2026-07-18</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.dominatuopo.com/aviso-legal/</loc>
-    <lastmod>2026-07-18</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <loc>https://www.dominatuopo.com/como-funciona/test-oficial/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.dominatuopo.com/privacidad/</loc>
-    <lastmod>2026-07-11</lastmod>
+    <loc>https://www.dominatuopo.com/como-funciona/test-personalizado/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/como-funciona/tu-tutor/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/como-funciona/zona-opositor/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/sueldo-funcionario-administracion-estado/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/avisos-oficiales/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/login/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/aviso-legal/</loc>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://www.dominatuopo.com/cookies/</loc>
-    <lastmod>2026-07-11</lastmod>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/privacidad/</loc>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://www.dominatuopo.com/terminos/</loc>
-    <lastmod>2026-07-11</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

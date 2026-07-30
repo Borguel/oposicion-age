@@ -16,7 +16,7 @@ sin tocar código si cambian las tarifas de DeepSeek.
 import logging
 import os
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +29,15 @@ def _precio(env, defecto):
 
 
 # € por cada 1.000.000 de tokens. Valores por defecto según las tarifas
-# oficiales de DeepSeek (deepseek-chat -> gama "flash"), convertidas de
-# dólares a euros al cambio aproximado (~0,92 €/$):
+# oficiales de DeepSeek para deepseek-v4-flash (el modelo usado en toda la
+# app salvo que TUTOR_MODELO_IA diga lo contrario -- ver chat_controller.py),
+# convertidas de dólares a euros al cambio aproximado (~0,92 €/$):
 #   entrada cache miss $0,14/M -> ~0,13 €/M   (usamos el precio caro, sin
 #     descuento de caché, para que la estimación quede siempre por lo alto)
 #   salida            $0,28/M -> ~0,26 €/M
 # Se pueden ajustar sin tocar código con las variables de entorno de abajo
-# (p. ej. si tu cuenta factura como "pro": salida $0,87/M -> ~0,80 €/M).
+# (p. ej. si se usa deepseek-v4-pro, más caro: revisa el precio real vigente
+# en la documentación de DeepSeek antes de ajustar estas dos variables).
 PRECIO_INPUT_EUR_MILLON = _precio("IA_PRECIO_INPUT_EUR_MILLON", 0.13)
 PRECIO_OUTPUT_EUR_MILLON = _precio("IA_PRECIO_OUTPUT_EUR_MILLON", 0.26)
 
@@ -118,25 +120,52 @@ class AcumuladorTokens:
             logger.debug("No se pudo volcar el acumulador de tokens (directo)", exc_info=True)
 
 
+# Cuántos días de histórico diario se conservan (usuarios/{uid}.coste_ia_dias)
+# -- a diferencia del histórico mensual (coste_ia), que se guarda para
+# siempre, el diario se poda en cada escritura para no crecer sin límite;
+# 35 días cubre "el mes en curso completo" con margen de sobra para el
+# selector "por día" del panel de admin.
+LIMITE_DIAS_HISTORICO = 35
+
+
 def _incrementar_mes(db, uid, tin, tout, llamadas):
-    """Suma el consumo indicado al contador del mes actual del usuario en
-    usuarios/{uid}.coste_ia.{YYYY-MM}. Lectura+escritura (no atómica): el
-    consumo de un mismo usuario se vuelca desde un único hilo por petición,
-    así que basta para el uso previsto."""
-    mes = datetime.utcnow().strftime("%Y-%m")
+    """Suma el consumo indicado al contador del mes Y del día actuales del
+    usuario, en usuarios/{uid}.coste_ia.{YYYY-MM} y
+    usuarios/{uid}.coste_ia_dias.{YYYY-MM-DD}. Lectura+escritura (no
+    atómica): el consumo de un mismo usuario se vuelca desde un único hilo
+    por petición, así que basta para el uso previsto."""
+    ahora = datetime.utcnow()
+    mes = ahora.strftime("%Y-%m")
+    dia = ahora.strftime("%Y-%m-%d")
     ref = db.collection("usuarios").document(uid)
     doc = ref.get()
     if not doc.exists:
         return
-    actual = ((doc.to_dict() or {}).get("coste_ia") or {}).get(mes) or {}
-    tin_total = (actual.get("tokens_in", 0) or 0) + tin
-    tout_total = (actual.get("tokens_out", 0) or 0) + tout
-    llamadas_total = (actual.get("llamadas", 0) or 0) + llamadas
+    datos = doc.to_dict() or {}
+
+    actual_mes = (datos.get("coste_ia") or {}).get(mes) or {}
+    tin_mes = (actual_mes.get("tokens_in", 0) or 0) + tin
+    tout_mes = (actual_mes.get("tokens_out", 0) or 0) + tout
+    llamadas_mes = (actual_mes.get("llamadas", 0) or 0) + llamadas
+
+    dias = dict(datos.get("coste_ia_dias") or {})
+    actual_dia = dias.get(dia) or {}
+    tin_dia = (actual_dia.get("tokens_in", 0) or 0) + tin
+    tout_dia = (actual_dia.get("tokens_out", 0) or 0) + tout
+    llamadas_dia = (actual_dia.get("llamadas", 0) or 0) + llamadas
+    dias[dia] = {
+        "tokens_in": tin_dia, "tokens_out": tout_dia, "llamadas": llamadas_dia,
+        "coste": coste_estimado(tin_dia, tout_dia),
+    }
+    limite = (ahora - timedelta(days=LIMITE_DIAS_HISTORICO)).strftime("%Y-%m-%d")
+    dias = {d: v for d, v in dias.items() if d >= limite}
+
     ref.update({
-        f"coste_ia.{mes}.tokens_in": tin_total,
-        f"coste_ia.{mes}.tokens_out": tout_total,
-        f"coste_ia.{mes}.llamadas": llamadas_total,
-        f"coste_ia.{mes}.coste": coste_estimado(tin_total, tout_total),
+        f"coste_ia.{mes}.tokens_in": tin_mes,
+        f"coste_ia.{mes}.tokens_out": tout_mes,
+        f"coste_ia.{mes}.llamadas": llamadas_mes,
+        f"coste_ia.{mes}.coste": coste_estimado(tin_mes, tout_mes),
+        "coste_ia_dias": dias,
     })
 
 

@@ -11,6 +11,7 @@ import { BACKEND_URL } from "/assets/firebase-config.js";
 import { obtenerAuthHeaders } from "/assets/auth.js";
 import { obtenerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
+import { leerStreamConTimeout } from "/assets/stream-utils.js";
 
 const ERROR_TECNICO = "El tutor ha tenido un problema técnico. Vuelve a intentarlo en unos segundos.";
 
@@ -260,6 +261,11 @@ export function montarWidgetTutor() {
   }
 
   const scrollAbajo = () => { mensajesEl.scrollTop = mensajesEl.scrollHeight; };
+  // Mientras el bot está escribiendo en streaming, solo se sigue bajando el
+  // scroll automáticamente si el usuario ya estaba abajo del todo -- si ha
+  // subido a leer desde el principio de la respuesta, no se le fuerza hacia
+  // abajo con cada trocito de texto que va llegando (dejaría de poder leer).
+  const yaEstabaAbajo = () => mensajesEl.scrollHeight - mensajesEl.scrollTop - mensajesEl.clientHeight < 60;
 
   function abrir() {
     panel.classList.add("abierto");
@@ -472,8 +478,9 @@ export function montarWidgetTutor() {
   }
 
   function pintarBot(burbuja, texto) {
+    const seguirAbajo = yaEstabaAbajo();
     burbuja.contenido.innerHTML = formatearMensajeBot(texto);
-    scrollAbajo();
+    if (seguirAbajo) scrollAbajo();
   }
 
   // iconoPrefijo (opcional): nombre de icono de /assets/icons.js que se
@@ -626,8 +633,13 @@ export function montarWidgetTutor() {
     let respuestaDesactualizada = false;
 
     try {
-      while (true) {
-        const { done, value } = await lector.read();
+      // "fin" y "error" son SIEMPRE el último evento del stream (el backend
+      // termina justo después de emitirlos), así que en cuanto llega uno se
+      // sale sin esperar al cierre de la conexión (done) -- en iPhone/WebKit
+      // esa señal a veces no llega nunca aunque todo esté ya recibido.
+      let terminado = false;
+      while (!terminado) {
+        const { done, value } = await leerStreamConTimeout(lector);
         if (done) break;
         buffer += decodificador.decode(value, { stream: true });
         const bloques = buffer.split("\n\n");
@@ -652,10 +664,11 @@ export function montarWidgetTutor() {
               }
             }
           }
-          else if (evento.tipo === "fin") { chatId = evento.chat_id; }
-          else if (evento.tipo === "error") { huboError = true; }
+          else if (evento.tipo === "fin") { chatId = evento.chat_id; terminado = true; }
+          else if (evento.tipo === "error") { huboError = true; terminado = true; }
         }
       }
+      lector.cancel().catch(() => {});
     } catch { huboError = true; }
 
     if (huboError && !acumulado) {
@@ -691,7 +704,16 @@ export function montarWidgetTutor() {
         respuesta_usuario: pregunta.respuestaUsuario || pregunta.respuesta_usuario || "",
         explicacion: pregunta.explicacion || "",
       };
-      chatId = null;             // conversación nueva, sin arrastrar nada
+      // No se reinicia chatId: si ya se venía hablando de otra pregunta en
+      // esta misma sesión (sin recargar la página), esta también se guarda
+      // en la MISMA conversación -- así en "Tus conversaciones" no aparece
+      // una entrada nueva por cada pregunta del test, sino una sola con
+      // todo lo hablado. Esto es seguro porque el backend ya trata cada
+      // pregunta de test como autocontenida (no le mete el historial de
+      // mensajes anteriores al construir la respuesta, ver chat_controller
+      // "Una pregunta de test pegada es autocontenida"), así que el tutor
+      // no arrastra ni se confunde con la pregunta anterior aunque
+      // compartan chat_id.
       ultimoEnunciado = contextoOverride.enunciado;
       sugerenciaPedida = true;   // no meter el saludo proactivo encima
       mensajesEl.innerHTML = "";

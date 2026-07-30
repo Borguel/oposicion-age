@@ -1,4 +1,5 @@
 import { icono } from "/assets/icons.js";
+import { leerStreamConTimeout } from "/assets/stream-utils.js";
 
 import("/assets/plan.js").then(({ protegerPagina }) => protegerPagina("premium"));
 
@@ -130,6 +131,55 @@ async function obtenerAuthHeaders() {
       });
     }
 
+    // Indicador de que el resto de preguntas se sigue generando en segundo
+    // plano -- se muestra tras el arranque temprano (num_preguntas > 5),
+    // igual que en Test Personalizado (ver frontend/test-personalizado/script.js).
+    function mostrarIndicadorGenerandoFondo(completadas, total) {
+      let el = document.getElementById("indicador-generando-fondo");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "indicador-generando-fondo";
+        el.className = "indicador-generando-fondo";
+        document.getElementById("navegador-preguntas").insertAdjacentElement("afterend", el);
+      }
+      const restantes = Math.max(total - completadas, 0);
+      el.innerHTML = restantes > 0
+        ? `<span class="icono-inline">${icono("arena", 16)} Generando ${restantes} pregunta${restantes !== 1 ? "s" : ""} más en segundo plano...</span>`
+        : `<span class="icono-inline">${icono("arena", 16)} Terminando de verificar el resto de preguntas...</span>`;
+    }
+
+    function ocultarIndicadorGenerandoFondo() {
+      document.getElementById("indicador-generando-fondo")?.remove();
+    }
+
+    function guardarContenidoEnSegundoPlano() {
+      import("/assets/test-progreso.js").then(({ actualizarContenidoEnCurso }) => {
+        actualizarContenidoEnCurso({
+          oposicion: oposicionActual, tipo: "test_pdf", temas: [],
+          contenido: preguntas,
+          respuestas_usuario: respuestasUsuario,
+          marcadas_revision: marcadasRevision,
+          marcadas_duda: marcadasDuda,
+          indice_actual: indicePreguntaActual,
+          pagina_origen: "/subida-pdf-generar-test/",
+          documento_id: documentoIdActual
+        });
+      });
+    }
+
+    // Añade una pregunta ya verificada al test EN CURSO (arranque temprano,
+    // num_preguntas > 5, ver generarTestDesdePdfConProgreso más abajo) sin
+    // interrumpir la pregunta que el usuario esté viendo.
+    function agregarPreguntaEnCurso(pregunta) {
+      preguntas.push(pregunta);
+      respuestasUsuario.push(null);
+      marcadasRevision.push(false);
+      marcadasDuda.push(false);
+      visitadas.push(false);
+      actualizarNavegadorPreguntas();
+      guardarContenidoEnSegundoPlano();
+    }
+
     // === GUARDADO EN FIRESTORE VIA BACKEND ===
     async function guardarTestEnBackend() {
       const contenido = preguntas;
@@ -227,19 +277,39 @@ async function obtenerAuthHeaders() {
     });
 
     // Consume el stream SSE de /generar-test-desde-pdf (progreso real por
-    // PREGUNTA verificada, no por lote -- ver test_generator.py) y devuelve
-    // el evento "fin" -- usado tanto al subir un PDF nuevo como al generar
-    // un test desde un documento ya guardado en "Mis documentos" (ambos
-    // llaman a la misma ruta). Mismo grano que el test personalizado
+    // PREGUNTA verificada, no por lote -- ver test_generator.py) -- usado
+    // tanto al subir un PDF nuevo como al generar un test desde un
+    // documento ya guardado en "Mis documentos" (ambos llaman a la misma
+    // ruta). Mismo grano que el test personalizado
     // (/assets/progreso-conversador.js rellena además los huecos entre
     // eventos reales para que la barra no se quede "pillada").
-    async function generarTestDesdePdfConProgreso(formData, authHeaders) {
+    //
+    // Para peticiones de más de 5 preguntas, en cuanto llegan las primeras
+    // min(5, num_preguntas) ya aceptadas se deja al usuario empezar a
+    // responder mientras el resto se sigue generando en segundo plano --
+    // mismo umbral y mismo motivo que Test Personalizado (ver
+    // frontend/test-personalizado/script.js). Devuelve {transicionadoATest:
+    // true} si ya se entró en el test dentro de esta función (el llamante
+    // no debe volver a llamar a iniciarTest), o {transicionadoATest: false,
+    // datosFinales} si el llamante debe iniciar el test él mismo con el
+    // resultado completo.
+    async function generarTestDesdePdfConProgreso(formData, authHeaders, num_preguntas) {
+      // No se pasan elTexto/elIcono: el carrusel de mensajes genéricos
+      // (Redactando..., Comprobando..., Verificando...) sobrescribía cada
+      // 2.2s el conteo real "Generando y verificando pregunta X de Y..."
+      // en cuanto tocaba turno, dando la sensación de progreso "aleatorio"
+      // en vez de real. Igual que test-personalizado/script.js (que no usa
+      // este carrusel en absoluto para su texto de estado), aquí se deja
+      // el texto estático inicial ("Leyendo texto del PDF...", ya en el
+      // HTML) hasta que llega el primer evento real, y a partir de ahí se
+      // escribe directamente y de forma persistente el conteo real (ver
+      // más abajo). etapasLeyendo/etapasGenerando se siguen pasando porque
+      // el módulo los necesita internamente (pintarEtapa() los indexa
+      // siempre), pero ya no pintan nada al no haber elTexto/elIcono.
       const { crearProgresoConversador } = await import("/assets/progreso-conversador.js");
       const progreso = crearProgresoConversador({
         elBarra: document.getElementById("progreso-generacion-pdf"),
         elTextoBarra: document.getElementById("texto-progreso-generacion-pdf"),
-        elTexto: document.getElementById("texto-estado"),
-        elIcono: document.getElementById("ai-icon"),
         etapasLeyendo: [
           { mensaje: "Leyendo el PDF…", icono: "documento" },
           { mensaje: "Localizando los conceptos clave del documento…", icono: "buscar" },
@@ -252,6 +322,21 @@ async function obtenerAuthHeaders() {
           { mensaje: "Puliendo la explicación de cada pregunta…", icono: "check" },
         ],
       });
+
+      let transicionadoATest = false;
+      const umbralInicioTemprano = Math.min(5, num_preguntas);
+      // Techo monótono de "completadas" (nunca baja) -- el contador que
+      // manda cada evento SSE no cuenta "preguntas únicas ya en el test
+      // final" sino candidatas procesadas (aceptadas o descartadas, de un
+      // lote normal o de un hueco de relleno, ver test_generator.py), así
+      // que puede no llegar a coincidir justo con num_preguntas antes del
+      // evento "fin" -- y además dos hilos pueden mandar sus eventos en
+      // orden distinto al que los generó (el incremento va dentro de un
+      // lock pero el envío del evento no), así que un valor más bajo
+      // podría llegar DESPUÉS de uno más alto. Sin este techo, el texto
+      // podía quedarse congelado en un número por debajo del total real
+      // (bug real reportado: "39 de 40" con un test que sí tenía 40).
+      let techoCompletadas = 0;
 
       try {
         const res = await fetch("https://oposicion-age.onrender.com/generar-test-desde-pdf", {
@@ -275,9 +360,35 @@ async function obtenerAuthHeaders() {
         const decodificador = new TextDecoder();
         let buffer = "";
         let datosFinales = null;
+        let preguntasRecibidas = [];
 
-        while (true) {
-          const { done, value } = await lector.read();
+        // "fin" es SIEMPRE el último evento del stream (el backend termina
+        // justo después de emitirlo): en cuanto llega (queda en datosFinales)
+        // se sale sin esperar al cierre de la conexión (done) -- en
+        // iPhone/WebKit esa señal a veces no llega nunca aunque todo esté ya
+        // recibido, y quedarse esperándola dejaba la pantalla congelada.
+        while (!datosFinales) {
+          let done, value;
+          try {
+            ({ done, value } = await leerStreamConTimeout(lector));
+          } catch (errorTimeout) {
+            // "El servidor está tardando demasiado..." (ver
+            // stream-utils.js) puede saltar DESPUÉS de que el test ya haya
+            // arrancado con las primeras preguntas (umbralInicioTemprano
+            // más arriba) -- una única llamada a DeepSeek lenta o con
+            // reintentos puede tardar bastante más de lo que este aviso
+            // tarda en saltar. Si ya se transicionó al test, NO hay que
+            // romper la sesión del usuario: se trata igual que llegar a
+            // "done" sin "fin" (bug real: el test quedaba visible con
+            // preguntas ya respondidas y el formulario de subir PDF volvía
+            // a aparecer encima, porque esta excepción llegaba sin pasar
+            // por el tramo de abajo y acababa en mostrarError). Si
+            // TODAVÍA no se había transicionado, se deja propagar el error
+            // tal cual (el formulario nunca llegó a ocultarse por un test
+            // en marcha, así que mostrarError sigue siendo lo correcto).
+            if (transicionadoATest) break;
+            throw errorTimeout;
+          }
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
           const bloques = buffer.split("\n\n");
@@ -292,11 +403,75 @@ async function obtenerAuthHeaders() {
               continue;
             }
             if (evento.tipo === "progreso") {
-              progreso.avanzar(evento, `Generando y verificando pregunta ${evento.completadas} de ${evento.total}…`);
+              techoCompletadas = Math.max(techoCompletadas, evento.completadas);
+              if (!transicionadoATest) {
+                progreso.avanzar(evento);
+                // Persistente (no vía el carrusel): mismo patrón que
+                // test-personalizado/script.js, que escribe este mismo
+                // mensaje directamente en cada evento real sin que nada
+                // lo sobrescriba después. Con el total ya alcanzado (o
+                // superado, por el relleno de huecos -- ver
+                // test_generator.py) se deja de mostrar un número
+                // concreto (podría no llegar nunca a coincidir justo con
+                // num_preguntas) y se pasa a un mensaje de cierre.
+                document.getElementById("texto-estado").textContent =
+                  techoCompletadas >= evento.total
+                    ? "Terminando de generar y verificar las últimas preguntas…"
+                    : `Generando y verificando pregunta ${techoCompletadas} de ${evento.total}…`;
+              } else {
+                mostrarIndicadorGenerandoFondo(techoCompletadas, evento.total);
+              }
+            } else if (evento.tipo === "pregunta" && evento.pregunta) {
+              if (!transicionadoATest) {
+                preguntasRecibidas.push(evento.pregunta);
+                if (num_preguntas > umbralInicioTemprano && preguntasRecibidas.length >= umbralInicioTemprano) {
+                  transicionadoATest = true;
+                  progreso.detener();
+                  await iniciarTest(preguntasRecibidas);
+                }
+              } else {
+                agregarPreguntaEnCurso(evento.pregunta);
+              }
             } else if (evento.tipo === "fin") {
               datosFinales = evento;
             }
           }
+        }
+
+        lector.cancel().catch(() => {});
+
+        if (transicionadoATest) {
+          // El usuario ya está haciendo el test -- "fin" solo sirve para
+          // reconciliar el conjunto definitivo (por si el streaming entregó
+          // alguna pregunta que agregarPreguntaEnCurso no llegó a procesar
+          // antes de que llegara "fin") y avisar sin interrumpir la
+          // pregunta que se esté viendo.
+          //
+          // documento_id: con el arranque temprano, iniciarTest() ya guardó
+          // el borrador ANTES de que el backend mandara el documento_id real
+          // (solo viaja aquí, en "fin") -- documentoIdActual seguía siendo
+          // null hasta este punto. Bug real: sin esto, el borrador se
+          // quedaba con documento_id nulo para siempre y "Mis documentos"
+          // nunca podía ofrecer "Continuar" para este documento.
+          if (datosFinales && datosFinales.documento_id) {
+            documentoIdActual = datosFinales.documento_id;
+          }
+          if (datosFinales && Array.isArray(datosFinales.test)) {
+            for (let i = preguntas.length; i < datosFinales.test.length; i++) {
+              agregarPreguntaEnCurso(datosFinales.test[i]);
+            }
+            avisarSiPreguntasIncompletas(datosFinales);
+          } else if (!datosFinales || datosFinales.error) {
+            avisarSiPreguntasIncompletas({
+              advertencia: (datosFinales && datosFinales.error) || "Ha ocurrido un error terminando de generar el resto de preguntas."
+            });
+          }
+          // Asegura que el documento_id corregido (arriba) se guarda
+          // aunque no hubiera ninguna pregunta nueva que reconciliar (el
+          // bucle de arriba, si no añade nada, no dispara ningún guardado
+          // por su cuenta).
+          guardarContenidoEnSegundoPlano();
+          return { transicionadoATest: true };
         }
 
         if (!datosFinales) {
@@ -306,39 +481,54 @@ async function obtenerAuthHeaders() {
           throw new Error(datosFinales.error || "No se pudieron generar preguntas válidas desde el PDF.");
         }
         progreso.completar();
-        return datosFinales;
+        return { transicionadoATest: false, datosFinales };
       } finally {
         progreso.detener();
+        if (transicionadoATest) ocultarIndicadorGenerandoFondo();
       }
     }
 
     // === ENVÍO DE FORMULARIO ===
+    // Si documentoIdActual ya está fijado (llegada desde "Mis documentos"
+    // para generar un test NUEVO, ver inicializarDesdeDocumento más abajo)
+    // no hace falta volver a subir el PDF -- se manda el documento_id ya
+    // existente, y el formulario solo sirve para elegir cuántas preguntas
+    // generar en vez de asumir siempre el valor por defecto sin preguntar.
     document.getElementById('form-subir-pdf').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const archivo = document.getElementById('archivo-pdf').files[0];
       const num_preguntas = parseInt(document.getElementById('num_preguntas').value);
-
-      if (!archivo) return mostrarError('Selecciona un archivo PDF.');
-      if (archivo.type !== 'application/pdf') return mostrarError('El archivo debe ser un PDF.');
-
-      nombreArchivo = archivo.name;
       const formData = new FormData();
-      formData.append('pdf', archivo);
+
+      if (documentoIdActual) {
+        formData.append('documento_id', documentoIdActual);
+      } else {
+        const archivo = document.getElementById('archivo-pdf').files[0];
+        if (!archivo) return mostrarError('Selecciona un archivo PDF.');
+        if (archivo.type !== 'application/pdf') return mostrarError('El archivo debe ser un PDF.');
+        nombreArchivo = archivo.name;
+        formData.append('pdf', archivo);
+      }
       formData.append('num_preguntas', num_preguntas);
 
       document.getElementById('tarjeta-formulario').style.display = 'none';
       document.getElementById('contenedor-carga').style.display = 'block';
-      document.getElementById('texto-estado').textContent = "Leyendo el PDF y preparando la generación…";
-      document.getElementById('ai-icon').innerHTML = icono("documento", 32);
+      document.getElementById('texto-estado').textContent = documentoIdActual
+        ? "Generando test desde tu documento…"
+        : "Leyendo el PDF y preparando la generación…";
+      document.getElementById('ai-icon').innerHTML = icono(documentoIdActual ? "cerebro" : "documento", 32);
 
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
 
       try {
-        const datosFinales = await generarTestDesdePdfConProgreso(formData, authHeaders);
-        documentoIdActual = datosFinales.documento_id || documentoIdActual;
-        avisarSiPreguntasIncompletas(datosFinales);
-        iniciarTest(datosFinales.test);
+        const resultado = await generarTestDesdePdfConProgreso(formData, authHeaders, num_preguntas);
+        if (!resultado.transicionadoATest) {
+          const datosFinales = resultado.datosFinales;
+          documentoIdActual = datosFinales.documento_id || documentoIdActual;
+          nombreArchivo = datosFinales.nombre_archivo || nombreArchivo;
+          avisarSiPreguntasIncompletas(datosFinales);
+          iniciarTest(datosFinales.test);
+        }
       } catch (err) {
         mostrarError(err.message || "Error al generar el test.");
       }
@@ -455,16 +645,13 @@ async function obtenerAuthHeaders() {
       if (!documentoId) return;
 
       documentoIdActual = documentoId;
-      document.getElementById('tarjeta-formulario').style.display = 'none';
-      document.getElementById('contenedor-carga').style.display = 'block';
-      const textoEstado = document.getElementById('texto-estado');
-      const aiIcon = document.getElementById('ai-icon');
-
-      const authHeaders = await obtenerAuthHeaders();
-      if (!authHeaders) return;
 
       if (ver === 'test') {
-        textoEstado.textContent = 'Cargando tu test guardado…';
+        document.getElementById('tarjeta-formulario').style.display = 'none';
+        document.getElementById('contenedor-carga').style.display = 'block';
+        document.getElementById('texto-estado').textContent = 'Cargando tu test guardado…';
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
         try {
           const res = await fetch(`https://oposicion-age.onrender.com/documento/${documentoId}/test`, { headers: authHeaders });
           const datos = await res.json();
@@ -477,21 +664,16 @@ async function obtenerAuthHeaders() {
         return;
       }
 
-      textoEstado.textContent = 'Generando test desde tu documento…';
-      aiIcon.innerHTML = icono('cerebro', 32);
-      try {
-        const numPreguntas = parseInt(params.get('num_preguntas')) || 10;
-        const formData = new FormData();
-        formData.append('documento_id', documentoId);
-        formData.append('num_preguntas', numPreguntas);
-        const datosFinales = await generarTestDesdePdfConProgreso(formData, authHeaders);
-        nombreArchivo = datosFinales.nombre_archivo || nombreArchivo;
-        documentoIdActual = datosFinales.documento_id || documentoIdActual;
-        avisarSiPreguntasIncompletas(datosFinales);
-        iniciarTest(datosFinales.test);
-      } catch (err) {
-        mostrarError(err.message);
-      }
+      // Generar un test NUEVO desde un documento ya subido: se deja el
+      // formulario visible (sin pedir de nuevo el PDF) para que el
+      // usuario elija cuántas preguntas quiere, en vez de generar
+      // siempre con el valor por defecto (10) sin preguntar.
+      const grupoArchivo = document.getElementById('grupo-archivo');
+      if (grupoArchivo) grupoArchivo.style.display = 'none';
+      const archivoInput = document.getElementById('archivo-pdf');
+      if (archivoInput) archivoInput.required = false;
+      const aviso = document.getElementById('aviso-documento-existente');
+      if (aviso) aviso.classList.remove('hidden');
     })();
 
     // === RENDERIZADO DE PREGUNTAS ===

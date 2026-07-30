@@ -2,7 +2,10 @@
 páginas del documento al contador global paginas_analizadas del usuario
 UNA sola vez -- si el mismo PDF se reutiliza en otra herramienta (mismo
 texto, mismo hash), no debe volver a sumarse."""
-from documentos_pdf import obtener_o_crear_documento, actualizar_titulo
+from documentos_pdf import (
+    obtener_o_crear_documento, actualizar_titulo, obtener_tests_en_progreso_por_documento,
+    eliminar_documento,
+)
 
 
 def test_documento_nuevo_suma_sus_paginas_al_contador_del_usuario(db):
@@ -52,3 +55,83 @@ def test_actualizar_titulo_vacio_no_hace_nada(db):
 
 def test_actualizar_titulo_documento_inexistente_devuelve_false(db):
     assert actualizar_titulo(db, "u1", "no_existe", "Nuevo nombre") is False
+
+
+class TestEliminarDocumento:
+    # Pensado sobre todo para poder quitar una subida duplicada de la
+    # biblioteca -- borra el documento y descuenta del contador
+    # paginas_analizadas del usuario las páginas que había sumado al
+    # crearse (ver obtener_o_crear_documento).
+
+    def test_elimina_el_documento_y_descuenta_sus_paginas(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 20})
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Apuntes", "num_paginas": 12})
+
+        ok = eliminar_documento(db, "u1", "d1")
+
+        assert ok is True
+        assert db.leer(("usuarios", "u1", "documentos", "d1")) is None
+        assert db.leer(("usuarios", "u1"))["paginas_analizadas"] == 8
+
+    def test_documento_inexistente_devuelve_false(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 20})
+        assert eliminar_documento(db, "u1", "no_existe") is False
+        assert db.leer(("usuarios", "u1"))["paginas_analizadas"] == 20
+
+    def test_no_afecta_a_otros_documentos_del_usuario(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 20})
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Duplicado", "num_paginas": 5})
+        db.sembrar(("usuarios", "u1", "documentos", "d2"), {"titulo": "Bueno", "num_paginas": 15})
+
+        eliminar_documento(db, "u1", "d1")
+
+        assert db.leer(("usuarios", "u1", "documentos", "d1")) is None
+        assert db.leer(("usuarios", "u1", "documentos", "d2")) is not None
+        assert db.leer(("usuarios", "u1"))["paginas_analizadas"] == 15
+
+    def test_documento_sin_num_paginas_no_rompe(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 3})
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Sin páginas registradas"})
+
+        ok = eliminar_documento(db, "u1", "d1")
+
+        assert ok is True
+        assert db.leer(("usuarios", "u1"))["paginas_analizadas"] == 3
+
+
+class TestObtenerTestsEnProgresoPorDocumento:
+    # Para que "Mis documentos" pueda ofrecer "Continuar" en la fila de
+    # Test cuando hay un autoguardado sin terminar -- antes, un test
+    # empezado y no acabado no aparecía por ningún sitio en la biblioteca.
+
+    def test_test_en_progreso_de_un_documento(self, db):
+        db.sembrar(("usuarios", "u1", "tests", "t1"), {
+            "estado": "en_progreso", "tipo": "test_pdf", "documento_id": "d1", "fecha": "2026-01-01",
+        })
+        assert obtener_tests_en_progreso_por_documento(db, "u1") == {"d1": "t1"}
+
+    def test_test_finalizado_no_cuenta(self, db):
+        db.sembrar(("usuarios", "u1", "tests", "t1"), {
+            "estado": "finalizado", "tipo": "test_pdf", "documento_id": "d1", "fecha": "2026-01-01",
+        })
+        assert obtener_tests_en_progreso_por_documento(db, "u1") == {}
+
+    def test_test_personalizado_en_progreso_no_cuenta(self, db):
+        # Un test en_progreso que no es de PDF (personalizado, oficial...)
+        # no tiene documento_id que ofrecer en la biblioteca de documentos.
+        db.sembrar(("usuarios", "u1", "tests", "t1"), {
+            "estado": "en_progreso", "tipo": "personalizado", "documento_id": None, "fecha": "2026-01-01",
+        })
+        assert obtener_tests_en_progreso_por_documento(db, "u1") == {}
+
+    def test_se_queda_con_el_mas_reciente_si_hay_varios(self, db):
+        db.sembrar(("usuarios", "u1", "tests", "viejo"), {
+            "estado": "en_progreso", "tipo": "test_pdf", "documento_id": "d1", "fecha": "2026-01-01",
+        })
+        db.sembrar(("usuarios", "u1", "tests", "nuevo"), {
+            "estado": "en_progreso", "tipo": "test_pdf", "documento_id": "d1", "fecha": "2026-06-01",
+        })
+        assert obtener_tests_en_progreso_por_documento(db, "u1") == {"d1": "nuevo"}
+
+    def test_sin_tests_devuelve_vacio(self, db):
+        assert obtener_tests_en_progreso_por_documento(db, "u1") == {}

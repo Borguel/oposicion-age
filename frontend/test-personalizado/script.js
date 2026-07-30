@@ -4,6 +4,7 @@
 // separada en su propia página para no mezclar el
 // selector de tipo de test con el propio formulario de generación.
 import { icono } from "/assets/icons.js";
+import { leerStreamConTimeout, TIMEOUT_SIN_EVENTOS_STREAM_MS } from "/assets/stream-utils.js";
 
 const TIPO_TEST = "personalizado";
 const ENDPOINT_GENERAR = "/generar-test-avanzado";
@@ -324,7 +325,7 @@ async function obtenerAuthHeaders() {
     }
 
     // Añade una pregunta que ha terminado de generarse/verificarse DESPUÉS
-    // de que el usuario ya haya empezado a responder (test de N>10
+    // de que el usuario ya haya empezado a responder (test de N>5
     // preguntas, ver entrarEnModoTest) -- siempre al final, para no
     // desalinear las respuestas ya dadas a las preguntas anteriores.
     function agregarPreguntaEnCurso(pregunta, temas) {
@@ -341,8 +342,8 @@ async function obtenerAuthHeaders() {
 
     // Arranca la pantalla de test con las preguntas ya disponibles --
     // llamada tanto en el camino "normal" (todas las preguntas listas, al
-    // llegar "fin") como en el camino de inicio temprano (N>10, en cuanto
-    // hay min(10, N) preguntas, ver el bucle de lectura del stream SSE más
+    // llegar "fin") como en el camino de inicio temprano (N>5, en cuanto
+    // hay min(5, N) preguntas, ver el bucle de lectura del stream SSE más
     // abajo). A partir de aquí el stream puede seguir corriendo en segundo
     // plano sin que esto se vuelva a llamar.
     async function entrarEnModoTest(preguntasIniciales, oposicion, temas) {
@@ -502,19 +503,35 @@ async function obtenerAuthHeaders() {
         let buffer = "";
         let datosFinales = null;
 
-        // Punto 2: para peticiones de más de 10 preguntas, en cuanto
-        // llegan las primeras min(10, num_preguntas) ya aceptadas se deja
+        // Punto 2: para peticiones de más de 5 preguntas, en cuanto
+        // llegan las primeras min(5, num_preguntas) ya aceptadas se deja
         // al usuario empezar a responder mientras el resto se sigue
         // generando en segundo plano -- la lectura del stream NO se
-        // interrumpe al transicionar, sigue drenándose hasta "fin".
+        // interrumpe al transicionar, sigue drenándose hasta "fin". Bajado
+        // de 10 a 5 (26/07/2026): con DeepSeek respondiendo más lento de lo
+        // normal estos días, esperar a las 10 completas para el caso más
+        // común (justo 10 preguntas pedidas) significaba no aprovechar
+        // nunca este arranque temprano -- con 5 empieza antes también en
+        // ese caso habitual.
         let transicionadoATest = false;
         let preguntasRecibidas = [];
-        const umbralInicioTemprano = Math.min(10, num_preguntas);
+        const umbralInicioTemprano = Math.min(5, num_preguntas);
         let ultimoCompletadas = 0;
         let ultimoTotal = num_preguntas;
 
-        while (true) {
-          const { done, value } = await lector.read();
+        // El backend garantiza que "fin" es SIEMPRE el último evento del
+        // stream (su generador termina justo después de emitirlo), así que
+        // en cuanto llega se sale del bucle sin esperar a que el navegador
+        // señale el cierre de la conexión (done) -- en iPhone/WebKit esa
+        // señal a veces no llega nunca aunque todos los datos ya estén
+        // recibidos, y quedarse esperándola dejaba la pantalla congelada en
+        // "10 de 10" con el test completo ya en la mano (visto en
+        // producción: el servidor había respondido 200 con todo enviado y
+        // la página seguía "generando" hasta saltar el timeout).
+        let finRecibido = false;
+        try {
+          while (!finRecibido) {
+          const { done, value } = await leerStreamConTimeout(lector, TIMEOUT_SIN_EVENTOS_STREAM_MS);
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
           const bloques = buffer.split("\n\n");
@@ -531,13 +548,24 @@ async function obtenerAuthHeaders() {
             pararProgresoCosmetico();
 
             if (evento.tipo === "progreso") {
-              ultimoCompletadas = evento.completadas;
+              // Math.max: "completadas" no cuenta "preguntas únicas ya en
+              // el test final" sino candidatas procesadas (aceptadas o
+              // descartadas, de un hueco normal o de relleno, ver
+              // generador_preguntas_verificado.py), así que puede no
+              // llegar a coincidir justo con el total -- y además dos
+              // hilos pueden mandar su evento en orden distinto al que lo
+              // generaron, así que un valor más bajo podría llegar
+              // DESPUÉS de uno más alto. ultimoCompletadas nunca baja para
+              // que nada de esto haga retroceder lo ya mostrado (bug real
+              // reportado: el mensaje se quedaba en "39 de 40" con un test
+              // que sí tenía 40 preguntas).
+              ultimoCompletadas = Math.max(ultimoCompletadas, evento.completadas);
               ultimoTotal = evento.total;
               if (!transicionadoATest) {
                 const elMensajeCarga = document.getElementById("mensaje-carga");
                 const elBarra = document.getElementById("progreso-generacion");
                 const elTextoBarra = document.getElementById("texto-progreso-generacion");
-                const fraccionReal = evento.total ? (evento.completadas / evento.total) : 0;
+                const fraccionReal = ultimoTotal ? Math.min(1, ultimoCompletadas / ultimoTotal) : 0;
                 // El progreso real se remapea al tramo que queda por encima
                 // del cosmético, para que la barra continúe sin saltar hacia
                 // atrás (el conteo honesto "X de Y" ya va en el mensaje de abajo).
@@ -545,15 +573,21 @@ async function obtenerAuthHeaders() {
                 if (elBarra) elBarra.style.width = `${porcentaje}%`;
                 if (elTextoBarra) elTextoBarra.textContent = `${porcentaje}%`;
                 if (elMensajeCarga) {
-                  elMensajeCarga.textContent = `Generando y verificando pregunta ${evento.completadas} de ${evento.total}...`;
+                  // Con el total ya alcanzado (o superado, por el relleno
+                  // de huecos) se deja de mostrar un número concreto
+                  // (podría no llegar nunca a coincidir justo con
+                  // num_preguntas) y se pasa a un mensaje de cierre.
+                  elMensajeCarga.textContent = ultimoCompletadas >= ultimoTotal
+                    ? "Terminando de generar y verificar las últimas preguntas..."
+                    : `Generando y verificando pregunta ${ultimoCompletadas} de ${ultimoTotal}...`;
                 }
               } else {
-                mostrarIndicadorGenerandoFondo(evento.completadas, evento.total);
+                mostrarIndicadorGenerandoFondo(ultimoCompletadas, ultimoTotal);
               }
             } else if (evento.tipo === "pregunta" && evento.pregunta) {
               if (!transicionadoATest) {
                 preguntasRecibidas.push(evento.pregunta);
-                if (num_preguntas > 10 && preguntasRecibidas.length >= umbralInicioTemprano) {
+                if (num_preguntas > umbralInicioTemprano && preguntasRecibidas.length >= umbralInicioTemprano) {
                   transicionadoATest = true;
                   entrarEnModoTest(preguntasRecibidas, oposicion, temas).then(() => {
                     mostrarIndicadorGenerandoFondo(ultimoCompletadas, ultimoTotal);
@@ -564,8 +598,34 @@ async function obtenerAuthHeaders() {
               }
             } else if (evento.tipo === "fin") {
               datosFinales = evento;
+              finRecibido = true;
             }
           }
+          }
+        } catch (errorStream) {
+          // El stream se cortó (timeout o error de red) ANTES de llegar
+          // "fin". Pero cada pregunta aceptada ya llegó como evento
+          // "pregunta" individual, así que si hay preguntas en la mano el
+          // test puede empezar igualmente con ellas -- perder el cierre de
+          // la conexión no debe tirar a la basura un test ya recibido.
+          // Solo si no llegó NINGUNA pregunta se propaga el error de verdad.
+          if (preguntasRecibidas.length === 0 && !transicionadoATest) {
+            throw errorStream;
+          }
+        }
+        lector.cancel().catch(() => {});
+
+        if (!datosFinales && !transicionadoATest && preguntasRecibidas.length > 0) {
+          // El final del stream se perdió pero las preguntas ya están aquí:
+          // se empieza el test con lo recibido, avisando sin bloquear si
+          // faltó alguna respecto a lo pedido.
+          if (preguntasRecibidas.length < num_preguntas) {
+            mostrarErrorGlobalNoBloqueante(
+              `La conexión se cortó al final: el test empieza con ${preguntasRecibidas.length} de ${num_preguntas} preguntas.`
+            );
+          }
+          await entrarEnModoTest(preguntasRecibidas, oposicion, temas);
+          return;
         }
 
         if (transicionadoATest) {
@@ -602,6 +662,15 @@ async function obtenerAuthHeaders() {
           return;
         }
         await entrarEnModoTest(datos.test, oposicion, temas);
+        // El backend puede entregar menos preguntas de las pedidas (algunas
+        // no superaron la verificación de calidad ni siquiera con el
+        // relleno, ver generador_preguntas_verificado.py) sin que eso sea un
+        // error -- test.length > 0 así que el bloque de arriba no salta,
+        // pero el usuario debe enterarse de que el test es más corto de lo
+        // pedido en vez de encontrarse con menos preguntas sin explicación.
+        if (datos.advertencia) {
+          mostrarErrorGlobalNoBloqueante(datos.advertencia);
+        }
       } catch (error) {
         pararProgresoCosmetico();
         const contenedorTest = document.getElementById('contenedor-test');

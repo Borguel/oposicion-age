@@ -312,6 +312,85 @@ body {
   color: var(--age-primary-dark);
 }
 
+.planes-comparativa {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+}
+
+.planes-comparativa h2 {
+  text-align: center;
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  font-weight: 700;
+  margin: 0 0 20px;
+}
+
+/* Deslizable en horizontal en vez de cortarse en pantallas estrechas
+   (mismo criterio que .admin-scroll en el panel admin). */
+.planes-comparativa-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.planes-tabla {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--age-shadow);
+}
+
+.planes-tabla th,
+.planes-tabla td {
+  padding: 12px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--age-border);
+  font-size: 13.5px;
+  color: var(--age-ink-soft);
+}
+
+.planes-tabla tbody tr:last-child th,
+.planes-tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.planes-tabla thead th {
+  padding-top: 18px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--age-ink);
+}
+
+.planes-tabla thead th span {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--age-ink-soft);
+  margin-top: 2px;
+}
+
+.planes-tabla th[scope="row"] {
+  text-align: left;
+  font-weight: 600;
+  color: var(--age-ink);
+}
+
+.planes-tabla-destacada {
+  background: var(--age-primary-soft);
+}
+
+.planes-tabla-check {
+  color: var(--age-primary-dark);
+  font-weight: 700;
+}
+
+.planes-tabla-cross {
+  color: var(--age-ink-faint);
+}
+
 .planes-beneficios {
   max-width: 1000px;
   margin: 8px auto 0;

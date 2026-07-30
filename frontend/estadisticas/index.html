@@ -39,7 +39,6 @@
         </svg>
         <div class="spinner"></div>
       </button>
-      <button id="estadisticas-exportar-pdf" type="button" class="age-btn age-btn-outline"><span data-icon="documento" data-icon-size="15" style="display:inline-flex;vertical-align:middle;"></span> Exportar PDF</button>
     </div>
   </div>
   <div class="tarjeta-recomendacion" id="tarjeta-temas-flojos" style="display:none;">
@@ -79,12 +78,17 @@
       <div class="valor vistazo-valor" id="vistazo-racha">—</div>
       <div class="vistazo-label">Racha actual</div>
     </div>
+    <div class="vistazo-tile">
+      <div class="vistazo-icono" data-icon="reloj" data-icon-size="22"></div>
+      <div class="valor vistazo-valor" id="tiempo">—</div>
+      <div class="vistazo-label">Tiempo dedicado</div>
+    </div>
   </section>
 
   <!-- Mapa de tu temario: justo debajo de "de un vistazo", antes de
        cualquier otra cosa -- es el dato más accionable de toda la página
        (qué temas dominas de verdad, no solo cuáles has "tocado" como
-       Cobertura/Temas estudiados de más abajo), así que va lo primero. -->
+       Cobertura de más abajo), así que va lo primero. -->
   <div class="seccion-separador seccion-separador-primera" id="mapa-temario-titulo">
     <h3><span data-icon="brujula" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Mapa de tu temario</h3>
   </div>
@@ -110,20 +114,6 @@
   <div class="seccion-separador">
     <h3><span data-icon="diana" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Aciertos y fallos</h3>
   </div>
-  <!-- Tiempo dedicado a hacer test: barra de ancho completo -->
-  <div class="tarjeta-estadistica neutra tarjeta-tiempo-total">
-    <div class="header">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
-      </svg>
-      <h4>Tiempo dedicado a hacer test</h4>
-    </div>
-    <div class="tiempo-total-datos">
-      <div class="valor" id="tiempo">—</div>
-      <div class="detalle">Dedicado a estudiar</div>
-    </div>
-  </div>
-
   <!-- Aciertos/fallos/blancos: antes 3 tarjetas casi idénticas, ahora una
        sola barra apilada + leyenda -- mismo dato, un solo vistazo. -->
   <div class="tarjeta-estadistica tarjeta-respuestas">
@@ -213,8 +203,10 @@
     <div class="seccion-separador seccion-separador-primera">
       <h3><span data-icon="libros" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Tus temas</h3>
     </div>
-    <!-- Cobertura del temario: cuántos temas se han trabajado ya en total,
-         para dar contexto a los números sueltos de las tarjetas de abajo. -->
+    <!-- Cobertura del temario: cuántos temas se han trabajado ya en total.
+         El detalle de cuáles en concreto (y con qué % de acierto) ya vive
+         en el mapa de temario de más arriba, así que aquí solo queda el
+         número de conjunto. -->
     <div class="tarjeta-estadistica tarjeta-cobertura">
       <div class="cobertura-cabecera">
         <span id="cobertura-texto">— de — temas trabajados</span>
@@ -223,30 +215,6 @@
       <div class="cobertura-barra">
         <div class="cobertura-fill" id="cobertura-fill" style="width:0%"></div>
       </div>
-    </div>
-    <!-- Temas Más Estudiados -->
-    <div class="tarjeta-estadistica tarjeta-temas" id="temas-top-container">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill="currentColor"/>
-        </svg>
-        <h4>Temas más estudiados</h4>
-      </div>
-      <div class="valor" id="temas-top-valor">—</div>
-      <div class="detalle" id="temas-top-detalle">Tus áreas de mayor enfoque</div>
-      <button class="btn-ver-temas" id="btn-ver-temas-top" type="button">Ver lista completa</button>
-    </div>
-    <!-- Temas No Estudiados -->
-    <div class="tarjeta-estadistica tarjeta-temas-nuevos" id="temas-nuevos-container">
-      <div class="header">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z" fill="currentColor"/>
-        </svg>
-        <h4>Temas no estudiados</h4>
-      </div>
-      <div class="valor" id="temas-nuevos">—</div>
-      <div class="detalle">Temas pendientes por estudiar</div>
-      <button class="btn-ver-temas" id="btn-ver-nuevos" type="button">Ver lista completa</button>
     </div>
     <div class="seccion-separador">
       <h3><span data-icon="reloj" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Otra actividad</h3>
@@ -282,44 +250,7 @@
       </div>
     </div>
   </div>
-</div>
-<!-- Modal para temas no estudiados -->
-<div class="modal-temas" id="modal-temas">
-  <div class="modal-contenido">
-    <button class="modal-cerrar" type="button" id="modal-cerrar" aria-label="Cerrar">&times;</button>
-    <h3 class="modal-titulo">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-2.67 0-8-1.34-8-4v-1c0-4.67 8-7.33 8-7.33s8 2.66 8 7.33v1c0 2.66-5.33 4-8 4z" fill="currentColor"/>
-      </svg>
-      Temas No Estudiados
-    </h3>
-    <div class="modal-busqueda">
-      <input type="text" id="modal-busqueda-input" placeholder="Buscar tema...">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M15.5 14h-.79l-.28-.28C16.41 12.53 17 11.06 17 9.5 17 5.91 14.09 3 10.5 3S4 5.91 4 9.5 6.91 16 10.5 16c1.56 0 3.03-.59 4.22-1.57l.28.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
-      </svg>
-    </div>
-    <ul class="lista-temas" id="lista-temas-nuevos"></ul>
-    <div class="modal-actions">
-      <button class="modal-btn modal-btn-secondary" id="modal-cerrar-btn" type="button">Cerrar</button>
-    </div>
-  </div>
-</div>
-<!-- Modal para temas más estudiados -->
-<div class="modal-temas" id="modal-temas-top">
-  <div class="modal-contenido">
-    <button class="modal-cerrar" type="button" id="modal-temas-top-cerrar" aria-label="Cerrar">&times;</button>
-    <h3 class="modal-titulo">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill="currentColor"/>
-      </svg>
-      Temas Más Estudiados
-    </h3>
-    <ul class="lista-temas" id="lista-temas-top"></ul>
-    <div class="modal-actions">
-      <button class="modal-btn modal-btn-secondary" id="modal-temas-top-cerrar-btn" type="button">Cerrar</button>
-    </div>
-  </div>
+  <button id="estadisticas-exportar-pdf" type="button" class="age-btn age-btn-outline age-btn-block estadisticas-exportar-pdf-final"><span data-icon="documento" data-icon-size="15" style="display:inline-flex;vertical-align:middle;"></span> Exportar PDF</button>
 </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

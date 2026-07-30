@@ -9,7 +9,7 @@ from conftest import sembrar_usuario_activo
 
 
 def _con_sesion(cliente, uid="u1", email="u1@example.com"):
-    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
+    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email, "email_verified": True})
     parche.start()
     return parche
 
@@ -113,6 +113,66 @@ def test_mi_test_devuelve_marcada_duda_de_preguntas_ya_guardadas(client, db):
         assert resp.status_code == 200
         preguntas = resp.get_json()["test"]["preguntas"]
         assert [p["marcada_duda"] for p in preguntas] == [True, False]
+    finally:
+        parche.stop()
+
+
+def test_guardar_test_excluye_dudas_de_la_nota_final(client, db):
+    # Sin marcar duda: 1 acierto, 1 fallo, 1 blanco -> nota 2.23/10,
+    # suspendido. Marcando como duda la pregunta fallada (la 2ª), esa
+    # pregunta no debe contar ni como fallo ni en el total: queda 1 acierto
+    # y 1 blanco sobre 2 preguntas -> nota 5.0/10, aprobado.
+    sembrar_usuario_activo(db, "u1", plan="basico")
+    contenido = [
+        {"pregunta": "¿Uno?", "respuesta_correcta": "A", "opciones": {"A": "x", "B": "y"}},
+        {"pregunta": "¿Dos?", "respuesta_correcta": "A", "opciones": {"A": "x", "B": "y"}},
+        {"pregunta": "¿Tres?", "respuesta_correcta": "A", "opciones": {"A": "x", "B": "y"}},
+    ]
+    respuestas = ["A", "B", None]
+    parche = _con_sesion(client)
+    try:
+        resp = client.post("/guardar-test?oposicion=AGE", json={
+            "test_id": "t1",
+            "contenido": contenido,
+            "respuestas": respuestas,
+            "metadatos": {"tipo": "personalizado", "tiempo": 0},
+            "marcadas_duda": [False, True, False],
+        }, headers={"Authorization": "Bearer x"})
+        assert resp.status_code == 200
+
+        guardado = db.leer(("usuarios", "u1", "tests", "t1"))
+        assert guardado["aciertos"] == 1
+        assert guardado["fallos"] == 0
+        assert guardado["blancos"] == 1
+        assert guardado["resultado"] == "aprobado"
+    finally:
+        parche.stop()
+
+
+def test_guardar_test_si_se_marcan_todas_como_duda_se_cuentan_igual(client, db):
+    # Si se marcan TODAS las preguntas como duda no queda ninguna con la que
+    # calcular una nota -- se cuentan todas igualmente en vez de guardar un
+    # resultado vacío/sin sentido.
+    sembrar_usuario_activo(db, "u1", plan="basico")
+    contenido = [
+        {"pregunta": "¿Uno?", "respuesta_correcta": "A", "opciones": {"A": "x", "B": "y"}},
+        {"pregunta": "¿Dos?", "respuesta_correcta": "A", "opciones": {"A": "x", "B": "y"}},
+    ]
+    parche = _con_sesion(client)
+    try:
+        resp = client.post("/guardar-test?oposicion=AGE", json={
+            "test_id": "t1",
+            "contenido": contenido,
+            "respuestas": ["A", "A"],
+            "metadatos": {"tipo": "personalizado", "tiempo": 0},
+            "marcadas_duda": [True, True],
+        }, headers={"Authorization": "Bearer x"})
+        assert resp.status_code == 200
+
+        guardado = db.leer(("usuarios", "u1", "tests", "t1"))
+        assert guardado["aciertos"] == 2
+        assert guardado["fallos"] == 0
+        assert guardado["resultado"] == "aprobado"
     finally:
         parche.stop()
 

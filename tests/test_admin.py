@@ -406,7 +406,7 @@ def test_temario_publicar_borrador_oculta_de_navegacion(client, db):
         client.patch("/admin/api/temario/AGE/bloque_01/publicado",
                      json={"publicado": False}, headers=_AUTH)
     # Ahora un usuario normal no debe ver ese bloque en /temas-disponibles.
-    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}):
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com", "email_verified": True}):
         temas = client.get("/temas-disponibles?oposicion=AGE", headers=_AUTH).get_json()["temas"]
     assert temas == []
 
@@ -576,6 +576,47 @@ def test_detalle_usuario_incluye_coste_ia(client, db):
     assert d["tokens_ia_total"] == 1500
 
 
+def test_detalle_usuario_incluye_coste_ia_diario(client, db):
+    from datetime import datetime
+    hoy = datetime.utcnow().strftime("%Y-%m-%d")
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia_dias": {
+        hoy: {"tokens_in": 200, "tokens_out": 100, "llamadas": 3, "coste": 0.004},
+    }})
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["coste_ia_historico_diario"] == [
+        {"dia": hoy, "coste": 0.004, "tokens": 300, "tokens_in": 200, "tokens_out": 100, "llamadas": 3},
+    ]
+
+
+def test_detalle_usuario_oculta_coste_ia_a_admin_parcial(client, db):
+    # Un admin con solo el permiso "usuarios" (soporte) puede ver y
+    # gestionar la ficha, pero no cuánto gasta la web en IA por ese
+    # usuario -- eso queda reservado al admin TOTAL.
+    from datetime import datetime
+    mes = datetime.utcnow().strftime("%Y-%m")
+    hoy = datetime.utcnow().strftime("%Y-%m-%d")
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com",
+        "coste_ia": {mes: {"tokens_in": 1000, "tokens_out": 500, "coste": 0.02}},
+        "coste_ia_dias": {hoy: {"tokens_in": 100, "tokens_out": 50, "llamadas": 1, "coste": 0.002}},
+    })
+    with _como(admin=False, uid="soporte1", permisos=["usuarios"]):
+        resp = client.get("/admin/api/usuarios/u1", headers=_AUTH)
+        d = resp.get_json()
+    assert resp.status_code == 200
+    assert d["coste_ia_mes"] is None
+    assert d["coste_ia_total"] is None
+    assert d["tokens_ia_total"] is None
+    assert d["coste_ia_historico"] is None
+    assert d["coste_ia_historico_diario"] is None
+    # El contenido creado y el rendimiento NO son datos monetarios -- un
+    # admin de soporte sí los necesita para ayudar al usuario, así que
+    # siguen viéndose con normalidad.
+    assert d["contenido_creado"] is not None
+    assert d["rendimiento"] is not None
+
+
 def test_resumen_calcula_mrr(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "a@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})
     db.sembrar(("usuarios", "u2"), {"email": "b@x.com", "suscripciones": {"AGE": {"plan": "basico"}, "GACE": {"plan": "premium"}}})
@@ -630,6 +671,29 @@ def test_reportes_adjuntan_pregunta_oficial(client, db):
     with _como():
         reportes = client.get("/admin/api/reportes?estado=pendiente", headers=_AUTH).get_json()["reportes"]
     assert reportes[0]["pregunta_oficial"]["respuesta_correcta"] == "C"
+
+
+def test_reportes_paginados(client, db):
+    # Antes traía TODOS los reportes de golpe sin límite -- con muchos
+    # acumulados, cada carga del panel iba leyendo (y facturando) cada vez
+    # más documentos de Firestore. 25 reportes -> 2 páginas de 20.
+    for i in range(25):
+        db.sembrar(("reportes_preguntas", f"r{i}"), {
+            "pregunta_texto": f"Pregunta {i}", "oposicion": "AGE", "motivo": "dudosa",
+            "estado": "pendiente", "fecha": f"2026-01-{i + 1:02d}",
+        })
+    with _como():
+        pagina1 = client.get("/admin/api/reportes?estado=pendiente", headers=_AUTH).get_json()
+        pagina2 = client.get("/admin/api/reportes?estado=pendiente&pagina=2", headers=_AUTH).get_json()
+
+    assert pagina1["total"] == 25
+    assert pagina1["pagina"] == 1
+    assert len(pagina1["reportes"]) == 20
+    assert len(pagina2["reportes"]) == 5
+    # Sin solape entre páginas.
+    ids_pagina1 = {r["id"] for r in pagina1["reportes"]}
+    ids_pagina2 = {r["id"] for r in pagina2["reportes"]}
+    assert not (ids_pagina1 & ids_pagina2)
 
 
 # ---------- Editor temario, import, sistema, banner, notas ----------
@@ -730,14 +794,31 @@ def test_limites_solo_admin_total(client, db):
 
 def test_banner_guardar_y_lectura_publica(client, db):
     with _como():
-        client.put("/admin/api/banner", json={"activo": True, "texto": "Hola", "tipo": "aviso"}, headers=_AUTH)
+        client.put(
+            "/admin/api/banner",
+            json={"activo": True, "texto": "Hola", "tipo": "aviso", "fuente": "elegante", "animacion": "parpadeo"},
+            headers=_AUTH,
+        )
     # Lectura pública sin token.
     pub = client.get("/banner-global").get_json()
     assert pub["activo"] is True and pub["texto"] == "Hola" and pub["tipo"] == "aviso"
+    assert pub["fuente"] == "elegante" and pub["animacion"] == "parpadeo"
     # Desactivado -> no expone el texto.
     with _como():
         client.put("/admin/api/banner", json={"activo": False, "texto": "Hola"}, headers=_AUTH)
     assert client.get("/banner-global").get_json() == {"activo": False}
+
+
+def test_banner_fuente_animacion_invalidas_caen_a_valor_por_defecto(client, db):
+    with _como():
+        r = client.put(
+            "/admin/api/banner",
+            json={"activo": True, "texto": "Hola", "fuente": "no-existe", "animacion": "no-existe"},
+            headers=_AUTH,
+        )
+    assert r.status_code == 200
+    d = r.get_json()
+    assert d["fuente"] == "default" and d["animacion"] == "ninguna"
 
 
 def test_promocion_guardar_y_lectura_publica(client, db):
@@ -748,6 +829,7 @@ def test_promocion_guardar_y_lectura_publica(client, db):
                 "activo": True, "plan": "premium", "descuento_pct": 20,
                 "duracion_texto": "2 meses", "fecha_fin": "2099-01-01T00:00:00",
                 "stripe_promotion_code": "promo_abc123", "mensaje": "Oferta especial",
+                "fuente": "impacto", "animacion": "deslizante",
             },
             headers=_AUTH,
         )
@@ -757,6 +839,19 @@ def test_promocion_guardar_y_lectura_publica(client, db):
     assert pub["plan"] == "premium"
     assert pub["descuento_pct"] == 20
     assert pub["stripe_promotion_code"] == "promo_abc123"
+    assert pub["fuente"] == "impacto" and pub["animacion"] == "deslizante"
+
+
+def test_promocion_fuente_animacion_invalidas_caen_a_valor_por_defecto(client, db):
+    with _como():
+        r = client.put(
+            "/admin/api/promocion",
+            json={"activo": True, "plan": "premium", "fuente": "no-existe", "animacion": "no-existe"},
+            headers=_AUTH,
+        )
+    assert r.status_code == 200
+    d = r.get_json()
+    assert d["fuente"] == "default" and d["animacion"] == "ninguna"
 
 
 def test_promocion_caducada_no_se_expone_aunque_siga_activa(client, db):
@@ -817,10 +912,28 @@ def test_auditoria_ordena_reciente_primero(client, db):
     assert entradas[0]["fecha"] >= entradas[1]["fecha"]
 
 
+def test_auditoria_paginada(client, db):
+    for i in range(60):
+        db.sembrar(("admin_auditoria", f"a{i}"), {
+            "accion": "algo", "objetivo": str(i), "email_admin": "admin@x.com",
+            "fecha": f"2026-01-{(i % 28) + 1:02d}T00:00:0{i % 10}",
+        })
+    with _como():
+        pagina1 = client.get("/admin/api/auditoria", headers=_AUTH).get_json()
+        pagina2 = client.get("/admin/api/auditoria?pagina=2", headers=_AUTH).get_json()
+
+    assert pagina1["total"] == 60
+    assert len(pagina1["entradas"]) == 50
+    assert len(pagina2["entradas"]) == 10
+    objetivos_pagina1 = {e["objetivo"] for e in pagina1["entradas"]}
+    objetivos_pagina2 = {e["objetivo"] for e in pagina2["entradas"]}
+    assert not (objetivos_pagina1 & objetivos_pagina2)
+
+
 # ---------- Reportes ----------
 def test_usuario_reporta_y_admin_lo_revisa(client, db):
     # Un usuario normal reporta.
-    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}):
+    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com", "email_verified": True}):
         r = client.post("/reportar-pregunta",
                         json={"pregunta_texto": "¿Pregunta con error?", "motivo": "La B también es correcta", "oposicion": "AGE"},
                         headers=_AUTH)
@@ -874,3 +987,406 @@ def test_bajas_sin_ninguna_no_falla(client, db):
         d = client.get("/admin/api/bajas", headers=_AUTH).get_json()
     assert d["total"] == 0
     assert d["comentarios_recientes"] == []
+
+
+# ---------- Vigilancia BOE: cambios de temario propuestos ----------
+def test_cambios_temario_requiere_permiso_temario(client, db):
+    with _como(admin=False, uid="mod1", permisos=["reportes"]):
+        assert client.get("/admin/api/cambios-temario?estado=pendiente", headers=_AUTH).status_code == 403
+
+
+def test_cambios_temario_lista_solo_el_estado_pedido(client, db):
+    db.sembrar(("cambios_temario_propuestos", "c1"), {
+        "oposicion": "AGE", "bloque_id": "bloque_01", "tema_id": "tema_01", "subbloque_id": "sub_1",
+        "ley_nombre": "TREBEP", "resumen": "El plazo cambia.", "texto_eliminar": "quince días",
+        "texto_anadir": "veinte días", "estado": "pendiente", "fecha_deteccion": "2026-01-01T00:00:00",
+    })
+    db.sembrar(("cambios_temario_propuestos", "c2"), {"estado": "descartado", "fecha_deteccion": "2026-01-01T00:00:00"})
+    with _como():
+        d = client.get("/admin/api/cambios-temario?estado=pendiente", headers=_AUTH).get_json()
+    assert len(d["cambios"]) == 1
+    assert d["cambios"][0]["id"] == "c1"
+    assert d["cambios"][0]["resumen"] == "El plazo cambia."
+
+
+def test_cambios_temario_aprobar_aplica_el_cambio_al_chunk(client, db):
+    _sembrar_tema(db)  # texto = "Texto del chunk 1."
+    db.sembrar(("cambios_temario_propuestos", "c1"), {
+        "oposicion": "AGE", "bloque_id": "bloque_01", "tema_id": "tema_01", "subbloque_id": "sub_1",
+        "resumen": "Cambia el chunk", "texto_eliminar": "chunk 1", "texto_anadir": "chunk actualizado",
+        "estado": "pendiente",
+    })
+    with _como():
+        resp = client.patch("/admin/api/cambios-temario/c1", json={"estado": "aprobado"}, headers=_AUTH)
+    assert resp.status_code == 200
+    chunk = db.leer(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"))
+    assert chunk["texto"] == "Texto del chunk actualizado."
+    propuesta = db.leer(("cambios_temario_propuestos", "c1"))
+    assert propuesta["estado"] == "aprobado"
+    assert propuesta["revisado_por"] == "admin1"
+    assert propuesta["revisado_por_email"] == "admin@example.com"
+    with _como():
+        d = client.get("/admin/api/cambios-temario?estado=aprobado", headers=_AUTH).get_json()
+    assert d["cambios"][0]["revisado_por_email"] == "admin@example.com"
+    assert d["cambios"][0]["fecha_revision"]
+
+
+def test_cambios_temario_aprobar_falla_si_el_chunk_ya_no_coincide(client, db):
+    _sembrar_tema(db)
+    db.sembrar(("cambios_temario_propuestos", "c1"), {
+        "oposicion": "AGE", "bloque_id": "bloque_01", "tema_id": "tema_01", "subbloque_id": "sub_1",
+        "resumen": "Cambia el chunk", "texto_eliminar": "un texto que ya no está", "texto_anadir": "nuevo",
+        "estado": "pendiente",
+    })
+    with _como():
+        resp = client.patch("/admin/api/cambios-temario/c1", json={"estado": "aprobado"}, headers=_AUTH)
+    assert resp.status_code == 409
+    # No se ha tocado el chunk ni el estado de la propuesta.
+    chunk = db.leer(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"))
+    assert chunk["texto"] == "Texto del chunk 1."
+    assert db.leer(("cambios_temario_propuestos", "c1"))["estado"] == "pendiente"
+
+
+def test_cambios_temario_descartar_no_toca_el_chunk(client, db):
+    _sembrar_tema(db)
+    db.sembrar(("cambios_temario_propuestos", "c1"), {
+        "oposicion": "AGE", "bloque_id": "bloque_01", "tema_id": "tema_01", "subbloque_id": "sub_1",
+        "texto_eliminar": "chunk 1", "texto_anadir": "chunk actualizado", "estado": "pendiente",
+    })
+    with _como():
+        resp = client.patch("/admin/api/cambios-temario/c1", json={"estado": "descartado"}, headers=_AUTH)
+    assert resp.status_code == 200
+    chunk = db.leer(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"))
+    assert chunk["texto"] == "Texto del chunk 1."
+    assert db.leer(("cambios_temario_propuestos", "c1"))["estado"] == "descartado"
+
+
+# ---------- Vigilancia BOE: avisos oficiales ----------
+def test_avisos_oficiales_requiere_permiso_reportes(client, db):
+    with _como(admin=False, uid="mod1", permisos=["temario"]):
+        assert client.get("/admin/api/avisos-oficiales?estado=pendiente", headers=_AUTH).status_code == 403
+
+
+def test_avisos_oficiales_crear_manual_requiere_permiso_reportes(client, db):
+    with _como(admin=False, uid="mod1", permisos=["temario"]):
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "AGE", "tipo": "fecha_examen", "titulo": "x",
+        }, headers=_AUTH)
+    assert resp.status_code == 403
+
+
+def test_avisos_oficiales_crear_manual_ok(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "AGE", "tipo": "fecha_examen",
+            "titulo": "Llamamiento extraordinario del ejercicio único",
+            "resumen": "Repesca para aspirantes convocados el 24 de julio.",
+            "url_boe": "https://run.gob.es/hsblF8yLcR",
+            "fecha_boe": "20260715",
+        }, headers=_AUTH)
+    assert resp.status_code == 201
+    aid = resp.get_json()["id"]
+    d = db.leer(("avisos_oficiales", aid))
+    assert d["oposiciones"] == ["AGE"]
+    assert d["tipo"] == "fecha_examen"
+    assert d["titulo"] == "Llamamiento extraordinario del ejercicio único"
+    assert d["url_boe"] == "https://run.gob.es/hsblF8yLcR"
+    assert d["fecha_boe"] == "20260715"
+    assert d["estado"] == "pendiente"
+    assert d["creado_manualmente_por"] == "admin1"
+
+
+def test_avisos_oficiales_crear_manual_rellena_resumen_y_fecha_por_defecto(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "GACE", "tipo": "convocatoria", "titulo": "Título sin resumen",
+        }, headers=_AUTH)
+    assert resp.status_code == 201
+    d = db.leer(("avisos_oficiales", resp.get_json()["id"]))
+    assert d["resumen"] == "Título sin resumen"
+    assert d["fecha_boe"]  # se rellena con la fecha de hoy
+
+
+def test_avisos_oficiales_crear_manual_con_varias_oposiciones(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposiciones": ["AGE", "GACE"], "tipo": "llamamiento_extraordinario",
+            "titulo": "Llamamiento extraordinario (AGE y GACE)",
+        }, headers=_AUTH)
+    assert resp.status_code == 201
+    d = db.leer(("avisos_oficiales", resp.get_json()["id"]))
+    assert d["oposiciones"] == ["AGE", "GACE"]
+
+
+def test_avisos_oficiales_crear_manual_rechaza_sin_ninguna_oposicion(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposiciones": [], "tipo": "convocatoria", "titulo": "x",
+        }, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_avisos_oficiales_crear_manual_rechaza_oposicion_invalida(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "NO_EXISTE", "tipo": "convocatoria", "titulo": "x",
+        }, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_avisos_oficiales_crear_manual_rechaza_tipo_invalido(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "AGE", "tipo": "lo-que-sea", "titulo": "x",
+        }, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_avisos_oficiales_crear_manual_rechaza_titulo_vacio(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "AGE", "tipo": "convocatoria", "titulo": "   ",
+        }, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_avisos_oficiales_publicar_y_descartar(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "GACE", "tipo": "convocatoria", "titulo": "Convocatoria GACE 2026",
+        "resumen": "Nueva convocatoria.", "url_boe": "https://boe.es/x", "estado": "pendiente",
+    })
+    with _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "publicado"}, headers=_AUTH)
+        assert resp.status_code == 200
+        d = client.get("/admin/api/avisos-oficiales?estado=publicado", headers=_AUTH).get_json()
+    assert len(d["avisos"]) == 1
+    assert d["avisos"][0]["titulo"] == "Convocatoria GACE 2026"
+    assert d["avisos"][0]["revisado_por_email"] == "admin@example.com"
+    assert db.leer(("avisos_oficiales", "a1"))["revisado_por"] == "admin1"
+
+
+def test_avisos_oficiales_estado_invalido_rechaza(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {"estado": "pendiente"})
+    with _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "lo-que-sea"}, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_avisos_oficiales_publicar_dispara_pagina_estatica_y_email(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Convocatoria AGE 2026",
+        "url_boe": "https://boe.es/x", "estado": "pendiente",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.actualizar_pagina_avisos_general") as mock_hub, \
+         patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
+         _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "publicado"}, headers=_AUTH)
+
+    assert resp.status_code == 200
+    mock_pagina.assert_called_once_with(db, "AGE")
+    mock_hub.assert_called_once_with(db)
+    mock_notificar.assert_called_once()
+    aviso_pasado = mock_notificar.call_args.args[1]
+    assert aviso_pasado["titulo"] == "Convocatoria AGE 2026"
+    assert aviso_pasado["estado"] == "publicado"
+
+
+def test_avisos_oficiales_publicar_con_varias_oposiciones_regenera_las_paginas_de_todas(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposiciones": ["AGE", "GACE"], "tipo": "llamamiento_extraordinario",
+        "titulo": "Llamamiento extraordinario (AGE y GACE)", "estado": "pendiente",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.actualizar_pagina_avisos_general") as mock_hub, \
+         patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
+         _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "publicado"}, headers=_AUTH)
+
+    assert resp.status_code == 200
+    assert {c.args[1] for c in mock_pagina.call_args_list} == {"AGE", "GACE"}
+    mock_hub.assert_called_once_with(db)
+    mock_notificar.assert_called_once()  # una sola vez, no una por oposición
+
+
+def test_avisos_oficiales_no_redispara_al_volver_a_guardar_publicado(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Convocatoria AGE 2026",
+        "url_boe": "https://boe.es/x", "estado": "publicado",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
+         _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "publicado"}, headers=_AUTH)
+
+    assert resp.status_code == 200
+    mock_pagina.assert_not_called()
+    mock_notificar.assert_not_called()
+
+
+def test_avisos_oficiales_descartar_no_dispara_pagina_ni_email(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Convocatoria AGE 2026",
+        "url_boe": "https://boe.es/x", "estado": "pendiente",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
+         _como():
+        resp = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "descartado"}, headers=_AUTH)
+
+    assert resp.status_code == 200
+    mock_pagina.assert_not_called()
+    mock_notificar.assert_not_called()
+
+
+def test_avisos_oficiales_crear_manual_con_tipo_personalizado_y_url_inap(client, db):
+    with _como():
+        resp = client.post("/admin/api/avisos-oficiales", json={
+            "oposicion": "AGE", "tipo": "otro", "tipo_personalizado": "Repesca especial",
+            "titulo": "x", "url_inap": "https://run.gob.es/algo-concreto",
+        }, headers=_AUTH)
+    assert resp.status_code == 201
+    d = db.leer(("avisos_oficiales", resp.get_json()["id"]))
+    assert d["tipo_personalizado"] == "Repesca especial"
+    assert d["url_inap"] == "https://run.gob.es/algo-concreto"
+
+
+def test_avisos_oficiales_listar_incluye_tipo_personalizado_y_url_inap(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "otro", "tipo_personalizado": "Repesca especial",
+        "titulo": "x", "url_inap": "https://run.gob.es/algo", "estado": "pendiente",
+    })
+    with _como():
+        d = client.get("/admin/api/avisos-oficiales?estado=pendiente", headers=_AUTH).get_json()
+    assert d["avisos"][0]["tipo_personalizado"] == "Repesca especial"
+    assert d["avisos"][0]["url_inap"] == "https://run.gob.es/algo"
+
+
+def test_avisos_oficiales_editar_requiere_permiso_reportes(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {"oposicion": "AGE", "tipo": "convocatoria", "titulo": "x", "estado": "pendiente"})
+    with _como(admin=False, uid="mod1", permisos=["temario"]):
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={"titulo": "y"}, headers=_AUTH)
+    assert resp.status_code == 403
+
+
+def test_avisos_oficiales_editar_corrige_contenido(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Título con typo",
+        "url_boe": "https://boe.es/mal", "estado": "pendiente",
+    })
+    with _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={
+            "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Título corregido",
+            "url_boe": "https://boe.es/bien", "url_inap": "https://run.gob.es/x",
+        }, headers=_AUTH)
+    assert resp.status_code == 200
+    d = db.leer(("avisos_oficiales", "a1"))
+    assert d["titulo"] == "Título corregido"
+    assert d["url_boe"] == "https://boe.es/bien"
+    assert d["url_inap"] == "https://run.gob.es/x"
+    assert d["estado"] == "pendiente"  # el PUT no toca el estado
+    assert d["editado_por"] == "admin1"
+
+
+def test_avisos_oficiales_editar_uno_ya_publicado_regenera_pagina_pero_no_reenvia_email(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Título con typo",
+        "url_boe": "https://boe.es/mal", "estado": "publicado",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.actualizar_pagina_avisos_general") as mock_hub, \
+         patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
+         _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={
+            "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Título corregido",
+            "url_boe": "https://boe.es/bien",
+        }, headers=_AUTH)
+    assert resp.status_code == 200
+    mock_pagina.assert_called_once_with(db, "AGE")
+    mock_hub.assert_called_once_with(db)
+    mock_notificar.assert_not_called()
+
+
+def test_avisos_oficiales_editar_quitando_una_oposicion_regenera_tambien_su_pagina(client, db):
+    # Si se quita GACE de la lista, su página tiene que regenerarse para
+    # que el aviso desaparezca de ahí (no solo la de las que quedan).
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposiciones": ["AGE", "GACE"], "tipo": "convocatoria", "titulo": "x", "estado": "publicado",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.actualizar_pagina_avisos_general") as mock_hub, \
+         _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={
+            "oposiciones": ["AGE"], "titulo": "x",
+        }, headers=_AUTH)
+    assert resp.status_code == 200
+    assert {c.args[1] for c in mock_pagina.call_args_list} == {"AGE", "GACE"}
+    mock_hub.assert_called_once_with(db)
+    assert db.leer(("avisos_oficiales", "a1"))["oposiciones"] == ["AGE"]
+
+
+def test_avisos_oficiales_editar_uno_pendiente_no_regenera_pagina(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "x", "estado": "pendiente",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={
+            "oposicion": "AGE", "tipo": "convocatoria", "titulo": "y",
+        }, headers=_AUTH)
+    assert resp.status_code == 200
+    mock_pagina.assert_not_called()
+
+
+def test_avisos_oficiales_editar_no_encontrado(client, db):
+    with _como():
+        resp = client.put("/admin/api/avisos-oficiales/no-existe", json={"titulo": "y"}, headers=_AUTH)
+    assert resp.status_code == 404
+
+
+def test_avisos_oficiales_editar_rechaza_titulo_vacio(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {"oposicion": "AGE", "tipo": "convocatoria", "titulo": "x", "estado": "pendiente"})
+    with _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={"titulo": "   "}, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_avisos_oficiales_editar_rechaza_tipo_invalido(client, db):
+    db.sembrar(("avisos_oficiales", "a1"), {"oposicion": "AGE", "tipo": "convocatoria", "titulo": "x", "estado": "pendiente"})
+    with _como():
+        resp = client.put("/admin/api/avisos-oficiales/a1", json={"tipo": "lo-que-sea"}, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_vigilancia_boe_salud_devuelve_lo_guardado_por_el_chequeo(client, db):
+    db.sembrar(("config", "vigilancia_boe"), {
+        "temas_faltantes": [{"oposicion": "GACE", "bloque_id": "bloque_09", "tema_id": "tema_99"}],
+        "temas_faltantes_fecha": "2026-07-23T00:00:00",
+    })
+    with _como():
+        resp = client.get("/admin/api/vigilancia-boe-salud", headers=_AUTH)
+    assert resp.status_code == 200
+    d = resp.get_json()
+    assert d["temas_faltantes"] == [{"oposicion": "GACE", "bloque_id": "bloque_09", "tema_id": "tema_99"}]
+    assert d["fecha"] == "2026-07-23T00:00:00"
+
+
+def test_vigilancia_boe_salud_sin_datos_previos_devuelve_vacio(client, db):
+    with _como():
+        resp = client.get("/admin/api/vigilancia-boe-salud", headers=_AUTH)
+    assert resp.status_code == 200
+    assert resp.get_json() == {"temas_faltantes": [], "fecha": ""}
+
+
+def test_vigilancia_boe_salud_requiere_permiso_reportes(client, db):
+    with _como(admin=False, uid="mod1", permisos=["temario"]):
+        assert client.get("/admin/api/vigilancia-boe-salud", headers=_AUTH).status_code == 403
+
+
+def test_resumen_incluye_pendientes_de_vigilancia_boe(client, db):
+    db.sembrar(("cambios_temario_propuestos", "c1"), {"estado": "pendiente"})
+    db.sembrar(("avisos_oficiales", "a1"), {"estado": "pendiente"})
+    db.sembrar(("avisos_oficiales", "a2"), {"estado": "publicado"})
+    with _como():
+        d = client.get("/admin/api/resumen", headers=_AUTH).get_json()
+    assert d["cambios_temario_pendientes"] == 1
+    assert d["avisos_oficiales_pendientes"] == 1

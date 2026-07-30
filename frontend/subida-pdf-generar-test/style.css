@@ -58,6 +58,26 @@
   flex: 1;
 }
 
+/* Aviso de "generando el resto en segundo plano" tras el arranque temprano
+   del test (num_preguntas > 5, ver script.js) -- mismo estilo que
+   test-personalizado/style.css para que se vea coherente. */
+.indicador-generando-fondo {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  background: var(--age-primary-soft, var(--age-bg));
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  font-size: 0.9rem;
+  color: var(--age-ink-soft);
+  text-align: center;
+}
+.icono-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+}
+
 .botones-navegacion-test {
   display: flex;
   flex-direction: row;
