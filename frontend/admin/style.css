@@ -196,7 +196,7 @@
    planes y rankings numerados en vez del antiguo .admin-cards/.admin-stat
    (una sola columna de tarjetas planas). */
 .admin-hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.admin-hero { border-radius: var(--age-radius-lg); padding: 20px 22px; box-shadow: var(--age-shadow); }
+.admin-hero { min-width: 0; border-radius: var(--age-radius-lg); padding: 20px 22px; box-shadow: var(--age-shadow); }
 .admin-hero-cab { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.85; }
 .admin-hero-num { font-size: 2.4rem; font-weight: 800; line-height: 1.1; margin: 6px 0 4px; }
 .admin-hero-sub { font-size: 13px; opacity: 0.85; }
@@ -215,8 +215,8 @@
 .admin-kpi-alerta .admin-kpi-ico { background: var(--age-danger-bg); color: var(--age-danger); }
 
 .admin-dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
-.admin-dash-col { display: flex; flex-direction: column; gap: 16px; }
-.admin-dash-col > .admin-bloque { margin-top: 0; }
+.admin-dash-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.admin-dash-col > .admin-bloque { margin-top: 0; min-width: 0; }
 
 .admin-planes-barra { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--age-neutral-bg); margin-bottom: 10px; }
 .admin-planes-seg { display: block; height: 100%; }
