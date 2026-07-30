@@ -5,7 +5,9 @@ prompt, no por orden de llamada -- el pipeline es paralelo)."""
 import json
 from unittest.mock import patch
 
-from tarjetas_generator import _repartir_cupos, _parsear_tarjetas, generar_tarjetas_verificadas
+from tarjetas_generator import (
+    _repartir_cupos, _parsear_tarjetas, _contiene_frase_prohibida, generar_tarjetas_verificadas,
+)
 
 
 class TestRepartirCupos:
@@ -34,6 +36,24 @@ class TestParsearTarjetas:
     def test_vacio_o_none_devuelve_lista_vacia(self):
         assert _parsear_tarjetas("") == []
         assert _parsear_tarjetas(None) == []
+
+
+class TestContieneFrasesProhibidas:
+    def test_pregunta_que_remite_al_texto_se_detecta(self):
+        tarjeta = {"pregunta": "¿Qué tipos de costumbre existen según el texto?", "respuesta": "R"}
+        assert _contiene_frase_prohibida(tarjeta) is True
+
+    def test_respuesta_que_remite_al_documento_tambien_se_detecta(self):
+        tarjeta = {"pregunta": "¿Qué es la costumbre?", "respuesta": "Según el documento, es una fuente del derecho."}
+        assert _contiene_frase_prohibida(tarjeta) is True
+
+    def test_mayusculas_no_evitan_la_deteccion(self):
+        tarjeta = {"pregunta": "¿Qué dice SEGÚN EL TEXTO sobre la costumbre?", "respuesta": "R"}
+        assert _contiene_frase_prohibida(tarjeta) is True
+
+    def test_tarjeta_autonoma_pasa(self):
+        tarjeta = {"pregunta": "¿Qué es la costumbre jurídica?", "respuesta": "Una fuente del derecho no escrita."}
+        assert _contiene_frase_prohibida(tarjeta) is False
 
 
 def _es_prompt_generacion(messages):
@@ -82,6 +102,31 @@ class TestGenerarTarjetasVerificadas:
             resultado = generar_tarjetas_verificadas("Texto corto del documento.", 1)
 
         assert resultado["descartadas"] == 0
+        assert len(resultado["tarjetas"]) == 1
+        assert resultado["tarjetas"][0]["pregunta"] == "¿Pregunta B?"
+
+    def test_tarjeta_con_frase_prohibida_se_descarta_sin_gastar_verificacion(self):
+        # La primera candidata remite al texto de origen ("según el texto")
+        # -- debe descartarse y regenerarse SIN llegar a pedir verificación
+        # por IA (el filtro es local, más barato que una llamada a
+        # DeepSeek). Si el prompt de verificación llegara a recibir la
+        # candidata "A", el AssertionError de abajo lo delataría.
+        def fake_call(messages, **kwargs):
+            if _es_prompt_generacion(messages):
+                if "No repitas esta pregunta" in messages[0]["content"]:
+                    return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta B?", "respuesta": "Respuesta B"}]})
+                return json.dumps({"tarjetas": [
+                    {"pregunta": "¿Qué dice el texto sobre X?", "respuesta": "Según el texto, X es Y."}
+                ]})
+            if _es_prompt_verificacion(messages):
+                candidata = json.loads(messages[1]["content"].split("TARJETA A VERIFICAR:\n")[1])
+                assert candidata["pregunta"] == "¿Pregunta B?", "la tarjeta con frase prohibida no debería verificarse"
+                return json.dumps({"valido": True, "problemas": []})
+            raise AssertionError("prompt inesperado")
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call):
+            resultado = generar_tarjetas_verificadas("Texto corto del documento.", 1)
+
         assert len(resultado["tarjetas"]) == 1
         assert resultado["tarjetas"][0]["pregunta"] == "¿Pregunta B?"
 

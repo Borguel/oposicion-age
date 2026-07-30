@@ -31,6 +31,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from deepseek_utils import call_deepseek_api, _trocear_en_parrafos
+from validador_preguntas import FRASES_PROHIBIDAS
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +94,11 @@ def _prompt_generacion(fragmento, cupo, evitar=None):
         "6. **Fidelidad al fragmento**: basa cada tarjeta ÚNICAMENTE en el fragmento proporcionado. No "
         "completes huecos con conocimiento propio ni inventes datos, cifras, fechas o artículos que no "
         "aparezcan en el texto.\n"
+        "7. **Autonomía de la tarjeta**: quien repasa la tarjeta más adelante NO tiene el documento "
+        "delante, solo la pregunta -- así que nunca remitas a él. Prohibido \"según el texto\", "
+        "\"según el documento\", \"en el fragmento proporcionado\", \"lo que has subido\", \"lo "
+        "mencionado\"/\"lo anterior\" ni similares. Afirma cada dato directamente, como si fuera "
+        "conocimiento general de la materia.\n"
         f"Genera EXACTAMENTE {cupo} tarjeta{'s' if cupo != 1 else ''} (ni más ni menos)."
         + (f" No repitas esta pregunta, ya descartada: {evitar!r}. Aborda un aspecto distinto del fragmento." if evitar else "")
         + "\nDevuelve ÚNICAMENTE un JSON con esta forma exacta, sin bloques de código ni texto adicional:\n"
@@ -164,6 +170,15 @@ def _verificar_tarjeta(tarjeta, fragmento, on_usage):
         return False
 
 
+def _contiene_frase_prohibida(tarjeta):
+    """Filtro determinista (no depende de que la IA de verificación lo
+    detecte): igual que validador_preguntas.validar_pregunta hace para el
+    Test Personalizado, comprueba localmente antes de gastar una llamada de
+    verificación en una tarjeta que se va a descartar de todos modos."""
+    texto = (tarjeta["pregunta"] + " " + tarjeta["respuesta"]).lower()
+    return any(frase in texto for frase in FRASES_PROHIBIDAS)
+
+
 def _regenerar_una_tarjeta(fragmento, pregunta_descartada, on_usage):
     system, user = _prompt_generacion(fragmento, 1, evitar=pregunta_descartada)
     generado = call_deepseek_api(
@@ -187,7 +202,8 @@ def _asegurar_tarjeta_valida(candidata, fragmento, dedup_lock, claves_vistas, on
         clave = _normalizar(tarjeta["pregunta"])
         with dedup_lock:
             es_duplicada = clave in claves_vistas
-        if not es_duplicada and _verificar_tarjeta(tarjeta, fragmento, on_usage):
+        if (not es_duplicada and not _contiene_frase_prohibida(tarjeta)
+                and _verificar_tarjeta(tarjeta, fragmento, on_usage)):
             with dedup_lock:
                 if clave in claves_vistas:
                     es_duplicada = True  # otro hilo aceptó lo mismo mientras se verificaba esta

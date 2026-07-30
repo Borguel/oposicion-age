@@ -1,6 +1,30 @@
 import re
 from collections import Counter
 
+# Frases que delatan que la pregunta/respuesta remite al documento de origen
+# en vez de tener sentido por sí sola (p. ej. "¿Qué tipos de costumbre
+# existen SEGÚN EL TEXTO...?") -- inútiles para quien responde sin ver ese
+# documento, sea un test (validar_pregunta, abajo) o una tarjeta de memoria
+# suelta (tarjetas_generator.py, que reutiliza esta misma lista).
+FRASES_PROHIBIDAS = [
+    "según el contenido", "según el texto", "según el documento", "en el contenido proporcionado",
+    "de acuerdo con lo anterior", "según lo anterior", "tal como se indica", "como se ha dicho",
+    "del contenido proporcionado", "en el documento proporcionado",
+    "en el texto proporcionado", "en el fragmento proporcionado",
+    "mencionado en el contenido", "mencionada en el contenido",
+    "mencionados en el contenido", "mencionadas en el contenido",
+    "mencionado en el documento", "mencionada en el documento",
+    "mencionados en el documento", "mencionadas en el documento",
+    "mencionado en el texto", "mencionada en el texto",
+    "mencionados en el texto", "mencionadas en el texto",
+    "arriba mencionado", "arriba mencionada", "arriba mencionados", "arriba mencionadas",
+    "anteriormente mencionado", "anteriormente mencionada",
+    "anteriormente mencionados", "anteriormente mencionadas", "mencionado anteriormente",
+    "de acuerdo con el contenido", "de acuerdo con el texto",
+    "de acuerdo con el documento", "de acuerdo con el fragmento",
+    "lo que has subido", "el documento que has subido", "el pdf que has subido",
+]
+
 # ✅ Detección de conceptos repetidos
 def detectar_repeticiones(preguntas, max_repeticiones=2):
     referencias = []
@@ -47,24 +71,7 @@ def validar_pregunta(pregunta):
     # remita a él ("¿qué tienen en común... mencionados en el contenido?")
     # queda sin sentido para quien la responde.
     texto_total = (pregunta["pregunta"] + " " + pregunta["explicacion"]).lower()
-    frases_prohibidas = [
-        "según el contenido", "según el texto", "en el contenido proporcionado",
-        "de acuerdo con lo anterior", "según lo anterior", "tal como se indica", "como se ha dicho",
-        "del contenido proporcionado", "en el documento proporcionado",
-        "en el texto proporcionado", "en el fragmento proporcionado",
-        "mencionado en el contenido", "mencionada en el contenido",
-        "mencionados en el contenido", "mencionadas en el contenido",
-        "mencionado en el documento", "mencionada en el documento",
-        "mencionados en el documento", "mencionadas en el documento",
-        "mencionado en el texto", "mencionada en el texto",
-        "mencionados en el texto", "mencionadas en el texto",
-        "arriba mencionado", "arriba mencionada", "arriba mencionados", "arriba mencionadas",
-        "anteriormente mencionado", "anteriormente mencionada",
-        "anteriormente mencionados", "anteriormente mencionadas", "mencionado anteriormente",
-        "de acuerdo con el contenido", "de acuerdo con el texto",
-        "de acuerdo con el documento", "de acuerdo con el fragmento",
-    ]
-    if any(frase in texto_total for frase in frases_prohibidas):
+    if any(frase in texto_total for frase in FRASES_PROHIBIDAS):
         return False
 
     # ❌ Filtro de siglas de normas -- los exámenes oficiales de estas
