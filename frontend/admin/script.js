@@ -360,16 +360,11 @@ async function renderDashboard() {
   actualizarBadgeReportes(d.reportes_pendientes || 0);
   actualizarBadgeBoe((d.cambios_temario_pendientes || 0) + (d.avisos_oficiales_pendientes || 0));
 
-  const planes = Object.entries(d.usuarios_por_plan || {})
-    .map(([plan, n]) => `<span class="admin-chip">${escapeHtml(plan)}: <strong>${n}</strong></span>`).join("");
-  const temas = (d.top_temas_fallados || []).map((t) => `
-    <tr><td>${escapeHtml(t.titulo || t.tema_id)}</td><td class="admin-num">${t.fallos}</td></tr>`).join("")
-    || `<tr><td colspan="2" class="admin-vacio">Sin datos de fallos todavía.</td></tr>`;
-
   const salud = d.salud_contenido || {};
   const preg = d.preguntas_stats || {};
   const sinContenido = salud.temas_sin_contenido || [];
   const alertaReportes = (d.reportes_pendientes || 0) > 0;
+  const puedeAbrirUsuario = puedeVer("usuarios");
 
   const huecos = sinContenido.length
     ? sinContenido.map((t) => `
@@ -378,54 +373,124 @@ async function renderDashboard() {
         </button>`).join("")
     : `<span class="admin-vacio">Todos los temas tienen contenido. ${icono("check", 14)}</span>`;
 
-  panel.innerHTML = `
-    <div class="admin-cards">
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("usuarios", 22)}</span><span class="admin-stat-num">${d.usuarios_totales}</span><span class="admin-stat-lbl">Usuarios</span><span class="admin-stat-sub">+${d.usuarios_nuevos_7_dias || 0} en 7 días</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("rayo", 22)}</span><span class="admin-stat-num">${d.usuarios_activos_7_dias || 0}</span><span class="admin-stat-lbl">Activos (7 días)</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("matraz", 22)}</span><span class="admin-stat-num">${d.tests_ultimos_7_dias}</span><span class="admin-stat-lbl">Tests (7 días)</span><span class="admin-stat-sub">${d.tests_ultimos_30_dias} en 30 días</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("libros", 22)}</span><span class="admin-stat-num">${d.tests_total || 0}</span><span class="admin-stat-lbl">Tests totales</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("euro", 22)}</span><span class="admin-stat-num">${(d.mrr || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Ingresos/mes (MRR)</span><span class="admin-stat-sub">${d.suscripciones_pago || 0} suscripciones de pago</span></div>
-      <div class="age-card admin-stat"><span class="admin-stat-ico" aria-hidden="true">${icono("robot", 22)}</span><span class="admin-stat-num">${(d.coste_ia_mes || 0).toFixed(2)}€</span><span class="admin-stat-lbl">Coste IA (este mes)</span></div>
-      <div class="age-card admin-stat admin-stat-clic ${alertaReportes ? "admin-stat-alerta" : ""}" id="stat-reportes"><span class="admin-stat-ico" aria-hidden="true">${icono("bandera", 22)}</span><span class="admin-stat-num">${d.reportes_pendientes}</span><span class="admin-stat-lbl">Reportes pendientes</span></div>
-    </div>
+  // Usuarios por plan: barra segmentada de N colores (derivados de tokens --age-*).
+  const PALETA_PLANES = ["var(--age-primary)", "var(--age-success)", "var(--age-warning)", "var(--age-primary-dark)"];
+  const entradasPlanes = Object.entries(d.usuarios_por_plan || {});
+  const totalPlanes = entradasPlanes.reduce((s, [, n]) => s + (n || 0), 0);
+  const planesHtml = totalPlanes === 0
+    ? `<p class="admin-vacio">Sin usuarios todavía.</p>`
+    : `
+      <div class="admin-planes-barra">${entradasPlanes.map(([plan, n], i) => {
+        const pct = ((n || 0) / totalPlanes) * 100;
+        return `<span class="admin-planes-seg" style="width:${pct.toFixed(2)}%; background:${PALETA_PLANES[i % PALETA_PLANES.length]}" title="${escapeHtml(plan)}: ${n}"></span>`;
+      }).join("")}</div>
+      <div class="admin-planes-leyenda">${entradasPlanes.map(([plan, n], i) => `
+        <span class="admin-planes-item">
+          <i class="admin-planes-dot" style="background:${PALETA_PLANES[i % PALETA_PLANES.length]}" aria-hidden="true"></i>
+          ${escapeHtml(plan)} <strong>${n}</strong>
+          <span class="admin-planes-pct">(${(((n || 0) / totalPlanes) * 100).toFixed(0)}%)</span>
+        </span>`).join("")}</div>`;
 
-    <div class="age-card admin-bloque">
-      <h3>Contenido de ${escapeHtml(d.oposicion || oposicionActual())}</h3>
-      <div class="admin-datos-grid">
-        <div class="admin-dato-caja"><span class="admin-dato-caja-num">${salud.temas_total || 0}</span><span class="admin-dato-caja-lbl">Temas</span></div>
-        <div class="admin-dato-caja"><span class="admin-dato-caja-num">${preg.activas || 0}</span><span class="admin-dato-caja-lbl">Preguntas activas</span></div>
-        <div class="admin-dato-caja"><span class="admin-dato-caja-num">${sinContenido.length}</span><span class="admin-dato-caja-lbl">Temas sin fichas</span></div>
-        <div class="admin-dato-caja"><span class="admin-dato-caja-num">${preg.sin_explicacion || 0}</span><span class="admin-dato-caja-lbl">Sin explicación</span></div>
-        <div class="admin-dato-caja"><span class="admin-dato-caja-num">${(salud.temas_borrador || 0) + (salud.bloques_borrador || 0)}</span><span class="admin-dato-caja-lbl">En borrador</span></div>
+  // Top gastadores IA: lista numerada en vez de tabla.
+  const gastadores = d.top_gastadores_ia || [];
+  const gastadoresHtml = gastadores.length
+    ? gastadores.map((g, i) => `
+        <li class="admin-ranking-item ${puedeAbrirUsuario ? "admin-fila-click" : ""}"
+            data-uid-gasto="${escapeHtml(g.uid)}"
+            ${puedeAbrirUsuario ? 'tabindex="0" role="button"' : ""}
+            aria-label="Ver ficha de ${escapeHtml(g.email || "usuario sin email")}">
+          <span class="admin-ranking-pos">${i + 1}</span>
+          <span class="admin-ranking-info">
+            <span class="admin-ranking-titulo">${escapeHtml(g.email || "(sin email)")}</span>
+            <span class="admin-ranking-meta"><span class="admin-chip">${escapeHtml(g.plan)}</span></span>
+          </span>
+          <span class="admin-ranking-valor">${(g.coste_mes || 0).toFixed(4)}€</span>
+        </li>`).join("")
+    : `<li class="admin-vacio admin-ranking-vacio">Sin consumo de IA este mes.</li>`;
+
+  // Top temas fallados: lista numerada en vez de tabla.
+  const temasFallados = d.top_temas_fallados || [];
+  const temasHtml = temasFallados.length
+    ? temasFallados.map((t, i) => `
+        <li class="admin-ranking-item">
+          <span class="admin-ranking-pos">${i + 1}</span>
+          <span class="admin-ranking-info">
+            <span class="admin-ranking-titulo">${escapeHtml(t.titulo || t.tema_id)}</span>
+          </span>
+          <span class="admin-ranking-valor admin-ranking-valor-danger">${t.fallos} fallos</span>
+        </li>`).join("")
+    : `<li class="admin-vacio admin-ranking-vacio">Sin datos de fallos todavía.</li>`;
+
+  panel.innerHTML = `
+    <div class="admin-hero-grid">
+      <div class="admin-hero admin-hero-primary">
+        <div class="admin-hero-cab"><span>${icono("euro", 18)} Ingresos / mes (MRR)</span></div>
+        <div class="admin-hero-num">${(d.mrr || 0).toFixed(2)}€</div>
+        <div class="admin-hero-sub">${d.suscripciones_pago || 0} suscripciones de pago</div>
+      </div>
+      <div class="admin-hero admin-hero-navy">
+        <div class="admin-hero-cab"><span>${icono("usuarios", 18)} Usuarios totales</span></div>
+        <div class="admin-hero-num">${d.usuarios_totales}</div>
+        <div class="admin-hero-sub">+${d.usuarios_nuevos_7_dias || 0} en los últimos 7 días</div>
       </div>
     </div>
 
-    <div class="age-card admin-bloque">
-      <h3>Temas sin contenido — huecos por rellenar</h3>
-      <div class="admin-chips">${huecos}</div>
+    <div class="admin-kpi-grid">
+      <div class="age-card admin-kpi"><span class="admin-kpi-ico">${icono("rayo", 18)}</span><span class="admin-kpi-num">${d.usuarios_activos_7_dias || 0}</span><span class="admin-kpi-lbl">Activos (7 días)</span></div>
+      <div class="age-card admin-kpi"><span class="admin-kpi-ico">${icono("matraz", 18)}</span><span class="admin-kpi-num">${d.tests_ultimos_7_dias}</span><span class="admin-kpi-lbl">Tests (7 días)</span><span class="admin-kpi-sub">${d.tests_ultimos_30_dias} en 30 días</span></div>
+      <div class="age-card admin-kpi"><span class="admin-kpi-ico">${icono("libros", 18)}</span><span class="admin-kpi-num">${d.tests_total || 0}</span><span class="admin-kpi-lbl">Tests totales</span></div>
+      <div class="age-card admin-kpi"><span class="admin-kpi-ico">${icono("robot", 18)}</span><span class="admin-kpi-num">${(d.coste_ia_mes || 0).toFixed(2)}€</span><span class="admin-kpi-lbl">Coste IA (mes)</span></div>
+      <div class="age-card admin-kpi admin-kpi-clic ${alertaReportes ? "admin-kpi-alerta" : ""}" id="stat-reportes"><span class="admin-kpi-ico">${icono("bandera", 18)}</span><span class="admin-kpi-num">${d.reportes_pendientes}</span><span class="admin-kpi-lbl">Reportes pendientes</span></div>
     </div>
 
-    <div class="age-card admin-bloque">
-      <h3>Usuarios por plan</h3>
-      <div class="admin-chips">${planes || '<span class="admin-vacio">Sin usuarios.</span>'}</div>
-    </div>
+    <div class="admin-dash-grid">
+      <div class="admin-dash-col">
+        <div class="age-card admin-bloque">
+          <h3>Contenido de ${escapeHtml(d.oposicion || oposicionActual())}</h3>
+          <div class="admin-datos-grid">
+            <div class="admin-dato-caja"><span class="admin-dato-caja-num">${salud.temas_total || 0}</span><span class="admin-dato-caja-lbl">Temas</span></div>
+            <div class="admin-dato-caja"><span class="admin-dato-caja-num">${preg.activas || 0}</span><span class="admin-dato-caja-lbl">Preguntas activas</span></div>
+            <div class="admin-dato-caja"><span class="admin-dato-caja-num">${sinContenido.length}</span><span class="admin-dato-caja-lbl">Temas sin fichas</span></div>
+            <div class="admin-dato-caja"><span class="admin-dato-caja-num">${preg.sin_explicacion || 0}</span><span class="admin-dato-caja-lbl">Sin explicación</span></div>
+            <div class="admin-dato-caja"><span class="admin-dato-caja-num">${(salud.temas_borrador || 0) + (salud.bloques_borrador || 0)}</span><span class="admin-dato-caja-lbl">En borrador</span></div>
+          </div>
+        </div>
 
-    <div class="age-card admin-bloque">
-      <h3>Usuarios que más IA consumen (este mes)</h3>
-      <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Email</th><th>Plan</th><th class="admin-num">Coste</th></tr></thead><tbody>${
-        (d.top_gastadores_ia || []).map((g) => `<tr class="admin-fila-click" data-uid-gasto="${escapeHtml(g.uid)}"><td>${escapeHtml(g.email || "(sin email)")}</td><td><span class="admin-chip">${escapeHtml(g.plan)}</span></td><td class="admin-num">${(g.coste_mes || 0).toFixed(4)}€</td></tr>`).join("")
-        || '<tr><td colspan="3" class="admin-vacio">Sin consumo de IA este mes.</td></tr>'}</tbody></table></div>
-    </div>
+        <div class="age-card admin-bloque">
+          <h3>Temas sin contenido — huecos por rellenar</h3>
+          <div class="admin-chips">${huecos}</div>
+        </div>
+      </div>
 
-    <div class="age-card admin-bloque">
-      <h3>Top 5 temas más fallados (todos los usuarios)</h3>
-      <div class="admin-scroll"><table class="admin-tabla"><thead><tr><th>Tema</th><th class="admin-num">Fallos</th></tr></thead><tbody>${temas}</tbody></table></div>
+      <div class="admin-dash-col">
+        <div class="age-card admin-bloque">
+          <h3>Usuarios por plan</h3>
+          ${planesHtml}
+        </div>
+
+        <div class="age-card admin-bloque">
+          <h3>Usuarios que más IA consumen (este mes)</h3>
+          <ol class="admin-ranking">${gastadoresHtml}</ol>
+        </div>
+
+        <div class="age-card admin-bloque">
+          <h3>Top 5 temas más fallados (todos los usuarios)</h3>
+          <ol class="admin-ranking">${temasHtml}</ol>
+        </div>
+      </div>
     </div>`;
 
   panel.querySelector("#stat-reportes")?.addEventListener("click", () => activarPestana("reportes"));
-  panel.querySelectorAll("[data-uid-gasto]").forEach((tr) => tr.addEventListener("click", () => {
-    if (puedeVer("usuarios")) abrirUsuario(tr.dataset.uidGasto);
-  }));
+
+  panel.querySelectorAll("[data-uid-gasto]").forEach((li) => {
+    if (!puedeAbrirUsuario) return;
+    const abrir = () => abrirUsuario(li.dataset.uidGasto);
+    li.addEventListener("click", abrir);
+    li.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrir(); }
+    });
+  });
+
   panel.querySelectorAll(".admin-hueco").forEach((b) => b.addEventListener("click", () => {
     temaSeleccionado = { bloque: b.dataset.bloque, tema: b.dataset.tema, titulo: b.textContent.trim() };
     activarPestana("temario");

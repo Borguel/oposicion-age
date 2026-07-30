@@ -181,7 +181,7 @@
    tarjetas del panel para que el contenido no quede pegado al borde. Las
    que ya definen su propio padding (estadísticas) lo recuperan debajo. */
 .admin-panel .age-card { padding: 16px 18px; }
-.admin-panel .admin-stat { padding: 18px 12px; }
+.admin-panel .admin-kpi { padding: 14px 12px; }
 .admin-panel .admin-arbol,
 .admin-panel .admin-chunks { padding: 14px; }
 
@@ -192,16 +192,56 @@
 .admin-seccion-titulo { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .admin-seccion-titulo h3 { margin: 0; }
 
-/* Dashboard */
-.admin-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
-.admin-stat { text-align: center; padding: 18px 12px; position: relative; }
-.admin-stat-ico { display: block; font-size: 1.3rem; margin-bottom: 4px; }
-.admin-stat-num { display: block; font-size: 2rem; font-weight: 800; color: var(--age-primary); line-height: 1.1; }
-.admin-stat-lbl { font-size: 12.5px; color: var(--age-ink-soft, var(--age-ink)); }
-.admin-stat-sub { display: block; font-size: 11.5px; color: var(--age-ink-soft, var(--age-ink)); margin-top: 3px; }
-.admin-stat-clic { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
-.admin-stat-clic:hover { transform: translateY(-2px); box-shadow: var(--age-shadow-hover); }
-.admin-stat-alerta .admin-stat-num { color: var(--age-danger, #dc3545); }
+/* Dashboard: hero (gradiente), KPIs compactos, grid de 2 columnas, barra de
+   planes y rankings numerados en vez del antiguo .admin-cards/.admin-stat
+   (una sola columna de tarjetas planas). */
+.admin-hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.admin-hero { border-radius: var(--age-radius-lg); padding: 20px 22px; box-shadow: var(--age-shadow); }
+.admin-hero-cab { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.85; }
+.admin-hero-num { font-size: 2.4rem; font-weight: 800; line-height: 1.1; margin: 6px 0 4px; }
+.admin-hero-sub { font-size: 13px; opacity: 0.85; }
+.admin-hero-primary { background: linear-gradient(135deg, var(--age-primary-dark), var(--age-primary)); color: #1b1f2e; }
+.admin-hero-navy { background: linear-gradient(135deg, var(--age-navy), var(--age-navy-soft)); color: #fff; border: 1px solid rgba(255, 255, 255, 0.08); }
+
+.admin-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.admin-kpi { display: flex; flex-direction: column; gap: 6px; padding: 14px 12px; text-align: left; position: relative; }
+.admin-kpi-ico { width: 34px; height: 34px; border-radius: 50%; background: var(--age-primary-soft); color: var(--age-primary-dark); display: inline-flex; align-items: center; justify-content: center; }
+.admin-kpi-num { font-size: 1.55rem; font-weight: 800; color: var(--age-ink); line-height: 1.15; }
+.admin-kpi-lbl { font-size: 12px; font-weight: 600; color: var(--age-ink-soft, var(--age-ink)); }
+.admin-kpi-sub { font-size: 11px; color: var(--age-ink-faint, var(--age-ink-soft)); }
+.admin-kpi-clic { cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.admin-kpi-clic:hover { transform: translateY(-2px); box-shadow: var(--age-shadow-hover); }
+.admin-kpi-alerta .admin-kpi-num { color: var(--age-danger, #dc3545); }
+.admin-kpi-alerta .admin-kpi-ico { background: var(--age-danger-bg); color: var(--age-danger); }
+
+.admin-dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+.admin-dash-col { display: flex; flex-direction: column; gap: 16px; }
+.admin-dash-col > .admin-bloque { margin-top: 0; }
+
+.admin-planes-barra { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--age-neutral-bg); margin-bottom: 10px; }
+.admin-planes-seg { display: block; height: 100%; }
+.admin-planes-leyenda { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.admin-planes-item { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--age-ink-soft, var(--age-ink)); }
+.admin-planes-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+.admin-planes-pct { color: var(--age-ink-faint, var(--age-ink-soft)); }
+
+.admin-ranking { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.admin-ranking-item { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-bottom: 1px solid var(--age-border); border-radius: 10px; }
+.admin-ranking-item:last-child { border-bottom: none; }
+.admin-ranking-pos { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; background: var(--age-primary-soft); color: var(--age-primary-dark); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.admin-ranking-item:first-child .admin-ranking-pos { background: var(--age-primary); color: #1b1f2e; }
+.admin-ranking-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.admin-ranking-titulo { font-size: 13.5px; font-weight: 700; color: var(--age-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-ranking-meta { font-size: 12px; }
+.admin-ranking-valor { flex: 0 0 auto; font-size: 13.5px; font-weight: 800; color: var(--age-ink); white-space: nowrap; }
+.admin-ranking-valor-danger { color: var(--age-danger, #dc3545); }
+.admin-ranking-vacio { padding: 8px 0; }
+.admin-ranking-item[tabindex="0"]:focus-visible { outline: 2px solid var(--age-primary); outline-offset: -2px; }
+
+@media (max-width: 900px) {
+  .admin-dash-grid { grid-template-columns: 1fr; }
+}
+
 .admin-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-chip { background: var(--age-primary-soft); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
 .admin-chip-warn { background: var(--age-danger-bg); color: var(--age-danger, #b02a37); }
@@ -703,7 +743,9 @@ tr.sis-opt .sis-punto { background: #d9a300; }
   .admin-oposicion { max-width: none; flex: 1; }
   .admin-filtros .age-input { max-width: none; flex-basis: 100%; }
   .admin-filtros .age-btn { flex: 1 1 auto; }
-  .admin-stat-num { font-size: 1.7rem; }
+  .admin-hero-grid { grid-template-columns: 1fr; }
+  .admin-hero-num { font-size: 2rem; }
+  .admin-kpi-num { font-size: 1.3rem; }
   .admin-modal { padding: 16px 10px; }
   .admin-modal-caja { padding: 18px 16px; }
 }
