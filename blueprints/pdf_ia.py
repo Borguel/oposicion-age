@@ -17,6 +17,7 @@ from pypdf import PdfReader
 from firebase_setup import db
 from auth_utils import requiere_plan, obtener_oposicion_solicitada
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso, devolver_uso
+from rate_limiter import limiter
 from documentos_pdf import (
     obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta,
     listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo, obtener_preguntas_previas,
@@ -99,6 +100,7 @@ def _extraer_json_array(texto):
 
 
 @bp.route('/resumir-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def resumir_pdf():
     # En streaming (SSE, mismo patrón que /generar-test-desde-pdf) para dar
@@ -196,6 +198,7 @@ def resumir_documento():
 
 
 @bp.route('/generar-esquema-desde-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def generar_esquema_desde_pdf():
     # En streaming (SSE, mismo patrón que /generar-test-desde-pdf/
@@ -319,6 +322,7 @@ def generar_esquema_desde_pdf():
 
 
 @bp.route('/generar-test-desde-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def generar_test_desde_pdf():
     # En streaming (SSE, mismo patrón que /generar-test-avanzado en
@@ -483,6 +487,7 @@ def generar_test_desde_pdf():
 
 
 @bp.route('/generar-tarjetas-desde-pdf', methods=['POST'])
+@limiter.limit("5 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def generar_tarjetas_desde_pdf():
     # En streaming (SSE, mismo patrón que /generar-test-desde-pdf/
@@ -615,6 +620,7 @@ def subir_pdf_chat():
 
 
 @bp.route('/chat-pdf-mensaje', methods=['POST'])
+@limiter.limit("20 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def chat_pdf_mensaje():
     datos = request.get_json(silent=True) or {}
@@ -675,6 +681,7 @@ def chat_pdf_mensaje():
 
 
 @bp.route("/chat-deepseek", methods=["POST"])
+@limiter.limit("20 per minute")
 @requiere_plan(db, "premium", global_check=True)
 def chat_deepseek():
     data = request.get_json()

@@ -11,6 +11,7 @@ from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 from firebase_setup import db
 from auth_utils import requiere_plan
 from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
+from rate_limiter import limiter
 from oposiciones import coleccion_temario
 from utils import obtener_catalogo_temas
 from chat_controller import responder_tutor, responder_tutor_stream, sugerencia_inicial_usuario
@@ -36,6 +37,7 @@ def tu_tutor_sugerencia_inicial():
 
 
 @bp.route("/tu-tutor", methods=["POST"])
+@limiter.limit("20 per minute")
 @requiere_plan(db, "premium")
 def tu_tutor_route():
     data = request.get_json()
@@ -70,6 +72,7 @@ def tu_tutor_route():
 # (igual que en la ruta normal); registrar_uso y el guardado en Firestore
 # ocurren dentro del propio generador, solo si se completa con éxito.
 @bp.route("/tu-tutor/stream", methods=["POST"])
+@limiter.limit("20 per minute")
 @requiere_plan(db, "premium")
 def tu_tutor_stream_route():
     data = request.get_json()

@@ -3,10 +3,10 @@ import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_talisman import Talisman
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
+
+from rate_limiter import limiter
 
 # Logging estructurado (con nivel y hora) en vez de print(): así se puede
 # filtrar por gravedad y, sobre todo, se ve en los logs de Render con
@@ -77,20 +77,10 @@ Talisman(
 # Límite de peticiones por IP para tráfico que no pasa por el control de
 # cuota de IA de limites_uso.py (que solo cubre a usuarios ya logueados):
 # sobre todo /health, que no exige autenticación y hace una lectura real a
-# Firestore en cada llamada. storage_uri="memory://" porque Render (plan
-# gratuito) corre un único proceso -- no hace falta un backend compartido
-# como Redis para que el límite sea efectivo.
-limiter = Limiter(
-    key_func=get_remote_address,
-    app=app,
-    default_limits=["200 per hour"],
-    storage_uri="memory://",
-    # Desactivado en tests (ver conftest.py): con cientos de peticiones de
-    # test client en una misma sesión de pytest, todas "desde la misma IP",
-    # se dispararía el límite real y los tests empezarían a fallar por un
-    # 429 que no tiene nada que ver con lo que cada test comprueba.
-    enabled=os.getenv("RATELIMIT_ENABLED", "true").lower() != "false",
-)
+# Firestore en cada llamada. El objeto en sí vive en rate_limiter.py (creado
+# sin app, para que los blueprints puedan importarlo y decorar sus propias
+# rutas -- ver ese módulo); aquí solo se enlaza con esta app en concreto.
+limiter.init_app(app)
 
 # Tamaño máximo de subida (20 MB): un PDF de exámenes normal pesa unos pocos
 # MB incluso con muchas páginas, así que esto solo frena subidas anómalas
