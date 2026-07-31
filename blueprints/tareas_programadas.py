@@ -16,6 +16,7 @@ from email_utils import (
     enviar_email_prueba_terminada,
     enviar_email_alerta_coste_ia,
 )
+from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketing
 from planes import ORDEN_PLANES, mejor_plan
 from push_utils import enviar_push
 from coste_ia import resumen_coste_usuario
@@ -130,6 +131,7 @@ def enviar_recordatorios_prueba():
             terminando += 1
         elif dias_restantes == -1:
             enviar_email_prueba_terminada(email, nombre=nombre)
+            sincronizar_contacto_marketing(email, nombre=nombre, estado="sin_suscripcion")
             terminada += 1
 
     logger.info("Recordatorios de prueba enviados: %s terminando, %s terminada", terminando, terminada)

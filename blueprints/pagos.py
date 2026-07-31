@@ -19,6 +19,7 @@ from email_utils import (
     enviar_email_pago_fallido,
     enviar_email_reactivacion_suscripcion,
 )
+from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketing
 from promociones import leer_promocion, promocion_vigente
 
 logger = logging.getLogger(__name__)
@@ -277,6 +278,7 @@ def reactivar_suscripcion():
     actualizar_suscripcion(db, g.uid, oposicion, cancelar_al_final_periodo=False)
     oposicion_nombre = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
     enviar_email_reactivacion_suscripcion(g.email, oposicion_nombre)
+    sincronizar_contacto_marketing(g.email, oposicion=oposicion, estado="activo")
     return jsonify({"mensaje": "Tu suscripción se ha reactivado."})
 
 
@@ -381,6 +383,8 @@ def webhook_stripe():
                     current_period_end=datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None,
                     cancelar_al_final_periodo=_sget(subscription, "cancel_at_period_end", False)
                 )
+                usuario = db.collection("usuarios").document(uid).get().to_dict() or {}
+                sincronizar_contacto_marketing(usuario.get("email"), oposicion=oposicion, estado="activo")
         elif tipo == "customer.subscription.updated":
             customer_id = _sget(objeto, "customer")
             # La oposición viaja en la metadata de la propia Subscription
@@ -413,6 +417,8 @@ def webhook_stripe():
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
                 actualizar_suscripcion(db, docs[0].id, oposicion, plan="gratis", subscription_status="canceled", cancelar_al_final_periodo=False)
+                email_usuario = (docs[0].to_dict() or {}).get("email")
+                sincronizar_contacto_marketing(email_usuario, oposicion=oposicion, estado="sin_suscripcion")
         elif tipo == "invoice.payment_failed":
             customer_id = _sget(objeto, "customer")
             subscription_id = _sget(objeto, "subscription")
@@ -429,6 +435,7 @@ def webhook_stripe():
                 email_usuario = (docs[0].to_dict() or {}).get("email")
                 oposicion_nombre = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
                 enviar_email_pago_fallido(email_usuario, oposicion_nombre)
+                sincronizar_contacto_marketing(email_usuario, oposicion=oposicion, estado="pago_fallido")
     except Exception:
         # logger.exception ya vuelca el traceback completo (y lo manda a
         # Sentry si está configurado). Se responde 500 sin el detalle interno
