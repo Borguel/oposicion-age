@@ -107,6 +107,92 @@ services:
       - type: redirect
         source: /asistente/*
         destination: /tu-tutor/
+      # Canonicalización de URLs para SEO: Search Console mostraba la misma
+      # página indexada bajo variantes con y sin barra final, diluyendo las
+      # señales de ranking entre ambas. www + https se resuelve a nivel de
+      # dominio (Custom Domains de este servicio en el panel de Render, no
+      # aquí); esto solo cubre la barra final, que Render no normaliza solo
+      # -- sirve el mismo index.html en /planes y /planes/ sin redirigir.
+      # Una regla explícita por página (no hay forma de capturar el path y
+      # añadirle "/" con un único wildcard en la sintaxis de rutas de Render).
+      - type: redirect
+        source: /planes
+        destination: /planes/
+      - type: redirect
+        source: /demo
+        destination: /demo/
+      - type: redirect
+        source: /oposicion-administrativo-estado-c1
+        destination: /oposicion-administrativo-estado-c1/
+      - type: redirect
+        source: /oposicion-auxiliar-administrativo-estado
+        destination: /oposicion-auxiliar-administrativo-estado/
+      - type: redirect
+        source: /oposicion-gace
+        destination: /oposicion-gace/
+      - type: redirect
+        source: /como-funciona
+        destination: /como-funciona/
+      - type: redirect
+        source: /como-funciona/estadisticas
+        destination: /como-funciona/estadisticas/
+      - type: redirect
+        source: /como-funciona/herramientas-ia
+        destination: /como-funciona/herramientas-ia/
+      - type: redirect
+        source: /como-funciona/mis-documentos
+        destination: /como-funciona/mis-documentos/
+      - type: redirect
+        source: /como-funciona/mis-tests
+        destination: /como-funciona/mis-tests/
+      - type: redirect
+        source: /como-funciona/repasar-preguntas
+        destination: /como-funciona/repasar-preguntas/
+      - type: redirect
+        source: /como-funciona/test-oficial
+        destination: /como-funciona/test-oficial/
+      - type: redirect
+        source: /como-funciona/test-personalizado
+        destination: /como-funciona/test-personalizado/
+      - type: redirect
+        source: /como-funciona/tu-tutor
+        destination: /como-funciona/tu-tutor/
+      - type: redirect
+        source: /como-funciona/zona-opositor
+        destination: /como-funciona/zona-opositor/
+      - type: redirect
+        source: /comparativa-oposiciones-estado
+        destination: /comparativa-oposiciones-estado/
+      - type: redirect
+        source: /estudiar-oposiciones-con-inteligencia-artificial
+        destination: /estudiar-oposiciones-con-inteligencia-artificial/
+      - type: redirect
+        source: /oposiciones
+        destination: /oposiciones/
+      - type: redirect
+        source: /como-estudiar-oposicion-trabajando
+        destination: /como-estudiar-oposicion-trabajando/
+      - type: redirect
+        source: /sueldo-funcionario-administracion-estado
+        destination: /sueldo-funcionario-administracion-estado/
+      - type: redirect
+        source: /avisos-oficiales
+        destination: /avisos-oficiales/
+      - type: redirect
+        source: /login
+        destination: /login/
+      - type: redirect
+        source: /aviso-legal
+        destination: /aviso-legal/
+      - type: redirect
+        source: /cookies
+        destination: /cookies/
+      - type: redirect
+        source: /privacidad
+        destination: /privacidad/
+      - type: redirect
+        source: /terminos
+        destination: /terminos/
       # Cualquier ruta que no corresponda a un fichero real (Render no
       # aplica esta regla si el path sí existe) sirve la página 404 propia
       # en vez del error genérico de Render.
