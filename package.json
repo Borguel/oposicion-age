@@ -2,9 +2,12 @@
   "name": "oposicion-age-frontend-tests",
   "private": true,
   "scripts": {
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "format:check": "prettier --check \"frontend/**/*.{js,css,html}\"",
+    "format:write": "prettier --write \"frontend/**/*.{js,css,html}\""
   },
   "devDependencies": {
-    "@playwright/test": "^1.48.0"
+    "@playwright/test": "^1.48.0",
+    "prettier": "^3.8.1"
   }
 }

@@ -1,0 +1,25 @@
+# Hooks locales de formateo/lint, mismos que corren (en modo solo-lectura,
+# sin bloquear) en el job "lint" de .github/workflows/ci.yml.
+#
+# Instalación (una sola vez, por dev):
+#   pip install pre-commit && pre-commit install
+#
+# A partir de ahí se ejecutan solos en cada `git commit`, solo sobre los
+# ficheros que se están commiteando.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.8
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+
+  - repo: https://github.com/psf/black
+    rev: 26.3.1
+    hooks:
+      - id: black
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.8.1
+    hooks:
+      - id: prettier
+        files: ^frontend/.*\.(js|css|html)$
