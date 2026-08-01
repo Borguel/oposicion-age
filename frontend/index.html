@@ -1082,7 +1082,7 @@
           <a href="/login/?next=/zona-opositor/" class="age-btn age-btn-primary">Empezar mi prueba gratuita</a>
           <a href="/planes/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Ver planes</a>
         </div>
-        <a href="/demo/" class="home-hero-demo-link"><span data-icon="rayo" data-icon-size="16"></span> Prueba 5 preguntas gratis, sin registrarte</a>
+        <a href="/demo/" class="home-hero-demo-link" style="display:none"><span data-icon="rayo" data-icon-size="16"></span> Prueba 5 preguntas gratis, sin registrarte</a>
       </div>
       <div class="home-hero-imagen" aria-hidden="true"></div>
     </div>
@@ -1391,8 +1391,15 @@
     // todavía no tiene cuenta -- quien ya ha iniciado sesión tiene los 7
     // días de prueba con Premium completo (todas las oposiciones incluidas),
     // así que mostrarle también la demo anónima es ruido, no una alternativa.
+    // Empieza oculta en el HTML (display:none) para que a quien ya tiene
+    // sesión iniciada nunca le llegue a parpadear en pantalla mientras se
+    // resuelve la autenticación; solo se revela una vez confirmado que es
+    // una visita anónima.
     esperarUsuario().then((usuario) => {
-      if (usuario) document.querySelector(".home-hero-demo-link")?.remove();
+      if (!usuario) {
+        const demo = document.querySelector(".home-hero-demo-link");
+        if (demo) demo.style.display = "";
+      }
     });
   </script>
 </body>
