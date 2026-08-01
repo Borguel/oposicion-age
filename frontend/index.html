@@ -296,7 +296,14 @@
     }
 
     .home-hero-imagen {
-      display: none;
+      display: block;
+      width: 190px;
+      height: 190px;
+      margin: 12px auto 0;
+      background-image: url('/assets/hero-estudio.svg');
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
     }
 
     @media (min-width: 960px) {
@@ -323,14 +330,10 @@
       }
 
       .home-hero-imagen {
-        display: block;
         flex: 0 0 380px;
         width: 380px;
         height: 380px;
-        background-image: url('/assets/hero-estudio.svg');
-        background-repeat: no-repeat;
-        background-size: contain;
-        background-position: center;
+        margin: 0;
       }
     }
 
@@ -1058,7 +1061,16 @@
   </style>
 </head>
 <body>
-  <nav class="age-nav"></nav>
+  <nav class="age-nav">
+    <noscript>
+      <div class="age-nav-fallback">
+        <a href="/">Domina tu Opo</a>
+        <a href="/planes/">Planes</a>
+        <a href="/como-funciona/">Cómo funciona</a>
+        <a href="/login/">Iniciar sesión</a>
+      </div>
+    </noscript>
+  </nav>
 
   <section class="home-hero">
     <div class="home-hero-inner">
@@ -1283,13 +1295,13 @@
       <div class="pricing-teaser-card">
         <h3>Básico</h3>
         <div class="pricing-teaser-price">4,99€<span>/mes</span></div>
-        <p class="desc">Test oficial y personalizado con IA, y análisis de rendimiento.</p>
+        <p class="desc">Test oficial y personalizado con IA (hasta 50 preguntas/día) y análisis de rendimiento (hasta 20 usos/mes).</p>
       </div>
       <div class="pricing-teaser-card destacado">
         <div class="pricing-teaser-badge">Más completo</div>
         <h3>Premium</h3>
         <div class="pricing-teaser-price">9,99€<span>/mes</span></div>
-        <p class="desc">Todas las herramientas desde PDF y Tu Tutor, el chat premium de IA.</p>
+        <p class="desc">Todo ilimitado, además de las herramientas desde tus PDF y Tu Tutor, el chat premium de IA.</p>
       </div>
     </div>
     <p class="pricing-teaser-note">

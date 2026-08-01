@@ -181,6 +181,37 @@ body {
   margin: 0 auto;
 }
 
+/* Solo se ve si el navegador no ejecuta JS: auth.js es quien normalmente
+   rellena .age-nav (logo, enlaces, cuenta), así que sin JS la barra
+   quedaría vacía -- sin navegación ni para el usuario ni para rastreadores
+   que no ejecuten scripts. */
+.age-nav-fallback {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 10px 0;
+}
+
+.age-nav-fallback a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.age-nav-fallback a:first-child {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.age-nav-fallback a:hover {
+  text-decoration: underline;
+}
+
 .age-nav-brand {
   display: inline-flex;
   align-items: center;
