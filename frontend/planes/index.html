@@ -80,7 +80,16 @@
   <link rel="stylesheet" href="/planes/style.css" />
 </head>
 <body>
-  <nav class="age-nav"></nav>
+  <nav class="age-nav">
+    <noscript>
+      <div class="age-nav-fallback">
+        <a href="/">Domina tu Opo</a>
+        <a href="/planes/">Planes</a>
+        <a href="/como-funciona/">Cómo funciona</a>
+        <a href="/login/">Iniciar sesión</a>
+      </div>
+    </noscript>
+  </nav>
 
   <div class="hero">
     <h1>Elige tu plan</h1>
@@ -137,6 +146,7 @@
 
   <section class="planes-comparativa">
     <h2>Compara los planes</h2>
+    <p class="planes-tabla-scroll-hint">Desliza hacia la derecha para ver el plan Premium →</p>
     <div class="planes-comparativa-scroll">
       <table class="planes-tabla">
         <thead>
@@ -206,51 +216,51 @@
   <section class="planes-faq">
     <h2>Preguntas frecuentes</h2>
     <div class="planes-faq-lista">
-      <div class="planes-faq-item">
-        <button type="button" class="planes-faq-pregunta" data-faq-toggle aria-expanded="false">
+      <details class="planes-faq-item">
+        <summary class="planes-faq-pregunta">
           ¿Cómo funciona la prueba gratuita de 7 días?
           <span class="planes-faq-chevron">▾</span>
-        </button>
-        <div class="planes-faq-respuesta" style="display:none;">
+        </summary>
+        <div class="planes-faq-respuesta">
           Al crear tu cuenta empiezas automáticamente con 7 días de acceso Premium completo, sin necesidad de tarjeta. Cuando termine, si no has contratado un plan de pago, tu cuenta queda bloqueada (aunque tus datos y tests ya hechos se conservan) hasta que elijas Básico o Premium.
         </div>
-      </div>
-      <div class="planes-faq-item">
-        <button type="button" class="planes-faq-pregunta" data-faq-toggle aria-expanded="false">
+      </details>
+      <details class="planes-faq-item">
+        <summary class="planes-faq-pregunta">
           ¿Puedo cancelar cuando quiera?
           <span class="planes-faq-chevron">▾</span>
-        </button>
-        <div class="planes-faq-respuesta" style="display:none;">
+        </summary>
+        <div class="planes-faq-respuesta">
           Sí. Puedes cancelar tu suscripción en cualquier momento desde "Mi cuenta → Gestionar suscripción", sin permanencia ni penalización. Seguirás teniendo acceso hasta el final del periodo ya pagado.
         </div>
-      </div>
-      <div class="planes-faq-item">
-        <button type="button" class="planes-faq-pregunta" data-faq-toggle aria-expanded="false">
+      </details>
+      <details class="planes-faq-item">
+        <summary class="planes-faq-pregunta">
           ¿El plan se aplica a todas las oposiciones o solo a una?
           <span class="planes-faq-chevron">▾</span>
-        </button>
-        <div class="planes-faq-respuesta" style="display:none;">
+        </summary>
+        <div class="planes-faq-respuesta">
           Cada oposición tiene su propia suscripción independiente. Puedes tener, por ejemplo, el plan Premium en una y el plan Básico en otra.
         </div>
-      </div>
-      <div class="planes-faq-item">
-        <button type="button" class="planes-faq-pregunta" data-faq-toggle aria-expanded="false">
+      </details>
+      <details class="planes-faq-item">
+        <summary class="planes-faq-pregunta">
           ¿Es seguro el pago?
           <span class="planes-faq-chevron">▾</span>
-        </button>
-        <div class="planes-faq-respuesta" style="display:none;">
+        </summary>
+        <div class="planes-faq-respuesta">
           Sí. Los pagos se procesan mediante una pasarela de pago cifrada y certificada (PCI-DSS), la misma tecnología que usan miles de tiendas y aplicaciones online. Nosotros nunca almacenamos los datos de tu tarjeta.
         </div>
-      </div>
-      <div class="planes-faq-item">
-        <button type="button" class="planes-faq-pregunta" data-faq-toggle aria-expanded="false">
+      </details>
+      <details class="planes-faq-item">
+        <summary class="planes-faq-pregunta">
           ¿Puedo cambiar de plan más adelante?
           <span class="planes-faq-chevron">▾</span>
-        </button>
-        <div class="planes-faq-respuesta" style="display:none;">
+        </summary>
+        <div class="planes-faq-respuesta">
           Sí, puedes subir o bajar de plan cuando quieras desde "Mi cuenta". Los cambios se aplican de inmediato.
         </div>
-      </div>
+      </details>
     </div>
   </section>
 

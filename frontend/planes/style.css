@@ -66,13 +66,13 @@ body {
 }
 
 .mensaje-checkout.ok {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: var(--age-success-bg);
+  color: var(--age-success);
 }
 
 .mensaje-checkout.error {
-  background: #fdecea;
-  color: #c62828;
+  background: var(--age-danger-bg);
+  color: var(--age-danger);
 }
 
 .cta-prueba {
@@ -332,6 +332,20 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+.planes-tabla-scroll-hint {
+  display: none;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--age-ink-soft);
+  margin: 0 0 8px;
+}
+
+@media (max-width: 640px) {
+  .planes-tabla-scroll-hint {
+    display: block;
+  }
+}
+
 .planes-tabla {
   width: 100%;
   min-width: 480px;
@@ -473,6 +487,11 @@ body {
   font-weight: 700;
   text-align: left;
   cursor: pointer;
+  list-style: none;
+}
+
+.planes-faq-pregunta::-webkit-details-marker {
+  display: none;
 }
 
 .planes-faq-chevron {
@@ -482,7 +501,7 @@ body {
   transition: transform 0.15s var(--age-ease);
 }
 
-.planes-faq-pregunta.abierto .planes-faq-chevron {
+.planes-faq-item[open] .planes-faq-chevron {
   transform: rotate(180deg);
 }
 

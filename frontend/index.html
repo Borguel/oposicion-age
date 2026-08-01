@@ -296,7 +296,14 @@
     }
 
     .home-hero-imagen {
-      display: none;
+      display: block;
+      width: 190px;
+      height: 190px;
+      margin: 12px auto 0;
+      background-image: url('/assets/hero-estudio.svg');
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
     }
 
     @media (min-width: 960px) {
@@ -323,14 +330,10 @@
       }
 
       .home-hero-imagen {
-        display: block;
         flex: 0 0 380px;
         width: 380px;
         height: 380px;
-        background-image: url('/assets/hero-estudio.svg');
-        background-repeat: no-repeat;
-        background-size: contain;
-        background-position: center;
+        margin: 0;
       }
     }
 
@@ -1058,7 +1061,16 @@
   </style>
 </head>
 <body>
-  <nav class="age-nav"></nav>
+  <nav class="age-nav">
+    <noscript>
+      <div class="age-nav-fallback">
+        <a href="/">Domina tu Opo</a>
+        <a href="/planes/">Planes</a>
+        <a href="/como-funciona/">Cómo funciona</a>
+        <a href="/login/">Iniciar sesión</a>
+      </div>
+    </noscript>
+  </nav>
 
   <section class="home-hero">
     <div class="home-hero-inner">
@@ -1070,7 +1082,7 @@
           <a href="/login/?next=/zona-opositor/" class="age-btn age-btn-primary">Empezar mi prueba gratuita</a>
           <a href="/planes/" class="age-btn age-btn-outline" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.25);color:#fff;">Ver planes</a>
         </div>
-        <a href="/demo/" class="home-hero-demo-link"><span data-icon="rayo" data-icon-size="16"></span> Prueba 5 preguntas gratis, sin registrarte</a>
+        <a href="/demo/" class="home-hero-demo-link" style="display:none"><span data-icon="rayo" data-icon-size="16"></span> Prueba 5 preguntas gratis, sin registrarte</a>
       </div>
       <div class="home-hero-imagen" aria-hidden="true"></div>
     </div>
@@ -1089,11 +1101,11 @@
 
   <div class="home-prueba-social" id="home-prueba-social">
     <div class="home-prueba-social-item">
-      <strong class="home-prueba-social-num" id="home-stat-oficiales" data-target="1655">0</strong>
+      <strong class="home-prueba-social-num">+1.655</strong>
       <span>preguntas oficiales disponibles</span>
     </div>
     <div class="home-prueba-social-item">
-      <strong class="home-prueba-social-num" id="home-stat-generadas" data-target="12223">0</strong>
+      <strong class="home-prueba-social-num">+12.223</strong>
       <span>preguntas generadas por opositores</span>
     </div>
   </div>
@@ -1283,13 +1295,13 @@
       <div class="pricing-teaser-card">
         <h3>Básico</h3>
         <div class="pricing-teaser-price">4,99€<span>/mes</span></div>
-        <p class="desc">Test oficial y personalizado con IA, y análisis de rendimiento.</p>
+        <p class="desc">Test oficial y personalizado con IA (hasta 50 preguntas/día) y análisis de rendimiento (hasta 20 usos/mes).</p>
       </div>
       <div class="pricing-teaser-card destacado">
         <div class="pricing-teaser-badge">Más completo</div>
         <h3>Premium</h3>
         <div class="pricing-teaser-price">9,99€<span>/mes</span></div>
-        <p class="desc">Todas las herramientas desde PDF y Tu Tutor, el chat premium de IA.</p>
+        <p class="desc">Todo ilimitado, además de las herramientas desde tus PDF y Tu Tutor, el chat premium de IA.</p>
       </div>
     </div>
     <p class="pricing-teaser-note">
@@ -1367,33 +1379,6 @@
     </div>
   </section>
 
-  <section class="home-section">
-    <h2 class="home-section-titulo">Todo en un solo sitio</h2>
-    <p class="home-section-sub">Elige por dónde quieres empezar hoy</p>
-    <div class="home-grid">
-      <a class="age-option-card" href="/test-generator/">
-        <span class="age-option-icon" data-icon="lapiz" data-icon-size="28"></span>
-        <span class="age-option-title">Tests</span>
-        <span class="age-option-desc">Personalizados, oficiales, con IA, repite el último o repasa tus fallos.</span>
-      </a>
-      <a class="age-option-card" href="/subida-pdf-pagina-principal/">
-        <span class="age-option-icon" data-icon="cerebro" data-icon-size="28"></span>
-        <span class="age-option-title">Herramientas IA</span>
-        <span class="age-option-desc">Sube un PDF y consigue resúmenes, esquemas, tarjetas o preguntas al momento.</span>
-      </a>
-      <a class="age-option-card" href="/tu-tutor/">
-        <span class="age-option-icon" data-icon="chat" data-icon-size="28"></span>
-        <span class="age-option-title">Tu Tutor</span>
-        <span class="age-option-desc">Resuelve dudas del temario o del proceso selectivo en un único chat.</span>
-      </a>
-      <a class="age-option-card" href="/estadisticas/">
-        <span class="age-option-icon" data-icon="grafico" data-icon-size="28"></span>
-        <span class="age-option-title">Estadísticas</span>
-        <span class="age-option-desc">Tu progreso, aciertos y temas pendientes, separado por cada oposición.</span>
-      </a>
-    </div>
-  </section>
-
   <script type="module" src="/assets/auth.js"></script>
   <script type="module">
     import { icono } from "/assets/icons.js";
@@ -1406,35 +1391,16 @@
     // todavía no tiene cuenta -- quien ya ha iniciado sesión tiene los 7
     // días de prueba con Premium completo (todas las oposiciones incluidas),
     // así que mostrarle también la demo anónima es ruido, no una alternativa.
+    // Empieza oculta en el HTML (display:none) para que a quien ya tiene
+    // sesión iniciada nunca le llegue a parpadear en pantalla mientras se
+    // resuelve la autenticación; solo se revela una vez confirmado que es
+    // una visita anónima.
     esperarUsuario().then((usuario) => {
-      if (usuario) document.querySelector(".home-hero-demo-link")?.remove();
-    });
-
-    function animarConteo(elemento, destino, duracionMs = 1500) {
-      const inicio = performance.now();
-      function paso(ahora) {
-        const t = Math.min((ahora - inicio) / duracionMs, 1);
-        const progreso = 1 - (1 - t) * (1 - t); // easeOutQuad
-        const valor = Math.round(destino * progreso);
-        elemento.textContent = `+${valor.toLocaleString("es-ES")}`;
-        if (t < 1) requestAnimationFrame(paso);
+      if (!usuario) {
+        const demo = document.querySelector(".home-hero-demo-link");
+        if (demo) demo.style.display = "";
       }
-      requestAnimationFrame(paso);
-    }
-
-    const fila = document.getElementById("home-prueba-social");
-    const elOficiales = document.getElementById("home-stat-oficiales");
-    const elGeneradas = document.getElementById("home-stat-generadas");
-
-    const observador = new IntersectionObserver((entradas) => {
-      entradas.forEach((entrada) => {
-        if (!entrada.isIntersecting) return;
-        animarConteo(elOficiales, Number(elOficiales.dataset.target));
-        animarConteo(elGeneradas, Number(elGeneradas.dataset.target));
-        observador.disconnect();
-      });
-    }, { threshold: 0.4 });
-    observador.observe(fila);
+    });
   </script>
 </body>
 </html>

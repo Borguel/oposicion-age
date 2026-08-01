@@ -1,88 +1,8 @@
 /* Páginas explicativas "Cómo funciona" (/como-funciona/*): guías públicas de
    uso de cada herramienta, con capturas recreadas en HTML/CSS (no imágenes)
-   fieles a la interfaz real. Reutiliza los tokens de theme.css. */
-
-body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
-
-.cf-wrap {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 40px 20px 80px;
-}
-
-.cf-migas {
-  font-size: 13px;
-  color: var(--age-ink-soft);
-  margin-bottom: 18px;
-}
-.cf-migas a { color: var(--age-ink-soft); }
-.cf-migas a:hover { color: var(--age-primary-dark); }
-
-.cf-hero-etiqueta {
-  display: inline-block;
-  background: var(--age-primary-soft);
-  color: var(--age-primary-dark, var(--age-ink));
-  font-size: 12.5px;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 999px;
-  margin-bottom: 12px;
-}
-
-.cf-wrap h1 {
-  font-size: 2rem;
-  line-height: 1.2;
-  margin: 0 0 10px;
-}
-
-.cf-intro {
-  font-size: 1.05rem;
-  line-height: 1.6;
-  color: var(--age-ink-soft);
-  max-width: 680px;
-  margin: 0 0 28px;
-}
-
-.cf-cta-fila {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 40px;
-}
-
-.cf-wrap h2 {
-  font-size: 1.3rem;
-  margin: 46px 0 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.cf-wrap h2 .cf-h2-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--age-primary);
-  color: #1b1200;
-  font-size: 14px;
-  font-weight: 800;
-}
-.cf-wrap h2 .cf-h2-icono {
-  display: inline-flex;
-  color: var(--age-primary-dark, var(--age-ink));
-}
-
-.cf-wrap p,
-.cf-wrap li {
-  font-size: 15px;
-  line-height: 1.65;
-  color: var(--age-ink);
-}
-.cf-wrap ul { padding-left: 22px; margin: 10px 0; }
-.cf-wrap a:not(.age-btn) { color: var(--age-primary-dark); }
+   fieles a la interfaz real. Reutiliza los tokens de theme.css y la
+   cabecera/cierre compartidos de guia-articulo.css; aquí solo va la
+   librería de mockups propia de estas páginas. */
 
 /* Tarjetas de la página índice */
 .cf-tool-grid {
@@ -447,40 +367,6 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
 .cf-resultado-mock ul { margin: 0 0 10px; padding-left: 18px; }
 .cf-resultado-mock li { margin-bottom: 4px; }
 
-.cf-cta-final {
-  margin-top: 48px;
-  padding: 32px;
-  border-radius: var(--age-radius-lg);
-  background: var(--age-navy, #1b2138);
-  color: #fff;
-  text-align: center;
-}
-.cf-cta-final h2 { margin-top: 0; color: #fff; justify-content: center; }
-.cf-cta-final p { color: rgba(255, 255, 255, 0.75); margin-bottom: 20px; }
-
-.cf-otras {
-  margin-top: 40px;
-  padding-top: 24px;
-  border-top: 1px solid var(--age-border);
-}
-.cf-otras-lista {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-}
-.cf-otras-lista a {
-  display: inline-block;
-  padding: 8px 16px;
-  border: 1.5px solid var(--age-border);
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--age-ink);
-  text-decoration: none;
-}
-.cf-otras-lista a:hover { border-color: var(--age-primary); color: var(--age-primary-dark); }
-
 /* Mockup: tarjetas de estadística / rejilla de números */
 .cf-stat-grid {
   display: grid;
@@ -735,8 +621,6 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
 .cf-modal-mock-pie { padding: 12px 16px; border-top: 1px solid var(--age-border); text-align: right; }
 
 @media (max-width: 600px) {
-  .cf-wrap h1 { font-size: 1.6rem; }
-  .cf-cta-final { padding: 24px 18px; }
   .cf-chat-burbuja { max-width: 88%; }
   .cf-flashcard-fila { flex-direction: column; }
 }
