@@ -1089,11 +1089,11 @@
 
   <div class="home-prueba-social" id="home-prueba-social">
     <div class="home-prueba-social-item">
-      <strong class="home-prueba-social-num" id="home-stat-oficiales" data-target="1655">0</strong>
+      <strong class="home-prueba-social-num">+1.655</strong>
       <span>preguntas oficiales disponibles</span>
     </div>
     <div class="home-prueba-social-item">
-      <strong class="home-prueba-social-num" id="home-stat-generadas" data-target="12223">0</strong>
+      <strong class="home-prueba-social-num">+12.223</strong>
       <span>preguntas generadas por opositores</span>
     </div>
   </div>
@@ -1367,33 +1367,6 @@
     </div>
   </section>
 
-  <section class="home-section">
-    <h2 class="home-section-titulo">Todo en un solo sitio</h2>
-    <p class="home-section-sub">Elige por dónde quieres empezar hoy</p>
-    <div class="home-grid">
-      <a class="age-option-card" href="/test-generator/">
-        <span class="age-option-icon" data-icon="lapiz" data-icon-size="28"></span>
-        <span class="age-option-title">Tests</span>
-        <span class="age-option-desc">Personalizados, oficiales, con IA, repite el último o repasa tus fallos.</span>
-      </a>
-      <a class="age-option-card" href="/subida-pdf-pagina-principal/">
-        <span class="age-option-icon" data-icon="cerebro" data-icon-size="28"></span>
-        <span class="age-option-title">Herramientas IA</span>
-        <span class="age-option-desc">Sube un PDF y consigue resúmenes, esquemas, tarjetas o preguntas al momento.</span>
-      </a>
-      <a class="age-option-card" href="/tu-tutor/">
-        <span class="age-option-icon" data-icon="chat" data-icon-size="28"></span>
-        <span class="age-option-title">Tu Tutor</span>
-        <span class="age-option-desc">Resuelve dudas del temario o del proceso selectivo en un único chat.</span>
-      </a>
-      <a class="age-option-card" href="/estadisticas/">
-        <span class="age-option-icon" data-icon="grafico" data-icon-size="28"></span>
-        <span class="age-option-title">Estadísticas</span>
-        <span class="age-option-desc">Tu progreso, aciertos y temas pendientes, separado por cada oposición.</span>
-      </a>
-    </div>
-  </section>
-
   <script type="module" src="/assets/auth.js"></script>
   <script type="module">
     import { icono } from "/assets/icons.js";
@@ -1409,32 +1382,6 @@
     esperarUsuario().then((usuario) => {
       if (usuario) document.querySelector(".home-hero-demo-link")?.remove();
     });
-
-    function animarConteo(elemento, destino, duracionMs = 1500) {
-      const inicio = performance.now();
-      function paso(ahora) {
-        const t = Math.min((ahora - inicio) / duracionMs, 1);
-        const progreso = 1 - (1 - t) * (1 - t); // easeOutQuad
-        const valor = Math.round(destino * progreso);
-        elemento.textContent = `+${valor.toLocaleString("es-ES")}`;
-        if (t < 1) requestAnimationFrame(paso);
-      }
-      requestAnimationFrame(paso);
-    }
-
-    const fila = document.getElementById("home-prueba-social");
-    const elOficiales = document.getElementById("home-stat-oficiales");
-    const elGeneradas = document.getElementById("home-stat-generadas");
-
-    const observador = new IntersectionObserver((entradas) => {
-      entradas.forEach((entrada) => {
-        if (!entrada.isIntersecting) return;
-        animarConteo(elOficiales, Number(elOficiales.dataset.target));
-        animarConteo(elGeneradas, Number(elGeneradas.dataset.target));
-        observador.disconnect();
-      });
-    }, { threshold: 0.4 });
-    observador.observe(fila);
   </script>
 </body>
 </html>
