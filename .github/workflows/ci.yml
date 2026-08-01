@@ -85,7 +85,7 @@ jobs:
 
       - name: Guardar informes completos de Lighthouse
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lighthouse-reports
           path: lighthouse-reports/

@@ -44,7 +44,7 @@ jobs:
 
       - name: Guardar vista previa como artefacto
         if: github.event.inputs.accion == 'preview'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: preview-podar-gace-bloque2-temas1-5
           path: preview_podar_gace_bloque2_temas1_5.json

@@ -72,7 +72,7 @@ jobs:
 
       - name: Guardar contenido generado como artefacto
         if: github.event.inputs.paso == 'generar'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: contenido-generado-ofimatica-${{ github.event.inputs.accion }}
           path: contenido-generado-ofimatica.json

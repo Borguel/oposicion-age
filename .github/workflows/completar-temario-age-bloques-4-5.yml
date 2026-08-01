@@ -44,7 +44,7 @@ jobs:
 
       - name: Guardar vista previa como artefacto
         if: github.event.inputs.accion == 'preview'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: preview-temario-age-bloques-4-5
           path: preview_temario_age_bloques_4_5.json
