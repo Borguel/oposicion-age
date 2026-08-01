@@ -76,7 +76,7 @@ COLECCION = "Temario GACE"
 BLOQUE_ID = "bloque_02"
 BLOQUE_NUM = 2
 TEMAS = TEMARIO[BLOQUE_NUM - 1]["temas"]
-CARPETA_FUENTES = "temario-fuentes"
+CARPETA_FUENTES = "temario-examenes/GACE/union-europea"
 
 TUE_PDF = os.path.join(CARPETA_FUENTES, "document.pdf")
 TFUE_PDF = os.path.join(CARPETA_FUENTES, "CELEX_12016E_TXT_ES_TXT.pdf")

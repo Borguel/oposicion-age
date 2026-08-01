@@ -1,7 +1,7 @@
 """
 Rellena los 2 temas de "Temario AGE" que estaban vacíos en Firestore (ver
 listar_temas_vacios.py), a partir de los 2 Códigos BOE consolidados aportados
-por el usuario en Continuacion-temario-AGE/:
+por el usuario en temario-examenes/AGE/:
 
   - bloque_04/tema_09 "El régimen de la Seguridad Social del personal
     laboral." <- BOE-A-2015-11724-consolidado.pdf (Real Decreto Legislativo
@@ -40,7 +40,7 @@ import sys
 from cargar_temario_boe import extraer_paginas, dividir_en_subbloques
 
 COLECCION = "Temario AGE"
-CARPETA_FUENTES = "Continuacion-temario-AGE"
+CARPETA_FUENTES = "temario-examenes/AGE"
 
 OBJETIVOS = [
     {

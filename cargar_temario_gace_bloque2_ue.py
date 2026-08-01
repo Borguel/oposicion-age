@@ -1,6 +1,6 @@
 """
 Carga el Bloque II ("Unión Europea", 6 temas) de "Temario GACE" a partir de
-los documentos aportados por el usuario en temario-fuentes/ -- hasta ahora
+los documentos aportados por el usuario en temario-examenes/GACE/union-europea/ -- hasta ahora
 este bloque no tenía contenido real: los "Códigos electrónicos" del BOE
 usados para el resto del temario (cargar_temario_boe.py) no incluyen los
 Tratados de la UE, que no son normativa española.
@@ -64,7 +64,7 @@ BLOQUE_TITULO = TEMARIO[BLOQUE_NUM - 1]["bloque"]
 TEMAS = TEMARIO[BLOQUE_NUM - 1]["temas"]
 MAX_TOKENS_SUBBLOQUE = 1800
 
-CARPETA_FUENTES = "temario-fuentes"
+CARPETA_FUENTES = "temario-examenes/GACE/union-europea"
 
 TRATADOS = [
     {"pdf": "document.pdf", "titulo": "Tratado de la Unión Europea (TUE)"},

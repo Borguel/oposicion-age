@@ -46,7 +46,7 @@ from cargar_temario_boe import extraer_paginas, PATRON_ARTICULO
 COLECCION = "Temario AGE"
 BLOQUE_ID = "bloque_05"
 TEMA_ID = "tema_06"
-PDF = "Continuacion-temario-AGE/BOE-A-2003-21614-consolidado.pdf"
+PDF = "temario-examenes/AGE/BOE-A-2003-21614-consolidado.pdf"
 TITULO_NORMA = "Ley 47/2003, de 26 de noviembre, General Presupuestaria"
 
 # (artículo_inicio, artículo_fin, descripción) -- ambos límites inclusive.

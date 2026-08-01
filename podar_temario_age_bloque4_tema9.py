@@ -43,7 +43,7 @@ from cargar_temario_boe import extraer_paginas, PATRON_ARTICULO
 COLECCION = "Temario AGE"
 BLOQUE_ID = "bloque_04"
 TEMA_ID = "tema_09"
-PDF = "Continuacion-temario-AGE/BOE-A-2015-11724-consolidado.pdf"
+PDF = "temario-examenes/AGE/BOE-A-2015-11724-consolidado.pdf"
 TITULO_NORMA = (
     "Real Decreto Legislativo 8/2015, de 30 de octubre, por el que se "
     "aprueba el texto refundido de la Ley General de la Seguridad Social"

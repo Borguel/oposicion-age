@@ -47,7 +47,7 @@ BLOQUE_ID = "bloque_02"
 BLOQUE_NUM = 2
 TEMA_ID = "tema_05"
 TEMA_TITULO = TEMARIO[BLOQUE_NUM - 1]["temas"][4]
-CARPETA_FUENTES = "temario-fuentes"
+CARPETA_FUENTES = "temario-examenes/GACE/union-europea"
 
 TFUE_PDF = os.path.join(CARPETA_FUENTES, "CELEX_12016E_TXT_ES_TXT.pdf")
 TFUE_TITULO = "Tratado de Funcionamiento de la Unión Europea (TFUE)"
