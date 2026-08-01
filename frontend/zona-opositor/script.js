@@ -1,4 +1,4 @@
-import { idToken, esperarUsuario } from "/assets/auth.js";
+import { idToken, esperarUsuario, marcarContenidoListo } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual } from "/assets/oposicion.js";
@@ -545,6 +545,8 @@ async function iniciar() {
   const pillPlan = document.getElementById("zona-plan-pill");
   pillPlan.className = PILL_PLAN[plan] || "age-pill";
   pillPlan.textContent = plan || "gratis";
+
+  marcarContenidoListo();
 }
 
 iniciar();

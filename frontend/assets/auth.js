@@ -193,6 +193,22 @@ export function esperarUsuario() {
   return conLimiteDeTiempo(promesa, 8000, null);
 }
 
+// auth-guard.js solo hace visible el <body> cuando se resuelve ESTA promesa
+// (además de confirmar la sesión) -- evita el "flash" de los placeholders
+// del HTML (p. ej. "Cargando…", un nombre o plan por defecto) que se veía
+// si el body se revelaba en cuanto Firebase confirmaba la sesión, sin
+// esperar a que la propia página hubiera pintado ya sus datos reales.
+// Cada página protegida debe llamar a marcarContenidoListo() en cuanto
+// termine de pintar su contenido principal (no hace falta esperar a
+// widgets secundarios que cargan aparte, solo a lo que se ve nada más
+// entrar). auth-guard.js tiene un límite de tiempo por si alguna página
+// nueva se olvida de llamarla, para no dejar el body oculto para siempre.
+let _resolverContenidoListo;
+export const contenidoListo = new Promise((resolve) => { _resolverContenidoListo = resolve; });
+export function marcarContenidoListo() {
+  _resolverContenidoListo();
+}
+
 // ¿Es administrador? Lee el custom claim `admin` del token del usuario
 // actual (getIdTokenResult). Solo sirve para MOSTRAR/OCULTAR el enlace al
 // panel -- la protección real está en el backend (requiere_admin en cada

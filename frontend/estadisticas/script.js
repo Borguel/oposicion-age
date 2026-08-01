@@ -1,4 +1,5 @@
 import { icono } from "/assets/icons.js";
+import { marcarContenidoListo } from "/assets/auth.js";
 
 function inyectarIconosEstaticos() {
   document.querySelectorAll("[data-icon]").forEach((el) => {
@@ -121,6 +122,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     } finally {
       refreshBtn.classList.remove('loading');
       refreshBtn.disabled = false;
+      marcarContenidoListo();
     }
   }
 

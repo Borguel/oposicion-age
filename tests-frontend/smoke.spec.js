@@ -11,6 +11,8 @@ export function idToken() { return Promise.resolve("fake-token"); }
 export function esperarUsuario() { return Promise.resolve({ email: "test@example.com" }); }
 export function signOut() { return Promise.resolve(); }
 export function obtenerAuthHeaders() { return Promise.resolve({ Authorization: "Bearer fake-token" }); }
+export const contenidoListo = Promise.resolve();
+export function marcarContenidoListo() {}
 `;
 
 const OPOSICION_STUB = `

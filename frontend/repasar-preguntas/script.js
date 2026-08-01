@@ -1,4 +1,5 @@
 import { icono } from "/assets/icons.js";
+import { marcarContenidoListo } from "/assets/auth.js";
 
 async function obtenerAuthHeaders() {
   const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");
@@ -257,7 +258,11 @@ elFiltroTema.addEventListener("change", pintarPestaña);
 
 window.addEventListener("load", async () => {
   const { protegerPagina } = await import("/assets/plan.js");
-  if (!(await protegerPagina("basico"))) return;
+  if (!(await protegerPagina("basico"))) {
+    marcarContenidoListo();
+    return;
+  }
   await cargarTemas();
-  pintarPestaña();
+  await pintarPestaña();
+  marcarContenidoListo();
 });

@@ -1,7 +1,12 @@
 import { icono } from "/assets/icons.js";
 import { leerStreamConTimeout } from "/assets/stream-utils.js";
+import { marcarContenidoListo } from "/assets/auth.js";
 
-import("/assets/plan.js").then(({ protegerPagina }) => protegerPagina("premium"));
+(async () => {
+  const { protegerPagina } = await import("/assets/plan.js");
+  await protegerPagina("premium");
+  marcarContenidoListo();
+})();
 
 // Iconos estáticos del markup (los que no cambian dinámicamente por JS): se
 // pintan aquí, una sola vez, a partir de los data-icon del HTML.

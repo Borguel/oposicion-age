@@ -1,6 +1,6 @@
 // Panel de administración. El backend (requiere_admin) es la barrera real;
 // aquí solo se comprueba esAdmin para no montar la UI a quien no lo es.
-import { esAdmin, obtenerPermisos, obtenerAuthHeaders } from "/assets/auth.js";
+import { esAdmin, obtenerPermisos, obtenerAuthHeaders, marcarContenidoListo } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { icono } from "/assets/icons.js";
 
@@ -2412,6 +2412,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   _permisos = await obtenerPermisos();
   if (!_permisos.admin && _permisos.permisos.length === 0) {
     mostrarNoAutorizado();
+    marcarContenidoListo();
     return;
   }
   document.getElementById("admin-contenido").style.display = "flex";
@@ -2445,4 +2446,5 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("admin-oposicion").addEventListener("change", () => { temaSeleccionado = null; RENDERS[pestanaActual](); });
   activarPestana(primeraPestanaVisible || "dashboard");
+  marcarContenidoListo();
 });

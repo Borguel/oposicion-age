@@ -11,15 +11,21 @@
 // código fuente o llamar al backend directamente saltándose esta
 // comprobación. La única protección real son los decoradores
 // @requiere_plan del backend (ver auth_utils.py).
-import { idToken, esperarUsuario } from "/assets/auth.js";
+import { auth, idToken, esperarUsuario } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { obtenerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
 
 const ORDEN_PLANES = { gratis: 0, basico: 1, premium: 2 };
 
+// Incluye el uid en la clave: sessionStorage sobrevive a la navegación entre
+// páginas dentro de la misma pestaña, así que sin esto una caché que
+// quedara sin limpiar de una sesión anterior (p. ej. tras cambiar de cuenta
+// sin pasar por "Cerrar sesión") se serviría tal cual para la cuenta nueva,
+// sin ninguna comprobación de a quién pertenece.
 function claveCache(oposicion) {
-  return `age_plan_cache_${oposicion}`;
+  const uid = auth.currentUser?.uid || "anonimo";
+  return `age_plan_cache_${uid}_${oposicion}`;
 }
 
 export async function obtenerPlan(forzarRefresco = false, oposicion = obtenerOposicionActual()) {
