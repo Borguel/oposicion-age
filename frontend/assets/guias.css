@@ -1,83 +1,8 @@
 /* Páginas guía por oposición (/oposicion-*): landing SEO informativas, no
-   requieren sesión. Reutiliza los tokens de theme.css; aquí solo van los
-   componentes propios de este tipo de página (hero, bloques de temario,
-   rejilla de datos de la convocatoria, aviso de fuente, CTA). */
-
-body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
-
-.guia-wrap {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 40px 20px 80px;
-}
-
-.guia-migas {
-  font-size: 13px;
-  color: var(--age-ink-soft);
-  margin-bottom: 18px;
-}
-.guia-migas a { color: var(--age-ink-soft); }
-.guia-migas a:hover { color: var(--age-primary-dark); }
-
-.guia-hero-etiqueta {
-  display: inline-block;
-  background: var(--age-primary-soft);
-  color: var(--age-primary-dark, var(--age-ink));
-  font-size: 12.5px;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 999px;
-  margin-bottom: 12px;
-}
-
-.guia-wrap h1 {
-  font-size: 2.1rem;
-  line-height: 1.2;
-  margin: 0 0 10px;
-}
-
-.guia-intro {
-  font-size: 1.05rem;
-  line-height: 1.6;
-  color: var(--age-ink-soft);
-  max-width: 680px;
-  margin: 0 0 28px;
-}
-
-.guia-cta-fila {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 40px;
-}
-
-.guia-wrap h2 {
-  font-size: 1.35rem;
-  margin: 44px 0 6px;
-}
-
-.guia-wrap h2 .guia-h2-icono {
-  display: inline-flex;
-  vertical-align: -5px;
-  margin-right: 8px;
-  color: var(--age-primary-dark, var(--age-ink));
-}
-
-.guia-seccion-sub {
-  color: var(--age-ink-soft);
-  font-size: 14.5px;
-  margin: 0 0 18px;
-}
-
-.guia-wrap p,
-.guia-wrap li {
-  font-size: 15px;
-  line-height: 1.65;
-  color: var(--age-ink);
-}
-
-.guia-wrap ul { padding-left: 22px; margin: 10px 0; }
-.guia-wrap a:not(.age-btn) { color: var(--age-primary-dark); }
+   requieren sesión. Reutiliza los tokens de theme.css y la cabecera/cierre
+   compartidos de guia-articulo.css; aquí solo van los componentes propios
+   de este tipo de página (bloques de temario, requisitos, rejilla de
+   datos de la convocatoria, aviso de fuente, avisos oficiales). */
 
 /* Rejilla de datos clave (plazas, sueldo, fecha) */
 .guia-stat-grid {
@@ -327,42 +252,6 @@ body { background: var(--age-bg); color: var(--age-ink); margin: 0; }
   color: #fff;
 }
 
-.guia-cta-final {
-  margin-top: 48px;
-  padding: 32px;
-  border-radius: var(--age-radius-lg);
-  background: var(--age-navy, #1b2138);
-  color: #fff;
-  text-align: center;
-}
-.guia-cta-final h2 { margin-top: 0; color: #fff; }
-.guia-cta-final p { color: rgba(255, 255, 255, 0.75); margin-bottom: 20px; }
-
-.guia-otras {
-  margin-top: 40px;
-  padding-top: 24px;
-  border-top: 1px solid var(--age-border);
-}
-.guia-otras-lista {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-}
-.guia-otras-lista a {
-  display: inline-block;
-  padding: 8px 16px;
-  border: 1.5px solid var(--age-border);
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--age-ink);
-  text-decoration: none;
-}
-.guia-otras-lista a:hover { border-color: var(--age-primary); color: var(--age-primary-dark); }
-
 @media (max-width: 600px) {
-  .guia-wrap h1 { font-size: 1.6rem; }
   .guia-bloque { flex-wrap: wrap; }
-  .guia-cta-final { padding: 24px 18px; }
 }
