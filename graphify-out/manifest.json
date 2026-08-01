@@ -1,0 +1,2657 @@
+{
+  ".claude/settings.json": {
+    "mtime": 1785565713.037346,
+    "ast_hash": "8e354e95633a2e8f9b91523377f1968c",
+    "semantic_hash": ""
+  },
+  "app.py": {
+    "mtime": 1785521584.0324996,
+    "ast_hash": "e7c2dd0397c0468e525250f041b74ccd",
+    "semantic_hash": ""
+  },
+  "auth_utils.py": {
+    "mtime": 1785521584.0324996,
+    "ast_hash": "00efa60ec3a2a34e6260784817a915a3",
+    "semantic_hash": ""
+  },
+  "banco_fallos.py": {
+    "mtime": 1785521584.0324996,
+    "ast_hash": "cf34cd475999e3f48620e0cf84106831",
+    "semantic_hash": ""
+  },
+  "banco_favoritas.py": {
+    "mtime": 1785521584.0324996,
+    "ast_hash": "a906cda66110d562f4258f73c5ea73c3",
+    "semantic_hash": ""
+  },
+  "banco_preguntas_ia.py": {
+    "mtime": 1785521584.0324996,
+    "ast_hash": "eaec387fcaaf949edeb212fc74129aaa",
+    "semantic_hash": ""
+  },
+  "blueprints/__init__.py": {
+    "mtime": 1785521584.0324996,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "blueprints/admin.py": {
+    "mtime": 1785521584.0382822,
+    "ast_hash": "21f6fa533da1a7e8550495381f76aee9",
+    "semantic_hash": ""
+  },
+  "blueprints/auth_publico.py": {
+    "mtime": 1785521584.0382822,
+    "ast_hash": "f00b944584f173e14a5641a0aff18379",
+    "semantic_hash": ""
+  },
+  "blueprints/pagos.py": {
+    "mtime": 1785521584.0382822,
+    "ast_hash": "b9c7d35726ec3761c7821e85182f40f5",
+    "semantic_hash": ""
+  },
+  "blueprints/pdf_ia.py": {
+    "mtime": 1785521584.0382822,
+    "ast_hash": "8a2517601a9a8a0adbf8a6b9a3a07b45",
+    "semantic_hash": ""
+  },
+  "blueprints/ranking.py": {
+    "mtime": 1785521584.0404994,
+    "ast_hash": "beecf8d9590f4d4557def0c315143069",
+    "semantic_hash": ""
+  },
+  "blueprints/tareas_programadas.py": {
+    "mtime": 1785521584.0404994,
+    "ast_hash": "722ec208046d55e48d420fd9cec5bc30",
+    "semantic_hash": ""
+  },
+  "blueprints/temario.py": {
+    "mtime": 1785521584.0404994,
+    "ast_hash": "8ecf0a8e74c5799efb5b00002ae6f559",
+    "semantic_hash": ""
+  },
+  "blueprints/test_ia.py": {
+    "mtime": 1785521584.0404994,
+    "ast_hash": "ee24f7bf7eaa04b9958cbb14aacc4661",
+    "semantic_hash": ""
+  },
+  "blueprints/tu_tutor.py": {
+    "mtime": 1785521584.0404994,
+    "ast_hash": "df52433436131eddba5c0a300fb88ec4",
+    "semantic_hash": ""
+  },
+  "cargar_datos_convocatoria.py": {
+    "mtime": 1785521584.0404994,
+    "ast_hash": "2a43771c1276643fdc08922a64288893",
+    "semantic_hash": ""
+  },
+  "cargar_examen_oficial_age.py": {
+    "mtime": 1785521584.0404994,
+    "ast_hash": "b8c21b6b245fc4aecbe450a09cddb534",
+    "semantic_hash": ""
+  },
+  "cargar_examen_oficial_auxiliar.py": {
+    "mtime": 1785521584.0444996,
+    "ast_hash": "0c733b1b78cb585df31c0ce57ee40d82",
+    "semantic_hash": ""
+  },
+  "cargar_examen_oficial_gace.py": {
+    "mtime": 1785521584.0444996,
+    "ast_hash": "bd6fc9395a226c08d03eed04355f14fb",
+    "semantic_hash": ""
+  },
+  "cargar_temario_auxiliar.py": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "594c454d143e4e1b31119947d06aa082",
+    "semantic_hash": ""
+  },
+  "cargar_temario_auxiliar_bloque2.py": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "69a3454f354a637c1f2106413f587382",
+    "semantic_hash": ""
+  },
+  "cargar_temario_boe.py": {
+    "mtime": 1785521584.0444996,
+    "ast_hash": "9f79939c439c4c2c20c6c60e39fe50ab",
+    "semantic_hash": ""
+  },
+  "cargar_temario_gace_bloque2_ue.py": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "562ced3776d58e6071c6f6fb929057e4",
+    "semantic_hash": ""
+  },
+  "chat_controller.py": {
+    "mtime": 1785521584.0484996,
+    "ast_hash": "82c5ca844fa9703e644984a454ea6cb9",
+    "semantic_hash": ""
+  },
+  "completar_temario_age_bloques_4_5.py": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "719504f44ef381d51710c44432758ff5",
+    "semantic_hash": ""
+  },
+  "completar_temario_gace_bloque2_tema5.py": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "ebdb9a858e605694eb604eec2eb6be1f",
+    "semantic_hash": ""
+  },
+  "conftest.py": {
+    "mtime": 1785521584.0524995,
+    "ast_hash": "03649f3dca1152524b91e8d86b15a2fb",
+    "semantic_hash": ""
+  },
+  "coste_ia.py": {
+    "mtime": 1785521584.0524995,
+    "ast_hash": "5a408e20ae00fb070a895086550d7889",
+    "semantic_hash": ""
+  },
+  "crear_admin.py": {
+    "mtime": 1785521584.0524995,
+    "ast_hash": "5a97600cf13f9a035d4a5f6c63b1760f",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2018_ejercicio_unico.json": {
+    "mtime": 1785521584.0564995,
+    "ast_hash": "075fa1fca6fafa0a9a003fc157dd03de",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2018_ejercicio_unico_explicaciones.json": {
+    "mtime": 1785521584.0613627,
+    "ast_hash": "73f059ccb1d25467fcf0a84885514038",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2018_ejercicio_unico_temas.json": {
+    "mtime": 1785521584.0613627,
+    "ast_hash": "db7a6c911faf2d8033827a63ae3c5235",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2019_ejercicio_unico.json": {
+    "mtime": 1785521584.0613627,
+    "ast_hash": "1174482c3425ee2bc695d981e09f8071",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2019_ejercicio_unico_explicaciones.json": {
+    "mtime": 1785521584.0613627,
+    "ast_hash": "364b7fab5cd0a9c37b8ad0d21598fbc1",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2019_ejercicio_unico_temas.json": {
+    "mtime": 1785521584.0613627,
+    "ast_hash": "54aec700b7498bc128db5165a3993b55",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2019_extra_ejercicio_unico.json": {
+    "mtime": 1785521584.0613627,
+    "ast_hash": "ef68abd171cc0d0a5457e68dc673195c",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2019_extra_ejercicio_unico_explicaciones.json": {
+    "mtime": 1785521584.0644996,
+    "ast_hash": "2c422ad493072c4bbc509184bdabba24",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2019_extra_ejercicio_unico_temas.json": {
+    "mtime": 1785521584.0644996,
+    "ast_hash": "2ac8b4b94d5cc370f394ee8c70b9654c",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2022_ejercicio_unico.json": {
+    "mtime": 1785521584.0644996,
+    "ast_hash": "ed68278913ac812b44fef146623d72b8",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2022_ejercicio_unico_explicaciones.json": {
+    "mtime": 1785521584.0644996,
+    "ast_hash": "ac6e4625e7fb0f28e3f62a991f59093c",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2022_ejercicio_unico_temas.json": {
+    "mtime": 1785521584.0644996,
+    "ast_hash": "b3dd513f52482a77dcc559b11986d347",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2022_extra_ejercicio_unico.json": {
+    "mtime": 1785521584.0644996,
+    "ast_hash": "284e7b28e3368a3eac5fcd506380bc4e",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2022_extra_ejercicio_unico_explicaciones.json": {
+    "mtime": 1785521584.0684996,
+    "ast_hash": "65a573f1b4fa0ff81dc8e93db6c1325e",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2022_extra_ejercicio_unico_temas.json": {
+    "mtime": 1785521584.0684996,
+    "ast_hash": "a43b37f76cad0e9d2a2bacff796dfbaf",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2025_ejercicio_unico.json": {
+    "mtime": 1785521584.0684996,
+    "ast_hash": "73834b849376f60e22d0786fa138ac5b",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2025_ejercicio_unico_explicaciones.json": {
+    "mtime": 1785521584.0684996,
+    "ast_hash": "53a253ecadb8c34e1e49d100ad9e3083",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_2025_ejercicio_unico_temas.json": {
+    "mtime": 1785521584.0684996,
+    "ast_hash": "4f68eb0c332ee783ba35a35dcab60dd1",
+    "semantic_hash": ""
+  },
+  "datos_examenes/age_modelo_a_2024_docid_temas.json": {
+    "mtime": 1785521584.0684996,
+    "ast_hash": "6244f7e2568d48815add54c0978c89ef",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2019_ejercicio_unico.json": {
+    "mtime": 1785521584.0724995,
+    "ast_hash": "51ce10b0f69a888c61d90551fc43929d",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2019_ejercicio_unico_explicaciones.json": {
+    "mtime": 1785521584.0724995,
+    "ast_hash": "12cfdeaaff72adc46818b036b68b2a1f",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2019_ejercicio_unico_temas.json": {
+    "mtime": 1785521584.0724995,
+    "ast_hash": "0afa69237bf889d7d6dc082a3ab2f444",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2022_ejercicio_unico.json": {
+    "mtime": 1785521584.0724995,
+    "ast_hash": "1af2034e28e89b1743b5f3bffb40cf35",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2022_ejercicio_unico_explicaciones.json": {
+    "mtime": 1785521584.0724995,
+    "ast_hash": "4c536fb4d80d0f18e6465091a7a8b51d",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2022_ejercicio_unico_temas.json": {
+    "mtime": 1785521584.0764995,
+    "ast_hash": "eabed58cd300d8c226952432678d2339",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2024_ejercicio_unico.json": {
+    "mtime": 1785521584.0764995,
+    "ast_hash": "f62a527f807cbd6e32f5e59b3041632c",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2024_ejercicio_unico_explicaciones.json": {
+    "mtime": 1785521584.0764995,
+    "ast_hash": "b54451ec6e25672727abef4e8ff5af10",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2024_ejercicio_unico_temas.json": {
+    "mtime": 1785521584.0764995,
+    "ast_hash": "90ae481009b1185cef5741d8c46eac28",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2025_ejercicio_unico.json": {
+    "mtime": 1785521584.0804996,
+    "ast_hash": "93d23485a3639abd3baf9f1ca231cd8c",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2025_ejercicio_unico_explicaciones.json": {
+    "mtime": 1785521584.0804996,
+    "ast_hash": "b6ca84209854937595eac264d7b3fdee",
+    "semantic_hash": ""
+  },
+  "datos_examenes/auxiliar_2025_ejercicio_unico_temas.json": {
+    "mtime": 1785521584.0804996,
+    "ast_hash": "3e30309727aa838ca5333f52813e0b58",
+    "semantic_hash": ""
+  },
+  "datos_examenes/datos_convocatoria_AGE.json": {
+    "mtime": 1785521584.0804996,
+    "ast_hash": "df84ad4983dc239c3434b88033d19a7a",
+    "semantic_hash": ""
+  },
+  "datos_examenes/datos_convocatoria_AUXILIAR.json": {
+    "mtime": 1785521584.0804996,
+    "ast_hash": "c90a7c1afca1b3b6394712e30e083b3e",
+    "semantic_hash": ""
+  },
+  "datos_examenes/datos_convocatoria_GACE.json": {
+    "mtime": 1785521584.0804996,
+    "ast_hash": "f5166cc316e67e804bad7139ddc00c1a",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2008_1er_ejercicio.json": {
+    "mtime": 1785521584.0804996,
+    "ast_hash": "8bfc074a9b18bf1c4045b1db5b8df3cc",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2008_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.0844996,
+    "ast_hash": "cf09d9a5b111c2f90dafca7dc13912d9",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2008_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.0844996,
+    "ast_hash": "79a4f83afe07485848cfec6d314b6748",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2009_1er_ejercicio.json": {
+    "mtime": 1785521584.0844996,
+    "ast_hash": "6a356580e85101422af42c0d242e6c88",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2009_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.0844996,
+    "ast_hash": "ae9461c79ecbff0622b04a1c27a2db55",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2009_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.0844996,
+    "ast_hash": "af93d424d7858998687358ec8f3e6dc4",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2010_1er_ejercicio.json": {
+    "mtime": 1785521584.0884995,
+    "ast_hash": "71e056f5bef4ad32098a483a1a386ea0",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2010_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.0884995,
+    "ast_hash": "08fab62209980a839047d1ce00f23631",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2010_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.0884995,
+    "ast_hash": "f0f2d4729ebd0eb313fec7c2f560fe23",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2011_1er_ejercicio.json": {
+    "mtime": 1785521584.0884995,
+    "ast_hash": "7b08283b18c722898b965b7d69d0e8cc",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2011_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.0884995,
+    "ast_hash": "625e4ff70885f35f03a3c488fab0d7e8",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2011_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.0884995,
+    "ast_hash": "47f507d426de7221c4eee25d2f2d6662",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2013_1er_ejercicio.json": {
+    "mtime": 1785521584.0924995,
+    "ast_hash": "08d80c3f958e13452c4c82fbd3139c88",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2013_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.0924995,
+    "ast_hash": "b40b5b17140e6116143fcd9a22241c16",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2013_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.0924995,
+    "ast_hash": "92693f529953d1427d417d2ef052ab16",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2018_1er_ejercicio.json": {
+    "mtime": 1785521584.0964997,
+    "ast_hash": "b7f2b32ceb76fb2bb51329c280a1cbd2",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2018_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.0964997,
+    "ast_hash": "3da58149b31869a6caa4f70894cd4d7f",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2018_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.0964997,
+    "ast_hash": "e4bc2be797cfd7ce1e201684b05e0c11",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2019_1er_ejercicio.json": {
+    "mtime": 1785521584.0964997,
+    "ast_hash": "412061046c208f5cf7efbadaaad9d0b5",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2019_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.1004996,
+    "ast_hash": "9ffd7da77ddad20b49abf381dc2c7fb5",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2019_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.1004996,
+    "ast_hash": "479139ab610d70dba92edeee8376d08a",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2019_extra_1er_ejercicio.json": {
+    "mtime": 1785521584.1004996,
+    "ast_hash": "aaeddd7d2f9306b91db683e15eb19b77",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2019_extra_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.1044996,
+    "ast_hash": "ea0513d8f4141f9a7abdd917cc78ad1f",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2019_extra_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.1044996,
+    "ast_hash": "a12bebc4a4655c4ceb7941a2d5b9e794",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2022_1er_ejercicio.json": {
+    "mtime": 1785521584.1084995,
+    "ast_hash": "a1e40acdbde4b7782edbd3c78f7a24c1",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2022_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.1084995,
+    "ast_hash": "f7f666c772246234becb48c6731ed14c",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2022_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.1084995,
+    "ast_hash": "73f0eff94e9816306f9067453f58702f",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2022_extra_1er_ejercicio.json": {
+    "mtime": 1785521584.1084995,
+    "ast_hash": "788103809a55e3e13845f05f4897aaae",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2022_extra_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.1124995,
+    "ast_hash": "88e3b83277358e91810c9517dde2723d",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2022_extra_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.1124995,
+    "ast_hash": "b7c607dabf20c619d46c7b8b841ac782",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2024_1er_ejercicio.json": {
+    "mtime": 1785521584.1124995,
+    "ast_hash": "2a0f72435c127f5579b11b0feea2de36",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2024_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.1164997,
+    "ast_hash": "4b9b0aa20f0cec11fecceb637ecf2fee",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2024_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.1164997,
+    "ast_hash": "dd2e4acedfbcdef7e089e8dd7dffb1e9",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2025_1er_ejercicio.json": {
+    "mtime": 1785521584.1164997,
+    "ast_hash": "b0b103ce56d0a2727d93323aa1e86d5c",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2025_1er_ejercicio_explicaciones.json": {
+    "mtime": 1785521584.1164997,
+    "ast_hash": "fd5d94d7953b47185600dcad035caf95",
+    "semantic_hash": ""
+  },
+  "datos_examenes/gacel_2025_1er_ejercicio_temas.json": {
+    "mtime": 1785521584.1204996,
+    "ast_hash": "6fafeef41a4c884ba6491d881dfe0579",
+    "semantic_hash": ""
+  },
+  "deepseek_utils.py": {
+    "mtime": 1785521584.1204996,
+    "ast_hash": "344869749e01bfd7c68bca56e9da422a",
+    "semantic_hash": ""
+  },
+  "desactivar_preguntas_gace_ley_derogada.py": {
+    "mtime": 1785521584.1204996,
+    "ast_hash": "04b8de878d9af8648433f6c4ea948c13",
+    "semantic_hash": ""
+  },
+  "desactivar_psicotecnicas_incompletas_auxiliar.py": {
+    "mtime": 1785521584.1204996,
+    "ast_hash": "669e623bfb86ded75b0e0336ed6f0b00",
+    "semantic_hash": ""
+  },
+  "diagnosticar_usuario.py": {
+    "mtime": 1785521584.1204996,
+    "ast_hash": "65b3e279b2ce41cedd1ce8c4ec0c9bd1",
+    "semantic_hash": ""
+  },
+  "documentos_pdf.py": {
+    "mtime": 1785521584.1244996,
+    "ast_hash": "c7da735c7127c9081bff5b4986d369ff",
+    "semantic_hash": ""
+  },
+  "dominios_desechables.py": {
+    "mtime": 1785521584.1244996,
+    "ast_hash": "bd609bad538fe46700cd5ec3e0b4aef1",
+    "semantic_hash": ""
+  },
+  "ejemplo_pregunta.json": {
+    "mtime": 1785521584.1244996,
+    "ast_hash": "035ee17ad83ee61eedaeedc6cf90ea7c",
+    "semantic_hash": ""
+  },
+  "email_utils.py": {
+    "mtime": 1785521584.1244996,
+    "ast_hash": "4d6991a83a6e322c68e6eb92c99b294b",
+    "semantic_hash": ""
+  },
+  "etiquetar_temas_examenes_age.py": {
+    "mtime": 1785521584.1244996,
+    "ast_hash": "c64f0c4f4242dffc55d00bcd93a9c7ca",
+    "semantic_hash": ""
+  },
+  "etiquetar_temas_examenes_auxiliar.py": {
+    "mtime": 1785521584.1244996,
+    "ast_hash": "b90d19e92c467542941ef32fb9fee85b",
+    "semantic_hash": ""
+  },
+  "etiquetar_temas_examenes_gace.py": {
+    "mtime": 1785521584.1284995,
+    "ast_hash": "fbec850ea9247f901b963b46253b2b13",
+    "semantic_hash": ""
+  },
+  "firebase_setup.py": {
+    "mtime": 1785521584.1284995,
+    "ast_hash": "20c94fd4b05a61df071c05f0b7ffa2d0",
+    "semantic_hash": ""
+  },
+  "frontend/admin/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "6619abb20fbae674f366669880856220",
+    "semantic_hash": ""
+  },
+  "frontend/assets/analytics.js": {
+    "mtime": 1785521584.1364996,
+    "ast_hash": "9d98e46405fc49825ef5719764ff13d0",
+    "semantic_hash": ""
+  },
+  "frontend/assets/auth-guard.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "fbcced2e0094775de57ce5d5f2b73ee5",
+    "semantic_hash": ""
+  },
+  "frontend/assets/auth.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "debf5461fe795acc1bb2a49b8cd97e96",
+    "semantic_hash": ""
+  },
+  "frontend/assets/cuenta-atras.js": {
+    "mtime": 1785521584.1396728,
+    "ast_hash": "796a996e1081c861981f73bfe25e1654",
+    "semantic_hash": ""
+  },
+  "frontend/assets/dom.js": {
+    "mtime": 1785521584.1404996,
+    "ast_hash": "748bd9941dadb8eb9c65532e503335cd",
+    "semantic_hash": ""
+  },
+  "frontend/assets/favoritas.js": {
+    "mtime": 1785521584.1404996,
+    "ast_hash": "d115851e4b8a6fdd5d7d007debbb35cc",
+    "semantic_hash": ""
+  },
+  "frontend/assets/firebase-config.js": {
+    "mtime": 1785521584.1404996,
+    "ast_hash": "efe11763f438c7933dad03db05ff4014",
+    "semantic_hash": ""
+  },
+  "frontend/assets/icons.js": {
+    "mtime": 1785521584.1444995,
+    "ast_hash": "43b24a195b23291ee6d1441a7f8dd3aa",
+    "semantic_hash": ""
+  },
+  "frontend/assets/limite-paginas.js": {
+    "mtime": 1785521584.1444995,
+    "ast_hash": "8b73be85b23450c3b922d50fea21df1f",
+    "semantic_hash": ""
+  },
+  "frontend/assets/navegador-preguntas.js": {
+    "mtime": 1785521584.1444995,
+    "ast_hash": "25cd421e1c5968e1074029115cce61e1",
+    "semantic_hash": ""
+  },
+  "frontend/assets/notificaciones.js": {
+    "mtime": 1785521584.1444995,
+    "ast_hash": "17d3ad8f15e578c9589f1755eb1554d1",
+    "semantic_hash": ""
+  },
+  "frontend/assets/onboarding-tour.js": {
+    "mtime": 1785521584.1484995,
+    "ast_hash": "953f38bde09862c2a237de8c4643c218",
+    "semantic_hash": ""
+  },
+  "frontend/assets/oposicion.js": {
+    "mtime": 1785521584.1484995,
+    "ast_hash": "c57e456e4c9f39a121c5826d2dd50704",
+    "semantic_hash": ""
+  },
+  "frontend/assets/otras-herramientas-pdf.js": {
+    "mtime": 1785521584.1484995,
+    "ast_hash": "e5d4797cee7ce8d9201b7a6971118f3e",
+    "semantic_hash": ""
+  },
+  "frontend/assets/plan.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "797c8062ff817a81cb69f4d8143b5684",
+    "semantic_hash": ""
+  },
+  "frontend/assets/popover.js": {
+    "mtime": 1785521584.1524997,
+    "ast_hash": "ddbee21517d4d57a61a5d839210f7e1b",
+    "semantic_hash": ""
+  },
+  "frontend/assets/posthog-array.js": {
+    "mtime": 1785521584.1524997,
+    "ast_hash": "13c663864120d56011f8409ad6614f91",
+    "semantic_hash": ""
+  },
+  "frontend/assets/progreso-conversador.js": {
+    "mtime": 1785521584.1564996,
+    "ast_hash": "14120c01d65a18fb8cb02093b80e4516",
+    "semantic_hash": ""
+  },
+  "frontend/assets/progreso-pdf.js": {
+    "mtime": 1785521584.1564996,
+    "ast_hash": "5b634c2d11a748706801122512290dd6",
+    "semantic_hash": ""
+  },
+  "frontend/assets/push.js": {
+    "mtime": 1785521584.1564996,
+    "ast_hash": "c26f4b2d49807bb6c68d6c4886d2fb4e",
+    "semantic_hash": ""
+  },
+  "frontend/assets/resultados-test.js": {
+    "mtime": 1785521584.1564996,
+    "ast_hash": "6fdeb7d994746f5b9b076885d8e3db4f",
+    "semantic_hash": ""
+  },
+  "frontend/assets/stream-utils.js": {
+    "mtime": 1785521584.1564996,
+    "ast_hash": "ac9fccc524fd4fb303b11675b040ce7d",
+    "semantic_hash": ""
+  },
+  "frontend/assets/temas-numeracion.js": {
+    "mtime": 1785521584.1564996,
+    "ast_hash": "88489089c20117a5feaa0fb389c66581",
+    "semantic_hash": ""
+  },
+  "frontend/assets/temas-selector.js": {
+    "mtime": 1785521584.1564996,
+    "ast_hash": "c52cfe5068b984a2ca36968c1fb0eead",
+    "semantic_hash": ""
+  },
+  "frontend/assets/test-progreso.js": {
+    "mtime": 1785521584.1564996,
+    "ast_hash": "41c3c55d6ee99bf15d954453db704eb0",
+    "semantic_hash": ""
+  },
+  "frontend/assets/tutor-widget.js": {
+    "mtime": 1785521584.1604996,
+    "ast_hash": "97081e8f420454fcb382bce25f1b9ebd",
+    "semantic_hash": ""
+  },
+  "frontend/demo/script.js": {
+    "mtime": 1785521584.1822746,
+    "ast_hash": "e73e0b1fa15a56e4f9a87145b20bf82c",
+    "semantic_hash": ""
+  },
+  "frontend/estadisticas/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "843aaf3bdd7e526964a8876bc115e530",
+    "semantic_hash": ""
+  },
+  "frontend/login/script.js": {
+    "mtime": 1785521584.1891932,
+    "ast_hash": "5629ebc0d8aca50f259979da7b9bc403",
+    "semantic_hash": ""
+  },
+  "frontend/manifest.json": {
+    "mtime": 1785521584.1891932,
+    "ast_hash": "35de531f5e509b68f333beb57da4d9b4",
+    "semantic_hash": ""
+  },
+  "frontend/mi-cuenta/datos-personales/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "34c13eb42377c5ff925a1d45fe3f756d",
+    "semantic_hash": ""
+  },
+  "frontend/mi-cuenta/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "18148863286178a35bb9907cbc3c633c",
+    "semantic_hash": ""
+  },
+  "frontend/mis-documentos/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "d73719e15d38d110cf20ec97638b5a93",
+    "semantic_hash": ""
+  },
+  "frontend/mis-tests/resultado/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "07741a59dd0e9d41f71c21d4785cde4f",
+    "semantic_hash": ""
+  },
+  "frontend/mis-tests/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "d5de668c3459b1b718bec997d654f194",
+    "semantic_hash": ""
+  },
+  "frontend/planes/script.js": {
+    "mtime": 1785521584.2047062,
+    "ast_hash": "1dc79cfbde434bfe429caba83ff1f298",
+    "semantic_hash": ""
+  },
+  "frontend/preguntas-falladas/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "ae06c8fc1045889aae1dd400c5316d94",
+    "semantic_hash": ""
+  },
+  "frontend/preguntas-favoritas/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "911f8f957e1ff1dd029301ef02442c9b",
+    "semantic_hash": ""
+  },
+  "frontend/ranking/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "fc7f4ef180929ff8bd799eabaf3771b7",
+    "semantic_hash": ""
+  },
+  "frontend/repasar-preguntas/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "db4e33f97c760b64bbd8498606cfe0f2",
+    "semantic_hash": ""
+  },
+  "frontend/repetir-test/script.js": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "4c0a2e3920b07acdf8177a9cec7f2f16",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-chat-pdf/script.js": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "c5297dc47177c1b6f52607c09e148ec1",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-esquemas/script.js": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "f324481dbb21f3c15afffd62d0e9d7fa",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-generar-test/script.js": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "4dbb1bdc3ff63e5e4ecc3ae0b187be14",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-pagina-principal/script.js": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "a5d5496f1c34178ac4ec6899af7af3a2",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-resumen/script.js": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "7c52da1e35be096cdef2e4732f27c210",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-tarjetas/script.js": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "9141505e058d811215a3ae77477c936d",
+    "semantic_hash": ""
+  },
+  "frontend/sw.js": {
+    "mtime": 1785521584.2287247,
+    "ast_hash": "ee8a7e3be4b22608e605448d22e385d3",
+    "semantic_hash": ""
+  },
+  "frontend/test-oficial/script.js": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "dbba31bc154509a2cd2daaa406b30a8d",
+    "semantic_hash": ""
+  },
+  "frontend/test-personalizado/script.js": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "ffd675f2b729f88fdf6f3f5ca672e040",
+    "semantic_hash": ""
+  },
+  "frontend/tu-tutor/script.js": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "aa9252e7bed1daafb2ed8e797bc88e33",
+    "semantic_hash": ""
+  },
+  "frontend/zona-opositor/script.js": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "fb6a720c1602eacba725ca2943a5d862",
+    "semantic_hash": ""
+  },
+  "generador_diff_temario.py": {
+    "mtime": 1785521584.2413607,
+    "ast_hash": "e137bfa7d168975c030a3688d22cc17b",
+    "semantic_hash": ""
+  },
+  "generador_preguntas_verificado.py": {
+    "mtime": 1785521584.2413607,
+    "ast_hash": "a74b0f0df02de65b03ee854e4331b778",
+    "semantic_hash": ""
+  },
+  "generar_claves_vapid.py": {
+    "mtime": 1785521584.2413607,
+    "ast_hash": "fb81709b0603e84f2e92a654b19b5e42",
+    "semantic_hash": ""
+  },
+  "generar_sitemap.py": {
+    "mtime": 1785521584.2413607,
+    "ast_hash": "d01e3dd03f874e67c6c24abf306a5a71",
+    "semantic_hash": ""
+  },
+  "gestion_cuenta.py": {
+    "mtime": 1785521584.2413607,
+    "ast_hash": "67464d6a94ac4918e3301a587d375985",
+    "semantic_hash": ""
+  },
+  "guardar_resultado.py": {
+    "mtime": 1785521584.2413607,
+    "ast_hash": "b63894b5362ec5b3f174de1a337be5ee",
+    "semantic_hash": ""
+  },
+  "indices-ofimatica.json": {
+    "mtime": 1785521584.2413607,
+    "ast_hash": "4a0f106866bb1705695f552fa4c54ead",
+    "semantic_hash": ""
+  },
+  "limites_uso.py": {
+    "mtime": 1785521584.4564996,
+    "ast_hash": "343108c8220326e54d038622ba07422c",
+    "semantic_hash": ""
+  },
+  "limpiar_titulos_vacio_temario.py": {
+    "mtime": 1785521584.4564996,
+    "ast_hash": "34f5eeadd49bfb99e84372ca4f4b5bda",
+    "semantic_hash": ""
+  },
+  "listar_temas_vacios.py": {
+    "mtime": 1785521584.4564996,
+    "ast_hash": "b1fa2852b66b5af3be476b790acfffa0",
+    "semantic_hash": ""
+  },
+  "migrar_usuarios_prueba.py": {
+    "mtime": 1785521584.4564996,
+    "ast_hash": "50f074a6bd1dcb49895ca1c48be3b0d4",
+    "semantic_hash": ""
+  },
+  "oposiciones.py": {
+    "mtime": 1785521584.4564996,
+    "ast_hash": "ff2766b0dba42e136dbc2ca82c32396e",
+    "semantic_hash": ""
+  },
+  "package.json": {
+    "mtime": 1785521584.4604995,
+    "ast_hash": "755e067db29570fee58946b79cc7c0fc",
+    "semantic_hash": ""
+  },
+  "planes.py": {
+    "mtime": 1785521584.4604995,
+    "ast_hash": "b7e588bf7584ba94065125b16ea297bf",
+    "semantic_hash": ""
+  },
+  "playwright.config.js": {
+    "mtime": 1785521584.4604995,
+    "ast_hash": "60bf8d4809c45b3a64dabc12c2bce52c",
+    "semantic_hash": ""
+  },
+  "podar_temario_age_bloque4_tema9.py": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "f6e3c6ef91dded56cc41ed73821a7ed7",
+    "semantic_hash": ""
+  },
+  "podar_temario_age_bloque5_tema6.py": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "cd281b5592ad1f48c1442acc80d8e4dc",
+    "semantic_hash": ""
+  },
+  "podar_temario_gace_bloque2_temas1_5.py": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "93e8325f7f112ab95bd797ecd0727986",
+    "semantic_hash": ""
+  },
+  "promociones.py": {
+    "mtime": 1785521584.4644995,
+    "ast_hash": "5337bda2435ad8f9f6b5a89ce40f66cf",
+    "semantic_hash": ""
+  },
+  "publicacion_estatica_boe.py": {
+    "mtime": 1785521584.4644995,
+    "ast_hash": "ce3544d42cfc9c6380a1641474e6e490",
+    "semantic_hash": ""
+  },
+  "push_utils.py": {
+    "mtime": 1785521584.4644995,
+    "ast_hash": "4a98f9d7619432e8c5f36e9fd9deef83",
+    "semantic_hash": ""
+  },
+  "rate_limiter.py": {
+    "mtime": 1785521584.4644995,
+    "ast_hash": "d6a84bd5d900d6e0fd1eaa37cc3d0b7e",
+    "semantic_hash": ""
+  },
+  "reasignar_temas_examenes.py": {
+    "mtime": 1785521584.4644995,
+    "ast_hash": "8580cac41cbb02990e5b7e2caf8c3e0c",
+    "semantic_hash": ""
+  },
+  "regenerar_temario_ofimatica.py": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "92b2c11ab2799ed772162f9a84159ef6",
+    "semantic_hash": ""
+  },
+  "registro_progreso_usuario.py": {
+    "mtime": 1785521584.4684997,
+    "ast_hash": "73407233e51f7a9c69e4594564d7906a",
+    "semantic_hash": ""
+  },
+  "rutas_progreso.py": {
+    "mtime": 1785521584.4724996,
+    "ast_hash": "61988e5849346f3e79f14fa011442654",
+    "semantic_hash": ""
+  },
+  "save_controller.py": {
+    "mtime": 1785521584.4724996,
+    "ast_hash": "f1c5506086c31aaf998ee3da1d8646de",
+    "semantic_hash": ""
+  },
+  "sin-uso/completar_explicaciones.py": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "0456e8656302f5c5a5a6bc421b71d15f",
+    "semantic_hash": ""
+  },
+  "sin-uso/completar_tema_gace_sector_publico.py": {
+    "mtime": 1785565766.247559,
+    "ast_hash": "76c729a5d6898924b238536954a4aaf3",
+    "semantic_hash": ""
+  },
+  "sin-uso/completar_temario_age.py": {
+    "mtime": 1785565766.247559,
+    "ast_hash": "705b2c095aa79ccea8ae6c5b74aace03",
+    "semantic_hash": ""
+  },
+  "sin-uso/corregir_resultados_tests.py": {
+    "mtime": 1785565766.247559,
+    "ast_hash": "3b4db461fad656a0171a93e6cafd43b0",
+    "semantic_hash": ""
+  },
+  "sin-uso/crear_subbloques_gace.py": {
+    "mtime": 1785565766.247559,
+    "ast_hash": "013b82122c8cf2dcff818ea5a60ab77b",
+    "semantic_hash": ""
+  },
+  "sin-uso/extraer_temas_firestore.py": {
+    "mtime": 1785565766.247559,
+    "ast_hash": "c66d6620d1433c41c2151c85105aa86e",
+    "semantic_hash": ""
+  },
+  "sin-uso/limpiar_subdivisiones_vacias.py": {
+    "mtime": 1785565766.2725549,
+    "ast_hash": "2d86d7e34b838ebf2788af56236a5a87",
+    "semantic_hash": ""
+  },
+  "sin-uso/migrar_usuarios_a_suscripciones.py": {
+    "mtime": 1785565766.2725549,
+    "ast_hash": "3cd9ed48216a08372ad944b992387114",
+    "semantic_hash": ""
+  },
+  "sin-uso/subir_temario_gace.py": {
+    "mtime": 1785565766.2725549,
+    "ast_hash": "2e0ccf9ec784fb1c0142da3638361032",
+    "semantic_hash": ""
+  },
+  "tarjetas_generator.py": {
+    "mtime": 1785521584.4764996,
+    "ast_hash": "03717425cd3f2881e6d9a1bd7541540e",
+    "semantic_hash": ""
+  },
+  "test_generator.py": {
+    "mtime": 1785521584.6444995,
+    "ast_hash": "cc093cada69cd017f20b535b39381081",
+    "semantic_hash": ""
+  },
+  "tests-frontend/nav.spec.js": {
+    "mtime": 1785521584.6444995,
+    "ast_hash": "392daf5cfe49a081c31ffeebb7ac4bc2",
+    "semantic_hash": ""
+  },
+  "tests-frontend/smoke.spec.js": {
+    "mtime": 1785565768.2234604,
+    "ast_hash": "0aea917b64a0b51c80c6d05018ea15c3",
+    "semantic_hash": ""
+  },
+  "tests/fakes.py": {
+    "mtime": 1785521584.6505277,
+    "ast_hash": "da091a9b0b6b7e916adb771a694f997b",
+    "semantic_hash": ""
+  },
+  "tests/test_admin.py": {
+    "mtime": 1785521584.6517127,
+    "ast_hash": "cce3c0ada6bdd6ef28eb51b8c906ff2b",
+    "semantic_hash": ""
+  },
+  "tests/test_auth_publico.py": {
+    "mtime": 1785521584.6517127,
+    "ast_hash": "aa6f47bdbfa0cc74847c6bd8b3f50c97",
+    "semantic_hash": ""
+  },
+  "tests/test_auth_utils.py": {
+    "mtime": 1785521584.6524997,
+    "ast_hash": "5cb4bed23ab3f90a6c5f8f96747aed1e",
+    "semantic_hash": ""
+  },
+  "tests/test_autosave_resume.py": {
+    "mtime": 1785521584.6524997,
+    "ast_hash": "2580e615e98f270f050615ba2635fa19",
+    "semantic_hash": ""
+  },
+  "tests/test_banco_preguntas_ia.py": {
+    "mtime": 1785521584.6524997,
+    "ast_hash": "580b84dc83d85147bf3cf5a47497550b",
+    "semantic_hash": ""
+  },
+  "tests/test_borrar_test.py": {
+    "mtime": 1785521584.6524997,
+    "ast_hash": "8807cc00e2323211d74ebbfb33fb621c",
+    "semantic_hash": ""
+  },
+  "tests/test_carpetas_documentos.py": {
+    "mtime": 1785521584.6524997,
+    "ast_hash": "8a4d842db44b89071e71e8ce78c969bd",
+    "semantic_hash": ""
+  },
+  "tests/test_coste_ia.py": {
+    "mtime": 1785521584.6524997,
+    "ast_hash": "2813e4930e13900ddd787b882a920776",
+    "semantic_hash": ""
+  },
+  "tests/test_deepseek_utils.py": {
+    "mtime": 1785521584.6524997,
+    "ast_hash": "e6053259d3b376cb52a39eea625c4956",
+    "semantic_hash": ""
+  },
+  "tests/test_documentos_pdf.py": {
+    "mtime": 1785521584.6524997,
+    "ast_hash": "6b9a6b5bc0f464f3c8d5e518c0f5c9d4",
+    "semantic_hash": ""
+  },
+  "tests/test_email_utils.py": {
+    "mtime": 1785521584.6564996,
+    "ast_hash": "d04a600f892dad9f0e7918b00849e0ae",
+    "semantic_hash": ""
+  },
+  "tests/test_error_handler.py": {
+    "mtime": 1785521584.6564996,
+    "ast_hash": "8b5d631734773c08416bbde92981c850",
+    "semantic_hash": ""
+  },
+  "tests/test_estadisticas_blancos.py": {
+    "mtime": 1785521584.6564996,
+    "ast_hash": "c6da5ebb6125d5e5e929ac6574eefe9e",
+    "semantic_hash": ""
+  },
+  "tests/test_fecha_examen.py": {
+    "mtime": 1785521584.6564996,
+    "ast_hash": "3e535417b3d7b3597c8942be866c6554",
+    "semantic_hash": ""
+  },
+  "tests/test_firebase_setup.py": {
+    "mtime": 1785521584.6564996,
+    "ast_hash": "c83e78633ed74c4e9ba4b4e1d11ed4dc",
+    "semantic_hash": ""
+  },
+  "tests/test_generador_diff_temario.py": {
+    "mtime": 1785521584.6564996,
+    "ast_hash": "503a45d19bce0a8ed8b40f7d7aa34be7",
+    "semantic_hash": ""
+  },
+  "tests/test_generador_ia_temario.py": {
+    "mtime": 1785521584.6564996,
+    "ast_hash": "39bcc039090280dcdd7ab055bed30c21",
+    "semantic_hash": ""
+  },
+  "tests/test_generador_preguntas_verificado.py": {
+    "mtime": 1785521584.6564996,
+    "ast_hash": "0a8c9532f7767746507a43c3525aaa10",
+    "semantic_hash": ""
+  },
+  "tests/test_generar_test_oficial.py": {
+    "mtime": 1785521584.6604996,
+    "ast_hash": "62617f010b5ebfea91a26e396c781447",
+    "semantic_hash": ""
+  },
+  "tests/test_gestion_cuenta.py": {
+    "mtime": 1785521584.6604996,
+    "ast_hash": "324f2679badd161820bee855bd2b0b69",
+    "semantic_hash": ""
+  },
+  "tests/test_guardar_resultado_pdf.py": {
+    "mtime": 1785521584.6604996,
+    "ast_hash": "e1bb3d92259a6ba14388910f8bfbbaf8",
+    "semantic_hash": ""
+  },
+  "tests/test_health.py": {
+    "mtime": 1785521584.6604996,
+    "ast_hash": "6c247d106e420b8474828b7e343fb52d",
+    "semantic_hash": ""
+  },
+  "tests/test_limites_uso.py": {
+    "mtime": 1785521584.6604996,
+    "ast_hash": "bd605c7fd33470e0e90e0e6af73f2e23",
+    "semantic_hash": ""
+  },
+  "tests/test_marcadas_duda.py": {
+    "mtime": 1785521584.6604996,
+    "ast_hash": "dee823024f19550e23c6f1e62d3cb528",
+    "semantic_hash": ""
+  },
+  "tests/test_mi_perfil.py": {
+    "mtime": 1785521584.6604996,
+    "ast_hash": "6f7015ffc73f1c8e693bbabeadcb980e",
+    "semantic_hash": ""
+  },
+  "tests/test_obtener_contexto_por_temas_exactos.py": {
+    "mtime": 1785521584.6604996,
+    "ast_hash": "e078f732c73c691ecade95d85dbb122a",
+    "semantic_hash": ""
+  },
+  "tests/test_pagos_checkout.py": {
+    "mtime": 1785521584.6604996,
+    "ast_hash": "3188f9e5983f55116ffc098679495704",
+    "semantic_hash": ""
+  },
+  "tests/test_pdf_ia.py": {
+    "mtime": 1785521584.6644995,
+    "ast_hash": "8b5e64865f768822194268a7302eff81",
+    "semantic_hash": ""
+  },
+  "tests/test_preguntas_favoritas.py": {
+    "mtime": 1785521584.6644995,
+    "ast_hash": "170c49f5e42b2564e345a6e460963cb6",
+    "semantic_hash": ""
+  },
+  "tests/test_prueba_gratuita.py": {
+    "mtime": 1785521584.6644995,
+    "ast_hash": "93ea1985e929bf5975958f643e670536",
+    "semantic_hash": ""
+  },
+  "tests/test_publicacion_estatica_boe.py": {
+    "mtime": 1785521584.6644995,
+    "ast_hash": "be7b3d50569c0a0ca79db04e2eb109a9",
+    "semantic_hash": ""
+  },
+  "tests/test_push_notificaciones.py": {
+    "mtime": 1785521584.6644995,
+    "ast_hash": "75ae23a293b3c8c92b1243ad58458a9b",
+    "semantic_hash": ""
+  },
+  "tests/test_ranking.py": {
+    "mtime": 1785521584.6684995,
+    "ast_hash": "aece98d86858a862fd5d3f392b3c2f09",
+    "semantic_hash": ""
+  },
+  "tests/test_rate_limiter.py": {
+    "mtime": 1785521584.6684995,
+    "ast_hash": "7b84af17fa8807f3dd26f7fa4ff1d317",
+    "semantic_hash": ""
+  },
+  "tests/test_reasignar_temas.py": {
+    "mtime": 1785521584.6684995,
+    "ast_hash": "a2d7b3296cf69d02b017e04aa1c54669",
+    "semantic_hash": ""
+  },
+  "tests/test_reparto_realista.py": {
+    "mtime": 1785521584.6684995,
+    "ast_hash": "c74a315e180d7f34dc95c368e596c8a3",
+    "semantic_hash": ""
+  },
+  "tests/test_repaso_espaciado.py": {
+    "mtime": 1785521584.6684995,
+    "ast_hash": "4026b72a469d03bc64a100fd01d34a27",
+    "semantic_hash": ""
+  },
+  "tests/test_resultado_test_oficial.py": {
+    "mtime": 1785521584.6684995,
+    "ast_hash": "acf07f95839e3200e8e45d218094b0a4",
+    "semantic_hash": ""
+  },
+  "tests/test_soporte.py": {
+    "mtime": 1785521584.6684995,
+    "ast_hash": "5990d39a125268a8917dfe3fe84c6888",
+    "semantic_hash": ""
+  },
+  "tests/test_tareas_programadas.py": {
+    "mtime": 1785565768.2234604,
+    "ast_hash": "ebb5655a92b36a6c74dbe70a2eb8050c",
+    "semantic_hash": ""
+  },
+  "tests/test_tarjetas_generator.py": {
+    "mtime": 1785521584.6724997,
+    "ast_hash": "e77453bfe212c398aa3756119dcb17ce",
+    "semantic_hash": ""
+  },
+  "tests/test_temario.py": {
+    "mtime": 1785521584.6724997,
+    "ast_hash": "3713d458c7e6e441770e5d1a6e07a867",
+    "semantic_hash": ""
+  },
+  "tests/test_test_generator.py": {
+    "mtime": 1785521584.6724997,
+    "ast_hash": "e757036af86627f48240a1234a1ed3d8",
+    "semantic_hash": ""
+  },
+  "tests/test_tu_tutor.py": {
+    "mtime": 1785521584.6724997,
+    "ast_hash": "804c44089d064004e14c51da280069ef",
+    "semantic_hash": ""
+  },
+  "tests/test_utils.py": {
+    "mtime": 1785521584.6724997,
+    "ast_hash": "2571e75914403e959e986bc4a2b3e598",
+    "semantic_hash": ""
+  },
+  "tests/test_validador_preguntas.py": {
+    "mtime": 1785521584.6764996,
+    "ast_hash": "06e0ab27a5c0615259699d646c15ec9a",
+    "semantic_hash": ""
+  },
+  "tests/test_vigilancia_boe.py": {
+    "mtime": 1785521584.6764996,
+    "ast_hash": "573ce0e781ac71d62e28c3f496ce63e2",
+    "semantic_hash": ""
+  },
+  "tests/test_webhook_stripe.py": {
+    "mtime": 1785521584.6764996,
+    "ast_hash": "902d64eef591b06834b9cc11cfa9e8f6",
+    "semantic_hash": ""
+  },
+  "utils.py": {
+    "mtime": 1785521584.6764996,
+    "ast_hash": "e04ae42aa60b9518c5190e6a0edb60a5",
+    "semantic_hash": ""
+  },
+  "validador_preguntas.py": {
+    "mtime": 1785521584.6764996,
+    "ast_hash": "df5da65244da53edda5a7b687bcaecbd",
+    "semantic_hash": ""
+  },
+  "vigilancia_boe.py": {
+    "mtime": 1785521584.6804996,
+    "ast_hash": "8e8f8981e0da7cd822ea6c67360e369a",
+    "semantic_hash": ""
+  },
+  ".github/workflows/cargar-examen-oficial-age.yml": {
+    "mtime": 1785521583.0453324,
+    "ast_hash": "dfa01f8cd6aa9143b01678630d96702b",
+    "semantic_hash": ""
+  },
+  ".github/workflows/cargar-examen-oficial-auxiliar.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "be5c16c8b8f0d79043bf904115d58c48",
+    "semantic_hash": ""
+  },
+  ".github/workflows/cargar-examen-oficial-gace.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "b3a79dcdf501326fe23fc244e2f16137",
+    "semantic_hash": ""
+  },
+  ".github/workflows/cargar-temario-auxiliar-bloque2.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "6573678363ffe8c061945784b60f93c8",
+    "semantic_hash": ""
+  },
+  ".github/workflows/cargar-temario-auxiliar.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "cf4b70a8f1f375f1b37ea314a75e9011",
+    "semantic_hash": ""
+  },
+  ".github/workflows/cargar-temario-gace-bloque2-ue.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "0b612aee81ce58f1d3ac37aefd5ee554",
+    "semantic_hash": ""
+  },
+  ".github/workflows/ci.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "541cc5349c5444ebe9a4ea04b6f9e5ff",
+    "semantic_hash": ""
+  },
+  ".github/workflows/completar-temario-age-bloques-4-5.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "24bd49d07f3558bc0b6d91c087aa0749",
+    "semantic_hash": ""
+  },
+  ".github/workflows/completar-temario-gace-bloque2-tema5.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "aa12202051ff4b4903e862fcbe0f101e",
+    "semantic_hash": ""
+  },
+  ".github/workflows/desactivar-preguntas-gace-ley-derogada.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "33b27d2a40aa7af3d45fe8935173f7fd",
+    "semantic_hash": ""
+  },
+  ".github/workflows/desactivar-psicotecnicas-incompletas-auxiliar.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "29eb23e73f88ca251ed642cfec701801",
+    "semantic_hash": ""
+  },
+  ".github/workflows/diagnosticar-usuario.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "560e4059b9749fb8ebafd3c578777a81",
+    "semantic_hash": ""
+  },
+  ".github/workflows/health-check.yml": {
+    "mtime": 1785521583.0462525,
+    "ast_hash": "bdc5d2d1f92c8ce5b4bdd621e14c4ee9",
+    "semantic_hash": ""
+  },
+  ".github/workflows/limpiar-titulos-vacio-temario.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "3ac8b3dae65e47857abd2b71f8d41ac4",
+    "semantic_hash": ""
+  },
+  ".github/workflows/listar-temas-vacios.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "1aacf1aebf1f90301b1f1a69f028a09c",
+    "semantic_hash": ""
+  },
+  ".github/workflows/migrar-usuarios-prueba.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "ec73dcdd82daed2dbf549935eb7e86dc",
+    "semantic_hash": ""
+  },
+  ".github/workflows/podar-temario-age-bloque4-tema9.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "c634f73b99336a58e587ea9d71aa31ac",
+    "semantic_hash": ""
+  },
+  ".github/workflows/podar-temario-age-bloque5-tema6.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "76876c4e90fc35f48f85354ba12cea8e",
+    "semantic_hash": ""
+  },
+  ".github/workflows/podar-temario-gace-bloque2-temas1-5.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "a8587fc6d4a912aab4e2b76ccd6a75fa",
+    "semantic_hash": ""
+  },
+  ".github/workflows/racha-recordatorio.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "b8a428cd196780245d0c7e4355fbe7eb",
+    "semantic_hash": ""
+  },
+  ".github/workflows/reasignar-temas-examenes.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "ebf83687c07595fd4a081a0f8d568086",
+    "semantic_hash": ""
+  },
+  ".github/workflows/recordatorio-prueba.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "905b290b2be7e448ca0f47cd0ae4d900",
+    "semantic_hash": ""
+  },
+  ".github/workflows/regenerar-temario-ofimatica.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "c8ce86ad0e8c3f7f4ca711c72b69902e",
+    "semantic_hash": ""
+  },
+  ".github/workflows/subir-datos-convocatoria.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "5725a9fc0fcdacbfe23295987318c8b4",
+    "semantic_hash": ""
+  },
+  ".github/workflows/vigilar-boe.yml": {
+    "mtime": 1785521583.0484996,
+    "ast_hash": "8e9ccd7ce445326a8b6bb28447284283",
+    "semantic_hash": ""
+  },
+  ".github/workflows/vigilar-gasto-ia.yml": {
+    "mtime": 1785521583.0524995,
+    "ast_hash": "4395b8d38af8c34b46ece93063d2f86a",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1785565775.4314609,
+    "ast_hash": "622b9cbf96d4adefaf2a2f8b9f3f58d8",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1785521584.0324996,
+    "ast_hash": "a0d330857c415e1fc6b6beeb520ebde6",
+    "semantic_hash": ""
+  },
+  "docs/firestore-schema.md": {
+    "mtime": 1785521584.1244996,
+    "ast_hash": "e8f2cf4fc3d309a87fcc0657a10d7af3",
+    "semantic_hash": ""
+  },
+  "frontend/404.html": {
+    "mtime": 1785521584.1284995,
+    "ast_hash": "5aed50735a52cbd216d8cbae5f806540",
+    "semantic_hash": ""
+  },
+  "frontend/admin/index.html": {
+    "mtime": 1785521584.1328688,
+    "ast_hash": "6d63ff69b0d21eb3be1aaf6cf5fb7c9d",
+    "semantic_hash": ""
+  },
+  "frontend/aviso-legal/index.html": {
+    "mtime": 1785521584.1604996,
+    "ast_hash": "95e185a5773468fee91c9c4f4cee60c5",
+    "semantic_hash": ""
+  },
+  "frontend/avisos-oficiales/index.html": {
+    "mtime": 1785521584.1644995,
+    "ast_hash": "591bd71efa3ccf06ae6d302a18a26bef",
+    "semantic_hash": ""
+  },
+  "frontend/como-estudiar-oposicion-trabajando/index.html": {
+    "mtime": 1785521584.1644995,
+    "ast_hash": "9c07a44c2c2add36a6fb2c82af5a6051",
+    "semantic_hash": ""
+  },
+  "frontend/como-funciona/estadisticas/index.html": {
+    "mtime": 1785521584.1688895,
+    "ast_hash": "fca09f51ba259384bff8408bf5148dcb",
+    "semantic_hash": ""
+  },
+  "frontend/como-funciona/herramientas-ia/index.html": {
+    "mtime": 1785521584.1688895,
+    "ast_hash": "877fb9d9686708a0e87631d82ee25296",
+    "semantic_hash": ""
+  },
+  "frontend/como-funciona/index.html": {
+    "mtime": 1785521584.1688895,
+    "ast_hash": "1902f448d1aca57342fd977566fdf92d",
+    "semantic_hash": ""
+  },
+  "frontend/como-funciona/mis-documentos/index.html": {
+    "mtime": 1785521584.1688895,
+    "ast_hash": "94c91cd93c32748ea409f2e65e326b37",
+    "semantic_hash": ""
+  },
+  "frontend/como-funciona/mis-tests/index.html": {
+    "mtime": 1785521584.1688895,
+    "ast_hash": "8397c709068cd1831b2f41e11f99efa2",
+    "semantic_hash": ""
+  },
+  "frontend/como-funciona/repasar-preguntas/index.html": {
+    "mtime": 1785521584.1688895,
+    "ast_hash": "0777d46d504a3750d6e5af82e1de6a86",
+    "semantic_hash": ""
+  },
+  "frontend/como-funciona/test-oficial/index.html": {
+    "mtime": 1785521584.1724997,
+    "ast_hash": "2b0d4914870b272bc676fd88447474f8",
+    "semantic_hash": ""
+  },
+  "frontend/como-funciona/test-personalizado/index.html": {
+    "mtime": 1785521584.1724997,
+    "ast_hash": "6c16186bb804b00ed504fb86a184eddd",
+    "semantic_hash": ""
+  },
+  "frontend/como-funciona/tu-tutor/index.html": {
+    "mtime": 1785521584.1724997,
+    "ast_hash": "b07510f2b20196372867792b14e88d84",
+    "semantic_hash": ""
+  },
+  "frontend/como-funciona/zona-opositor/index.html": {
+    "mtime": 1785521584.1764996,
+    "ast_hash": "3d262a4093a215ac08ce853b2a0e127d",
+    "semantic_hash": ""
+  },
+  "frontend/comparativa-oposiciones-estado/index.html": {
+    "mtime": 1785521584.1764996,
+    "ast_hash": "438c6ba6a93182b78ff1682dd4041513",
+    "semantic_hash": ""
+  },
+  "frontend/cookies/index.html": {
+    "mtime": 1785521584.1764996,
+    "ast_hash": "e23ab81372d1a334740da79a3020d039",
+    "semantic_hash": ""
+  },
+  "frontend/demo/index.html": {
+    "mtime": 1785521584.1764996,
+    "ast_hash": "446d508e79ef9f67e50dabec22f67d92",
+    "semantic_hash": ""
+  },
+  "frontend/estadisticas/index.html": {
+    "mtime": 1785521584.1822746,
+    "ast_hash": "a9a8775afe2cd4ed60cc4d627a2fee65",
+    "semantic_hash": ""
+  },
+  "frontend/estudiar-oposiciones-con-inteligencia-artificial/index.html": {
+    "mtime": 1785521584.1847227,
+    "ast_hash": "76dd16bcaaf25353b1ca2043f4a7df3d",
+    "semantic_hash": ""
+  },
+  "frontend/index.html": {
+    "mtime": 1785565766.2398012,
+    "ast_hash": "04c3aae771ce36ed403451dadd43de80",
+    "semantic_hash": ""
+  },
+  "frontend/login/index.html": {
+    "mtime": 1785521584.1847227,
+    "ast_hash": "2f0eb4c75247a38d64afda92785b16ae",
+    "semantic_hash": ""
+  },
+  "frontend/mi-cuenta/datos-personales/index.html": {
+    "mtime": 1785521584.1913202,
+    "ast_hash": "5cca5a9eb63d4ab3f1628f5044e13483",
+    "semantic_hash": ""
+  },
+  "frontend/mi-cuenta/index.html": {
+    "mtime": 1785521584.1922295,
+    "ast_hash": "ee45db70ab5ac5ecde8bc81cab1d7d01",
+    "semantic_hash": ""
+  },
+  "frontend/mis-documentos/index.html": {
+    "mtime": 1785521584.1924996,
+    "ast_hash": "7c2146368827f1a2b39495587b69df2c",
+    "semantic_hash": ""
+  },
+  "frontend/mis-tests/index.html": {
+    "mtime": 1785521584.1951766,
+    "ast_hash": "7db8fe4d714ce1ad0fc16ef5210bfef8",
+    "semantic_hash": ""
+  },
+  "frontend/mis-tests/resultado/index.html": {
+    "mtime": 1785521584.1970417,
+    "ast_hash": "3be3bd1d3c18f1a8344c64566c9ccdb0",
+    "semantic_hash": ""
+  },
+  "frontend/oposicion-administrativo-estado-c1/index.html": {
+    "mtime": 1785521584.1977918,
+    "ast_hash": "19be5de0a7b1032dc6b8868cfa2e35ac",
+    "semantic_hash": ""
+  },
+  "frontend/oposicion-auxiliar-administrativo-estado/index.html": {
+    "mtime": 1785521584.1977918,
+    "ast_hash": "3702edacf57348436b259a568879255d",
+    "semantic_hash": ""
+  },
+  "frontend/oposicion-gace/index.html": {
+    "mtime": 1785521584.2004995,
+    "ast_hash": "85c055894d735e539bc47159992fb364",
+    "semantic_hash": ""
+  },
+  "frontend/oposiciones/index.html": {
+    "mtime": 1785521584.2004995,
+    "ast_hash": "cca11075b16d1531981e363142ff2d41",
+    "semantic_hash": ""
+  },
+  "frontend/planes/index.html": {
+    "mtime": 1785521584.2004995,
+    "ast_hash": "eaa64ca9a56b1c276e691764928e7abb",
+    "semantic_hash": ""
+  },
+  "frontend/preguntas-falladas/index.html": {
+    "mtime": 1785521584.2047062,
+    "ast_hash": "7d84c1dd0ebf678c81a2c82c985e5971",
+    "semantic_hash": ""
+  },
+  "frontend/preguntas-favoritas/index.html": {
+    "mtime": 1785521584.2066138,
+    "ast_hash": "fdc9f3c48c0fb22e85fcf1fc7e91061c",
+    "semantic_hash": ""
+  },
+  "frontend/privacidad/index.html": {
+    "mtime": 1785521584.209436,
+    "ast_hash": "ae4540125072af750a18bb4829d9e884",
+    "semantic_hash": ""
+  },
+  "frontend/ranking/index.html": {
+    "mtime": 1785521584.209436,
+    "ast_hash": "8a1ec09afe332df9f6a93b474d96fc61",
+    "semantic_hash": ""
+  },
+  "frontend/repasar-preguntas/index.html": {
+    "mtime": 1785521584.2131877,
+    "ast_hash": "d79b0b5fa7bfa93c86dc00d4d789996f",
+    "semantic_hash": ""
+  },
+  "frontend/repetir-test/index.html": {
+    "mtime": 1785521584.2147315,
+    "ast_hash": "f5b8f0bd65a890cab950ddc514842cbe",
+    "semantic_hash": ""
+  },
+  "frontend/robots.txt": {
+    "mtime": 1785521584.2166283,
+    "ast_hash": "e9655f36b48de4ab265e4e077c878e06",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-chat-pdf/index.html": {
+    "mtime": 1785521584.2166283,
+    "ast_hash": "cdbea645591598dfedfaea45f90da3ad",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-esquemas/index.html": {
+    "mtime": 1785521584.219372,
+    "ast_hash": "6b392ecb6964def3a71d04a6121fd3b5",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-generar-test/index.html": {
+    "mtime": 1785521584.2215924,
+    "ast_hash": "96af96d59191145c1d63e025b579bafc",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-pagina-principal/index.html": {
+    "mtime": 1785521584.2235615,
+    "ast_hash": "801957e7a63a73813cfc081d5fdd9eb3",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-resumen/index.html": {
+    "mtime": 1785521584.2250564,
+    "ast_hash": "d4b1f0b7ab1983d387c263ef83d32c7e",
+    "semantic_hash": ""
+  },
+  "frontend/subida-pdf-tarjetas/index.html": {
+    "mtime": 1785521584.226775,
+    "ast_hash": "36285b0bcd207ad1c328cd46415c73ad",
+    "semantic_hash": ""
+  },
+  "frontend/sueldo-funcionario-administracion-estado/index.html": {
+    "mtime": 1785521584.2287247,
+    "ast_hash": "d7c995f93a409b2d312193373cf2937d",
+    "semantic_hash": ""
+  },
+  "frontend/terminos/index.html": {
+    "mtime": 1785521584.2287247,
+    "ast_hash": "660c9530251c044a99f493f5d0a13902",
+    "semantic_hash": ""
+  },
+  "frontend/test-generator/index.html": {
+    "mtime": 1785521584.2287247,
+    "ast_hash": "454a71948e8766a1108dce5b095a2d15",
+    "semantic_hash": ""
+  },
+  "frontend/test-oficial/index.html": {
+    "mtime": 1785521584.2343733,
+    "ast_hash": "c128177b968b208dc5ca790ef90883ad",
+    "semantic_hash": ""
+  },
+  "frontend/test-personalizado/index.html": {
+    "mtime": 1785521584.2357557,
+    "ast_hash": "9f0623905ba94e179a4c0d7da9981d25",
+    "semantic_hash": ""
+  },
+  "frontend/tu-tutor/index.html": {
+    "mtime": 1785521584.2376087,
+    "ast_hash": "124961ea5caf7ee8a175f0665ee921a4",
+    "semantic_hash": ""
+  },
+  "frontend/zona-opositor/index.html": {
+    "mtime": 1785521584.2395282,
+    "ast_hash": "6a6e49da80827138bbea5ea041c53361",
+    "semantic_hash": ""
+  },
+  "render.yaml": {
+    "mtime": 1785565766.2434602,
+    "ast_hash": "fee8b851e5b5b604a997d301c41129d8",
+    "semantic_hash": ""
+  },
+  "requirements-dev.txt": {
+    "mtime": 1785521584.4724996,
+    "ast_hash": "9228cdf336acfd5322682a2f513f50b4",
+    "semantic_hash": ""
+  },
+  "requirements.txt": {
+    "mtime": 1785521584.4724996,
+    "ast_hash": "90f4ca1257618a624f5cfe2a29873af5",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo asistente/asisntente deep/Codigo_asistente_1.0.txt": {
+    "mtime": 1785565766.2480686,
+    "ast_hash": "b1ef356043b6a8395e4eddbce7fc6d92",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo asistente/asisntente deep/Codigo_asistente_1.1.txt": {
+    "mtime": 1785565766.2485864,
+    "ast_hash": "39f0881b8168db4e665bc784ddbecb00",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo asistente/codig_asistente_1.0.txt": {
+    "mtime": 1785565766.2485864,
+    "ast_hash": "e20bc069ea9fbb07845fb8c16c8a7046",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/CODIGO 1.3.txt": {
+    "mtime": 1785565766.2489045,
+    "ast_hash": "0d20fd7290665e604e3d7d7e3d5d3201",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/CODIGOS DEEP/CODIGO_CHAT_AI_1.0.txt": {
+    "mtime": 1785565766.2490346,
+    "ast_hash": "7461d01af3fdf5be65bbc264e9e63fec",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/CSS/CSS 1.0.txt": {
+    "mtime": 1785565766.2490346,
+    "ast_hash": "be671ed0289db18b69b2382717d358bb",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/Chat_AI_1.4.txt": {
+    "mtime": 1785565766.2490346,
+    "ast_hash": "7f238a9b8a479977928154864b325b1a",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/Codigo_chat_AI_1.1.txt": {
+    "mtime": 1785565766.2490346,
+    "ast_hash": "67387f38e1ae2caf46ee6e676506f2a2",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/Codigo_chat_ai.txt": {
+    "mtime": 1785565766.2490346,
+    "ast_hash": "84a4d9afb6286ae3832c7b4ba6e0eabd",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/HTML/CODIGO 1.3.txt": {
+    "mtime": 1785565766.2490346,
+    "ast_hash": "0d20fd7290665e604e3d7d7e3d5d3201",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/HTML/CODIGOS ANTIGUOS/Codigo_chat_AI_1.1.txt": {
+    "mtime": 1785565766.2500827,
+    "ast_hash": "67387f38e1ae2caf46ee6e676506f2a2",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/HTML/CODIGOS ANTIGUOS/Codigo_chat_ai.txt": {
+    "mtime": 1785565766.2504194,
+    "ast_hash": "84a4d9afb6286ae3832c7b4ba6e0eabd",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/HTML/CODIGOS ANTIGUOS/cODIGO_CHAT_AI 1.0.txt": {
+    "mtime": 1785565766.2504194,
+    "ast_hash": "e257cf52fc1de1917c55e4fc365a6851",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/HTML/CODIGOS ANTIGUOS/codigo_chat_ai_1.2.txt": {
+    "mtime": 1785565766.2504194,
+    "ast_hash": "fdd8611344cfedeb66984e46dbea4fae",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/HTML/CODIGOS DEEP/CODIGO_CHAT_AI_1.0.txt": {
+    "mtime": 1785565766.2514603,
+    "ast_hash": "7461d01af3fdf5be65bbc264e9e63fec",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/cODIGO_CHAT_AI 1.0.txt": {
+    "mtime": 1785565766.2514603,
+    "ast_hash": "e257cf52fc1de1917c55e4fc365a6851",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/CODIGOS ANTIGUOS/codigo_chat_ai_1.2.txt": {
+    "mtime": 1785565766.2514603,
+    "ast_hash": "fdd8611344cfedeb66984e46dbea4fae",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/Chat_AI_1.5.txt": {
+    "mtime": 1785565766.2514603,
+    "ast_hash": "39b7a22e873ee93cfa7d62d76aba4d6a",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/codigo css/css_chat_1.0.txt": {
+    "mtime": 1785565766.2514603,
+    "ast_hash": "6adedf3463be397e621f38bb9b2b595d",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo chat AI/codigo html + java script/html + JS_CHAT_1.0.txt": {
+    "mtime": 1785565766.2514603,
+    "ast_hash": "888102c60bd7e8e7a556755ae2c83c23",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Esquemas/CSS/Esquemas_pdf_CSS_1.0.txt": {
+    "mtime": 1785565766.2534668,
+    "ast_hash": "b940b2b3a4282876915162847d4ae9ca",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Esquemas/Esquemas_pdf_1.0.txt": {
+    "mtime": 1785565766.2534668,
+    "ast_hash": "e477bfbb8fedd7edd09e256799d66eef",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Esquemas/HTML/Esquemas_pdf_HTML+JS_1.0.txt": {
+    "mtime": 1785565766.2534668,
+    "ast_hash": "8610fdc44884b92be5f8830e481c2229",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Generar tarjetas/Antiguos/Generar_tarjetas_1.2.txt": {
+    "mtime": 1785565766.2539861,
+    "ast_hash": "44a1e6eba034feeae58dc8bc8b99654a",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Generar tarjetas/Antiguos/Generar_tarjetas_1.3.txt": {
+    "mtime": 1785565766.2541668,
+    "ast_hash": "a0ffb209a368c88e013aa9ae1b10a250",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Generar tarjetas/Antiguos/Generar_tarjetas_1.4.txt": {
+    "mtime": 1785565766.2541668,
+    "ast_hash": "f7aa07b4d107592cfe310f59dc6fbbbc",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Generar tarjetas/Antiguos/Generar_tarjetas_1.5.txt": {
+    "mtime": 1785565766.2541668,
+    "ast_hash": "f7aa07b4d107592cfe310f59dc6fbbbc",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Generar tarjetas/Antiguos/Generar_tarjetaspdf_1.0.txt": {
+    "mtime": 1785565766.2541668,
+    "ast_hash": "2bbd0bfd27ee25405b9d72d947c48873",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Generar tarjetas/Antiguos/Generar_tarjetaspdf_1.1.txt": {
+    "mtime": 1785565766.2541668,
+    "ast_hash": "299d4492d2e57e83de13ab0713ebefa2",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Generar tarjetas/CSS/Generar_tarjetas_CSS_1.6.txt": {
+    "mtime": 1785565766.2541668,
+    "ast_hash": "5ef642d5d4955b0be7c4aa777bf10c99",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Generar tarjetas/Generar_tarjetas_1.6.txt": {
+    "mtime": 1785565766.2541668,
+    "ast_hash": "36686b3972a199deb61db10250d124f8",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Generar tarjetas/HTML+JS/Generar_tarjetas_HTML+JS_1.6.txt": {
+    "mtime": 1785565766.2541668,
+    "ast_hash": "18cec0b339a32d8498682d8cc88c481d",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Pagina principal con botones/pagina subida pdf botones.txt": {
+    "mtime": 1785565766.2554603,
+    "ast_hash": "d9127435f307967093e64aac8ea3b1e1",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Pagina principal con botones/paginasubida pdf botones 1.0.txt": {
+    "mtime": 1785565766.2566972,
+    "ast_hash": "f108fa6b93b1139b37de01530fd67bc9",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Resumir documento/CSS/Resumir_pdf_CSS_1.0.txt": {
+    "mtime": 1785565766.2567878,
+    "ast_hash": "c99ba39b76cbe590ae04666382b4b17a",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Resumir documento/HMTL+JS/Resumir_pdf_HTML+JS_1.0.txt": {
+    "mtime": 1785565766.2567878,
+    "ast_hash": "cec5dc3f02ed1717e78ac92d3d4e8b01",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Resumir documento/Resumir_documento_pdf.txt": {
+    "mtime": 1785565766.2567878,
+    "ast_hash": "ed7c74160f36d7acf7aa44e6fe3aa04e",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/Resumir documento/Resumir_documento_pdf_1.0.txt": {
+    "mtime": 1785565766.2567878,
+    "ast_hash": "c621f962b3e2b743ee689611a9df53d3",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/ANTIGUOS/Generar_test_1.0(buena sin guardado).txt": {
+    "mtime": 1785565766.257892,
+    "ast_hash": "56a2ea9343e6cd09d97314970513ff85",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/ANTIGUOS/Generar_test_pdf_1.1.txt": {
+    "mtime": 1785565766.2580645,
+    "ast_hash": "134d05ba89a25b6ce69c0a06c2fe5763",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/ANTIGUOS/Generar_test_pdf_1.2.txt": {
+    "mtime": 1785565766.2580645,
+    "ast_hash": "ce5cbe879db21335bfbd235e6f2a111e",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/ANTIGUOS/generar_test_pdf.txt": {
+    "mtime": 1785565766.2580645,
+    "ast_hash": "cc5927b2e67d5fe64de9e2c32ec406ca",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/CSS/Generar_test_pdf_CSS_1.2.txt": {
+    "mtime": 1785565766.2580645,
+    "ast_hash": "269ef5dfe41d3a9c6b832ed273af31d9",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/CSS/Generar_test_pdf_CSS_1.3(NO GUARDA FAIRBASE).txt": {
+    "mtime": 1785565766.2584522,
+    "ast_hash": "eea456a503402517cfbcd149d77e3c72",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/CSS/css_generartestpdf_1.3.txt": {
+    "mtime": 1785565766.2584522,
+    "ast_hash": "bf5a16ea882a9ca407150d4a6c7b5a13",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/HTML+JS/Generar_test_pdf_html+js_1.2.txt": {
+    "mtime": 1785565766.2584522,
+    "ast_hash": "3d7857f6424cc9082aec668c1d8c7a7d",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/HTML+JS/Generar_test_pdf_html+js_1.3 (NO GUARDAFAIRBASE).txt": {
+    "mtime": 1785565766.2591994,
+    "ast_hash": "52a50694a7283052800a8ffe8902489e",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/HTML+JS/html+js_generartestpdf_1.3.txt": {
+    "mtime": 1785565766.2591994,
+    "ast_hash": "f0c6bb9b5876893d957622a0679a06d8",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/Pruebas/1.txt": {
+    "mtime": 1785565766.2591994,
+    "ast_hash": "ee7f2f653bbeb97014cb673a6b189300",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/Pruebas/cssultimo.txt": {
+    "mtime": 1785565766.2600305,
+    "ast_hash": "74c01194ab2d2566f6321ad9082ac913",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/generar test/Pruebas/html+js.txt": {
+    "mtime": 1785565766.2600305,
+    "ast_hash": "c4ef57e2d5f1db73ec837b39fabde567",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/otros/CHAT_PDF_1.1.txt": {
+    "mtime": 1785565766.2600305,
+    "ast_hash": "648d98df305a708aea49af758575049a",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/otros/CHAT_PDF_1.2.txt": {
+    "mtime": 1785565766.2603877,
+    "ast_hash": "826cc39d31b7e3b6cd7375607c474a91",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/otros/Chat_pdf_1.0.txt": {
+    "mtime": 1785565766.2603877,
+    "ast_hash": "b3ef289bf1ce84dcc4cb14e0b2dae9e0",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/otros/Nueva pagina chat ai 0.1.txt": {
+    "mtime": 1785565766.2603877,
+    "ast_hash": "6a6d06dca0937f6b78ea440d72672a3d",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/otros/Nueva pagina chat ai 0.2.txt": {
+    "mtime": 1785565766.2603877,
+    "ast_hash": "a676654a5d102b50be7ac693beb7a5a5",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/otros/basico pdf 1.txt": {
+    "mtime": 1785565766.2603877,
+    "ast_hash": "78c784a8cdb02352ad1a2c9d904b1200",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/otros/chat_pdf_ai_funciona_basico.txt": {
+    "mtime": 1785565766.2603877,
+    "ast_hash": "648d98df305a708aea49af758575049a",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo subida pdf/otros/html pdf.txt": {
+    "mtime": 1785565766.2603877,
+    "ast_hash": "e23195e78b736f382f3b95ad4af92ca4",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO CSS/CODIGO_CSS_TEST_GENERATOR_1.0.txt": {
+    "mtime": 1785565766.2617426,
+    "ast_hash": "41d25555484cf1ae0751560c4b1622db",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codifo_test_3.8.txt": {
+    "mtime": 1785565766.2617426,
+    "ast_hash": "c1051bf3e9c19608a0331f958c2e0667",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigo_test_3.9.txt": {
+    "mtime": 1785565766.262263,
+    "ast_hash": "1ccbcb9d72a782921851d65b40a34bf4",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo chat.txt": {
+    "mtime": 1785565766.262263,
+    "ast_hash": "487424568847037e38b861d02c1dd5b6",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo test 2.0.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "f70647836cc39d573f57f2edcff3ddfd",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo test web 2.1.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "093e5e6445595870b925ad33880faa46",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo test.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "bc34a12170bd9c7f8c1afce8f137ee83",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo text 2.2.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "9505ef9fd1b84f08889d1cf62781fe82",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo text 2.3.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "f5f64454407797c0d7deb4e33efe238a",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo texto 2.8.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "6d4d05318347e3c3db1bb0d1275c9293",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo texto 2.9. txt.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "6d4d05318347e3c3db1bb0d1275c9293",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo texto 2_7.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "6ae1b6de0264317399e8c00f77bd6dbb",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo_test_3.0.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "36bfa5ed965ab5eae24bf4d9fa87e0d7",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo_test_3.0_actualizado.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "36bfa5ed965ab5eae24bf4d9fa87e0d7",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo_test_3.1_guardado_unificado.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "94bd79b66efcec69fca2ed6be47ea940",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo_test_3.2.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "b06da1bb0bf93804107107fd65e3460e",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo_test_3.3.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "b06da1bb0bf93804107107fd65e3460e",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo_test_3.5_recoge_temas_IA_OK.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "b06da1bb0bf93804107107fd65e3460e",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo_test_3.6_header_json_ok.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "ac85db0a00d2cf1e8482cb08ecaf029b",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo_test_3.7.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "62ca14671d1649411548c600108d4979",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Codigos antiguos/codigo_texto_2_7_completo_actualizado.html": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "2c7bbedd98b7a05b13f2f08f2600e816",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Nueva carpeta/CODIGO_NUEVO_1.1.txt": {
+    "mtime": 1785565766.2624357,
+    "ast_hash": "9a62b55af593a6fd91cfcda2e70bee90",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Nueva carpeta/Codigo 1.2.txt": {
+    "mtime": 1785565766.2642071,
+    "ast_hash": "4521e878a31182ee8d68b64b7ba25cdb",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Nueva carpeta/Codigo_1.3.txt": {
+    "mtime": 1785565766.2642071,
+    "ast_hash": "a79cfd6c02f3817505bd34c196c15129",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Nueva carpeta/Codigo_1.4.txt": {
+    "mtime": 1785565766.2642071,
+    "ast_hash": "e1f8d9ec6919b953bc8786a2d9f9bb7b",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Nueva carpeta/cODIGO NUEVO 1.0.txt": {
+    "mtime": 1785565766.2642071,
+    "ast_hash": "96e7855e6434787f53b537dfd48d2f5f",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Nueva carpeta/codigo 1.5.txt": {
+    "mtime": 1785565766.2642071,
+    "ast_hash": "7fde27b99796883d566ac9933ee6e3d7",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Nueva carpeta/codigo 1.6.txt": {
+    "mtime": 1785565766.2642071,
+    "ast_hash": "ee2da0daffa2e294b05c660af0a6a3c9",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/CODIGO HTML/Nueva carpeta/codigo_test_generator_1.7.txt": {
+    "mtime": 1785565766.2642071,
+    "ast_hash": "c694be300f2af83e03073398e4ea2099",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/Codifo_test_3.8.txt": {
+    "mtime": 1785565766.2642071,
+    "ast_hash": "c1051bf3e9c19608a0331f958c2e0667",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/Codigo_test_3.9.txt": {
+    "mtime": 1785565766.2642071,
+    "ast_hash": "c694be300f2af83e03073398e4ea2099",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/Nueva carpeta/CODIGO_NUEVO_1.1.txt": {
+    "mtime": 1785565766.2642071,
+    "ast_hash": "9a62b55af593a6fd91cfcda2e70bee90",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/Nueva carpeta/Codigo 1.2.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "4521e878a31182ee8d68b64b7ba25cdb",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/Nueva carpeta/Codigo_1.3.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "a79cfd6c02f3817505bd34c196c15129",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/Nueva carpeta/Codigo_1.4.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "e1f8d9ec6919b953bc8786a2d9f9bb7b",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/Nueva carpeta/cODIGO NUEVO 1.0.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "96e7855e6434787f53b537dfd48d2f5f",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/Nueva carpeta/codigo 1.5.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "7fde27b99796883d566ac9933ee6e3d7",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/Nueva carpeta/codigo 1.6.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "ee2da0daffa2e294b05c660af0a6a3c9",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/Nueva carpeta/codigo_test_generator_1.7.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "c694be300f2af83e03073398e4ea2099",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo chat.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "487424568847037e38b861d02c1dd5b6",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo test 2.0.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "f70647836cc39d573f57f2edcff3ddfd",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo test web 2.1.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "093e5e6445595870b925ad33880faa46",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo test.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "bc34a12170bd9c7f8c1afce8f137ee83",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo text 2.2.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "9505ef9fd1b84f08889d1cf62781fe82",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo text 2.3.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "f5f64454407797c0d7deb4e33efe238a",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo texto 2.8.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "6d4d05318347e3c3db1bb0d1275c9293",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo texto 2.9. txt.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "6d4d05318347e3c3db1bb0d1275c9293",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo texto 2_7.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "6ae1b6de0264317399e8c00f77bd6dbb",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo_test_3.0.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "36bfa5ed965ab5eae24bf4d9fa87e0d7",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo_test_3.0_actualizado.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "36bfa5ed965ab5eae24bf4d9fa87e0d7",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo_test_3.1_guardado_unificado.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "94bd79b66efcec69fca2ed6be47ea940",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo_test_3.2.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "b06da1bb0bf93804107107fd65e3460e",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo_test_3.3.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "b06da1bb0bf93804107107fd65e3460e",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo_test_3.5_recoge_temas_IA_OK.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "b06da1bb0bf93804107107fd65e3460e",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo_test_3.6_header_json_ok.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "ac85db0a00d2cf1e8482cb08ecaf029b",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo_test_3.7.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "62ca14671d1649411548c600108d4979",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/Codigos antiguos/codigo_texto_2_7_completo_actualizado.html": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "2c7bbedd98b7a05b13f2f08f2600e816",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/codigo CSS/CSS_TESTGENERATOR_1.0.txt": {
+    "mtime": 1785565766.2655158,
+    "ast_hash": "41a98737b228f68735725e83ccf30329",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/codigo CSS/CSS_TESTGENERATOR_1.2.txt": {
+    "mtime": 1785565766.2680035,
+    "ast_hash": "926b1a25289073f98f8b8ffb84afd8c1",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/codigo CSS/CSS_TESTGENERATOR_1.3.txt": {
+    "mtime": 1785565766.2680035,
+    "ast_hash": "1d2a82b239d14c35f354ae9b9c201cef",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/codigo CSS/Nuevo Documento de texto.txt": {
+    "mtime": 1785565766.2680035,
+    "ast_hash": "a09fbaebe465983f5ea47b657bc0df01",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test generator/codigo HTML+JS/HMTL+JS_TESTGENERATOR_1.0.txt": {
+    "mtime": 1785565766.2680035,
+    "ast_hash": "038164665b2e4bd0606a552026a4f7c0",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test preguntas falladas_ADMIN_Nov-03-190946-2025_Conflict/CSS TEST PREGUNTAS FALLADAS/css_preguntasfalladas_1.0.txt": {
+    "mtime": 1785565766.26911,
+    "ast_hash": "18ed374bc3078f3779f3b3e2016340da",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test preguntas falladas_ADMIN_Nov-03-190946-2025_Conflict/Codigos antiguos/Codigo css. en principio no necesario/Codigo_css_preguntas_falladas_1.0.txt": {
+    "mtime": 1785565766.2692897,
+    "ast_hash": "93ec8e62329890ba9cf081fdd8798beb",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test preguntas falladas_ADMIN_Nov-03-190946-2025_Conflict/Codigos antiguos/Codigo css. en principio no necesario/prueba css pregutnas falldas.txt": {
+    "mtime": 1785565766.2693868,
+    "ast_hash": "50d5b7b44bd2b2db8ac82b8d1bebaca2",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test preguntas falladas_ADMIN_Nov-03-190946-2025_Conflict/Codigos antiguos/Codigo html/Codigo_preguntas_falladas_1.0.txt": {
+    "mtime": 1785565766.2693868,
+    "ast_hash": "9a965d846785e4844a842656847720f1",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test preguntas falladas_ADMIN_Nov-03-190946-2025_Conflict/Codigos antiguos/Codigo html/Codigo_preguntas_falladas_1.1.txt": {
+    "mtime": 1785565766.269707,
+    "ast_hash": "9a965d846785e4844a842656847720f1",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test preguntas falladas_ADMIN_Nov-03-190946-2025_Conflict/Codigos antiguos/Codigo html/Codigo_preguntas_falladas_1.2.txt": {
+    "mtime": 1785565766.269707,
+    "ast_hash": "f0d8471759f71e5762ecbe64c444938b",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test preguntas falladas_ADMIN_Nov-03-190946-2025_Conflict/Codigos antiguos/Codigo html/Repetir test Prueba ultimo octubre/codigo_preguntas pagina copia 1.0.txt": {
+    "mtime": 1785565766.269707,
+    "ast_hash": "526b6be082b64f0b36716d4e9c3e84f9",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test preguntas falladas_ADMIN_Nov-03-190946-2025_Conflict/Codigos antiguos/Codigo html/Repetir test Prueba ultimo octubre/codigo_preguntas pagina copia 1.1.txt": {
+    "mtime": 1785565766.2700503,
+    "ast_hash": "2b2954b8bc86a488500830f9f86f44c7",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test preguntas falladas_ADMIN_Nov-03-190946-2025_Conflict/Codigos antiguos/Codigo html/codigo_preguntas_falladas_1.3.txt": {
+    "mtime": 1785565766.2700503,
+    "ast_hash": "165d426fb6b632e942cdde9855cff5ae",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigo test preguntas falladas_ADMIN_Nov-03-190946-2025_Conflict/HTML + JS PREGUNTAS FALLADAS/codigo_preguntas_falladas_1.4.txt": {
+    "mtime": 1785565766.2700503,
+    "ast_hash": "0ce5c866b770724143150eebcc4ccfa0",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos estadisticas/Codigo CSS/CSS_Estadisticas_2.3.txt": {
+    "mtime": 1785565766.2705379,
+    "ast_hash": "8ae8c4e94f877c4d817730b516cc993b",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos estadisticas/Codigo HTML+JS/HTML+JS_Estadisticas_2.3.txt": {
+    "mtime": 1785565766.2705379,
+    "ast_hash": "7e359afc64de9d6d40300f466cea5927",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos estadisticas/Estadisticas_2.3.txt": {
+    "mtime": 1785565766.2705379,
+    "ast_hash": "357b7006feb20020bd503ff4119a89dd",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos estadisticas/deepseek/Estadisticas1.0.txt": {
+    "mtime": 1785565766.2705379,
+    "ast_hash": "c8da24e91c56dd5e5960a510e063a0ce",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos estadisticas/deepseek/Estadisticas1.1.txt": {
+    "mtime": 1785565766.2714667,
+    "ast_hash": "c2e509a4be114df69b7e27871d4a547e",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos repetir test/Codigo repetir test 1.0.txt": {
+    "mtime": 1785565766.2714667,
+    "ast_hash": "c21d2feebda60d18a54d1f5b80ae10aa",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos repetir test/Codigo repetir test 1.1.txt": {
+    "mtime": 1785565766.2718406,
+    "ast_hash": "9cf8f44b84b93b4b46784d1d8081f573",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos repetir test/Codigo_repetir_test_1.2.txt": {
+    "mtime": 1785565766.2718406,
+    "ast_hash": "5228835772e2c361b234c659c1db32ba",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos repetir test/Codigo_repetir_test_1.3.html": {
+    "mtime": 1785565766.2718406,
+    "ast_hash": "98453df2dfb861946ec01b2dba1565c8",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos repetir test/Codigo_repetir_test_1.4.txt": {
+    "mtime": 1785565766.2718406,
+    "ast_hash": "03f6389140164e56213d9e531fa60003",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos repetir test/Nueva carpeta/Codig_repetir_test_1.0.txt": {
+    "mtime": 1785565766.2718406,
+    "ast_hash": "17867ccae95a9c471f36a14bfb7871c4",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos repetir test/Nueva carpeta/Codigo_repetir_test_1.1.txt": {
+    "mtime": 1785565766.2725549,
+    "ast_hash": "05e5f8766d5ee30bbfef50f4e54db092",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos repetir test/codigo_repetir_test_1.5.txt": {
+    "mtime": 1785565766.2725549,
+    "ast_hash": "8b6f8892b34247478e0d49a87fc06146",
+    "semantic_hash": ""
+  },
+  "sin-uso/legacy-frontend/Codigos repetir test/css/css.txt": {
+    "mtime": 1785565766.2725549,
+    "ast_hash": "d0c315a83ff0bce7875bce76c78ebcea",
+    "semantic_hash": ""
+  },
+  "temario-examenes/AGE/BOE-442_Normativa_para_ingreso_en_el_Cuerpo_General_Administrativo_de_la_Administracion_del_Estado.pdf": {
+    "mtime": 1785565767.6154604,
+    "ast_hash": "7dfa23dbc2be597b4dfef2d7a846683b",
+    "semantic_hash": ""
+  },
+  "temario-examenes/AGE/BOE-A-2003-21614-consolidado.pdf": {
+    "mtime": 1785565767.6234603,
+    "ast_hash": "f8334353fbb328dcc7aee67308fd16b5",
+    "semantic_hash": ""
+  },
+  "temario-examenes/AGE/BOE-A-2015-11724-consolidado.pdf": {
+    "mtime": 1785565767.6434603,
+    "ast_hash": "f98fc430ea59b8c304fd2d1a5ad532bd",
+    "semantic_hash": ""
+  },
+  "temario-examenes/AUX/01 - Atenci\u00f3n al p\u00fablico.pdf": {
+    "mtime": 1785565767.6474602,
+    "ast_hash": "2413bf76113be61e28e736ae3aefd3c6",
+    "semantic_hash": ""
+  },
+  "temario-examenes/AUX/02 - Los servicios de informaci\u00f3n administrativa.pdf": {
+    "mtime": 1785565767.6514604,
+    "ast_hash": "3aca14974652a56fb7da41e82276c6bc",
+    "semantic_hash": ""
+  },
+  "temario-examenes/AUX/03 - Documento, registro y archivo.pdf": {
+    "mtime": 1785565767.6554604,
+    "ast_hash": "01633471a0ca3d10ee4f350d4d222581",
+    "semantic_hash": ""
+  },
+  "temario-examenes/AUX/04 - Administraci\u00f3n electr\u00f3nica y servicios al ciudadano.pdf": {
+    "mtime": 1785565767.6634603,
+    "ast_hash": "d13ea3cc55536e1381aed523586a06d0",
+    "semantic_hash": ""
+  },
+  "temario-examenes/AUX/BOE-435_Normativa_para_ingreso_en_el_Cuerpo_General_Auxiliar_de_la_Administracion_del_Estado.pdf": {
+    "mtime": 1785565767.7594604,
+    "ast_hash": "34848e5cbe210a8713b694e15bd900a3",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/BOE-443_Normativa_para_ingreso_en_el_Cuerpo_de_Gestion_de_la_Administracion_Civil_del_Estado.pdf": {
+    "mtime": 1785565768.1434603,
+    "ast_hash": "81ed96400d5f0eb5ccc50af09ce0cf6d",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/CELEX_12016E_TXT_ES_TXT.pdf": {
+    "mtime": 1785565768.1714604,
+    "ast_hash": "7583b80b11928e06c6f4e4a5cace7908",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_2.1.1.pdf": {
+    "mtime": 1785565768.1714604,
+    "ast_hash": "9c827837268b276653742b93a66f3753",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_2.1.2.pdf": {
+    "mtime": 1785565768.1714604,
+    "ast_hash": "33fa78ceb306b9cb3c7310ee0d623aec",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_2.1.3.pdf": {
+    "mtime": 1785565768.1714604,
+    "ast_hash": "3dd65d953afdcff29cd3186e55d3fa5d",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_2.1.4.pdf": {
+    "mtime": 1785565768.1754603,
+    "ast_hash": "6fb3a82115a40c5af180de82cb1033f1",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_2.1.5.pdf": {
+    "mtime": 1785565768.1754603,
+    "ast_hash": "bedbccd8889159b3f346cad07366bd1d",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_2.5.1.pdf": {
+    "mtime": 1785565768.1754603,
+    "ast_hash": "75c119cf873dd0f6fbb83733f0b8c404",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_2.5.12.pdf": {
+    "mtime": 1785565768.1794603,
+    "ast_hash": "a8a7030c6b77cb15390e82f7d6707a66",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_2.5.2.pdf": {
+    "mtime": 1785565768.1794603,
+    "ast_hash": "2b4f3d98ab91ff9bd88548d3b80be943",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_2.5.3.pdf": {
+    "mtime": 1785565768.1794603,
+    "ast_hash": "4c236f24b33921eab65bdc2b29cb2adf",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_2.5.4.pdf": {
+    "mtime": 1785565768.1834605,
+    "ast_hash": "5c68e35ca542760f3304dfa12873f6ad",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_3.1.1.pdf": {
+    "mtime": 1785565768.1834605,
+    "ast_hash": "6ac0c3a6c0d6b5b6be5c917fb5ef8b0d",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_3.1.2.pdf": {
+    "mtime": 1785565768.1834605,
+    "ast_hash": "b7ebaf75682d311d0b145d59580117c6",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_3.1.3.pdf": {
+    "mtime": 1785565768.1874604,
+    "ast_hash": "3a709f59a1fd8022bb0f8fc471b1787b",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_3.1.4.pdf": {
+    "mtime": 1785565768.1874604,
+    "ast_hash": "13b9c4de8e599abf4924837070c447b0",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_3.2.1.pdf": {
+    "mtime": 1785565768.1874604,
+    "ast_hash": "09e2c5dd909a45c04342eaabd81712bb",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_3.2.3.pdf": {
+    "mtime": 1785565768.1914604,
+    "ast_hash": "3bb9c8209cebf0695d2bb7b7917daca4",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_3.3.1.pdf": {
+    "mtime": 1785565768.1914604,
+    "ast_hash": "fa0204894257b0b0b40521b78a910f07",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_3.3.2.pdf": {
+    "mtime": 1785565768.1914604,
+    "ast_hash": "10cd4b25e04184b4a155a42910202b2f",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_4.2.1.pdf": {
+    "mtime": 1785565768.1954603,
+    "ast_hash": "a4bd7db3bf4fd9194a8a1aa08c9ab270",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_4.2.2.pdf": {
+    "mtime": 1785565768.1954603,
+    "ast_hash": "99400fefec609e538aa0eac532324d8f",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_4.2.3.pdf": {
+    "mtime": 1785565768.1994603,
+    "ast_hash": "2eabef600d54f1ccf6916974740a72fe",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_4.2.4.pdf": {
+    "mtime": 1785565768.1994603,
+    "ast_hash": "ba6ef7eb97bacca57b0483fd1f82fe5e",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_4.2.5.pdf": {
+    "mtime": 1785565768.2034605,
+    "ast_hash": "5c31bf64f116de60d250c5f15350ac9c",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_4.2.6.pdf": {
+    "mtime": 1785565768.2034605,
+    "ast_hash": "e4c6ad7ed028d0eb31a539385ab9ce48",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_4.2.7.pdf": {
+    "mtime": 1785565768.2034605,
+    "ast_hash": "41068e05217c951ce85adb35520e2c52",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_4.2.8.pdf": {
+    "mtime": 1785565768.2074604,
+    "ast_hash": "84598edf71f08cc1c9de87c6d67c212b",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/FTU_5.1.1.pdf": {
+    "mtime": 1785565768.2074604,
+    "ast_hash": "3614e8571ff06c06d581f2b9c09e6cd7",
+    "semantic_hash": ""
+  },
+  "temario-examenes/GACE/union-europea/document.pdf": {
+    "mtime": 1785565768.2234604,
+    "ast_hash": "4ab8f9997217e7f0643f9a9830b47734",
+    "semantic_hash": ""
+  },
+  "frontend/assets/apple-touch-icon.png": {
+    "mtime": 1785521584.1396728,
+    "ast_hash": "bca517e7f55ef4bffc2b5ad9d251be13",
+    "semantic_hash": ""
+  },
+  "frontend/assets/favicon-192.png": {
+    "mtime": 1785521584.1404996,
+    "ast_hash": "23e277ce2924857fa49afd8f28b496a7",
+    "semantic_hash": ""
+  },
+  "frontend/assets/favicon-512.png": {
+    "mtime": 1785521584.1404996,
+    "ast_hash": "bfc05b0974d4d480823b55bf357b6ce8",
+    "semantic_hash": ""
+  },
+  "frontend/assets/favicon.svg": {
+    "mtime": 1785521584.1404996,
+    "ast_hash": "eeb18ca1a1a13025ecd50db25e1fbb53",
+    "semantic_hash": ""
+  },
+  "frontend/assets/hero-estudio.svg": {
+    "mtime": 1785521584.1444995,
+    "ast_hash": "b5f26a8bd077d13a8318634c98d95b1a",
+    "semantic_hash": ""
+  },
+  "frontend/assets/og-image.png": {
+    "mtime": 1785521584.1484995,
+    "ast_hash": "c46542a205aa830101e4ff585cb31766",
+    "semantic_hash": ""
+  },
+  "frontend/assets/tutor-avatar.svg": {
+    "mtime": 1785521584.1604996,
+    "ast_hash": "c5f6759f885f705789c9b6830c798d52",
+    "semantic_hash": ""
+  }
+}

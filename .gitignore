@@ -212,3 +212,6 @@ contenido-generado-ofimatica.json
 node_modules/
 test-results/
 playwright-report/
+
+# graphify local cache (rebuilt automatically, not the tracked graph output)
+graphify-out/cache/
