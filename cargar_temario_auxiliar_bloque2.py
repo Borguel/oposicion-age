@@ -87,7 +87,7 @@ MARCADORES = {
 }
 
 
-def _localizar_pdfs(carpeta="."):
+def _localizar_pdfs(carpeta="temario-examenes/AUX"):
     """Empareja cada uno de los 12 PDFs con su número de tema (1-12) por el
     prefijo del nombre de archivo -- usa os.listdir (no glob con literales
     acentuados) porque estos archivos llegaron con nombres en NFD (normal en
