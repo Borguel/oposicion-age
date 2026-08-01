@@ -75,9 +75,10 @@ class FakeDocumentRef:
         return FakeDocumentSnapshot(self._path[-1], self._store.get(self._path), self._store, self._path)
 
     def set(self, datos, merge=False):
-        if merge and self._path in self._store:
-            existente = dict(self._store[self._path])
-            existente.update(datos)
+        if merge:
+            existente = dict(self._store.get(self._path) or {})
+            for clave, valor in datos.items():
+                existente[clave] = _resolver_valor(existente.get(clave), valor)
             self._store[self._path] = existente
         else:
             self._store[self._path] = dict(datos)
@@ -223,6 +224,34 @@ class FakeTransaction:
         ref.delete()
 
 
+class FakeWriteBatch:
+    """Imita un WriteBatch real: las operaciones se acumulan y solo se
+    aplican al store al llamar a .commit(), igual que el cliente real no
+    escribe nada hasta que se confirma el batch completo."""
+
+    def __init__(self):
+        self._operaciones = []
+
+    def set(self, ref, datos, merge=False):
+        self._operaciones.append((ref.set, datos, merge))
+
+    def update(self, ref, datos):
+        self._operaciones.append((ref.update, datos, None))
+
+    def delete(self, ref):
+        self._operaciones.append((ref.delete, None, None))
+
+    def commit(self):
+        for metodo, datos, merge in self._operaciones:
+            if merge is not None:
+                metodo(datos, merge=merge)
+            elif datos is not None:
+                metodo(datos)
+            else:
+                metodo()
+        self._operaciones = []
+
+
 class FakeFirestore:
     """Sustituye a firestore.client(): db.collection("x") es el único punto
     de entrada real que usa el resto del código."""
@@ -235,6 +264,9 @@ class FakeFirestore:
 
     def collection_group(self, nombre):
         return FakeCollectionGroupRef(self._store, nombre)
+
+    def batch(self):
+        return FakeWriteBatch()
 
     def get_all(self, refs):
         # A diferencia del cliente real (que no garantiza que el orden de

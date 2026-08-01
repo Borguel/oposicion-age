@@ -1,12 +1,47 @@
 import logging
 from datetime import datetime
+from firebase_admin import firestore
 from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_estadisticas_esquema, actualizar_estadisticas_pdf, registrar_actividad_racha
 from oposiciones import OPOSICION_POR_DEFECTO
 from documentos_pdf import marcar_generado
-from banco_fallos import actualizar_banco_fallos
+from banco_fallos import actualizar_banco_fallos, _id_pregunta
 from utils import calcular_resultado_test
 
 logger = logging.getLogger(__name__)
+
+
+def _actualizar_contadores_preguntas(db, oposicion, contenido, respuestas, excluir_dudas, es_duda):
+    """Fase 1 de calibración de dificultad: por cada pregunta corregida en el
+    test, acumula en preguntas/{id} cuántas veces se ha respondido y cuántas
+    se ha acertado (id = mismo hash de contenido que usa banco_fallos, ya que
+    aquí tampoco llega un id estable de Firestore desde el banco de origen).
+    Solo telemetría para fases futuras -- un fallo aquí nunca debe impedir
+    que el usuario reciba la corrección de su test."""
+    try:
+        batch = db.batch()
+        coleccion_preguntas = db.collection("preguntas")
+        total = 0
+        aciertos = 0
+        for i, p in enumerate(contenido):
+            if excluir_dudas and es_duda(i):
+                continue
+            texto = p.get("pregunta")
+            if not texto:
+                continue
+            seleccion = respuestas[i] if i < len(respuestas) else None
+            acierto = seleccion == p.get("respuesta_correcta")
+            datos = {"total_respuestas": firestore.Increment(1)}
+            if acierto:
+                datos["total_aciertos"] = firestore.Increment(1)
+                aciertos += 1
+            batch.set(coleccion_preguntas.document(_id_pregunta(oposicion, texto)), datos, merge=True)
+            total += 1
+        if total:
+            batch.commit()
+            logger.info("[calibracion] batch escrito: %d preguntas actualizadas, %d aciertos", total, aciertos)
+    except Exception:
+        logger.warning("[calibracion] fallo al actualizar contadores de preguntas (no bloqueante)", exc_info=True)
+
 
 def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prueba", metadatos=None, oposicion=OPOSICION_POR_DEFECTO, test_id=None, marcadas_duda=None):
     metadatos = metadatos or {}
@@ -45,6 +80,8 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
                 blancos += 1
             else:
                 fallos += 1
+
+        _actualizar_contadores_preguntas(db, oposicion, contenido, respuestas, excluir_dudas, es_duda)
 
         puntuacion, _nota_sobre_10, resultado = calcular_resultado_test(aciertos, fallos, blancos)
 

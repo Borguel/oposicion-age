@@ -665,8 +665,9 @@ def test_reportes_adjuntan_pregunta_oficial(client, db):
         "tipo": "pregunta", "pregunta": enunciado,
         "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "C",
     })
-    db.sembrar(("reportes_preguntas", "r1"), {
-        "pregunta_texto": enunciado, "oposicion": "AGE", "motivo": "dudosa", "estado": "pendiente", "fecha": "2026-01-01",
+    db.sembrar(("errores_generacion", "r1"), {
+        "fuente": "usuario_admin", "pregunta_texto": enunciado, "oposicion": "AGE", "detalle": "dudosa",
+        "estado": "pendiente", "fecha": "2026-01-01",
     })
     with _como():
         reportes = client.get("/admin/api/reportes?estado=pendiente", headers=_AUTH).get_json()["reportes"]
@@ -678,8 +679,8 @@ def test_reportes_paginados(client, db):
     # acumulados, cada carga del panel iba leyendo (y facturando) cada vez
     # más documentos de Firestore. 25 reportes -> 2 páginas de 20.
     for i in range(25):
-        db.sembrar(("reportes_preguntas", f"r{i}"), {
-            "pregunta_texto": f"Pregunta {i}", "oposicion": "AGE", "motivo": "dudosa",
+        db.sembrar(("errores_generacion", f"r{i}"), {
+            "fuente": "usuario_admin", "pregunta_texto": f"Pregunta {i}", "oposicion": "AGE", "detalle": "dudosa",
             "estado": "pendiente", "fecha": f"2026-01-{i + 1:02d}",
         })
     with _como():
@@ -745,16 +746,30 @@ def test_sistema_reporta_servicios(client, db, monkeypatch):
 
 def test_sistema_diagnostico(client, db, monkeypatch):
     for k in ("DEEPSEEK_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
-              "STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM",
               "BREVO_API_KEY", "BREVO_FROM_EMAIL"):
         monkeypatch.setenv(k, "x")
-    db.sembrar(("reportes_preguntas", "r1"), {"estado": "pendiente"})
+    monkeypatch.setenv("STRIPE_PRICE_ID_BASICO", "price_basico")
+    monkeypatch.setenv("STRIPE_PRICE_ID_PREMIUM", "price_premium")
+    db.sembrar(("errores_generacion", "r1"), {"fuente": "usuario_admin", "estado": "pendiente"})
     db.sembrar(("config", "banner"), {"activo": True})
     with _como():
         d = client.get("/admin/api/sistema", headers=_AUTH).get_json()["diagnostico"]
     assert d["todo_ok"] is True  # todos los críticos configurados
     assert d["reportes_pendientes"] == 1
     assert d["banner_activo"] is True
+
+
+def test_sistema_detecta_price_id_con_formato_invalido(client, db, monkeypatch):
+    # Caso real de julio 2026: el ID de Producto de Stripe (prod_...) quedó
+    # pegado por error donde iba el ID de Precio (price_...) -- el checkout
+    # fallaba en producción pero este panel lo daba por bien configurado
+    # porque antes solo comprobaba que la variable no estuviera vacía.
+    monkeypatch.setenv("STRIPE_PRICE_ID_BASICO", "prod_UuRQjxkUdQgoYu")
+    monkeypatch.setenv("STRIPE_PRICE_ID_PREMIUM", "price_premium")
+    with _como():
+        servicios = client.get("/admin/api/sistema", headers=_AUTH).get_json()["servicios"]
+    por_nombre = {s["nombre"]: s["ok"] for s in servicios}
+    assert por_nombre["Precios de planes"] is False
 
 
 def test_limites_obtener_devuelve_defaults(client, db):

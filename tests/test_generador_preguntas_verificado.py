@@ -207,6 +207,60 @@ def test_agotar_los_intentos_devuelve_none_sin_bloquear():
     assert mock_llamada.call_count == 4  # 2 intentos x (generar + verificar), nunca más
 
 
+def test_rechazo_de_verificacion_registra_errores_generacion(db):
+    # Cada rechazo de la verificación legal (valido=False) debe dejar un
+    # documento en errores_generacion con fuente="auto_verificacion", sin
+    # cambiar en nada el comportamiento de reintento ya cubierto arriba.
+    subbloques_tema = [{
+        "etiqueta": "bloque_01-tema_01-sub_1", "titulo": "Ley 39/2015",
+        "texto": "Artículo 1. Contenido real de ejemplo para anclar la pregunta."
+    }]
+    with patch("generador_preguntas_verificado.call_deepseek_api", side_effect=[
+        _pregunta_valida("¿Primer intento, con un dato mal?"),
+        json.dumps({"valido": False, "problemas": ["el plazo citado no coincide con el texto"]}),
+        _pregunta_valida("¿Segundo intento, ya correcto?"),
+        json.dumps({"valido": True, "problemas": []}),
+    ]):
+        resultado = _generar_pregunta_verificada(
+            subbloques_tema, "bloque_01-tema_01", "AGE",
+            subbloques_ya_usados=set(), preguntas_ya_aceptadas=set(), lock=threading.Lock(), db=db,
+        )
+
+    assert resultado["pregunta"] == "¿Segundo intento, ya correcto?"
+    documentos = [doc.to_dict() for doc in db.collection("errores_generacion").stream()]
+    assert len(documentos) == 1  # solo el intento rechazado, no el aceptado
+    doc = documentos[0]
+    assert doc["tema_id"] == "bloque_01-tema_01"
+    assert doc["fuente"] == "auto_verificacion"
+    assert doc["tipo_error"] == "desfase_legal"  # heurística: menciona "plazo"
+    assert doc["pregunta_texto"] == "¿Primer intento, con un dato mal?"
+    assert doc["detalle"] == "el plazo citado no coincide con el texto"
+    assert doc["intento_numero"] == 1
+    assert doc["resuelto"] is False
+    assert "timestamp" in doc
+
+
+def test_sin_db_no_registra_nada_ni_falla(db):
+    # generar_test_verificado siempre pasa db, pero _generar_pregunta_verificada
+    # debe seguir funcionando sin él (valor por defecto None, ver tests de
+    # arriba que no lo pasan) -- no debe registrar nada ni reventar.
+    subbloques_tema = [{
+        "etiqueta": "bloque_01-tema_01-sub_1", "titulo": "Ley 39/2015",
+        "texto": "Artículo 1. Contenido real de ejemplo para anclar la pregunta."
+    }]
+    with patch("generador_preguntas_verificado.call_deepseek_api", side_effect=[
+        _pregunta_valida("¿Intento?"), json.dumps({"valido": False, "problemas": ["x"]}),
+        _pregunta_valida("¿Intento 2?"), json.dumps({"valido": True, "problemas": []}),
+    ]):
+        resultado = _generar_pregunta_verificada(
+            subbloques_tema, "bloque_01-tema_01", "AGE",
+            subbloques_ya_usados=set(), preguntas_ya_aceptadas=set(), lock=threading.Lock(),
+        )
+
+    assert resultado["pregunta"] == "¿Intento 2?"
+    assert list(db.collection("errores_generacion").stream()) == []
+
+
 def test_fallo_inesperado_en_un_intento_consume_solo_ese_intento():
     # Si la respuesta de verificación viene con una forma que ningún
     # "continue" contempla (aquí una lista en vez de un objeto, que hace
