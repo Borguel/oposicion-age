@@ -6,6 +6,90 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    name: Lint (informativo, no bloquea el PR)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements-dev.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependencias
+        run: |
+          pip install -r requirements-dev.txt
+          npm install
+
+      - name: ruff (Python)
+        continue-on-error: true
+        run: ruff check .
+
+      - name: black (Python)
+        continue-on-error: true
+        run: black --check .
+
+      - name: prettier (frontend)
+        continue-on-error: true
+        run: npx prettier --check "frontend/**/*.{js,css,html}"
+
+  lighthouse:
+    name: Lighthouse (informativo, no bloquea el PR)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Servir el frontend estático
+        run: |
+          python3 -m http.server 8123 --directory frontend &
+          for i in $(seq 1 20); do curl -sSf http://localhost:8123/ > /dev/null && break; sleep 0.5; done
+
+      # Umbrales pendientes: esto es informativo mientras cogemos un
+      # historial real de puntuaciones en PRs (ver SECURITY.md/ronda de
+      # infraestructura, agosto 2026) -- lo endurecemos a bloqueante más
+      # adelante con datos reales en vez de un umbral inventado hoy.
+      - name: Ejecutar Lighthouse sobre páginas públicas clave
+        run: |
+          mkdir -p lighthouse-reports
+          echo "## Lighthouse (informativo, no bloquea el PR)" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Página | Performance | Accessibility | Best Practices | SEO |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          declare -A paginas=(
+            [home]="/"
+            [planes]="/planes/"
+            [login]="/login/"
+            [demo]="/demo/"
+            [oposicion-gace]="/oposicion-gace/"
+          )
+          for nombre in "${!paginas[@]}"; do
+            ruta="${paginas[$nombre]}"
+            npx --yes lighthouse@13.4.1 "http://localhost:8123${ruta}" \
+              --output=json --output-path="lighthouse-reports/${nombre}.json" \
+              --chrome-flags="--headless=new --no-sandbox" \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --quiet
+            node -e "
+              const r = require('./lighthouse-reports/${nombre}.json');
+              const s = (k) => Math.round(r.categories[k].score * 100);
+              console.log(\`| ${nombre} | \${s('performance')} | \${s('accessibility')} | \${s('best-practices')} | \${s('seo')} |\`);
+            " >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Guardar informes completos de Lighthouse
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: lighthouse-reports/
+
   backend:
     name: Backend (Python)
     runs-on: ubuntu-latest
