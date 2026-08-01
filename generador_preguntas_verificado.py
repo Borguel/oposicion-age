@@ -43,6 +43,7 @@ from utils import (
 from validador_preguntas import validar_pregunta
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
 from banco_preguntas_ia import guardar_pregunta_generada
+from errores_generacion import registrar_error_generacion
 
 logger = logging.getLogger(__name__)
 
@@ -414,7 +415,7 @@ def _prompt_verificacion_descriptivo(pregunta_candidata, anclas):
 
 
 def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques_ya_usados,
-                                  preguntas_ya_aceptadas, lock, on_usage=None,
+                                  preguntas_ya_aceptadas, lock, on_usage=None, db=None,
                                   max_intentos=MAX_INTENTOS_POR_PREGUNTA):
     for _intento in range(max_intentos):
         try:
@@ -484,7 +485,20 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
                 continue
 
             if verificacion.get("valido") is not True:
-                continue  # inválida: se descarta ENTERA, nunca se corrige -- siguiente intento desde cero
+                # inválida: se descarta ENTERA, nunca se corrige -- siguiente
+                # intento desde cero. Efecto secundario no bloqueante: deja
+                # constancia en errores_generacion para el loop de mejora de
+                # calidad (ver errores_generacion.py) -- un fallo aquí nunca
+                # debe frenar la generación.
+                if db is not None:
+                    problemas = verificacion.get("problemas")
+                    registrar_error_generacion(
+                        db, tema_id=tema_id, fuente="auto_verificacion",
+                        pregunta_texto=str(pregunta_candidata.get("pregunta", "")),
+                        detalle="; ".join(str(p) for p in problemas) if isinstance(problemas, list) else "",
+                        intento_numero=_intento + 1,
+                    )
+                continue
 
             with lock:
                 if clave_dedup in preguntas_ya_aceptadas:
@@ -571,7 +585,7 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
         futuros = [
             executor.submit(
                 _generar_pregunta_verificada, subbloques_por_tema[tid], tid, oposicion,
-                subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add
+                subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add, db
             )
             for tid in huecos
         ]
@@ -638,7 +652,7 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
             futuros = [
                 executor.submit(
                     _generar_pregunta_verificada, subbloques_por_tema[tid], tid, oposicion,
-                    subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add,
+                    subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add, db,
                 )
                 for tid in tids_relleno
             ]

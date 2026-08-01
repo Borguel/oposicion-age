@@ -15,6 +15,7 @@ from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
 from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales
 from generador_preguntas_verificado import generar_test_verificado
+from errores_generacion import registrar_error_generacion
 from deepseek_utils import call_deepseek_api
 from registro_progreso_usuario import obtener_resumen_progreso
 from banco_fallos import ordenar_por_prioridad_repaso as ordenar_fallos_por_prioridad
@@ -355,9 +356,12 @@ def generar_test_fallos():
 @requiere_plan(db, "basico", global_check=False)
 def reportar_pregunta():
     """Un usuario normal reporta una pregunta con algún error. Se guarda en la
-    colección global reportes_preguntas (estado='pendiente') para que el panel
-    admin la revise. pregunta_id es opcional (los tests generados por IA no
-    tienen id estable): siempre se guarda el texto como referencia."""
+    colección global errores_generacion (fuente="usuario_admin", ver
+    errores_generacion.py) para que el panel admin la revise -- comparte
+    esquema con los auto-rechazos de la verificación automática de
+    generador_preguntas_verificado.py (fuente="auto_verificacion").
+    pregunta_id es opcional (los tests generados por IA no tienen id
+    estable): siempre se guarda el texto como referencia."""
     from datetime import datetime
     data = request.get_json(silent=True) or {}
     motivo = (data.get("motivo") or "").strip()
@@ -366,15 +370,15 @@ def reportar_pregunta():
         return jsonify({"error": "Indica el motivo del reporte."}), 400
     if not pregunta_texto:
         return jsonify({"error": "Falta la pregunta reportada."}), 400
-    db.collection("reportes_preguntas").document().set({
-        "pregunta_id": (data.get("pregunta_id") or "").strip(),
-        "pregunta_texto": pregunta_texto[:1000],
-        "oposicion": obtener_oposicion_solicitada(),
-        "uid": g.uid,
-        "motivo": motivo[:1000],
-        "estado": "pendiente",
-        "fecha": datetime.utcnow().isoformat(),
-    })
+    registrar_error_generacion(
+        db, tema_id="", fuente="usuario_admin",
+        pregunta_texto=pregunta_texto[:1000], detalle=motivo[:1000],
+        pregunta_id=(data.get("pregunta_id") or "").strip(),
+        oposicion=obtener_oposicion_solicitada(),
+        uid=g.uid,
+        estado="pendiente",
+        fecha=datetime.utcnow().isoformat(),
+    )
     return jsonify({"mensaje": "Gracias, hemos recibido tu reporte."}), 201
 
 

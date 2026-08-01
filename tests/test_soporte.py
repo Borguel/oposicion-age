@@ -68,7 +68,7 @@ def test_soporte_con_permiso_reportes_accede(client, db):
 
 
 def test_reportes_pendientes_suma_soporte_y_preguntas(client, db):
-    db.sembrar(("reportes_preguntas", "r1"), {"estado": "pendiente"})
+    db.sembrar(("errores_generacion", "r1"), {"fuente": "usuario_admin", "estado": "pendiente"})
     db.sembrar(("mensajes_soporte", "s1"), {"estado": "pendiente"})
     db.sembrar(("mensajes_soporte", "s2"), {"estado": "revisado"})
     with _como():

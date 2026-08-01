@@ -9,7 +9,10 @@ Convenciones de datos que usa (ya existentes en el proyecto):
 - Falladas:   usuarios/{uid}/preguntas_falladas/{hash} (subcolección por
               usuario -> se agrega con collection_group, sin exponer qué
               usuario individual falló qué)
-- Reportes:   reportes_preguntas/{id} (colección global, nueva)
+- Reportes:   errores_generacion/{id} (colección global; fuente="usuario_admin"
+              son los reportes de usuarios que gestiona este panel,
+              "auto_verificacion" son los auto-rechazos del generador de
+              tests -- ver errores_generacion.py)
 """
 import csv
 import hmac
@@ -427,7 +430,8 @@ def resumen():
         for tid, n in sorted(fallos_por_tema.items(), key=lambda kv: kv[1], reverse=True)[:5]
     ]
     reportes_pendientes = sum(
-        1 for _ in db.collection("reportes_preguntas").where("estado", "==", "pendiente").stream()
+        1 for doc in db.collection("errores_generacion").where("fuente", "==", "usuario_admin").stream()
+        if (doc.to_dict() or {}).get("estado", "pendiente") == "pendiente"
     ) + sum(
         1 for _ in db.collection("mensajes_soporte").where("estado", "==", "pendiente").stream()
     )
@@ -1513,17 +1517,20 @@ def reportes_listar():
         pagina = 1
     por_pagina = 20
     reportes = []
-    consulta = db.collection("reportes_preguntas")
-    if estado and estado != "todos":
-        consulta = consulta.where("estado", "==", estado)
-    for doc in consulta.stream():
+    # Filtro por "fuente" en Firestore (un solo campo, sin índice compuesto),
+    # el filtro por "estado" se aplica en Python -- errores_generacion mezcla
+    # los reportes de usuario con los auto-rechazos de la verificación
+    # automática, que este panel nunca debe mostrar.
+    for doc in db.collection("errores_generacion").where("fuente", "==", "usuario_admin").stream():
         d = doc.to_dict() or {}
+        if estado and estado != "todos" and d.get("estado", "pendiente") != estado:
+            continue
         reportes.append({
             "id": doc.id,
             "pregunta_id": d.get("pregunta_id", ""),
             "pregunta_texto": d.get("pregunta_texto", ""),
             "oposicion": d.get("oposicion", ""),
-            "motivo": d.get("motivo", ""),
+            "motivo": d.get("detalle", ""),
             "estado": d.get("estado", "pendiente"),
             "fecha": d.get("fecha", ""),
         })
@@ -1568,11 +1575,12 @@ def reportes_actualizar(rid):
     estado = data.get("estado")
     if estado not in ("pendiente", "revisado", "descartado"):
         return jsonify({"error": "Estado no válido"}), 400
-    ref = db.collection("reportes_preguntas").document(rid)
+    ref = db.collection("errores_generacion").document(rid)
     if not ref.get().exists:
         return jsonify({"error": "Reporte no encontrado"}), 404
     ref.set({
         "estado": estado,
+        "resuelto": estado != "pendiente",
         "revisado_por": g.uid,
         "fecha_revision": datetime.utcnow().isoformat(),
     }, merge=True)
@@ -1960,7 +1968,8 @@ def sistema_estado():
             except Exception:
                 return 0
     reportes_pendientes = (
-        _contar(db.collection("reportes_preguntas").where("estado", "==", "pendiente"))
+        sum(1 for doc in db.collection("errores_generacion").where("fuente", "==", "usuario_admin").stream()
+            if (doc.to_dict() or {}).get("estado", "pendiente") == "pendiente")
         + _contar(db.collection("mensajes_soporte").where("estado", "==", "pendiente"))
     )
     try:
