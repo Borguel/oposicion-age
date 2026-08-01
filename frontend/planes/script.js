@@ -121,16 +121,6 @@ document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
   });
 });
 
-document.querySelectorAll("[data-faq-toggle]").forEach((boton) => {
-  boton.addEventListener("click", () => {
-    const panel = boton.nextElementSibling;
-    const abierto = panel.style.display !== "none";
-    panel.style.display = abierto ? "none" : "block";
-    boton.setAttribute("aria-expanded", String(!abierto));
-    boton.classList.toggle("abierto", !abierto);
-  });
-});
-
 renderizarConfianza();
 inicializarSelectorOposicion();
 mostrarMensajeCheckout();
