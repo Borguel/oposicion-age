@@ -215,3 +215,6 @@ playwright-report/
 
 # graphify local cache (rebuilt automatically, not the tracked graph output)
 graphify-out/cache/
+# graphify auto-backups of the previous graph, taken before a rebuild
+# that would shrink it (dated dirs, e.g. graphify-out/2026-08-01/)
+graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
