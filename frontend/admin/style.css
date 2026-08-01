@@ -163,9 +163,40 @@
   max-width: 1120px; margin: 0 auto;
 }
 .admin-header h1 { font-size: 1.5rem; line-height: 1.15; margin: 0; flex: 1 1 auto; }
-.admin-header-op { display: flex; align-items: center; gap: 8px; }
+.admin-header-op { display: flex; align-items: center; gap: 10px; }
 .admin-header-op label { font-size: 12px; font-weight: 700; color: var(--age-ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
-.admin-oposicion { max-width: 150px; }
+
+/* Selector de oposición: nativo pero sin cromado del SO (appearance: none +
+   chevron propio en SVG) para que combine con el resto de controles age-*. */
+.admin-oposicion {
+  max-width: 170px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 8px 30px 8px 14px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  background-color: var(--age-card);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 13px;
+  font-family: var(--age-font);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--age-ink);
+  cursor: pointer;
+  transition: border-color 0.15s var(--age-ease), box-shadow 0.15s var(--age-ease);
+}
+.admin-oposicion:hover { border-color: var(--age-primary); }
+.admin-oposicion:focus-visible {
+  outline: none;
+  border-color: var(--age-primary);
+  box-shadow: 0 0 0 3px var(--age-primary-soft);
+}
+:root[data-theme="dark"] .admin-oposicion {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a7acba' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
 
 /* Botón de menú (hamburguesa): oculto en escritorio, solo aparece cuando
    la sidebar pasa a cajón deslizante (ver breakpoint más abajo). */

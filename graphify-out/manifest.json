@@ -2444,24 +2444,9 @@
     "ast_hash": "f98fc430ea59b8c304fd2d1a5ad532bd",
     "semantic_hash": ""
   },
-  "temario-examenes/AUX/01 - Atenci\u00f3n al p\u00fablico.pdf": {
-    "mtime": 1785565767.6474602,
-    "ast_hash": "2413bf76113be61e28e736ae3aefd3c6",
-    "semantic_hash": ""
-  },
-  "temario-examenes/AUX/02 - Los servicios de informaci\u00f3n administrativa.pdf": {
-    "mtime": 1785565767.6514604,
-    "ast_hash": "3aca14974652a56fb7da41e82276c6bc",
-    "semantic_hash": ""
-  },
   "temario-examenes/AUX/03 - Documento, registro y archivo.pdf": {
     "mtime": 1785565767.6554604,
     "ast_hash": "01633471a0ca3d10ee4f350d4d222581",
-    "semantic_hash": ""
-  },
-  "temario-examenes/AUX/04 - Administraci\u00f3n electr\u00f3nica y servicios al ciudadano.pdf": {
-    "mtime": 1785565767.6634603,
-    "ast_hash": "d13ea3cc55536e1381aed523586a06d0",
     "semantic_hash": ""
   },
   "temario-examenes/AUX/BOE-435_Normativa_para_ingreso_en_el_Cuerpo_General_Auxiliar_de_la_Administracion_del_Estado.pdf": {
@@ -2652,6 +2637,21 @@
   "frontend/assets/tutor-avatar.svg": {
     "mtime": 1785521584.1604996,
     "ast_hash": "c5f6759f885f705789c9b6830c798d52",
+    "semantic_hash": ""
+  },
+  "temario-examenes/AUX/01 - Atenci\u00f3n al p\u00fablico.pdf": {
+    "mtime": 1785565767.6474602,
+    "ast_hash": "2413bf76113be61e28e736ae3aefd3c6",
+    "semantic_hash": ""
+  },
+  "temario-examenes/AUX/02 - Los servicios de informaci\u00f3n administrativa.pdf": {
+    "mtime": 1785565767.6514604,
+    "ast_hash": "3aca14974652a56fb7da41e82276c6bc",
+    "semantic_hash": ""
+  },
+  "temario-examenes/AUX/04 - Administraci\u00f3n electr\u00f3nica y servicios al ciudadano.pdf": {
+    "mtime": 1785565767.6634603,
+    "ast_hash": "d13ea3cc55536e1381aed523586a06d0",
     "semantic_hash": ""
   }
 }
