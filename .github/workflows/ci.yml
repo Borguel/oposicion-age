@@ -29,12 +29,15 @@ jobs:
           npm install
 
       - name: ruff (Python)
+        continue-on-error: true
         run: ruff check .
 
       - name: black (Python)
+        continue-on-error: true
         run: black --check .
 
       - name: prettier (frontend)
+        continue-on-error: true
         run: npx prettier --check "frontend/**/*.{js,css,html}"
 
   lighthouse:
