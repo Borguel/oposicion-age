@@ -2,7 +2,7 @@
 que el endpoint exija la clave de cron, y que solo se avise a quien está en
 riesgo de perder la racha hoy o cruza justo un umbral de inactividad."""
 import os
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 
@@ -181,15 +181,31 @@ def test_vigilar_gasto_ia_primer_run_no_avisa_solo_guarda_foto(client, db):
     assert estado["total_acumulado_mes"] == 5.0
 
 
+# Fecha fija (día 15, lejos de cualquier borde de mes) para las dos pruebas
+# de abajo: usaban date.today() - timedelta(days=1) como "foto de ayer", lo
+# que las hacía fallar en falso cada día 1 de mes (ayer cae en el mes
+# anterior, y el código -- correctamente -- descarta la comparación al ver
+# que la foto previa es de otro mes). Fijar "hoy" evita depender del día real
+# de ejecución.
+_HOY_FIJO = date(2026, 1, 15)
+
+
 def test_vigilar_gasto_ia_pico_respecto_a_la_media_avisa(client, db):
-    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {_mes_actual(): {"coste": 20.0}}})
+    mes_fijo = _HOY_FIJO.strftime("%Y-%m")
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {mes_fijo: {"coste": 20.0}}})
     db.sembrar(("config", "coste_ia_alerta"), {
-        "fecha": (date.today() - timedelta(days=1)).isoformat(),
+        "fecha": (_HOY_FIJO - timedelta(days=1)).isoformat(),
         "total_acumulado_mes": 10.0,
         "historial": [0.2, 0.3, 0.25],
     })
     with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
-         patch("blueprints.tareas_programadas.enviar_email_alerta_coste_ia") as mock_alerta:
+         patch("blueprints.tareas_programadas.enviar_email_alerta_coste_ia") as mock_alerta, \
+         patch("blueprints.tareas_programadas.date") as mock_date, \
+         patch("blueprints.tareas_programadas.datetime") as mock_datetime, \
+         patch("coste_ia.datetime") as mock_datetime_coste:
+        mock_date.today.return_value = _HOY_FIJO
+        mock_datetime.utcnow.return_value = datetime(_HOY_FIJO.year, _HOY_FIJO.month, _HOY_FIJO.day)
+        mock_datetime_coste.utcnow.return_value = datetime(_HOY_FIJO.year, _HOY_FIJO.month, _HOY_FIJO.day)
         resp = client.post("/tareas/vigilar-gasto-ia", headers={"X-Cron-Key": "secreta"})
     assert resp.status_code == 200
     datos = resp.get_json()
@@ -201,14 +217,21 @@ def test_vigilar_gasto_ia_pico_respecto_a_la_media_avisa(client, db):
 
 
 def test_vigilar_gasto_ia_por_debajo_del_minimo_no_avisa(client, db):
-    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {_mes_actual(): {"coste": 10.3}}})
+    mes_fijo = _HOY_FIJO.strftime("%Y-%m")
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "coste_ia": {mes_fijo: {"coste": 10.3}}})
     db.sembrar(("config", "coste_ia_alerta"), {
-        "fecha": (date.today() - timedelta(days=1)).isoformat(),
+        "fecha": (_HOY_FIJO - timedelta(days=1)).isoformat(),
         "total_acumulado_mes": 10.0,
         "historial": [0.01, 0.02],
     })
     with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
-         patch("blueprints.tareas_programadas.enviar_email_alerta_coste_ia") as mock_alerta:
+         patch("blueprints.tareas_programadas.enviar_email_alerta_coste_ia") as mock_alerta, \
+         patch("blueprints.tareas_programadas.date") as mock_date, \
+         patch("blueprints.tareas_programadas.datetime") as mock_datetime, \
+         patch("coste_ia.datetime") as mock_datetime_coste:
+        mock_date.today.return_value = _HOY_FIJO
+        mock_datetime.utcnow.return_value = datetime(_HOY_FIJO.year, _HOY_FIJO.month, _HOY_FIJO.day)
+        mock_datetime_coste.utcnow.return_value = datetime(_HOY_FIJO.year, _HOY_FIJO.month, _HOY_FIJO.day)
         resp = client.post("/tareas/vigilar-gasto-ia", headers={"X-Cron-Key": "secreta"})
     assert resp.get_json()["aviso_enviado"] is False
     mock_alerta.assert_not_called()
