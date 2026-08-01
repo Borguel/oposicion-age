@@ -22,12 +22,19 @@
   <meta name="twitter:description" content="Empieza con 7 días de prueba Premium gratis y sin tarjeta. Compara después los planes Básico y Premium de Domina tu Opo." />
   <meta name="twitter:image" content="https://www.dominatuopo.com/assets/og-image.png" />
   <link rel="canonical" href="https://www.dominatuopo.com/planes/" />
+  <!-- aggregateRating/review se dejan fuera a propósito: no hay reseñas
+  reales de usuarios en el sitio todavía, y Google prohíbe (y puede
+  penalizar) los datos estructurados con valoraciones inventadas. Retomar
+  cuando haya reseñas genuinas que mostrar.
+  shippingDetails tampoco aplica: es una suscripción online, no hay ningún
+  envío físico que describir. -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Product",
     "name": "Domina tu Opo",
     "description": "Plataforma online para preparar oposiciones de la Administración Pública española (AGE, GACE, Auxiliar Administrativo) con tests sobre el temario oficial y herramientas de estudio con IA.",
+    "image": "https://www.dominatuopo.com/assets/og-image.png",
     "brand": {
       "@type": "Organization",
       "name": "Domina tu Opo"
@@ -39,7 +46,15 @@
         "price": "4.99",
         "priceCurrency": "EUR",
         "url": "https://www.dominatuopo.com/planes/",
-        "availability": "https://schema.org/InStock"
+        "availability": "https://schema.org/InStock",
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "applicableCountry": "ES",
+          "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 14,
+          "returnFees": "https://schema.org/FreeReturn",
+          "merchantReturnLink": "https://www.dominatuopo.com/terminos/"
+        }
       },
       {
         "@type": "Offer",
@@ -47,7 +62,15 @@
         "price": "9.99",
         "priceCurrency": "EUR",
         "url": "https://www.dominatuopo.com/planes/",
-        "availability": "https://schema.org/InStock"
+        "availability": "https://schema.org/InStock",
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "applicableCountry": "ES",
+          "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 14,
+          "returnFees": "https://schema.org/FreeReturn",
+          "merchantReturnLink": "https://www.dominatuopo.com/terminos/"
+        }
       }
     ]
   }
