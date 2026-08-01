@@ -1,4 +1,4 @@
-import { idToken } from "/assets/auth.js";
+import { idToken, marcarContenidoListo } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { icono } from "/assets/icons.js";
@@ -201,7 +201,10 @@ async function inicializar() {
     return;
   }
   const { protegerPagina } = await import("/assets/plan.js");
-  if (!(await protegerPagina("basico"))) return;
+  if (!(await protegerPagina("basico"))) {
+    marcarContenidoListo();
+    return;
+  }
 
   try {
     const { obtenerOposicionActual } = await import("/assets/oposicion.js");
@@ -231,6 +234,8 @@ async function inicializar() {
     renderizar();
   } catch (e) {
     document.getElementById("tests-cargando").textContent = e.message || "No se pudieron cargar tus tests.";
+  } finally {
+    marcarContenidoListo();
   }
 }
 

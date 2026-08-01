@@ -5,6 +5,7 @@
 // selector de tipo de test con el propio formulario de generación.
 import { icono } from "/assets/icons.js";
 import { leerStreamConTimeout, TIMEOUT_SIN_EVENTOS_STREAM_MS } from "/assets/stream-utils.js";
+import { marcarContenidoListo } from "/assets/auth.js";
 
 const TIPO_TEST = "personalizado";
 const ENDPOINT_GENERAR = "/generar-test-avanzado";
@@ -989,8 +990,12 @@ async function obtenerAuthHeaders() {
 
     window.addEventListener("load", async () => {
       const { protegerPagina } = await import("/assets/plan.js");
-      if (!(await protegerPagina("basico"))) return;
+      if (!(await protegerPagina("basico"))) {
+        marcarContenidoListo();
+        return;
+      }
       await cargarTemas();
+      marcarContenidoListo();
       iniciarSelectorRepartoRealista();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();

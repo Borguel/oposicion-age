@@ -1,8 +1,8 @@
-import { obtenerAuthHeaders } from "/assets/auth.js";
+import { obtenerAuthHeaders, marcarContenidoListo } from "/assets/auth.js";
 import { protegerPagina } from "/assets/plan.js";
 import { icono } from "/assets/icons.js";
 
-protegerPagina("premium");
+protegerPagina("premium").then(() => marcarContenidoListo());
 
 // Iconos estáticos del markup: se pintan aquí, una sola vez, a partir de
 // los data-icon del HTML (en vez de emoji sueltos incrustados en el HTML).

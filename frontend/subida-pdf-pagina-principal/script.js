@@ -1,4 +1,4 @@
-import { idToken } from "/assets/auth.js";
+import { idToken, marcarContenidoListo } from "/assets/auth.js";
 import { icono } from "/assets/icons.js";
 
 const BACKEND_URL = "https://oposicion-age.onrender.com";
@@ -43,6 +43,8 @@ async function cargarResumenDocumentos() {
     document.getElementById('mis-documentos-banner').classList.remove('hidden');
   } catch (e) {
     console.error('Error cargando resumen de "Mis documentos":', e);
+  } finally {
+    marcarContenidoListo();
   }
 }
 

@@ -1,4 +1,4 @@
-import { idToken, esperarUsuario, cambiarEmail, cambiarContrasena, tieneProveedorPassword, reautenticarConPassword } from "/assets/auth.js";
+import { idToken, esperarUsuario, marcarContenidoListo, cambiarEmail, cambiarContrasena, tieneProveedorPassword, reautenticarConPassword } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 
@@ -97,6 +97,7 @@ async function iniciar() {
   document.getElementById("campo-telefono").value = telefono || "";
   document.getElementById("campo-direccion").value = direccion || "";
   document.getElementById("campo-email").value = usuarioActual.email || "";
+  marcarContenidoListo();
 
   document.getElementById("form-datos").addEventListener("submit", async (evento) => {
     evento.preventDefault();

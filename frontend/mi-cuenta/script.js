@@ -1,4 +1,4 @@
-import { auth, idToken, esperarUsuario, signOut } from "/assets/auth.js";
+import { auth, idToken, esperarUsuario, marcarContenidoListo, signOut } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { OPOSICIONES } from "/assets/oposicion.js";
@@ -252,6 +252,7 @@ async function iniciar() {
   fijarTexto("resumen-telefono", telefono || "—");
   fijarTexto("resumen-email", usuario.email || "—");
   fijarTexto("resumen-direccion", direccion || "—");
+  marcarContenidoListo();
 
   const btnPortal = document.getElementById("btn-portal");
   btnPortal.addEventListener("click", async () => {

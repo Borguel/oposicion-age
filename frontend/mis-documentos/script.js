@@ -1,4 +1,4 @@
-import { idToken } from "/assets/auth.js";
+import { idToken, marcarContenidoListo } from "/assets/auth.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { icono } from "/assets/icons.js";
 
@@ -460,7 +460,10 @@ async function cargarDocumentos() {
     return;
   }
   const { protegerPagina } = await import("/assets/plan.js");
-  if (!(await protegerPagina("premium"))) return;
+  if (!(await protegerPagina("premium"))) {
+    marcarContenidoListo();
+    return;
+  }
 
   try {
     const res = await fetch(`${BACKEND_URL}/mis-documentos`, { headers: { Authorization: `Bearer ${token}` } });
@@ -487,6 +490,8 @@ async function cargarDocumentos() {
   } catch (e) {
     document.getElementById("documentos-cargando").textContent = e.message || "No se pudieron cargar tus documentos.";
     document.getElementById("documentos-cargando").classList.remove("hidden");
+  } finally {
+    marcarContenidoListo();
   }
 }
 

@@ -1,4 +1,5 @@
 import { icono } from "/assets/icons.js";
+import { marcarContenidoListo } from "/assets/auth.js";
 
 async function obtenerAuthHeaders() {
   const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");
@@ -452,7 +453,10 @@ document.getElementById("btn-descargar-pdf").addEventListener("click", async () 
 // anterior) a partir del contenido de ESE test concreto, no solo el último.
 window.addEventListener("load", async () => {
   const { protegerPagina } = await import("/assets/plan.js");
-  if (!(await protegerPagina("basico"))) return;
+  if (!(await protegerPagina("basico"))) {
+    marcarContenidoListo();
+    return;
+  }
   const { idDesdeUrlResume, usarTestId, cargarTestEnProgreso, generarTestId, guardarContenidoInicial, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
   const resumeId = idDesdeUrlResume();
   const repetirId = new URLSearchParams(window.location.search).get("repetir");
@@ -627,5 +631,7 @@ window.addEventListener("load", async () => {
   } catch (err) {
     console.error("Error:", err);
     document.getElementById("contenedor-test").innerHTML = "<p>Error al cargar el test.</p>";
+  } finally {
+    marcarContenidoListo();
   }
 });

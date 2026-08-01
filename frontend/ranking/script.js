@@ -1,4 +1,4 @@
-import { idToken } from "/assets/auth.js";
+import { idToken, marcarContenidoListo } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { icono } from "/assets/icons.js";
 
@@ -109,6 +109,8 @@ async function iniciar() {
   } catch (e) {
     contenedorParticipacion.innerHTML = `<p>No se pudo cargar la clasificación.</p>`;
     console.error("Error cargando la clasificación:", e);
+  } finally {
+    marcarContenidoListo();
   }
 }
 

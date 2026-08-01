@@ -1,4 +1,4 @@
-import { idToken } from "/assets/auth.js";
+import { idToken, marcarContenidoListo } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { icono } from "/assets/icons.js";
 
@@ -44,12 +44,16 @@ async function inicializar() {
     return;
   }
   const { protegerPagina } = await import("/assets/plan.js");
-  if (!(await protegerPagina("basico"))) return;
+  if (!(await protegerPagina("basico"))) {
+    marcarContenidoListo();
+    return;
+  }
 
   const params = new URLSearchParams(window.location.search);
   const testId = params.get("id");
   if (!testId) {
     document.getElementById("resultado-cargando").textContent = "Falta el identificador del test.";
+    marcarContenidoListo();
     return;
   }
 
@@ -90,6 +94,8 @@ async function inicializar() {
     document.getElementById("resultado-contenido").classList.remove("hidden");
   } catch (e) {
     document.getElementById("resultado-cargando").textContent = e.message || "No se pudieron cargar los resultados.";
+  } finally {
+    marcarContenidoListo();
   }
 }
 

@@ -5,6 +5,7 @@
 // separada en su propia página para no mezclar el
 // selector de tipo de test con el propio formulario de generación.
 import { icono } from "/assets/icons.js";
+import { marcarContenidoListo } from "/assets/auth.js";
 
 const TIPO_TEST = "oficial";
 const ENDPOINT_GENERAR = "/generar-test-oficial";
@@ -772,8 +773,12 @@ async function obtenerAuthHeaders() {
 
     window.addEventListener("load", async () => {
       const { protegerPagina } = await import("/assets/plan.js");
-      if (!(await protegerPagina("basico"))) return;
+      if (!(await protegerPagina("basico"))) {
+        marcarContenidoListo();
+        return;
+      }
       await cargarTemas();
+      marcarContenidoListo();
       iniciarBotonSimulacroOficial();
       iniciarSelectorRepartoRealista();
       iniciarSelectorPsicotecnicas();

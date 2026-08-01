@@ -1,4 +1,5 @@
 import { icono } from "/assets/icons.js";
+import { marcarContenidoListo } from "/assets/auth.js";
 
 async function obtenerAuthHeaders() {
       const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");
@@ -519,8 +520,12 @@ async function obtenerAuthHeaders() {
 
     window.addEventListener("load", async () => {
       const { protegerPagina } = await import("/assets/plan.js");
-      if (!(await protegerPagina("basico"))) return;
+      if (!(await protegerPagina("basico"))) {
+        marcarContenidoListo();
+        return;
+      }
       await cargarTemas();
+      marcarContenidoListo();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
       if (resumeId) {

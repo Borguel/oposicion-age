@@ -1,5 +1,6 @@
 import { icono } from "/assets/icons.js";
 import { leerStreamConTimeout } from "/assets/stream-utils.js";
+import { marcarContenidoListo } from "/assets/auth.js";
 
 // Se resuelve aquí, en el nivel superior del módulo (que se ejecuta
 // "deferred" pero SIEMPRE antes de DOMContentLoaded), y no dentro del
@@ -113,7 +114,10 @@ async function copyToClipboard(text) {
 // ===== LÓGICA PRINCIPAL =====
 document.addEventListener("DOMContentLoaded", async function () {
   const { protegerPagina } = await import("/assets/plan.js");
-  if (!(await protegerPagina("premium"))) return;
+  if (!(await protegerPagina("premium"))) {
+    marcarContenidoListo();
+    return;
+  }
 
   const contenedor = document.getElementById("tutor-container");
   const input = document.getElementById("chat-input");
@@ -713,4 +717,5 @@ document.addEventListener("DOMContentLoaded", async function () {
   // INICIO
   cargarHistorial();
   cargarSugerenciaInicial();
+  marcarContenidoListo();
 });
