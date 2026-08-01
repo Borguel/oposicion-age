@@ -1943,13 +1943,22 @@ def sistema_estado():
     las claves están presentes en el entorno, no hace llamadas de red)."""
     def _hay(*nombres):
         return all(bool(os.environ.get(n)) for n in nombres)
+    def _son_price_ids_validos(*nombres):
+        # No basta con comprobar que la variable no está vacía: un ID de
+        # Precio de Stripe siempre empieza por "price_", y pegar aquí por
+        # error el ID del Producto (empieza por "prod_") pasaba _hay() sin
+        # problema mientras el checkout fallaba en producción con un 404 de
+        # Stripe -- incidente real de julio 2026, detectado por un usuario
+        # que no pudo pagar en vez de por este panel.
+        valores = [os.environ.get(n) for n in nombres]
+        return all(v and v.startswith("price_") for v in valores)
     # critico=True: si falta, algo de la web NO funciona (rojo). critico=False:
     # servicio opcional; si falta no pasa nada (ámbar, no alarma).
     servicios = [
         {"nombre": "Firebase / Firestore", "ok": True, "critico": True, "detalle": "Conectado (la app arranca con credenciales)."},
         {"nombre": "IA (DeepSeek)", "ok": _hay("DEEPSEEK_API_KEY"), "critico": True, "detalle": "Necesaria para Tu Tutor y generación de tests/resúmenes."},
         {"nombre": "Pagos (Stripe)", "ok": _hay("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"), "critico": True, "detalle": "Clave y webhook para cobros y altas de plan."},
-        {"nombre": "Precios de planes", "ok": _hay("STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM"), "critico": True, "detalle": "IDs de precio de básico y premium."},
+        {"nombre": "Precios de planes", "ok": _son_price_ids_validos("STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM"), "critico": True, "detalle": "IDs de precio (price_...) de básico y premium -- no el ID del producto (prod_...)."},
         {"nombre": "Email (Brevo)", "ok": _hay("BREVO_API_KEY", "BREVO_FROM_EMAIL"), "critico": True, "detalle": "Bienvenida, verificar correo, recuperar contraseña, cancelación de suscripción y avisos de racha."},
         {"nombre": "Notificaciones push (VAPID)", "ok": _hay("VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"), "critico": False, "detalle": "Avisos push del navegador. Opcional."},
         {"nombre": "Errores (Sentry)", "ok": _hay("SENTRY_DSN"), "critico": False, "detalle": "Captura de errores en producción. Opcional."},

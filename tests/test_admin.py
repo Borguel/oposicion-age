@@ -746,9 +746,10 @@ def test_sistema_reporta_servicios(client, db, monkeypatch):
 
 def test_sistema_diagnostico(client, db, monkeypatch):
     for k in ("DEEPSEEK_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
-              "STRIPE_PRICE_ID_BASICO", "STRIPE_PRICE_ID_PREMIUM",
               "BREVO_API_KEY", "BREVO_FROM_EMAIL"):
         monkeypatch.setenv(k, "x")
+    monkeypatch.setenv("STRIPE_PRICE_ID_BASICO", "price_basico")
+    monkeypatch.setenv("STRIPE_PRICE_ID_PREMIUM", "price_premium")
     db.sembrar(("errores_generacion", "r1"), {"fuente": "usuario_admin", "estado": "pendiente"})
     db.sembrar(("config", "banner"), {"activo": True})
     with _como():
@@ -756,6 +757,19 @@ def test_sistema_diagnostico(client, db, monkeypatch):
     assert d["todo_ok"] is True  # todos los críticos configurados
     assert d["reportes_pendientes"] == 1
     assert d["banner_activo"] is True
+
+
+def test_sistema_detecta_price_id_con_formato_invalido(client, db, monkeypatch):
+    # Caso real de julio 2026: el ID de Producto de Stripe (prod_...) quedó
+    # pegado por error donde iba el ID de Precio (price_...) -- el checkout
+    # fallaba en producción pero este panel lo daba por bien configurado
+    # porque antes solo comprobaba que la variable no estuviera vacía.
+    monkeypatch.setenv("STRIPE_PRICE_ID_BASICO", "prod_UuRQjxkUdQgoYu")
+    monkeypatch.setenv("STRIPE_PRICE_ID_PREMIUM", "price_premium")
+    with _como():
+        servicios = client.get("/admin/api/sistema", headers=_AUTH).get_json()["servicios"]
+    por_nombre = {s["nombre"]: s["ok"] for s in servicios}
+    assert por_nombre["Precios de planes"] is False
 
 
 def test_limites_obtener_devuelve_defaults(client, db):
