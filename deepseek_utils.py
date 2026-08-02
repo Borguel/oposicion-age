@@ -16,15 +16,16 @@ logger = logging.getLogger(__name__)
 # que reintentar por otros motivos (p. ej. una pregunta que no supera la
 # verificación jurídica en generador_preguntas_verificado.py).
 #
-# Subido de 2 a 3 (02/08/2026): con datos reales de producción, "Error de
-# conexión: no se pudo conectar a DeepSeek API" se ve con más frecuencia
-# desde que las respuestas de generación son más largas (ver max_tokens en
-# generador_preguntas_verificado.py) -- con solo 2 reintentos, una llamada
-# con mala suerte agotaba su presupuesto y obligaba al bucle EXTERIOR
-# (_generar_pregunta_verificada, hasta MAX_INTENTOS_POR_PREGUNTA) a
-# empezar ese hueco de cero (nueva ancla, nuevo tipo de pregunta) en vez
-# de solo reintentar la misma llamada que falló.
-_REINTENTOS_TRANSITORIOS = 3
+# NOTA (02/08/2026): se probó subir esto a 3 y bajar el semáforo de abajo
+# a 6, con la hipótesis de que el problema era contención en la propia
+# app -- con datos reales resultó ser un empeoramiento claro (más errores
+# de conexión agrupados en ráfaga, tiempo total peor), así que se revirtió
+# a los valores de siempre. La causa real de "Error de conexión: no se
+# pudo conectar a DeepSeek API" / "Response ended prematurely" parece ser
+# inestabilidad del lado de DeepSeek (o de la red hacia allí), no
+# contención nuestra -- no se toca más este número a ciegas sin evidencia
+# clara de que ayuda.
+_REINTENTOS_TRANSITORIOS = 2
 _ESPERA_ENTRE_REINTENTOS_SEGUNDOS = 1.5
 
 # Tope global de peticiones EN VUELO a DeepSeek en todo el proceso (app.py
@@ -43,23 +44,23 @@ _ESPERA_ENTRE_REINTENTOS_SEGUNDOS = 1.5
 # DESPUÉS de pasar de "python app.py" a gunicorn (ver render.yaml): eso
 # descarta que fuera un cuello de botella del servidor de aplicación y
 # confirma que 16 llamadas a la vez ya basta para que la propia API de
-# DeepSeek se sature bajo nuestra cuenta. Bajado a 8, y luego a 6
-# (02/08/2026): tras subir max_tokens de generación a 5000 (ver
-# generador_preguntas_verificado.py) las respuestas tardan más en
-# completarse, así que cada hueco del semáforo se ocupa más tiempo -- con
-# 8 seguían viéndose "Error de conexión: no se pudo conectar a DeepSeek
-# API" con mucha más frecuencia que antes de esa subida, con 15 hilos de
-# generador_preguntas_verificado.py compitiendo por los 8 huecos (ver
-# _MAX_WORKERS ahí, bajado a la vez que este número). Frenar aquí (el
+# DeepSeek se sature bajo nuestra cuenta. Bajado a 8. Frenar aquí (el
 # único punto por el que pasan TODAS las llamadas a la API, sea cual sea
 # la herramienta que las dispare) es más simple y más fiable que ajustar
 # cada ThreadPoolExecutor por separado uno a uno. Una llamada que no
 # consigue hueco espera en cola (barato) en vez de sumarse a la
-# sobrecarga real del proveedor -- si 6 sigue resultando demasiado alto o
-# ya se puede subir de nuevo, ajustar con datos reales de los logs
-# ("DeepSeek respondió en Xs...", que incluye la espera en cola de este
-# semáforo, no solo el tiempo de red).
-_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK = 6
+# sobrecarga real del proveedor.
+#
+# NOTA (02/08/2026): se probó bajar esto a 6 tras subir max_tokens de
+# generación (respuestas más largas = cada hueco del semáforo ocupado más
+# tiempo), con la hipótesis de que había contención propia -- con datos
+# reales de producción resultó en MÁS errores de conexión, agrupados en
+# ráfaga, y un tiempo total peor. Revertido a 8. Todo apunta a que "Error
+# de conexión: no se pudo conectar a DeepSeek API" / "Response ended
+# prematurely" es inestabilidad del lado de DeepSeek (o de la red hacia
+# allí) más que contención nuestra -- no bajar este número otra vez sin
+# evidencia clara de que ayuda de verdad, no solo en teoría.
+_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK = 8
 _semaforo_deepseek = threading.Semaphore(_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK)
 
 
