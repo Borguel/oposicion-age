@@ -137,6 +137,14 @@ def _generar_candidatas_fragmento(fragmento, cupo, on_usage):
         max_tokens=min(8000, 200 + cupo * 220),
         response_format_json=True,
         on_usage=on_usage,
+        # stream=True (02/08/2026, arreglo real de producción: este archivo
+        # se había quedado sin el fix de streaming que ya tenía
+        # generador_preguntas_verificado.py -- un despiste, no una
+        # decisión). Sin streaming, cualquier llamada que tarda más de ~30s
+        # en generar muere con "Error de conexión: no se pudo conectar a
+        # DeepSeek API" -- ver el comentario largo en
+        # deepseek_utils._leer_respuesta_en_streaming.
+        stream=True,
     )
     candidatas = []
     for c in _parsear_tarjetas(generado):
@@ -169,6 +177,12 @@ def _verificar_tarjeta(tarjeta, fragmento, on_usage):
         # test_generator.py._verificar_pregunta: se mantiene el margen de
         # deliberación encendido a propósito para no perder precisión.
         thinking_enabled=True,
+        # stream=True: ver el comentario en _generar_candidatas_fragmento --
+        # mismo arreglo real de producción (este archivo se había quedado
+        # sin streaming, y con thinking_enabled=True esta verificación
+        # puede tardar bastante, condenándola a morir por conexión con
+        # cierta frecuencia sin este fix).
+        stream=True,
     )
     if not raw:
         return False
@@ -195,6 +209,8 @@ def _regenerar_una_tarjeta(fragmento, pregunta_descartada, on_usage):
         max_tokens=500,
         response_format_json=True,
         on_usage=on_usage,
+        # stream=True: ver el comentario en _generar_candidatas_fragmento.
+        stream=True,
     )
     for c in _parsear_tarjetas(generado):
         if isinstance(c, dict) and c.get("pregunta") and c.get("respuesta"):

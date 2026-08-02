@@ -120,6 +120,22 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
         # aquí igual: es la tarea que se juega la precisión, así que se
         # mantiene el margen de deliberación encendido a propósito.
         thinking_enabled=True,
+        # stream=True (02/08/2026, arreglo real de producción: este archivo
+        # se había quedado sin el fix de streaming que ya tenía
+        # generador_preguntas_verificado.py desde el principio de la sesión
+        # -- un despiste, no una decisión). Sin streaming no viaja NINGÚN
+        # byte entre la petición y la respuesta terminada, y toda llamada
+        # que tarda más de ~30s en generar muere con "Error de conexión: no
+        # se pudo conectar a DeepSeek API" -- cortada desde el otro lado,
+        # no por nuestro timeout. Con thinking_enabled=True esta
+        # verificación puede tardar bastante (visto en el generador
+        # principal: reasoning_content de hasta 20000+ caracteres, 40-50s),
+        # así que sin streaming estaba condenada a morir con cierta
+        # frecuencia -- exactamente lo que se vio en producción: varias
+        # "Error de conexión" seguidos y un test de 20 preguntas que se
+        # quedó en 18-19. Ver el comentario largo en
+        # deepseek_utils._leer_respuesta_en_streaming.
+        stream=True,
     )
     if not raw:
         return False
@@ -210,6 +226,10 @@ def _verificar_lote(preguntas, texto_fuente, on_usage):
         # misma verificación, misma razón para mantener el razonamiento
         # encendido pese a que deepseek-v4-flash lo desactiva por defecto.
         thinking_enabled=True,
+        # stream=True: ver el comentario largo en _verificar_pregunta --
+        # mismo arreglo real de producción (este archivo se había quedado
+        # sin streaming, provocando "Error de conexión" en llamadas largas).
+        stream=True,
     )
     if not raw:
         return {}
@@ -309,6 +329,10 @@ def _pedir_una_pregunta_de_recambio(construir_prompt, pregunta_descartada, on_us
         # subir el margen no cuesta nada si no hace falta.
         max_tokens=4500,
         on_usage=on_usage,
+        # stream=True: ver el comentario largo en _verificar_pregunta --
+        # mismo arreglo real de producción (este archivo se había quedado
+        # sin streaming, provocando "Error de conexión" en llamadas largas).
+        stream=True,
     )
     if not generado:
         return None
@@ -469,7 +493,13 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
             max_tokens=min(8000, 1500 * n),
-            on_usage=on_usage
+            on_usage=on_usage,
+            # stream=True: ver el comentario largo en _verificar_pregunta --
+            # mismo arreglo real de producción (este archivo se había
+            # quedado sin streaming, provocando "Error de conexión" en
+            # llamadas largas -- más probable aún aquí, generando varias
+            # preguntas de golpe con hasta 8000 tokens de margen).
+            stream=True,
         )
         if not generado:
             return [], f"Sin respuesta de DeepSeek para un lote de {n} preguntas"
