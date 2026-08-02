@@ -54,7 +54,7 @@ jobs:
 
       - name: Cache del contenido generado por DeepSeek
         if: github.event.inputs.paso == 'generar' || github.event.inputs.paso == 'mostrar'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: contenido-generado-ofimatica.json
           key: ofimatica-generado-v2-${{ hashFiles('indices-ofimatica.json') }}
