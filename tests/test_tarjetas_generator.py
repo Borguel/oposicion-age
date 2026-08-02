@@ -85,6 +85,42 @@ class TestGenerarTarjetasVerificadas:
         preguntas = {t["pregunta"] for t in resultado["tarjetas"]}
         assert preguntas == {"¿Pregunta 1?", "¿Pregunta 2?"}
 
+    def test_on_progreso_incluye_la_tarjeta_aceptada(self):
+        # Mismo patrón que generador_preguntas_verificado.py/test_generator.py:
+        # el evento de progreso lleva el contenido de la tarjeta ACEPTADA
+        # (no solo el contador), para que el llamante (ver
+        # /generar-tarjetas-desde-pdf en blueprints/pdf_ia.py) pueda mandar
+        # un evento SSE aparte y dejar repasar tarjetas ya listas sin
+        # esperar a que termine todo el documento.
+        def fake_call(messages, **kwargs):
+            if _es_prompt_generacion(messages):
+                return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta?", "respuesta": "Respuesta"}]})
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            raise AssertionError("prompt inesperado")
+
+        eventos = []
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call):
+            generar_tarjetas_verificadas("Texto corto del documento.", 1, on_progreso=eventos.append)
+
+        assert len(eventos) == 1
+        assert eventos[0]["tarjeta"]["pregunta"] == "¿Pregunta?"
+
+    def test_on_progreso_no_incluye_tarjeta_si_se_descarta(self):
+        def fake_call(messages, **kwargs):
+            if _es_prompt_generacion(messages):
+                return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta única?", "respuesta": "Respuesta"}]})
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": False, "problemas": ["dato inventado"]})
+            raise AssertionError("prompt inesperado")
+
+        eventos = []
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call):
+            generar_tarjetas_verificadas("Texto corto del documento.", 1, on_progreso=eventos.append)
+
+        assert len(eventos) > 0
+        assert all("tarjeta" not in evento for evento in eventos)
+
     def test_tarjeta_invalida_se_descarta_y_se_regenera(self):
         # La tarjeta "A" nunca pasa la verificación; su recambio "B" sí --
         # debe aparecer en el resultado final, y "A" NO.

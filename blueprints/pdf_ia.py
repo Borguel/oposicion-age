@@ -526,7 +526,18 @@ def generar_tarjetas_desde_pdf():
 
         def _en_hilo_de_fondo():
             def on_progreso(evento_progreso):
+                # "tarjeta" se manda como evento aparte (no como parte de
+                # "progreso") para que el frontend pueda dejar repasar las
+                # tarjetas en cuanto lleguen las primeras N aceptadas, sin
+                # esperar a que termine todo el documento -- mismo patrón
+                # que /generar-test-desde-pdf usa para sus preguntas.
+                tarjeta = evento_progreso.pop("tarjeta", None)
                 eventos.put({"tipo": "progreso", **evento_progreso})
+                if tarjeta:
+                    eventos.put({
+                        "tipo": "tarjeta", "tarjeta": tarjeta,
+                        "completadas": evento_progreso["completadas"], "total": evento_progreso["total"],
+                    })
             try:
                 resultado_generacion = generar_tarjetas_verificadas(
                     text, num_tarjetas, on_usage=acumulador_tokens.add, on_progreso=on_progreso,

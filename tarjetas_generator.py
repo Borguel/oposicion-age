@@ -238,7 +238,12 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
     "total": n_candidatas} a medida que cada tarjeta candidata termina de
     verificarse (aceptada o descartada) -- pensado para retransmitir
     progreso real por SSE en vez de mensajes rotativos cosméticos (ver
-    /generar-tarjetas-desde-pdf en blueprints/pdf_ia.py).
+    /generar-tarjetas-desde-pdf en blueprints/pdf_ia.py). Si la candidata
+    fue ACEPTADA, el evento incluye además "tarjeta" con su contenido
+    (mismo patrón que generador_preguntas_verificado.py/test_generator.py
+    para Test Personalizado y Test desde PDF), para que el llamante pueda
+    dejar empezar a repasar tarjetas ya listas sin esperar a que termine
+    todo el documento.
 
     Devuelve {"tarjetas": [...], "descartadas": int, "advertencia": str
     opcional si se generaron menos tarjetas de las pedidas}."""
@@ -286,7 +291,17 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
                 descartadas += 1
             verificadas += 1
             if on_progreso:
-                on_progreso({"completadas": verificadas, "total": total_candidatas})
+                # "tarjeta" solo si resultado (aceptada) -- mismo patrón que
+                # generador_preguntas_verificado.py/test_generator.py: el
+                # llamante (ver /generar-tarjetas-desde-pdf en
+                # blueprints/pdf_ia.py) usa esto para mandar un evento SSE
+                # aparte por cada tarjeta aceptada, así el frontend puede
+                # dejar ver/repasar las tarjetas ya listas sin esperar a que
+                # termine todo el documento.
+                evento = {"completadas": verificadas, "total": total_candidatas}
+                if resultado:
+                    evento["tarjeta"] = resultado
+                on_progreso(evento)
 
     # Relleno: si tras la fase normal siguen faltando tarjetas -- ya sea
     # porque algún fragmento devolvió menos candidatas de las pedidas en su
@@ -350,7 +365,10 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
                     descartadas += 1
                 valor = verificadas
             if on_progreso:
-                on_progreso({"completadas": valor, "total": total_candidatas})
+                evento = {"completadas": valor, "total": total_candidatas}
+                if resultado:
+                    evento["tarjeta"] = resultado
+                on_progreso(evento)
 
         with ThreadPoolExecutor(max_workers=min(10, faltan)) as executor:
             list(executor.map(_rellenar_un_hueco, listas_fragmentos_huecos))

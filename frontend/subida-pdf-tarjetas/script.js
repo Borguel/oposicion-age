@@ -292,6 +292,32 @@ async function obtenerAuthHeaders() {
       // Auto-guardar al cambiar de tarjeta
       guardarEstado();
     }
+    // Añade una tarjeta ya verificada al repaso EN CURSO (arranque temprano,
+    // num_tarjetas > 5, ver generarTarjetasConProgreso más abajo) sin
+    // interrumpir la tarjeta que el usuario esté viendo -- solo al final
+    // de la lista, nunca se reordena lo que ya está en pantalla.
+    function agregarTarjetaEnCurso(tarjeta) {
+      tarjetas.push(tarjeta);
+      totalTarjetas.textContent = tarjetas.length;
+      btnSiguiente.disabled = tarjetaActual === tarjetas.length - 1;
+      guardarEstado();
+    }
+    function mostrarIndicadorGenerandoFondo(completadas, total) {
+      let el = document.getElementById('indicador-generando-fondo');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'indicador-generando-fondo';
+        el.className = 'indicador-generando-fondo';
+        modoEstudio.querySelector('.controles-tarjetas').insertAdjacentElement('afterend', el);
+      }
+      const restantes = Math.max(total - completadas, 0);
+      el.innerHTML = restantes > 0
+        ? `<span class="icono-inline">${icono('arena', 16)} Generando ${restantes} tarjeta${restantes !== 1 ? 's' : ''} más en segundo plano...</span>`
+        : `<span class="icono-inline">${icono('arena', 16)} Terminando de verificar el resto de tarjetas...</span>`;
+    }
+    function ocultarIndicadorGenerandoFondo() {
+      document.getElementById('indicador-generando-fondo')?.remove();
+    }
     // Las tarjetas las genera la IA a partir de un PDF subido por el
     // usuario: se escapan antes de pintarlas para que un documento con
     // "<script>" o similar como texto plano no se ejecute al mostrarlas.
@@ -325,12 +351,24 @@ async function obtenerAuthHeaders() {
     }
     // Consume el stream SSE de /generar-tarjetas-desde-pdf (progreso real por
     // tarjeta verificada, ver tarjetas_generator.generar_tarjetas_verificadas)
-    // y devuelve el evento "fin" -- usado tanto al subir un PDF nuevo como al
-    // generar desde un documento ya guardado en "Mis documentos". Con pocas
-    // tarjetas solo llega UN evento de progreso real, justo al final -- ver
+    // -- usado tanto al subir un PDF nuevo como al generar desde un documento
+    // ya guardado en "Mis documentos". Con pocas tarjetas solo llega UN
+    // evento de progreso real, justo al final -- ver
     // /assets/progreso-conversador.js para cómo se evita que la barra se
     // quede "pillada" ese rato.
-    async function generarTarjetasConProgreso(url, formData, authHeaders) {
+    //
+    // Para peticiones de más de 5 tarjetas, en cuanto llegan las primeras
+    // min(5, numTarjetasSolicitadas) ya aceptadas se deja al usuario empezar
+    // a repasar mientras el resto se sigue generando en segundo plano --
+    // mismo umbral y mismo motivo que Test Personalizado/Test desde PDF (ver
+    // frontend/test-personalizado/script.js y
+    // frontend/subida-pdf-generar-test/script.js). Devuelve
+    // {transicionadoAEstudio: true} si ya se entró en modo estudio dentro de
+    // esta función (el llamante no debe volver a llamar a
+    // iniciarModoEstudio), o {transicionadoAEstudio: false, datosFinales} si
+    // el llamante debe entrar en modo estudio él mismo con el resultado
+    // completo.
+    async function generarTarjetasConProgreso(url, formData, authHeaders, numTarjetasSolicitadas) {
       const { crearProgresoConversador } = await import("/assets/progreso-conversador.js");
       const progreso = crearProgresoConversador({
         elBarra: document.getElementById('progreso-generacion-pdf'),
@@ -348,6 +386,16 @@ async function obtenerAuthHeaders() {
           { mensaje: "Descartando las tarjetas de baja calidad…", icono: "check" },
         ],
       });
+
+      let transicionadoAEstudio = false;
+      const umbralInicioTemprano = Math.min(5, numTarjetasSolicitadas);
+      let tarjetasRecibidas = [];
+      // Techo monótono de "completadas" (nunca baja) -- mismo motivo que en
+      // subida-pdf-generar-test/script.js: el contador no cuenta "tarjetas
+      // únicas ya aceptadas" sino candidatas procesadas (aceptadas o
+      // descartadas), así que un valor más bajo podría llegar DESPUÉS de
+      // uno más alto entre hilos distintos.
+      let techoCompletadas = 0;
 
       try {
         const res = await fetch(url, { method: "POST", headers: authHeaders, body: formData });
@@ -374,7 +422,17 @@ async function obtenerAuthHeaders() {
         // iPhone/WebKit esa señal a veces no llega nunca aunque todo esté ya
         // recibido, y quedarse esperándola dejaba la pantalla congelada.
         while (!datosFinales) {
-          const { done, value } = await leerStreamConTimeout(lector);
+          let done, value;
+          try {
+            ({ done, value } = await leerStreamConTimeout(lector));
+          } catch (errorTimeout) {
+            // Mismo motivo que subida-pdf-generar-test/script.js: si ya se
+            // transicionó a modo estudio, no hay que romper la sesión del
+            // usuario por un aviso de "servidor tardando" sobre el resto
+            // que se sigue generando en segundo plano.
+            if (transicionadoAEstudio) break;
+            throw errorTimeout;
+          }
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
           const bloques = buffer.split("\n\n");
@@ -389,7 +447,28 @@ async function obtenerAuthHeaders() {
               continue;
             }
             if (evento.tipo === "progreso") {
-              progreso.avanzar(evento, `Verificando tarjetas (${Math.min(evento.completadas, evento.total)} de ${evento.total})…`);
+              techoCompletadas = Math.max(techoCompletadas, evento.completadas);
+              if (!transicionadoAEstudio) {
+                progreso.avanzar(evento, `Verificando tarjetas (${Math.min(techoCompletadas, evento.total)} de ${evento.total})…`);
+              } else {
+                mostrarIndicadorGenerandoFondo(techoCompletadas, evento.total);
+              }
+            } else if (evento.tipo === "tarjeta" && evento.tarjeta) {
+              if (!transicionadoAEstudio) {
+                tarjetasRecibidas.push(evento.tarjeta);
+                if (numTarjetasSolicitadas > umbralInicioTemprano && tarjetasRecibidas.length >= umbralInicioTemprano) {
+                  transicionadoAEstudio = true;
+                  progreso.detener();
+                  tarjetas = shuffleArray(tarjetasRecibidas);
+                  tarjetaActual = 0;
+                  contenedorCarga.classList.add('hidden');
+                  modoEstudio.classList.remove('hidden');
+                  mostrarTarjetaActual();
+                  guardarEstado();
+                }
+              } else {
+                agregarTarjetaEnCurso(evento.tarjeta);
+              }
             } else if (evento.tipo === "fin") {
               datosFinales = evento;
             }
@@ -398,6 +477,49 @@ async function obtenerAuthHeaders() {
 
         lector.cancel().catch(() => {});
 
+        if (transicionadoAEstudio) {
+          // El usuario ya está repasando -- "fin" solo sirve para
+          // reconciliar el conjunto definitivo (por si el streaming entregó
+          // alguna tarjeta que agregarTarjetaEnCurso no llegó a procesar
+          // antes de que llegara "fin", o si num_tarjetas pedía menos de lo
+          // que el backend generó de más -- ver el recorte más abajo, mismo
+          // que se hacía en el envío del formulario antes de este cambio) y
+          // avisar/guardar sin interrumpir la tarjeta que se esté viendo.
+          ocultarIndicadorGenerandoFondo();
+          if (datosFinales && Array.isArray(datosFinales.tarjetas)) {
+            let tarjetasFinales = datosFinales.tarjetas;
+            if (numTarjetasSolicitadas < tarjetasFinales.length) {
+              tarjetasFinales = tarjetasFinales.slice(0, numTarjetasSolicitadas);
+            }
+            for (let i = tarjetas.length; i < tarjetasFinales.length; i++) {
+              agregarTarjetaEnCurso(tarjetasFinales[i]);
+            }
+            if (datosFinales.advertencia) {
+              alertaPreguntas.innerHTML = `
+                <div class="alerta-aviso">
+                  <span class="alerta-aviso-icono">${icono("alerta", 20)}</span>
+                  <div><strong>Aviso:</strong> ${datosFinales.advertencia}</div>
+                </div>
+              `;
+              alertaPreguntas.classList.remove('hidden');
+            }
+            documentoIdActual = datosFinales.documento_id || documentoIdActual;
+            nombreArchivo = datosFinales.nombre_archivo || nombreArchivo;
+          } else if (!datosFinales || datosFinales.error) {
+            const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+            mostrarErrorGlobal((datosFinales && datosFinales.error) || "Ha ocurrido un error terminando de generar el resto de tarjetas.");
+          }
+          guardarTarjetasAutomaticamente();
+          import('/assets/otras-herramientas-pdf.js').then(({ pintarAccesosOtrasHerramientas }) => {
+            pintarAccesosOtrasHerramientas({
+              contenedor: document.getElementById('otras-herramientas-bloque'),
+              documentoId: documentoIdActual,
+              herramientaActual: 'subida-pdf-tarjetas',
+            });
+          });
+          return { transicionadoAEstudio: true };
+        }
+
         if (!datosFinales) {
           throw new Error("Error al generar las tarjetas. Vuelve a intentarlo.");
         }
@@ -405,9 +527,10 @@ async function obtenerAuthHeaders() {
           throw new Error(datosFinales.error || "No se generaron tarjetas.");
         }
         progreso.completar();
-        return datosFinales;
+        return { transicionadoAEstudio: false, datosFinales };
       } finally {
         progreso.detener();
+        if (transicionadoAEstudio) ocultarIndicadorGenerandoFondo();
       }
     }
 
@@ -565,13 +688,18 @@ async function obtenerAuthHeaders() {
       if (!authHeaders) return;
 
       try {
-        const datosIA = await generarTarjetasConProgreso("https://oposicion-age.onrender.com/generar-tarjetas-desde-pdf", formData, authHeaders);
-        let tarjetasFinales = datosIA.tarjetas || [];
-        if (numTarjetas < tarjetasFinales.length) {
-          tarjetasFinales = tarjetasFinales.slice(0, numTarjetas);
+        const resultado = await generarTarjetasConProgreso(
+          "https://oposicion-age.onrender.com/generar-tarjetas-desde-pdf", formData, authHeaders, numTarjetas);
+        if (!resultado.transicionadoAEstudio) {
+          const datosIA = resultado.datosFinales;
+          let tarjetasFinales = datosIA.tarjetas || [];
+          if (numTarjetas < tarjetasFinales.length) {
+            tarjetasFinales = tarjetasFinales.slice(0, numTarjetas);
+          }
+          documentoIdActual = datosIA.documento_id || documentoIdActual;
+          nombreArchivo = datosIA.nombre_archivo || nombreArchivo;
+          iniciarModoEstudio(tarjetasFinales, true, datosIA.advertencia, datosIA.sugerencia);
         }
-        documentoIdActual = datosIA.documento_id || documentoIdActual;
-        iniciarModoEstudio(tarjetasFinales, true, datosIA.advertencia, datosIA.sugerencia);
       } catch (err) {
         mostrarError(err.message || "Error al generar las tarjetas.");
       }

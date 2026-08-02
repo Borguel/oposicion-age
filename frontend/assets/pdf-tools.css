@@ -407,6 +407,28 @@
   transform: translateY(0);
 }
 
+/* Aviso de "sigue generando N más en segundo plano" tras el arranque
+   temprano (ver generarTarjetasConProgreso en
+   subida-pdf-tarjetas/script.js, mismo patrón que
+   subida-pdf-generar-test/script.js -- copiado aquí en vez de duplicado
+   por página porque ambas herramientas comparten .pdfherr-body). */
+.indicador-generando-fondo {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  background: var(--age-primary-soft, var(--age-bg));
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  font-size: 0.9rem;
+  color: var(--age-ink-soft);
+  text-align: center;
+}
+.icono-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+}
+
 @media (max-width: 640px) {
   .pdfherr-header {
     padding: 30px 16px 26px;
