@@ -7,6 +7,7 @@ artículo se recupera del texto real y no lo inventa el modelo, y que
 agotar los intentos no bloquea el resto del test."""
 import itertools
 import json
+import re
 import threading
 from unittest.mock import patch
 
@@ -14,9 +15,13 @@ from generador_preguntas_verificado import (
     MAX_RONDAS_RELLENO,
     _extraer_articulos,
     _elegir_ancla_legal,
+    _generar_candidatos_lote,
+    _generar_lote_preguntas_verificadas,
     _generar_pregunta_verificada,
     _prompt_generacion,
+    _prompt_generacion_lote_normativo,
     _prompt_verificacion,
+    _tema_es_normativo,
     generar_test_verificado,
 )
 from limites_uso import _clave_periodo
@@ -287,11 +292,283 @@ def test_fallo_inesperado_en_un_intento_consume_solo_ese_intento():
     assert resultado["pregunta"] == "¿Segundo intento, ya normal?"
 
 
+class TestGeneracionEnLote:
+    """Generación EN LOTE de varias preguntas en una sola llamada (ver
+    TAMANO_LOTE_GENERACION) -- reduce las llamadas de generación sin tocar
+    la verificación (sigue siendo una llamada independiente por pregunta,
+    contra su propio texto legal: la garantía de precisión no cambia)."""
+
+    def test_tema_es_normativo_detecta_articulo_real(self):
+        subbloques = [{"etiqueta": "s1", "titulo": "Ley X", "texto": "Artículo 1. Contenido normativo real."}]
+        assert _tema_es_normativo(subbloques) is True
+
+    def test_tema_es_normativo_false_sin_articulos(self):
+        subbloques = [{"etiqueta": "s1", "titulo": "Informática", "texto": "El sistema operativo gestiona recursos."}]
+        assert _tema_es_normativo(subbloques) is False
+
+    def test_prompt_lote_incluye_cada_texto_legal_numerado_y_prohibe_mezclar(self):
+        especificaciones = [
+            {"anclas": [{"norma": "Ley 39/2015", "articulo": "Artículo 21",
+                         "texto_legal": "Artículo 21. Texto A.", "etiqueta_subbloque": "s1"}],
+             "tipo_pregunta": "memoria_literal"},
+            {"anclas": [{"norma": "Ley 40/2015", "articulo": "Artículo 5",
+                         "texto_legal": "Artículo 5. Texto B.", "etiqueta_subbloque": "s2"}],
+             "tipo_pregunta": "pregunta_trampa"},
+        ]
+        system, user = _prompt_generacion_lote_normativo(especificaciones, "AGE")
+        assert "TEXTO LEGAL 1" in user and "Texto A." in user
+        assert "TEXTO LEGAL 2" in user and "Texto B." in user
+        assert "PREGUNTA 1" in user and "PREGUNTA 2" in user
+        assert "exactamente 2 elementos" in system
+        # Regla explícita anti-contaminación entre preguntas del mismo lote.
+        assert "NUNCA en el texto legal de otra pregunta del lote" in system
+
+    def test_generar_candidatos_lote_empareja_por_pregunta_num_no_por_posicion(self):
+        especificaciones = [
+            {"anclas": [{"norma": "Ley A", "articulo": "Artículo 1", "texto_legal": "...", "etiqueta_subbloque": "s1"}],
+             "tipo_pregunta": "memoria_literal"},
+            {"anclas": [{"norma": "Ley B", "articulo": "Artículo 2", "texto_legal": "...", "etiqueta_subbloque": "s2"}],
+             "tipo_pregunta": "comprension"},
+        ]
+        # El modelo las devuelve en orden invertido -- el emparejamiento debe
+        # seguir siendo correcto porque se hace por pregunta_num, no por
+        # posición en la lista.
+        respuesta = json.dumps({"preguntas": [
+            {"pregunta_num": 2, "pregunta": "¿Segunda?", "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"},
+             "respuesta_correcta": "A", "explicacion": "Explicación suficientemente larga para pasar."},
+            {"pregunta_num": 1, "pregunta": "¿Primera?", "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"},
+             "respuesta_correcta": "A", "explicacion": "Explicación suficientemente larga para pasar."},
+        ]})
+        with patch("generador_preguntas_verificado.call_deepseek_api", return_value=respuesta):
+            candidatos = _generar_candidatos_lote(especificaciones, "AGE", None, "contexto")
+        assert candidatos[0]["pregunta"] == "¿Primera?"
+        assert candidatos[1]["pregunta"] == "¿Segunda?"
+
+    def test_generar_candidatos_lote_descarta_indice_repetido_en_vez_de_arriesgar_el_emparejamiento(self):
+        # Dos elementos con el MISMO pregunta_num=1: mejor perder esa
+        # posición que anclarla por error al texto legal de otra pregunta
+        # -- eso aprobaría en la verificación posterior una pregunta
+        # comparada contra el texto EQUIVOCADO.
+        especificaciones = [
+            {"anclas": [{"norma": "Ley A", "articulo": "Artículo 1", "texto_legal": "...", "etiqueta_subbloque": "s1"}],
+             "tipo_pregunta": "memoria_literal"},
+            {"anclas": [{"norma": "Ley B", "articulo": "Artículo 2", "texto_legal": "...", "etiqueta_subbloque": "s2"}],
+             "tipo_pregunta": "comprension"},
+        ]
+        respuesta = json.dumps({"preguntas": [
+            {"pregunta_num": 1, "pregunta": "¿Primera?", "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"},
+             "respuesta_correcta": "A", "explicacion": "Explicación suficientemente larga para pasar."},
+            {"pregunta_num": 1, "pregunta": "¿Duplicada?", "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"},
+             "respuesta_correcta": "A", "explicacion": "Explicación suficientemente larga para pasar."},
+        ]})
+        with patch("generador_preguntas_verificado.call_deepseek_api", return_value=respuesta):
+            candidatos = _generar_candidatos_lote(especificaciones, "AGE", None, "contexto")
+        assert candidatos[0]["pregunta"] == "¿Primera?"
+        assert candidatos[1] is None  # pregunta_num=2 nunca llegó
+
+    def test_generar_candidatos_lote_devuelve_todo_none_si_la_llamada_falla(self):
+        especificaciones = [
+            {"anclas": [{"norma": "Ley A", "articulo": "Artículo 1", "texto_legal": "...", "etiqueta_subbloque": "s1"}],
+             "tipo_pregunta": "memoria_literal"},
+        ] * 3
+        with patch("generador_preguntas_verificado.call_deepseek_api", return_value=None):
+            candidatos = _generar_candidatos_lote(especificaciones, "AGE", None, "contexto")
+        assert candidatos == [None, None, None]
+
+    def test_generar_lote_preguntas_verificadas_ancla_cada_pregunta_a_su_propio_tema(self):
+        subbloques_por_tema = {
+            "bloque_01-tema_01": [{"etiqueta": "s1", "titulo": "Ley A", "texto": "Artículo 1. Contenido A."}],
+            "bloque_02-tema_01": [{"etiqueta": "s2", "titulo": "Ley B", "texto": "Artículo 2. Contenido B."}],
+        }
+        huecos_lote = ["bloque_01-tema_01", "bloque_02-tema_01"]
+
+        def _mock(messages, **kwargs):
+            if "PREGUNTA A VERIFICAR" in messages[-1]["content"]:
+                return json.dumps({"valido": True, "problemas": []})
+            return json.dumps({"preguntas": [
+                {"pregunta_num": 1, "pregunta": "¿Pregunta del tema 1?",
+                 "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A",
+                 "explicacion": "Explicación suficientemente larga para pasar la validación."},
+                {"pregunta_num": 2, "pregunta": "¿Pregunta del tema 2?",
+                 "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A",
+                 "explicacion": "Explicación suficientemente larga para pasar la validación."},
+            ]})
+
+        with patch("generador_preguntas_verificado.call_deepseek_api", side_effect=_mock):
+            resultados = _generar_lote_preguntas_verificadas(
+                huecos_lote, subbloques_por_tema, "AGE",
+                subbloques_ya_usados=set(), preguntas_ya_aceptadas=set(), lock=threading.Lock(),
+            )
+        assert resultados[0]["tema_id"] == "bloque_01-tema_01"
+        assert resultados[0]["pregunta"] == "¿Pregunta del tema 1?"
+        assert resultados[1]["tema_id"] == "bloque_02-tema_01"
+        assert resultados[1]["pregunta"] == "¿Pregunta del tema 2?"
+
+    def test_generar_lote_preguntas_verificadas_un_fallo_de_verificacion_no_tira_el_resto(self):
+        # Si la verificación de UNA pregunta del lote falla (o revienta con
+        # una forma inesperada), las demás del mismo lote deben seguir
+        # aceptándose -- un lote no es "todo o nada".
+        subbloques_por_tema = {
+            "bloque_01-tema_01": [{"etiqueta": "s1", "titulo": "Ley A", "texto": "Artículo 1. Contenido A."}],
+            "bloque_02-tema_01": [{"etiqueta": "s2", "titulo": "Ley B", "texto": "Artículo 2. Contenido B."}],
+        }
+        huecos_lote = ["bloque_01-tema_01", "bloque_02-tema_01"]
+
+        def _mock(messages, **kwargs):
+            contenido = messages[-1]["content"]
+            if "PREGUNTA A VERIFICAR" in contenido:
+                if "tema 1" in contenido:
+                    return json.dumps({"valido": False, "problemas": ["no coincide con el texto"]})
+                return json.dumps({"valido": True, "problemas": []})
+            return json.dumps({"preguntas": [
+                {"pregunta_num": 1, "pregunta": "¿Pregunta del tema 1?",
+                 "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A",
+                 "explicacion": "Explicación suficientemente larga para pasar la validación."},
+                {"pregunta_num": 2, "pregunta": "¿Pregunta del tema 2?",
+                 "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A",
+                 "explicacion": "Explicación suficientemente larga para pasar la validación."},
+            ]})
+
+        with patch("generador_preguntas_verificado.call_deepseek_api", side_effect=_mock):
+            resultados = _generar_lote_preguntas_verificadas(
+                huecos_lote, subbloques_por_tema, "AGE",
+                subbloques_ya_usados=set(), preguntas_ya_aceptadas=set(), lock=threading.Lock(),
+            )
+        assert resultados[0] is None  # tema 1: verificación rechazada
+        assert resultados[1]["tema_id"] == "bloque_02-tema_01"  # tema 2: sobrevive igual
+
+    def test_generar_lote_preguntas_verificadas_verifica_en_paralelo_no_secuencial(self):
+        # Agrupar la GENERACIÓN en una sola llamada no debe mover el cuello
+        # de botella a la verificación: verificar las N preguntas del lote
+        # una detrás de otra tardaría tanto como las N llamadas de
+        # generación que se acaban de ahorrar agrupándolas.
+        import time
+        RETRASO = 0.05
+        subbloques_por_tema = {
+            f"bloque_0{i}-tema_01": [{"etiqueta": f"s{i}", "titulo": f"Ley {i}", "texto": f"Artículo {i}. Contenido {i}."}]
+            for i in range(1, 5)
+        }
+        huecos_lote = list(subbloques_por_tema.keys())
+
+        def _mock(messages, **kwargs):
+            contenido = messages[-1]["content"]
+            if "PREGUNTA A VERIFICAR" in contenido:
+                time.sleep(RETRASO)
+                return json.dumps({"valido": True, "problemas": []})
+            preguntas = [
+                {"pregunta_num": i, "pregunta": f"¿Pregunta {i}?",
+                 "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A",
+                 "explicacion": "Explicación suficientemente larga para pasar la validación."}
+                for i in range(1, 5)
+            ]
+            return json.dumps({"preguntas": preguntas})
+
+        with patch("generador_preguntas_verificado.call_deepseek_api", side_effect=_mock):
+            inicio = time.perf_counter()
+            resultados = _generar_lote_preguntas_verificadas(
+                huecos_lote, subbloques_por_tema, "AGE",
+                subbloques_ya_usados=set(), preguntas_ya_aceptadas=set(), lock=threading.Lock(),
+            )
+            duracion = time.perf_counter() - inicio
+
+        assert all(r is not None for r in resultados)
+        # Secuencial habría tardado 4 * RETRASO; en paralelo debe quedar muy
+        # por debajo (cota floja pero suficiente para distinguir "en
+        # paralelo" de "uno detrás de otro").
+        assert duracion < RETRASO * len(huecos_lote)
+
+    def test_generar_test_verificado_agrupa_temas_normativos_en_un_lote(self, db):
+        # Con varios temas normativos y cupo total <= TAMANO_LOTE_GENERACION,
+        # deben resolverse con UNA sola llamada de generación (no una por
+        # tema) -- se comprueba contando cuántas veces se ve "TEXTO LEGAL 1"
+        # en las llamadas (una única llamada de lote la trae; N llamadas
+        # individuales no traerían nunca "TEXTO LEGAL 2").
+        relleno = " ".join(["palabra"] * 30)
+        db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+            "titulo": "Ley A", "texto": f"Artículo 1. Contenido A. {relleno}"
+        })
+        db.sembrar(("Temario AGE", "bloque_02", "temas", "tema_01", "subbloques", "sub_1"), {
+            "titulo": "Ley B", "texto": f"Artículo 2. Contenido B. {relleno}"
+        })
+        db.sembrar(("Temario AGE", "bloque_03", "temas", "tema_01", "subbloques", "sub_1"), {
+            "titulo": "Ley C", "texto": f"Artículo 3. Contenido C. {relleno}"
+        })
+
+        contador = itertools.count()
+        lock_contador = threading.Lock()
+        llamadas_generacion = []
+
+        def _mock(messages, **kwargs):
+            contenido = messages[-1]["content"]
+            if "PREGUNTA A VERIFICAR" in contenido:
+                return json.dumps({"valido": True, "problemas": []})
+            llamadas_generacion.append(contenido)
+            n_lote = len(re.findall(r"TEXTO LEGAL \d+ --", contenido))
+            preguntas = []
+            for i in range(1, max(n_lote, 1) + 1):
+                with lock_contador:
+                    n = next(contador)
+                preguntas.append({
+                    "pregunta_num": i, "pregunta": f"¿Pregunta {n}?",
+                    "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A",
+                    "explicacion": "Explicación suficientemente larga para pasar la validación.",
+                })
+            return json.dumps({"preguntas": preguntas})
+
+        with patch("generador_preguntas_verificado.call_deepseek_api", side_effect=_mock), \
+             patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+            resultado = generar_test_verificado(
+                db, temas=["bloque_01-tema_01", "bloque_02-tema_01", "bloque_03-tema_01"], num_preguntas=3,
+                coleccion="Temario AGE", oposicion="AGE",
+            )
+
+        assert len(resultado["test"]) == 3
+        assert len(llamadas_generacion) == 1  # una sola llamada de generación para las 3
+        assert "TEXTO LEGAL 3" in llamadas_generacion[0]
+
+    def test_generar_test_verificado_no_agrupa_temas_descriptivos(self, db):
+        # Un tema sin "Artículo N." (ofimática/informática) debe seguir
+        # yendo por la vía individual, nunca dentro de un prompt de lote.
+        relleno = " ".join(["palabra"] * 30)
+        db.sembrar(("Temario AGE", "bloque_04", "temas", "tema_01", "subbloques", "sub_1"), {
+            "titulo": "Informática básica", "texto": f"El sistema operativo gestiona los recursos. {relleno}"
+        })
+
+        contador = itertools.count()
+        lock_contador = threading.Lock()
+        with patch("generador_preguntas_verificado.call_deepseek_api",
+                   side_effect=_mock_deepseek_siempre_valido(contador, lock_contador)), \
+             patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+            resultado = generar_test_verificado(
+                db, temas=["bloque_04-tema_01"], num_preguntas=2,
+                coleccion="Temario AGE", oposicion="AGE",
+            )
+        assert len(resultado["test"]) == 2
+
+
 def _mock_deepseek_siempre_valido(contador, lock_contador):
     def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None, model=None, contexto=None, stream=False, frequency_penalty=None):
         contenido_usuario = messages[-1]["content"]
         if "PREGUNTA A VERIFICAR" in contenido_usuario:
             return json.dumps({"valido": True, "problemas": []})
+        # Llamada de generación EN LOTE (ver TAMANO_LOTE_GENERACION): se
+        # reconoce por "TEXTO LEGAL N --" repetido, y hay que devolver
+        # exactamente ese mismo número de preguntas, cada una con su propio
+        # "pregunta_num" -- si no, _generar_candidatos_lote las descarta
+        # todas por no poder emparejarlas con su texto legal.
+        n_lote = len(re.findall(r"TEXTO LEGAL \d+ --", contenido_usuario))
+        if n_lote:
+            preguntas = []
+            for i in range(1, n_lote + 1):
+                with lock_contador:
+                    n = next(contador)
+                preguntas.append({
+                    "pregunta_num": i, "norma": "Ley 39/2015", "articulo": "Artículo 1",
+                    "tipo_pregunta": "memoria_literal", "pregunta": f"¿Pregunta única número {n}?",
+                    "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A",
+                    "explicacion": "Explicación suficientemente larga para superar la validación estructural.",
+                })
+            return json.dumps({"preguntas": preguntas})
         with lock_contador:
             n = next(contador)
         return _pregunta_valida(f"¿Pregunta única número {n}?")
@@ -391,6 +668,10 @@ def test_generar_test_verificado_sobrevive_a_un_fallo_inesperado_de_un_hueco(db)
     # ni propagar el error hacia arriba -- se cuenta como una más descartada,
     # pero el relleno (ver test siguiente) le da una oportunidad más y
     # recupera igualmente el número de preguntas pedido.
+    # _tema_es_normativo forzado a False: este test ejercita la vía
+    # INDIVIDUAL (_generar_pregunta_verificada, la que patchea), no el lote
+    # de generación (ver test_generar_lote... para la resiliencia dentro
+    # de un lote, un camino distinto con su propio try/except).
     relleno = " ".join(["palabra"] * 30)
     db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
         "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del subbloque. {relleno}"
@@ -416,6 +697,7 @@ def test_generar_test_verificado_sobrevive_a_un_fallo_inesperado_de_un_hueco(db)
 
     with patch("generador_preguntas_verificado._generar_pregunta_verificada",
                side_effect=_peta_la_primera_vez), \
+         patch("generador_preguntas_verificado._tema_es_normativo", return_value=False), \
          patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
         resultado = generar_test_verificado(
             db, temas=["bloque_01-tema_01"], num_preguntas=3,
@@ -435,6 +717,9 @@ def test_generar_test_verificado_rellena_hueco_agotado_con_otro_tema(db):
     # (aquí forzado devolviendo None, como cuando la verificación rechaza la
     # pregunta las 4 veces) no debe traducirse en menos preguntas de las
     # pedidas si otro tema todavía tiene contenido disponible.
+    # _tema_es_normativo forzado a False: este test ejercita la vía
+    # INDIVIDUAL (_generar_pregunta_verificada, la que patchea), no el lote
+    # de generación -- ver el comentario del test anterior.
     relleno = " ".join(["palabra"] * 30)
     db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
         "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del tema 1. {relleno}"
@@ -460,6 +745,7 @@ def test_generar_test_verificado_rellena_hueco_agotado_con_otro_tema(db):
 
     with patch("generador_preguntas_verificado._generar_pregunta_verificada",
                side_effect=_falla_siempre_el_tema_2), \
+         patch("generador_preguntas_verificado._tema_es_normativo", return_value=False), \
          patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
         resultado = generar_test_verificado(
             db, temas=["bloque_01-tema_01", "bloque_02-tema_01"], num_preguntas=2,
@@ -478,12 +764,16 @@ def test_generar_test_verificado_si_el_relleno_tambien_falla_avisa_del_numero_re
     # forzado para que todo falle), el relleno no debe insistir sin límite
     # ni fingir que llegó al número pedido -- se entrega lo que haya y se
     # avisa, igual que antes de que existiera el relleno.
+    # _tema_es_normativo forzado a False: este test ejercita la vía
+    # INDIVIDUAL (_generar_pregunta_verificada, la que patchea), no el lote
+    # de generación -- ver el comentario de los tests anteriores.
     relleno = " ".join(["palabra"] * 30)
     db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
         "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del tema. {relleno}"
     })
 
     with patch("generador_preguntas_verificado._generar_pregunta_verificada", return_value=None), \
+         patch("generador_preguntas_verificado._tema_es_normativo", return_value=False), \
          patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
         resultado = generar_test_verificado(
             db, temas=["bloque_01-tema_01"], num_preguntas=3,
