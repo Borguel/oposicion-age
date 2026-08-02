@@ -435,19 +435,26 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
                 messages=[{"role": "system", "content": system_gen}, {"role": "user", "content": user_gen}],
                 temperature=0.5,
                 contexto=f"tema={tema_id} tipo=generacion intento={_intento + 1}",
-                # max_tokens=3000: no es por razonamiento (deepseek-v4-flash
-                # no razona) -- se bajó a 1000 pensando que ya no hacía falta
-                # el margen usado para probar deepseek-v4-pro, pero eso
-                # causó una regresión real: los únicos tests que salieron
-                # limpios hoy (10/10 aceptadas, 0 descartes) se generaron
-                # con flash Y este margen alto, nunca con 1000. La hipótesis
-                # es que deepseek-v4-flash es simplemente más verboso que el
-                # antiguo deepseek-chat para el que 1000 se pensó
-                # originalmente. Ver el log "DeepSeek respondió en Xs (...
-                # finish_reason=...)" en deepseek_utils.py -- si nunca sale
-                # finish_reason == "length" con este margen, se puede volver
-                # a bajar con datos reales en vez de a ciegas.
-                max_tokens=3000,
+                # max_tokens=5000 (subido de 3000 el 02/08/2026, con datos
+                # reales de producción, no a ciegas): con 3000, la inmensa
+                # mayoría de las llamadas de generación truncaban a mitad del
+                # JSON (finish_reason == "length" con tokens_salida == 3000
+                # una y otra vez en el log "DeepSeek respondió en Xs..." de
+                # deepseek_utils.py) -- y no era un caso raro, sino casi
+                # sistemático: incluso las respuestas BUENAS (finish_reason
+                # == "stop", nunca truncadas) ya consumían hasta ~2950
+                # tokens con este mismo prompt, así que 3000 apenas dejaba
+                # margen real. El reintento por truncamiento (ver
+                # call_deepseek_api) ayuda ante un corte puntual, pero
+                # reintentar con el MISMO límite no arregla un corte
+                # sistemático -- solo dobla o triplica la latencia de ese
+                # hueco sin conseguir nada. 5000 da margen de sobra sobre
+                # esos ~2950 sin tocar el prompt (que ya pide explícitamente
+                # explicaciones breves, máximo 25-30 palabras por opción) --
+                # así no se sacrifica calidad para ganar velocidad. Si con
+                # datos reales se ve que finish_reason == "length" ha
+                # desaparecido del todo, se puede volver a ajustar a la baja.
+                max_tokens=5000,
                 response_format_json=True,
                 on_usage=on_usage,
                 model=_MODELO,
@@ -473,7 +480,11 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             verificacion_raw = call_deepseek_api(
                 messages=[{"role": "system", "content": system_ver}, {"role": "user", "content": user_ver}],
                 temperature=0.0,
-                max_tokens=2000,  # ver comentario de max_tokens en la llamada de generación de arriba
+                # max_tokens=3000 (subido de 2000 el 02/08/2026): mismo
+                # motivo que en la llamada de generación de arriba -- se vio
+                # en producción un truncamiento real también aquí
+                # (finish_reason == "length" con tokens_salida == 2000).
+                max_tokens=3000,
                 contexto=f"tema={tema_id} tipo=verificacion intento={_intento + 1}",
                 response_format_json=True,
                 on_usage=on_usage,
