@@ -455,6 +455,16 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
                 # datos reales se ve que finish_reason == "length" ha
                 # desaparecido del todo, se puede volver a ajustar a la baja.
                 max_tokens=5000,
+                # stream=True NO es para mostrar la pregunta poco a poco (aquí
+                # se espera igualmente al JSON completo antes de validarlo):
+                # es lo que evita que una generación larga muera con "Error de
+                # conexión". Con stream=false no viaja ningún byte mientras el
+                # modelo genera, y en producción (02/08/2026) TODA llamada que
+                # pasaba de ~30s se cortaba desde el otro lado -- justo las de
+                # este prompt, que a los ~110-130 tokens/s de deepseek-v4-flash
+                # cruzan ese muro en cuanto pasan de ~3300 tokens de salida.
+                # Ver _leer_respuesta_en_streaming en deepseek_utils.py.
+                stream=True,
                 response_format_json=True,
                 on_usage=on_usage,
                 model=_MODELO,
@@ -489,6 +499,7 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
                 # en una pregunta, "problemas" puede alargarse bastante).
                 max_tokens=4000,
                 contexto=f"tema={tema_id} tipo=verificacion intento={_intento + 1}",
+                stream=True,  # mismo motivo que en la generación de arriba
                 response_format_json=True,
                 on_usage=on_usage,
                 model=_MODELO,

@@ -63,6 +63,93 @@ _ESPERA_ENTRE_REINTENTOS_SEGUNDOS = 1.5
 _MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK = 8
 _semaforo_deepseek = threading.Semaphore(_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK)
 
+# Timeout de una llamada NO streaming: la respuesta entera tiene que llegar
+# dentro de este margen, porque con stream=false no se recibe ni un byte
+# hasta que el modelo ha terminado de generar.
+_TIMEOUT_RESPUESTA_COMPLETA = 30
+
+# Timeout de una llamada en STREAMING, como (conexión, lectura). El de
+# lectura NO es el tope de la respuesta entera, sino el máximo ENTRE dos
+# fragmentos consecutivos: una vez el modelo empieza a emitir, los
+# fragmentos llegan cada pocos milisegundos, así que en la práctica este
+# margen solo aplica al tiempo hasta el PRIMER fragmento. Por eso una
+# respuesta en streaming puede tardar 60s en total sin problema, mientras
+# que la misma respuesta sin streaming moriría a los ~30s (ver
+# _leer_respuesta_en_streaming).
+_TIMEOUT_STREAMING = (10, 60)
+
+_URL_DEEPSEEK = "https://api.deepseek.com/chat/completions"
+
+
+def _leer_respuesta_completa(headers, payload, timeout):
+    """Llamada clásica (stream=false): se espera a la respuesta entera y se
+    devuelve (contenido, finish_reason, usage). contenido es None -- y ya
+    queda logueado aquí -- si la respuesta no trae 'choices', un fallo de
+    forma que no se arregla reintentando."""
+    response = requests.post(_URL_DEEPSEEK, headers=headers, json=payload, timeout=timeout)
+    response.raise_for_status()  # Lanza excepción para códigos HTTP 4xx/5xx
+    data = response.json()
+    choices = data.get("choices") or []
+    if not choices:
+        logger.error("Respuesta inesperada de DeepSeek API: %s", data)
+        return None, None, data.get("usage")
+    return choices[0]["message"]["content"], choices[0].get("finish_reason"), data.get("usage")
+
+
+def _leer_respuesta_en_streaming(headers, payload, timeout):
+    """Misma llamada pero con stream=true, consumiendo el SSE entero aquí
+    dentro y devolviendo (contenido, finish_reason, usage) EXACTAMENTE con
+    la misma forma que _leer_respuesta_completa -- quien llama no nota la
+    diferencia, solo recibe el texto completo igual que antes.
+
+    El motivo no es mostrar la respuesta poco a poco (aquí no se cede nada
+    al llamante hasta tener el texto entero), sino que la conexión no se
+    quede muda: con stream=false no viaja NINGÚN byte entre la petición y
+    la respuesta terminada, y en producción (02/08/2026) se comprobó que
+    toda llamada que tardaba más de ~30s en generar moría con "Error de
+    conexión: no se pudo conectar a DeepSeek API" / "Response ended
+    prematurely" -- cortada desde el otro lado, no por nuestro timeout (un
+    timeout nuestro se registraría como Timeout, y ese mensaje no aparecía
+    nunca en los logs). La correlación era total: ninguna respuesta
+    completada por debajo de 30s falló, y ninguna por encima de 30s
+    sobrevivió. Con deepseek-v4-flash generando a ~110-130 tokens/s, ese
+    muro cae sobre los 3300-3900 tokens de salida, justo el tamaño de las
+    preguntas más largas del test personalizado. En streaming los
+    fragmentos van llegando continuamente desde el primer token, la
+    conexión nunca parece inactiva, y una respuesta de 45s se completa sin
+    problema."""
+    partes = []
+    finish_reason = None
+    usage = None
+    with requests.post(_URL_DEEPSEEK, headers=headers, json=payload, timeout=timeout, stream=True) as response:
+        response.raise_for_status()
+        for linea in response.iter_lines(decode_unicode=True):
+            if not linea or not linea.startswith("data: "):
+                continue
+            contenido_linea = linea[len("data: "):].strip()
+            if contenido_linea == "[DONE]":
+                break
+            try:
+                data = json.loads(contenido_linea)
+            except json.JSONDecodeError:
+                continue
+            # El chunk final (con stream_options.include_usage) trae usage y
+            # choices vacío -- de ahí que se lea antes de mirar choices.
+            if data.get("usage"):
+                usage = data["usage"]
+            choices = data.get("choices") or []
+            if not choices:
+                continue
+            fragmento = (choices[0].get("delta") or {}).get("content")
+            if fragmento:
+                partes.append(fragmento)
+            # finish_reason llega en el último chunk con contenido: se
+            # guarda para que el reintento por truncamiento ("length")
+            # siga funcionando igual que sin streaming.
+            if choices[0].get("finish_reason"):
+                finish_reason = choices[0]["finish_reason"]
+    return "".join(partes), finish_reason, usage
+
 
 def _registrar_coste(usage):
     """Contabiliza el consumo de tokens de una respuesta de DeepSeek en el
@@ -94,7 +181,7 @@ def _es_error_transitorio(exc):
     return False
 
 
-def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash", contexto=None):
+def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash", contexto=None, stream=False):
     """
     Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.
 
@@ -130,6 +217,16 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     medias) para que el llamante lo trate como un intento fallido más, en
     vez de que un json.loads() posterior falle en silencio sin dejar
     ningún rastro de que la causa real fue un límite de tokens.
+
+    stream=True hace la llamada en streaming pero SIN cambiar en nada lo
+    que recibe quien llama: el SSE se consume entero aquí dentro y se
+    devuelve el mismo texto completo de siempre (ver
+    _leer_respuesta_en_streaming). No es para pintar la respuesta poco a
+    poco -- es la forma de que una respuesta que tarda más de ~30s en
+    generarse no muera con "Error de conexión" por tener la conexión muda
+    mientras el modelo piensa. Recomendado para cualquier llamada que
+    pueda pasar de ~3000 tokens de salida; innecesario (y sin ventaja)
+    para respuestas cortas.
     """
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
@@ -146,8 +243,12 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
         "model": model,
         "messages": messages,
         "max_tokens": max_tokens,
-        "stream": False
+        "stream": stream
     }
+    if stream:
+        # Pide que el último chunk del stream incluya el consumo de tokens:
+        # sin esto, una llamada en streaming no podría contabilizar coste.
+        payload["stream_options"] = {"include_usage": True}
     if model != "deepseek-reasoner":
         payload["temperature"] = temperature
     if response_format_json:
@@ -164,70 +265,76 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     intentos_restantes = _REINTENTOS_TRANSITORIOS
     while True:
         try:
+            # Todo el consumo de la respuesta ocurre DENTRO del semáforo: en
+            # streaming la llamada no termina al recibir las cabeceras, sino
+            # al agotar el stream, así que soltar el hueco antes dejaría
+            # muchas más llamadas realmente en vuelo que las permitidas.
             with _semaforo_deepseek:
-                response = requests.post(
-                    "https://api.deepseek.com/chat/completions",
-                    headers=headers,
-                    json=payload,
-                    timeout=30  # 30 segundos de timeout
-                )
+                if stream:
+                    contenido, finish_reason, usage = _leer_respuesta_en_streaming(
+                        headers, payload, _TIMEOUT_STREAMING)
+                else:
+                    contenido, finish_reason, usage = _leer_respuesta_completa(
+                        headers, payload, _TIMEOUT_RESPUESTA_COMPLETA)
 
-            response.raise_for_status()  # Lanza excepción para códigos HTTP 4xx/5xx
-
-            data = response.json()
             # Si nos pasan on_usage (llamadas dentro de hilos, que no ven
             # flask.g) se lo entregamos ahí; si no, se contabiliza contra la
             # petición actual como de costumbre.
             if on_usage is not None:
                 try:
-                    on_usage(data.get("usage"))
+                    on_usage(usage)
                 except Exception:
                     pass
             else:
-                _registrar_coste(data.get("usage"))
+                _registrar_coste(usage)
 
-            # Verificar que la respuesta tiene la estructura esperada
-            if 'choices' in data and len(data['choices']) > 0:
-                # finish_reason/tokens_salida: para comprobar con datos reales
-                # (no adivinando) si max_tokens se está quedando corto --
-                # "length" significa que la respuesta se cortó antes de que
-                # el modelo terminara por sí solo, candidato real a JSON
-                # incompleto/descartado; "stop" significa que el modelo
-                # terminó por su cuenta bien dentro del límite.
-                finish_reason = data['choices'][0].get('finish_reason')
-                logger.info(
-                    "DeepSeek respondió en %.2fs (modelo=%s, finish_reason=%s, tokens_salida=%s)%s",
-                    time.monotonic() - inicio, model, finish_reason,
-                    (data.get('usage') or {}).get('completion_tokens'), sufijo_contexto,
-                )
-                if finish_reason == "length":
-                    # Truncado a mitad de respuesta: nunca se devuelve el
-                    # JSON a medias (el llamante solo lo descartaría igual
-                    # al fallar el parseo, sin dejar rastro claro de por
-                    # qué). Se trata como un fallo transitorio más: mismo
-                    # backoff y mismo tope de reintentos que timeout/conexión.
-                    if intentos_restantes > 0:
-                        intentos_restantes -= 1
-                        logger.warning(
-                            "DeepSeek truncó la respuesta (finish_reason=length, max_tokens=%s)%s -- "
-                            "reintentando (quedan %d intentos)",
-                            max_tokens, sufijo_contexto, intentos_restantes,
-                        )
-                        time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
-                        continue
-                    logger.warning(
-                        "DeepSeek siguió truncando la respuesta tras agotar los reintentos "
-                        "(finish_reason=length, max_tokens=%s)%s -- se descarta este intento",
-                        max_tokens, sufijo_contexto,
-                    )
-                    return None
-                return data['choices'][0]['message']['content']
-            else:
-                logger.error("Respuesta inesperada de DeepSeek API: %s", data)
+            # contenido None == respuesta sin 'choices' (ya logueada dentro
+            # del lector): un fallo de forma, no se arregla reintentando.
+            if contenido is None:
                 return None
 
+            # finish_reason/tokens_salida: para comprobar con datos reales
+            # (no adivinando) si max_tokens se está quedando corto --
+            # "length" significa que la respuesta se cortó antes de que
+            # el modelo terminara por sí solo, candidato real a JSON
+            # incompleto/descartado; "stop" significa que el modelo
+            # terminó por su cuenta bien dentro del límite. modo= permite
+            # confirmar de un vistazo en los logs si una llamada concreta
+            # fue en streaming o no.
+            logger.info(
+                "DeepSeek respondió en %.2fs (modelo=%s, finish_reason=%s, tokens_salida=%s, modo=%s)%s",
+                time.monotonic() - inicio, model, finish_reason,
+                (usage or {}).get('completion_tokens'),
+                "streaming" if stream else "completo", sufijo_contexto,
+            )
+            if finish_reason == "length":
+                # Truncado a mitad de respuesta: nunca se devuelve el
+                # JSON a medias (el llamante solo lo descartaría igual
+                # al fallar el parseo, sin dejar rastro claro de por
+                # qué). Se trata como un fallo transitorio más: mismo
+                # backoff y mismo tope de reintentos que timeout/conexión.
+                if intentos_restantes > 0:
+                    intentos_restantes -= 1
+                    logger.warning(
+                        "DeepSeek truncó la respuesta (finish_reason=length, max_tokens=%s)%s -- "
+                        "reintentando (quedan %d intentos)",
+                        max_tokens, sufijo_contexto, intentos_restantes,
+                    )
+                    time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
+                    continue
+                logger.warning(
+                    "DeepSeek siguió truncando la respuesta tras agotar los reintentos "
+                    "(finish_reason=length, max_tokens=%s)%s -- se descarta este intento",
+                    max_tokens, sufijo_contexto,
+                )
+                return None
+            return contenido
+
         except requests.exceptions.Timeout:
-            logger.warning("Timeout: la API de DeepSeek no respondió en 30 segundos%s", sufijo_contexto)
+            logger.warning(
+                "Timeout: la API de DeepSeek no respondió a tiempo (%s)%s",
+                "streaming" if stream else "sin streaming, 30 segundos", sufijo_contexto,
+            )
             transitorio = True
 
         except requests.exceptions.ConnectionError:

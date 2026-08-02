@@ -182,6 +182,106 @@ def test_contexto_se_incluye_en_el_log_de_truncamiento(monkeypatch, caplog):
     assert any("tema=bloque_01-tema_02 tipo=generacion" in r.message for r in caplog.records)
 
 
+def _respuesta_sse(lineas_sse, status_code=200):
+    """Mock de una respuesta en streaming (SSE) para call_deepseek_api con
+    stream=True: soporta el uso como context manager
+    ('with requests.post(...) as response') que usa
+    _leer_respuesta_en_streaming, igual que _respuesta_stream más abajo
+    (usada por call_deepseek_api_stream) -- duplicada aquí, no reutilizada,
+    porque esa vive más adelante en el archivo y esta zona del archivo
+    prueba una función distinta con su propio contrato."""
+    mock = MagicMock()
+    mock.status_code = status_code
+    mock.raise_for_status.return_value = None
+    mock.iter_lines.return_value = iter(lineas_sse)
+    mock.__enter__.return_value = mock
+    mock.__exit__.return_value = False
+    return mock
+
+
+class TestCallDeepseekApiStreamInterno:
+    """call_deepseek_api(..., stream=True): la llamada en streaming NO
+    cambia el contrato con quien llama (sigue devolviendo el texto
+    completo de una vez, no fragmentos) -- solo evita que una respuesta
+    larga (más de ~30s generándose) muera con "Error de conexión" por
+    tener la conexión muda mientras dura la generación (ver
+    _leer_respuesta_en_streaming en deepseek_utils.py, añadido 02/08/2026
+    con datos reales de producción)."""
+
+    def test_incluye_stream_true_y_stream_options_en_el_payload(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        lineas = ['data: {"choices": [{"delta": {"content": "hola"}, "finish_reason": "stop"}]}', "data: [DONE]"]
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_sse(lineas)) as mock_post:
+            deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], stream=True)
+        payload_enviado = mock_post.call_args.kwargs["json"]
+        assert payload_enviado["stream"] is True
+        assert payload_enviado["stream_options"] == {"include_usage": True}
+
+    def test_sin_stream_el_payload_no_lleva_stream_options(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+            deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
+        payload_enviado = mock_post.call_args.kwargs["json"]
+        assert payload_enviado["stream"] is False
+        assert "stream_options" not in payload_enviado
+
+    def test_acumula_los_fragmentos_y_devuelve_el_texto_completo(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        lineas = [
+            'data: {"choices": [{"delta": {"content": "Hola "}}]}',
+            'data: {"choices": [{"delta": {"content": "mundo"}, "finish_reason": "stop"}]}',
+            'data: {"choices": [], "usage": {"completion_tokens": 42}}',
+            "data: [DONE]",
+        ]
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_sse(lineas)):
+            resultado = deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], stream=True)
+        assert resultado == "Hola mundo"
+
+    def test_reintenta_si_finish_reason_es_length_igual_que_sin_streaming(self, monkeypatch):
+        # Mismo criterio de reintento por truncamiento que la llamada
+        # clásica: el finish_reason del último chunk con contenido decide,
+        # no un status HTTP -- aquí también SIEMPRE es 200.
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        lineas_truncadas = [
+            'data: {"choices": [{"delta": {"content": "a medi"}, "finish_reason": "length"}]}',
+            "data: [DONE]",
+        ]
+        lineas_completas = [
+            'data: {"choices": [{"delta": {"content": "completa"}, "finish_reason": "stop"}]}',
+            "data: [DONE]",
+        ]
+        with patch("deepseek_utils.requests.post", side_effect=[
+            _respuesta_sse(lineas_truncadas), _respuesta_sse(lineas_completas),
+        ]) as mock_post, patch("deepseek_utils.time.sleep"):
+            resultado = deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], stream=True)
+        assert resultado == "completa"
+        assert mock_post.call_count == 2
+
+    def test_captura_el_usage_del_ultimo_chunk_para_on_usage(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        lineas = [
+            'data: {"choices": [{"delta": {"content": "x"}, "finish_reason": "stop"}]}',
+            'data: {"choices": [], "usage": {"completion_tokens": 99, "total_tokens": 150}}',
+            "data: [DONE]",
+        ]
+        usages_capturados = []
+        with patch("deepseek_utils.requests.post", return_value=_respuesta_sse(lineas)):
+            deepseek_utils.call_deepseek_api(
+                messages=[{"role": "user", "content": "hola"}], stream=True, on_usage=usages_capturados.append
+            )
+        assert usages_capturados == [{"completion_tokens": 99, "total_tokens": 150}]
+
+    def test_reintenta_ante_fallo_de_conexion_igual_que_sin_streaming(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        lineas = ['data: {"choices": [{"delta": {"content": "ok"}, "finish_reason": "stop"}]}', "data: [DONE]"]
+        with patch("deepseek_utils.requests.post", side_effect=[
+            requests.exceptions.ConnectionError(), _respuesta_sse(lineas),
+        ]) as mock_post, patch("deepseek_utils.time.sleep"):
+            resultado = deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], stream=True)
+        assert resultado == "ok"
+        assert mock_post.call_count == 2
+
+
 def test_limita_las_llamadas_simultaneas_a_deepseek(monkeypatch):
     # Bug real de producción: sin límite compartido, generar un test de 30
     # preguntas desde PDF puede disparar hasta ~48 llamadas en paralelo (8
