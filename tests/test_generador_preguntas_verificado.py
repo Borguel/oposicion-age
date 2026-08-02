@@ -11,6 +11,7 @@ import threading
 from unittest.mock import patch
 
 from generador_preguntas_verificado import (
+    MAX_RONDAS_RELLENO,
     _extraer_articulos,
     _elegir_ancla_legal,
     _generar_pregunta_verificada,
@@ -287,7 +288,7 @@ def test_fallo_inesperado_en_un_intento_consume_solo_ese_intento():
 
 
 def _mock_deepseek_siempre_valido(contador, lock_contador):
-    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None, model=None, contexto=None, stream=False):
+    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None, model=None, contexto=None, stream=False, frequency_penalty=None):
         contenido_usuario = messages[-1]["content"]
         if "PREGUNTA A VERIFICAR" in contenido_usuario:
             return json.dumps({"valido": True, "problemas": []})
@@ -490,9 +491,11 @@ def test_generar_test_verificado_si_el_relleno_tambien_falla_avisa_del_numero_re
         )
 
     assert len(resultado["test"]) == 0
-    # 3 huecos originales + 3 intentos de relleno (uno por hueco que faltaba)
-    # -- el relleno también cuenta como descartada cuando falla de verdad.
-    assert resultado["descartadas"] == 6
+    # 3 huecos originales + MAX_RONDAS_RELLENO rondas de relleno (3 intentos
+    # cada una, porque sigue faltando el total las 3 rondas) -- el relleno
+    # también cuenta como descartada cuando falla de verdad, y se detiene
+    # solo tras agotar las rondas, nunca insiste sin límite.
+    assert resultado["descartadas"] == 3 + 3 * MAX_RONDAS_RELLENO
     assert "advertencia" in resultado
     assert "0 de 3" in resultado["advertencia"]
 

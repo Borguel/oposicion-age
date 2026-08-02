@@ -181,7 +181,7 @@ def _es_error_transitorio(exc):
     return False
 
 
-def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash", contexto=None, stream=False):
+def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash", contexto=None, stream=False, frequency_penalty=None):
     """
     Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.
 
@@ -227,6 +227,21 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     mientras el modelo piensa. Recomendado para cualquier llamada que
     pueda pasar de ~3000 tokens de salida; innecesario (y sin ventaja)
     para respuestas cortas.
+
+    frequency_penalty (opcional, None por defecto = no se manda -- se
+    respeta el valor por defecto de la propia API): penaliza repetir
+    tokens ya usados, el antídoto estándar contra que el modelo entre en
+    un bucle de repetición y no emita nunca su propio stop token. Datos
+    reales de producción (02/08/2026): se veían llamadas -- incluso de
+    VERIFICACIÓN, con temperature=0.0 -- que se truncaban al llegar
+    EXACTAMENTE a max_tokens en dos intentos seguidos con el mismo input
+    (4000/4000 ambas veces). Con temperature=0 eso es casi determinista:
+    si de verdad necesitara más espacio, subir max_tokens lo arreglaría
+    sin más -- pero subirlo de 3000 a 5000 solo desplazó el mismo patrón
+    más arriba (ver la nota de max_tokens en
+    generador_preguntas_verificado.py), la firma clásica de una
+    generación que se repite en vez de terminar. Se recomienda para
+    cualquier llamada de generación/verificación estructurada como esta.
     """
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
@@ -253,6 +268,8 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
         payload["temperature"] = temperature
     if response_format_json:
         payload["response_format"] = {"type": "json_object"}
+    if frequency_penalty is not None:
+        payload["frequency_penalty"] = frequency_penalty
 
     # Cronómetro de TODA la llamada (incluidos los reintentos internos de
     # abajo): permite ver en los logs de Render cuánto tarda de verdad
@@ -315,10 +332,26 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
                 # backoff y mismo tope de reintentos que timeout/conexión.
                 if intentos_restantes > 0:
                     intentos_restantes -= 1
+                    # Sube la temperatura para EL REINTENTO (nunca la
+                    # llamada original) en vez de repetir exactamente la
+                    # misma petición: con temperature=0.0 (verificación)
+                    # reintentar tal cual es casi inútil -- es
+                    # determinista, así que reproduce el mismo bucle de
+                    # repetición y vuelve a truncarse en el mismo punto
+                    # (visto en producción el 02/08/2026: 4000/4000 tokens
+                    # en dos intentos seguidos del mismo input). Subir la
+                    # temperatura le da al reintento una probabilidad real
+                    # de tomar un camino de generación distinto que sí
+                    # termine solo. Tope 0.9 -- no hace falta más para
+                    # romper un bucle, y una temperatura demasiado alta
+                    # perjudicaría la precisión jurídica que exige este
+                    # generador.
+                    if model != "deepseek-reasoner":
+                        payload["temperature"] = min(payload.get("temperature", temperature) + 0.3, 0.9)
                     logger.warning(
                         "DeepSeek truncó la respuesta (finish_reason=length, max_tokens=%s)%s -- "
-                        "reintentando (quedan %d intentos)",
-                        max_tokens, sufijo_contexto, intentos_restantes,
+                        "reintentando con temperature=%s (quedan %d intentos)",
+                        max_tokens, sufijo_contexto, payload.get("temperature"), intentos_restantes,
                     )
                     time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
                     continue

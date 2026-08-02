@@ -169,6 +169,51 @@ def test_deja_de_reintentar_tras_agotar_los_intentos_por_truncamiento(monkeypatc
     assert mock_post.call_count == 3  # 1 intento inicial + 2 reintentos, nunca más
 
 
+def test_reintento_por_truncamiento_sube_la_temperature(monkeypatch):
+    # Con temperature=0.0 (verificación), reintentar con la MISMA petición
+    # es casi inútil: es determinista, así que reproduce el mismo bucle de
+    # repetición y vuelve a truncarse en el mismo punto (visto en
+    # producción el 02/08/2026 -- mismo input, dos intentos seguidos,
+    # ambos truncados exactamente en el mismo número de tokens). Subir la
+    # temperature SOLO en el reintento le da una probabilidad real de
+    # tomar un camino de generación distinto que sí termine solo.
+    #
+    # payload es el MISMO dict mutado entre reintentos (no una copia por
+    # llamada), así que hay que capturar la temperature en el momento
+    # exacto de cada llamada real -- inspeccionar mock_post.call_args_list
+    # DESPUÉS de que todo termine vería siempre el valor final mutado en
+    # las dos entradas, no la evolución real.
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    temperaturas_por_llamada = []
+    respuestas = iter([
+        _respuesta_finish_reason('{"a": "b medi', "length"),
+        _respuesta_finish_reason('{"a": "b completa"}', "stop"),
+    ])
+
+    def fake_post(*args, **kwargs):
+        temperaturas_por_llamada.append(kwargs["json"]["temperature"])
+        return next(respuestas)
+
+    with patch("deepseek_utils.requests.post", side_effect=fake_post), patch("deepseek_utils.time.sleep"):
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], temperature=0.0)
+    assert temperaturas_por_llamada[0] == 0.0
+    assert temperaturas_por_llamada[1] > 0.0
+
+
+def test_frequency_penalty_se_incluye_en_el_payload_si_se_pasa(monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], frequency_penalty=0.4)
+    assert mock_post.call_args.kwargs["json"]["frequency_penalty"] == 0.4
+
+
+def test_sin_frequency_penalty_no_se_incluye_en_el_payload(monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
+    assert "frequency_penalty" not in mock_post.call_args.kwargs["json"]
+
+
 def test_contexto_se_incluye_en_el_log_de_truncamiento(monkeypatch, caplog):
     import logging
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")

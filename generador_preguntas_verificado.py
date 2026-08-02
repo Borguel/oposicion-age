@@ -48,6 +48,21 @@ from errores_generacion import registrar_error_generacion
 logger = logging.getLogger(__name__)
 
 MAX_INTENTOS_POR_PREGUNTA = 4
+
+# Tope de RONDAS de relleno (ver el final de generar_test_verificado): una
+# única pasada de relleno dejaba el test corto de verdad en producción
+# (02/08/2026: pedir 10 devolvía 8, pedir 20 devolvía 18) cuando algún
+# hueco de relleno tenía a su vez mala suerte -- exactamente el mismo
+# riesgo que ya se acepta para el primer hueco, solo que sin una segunda
+# oportunidad. Repetir el relleno hasta completar el número pedido (o
+# agotar las rondas) es la única forma de sostener "nunca menos preguntas
+# de las pedidas" frente a mala suerte repetida, no solo puntual. Acotado
+# (no un bucle infinito) porque un tema realmente sin más contenido
+# disponible no va a "tener suerte" a la ronda 10 -- si tras
+# MAX_RONDAS_RELLENO rondas sigue faltando, es que de verdad no hay más
+# que ofrecer, y toca avisar en vez de reintentar para siempre.
+MAX_RONDAS_RELLENO = 3
+
 # Subido de 6 a 10 (25/07/2026) y a 15 (26/07/2026): deepseek-v4-flash es
 # barato por token, así que más llamadas en paralelo reduce el tiempo total
 # de generación sin encarecerla apenas -- el cuello de botella es la
@@ -465,6 +480,15 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
                 # cruzan ese muro en cuanto pasan de ~3300 tokens de salida.
                 # Ver _leer_respuesta_en_streaming en deepseek_utils.py.
                 stream=True,
+                # frequency_penalty=0.4 (02/08/2026, con datos reales): se
+                # veían truncamientos que no eran por falta de margen --
+                # subir max_tokens de 3000 a 5000 solo desplazó el mismo
+                # patrón más arriba en vez de arreglarlo, la firma de una
+                # generación que se repite en vez de terminar sola. Esto
+                # penaliza repetir tokens ya usados, el antídoto estándar
+                # contra ese bucle. Ver el comentario largo en
+                # deepseek_utils.call_deepseek_api.
+                frequency_penalty=0.4,
                 response_format_json=True,
                 on_usage=on_usage,
                 model=_MODELO,
@@ -500,6 +524,14 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
                 max_tokens=4000,
                 contexto=f"tema={tema_id} tipo=verificacion intento={_intento + 1}",
                 stream=True,  # mismo motivo que en la generación de arriba
+                # frequency_penalty=0.4: mismo motivo que en la generación de
+                # arriba. Especialmente importante aquí -- con temperature=0.0
+                # (determinista) se vio en producción el mismo input
+                # truncarse dos veces SEGUIDAS en el mismo punto exacto
+                # (4000/4000 tokens): sin este freno a la repetición, un
+                # reintento en temperatura 0 tiene muchas más papeletas de
+                # reproducir el mismo bucle en vez de romperlo.
+                frequency_penalty=0.4,
                 response_format_json=True,
                 on_usage=on_usage,
                 model=_MODELO,
@@ -677,10 +709,13 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
 
     # Relleno: si algún hueco agotó sus MAX_INTENTOS_POR_PREGUNTA honestamente
     # (nunca se relaja la verificación para llegar al número pedido), se le da
-    # una oportunidad más por cada uno que falte, en OTRO tema con contenido
+    # otra oportunidad por cada uno que falte, en OTRO tema con contenido
     # disponible (rotando entre los elegidos) -- para que "hay temario de
     # sobra" no se traduzca en menos preguntas de las pedidas solo porque a
-    # un hueco concreto le tocó mala suerte con sus intentos.
+    # un hueco concreto le tocó mala suerte con sus intentos. Ver
+    # MAX_RONDAS_RELLENO arriba: esto se repite en bucle (acotado) mientras
+    # sigan faltando preguntas, no una única pasada -- una sola pasada podía
+    # a su vez tener mala suerte y dejar el test corto de verdad.
     #
     # EN PARALELO (antes era un "for" secuencial, con el mismo razonamiento
     # de "no merece la pena otro ThreadPoolExecutor para 1-2 preguntas" que
@@ -697,7 +732,9 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     # 'descartadas'/'completadas' y la llamada a on_progreso, que se hacen
     # aquí en el hilo principal según van llegando los resultados (as_completed),
     # nunca dentro de los hilos del pool.
-    if len(preguntas) < num_preguntas and temas_con_contenido:
+    rondas_relleno = 0
+    while len(preguntas) < num_preguntas and temas_con_contenido and rondas_relleno < MAX_RONDAS_RELLENO:
+        rondas_relleno += 1
         faltan = num_preguntas - len(preguntas)
         ciclo_temas = itertools.cycle(temas_con_contenido)
         tids_relleno = [next(ciclo_temas) for _ in range(faltan)]
@@ -728,6 +765,11 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                         "completadas": completadas, "total": total, "aceptadas": len(preguntas),
                         "pregunta": resultado,
                     })
+        if len(preguntas) < num_preguntas:
+            logger.warning(
+                "Relleno ronda %d/%d: siguen faltando %d/%d preguntas tras esta ronda (temas: %s)",
+                rondas_relleno, MAX_RONDAS_RELLENO, num_preguntas - len(preguntas), num_preguntas, temas_unicos,
+            )
 
     # Con uid (Test Personalizado): la generación corre en un hilo de fondo
     # desligado de la petición, así que se vuelca DIRECTO a Firestore. Sin uid
@@ -741,8 +783,8 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     if len(preguntas) < num_preguntas:
         resultado_final["advertencia"] = (
             f"Se generaron {len(preguntas)} de {num_preguntas} preguntas -- el resto no llegó a superar "
-            "la verificación de calidad tras varios intentos (incluyendo un intento de relleno en otro "
-            "tema) y se descartó en vez de entregarse sin validar."
+            f"la verificación de calidad tras varios intentos (incluyendo {MAX_RONDAS_RELLENO} rondas de "
+            "relleno en otros temas) y se descartó en vez de entregarse sin validar."
         )
     # Sin este log, un test que entrega menos preguntas de las pedidas no
     # deja NINGÚN rastro en los logs (los descartes por no superar la
