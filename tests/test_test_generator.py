@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 from test_generator import (
     generar_preguntas_ia_en_lotes, MAX_INTENTOS_POR_PREGUNTA_PDF, _verificar_pregunta, _verificar_lote,
-    _claves_dedup,
+    _claves_dedup, _fragmentos_por_lote,
 )
 
 
@@ -420,13 +420,20 @@ class TestGenerarPreguntasIaEnLotes:
         # 2 lotes, cada uno pide su generación una sola vez (todo se acepta
         # a la primera, sin recambios ni relleno): 2 llamadas a
         # construir_prompt, cada una con un fragmento no vacío, DISTINTO
-        # entre sí, ninguno el documento completo, y ambos contenidos
-        # dentro del documento original.
+        # entre sí y distinto del documento completo. El reparto es
+        # INTERCALADO por párrafo (ver _fragmentos_por_lote), no contiguo,
+        # así que cada fragmento ya no es necesariamente una subcadena
+        # literal del original -- se comprueba en su lugar que cada
+        # PÁRRAFO de cada fragmento SÍ viene del documento original, y que
+        # entre los dos fragmentos se reparten los 4 párrafos sin perder
+        # ninguno.
         assert len(fragmentos_recibidos) == 2
         assert all(f is not None for f in fragmentos_recibidos)
         assert fragmentos_recibidos[0] != fragmentos_recibidos[1]
         assert all(f != texto_largo for f in fragmentos_recibidos)
-        assert all(f in texto_largo for f in fragmentos_recibidos)
+        parrafos_originales = [p for p in texto_largo.split("\n\n") if p.strip()]
+        parrafos_repartidos = [p for f in fragmentos_recibidos for p in f.split("\n\n")]
+        assert sorted(parrafos_repartidos) == sorted(parrafos_originales)
 
     def test_dedupe_tambien_por_respuesta_correcta_larga(self):
         # Bug real: 4 preguntas sobre "la duración del mandato del
@@ -805,3 +812,51 @@ class TestGenerarPreguntasIaEnLotes:
         assert len(preguntas) == 5
         assert errores == []
         assert llamadas["total"] == 2
+
+
+class TestFragmentosPorLote:
+    def test_reparto_intercalado_cada_fragmento_abarca_todo_el_documento(self):
+        # Bug real de producción (02/08/2026): con el reparto CONTIGUO
+        # anterior, el primer lote se llevaba literalmente el primer tramo
+        # del documento -- si esa zona trataba un único tema (un caso real:
+        # varios artículos seguidos, todos sobre la invalidez de los actos
+        # administrativos), las primeras preguntas que veía el usuario con
+        # el arranque temprano salían TODAS de ese mismo tema. Aquí, con 8
+        # párrafos (uno por "TEMA") y 4 lotes, cada fragmento debe contener
+        # párrafos de TODO el documento -- del principio, la mitad y el
+        # final -- no solo un tramo contiguo.
+        relleno = "Frase de relleno para simular contenido real del documento. " * 5
+        parrafos_originales = [f"TEMA {i}. {relleno}" for i in range(8)]
+        texto = "\n\n".join(parrafos_originales)
+        assert len(texto) >= 4 * 400  # por encima del umbral de fragmentación
+
+        fragmentos = _fragmentos_por_lote(texto, 4)
+
+        assert len(fragmentos) == 4
+        # Ningún fragmento debe limitarse a un tramo contiguo (p.ej. "TEMA 0"
+        # y "TEMA 1" solamente) -- cada uno se lleva every-4º párrafo, así
+        # que el primer fragmento contiene el primer Y el último tema.
+        assert "TEMA 0" in fragmentos[0] and "TEMA 4" in fragmentos[0]
+        assert "TEMA 1" in fragmentos[1] and "TEMA 5" in fragmentos[1]
+        # Entre los 4 fragmentos se reparten los 8 párrafos sin perder ni
+        # duplicar ninguno.
+        parrafos_repartidos = [p for f in fragmentos for p in f.split("\n\n")]
+        assert sorted(parrafos_repartidos) == sorted(parrafos_originales)
+
+    def test_documento_con_pocos_parrafos_cae_al_reparto_contiguo(self):
+        # Con menos del doble de párrafos que lotes, el reparto intercalado
+        # dejaría lotes vacíos o casi vacíos -- se cae al reparto contiguo
+        # de siempre en vez de eso.
+        texto = "Una sola línea muy larga sin dobles saltos de párrafo. " * 20
+        assert len(texto) >= 2 * 400
+
+        fragmentos = _fragmentos_por_lote(texto, 2)
+
+        assert len(fragmentos) == 2
+        assert all(f is not None for f in fragmentos)
+        assert all(f in texto for f in fragmentos)  # reparto contiguo: subcadena literal
+
+    def test_documento_corto_o_un_solo_lote_no_fragmenta(self):
+        assert _fragmentos_por_lote("Texto corto.", 3) == [None, None, None]
+        assert _fragmentos_por_lote("Texto." * 200, 1) == [None]
+        assert _fragmentos_por_lote(None, 3) == [None, None, None]

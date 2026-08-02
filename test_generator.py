@@ -310,14 +310,38 @@ def _fragmentos_por_lote(texto_fuente, n_lotes):
     "duración del mandato del Presidente..." repetida en 8 de 20 preguntas
     de un mismo test).
 
-    Con documentos cortos, un solo lote, o sin texto_fuente, dividir no
-    compensa (puede dejar algún fragmento sin contenido suficiente para
-    generar preguntas de calidad): se devuelve None en cada posición, y el
-    llamante entonces usa el documento completo tal cual (sin pasar
-    'fragmento' a construir_prompt, para no romper compatibilidad con
-    construir_prompt(n) de un solo argumento)."""
+    Reparto INTERCALADO por párrafos (02/08/2026, bug real), no por tramos
+    contiguos: con el reparto contiguo anterior (el lote 1 se llevaba
+    literalmente el primer tramo del documento, el lote 2 el segundo...),
+    si esa primera zona trataba un único tema (p.ej. varios artículos
+    seguidos, todos sobre lo mismo -- la invalidez de los actos
+    administrativos, en un caso real), las primeras preguntas que ve el
+    usuario con el arranque temprano (num_preguntas > 5, ver
+    generar_preguntas_ia_en_lotes) podían salir TODAS de ese mismo tema
+    -- sensación real reportada de "todo pregunta de lo mismo" al empezar,
+    aunque el test completo sí acabara cubriendo temas distintos. Da igual
+    qué lote termine antes: si cada uno recibe una every-n_lotes selección
+    de párrafos (el lote 0 se lleva los párrafos 0, n_lotes, 2*n_lotes...,
+    el lote 1 los 1, n_lotes+1...), CADA fragmento por separado ya abarca
+    todo el documento de punta a punta, así que ningún lote puede
+    monopolizar un único tramo temático.
+
+    Con documentos cortos, un solo lote, sin texto_fuente, o con pocos
+    saltos de párrafo reales (menos del doble de n_lotes -- p.ej. texto
+    extraído de un PDF en pocas líneas largas, sin dobles saltos), el
+    reparto por párrafo dejaría lotes vacíos o casi vacíos: se cae al
+    reparto contiguo de siempre (mejor que nada) o, si ni eso compensa
+    (documento corto/un solo lote), se devuelve None en cada posición y el
+    llamante usa el documento completo tal cual (sin pasar 'fragmento' a
+    construir_prompt, para no romper compatibilidad con construir_prompt(n)
+    de un solo argumento)."""
     if not texto_fuente or n_lotes <= 1 or len(texto_fuente) < n_lotes * 400:
         return [None] * n_lotes
+
+    parrafos = [p for p in texto_fuente.split("\n\n") if p.strip()]
+    if len(parrafos) >= n_lotes * 2:
+        return ["\n\n".join(parrafos[i::n_lotes]) for i in range(n_lotes)]
+
     longitud_objetivo = len(texto_fuente) // n_lotes
     fragmentos = []
     resto = texto_fuente
