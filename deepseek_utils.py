@@ -398,6 +398,16 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
                     "(finish_reason=length, max_tokens=%s)%s -- se descarta este intento",
                     max_tokens, sufijo_contexto,
                 )
+                # DIAGNÓSTICO TEMPORAL (02/08/2026): para saber si un
+                # truncamiento es un bucle de repetición literal (el final
+                # se ve calcado) o simplemente contenido largo pero
+                # variado -- sin esto no hay forma de decidir si
+                # frequency_penalty es la palanca correcta o no. Quitar
+                # este bloque en cuanto se tenga suficiente evidencia real.
+                logger.warning(
+                    "Diagnóstico truncamiento%s -- últimos 500 caracteres de la respuesta cortada: %r",
+                    sufijo_contexto, contenido[-500:] if contenido else contenido,
+                )
                 return None
             return contenido
 
