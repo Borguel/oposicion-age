@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 from test_generator import (
     generar_preguntas_ia_en_lotes, MAX_INTENTOS_POR_PREGUNTA_PDF, _verificar_pregunta, _verificar_lote,
+    _claves_dedup,
 )
 
 
@@ -418,6 +419,73 @@ class TestGenerarPreguntasIaEnLotes:
             )
 
         assert len(preguntas) == 1
+
+    def test_dedupe_por_articulo_y_cifras_pese_a_redaccion_muy_distinta(self):
+        # Bug real de producción (02/08/2026), documento real: el art. 26.6
+        # de una ley (plazo de audiencia pública, "15 días hábiles,
+        # reducible a 7 días hábiles") generado 4 veces con redacciones
+        # tan distintas que ni el texto de la pregunta ni el de la
+        # respuesta completa coincidían -- se coló como 4 preguntas
+        # "distintas" en un test de 20. Aquí, dos candidatas que citan el
+        # mismo artículo base con la misma respuesta en cifras, pero con
+        # el enunciado Y la respuesta completa redactados de forma
+        # distinta, deben deduplicarse a 1 sola.
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            return json.dumps([
+                {
+                    "pregunta": "De acuerdo con el artículo 26.6 de la Ley 50/1997, ¿cuál es el plazo mínimo de "
+                                "la audiencia e información públicas y en qué casos puede reducirse?",
+                    "opciones": {
+                        "A": "15 días hábiles, reducible a 7 días hábiles cuando razones debidamente "
+                             "motivadas lo justifiquen o se aplique la tramitación urgente",
+                        "B": "10 días hábiles", "C": "1 mes", "D": "15 días naturales",
+                    },
+                    "respuesta_correcta": "A", "explicacion": "...",
+                },
+                {
+                    "pregunta": "Conforme a lo establecido en el artículo 26 de la Ley 50/1997, ¿cuál es el "
+                                "plazo mínimo de la audiencia e información públicas en el procedimiento de "
+                                "elaboración de normas, y en qué supuestos puede reducirse?",
+                    "opciones": {
+                        "A": "El plazo mínimo es de 15 días hábiles, y puede reducirse hasta un mínimo de 7 "
+                             "días hábiles cuando existan razones debidamente motivadas o se aplique la "
+                             "tramitación urgente de iniciativas normativas.",
+                        "B": "10 días hábiles", "C": "1 mes", "D": "15 días naturales",
+                    },
+                    "respuesta_correcta": "A", "explicacion": "...",
+                },
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(
+                construir_prompt, 2, "Texto de prueba.", tamano_lote=15,
+            )
+
+        assert len(preguntas) == 1
+
+    def test_no_dedupe_preguntas_legitimamente_distintas_del_mismo_articulo(self):
+        # Mismo artículo base (26) pero cifras distintas (15/7 días frente
+        # a 1 mes): son sub-puntos legítimamente distintos del mismo
+        # artículo (audiencia pública frente a informes preceptivos) y NO
+        # deben deduplicarse entre sí -- la clave nueva exige coincidir en
+        # artículo Y cifras, no solo en el artículo.
+        q_audiencia = {
+            "pregunta": "Según el artículo 26.6 de la Ley 50/1997, ¿cuál es el plazo mínimo de la audiencia "
+                        "e información públicas?",
+            "opciones": {"A": "15 días hábiles"},
+            "respuesta_correcta": "A",
+        }
+        q_informes = {
+            "pregunta": "Según el artículo 26 de la Ley 50/1997, ¿en qué plazo se emiten los informes "
+                        "preceptivos cuando se solicitan a otra Administración?",
+            "opciones": {"A": "1 mes"},
+            "respuesta_correcta": "A",
+        }
+        assert _claves_dedup(q_audiencia).isdisjoint(_claves_dedup(q_informes))
 
     def test_relleno_evita_repetir_preguntas_ya_aceptadas(self):
         # El relleno debe conocer lo que YA está aceptado en el resto del

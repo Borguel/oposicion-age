@@ -18,6 +18,18 @@ _MAX_WORKERS_VERIFICACION_LOTE = 6
 # de cada año.") están muy por encima de este umbral.
 _LONGITUD_MINIMA_DEDUP_RESPUESTA = 10
 
+# Artículo citado en el enunciado (solo el número base, p.ej. "26" tanto
+# para "artículo 26" como para "artículo 26.6" -- ver _claves_dedup) y
+# cifras concretas ("15 días hábiles", "1 mes", "2 tercios"...) en la
+# respuesta correcta -- ver el comentario largo en _claves_dedup sobre por
+# qué hace falta esta clave adicional.
+_PATRON_ARTICULO_BASE = re.compile(r"art[íi]culo\s+(\d+)", re.IGNORECASE)
+_PATRON_CIFRA = re.compile(
+    r"\d+(?:[.,]\d+)?\s*(?:d[íi]as?\s+h[áa]biles?|d[íi]as?\s+naturales?|d[íi]as?|"
+    r"meses?|mes\b|a[ñn]os?|tercios?|cuartos?|%|por\s*ciento)",
+    re.IGNORECASE,
+)
+
 
 def _normalizar(texto):
     return re.sub(r"\s+", " ", str(texto or "").strip().lower())
@@ -33,9 +45,32 @@ def _claves_dedup(pregunta):
     aunque el texto de la pregunta no coincida en nada -- bug real: la
     misma pregunta sobre la duración de un mandato, repetida 4 veces con
     4 redacciones distintas, escapaba al dedup anterior (que solo
-    comparaba el texto de la pregunta)."""
+    comparaba el texto de la pregunta).
+
+    Tercera clave (02/08/2026, bug real): "artículo citado + cifras
+    concretas de la respuesta correcta" -- las dos claves de arriba
+    exigen coincidencia de texto casi literal (la pregunta entera, o la
+    respuesta entera), así que una reformulación MÁS AMPLIA del mismo
+    hecho (p.ej. "¿cuál es el plazo?" -> "15 días hábiles" vs "¿cuál es
+    el plazo y cuándo se reduce?" -> "15 días hábiles, reducible a 7 días
+    hábiles...") se les escapa a ambas por igual. Visto en producción con
+    un documento real: el art. 26.6 de una ley (plazo de audiencia
+    pública, 15 días hábiles reducible a 7) generado 4 veces con 4
+    redacciones distintas, 2 de ellas casi calcadas entre sí -- ninguna
+    coincidía en texto exacto con otra. Aquí se compara el NÚMERO BASE
+    del artículo citado (26 tanto para "artículo 26" como "artículo
+    26.6" -- los lotes en paralelo no siempre citan el mismo nivel de
+    detalle del mismo apartado) junto con el CONJUNTO de cifras de la
+    respuesta correcta: mismo artículo base + mismas cifras es una
+    combinación lo bastante específica para no confundir dos preguntas
+    LEGÍTIMAMENTE distintas sobre el mismo artículo (p.ej. el plazo de
+    audiencia pública frente al plazo de informes preceptivos, ambos del
+    art. 26 pero con cifras distintas -- 15/7 días frente a 1 mes). Si no
+    hay artículo citado o no hay cifras en la respuesta, esta clave
+    simplemente no se genera (las dos de arriba siguen aplicando igual)."""
     claves = set()
-    clave_pregunta = _normalizar(pregunta.get("pregunta", ""))
+    texto_pregunta = pregunta.get("pregunta", "")
+    clave_pregunta = _normalizar(texto_pregunta)
     if clave_pregunta:
         claves.add(f"p:{clave_pregunta}")
     opciones = pregunta.get("opciones") or {}
@@ -43,6 +78,10 @@ def _claves_dedup(pregunta):
     clave_respuesta = _normalizar(opciones.get(letra_respuesta, ""))
     if len(clave_respuesta) >= _LONGITUD_MINIMA_DEDUP_RESPUESTA:
         claves.add(f"r:{clave_respuesta}")
+    articulos = sorted(set(_PATRON_ARTICULO_BASE.findall(texto_pregunta)))
+    cifras = sorted(set(_PATRON_CIFRA.findall(clave_respuesta)))
+    if articulos and cifras:
+        claves.add(f"d:{'|'.join(articulos)}:{'|'.join(cifras)}")
     return claves
 
 
