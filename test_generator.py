@@ -147,7 +147,14 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
         # en ese tope -- 2000 redujo muchísimo los cortes pero no los quitó
         # del todo. Subido a 4000 con el mismo razonamiento (sin coste si no
         # hace falta).
-        max_tokens=4000,
+        # Segunda actualización (02/08/2026): con thinking_enabled=True ya
+        # activo aquí (ver más abajo), en producción se vio esta
+        # verificación truncar varias veces justo en tokens_salida=4000 --
+        # mismo patrón, misma causa y mismo arreglo ya aplicado en
+        # generador_preguntas_verificado.py: el razonamiento (que aquí
+        # cuenta contra el mismo tope que el JSON de salida) necesita más
+        # margen del que hacía falta antes de activarlo. Subido a 8000.
+        max_tokens=8000,
         response_format_json=True,
         on_usage=on_usage,
         # thinking_enabled=True (02/08/2026): call_deepseek_api desactiva el

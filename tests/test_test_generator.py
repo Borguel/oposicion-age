@@ -668,17 +668,17 @@ class TestGenerarPreguntasIaEnLotes:
 
         assert max_tokens_lote == [min(8000, 500 + 700 * 4)]
 
-    def test_verificacion_individual_de_recambio_sigue_pidiendo_4000_tokens(self):
+    def test_verificacion_individual_de_recambio_sigue_pidiendo_8000_tokens(self):
         # Bug real de producción: con max_tokens=400, deepseek-v4-flash
         # truncaba la respuesta de verificación (finish_reason="length")
         # cuando detallaba varios problemas, y el JSON cortado se trataba
         # como pregunta inválida aunque no lo fuera -- multiplicando las
         # llamadas totales y dejando el test por debajo de lo pedido. Ese
-        # margen (ya corregido a 4000, ver _verificar_pregunta) se sigue
-        # usando cuando la verificación en bloque marca una candidata como
-        # inválida y hay que verificar su recambio de una en una
-        # (_asegurar_pregunta_valida no cambió con la verificación en
-        # bloque).
+        # margen (subido de 400 a 2000, a 4000 y finalmente a 8000 -- ver
+        # _verificar_pregunta) se sigue usando cuando la verificación en
+        # bloque marca una candidata como inválida y hay que verificar su
+        # recambio de una en una (_asegurar_pregunta_valida no cambió con
+        # la verificación en bloque).
         construir_prompt = _construir_prompt_fabrica(None)
         max_tokens_individual = []
 
@@ -696,7 +696,7 @@ class TestGenerarPreguntasIaEnLotes:
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
             generar_preguntas_ia_en_lotes(construir_prompt, 1, "Texto de prueba.", tamano_lote=1)
 
-        assert max_tokens_individual == [4000]
+        assert max_tokens_individual == [8000]
 
     def test_verificacion_individual_mantiene_el_thinking_encendido(self):
         # call_deepseek_api desactiva el razonamiento de deepseek-v4-flash
