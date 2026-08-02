@@ -238,6 +238,28 @@ def test_sin_frequency_penalty_no_se_incluye_en_el_payload(monkeypatch):
     assert "frequency_penalty" not in mock_post.call_args.kwargs["json"]
 
 
+def test_deepseek_v4_flash_desactiva_el_thinking_por_defecto(monkeypatch):
+    # deepseek-v4-flash trae "thinking" activado por defecto (nivel
+    # "high") -- ver datos reales en el comentario junto a payload["thinking"]
+    # en deepseek_utils.py. Se desactiva explícitamente porque toda la
+    # generación/verificación de preguntas gasta el razonamiento invisible
+    # sin usarlo nunca, y eso es lo que causaba tanto la lentitud como los
+    # truncamientos.
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], model="deepseek-v4-flash")
+    assert mock_post.call_args.kwargs["json"]["thinking"] == {"type": "disabled"}
+
+
+def test_deepseek_v4_pro_mantiene_el_thinking_activado(monkeypatch):
+    # "deepseek-v4-pro" es el modelo de razonamiento, usado a propósito
+    # (Tu Tutor) -- no se le debe desactivar el thinking.
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}], model="deepseek-v4-pro")
+    assert "thinking" not in mock_post.call_args.kwargs["json"]
+
+
 def test_contexto_se_incluye_en_el_log_de_truncamiento(monkeypatch, caplog):
     import logging
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
