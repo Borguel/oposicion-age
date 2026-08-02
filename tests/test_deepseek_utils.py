@@ -106,10 +106,11 @@ def test_deja_de_reintentar_tras_agotar_los_intentos(monkeypatch):
         requests.exceptions.ConnectionError(),
         requests.exceptions.ConnectionError(),
         requests.exceptions.ConnectionError(),
+        requests.exceptions.ConnectionError(),
     ]) as mock_post, patch("deepseek_utils.time.sleep"):
         resultado = deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
     assert resultado is None
-    assert mock_post.call_count == 3  # 1 intento inicial + 2 reintentos, nunca más
+    assert mock_post.call_count == 4  # 1 intento inicial + 3 reintentos, nunca más
 
 
 def test_no_reintenta_ante_error_4xx(monkeypatch):
@@ -160,13 +161,14 @@ def test_deja_de_reintentar_tras_agotar_los_intentos_por_truncamiento(monkeypatc
         _respuesta_finish_reason('{"pregunta": "a', "length"),
         _respuesta_finish_reason('{"pregunta": "a medi', "length"),
         _respuesta_finish_reason('{"pregunta": "a medias tod', "length"),
+        _respuesta_finish_reason('{"pregunta": "a medias todav', "length"),
     ]) as mock_post, patch("deepseek_utils.time.sleep"):
         resultado = deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
     # Nunca se devuelve el JSON truncado -- ni siquiera tras agotar los
     # reintentos: el llamante debe poder tratarlo igual que cualquier otro
     # fallo (None), no como un resultado válido a medio parsear.
     assert resultado is None
-    assert mock_post.call_count == 3  # 1 intento inicial + 2 reintentos, nunca más
+    assert mock_post.call_count == 4  # 1 intento inicial + 3 reintentos, nunca más
 
 
 def test_contexto_se_incluye_en_el_log_de_truncamiento(monkeypatch, caplog):

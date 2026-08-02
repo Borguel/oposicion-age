@@ -480,11 +480,14 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             verificacion_raw = call_deepseek_api(
                 messages=[{"role": "system", "content": system_ver}, {"role": "user", "content": user_ver}],
                 temperature=0.0,
-                # max_tokens=3000 (subido de 2000 el 02/08/2026): mismo
-                # motivo que en la llamada de generación de arriba -- se vio
-                # en producción un truncamiento real también aquí
-                # (finish_reason == "length" con tokens_salida == 2000).
-                max_tokens=3000,
+                # max_tokens=4000 (subido de 2000 a 3000, y de 3000 a 4000,
+                # ambos el 02/08/2026): mismo motivo que en la llamada de
+                # generación de arriba -- se vio en producción truncamiento
+                # real también aquí, primero con tokens_salida == 2000 y
+                # luego, tras la primera subida, con tokens_salida == 3000
+                # de nuevo (cuando el verificador encuentra varios problemas
+                # en una pregunta, "problemas" puede alargarse bastante).
+                max_tokens=4000,
                 contexto=f"tema={tema_id} tipo=verificacion intento={_intento + 1}",
                 response_format_json=True,
                 on_usage=on_usage,
