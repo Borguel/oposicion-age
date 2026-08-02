@@ -260,6 +260,19 @@ def test_deepseek_v4_pro_mantiene_el_thinking_activado(monkeypatch):
     assert "thinking" not in mock_post.call_args.kwargs["json"]
 
 
+def test_thinking_enabled_true_fuerza_el_thinking_incluso_en_deepseek_v4_flash(monkeypatch):
+    # generador_preguntas_verificado usa esto en la llamada de
+    # VERIFICACIÓN (02/08/2026, decisión explícita del negocio): ahí sí
+    # interesa mantener el razonamiento encendido pese a que el modelo
+    # sea deepseek-v4-flash, porque es la tarea que se juega la precisión
+    # legal del test.
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        deepseek_utils.call_deepseek_api(
+            messages=[{"role": "user", "content": "hola"}], model="deepseek-v4-flash", thinking_enabled=True)
+    assert "thinking" not in mock_post.call_args.kwargs["json"]
+
+
 def test_contexto_se_incluye_en_el_log_de_truncamiento(monkeypatch, caplog):
     import logging
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")

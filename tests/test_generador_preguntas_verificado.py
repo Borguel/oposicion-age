@@ -508,7 +508,7 @@ def _mock_deepseek_siempre_valido(contador, lock_contador):
     # vuelve a su forma simple de siempre, sin detección de lote: los
     # tests de _generar_lote_preguntas_verificadas/_generar_candidatos_lote
     # más abajo usan sus propios mocks dedicados para ese formato.
-    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None, model=None, contexto=None, stream=False, frequency_penalty=None, max_reintentos_truncamiento=None):
+    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None, model=None, contexto=None, stream=False, frequency_penalty=None, max_reintentos_truncamiento=None, thinking_enabled=None):
         contenido_usuario = messages[-1]["content"]
         if "PREGUNTA A VERIFICAR" in contenido_usuario:
             return json.dumps({"valido": True, "problemas": []})

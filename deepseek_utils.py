@@ -224,7 +224,7 @@ def _es_error_transitorio(exc):
     return False
 
 
-def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash", contexto=None, stream=False, frequency_penalty=None, max_reintentos_truncamiento=None):
+def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash", contexto=None, stream=False, frequency_penalty=None, max_reintentos_truncamiento=None, thinking_enabled=None):
     """
     Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.
 
@@ -322,23 +322,35 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
         payload["stream_options"] = {"include_usage": True}
     if model != "deepseek-reasoner":
         payload["temperature"] = temperature
-    if model not in ("deepseek-v4-pro", "deepseek-reasoner"):
-        # thinking desactivado (02/08/2026, con datos reales de
-        # producción): "deepseek-v4-flash" -- el modelo que usa TODA la
-        # generación de tests -- viene con razonamiento interno
-        # (delta.reasoning_content) activado por defecto en nivel "high",
-        # algo invisible hasta ahora porque solo se leía delta.content. El
-        # diagnóstico temporal añadido en este mismo commit mostró que
-        # CADA llamada gastaba la mayoría de sus tokens en ese
-        # razonamiento nunca usado (p.ej. una verificación con
-        # reasoning_content=7970 caracteres y content=33) y que el caso
-        # que truncó a 8000/8000 lo hizo con reasoning_content=31511
-        # caracteres y content=0 -- se quedó sin presupuesto pensando,
-        # sin llegar a escribir el JSON. Esto explica a la vez la
-        # lentitud general (razonamiento invisible dominando cada
-        # llamada) y los truncamientos. Se deja activo solo para
-        # "deepseek-v4-pro" (el modelo de razonamiento, usado a propósito
-        # por Tu Tutor) y el nombre retirado "deepseek-reasoner".
+    # thinking (02/08/2026, con datos reales de producción):
+    # "deepseek-v4-flash" -- el modelo que usa toda la generación de
+    # tests -- viene con razonamiento interno (delta.reasoning_content)
+    # activado por defecto en nivel "high", algo invisible hasta ahora
+    # porque solo se leía delta.content. El diagnóstico temporal añadido
+    # ese mismo día mostró que CADA llamada gastaba la mayoría de sus
+    # tokens en ese razonamiento (p.ej. una verificación con
+    # reasoning_content=7970 caracteres y content=33) y que el caso que
+    # truncó a 8000/8000 lo hizo con reasoning_content=31511 caracteres y
+    # content=0 -- se quedó sin presupuesto pensando, sin llegar a
+    # escribir el JSON. Esto explicaba a la vez la lentitud general y los
+    # truncamientos sistemáticos.
+    #
+    # Por defecto (thinking_enabled=None) se desactiva para cualquier
+    # modelo que no sea explícitamente el de razonamiento
+    # ("deepseek-v4-pro", usado a propósito por Tu Tutor, y el nombre
+    # retirado "deepseek-reasoner"). PERO en generador_preguntas_verificado
+    # la llamada de VERIFICACIÓN pasa thinking_enabled=True explícitamente
+    # para mantenerlo encendido ahí: verificar es justo la tarea donde ese
+    # "borrador" (cotejar fechas/artículos/datos contra el texto legal
+    # antes de decidir) puede importar de verdad para no dejar pasar un
+    # desfase o un dato inventado -- a diferencia de la generación, más
+    # mecánica (redactar opciones a partir del texto ya dado), donde
+    # desactivarlo no debería perder precisión y sí ahorra mucho tiempo.
+    if thinking_enabled is None:
+        desactivar_thinking = model not in ("deepseek-v4-pro", "deepseek-reasoner")
+    else:
+        desactivar_thinking = not thinking_enabled
+    if desactivar_thinking:
         payload["thinking"] = {"type": "disabled"}
     if response_format_json:
         payload["response_format"] = {"type": "json_object"}

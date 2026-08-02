@@ -614,6 +614,20 @@ def _verificar_y_aceptar_pregunta(pregunta_candidata, anclas, tema_id, tipo_preg
         # nueva casi siempre sale bien a la primera, reintentar la misma
         # casi nunca.
         max_reintentos_truncamiento=0,
+        # thinking_enabled=True (02/08/2026, decisión explícita del
+        # negocio tras ver que deepseek-v4-flash lo trae desactivado por
+        # defecto ahora en call_deepseek_api): verificar es la tarea que
+        # de verdad se juega la precisión legal del test -- cotejar
+        # fechas, artículos y datos concretos contra el texto legal antes
+        # de decidir "válido"/"inválido". Se prefiere pagar el coste en
+        # tiempo (y el riesgo de que alguna verificación trunque, ya que
+        # el razonamiento no tiene tope propio) antes que arriesgar que
+        # se cuelen desfases o datos inventados sin ese margen de
+        # deliberación. La generación, más mecánica (redactar opciones a
+        # partir de un texto ya dado), se queda SIN thinking -- ahí el
+        # riesgo de perder precisión es mucho menor y el ahorro de tiempo
+        # es real.
+        thinking_enabled=True,
         response_format_json=True,
         on_usage=on_usage,
         model=_MODELO,
