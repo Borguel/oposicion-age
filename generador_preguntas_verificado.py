@@ -598,13 +598,20 @@ def _verificar_y_aceptar_pregunta(pregunta_candidata, anclas, tema_id, tipo_preg
         contexto=f"tema={tema_id} tipo=verificacion {contexto_intento}",
         stream=True,  # ver el comentario largo sobre streaming en la generación
         # frequency_penalty=0.4: mismo motivo que en la generación.
-        # Especialmente importante aquí -- con temperature=0.0
-        # (determinista) se vio en producción el mismo input truncarse dos
-        # veces SEGUIDAS en el mismo punto exacto (4000/4000 tokens): sin
-        # este freno a la repetición, un reintento en temperatura 0 tiene
-        # muchas más papeletas de reproducir el mismo bucle en vez de
-        # romperlo.
         frequency_penalty=0.4,
+        # max_reintentos_truncamiento=0 (02/08/2026, con datos reales):
+        # reintentar la verificación de la MISMA pregunta rara vez la
+        # arregla y es carísimo (cada intento hasta ~4000 tokens). Caso
+        # real medido: una pregunta que truncó al verificar dos veces
+        # seguidas se llevó 98s ELLA SOLA y aun así se acabó descartando
+        # -- mientras que la siguiente pregunta del mismo hueco (generada
+        # desde cero para el hueco siguiente intento) se resolvió en 20s a
+        # la primera. Es mucho mejor apuesta dar la pregunta por perdida
+        # YA y dejar que el bucle exterior (MAX_INTENTOS_POR_PREGUNTA)
+        # pruebe con un ancla/tipo de pregunta distintos -- una pregunta
+        # nueva casi siempre sale bien a la primera, reintentar la misma
+        # casi nunca.
+        max_reintentos_truncamiento=0,
         response_format_json=True,
         on_usage=on_usage,
         model=_MODELO,
@@ -704,6 +711,21 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
                 response_format_json=True,
                 on_usage=on_usage,
                 model=_MODELO,
+                # max_reintentos_truncamiento=0 (02/08/2026, con datos reales):
+                # reintentar la generación de la MISMA pregunta tras un
+                # truncamiento rara vez la salva y es carísimo (cada intento,
+                # hasta ~5000 tokens de salida). Caso real medido: un hueco
+                # (bloque_01-tema_06) truncó al generar (41.58s) y reintentó
+                # con el mismo ancla (70.82s más) para acabar truncando otra
+                # vez en verificación -- 98s tirados y la pregunta descartada
+                # igualmente. El siguiente intento del MISMO hueco, con un
+                # ancla y tipo de pregunta nuevos (bucle exterior
+                # MAX_INTENTOS_POR_PREGUNTA), se resolvió en 20s a la primera.
+                # Igual que en _verificar_y_aceptar_pregunta: es mejor dar la
+                # pregunta por perdida ya y dejar que el bucle exterior
+                # pruebe con contenido distinto, que pagar un reintento sobre
+                # el mismo contenido que ya está fallando.
+                max_reintentos_truncamiento=0,
             )
             if not generado:
                 continue
