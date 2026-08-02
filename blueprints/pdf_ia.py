@@ -343,7 +343,19 @@ def generar_test_desde_pdf():
     if error:
         return error
 
-    max_length = 150000
+    # max_length=800000 (subido de 150000 el 02/08/2026): el límite de
+    # páginas por plan (ver limites_uso.MAX_PAGINAS_POR_PLAN) ya permite
+    # subir hasta 300-500 páginas, y los usuarios van a poder subir PDFs de
+    # hasta 200 -- con 150000 caracteres, un documento de texto legal denso
+    # (~2000-4000 caracteres/página) se cortaba ya a partir de ~40-75
+    # páginas, y todo lo posterior se descartaba en silencio ANTES incluso
+    # de llegar al reparto en lotes (ver _fragmentos_por_lote en
+    # test_generator.py): por muy bien que se reparta el texto que SÍ
+    # llega, el resto del documento nunca se llega a ver. 800000
+    # caracteres cubre con margen 200 páginas incluso en el caso más denso,
+    # y sigue siendo una fracción pequeña de la ventana de contexto de
+    # deepseek-v4-flash (1M tokens, varios millones de caracteres).
+    max_length = 800000
     if len(text) > max_length:
         text = text[:max_length]
 
@@ -502,7 +514,12 @@ def generar_tarjetas_desde_pdf():
     if not os.getenv("DEEPSEEK_API_KEY"):
         return jsonify({"error": "API key de DeepSeek no configurada"}), 500
 
-    max_length = 150000
+    # max_length=800000: mismo motivo y mismo valor que
+    # /generar-test-desde-pdf (ver el comentario largo ahí) -- soportar los
+    # PDFs de hasta 200 páginas que los usuarios van a poder subir sin
+    # cortar el documento en silencio antes de llegar al reparto por
+    # fragmentos.
+    max_length = 800000
     if len(text) > max_length:
         text = text[:max_length]
     try:
