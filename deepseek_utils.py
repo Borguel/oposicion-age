@@ -116,7 +116,7 @@ def _leer_respuesta_completa(headers, payload, timeout):
     return choices[0]["message"]["content"], choices[0].get("finish_reason"), data.get("usage")
 
 
-def _leer_respuesta_en_streaming(headers, payload, timeout, contexto=None):
+def _leer_respuesta_en_streaming(headers, payload, timeout):
     """Misma llamada pero con stream=true, consumiendo el SSE entero aquí
     dentro y devolviendo (contenido, finish_reason, usage) EXACTAMENTE con
     la misma forma que _leer_respuesta_completa -- quien llama no nota la
@@ -139,17 +139,6 @@ def _leer_respuesta_en_streaming(headers, payload, timeout, contexto=None):
     conexión nunca parece inactiva, y una respuesta de 45s se completa sin
     problema."""
     partes = []
-    # DIAGNÓSTICO TEMPORAL (02/08/2026): en producción se vio content=''
-    # con tokens_salida=8000 en respuestas truncadas -- la conexión se
-    # completó entera (llegó el chunk final con usage) pero el
-    # acumulador de "content" no capturó nada. Hipótesis: el modelo está
-    # mandando esos tokens por "reasoning_content" (razonamiento interno
-    # estilo R1, que algunos modelos DeepSeek emiten incluso sin ser la
-    # variante "reasoner" explícita) y nunca llega a emitir el "content"
-    # real porque el razonamiento agota el presupuesto de tokens antes de
-    # terminar. Se captura aquí para confirmarlo con datos reales; quitar
-    # en cuanto haya suficiente evidencia.
-    partes_razonamiento = []
     finish_reason = None
     usage = None
     with requests.post(_URL_DEEPSEEK, headers=headers, json=payload, timeout=timeout, stream=True) as response:
@@ -171,26 +160,14 @@ def _leer_respuesta_en_streaming(headers, payload, timeout, contexto=None):
             choices = data.get("choices") or []
             if not choices:
                 continue
-            delta = choices[0].get("delta") or {}
-            fragmento = delta.get("content")
+            fragmento = (choices[0].get("delta") or {}).get("content")
             if fragmento:
                 partes.append(fragmento)
-            fragmento_razonamiento = delta.get("reasoning_content")
-            if fragmento_razonamiento:
-                partes_razonamiento.append(fragmento_razonamiento)
             # finish_reason llega en el último chunk con contenido: se
             # guarda para que el reintento por truncamiento ("length")
             # siga funcionando igual que sin streaming.
             if choices[0].get("finish_reason"):
                 finish_reason = choices[0]["finish_reason"]
-    if partes_razonamiento:
-        razonamiento = "".join(partes_razonamiento)
-        sufijo = f" [{contexto}]" if contexto else ""
-        logger.warning(
-            "Diagnóstico razonamiento%s -- reasoning_content: %d caracteres, content: %d caracteres "
-            "(últimos 300 de razonamiento: %r)",
-            sufijo, len(razonamiento), len("".join(partes)), razonamiento[-300:],
-        )
     return "".join(partes), finish_reason, usage
 
 
@@ -378,7 +355,7 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
             with _semaforo_deepseek:
                 if stream:
                     contenido, finish_reason, usage = _leer_respuesta_en_streaming(
-                        headers, payload, _TIMEOUT_STREAMING, contexto=contexto)
+                        headers, payload, _TIMEOUT_STREAMING)
                 else:
                     contenido, finish_reason, usage = _leer_respuesta_completa(
                         headers, payload, _TIMEOUT_RESPUESTA_COMPLETA)
@@ -450,16 +427,6 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
                     "DeepSeek siguió truncando la respuesta tras agotar los reintentos "
                     "(finish_reason=length, max_tokens=%s)%s -- se descarta este intento",
                     max_tokens, sufijo_contexto,
-                )
-                # DIAGNÓSTICO TEMPORAL (02/08/2026): para saber si un
-                # truncamiento es un bucle de repetición literal (el final
-                # se ve calcado) o simplemente contenido largo pero
-                # variado -- sin esto no hay forma de decidir si
-                # frequency_penalty es la palanca correcta o no. Quitar
-                # este bloque en cuanto se tenga suficiente evidencia real.
-                logger.warning(
-                    "Diagnóstico truncamiento%s -- últimos 500 caracteres de la respuesta cortada: %r",
-                    sufijo_contexto, contenido[-500:] if contenido else contenido,
                 )
                 return None
             return contenido
