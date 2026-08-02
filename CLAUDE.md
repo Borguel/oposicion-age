@@ -1,11 +1,10 @@
 # Rama de trabajo
 
-La rama de despliegue real en Render (la que usan ambos servicios,
-`oposicion-age` y `oposicion-age-frontend`) es `claude/exam-prep-web-platform-07flxz`,
-no `main`. `main` está aparcada.
+`main` es la rama de despliegue real en Render (la que usan ambos servicios,
+`oposicion-age` y `oposicion-age-frontend`) y la rama de trabajo principal.
 
-Todo el desarrollo, commits y push deben ir a `claude/exam-prep-web-platform-07flxz`
-salvo que el usuario pida explícitamente lo contrario.
+Todo el desarrollo, commits y push deben ir a `main` salvo que el usuario
+pida explícitamente lo contrario.
 
 ## graphify
 
