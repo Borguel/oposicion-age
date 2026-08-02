@@ -513,7 +513,7 @@ class TestCosteIaEnHerramientasPdf:
             n = int(match.group(1)) if match else 1
             return json.dumps([
                 {"pregunta": f"¿P{next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."}
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
                 for _ in range(n)
             ])
 

@@ -63,9 +63,9 @@ class TestGenerarPreguntasIaEnLotes:
                 return json.dumps({"valido": True, "problemas": []})
             return json.dumps([
                 {"pregunta": "¿Pregunta 1?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."},
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."},
                 {"pregunta": "¿Pregunta 2?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "B", "explicacion": "..."},
+                 "respuesta_correcta": "B", "explicacion": "Explicación de prueba para el test."},
             ])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
@@ -93,11 +93,49 @@ class TestGenerarPreguntasIaEnLotes:
             if "No repitas esta pregunta" in messages[0]["content"]:
                 return json.dumps([{
                     "pregunta": "¿Pregunta buena?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                    "respuesta_correcta": "A", "explicacion": "..."
+                    "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
                 }])
             return json.dumps([{
                 "pregunta": "¿Pregunta mala?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                "respuesta_correcta": "A", "explicacion": "..."
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
+            }])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 1, "Texto de prueba.", tamano_lote=15)
+
+        assert errores == []
+        assert len(preguntas) == 1
+        assert preguntas[0]["pregunta"] == "¿Pregunta buena?"
+
+    def test_frase_prohibida_se_descarta_sin_gastar_verificacion(self):
+        # Bug real de producción (02/08/2026): este archivo nunca usaba el
+        # filtro local determinista (validador_preguntas.validar_pregunta)
+        # que sí usan generador_preguntas_verificado.py y
+        # tarjetas_generator.py -- dependía solo de que la IA verificadora
+        # cazara frases como "según el contenido"/"el documento indica
+        # que..." (prohibidas en el propio prompt de generación), y en un
+        # test real de 20 preguntas varias se colaron sin que la
+        # verificación las descartara. Aquí, una candidata con una frase
+        # prohibida debe descartarse SIN llegar a pedir SU verificación (si
+        # llegara, el AssertionError de abajo lo delataría) -- se manda
+        # directa al recambio, cuya propia verificación sí debe ocurrir
+        # con normalidad.
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion_lote(messages) or _es_llamada_verificacion(messages):
+                if "Según el contenido" in messages[1]["content"]:
+                    raise AssertionError("la candidata con frase prohibida no debería llegar a verificarse")
+                return json.dumps({"valido": True, "problemas": []})
+            if "No repitas esta pregunta" in messages[0]["content"]:
+                return json.dumps([{
+                    "pregunta": "¿Pregunta buena?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                    "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
+                }])
+            return json.dumps([{
+                "pregunta": "Según el contenido, ¿qué establece la norma?",
+                "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
             }])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
@@ -120,7 +158,7 @@ class TestGenerarPreguntasIaEnLotes:
             return json.dumps([{
                 "pregunta": f"¿Pregunta intento {len(llamadas_generacion)}?",
                 "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                "respuesta_correcta": "A", "explicacion": "..."
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
             }])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
@@ -151,7 +189,7 @@ class TestGenerarPreguntasIaEnLotes:
                 return json.dumps({"valido": True, "problemas": []})
             return json.dumps([{
                 "pregunta": f"¿Pregunta {next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                "respuesta_correcta": "A", "explicacion": "..."
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
             }])
 
         eventos = []
@@ -177,11 +215,11 @@ class TestGenerarPreguntasIaEnLotes:
                 return json.dumps({"valido": True, "problemas": []})
             return json.dumps([
                 {"pregunta": "¿Pregunta 1?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."},
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."},
                 {"pregunta": "¿Pregunta 2?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "B", "explicacion": "..."},
+                 "respuesta_correcta": "B", "explicacion": "Explicación de prueba para el test."},
                 {"pregunta": "¿Pregunta 3?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "C", "explicacion": "..."},
+                 "respuesta_correcta": "C", "explicacion": "Explicación de prueba para el test."},
             ])
 
         eventos = []
@@ -219,13 +257,13 @@ class TestGenerarPreguntasIaEnLotes:
             if "No repitas esta pregunta" in messages[0]["content"]:
                 return json.dumps([{
                     "pregunta": "¿Mala?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                    "respuesta_correcta": "A", "explicacion": "..."
+                    "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
                 }])
             return json.dumps([
                 {"pregunta": "¿Buena?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."},
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."},
                 {"pregunta": "¿Mala?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."},
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."},
             ])
 
         eventos = []
@@ -253,7 +291,7 @@ class TestGenerarPreguntasIaEnLotes:
                 return json.dumps({"valido": True, "problemas": []})
             return json.dumps([{
                 "pregunta": "¿Pregunta?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                "respuesta_correcta": "A", "explicacion": "..."
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
             }])
 
         recibidos = []
@@ -312,7 +350,7 @@ class TestGenerarPreguntasIaEnLotes:
                 return json.dumps([{
                     "pregunta": f"¿Mala recambio {next(contador_mala)}?",
                     "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                    "respuesta_correcta": "A", "explicacion": "..."
+                    "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
                 }])
             if "Genera 1 preguntas" in contenido:
                 # Relleno FINAL: pide 1 pregunta nueva sin evitar nada --
@@ -320,16 +358,16 @@ class TestGenerarPreguntasIaEnLotes:
                 return json.dumps([{
                     "pregunta": f"¿Relleno {next(contador_relleno)}?",
                     "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                    "respuesta_correcta": "A", "explicacion": "..."
+                    "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
                 }])
             # Generación inicial del lote completo (10 preguntas pedidas).
             return json.dumps([
                 {"pregunta": f"¿Mala {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."}
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
                 for i in range(3)
             ] + [
                 {"pregunta": f"¿Buena {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."}
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
                 for i in range(7)
             ])
 
@@ -369,7 +407,7 @@ class TestGenerarPreguntasIaEnLotes:
                 return json.dumps({"valido": True, "problemas": []})
             return json.dumps([{
                 "pregunta": f"¿Pregunta {next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                "respuesta_correcta": "A", "explicacion": "..."
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
             } for _ in range(2)])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
@@ -407,10 +445,10 @@ class TestGenerarPreguntasIaEnLotes:
             return json.dumps([
                 {"pregunta": "¿Cuánto dura el mandato del Presidente?",
                  "opciones": {"A": "4 años", "B": "5 años", "C": "6 años, no renovable.", "D": "7 años"},
-                 "respuesta_correcta": "C", "explicacion": "..."},
+                 "respuesta_correcta": "C", "explicacion": "Explicación de prueba para el test."},
                 {"pregunta": "¿Es renovable el cargo del Presidente y por cuánto tiempo se ejerce?",
                  "opciones": {"A": "6 años, no renovable.", "B": "5 años", "C": "4 años", "D": "7 años"},
-                 "respuesta_correcta": "A", "explicacion": "..."},
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."},
             ])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
@@ -444,7 +482,7 @@ class TestGenerarPreguntasIaEnLotes:
                              "motivadas lo justifiquen o se aplique la tramitación urgente",
                         "B": "10 días hábiles", "C": "1 mes", "D": "15 días naturales",
                     },
-                    "respuesta_correcta": "A", "explicacion": "...",
+                    "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test.",
                 },
                 {
                     "pregunta": "Conforme a lo establecido en el artículo 26 de la Ley 50/1997, ¿cuál es el "
@@ -456,7 +494,7 @@ class TestGenerarPreguntasIaEnLotes:
                              "tramitación urgente de iniciativas normativas.",
                         "B": "10 días hábiles", "C": "1 mes", "D": "15 días naturales",
                     },
-                    "respuesta_correcta": "A", "explicacion": "...",
+                    "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test.",
                 },
             ])
 
@@ -506,14 +544,14 @@ class TestGenerarPreguntasIaEnLotes:
                 return json.dumps([{
                     "pregunta": "¿Pregunta de relleno?",
                     "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                    "respuesta_correcta": "A", "explicacion": "..."
+                    "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
                 }])
             # Lote inicial: pide 2 preguntas pero solo devuelve 1 (deja un
             # hueco que el relleno debe rellenar).
             return json.dumps([{
                 "pregunta": "¿Cuánto dura el mandato del Presidente?",
                 "opciones": {"A": "1", "B": "2", "C": "6 años, no renovable.", "D": "4"},
-                "respuesta_correcta": "C", "explicacion": "..."
+                "respuesta_correcta": "C", "explicacion": "Explicación de prueba para el test."
             }])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
@@ -542,7 +580,7 @@ class TestGenerarPreguntasIaEnLotes:
             prompts_recibidos.append(messages[0]["content"])
             return json.dumps([{
                 "pregunta": "¿Pregunta nueva?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                "respuesta_correcta": "A", "explicacion": "..."
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
             }])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
@@ -569,14 +607,14 @@ class TestGenerarPreguntasIaEnLotes:
                 return json.dumps([{
                     "pregunta": "¿Pregunta de relleno?",
                     "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                    "respuesta_correcta": "A", "explicacion": "..."
+                    "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
                 }])
             # Lote inicial: pide 2 preguntas pero solo devuelve 1 (deja un
             # hueco que el relleno debe rellenar).
             return json.dumps([{
                 "pregunta": "¿Pregunta del lote?",
                 "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                "respuesta_correcta": "A", "explicacion": "..."
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
             }])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
@@ -608,7 +646,7 @@ class TestGenerarPreguntasIaEnLotes:
             max_tokens_recibidos.append(max_tokens)
             return json.dumps([
                 {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."}
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
                 for i in range(4)
             ])
 
@@ -632,7 +670,7 @@ class TestGenerarPreguntasIaEnLotes:
             max_tokens_recibidos.append(max_tokens)
             return json.dumps([
                 {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."}
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
                 for i in range(6)
             ])
 
@@ -659,7 +697,7 @@ class TestGenerarPreguntasIaEnLotes:
                 ]})
             return json.dumps([
                 {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."}
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
                 for i in range(4)
             ])
 
@@ -690,7 +728,7 @@ class TestGenerarPreguntasIaEnLotes:
                 return json.dumps({"valido": True, "problemas": []})
             return json.dumps([{
                 "pregunta": "¿Pregunta?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                "respuesta_correcta": "A", "explicacion": "..."
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
             }])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
@@ -728,7 +766,7 @@ class TestGenerarPreguntasIaEnLotes:
                 return json.dumps({"valido": True, "problemas": []})
             return json.dumps([
                 {"pregunta": f"¿Pregunta {next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."}
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
                 for _ in range(3)
             ])
 
@@ -757,7 +795,7 @@ class TestGenerarPreguntasIaEnLotes:
                 ]})
             return json.dumps([
                 {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
-                 "respuesta_correcta": "A", "explicacion": "..."}
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
                 for i in range(5)
             ])
 

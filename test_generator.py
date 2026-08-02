@@ -3,6 +3,7 @@ import json
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from deepseek_utils import call_deepseek_api
+from validador_preguntas import validar_pregunta
 
 MAX_INTENTOS_POR_PREGUNTA_PDF = 3
 _MAX_WORKERS_VERIFICACION_LOTE = 6
@@ -398,11 +399,26 @@ def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente
     """Verifica una pregunta candidata contra el documento de origen y, si
     no supera la verificación, la descarta POR COMPLETO y pide una de
     recambio evitando su tema, hasta max_intentos veces -- mismo principio
-    que generador_preguntas_verificado.py aplica al temario oficial."""
+    que generador_preguntas_verificado.py aplica al temario oficial.
+
+    validar_pregunta (02/08/2026, bug real): este archivo nunca usaba el
+    filtro local determinista que SÍ usan generador_preguntas_verificado.py
+    y tarjetas_generator.py -- dependía solo del juicio de la IA
+    verificadora para cazar frases como "según el contenido"/"el documento
+    indica que..." (prohibidas explícitamente en el prompt de generación y
+    en el de verificación, ver _prompt_verificacion), y esa verificación no
+    las cazaba siempre: en un test real de 20 preguntas, 3 empezaban con
+    "Según/De acuerdo con el contenido del tema..." y varias explicaciones
+    decían "el documento indica/señala/establece que...". validar_pregunta
+    las descarta de forma determinista (100% de aciertos, no depende de que
+    el modelo verificador se acuerde de esta regla concreta entre las
+    otras 8 que comprueba a la vez) y ANTES de gastar la llamada de
+    verificación -- mismo ahorro que _contiene_frase_prohibida ya da en
+    tarjetas_generator.py."""
     pregunta = pregunta_candidata
     intentos_restantes = max_intentos
     while intentos_restantes > 0:
-        if _verificar_pregunta(pregunta, texto_fuente, on_usage):
+        if validar_pregunta(pregunta) and _verificar_pregunta(pregunta, texto_fuente, on_usage):
             return pregunta
         intentos_restantes -= 1
         if intentos_restantes <= 0:
@@ -566,6 +582,19 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
                 _reportar_avance_pregunta(candidata)
             return candidatas, None
 
+        # validar_pregunta ANTES de la verificación en bloque (02/08/2026,
+        # bug real, mismo motivo que en _asegurar_pregunta_valida): una
+        # candidata que ya viola el filtro local determinista (frases como
+        # "según el contenido"/"el documento indica que...", siglas sin
+        # desarrollar, estructura incompleta) no necesita gastar la
+        # llamada de verificación en bloque para saber que hace falta
+        # regenerarla -- se manda directa al camino de recambio individual,
+        # que si acepta la reemplaza por una limpia.
+        candidatas_ok_local = []
+        pendientes = []
+        for candidata in candidatas:
+            (candidatas_ok_local if validar_pregunta(candidata) else pendientes).append(candidata)
+
         # Verificación EN BLOQUE (ver _verificar_lote): una sola llamada
         # juzga TODAS las candidatas de este lote a la vez, en vez de una
         # llamada de verificación por candidata -- reduce las llamadas de
@@ -575,10 +604,9 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         # exactamente igual que antes (_asegurar_pregunta_valida no
         # cambia): el ahorro de llamadas está en esta primera pasada, no en
         # el rigor del reintento sobre las que fallan.
-        resultados_lote = _verificar_lote(candidatas, texto_fuente, on_usage)
+        resultados_lote = _verificar_lote(candidatas_ok_local, texto_fuente, on_usage)
         aceptadas = []
-        pendientes = []
-        for i, candidata in enumerate(candidatas):
+        for i, candidata in enumerate(candidatas_ok_local):
             if resultados_lote.get(i):
                 aceptadas.append(candidata)
                 _reportar_avance_pregunta(candidata)
