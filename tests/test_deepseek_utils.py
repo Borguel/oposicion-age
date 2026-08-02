@@ -132,6 +132,56 @@ def test_reintenta_ante_error_5xx(monkeypatch):
     assert mock_post.call_count == 2
 
 
+def _respuesta_finish_reason(contenido, finish_reason):
+    mock = MagicMock()
+    mock.raise_for_status.return_value = None
+    mock.json.return_value = {"choices": [{"message": {"content": contenido}, "finish_reason": finish_reason}]}
+    return mock
+
+
+def test_reintenta_ante_respuesta_truncada_y_acaba_devolviendo_la_respuesta(monkeypatch):
+    # finish_reason=length (DeepSeek cortó al llegar a max_tokens, casi
+    # siempre a mitad del JSON pedido) se trata como un fallo transitorio
+    # más -- nunca se devuelve el JSON a medias al llamante.
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", side_effect=[
+        _respuesta_finish_reason('{"pregunta": "a medi', "length"),
+        _respuesta_finish_reason('{"pregunta": "completa"}', "stop"),
+    ]) as mock_post, patch("deepseek_utils.time.sleep") as mock_sleep:
+        resultado = deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
+    assert resultado == '{"pregunta": "completa"}'
+    assert mock_post.call_count == 2
+    mock_sleep.assert_called_once()
+
+
+def test_deja_de_reintentar_tras_agotar_los_intentos_por_truncamiento(monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post", side_effect=[
+        _respuesta_finish_reason('{"pregunta": "a', "length"),
+        _respuesta_finish_reason('{"pregunta": "a medi', "length"),
+        _respuesta_finish_reason('{"pregunta": "a medias tod', "length"),
+    ]) as mock_post, patch("deepseek_utils.time.sleep"):
+        resultado = deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
+    # Nunca se devuelve el JSON truncado -- ni siquiera tras agotar los
+    # reintentos: el llamante debe poder tratarlo igual que cualquier otro
+    # fallo (None), no como un resultado válido a medio parsear.
+    assert resultado is None
+    assert mock_post.call_count == 3  # 1 intento inicial + 2 reintentos, nunca más
+
+
+def test_contexto_se_incluye_en_el_log_de_truncamiento(monkeypatch, caplog):
+    import logging
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post",
+               return_value=_respuesta_finish_reason('{"a": "b"}', "length")), \
+         patch("deepseek_utils.time.sleep"), \
+         caplog.at_level(logging.WARNING, logger="deepseek_utils"):
+        deepseek_utils.call_deepseek_api(
+            messages=[{"role": "user", "content": "hola"}], contexto="tema=bloque_01-tema_02 tipo=generacion"
+        )
+    assert any("tema=bloque_01-tema_02 tipo=generacion" in r.message for r in caplog.records)
+
+
 def test_limita_las_llamadas_simultaneas_a_deepseek(monkeypatch):
     # Bug real de producción: sin límite compartido, generar un test de 30
     # preguntas desde PDF puede disparar hasta ~48 llamadas en paralelo (8

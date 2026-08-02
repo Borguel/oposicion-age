@@ -434,6 +434,7 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             generado = call_deepseek_api(
                 messages=[{"role": "system", "content": system_gen}, {"role": "user", "content": user_gen}],
                 temperature=0.5,
+                contexto=f"tema={tema_id} tipo=generacion intento={_intento + 1}",
                 # max_tokens=3000: no es por razonamiento (deepseek-v4-flash
                 # no razona) -- se bajó a 1000 pensando que ya no hacía falta
                 # el margen usado para probar deepseek-v4-pro, pero eso
@@ -473,6 +474,7 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
                 messages=[{"role": "system", "content": system_ver}, {"role": "user", "content": user_ver}],
                 temperature=0.0,
                 max_tokens=2000,  # ver comentario de max_tokens en la llamada de generación de arriba
+                contexto=f"tema={tema_id} tipo=verificacion intento={_intento + 1}",
                 response_format_json=True,
                 on_usage=on_usage,
                 model=_MODELO,
@@ -516,6 +518,18 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
             continue
         return barajar_opciones_pregunta(pregunta_candidata)
 
+    # Se agotaron los max_intentos sin conseguir una pregunta válida para
+    # este hueco (truncamientos persistentes, fallos de conexión repetidos,
+    # o descartes reales de verificación) -- nunca debe pasar en silencio:
+    # sin este log, un test incompleto no dejaba NINGÚN rastro de qué tema
+    # concreto se quedó sin cubrir (los descartes individuales, por sí
+    # solos, no distinguen "mala suerte puntual" de "este tema falló
+    # sistemáticamente"). El hueco todavía puede recuperarse en el relleno
+    # de generar_test_verificado, en otro tema.
+    logger.warning(
+        "No se pudo generar una pregunta válida para el tema %s tras %d intentos -- hueco perdido "
+        "(puede recuperarse en el relleno)", tema_id, max_intentos,
+    )
     return None
 
 
@@ -557,6 +571,14 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
         cupos = repartir_cupos_por_tema_realista(temas_con_contenido, num_preguntas, pesos_por_bloque)
     else:
         cupos = repartir_cupos_por_tema(temas_con_contenido, num_preguntas)
+    # Los temas con cupo 0 (reparto equitativo con más temas que preguntas
+    # pedidas, p. ej. 40 temas para 20 preguntas) NO generan ningún hueco
+    # más abajo, así que nunca disparan ninguna llamada a DeepSeek para
+    # ellos -- se deja constancia aquí de qué le tocó a cada tema para
+    # poder comprobarlo en los logs, en vez de tener que inferirlo contando
+    # llamadas.
+    logger.info("Reparto de preguntas por tema (modo=%s, %d preguntas / %d temas): %s",
+                modo_reparto, num_preguntas, len(temas_con_contenido), cupos)
     huecos = [tid for tid, cupo in cupos.items() for _ in range(cupo)]
     total = len(huecos)
     if total == 0:
@@ -574,6 +596,11 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     preguntas = []
     descartadas = 0
     completadas = 0
+    # Cuántas preguntas se aceptaron REALMENTE por tema (incluyendo las del
+    # relleno más abajo) -- se compara con 'cupos' (lo asignado) al final,
+    # para poder ver en los logs si el déficit se concentra en unos pocos
+    # temas concretos en vez de repartirse por igual.
+    generadas_por_tema = {tid: 0 for tid in temas_con_contenido}
 
     # Acumulador de tokens seguro entre hilos: los workers hacen las llamadas
     # a DeepSeek (donde no hay contexto de petición) y suman aquí; al acabar,
@@ -603,6 +630,7 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
             completadas += 1
             if resultado:
                 preguntas.append(resultado)
+                generadas_por_tema[resultado["tema_id"]] = generadas_por_tema.get(resultado["tema_id"], 0) + 1
                 # Se acumula aparte, por oposición, un banco de preguntas ya
                 # verificadas (ver banco_preguntas_ia.py) -- Tu Tutor lo
                 # consulta (utils.buscar_pregunta_banco_ia) para dar la
@@ -665,6 +693,7 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                 completadas += 1
                 if resultado:
                     preguntas.append(resultado)
+                    generadas_por_tema[resultado["tema_id"]] = generadas_por_tema.get(resultado["tema_id"], 0) + 1
                     guardar_pregunta_generada(db, oposicion, resultado)
                     limpiar_cache_preguntas_banco_ia(oposicion)
                 else:
@@ -695,9 +724,14 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     # verificación no son un error, así que no pasan por logger.exception) --
     # visto en producción: sin esta línea no había forma de saber, a partir
     # de los logs de Render, si una tasa de descarte alta era el motivo real
-    # de una generación lenta o incompleta.
-    logger.info(
-        "Test personalizado generado: %s/%s aceptadas, %s descartadas (temas: %s)",
+    # de una generación lenta o incompleta. Nivel WARNING (no INFO) cuando
+    # falta alguna: nunca debe poder pasar desapercibido en los logs que un
+    # test se entregó incompleto.
+    nivel_log = logger.warning if len(preguntas) < num_preguntas else logger.info
+    nivel_log(
+        "Test personalizado generado: %s/%s aceptadas, %s descartadas (temas: %s, asignadas vs "
+        "generadas por tema: %s)",
         len(preguntas), num_preguntas, descartadas, temas_unicos,
+        {tid: {"asignadas": cupos.get(tid, 0), "generadas": generadas_por_tema.get(tid, 0)} for tid in temas_con_contenido},
     )
     return resultado_final
