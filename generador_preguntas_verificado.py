@@ -953,93 +953,76 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     from coste_ia import AcumuladorTokens
     acumulador_tokens = AcumuladorTokens()
 
-    # Se agrupan los huecos NORMATIVOS en lotes de generación (ver
-    # TAMANO_LOTE_GENERACION) -- los descriptivos (ofimática/informática,
-    # sin "Artículo N.") siguen yendo uno a uno, para no mezclar dos
-    # formatos de contenido en el mismo prompt de lote. es_normativo se
-    # calcula una vez por tema (constante para todos sus huecos).
-    es_normativo_por_tema = {tid: _tema_es_normativo(subbloques_por_tema[tid]) for tid in temas_con_contenido}
-    huecos_normativos = [tid for tid in huecos if es_normativo_por_tema[tid]]
-    huecos_individuales = [tid for tid in huecos if not es_normativo_por_tema[tid]]
-    lotes = [
-        huecos_normativos[i:i + TAMANO_LOTE_GENERACION]
-        for i in range(0, len(huecos_normativos), TAMANO_LOTE_GENERACION)
-    ]
-
-    def _tarea_individual(tid):
-        # Envuelto en una lista de 1: así el consumidor de más abajo
-        # itera SIEMPRE una lista de resultados, sea la tarea un lote de
-        # varias preguntas o una sola -- misma forma, mismo código.
-        return [_generar_pregunta_verificada(
-            subbloques_por_tema[tid], tid, oposicion,
-            subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add, db,
-        )]
-
-    def _tarea_lote(lote):
-        try:
-            return _generar_lote_preguntas_verificadas(
-                lote, subbloques_por_tema, oposicion,
-                subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add, db,
+    # DESACTIVADO el enrutamiento a lotes (02/08/2026): con datos reales de
+    # producción, agrupar la generación resultó MENOS fiable, no más
+    # rápida en la práctica -- un lote de 3 que trunca pierde 3 preguntas
+    # de golpe (no solo 1), y con el reintento de lote quitado (commit
+    # anterior, para no pagar un reintento carísimo) esas pérdidas caían
+    # DIRECTO al relleno: en una prueba real, 7 de 10 huecos del primer
+    # test acabaron en relleno por culpa de solo 2 lotes truncados. Además
+    # rompe la entrega progresiva (el usuario ya no ve llegar preguntas
+    # sueltas sin más, sino ráfagas de hasta 3 cuando un lote entero
+    # termina, o silencio si el lote entero falla). Las funciones de lote
+    # (_generar_lote_preguntas_verificadas y compañía, más abajo en el
+    # archivo) se dejan sin borrar por si se retoma con otro enfoque
+    # (p. ej. lotes más pequeños Y con reintento) tras probarlo con más
+    # cuidado -- no se enrutan aquí mientras tanto.
+    with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS, total)) as executor:
+        futuros = [
+            executor.submit(
+                _generar_pregunta_verificada, subbloques_por_tema[tid], tid, oposicion,
+                subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add, db
             )
-        except Exception:
-            # Un fallo inesperado en TODO el lote (no en una pregunta
-            # suelta dentro de él -- eso ya lo captura
-            # _generar_lote_preguntas_verificadas internamente) no debe
-            # perder la cuenta de cuántos huecos traía este lote: se
-            # devuelven todos como fallidos, cada uno recuperable en el
-            # relleno final, igual que un hueco individual que agota sus
-            # intentos.
-            logger.exception("Fallo inesperado generando un lote de preguntas del test personalizado")
-            return [None] * len(lote)
-
-    with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS, len(lotes) + len(huecos_individuales))) as executor:
-        futuros = (
-            [executor.submit(_tarea_lote, lote) for lote in lotes]
-            + [executor.submit(_tarea_individual, tid) for tid in huecos_individuales]
-        )
+            for tid in huecos
+        ]
         for futuro in as_completed(futuros):
             try:
-                resultados = futuro.result()
+                resultado = futuro.result()
             except Exception:
-                # Un fallo inesperado aquí ya no debería pasar (_tarea_lote
-                # y _tarea_individual capturan por dentro), pero por si
-                # acaso: mejor una pregunta descartada de más que tirar
-                # todo lo que los demás hilos ya llevan aceptado.
-                logger.exception("Fallo inesperado generando preguntas del test personalizado")
-                resultados = [None]
-            for resultado in resultados:
-                completadas += 1
-                if resultado:
-                    preguntas.append(resultado)
-                    generadas_por_tema[resultado["tema_id"]] = generadas_por_tema.get(resultado["tema_id"], 0) + 1
-                    # Se acumula aparte, por oposición, un banco de preguntas ya
-                    # verificadas (ver banco_preguntas_ia.py) -- Tu Tutor lo
-                    # consulta (utils.buscar_pregunta_banco_ia) para dar la
-                    # respuesta ya corregida en vez de razonarla de nuevo cuando
-                    # el usuario le pega una de estas preguntas.
-                    guardar_pregunta_generada(db, oposicion, resultado)
-                    # Invalida en este proceso la caché de Tu Tutor sobre el
-                    # banco de IA -- si no, buscar_pregunta_banco_ia podía tardar
-                    # hasta 30 min (TTL) en ver esta misma pregunta recién
-                    # generada (bug real visto en producción).
-                    limpiar_cache_preguntas_banco_ia(oposicion)
-                else:
-                    descartadas += 1
-                if on_progreso:
-                    on_progreso({
-                        "completadas": completadas, "total": total, "aceptadas": len(preguntas),
-                        "pregunta": resultado,
-                    })
+                # Un fallo inesperado en UN hueco (p. ej. una forma de
+                # respuesta de DeepSeek que ningún "continue" contemplaba)
+                # no debe tirar todas las preguntas ya aceptadas por los
+                # demás hilos -- se trata como una pregunta descartada más,
+                # igual que si no hubiera superado la verificación.
+                logger.exception("Fallo inesperado generando una pregunta del test personalizado")
+                resultado = None
+            completadas += 1
+            if resultado:
+                preguntas.append(resultado)
+                generadas_por_tema[resultado["tema_id"]] = generadas_por_tema.get(resultado["tema_id"], 0) + 1
+                # Se acumula aparte, por oposición, un banco de preguntas ya
+                # verificadas (ver banco_preguntas_ia.py) -- Tu Tutor lo
+                # consulta (utils.buscar_pregunta_banco_ia) para dar la
+                # respuesta ya corregida en vez de razonarla de nuevo cuando
+                # el usuario le pega una de estas preguntas.
+                guardar_pregunta_generada(db, oposicion, resultado)
+                # Invalida en este proceso la caché de Tu Tutor sobre el
+                # banco de IA -- si no, buscar_pregunta_banco_ia podía tardar
+                # hasta 30 min (TTL) en ver esta misma pregunta recién
+                # generada (bug real visto en producción).
+                limpiar_cache_preguntas_banco_ia(oposicion)
+            else:
+                descartadas += 1
+            if on_progreso:
+                on_progreso({
+                    "completadas": completadas, "total": total, "aceptadas": len(preguntas),
+                    "pregunta": resultado,
+                })
 
     # Relleno: si algún hueco agotó sus MAX_INTENTOS_POR_PREGUNTA honestamente
     # (nunca se relaja la verificación para llegar al número pedido), se le da
     # otra oportunidad por cada uno que falte, en OTRO tema con contenido
-    # disponible (rotando entre los elegidos) -- para que "hay temario de
-    # sobra" no se traduzca en menos preguntas de las pedidas solo porque a
-    # un hueco concreto le tocó mala suerte con sus intentos. Ver
-    # MAX_RONDAS_RELLENO arriba: esto se repite en bucle (acotado) mientras
-    # sigan faltando preguntas, no una única pasada -- una sola pasada podía
-    # a su vez tener mala suerte y dejar el test corto de verdad.
+    # disponible (rotando entre TODOS los elegidos, no solo los que
+    # fallaron) -- para que "hay temario de sobra" no se traduzca en menos
+    # preguntas de las pedidas solo porque a un hueco concreto le tocó mala
+    # suerte con sus intentos, o incluso porque UN tema entero resultó
+    # sistemáticamente problemático: si hace falta, el relleno duplica en
+    # un tema que ya dio una pregunta buena antes que dejar el test corto
+    # (probado explícitamente: con un único tema viable disponible, debe
+    # poder generarle una segunda pregunta). Ver MAX_RONDAS_RELLENO arriba:
+    # esto se repite en bucle (acotado) mientras sigan faltando preguntas,
+    # no una única pasada -- una sola pasada podía a su vez tener mala
+    # suerte y dejar el test corto de verdad.
     #
     # EN PARALELO (antes era un "for" secuencial, con el mismo razonamiento
     # de "no merece la pena otro ThreadPoolExecutor para 1-2 preguntas" que
@@ -1062,15 +1045,17 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
         faltan = num_preguntas - len(preguntas)
         ciclo_temas = itertools.cycle(temas_con_contenido)
         tids_relleno = [next(ciclo_temas) for _ in range(faltan)]
+        huecos_fallidos = []  # solo para el log de abajo -- qué falló en ESTA ronda
         with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS, faltan)) as executor:
-            futuros = [
+            futuros = {
                 executor.submit(
                     _generar_pregunta_verificada, subbloques_por_tema[tid], tid, oposicion,
                     subbloques_ya_usados, preguntas_ya_aceptadas, lock, acumulador_tokens.add, db,
-                )
+                ): tid
                 for tid in tids_relleno
-            ]
+            }
             for futuro in as_completed(futuros):
+                tid = futuros[futuro]
                 try:
                     resultado = futuro.result()
                 except Exception:
@@ -1084,6 +1069,7 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                     limpiar_cache_preguntas_banco_ia(oposicion)
                 else:
                     descartadas += 1
+                    huecos_fallidos.append(tid)
                 if on_progreso:
                     on_progreso({
                         "completadas": completadas, "total": total, "aceptadas": len(preguntas),
@@ -1091,8 +1077,9 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                     })
         if len(preguntas) < num_preguntas:
             logger.warning(
-                "Relleno ronda %d/%d: siguen faltando %d/%d preguntas tras esta ronda (temas: %s)",
-                rondas_relleno, MAX_RONDAS_RELLENO, num_preguntas - len(preguntas), num_preguntas, temas_unicos,
+                "Relleno ronda %d/%d: siguen faltando %d/%d preguntas tras esta ronda (temas que "
+                "fallaron en esta ronda: %s)",
+                rondas_relleno, MAX_RONDAS_RELLENO, num_preguntas - len(preguntas), num_preguntas, huecos_fallidos,
             )
 
     # Con uid (Test Personalizado): la generación corre en un hilo de fondo

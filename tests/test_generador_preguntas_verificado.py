@@ -7,7 +7,6 @@ artículo se recupera del texto real y no lo inventa el modelo, y que
 agotar los intentos no bloquea el resto del test."""
 import itertools
 import json
-import re
 import threading
 from unittest.mock import patch
 
@@ -294,9 +293,13 @@ def test_fallo_inesperado_en_un_intento_consume_solo_ese_intento():
 
 class TestGeneracionEnLote:
     """Generación EN LOTE de varias preguntas en una sola llamada (ver
-    TAMANO_LOTE_GENERACION) -- reduce las llamadas de generación sin tocar
-    la verificación (sigue siendo una llamada independiente por pregunta,
-    contra su propio texto legal: la garantía de precisión no cambia)."""
+    TAMANO_LOTE_GENERACION). NOTA (02/08/2026): este enrutamiento está
+    DESACTIVADO en generar_test_verificado (con datos reales resultó menos
+    fiable, no más rápido -- ver el comentario junto al bucle principal en
+    generador_preguntas_verificado.py); las funciones de abajo siguen
+    funcionando correctamente por sí solas y se prueban aquí de forma
+    aislada, por si se retoma el enrutamiento más adelante con otro
+    enfoque."""
 
     def test_tema_es_normativo_detecta_articulo_real(self):
         subbloques = [{"etiqueta": "s1", "titulo": "Ley X", "texto": "Artículo 1. Contenido normativo real."}]
@@ -490,98 +493,25 @@ class TestGeneracionEnLote:
         # paralelo" de "uno detrás de otro").
         assert duracion < RETRASO * len(huecos_lote)
 
-    def test_generar_test_verificado_agrupa_temas_normativos_en_un_lote(self, db):
-        # Con varios temas normativos y cupo total <= TAMANO_LOTE_GENERACION,
-        # deben resolverse con UNA sola llamada de generación (no una por
-        # tema) -- se comprueba contando cuántas veces se ve "TEXTO LEGAL 1"
-        # en las llamadas (una única llamada de lote la trae; N llamadas
-        # individuales no traerían nunca "TEXTO LEGAL 2").
-        relleno = " ".join(["palabra"] * 30)
-        db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
-            "titulo": "Ley A", "texto": f"Artículo 1. Contenido A. {relleno}"
-        })
-        db.sembrar(("Temario AGE", "bloque_02", "temas", "tema_01", "subbloques", "sub_1"), {
-            "titulo": "Ley B", "texto": f"Artículo 2. Contenido B. {relleno}"
-        })
-        db.sembrar(("Temario AGE", "bloque_03", "temas", "tema_01", "subbloques", "sub_1"), {
-            "titulo": "Ley C", "texto": f"Artículo 3. Contenido C. {relleno}"
-        })
-
-        contador = itertools.count()
-        lock_contador = threading.Lock()
-        llamadas_generacion = []
-
-        def _mock(messages, **kwargs):
-            contenido = messages[-1]["content"]
-            if "PREGUNTA A VERIFICAR" in contenido:
-                return json.dumps({"valido": True, "problemas": []})
-            llamadas_generacion.append(contenido)
-            n_lote = len(re.findall(r"TEXTO LEGAL \d+ --", contenido))
-            preguntas = []
-            for i in range(1, max(n_lote, 1) + 1):
-                with lock_contador:
-                    n = next(contador)
-                preguntas.append({
-                    "pregunta_num": i, "pregunta": f"¿Pregunta {n}?",
-                    "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A",
-                    "explicacion": "Explicación suficientemente larga para pasar la validación.",
-                })
-            return json.dumps({"preguntas": preguntas})
-
-        with patch("generador_preguntas_verificado.call_deepseek_api", side_effect=_mock), \
-             patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
-            resultado = generar_test_verificado(
-                db, temas=["bloque_01-tema_01", "bloque_02-tema_01", "bloque_03-tema_01"], num_preguntas=3,
-                coleccion="Temario AGE", oposicion="AGE",
-            )
-
-        assert len(resultado["test"]) == 3
-        assert len(llamadas_generacion) == 1  # una sola llamada de generación para las 3
-        assert "TEXTO LEGAL 3" in llamadas_generacion[0]
-
-    def test_generar_test_verificado_no_agrupa_temas_descriptivos(self, db):
-        # Un tema sin "Artículo N." (ofimática/informática) debe seguir
-        # yendo por la vía individual, nunca dentro de un prompt de lote.
-        relleno = " ".join(["palabra"] * 30)
-        db.sembrar(("Temario AGE", "bloque_04", "temas", "tema_01", "subbloques", "sub_1"), {
-            "titulo": "Informática básica", "texto": f"El sistema operativo gestiona los recursos. {relleno}"
-        })
-
-        contador = itertools.count()
-        lock_contador = threading.Lock()
-        with patch("generador_preguntas_verificado.call_deepseek_api",
-                   side_effect=_mock_deepseek_siempre_valido(contador, lock_contador)), \
-             patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
-            resultado = generar_test_verificado(
-                db, temas=["bloque_04-tema_01"], num_preguntas=2,
-                coleccion="Temario AGE", oposicion="AGE",
-            )
-        assert len(resultado["test"]) == 2
+    # NOTA (02/08/2026): no hay test aquí de "generar_test_verificado usa el
+    # lote" -- ese enrutamiento está DESACTIVADO (ver el comentario junto al
+    # bucle principal en generador_preguntas_verificado.py). Las funciones
+    # de lote de arriba siguen probadas de forma aislada (siguen
+    # funcionando correctamente por sí solas); si se retoma el enrutamiento
+    # más adelante, aquí es donde vuelve a tener sentido un test de
+    # integración para ello.
 
 
 def _mock_deepseek_siempre_valido(contador, lock_contador):
+    # La generación en lote está DESACTIVADA en generar_test_verificado
+    # (ver el comentario en el propio archivo, 02/08/2026) -- este mock
+    # vuelve a su forma simple de siempre, sin detección de lote: los
+    # tests de _generar_lote_preguntas_verificadas/_generar_candidatos_lote
+    # más abajo usan sus propios mocks dedicados para ese formato.
     def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None, model=None, contexto=None, stream=False, frequency_penalty=None, max_reintentos_truncamiento=None):
         contenido_usuario = messages[-1]["content"]
         if "PREGUNTA A VERIFICAR" in contenido_usuario:
             return json.dumps({"valido": True, "problemas": []})
-        # Llamada de generación EN LOTE (ver TAMANO_LOTE_GENERACION): se
-        # reconoce por "TEXTO LEGAL N --" repetido, y hay que devolver
-        # exactamente ese mismo número de preguntas, cada una con su propio
-        # "pregunta_num" -- si no, _generar_candidatos_lote las descarta
-        # todas por no poder emparejarlas con su texto legal.
-        n_lote = len(re.findall(r"TEXTO LEGAL \d+ --", contenido_usuario))
-        if n_lote:
-            preguntas = []
-            for i in range(1, n_lote + 1):
-                with lock_contador:
-                    n = next(contador)
-                preguntas.append({
-                    "pregunta_num": i, "norma": "Ley 39/2015", "articulo": "Artículo 1",
-                    "tipo_pregunta": "memoria_literal", "pregunta": f"¿Pregunta única número {n}?",
-                    "opciones": {"A": "a", "B": "b", "C": "c", "D": "d"}, "respuesta_correcta": "A",
-                    "explicacion": "Explicación suficientemente larga para superar la validación estructural.",
-                })
-            return json.dumps({"preguntas": preguntas})
         with lock_contador:
             n = next(contador)
         return _pregunta_valida(f"¿Pregunta única número {n}?")
