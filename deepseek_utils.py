@@ -201,7 +201,7 @@ def _es_error_transitorio(exc):
     return False
 
 
-def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash", contexto=None, stream=False, frequency_penalty=None):
+def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash", contexto=None, stream=False, frequency_penalty=None, max_reintentos_truncamiento=None):
     """
     Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.
 
@@ -262,6 +262,19 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     generador_preguntas_verificado.py), la firma clásica de una
     generación que se repite en vez de terminar. Se recomienda para
     cualquier llamada de generación/verificación estructurada como esta.
+
+    max_reintentos_truncamiento (opcional, None = usa _REINTENTOS_TRUNCAMIENTO):
+    permite BAJAR el presupuesto de reintentos por truncamiento para una
+    llamada concreta -- pensado para la generación EN LOTE (ver
+    TAMANO_LOTE_GENERACION en generador_preguntas_verificado.py), donde
+    max_tokens ya es varias veces mayor que en una llamada normal (varias
+    preguntas a la vez) y un reintento cuesta proporcionalmente mucho más
+    tiempo (datos reales, 02/08/2026: un lote de solo 2 preguntas tardó
+    116s en total por truncar y reintentar una vez con max_tokens=8400).
+    Con 0, un lote que trunca no reintenta él mismo -- cede el turno de
+    inmediato al relleno final (rápido, en paralelo, con llamadas
+    individuales normales) en vez de pagar un segundo intento gigante
+    dentro del mismo lote.
     """
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
@@ -300,7 +313,9 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     sufijo_contexto = f" [{contexto}]" if contexto else ""
 
     intentos_restantes = _REINTENTOS_TRANSITORIOS
-    intentos_truncamiento_restantes = _REINTENTOS_TRUNCAMIENTO
+    intentos_truncamiento_restantes = (
+        _REINTENTOS_TRUNCAMIENTO if max_reintentos_truncamiento is None else max_reintentos_truncamiento
+    )
     while True:
         try:
             # Todo el consumo de la respuesta ocurre DENTRO del semáforo: en

@@ -375,6 +375,19 @@ class TestGeneracionEnLote:
             candidatos = _generar_candidatos_lote(especificaciones, "AGE", None, "contexto")
         assert candidatos == [None, None, None]
 
+    def test_generar_candidatos_lote_no_reintenta_internamente_si_trunca(self):
+        # Un reintento de LOTE es caro (max_tokens ya varias veces mayor
+        # que una llamada normal) -- si trunca, debe ceder el turno YA al
+        # relleno final en vez de pagar un segundo intento gigante dentro
+        # del mismo lote (ver max_reintentos_truncamiento=0 en la llamada).
+        especificaciones = [
+            {"anclas": [{"norma": "Ley A", "articulo": "Artículo 1", "texto_legal": "...", "etiqueta_subbloque": "s1"}],
+             "tipo_pregunta": "memoria_literal"},
+        ]
+        with patch("generador_preguntas_verificado.call_deepseek_api", return_value=None) as mock_llamada:
+            _generar_candidatos_lote(especificaciones, "AGE", None, "contexto")
+        assert mock_llamada.call_args.kwargs["max_reintentos_truncamiento"] == 0
+
     def test_generar_lote_preguntas_verificadas_ancla_cada_pregunta_a_su_propio_tema(self):
         subbloques_por_tema = {
             "bloque_01-tema_01": [{"etiqueta": "s1", "titulo": "Ley A", "texto": "Artículo 1. Contenido A."}],
@@ -547,7 +560,7 @@ class TestGeneracionEnLote:
 
 
 def _mock_deepseek_siempre_valido(contador, lock_contador):
-    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None, model=None, contexto=None, stream=False, frequency_penalty=None):
+    def _mock(messages, temperature=0.5, max_tokens=1000, response_format_json=False, on_usage=None, model=None, contexto=None, stream=False, frequency_penalty=None, max_reintentos_truncamiento=None):
         contenido_usuario = messages[-1]["content"]
         if "PREGUNTA A VERIFICAR" in contenido_usuario:
             return json.dumps({"valido": True, "problemas": []})

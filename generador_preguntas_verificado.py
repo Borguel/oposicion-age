@@ -106,7 +106,19 @@ MAX_RONDAS_RELLENO = 3
 # agrupa, por el mismo motivo de simplicidad -- sigue disponible por la
 # vía individual (y por el relleno, que también va uno a uno: es la vía
 # fiable de respaldo, no tiene que ser la rápida).
-TAMANO_LOTE_GENERACION = 4
+#
+# Bajado de 4 a 3 (02/08/2026, con datos reales de producción): agrupar
+# también AGRANDA el "radio de explosión" de cada fallo -- un lote de 4
+# preguntas completas de calidad jurídica necesitó de verdad hasta ~15000
+# tokens en una respuesta BUENA (nunca truncada), y cuando encima una de
+# esas 4 cae en un caso propenso a repetición, el lote entero paga el
+# coste de un max_tokens mucho mayor (ver _generar_candidatos_lote): un
+# lote de solo 2 preguntas tardó 116s por truncar y reintentar una vez a
+# max_tokens=8400. Con 3 el techo de tokens necesario baja
+# proporcionalmente sin perder casi nada del ahorro de llamadas frente a
+# 4 (10 preguntas: 4 llamadas de generación en vez de 3, contra 10 antes
+# de agrupar).
+TAMANO_LOTE_GENERACION = 3
 
 # Subido de 6 a 10 (25/07/2026) y a 15 (26/07/2026): deepseek-v4-flash es
 # barato por token, así que más llamadas en paralelo reduce el tiempo total
@@ -754,6 +766,14 @@ def _generar_candidatos_lote(especificaciones, oposicion, on_usage, contexto_lot
         max_tokens=min(4200 * n, 20000),
         stream=True,
         frequency_penalty=0.4,
+        # max_reintentos_truncamiento=0 (02/08/2026, con datos reales): un
+        # reintento de LOTE es muy caro (max_tokens ya varias veces mayor
+        # que una llamada normal -- un lote de 116s en producción tardó eso
+        # justamente por truncar y reintentar una vez). Si trunca, es más
+        # barato ceder el turno YA al relleno final (rápido, en paralelo,
+        # con llamadas individuales normales) que pagar un segundo intento
+        # gigante dentro del mismo lote.
+        max_reintentos_truncamiento=0,
         response_format_json=True,
         on_usage=on_usage,
         model=_MODELO,

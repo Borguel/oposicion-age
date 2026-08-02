@@ -174,6 +174,25 @@ def test_deja_de_reintentar_tras_agotar_los_intentos_por_truncamiento(monkeypatc
     assert mock_post.call_count == 2  # 1 intento inicial + 1 reintento, nunca más
 
 
+def test_max_reintentos_truncamiento_permite_bajar_el_presupuesto_por_llamada(monkeypatch):
+    # Usado por la generación EN LOTE (ver TAMANO_LOTE_GENERACION en
+    # generador_preguntas_verificado.py): con max_tokens ya varias veces
+    # mayor que una llamada normal, un reintento de lote es muy caro --
+    # max_reintentos_truncamiento=0 hace que un truncamiento se rinda de
+    # inmediato (0 reintentos) en vez de usar el _REINTENTOS_TRUNCAMIENTO
+    # por defecto del módulo.
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    with patch("deepseek_utils.requests.post",
+               return_value=_respuesta_finish_reason('{"a": "b medi', "length")) as mock_post, \
+         patch("deepseek_utils.time.sleep") as mock_sleep:
+        resultado = deepseek_utils.call_deepseek_api(
+            messages=[{"role": "user", "content": "hola"}], max_reintentos_truncamiento=0
+        )
+    assert resultado is None
+    assert mock_post.call_count == 1  # ni un solo reintento
+    mock_sleep.assert_not_called()
+
+
 def test_reintento_por_truncamiento_sube_la_temperature(monkeypatch):
     # Con temperature=0.0 (verificación), reintentar con la MISMA petición
     # es casi inútil: es determinista, así que reproduce el mismo bucle de
