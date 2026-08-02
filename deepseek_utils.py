@@ -116,7 +116,7 @@ def _leer_respuesta_completa(headers, payload, timeout):
     return choices[0]["message"]["content"], choices[0].get("finish_reason"), data.get("usage")
 
 
-def _leer_respuesta_en_streaming(headers, payload, timeout):
+def _leer_respuesta_en_streaming(headers, payload, timeout, contexto=None):
     """Misma llamada pero con stream=true, consumiendo el SSE entero aquí
     dentro y devolviendo (contenido, finish_reason, usage) EXACTAMENTE con
     la misma forma que _leer_respuesta_completa -- quien llama no nota la
@@ -139,6 +139,17 @@ def _leer_respuesta_en_streaming(headers, payload, timeout):
     conexión nunca parece inactiva, y una respuesta de 45s se completa sin
     problema."""
     partes = []
+    # DIAGNÓSTICO TEMPORAL (02/08/2026): en producción se vio content=''
+    # con tokens_salida=8000 en respuestas truncadas -- la conexión se
+    # completó entera (llegó el chunk final con usage) pero el
+    # acumulador de "content" no capturó nada. Hipótesis: el modelo está
+    # mandando esos tokens por "reasoning_content" (razonamiento interno
+    # estilo R1, que algunos modelos DeepSeek emiten incluso sin ser la
+    # variante "reasoner" explícita) y nunca llega a emitir el "content"
+    # real porque el razonamiento agota el presupuesto de tokens antes de
+    # terminar. Se captura aquí para confirmarlo con datos reales; quitar
+    # en cuanto haya suficiente evidencia.
+    partes_razonamiento = []
     finish_reason = None
     usage = None
     with requests.post(_URL_DEEPSEEK, headers=headers, json=payload, timeout=timeout, stream=True) as response:
@@ -160,14 +171,26 @@ def _leer_respuesta_en_streaming(headers, payload, timeout):
             choices = data.get("choices") or []
             if not choices:
                 continue
-            fragmento = (choices[0].get("delta") or {}).get("content")
+            delta = choices[0].get("delta") or {}
+            fragmento = delta.get("content")
             if fragmento:
                 partes.append(fragmento)
+            fragmento_razonamiento = delta.get("reasoning_content")
+            if fragmento_razonamiento:
+                partes_razonamiento.append(fragmento_razonamiento)
             # finish_reason llega en el último chunk con contenido: se
             # guarda para que el reintento por truncamiento ("length")
             # siga funcionando igual que sin streaming.
             if choices[0].get("finish_reason"):
                 finish_reason = choices[0]["finish_reason"]
+    if partes_razonamiento:
+        razonamiento = "".join(partes_razonamiento)
+        sufijo = f" [{contexto}]" if contexto else ""
+        logger.warning(
+            "Diagnóstico razonamiento%s -- reasoning_content: %d caracteres, content: %d caracteres "
+            "(últimos 300 de razonamiento: %r)",
+            sufijo, len(razonamiento), len("".join(partes)), razonamiento[-300:],
+        )
     return "".join(partes), finish_reason, usage
 
 
@@ -325,7 +348,7 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
             with _semaforo_deepseek:
                 if stream:
                     contenido, finish_reason, usage = _leer_respuesta_en_streaming(
-                        headers, payload, _TIMEOUT_STREAMING)
+                        headers, payload, _TIMEOUT_STREAMING, contexto=contexto)
                 else:
                     contenido, finish_reason, usage = _leer_respuesta_completa(
                         headers, payload, _TIMEOUT_RESPUESTA_COMPLETA)
