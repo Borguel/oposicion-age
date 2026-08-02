@@ -155,18 +155,23 @@ def test_reintenta_ante_respuesta_truncada_y_acaba_devolviendo_la_respuesta(monk
 
 
 def test_deja_de_reintentar_tras_agotar_los_intentos_por_truncamiento(monkeypatch):
+    # _REINTENTOS_TRUNCAMIENTO (1) es deliberadamente más corto que
+    # _REINTENTOS_TRANSITORIOS (2): cada reintento aquí cuesta una
+    # generación entera, así que un hueco atascado en un bucle de
+    # repetición debe ceder el turno pronto al bucle EXTERIOR (que sí
+    # prueba con una ancla/tipo de pregunta distintos) en vez de agotar el
+    # mismo presupuesto que un simple parpadeo de red.
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
     with patch("deepseek_utils.requests.post", side_effect=[
         _respuesta_finish_reason('{"pregunta": "a', "length"),
         _respuesta_finish_reason('{"pregunta": "a medi', "length"),
-        _respuesta_finish_reason('{"pregunta": "a medias tod', "length"),
     ]) as mock_post, patch("deepseek_utils.time.sleep"):
         resultado = deepseek_utils.call_deepseek_api(messages=[{"role": "user", "content": "hola"}])
     # Nunca se devuelve el JSON truncado -- ni siquiera tras agotar los
     # reintentos: el llamante debe poder tratarlo igual que cualquier otro
     # fallo (None), no como un resultado válido a medio parsear.
     assert resultado is None
-    assert mock_post.call_count == 3  # 1 intento inicial + 2 reintentos, nunca más
+    assert mock_post.call_count == 2  # 1 intento inicial + 1 reintento, nunca más
 
 
 def test_reintento_por_truncamiento_sube_la_temperature(monkeypatch):

@@ -47,7 +47,24 @@ from errores_generacion import registrar_error_generacion
 
 logger = logging.getLogger(__name__)
 
-MAX_INTENTOS_POR_PREGUNTA = 4
+# Bajado de 4 a 2 (02/08/2026, con datos reales de producción): los huecos
+# corren en PARALELO, así que el tiempo total del test lo marca el más
+# LENTO de todos -- un único hueco atascado en un tema/ancla propenso a
+# repetición podía encadenar 4 intentos exteriores, cada uno con su propio
+# reintento interno de truncamiento (ver _REINTENTOS_TRUNCAMIENTO en
+# deepseek_utils.py), y llevarse más de 4 minutos ÉL SOLO mientras los
+# otros 9 huecos ya llevaban rato terminados -- ese caso real (test de 10
+# preguntas, ~4:20 total) es justo lo que se vio en producción. Bajar esto
+# a 2 corta el tope de tiempo que un hueco puede monopolizar en la mitad,
+# y es seguro hacerlo AHORA porque el relleno final (ver
+# MAX_RONDAS_RELLENO más abajo) ya no es una única pasada sino un bucle
+# que sigue intentando hasta completar el número pedido -- un hueco que
+# se rinde antes no significa menos preguntas, solo que ese hueco concreto
+# cede el turno antes a una ancla/tipo de pregunta distinto (en el propio
+# tema o, en el relleno, en otro) que tiene más probabilidad real de
+# terminar limpio que seguir insistiendo en la misma combinación
+# problemática.
+MAX_INTENTOS_POR_PREGUNTA = 2
 
 # Tope de RONDAS de relleno (ver el final de generar_test_verificado): una
 # única pasada de relleno dejaba el test corto de verdad en producción
@@ -614,10 +631,20 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     if not temas_unicos:
         return {"test": [], "descartadas": 0, "advertencia": "No se ha seleccionado ningún tema."}
 
-    subbloques_por_tema = {
-        tid: obtener_subbloques_individuales(db, [tid], coleccion=coleccion)
-        for tid in temas_unicos
-    }
+    # En PARALELO (antes secuencial: un round-trip a Firestore por cada
+    # tema elegido, uno detrás de otro) -- con 20+ temas seleccionados
+    # (habitual: el usuario elige varios bloques enteros aunque solo pida
+    # 10 preguntas) esto solo sumaba ~10-12s de espera ANTES de que
+    # arrancara siquiera la primera llamada a DeepSeek, visto en
+    # producción el 02/08/2026 comparando el timestamp de "Petición
+    # recibida" con el de "Reparto de preguntas por tema". Cada llamada a
+    # obtener_subbloques_individuales es independiente (un tema, sin
+    # estado compartido), así que paralelizarla es seguro.
+    with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS, len(temas_unicos))) as executor:
+        subbloques_por_tema = dict(zip(
+            temas_unicos,
+            executor.map(lambda tid: obtener_subbloques_individuales(db, [tid], coleccion=coleccion), temas_unicos),
+        ))
     temas_con_contenido = [tid for tid in temas_unicos if subbloques_por_tema[tid]]
     if not temas_con_contenido:
         return {"test": [], "descartadas": 0,

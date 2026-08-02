@@ -28,6 +28,26 @@ logger = logging.getLogger(__name__)
 _REINTENTOS_TRANSITORIOS = 2
 _ESPERA_ENTRE_REINTENTOS_SEGUNDOS = 1.5
 
+# Reintentos ante finish_reason=length, DELIBERADAMENTE SEPARADOS de
+# _REINTENTOS_TRANSITORIOS (02/08/2026, con datos reales de producción):
+# un truncamiento no es un simple parpadeo de red -- cada reintento cuesta
+# una generación ENTERA (hasta ~40s con max_tokens=5000), así que
+# compartir presupuesto con timeout/conexión (barato de reintentar) es
+# carísimo en la cola con peor suerte: se vio un hueco tardar más de 4
+# minutos ÉL SOLO por encadenar reintentos de truncamiento dentro de
+# varios intentos exteriores (ver MAX_INTENTOS_POR_PREGUNTA en
+# generador_preguntas_verificado.py), y como los huecos corren en
+# paralelo, el tiempo total del test lo marca el MÁS LENTO de todos -- un
+# solo hueco atascado se lleva por delante el test entero por mucho que
+# el resto ya hubiera terminado. Un único reintento (con la temperature
+# ya subida, ver más abajo) es suficiente para darle una oportunidad real
+# de escapar del bucle sin multiplicar el coste de un caso ya perdido --
+# si tampoco funciona, es mejor ceder el turno cuanto antes al bucle
+# EXTERIOR (que sí prueba con una ancla/tipo de pregunta distintos, un
+# cambio real, no solo más temperatura) o al relleno final, que a un tema
+# concreto le siga tocando mala suerte con el mismo prompt.
+_REINTENTOS_TRUNCAMIENTO = 1
+
 # Tope global de peticiones EN VUELO a DeepSeek en todo el proceso (app.py
 # corre un único proceso -- ver --workers 1 en render.yaml, a propósito
 # porque este semáforo y el rate-limiter de app.py son estado en memoria
@@ -280,6 +300,7 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     sufijo_contexto = f" [{contexto}]" if contexto else ""
 
     intentos_restantes = _REINTENTOS_TRANSITORIOS
+    intentos_truncamiento_restantes = _REINTENTOS_TRUNCAMIENTO
     while True:
         try:
             # Todo el consumo de la respuesta ocurre DENTRO del semáforo: en
@@ -325,13 +346,15 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
                 "streaming" if stream else "completo", sufijo_contexto,
             )
             if finish_reason == "length":
-                # Truncado a mitad de respuesta: nunca se devuelve el
-                # JSON a medias (el llamante solo lo descartaría igual
-                # al fallar el parseo, sin dejar rastro claro de por
-                # qué). Se trata como un fallo transitorio más: mismo
-                # backoff y mismo tope de reintentos que timeout/conexión.
-                if intentos_restantes > 0:
-                    intentos_restantes -= 1
+                # Truncado a mitad de respuesta: nunca se devuelve el JSON a
+                # medias (el llamante solo lo descartaría igual al fallar el
+                # parseo, sin dejar rastro claro de por qué). Presupuesto de
+                # reintentos PROPIO (_REINTENTOS_TRUNCAMIENTO, ver la
+                # constante arriba) -- deliberadamente más corto que el de
+                # timeout/conexión: cada reintento aquí cuesta una
+                # generación entera (hasta ~40s), no un simple parpadeo.
+                if intentos_truncamiento_restantes > 0:
+                    intentos_truncamiento_restantes -= 1
                     # Sube la temperatura para EL REINTENTO (nunca la
                     # llamada original) en vez de repetir exactamente la
                     # misma petición: con temperature=0.0 (verificación)
@@ -350,8 +373,8 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
                         payload["temperature"] = min(payload.get("temperature", temperature) + 0.3, 0.9)
                     logger.warning(
                         "DeepSeek truncó la respuesta (finish_reason=length, max_tokens=%s)%s -- "
-                        "reintentando con temperature=%s (quedan %d intentos)",
-                        max_tokens, sufijo_contexto, payload.get("temperature"), intentos_restantes,
+                        "reintentando con temperature=%s (quedan %d intentos de truncamiento)",
+                        max_tokens, sufijo_contexto, payload.get("temperature"), intentos_truncamiento_restantes,
                     )
                     time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
                     continue
