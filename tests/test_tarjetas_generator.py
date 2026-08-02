@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from tarjetas_generator import (
     _repartir_cupos, _parsear_tarjetas, _contiene_frase_prohibida, generar_tarjetas_verificadas,
+    _verificar_tarjeta,
 )
 
 
@@ -286,6 +287,17 @@ class TestGenerarTarjetasVerificadas:
             generar_tarjetas_verificadas("Texto corto.", 1)
 
         assert max_tokens_verificacion == [4000]
+
+    def test_verificacion_mantiene_el_thinking_encendido(self):
+        # call_deepseek_api desactiva el razonamiento de deepseek-v4-flash
+        # por defecto (02/08/2026, ver deepseek_utils.py) porque en la
+        # GENERACIÓN no aportaba nada -- pero esto es una verificación, la
+        # tarea que se juega la precisión frente al fragmento de origen, así
+        # que debe pedir thinking_enabled=True explícitamente.
+        with patch("tarjetas_generator.call_deepseek_api",
+                   return_value=json.dumps({"valido": True, "problemas": []})) as mock:
+            _verificar_tarjeta({"pregunta": "¿?", "respuesta": "R"}, "Fragmento de prueba.", on_usage=None)
+        assert mock.call_args.kwargs["thinking_enabled"] is True
 
     def test_relleno_de_varios_huecos_se_ejecuta_en_paralelo(self):
         # Regresión de lentitud: el relleno era un "for" secuencial, así que

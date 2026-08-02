@@ -111,6 +111,15 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
         max_tokens=4000,
         response_format_json=True,
         on_usage=on_usage,
+        # thinking_enabled=True (02/08/2026): call_deepseek_api desactiva el
+        # razonamiento interno de deepseek-v4-flash por defecto (ver el
+        # comentario largo junto a payload["thinking"] en deepseek_utils.py)
+        # porque en el Test Personalizado se vio que ese razonamiento
+        # dominaba tiempo y tokens sin aportar nada en la GENERACIÓN. Pero
+        # esto es una VERIFICACIÓN -- la misma decisión tomada ahí aplica
+        # aquí igual: es la tarea que se juega la precisión, así que se
+        # mantiene el margen de deliberación encendido a propósito.
+        thinking_enabled=True,
     )
     if not raw:
         return False
@@ -197,6 +206,10 @@ def _verificar_lote(preguntas, texto_fuente, on_usage):
         max_tokens=min(8000, 500 + 700 * len(preguntas)),
         response_format_json=True,
         on_usage=on_usage,
+        # thinking_enabled=True: ver el comentario en _verificar_pregunta --
+        # misma verificación, misma razón para mantener el razonamiento
+        # encendido pese a que deepseek-v4-flash lo desactiva por defecto.
+        thinking_enabled=True,
     )
     if not raw:
         return {}

@@ -161,6 +161,14 @@ def _verificar_tarjeta(tarjeta, fragmento, on_usage):
         max_tokens=4000,
         response_format_json=True,
         on_usage=on_usage,
+        # thinking_enabled=True (02/08/2026): call_deepseek_api desactiva el
+        # razonamiento interno de deepseek-v4-flash por defecto (ver
+        # deepseek_utils.py) porque en el Test Personalizado se vio que ese
+        # razonamiento dominaba tiempo y tokens sin aportar nada en la
+        # GENERACIÓN. Esta es una VERIFICACIÓN -- misma decisión que en
+        # test_generator.py._verificar_pregunta: se mantiene el margen de
+        # deliberación encendido a propósito para no perder precisión.
+        thinking_enabled=True,
     )
     if not raw:
         return False

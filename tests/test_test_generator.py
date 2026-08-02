@@ -11,7 +11,9 @@ import json
 import re
 from unittest.mock import patch
 
-from test_generator import generar_preguntas_ia_en_lotes, MAX_INTENTOS_POR_PREGUNTA_PDF
+from test_generator import (
+    generar_preguntas_ia_en_lotes, MAX_INTENTOS_POR_PREGUNTA_PDF, _verificar_pregunta, _verificar_lote,
+)
 
 
 def _construir_prompt_fabrica(preguntas_por_llamada):
@@ -627,6 +629,22 @@ class TestGenerarPreguntasIaEnLotes:
             generar_preguntas_ia_en_lotes(construir_prompt, 1, "Texto de prueba.", tamano_lote=1)
 
         assert max_tokens_individual == [4000]
+
+    def test_verificacion_individual_mantiene_el_thinking_encendido(self):
+        # call_deepseek_api desactiva el razonamiento de deepseek-v4-flash
+        # por defecto (02/08/2026, ver deepseek_utils.py) porque en la
+        # GENERACIÓN no aportaba nada -- pero esto es una verificación, la
+        # tarea que se juega la precisión frente al documento de origen, así
+        # que debe pedir thinking_enabled=True explícitamente.
+        with patch("test_generator.call_deepseek_api", return_value=json.dumps({"valido": True, "problemas": []})) as mock:
+            _verificar_pregunta({"pregunta": "¿?"}, "Documento de prueba.", on_usage=None)
+        assert mock.call_args.kwargs["thinking_enabled"] is True
+
+    def test_verificacion_en_bloque_mantiene_el_thinking_encendido(self):
+        respuesta = json.dumps({"resultados": [{"indice": 0, "valido": True, "problemas": []}]})
+        with patch("test_generator.call_deepseek_api", return_value=respuesta) as mock:
+            _verificar_lote([{"pregunta": "¿?"}], "Documento de prueba.", on_usage=None)
+        assert mock.call_args.kwargs["thinking_enabled"] is True
 
     def test_nunca_devuelve_mas_preguntas_de_las_pedidas(self):
         # Bug real reportado: pedir 20 preguntas y recibir 22 -- un lote
