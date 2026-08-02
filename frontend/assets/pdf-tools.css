@@ -354,6 +354,14 @@
   white-space: nowrap;
   text-shadow: 0 0 5px #fff, 0 0 5px #fff, 0 0 9px #fff;
 }
+/* El halo blanco de arriba da contraste al texto oscuro (--age-ink en
+   claro) sobre el relleno naranja/fondo gris. En oscuro --age-ink pasa
+   a ser claro, así que ese mismo halo blanco se convertía en un borrón
+   claro sobre claro, ilegible (bug real reportado: el % no se veía al
+   generar un test/tarjetas en modo oscuro). Invertido a halo oscuro. */
+:root[data-theme="dark"] .pdfherr-body .progress-text {
+  text-shadow: 0 0 5px #000, 0 0 5px #000, 0 0 9px #000;
+}
 
 
 /* Bloque "También puedes generar desde este mismo documento" (ver
