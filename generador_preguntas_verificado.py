@@ -588,13 +588,15 @@ def _verificar_y_aceptar_pregunta(pregunta_candidata, anclas, tema_id, tipo_preg
     verificacion_raw = call_deepseek_api(
         messages=[{"role": "system", "content": system_ver}, {"role": "user", "content": user_ver}],
         temperature=0.0,
-        # max_tokens=4000 (subido de 2000 a 3000, y de 3000 a 4000, ambos
-        # el 02/08/2026): se vio en producción truncamiento real también
-        # aquí, primero con tokens_salida == 2000 y luego, tras la primera
-        # subida, con tokens_salida == 3000 de nuevo (cuando el
-        # verificador encuentra varios problemas en una pregunta,
-        # "problemas" puede alargarse bastante).
-        max_tokens=4000,
+        # max_tokens=8000 (subido de 2000 a 3000, de 3000 a 4000 y de 4000
+        # a 8000, todo el 02/08/2026): se vio en producción truncamiento
+        # real en cada nivel anterior (2000, luego 3000, luego 4000 -- con
+        # max_reintentos_truncamiento=0 un truncamiento aquí pierde
+        # directamente la pregunta, no hay margen para "ya se arreglará en
+        # el reintento"). DeepSeek es barato, así que se sube de golpe a
+        # 8000 en vez de ir subiendo de 1000 en 1000 cada vez que aparece
+        # un caso real.
+        max_tokens=8000,
         contexto=f"tema={tema_id} tipo=verificacion {contexto_intento}",
         stream=True,  # ver el comentario largo sobre streaming en la generación
         # frequency_penalty=0.4: mismo motivo que en la generación.
@@ -669,26 +671,20 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
                 messages=[{"role": "system", "content": system_gen}, {"role": "user", "content": user_gen}],
                 temperature=0.5,
                 contexto=f"tema={tema_id} tipo=generacion intento={_intento + 1}",
-                # max_tokens=5000 (subido de 3000 el 02/08/2026, con datos
-                # reales de producción, no a ciegas): con 3000, la inmensa
-                # mayoría de las llamadas de generación truncaban a mitad del
-                # JSON (finish_reason == "length" con tokens_salida == 3000
-                # una y otra vez en el log "DeepSeek respondió en Xs..." de
-                # deepseek_utils.py) -- y no era un caso raro, sino casi
-                # sistemático: incluso las respuestas BUENAS (finish_reason
-                # == "stop", nunca truncadas) ya consumían hasta ~2950
-                # tokens con este mismo prompt, así que 3000 apenas dejaba
-                # margen real. El reintento por truncamiento (ver
-                # call_deepseek_api) ayuda ante un corte puntual, pero
-                # reintentar con el MISMO límite no arregla un corte
-                # sistemático -- solo dobla o triplica la latencia de ese
-                # hueco sin conseguir nada. 5000 da margen de sobra sobre
-                # esos ~2950 sin tocar el prompt (que ya pide explícitamente
-                # explicaciones breves, máximo 25-30 palabras por opción) --
-                # así no se sacrifica calidad para ganar velocidad. Si con
-                # datos reales se ve que finish_reason == "length" ha
-                # desaparecido del todo, se puede volver a ajustar a la baja.
-                max_tokens=5000,
+                # max_tokens=8000 (subido de 3000 a 5000 y de 5000 a 8000,
+                # ambos el 02/08/2026, con datos reales de producción, no a
+                # ciegas): con 3000 la inmensa mayoría truncaba a mitad del
+                # JSON; con 5000 seguía truncando de forma sistemática en
+                # ciertos temas (p.ej. bloque_03), no como caso puntual --
+                # varios huecos distintos truncaron a la vez en 5000/5000
+                # tokens en el mismo test. Con max_reintentos_truncamiento=0
+                # un truncamiento aquí pierde la pregunta directamente (ver
+                # más abajo), así que no compensa dejar el límite justo:
+                # DeepSeek es barato y 8000 da margen de sobra sin tocar el
+                # prompt (que ya pide explícitamente explicaciones breves,
+                # máximo 25-30 palabras por opción) -- así no se sacrifica
+                # calidad para ganar velocidad.
+                max_tokens=8000,
                 # stream=True NO es para mostrar la pregunta poco a poco (aquí
                 # se espera igualmente al JSON completo antes de validarlo):
                 # es lo que evita que una generación larga muera con "Error de
