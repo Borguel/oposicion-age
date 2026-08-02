@@ -75,7 +75,7 @@ def _es_error_transitorio(exc):
     return False
 
 
-def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash"):
+def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_format_json=False, on_usage=None, model="deepseek-v4-flash", contexto=None):
     """
     Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.
 
@@ -96,6 +96,21 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     "deepseek-v4-pro" actual sí lo admite con normalidad -- se mantiene la
     exclusión de abajo solo por si quedara algún sitio con el nombre
     retirado todavía configurado, nunca se activa con los nombres actuales.
+
+    contexto (opcional): etiqueta libre (p. ej. "tema=bloque_01-tema_02
+    tipo=generacion") que se añade a los logs de esta llamada concreta --
+    solo para poder identificar en los logs de Render QUÉ tema/pregunta se
+    vio afectado por una respuesta truncada o un fallo de conexión, sin
+    tener que cruzar manualmente varias líneas de log por timestamp.
+
+    Una respuesta con finish_reason == "length" (DeepSeek cortó la salida
+    al llegar a max_tokens, casi siempre a mitad del JSON pedido) se trata
+    igual que un fallo transitorio de red: se reintenta hasta
+    _REINTENTOS_TRANSITORIOS veces con el mismo backoff, y si sigue
+    truncando tras agotar los reintentos se devuelve None (nunca el JSON a
+    medias) para que el llamante lo trate como un intento fallido más, en
+    vez de que un json.loads() posterior falle en silencio sin dejar
+    ningún rastro de que la causa real fue un límite de tokens.
     """
     api_key = os.getenv("DEEPSEEK_API_KEY")
 
@@ -125,6 +140,7 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
     # algo nuestro atascado" sin tener que adivinar -- ver también el mismo
     # patrón en call_deepseek_api_stream.
     inicio = time.monotonic()
+    sufijo_contexto = f" [{contexto}]" if contexto else ""
 
     intentos_restantes = _REINTENTOS_TRANSITORIOS
     while True:
@@ -159,55 +175,76 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
                 # el modelo terminara por sí solo, candidato real a JSON
                 # incompleto/descartado; "stop" significa que el modelo
                 # terminó por su cuenta bien dentro del límite.
+                finish_reason = data['choices'][0].get('finish_reason')
                 logger.info(
-                    "DeepSeek respondió en %.2fs (modelo=%s, finish_reason=%s, tokens_salida=%s)",
-                    time.monotonic() - inicio, model,
-                    data['choices'][0].get('finish_reason'),
-                    (data.get('usage') or {}).get('completion_tokens'),
+                    "DeepSeek respondió en %.2fs (modelo=%s, finish_reason=%s, tokens_salida=%s)%s",
+                    time.monotonic() - inicio, model, finish_reason,
+                    (data.get('usage') or {}).get('completion_tokens'), sufijo_contexto,
                 )
+                if finish_reason == "length":
+                    # Truncado a mitad de respuesta: nunca se devuelve el
+                    # JSON a medias (el llamante solo lo descartaría igual
+                    # al fallar el parseo, sin dejar rastro claro de por
+                    # qué). Se trata como un fallo transitorio más: mismo
+                    # backoff y mismo tope de reintentos que timeout/conexión.
+                    if intentos_restantes > 0:
+                        intentos_restantes -= 1
+                        logger.warning(
+                            "DeepSeek truncó la respuesta (finish_reason=length, max_tokens=%s)%s -- "
+                            "reintentando (quedan %d intentos)",
+                            max_tokens, sufijo_contexto, intentos_restantes,
+                        )
+                        time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
+                        continue
+                    logger.warning(
+                        "DeepSeek siguió truncando la respuesta tras agotar los reintentos "
+                        "(finish_reason=length, max_tokens=%s)%s -- se descarta este intento",
+                        max_tokens, sufijo_contexto,
+                    )
+                    return None
                 return data['choices'][0]['message']['content']
             else:
                 logger.error("Respuesta inesperada de DeepSeek API: %s", data)
                 return None
 
         except requests.exceptions.Timeout:
-            logger.warning("Timeout: la API de DeepSeek no respondió en 30 segundos")
+            logger.warning("Timeout: la API de DeepSeek no respondió en 30 segundos%s", sufijo_contexto)
             transitorio = True
 
         except requests.exceptions.ConnectionError:
-            logger.warning("Error de conexión: no se pudo conectar a DeepSeek API")
+            logger.warning("Error de conexión: no se pudo conectar a DeepSeek API%s", sufijo_contexto)
             transitorio = True
 
         except requests.exceptions.HTTPError as e:
             status = e.response.status_code if e.response is not None else None
             cuerpo = e.response.text[:500] if e.response is not None else ""
             if status == 401:
-                logger.error("Error HTTP 401 de DeepSeek: verifica que la API key sea válida (%s) -- %s", e, cuerpo)
+                logger.error("Error HTTP 401 de DeepSeek: verifica que la API key sea válida (%s) -- %s%s", e, cuerpo, sufijo_contexto)
             elif status == 429:
-                logger.warning("Error HTTP 429 de DeepSeek: límite de tasa excedido (%s) -- %s", e, cuerpo)
+                logger.warning("Error HTTP 429 de DeepSeek: límite de tasa excedido (%s) -- %s%s", e, cuerpo, sufijo_contexto)
             elif status is not None and status >= 500:
-                logger.warning("Error HTTP %s del servidor de DeepSeek (%s) -- %s", status, e, cuerpo)
+                logger.warning("Error HTTP %s del servidor de DeepSeek (%s) -- %s%s", status, e, cuerpo, sufijo_contexto)
             else:
-                logger.error("Error HTTP %s de DeepSeek: %s -- %s", status, e, cuerpo)
+                logger.error("Error HTTP %s de DeepSeek: %s -- %s%s", status, e, cuerpo, sufijo_contexto)
             transitorio = _es_error_transitorio(e)
 
         except requests.exceptions.RequestException as e:
-            logger.warning("Error en la petición a DeepSeek: %s", e)
+            logger.warning("Error en la petición a DeepSeek: %s%s", e, sufijo_contexto)
             transitorio = _es_error_transitorio(e)
 
         except KeyError as e:
-            logger.exception("Error en la estructura de la respuesta de DeepSeek: %s", e)
+            logger.exception("Error en la estructura de la respuesta de DeepSeek: %s%s", e, sufijo_contexto)
             return None
 
         except Exception:
-            logger.exception("Error inesperado en DeepSeek API")
+            logger.exception("Error inesperado en DeepSeek API%s", sufijo_contexto)
             return None
 
         if transitorio and intentos_restantes > 0:
             intentos_restantes -= 1
             time.sleep(_ESPERA_ENTRE_REINTENTOS_SEGUNDOS)
             continue
-        logger.warning("DeepSeek falló tras %.2fs (modelo=%s)", time.monotonic() - inicio, model)
+        logger.warning("DeepSeek falló tras %.2fs (modelo=%s)%s", time.monotonic() - inicio, model, sufijo_contexto)
         return None
 
 def _post_deepseek_con_reintentos(headers, payload, timeout, stream=False):
