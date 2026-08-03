@@ -198,6 +198,37 @@ def test_no_rechaza_contenido_esencial_como_termino_juridico_legitimo():
     )) is True
 
 
+def test_rechaza_participio_seguido_de_en_el_tema():
+    # Bug real reportado por un usuario (03/08/2026), visto SEIS veces en un
+    # mismo test real generado desde PDF: "la clasificación... recogida EN
+    # EL TEMA" y "la sentencia... citada EN EL TEMA" son la misma remisión
+    # al material de origen que ya cazaba test_rechaza_el_documento_
+    # establece_indica_o_menciona ("el tema cita el artículo..."), pero con
+    # el orden invertido -- el participio va ANTES de "en el tema", no
+    # después, y el patrón anterior solo miraba [sustantivo] -> [verbo], no
+    # [participio] -> [en el + sustantivo].
+    for variante in [
+        "Según la clasificación de fuentes del Derecho recogida en el tema, ¿qué se entiende por "
+        "fuentes reales?",
+        "Según la sentencia Van Gend & Loos del Tribunal de Justicia de la Unión Europea, citada en "
+        "el tema, ¿cuál de las siguientes afirmaciones es correcta?",
+        "La excepción prevista en el documento no se aplica a este supuesto.",
+        "El plazo establecido en el texto es de un mes.",
+        "El procedimiento regulado en el fragmento exige notificación previa.",
+    ]:
+        assert validar_pregunta(_pregunta_valida(pregunta=variante)) is False, variante
+
+
+def test_no_rechaza_participio_seguido_de_en_una_norma_legitima():
+    # Mismo cuidado que test_no_rechaza_conforme_a_seguido_de_una_norma_
+    # legitima: el participio + "en el/la..." solo debe dispararse si lo
+    # que sigue es el documento/tema/contenido/texto/fragmento de origen,
+    # no una norma real citada por su nombre.
+    assert validar_pregunta(_pregunta_valida(
+        explicacion="El plazo previsto en la Ley 39/2015 es de un mes."
+    )) is True
+
+
 def test_rechaza_sigla_ce_en_vez_del_nombre_completo():
     # Regresión: los exámenes oficiales de estas oposiciones nunca abrevian
     # -- una pregunta que diga "según la CE" en vez de "según la

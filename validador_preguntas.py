@@ -59,7 +59,17 @@ PATRON_REFERENCIA_META = re.compile(
     r"|\bconforme\s+(al|a\s+la|a\s+lo)\s+(documento|contenido|texto|tema|fragmento)\b"
     r"|\b(el|la)\s+(documento|contenido|texto|tema|fragmento)\b"
     r"(?:(?!\.\s)[\s\S]){0,150}?\s+"
-    r"(establece|indica|se[ñn]ala|menciona|dice|cita|dispone|regula|recoge|prev[ée]|afirma|explica)\b",
+    r"(establece|indica|se[ñn]ala|menciona|dice|cita|dispone|regula|recoge|prev[ée]|afirma|explica)\b"
+    # [participio] + "en el/la [documento/tema/...]" (03/08/2026, bug real,
+    # visto 6 veces en un único test real generado desde PDF): el patrón de
+    # arriba solo cazaba [sustantivo] ANTES del verbo ("el tema cita..."),
+    # no al revés -- "la clasificación... recogida EN EL TEMA", "la
+    # sentencia... citada EN EL TEMA" tienen el participio ANTES de "en el
+    # tema", así que se colaban enteros por ese hueco pese a ser la misma
+    # remisión al documento de origen.
+    r"|\b(recogid[oa]s?|citad[oa]s?|mencionad[oa]s?|previst[oa]s?|regulad[oa]s?|establecid[oa]s?|"
+    r"se[ñn]alad[oa]s?|indicad[oa]s?|dispuest[oa]s?|contemplad[oa]s?|definid[oa]s?)\s+en\s+"
+    r"(el|la|lo)\s+(documento|contenido|texto|tema|fragmento)\b",
     re.IGNORECASE,
 )
 
