@@ -22,6 +22,7 @@ from test_generator import (
     _claves_dedup, _fragmentos_por_lote, _es_duplicado_por_contencion,
     _bloques_estructurales, _repartir_bloques_en_lotes, _bloques_por_esquema_ia,
     _detectar_duplicados_finales, generar_banco_preguntas_adaptativo,
+    _recortar_fragmento_a_articulo_citado,
 )
 
 
@@ -1822,6 +1823,105 @@ class TestFragmentosPorLoteConBloquesEstructurales:
             fragmentos = _fragmentos_por_lote(texto, 4)  # pero 4 lotes
 
         assert len(fragmentos) == 4
+
+
+class TestRecortarFragmentoAArticuloCitado:
+    # Optimización de coste de verificación (03/08/2026): en vez de mandar
+    # el fragmento ENTERO del lote (varios artículos completos) a verificar
+    # cada candidata, cuando se puede identificar con seguridad a qué
+    # artículo pertenece se manda solo ESE bloque. Prioridad absoluta:
+    # nunca acotar mal -- cualquier caso ambiguo debe devolver None (usar
+    # el fragmento completo, comportamiento de siempre).
+
+    def _fragmento_tres_articulos(self):
+        relleno = "Frase de relleno para simular contenido real de un artículo constitucional. " * 4
+        return "\n\n".join(
+            f"Artículo {n}.\n1. {relleno} (contenido específico del artículo {n})"
+            for n in (9, 10, 11)
+        )
+
+    def test_acota_al_bloque_del_articulo_citado_en_el_enunciado(self):
+        fragmento = self._fragmento_tres_articulos()
+        pregunta = {"pregunta": "Según el artículo 10, ¿qué se establece?", "explicacion": ""}
+
+        resultado = _recortar_fragmento_a_articulo_citado(pregunta, fragmento)
+
+        assert resultado is not None
+        assert "contenido específico del artículo 10" in resultado
+        assert "artículo 9" not in resultado.lower()
+        assert "artículo 11" not in resultado.lower()
+
+    def test_usa_la_explicacion_si_el_enunciado_no_cita_articulo(self):
+        # Mismo respaldo que ya usa _articulos_citados para dedup.
+        fragmento = self._fragmento_tres_articulos()
+        pregunta = {"pregunta": "¿Qué mayoría se exige?", "explicacion": "El artículo 11 establece..."}
+
+        resultado = _recortar_fragmento_a_articulo_citado(pregunta, fragmento)
+
+        assert resultado is not None
+        assert "contenido específico del artículo 11" in resultado
+
+    def test_incluye_hasta_el_final_si_es_el_ultimo_articulo(self):
+        fragmento = self._fragmento_tres_articulos()
+        pregunta = {"pregunta": "Según el artículo 11, ¿qué se establece?", "explicacion": ""}
+
+        resultado = _recortar_fragmento_a_articulo_citado(pregunta, fragmento)
+
+        assert resultado is not None
+        assert resultado.strip().endswith("(contenido específico del artículo 11)")
+
+    def test_ningun_articulo_citado_devuelve_none(self):
+        fragmento = self._fragmento_tres_articulos()
+        pregunta = {"pregunta": "¿Cuál es el orden de las fuentes del derecho?", "explicacion": "Sin cifras."}
+        assert _recortar_fragmento_a_articulo_citado(pregunta, fragmento) is None
+
+    def test_mas_de_un_articulo_citado_devuelve_none(self):
+        # Ambiguo -- podría depender de cualquiera de los dos, no se puede
+        # acotar con seguridad a uno solo.
+        fragmento = self._fragmento_tres_articulos()
+        pregunta = {
+            "pregunta": "Comparando el artículo 9 y el artículo 10, ¿cuál es la diferencia?",
+            "explicacion": "",
+        }
+        assert _recortar_fragmento_a_articulo_citado(pregunta, fragmento) is None
+
+    def test_articulo_citado_no_aparece_en_este_fragmento_devuelve_none(self):
+        # El artículo 25 no está en este fragmento -- le tocó a otro lote,
+        # o el documento no tiene esta estructura. No hay nada que acotar.
+        fragmento = self._fragmento_tres_articulos()
+        pregunta = {"pregunta": "Según el artículo 25, ¿qué se establece?", "explicacion": ""}
+        assert _recortar_fragmento_a_articulo_citado(pregunta, fragmento) is None
+
+    def test_articulo_citado_aparece_dos_veces_en_el_fragmento_devuelve_none(self):
+        # Dos normas distintas citando el mismo número de artículo dentro
+        # del mismo fragmento (limitación conocida de _bloques_
+        # estructurales, ver su docstring) -- más seguro no acotar que
+        # acotar al bloque equivocado.
+        fragmento = self._fragmento_tres_articulos() + "\n\nArtículo 10.\n1. Otra norma distinta."
+        pregunta = {"pregunta": "Según el artículo 10, ¿qué se establece?", "explicacion": ""}
+        assert _recortar_fragmento_a_articulo_citado(pregunta, fragmento) is None
+
+    def test_sin_fragmento_devuelve_none(self):
+        pregunta = {"pregunta": "Según el artículo 10, ¿qué se establece?", "explicacion": ""}
+        assert _recortar_fragmento_a_articulo_citado(pregunta, None) is None
+        assert _recortar_fragmento_a_articulo_citado(pregunta, "") is None
+
+    def test_bloque_resultante_demasiado_corto_devuelve_none(self):
+        # Salvaguarda contra falsos positivos del regex: un "artículo" que
+        # resulta ser solo un título suelto sin contenido real no debe
+        # tratarse como un bloque válido.
+        fragmento = "Artículo 10.\nArtículo 11.\n1. Contenido real y largo del artículo once. " * 3
+        pregunta = {"pregunta": "Según el artículo 10, ¿qué se establece?", "explicacion": ""}
+        assert _recortar_fragmento_a_articulo_citado(pregunta, fragmento) is None
+
+    def test_documento_narrativo_sin_marcadores_de_articulo_devuelve_none(self):
+        # Un documento repartido por _bloques_por_esquema_ia o por párrafo
+        # (sin "Artículo N" como encabezado propio) nunca puede acotarse
+        # aquí -- sigue verificándose con el fragmento completo, igual que
+        # hasta ahora.
+        fragmento = "El art. 10 CE señala varias cuestiones relevantes sobre esta materia en concreto."
+        pregunta = {"pregunta": "Según el artículo 10, ¿qué se establece?", "explicacion": ""}
+        assert _recortar_fragmento_a_articulo_citado(pregunta, fragmento) is None
 
 
 class TestGenerarBancoPreguntasAdaptativo:

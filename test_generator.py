@@ -665,6 +665,45 @@ def _bloques_estructurales(texto_fuente):
     return bloques, prosa_inicial
 
 
+def _recortar_fragmento_a_articulo_citado(pregunta, fragmento):
+    """Optimización de coste de verificación (03/08/2026): si 'pregunta'
+    cita un ÚNICO número de artículo (ver _articulos_citados) y ese
+    artículo aparece EXACTAMENTE UNA VEZ como marcador de bloque dentro de
+    'fragmento' (el trozo del lote del que salió la candidata), devuelve
+    solo el texto de ESE bloque -- desde su marcador hasta el siguiente
+    marcador de cualquier tipo, o fin de fragmento -- en vez del fragmento
+    entero. La verificación individual de cada candidata (ver
+    _pedir_lote_verificado) mandaba hasta ahora el fragmento COMPLETO del
+    lote (varios artículos enteros) para comprobar una pregunta que solo
+    trata UNO de ellos -- con varias candidatas por lote, ese mismo
+    fragmento se pagaba varias veces de más como tokens de entrada.
+
+    Devuelve None (el llamante debe usar el fragmento completo, igual que
+    antes) en cualquier caso ambiguo -- se prioriza NUNCA acotar mal antes
+    que ahorrar: sin artículo citado, más de uno citado, el marcador no
+    aparece o aparece más de una vez en este fragmento (documentos sin
+    "Artículo N" como encabezado propio, repartidos por _bloques_por_
+    esquema_ia o por párrafo, nunca llegan a coincidir aquí y siguen
+    verificándose exactamente igual que hasta ahora), o el bloque
+    resultante es sospechosamente corto (probable falso positivo del
+    regex, no un artículo de verdad)."""
+    articulos = _articulos_citados(pregunta)
+    if len(articulos) != 1 or not fragmento:
+        return None
+    numero = next(iter(articulos))
+    patron_este_articulo = re.compile(
+        rf"^\s*art[íi]culo\s+{re.escape(numero)}\b", re.IGNORECASE | re.MULTILINE
+    )
+    coincidencias = list(patron_este_articulo.finditer(fragmento))
+    if len(coincidencias) != 1:
+        return None
+    inicio = coincidencias[0].start()
+    siguientes = [m.start() for m in _PATRON_MARCADOR_PRIMARIO.finditer(fragmento) if m.start() > inicio]
+    fin = min(siguientes) if siguientes else len(fragmento)
+    bloque = fragmento[inicio:fin].strip()
+    return bloque if len(bloque) >= 40 else None
+
+
 def _repartir_bloques_en_lotes(bloques, n_lotes):
     """Reparte 'bloques' (ver _bloques_estructurales) entre n_lotes listas,
     equilibrando el total de CARACTERES por lote -- no solo el número de
@@ -1334,7 +1373,16 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         if candidatas_ok_local:
             with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(candidatas_ok_local))) as executor:
                 futuros = {
-                    executor.submit(_verificar_pregunta, candidata, texto_fuente_lote, on_usage): candidata
+                    executor.submit(
+                        _verificar_pregunta, candidata,
+                        # Acota al bloque del artículo citado cuando se
+                        # puede identificar con seguridad (ver el
+                        # comentario largo en
+                        # _recortar_fragmento_a_articulo_citado) -- si no,
+                        # fragmento completo, exactamente igual que antes.
+                        _recortar_fragmento_a_articulo_citado(candidata, texto_fuente_lote) or texto_fuente_lote,
+                        on_usage,
+                    ): candidata
                     for candidata in candidatas_ok_local
                 }
                 for futuro in as_completed(futuros):
