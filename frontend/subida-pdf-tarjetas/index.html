@@ -68,10 +68,13 @@
         <div class="mensaje-estado">
           <span id="texto-estado">Leyendo texto del PDF…</span>
         </div>
-        <div class="progress-container">
+        <p id="texto-estado-detalle" class="texto-estado-detalle hidden"></p>
+        <div class="progress-container" id="progress-container-numerico">
           <div class="progress-bar"><div id="progreso-generacion-pdf" class="progress-fill" style="width:0%"></div></div>
           <div id="texto-progreso-generacion-pdf" class="progress-text">0%</div>
         </div>
+        <div class="barra-indeterminada hidden" id="barra-indeterminada-redireccion"><div class="barra-indeterminada-fill"></div></div>
+        <a href="/mis-documentos/" class="enlace-ir-ahora hidden" id="enlace-ir-a-mis-documentos">Ir a Mis documentos ahora →</a>
       </div>
     </div>
     <!-- Alertas -->

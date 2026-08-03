@@ -1,5 +1,4 @@
 import { icono } from "/assets/icons.js";
-import { leerStreamConTimeout } from "/assets/stream-utils.js";
 import { marcarContenidoListo } from "/assets/auth.js";
 
 (async () => {
@@ -322,104 +321,85 @@ async function obtenerAuthHeaders() {
       modoEstudio.classList.remove('hidden');
       mostrarTarjetaActual();
     }
-    // Consume el stream SSE de /generar-banco-tarjetas-desde-pdf (progreso
-    // real por tarjeta verificada, ver
-    // tarjetas_generator.generar_banco_tarjetas_adaptativo). A diferencia
-    // del flujo anterior (pedir un número fijo de tarjetas), aquí se genera
-    // siempre el banco completo del documento (máximo aprovechable, hasta
-    // 100 -- 03/08/2026, decisión explícita del usuario: sin preguntar
-    // cuántas tarjetas quiere de entrada) y se entra en modo estudio con
-    // TODO lo generado en cuanto termina; desde "Mis documentos" podrá
-    // repetir con un subconjunto sin volver a gastar en IA. Sin arranque
-    // temprano: se espera al evento "fin", que ya trae las tarjetas listas.
-    async function generarBancoTarjetasConProgreso(formData, authHeaders) {
-      const { crearProgresoConversador } = await import("/assets/progreso-conversador.js");
-      const progreso = crearProgresoConversador({
-        elBarra: document.getElementById('progreso-generacion-pdf'),
-        elTextoBarra: document.getElementById('texto-progreso-generacion-pdf'),
-        elTexto: document.getElementById('texto-estado'),
-        elIcono: document.getElementById('ai-icon'),
-        etapasLeyendo: [
-          { mensaje: "Leyendo el texto del PDF…", icono: "documento" },
-          { mensaje: "Extrayendo los conceptos clave…", icono: "buscar" },
-        ],
-        etapasGenerando: [
-          { mensaje: "Generando preguntas para las tarjetas…", icono: "cerebro" },
-          { mensaje: "Verificando cada tarjeta con IA…", icono: "buscar" },
-          { mensaje: "Comprobando que la respuesta sea correcta…", icono: "grafico" },
-          { mensaje: "Descartando las tarjetas de baja calidad…", icono: "check" },
-        ],
-      });
+    // Espera 'ms' como mínimo junto a 'promesa' -- ver el mismo helper en
+    // subida-pdf-generar-test/script.js.
+    function conEsperaMinima(promesa, ms) {
+      return Promise.all([promesa, new Promise((resolve) => setTimeout(resolve, ms))]).then(([resultado]) => resultado);
+    }
 
-      // Techo monótono de "completadas" (nunca baja) -- mismo motivo que en
-      // subida-pdf-generar-test/script.js.
-      let techoCompletadas = 0;
+    // Sustituye el formulario por un aviso de que la generación ya ha
+    // arrancado en el servidor y de que el resto del progreso se sigue
+    // desde "Mis documentos" -- ver el comentario largo en
+    // subida-pdf-generar-test/script.js, mismo motivo y mismo patrón.
+    function mostrarRedireccionAMisDocumentos() {
+      formularioCard.classList.add('hidden');
+      contenedorCarga.classList.remove('hidden');
+      document.getElementById('ai-icon').innerHTML = icono('cerebro', 32);
+      document.getElementById('texto-estado').textContent = 'Nos ponemos a generar las tarjetas de tu documento…';
+      const detalle = document.getElementById('texto-estado-detalle');
+      detalle.textContent = 'Puede tardar unos minutos según lo largo que sea el documento. Te llevamos a "Mis documentos" para que veas cómo van apareciendo, sin tener que esperar aquí.';
+      detalle.classList.remove('hidden');
+      document.getElementById('progress-container-numerico').classList.add('hidden');
+      document.getElementById('barra-indeterminada-redireccion').classList.remove('hidden');
+      document.getElementById('enlace-ir-a-mis-documentos').classList.remove('hidden');
+    }
 
+    // Dispara la generación del banco completo de tarjetas y devuelve en
+    // cuanto el servidor confirma que ha arrancado, sin esperar a que
+    // termine -- ver el comentario largo en
+    // subida-pdf-generar-test/script.js (iniciarGeneracionBancoPreguntas),
+    // mismo motivo y mismo patrón.
+    // Devuelve el documento_id en cuanto llega el evento "inicio" -- ver
+    // el comentario largo en subida-pdf-generar-test/script.js
+    // (iniciarGeneracionBancoPreguntas), mismo motivo y mismo patrón.
+    async function iniciarGeneracionBancoTarjetas(formData, authHeaders) {
+      const res = await fetch("https://oposicion-age.onrender.com/generar-banco-tarjetas-desde-pdf",
+        { method: "POST", headers: authHeaders, body: formData });
+      if (res.status === 403) {
+        throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
+      }
+      if (res.status === 409) {
+        throw new Error('Ya se está generando el banco de tarjetas de este documento. Consulta el progreso en "Mis documentos".');
+      }
+      if (res.status === 429) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
+      }
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+      }
+      if (!res.body) return null;
+
+      const lector = res.body.getReader();
+      const decodificador = new TextDecoder();
+      let buffer = "";
+      let documentoId = null;
       try {
-        const res = await fetch("https://oposicion-age.onrender.com/generar-banco-tarjetas-desde-pdf",
-          { method: "POST", headers: authHeaders, body: formData });
-        if (res.status === 403) {
-          throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
-        }
-        if (res.status === 409) {
-          throw new Error('Ya se está generando el banco de tarjetas de este documento. Vuelve a "Mis documentos" en unos minutos.');
-        }
-        if (res.status === 429) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
-        }
-        if (!res.ok || !res.body) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
-        }
-
-        const lector = res.body.getReader();
-        const decodificador = new TextDecoder();
-        let buffer = "";
-        let datosFinales = null;
-
-        // "fin" es SIEMPRE el último evento del stream (el backend termina
-        // justo después de emitirlo): en cuanto llega se sale sin esperar
-        // al cierre de la conexión (done) -- en iPhone/WebKit esa señal a
-        // veces no llega nunca aunque todo esté ya recibido.
-        while (!datosFinales) {
-          const { done, value } = await leerStreamConTimeout(lector);
+        for (let intentos = 0; intentos < 5 && !documentoId; intentos++) {
+          const { done, value } = await lector.read();
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
           const bloques = buffer.split("\n\n");
-          buffer = bloques.pop(); // el último trozo puede venir incompleto
+          buffer = bloques.pop();
           for (const bloque of bloques) {
             const linea = bloque.trim();
             if (!linea.startsWith("data: ")) continue;
-            let evento;
             try {
-              evento = JSON.parse(linea.slice(6));
+              const evento = JSON.parse(linea.slice(6));
+              if (evento.tipo === "inicio") {
+                documentoId = evento.documento_id;
+                break;
+              }
             } catch {
-              continue;
-            }
-            if (evento.tipo === "progreso") {
-              techoCompletadas = Math.max(techoCompletadas, evento.completadas);
-              progreso.avanzar({ completadas: techoCompletadas, total: evento.objetivo },
-                `Verificando tarjetas (${techoCompletadas})…`);
-            } else if (evento.tipo === "fin") {
-              datosFinales = evento;
+              // ignorar trozo no parseable
             }
           }
         }
-
-        lector.cancel().catch(() => {});
-
-        if (!datosFinales) {
-          throw new Error("Error al generar las tarjetas. Vuelve a intentarlo.");
-        }
-        if (!datosFinales.tarjetas || datosFinales.tarjetas.length === 0) {
-          throw new Error(datosFinales.error || "No se generaron tarjetas.");
-        }
-        progreso.completar();
-        return datosFinales;
       } finally {
-        progreso.detener();
+        lector.cancel().catch(() => {});
       }
+      return documentoId;
     }
 
     // === Eventos ===
@@ -561,21 +541,16 @@ async function obtenerAuthHeaders() {
       }
       mensajeError.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
-      formularioCard.classList.add('hidden');
-      contenedorCarga.classList.remove('hidden');
-      document.getElementById('texto-estado').textContent = documentoIdActual
-        ? "Generando tarjetas desde tu documento…"
-        : "Leyendo texto del PDF…";
-      document.getElementById('ai-icon').innerHTML = icono(documentoIdActual ? "cerebro" : "documento", 32);
+      mostrarRedireccionAMisDocumentos();
 
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
 
       try {
-        const datosIA = await generarBancoTarjetasConProgreso(formData, authHeaders);
-        documentoIdActual = datosIA.documento_id || documentoIdActual;
-        nombreArchivo = datosIA.nombre_archivo || nombreArchivo;
-        iniciarModoEstudio(datosIA.tarjetas, true);
+        const documentoId = await conEsperaMinima(iniciarGeneracionBancoTarjetas(formData, authHeaders), 2200);
+        window.location.href = documentoId
+          ? `/mis-documentos/?destacar=${encodeURIComponent(documentoId)}`
+          : "/mis-documentos/";
       } catch (err) {
         mostrarError(err.message || "Error al generar las tarjetas.");
       }

@@ -653,6 +653,12 @@ class TestBancoPreguntasYTarjetas:
             parche.stop()
 
         assert resp.status_code == 200
+        # "inicio" es el PRIMER evento, con el documento_id ya resuelto --
+        # el frontend de "Subir PDF" (03/08/2026) solo lee este evento y
+        # abandona el resto del stream, para poder redirigir a "Mis
+        # documentos" sin esperar a que termine toda la generación.
+        assert eventos[0]["tipo"] == "inicio"
+        assert eventos[0]["documento_id"] == documento_sembrado
         assert eventos[-1]["tipo"] == "fin"
         assert eventos[-1]["total"] == 2
         # El evento "fin" trae ya las preguntas normalizadas/barajadas
@@ -727,6 +733,8 @@ class TestBancoPreguntasYTarjetas:
             parche.stop()
 
         assert resp.status_code == 200
+        assert eventos[0]["tipo"] == "inicio"
+        assert eventos[0]["documento_id"] == documento_sembrado
         assert eventos[-1]["tipo"] == "fin"
         assert eventos[-1]["total"] == 1
         assert eventos[-1]["tarjetas"] == tarjetas_generadas

@@ -1,5 +1,4 @@
 import { icono } from "/assets/icons.js";
-import { leerStreamConTimeout } from "/assets/stream-utils.js";
 import { marcarContenidoListo } from "/assets/auth.js";
 
 (async () => {
@@ -232,110 +231,107 @@ async function obtenerAuthHeaders() {
       document.getElementById('archivo-pdf').dispatchEvent(event);
     });
 
-    // Consume el stream SSE de /generar-banco-preguntas-desde-pdf (progreso
-    // real por PREGUNTA verificada -- ver test_generator.py). A diferencia
-    // del flujo anterior (pedir un número fijo de preguntas), aquí se genera
-    // siempre el banco completo del documento (máximo aprovechable, hasta
-    // 100 -- 03/08/2026, decisión explícita del usuario: sin preguntar
-    // cuántas preguntas quiere de entrada) y se arranca el test con TODO lo
-    // generado en cuanto termina; desde "Mis documentos" podrá repetir con
-    // un subconjunto sin volver a gastar en IA. Sin arranque temprano (no
-    // hay un "num_preguntas" al que comparar un umbral): se espera al
-    // evento "fin", que ya trae las preguntas listas para usar.
-    async function generarBancoPreguntasConProgreso(formData, authHeaders) {
-      const { crearProgresoConversador } = await import("/assets/progreso-conversador.js");
-      const progreso = crearProgresoConversador({
-        elBarra: document.getElementById("progreso-generacion-pdf"),
-        elTextoBarra: document.getElementById("texto-progreso-generacion-pdf"),
-        etapasLeyendo: [
-          { mensaje: "Leyendo el PDF…", icono: "documento" },
-          { mensaje: "Localizando los conceptos clave del documento…", icono: "buscar" },
-          { mensaje: "Preparando la generación de preguntas…", icono: "cerebro" },
-        ],
-        etapasGenerando: [
-          { mensaje: "Redactando las preguntas con IA…", icono: "cerebro" },
-          { mensaje: "Comprobando que cada respuesta sea correcta…", icono: "buscar" },
-          { mensaje: "Verificando la calidad de los distractores…", icono: "grafico" },
-          { mensaje: "Puliendo la explicación de cada pregunta…", icono: "check" },
-        ],
+    // Espera 'ms' como mínimo junto a 'promesa' -- para que el mensaje de
+    // "te llevamos a Mis documentos" (ver mostrarRedireccionAMisDocumentos)
+    // no aparezca y desaparezca demasiado rápido en una respuesta de
+    // servidor muy veloz, sin que el usuario llegue a leerlo.
+    function conEsperaMinima(promesa, ms) {
+      return Promise.all([promesa, new Promise((resolve) => setTimeout(resolve, ms))]).then(([resultado]) => resultado);
+    }
+
+    // Sustituye el formulario por un aviso de que la generación ya ha
+    // arrancado en el servidor y de que el resto del progreso se sigue
+    // desde "Mis documentos" -- 03/08/2026, decisión explícita del
+    // usuario: el banco completo (hasta 100 preguntas) puede tardar varios
+    // minutos, y nadie va a quedarse esperando en esta pantalla con una
+    // barra de progreso. Barra INDETERMINADA (no numérica): esta página ya
+    // no sigue el streaming de progreso, así que no hay un % real que
+    // mostrar aquí.
+    function mostrarRedireccionAMisDocumentos() {
+      document.getElementById('tarjeta-formulario').style.display = 'none';
+      document.getElementById('contenedor-carga').style.display = 'block';
+      document.getElementById('ai-icon').innerHTML = icono('cerebro', 32);
+      document.getElementById('texto-estado').textContent = 'Nos ponemos a generar las preguntas de tu documento…';
+      const detalle = document.getElementById('texto-estado-detalle');
+      detalle.textContent = 'Puede tardar unos minutos según lo largo que sea el documento. Te llevamos a "Mis documentos" para que veas cómo van apareciendo, sin tener que esperar aquí.';
+      detalle.classList.remove('hidden');
+      document.getElementById('progress-container-numerico').classList.add('hidden');
+      document.getElementById('barra-indeterminada-redireccion').classList.remove('hidden');
+      document.getElementById('enlace-ir-a-mis-documentos').classList.remove('hidden');
+    }
+
+    // Dispara la generación del banco completo de preguntas y devuelve en
+    // cuanto el servidor confirma que ha arrancado (cabeceras de la
+    // respuesta), SIN esperar a que termine -- generar_banco_preguntas_
+    // desde_pdf (blueprints/pdf_ia.py) ya deja el banco creado en
+    // Firestore con estado "generando" ANTES de mandar ni un byte de
+    // respuesta, así que en cuanto esta petición resuelve es seguro
+    // redirigir a "Mis documentos": el hilo de fondo del servidor sigue
+    // generando y persistiendo cada pregunta aceptada aunque esta pestaña
+    // se cierre justo después (mismo principio que ya usan el resto de
+    // rutas de generación desde PDF, ver el comentario largo en
+    // blueprints/pdf_ia.py).
+    // Devuelve el documento_id en cuanto llega el evento "inicio" (ver el
+    // comentario largo en blueprints/pdf_ia.py) -- se lee solo lo justo
+    // del stream para capturarlo, con un tope de lecturas por si acaso, y
+    // se abandona el resto (el resto de la generación se sigue desde "Mis
+    // documentos"). null si por lo que sea no llega a tiempo -- el
+    // llamante debe poder redirigir igualmente sin él.
+    async function iniciarGeneracionBancoPreguntas(formData, authHeaders) {
+      const res = await fetch("https://oposicion-age.onrender.com/generar-banco-preguntas-desde-pdf", {
+        method: "POST",
+        headers: authHeaders,
+        body: formData
       });
+      if (res.status === 403) {
+        throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
+      }
+      if (res.status === 409) {
+        throw new Error('Ya se está generando el banco de preguntas de este documento. Consulta el progreso en "Mis documentos".');
+      }
+      if (res.status === 429) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
+      }
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+      }
+      if (!res.body) return null;
 
-      // Techo monótono de "completadas" (nunca baja) -- mismo motivo que
-      // antes: el contador de un evento SSE puede no coincidir exactamente
-      // con el de otro que llegó después si dos hilos mandan sus eventos en
-      // un orden distinto al que los generaron.
-      let techoCompletadas = 0;
-
+      const lector = res.body.getReader();
+      const decodificador = new TextDecoder();
+      let buffer = "";
+      let documentoId = null;
       try {
-        const res = await fetch("https://oposicion-age.onrender.com/generar-banco-preguntas-desde-pdf", {
-          method: "POST",
-          headers: authHeaders,
-          body: formData
-        });
-        if (res.status === 403) {
-          throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
-        }
-        if (res.status === 409) {
-          throw new Error('Ya se está generando el banco de preguntas de este documento. Vuelve a "Mis documentos" en unos minutos.');
-        }
-        if (res.status === 429) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
-        }
-        if (!res.ok || !res.body) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
-        }
-
-        const lector = res.body.getReader();
-        const decodificador = new TextDecoder();
-        let buffer = "";
-        let datosFinales = null;
-
-        // "fin" es SIEMPRE el último evento del stream (el backend termina
-        // justo después de emitirlo): en cuanto llega se sale sin esperar
-        // al cierre de la conexión (done) -- en iPhone/WebKit esa señal a
-        // veces no llega nunca aunque todo esté ya recibido.
-        while (!datosFinales) {
-          let done, value;
-          ({ done, value } = await leerStreamConTimeout(lector));
+        for (let intentos = 0; intentos < 5 && !documentoId; intentos++) {
+          const { done, value } = await lector.read();
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
           const bloques = buffer.split("\n\n");
-          buffer = bloques.pop(); // el último trozo puede venir incompleto
+          buffer = bloques.pop();
           for (const bloque of bloques) {
             const linea = bloque.trim();
             if (!linea.startsWith("data: ")) continue;
-            let evento;
             try {
-              evento = JSON.parse(linea.slice(6));
+              const evento = JSON.parse(linea.slice(6));
+              if (evento.tipo === "inicio") {
+                documentoId = evento.documento_id;
+                break;
+              }
             } catch {
-              continue;
-            }
-            if (evento.tipo === "progreso") {
-              techoCompletadas = Math.max(techoCompletadas, evento.completadas);
-              progreso.avanzar({ completadas: techoCompletadas, total: evento.objetivo });
-              document.getElementById("texto-estado").textContent =
-                `Generando y verificando pregunta ${techoCompletadas}…`;
-            } else if (evento.tipo === "fin") {
-              datosFinales = evento;
+              // ignorar trozo no parseable
             }
           }
         }
-
-        lector.cancel().catch(() => {});
-
-        if (!datosFinales) {
-          throw new Error("Error al generar las preguntas. Vuelve a intentarlo.");
-        }
-        if (!datosFinales.preguntas || datosFinales.preguntas.length === 0) {
-          throw new Error(datosFinales.error || "No se pudieron generar preguntas válidas desde el PDF.");
-        }
-        progreso.completar();
-        return datosFinales;
       } finally {
-        progreso.detener();
+        // No se lee el resto del stream: el progreso a partir de aquí se
+        // sigue desde "Mis documentos" (ver mis-documentos/script.js), que
+        // sondea el estado del banco en vez de mantener esta conexión
+        // abierta.
+        lector.cancel().catch(() => {});
       }
+      return documentoId;
     }
 
     // === ENVÍO DE FORMULARIO ===
@@ -357,21 +353,16 @@ async function obtenerAuthHeaders() {
         formData.append('pdf', archivo);
       }
 
-      document.getElementById('tarjeta-formulario').style.display = 'none';
-      document.getElementById('contenedor-carga').style.display = 'block';
-      document.getElementById('texto-estado').textContent = documentoIdActual
-        ? "Generando preguntas desde tu documento…"
-        : "Leyendo el PDF y preparando la generación…";
-      document.getElementById('ai-icon').innerHTML = icono(documentoIdActual ? "cerebro" : "documento", 32);
+      mostrarRedireccionAMisDocumentos();
 
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
 
       try {
-        const datosFinales = await generarBancoPreguntasConProgreso(formData, authHeaders);
-        documentoIdActual = datosFinales.documento_id || documentoIdActual;
-        nombreArchivo = datosFinales.nombre_archivo || nombreArchivo;
-        iniciarTest(datosFinales.preguntas);
+        const documentoId = await conEsperaMinima(iniciarGeneracionBancoPreguntas(formData, authHeaders), 2200);
+        window.location.href = documentoId
+          ? `/mis-documentos/?destacar=${encodeURIComponent(documentoId)}`
+          : "/mis-documentos/";
       } catch (err) {
         mostrarError(err.message || "Error al generar las preguntas.");
       }

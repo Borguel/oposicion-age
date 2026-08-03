@@ -736,6 +736,16 @@ def generar_banco_preguntas_desde_pdf():
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
         hilo.start()
 
+        # "inicio" (03/08/2026): documento_id ya existe en Firestore en este
+        # punto (iniciar_banco ya corrió antes de construir este generador),
+        # así que se manda de inmediato, sin esperar a la generación en sí
+        # -- el frontend de "Subir PDF" ya no espera al final del banco
+        # (puede tardar varios minutos): lee SOLO este evento para saber a
+        # qué documento redirigir en "Mis documentos" y abandona el resto
+        # del stream (ver blueprints/pdf_ia.py y subida-pdf-generar-test/
+        # script.js).
+        yield f"data: {json.dumps({'tipo': 'inicio', 'documento_id': documento_id, 'nombre_archivo': nombre_archivo}, ensure_ascii=False)}\n\n"
+
         while True:
             evento = eventos.get()
             yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
@@ -814,6 +824,9 @@ def generar_banco_tarjetas_desde_pdf():
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
         hilo.start()
+
+        # "inicio": ver el comentario largo en generar_banco_preguntas_desde_pdf.
+        yield f"data: {json.dumps({'tipo': 'inicio', 'documento_id': documento_id, 'nombre_archivo': nombre_archivo}, ensure_ascii=False)}\n\n"
 
         while True:
             evento = eventos.get()

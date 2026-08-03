@@ -276,6 +276,30 @@
   margin-bottom: 18px;
 }
 
+/* Texto secundario bajo el mensaje principal de carga -- usado sobre todo
+   para explicar que la generación sigue en segundo plano y a dónde lleva
+   el redirigido automático (ver subida-pdf-generar-test/subida-pdf-tarjetas). */
+.pdfherr-body .texto-estado-detalle {
+  max-width: 420px;
+  margin: -8px auto 18px;
+  color: var(--age-ink-soft, var(--age-ink));
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.pdfherr-body .enlace-ir-ahora {
+  display: inline-block;
+  margin-top: 14px;
+  color: var(--age-primary-dark, var(--age-primary));
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+
+.pdfherr-body .enlace-ir-ahora:hover {
+  text-decoration: underline;
+}
+
 .pdfherr-body .barra-indeterminada {
   height: 8px;
   border-radius: var(--age-radius-pill);

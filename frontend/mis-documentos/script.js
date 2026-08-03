@@ -625,6 +625,81 @@ function inicializarEventos() {
   document.getElementById("filtro-busqueda").addEventListener("input", (evento) => renderizarBusqueda(evento.target.value));
 }
 
+// Sondeo del progreso de bancos en generación (03/08/2026): cuando se
+// llega aquí redirigido desde "Subir PDF" (ver subida-pdf-generar-test/
+// subida-pdf-tarjetas), la conexión SSE que iba retransmitiendo el
+// progreso se queda en la página anterior -- se pierde al navegar. Para
+// que el contador siga actualizándose SOLO, sin que el usuario tenga que
+// refrescar a mano, se vuelve a pedir /mis-documentos cada pocos segundos
+// mientras algún banco siga "generando", y se para en cuanto no quede
+// ninguno.
+let temporizadorSondeoBancos = null;
+
+function hayBancosGenerando() {
+  return documentos.some((d) => d.banco_preguntas_estado === "generando" || d.banco_tarjetas_estado === "generando");
+}
+
+function detenerSondeoBancos() {
+  if (temporizadorSondeoBancos) {
+    clearTimeout(temporizadorSondeoBancos);
+    temporizadorSondeoBancos = null;
+  }
+}
+
+async function sondearBancosEnGeneracion() {
+  temporizadorSondeoBancos = null;
+  try {
+    const token = await idToken();
+    const res = await fetch(`${BACKEND_URL}/mis-documentos`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) {
+      const datos = await res.json();
+      const porId = new Map((datos.documentos || []).map((d) => [d.id, d]));
+      documentos.forEach((doc) => {
+        const actualizado = porId.get(doc.id);
+        if (!actualizado) return;
+        doc.banco_preguntas_estado = actualizado.banco_preguntas_estado;
+        doc.banco_preguntas_total = actualizado.banco_preguntas_total;
+        doc.banco_preguntas_objetivo = actualizado.banco_preguntas_objetivo;
+        doc.banco_tarjetas_estado = actualizado.banco_tarjetas_estado;
+        doc.banco_tarjetas_total = actualizado.banco_tarjetas_total;
+        doc.banco_tarjetas_objetivo = actualizado.banco_tarjetas_objetivo;
+      });
+      if (carpetaActual !== null) renderizarDocumentosDeCarpeta();
+      const query = document.getElementById("filtro-busqueda")?.value;
+      if (query) renderizarBusqueda(query);
+    }
+  } catch (e) {
+    // Sondeo silencioso: un fallo puntual (red, token) no debe interrumpir
+    // nada -- se reintenta en el siguiente ciclo mientras siga haciendo falta.
+  }
+  iniciarSondeoBancosSiHaceFalta();
+}
+
+function iniciarSondeoBancosSiHaceFalta() {
+  if (temporizadorSondeoBancos || !hayBancosGenerando()) return;
+  temporizadorSondeoBancos = setTimeout(sondearBancosEnGeneracion, 4000);
+}
+
+// Llegada desde "Subir PDF" con ?destacar=<documento_id> (03/08/2026): en
+// vez de dejar al usuario buscando en qué carpeta cayó el documento recién
+// subido, se abre directamente la vista donde está (o "Sin carpeta") y se
+// resalta su tarjeta un momento, para que sea evidente de un vistazo dónde
+// seguir el progreso de su banco.
+function destacarDocumentoDesdeUrl() {
+  const id = new URLSearchParams(window.location.search).get("destacar");
+  if (!id) return;
+  const doc = documentos.find((d) => d.id === id);
+  if (!doc) return;
+  abrirCarpeta(doc.carpeta || SIN_CARPETA);
+  requestAnimationFrame(() => {
+    const tarjeta = document.querySelector(`.documento-card[data-id="${CSS.escape(id)}"]`);
+    if (!tarjeta) return;
+    tarjeta.scrollIntoView({ behavior: "smooth", block: "center" });
+    tarjeta.classList.add("documento-card-destacada");
+    setTimeout(() => tarjeta.classList.remove("documento-card-destacada"), 3000);
+  });
+}
+
 async function cargarDocumentos() {
   const token = await idToken();
   if (!token) {
@@ -658,7 +733,10 @@ async function cargarDocumentos() {
     if (qInicial) {
       document.getElementById("filtro-busqueda").value = qInicial;
       renderizarBusqueda(qInicial);
+    } else {
+      destacarDocumentoDesdeUrl();
     }
+    iniciarSondeoBancosSiHaceFalta();
   } catch (e) {
     document.getElementById("documentos-cargando").textContent = e.message || "No se pudieron cargar tus documentos.";
     document.getElementById("documentos-cargando").classList.remove("hidden");
