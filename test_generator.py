@@ -10,6 +10,12 @@ logger = logging.getLogger(__name__)
 
 MAX_INTENTOS_POR_PREGUNTA_PDF = 3
 _MAX_WORKERS_VERIFICACION_LOTE = 6
+# Nº de preguntas por lote de generación en paralelo -- valor por defecto de
+# generar_preguntas_ia_en_lotes(tamano_lote=...), extraído a constante de
+# módulo (03/08/2026) para que generar_banco_preguntas_adaptativo pueda
+# calcular con el MISMO valor cuántos lotes va a pedir cada ronda, sin
+# duplicar el "5" a mano y arriesgarse a que diverjan.
+_TAMANO_LOTE_PREGUNTAS = 5
 
 # Umbral de longitud para usar el texto de la respuesta correcta como
 # clave adicional de deduplicación (ver _claves_dedup): por debajo de
@@ -1032,9 +1038,10 @@ def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente
     return None
 
 
-def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=None, tamano_lote=5,
+def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=None,
+                                   tamano_lote=_TAMANO_LOTE_PREGUNTAS,
                                    temperature=0.4, on_progreso=None, on_usage=None,
-                                   preguntas_a_evitar=None):
+                                   preguntas_a_evitar=None, fragmentos_precalculados=None):
     """Genera 'num_preguntas' preguntas pidiéndolas a DeepSeek en varios lotes
     en paralelo (ThreadPoolExecutor). Si se pasa texto_fuente, cada
     candidata se verifica además con una segunda llamada independiente
@@ -1113,6 +1120,23 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     sobre el mismo documento no repita lo ya preguntado en una generación
     previa (_fragmentos_por_lote y el relleno de más abajo solo evitan
     duplicados DENTRO de una misma llamada).
+
+    fragmentos_precalculados (opcional, 03/08/2026, optimización de coste):
+    si se pasa y su longitud coincide con el nº de lotes que esta llamada
+    necesita, se usan tal cual en vez de volver a calcularlos con
+    _fragmentos_por_lote. Pensado para generar_banco_preguntas_adaptativo,
+    que llama a esta función una vez POR RONDA sobre el MISMO documento --
+    sin esto, cada ronda repetía el troceado desde cero y, si el documento
+    no tiene estructura reconocible por patrones (un temario en prosa, sin
+    artículos numerados), disparaba de nuevo la llamada a la IA que
+    propone dónde cortarlo (_bloques_por_esquema_ia) aunque el resultado
+    fuera a ser el mismo que en la ronda anterior -- coste real medido en
+    producción: para un banco de 100 preguntas en rondas de 40, esa llamada
+    (que manda el documento COMPLETO como entrada) se pagaba hasta 3 veces
+    en vez de 1. Si la longitud no coincide (p. ej. la última ronda, más
+    corta, pide menos lotes que las anteriores), se ignora y se recalcula
+    como siempre -- nunca rompe la generación, solo deja de ahorrar en ese
+    caso concreto.
 
     Devuelve (preguntas, errores): preguntas ya verificadas y deduplicadas
     por texto de pregunta normalizado (pedir el mismo tema en varios lotes
@@ -1364,7 +1388,10 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             return [], f"Ninguna de las {len(candidatas)} preguntas candidatas de un lote superó la verificación de calidad"
         return aceptadas, None
 
-    fragmentos = _fragmentos_por_lote(texto_fuente, len(lotes), on_usage)
+    if fragmentos_precalculados is not None and len(fragmentos_precalculados) == len(lotes):
+        fragmentos = fragmentos_precalculados
+    else:
+        fragmentos = _fragmentos_por_lote(texto_fuente, len(lotes), on_usage)
 
     errores = []
     # max_workers=8 (no 15, como generador_preguntas_verificado.py): cada
@@ -1620,12 +1647,28 @@ def generar_banco_preguntas_adaptativo(construir_prompt, texto_fuente, tope=TOPE
     claves_acumuladas = set()
     evitar_acumulado = list(preguntas_a_evitar or [])
     max_rondas = max(3, (tope // tamano_ronda) + 2)
+    # Fragmentos del documento calculados UNA vez para toda la generación,
+    # no una vez por ronda (03/08/2026, optimización de coste real: ver el
+    # comentario largo de fragmentos_precalculados en
+    # generar_preguntas_ia_en_lotes). Todas las rondas de tamaño completo
+    # piden el mismo nº de lotes (tamano_ronda entre
+    # _TAMANO_LOTE_PREGUNTAS, redondeado hacia arriba), así que el troceado
+    # -- y, si el documento no tiene estructura reconocible por patrones,
+    # la llamada a la IA que propone dónde cortarlo -- se puede compartir
+    # entre rondas en vez de repetirse y volver a mandar el documento
+    # completo como entrada en cada una. La última ronda (más corta, si
+    # tope no es múltiplo exacto de tamano_ronda) pide un nº de lotes
+    # distinto, así que generar_preguntas_ia_en_lotes la detecta y
+    # recalcula solo para esa -- ver ahí mismo.
+    n_lotes_ronda = -(-tamano_ronda // _TAMANO_LOTE_PREGUNTAS)  # ceil sin depender de math
+    fragmentos_precalculados = _fragmentos_por_lote(texto_fuente, n_lotes_ronda, on_usage)
     ronda = 0
     while len(acumuladas) < tope and ronda < max_rondas:
         objetivo_ronda = min(tamano_ronda, tope - len(acumuladas))
         preguntas_ronda, _errores_ronda = generar_preguntas_ia_en_lotes(
             construir_prompt, objetivo_ronda, texto_fuente,
             on_usage=on_usage, preguntas_a_evitar=evitar_acumulado,
+            fragmentos_precalculados=fragmentos_precalculados,
         )
         ronda += 1
         nuevas = []

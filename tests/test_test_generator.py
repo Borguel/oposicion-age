@@ -1909,3 +1909,56 @@ class TestGenerarBancoPreguntasAdaptativo:
         assert eventos[0]["pregunta"]["pregunta"] == "¿Pregunta 1?"
         assert eventos[0]["completadas"] == 1
         assert eventos[0]["objetivo"] == 20
+
+    def test_no_repite_la_llamada_a_la_ia_de_esquema_entre_rondas(self):
+        # Optimización de coste real (03/08/2026): sin fragmentos_
+        # precalculados, cada ronda repetía el troceado del documento
+        # desde cero y, con un documento sin estructura reconocible por
+        # regex (un apunte de academia en prosa, no una ley con
+        # "Artículo N"), disparaba de nuevo la llamada a la IA que
+        # propone dónde cortarlo -- una llamada que manda el documento
+        # COMPLETO como entrada, pagada una vez por ronda en vez de una
+        # vez por todo el banco. Aquí se comprueba que con 2 rondas
+        # completas solo se dispara ESA llamada una vez.
+        relleno_seccion = "Frase de relleno para simular contenido real de un apunte de academia. " * 6
+        texto = "\n\n".join(
+            f"{i}. SECCIÓN NÚMERO {i}\nEl art. {i} CE señala varias cuestiones. {relleno_seccion}"
+            for i in range(1, 3)
+        )
+        assert len(texto) >= 2 * 400
+        # Regex (nivel 1) no encuentra nada -- misma comprobación que
+        # test_fragmentos_por_lote_usa_la_ia_para_un_documento_narrativo_sin_marcadores_regex.
+        assert _bloques_estructurales(texto)[0] == []
+
+        def construir_prompt(n, fragmento=None):
+            documento = fragmento if fragmento is not None else texto
+            return f"Genera {n} preguntas.\n\nDocumento para crear preguntas test:\n{documento}"
+
+        respuesta_esquema = json.dumps([
+            {"titulo": f"Sección {i}", "inicio_literal": f"{i}. SECCIÓN NÚMERO {i}"}
+            for i in range(1, 3)
+        ])
+        llamadas_esquema = []
+        contador = itertools.count(1)
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            if _es_llamada_deduplicacion_final(messages):
+                return json.dumps({"grupos_duplicados": []})
+            if len(messages) == 1 and "inicio_literal" in messages[0]["content"]:
+                llamadas_esquema.append(1)
+                return respuesta_esquema
+            return json.dumps([
+                {"pregunta": f"¿Pregunta {next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
+                for _ in range(4)
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            resultado = generar_banco_preguntas_adaptativo(
+                construir_prompt, texto, tope=16, tamano_ronda=8,
+            )
+
+        assert len(resultado) == 16
+        assert len(llamadas_esquema) == 1
