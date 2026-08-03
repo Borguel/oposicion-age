@@ -1,9 +1,12 @@
 import re
 import json
+import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from deepseek_utils import call_deepseek_api
 from validador_preguntas import validar_pregunta
+
+logger = logging.getLogger(__name__)
 
 MAX_INTENTOS_POR_PREGUNTA_PDF = 3
 _MAX_WORKERS_VERIFICACION_LOTE = 6
@@ -395,6 +398,124 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
         return False
 
 
+# Marcador de bloque PRIMARIO -- artículo o disposición -- que nunca debe
+# repartirse entre dos lotes (03/08/2026, ver el comentario largo en
+# _fragmentos_por_lote sobre por qué el reparto por párrafo intercalado
+# seguía dando duplicados en documentos legales). Anclado al INICIO DE
+# LÍNEA (^, con re.MULTILINE): un encabezado real extraído de un PDF legal
+# casi siempre empieza su propia línea ("Artículo 167.\n1. Los proyectos
+# de reforma..."), mientras que una REFERENCIA a ese artículo dentro del
+# texto de OTRO ("como establece el artículo 167 de la Constitución...")
+# aparece a mitad de frase -- sin el ancla, esa referencia cruzada se
+# confundiría con un encabezado nuevo y cortaría el bloque del artículo
+# que sí lo contiene a mitad de frase.
+_PATRON_MARCADOR_PRIMARIO = re.compile(
+    r"^\s*(?:"
+    r"art[íi]culo\s+\d+"
+    r"|disposici[óo]n\s+(?:adicional|transitoria|final|derogatoria)"
+    r"\s*(?:primera|segunda|tercera|cuarta|quinta|sexta|s[ée]ptima|octava|novena|d[ée]cima|[úu]nica|\d+\.?[ªa]?)?"
+    r")",
+    re.IGNORECASE | re.MULTILINE,
+)
+# Marcador de SECCIÓN (Título/Capítulo/Sección) -- no es un bloque en sí
+# mismo, pero actúa como límite: si tras él viene directamente un
+# Artículo, su propio "bloque" queda vacío (se descarta, ver
+# _bloques_estructurales) y el título simplemente antecede al artículo
+# como esperaría cualquiera; si en cambio agrupa texto SIN artículos
+# numerados propios (p.ej. un título puramente introductorio), ese texto
+# se trata como un bloque más, para que tampoco se reparta entre lotes.
+_PATRON_MARCADOR_SECCION = re.compile(
+    # "preliminar" además de números romanos/arábigos (03/08/2026, bug
+    # real de esta misma sesión): la propia Constitución Española tiene un
+    # "Título Preliminar" antes del Título I -- sin esta alternativa, ese
+    # título quedaba sin reconocer como marcador y todo su contenido (más
+    # lo que viniera antes) se trataba como prosa suelta.
+    r"^\s*(?:T[ÍI]TULO|CAP[ÍI]TULO|SECCI[ÓO]N)\s+(?:[IVXLCDM]+|\d+|preliminar)\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def _bloques_estructurales(texto_fuente):
+    """Divide texto_fuente en bloques anclados a sus marcadores
+    estructurales (artículo, disposición, título/capítulo/sección) --
+    cada bloque abarca desde su marcador hasta el siguiente marcador de
+    CUALQUIER tipo (o fin de documento). Un apartado numerado dentro de un
+    artículo ("1.", "2.", "a)"...) nunca se confunde con un marcador
+    nuevo porque _PATRON_MARCADOR_PRIMARIO/_SECCION no matchean ese
+    patrón -- se queda como texto normal dentro del bloque de su
+    artículo/disposición padre.
+
+    Devuelve (bloques, prosa_inicial): bloques es una lista de
+    {"etiqueta": str, "tipo": "primario"|"seccion", "inicio": int,
+    "texto": str} en el orden en que aparecen en el documento;
+    prosa_inicial es el texto ANTES del primer marcador (portada,
+    introducción...), que no pertenece a ningún bloque -- ver el
+    comentario largo en _fragmentos_por_lote sobre por qué esa prosa
+    suelta se reparte aparte, por párrafo, en vez de intentar agruparla.
+
+    LIMITACIÓN CONOCIDA: si el documento cita el MISMO número de artículo
+    en dos normas distintas sin un Título/Capítulo por medio que las
+    separe (p.ej. "Artículo 5" de una ley y, más adelante, "Artículo 5" de
+    otra ley distinta dentro del mismo PDF), cada aparición se trata como
+    su propio bloque igualmente (esta función no intenta identificar a
+    qué norma pertenece cada uno) -- caso raro, y no es nuevo: la propia
+    clave de deduplicación de _claves_dedup ya tenía esta misma limitación
+    (compara solo el número de artículo, nunca la norma)."""
+    marcadores = sorted(
+        [
+            (m.start(), m.end(), "primario", re.sub(r"\s+", " ", m.group()).strip())
+            for m in _PATRON_MARCADOR_PRIMARIO.finditer(texto_fuente)
+        ] + [
+            (m.start(), m.end(), "seccion", re.sub(r"\s+", " ", m.group()).strip())
+            for m in _PATRON_MARCADOR_SECCION.finditer(texto_fuente)
+        ],
+        key=lambda marcador: marcador[0],
+    )
+    if not marcadores:
+        return [], texto_fuente
+
+    prosa_inicial = texto_fuente[:marcadores[0][0]]
+    bloques = []
+    for indice, (inicio, fin_marcador, tipo, etiqueta) in enumerate(marcadores):
+        fin_bloque = marcadores[indice + 1][0] if indice + 1 < len(marcadores) else len(texto_fuente)
+        if tipo == "seccion":
+            # Solo cuenta como bloque si hay contenido DESPUÉS del propio
+            # texto del marcador -- el caso normal (un Título seguido
+            # directamente de su primer Artículo) no debe dejar un
+            # "bloque" formado únicamente por el título repitiéndose a sí
+            # mismo sin texto propio.
+            if not texto_fuente[fin_marcador:fin_bloque].strip():
+                continue
+            etiqueta = f"{etiqueta} completo (sin artículos numerados)"
+        contenido = texto_fuente[inicio:fin_bloque]
+        if not contenido.strip():
+            continue
+        bloques.append({"etiqueta": etiqueta, "tipo": tipo, "inicio": inicio, "texto": contenido})
+    return bloques, prosa_inicial
+
+
+def _repartir_bloques_en_lotes(bloques, n_lotes):
+    """Reparte 'bloques' (ver _bloques_estructurales) entre n_lotes listas,
+    equilibrando el total de CARACTERES por lote -- no solo el número de
+    bloques, que dejaría un lote con un único artículo larguísimo y otro
+    con cinco artículos cortos como si fuera un reparto equilibrado. Bin
+    packing voraz clásico: los bloques más grandes se colocan primero,
+    cada uno en el lote que menos caracteres lleve acumulados hasta ese
+    momento -- con al menos tantos bloques como lotes (única condición
+    bajo la que se llama a esta función, ver _fragmentos_por_lote), los
+    primeros n_lotes bloques colocados garantizan que ningún lote se quede
+    vacío."""
+    lotes = [[] for _ in range(n_lotes)]
+    tamanos = [0] * n_lotes
+    for bloque in sorted(bloques, key=lambda b: -len(b["texto"])):
+        indice_lote = tamanos.index(min(tamanos))
+        lotes[indice_lote].append(bloque)
+        tamanos[indice_lote] += len(bloque["texto"])
+    for lote in lotes:
+        lote.sort(key=lambda b: b["inicio"])
+    return lotes
+
+
 def _fragmentos_por_lote(texto_fuente, n_lotes):
     """Devuelve una lista de n_lotes fragmentos del documento, uno por lote,
     para que cada llamada de generación en paralelo se apoye en una parte
@@ -407,21 +528,40 @@ def _fragmentos_por_lote(texto_fuente, n_lotes):
     "duración del mandato del Presidente..." repetida en 8 de 20 preguntas
     de un mismo test).
 
-    Reparto INTERCALADO por párrafos (02/08/2026, bug real), no por tramos
-    contiguos: con el reparto contiguo anterior (el lote 1 se llevaba
+    Reparto por BLOQUE ESTRUCTURAL COMPLETO (03/08/2026, bug real): el
+    reparto anterior, intercalado por párrafo, evitaba que un lote se
+    llevara un único tramo temático contiguo, pero un artículo largo (con
+    varios párrafos) se ACABABA REPARTIENDO ENTRE VARIOS LOTES -- cada uno
+    veía solo un trozo, pero cada uno veía LO BASTANTE del mismo artículo
+    (p.ej. el dato más citable, "mayoría absoluta", "quinta parte de los
+    miembros"...) como para generar, sin saber unos de otros, una pregunta
+    sobre el mismo hecho con una redacción distinta -- confirmado en
+    producción con 3 preguntas sobre "qué mayoría exige el Senado" del
+    art. 167 repartidas entre lotes distintos de un mismo test. Ahora
+    (ver _bloques_estructurales) un artículo, disposición o
+    título/capítulo sin artículos propios va ENTERO a un único lote,
+    repartidos por _repartir_bloques_en_lotes para equilibrar caracteres
+    totales -- dos lotes ya no pueden converger en el mismo artículo
+    porque ninguno de los dos lo ve si no le tocó a él. Sigue siendo 100%
+    en paralelo (mismo número de lotes, misma concurrencia): el reparto es
+    puro procesamiento de texto sobre el documento ya descargado, no
+    añade ninguna llamada a la API ni tiempo de espera extra.
+
+    Solo la prosa SIN NINGÚN marcador por encima (normalmente la
+    portada/introducción antes del primer Título o Artículo) sigue el
+    reparto INTERCALADO por párrafo de siempre (02/08/2026, bug real): con
+    el reparto contiguo anterior a ese arreglo (el lote 1 se llevaba
     literalmente el primer tramo del documento, el lote 2 el segundo...),
-    si esa primera zona trataba un único tema (p.ej. varios artículos
-    seguidos, todos sobre lo mismo -- la invalidez de los actos
-    administrativos, en un caso real), las primeras preguntas que ve el
-    usuario con el arranque temprano (num_preguntas > 5, ver
-    generar_preguntas_ia_en_lotes) podían salir TODAS de ese mismo tema
-    -- sensación real reportada de "todo pregunta de lo mismo" al empezar,
-    aunque el test completo sí acabara cubriendo temas distintos. Da igual
-    qué lote termine antes: si cada uno recibe una every-n_lotes selección
-    de párrafos (el lote 0 se lleva los párrafos 0, n_lotes, 2*n_lotes...,
-    el lote 1 los 1, n_lotes+1...), CADA fragmento por separado ya abarca
-    todo el documento de punta a punta, así que ningún lote puede
-    monopolizar un único tramo temático.
+    si esa primera zona trataba un único tema, las primeras preguntas que
+    ve el usuario con el arranque temprano (num_preguntas > 5, ver
+    generar_preguntas_ia_en_lotes) podían salir TODAS de ese mismo tema.
+
+    Si el documento no tiene marcadores reconocibles en absoluto (no es
+    texto legal con artículos/disposiciones/títulos -- p.ej. un temario
+    puramente narrativo), o tiene menos bloques que lotes (no hay
+    suficientes para repartir sin dejar algún lote vacío), se cae al
+    reparto por párrafo intercalado de siempre para TODO el documento --
+    ni mejor ni peor que el comportamiento anterior a este cambio.
 
     Con documentos cortos, un solo lote, sin texto_fuente, o con pocos
     saltos de párrafo reales (menos del doble de n_lotes -- p.ej. texto
@@ -434,6 +574,29 @@ def _fragmentos_por_lote(texto_fuente, n_lotes):
     de un solo argumento)."""
     if not texto_fuente or n_lotes <= 1 or len(texto_fuente) < n_lotes * 400:
         return [None] * n_lotes
+
+    bloques, prosa_inicial = _bloques_estructurales(texto_fuente)
+    if len(bloques) >= n_lotes:
+        lotes_de_bloques = _repartir_bloques_en_lotes(bloques, n_lotes)
+        parrafos_prosa = [p for p in prosa_inicial.split("\n\n") if p.strip()]
+        fragmentos = []
+        for indice, bloques_del_lote in enumerate(lotes_de_bloques):
+            partes = list(parrafos_prosa[indice::n_lotes]) if parrafos_prosa else []
+            partes.extend(bloque["texto"] for bloque in bloques_del_lote)
+            fragmento = "\n\n".join(parte.strip() for parte in partes if parte.strip())
+            fragmentos.append(fragmento)
+            logger.info(
+                "Lote %d: %s - %d caracteres",
+                indice + 1,
+                ", ".join(bloque["etiqueta"] for bloque in bloques_del_lote),
+                len(fragmento),
+            )
+        if parrafos_prosa:
+            logger.info(
+                "Prosa suelta repartida por párrafo: %d bloques (portada/intro)",
+                len(parrafos_prosa),
+            )
+        return fragmentos
 
     parrafos = [p for p in texto_fuente.split("\n\n") if p.strip()]
     if len(parrafos) >= n_lotes * 2:

@@ -20,6 +20,7 @@ from unittest.mock import patch
 from test_generator import (
     generar_preguntas_ia_en_lotes, MAX_INTENTOS_POR_PREGUNTA_PDF, _verificar_pregunta,
     _claves_dedup, _fragmentos_por_lote, _es_duplicado_por_contencion,
+    _bloques_estructurales, _repartir_bloques_en_lotes,
 )
 
 
@@ -399,8 +400,14 @@ class TestGenerarPreguntasIaEnLotes:
         # y más de un lote, cada lote debe recibir un FRAGMENTO distinto
         # (ver _fragmentos_por_lote en test_generator.py) para repartir la
         # generación entre partes distintas del documento.
+        # "PARRAFO N" (no "SECCION N"/"ARTÍCULO N") a propósito: este texto
+        # no representa un documento legal real, solo prueba el reparto
+        # intercalado por párrafo -- con un marcador que _bloques_
+        # estructurales reconociera como Sección/Artículo, el reparto por
+        # BLOQUE (ver TestFragmentosPorLote más abajo) se activaría en su
+        # lugar y este test dejaría de probar lo que dice probar.
         parrafo = "Frase de relleno para simular contenido real del documento. " * 10
-        texto_largo = "\n\n".join(f"SECCION {i}. {parrafo}" for i in range(4))
+        texto_largo = "\n\n".join(f"PARRAFO {i}. {parrafo}" for i in range(4))
         assert len(texto_largo) >= 2 * 400  # por encima del umbral de fragmentación
 
         fragmentos_recibidos = []
@@ -1172,3 +1179,174 @@ class TestFragmentosPorLote:
         assert _fragmentos_por_lote("Texto corto.", 3) == [None, None, None]
         assert _fragmentos_por_lote("Texto." * 200, 1) == [None]
         assert _fragmentos_por_lote(None, 3) == [None, None, None]
+
+
+class TestBloquesEstructurales:
+    def test_agrupa_un_articulo_con_apartados_numerados_como_un_solo_bloque(self):
+        # Los apartados numerados ("1.", "2.") dentro de un artículo NO
+        # deben tratarse como marcadores de bloque nuevo -- deben quedar
+        # dentro del bloque de su artículo padre.
+        texto = (
+            "Artículo 167.\n"
+            "1. Los proyectos de reforma constitucional deberán ser aprobados por una "
+            "mayoría de tres quintos de cada una de las Cámaras.\n"
+            "2. De no lograrse el acuerdo, y siempre que el texto hubiere obtenido el "
+            "voto favorable de la mayoría absoluta del Senado, el Congreso podrá aprobar "
+            "la reforma por mayoría de dos tercios.\n"
+            "Artículo 168.\n"
+            "1. Cuando se propusiere la revisión total de la Constitución se procederá a "
+            "la aprobación del principio por mayoría de dos tercios de cada Cámara."
+        )
+        bloques, prosa_inicial = _bloques_estructurales(texto)
+        assert prosa_inicial == ""
+        assert [b["etiqueta"] for b in bloques] == ["Artículo 167", "Artículo 168"]
+        assert [b["tipo"] for b in bloques] == ["primario", "primario"]
+        assert "mayoría absoluta" in bloques[0]["texto"]
+        assert "Artículo 168" not in bloques[0]["texto"]
+
+    def test_no_confunde_una_referencia_cruzada_con_un_encabezado_nuevo(self):
+        # Una mención a OTRO artículo a mitad de frase ("...a diferencia
+        # del artículo 168...") no debe cortar el bloque del artículo que
+        # la contiene -- solo un marcador al PRINCIPIO de su propia línea
+        # cuenta como encabezado real.
+        texto = (
+            "Artículo 167.\n"
+            "1. La mayoría de dos tercios, a diferencia de la exigida por el artículo 168 "
+            "para el procedimiento agravado, solo se aplica en la vía alternativa de este "
+            "artículo."
+        )
+        bloques, _ = _bloques_estructurales(texto)
+        assert len(bloques) == 1
+        assert bloques[0]["etiqueta"] == "Artículo 167"
+        assert "artículo 168" in bloques[0]["texto"]
+
+    def test_disposicion_transitoria_es_su_propio_bloque(self):
+        texto = (
+            "Artículo 169.\n"
+            "No podrá iniciarse la reforma constitucional en tiempo de guerra.\n"
+            "Disposición transitoria segunda.\n"
+            "Las referencias que las leyes hagan a las Cortes se entenderán hechas al "
+            "Congreso o al Senado, en su caso."
+        )
+        bloques, _ = _bloques_estructurales(texto)
+        assert [b["etiqueta"] for b in bloques] == ["Artículo 169", "Disposición transitoria segunda"]
+        assert bloques[1]["tipo"] == "primario"
+
+    def test_titulo_seguido_de_articulo_no_deja_un_bloque_vacio(self):
+        texto = (
+            "TÍTULO PRELIMINAR\n"
+            "Introducción general sin ningún artículo numerado en este bloque.\n"
+            "TÍTULO I\n"
+            "Artículo 10.\n"
+            "1. La dignidad de la persona es fundamento del orden político."
+        )
+        bloques, _ = _bloques_estructurales(texto)
+        etiquetas = [b["etiqueta"] for b in bloques]
+        assert "TÍTULO PRELIMINAR completo (sin artículos numerados)" in etiquetas
+        # TÍTULO I va seguido inmediatamente de un artículo -- el hueco
+        # entre su propio marcador y el de "Artículo 10" está vacío y se
+        # descarta, no aparece como bloque de texto por separado.
+        assert "TÍTULO I completo (sin artículos numerados)" not in etiquetas
+        assert "Artículo 10" in etiquetas
+
+    def test_prosa_antes_del_primer_marcador_se_devuelve_aparte(self):
+        texto = (
+            "Portada del documento y resumen introductorio antes de cualquier título.\n\n"
+            "Artículo 1.\n"
+            "España se constituye en un Estado social y democrático de Derecho."
+        )
+        bloques, prosa_inicial = _bloques_estructurales(texto)
+        assert "Portada del documento" in prosa_inicial
+        assert len(bloques) == 1
+
+    def test_sin_marcadores_devuelve_todo_como_prosa(self):
+        texto = "Un documento puramente narrativo, sin ningún artículo ni título numerado."
+        bloques, prosa_inicial = _bloques_estructurales(texto)
+        assert bloques == []
+        assert prosa_inicial == texto
+
+
+class TestRepartirBloquesEnLotes:
+    def test_equilibra_por_caracteres_no_por_numero_de_bloques(self):
+        # Un reparto por CANTIDAD de bloques (2 y 2) dejaría un lote con
+        # 1100 caracteres y otro con 200 -- muy desequilibrado. El bin
+        # packing por caracteres debe agrupar los 3 bloques cortos juntos
+        # frente al único largo.
+        bloques = [
+            {"etiqueta": "Artículo largo", "tipo": "primario", "inicio": 0, "texto": "X" * 1000},
+            {"etiqueta": "Artículo corto 1", "tipo": "primario", "inicio": 1000, "texto": "X" * 100},
+            {"etiqueta": "Artículo corto 2", "tipo": "primario", "inicio": 1100, "texto": "X" * 100},
+            {"etiqueta": "Artículo corto 3", "tipo": "primario", "inicio": 1200, "texto": "X" * 100},
+        ]
+        lotes = _repartir_bloques_en_lotes(bloques, 2)
+        tamanos = sorted(sum(len(b["texto"]) for b in lote) for lote in lotes)
+        assert tamanos == [300, 1000]
+
+    def test_nunca_deja_un_lote_vacio_si_hay_al_menos_un_bloque_por_lote(self):
+        bloques = [
+            {"etiqueta": f"Artículo {i}", "tipo": "primario", "inicio": i, "texto": "X" * 50}
+            for i in range(4)
+        ]
+        lotes = _repartir_bloques_en_lotes(bloques, 4)
+        assert all(len(lote) >= 1 for lote in lotes)
+
+    def test_conserva_el_orden_original_del_documento_dentro_de_cada_lote(self):
+        bloques = [
+            {"etiqueta": "Artículo 5", "tipo": "primario", "inicio": 100, "texto": "X" * 10},
+            {"etiqueta": "Artículo 2", "tipo": "primario", "inicio": 10, "texto": "X" * 10},
+        ]
+        lotes = _repartir_bloques_en_lotes(bloques, 1)
+        assert [b["etiqueta"] for b in lotes[0]] == ["Artículo 2", "Artículo 5"]
+
+
+class TestFragmentosPorLoteConBloquesEstructurales:
+    @staticmethod
+    def _articulo(n, relleno):
+        return f"Artículo {n}.\n1. {relleno}"
+
+    def test_un_articulo_largo_no_se_reparte_entre_dos_lotes(self):
+        # Bug real de producción (03/08/2026): con el reparto anterior
+        # (intercalado por párrafo), un artículo con varios párrafos largos
+        # se repartía ENTRE VARIOS LOTES -- cada uno veía solo un trozo,
+        # pero lo bastante para generar, sin saber unos de otros, una
+        # pregunta sobre el mismo dato citable del mismo artículo.
+        # Confirmado con datos reales: 3 preguntas sobre "qué mayoría exige
+        # el Senado" del art. 167 en un mismo test de 20, repartidas entre
+        # lotes distintos. Aquí, cada "Artículo N." debe caer entero en
+        # UN ÚNICO fragmento, nunca partido entre dos ni duplicado.
+        relleno = "Frase de relleno para simular contenido real de un artículo constitucional. " * 8
+        texto = "\n\n".join(self._articulo(n, relleno) for n in range(160, 170))
+        assert len(texto) >= 4 * 400
+
+        fragmentos = _fragmentos_por_lote(texto, 4)
+
+        assert len(fragmentos) == 4
+        assert all(f is not None for f in fragmentos)
+        for n in range(160, 170):
+            marcador = f"Artículo {n}."
+            en_cuantos_fragmentos = sum(1 for f in fragmentos if marcador in f)
+            assert en_cuantos_fragmentos == 1, f"{marcador} apareció en {en_cuantos_fragmentos} fragmentos"
+
+    def test_la_prosa_inicial_se_reparte_por_parrafo_entre_los_lotes(self):
+        relleno = "Frase de relleno para simular contenido real de un artículo constitucional. " * 8
+        prosa = "\n\n".join(f"Párrafo introductorio {i} de la portada." for i in range(4))
+        articulos = "\n\n".join(self._articulo(n, relleno) for n in range(1, 9))
+        texto = f"{prosa}\n\n{articulos}"
+
+        fragmentos = _fragmentos_por_lote(texto, 4)
+
+        assert len(fragmentos) == 4
+        for i in range(4):
+            marcador = f"Párrafo introductorio {i} de la portada."
+            assert sum(1 for f in fragmentos if marcador in f) == 1
+
+    def test_documento_con_menos_bloques_que_lotes_cae_al_reparto_por_parrafo(self):
+        # Con menos bloques estructurales que lotes no hay suficientes
+        # para repartir sin dejar alguno vacío -- se cae al reparto por
+        # párrafo/contiguo de siempre para todo el documento, sin fallar.
+        relleno = "Frase de relleno para simular contenido real del documento. " * 8
+        texto = "\n\n".join(self._articulo(n, relleno) for n in range(1, 3))  # solo 2 artículos
+
+        fragmentos = _fragmentos_por_lote(texto, 4)  # pero 4 lotes
+
+        assert len(fragmentos) == 4
