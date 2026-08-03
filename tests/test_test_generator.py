@@ -765,6 +765,61 @@ class TestGenerarPreguntasIaEnLotes:
         }
         assert _claves_dedup(q_publicidad).isdisjoint(_claves_dedup(q_interdiccion))
 
+    def test_dedupe_ignora_referencia_cruzada_a_otro_articulo_en_la_explicacion(self):
+        # Bug real de producción (03/08/2026), documento real: dos preguntas
+        # casi idénticas sobre el artículo 167 ("mayoría de tres quintos"
+        # para la reforma ordinaria) se colaron juntas en un test de 18/20
+        # pese a que _claves_dedup debería haberlas fusionado. Antes,
+        # _articulos_citados buscaba en el enunciado Y en TODA la
+        # explicación: una de las dos preguntas, al descartar la opción
+        # "mayoría de dos tercios", mencionaba de pasada que esa mayoría
+        # "se exige... en el procedimiento agravado del artículo 168" --
+        # una simple referencia cruzada en un distractor, no el artículo de
+        # la pregunta -- así que esa candidata quedaba con
+        # articulos={'167','168'} mientras la otra (sin esa referencia
+        # cruzada) quedaba con articulos={'167'}, produciendo claves
+        # distintas (d:167|168:3/5 frente a d:167:3/5) que nunca coincidían.
+        q_con_referencia_cruzada = {
+            "pregunta": "Conforme al artículo 167 de la Constitución Española, ¿qué mayoría se exige "
+                        "inicialmente para la aprobación de un proyecto de reforma constitucional por el "
+                        "procedimiento ordinario en cada una de las Cámaras?",
+            "opciones": {"A": "Mayoría absoluta.", "B": "Mayoría de tres quintos.",
+                         "C": "Mayoría de dos tercios.", "D": "Mayoría simple."},
+            "respuesta_correcta": "B",
+            "explicacion": "A) es incorrecta porque el artículo 167 de la Constitución Española no establece "
+                           "la mayoría absoluta como requisito inicial para la aprobación de la reforma "
+                           "ordinaria. B) es correcta porque el artículo 167 de la Constitución Española "
+                           "establece que los proyectos de reforma constitucional deberán ser aprobados por "
+                           "una mayoría de tres quintos de cada una de las Cámaras. C) es incorrecta porque la "
+                           "mayoría de dos tercios se exige en el artículo 167 de la Constitución Española "
+                           "solo en una fase posterior, como alternativa si no se logra el acuerdo inicial y el "
+                           "Senado ha aprobado el texto por mayoría absoluta, o en el procedimiento agravado "
+                           "del artículo 168 de la Constitución Española. D) es incorrecta porque la mayoría "
+                           "simple no se contempla en el artículo 167 de la Constitución Española para la "
+                           "aprobación inicial de la reforma ordinaria.",
+        }
+        q_sin_referencia_cruzada = {
+            "pregunta": "Según el artículo 167 de la Constitución Española de 1978, ¿qué mayoría se exige "
+                        "inicialmente para la aprobación de un proyecto de reforma constitucional en cada una "
+                        "de las Cámaras?",
+            "opciones": {"A": "Mayoría absoluta", "B": "Mayoría de tres quintos", "C": "Mayoría de dos tercios",
+                         "D": "Mayoría simple"},
+            "respuesta_correcta": "B",
+            "explicacion": "A) es incorrecta porque el artículo 167 de la Constitución Española de 1978 exige "
+                           "una mayoría de tres quintos, no mayoría absoluta, para la aprobación inicial de los "
+                           "proyectos de reforma constitucional en cada Cámara. B) es correcta porque el "
+                           "apartado 1 del artículo 167 de la Constitución Española de 1978 establece que los "
+                           "proyectos de reforma constitucional deberán ser aprobados por una mayoría de tres "
+                           "quintos de cada una de las Cámaras. C) es incorrecta porque la mayoría de dos "
+                           "tercios solo se requiere en el procedimiento ordinario como alternativa final, "
+                           "cuando el Senado ha aprobado el texto por mayoría absoluta y el Congreso debe "
+                           "aprobarlo por dos tercios, según el apartado 2 del artículo 167 de la Constitución "
+                           "Española de 1978, no como mayoría inicial. D) es incorrecta porque la mayoría "
+                           "simple no es la exigida en el artículo 167 de la Constitución Española de 1978 "
+                           "para la aprobación inicial de una reforma constitucional ordinaria.",
+        }
+        assert _claves_dedup(q_con_referencia_cruzada) & _claves_dedup(q_sin_referencia_cruzada)
+
     def test_dedupe_por_contencion_pregunta_amplia_y_pregunta_concreta(self):
         # Bug real de producción (03/08/2026), documento real: "¿qué
         # establece el artículo 8 sobre las Fuerzas Armadas?" (respuesta:

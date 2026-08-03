@@ -169,19 +169,34 @@ def _normalizar(texto):
 
 
 def _articulos_citados(pregunta):
-    """Números base de artículo citados en 'pregunta' -- en el ENUNCIADO Y
-    en la EXPLICACIÓN (bug real, documento real: "Según la Constitución
-    Española de 1978, ¿qué mayoría se exige en el Senado para que...?" no
-    citaba ningún artículo en el enunciado, solo en la explicación
-    ("el artículo 167.2 de la Constitución Española establece..."), así
-    que buscar solo en el enunciado (como hacía antes esta función) dejaba
-    esa pregunta sin artículo detectado -- y por tanto sin la clave
-    artículo+cifras -- pese a ser, con otras dos preguntas del mismo test
-    que sí lo citaban en el enunciado, la MISMA pregunta sobre la misma
-    mayoría del mismo artículo repetida 3 veces. La explicación cita el
-    artículo casi siempre, aunque el enunciado no lo repita."""
-    texto = f"{pregunta.get('pregunta', '')} {pregunta.get('explicacion', '')}"
-    return set(_PATRON_ARTICULO_BASE.findall(texto))
+    """Números base de artículo citados en el ENUNCIADO -- o, si el
+    enunciado no cita ninguno, en la EXPLICACIÓN como respaldo (bug real,
+    documento real: "Según la Constitución Española de 1978, ¿qué mayoría
+    se exige en el Senado para que...?" no citaba ningún artículo en el
+    enunciado, solo en la explicación ("el artículo 167.2 de la
+    Constitución Española establece..."), así que buscar solo en el
+    enunciado dejaba esa pregunta sin artículo detectado -- y por tanto sin
+    la clave artículo+cifras -- pese a ser, con otras dos preguntas del
+    mismo test que sí lo citaban en el enunciado, la MISMA pregunta sobre
+    la misma mayoría del mismo artículo repetida 3 veces.
+
+    NO se usa la UNIÓN de enunciado+explicación (03/08/2026, bug real,
+    documento real): dos preguntas casi idénticas sobre el artículo 167
+    ("mayoría de tres quintos" para la reforma ordinaria) escaparon al
+    dedup porque una de ellas, al descartar la opción "mayoría de dos
+    tercios", explicaba de pasada que esa mayoría "se exige... en el
+    procedimiento agravado del artículo 168" -- una simple referencia
+    cruzada en un distractor, no el artículo de la pregunta. Con la unión,
+    esa pregunta quedaba con articulos={'167','168'} mientras la otra (sin
+    esa referencia cruzada) quedaba con articulos={'167'}: conjuntos
+    distintos, clave d:167|168:3/5 frente a d:167:3/5, ninguna coincidía.
+    El enunciado (¿"Según/Conforme al artículo N..."?) es la fuente fiable
+    de qué artículo trata la pregunta; la explicación solo se consulta
+    como respaldo cuando el enunciado no cita ninguno."""
+    articulos_enunciado = set(_PATRON_ARTICULO_BASE.findall(pregunta.get("pregunta", "")))
+    if articulos_enunciado:
+        return articulos_enunciado
+    return set(_PATRON_ARTICULO_BASE.findall(pregunta.get("explicacion", "")))
 
 
 # Umbral para la contención de respuestas (ver _es_duplicado_por_contencion):
