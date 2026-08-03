@@ -206,3 +206,46 @@ class TestBancoPreguntasYTarjetas:
         assert documentos["d1"]["banco_preguntas_estado"] == "sin_generar"
         assert documentos["d1"]["banco_preguntas_total"] == 0
         assert documentos["d1"]["banco_tarjetas_estado"] == "sin_generar"
+
+
+class TestBancoAtascado:
+    # Bug real reportado (03/08/2026): un banco puede quedarse "generando"
+    # para siempre si el hilo de fondo que lo rellena muere sin llegar a
+    # llamar a finalizar_banco -- el caso típico es un despliegue/reinicio
+    # del servidor a mitad de generación. obtener_banco/_resumen_bancos
+    # deben dejar de tratarlo como "en curso" pasados unos minutos sin
+    # ninguna actualización, para que la UI pueda ofrecer reintentar en vez
+    # de mostrar "Generando..." indefinidamente.
+
+    def test_banco_generando_reciente_se_mantiene_generando(self, db):
+        from datetime import datetime
+        iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf")
+        anadir_al_banco(db, "u1", "d1", "preguntas", {"pregunta": "¿Uno?"})
+        assert obtener_banco(db, "u1", "d1", "preguntas")["estado"] == "generando"
+
+    def test_banco_generando_sin_actualizar_en_mucho_tiempo_se_reporta_atascado(self, db):
+        from datetime import datetime, timedelta
+        iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf")
+        viejo = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", "d1"), {
+            "estado": "generando", "total": 3, "objetivo": 100, "actualizado": viejo,
+        })
+        assert obtener_banco(db, "u1", "d1", "preguntas")["estado"] == "atascado"
+
+    def test_banco_completo_no_se_ve_afectado_por_la_antiguedad(self, db):
+        from datetime import datetime, timedelta
+        viejo = (datetime.utcnow() - timedelta(days=30)).isoformat()
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", "d1"), {
+            "estado": "completo", "total": 20, "objetivo": 100, "actualizado": viejo,
+        })
+        assert obtener_banco(db, "u1", "d1", "preguntas")["estado"] == "completo"
+
+    def test_listar_documentos_refleja_el_banco_atascado(self, db):
+        from datetime import datetime, timedelta
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Doc 1", "nombre_archivo": "a.pdf"})
+        viejo = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", "d1"), {
+            "estado": "generando", "total": 3, "objetivo": 100, "actualizado": viejo,
+        })
+        documentos = {d["id"]: d for d in listar_documentos(db, "u1")}
+        assert documentos["d1"]["banco_preguntas_estado"] == "atascado"

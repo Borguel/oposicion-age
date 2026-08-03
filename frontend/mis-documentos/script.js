@@ -133,6 +133,16 @@ function filaBanco(doc, tipo) {
     } else if (estado === "error") {
       acciones.push(`<span class="documento-card-banco-estado documento-card-banco-error">No se pudo generar</span>`);
       acciones.push(`<button type="button" class="documento-card-btn" data-banco-generar="${tipo}" data-id="${doc.id}">Reintentar</button>`);
+    } else if (estado === "atascado") {
+      // "atascado" (03/08/2026, bug real): el backend deja de reportar un
+      // banco como "generando" pasados varios minutos sin ninguna
+      // actualización (ver documentos_pdf._banco_atascado) -- típicamente
+      // porque el hilo de fondo murió a mitad de generación (un
+      // despliegue del servidor, por ejemplo) sin llegar a terminar. Antes
+      // esto dejaba el documento mostrando "Generando..." para siempre,
+      // sin ninguna forma de reintentar.
+      acciones.push(`<span class="documento-card-banco-estado documento-card-banco-error">La generación se interrumpió${total > 0 ? ` (se quedaron ${total} guardadas)` : ""}</span>`);
+      acciones.push(`<button type="button" class="documento-card-btn" data-banco-generar="${tipo}" data-id="${doc.id}">Reintentar</button>`);
     }
     if (total > 0) {
       if (total > 1) {

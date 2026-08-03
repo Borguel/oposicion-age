@@ -9,7 +9,7 @@ PDF). El contenido en sí (resumen/esquema/tarjetas/test) se sigue guardando
 en las subcolecciones ya existentes (resumenes_pdf, esquemas_pdf, etc.),
 cada entrada etiquetada con su documento_id."""
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Se guarda un extracto generoso del texto (bastante más que en el chat con
 # PDF, donde se reenvía en cada mensaje y sí conviene recortarlo mucho): aquí
@@ -150,9 +150,48 @@ def _banco_ref(db, uid, documento_id, tipo):
     return db.collection("usuarios").document(uid).collection(coleccion).document(documento_id)
 
 
+# Minutos sin ninguna actualización (ver anadir_al_banco/finalizar_banco)
+# a partir de los cuales un banco en estado "generando" se considera
+# abandonado, no en curso (03/08/2026, bug real reportado: documentos que
+# se quedaban mostrando "Generando..." para siempre). El hilo de fondo que
+# rellena el banco puede morir sin llegar a llamar nunca a finalizar_banco
+# -- el caso típico es un despliegue/reinicio del servidor a mitad de
+# generación (Render mata los procesos en marcha al desplegar una versión
+# nueva, y esta app se redespliega a menudo). Sin este chequeo, ese
+# documento se quedaba "generando" para siempre Y además el propio botón
+# de disparo lo bloqueaba con 409 "ya se está generando", sin ninguna
+# forma de reintentar salvo tocar Firestore a mano.
+_BANCO_ATASCADO_MINUTOS = 10
+
+
+def _banco_atascado(datos):
+    if datos.get("estado") != "generando":
+        return False
+    actualizado = datos.get("actualizado")
+    if not actualizado:
+        return True
+    try:
+        momento = datetime.fromisoformat(actualizado)
+    except (TypeError, ValueError):
+        return True
+    return (datetime.utcnow() - momento) > timedelta(minutes=_BANCO_ATASCADO_MINUTOS)
+
+
 def obtener_banco(db, uid, documento_id, tipo):
+    """Devuelve el banco tal cual está en Firestore, salvo que lleve
+    "generando" más de _BANCO_ATASCADO_MINUTOS sin ninguna actualización
+    -- en ese caso se presenta como "atascado" (nunca se reescribe aquí,
+    solo en la copia devuelta) para que tanto la UI como el chequeo de "ya
+    hay una generación en curso" de las rutas /generar-banco-*-desde-pdf
+    dejen de tratarlo como si siguiera vivo."""
     doc = _banco_ref(db, uid, documento_id, tipo).get()
-    return doc.to_dict() if doc.exists else None
+    if not doc.exists:
+        return None
+    datos = doc.to_dict()
+    if _banco_atascado(datos):
+        datos = dict(datos)
+        datos["estado"] = "atascado"
+    return datos
 
 
 def iniciar_banco(db, uid, documento_id, tipo, objetivo, nombre_archivo):
@@ -204,8 +243,9 @@ def _resumen_bancos(db, uid, tipo):
     resultado = {}
     for doc in db.collection("usuarios").document(uid).collection(coleccion).stream():
         datos = doc.to_dict() or {}
+        estado = "atascado" if _banco_atascado(datos) else datos.get("estado", "sin_generar")
         resultado[doc.id] = {
-            "estado": datos.get("estado", "sin_generar"),
+            "estado": estado,
             "total": datos.get("total", 0),
             "objetivo": datos.get("objetivo", 0),
         }

@@ -701,8 +701,11 @@ class TestBancoPreguntasYTarjetas:
         assert resp.status_code == 404
 
     def test_generar_banco_preguntas_ya_en_marcha_da_409(self, client, db, documento_sembrado):
-        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado),
-                    {"estado": "generando", "total": 3, "objetivo": 100})
+        from datetime import datetime
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {
+            "estado": "generando", "total": 3, "objetivo": 100,
+            "actualizado": datetime.utcnow().isoformat(),
+        })
         parche = _con_sesion(client)
         try:
             resp = client.post("/generar-banco-preguntas-desde-pdf",
@@ -711,6 +714,29 @@ class TestBancoPreguntasYTarjetas:
         finally:
             parche.stop()
         assert resp.status_code == 409
+
+    def test_generar_banco_preguntas_atascado_permite_reintentar(self, client, db, documento_sembrado):
+        # Bug real: un banco "generando" cuyo hilo de fondo murió (p. ej.
+        # un despliegue a mitad de generación) se quedaba bloqueando para
+        # siempre el botón de reintentar con un 409 -- pasados varios
+        # minutos sin actualizarse, obtener_banco ya no lo reporta como
+        # "generando" (ver documentos_pdf._banco_atascado), así que este
+        # endpoint debe dejar arrancar una generación nueva.
+        from datetime import datetime, timedelta
+        viejo = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {
+            "estado": "generando", "total": 3, "objetivo": 100, "actualizado": viejo,
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", return_value=[]):
+                resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                resp.get_data()
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
 
     def test_generar_banco_tarjetas_persiste_de_forma_incremental_y_finaliza_completo(
             self, client, db, documento_sembrado):
@@ -785,9 +811,11 @@ class TestBancoPreguntasYTarjetas:
         assert len(resp.get_json()["preguntas"]) == 2
 
     def test_get_banco_tarjetas_devuelve_estado_y_contenido(self, client, db, documento_sembrado):
+        from datetime import datetime
         db.sembrar(("usuarios", "u1", "banco_tarjetas_pdf", documento_sembrado), {
             "estado": "generando", "total": 1, "objetivo": 100,
             "tarjetas": [{"pregunta": "¿Qué es X?", "respuesta": "Y"}],
+            "actualizado": datetime.utcnow().isoformat(),
         })
         parche = _con_sesion(client)
         try:
