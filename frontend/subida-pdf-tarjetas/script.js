@@ -342,6 +342,7 @@ async function obtenerAuthHeaders() {
       document.getElementById('progress-container-numerico').classList.add('hidden');
       document.getElementById('barra-indeterminada-redireccion').classList.remove('hidden');
       document.getElementById('enlace-ir-a-mis-documentos').classList.remove('hidden');
+      document.getElementById('sugerencia-mientras-tanto').classList.remove('hidden');
     }
 
     // Dispara la generación del banco completo de tarjetas y devuelve en
@@ -547,7 +548,7 @@ async function obtenerAuthHeaders() {
       if (!authHeaders) return;
 
       try {
-        const documentoId = await conEsperaMinima(iniciarGeneracionBancoTarjetas(formData, authHeaders), 2200);
+        const documentoId = await conEsperaMinima(iniciarGeneracionBancoTarjetas(formData, authHeaders), 5500);
         window.location.href = documentoId
           ? `/mis-documentos/?destacar=${encodeURIComponent(documentoId)}`
           : "/mis-documentos/";

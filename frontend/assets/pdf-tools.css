@@ -300,6 +300,54 @@
   text-decoration: underline;
 }
 
+/* "Mientras tanto..." (03/08/2026): sugerencia para no dejar al usuario
+   mirando la pantalla de carga sin nada que hacer mientras el banco se
+   genera en segundo plano -- lleva a practicar con Test Oficial/Test
+   Personalizado, cuyo contenido ya existe de antes y no depende de esta
+   generación. */
+.pdfherr-body .sugerencia-mientras-tanto {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--age-border);
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pdfherr-body .sugerencia-mientras-tanto-gancho {
+  font-weight: 700;
+  color: var(--age-ink);
+  font-size: 0.92rem;
+  margin: 0 0 14px;
+}
+
+.pdfherr-body .sugerencia-mientras-tanto-enlaces {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.pdfherr-body .enlace-sugerencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pdfherr-body .enlace-sugerencia:hover {
+  border-color: var(--age-primary);
+  background: var(--age-primary-soft);
+}
+
 .pdfherr-body .barra-indeterminada {
   height: 8px;
   border-radius: var(--age-radius-pill);
