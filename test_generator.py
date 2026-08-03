@@ -1548,3 +1548,94 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         errores.append(f"No se pudieron generar {faltan_final} pregunta(s) adicionales tras varios intentos de relleno")
 
     return preguntas_unicas, errores
+
+
+# Tope del "banco" de preguntas de un documento (03/08/2026, decisión
+# explícita del usuario): en vez de pedir un número fijo de una vez (100
+# preguntas fijas, sin importar de qué dé el documento), se genera en
+# RONDAS sucesivas hasta agotar el contenido distinto del documento -- 100
+# es solo el TECHO de seguridad, nunca el objetivo a forzar. Ver el
+# comentario largo de generar_banco_preguntas_adaptativo.
+TOPE_BANCO_PREGUNTAS = 100
+_TAMANO_RONDA_BANCO = 20
+# Si una ronda rinde menos de este porcentaje de lo pedido en preguntas
+# NUEVAS (no duplicadas de rondas anteriores), se considera que el
+# documento ya no da más contenido distinto y se para -- seguir insistiendo
+# solo generaría relleno de peor calidad para forzar una cuota arbitraria
+# (el mismo riesgo que ya vimos con num_preguntas fijo alto en documentos
+# de contenido limitado: más relleno, más gasto, y en el peor caso
+# preguntas de menor calidad para completar la cuota).
+_UMBRAL_RENDIMIENTO_MINIMO_BANCO = 0.25
+
+
+def generar_banco_preguntas_adaptativo(construir_prompt, texto_fuente, tope=TOPE_BANCO_PREGUNTAS,
+                                        tamano_ronda=_TAMANO_RONDA_BANCO, on_usage=None, on_progreso=None,
+                                        preguntas_a_evitar=None):
+    """Genera el máximo de preguntas distintas que el documento realmente dé
+    de sí, en rondas sucesivas de generar_preguntas_ia_en_lotes, hasta:
+    (a) llegar a 'tope' (techo de seguridad, nunca objetivo forzado),
+    (b) que una ronda entera rinda por debajo de
+        _UMBRAL_RENDIMIENTO_MINIMO_BANCO en preguntas NUEVAS (señal de que
+        el documento ya no tiene más contenido distinto que dar), o
+    (c) agotar un número máximo de rondas (cinturón de seguridad para no
+        disparar el gasto en un documento raro que rinda poco ronda tras
+        ronda sin llegar nunca a 0).
+
+    Cada ronda pide preguntas_a_evitar (acumulado de rondas anteriores,
+    igual que ya se usa para evitar repetir tests ANTERIORES del mismo
+    documento) -- sin esto, cada ronda fragmentaría el MISMO documento de
+    la MISMA forma y regeneraría preguntas muy parecidas a las ya
+    aceptadas, con un rendimiento decreciente artificial que pararía la
+    generación demasiado pronto.
+
+    generar_preguntas_ia_en_lotes ya deduplica DENTRO de cada ronda (claves
+    léxicas + pasada semántica final), pero esa deduplicación es local a
+    la llamada -- cada ronda crea su propio 'vistas'/'preguntas_unicas' sin
+    memoria de rondas anteriores. Aquí se añade una comprobación adicional
+    CRUZANDO rondas con las mismas funciones deterministas
+    (_claves_dedup/_es_duplicado_por_contencion) contra todo lo ya
+    acumulado, antes de aceptar cada pregunta de una ronda nueva.
+
+    on_progreso(evento), si se pasa, se llama con {"completadas": N,
+    "objetivo": tope, "pregunta": p} por cada pregunta NUEVA aceptada
+    (después del dedup entre rondas) -- no se reenvían los eventos brutos
+    de cada ronda individual, que incluirían candidatas luego descartadas
+    por duplicar una ronda anterior.
+
+    Devuelve la lista de preguntas aceptadas."""
+    acumuladas = []
+    claves_acumuladas = set()
+    evitar_acumulado = list(preguntas_a_evitar or [])
+    max_rondas = max(3, (tope // tamano_ronda) + 2)
+    ronda = 0
+    while len(acumuladas) < tope and ronda < max_rondas:
+        objetivo_ronda = min(tamano_ronda, tope - len(acumuladas))
+        preguntas_ronda, _errores_ronda = generar_preguntas_ia_en_lotes(
+            construir_prompt, objetivo_ronda, texto_fuente,
+            on_usage=on_usage, preguntas_a_evitar=evitar_acumulado,
+        )
+        ronda += 1
+        nuevas = []
+        for pregunta in preguntas_ronda:
+            # Un lote puede ignorar el "EXACTAMENTE N" pedido y devolver de
+            # más (mismo bug ya visto y arreglado en
+            # generar_preguntas_ia_en_lotes) -- aquí se corta al llegar al
+            # tope para no aceptar más de la cuenta.
+            if len(acumuladas) >= tope:
+                break
+            claves = _claves_dedup(pregunta)
+            if not claves or (claves & claves_acumuladas) or _es_duplicado_por_contencion(pregunta, acumuladas):
+                continue
+            claves_acumuladas.update(claves)
+            acumuladas.append(pregunta)
+            nuevas.append(pregunta)
+            if on_progreso:
+                on_progreso({"completadas": len(acumuladas), "objetivo": tope, "pregunta": pregunta})
+        evitar_acumulado.extend(
+            f"{p.get('pregunta', '')} (respuesta: "
+            f"{(p.get('opciones') or {}).get(str(p.get('respuesta_correcta', '')).upper(), '')})"
+            for p in nuevas
+        )
+        if not nuevas or len(nuevas) / objetivo_ronda < _UMBRAL_RENDIMIENTO_MINIMO_BANCO:
+            break
+    return acumuladas

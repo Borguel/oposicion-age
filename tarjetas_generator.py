@@ -75,6 +75,24 @@ def _repartir_cupos(n_fragmentos, num_tarjetas):
     return [base + (1 if i < resto else 0) for i in range(n_fragmentos)]
 
 
+def _prompt_con_exclusion(system, tarjetas_a_evitar):
+    """Añade al prompt de generación la lista de tarjetas que NO debe
+    repetir -- ya aceptadas en rondas ANTERIORES de una misma generación
+    adaptativa de banco (ver generar_banco_tarjetas_adaptativo). Mismo
+    principio que _prompt_con_exclusion en test_generator.py para Test
+    desde PDF: sin esto, cada ronda parte de cero y puede converger en las
+    mismas tarjetas que una ronda anterior ya generó sobre el mismo
+    fragmento."""
+    tarjetas_a_evitar = [t for t in (tarjetas_a_evitar or []) if t]
+    if not tarjetas_a_evitar:
+        return system
+    listado = "; ".join(tarjetas_a_evitar[:60])
+    return system + (
+        f"\n\nNo repitas ninguna de estas tarjetas, ya generadas en una ronda anterior: {listado}. "
+        f"Aborda un aspecto distinto del fragmento."
+    )
+
+
 def _prompt_generacion(fragmento, cupo, evitar=None):
     system = (
         "Eres un experto en metodologías de estudio para oposiciones en España. Tu tarea es crear "
@@ -127,10 +145,11 @@ def _prompt_verificacion(tarjeta, fragmento):
     return system, user
 
 
-def _generar_candidatas_fragmento(fragmento, cupo, on_usage):
+def _generar_candidatas_fragmento(fragmento, cupo, on_usage, tarjetas_a_evitar=None):
     if cupo <= 0:
         return []
     system, user = _prompt_generacion(fragmento, cupo)
+    system = _prompt_con_exclusion(system, tarjetas_a_evitar)
     generado = call_deepseek_api(
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         temperature=0.3,
@@ -247,7 +266,8 @@ def _asegurar_tarjeta_valida(candidata, fragmento, dedup_lock, claves_vistas, on
     return None
 
 
-def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso=None):
+def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso=None,
+                                  tarjetas_a_evitar=None, claves_iniciales=None):
     """Genera hasta num_tarjetas tarjetas de memoria verificadas a partir de
     texto (ya extraído de un PDF). on_usage, si se pasa, recibe el usage de
     cada llamada a DeepSeek (ver AcumuladorTokens en coste_ia.py) -- esta
@@ -265,6 +285,14 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
     dejar empezar a repasar tarjetas ya listas sin esperar a que termine
     todo el documento.
 
+    tarjetas_a_evitar/claves_iniciales (03/08/2026, banco adaptativo, ver
+    generar_banco_tarjetas_adaptativo): permiten encadenar varias llamadas
+    a esta función sobre el MISMO documento sin que cada una parta de cero
+    -- tarjetas_a_evitar se añade al prompt de generación (aviso "no
+    repitas esto"), y claves_iniciales siembra claves_vistas para que el
+    dedup interno de ESTA llamada ya sepa qué se aceptó en rondas
+    anteriores, no solo dentro de sí misma.
+
     Devuelve {"tarjetas": [...], "descartadas": int, "advertencia": str
     opcional si se generaron menos tarjetas de las pedidas}."""
     fragmentos = _trocear_en_parrafos(texto)
@@ -272,7 +300,7 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
 
     with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_GENERACION, len(fragmentos))) as executor:
         futuros_generacion = [
-            executor.submit(_generar_candidatas_fragmento, fragmento, cupo, on_usage)
+            executor.submit(_generar_candidatas_fragmento, fragmento, cupo, on_usage, tarjetas_a_evitar)
             for cupo, fragmento in zip(cupos, fragmentos)
         ]
         candidatas_por_fragmento = [
@@ -292,7 +320,7 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
         }
 
     dedup_lock = threading.Lock()
-    claves_vistas = set()
+    claves_vistas = set(claves_iniciales or [])
     tarjetas = []
     descartadas = 0
     total_candidatas = len(pares_candidata_fragmento)
@@ -400,3 +428,80 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
             "verificación de contenido tras varios intentos y se descartó en vez de entregarse sin validar."
         )
     return resultado_final
+
+
+# Tope del "banco" de tarjetas de un documento (03/08/2026, decisión
+# explícita del usuario): en vez de pedir un número fijo de una vez (100
+# preguntas fijas, sin importar de qué dé el documento), se genera en
+# RONDAS sucesivas hasta agotar el contenido distinto del documento -- 100
+# es solo el TECHO de seguridad, nunca el objetivo a forzar. Ver el
+# comentario largo de generar_banco_tarjetas_adaptativo.
+TOPE_BANCO_TARJETAS = 100
+_TAMANO_RONDA_BANCO = 20
+# Si una ronda rinde menos de este porcentaje de lo pedido en tarjetas
+# NUEVAS (no duplicadas de rondas anteriores), se considera que el
+# documento ya no da más contenido distinto y se para -- seguir insistiendo
+# solo generaría relleno de peor calidad para forzar una cuota arbitraria.
+_UMBRAL_RENDIMIENTO_MINIMO_BANCO = 0.25
+
+
+def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ronda=_TAMANO_RONDA_BANCO,
+                                       on_usage=None, on_progreso=None):
+    """Genera el máximo de tarjetas distintas que el documento realmente dé
+    de sí, en rondas sucesivas de generar_tarjetas_verificadas, hasta:
+    (a) llegar a 'tope' (techo de seguridad, nunca objetivo forzado),
+    (b) que una ronda entera rinda por debajo de
+        _UMBRAL_RENDIMIENTO_MINIMO_BANCO en tarjetas NUEVAS (señal de que
+        el documento ya no tiene más contenido distinto que dar), o
+    (c) agotar un número máximo de rondas (cinturón de seguridad para no
+        disparar el gasto en un documento raro que rinda poco ronda tras
+        ronda sin llegar nunca a 0).
+
+    Cada ronda usa tarjetas_a_evitar/claves_iniciales (ver
+    generar_tarjetas_verificadas) para que no repita lo ya aceptado en
+    rondas anteriores -- sin esto, cada ronda fragmentaría el MISMO
+    documento de la MISMA forma y regeneraría tarjetas muy parecidas a las
+    ya aceptadas, con un rendimiento decreciente artificial que pararía la
+    generación demasiado pronto.
+
+    on_progreso(evento), si se pasa, se llama con {"completadas": N,
+    "objetivo": tope, "tarjeta": t} por cada tarjeta NUEVA aceptada
+    (después del dedup entre rondas) -- no se reenvían los eventos brutos
+    de cada ronda individual, que incluirían candidatas luego descartadas
+    por duplicar una ronda anterior.
+
+    Devuelve la lista de tarjetas aceptadas (sin envoltorio, a diferencia
+    de generar_tarjetas_verificadas: aquí no hay un "num_tarjetas pedido"
+    único al que comparar para una advertencia de faltantes)."""
+    acumuladas = []
+    claves_acumuladas = set()
+    evitar_acumulado = []
+    max_rondas = max(3, (tope // tamano_ronda) + 2)
+    ronda = 0
+    while len(acumuladas) < tope and ronda < max_rondas:
+        objetivo_ronda = min(tamano_ronda, tope - len(acumuladas))
+        resultado_ronda = generar_tarjetas_verificadas(
+            texto, objetivo_ronda, on_usage=on_usage,
+            tarjetas_a_evitar=evitar_acumulado, claves_iniciales=claves_acumuladas,
+        )
+        ronda += 1
+        nuevas = []
+        for tarjeta in resultado_ronda.get("tarjetas", []):
+            # Un lote/fragmento puede ignorar el "EXACTAMENTE N" pedido y
+            # devolver de más (mismo bug ya visto y arreglado en
+            # generar_preguntas_ia_en_lotes) -- aquí se corta al llegar al
+            # tope para no aceptar más de la cuenta.
+            if len(acumuladas) >= tope:
+                break
+            clave = _normalizar(tarjeta.get("pregunta", ""))
+            if not clave or clave in claves_acumuladas:
+                continue
+            claves_acumuladas.add(clave)
+            acumuladas.append(tarjeta)
+            nuevas.append(tarjeta)
+            if on_progreso:
+                on_progreso({"completadas": len(acumuladas), "objetivo": tope, "tarjeta": tarjeta})
+        evitar_acumulado.extend(t.get("pregunta", "") for t in nuevas)
+        if not nuevas or len(nuevas) / objetivo_ronda < _UMBRAL_RENDIMIENTO_MINIMO_BANCO:
+            break
+    return acumuladas

@@ -2,12 +2,13 @@
 parseo de la respuesta cruda de DeepSeek, y el pipeline completo
 generar->verificar->reintentar (con DeepSeek mockeado por CONTENIDO del
 prompt, no por orden de llamada -- el pipeline es paralelo)."""
+import itertools
 import json
 from unittest.mock import patch
 
 from tarjetas_generator import (
     _repartir_cupos, _parsear_tarjetas, _contiene_frase_prohibida, generar_tarjetas_verificadas,
-    _verificar_tarjeta,
+    _verificar_tarjeta, generar_banco_tarjetas_adaptativo,
 )
 
 
@@ -377,3 +378,75 @@ class TestGenerarTarjetasVerificadas:
         # paralelo debe quedar muy por debajo (cota floja pero suficiente
         # para distinguir "en paralelo" de "uno detrás de otro").
         assert duracion < RETRASO * NUM_HUECOS
+
+
+class TestGenerarBancoTarjetasAdaptativo:
+    # generar_banco_tarjetas_adaptativo (03/08/2026, decisión explícita del
+    # usuario): genera en rondas sucesivas hasta agotar el contenido
+    # distinto del documento, con un tope de seguridad -- no un número fijo
+    # a forzar. Ver el comentario largo en tarjetas_generator.py.
+    def test_para_al_llegar_al_tope_si_el_documento_da_de_sobra(self):
+        contador = itertools.count(1)
+
+        def fake_call(messages, **kwargs):
+            if _es_prompt_generacion(messages):
+                # Contenido "infinito": cada llamada devuelve tarjetas
+                # nuevas y distintas, nunca se agota.
+                return json.dumps({"tarjetas": [
+                    {"pregunta": f"¿Pregunta {next(contador)}?", "respuesta": "R"} for _ in range(8)
+                ]})
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            raise AssertionError("prompt inesperado")
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
+            resultado = generar_banco_tarjetas_adaptativo("Documento.", tope=20, tamano_ronda=8)
+
+        assert len(resultado) == 20
+
+    def test_para_por_bajo_rendimiento_aunque_no_haya_llegado_al_tope(self):
+        # Ronda 1: el documento da 8 tarjetas nuevas de sobra. Ronda 2: el
+        # prompt ya lleva el aviso "no repitas" (ver tarjetas_generator.
+        # _prompt_con_exclusion) -- se simula que el documento ya no da más
+        # devolviendo SIEMPRE la misma tarjeta de la ronda 1, que el dedup
+        # (interno vía claves_iniciales, y el de esta función) descarta por
+        # completo. El bajo rendimiento de la ronda 2 (0 nuevas) debe parar
+        # la generación mucho antes de llegar al tope de 100.
+        def fake_call(messages, **kwargs):
+            if _es_prompt_generacion(messages):
+                if "No repitas ninguna de estas tarjetas" in messages[0]["content"]:
+                    return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta 1?", "respuesta": "Respuesta 1"}]})
+                return json.dumps({"tarjetas": [
+                    {"pregunta": f"¿Pregunta {i}?", "respuesta": f"Respuesta {i}"} for i in range(1, 9)
+                ]})
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            raise AssertionError("prompt inesperado")
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
+            resultado = generar_banco_tarjetas_adaptativo("Documento.", tope=100, tamano_ronda=8)
+
+        assert len(resultado) == 8
+
+    def test_on_progreso_solo_reporta_tarjetas_nuevas_no_las_de_rondas_repetidas(self):
+        def fake_call(messages, **kwargs):
+            if _es_prompt_generacion(messages):
+                if "No repitas ninguna de estas tarjetas" in messages[0]["content"]:
+                    return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta 1?", "respuesta": "Respuesta 1"}]})
+                return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta 1?", "respuesta": "Respuesta 1"}]})
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            raise AssertionError("prompt inesperado")
+
+        eventos = []
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
+            resultado = generar_banco_tarjetas_adaptativo(
+                "Documento.", tope=20, tamano_ronda=1, on_progreso=eventos.append,
+            )
+
+        assert len(resultado) == 1
+        assert len(eventos) == 1
+        assert eventos[0] == {"completadas": 1, "objetivo": 20, "tarjeta": resultado[0]}

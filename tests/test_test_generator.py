@@ -21,7 +21,7 @@ from test_generator import (
     generar_preguntas_ia_en_lotes, MAX_INTENTOS_POR_PREGUNTA_PDF, _verificar_pregunta,
     _claves_dedup, _fragmentos_por_lote, _es_duplicado_por_contencion,
     _bloques_estructurales, _repartir_bloques_en_lotes, _bloques_por_esquema_ia,
-    _detectar_duplicados_finales,
+    _detectar_duplicados_finales, generar_banco_preguntas_adaptativo,
 )
 
 
@@ -1822,3 +1822,90 @@ class TestFragmentosPorLoteConBloquesEstructurales:
             fragmentos = _fragmentos_por_lote(texto, 4)  # pero 4 lotes
 
         assert len(fragmentos) == 4
+
+
+class TestGenerarBancoPreguntasAdaptativo:
+    # generar_banco_preguntas_adaptativo (03/08/2026, decisión explícita del
+    # usuario): genera en rondas sucesivas hasta agotar el contenido
+    # distinto del documento, con un tope de seguridad -- no un número fijo
+    # a forzar. Ver el comentario largo en test_generator.py.
+    def test_para_al_llegar_al_tope_si_el_documento_da_de_sobra(self):
+        contador = itertools.count(1)
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            if _es_llamada_deduplicacion_final(messages):
+                return json.dumps({"grupos_duplicados": []})
+            # Contenido "infinito": cada llamada de generación devuelve
+            # preguntas nuevas y distintas, nunca se agota.
+            return json.dumps([
+                {"pregunta": f"¿Pregunta {next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
+                for _ in range(8)
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            resultado = generar_banco_preguntas_adaptativo(
+                construir_prompt, "Texto de prueba.", tope=20, tamano_ronda=8,
+            )
+
+        assert len(resultado) == 20
+
+    def test_para_por_bajo_rendimiento_aunque_no_haya_llegado_al_tope(self):
+        # Ronda 1: el documento da 8 preguntas nuevas de sobra. Ronda 2: el
+        # prompt ya lleva el aviso de exclusión (ver _prompt_con_exclusion)
+        # -- se simula que el documento ya no da más devolviendo SIEMPRE la
+        # misma pregunta de la ronda 1, que el dedup entre rondas de esta
+        # función descarta por completo. El bajo rendimiento de la ronda 2
+        # (0 nuevas) debe parar la generación mucho antes del tope de 100.
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            if _es_llamada_deduplicacion_final(messages):
+                return json.dumps({"grupos_duplicados": []})
+            if "ya se hicieron en tests ANTERIORES" in messages[0]["content"]:
+                return json.dumps([{
+                    "pregunta": "¿Pregunta 1?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                    "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
+                }])
+            return json.dumps([
+                {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
+                for i in range(1, 9)
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            resultado = generar_banco_preguntas_adaptativo(
+                construir_prompt, "Texto de prueba.", tope=100, tamano_ronda=8,
+            )
+
+        assert len(resultado) == 8
+
+    def test_on_progreso_solo_reporta_preguntas_nuevas_no_las_de_rondas_repetidas(self):
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            if _es_llamada_deduplicacion_final(messages):
+                return json.dumps({"grupos_duplicados": []})
+            return json.dumps([{
+                "pregunta": "¿Pregunta 1?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
+            }])
+
+        eventos = []
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            resultado = generar_banco_preguntas_adaptativo(
+                construir_prompt, "Texto de prueba.", tope=20, tamano_ronda=1, on_progreso=eventos.append,
+            )
+
+        assert len(resultado) == 1
+        assert len(eventos) == 1
+        assert eventos[0]["pregunta"]["pregunta"] == "¿Pregunta 1?"
+        assert eventos[0]["completadas"] == 1
+        assert eventos[0]["objetivo"] == 20
