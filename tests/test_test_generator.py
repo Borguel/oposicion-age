@@ -148,11 +148,11 @@ class TestGenerarPreguntasIaEnLotes:
         assert len(errores) == 2
         assert errores[0].startswith("Ninguna de las")
         # El hueco original agota MAX_INTENTOS_POR_PREGUNTA_PDF candidatas
-        # (la del lote + los recambios); el relleno (_MAX_RONDAS_RELLENO=2,
+        # (la del lote + los recambios); el relleno (_MAX_RONDAS_RELLENO=3,
         # ver test_generator.py) le da al mismo hueco que sigue faltando
-        # DOS tandas completas más del mismo tamaño -- el triple en total,
-        # nunca más.
-        assert len(llamadas_generacion) == MAX_INTENTOS_POR_PREGUNTA_PDF * 3
+        # TRES tandas completas más del mismo tamaño -- el cuádruple en
+        # total, nunca más.
+        assert len(llamadas_generacion) == MAX_INTENTOS_POR_PREGUNTA_PDF * 4
 
     def test_on_progreso_se_llama_una_vez_por_pregunta_no_por_lote(self):
         # Con num_preguntas=2 y tamano_lote=1 hay 2 lotes, cada uno con su
@@ -351,7 +351,8 @@ class TestGenerarPreguntasIaEnLotes:
         # para siempre sin una segunda oportunidad. Aquí, la primera ronda
         # de relleno agota sus 3 intentos (todas "malas" a propósito) y
         # solo la SEGUNDA ronda (_MAX_RONDAS_RELLENO=2) consigue una
-        # candidata válida.
+        # candidata válida (con _MAX_RONDAS_RELLENO=3, sin necesidad de
+        # llegar a la tercera).
         construir_prompt = _construir_prompt_fabrica(None)
         contador_generacion = itertools.count()
 

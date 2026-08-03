@@ -1355,7 +1355,20 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     # cuesta nada si no hace falta (si faltan=0 el bucle ni se ejecuta) y
     # evita que una colisión puntual entre dos huecos en paralelo se
     # traduzca directamente en "pedí 20, recibí 18".
-    _MAX_RONDAS_RELLENO = 2
+    #
+    # Subido de 2 a 3 (03/08/2026, decisión explícita del usuario, documento
+    # real): con el dedup ya bastante más estricto tras varias rondas de
+    # correcciones esta misma sesión (solapamiento de palabras, contención
+    # de cifras...), un documento centrado en pocos artículos con un
+    # conjunto de hechos citables limitado (aquí, arts. 166-169 y 9.3 de la
+    # Constitución Española) puede agotar sus hechos distintos antes de
+    # llegar a las N preguntas pedidas -- 2 rondas dejaron un test en 17/20
+    # sin ningún duplicado real entre las 17 (el dedup funcionaba bien, solo
+    # faltaba presupuesto de intentos). El usuario, informado del cambio de
+    # tiempo que esto puede suponer en esos casos límite (una ronda más
+    # solo se ejecuta si aún faltan preguntas), prefirió priorizar llegar a
+    # las N pedidas sobre ahorrar esos segundos.
+    _MAX_RONDAS_RELLENO = 3
     for _ronda_relleno in range(_MAX_RONDAS_RELLENO):
         faltan = num_preguntas - len(preguntas_unicas)
         if faltan <= 0:
