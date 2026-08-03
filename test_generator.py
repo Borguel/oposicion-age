@@ -516,7 +516,126 @@ def _repartir_bloques_en_lotes(bloques, n_lotes):
     return lotes
 
 
-def _fragmentos_por_lote(texto_fuente, n_lotes):
+def _prompt_esquema_documento(texto_fuente, n_bloques):
+    return (
+        "Eres un asistente que divide un documento en secciones temáticas para repartir su "
+        f"contenido entre {n_bloques} grupos de trabajo -- cada grupo se encargará de una "
+        "parte distinta, ningún grupo debe ver la misma sección que otro, para no duplicar "
+        "trabajo entre ellos.\n\n"
+        f"Divide el documento de abajo en EXACTAMENTE {n_bloques} secciones consecutivas, de "
+        "tamaño lo más parecido posible entre sí, que cubran el documento COMPLETO de "
+        "principio a fin sin solaparse ni dejar huecos. Elige los cortes en los límites "
+        "temáticos más naturales del propio documento (un artículo, un apartado, un cambio de "
+        "tema o epígrafe...), nunca a mitad de una frase o de una idea.\n\n"
+        "Para cada sección, copia LITERALMENTE del documento (sin cambiar ni una letra, ni "
+        "corregir tildes o mayúsculas) las primeras 6-10 palabras con las que empieza esa "
+        "sección -- se usan para localizar el corte exacto en el texto original, así que deben "
+        "coincidir carácter por carácter con el documento.\n\n"
+        "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
+        '[{"titulo": "resumen breve del tema de la sección", "inicio_literal": "primeras '
+        'palabras exactas de la sección"}]\n\n'
+        f"DOCUMENTO:\n{texto_fuente}"
+    )
+
+
+def _bloques_por_esquema_ia(texto_fuente, n_bloques, on_usage=None):
+    """Segundo nivel de detección de estructura (03/08/2026, ver el
+    comentario largo en _fragmentos_por_lote): _bloques_estructurales
+    (basada en regex de artículo/disposición/título) solo funciona con
+    texto LEGAL en bruto -- probada contra un documento real subido por un
+    usuario (un temario narrativo tipo apunte, no la ley en sí, con los
+    artículos citados dentro de la prosa: "el art. 9 CE señala que...")
+    encontró un único "bloque", y ese uno era un falso positivo (un salto
+    de línea del PDF que coincidía por casualidad con el patrón). Los
+    usuarios suben documentos de cualquier formato, así que ninguna regex
+    fija va a generalizar -- aquí se le pide a la propia IA que LEA el
+    documento (funciona igual de bien sea cual sea su estructura, porque
+    no depende de reconocer un patrón concreto) y devuelva dónde empieza
+    cada sección temática.
+
+    No se le pide un número de carácter o página (los modelos son malos
+    calculando posiciones exactas) sino que COPIE LITERALMENTE las
+    primeras palabras de cada sección -- se localizan buscando ese
+    fragmento tal cual en el texto original, mucho más fiable que pedir
+    un índice numérico.
+
+    Devuelve una lista de bloques (mismo formato que _bloques_estructurales,
+    con tipo="tema") o [] si la llamada falla, el JSON no es válido, o no
+    se pudo localizar en el texto ni la mitad de los fragmentos que la IA
+    dijo -- en cualquiera de esos casos el llamante (_fragmentos_por_lote)
+    cae al reparto por párrafo de siempre, nunca se bloquea ni rompe la
+    generación por esto."""
+    if not texto_fuente or n_bloques <= 1:
+        return []
+    generado = call_deepseek_api(
+        messages=[{"role": "user", "content": _prompt_esquema_documento(texto_fuente, n_bloques)}],
+        temperature=0.0,
+        # Respuesta corta (un título + unas palabras por sección, unas
+        # pocas decenas de bloques como mucho) -- no hace falta más
+        # margen que el que ya usa el resto de llamadas cortas de este
+        # archivo.
+        max_tokens=min(4000, 300 + 150 * n_bloques),
+        response_format_json=True,
+        on_usage=on_usage,
+        # thinking_enabled=False (por defecto, ver deepseek_utils.py): es
+        # una tarea de extracción mecánica (copiar texto tal cual, no
+        # verificar precisión legal contra un documento), no la tarea
+        # donde razonar aporta algo -- igual que la GENERACIÓN de
+        # preguntas, a diferencia de su VERIFICACIÓN (ver
+        # _verificar_pregunta).
+        # stream=True: mismo motivo que el resto de llamadas de este
+        # archivo -- el documento completo puede ser largo, sin streaming
+        # una llamada de más de ~30s muere con "Error de conexión".
+        stream=True,
+    )
+    if not generado:
+        return []
+    try:
+        secciones = json.loads(generado)
+    except json.JSONDecodeError:
+        inicio_json = generado.find("[")
+        fin_json = generado.rfind("]") + 1
+        if inicio_json == -1 or fin_json <= inicio_json:
+            return []
+        try:
+            secciones = json.loads(generado[inicio_json:fin_json])
+        except json.JSONDecodeError:
+            return []
+    if not isinstance(secciones, list):
+        return []
+
+    posiciones = {}
+    for seccion in secciones:
+        if not isinstance(seccion, dict):
+            continue
+        inicio_literal = str(seccion.get("inicio_literal", "")).strip()
+        if not inicio_literal:
+            continue
+        posicion = texto_fuente.find(inicio_literal)
+        if posicion == -1:
+            continue
+        titulo = str(seccion.get("titulo", "")).strip() or inicio_literal[:40]
+        posiciones[posicion] = titulo
+
+    # Si no se pudo localizar ni la mitad de las secciones pedidas, el
+    # esquema no es de fiar (demasiados fragmentos inventados o
+    # reescritos por el modelo pese a la instrucción de copiarlos tal
+    # cual) -- mejor caer al reparto por párrafo que repartir con cortes
+    # a medias.
+    if len(posiciones) < max(2, n_bloques // 2):
+        return []
+
+    posiciones_ordenadas = sorted(posiciones.items())
+    bloques = []
+    for indice, (inicio, titulo) in enumerate(posiciones_ordenadas):
+        fin = posiciones_ordenadas[indice + 1][0] if indice + 1 < len(posiciones_ordenadas) else len(texto_fuente)
+        contenido = texto_fuente[inicio:fin]
+        if contenido.strip():
+            bloques.append({"etiqueta": titulo, "tipo": "tema", "inicio": inicio, "texto": contenido})
+    return bloques
+
+
+def _fragmentos_por_lote(texto_fuente, n_lotes, on_usage=None):
     """Devuelve una lista de n_lotes fragmentos del documento, uno por lote,
     para que cada llamada de generación en paralelo se apoye en una parte
     DISTINTA del documento en vez de que todos los lotes reciban el mismo
@@ -528,39 +647,47 @@ def _fragmentos_por_lote(texto_fuente, n_lotes):
     "duración del mandato del Presidente..." repetida en 8 de 20 preguntas
     de un mismo test).
 
-    Reparto por BLOQUE ESTRUCTURAL COMPLETO (03/08/2026, bug real): el
-    reparto anterior, intercalado por párrafo, evitaba que un lote se
-    llevara un único tramo temático contiguo, pero un artículo largo (con
-    varios párrafos) se ACABABA REPARTIENDO ENTRE VARIOS LOTES -- cada uno
-    veía solo un trozo, pero cada uno veía LO BASTANTE del mismo artículo
-    (p.ej. el dato más citable, "mayoría absoluta", "quinta parte de los
-    miembros"...) como para generar, sin saber unos de otros, una pregunta
-    sobre el mismo hecho con una redacción distinta -- confirmado en
-    producción con 3 preguntas sobre "qué mayoría exige el Senado" del
-    art. 167 repartidas entre lotes distintos de un mismo test. Ahora
-    (ver _bloques_estructurales) un artículo, disposición o
-    título/capítulo sin artículos propios va ENTERO a un único lote,
-    repartidos por _repartir_bloques_en_lotes para equilibrar caracteres
-    totales -- dos lotes ya no pueden converger en el mismo artículo
-    porque ninguno de los dos lo ve si no le tocó a él. Sigue siendo 100%
-    en paralelo (mismo número de lotes, misma concurrencia): el reparto es
-    puro procesamiento de texto sobre el documento ya descargado, no
-    añade ninguna llamada a la API ni tiempo de espera extra.
+    Reparto por BLOQUE ESTRUCTURAL COMPLETO, en DOS NIVELES (03/08/2026,
+    bug real): el reparto anterior, intercalado por párrafo, evitaba que
+    un lote se llevara un único tramo temático contiguo, pero un artículo
+    largo (con varios párrafos) se ACABABA REPARTIENDO ENTRE VARIOS LOTES
+    -- cada uno veía solo un trozo, pero cada uno veía LO BASTANTE del
+    mismo artículo (p.ej. el dato más citable, "mayoría absoluta", "quinta
+    parte de los miembros"...) como para generar, sin saber unos de otros,
+    una pregunta sobre el mismo hecho con una redacción distinta --
+    confirmado en producción con 3 preguntas sobre "qué mayoría exige el
+    Senado" del art. 167 repartidas entre lotes distintos de un mismo
+    test. Ahora un artículo, disposición, título/capítulo sin artículos
+    propios, o sección temática (según el nivel, ver abajo) va ENTERO a un
+    único lote, repartidos por _repartir_bloques_en_lotes para equilibrar
+    caracteres totales -- dos lotes ya no pueden converger en el mismo
+    bloque porque ninguno de los dos lo ve si no le tocó a él.
 
-    Solo la prosa SIN NINGÚN marcador por encima (normalmente la
-    portada/introducción antes del primer Título o Artículo) sigue el
+    Nivel 1 -- _bloques_estructurales (regex, gratis, sin llamada a la
+    API): busca marcadores de artículo/disposición/título -- funciona bien
+    con texto LEGAL en bruto (leyes, reglamentos), pero solo con eso.
+    Nivel 2 -- _bloques_por_esquema_ia (una llamada a DeepSeek, ver su
+    comentario largo): si el nivel 1 no encuentra suficientes bloques (bug
+    real: probado contra un temario narrativo real -- un apunte de
+    academia que EXPLICA la Constitución citando los artículos dentro de
+    la prosa, "el art. 9 CE señala que...", nunca como encabezado propio
+    -- el nivel 1 encontró un único bloque, y ese uno era un falso
+    positivo), se le pide a la IA que lea el documento COMPLETO y proponga
+    ella misma dónde cortarlo en secciones temáticas -- funciona sea cual
+    sea el formato del documento, porque no depende de reconocer un patrón
+    de texto fijo. Añade una única llamada corta (sin razonamiento
+    profundo) antes de arrancar los lotes, no una por lote -- tiempo fijo
+    y pequeño, no crece con el número de lotes ni con num_preguntas.
+
+    Solo si NINGUNO de los dos niveles encuentra suficientes bloques (un
+    documento demasiado corto, sin estructura reconocible NI accesible
+    por lectura, o si la llamada a la IA del nivel 2 falla) se cae al
     reparto INTERCALADO por párrafo de siempre (02/08/2026, bug real): con
     el reparto contiguo anterior a ese arreglo (el lote 1 se llevaba
     literalmente el primer tramo del documento, el lote 2 el segundo...),
     si esa primera zona trataba un único tema, las primeras preguntas que
     ve el usuario con el arranque temprano (num_preguntas > 5, ver
-    generar_preguntas_ia_en_lotes) podían salir TODAS de ese mismo tema.
-
-    Si el documento no tiene marcadores reconocibles en absoluto (no es
-    texto legal con artículos/disposiciones/títulos -- p.ej. un temario
-    puramente narrativo), o tiene menos bloques que lotes (no hay
-    suficientes para repartir sin dejar algún lote vacío), se cae al
-    reparto por párrafo intercalado de siempre para TODO el documento --
+    generar_preguntas_ia_en_lotes) podían salir TODAS de ese mismo tema --
     ni mejor ni peor que el comportamiento anterior a este cambio.
 
     Con documentos cortos, un solo lote, sin texto_fuente, o con pocos
@@ -571,11 +698,20 @@ def _fragmentos_por_lote(texto_fuente, n_lotes):
     (documento corto/un solo lote), se devuelve None en cada posición y el
     llamante usa el documento completo tal cual (sin pasar 'fragmento' a
     construir_prompt, para no romper compatibilidad con construir_prompt(n)
-    de un solo argumento)."""
+    de un solo argumento).
+
+    on_usage: se pasa a la llamada del nivel 2, si hace falta -- sin esto
+    el coste de esa llamada se perdería en silencio (ver AcumuladorTokens
+    en coste_ia.py), igual que el resto de llamadas de este archivo."""
     if not texto_fuente or n_lotes <= 1 or len(texto_fuente) < n_lotes * 400:
         return [None] * n_lotes
 
     bloques, prosa_inicial = _bloques_estructurales(texto_fuente)
+    if len(bloques) < n_lotes:
+        bloques_ia = _bloques_por_esquema_ia(texto_fuente, n_lotes, on_usage)
+        if len(bloques_ia) >= n_lotes:
+            bloques, prosa_inicial = bloques_ia, ""
+
     if len(bloques) >= n_lotes:
         lotes_de_bloques = _repartir_bloques_en_lotes(bloques, n_lotes)
         parrafos_prosa = [p for p in prosa_inicial.split("\n\n") if p.strip()]
@@ -1041,7 +1177,7 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             return [], f"Ninguna de las {len(candidatas)} preguntas candidatas de un lote superó la verificación de calidad"
         return aceptadas, None
 
-    fragmentos = _fragmentos_por_lote(texto_fuente, len(lotes))
+    fragmentos = _fragmentos_por_lote(texto_fuente, len(lotes), on_usage)
 
     errores = []
     # max_workers=8 (no 15, como generador_preguntas_verificado.py): cada

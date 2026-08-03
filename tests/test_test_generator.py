@@ -20,7 +20,7 @@ from unittest.mock import patch
 from test_generator import (
     generar_preguntas_ia_en_lotes, MAX_INTENTOS_POR_PREGUNTA_PDF, _verificar_pregunta,
     _claves_dedup, _fragmentos_por_lote, _es_duplicado_por_contencion,
-    _bloques_estructurales, _repartir_bloques_en_lotes,
+    _bloques_estructurales, _repartir_bloques_en_lotes, _bloques_por_esquema_ia,
 )
 
 
@@ -1144,12 +1144,17 @@ class TestFragmentosPorLote:
         # párrafos (uno por "TEMA") y 4 lotes, cada fragmento debe contener
         # párrafos de TODO el documento -- del principio, la mitad y el
         # final -- no solo un tramo contiguo.
+        # "TEMA N" no tiene marcadores reconocibles por _bloques_estructurales
+        # (ni por artículo ni por título) y aquí se mockea la IA del nivel 2
+        # (_bloques_por_esquema_ia) para que falle -- este test es
+        # específicamente del reparto por párrafo, el fallback final.
         relleno = "Frase de relleno para simular contenido real del documento. " * 5
         parrafos_originales = [f"TEMA {i}. {relleno}" for i in range(8)]
         texto = "\n\n".join(parrafos_originales)
         assert len(texto) >= 4 * 400  # por encima del umbral de fragmentación
 
-        fragmentos = _fragmentos_por_lote(texto, 4)
+        with patch("test_generator.call_deepseek_api", return_value=None):
+            fragmentos = _fragmentos_por_lote(texto, 4)
 
         assert len(fragmentos) == 4
         # Ningún fragmento debe limitarse a un tramo contiguo (p.ej. "TEMA 0"
@@ -1165,11 +1170,13 @@ class TestFragmentosPorLote:
     def test_documento_con_pocos_parrafos_cae_al_reparto_contiguo(self):
         # Con menos del doble de párrafos que lotes, el reparto intercalado
         # dejaría lotes vacíos o casi vacíos -- se cae al reparto contiguo
-        # de siempre en vez de eso.
+        # de siempre en vez de eso. Se mockea la IA del nivel 2 para que
+        # falle (mismo motivo que el test anterior).
         texto = "Una sola línea muy larga sin dobles saltos de párrafo. " * 20
         assert len(texto) >= 2 * 400
 
-        fragmentos = _fragmentos_por_lote(texto, 2)
+        with patch("test_generator.call_deepseek_api", return_value=None):
+            fragmentos = _fragmentos_por_lote(texto, 2)
 
         assert len(fragmentos) == 2
         assert all(f is not None for f in fragmentos)
@@ -1299,6 +1306,91 @@ class TestRepartirBloquesEnLotes:
         assert [b["etiqueta"] for b in lotes[0]] == ["Artículo 2", "Artículo 5"]
 
 
+class TestBloquesPorEsquemaIa:
+    def test_localiza_bloques_a_partir_del_esquema_devuelto_por_la_ia(self):
+        # Nivel 2 de detección de estructura (03/08/2026, bug real): un
+        # documento subido por un usuario real -- un temario narrativo tipo
+        # apunte de academia, no la ley en bruto -- no tiene ningún
+        # "Artículo N" como encabezado propio (los artículos se citan
+        # DENTRO de la prosa: "el art. 9 CE señala que..."), así que
+        # _bloques_estructurales (regex) no encuentra nada útil. Aquí se
+        # comprueba que, dada una respuesta de la IA con el esquema del
+        # documento, las secciones se localizan correctamente por su texto
+        # literal de inicio.
+        texto = (
+            "1. INTRODUCCIÓN\n"
+            "La Constitución de 1978 fue fruto de un largo proceso.\n"
+            "2. ESTRUCTURA\n"
+            "La CE consta de 169 artículos repartidos en un Título Preliminar y diez Títulos.\n"
+            "3. CARACTERÍSTICAS\n"
+            "Como características de la CE cabe destacar que es una Constitución de consenso."
+        )
+        respuesta_ia = json.dumps([
+            {"titulo": "Introducción", "inicio_literal": "1. INTRODUCCIÓN"},
+            {"titulo": "Estructura", "inicio_literal": "2. ESTRUCTURA"},
+            {"titulo": "Características", "inicio_literal": "3. CARACTERÍSTICAS"},
+        ])
+        with patch("test_generator.call_deepseek_api", return_value=respuesta_ia):
+            bloques = _bloques_por_esquema_ia(texto, 3)
+
+        assert [b["etiqueta"] for b in bloques] == ["Introducción", "Estructura", "Características"]
+        assert "largo proceso" in bloques[0]["texto"]
+        assert "2. ESTRUCTURA" not in bloques[0]["texto"]
+        assert "169 artículos" in bloques[1]["texto"]
+        assert "Constitución de consenso" in bloques[2]["texto"]
+
+    def test_devuelve_vacio_si_deepseek_no_responde(self):
+        with patch("test_generator.call_deepseek_api", return_value=None):
+            assert _bloques_por_esquema_ia("Documento de prueba. " * 50, 3) == []
+
+    def test_devuelve_vacio_si_el_json_no_es_valido(self):
+        with patch("test_generator.call_deepseek_api", return_value="esto no es JSON en absoluto"):
+            assert _bloques_por_esquema_ia("Documento de prueba. " * 50, 3) == []
+
+    def test_devuelve_vacio_si_menos_de_la_mitad_de_los_fragmentos_se_localizan(self):
+        # Si la IA "inventa" o reescribe la mayoría de los inicios
+        # literales (pese a la instrucción de copiarlos tal cual) en vez
+        # de devolver texto real del documento, no es de fiar -- mejor
+        # caer al reparto por párrafo que repartir con cortes a medias.
+        texto = "1. INTRODUCCIÓN\nTexto real del documento.\n2. ESTRUCTURA\nMás texto real."
+        respuesta_ia = json.dumps([
+            {"titulo": "Introducción", "inicio_literal": "1. INTRODUCCIÓN"},
+            {"titulo": "Inventado 1", "inicio_literal": "Esto no aparece en el documento"},
+            {"titulo": "Inventado 2", "inicio_literal": "Esto tampoco aparece"},
+        ])
+        with patch("test_generator.call_deepseek_api", return_value=respuesta_ia):
+            assert _bloques_por_esquema_ia(texto, 3) == []
+
+    def test_fragmentos_por_lote_usa_la_ia_para_un_documento_narrativo_sin_marcadores_regex(self):
+        # Caso real completo: un documento SIN "Artículo N" como encabezado
+        # (los artículos se citan dentro de la prosa) no activa el nivel 1
+        # (regex), así que _fragmentos_por_lote debe recurrir al nivel 2
+        # (IA) y repartir por el esquema que devuelva.
+        relleno_seccion = "Frase de relleno para simular contenido real de un apunte de academia. " * 6
+        texto = "\n\n".join(
+            f"{i}. SECCIÓN NÚMERO {i}\nEl art. {i} CE señala varias cuestiones. {relleno_seccion}"
+            for i in range(1, 5)
+        )
+        assert len(texto) >= 4 * 400
+
+        # Regex (nivel 1) no encuentra nada -- "el art. N CE" es una
+        # referencia dentro de la prosa, no un encabezado ("Artículo N").
+        assert _bloques_estructurales(texto)[0] == []
+
+        respuesta_ia = json.dumps([
+            {"titulo": f"Sección {i}", "inicio_literal": f"{i}. SECCIÓN NÚMERO {i}"}
+            for i in range(1, 5)
+        ])
+        with patch("test_generator.call_deepseek_api", return_value=respuesta_ia):
+            fragmentos = _fragmentos_por_lote(texto, 4)
+
+        assert len(fragmentos) == 4
+        assert all(f is not None for f in fragmentos)
+        for i in range(1, 5):
+            marcador = f"SECCIÓN NÚMERO {i}"
+            assert sum(1 for f in fragmentos if marcador in f) == 1
+
+
 class TestFragmentosPorLoteConBloquesEstructurales:
     @staticmethod
     def _articulo(n, relleno):
@@ -1340,13 +1432,17 @@ class TestFragmentosPorLoteConBloquesEstructurales:
             marcador = f"Párrafo introductorio {i} de la portada."
             assert sum(1 for f in fragmentos if marcador in f) == 1
 
-    def test_documento_con_menos_bloques_que_lotes_cae_al_reparto_por_parrafo(self):
-        # Con menos bloques estructurales que lotes no hay suficientes
-        # para repartir sin dejar alguno vacío -- se cae al reparto por
-        # párrafo/contiguo de siempre para todo el documento, sin fallar.
-        relleno = "Frase de relleno para simular contenido real del documento. " * 8
+    def test_documento_con_menos_bloques_que_lotes_intenta_la_ia_y_luego_cae_al_parrafo(self):
+        # Con menos bloques estructurales (nivel 1, regex) que lotes no hay
+        # suficientes para repartir sin dejar alguno vacío -- se intenta el
+        # nivel 2 (IA), y si tampoco da suficientes bloques (aquí, mockeada
+        # para fallar) se cae al reparto por párrafo/contiguo de siempre
+        # para todo el documento, sin fallar.
+        relleno = "Frase de relleno para simular contenido real de un artículo constitucional. " * 16
         texto = "\n\n".join(self._articulo(n, relleno) for n in range(1, 3))  # solo 2 artículos
+        assert len(texto) >= 4 * 400  # por encima del umbral de fragmentación
 
-        fragmentos = _fragmentos_por_lote(texto, 4)  # pero 4 lotes
+        with patch("test_generator.call_deepseek_api", return_value=None):
+            fragmentos = _fragmentos_por_lote(texto, 4)  # pero 4 lotes
 
         assert len(fragmentos) == 4
