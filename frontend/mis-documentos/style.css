@@ -369,6 +369,13 @@ body {
   color: var(--age-danger, #c0392b);
 }
 
+.documento-card-banco-completo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--age-success, #2f9e44);
+}
+
 .documento-card-btn.principal:hover {
   background: var(--age-primary-dark);
   border-color: var(--age-primary-dark);

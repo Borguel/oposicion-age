@@ -105,9 +105,9 @@ function seccionCarpeta(doc, modoCarpeta) {
 function filaBanco(doc, tipo) {
   const estado = doc[`banco_${tipo}_estado`];
   const total = doc[`banco_${tipo}_total`] || 0;
-  const objetivo = doc[`banco_${tipo}_objetivo`] || 0;
   const esPreguntas = tipo === "preguntas";
   const label = esPreguntas ? "Banco de preguntas" : "Banco de tarjetas";
+  const nombreItem = esPreguntas ? "pregunta" : "tarjeta";
   const iconoHtml = icono(esPreguntas ? "matraz" : "tarjeta", 16);
   const rutaPractica = esPreguntas ? "/subida-pdf-generar-test/" : "/subida-pdf-tarjetas/";
   const paramVer = esPreguntas ? "banco" : "banco-tarjetas";
@@ -118,7 +118,18 @@ function filaBanco(doc, tipo) {
     acciones.push(`<button type="button" class="documento-card-btn principal" data-banco-generar="${tipo}" data-id="${doc.id}">Generar banco de ${tipo}</button>`);
   } else {
     if (estado === "generando") {
-      acciones.push(`<span class="documento-card-banco-estado">Generando… ${total}${objetivo ? `/${objetivo}` : ""}</span>`);
+      // Sin el tope interno (antes "1/100"): el usuario no tiene por qué
+      // saber cuál es el techo de seguridad del banco, solo cuántas lleva
+      // generadas hasta ahora -- este número se actualiza en vivo según
+      // van llegando eventos de progreso (ver iniciarBanco).
+      acciones.push(`<span class="documento-card-banco-estado">Generando… ${total} ${nombreItem}${total === 1 ? "" : "s"} hasta ahora</span>`);
+    } else if (estado === "completo") {
+      // Aviso explícito de que la generación YA terminó (03/08/2026, a
+      // petición del usuario: antes, al pasar de "generando" a completo,
+      // no había ninguna señal clara de que el sistema hubiera acabado de
+      // trabajar -- solo aparecían los botones de practicar, fáciles de
+      // confundir con "sigue generando").
+      acciones.push(`<span class="documento-card-banco-estado documento-card-banco-completo">${icono("check", 14)} ${total} ${nombreItem}${total === 1 ? "" : "s"} generada${total === 1 ? "" : "s"}</span>`);
     } else if (estado === "error") {
       acciones.push(`<span class="documento-card-banco-estado documento-card-banco-error">No se pudo generar</span>`);
       acciones.push(`<button type="button" class="documento-card-btn" data-banco-generar="${tipo}" data-id="${doc.id}">Reintentar</button>`);
@@ -141,7 +152,8 @@ function filaBanco(doc, tipo) {
     }
   }
 
-  const etiquetaCantidad = total > 0 ? ` (${total}${objetivo && estado === "generando" ? `/${objetivo}` : ""})` : "";
+  // Sin el tope interno en la etiqueta tampoco -- mismo motivo que arriba.
+  const etiquetaCantidad = total > 0 ? ` (${total})` : "";
   return `
     <div class="documento-card-fila">
       <span class="documento-card-fila-label">${iconoHtml} ${label}${etiquetaCantidad}</span>
