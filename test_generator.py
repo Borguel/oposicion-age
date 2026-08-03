@@ -419,7 +419,7 @@ def _pedir_una_pregunta_de_recambio(construir_prompt, pregunta_descartada, on_us
 
 
 def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente, on_usage,
-                               max_intentos=MAX_INTENTOS_POR_PREGUNTA_PDF):
+                               max_intentos=MAX_INTENTOS_POR_PREGUNTA_PDF, forzar_recambio=False):
     """Verifica una pregunta candidata contra el documento de origen y, si
     no supera la verificación, la descarta POR COMPLETO y pide una de
     recambio evitando su tema, hasta max_intentos veces -- mismo principio
@@ -438,9 +438,26 @@ def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente
     el modelo verificador se acuerde de esta regla concreta entre las
     otras 8 que comprueba a la vez) y ANTES de gastar la llamada de
     verificación -- mismo ahorro que _contiene_frase_prohibida ya da en
-    tarjetas_generator.py."""
+    tarjetas_generator.py.
+
+    forzar_recambio (03/08/2026, bug real de dedup entre lotes): si
+    pregunta_candidata YA superó la verificación de precisión (en bloque, en
+    otro lote) y el único motivo por el que llega aquí es ser un duplicado
+    de otra pregunta ya aceptada (ver _intentar_aceptar en
+    generar_preguntas_ia_en_lotes), no tiene sentido volver a verificarla
+    tal cual -- su contenido no ha cambiado, así que pasaría otra vez y
+    seguiría siendo el mismo duplicado, sin llegar nunca a pedir una
+    pregunta distinta. Con forzar_recambio=True se salta la comprobación
+    sobre pregunta_candidata y se pide directamente una de recambio, con el
+    resto del presupuesto de intentos igual que si esa primera comprobación
+    hubiera fallado."""
     pregunta = pregunta_candidata
     intentos_restantes = max_intentos
+    if forzar_recambio:
+        intentos_restantes -= 1
+        pregunta = _pedir_una_pregunta_de_recambio(construir_prompt, pregunta.get("pregunta", ""), on_usage)
+        if not pregunta or intentos_restantes <= 0:
+            return None
     while intentos_restantes > 0:
         if validar_pregunta(pregunta) and _verificar_pregunta(pregunta, texto_fuente, on_usage):
             return pregunta
@@ -572,6 +589,49 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             evento["pregunta"] = pregunta_aceptada
         on_progreso(evento)
 
+    # vistas/preguntas_unicas/lock_dedup (03/08/2026, bug real): antes se
+    # deduplicaba en UNA pasada final, después de que TODOS los lotes en
+    # paralelo hubieran terminado (ver el bloque que hacía "for p in
+    # preguntas: ..." tras el ThreadPoolExecutor de más abajo). El problema
+    # es que _reportar_avance_pregunta (y con ella el evento SSE "pregunta"
+    # que el frontend muestra de inmediato, ver blueprints/pdf_ia.py) se
+    # dispara DENTRO de _pedir_lote_verificado, en cuanto una candidata
+    # supera la verificación de SU PROPIO lote -- mucho antes de que la
+    # pasada final de dedup tenga ocasión de descartarla. Dos lotes en
+    # paralelo pueden generar, cada uno por su cuenta, una pregunta distinta
+    # sobre el mismo hecho (no se ven entre sí mientras corren), y las dos se
+    # enseñan al usuario antes de que el dedup tardío las detecte -- bug
+    # real confirmado con un documento real: 3 preguntas casi idénticas
+    # sobre el art. 26.6 (plazo de audiencia pública) de 3 lotes distintos,
+    # las 3 mostradas en el test aunque _claves_dedup ya las identificaba
+    # correctamente como la misma pregunta. generador_preguntas_verificado.py
+    # (Test Personalizado) no tiene este problema porque su dedup
+    # (preguntas_ya_aceptadas) se comprueba de forma ATÓMICA en el momento
+    # de aceptar, bajo un lock, antes de reportar -- vistas/preguntas_unicas
+    # se adelantan aquí (antes solo existían tras el ThreadPoolExecutor de
+    # los lotes) para poder hacer exactamente lo mismo: _intentar_aceptar
+    # comprueba-y-registra bajo lock_dedup ANTES de que el llamante decida
+    # si reportar la pregunta por SSE.
+    vistas = set()
+    preguntas_unicas = []
+    lock_dedup = threading.Lock()
+
+    def _intentar_aceptar(pregunta):
+        """Registra 'pregunta' (ya verificada) en preguntas_unicas si no es
+        un duplicado de otra ya aceptada por CUALQUIER lote -- comprobación
+        e inserción atómicas bajo lock_dedup, para que dos lotes en paralelo
+        no puedan aceptar el mismo hecho a la vez. Devuelve True si se
+        aceptó (el llamante debe reportarla por SSE) o False si ya había una
+        equivalente (el llamante debe tratarla como descartada y, si puede,
+        pedir una de recambio -- nunca reportarla)."""
+        claves = _claves_dedup(pregunta)
+        with lock_dedup:
+            if not claves or (claves & vistas):
+                return False
+            vistas.update(claves)
+            preguntas_unicas.append(pregunta)
+        return True
+
     def _pedir_lote_verificado(n, fragmento=None):
         prompt = construir_prompt(n, fragmento) if fragmento is not None else construir_prompt(n)
         prompt = _prompt_con_exclusion(prompt, preguntas_a_evitar)
@@ -601,10 +661,17 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             return [], None
         if texto_fuente is None:
             # Sin documento contra el que verificar: se acepta la candidata
-            # tal cual, igual que antes de añadir la verificación.
+            # tal cual (nunca hay verificación con la que rechazarla), pero
+            # SÍ pasa por el dedup atómico -- sin texto_fuente no hay forma
+            # de pedir una de recambio (no hay nada contra lo que
+            # verificarla), así que una duplicada simplemente no se cuenta
+            # como aceptada ni se reporta por SSE.
+            aceptadas = []
             for candidata in candidatas:
-                _reportar_avance_pregunta(candidata)
-            return candidatas, None
+                if _intentar_aceptar(candidata):
+                    aceptadas.append(candidata)
+                    _reportar_avance_pregunta(candidata)
+            return aceptadas, None
 
         # validar_pregunta ANTES de la verificación en bloque (02/08/2026,
         # bug real, mismo motivo que en _asegurar_pregunta_valida): una
@@ -614,10 +681,24 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         # llamada de verificación en bloque para saber que hace falta
         # regenerarla -- se manda directa al camino de recambio individual,
         # que si acepta la reemplaza por una limpia.
+        #
+        # 'pendientes' es una lista de (candidata, forzar_recambio): la
+        # mayoría de motivos para acabar aquí (filtro local o verificación
+        # en bloque fallidos) todavía no saben si la candidata en sí es
+        # válida, así que _asegurar_pregunta_valida la vuelve a intentar tal
+        # cual antes de pedir recambio (forzar_recambio=False). La excepción
+        # es un duplicado detectado DESPUÉS de pasar la verificación en
+        # bloque (ver más abajo): esa candidata ya se sabe que es correcta,
+        # solo que repite un hecho que otro lote ya cubrió, así que
+        # reintentarla tal cual siempre daría el mismo duplicado --
+        # forzar_recambio=True salta directo a pedir una distinta.
         candidatas_ok_local = []
         pendientes = []
         for candidata in candidatas:
-            (candidatas_ok_local if validar_pregunta(candidata) else pendientes).append(candidata)
+            if validar_pregunta(candidata):
+                candidatas_ok_local.append(candidata)
+            else:
+                pendientes.append((candidata, False))
 
         # Verificación EN BLOQUE (ver _verificar_lote): una sola llamada
         # juzga TODAS las candidatas de este lote a la vez, en vez de una
@@ -631,23 +712,40 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         resultados_lote = _verificar_lote(candidatas_ok_local, texto_fuente, on_usage)
         aceptadas = []
         for i, candidata in enumerate(candidatas_ok_local):
-            if resultados_lote.get(i):
+            if not resultados_lote.get(i):
+                pendientes.append((candidata, False))
+            elif _intentar_aceptar(candidata):
                 aceptadas.append(candidata)
                 _reportar_avance_pregunta(candidata)
             else:
-                pendientes.append(candidata)
+                # Superó la verificación pero es un duplicado (mismo
+                # artículo + mismas cifras, o mismo texto) de una pregunta
+                # ya aceptada por OTRO lote en paralelo -- ver el comentario
+                # largo junto a vistas/preguntas_unicas más arriba. Se manda
+                # a recambio en vez de descartarse sin más, para no perder
+                # el hueco.
+                pendientes.append((candidata, True))
 
         if pendientes:
             with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(pendientes))) as executor:
                 futuros = [
-                    executor.submit(_asegurar_pregunta_valida, candidata, construir_prompt, texto_fuente, on_usage)
-                    for candidata in pendientes
+                    executor.submit(_asegurar_pregunta_valida, candidata, construir_prompt, texto_fuente, on_usage,
+                                     forzar_recambio=forzar)
+                    for candidata, forzar in pendientes
                 ]
                 for futuro in as_completed(futuros):
                     resultado = futuro.result()
-                    _reportar_avance_pregunta(resultado)
-                    if resultado:
+                    if resultado and _intentar_aceptar(resultado):
                         aceptadas.append(resultado)
+                        _reportar_avance_pregunta(resultado)
+                    else:
+                        # Sin resultado (recambio agotó sus intentos) o
+                        # resultado duplicado de otra ya aceptada mientras
+                        # tanto: no se reporta como pregunta (no hay
+                        # "pregunta" en el evento), pero SÍ cuenta como un
+                        # hueco de progreso ya resuelto -- el relleno final
+                        # (ver más abajo) se encarga de cubrir lo que falte.
+                        _reportar_avance_pregunta(None)
 
         if not aceptadas:
             # Generación OK (hubo candidatas), pero NINGUNA superó la
@@ -664,7 +762,6 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
 
     fragmentos = _fragmentos_por_lote(texto_fuente, len(lotes))
 
-    preguntas = []
     errores = []
     # max_workers=8 (no 15, como generador_preguntas_verificado.py): cada
     # lote de aquí dispara además hasta _MAX_WORKERS_VERIFICACION_LOTE
@@ -674,25 +771,22 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     # Sirve sobre todo para peticiones grandes (30-100 preguntas, varios
     # lotes): con num_preguntas pequeño ya cabían todos los lotes en una
     # sola tanda incluso con el límite anterior de 5.
+    #
+    # preguntas_unicas/vistas YA se rellenan dentro de _pedir_lote_verificado
+    # (vía _intentar_aceptar, bajo lock_dedup) según cada lote va aceptando
+    # candidatas -- no hace falta (ni sería correcto: ver el comentario
+    # largo junto a _intentar_aceptar) una segunda pasada de dedup aquí
+    # después de que todos los lotes terminen; el valor de retorno de
+    # _pedir_lote_verificado solo se usa aquí para saber si hubo error.
     with ThreadPoolExecutor(max_workers=min(8, len(lotes))) as executor:
         futuros = [
             executor.submit(_pedir_lote_verificado, n, fragmentos[i])
             for i, n in enumerate(lotes)
         ]
         for futuro in as_completed(futuros):
-            lote_preguntas, error = futuro.result()
+            _, error = futuro.result()
             if error:
                 errores.append(error)
-            else:
-                preguntas.extend(lote_preguntas)
-
-    vistas = set()
-    preguntas_unicas = []
-    for p in preguntas:
-        claves = _claves_dedup(p)
-        if claves and not (claves & vistas):
-            vistas.update(claves)
-            preguntas_unicas.append(p)
 
     # Nunca se acepta más preguntas de las pedidas: un lote puede ignorar el
     # "EXACTAMENTE n" del prompt y devolver más candidatas de las
@@ -728,7 +822,6 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     # paralelo, dos hilos podrían aceptar el mismo tema a la vez sin él).
     faltan = num_preguntas - len(preguntas_unicas)
     if faltan > 0:
-        lock_relleno = threading.Lock()
 
         def construir_prompt_evitando_repetidas(n):
             # Envuelve construir_prompt con un aviso de qué temas/datos ya
@@ -740,8 +833,12 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             # intentos, sin llegar nunca a rellenarse de verdad (bug real:
             # "pedí 10, recibí 9" con el hueco perdido siendo justo el que
             # intentaba repetir un hecho ya cubierto 3 veces en el resto
-            # del test).
-            with lock_relleno:
+            # del test). Se lee bajo lock_dedup (el mismo lock que protege
+            # las inserciones vía _intentar_aceptar) para que la foto de
+            # "cubiertas" esté sincronizada con lo que de verdad hay
+            # aceptado en cada momento, no con un lock distinto que ya no
+            # protege las escrituras.
+            with lock_dedup:
                 cubiertas = [
                     f"{p.get('pregunta', '')} (respuesta: "
                     f"{(p.get('opciones') or {}).get(str(p.get('respuesta_correcta', '')).upper(), '')})"
@@ -765,14 +862,12 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
                 _asegurar_pregunta_valida(candidata, construir_prompt_evitando_repetidas, texto_fuente, on_usage)
                 if candidata and texto_fuente is not None else candidata
             )
-            aceptada = None
-            if pregunta:
-                claves = _claves_dedup(pregunta)
-                with lock_relleno:
-                    if claves and not (claves & vistas):
-                        vistas.update(claves)
-                        preguntas_unicas.append(pregunta)
-                        aceptada = pregunta
+            # _intentar_aceptar (mismo helper que usan los lotes, ver más
+            # arriba): comprueba-y-registra en 'vistas'/'preguntas_unicas'
+            # bajo el mismo lock_dedup, así un hueco de relleno tampoco
+            # puede aceptar por duplicado un hecho que otro hueco (u otro
+            # lote que aún estuviera terminando) ya hubiera cubierto.
+            aceptada = pregunta if pregunta and _intentar_aceptar(pregunta) else None
             # Solo se incluye en el evento si de verdad se aceptó (no si
             # era un duplicado que se descarta) -- el "pregunta" del
             # evento SSE representa una pregunta genuinamente nueva del

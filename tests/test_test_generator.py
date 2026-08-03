@@ -532,6 +532,56 @@ class TestGenerarPreguntasIaEnLotes:
         }
         assert _claves_dedup(q_audiencia).isdisjoint(_claves_dedup(q_informes))
 
+    def test_lotes_en_paralelo_no_reportan_duplicados_por_sse(self):
+        # Bug real de producción (03/08/2026), con un documento real: 3
+        # preguntas casi idénticas sobre el art. 26.6 (plazo de audiencia
+        # pública) generadas por LOTES DISTINTOS en paralelo se mostraban
+        # las 3 en el test, aunque _claves_dedup ya las identificaba
+        # correctamente como la misma pregunta. La causa no era la clave de
+        # dedup (correcta) sino que _reportar_avance_pregunta (el evento SSE
+        # que el frontend muestra de inmediato) se disparaba dentro de cada
+        # lote en cuanto pasaba SU PROPIA verificación, antes de que el
+        # dedup -- que antes solo corría en una pasada final tras acabar
+        # TODOS los lotes -- tuviera ocasión de detectarla. Aquí, con 2
+        # lotes de 1 pregunta cada uno generando SIEMPRE una candidata
+        # equivalente (mismo artículo, mismas cifras, redacción distinta),
+        # el resultado final debe tener como mucho 1 pregunta de ese hecho Y
+        # el evento SSE con "pregunta" (el que el frontend muestra) solo
+        # debe haberse disparado una vez con ese contenido -- nunca dos
+        # veces con la misma pregunta duplicada.
+        construir_prompt = _construir_prompt_fabrica(None)
+        candidatas_equivalentes = [
+            {
+                "pregunta": "¿Cuál es el plazo mínimo de audiencia pública del artículo 26?",
+                "opciones": {"A": "15 días hábiles", "B": "10 días", "C": "1 mes", "D": "2 meses"},
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test.",
+            },
+            {
+                "pregunta": "Según el artículo 26.6, ¿en cuántos días hábiles debe darse audiencia pública?",
+                "opciones": {"A": "15 días hábiles", "B": "10 días", "C": "1 mes", "D": "2 meses"},
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test.",
+            },
+        ]
+        contador_generacion = itertools.count()
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion_lote(messages):
+                return json.dumps({"resultados": [{"indice": 0, "valido": True, "problemas": []}]})
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            indice = next(contador_generacion) % 2
+            return json.dumps([candidatas_equivalentes[indice]])
+
+        eventos = []
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(
+                construir_prompt, 2, "Texto de prueba.", tamano_lote=1, on_progreso=eventos.append,
+            )
+
+        assert len(preguntas) == 1
+        eventos_con_pregunta = [e for e in eventos if "pregunta" in e]
+        assert len(eventos_con_pregunta) == 1
+
     def test_relleno_evita_repetir_preguntas_ya_aceptadas(self):
         # El relleno debe conocer lo que YA está aceptado en el resto del
         # test para no volver a generar el mismo hecho sobreexplotado del

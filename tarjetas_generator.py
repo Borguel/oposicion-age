@@ -31,7 +31,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from deepseek_utils import call_deepseek_api, _trocear_en_parrafos
-from validador_preguntas import FRASES_PROHIBIDAS
+from validador_preguntas import FRASES_PROHIBIDAS, contiene_referencia_meta
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +198,11 @@ def _contiene_frase_prohibida(tarjeta):
     Test Personalizado, comprueba localmente antes de gastar una llamada de
     verificación en una tarjeta que se va a descartar de todos modos."""
     texto = (tarjeta["pregunta"] + " " + tarjeta["respuesta"]).lower()
-    return any(frase in texto for frase in FRASES_PROHIBIDAS)
+    # contiene_referencia_meta (03/08/2026): complementa FRASES_PROHIBIDAS
+    # con patrones tipo "conforme al contenido"/"el documento establece que"
+    # -- ver el comentario largo junto a PATRON_REFERENCIA_META en
+    # validador_preguntas.py.
+    return any(frase in texto for frase in FRASES_PROHIBIDAS) or contiene_referencia_meta(texto)
 
 
 def _regenerar_una_tarjeta(fragmento, pregunta_descartada, on_usage):

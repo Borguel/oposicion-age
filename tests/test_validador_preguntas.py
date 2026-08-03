@@ -92,6 +92,51 @@ def test_rechaza_pregunta_de_acuerdo_con_el_contenido():
         assert validar_pregunta(_pregunta_valida(explicacion=variante)) is False, variante
 
 
+def test_rechaza_conforme_al_contenido_o_al_documento():
+    # Bug real (03/08/2026), test generado desde PDF: la primera pregunta
+    # empezaba con "Conforme al contenido del tema, ¿...?" -- FRASES_PROHIBIDAS
+    # solo cubría "según"/"de acuerdo con", no "conforme a(l)", así que esta
+    # variante se colaba tal cual.
+    assert validar_pregunta(_pregunta_valida(
+        pregunta="Conforme al contenido del tema, ¿cómo se construye el Permalink?"
+    )) is False
+    for variante in [
+        "conforme al contenido, el órgano competente decide.",
+        "conforme al documento, el plazo es de un mes.",
+        "conforme al texto, la competencia es del Rey.",
+        "conforme al tema, la norma aplicable es esta.",
+    ]:
+        assert validar_pregunta(_pregunta_valida(explicacion=variante)) is False, variante
+
+
+def test_rechaza_el_documento_establece_indica_o_menciona():
+    # Bug real (03/08/2026), mismo test: varias explicaciones decían "el
+    # documento establece/indica/señala que..." y una decía "el tema cita
+    # el artículo..." -- no son frases fijas (varía el verbo), así que
+    # FRASES_PROHIBIDAS (que solo compara substrings exactos) nunca las
+    # cazaba; hace falta un patrón sujeto+verbo.
+    for variante in [
+        "el documento establece que el plazo es de un mes.",
+        "el documento indica que la competencia es del Rey.",
+        "el documento señala que el órgano competente decide.",
+        "el documento menciona que la norma aplicable es esta.",
+        "el tema cita el artículo 62 de la Constitución.",
+        "el contenido dispone que se aplique el procedimiento ordinario.",
+        "el texto regula esta materia de forma expresa.",
+        "el fragmento recoge la excepción prevista en la ley.",
+    ]:
+        assert validar_pregunta(_pregunta_valida(explicacion=variante)) is False, variante
+
+
+def test_no_rechaza_conforme_a_seguido_de_una_norma_legitima():
+    # "conforme a" es una construcción legítima cuando lo que sigue es una
+    # norma real, no el material de origen -- PATRON_REFERENCIA_META solo
+    # dispara con documento/contenido/texto/tema/fragmento justo detrás.
+    assert validar_pregunta(_pregunta_valida(
+        explicacion="Conforme a la Constitución Española, el Rey nombra al Presidente del Gobierno."
+    )) is True
+
+
 def test_no_rechaza_contenido_esencial_como_termino_juridico_legitimo():
     # "contenido esencial" es terminología constitucional real (artículo
     # 53.1 de la Constitución Española) -- no debe confundirse con una

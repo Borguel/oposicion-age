@@ -25,6 +25,34 @@ FRASES_PROHIBIDAS = [
     "lo que has subido", "el documento que has subido", "el pdf que has subido",
 ]
 
+# Igual que FRASES_PROHIBIDAS pero como PATRONES (no frases exactas): dos
+# construcciones muy habituales de referencia al documento de origen que la
+# lista de arriba no cazaba porque no es una frase fija, sino [preposición]
+# + [documento/contenido/texto/tema/fragmento] o [documento/contenido/
+# texto/tema/fragmento] + [verbo] con cualquier redacción intermedia --
+# vistas repetidas veces en un test real generado desde PDF (03/08/2026):
+# la primera pregunta empezaba con "Conforme al contenido del tema..."
+# (FRASES_PROHIBIDAS solo cubre "según"/"de acuerdo con", no "conforme a"),
+# y varias explicaciones decían "el documento establece/indica/menciona
+# que..." o "el tema cita el artículo..." (sujeto + verbo, no una frase fija
+# que se pueda listar una a una).
+PATRON_REFERENCIA_META = re.compile(
+    r"\b(seg[uú]n|de\s+acuerdo\s+con)\s+(el|la|lo)\s+(documento|contenido|texto|tema|fragmento)\b"
+    r"|\bconforme\s+(al|a\s+la|a\s+lo)\s+(documento|contenido|texto|tema|fragmento)\b"
+    r"|\b(el|la)\s+(documento|contenido|texto|tema|fragmento)\s+"
+    r"(establece|indica|se[ñn]ala|menciona|dice|cita|dispone|regula|recoge|prev[ée]|afirma|explica)\b",
+    re.IGNORECASE,
+)
+
+
+def contiene_referencia_meta(texto):
+    """True si 'texto' remite al documento/tema/contenido de origen en vez
+    de tener sentido por sí solo -- ver PATRON_REFERENCIA_META arriba.
+    Complementa (no sustituye) a FRASES_PROHIBIDAS: esta lista cubre frases
+    FIJAS que un simple 'in' ya detecta, mientras que este patrón cubre
+    construcciones con verbo o preposición que varían de redacción."""
+    return bool(PATRON_REFERENCIA_META.search(texto or ""))
+
 # ✅ Detección de conceptos repetidos
 def detectar_repeticiones(preguntas, max_repeticiones=2):
     referencias = []
@@ -72,6 +100,12 @@ def validar_pregunta(pregunta):
     # queda sin sentido para quien la responde.
     texto_total = (pregunta["pregunta"] + " " + pregunta["explicacion"]).lower()
     if any(frase in texto_total for frase in FRASES_PROHIBIDAS):
+        return False
+
+    # ❌ Igual que el filtro de arriba pero por patrón, no por frase fija --
+    # ver PATRON_REFERENCIA_META: "conforme al contenido", "el documento
+    # establece que...", "el tema cita el artículo..." etc.
+    if contiene_referencia_meta(texto_total):
         return False
 
     # ❌ Filtro de siglas de normas -- los exámenes oficiales de estas
