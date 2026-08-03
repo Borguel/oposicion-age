@@ -532,6 +532,54 @@ class TestGenerarPreguntasIaEnLotes:
         }
         assert _claves_dedup(q_audiencia).isdisjoint(_claves_dedup(q_informes))
 
+    def test_dedupe_de_fracciones_en_palabras_cifras_y_barra(self):
+        # Bug real de producción (03/08/2026), documento real: 4 preguntas
+        # sobre la mayoría exigida por el art. 168 de la Constitución
+        # Española ("dos tercios de cada Cámara") se colaron como 4
+        # preguntas "distintas" en un test de 20 porque la respuesta
+        # correcta expresaba la misma fracción de formas distintas --
+        # "dos tercios", "2/3" -- y _PATRON_CIFRA solo cazaba cifras con un
+        # DÍGITO pegado a la unidad ("15 días", "1 mes"), nunca un número
+        # en palabras ni una fracción con barra. Las mayorías cualificadas
+        # (tercios, cuartos, quintos...) son uno de los datos más citados
+        # en cualquier temario de oposición, así que esto no es específico
+        # de un documento. Aquí, tres formas distintas de escribir "2/3"
+        # deben producir la MISMA clave de dedup.
+        q_palabras = {
+            "pregunta": "Según el artículo 168 de la Constitución Española, ¿qué mayoría se exige para "
+                        "la aprobación del principio de una reforma que afecte al Título II?",
+            "opciones": {"A": "Mayoría de dos tercios de cada Cámara."}, "respuesta_correcta": "A",
+        }
+        q_barra = {
+            "pregunta": "Conforme al artículo 168 de la Constitución Española, ¿qué mayoría se requiere "
+                        "en cada Cámara para el principio de reforma del Título II?",
+            "opciones": {"A": "Mayoría de 2/3 de cada Cámara."}, "respuesta_correcta": "A",
+        }
+        q_cifra_pegada = {
+            "pregunta": "De acuerdo con el artículo 168 de la Constitución Española, ¿cuántos de los "
+                        "miembros de cada Cámara deben votar a favor del principio de reforma del Título II?",
+            "opciones": {"A": "Se exigen 2 tercios de cada Cámara."}, "respuesta_correcta": "A",
+        }
+        claves_palabras = _claves_dedup(q_palabras)
+        claves_barra = _claves_dedup(q_barra)
+        claves_cifra_pegada = _claves_dedup(q_cifra_pegada)
+        assert any(c.startswith("d:168:2/3") for c in claves_palabras)
+        assert (claves_palabras & claves_barra) and (claves_palabras & claves_cifra_pegada)
+
+    def test_no_dedupe_fracciones_distintas_del_mismo_articulo(self):
+        # "un tercio" y "dos tercios" del MISMO artículo son datos
+        # distintos (no la misma fracción escrita de otra forma) y no
+        # deben confundirse entre sí.
+        q_un_tercio = {
+            "pregunta": "Según el artículo 168, ¿qué fracción de la Cámara debe estar presente?",
+            "opciones": {"A": "Un tercio de sus miembros."}, "respuesta_correcta": "A",
+        }
+        q_dos_tercios = {
+            "pregunta": "Según el artículo 168, ¿qué mayoría se exige para aprobar la reforma?",
+            "opciones": {"A": "Dos tercios de sus miembros."}, "respuesta_correcta": "A",
+        }
+        assert _claves_dedup(q_un_tercio).isdisjoint(_claves_dedup(q_dos_tercios))
+
     def test_lotes_en_paralelo_no_reportan_duplicados_por_sse(self):
         # Bug real de producción (03/08/2026), con un documento real: 3
         # preguntas casi idénticas sobre el art. 26.6 (plazo de audiencia
@@ -761,7 +809,7 @@ class TestGenerarPreguntasIaEnLotes:
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
             generar_preguntas_ia_en_lotes(construir_prompt, 4, "Texto de prueba.", tamano_lote=4)
 
-        assert max_tokens_lote == [min(8000, 500 + 700 * 4)]
+        assert max_tokens_lote == [min(8000, 500 + 1500 * 4)]
 
     def test_verificacion_individual_de_recambio_sigue_pidiendo_8000_tokens(self):
         # Bug real de producción: con max_tokens=400, deepseek-v4-flash

@@ -25,11 +25,60 @@ _LONGITUD_MINIMA_DEDUP_RESPUESTA = 10
 # respuesta correcta -- ver el comentario largo en _claves_dedup sobre por
 # qué hace falta esta clave adicional.
 _PATRON_ARTICULO_BASE = re.compile(r"art[íi]culo\s+(\d+)", re.IGNORECASE)
+
+# Fracciones en PALABRAS ("dos tercios", "tres quintos") y en cifras con
+# barra ("2/3", "3/5") -- bug real, documento real (03/08/2026): 4
+# preguntas sobre el art. 168 de la Constitución Española y la mayoría
+# exigida ("dos tercios de cada Cámara") se colaron como 4 preguntas
+# "distintas" en un test de 20 porque la respuesta correcta las expresaba
+# de formas distintas ("dos tercios", "2/3") y ninguna contenía un dígito
+# PEGADO a la unidad como exige el resto de _PATRON_CIFRA (que solo cazaba
+# "15 días", "1 mes", nunca un número en palabras). Las mayorías
+# cualificadas ("mayoría de tres quintos", "mayoría de dos tercios",
+# "mayoría absoluta") son uno de los datos más citados en cualquier
+# temario de oposición (procedimientos legislativos, reformas
+# constitucionales y de estatutos, votaciones de órganos colegiados...),
+# así que este hueco no es específico de un documento sino un patrón
+# recurrente en este tipo de test.
+_NUMEROS_EN_PALABRAS = {
+    "un": "1", "uno": "1", "una": "1", "dos": "2", "tres": "3", "cuatro": "4",
+    "cinco": "5", "seis": "6", "siete": "7", "ocho": "8", "nueve": "9", "diez": "10",
+}
+_DENOMINADORES_EN_PALABRAS = {
+    "tercio": "3", "cuarto": "4", "quinto": "5", "sexto": "6", "septimo": "7",
+    "octavo": "8", "noveno": "9", "decimo": "10",
+}
 _PATRON_CIFRA = re.compile(
     r"\d+(?:[.,]\d+)?\s*(?:d[íi]as?\s+h[áa]biles?|d[íi]as?\s+naturales?|d[íi]as?|"
-    r"meses?|mes\b|a[ñn]os?|tercios?|cuartos?|%|por\s*ciento)",
+    r"meses?|mes\b|a[ñn]os?|tercios?|cuartos?|%|por\s*ciento)"
+    r"|\d+\s*/\s*\d+"
+    r"|(?:un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+"
+    r"(?:tercios?|cuartos?|quintos?|sextos?|s[ée]ptimos?|octavos?|novenos?|d[ée]cimos?)",
     re.IGNORECASE,
 )
+
+
+def _normalizar_cifra(cifra):
+    """Reduce una cifra encontrada por _PATRON_CIFRA a una forma canónica
+    para que "dos tercios", "2/3" y "2 tercios" -- la misma fracción
+    escrita de tres formas distintas -- produzcan la MISMA clave de dedup
+    en vez de tres claves distintas que no se reconocen entre sí. Las
+    cifras que no son una fracción (p.ej. "15 días hábiles") se devuelven
+    tal cual, ya normalizadas en espacios por _normalizar aguas arriba."""
+    coincide_barra = re.fullmatch(r"(\d+)\s*/\s*(\d+)", cifra)
+    if coincide_barra:
+        return f"{coincide_barra.group(1)}/{coincide_barra.group(2)}"
+    coincide_fraccion = re.fullmatch(
+        r"(\d+|[a-záéíóúñ]+)\s+(tercios?|cuartos?|quintos?|sextos?|s[ée]ptimos?|octavos?|novenos?|d[ée]cimos?)",
+        cifra,
+    )
+    if coincide_fraccion:
+        numerador = _NUMEROS_EN_PALABRAS.get(coincide_fraccion.group(1), coincide_fraccion.group(1))
+        denominador_singular = re.sub(r"s$", "", coincide_fraccion.group(2)).replace("é", "e")
+        denominador = _DENOMINADORES_EN_PALABRAS.get(denominador_singular)
+        if denominador:
+            return f"{numerador}/{denominador}"
+    return cifra
 
 
 def _normalizar(texto):
@@ -80,7 +129,7 @@ def _claves_dedup(pregunta):
     if len(clave_respuesta) >= _LONGITUD_MINIMA_DEDUP_RESPUESTA:
         claves.add(f"r:{clave_respuesta}")
     articulos = sorted(set(_PATRON_ARTICULO_BASE.findall(texto_pregunta)))
-    cifras = sorted(set(_PATRON_CIFRA.findall(clave_respuesta)))
+    cifras = sorted({_normalizar_cifra(c) for c in _PATRON_CIFRA.findall(clave_respuesta)})
     if articulos and cifras:
         claves.add(f"d:{'|'.join(articulos)}:{'|'.join(cifras)}")
     return claves
@@ -264,9 +313,23 @@ def _verificar_lote(preguntas, texto_fuente, on_usage):
         # necesitan un veredicto corto ({"valido": true, "problemas": []}),
         # pero si varias resultan inválidas a la vez y el modelo detalla
         # los motivos de cada una, el conjunto puede pesar bastante más que
-        # una sola verificación individual (tope 4000, ver
-        # _verificar_pregunta). Sin coste extra si no hace falta.
-        max_tokens=min(8000, 500 + 700 * len(preguntas)),
+        # una sola verificación individual (tope 8000, ver
+        # _verificar_pregunta). Sin coste extra si no hace falta -- pedir
+        # más max_tokens de los que se usan no cuesta nada (DeepSeek
+        # factura por tokens generados, no por el tope pedido).
+        #
+        # Coeficiente subido de 700 a 1500 por pregunta (03/08/2026, bug
+        # real de producción): con tamano_lote=5 (el tamaño normal de un
+        # lote, ver generar_preguntas_ia_en_lotes) el cálculo anterior daba
+        # exactamente 4000 (500 + 700*5), y en un test real de 21
+        # preguntas 3 de esos lotes truncaron la verificación en bloque a
+        # ese tope -- las 5 candidatas de cada uno de esos lotes se
+        # trataban entonces como "no verificadas" y tenían que repetirse
+        # una a una por el camino de recambio individual, más lento y sin
+        # aprovechar el ahorro de la verificación en bloque. Con 1500 por
+        # pregunta, un lote lleno de 5 ya llega directo al tope real de
+        # 8000 sin pasar por un truncamiento-y-reintento de por medio.
+        max_tokens=min(8000, 500 + 1500 * len(preguntas)),
         response_format_json=True,
         on_usage=on_usage,
         # thinking_enabled=True: ver el comentario en _verificar_pregunta --
