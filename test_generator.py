@@ -206,11 +206,32 @@ def _articulos_citados(pregunta):
 # absoluta.", 16 caracteres) con un duplicado real.
 _LONGITUD_MINIMA_CONTENCION = 25
 
+# Umbral de solapamiento de palabras (ver _solapamiento_palabras) para que
+# dos respuestas correctas del mismo artículo se consideren el mismo hecho
+# reformulado -- 0.5 separa con margen amplio los casos reales: el mismo
+# hecho reformulado con las palabras reordenadas o una palabra distinta
+# ("o"/"ni") da 0.58-0.92, mientras que dos hechos LEGÍTIMAMENTE distintos
+# del mismo artículo (p.ej. el deber de resolver de los jueces frente a los
+# requisitos de la costumbre, ambos del art. 1 del Código Civil) dan como
+# mucho 0.18 -- probado con datos reales, ver el comentario largo de
+# _es_duplicado_por_contencion.
+_UMBRAL_SOLAPAMIENTO_RESPUESTA = 0.5
+
 
 def _respuesta_correcta_normalizada(pregunta):
     opciones = pregunta.get("opciones") or {}
     letra = str(pregunta.get("respuesta_correcta", "")).upper()
     return _normalizar(opciones.get(letra, ""))
+
+
+def _solapamiento_palabras(texto_a, texto_b):
+    """Proporción de Jaccard entre las palabras de dos textos (intersección
+    entre unión) -- ver _UMBRAL_SOLAPAMIENTO_RESPUESTA."""
+    palabras_a = set(re.findall(r"\w+", texto_a))
+    palabras_b = set(re.findall(r"\w+", texto_b))
+    if not palabras_a or not palabras_b:
+        return 0.0
+    return len(palabras_a & palabras_b) / len(palabras_a | palabras_b)
 
 
 def _es_duplicado_por_contencion(pregunta, candidatas_existentes):
@@ -227,7 +248,19 @@ def _es_duplicado_por_contencion(pregunta, candidatas_existentes):
     es una cifra). Se compara aquí el artículo base citado junto con
     CONTENCIÓN de texto entre las respuestas correctas normalizadas, ya que
     _claves_dedup exige coincidencia casi literal y esto necesita detectar
-    que una es un subconjunto de la otra."""
+    que una es un subconjunto de la otra.
+
+    También se compara por SOLAPAMIENTO DE PALABRAS, no solo contención
+    literal (03/08/2026, bug real, documento real): 3 preguntas sobre el
+    mismo requisito del artículo 1.3 del Código Civil (que la costumbre
+    "regirá en defecto de ley aplicable, siempre que resulte probada y no
+    sea contraria a la moral o al orden público") se colaron juntas en un
+    test de 20 porque cada una reformulaba la frase con las palabras en
+    otro orden o con una palabra distinta ("o" en vez de "ni") -- ninguna
+    era ni el texto exacto de otra (falla 'r:') ni un fragmento literal
+    contiguo de otra (falla la contención de arriba, por el reordenamiento).
+    El solapamiento de palabras (intersección/unión, sin importar el orden)
+    sí detecta que son el mismo hecho."""
     articulos = _articulos_citados(pregunta)
     if not articulos:
         return False
@@ -241,6 +274,8 @@ def _es_duplicado_por_contencion(pregunta, candidatas_existentes):
         if len(otra_respuesta) < _LONGITUD_MINIMA_CONTENCION:
             continue
         if respuesta in otra_respuesta or otra_respuesta in respuesta:
+            return True
+        if _solapamiento_palabras(respuesta, otra_respuesta) >= _UMBRAL_SOLAPAMIENTO_RESPUESTA:
             return True
     return False
 

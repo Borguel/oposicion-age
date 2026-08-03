@@ -867,6 +867,79 @@ class TestGenerarPreguntasIaEnLotes:
         }
         assert not _es_duplicado_por_contencion(pregunta_2, [pregunta_1])
 
+    def test_dedupe_por_solapamiento_de_palabras_con_orden_distinto(self):
+        # Bug real de producción (03/08/2026), documento real: 3 preguntas
+        # sobre el mismo requisito del artículo 1.3 del Código Civil (que la
+        # costumbre "regirá en defecto de ley aplicable, siempre que resulte
+        # probada y no sea contraria a la moral o al orden público") se
+        # colaron juntas en un test de 20. Ninguna de las tres coincidía en
+        # texto exacto con otra (falla "r:"), ni ninguna era un fragmento
+        # LITERAL CONTIGUO de otra (falla la contención de arriba): una
+        # reordenaba "resulte probada" y "no sea contraria..." al revés, y
+        # otra cambiaba "o" por "ni". El solapamiento de palabras (sin
+        # importar el orden) sí detecta que es el mismo hecho.
+        pregunta_completa = {
+            "pregunta": "Según el artículo 1 del Real Decreto de 24 de julio de 1889 por el que se publica "
+                        "el Código Civil, ¿cuál de las siguientes afirmaciones sobre la costumbre es "
+                        "correcta?",
+            "opciones": {"A": "La costumbre solo regirá en defecto de ley aplicable, siempre que resulte "
+                              "probada y no sea contraria a la moral o al orden público."},
+            "respuesta_correcta": "A",
+        }
+        pregunta_orden_invertido = {
+            "pregunta": "Según el artículo 1.3 del Real Decreto de 24 de julio de 1889 por el que se "
+                        "publica el Código Civil, ¿en qué condiciones la costumbre regirá en defecto de "
+                        "ley aplicable?",
+            "opciones": {"A": "Siempre que no sea contraria a la moral o al orden público y resulte "
+                              "probada."},
+            "respuesta_correcta": "A",
+        }
+        pregunta_una_palabra_distinta = {
+            "pregunta": "Según artículo 1 del Código Civil, publicado por el Real Decreto de 24 de julio "
+                        "de 1889, ¿cuál de las siguientes afirmaciones sobre las fuentes del ordenamiento "
+                        "jurídico español es correcta?",
+            "opciones": {"A": "La costumbre solo regirá en defecto de ley aplicable, siempre que resulte "
+                              "probada y no sea contraria a la moral ni al orden público."},
+            "respuesta_correcta": "A",
+        }
+        assert _claves_dedup(pregunta_completa).isdisjoint(_claves_dedup(pregunta_orden_invertido))
+        assert _claves_dedup(pregunta_completa).isdisjoint(_claves_dedup(pregunta_una_palabra_distinta))
+        assert _es_duplicado_por_contencion(pregunta_orden_invertido, [pregunta_completa])
+        assert _es_duplicado_por_contencion(pregunta_una_palabra_distinta, [pregunta_completa])
+
+    def test_no_dedupe_por_solapamiento_hechos_distintos_del_mismo_articulo(self):
+        # Bug potencial descartado durante el desarrollo del solapamiento de
+        # palabras de arriba: el mismo documento real tiene VARIAS preguntas
+        # legítimamente distintas sobre el artículo 1 del Código Civil (el
+        # deber de los jueces de resolver, la nulidad de disposiciones que
+        # contradicen una norma superior, las fuentes del ordenamiento...) --
+        # ninguna de ellas debe fusionarse con la pregunta sobre los
+        # requisitos de la costumbre solo por compartir el mismo artículo
+        # base. Probado con el umbral 0.5: estos pares reales dan como mucho
+        # 0.18 de solapamiento.
+        pregunta_costumbre = {
+            "pregunta": "Según el artículo 1 del Código Civil, ¿cuál de las siguientes afirmaciones sobre "
+                        "la costumbre es correcta?",
+            "opciones": {"A": "La costumbre solo regirá en defecto de ley aplicable, siempre que resulte "
+                              "probada y no sea contraria a la moral o al orden público."},
+            "respuesta_correcta": "A",
+        }
+        pregunta_deber_jueces = {
+            "pregunta": "Según el artículo 1 del Código Civil, ¿cuál es el deber de los Jueces y "
+                        "Tribunales respecto al sistema de fuentes?",
+            "opciones": {"A": "Tienen el deber inexcusable de resolver en todo caso los asuntos de que "
+                              "conozcan, ateniéndose al sistema de fuentes establecido."},
+            "respuesta_correcta": "A",
+        }
+        pregunta_nulidad = {
+            "pregunta": "Según el artículo 1.2 del Código Civil, ¿qué consecuencia se deriva para las "
+                        "disposiciones que contradigan otra de rango superior?",
+            "opciones": {"A": "Carecerán de validez."},
+            "respuesta_correcta": "A",
+        }
+        assert not _es_duplicado_por_contencion(pregunta_deber_jueces, [pregunta_costumbre])
+        assert not _es_duplicado_por_contencion(pregunta_nulidad, [pregunta_costumbre])
+
     def test_lotes_en_paralelo_no_reportan_duplicados_por_sse(self):
         # Bug real de producción (03/08/2026), con un documento real: 3
         # preguntas casi idénticas sobre el art. 26.6 (plazo de audiencia
