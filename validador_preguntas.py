@@ -37,17 +37,28 @@ FRASES_PROHIBIDAS = [
 # que..." o "el tema cita el artículo..." (sujeto + verbo, no una frase fija
 # que se pueda listar una a una).
 #
-# El [sujeto]+[verbo] admite una cláusula intercalada entre comas (03/08/2026,
-# bug real, documento real): "el documento, al detallar la iniciativa de
-# reforma, señala que..." se coló porque el patrón exigía que el verbo
-# viniera INMEDIATAMENTE después del sustantivo (solo espacios de por
-# medio) -- cualquier inciso entre comas antes del verbo lo dejaba sin
-# detectar aunque la referencia al documento fuera exactamente la misma.
+# El [sujeto]+[verbo] admite un inciso intercalado antes del verbo
+# (03/08/2026, bug real, documento real, dos veces): "el documento, al
+# detallar la iniciativa de reforma, señala que..." se coló porque el
+# patrón exigía que el verbo viniera INMEDIATAMENTE después del sustantivo
+# (solo espacios de por medio). Se amplió a admitir UN inciso entre comas
+# de hasta 80 caracteres SIN comas dentro -- pero un caso posterior, con el
+# mismo documento real, lo volvió a esquivar: "el documento, al desarrollar
+# el artículo 14.3 de la Ley 39/2015, de 1 de octubre, del Procedimiento
+# Administrativo Común de las Administraciones Públicas, señala que..."
+# tiene VARIAS comas dentro del propio inciso (una cita legal completa, con
+# su fecha y su nombre largo), así que ni siquiera ese primer arreglo lo
+# detectaba. Ahora el hueco entre sustantivo y verbo admite cualquier
+# cosa (incluidas comas) siempre que no cruce a la frase siguiente -- el
+# fin de frase se reconoce como PUNTO SEGUIDO DE ESPACIO, no como cualquier
+# punto: un punto sin espacio detrás (p.ej. "artículo 14.3", "Ley 39/2015,
+# de 1 de octubre") es parte de una cita legal, no un cambio de frase, y el
+# inciso real de arriba tiene justo ese tipo de punto en medio.
 PATRON_REFERENCIA_META = re.compile(
     r"\b(seg[uú]n|de\s+acuerdo\s+con)\s+(el|la|lo)\s+(documento|contenido|texto|tema|fragmento)\b"
     r"|\bconforme\s+(al|a\s+la|a\s+lo)\s+(documento|contenido|texto|tema|fragmento)\b"
     r"|\b(el|la)\s+(documento|contenido|texto|tema|fragmento)\b"
-    r"(?:\s*,\s*[^,.]{1,80}\s*,)?\s+"
+    r"(?:(?!\.\s)[\s\S]){0,150}?\s+"
     r"(establece|indica|se[ñn]ala|menciona|dice|cita|dispone|regula|recoge|prev[ée]|afirma|explica)\b",
     re.IGNORECASE,
 )

@@ -144,6 +144,41 @@ def test_rechaza_el_documento_con_inciso_entre_comas_antes_del_verbo():
         assert validar_pregunta(_pregunta_valida(explicacion=variante)) is False, variante
 
 
+def test_rechaza_el_documento_con_inciso_de_varias_comas_como_cita_legal():
+    # Bug real de producción (03/08/2026), documento real: el arreglo de
+    # test_rechaza_el_documento_con_inciso_entre_comas_antes_del_verbo (un
+    # único inciso entre comas SIN comas dentro) volvió a fallar con "el
+    # documento, al desarrollar el artículo 14.3 de la Ley 39/2015, de 1 de
+    # octubre, del Procedimiento Administrativo Común de las
+    # Administraciones Públicas, señala que..." -- el inciso aquí es una
+    # cita legal completa (con su propia coma de fecha, "de 1 de octubre"),
+    # así que tiene VARIAS comas y el patrón de un solo inciso sin comas
+    # dentro no llegaba al verbo. PATRON_REFERENCIA_META ahora admite
+    # cualquier cosa entre sustantivo y verbo mientras no cruce un punto
+    # seguido de espacio (fin de frase real), no solo un inciso entre comas.
+    variante = (
+        "el documento, al desarrollar el artículo 14.3 de la Ley 39/2015, de 1 de octubre, del "
+        "Procedimiento Administrativo Común de las Administraciones Públicas, señala que la "
+        "obligatoriedad podrá establecerse por Real Decreto."
+    )
+    assert validar_pregunta(_pregunta_valida(explicacion=variante)) is False, variante
+
+
+def test_no_rechaza_documento_y_verbo_en_frases_distintas():
+    # El hueco entre "el documento" y un verbo de la lista no debe cruzar a
+    # la frase SIGUIENTE -- un punto seguido de espacio es fin de frase
+    # real (a diferencia de un punto sin espacio como en "artículo 14.3",
+    # que sí forma parte del inciso admitido). Si "establece" aparece en
+    # una frase completamente distinta, no debe confundirse con una
+    # referencia al documento.
+    variante = (
+        "El documento de identidad, expedido por la Dirección General de la Policía, es "
+        "obligatorio a partir de los 14 años. El reglamento posterior establece excepciones "
+        "para menores."
+    )
+    assert validar_pregunta(_pregunta_valida(explicacion=variante)) is True, variante
+
+
 def test_no_rechaza_conforme_a_seguido_de_una_norma_legitima():
     # "conforme a" es una construcción legítima cuando lo que sigue es una
     # norma real, no el material de origen -- PATRON_REFERENCIA_META solo
