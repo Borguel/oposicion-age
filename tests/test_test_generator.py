@@ -147,10 +147,11 @@ class TestGenerarPreguntasIaEnLotes:
         assert len(errores) == 2
         assert errores[0].startswith("Ninguna de las")
         # El hueco original agota MAX_INTENTOS_POR_PREGUNTA_PDF candidatas
-        # (la del lote + los recambios); el relleno le da al mismo hueco
-        # que sigue faltando una segunda tanda completa del mismo tamaño
-        # -- el doble en total, nunca más.
-        assert len(llamadas_generacion) == MAX_INTENTOS_POR_PREGUNTA_PDF * 2
+        # (la del lote + los recambios); el relleno (_MAX_RONDAS_RELLENO=2,
+        # ver test_generator.py) le da al mismo hueco que sigue faltando
+        # DOS tandas completas más del mismo tamaño -- el triple en total,
+        # nunca más.
+        assert len(llamadas_generacion) == MAX_INTENTOS_POR_PREGUNTA_PDF * 3
 
     def test_on_progreso_se_llama_una_vez_por_pregunta_no_por_lote(self):
         # Con num_preguntas=2 y tamano_lote=1 hay 2 lotes, cada uno con su
@@ -340,6 +341,52 @@ class TestGenerarPreguntasIaEnLotes:
         assert errores == []
         preguntas_texto = {p["pregunta"] for p in preguntas}
         assert all("Mala" not in t for t in preguntas_texto)
+
+    def test_segunda_ronda_de_relleno_completa_el_hueco_si_la_primera_falla(self):
+        # Con el dedup ampliado (mayoría/fracción/artículo-en-explicación,
+        # ver test_generator.py) el relleno se invoca más a menudo que
+        # antes -- antes, un hueco de relleno que agotaba su presupuesto
+        # completo de MAX_INTENTOS_POR_PREGUNTA_PDF candidatas se perdía
+        # para siempre sin una segunda oportunidad. Aquí, la primera ronda
+        # de relleno agota sus 3 intentos (todas "malas" a propósito) y
+        # solo la SEGUNDA ronda (_MAX_RONDAS_RELLENO=2) consigue una
+        # candidata válida.
+        construir_prompt = _construir_prompt_fabrica(None)
+        contador_generacion = itertools.count()
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                candidata = json.loads(messages[1]["content"].split("PREGUNTA A VERIFICAR:\n")[1])
+                valido = candidata["pregunta"] != "¿Mala primera ronda de relleno?"
+                return json.dumps({"valido": valido, "problemas": [] if valido else ["dato inventado"]})
+            indice = next(contador_generacion)
+            if indice == 0:
+                # Generación inicial del lote: no aporta ninguna candidata,
+                # deja el único hueco pedido completamente a cargo del
+                # relleno.
+                return json.dumps([])
+            if indice <= MAX_INTENTOS_POR_PREGUNTA_PDF:
+                # Primera ronda de relleno: mala a propósito las
+                # MAX_INTENTOS_POR_PREGUNTA_PDF veces, agota su
+                # presupuesto sin llenar el hueco.
+                return json.dumps([{
+                    "pregunta": "¿Mala primera ronda de relleno?",
+                    "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                    "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
+                }])
+            # Segunda ronda de relleno: válida a la primera.
+            return json.dumps([{
+                "pregunta": "¿Buena segunda ronda de relleno?",
+                "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
+            }])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 1, "Texto de prueba.", tamano_lote=1)
+
+        assert len(preguntas) == 1
+        assert preguntas[0]["pregunta"] == "¿Buena segunda ronda de relleno?"
+        assert errores == []
 
     def test_fragmenta_el_documento_entre_lotes_en_paralelo(self):
         # Bug real: con num_preguntas=20 sobre un PDF de 11 páginas, 8 de
@@ -541,6 +588,175 @@ class TestGenerarPreguntasIaEnLotes:
             "opciones": {"A": "Dos tercios de sus miembros."}, "respuesta_correcta": "A",
         }
         assert _claves_dedup(q_un_tercio).isdisjoint(_claves_dedup(q_dos_tercios))
+
+    def test_dedupe_por_mayoria_cualificada_sin_cifra_numerica(self):
+        # Bug real de producción (03/08/2026), documento real: "¿qué mayoría
+        # se requiere en el Senado para que el Congreso apruebe por dos
+        # tercios?" se preguntó 3 VECES en un test de 20 con enunciados
+        # distintos, las 3 con la misma respuesta correcta ("Mayoría
+        # absoluta") -- pero "absoluta" no lleva ningún dígito ni fracción
+        # pegados, así que _PATRON_CIFRA no la reconocía como cifra y la
+        # clave artículo+cifras nunca se generaba. Una de las 3 ni siquiera
+        # citaba "artículo 167" en el enunciado (solo en la explicación) --
+        # ver también test_dedupe_articulo_citado_solo_en_la_explicacion.
+        q2 = {
+            "pregunta": "Según el artículo 167 de la Constitución Española, en el procedimiento ordinario de "
+                        "reforma constitucional, si el texto presentado por la Comisión Paritaria no obtiene "
+                        "las mayorías exigidas, ¿qué mayoría se requiere en el Senado para que el Congreso de "
+                        "los Diputados pueda aprobar la reforma por mayoría de dos tercios?",
+            "opciones": {"A": "Mayoría simple.", "B": "Mayoría de tres quintos.", "C": "Mayoría absoluta.",
+                         "D": "Mayoría de dos tercios."},
+            "respuesta_correcta": "C",
+            "explicacion": "C) es correcta porque el artículo 167 de la Constitución Española establece que, "
+                           "si el Senado aprueba el texto por mayoría absoluta, el Congreso podrá aprobar la "
+                           "reforma por mayoría de dos tercios.",
+        }
+        q11 = {
+            "pregunta": "Según el artículo 167 de la Constitución Española, en el procedimiento ordinario de "
+                        "reforma constitucional, si no se logra la aprobación mediante el procedimiento de la "
+                        "Comisión de composición paritaria de Diputados y Senadores, ¿qué condición debe "
+                        "cumplirse para que el Congreso pueda aprobar la reforma por mayoría de dos tercios?",
+            "opciones": {"A": "Que el texto hubiere obtenido el voto favorable de la mayoría absoluta del Senado",
+                         "B": "x", "C": "y", "D": "z"},
+            "respuesta_correcta": "A",
+            "explicacion": "A) es correcta porque el artículo 167.2 de la Constitución Española establece que, "
+                           "de no lograrse la aprobación mediante el procedimiento del apartado anterior, y "
+                           "siempre que el texto hubiere obtenido el voto favorable de la mayoría absoluta del "
+                           "Senado, el Congreso, por mayoría de dos tercios, podrá aprobar la reforma.",
+        }
+        q18 = {
+            "pregunta": "Según la Constitución Española de 1978, ¿qué mayoría se exige en el Senado para que, "
+                        "en el procedimiento de reforma ordinaria, el Congreso pueda aprobar la reforma por "
+                        "mayoría de dos tercios si no se logra el acuerdo inicial entre ambas Cámaras?",
+            "opciones": {"A": "Mayoría simple", "B": "Mayoría absoluta", "C": "Mayoría de tres quintos",
+                         "D": "Mayoría de dos tercios"},
+            "respuesta_correcta": "B",
+            "explicacion": "B) es correcta porque el artículo 167.2 de la Constitución Española de 1978 "
+                           "establece que, de no lograrse la aprobación mediante la Comisión de composición "
+                           "paritaria, y siempre que el texto hubiere obtenido el voto favorable de la mayoría "
+                           "absoluta del Senado, el Congreso, por mayoría de dos tercios, podrá aprobar la "
+                           "reforma.",
+        }
+        claves_q2, claves_q11, claves_q18 = _claves_dedup(q2), _claves_dedup(q11), _claves_dedup(q18)
+        assert any(c.startswith("d:167:mayor") for c in claves_q2)
+        assert (claves_q2 & claves_q11) and (claves_q2 & claves_q18)
+
+    def test_dedupe_articulo_citado_solo_en_la_explicacion(self):
+        # Bug real (mismo caso que arriba, pregunta 18): el enunciado dice
+        # "Según la Constitución Española de 1978..." sin repetir el número
+        # de artículo -- solo la explicación lo cita ("el artículo 167.2 de
+        # la Constitución Española establece..."). _articulos_citados debe
+        # encontrarlo igual, buscando en explicación además de en el
+        # enunciado.
+        q_sin_articulo_en_enunciado = {
+            "pregunta": "Según la Constitución Española de 1978, ¿qué mayoría se exige en el Senado para que "
+                        "el Congreso pueda aprobar la reforma por mayoría de dos tercios?",
+            "opciones": {"A": "Mayoría absoluta"}, "respuesta_correcta": "A",
+            "explicacion": "El artículo 167.2 de la Constitución Española establece que el Congreso, por "
+                           "mayoría de dos tercios, podrá aprobar la reforma.",
+        }
+        q_con_articulo_en_enunciado = {
+            "pregunta": "Según el artículo 167 de la Constitución Española, ¿qué mayoría se requiere en el "
+                        "Senado para que el Congreso pueda aprobar la reforma por dos tercios?",
+            "opciones": {"A": "Mayoría absoluta."}, "respuesta_correcta": "A",
+            "explicacion": "Explicación de prueba para el test.",
+        }
+        claves_1 = _claves_dedup(q_sin_articulo_en_enunciado)
+        claves_2 = _claves_dedup(q_con_articulo_en_enunciado)
+        assert claves_1 & claves_2
+
+    def test_dedupe_de_fracciones_expresadas_como_una_quinta_parte(self):
+        # Bug real de producción (03/08/2026), documento real: "la firma de
+        # 2 Grupos Parlamentarios o de una quinta parte de los miembros de
+        # la Cámara" (art. 146 del Reglamento del Congreso) se preguntó 2
+        # veces con enunciados distintos -- "una quinta parte" es la forma
+        # HABITUAL de expresar una fracción en español jurídico (adjetivo
+        # ordinal femenino + "parte"), gramaticalmente distinta de "un
+        # quinto"/"dos quintos" que ya cubría el patrón anterior.
+        q16 = {
+            "pregunta": "Según el artículo 146 del Reglamento del Congreso de los Diputados, ¿qué se requiere "
+                        "para presentar una proposición de reforma constitucional en el Congreso de los "
+                        "Diputados?",
+            "opciones": {"A": "x", "B": "La firma de 2 Grupos Parlamentarios o de una quinta parte de los "
+                                        "miembros de la Cámara.", "C": "y", "D": "z"},
+            "respuesta_correcta": "B",
+        }
+        q17 = {
+            "pregunta": "Según el artículo 146 del Reglamento del Congreso de los Diputados, ¿qué se exige "
+                        "para que los Grupos parlamentarios puedan presentar una proposición de reforma "
+                        "constitucional?",
+            "opciones": {"A": "x", "B": "Que esté suscrita por 2 Grupos parlamentarios o por una quinta parte "
+                                        "de los miembros de la Cámara.", "C": "y", "D": "z"},
+            "respuesta_correcta": "B",
+        }
+        claves_q16, claves_q17 = _claves_dedup(q16), _claves_dedup(q17)
+        assert any(c.startswith("d:146:1/5") for c in claves_q16)
+        assert claves_q16 & claves_q17
+
+    def test_dedupe_por_principio_juridico_con_nombre_propio(self):
+        # Bug real de producción (03/08/2026), documento real: "¿qué
+        # principio implica que la ley no podrá aplicarse a casos
+        # anteriores...?" (respuesta: "El principio de irretroactividad de
+        # ciertas normas.") es un hecho de nombre propio (no una cifra) del
+        # artículo 9.3 de la Constitución Española -- uno de los artículos
+        # más citados en cualquier temario de oposición sobre Administración
+        # Pública.
+        q_a = {
+            "pregunta": "Según el artículo 9.3 de la Constitución Española, ¿qué principio del ordenamiento "
+                        "jurídico implica que la ley no podrá aplicarse a casos anteriores cuando se trate de "
+                        "disposiciones sancionadoras no favorables?",
+            "opciones": {"A": "El principio de legalidad.", "B": "El principio de jerarquía normativa.",
+                         "C": "El principio de irretroactividad de ciertas normas.",
+                         "D": "El principio de seguridad jurídica."},
+            "respuesta_correcta": "C",
+        }
+        q_b = {
+            "pregunta": "De acuerdo con el artículo 9.3 de la Constitución Española, ¿qué garantiza la "
+                        "irretroactividad de las disposiciones sancionadoras no favorables?",
+            "opciones": {"A": "El principio de irretroactividad.", "B": "x", "C": "y", "D": "z"},
+            "respuesta_correcta": "A",
+        }
+        assert _claves_dedup(q_a) & _claves_dedup(q_b)
+
+    def test_no_dedupe_principios_distintos_pese_a_explicacion_cruzada(self):
+        # Bug potencial descartado durante el desarrollo de la clave de
+        # arriba: la "explicacion" de este tipo de pregunta repasa las 4
+        # opciones (formato exigido por el prompt de generación), así que
+        # una pregunta sobre "publicidad de las normas" menciona en su
+        # propia explicación "el principio de legalidad", "jerarquía
+        # normativa" e "irretroactividad" -- los distractores descartados.
+        # Dos preguntas legítimamente distintas que solo comparten un
+        # distractor mencionado en la explicación (nada raro con 7
+        # principios posibles del art. 9.3 y varias preguntas sobre el
+        # mismo artículo) NO deben confundirse -- por eso la clave busca
+        # solo en la pregunta y la respuesta CORRECTA, nunca en la
+        # explicación completa.
+        q_publicidad = {
+            "pregunta": "Según el artículo 9.3 de la Constitución Española, ¿qué principio implica que los "
+                        "ciudadanos solo podrán acatar las normas si tienen la oportunidad de conocerlas?",
+            "opciones": {"A": "El principio de legalidad", "B": "El principio de jerarquía normativa",
+                         "C": "El principio de publicidad de las normas",
+                         "D": "El principio de irretroactividad de las disposiciones sancionadoras"},
+            "respuesta_correcta": "C",
+            "explicacion": "C) es correcta porque garantiza la publicidad de las normas. A) es incorrecta "
+                           "porque el principio de legalidad no se refiere a esto. B) es incorrecta porque el "
+                           "principio de jerarquía normativa ordena las normas. D) es incorrecta porque el "
+                           "principio de irretroactividad de las disposiciones sancionadoras no favorables se "
+                           "refiere a otra cosa.",
+        }
+        q_interdiccion = {
+            "pregunta": "De acuerdo con el artículo 9.3 de la Constitución Española, ¿qué principio se "
+                        "relaciona con la desviación de poder del artículo 106?",
+            "opciones": {"A": "El principio de responsabilidad de los poderes públicos",
+                         "B": "El principio de interdicción de la arbitrariedad de los poderes públicos",
+                         "C": "El principio de seguridad jurídica", "D": "El principio de jerarquía normativa"},
+            "respuesta_correcta": "B",
+            "explicacion": "B) es correcta porque se relaciona con la desviación de poder. A) es incorrecta "
+                           "porque el principio de responsabilidad de los poderes públicos es otra cosa. C) es "
+                           "incorrecta porque el principio de seguridad jurídica implica claridad normativa. "
+                           "D) es incorrecta porque el principio de jerarquía normativa ordena las normas.",
+        }
+        assert _claves_dedup(q_publicidad).isdisjoint(_claves_dedup(q_interdiccion))
 
     def test_dedupe_por_contencion_pregunta_amplia_y_pregunta_concreta(self):
         # Bug real de producción (03/08/2026), documento real: "¿qué

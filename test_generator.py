@@ -48,14 +48,83 @@ _DENOMINADORES_EN_PALABRAS = {
     "tercio": "3", "cuarto": "4", "quinto": "5", "sexto": "6", "septimo": "7",
     "octavo": "8", "noveno": "9", "decimo": "10",
 }
+# Fracciones como "adjetivo ordinal femenino + parte" ("una quinta parte",
+# "dos quintas partes", "una décima parte") -- forma HABITUAL en español
+# jurídico para expresar fracciones de un colectivo (quórums, iniciativas
+# firmadas por una fracción de una Cámara...), y GRAMATICALMENTE DISTINTA
+# de "un quinto"/"dos quintos" (que _DENOMINADORES_EN_PALABRAS ya cubre):
+# aquí el numeral concuerda con "parte" (femenino), no con la fracción en
+# sí. Bug real, documento real (03/08/2026): "la firma de 2 Grupos
+# Parlamentarios o de una quinta parte de los miembros de la Cámara" (art.
+# 146 del Reglamento del Congreso) se preguntó 2 veces con enunciados
+# distintos ("¿qué se requiere para presentar...?" / "¿qué se exige para
+# que los Grupos... puedan presentar...?") -- sin este patrón, "una quinta
+# parte" no producía ninguna cifra reconocible.
+_DENOMINADORES_ORDINAL_FEMENINO = {
+    "segunda": "2", "tercera": "3", "cuarta": "4", "quinta": "5", "sexta": "6",
+    "septima": "7", "octava": "8", "novena": "9", "decima": "10",
+}
 _PATRON_CIFRA = re.compile(
     r"\d+(?:[.,]\d+)?\s*(?:d[íi]as?\s+h[áa]biles?|d[íi]as?\s+naturales?|d[íi]as?|"
     r"meses?|mes\b|a[ñn]os?|tercios?|cuartos?|%|por\s*ciento)"
     r"|\d+\s*/\s*\d+"
     r"|(?:un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+"
-    r"(?:tercios?|cuartos?|quintos?|sextos?|s[ée]ptimos?|octavos?|novenos?|d[ée]cimos?)",
+    r"(?:tercios?|cuartos?|quintos?|sextos?|s[ée]ptimos?|octavos?|novenos?|d[ée]cimos?)"
+    r"|(?:un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+"
+    r"(?:segunda|tercera|cuarta|quinta|sexta|s[ée]ptima|octava|novena|d[ée]cima)s?\s+partes?"
+    # Mayorías cualificadas SIN cifra explícita (bug real, documento real:
+    # "mayoría absoluta" se preguntó 3 veces sobre el mismo dato con
+    # enunciados distintos, ninguno con un número o fracción que la
+    # regla de arriba pudiera cazar) -- tan citadas en cualquier temario
+    # de oposición como las fracciones numéricas de más arriba.
+    r"|mayor[íi]a\s+(?:absoluta|simple|cualificada|relativa)",
     re.IGNORECASE,
 )
+
+# Principios jurídicos con NOMBRE PROPIO del artículo 9.3 de la Constitución
+# Española (legalidad, jerarquía normativa, publicidad de las normas,
+# irretroactividad, seguridad jurídica, responsabilidad de los poderes
+# públicos, interdicción de la arbitrariedad) -- bug real, documento real
+# (03/08/2026): "¿qué principio implica que la ley no podrá aplicarse a
+# casos anteriores...?" (respuesta: "El principio de irretroactividad de
+# ciertas normas.") y "¿qué se establece en el artículo 9.3 respecto a las
+# disposiciones sancionadoras no favorables?" (respuesta: "La Constitución
+# garantiza SU IRRETROACTIVIDAD...") son la misma pregunta sobre el mismo
+# principio, pero ninguna clave de _claves_dedup las detectaba: los textos
+# no coinciden ni por completo ni por contención, y "irretroactividad" no
+# es una cifra (_PATRON_CIFRA no aplica). El artículo 9.3 CE es de los
+# artículos más preguntados en cualquier temario de oposición sobre
+# Administración Pública española, así que este patrón concreto no es
+# específico de un documento.
+#
+# Se busca SOLO en pregunta+RESPUESTA CORRECTA, nunca en la explicación
+# completa ni en las opciones incorrectas (ver
+# _conceptos_juridicos_citados) -- probado con datos reales y descartado:
+# el campo "explicacion" repasa TODAS las opciones (A-D), así que una
+# pregunta sobre "publicidad de las normas" con distractores que descartan
+# "legalidad"/"jerarquía normativa"/"irretroactividad" menciona los CUATRO
+# nombres en su propia explicación, y dos preguntas de un mismo test que
+# comparten solo un distractor en común (nada raro con 7 principios
+# posibles y varias preguntas sobre el mismo artículo) acababan
+# fusionándose como si fueran la misma -- un falso positivo real,
+# reproducido con las preguntas de este mismo documento. La pregunta y la
+# respuesta CORRECTA, en cambio, casi nunca nombran un principio que no
+# sea el que de verdad se está preguntando.
+_PATRON_PRINCIPIO_JURIDICO = re.compile(
+    r"principio\s+de\s+legalidad"
+    r"|principio\s+de\s+jerarqu[íi]a\s+normativa"
+    r"|principio\s+de\s+publicidad(?:\s+de\s+las\s+normas)?"
+    r"|principio\s+de\s+irretroactividad"
+    r"|principio\s+de\s+seguridad\s+jur[íi]dica"
+    r"|principio\s+de\s+responsabilidad"
+    r"|interdicci[óo]n\s+de\s+la\s+arbitrariedad",
+    re.IGNORECASE,
+)
+
+
+def _conceptos_juridicos_citados(pregunta):
+    texto = f"{pregunta.get('pregunta', '')} {_respuesta_correcta_normalizada(pregunta)}".lower()
+    return set(_PATRON_PRINCIPIO_JURIDICO.findall(texto))
 
 
 def _normalizar_cifra(cifra):
@@ -63,8 +132,9 @@ def _normalizar_cifra(cifra):
     para que "dos tercios", "2/3" y "2 tercios" -- la misma fracción
     escrita de tres formas distintas -- produzcan la MISMA clave de dedup
     en vez de tres claves distintas que no se reconocen entre sí. Las
-    cifras que no son una fracción (p.ej. "15 días hábiles") se devuelven
-    tal cual, ya normalizadas en espacios por _normalizar aguas arriba."""
+    cifras que no son una fracción (p.ej. "15 días hábiles", "mayoría
+    absoluta") se devuelven tal cual, ya normalizadas en espacios por
+    _normalizar aguas arriba."""
     coincide_barra = re.fullmatch(r"(\d+)\s*/\s*(\d+)", cifra)
     if coincide_barra:
         return f"{coincide_barra.group(1)}/{coincide_barra.group(2)}"
@@ -78,11 +148,37 @@ def _normalizar_cifra(cifra):
         denominador = _DENOMINADORES_EN_PALABRAS.get(denominador_singular)
         if denominador:
             return f"{numerador}/{denominador}"
+    coincide_parte = re.fullmatch(
+        r"(\d+|[a-záéíóúñ]+)\s+(segunda|tercera|cuarta|quinta|sexta|s[ée]ptima|octava|novena|d[ée]cima)s?\s+partes?",
+        cifra,
+    )
+    if coincide_parte:
+        numerador = _NUMEROS_EN_PALABRAS.get(coincide_parte.group(1), coincide_parte.group(1))
+        denominador_singular = coincide_parte.group(2).replace("é", "e")
+        denominador = _DENOMINADORES_ORDINAL_FEMENINO.get(denominador_singular)
+        if denominador:
+            return f"{numerador}/{denominador}"
     return cifra
 
 
 def _normalizar(texto):
     return re.sub(r"\s+", " ", str(texto or "").strip().lower())
+
+
+def _articulos_citados(pregunta):
+    """Números base de artículo citados en 'pregunta' -- en el ENUNCIADO Y
+    en la EXPLICACIÓN (bug real, documento real: "Según la Constitución
+    Española de 1978, ¿qué mayoría se exige en el Senado para que...?" no
+    citaba ningún artículo en el enunciado, solo en la explicación
+    ("el artículo 167.2 de la Constitución Española establece..."), así
+    que buscar solo en el enunciado (como hacía antes esta función) dejaba
+    esa pregunta sin artículo detectado -- y por tanto sin la clave
+    artículo+cifras -- pese a ser, con otras dos preguntas del mismo test
+    que sí lo citaban en el enunciado, la MISMA pregunta sobre la misma
+    mayoría del mismo artículo repetida 3 veces. La explicación cita el
+    artículo casi siempre, aunque el enunciado no lo repita."""
+    texto = f"{pregunta.get('pregunta', '')} {pregunta.get('explicacion', '')}"
+    return set(_PATRON_ARTICULO_BASE.findall(texto))
 
 
 # Umbral para la contención de respuestas (ver _es_duplicado_por_contencion):
@@ -114,14 +210,14 @@ def _es_duplicado_por_contencion(pregunta, candidatas_existentes):
     CONTENCIÓN de texto entre las respuestas correctas normalizadas, ya que
     _claves_dedup exige coincidencia casi literal y esto necesita detectar
     que una es un subconjunto de la otra."""
-    articulos = set(_PATRON_ARTICULO_BASE.findall(pregunta.get("pregunta", "")))
+    articulos = _articulos_citados(pregunta)
     if not articulos:
         return False
     respuesta = _respuesta_correcta_normalizada(pregunta)
     if len(respuesta) < _LONGITUD_MINIMA_CONTENCION:
         return False
     for otra in candidatas_existentes:
-        if not (articulos & set(_PATRON_ARTICULO_BASE.findall(otra.get("pregunta", "")))):
+        if not (articulos & _articulos_citados(otra)):
             continue
         otra_respuesta = _respuesta_correcta_normalizada(otra)
         if len(otra_respuesta) < _LONGITUD_MINIMA_CONTENCION:
@@ -163,7 +259,12 @@ def _claves_dedup(pregunta):
     audiencia pública frente al plazo de informes preceptivos, ambos del
     art. 26 pero con cifras distintas -- 15/7 días frente a 1 mes). Si no
     hay artículo citado o no hay cifras en la respuesta, esta clave
-    simplemente no se genera (las dos de arriba siguen aplicando igual)."""
+    simplemente no se genera (las dos de arriba siguen aplicando igual).
+
+    El artículo se busca con _articulos_citados (enunciado Y explicación,
+    ver su comentario) -- no todas las preguntas repiten el número de
+    artículo en el propio enunciado, pero la explicación casi siempre lo
+    cita."""
     claves = set()
     texto_pregunta = pregunta.get("pregunta", "")
     clave_pregunta = _normalizar(texto_pregunta)
@@ -174,10 +275,17 @@ def _claves_dedup(pregunta):
     clave_respuesta = _normalizar(opciones.get(letra_respuesta, ""))
     if len(clave_respuesta) >= _LONGITUD_MINIMA_DEDUP_RESPUESTA:
         claves.add(f"r:{clave_respuesta}")
-    articulos = sorted(set(_PATRON_ARTICULO_BASE.findall(texto_pregunta)))
+    articulos = sorted(_articulos_citados(pregunta))
     cifras = sorted({_normalizar_cifra(c) for c in _PATRON_CIFRA.findall(clave_respuesta)})
     if articulos and cifras:
         claves.add(f"d:{'|'.join(articulos)}:{'|'.join(cifras)}")
+    # Cuarta clave (03/08/2026, bug real): igual que la de arriba pero para
+    # principios jurídicos con nombre propio ("principio de irretroactividad",
+    # "interdicción de la arbitrariedad"...) en vez de cifras -- ver el
+    # comentario largo junto a _PATRON_PRINCIPIO_JURIDICO.
+    conceptos = sorted(_conceptos_juridicos_citados(pregunta))
+    if articulos and conceptos:
+        claves.add(f"c:{'|'.join(articulos)}:{'|'.join(conceptos)}")
     return claves
 
 
@@ -830,8 +938,26 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     # tiempo. Se protege con un lock el check-then-add sobre 'vistas' /
     # 'preguntas_unicas' (antes era seguro por ser secuencial; en
     # paralelo, dos hilos podrían aceptar el mismo tema a la vez sin él).
-    faltan = num_preguntas - len(preguntas_unicas)
-    if faltan > 0:
+    # _MAX_RONDAS_RELLENO=2 (03/08/2026): antes, un hueco de relleno que
+    # fallaba (verificación agotada, o duplicado de otro hueco que terminó
+    # a la vez) se daba por perdido sin más -- un único intento por hueco,
+    # pese a que cada intento YA lleva su propio presupuesto completo de
+    # reintentos (ver _rellenar_un_hueco/_asegurar_pregunta_valida). El
+    # dedup por artículo+cifras/mayoría/parte-fracción de más arriba ahora
+    # detecta bastantes más duplicados reales que antes -- correcto, pero
+    # también significa que el relleno se invoca más a menudo (un
+    # duplicado detectado a tiempo dentro de un lote se manda a recambio
+    # ahí mismo, pero uno que dos huecos de relleno aceptan A LA VEZ solo
+    # se resuelve dejando UNO y perdiendo el otro). Una segunda ronda,
+    # dirigida solo a los huecos que sigan faltando tras la primera, no
+    # cuesta nada si no hace falta (si faltan=0 el bucle ni se ejecuta) y
+    # evita que una colisión puntual entre dos huecos en paralelo se
+    # traduzca directamente en "pedí 20, recibí 18".
+    _MAX_RONDAS_RELLENO = 2
+    for _ronda_relleno in range(_MAX_RONDAS_RELLENO):
+        faltan = num_preguntas - len(preguntas_unicas)
+        if faltan <= 0:
+            break
 
         def construir_prompt_evitando_repetidas(n):
             # Envuelve construir_prompt con un aviso de qué temas/datos ya
