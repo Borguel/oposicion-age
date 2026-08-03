@@ -479,6 +479,90 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
         return False
 
 
+def _prompt_deduplicacion_final(preguntas):
+    listado = "\n".join(
+        f"{i}. PREGUNTA: {p.get('pregunta', '')}\n"
+        f"   RESPUESTA CORRECTA: {(p.get('opciones') or {}).get(str(p.get('respuesta_correcta', '')).upper(), '')}"
+        for i, p in enumerate(preguntas)
+    )
+    system = (
+        "Eres un revisor de calidad de un test tipo oposición YA TERMINADO. Te llega la lista completa "
+        "de preguntas ya aceptadas, numeradas. Tu única tarea es encontrar grupos de preguntas que "
+        "pregunten por el MISMO dato o hecho concreto, aunque estén redactadas de forma muy distinta: "
+        "con las palabras en otro orden, con una cifra en otro formato (\"13%\" y \"13 por ciento\"), "
+        "citando el mismo dato desde un ángulo distinto (\"¿qué mayoría se exige en el Senado?\" y "
+        "\"¿qué mayoría hace falta para que el Congreso apruebe...?\" si ambas apuntan al mismo requisito "
+        "concreto), o una más amplia que ya incluye por completo el dato de otra más concreta.\n\n"
+        "NO marques como duplicadas dos preguntas solo por tratar el mismo artículo, la misma ley o el "
+        "mismo tema general si cada una pregunta por un dato, cifra, plazo u órgano DISTINTO dentro de "
+        "ese artículo -- eso son preguntas legítimamente distintas, no duplicados, aunque tengan mucho "
+        "vocabulario en común.\n\n"
+        "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
+        '{"grupos_duplicados": [[0, 3], [5, 7, 8]]}\n'
+        "Cada lista interna son los números de las preguntas que preguntan por el mismo dato entre sí. "
+        "Si no hay ningún grupo, devuelve exactamente {\"grupos_duplicados\": []}."
+    )
+    return system, listado
+
+
+def _detectar_duplicados_finales(preguntas, on_usage=None):
+    """Pasada final de deduplicación SEMÁNTICA sobre la lista YA ACEPTADA
+    de un test completo (03/08/2026, decisión explícita del usuario tras
+    varias rondas de bugs reales de duplicados en esta misma sesión: art.
+    167 con una referencia cruzada a otro artículo en la explicación,
+    "mayoría de tres quintos" repetida con las palabras reordenadas o una
+    palabra distinta, el mismo dato citado en símbolo y en palabras...).
+    Cada uno de esos bugs se corrigió por separado en _claves_dedup /
+    _es_duplicado_por_contencion (comparaciones deterministas, gratis,
+    rápidas -- se quedan como primera línea de defensa porque no cuestan
+    nada), pero son heurísticas LÉXICAS: cada documento nuevo puede volver
+    a encontrar una reformulación distinta que ninguna de ellas cubra
+    todavía. En vez de seguir persiguiendo casos nuevos uno a uno, esta
+    pasada añade una red de seguridad SEMÁNTICA: una única llamada extra,
+    al final, que compara los enunciados y respuestas ya cortos de la
+    lista final entre sí (sin el documento de origen, así que es rápida y
+    barata) y no escala con el tamaño del documento ni con el número de
+    lotes -- solo se paga UNA vez por test, no una vez por candidata.
+
+    Devuelve el conjunto de ÍNDICES a eliminar (todos menos el primero de
+    cada grupo duplicado que la IA identifique). Si la llamada falla o no
+    devuelve JSON válido, se queda sin eliminar nada (falla abierta: mejor
+    dejar un posible duplicado que perder preguntas buenas por un fallo de
+    red)."""
+    if len(preguntas) < 2:
+        return set()
+    system, user = _prompt_deduplicacion_final(preguntas)
+    raw = call_deepseek_api(
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+        temperature=0.0,
+        max_tokens=1500,
+        response_format_json=True,
+        on_usage=on_usage,
+        stream=True,
+    )
+    if not raw:
+        return set()
+    try:
+        datos = json.loads(raw)
+    except json.JSONDecodeError:
+        return set()
+    # datos podría no ser un dict (p.ej. en tests que mockean
+    # call_deepseek_api sin distinguir esta llamada de otras y devuelven
+    # el array de generación por defecto) -- fallar abierto, sin
+    # eliminar nada, igual que ante cualquier otra respuesta inesperada.
+    if not isinstance(datos, dict):
+        return set()
+    grupos = datos.get("grupos_duplicados", [])
+    indices_a_quitar = set()
+    for grupo in grupos:
+        if not isinstance(grupo, list):
+            continue
+        indices_validos = sorted({i for i in grupo if isinstance(i, int) and 0 <= i < len(preguntas)})
+        if len(indices_validos) >= 2:
+            indices_a_quitar.update(indices_validos[1:])
+    return indices_a_quitar
+
+
 # Marcador de bloque PRIMARIO -- artículo o disposición -- que nunca debe
 # repartirse entre dos lotes (03/08/2026, ver el comentario largo en
 # _fragmentos_por_lote sobre por qué el reparto por párrafo intercalado
@@ -1368,65 +1452,96 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     # tiempo que esto puede suponer en esos casos límite (una ronda más
     # solo se ejecuta si aún faltan preguntas), prefirió priorizar llegar a
     # las N pedidas sobre ahorrar esos segundos.
+    # construir_prompt_evitando_repetidas y _rellenar_un_hueco se definen
+    # UNA vez aquí fuera (antes solo existían dentro del "for" de rondas)
+    # para poder reutilizarlas también en la pasada final de deduplicación
+    # semántica de más abajo, que necesita el mismo mecanismo de "rellenar
+    # un hueco concreto" pero fuera de esas rondas.
+    def construir_prompt_evitando_repetidas(n):
+        # Envuelve construir_prompt con un aviso de qué temas/datos ya
+        # están cubiertos por el resto del test (snapshot de
+        # preguntas_unicas en el momento de la llamada, incluyendo lo
+        # que otros huecos de relleno ya hayan ido aceptando) -- sin
+        # esto, un hueco podía regenerar a ciegas el mismo dato
+        # sobreexplotado del documento una y otra vez hasta agotar sus
+        # intentos, sin llegar nunca a rellenarse de verdad (bug real:
+        # "pedí 10, recibí 9" con el hueco perdido siendo justo el que
+        # intentaba repetir un hecho ya cubierto 3 veces en el resto
+        # del test). Se lee bajo lock_dedup (el mismo lock que protege
+        # las inserciones vía _intentar_aceptar) para que la foto de
+        # "cubiertas" esté sincronizada con lo que de verdad hay
+        # aceptado en cada momento, no con un lock distinto que ya no
+        # protege las escrituras.
+        with lock_dedup:
+            cubiertas = [
+                f"{p.get('pregunta', '')} (respuesta: "
+                f"{(p.get('opciones') or {}).get(str(p.get('respuesta_correcta', '')).upper(), '')})"
+                for p in preguntas_unicas
+            ]
+        prompt = construir_prompt(n)
+        if cubiertas:
+            prompt += (
+                "\n\nNo repitas ninguno de estos temas/datos, ya cubiertos por otras preguntas de este "
+                f"mismo test: {'; '.join(cubiertas)}. Aborda un aspecto distinto del documento."
+            )
+        # También se evitan aquí las de tests ANTERIORES del mismo
+        # documento (ver preguntas_a_evitar más arriba) -- un hueco de
+        # relleno es, igual que un lote normal, una oportunidad más de
+        # acabar repitiendo lo ya preguntado en una generación previa.
+        return _prompt_con_exclusion(prompt, preguntas_a_evitar)
+
+    def _rellenar_un_hueco(_indice):
+        candidata = _pedir_una_pregunta_de_recambio(construir_prompt_evitando_repetidas, None, on_usage)
+        pregunta = (
+            _asegurar_pregunta_valida(candidata, construir_prompt_evitando_repetidas, texto_fuente, on_usage)
+            if candidata and texto_fuente is not None else candidata
+        )
+        # _intentar_aceptar (mismo helper que usan los lotes, ver más
+        # arriba): comprueba-y-registra en 'vistas'/'preguntas_unicas'
+        # bajo el mismo lock_dedup, así un hueco de relleno tampoco
+        # puede aceptar por duplicado un hecho que otro hueco (u otro
+        # lote que aún estuviera terminando) ya hubiera cubierto.
+        aceptada = pregunta if pregunta and _intentar_aceptar(pregunta) else None
+        # Solo se incluye en el evento si de verdad se aceptó (no si
+        # era un duplicado que se descarta) -- el "pregunta" del
+        # evento SSE representa una pregunta genuinamente nueva del
+        # test final, no un intento cualquiera.
+        _reportar_avance_pregunta(aceptada)
+
+    def _rellenar_huecos(cantidad):
+        if cantidad <= 0:
+            return
+        with ThreadPoolExecutor(max_workers=min(10, cantidad)) as executor:
+            list(executor.map(_rellenar_un_hueco, range(cantidad)))
+
     _MAX_RONDAS_RELLENO = 3
     for _ronda_relleno in range(_MAX_RONDAS_RELLENO):
         faltan = num_preguntas - len(preguntas_unicas)
         if faltan <= 0:
             break
+        _rellenar_huecos(faltan)
 
-        def construir_prompt_evitando_repetidas(n):
-            # Envuelve construir_prompt con un aviso de qué temas/datos ya
-            # están cubiertos por el resto del test (snapshot de
-            # preguntas_unicas en el momento de la llamada, incluyendo lo
-            # que otros huecos de relleno ya hayan ido aceptando) -- sin
-            # esto, un hueco podía regenerar a ciegas el mismo dato
-            # sobreexplotado del documento una y otra vez hasta agotar sus
-            # intentos, sin llegar nunca a rellenarse de verdad (bug real:
-            # "pedí 10, recibí 9" con el hueco perdido siendo justo el que
-            # intentaba repetir un hecho ya cubierto 3 veces en el resto
-            # del test). Se lee bajo lock_dedup (el mismo lock que protege
-            # las inserciones vía _intentar_aceptar) para que la foto de
-            # "cubiertas" esté sincronizada con lo que de verdad hay
-            # aceptado en cada momento, no con un lock distinto que ya no
-            # protege las escrituras.
-            with lock_dedup:
-                cubiertas = [
-                    f"{p.get('pregunta', '')} (respuesta: "
-                    f"{(p.get('opciones') or {}).get(str(p.get('respuesta_correcta', '')).upper(), '')})"
-                    for p in preguntas_unicas
-                ]
-            prompt = construir_prompt(n)
-            if cubiertas:
-                prompt += (
-                    "\n\nNo repitas ninguno de estos temas/datos, ya cubiertos por otras preguntas de este "
-                    f"mismo test: {'; '.join(cubiertas)}. Aborda un aspecto distinto del documento."
-                )
-            # También se evitan aquí las de tests ANTERIORES del mismo
-            # documento (ver preguntas_a_evitar más arriba) -- un hueco de
-            # relleno es, igual que un lote normal, una oportunidad más de
-            # acabar repitiendo lo ya preguntado en una generación previa.
-            return _prompt_con_exclusion(prompt, preguntas_a_evitar)
-
-        def _rellenar_un_hueco(_indice):
-            candidata = _pedir_una_pregunta_de_recambio(construir_prompt_evitando_repetidas, None, on_usage)
-            pregunta = (
-                _asegurar_pregunta_valida(candidata, construir_prompt_evitando_repetidas, texto_fuente, on_usage)
-                if candidata and texto_fuente is not None else candidata
-            )
-            # _intentar_aceptar (mismo helper que usan los lotes, ver más
-            # arriba): comprueba-y-registra en 'vistas'/'preguntas_unicas'
-            # bajo el mismo lock_dedup, así un hueco de relleno tampoco
-            # puede aceptar por duplicado un hecho que otro hueco (u otro
-            # lote que aún estuviera terminando) ya hubiera cubierto.
-            aceptada = pregunta if pregunta and _intentar_aceptar(pregunta) else None
-            # Solo se incluye en el evento si de verdad se aceptó (no si
-            # era un duplicado que se descarta) -- el "pregunta" del
-            # evento SSE representa una pregunta genuinamente nueva del
-            # test final, no un intento cualquiera.
-            _reportar_avance_pregunta(aceptada)
-
-        with ThreadPoolExecutor(max_workers=min(10, faltan)) as executor:
-            list(executor.map(_rellenar_un_hueco, range(faltan)))
+    # Pasada final de deduplicación SEMÁNTICA (03/08/2026, decisión
+    # explícita del usuario tras varias rondas de bugs reales de
+    # duplicados en esta misma sesión, cada uno una reformulación
+    # distinta que ninguna heurística anterior cubría todavía -- ver el
+    # comentario largo en _detectar_duplicados_finales). Una única
+    # llamada extra, al final, sin el documento de origen (compara solo
+    # los enunciados y respuestas ya cortos de la lista final entre sí),
+    # así que no escala con el tamaño del documento ni con el número de
+    # lotes -- se paga UNA vez por test, no una vez por candidata. Si
+    # encuentra duplicados los quita y rellena el hueco resultante con
+    # el MISMO mecanismo de arriba, pero solo UNA pasada más (no otras
+    # _MAX_RONDAS_RELLENO completas): esto es una red de seguridad para
+    # lo que las heurísticas deterministas no cazaron, no se espera que
+    # dispare a menudo.
+    if texto_fuente is not None and len(preguntas_unicas) > 1:
+        indices_duplicados = _detectar_duplicados_finales(preguntas_unicas, on_usage)
+        for indice in sorted(indices_duplicados, reverse=True):
+            preguntas_unicas.pop(indice)
+        if indices_duplicados:
+            faltan = num_preguntas - len(preguntas_unicas)
+            _rellenar_huecos(faltan)
 
     faltan_final = num_preguntas - len(preguntas_unicas)
     if faltan_final > 0:

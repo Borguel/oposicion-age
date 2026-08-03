@@ -21,6 +21,7 @@ from test_generator import (
     generar_preguntas_ia_en_lotes, MAX_INTENTOS_POR_PREGUNTA_PDF, _verificar_pregunta,
     _claves_dedup, _fragmentos_por_lote, _es_duplicado_por_contencion,
     _bloques_estructurales, _repartir_bloques_en_lotes, _bloques_por_esquema_ia,
+    _detectar_duplicados_finales,
 )
 
 
@@ -36,7 +37,27 @@ def _construir_prompt_fabrica(preguntas_por_llamada):
 
 
 def _es_llamada_verificacion(messages):
-    return len(messages) == 2 and messages[0]["role"] == "system"
+    # "PREGUNTA A VERIFICAR:" solo aparece en _prompt_verificacion (la
+    # verificación INDIVIDUAL de una candidata contra el documento) -- la
+    # pasada final de deduplicación semántica (_prompt_deduplicacion_final,
+    # ver _detectar_duplicados_finales en test_generator.py) también manda
+    # un mensaje [system, user], pero con un listado de preguntas ya
+    # aceptadas, no "PREGUNTA A VERIFICAR:". Sin este marcador, ambas
+    # llamadas eran indistinguibles para los tests que mockean
+    # call_deepseek_api por FORMA de mensaje en vez de por contenido.
+    return (
+        len(messages) == 2
+        and messages[0]["role"] == "system"
+        and "PREGUNTA A VERIFICAR:" in messages[1]["content"]
+    )
+
+
+def _es_llamada_deduplicacion_final(messages):
+    return (
+        len(messages) == 2
+        and messages[0]["role"] == "system"
+        and "grupos_duplicados" in messages[0]["content"]
+    )
 
 
 class TestGenerarPreguntasIaEnLotes:
@@ -1141,6 +1162,8 @@ class TestGenerarPreguntasIaEnLotes:
         def fake_call(messages, max_tokens=None, **kwargs):
             if _es_llamada_verificacion(messages):
                 return json.dumps({"valido": True, "problemas": []})
+            if _es_llamada_deduplicacion_final(messages):
+                return json.dumps({"grupos_duplicados": []})
             max_tokens_recibidos.append(max_tokens)
             return json.dumps([
                 {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
@@ -1160,6 +1183,8 @@ class TestGenerarPreguntasIaEnLotes:
         def fake_call(messages, max_tokens=None, **kwargs):
             if _es_llamada_verificacion(messages):
                 return json.dumps({"valido": True, "problemas": []})
+            if _es_llamada_deduplicacion_final(messages):
+                return json.dumps({"grupos_duplicados": []})
             max_tokens_recibidos.append(max_tokens)
             return json.dumps([
                 {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
@@ -1271,15 +1296,17 @@ class TestGenerarPreguntasIaEnLotes:
 
     def test_verificacion_individual_dispara_una_llamada_por_candidata(self):
         # Con un lote de 5 preguntas todas válidas a la primera, el total
-        # debe ser 6 llamadas (1 generación + 1 verificación POR
-        # PREGUNTA) -- ver el comentario largo junto a
-        # _pedir_lote_verificado en test_generator.py sobre por qué se
-        # retiró la verificación en bloque (una sola llamada para las 5)
-        # que antes reducía esto a 2: con thinking_enabled=True el
-        # razonamiento del modelo escala con cuántas candidatas juzga A LA
-        # VEZ, así que un lote lleno podía agotar el presupuesto de
-        # tokens solo pensando -- verificar cada una por separado es más
-        # lento en número de llamadas pero mucho más fiable.
+        # debe ser 7 llamadas (1 generación + 1 verificación POR PREGUNTA
+        # + 1 pasada final de deduplicación semántica sobre las 5 ya
+        # aceptadas, ver _detectar_duplicados_finales) -- ver el
+        # comentario largo junto a _pedir_lote_verificado en
+        # test_generator.py sobre por qué se retiró la verificación en
+        # bloque (una sola llamada para las 5) que antes reducía esto a 2:
+        # con thinking_enabled=True el razonamiento del modelo escala con
+        # cuántas candidatas juzga A LA VEZ, así que un lote lleno podía
+        # agotar el presupuesto de tokens solo pensando -- verificar cada
+        # una por separado es más lento en número de llamadas pero mucho
+        # más fiable.
         construir_prompt = _construir_prompt_fabrica(None)
         llamadas = {"total": 0}
 
@@ -1287,6 +1314,8 @@ class TestGenerarPreguntasIaEnLotes:
             llamadas["total"] += 1
             if _es_llamada_verificacion(messages):
                 return json.dumps({"valido": True, "problemas": []})
+            if _es_llamada_deduplicacion_final(messages):
+                return json.dumps({"grupos_duplicados": []})
             return json.dumps([
                 {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
                  "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
@@ -1298,7 +1327,7 @@ class TestGenerarPreguntasIaEnLotes:
 
         assert len(preguntas) == 5
         assert errores == []
-        assert llamadas["total"] == 6
+        assert llamadas["total"] == 7
 
     def test_verificacion_individual_usa_el_fragmento_del_lote_no_el_documento_completo(self):
         # Optimización de tiempo (03/08/2026, bug real, documento real):
@@ -1353,6 +1382,131 @@ class TestGenerarPreguntasIaEnLotes:
             assert len(documento_verificado) < len(texto), (
                 "la verificación recibió el documento completo, no el fragmento"
             )
+
+    def test_la_pasada_final_quita_un_duplicado_semantico_y_rellena_el_hueco(self):
+        # Integración de extremo a extremo (03/08/2026): si la pasada final
+        # de deduplicación semántica marca dos de las preguntas ya
+        # aceptadas como el mismo dato (algo que las heurísticas
+        # deterministas, aquí simuladas como si no lo hubieran cazado, se
+        # supone que dejaron pasar), el resultado final debe tener 2
+        # preguntas -- nunca 3 (una de las "duplicadas" descartada) ni 1
+        # (sin rellenar el hueco que deja).
+        construir_prompt = _construir_prompt_fabrica(None)
+        contador_generacion = itertools.count()
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            if _es_llamada_deduplicacion_final(messages):
+                # Las preguntas 0 y 1 se marcan como el mismo dato -- se
+                # debe conservar la 0 y rellenar el hueco que deja la 1.
+                return json.dumps({"grupos_duplicados": [[0, 1]]})
+            return json.dumps([{
+                "pregunta": f"¿Pregunta {next(contador_generacion)}?",
+                "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
+            }])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, errores = generar_preguntas_ia_en_lotes(construir_prompt, 2, "Texto de prueba.", tamano_lote=1)
+
+        assert len(preguntas) == 2
+        assert errores == []
+
+    def test_la_pasada_final_no_se_ejecuta_sin_texto_fuente(self):
+        # Sin documento de origen no hay nada real que verificar -- la
+        # pasada final tampoco debería dispararse (igual que la
+        # verificación individual normal, ver el "if texto_fuente is None"
+        # en _pedir_lote_verificado).
+        construir_prompt = _construir_prompt_fabrica(None)
+        contador_generacion = itertools.count()
+        llamadas_deduplicacion = []
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_deduplicacion_final(messages):
+                llamadas_deduplicacion.append(1)
+                return json.dumps({"grupos_duplicados": []})
+            return json.dumps([{
+                "pregunta": f"¿Pregunta {next(contador_generacion)}?",
+                "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."
+            }])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            preguntas, _ = generar_preguntas_ia_en_lotes(construir_prompt, 2, texto_fuente=None, tamano_lote=1)
+
+        assert len(preguntas) == 2
+        assert llamadas_deduplicacion == []
+
+
+class TestDetectarDuplicadosFinales:
+    # _detectar_duplicados_finales es la red de seguridad SEMÁNTICA
+    # añadida al final del pipeline (03/08/2026, decisión explícita del
+    # usuario): una única llamada extra, sin el documento de origen, que
+    # compara los enunciados y respuestas de la lista YA ACEPTADA entre sí
+    # -- pensada para cazar reformulaciones que las heurísticas
+    # deterministas (_claves_dedup, _es_duplicado_por_contencion) todavía
+    # no cubran, sin repetir el patrón de "verificación en bloque" que
+    # causó el bug de thinking-tokens agotados (aquí no hay
+    # thinking_enabled=True ni se compara contra un documento grande, así
+    # que no aplica el mismo riesgo).
+    def _preguntas(self, n):
+        return [
+            {"pregunta": f"¿Pregunta {i}?", "opciones": {"A": f"Respuesta {i}"}, "respuesta_correcta": "A"}
+            for i in range(n)
+        ]
+
+    def test_menos_de_dos_preguntas_no_hace_ninguna_llamada(self):
+        with patch("test_generator.call_deepseek_api") as mock:
+            resultado = _detectar_duplicados_finales(self._preguntas(1))
+        mock.assert_not_called()
+        assert resultado == set()
+
+    def test_parsea_un_grupo_de_duplicados_y_conserva_el_primero(self):
+        with patch("test_generator.call_deepseek_api",
+                   return_value=json.dumps({"grupos_duplicados": [[0, 3]]})):
+            resultado = _detectar_duplicados_finales(self._preguntas(5))
+        assert resultado == {3}
+
+    def test_parsea_varios_grupos_a_la_vez(self):
+        with patch("test_generator.call_deepseek_api",
+                   return_value=json.dumps({"grupos_duplicados": [[0, 2], [4, 6, 7]]})):
+            resultado = _detectar_duplicados_finales(self._preguntas(8))
+        assert resultado == {2, 6, 7}
+
+    def test_sin_respuesta_no_elimina_nada(self):
+        with patch("test_generator.call_deepseek_api", return_value=None):
+            resultado = _detectar_duplicados_finales(self._preguntas(3))
+        assert resultado == set()
+
+    def test_json_invalido_no_elimina_nada(self):
+        with patch("test_generator.call_deepseek_api", return_value="no es json"):
+            resultado = _detectar_duplicados_finales(self._preguntas(3))
+        assert resultado == set()
+
+    def test_json_no_es_un_diccionario_no_elimina_nada(self):
+        # Bug real durante el desarrollo de esta función: varios tests que
+        # mockean call_deepseek_api por FORMA de mensaje (no por contenido)
+        # devuelven el array de generación por defecto ante cualquier
+        # llamada no reconocida como verificación -- un JSON válido, pero
+        # una lista, no un diccionario con "grupos_duplicados". Debe
+        # fallar abierto (sin eliminar nada) en vez de reventar con
+        # AttributeError al llamar .get() sobre una lista.
+        with patch("test_generator.call_deepseek_api", return_value=json.dumps([1, 2, 3])):
+            resultado = _detectar_duplicados_finales(self._preguntas(3))
+        assert resultado == set()
+
+    def test_indices_fuera_de_rango_se_ignoran(self):
+        with patch("test_generator.call_deepseek_api",
+                   return_value=json.dumps({"grupos_duplicados": [[0, 99]]})):
+            resultado = _detectar_duplicados_finales(self._preguntas(3))
+        assert resultado == set()
+
+    def test_grupo_de_un_solo_indice_no_cuenta_como_duplicado(self):
+        with patch("test_generator.call_deepseek_api",
+                   return_value=json.dumps({"grupos_duplicados": [[1]]})):
+            resultado = _detectar_duplicados_finales(self._preguntas(3))
+        assert resultado == set()
 
 
 class TestFragmentosPorLote:

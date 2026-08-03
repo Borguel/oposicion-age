@@ -540,13 +540,16 @@ class TestCosteIaEnHerramientasPdf:
         # (5+5+5+5); cada lote hace 1 llamada de generación + 1 llamada de
         # verificación INDIVIDUAL por candidata (ver el comentario largo
         # junto a _pedir_lote_verificado en test_generator.py) = 1 + 5 = 6
-        # llamadas por lote, 24 en total. Este hilo de fondo vuelca DIRECTO
-        # a Firestore (volcar_directo), sin depender de flask.g -- el caso
-        # que antes perdía el coste por completo.
+        # llamadas por lote, 24 en total, MÁS 1 llamada final de
+        # deduplicación semántica sobre las 20 preguntas ya aceptadas (ver
+        # _detectar_duplicados_finales en test_generator.py) = 25 en total.
+        # Este hilo de fondo vuelca DIRECTO a Firestore (volcar_directo),
+        # sin depender de flask.g -- el caso que antes perdía el coste por
+        # completo.
         coste = db.leer(("usuarios", "u1"))["coste_ia"][self._mes_actual()]
-        assert coste["tokens_in"] == 480
-        assert coste["tokens_out"] == 240
-        assert coste["llamadas"] == 24
+        assert coste["tokens_in"] == 500
+        assert coste["tokens_out"] == 250
+        assert coste["llamadas"] == 25
         # Las preguntas aceptadas se retransmiten individualmente en un
         # evento "pregunta" aparte según van llegando, para que el
         # frontend pueda empezar el test en cuanto tenga las primeras N
