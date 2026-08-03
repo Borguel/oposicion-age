@@ -128,6 +128,22 @@ def test_rechaza_el_documento_establece_indica_o_menciona():
         assert validar_pregunta(_pregunta_valida(explicacion=variante)) is False, variante
 
 
+def test_rechaza_el_documento_con_inciso_entre_comas_antes_del_verbo():
+    # Bug real de producción (03/08/2026), documento real: "el documento, al
+    # detallar la iniciativa de reforma, señala que..." se coló en un test
+    # porque PATRON_REFERENCIA_META exigía que el verbo viniera INMEDIATAMENTE
+    # después del sustantivo (solo espacios de por medio) -- cualquier
+    # inciso entre comas antes del verbo (habitual en explicaciones más
+    # largas) lo dejaba sin detectar aunque la referencia al documento fuera
+    # exactamente la misma que en test_rechaza_el_documento_establece_indica_o_menciona.
+    for variante in [
+        "el documento, al detallar la iniciativa de reforma, señala que el requisito es este.",
+        "el texto, más adelante, establece una excepción a esta regla.",
+        "el tema, en el apartado dedicado a la reforma, cita el artículo 62 de la Constitución.",
+    ]:
+        assert validar_pregunta(_pregunta_valida(explicacion=variante)) is False, variante
+
+
 def test_no_rechaza_conforme_a_seguido_de_una_norma_legitima():
     # "conforme a" es una construcción legítima cuando lo que sigue es una
     # norma real, no el material de origen -- PATRON_REFERENCIA_META solo

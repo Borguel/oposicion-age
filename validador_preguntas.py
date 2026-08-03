@@ -36,10 +36,18 @@ FRASES_PROHIBIDAS = [
 # y varias explicaciones decían "el documento establece/indica/menciona
 # que..." o "el tema cita el artículo..." (sujeto + verbo, no una frase fija
 # que se pueda listar una a una).
+#
+# El [sujeto]+[verbo] admite una cláusula intercalada entre comas (03/08/2026,
+# bug real, documento real): "el documento, al detallar la iniciativa de
+# reforma, señala que..." se coló porque el patrón exigía que el verbo
+# viniera INMEDIATAMENTE después del sustantivo (solo espacios de por
+# medio) -- cualquier inciso entre comas antes del verbo lo dejaba sin
+# detectar aunque la referencia al documento fuera exactamente la misma.
 PATRON_REFERENCIA_META = re.compile(
     r"\b(seg[uú]n|de\s+acuerdo\s+con)\s+(el|la|lo)\s+(documento|contenido|texto|tema|fragmento)\b"
     r"|\bconforme\s+(al|a\s+la|a\s+lo)\s+(documento|contenido|texto|tema|fragmento)\b"
-    r"|\b(el|la)\s+(documento|contenido|texto|tema|fragmento)\s+"
+    r"|\b(el|la)\s+(documento|contenido|texto|tema|fragmento)\b"
+    r"(?:\s*,\s*[^,.]{1,80}\s*,)?\s+"
     r"(establece|indica|se[ñn]ala|menciona|dice|cita|dispone|regula|recoge|prev[ée]|afirma|explica)\b",
     re.IGNORECASE,
 )
