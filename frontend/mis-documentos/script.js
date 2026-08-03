@@ -124,8 +124,18 @@ function filaBanco(doc, tipo) {
       acciones.push(`<button type="button" class="documento-card-btn" data-banco-generar="${tipo}" data-id="${doc.id}">Reintentar</button>`);
     }
     if (total > 0) {
-      if (total >= 10) {
-        acciones.push(`<a class="documento-card-btn" href="${rutaPractica}?documento_id=${doc.id}&ver=${paramVer}&cantidad=10">${etiquetaAccion} de 10</a>`);
+      if (total > 1) {
+        // Cantidad libre (03/08/2026, a petición del usuario: antes era un
+        // botón fijo "de 10") -- el usuario elige cuántas de las "total"
+        // disponibles quiere en esta sesión, entre 1 y el total del banco.
+        acciones.push(`
+          <span class="documento-card-banco-cantidad">
+            <input type="number" class="documento-card-banco-input" min="1" max="${total}"
+                   value="${Math.min(10, total)}" data-banco-cantidad="${tipo}"
+                   aria-label="Cantidad de ${label.toLowerCase()}">
+            <button type="button" class="documento-card-btn" data-banco-empezar="${tipo}" data-id="${doc.id}">${etiquetaAccion}</button>
+          </span>
+        `);
       }
       acciones.push(`<a class="documento-card-btn${estado === "completo" ? " principal" : ""}" href="${rutaPractica}?documento_id=${doc.id}&ver=${paramVer}">${etiquetaAccion} de todas (${total})</a>`);
     }
@@ -138,6 +148,22 @@ function filaBanco(doc, tipo) {
       <div class="documento-card-fila-acciones">${acciones.join("")}</div>
     </div>
   `;
+}
+
+// Lee la cantidad elegida en el input de al lado del botón pulsado (dentro
+// de la misma fila de acciones) y navega a la herramienta correspondiente
+// pidiendo un test/repaso de ese tamaño sobre el banco ya generado.
+function irABanco(evento, documentoId, tipo) {
+  const fila = evento.currentTarget.closest(".documento-card-fila-acciones");
+  const input = fila?.querySelector("input[data-banco-cantidad]");
+  const doc = documentos.find((d) => d.id === documentoId);
+  const total = doc ? (doc[`banco_${tipo}_total`] || 0) : 0;
+  let cantidad = parseInt(input?.value, 10);
+  if (!Number.isFinite(cantidad) || cantidad < 1) cantidad = 1;
+  if (total && cantidad > total) cantidad = total;
+  const rutaPractica = tipo === "preguntas" ? "/subida-pdf-generar-test/" : "/subida-pdf-tarjetas/";
+  const paramVer = tipo === "preguntas" ? "banco" : "banco-tarjetas";
+  window.location.href = `${rutaPractica}?documento_id=${documentoId}&ver=${paramVer}&cantidad=${cantidad}`;
 }
 
 async function iniciarBanco(documentoId, tipo) {
@@ -335,6 +361,15 @@ function renderizarDocumentosDeCarpeta() {
   contenedor.querySelectorAll("[data-banco-generar]").forEach((boton) => {
     boton.addEventListener("click", () => iniciarBanco(boton.dataset.id, boton.dataset.bancoGenerar));
   });
+  contenedor.querySelectorAll("[data-banco-empezar]").forEach((boton) => {
+    boton.addEventListener("click", (evento) => irABanco(evento, boton.dataset.id, boton.dataset.bancoEmpezar));
+  });
+  contenedor.querySelectorAll("input[data-banco-cantidad]").forEach((input) => {
+    input.addEventListener("keydown", (evento) => {
+      if (evento.key !== "Enter") return;
+      evento.target.closest(".documento-card-fila-acciones")?.querySelector("[data-banco-empezar]")?.click();
+    });
+  });
 }
 
 async function renombrarDocumento(documentoId) {
@@ -438,6 +473,15 @@ function renderizarBusqueda(query) {
   });
   resultados.querySelectorAll("[data-banco-generar]").forEach((boton) => {
     boton.addEventListener("click", () => iniciarBanco(boton.dataset.id, boton.dataset.bancoGenerar));
+  });
+  resultados.querySelectorAll("[data-banco-empezar]").forEach((boton) => {
+    boton.addEventListener("click", (evento) => irABanco(evento, boton.dataset.id, boton.dataset.bancoEmpezar));
+  });
+  resultados.querySelectorAll("input[data-banco-cantidad]").forEach((input) => {
+    input.addEventListener("keydown", (evento) => {
+      if (evento.key !== "Enter") return;
+      evento.target.closest(".documento-card-fila-acciones")?.querySelector("[data-banco-empezar]")?.click();
+    });
   });
 }
 

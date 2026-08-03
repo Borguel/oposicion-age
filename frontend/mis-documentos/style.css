@@ -334,6 +334,29 @@ body {
   color: #1b1f2e;
 }
 
+.documento-card-banco-cantidad {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.documento-card-banco-input {
+  width: 58px;
+  padding: 6px 8px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.documento-card-banco-input:focus {
+  outline: none;
+  border-color: var(--age-primary);
+}
+
 .documento-card-banco-estado {
   font-size: 0.8rem;
   font-weight: 600;
