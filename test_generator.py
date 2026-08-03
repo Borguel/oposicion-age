@@ -161,6 +161,19 @@ def _normalizar_cifra(cifra):
         denominador = _DENOMINADORES_ORDINAL_FEMENINO.get(denominador_singular)
         if denominador:
             return f"{numerador}/{denominador}"
+    # Porcentajes en símbolo ("13%") y en palabras ("13 por ciento") -- bug
+    # real, documento real (03/08/2026): una pregunta sobre el límite de
+    # deuda pública de las Comunidades Autónomas ("El 13 por ciento del
+    # Producto Interior Bruto nacional") y otra pregunta más amplia sobre
+    # el mismo artículo, con el desglose completo por subsector escrito en
+    # símbolo ("El 60% del PIB..., un 13% para el conjunto de las
+    # Comunidades Autónomas..."), citan el MISMO dato (13% para CCAA) pero
+    # ninguna clave de dedup las detectaba: "13 por ciento" y "13%" son
+    # cadenas distintas para _PATRON_CIFRA, así que ni siquiera producían
+    # la misma cifra dentro de la clave artículo+cifras.
+    coincide_porcentaje = re.fullmatch(r"(\d+(?:[.,]\d+)?)\s*(?:%|por\s*ciento)", cifra)
+    if coincide_porcentaje:
+        return f"{coincide_porcentaje.group(1)}%"
     return cifra
 
 
@@ -260,13 +273,28 @@ def _es_duplicado_por_contencion(pregunta, candidatas_existentes):
     era ni el texto exacto de otra (falla 'r:') ni un fragmento literal
     contiguo de otra (falla la contención de arriba, por el reordenamiento).
     El solapamiento de palabras (intersección/unión, sin importar el orden)
-    sí detecta que son el mismo hecho."""
+    sí detecta que son el mismo hecho.
+
+    También se compara por CONTENCIÓN DE CIFRAS, no solo de texto (03/08/2026,
+    bug real, documento real): una pregunta concreta sobre el límite de deuda
+    de las Comunidades Autónomas ("El 13 por ciento del PIB nacional") y otra
+    más amplia sobre el mismo artículo con el desglose completo por subsector
+    ("El 60% del PIB..., un 13% para las Comunidades Autónomas...") citan el
+    MISMO dato, pero ninguna de las comprobaciones de arriba lo detectaba: el
+    texto completo no coincide ni por contención ni por solapamiento (la
+    pregunta amplia tiene muchas más palabras propias -- 44%, 3%, Corporaciones
+    Locales... -- que diluyen el solapamiento muy por debajo del umbral), y la
+    clave "d:" de _claves_dedup exige que el CONJUNTO de cifras sea IDÉNTICO,
+    no que uno esté contenido en el otro. Si el conjunto de cifras de una
+    pregunta es subconjunto del de la otra (mismo artículo, ya comprobado
+    arriba), es el mismo dato citado con distinto nivel de detalle."""
     articulos = _articulos_citados(pregunta)
     if not articulos:
         return False
     respuesta = _respuesta_correcta_normalizada(pregunta)
     if len(respuesta) < _LONGITUD_MINIMA_CONTENCION:
         return False
+    cifras = {_normalizar_cifra(c) for c in _PATRON_CIFRA.findall(respuesta)}
     for otra in candidatas_existentes:
         if not (articulos & _articulos_citados(otra)):
             continue
@@ -276,6 +304,9 @@ def _es_duplicado_por_contencion(pregunta, candidatas_existentes):
         if respuesta in otra_respuesta or otra_respuesta in respuesta:
             return True
         if _solapamiento_palabras(respuesta, otra_respuesta) >= _UMBRAL_SOLAPAMIENTO_RESPUESTA:
+            return True
+        cifras_otra = {_normalizar_cifra(c) for c in _PATRON_CIFRA.findall(otra_respuesta)}
+        if cifras and cifras_otra and (cifras <= cifras_otra or cifras_otra <= cifras):
             return True
     return False
 

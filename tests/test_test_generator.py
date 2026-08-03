@@ -940,6 +940,45 @@ class TestGenerarPreguntasIaEnLotes:
         assert not _es_duplicado_por_contencion(pregunta_deber_jueces, [pregunta_costumbre])
         assert not _es_duplicado_por_contencion(pregunta_nulidad, [pregunta_costumbre])
 
+    def test_dedupe_por_contencion_de_cifras_con_formatos_distintos(self):
+        # Bug real de producción (03/08/2026), documento real: una pregunta
+        # concreta sobre el límite de deuda pública de las Comunidades
+        # Autónomas ("El 13 por ciento del Producto Interior Bruto
+        # nacional") y otra más amplia sobre el mismo artículo con el
+        # desglose completo por subsector ("El 60% del PIB..., un 13% para
+        # las Comunidades Autónomas...") citan el MISMO dato, pero ninguna
+        # comprobación existente lo detectaba: el texto no coincide ni por
+        # contención ni por solapamiento de palabras (la pregunta amplia
+        # tiene muchas más palabras propias -- 44%, 3%, Corporaciones
+        # Locales... -- que diluyen el solapamiento muy por debajo del
+        # umbral), y la clave "d:" exige que el conjunto de cifras sea
+        # IDÉNTICO, no que uno esté contenido en el otro -- y ni siquiera
+        # llegaba a comparar bien: "13 por ciento" y "13%" son cadenas
+        # distintas para _PATRON_CIFRA (ver _normalizar_cifra, que ahora
+        # normaliza ambos formatos a "13%").
+        pregunta_concreta = {
+            "pregunta": "De acuerdo con el artículo 13 de la Ley Orgánica 2/2012, de 27 de abril, de "
+                        "Estabilidad Presupuestaria y Sostenibilidad Financiera, ¿cuál es el límite "
+                        "máximo de deuda pública para el conjunto de Comunidades Autónomas en relación "
+                        "con el Producto Interior Bruto nacional?",
+            "opciones": {"A": "El 13 por ciento del Producto Interior Bruto nacional."},
+            "respuesta_correcta": "A",
+        }
+        pregunta_amplia = {
+            "pregunta": "Conforme a la Ley Orgánica 2/2012, de 27 de abril, de Estabilidad "
+                        "Presupuestaria y Sostenibilidad Financiera, ¿cuál es el porcentaje del "
+                        "Producto Interior Bruto nacional que, como máximo, puede alcanzar el volumen "
+                        "de deuda pública del conjunto de las Administraciones Públicas, y cómo se "
+                        "distribuye entre los diferentes subsectores?",
+            "opciones": {"A": "El 60% del PIB nacional, distribuido en un 44% para la Administración "
+                              "central, un 13% para el conjunto de las Comunidades Autónomas y un 3% "
+                              "para el conjunto de las Corporaciones Locales."},
+            "respuesta_correcta": "A",
+            "explicacion": "el artículo 13 de la Ley Orgánica 2/2012 establece el límite de deuda.",
+        }
+        assert _claves_dedup(pregunta_concreta).isdisjoint(_claves_dedup(pregunta_amplia))
+        assert _es_duplicado_por_contencion(pregunta_concreta, [pregunta_amplia])
+
     def test_lotes_en_paralelo_no_reportan_duplicados_por_sse(self):
         # Bug real de producción (03/08/2026), con un documento real: 3
         # preguntas casi idénticas sobre el art. 26.6 (plazo de audiencia
