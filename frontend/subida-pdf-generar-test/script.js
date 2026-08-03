@@ -669,6 +669,36 @@ async function obtenerAuthHeaders() {
         return;
       }
 
+      // Test sacado del banco de preguntas pre-generado (ver "Mis
+      // documentos", filaBanco): a diferencia de "ver=test" (el último test
+      // GUARDADO de este documento), esto tira de usuarios/{uid}/
+      // banco_preguntas_pdf/{documento_id} -- el pool generado en segundo
+      // plano, del que se puede sacar un test de tamaño N (?cantidad=N,
+      // aleatorias) o de todo lo generado (sin "cantidad") sin volver a
+      // gastar en IA.
+      if (ver === 'banco') {
+        document.getElementById('tarjeta-formulario').style.display = 'none';
+        document.getElementById('contenedor-carga').style.display = 'block';
+        document.getElementById('texto-estado').textContent = 'Cargando preguntas del banco…';
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
+        try {
+          const cantidad = params.get('cantidad');
+          const qs = cantidad ? `?modo=aleatorias&cantidad=${encodeURIComponent(cantidad)}` : '?modo=todas';
+          const res = await fetch(`https://oposicion-age.onrender.com/documento/${documentoId}/banco-preguntas${qs}`, { headers: authHeaders });
+          const datos = await res.json();
+          if (!res.ok) throw new Error(datos.error || 'No se pudo cargar el banco de preguntas.');
+          if (!datos.preguntas || datos.preguntas.length === 0) {
+            throw new Error('Este documento todavía no tiene preguntas generadas en su banco.');
+          }
+          nombreArchivo = datos.nombre_archivo || nombreArchivo;
+          iniciarTest(datos.preguntas);
+        } catch (err) {
+          mostrarError(err.message);
+        }
+        return;
+      }
+
       // Generar un test NUEVO desde un documento ya subido: se deja el
       // formulario visible (sin pedir de nuevo el PDF) para que el
       // usuario elija cuántas preguntas quiere, en vez de generar

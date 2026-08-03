@@ -334,6 +334,18 @@ body {
   color: #1b1f2e;
 }
 
+.documento-card-banco-estado {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--age-ink-soft, var(--age-ink));
+  align-self: center;
+  white-space: nowrap;
+}
+
+.documento-card-banco-error {
+  color: var(--age-danger, #c0392b);
+}
+
 .documento-card-btn.principal:hover {
   background: var(--age-primary-dark);
   border-color: var(--age-primary-dark);

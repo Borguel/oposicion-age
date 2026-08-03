@@ -772,6 +772,35 @@ async function obtenerAuthHeaders() {
         return;
       }
 
+      // Repaso sacado del banco de tarjetas pre-generado (ver "Mis
+      // documentos", filaBanco): a diferencia de "ver=tarjetas" (el último
+      // set GUARDADO de este documento), esto tira de usuarios/{uid}/
+      // banco_tarjetas_pdf/{documento_id} -- el pool generado en segundo
+      // plano, del que se puede sacar un repaso de tamaño N (?cantidad=N) o
+      // de todo lo generado (sin "cantidad") sin volver a gastar en IA.
+      if (ver === 'banco-tarjetas') {
+        formularioCard.classList.add('hidden');
+        contenedorCarga.classList.remove('hidden');
+        const textoEstado = document.getElementById('texto-estado');
+        const authHeaders = await obtenerAuthHeaders();
+        if (!authHeaders) return;
+        textoEstado.textContent = 'Cargando tarjetas del banco…';
+        try {
+          const cantidad = params.get('cantidad');
+          const qs = cantidad ? `?modo=aleatorias&cantidad=${encodeURIComponent(cantidad)}` : '?modo=todas';
+          const res = await fetch(`https://oposicion-age.onrender.com/documento/${documentoId}/banco-tarjetas${qs}`, { headers: authHeaders });
+          const datos = await res.json();
+          if (!res.ok) throw new Error(datos.error || 'No se pudo cargar el banco de tarjetas.');
+          if (!datos.tarjetas || datos.tarjetas.length === 0) {
+            throw new Error('Este documento todavía no tiene tarjetas generadas en su banco.');
+          }
+          iniciarModoEstudio(datos.tarjetas, false);
+        } catch (err) {
+          mostrarError(err.message);
+        }
+        return;
+      }
+
       // Generar tarjetas NUEVAS desde un documento ya subido: se deja el
       // formulario visible (sin pedir de nuevo el PDF) para que el usuario
       // elija cuántas tarjetas quiere, en vez de generar siempre con el

@@ -95,6 +95,111 @@ function seccionCarpeta(doc, modoCarpeta) {
   return "";
 }
 
+// Banco de preguntas/tarjetas pre-generado (03/08/2026): a diferencia de
+// las filas "Tarjetas"/"Test" de arriba (una sesión concreta ya generada
+// y guardada), esto es un POOL generado en segundo plano hasta agotar el
+// contenido distinto del documento (ver generar_banco_preguntas_
+// adaptativo/generar_banco_tarjetas_adaptativo en el backend), del que el
+// usuario puede sacar tantas veces como quiera un test/repaso de tamaño
+// N o de todo lo generado, sin volver a gastar en IA cada vez.
+function filaBanco(doc, tipo) {
+  const estado = doc[`banco_${tipo}_estado`];
+  const total = doc[`banco_${tipo}_total`] || 0;
+  const objetivo = doc[`banco_${tipo}_objetivo`] || 0;
+  const esPreguntas = tipo === "preguntas";
+  const label = esPreguntas ? "Banco de preguntas" : "Banco de tarjetas";
+  const iconoHtml = icono(esPreguntas ? "matraz" : "tarjeta", 16);
+  const rutaPractica = esPreguntas ? "/subida-pdf-generar-test/" : "/subida-pdf-tarjetas/";
+  const paramVer = esPreguntas ? "banco" : "banco-tarjetas";
+  const etiquetaAccion = esPreguntas ? "Test" : "Repasar";
+
+  const acciones = [];
+  if (!estado || estado === "sin_generar") {
+    acciones.push(`<button type="button" class="documento-card-btn principal" data-banco-generar="${tipo}" data-id="${doc.id}">Generar banco de ${tipo}</button>`);
+  } else {
+    if (estado === "generando") {
+      acciones.push(`<span class="documento-card-banco-estado">Generando… ${total}${objetivo ? `/${objetivo}` : ""}</span>`);
+    } else if (estado === "error") {
+      acciones.push(`<span class="documento-card-banco-estado documento-card-banco-error">No se pudo generar</span>`);
+      acciones.push(`<button type="button" class="documento-card-btn" data-banco-generar="${tipo}" data-id="${doc.id}">Reintentar</button>`);
+    }
+    if (total > 0) {
+      if (total >= 10) {
+        acciones.push(`<a class="documento-card-btn" href="${rutaPractica}?documento_id=${doc.id}&ver=${paramVer}&cantidad=10">${etiquetaAccion} de 10</a>`);
+      }
+      acciones.push(`<a class="documento-card-btn${estado === "completo" ? " principal" : ""}" href="${rutaPractica}?documento_id=${doc.id}&ver=${paramVer}">${etiquetaAccion} de todas (${total})</a>`);
+    }
+  }
+
+  const etiquetaCantidad = total > 0 ? ` (${total}${objetivo && estado === "generando" ? `/${objetivo}` : ""})` : "";
+  return `
+    <div class="documento-card-fila">
+      <span class="documento-card-fila-label">${iconoHtml} ${label}${etiquetaCantidad}</span>
+      <div class="documento-card-fila-acciones">${acciones.join("")}</div>
+    </div>
+  `;
+}
+
+async function iniciarBanco(documentoId, tipo) {
+  const doc = documentos.find((d) => d.id === documentoId);
+  if (doc) doc[`banco_${tipo}_estado`] = "generando";
+  const refrescar = () => {
+    if (carpetaActual !== null) renderizarDocumentosDeCarpeta();
+    const query = document.getElementById("filtro-busqueda")?.value;
+    if (query) renderizarBusqueda(query);
+  };
+  refrescar();
+
+  try {
+    const token = await idToken();
+    const ruta = tipo === "preguntas" ? "generar-banco-preguntas" : "generar-banco-tarjetas";
+    const res = await fetch(`${BACKEND_URL}/documento/${documentoId}/${ruta}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok || !res.body) {
+      const datos = await res.json().catch(() => ({}));
+      throw new Error(datos.error || "No se pudo iniciar la generación del banco.");
+    }
+
+    const lector = res.body.getReader();
+    const decodificador = new TextDecoder();
+    let buffer = "";
+    let terminado = false;
+    while (!terminado) {
+      const { done, value } = await lector.read();
+      if (done) break;
+      buffer += decodificador.decode(value, { stream: true });
+      const bloques = buffer.split("\n\n");
+      buffer = bloques.pop();
+      for (const bloque of bloques) {
+        const linea = bloque.trim();
+        if (!linea.startsWith("data: ")) continue;
+        let evento;
+        try { evento = JSON.parse(linea.slice(6)); } catch { continue; }
+        if (evento.tipo === "progreso") {
+          if (doc) {
+            doc[`banco_${tipo}_total`] = evento.completadas;
+            doc[`banco_${tipo}_objetivo`] = evento.objetivo;
+          }
+          refrescar();
+        } else if (evento.tipo === "fin") {
+          terminado = true;
+          if (doc) {
+            doc[`banco_${tipo}_total`] = evento.total ?? doc[`banco_${tipo}_total`];
+            doc[`banco_${tipo}_estado`] = evento.total ? "completo" : "error";
+          }
+        }
+      }
+    }
+  } catch (e) {
+    if (doc) doc[`banco_${tipo}_estado`] = "error";
+    mostrarErrorGlobal(e.message || "No se pudo generar el banco.");
+  } finally {
+    refrescar();
+  }
+}
+
 function tarjetaDocumento(doc, modoCarpeta) {
   const nombreCorto = (doc.titulo || doc.nombre_archivo || "Documento").slice(0, 90);
   const meta = [
@@ -130,7 +235,9 @@ function tarjetaDocumento(doc, modoCarpeta) {
       urlGenerar: `/subida-pdf-generar-test/?documento_id=${doc.id}`,
       urlContinuar: doc.test_en_progreso ? `/subida-pdf-generar-test/?resume=${doc.test_en_progreso}` : null,
       textoGenerar: "Generar test"
-    })
+    }),
+    filaBanco(doc, "preguntas"),
+    filaBanco(doc, "tarjetas")
   ].join("");
 
   return `
@@ -221,6 +328,9 @@ function renderizarDocumentosDeCarpeta() {
   });
   contenedor.querySelectorAll(".documento-card-eliminar").forEach((boton) => {
     boton.addEventListener("click", () => eliminarDocumento(boton.dataset.id));
+  });
+  contenedor.querySelectorAll("[data-banco-generar]").forEach((boton) => {
+    boton.addEventListener("click", () => iniciarBanco(boton.dataset.id, boton.dataset.bancoGenerar));
   });
 }
 
@@ -322,6 +432,9 @@ function renderizarBusqueda(query) {
   });
   resultados.querySelectorAll(".documento-card-eliminar").forEach((boton) => {
     boton.addEventListener("click", () => eliminarDocumento(boton.dataset.id));
+  });
+  resultados.querySelectorAll("[data-banco-generar]").forEach((boton) => {
+    boton.addEventListener("click", () => iniciarBanco(boton.dataset.id, boton.dataset.bancoGenerar));
   });
 }
 
