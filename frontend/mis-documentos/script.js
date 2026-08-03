@@ -152,10 +152,13 @@ async function iniciarBanco(documentoId, tipo) {
 
   try {
     const token = await idToken();
-    const ruta = tipo === "preguntas" ? "generar-banco-preguntas" : "generar-banco-tarjetas";
-    const res = await fetch(`${BACKEND_URL}/documento/${documentoId}/${ruta}`, {
+    const ruta = tipo === "preguntas" ? "generar-banco-preguntas-desde-pdf" : "generar-banco-tarjetas-desde-pdf";
+    const formData = new FormData();
+    formData.append("documento_id", documentoId);
+    const res = await fetch(`${BACKEND_URL}/${ruta}`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
     });
     if (!res.ok || !res.body) {
       const datos = await res.json().catch(() => ({}));

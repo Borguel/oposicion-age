@@ -645,7 +645,8 @@ class TestBancoPreguntasYTarjetas:
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", side_effect=fake_adaptativo):
-                resp = client.post(f"/documento/{documento_sembrado}/generar-banco-preguntas",
+                resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
                 eventos = _eventos_sse(resp.get_data(as_text=True))
         finally:
@@ -654,10 +655,14 @@ class TestBancoPreguntasYTarjetas:
         assert resp.status_code == 200
         assert eventos[-1]["tipo"] == "fin"
         assert eventos[-1]["total"] == 2
+        # El evento "fin" trae ya las preguntas normalizadas/barajadas
+        # (03/08/2026): el frontend de "Subir PDF" arranca el test
+        # directamente con ellas, sin una segunda llamada a /banco-preguntas.
+        assert {p["pregunta"] for p in eventos[-1]["preguntas"]} == {"¿P1?", "¿P2?"}
         banco = db.leer(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado))
         assert banco["estado"] == "completo"
         assert banco["total"] == 2
-        assert [p["pregunta"] for p in banco["preguntas"]] == ["¿P1?", "¿P2?"]
+        assert {p["pregunta"] for p in banco["preguntas"]} == {"¿P1?", "¿P2?"}
         assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
 
     def test_generar_banco_preguntas_sin_resultados_marca_error_y_devuelve_uso(
@@ -665,7 +670,8 @@ class TestBancoPreguntasYTarjetas:
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", return_value=[]):
-                resp = client.post(f"/documento/{documento_sembrado}/generar-banco-preguntas",
+                resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
                 eventos = _eventos_sse(resp.get_data(as_text=True))
         finally:
@@ -681,7 +687,8 @@ class TestBancoPreguntasYTarjetas:
         sembrar_usuario_activo(db, "u1", plan="premium")
         parche = _con_sesion(client)
         try:
-            resp = client.post("/documento/no_existe/generar-banco-preguntas",
+            resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                data={"documento_id": "no_existe"},
                                 headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
@@ -692,7 +699,8 @@ class TestBancoPreguntasYTarjetas:
                     {"estado": "generando", "total": 3, "objetivo": 100})
         parche = _con_sesion(client)
         try:
-            resp = client.post(f"/documento/{documento_sembrado}/generar-banco-preguntas",
+            resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                data={"documento_id": documento_sembrado},
                                 headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
@@ -711,7 +719,8 @@ class TestBancoPreguntasYTarjetas:
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.generar_banco_tarjetas_adaptativo", side_effect=fake_adaptativo):
-                resp = client.post(f"/documento/{documento_sembrado}/generar-banco-tarjetas",
+                resp = client.post("/generar-banco-tarjetas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
                 eventos = _eventos_sse(resp.get_data(as_text=True))
         finally:
@@ -720,6 +729,7 @@ class TestBancoPreguntasYTarjetas:
         assert resp.status_code == 200
         assert eventos[-1]["tipo"] == "fin"
         assert eventos[-1]["total"] == 1
+        assert eventos[-1]["tarjetas"] == tarjetas_generadas
         banco = db.leer(("usuarios", "u1", "banco_tarjetas_pdf", documento_sembrado))
         assert banco["estado"] == "completo"
         assert banco["tarjetas"] == tarjetas_generadas

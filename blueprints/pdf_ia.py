@@ -624,22 +624,34 @@ def generar_tarjetas_desde_pdf():
 # escuchando cuando llegaba el evento "fin", el contenido generado se
 # perdía por completo pese a haberse cobrado ya el uso.
 # ===================================================================
-@bp.route('/documento/<documento_id>/generar-banco-preguntas', methods=['POST'])
+@bp.route('/generar-banco-preguntas-desde-pdf', methods=['POST'])
 @limiter.limit("5 per minute")
 @requiere_plan(db, "premium", global_check=True)
-def generar_banco_preguntas(documento_id):
-    documento = obtener_documento(db, g.uid, documento_id)
-    if not documento:
-        return jsonify({"error": "No se encontró el documento indicado."}), 404
-    banco_existente = obtener_banco(db, g.uid, documento_id, "preguntas")
-    if banco_existente and banco_existente.get("estado") == "generando":
-        return jsonify({"error": "Ya se está generando el banco de preguntas de este documento."}), 409
+def generar_banco_preguntas_desde_pdf():
+    # Ruta de entrada única (mismo patrón que /generar-test-desde-pdf, ver
+    # _resolver_texto_documento): acepta tanto un PDF nuevo (campo "pdf")
+    # como un documento ya subido (campo "documento_id"). Sustituye a la
+    # generación de un número fijo de preguntas como punto de entrada
+    # normal desde "Subir PDF" (03/08/2026, decisión explícita del
+    # usuario): en vez de preguntar "¿cuántas preguntas quieres?" y generar
+    # solo esas, se genera directamente el banco completo (máximo
+    # aprovechable del documento) y el frontend arranca el test con todo
+    # lo generado -- si luego quiere repetir con menos, ya puede elegir
+    # "Test de 10" desde "Mis documentos" sobre el mismo banco, sin volver
+    # a gastar en IA.
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
+    text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
+    if error:
+        return error
+    banco_existente = obtener_banco(db, g.uid, documento_id, "preguntas")
+    if banco_existente and banco_existente.get("estado") == "generando":
+        return jsonify({"error": "Ya se está generando el banco de preguntas de este documento."}), 409
 
-    text = documento["texto"]
-    nombre_archivo = documento.get("nombre_archivo", "documento.pdf")
+    max_length = 800000
+    if len(text) > max_length:
+        text = text[:max_length]
     preguntas_previas = obtener_preguntas_previas(db, g.uid, documento_id)
 
     def construir_prompt(n, fragmento=None):
@@ -678,30 +690,41 @@ def generar_banco_preguntas(documento_id):
     def generar():
         eventos = queue.Queue()
         acumulador_tokens = AcumuladorTokens()
+        preguntas_normalizadas = []
 
         def _en_hilo_de_fondo():
             def on_progreso(evento_progreso):
-                pregunta_normalizada = None
                 if evento_progreso.get("pregunta"):
-                    pregunta_normalizada = _normalizar_pregunta_pdf(dict(evento_progreso["pregunta"]))
-                    if pregunta_normalizada:
-                        anadir_al_banco(db, uid, documento_id, "preguntas", pregunta_normalizada)
+                    normalizada = _normalizar_pregunta_pdf(dict(evento_progreso["pregunta"]))
+                    if normalizada:
+                        anadir_al_banco(db, uid, documento_id, "preguntas", normalizada)
+                        preguntas_normalizadas.append(normalizada)
                 eventos.put({
                     "tipo": "progreso",
                     "completadas": evento_progreso["completadas"],
                     "objetivo": evento_progreso["objetivo"],
                 })
             try:
-                preguntas = generar_banco_preguntas_adaptativo(
+                generar_banco_preguntas_adaptativo(
                     construir_prompt, text, on_usage=acumulador_tokens.add, on_progreso=on_progreso,
                     preguntas_a_evitar=preguntas_previas,
                 )
-                estado_final = "completo" if preguntas else "error"
-                resultado = {"total": len(preguntas), "documento_id": documento_id, "nombre_archivo": nombre_archivo}
-                if not preguntas:
+                # "preguntas" en el evento "fin" (03/08/2026): antes solo se
+                # mandaba el total -- el frontend necesita el contenido real
+                # para poder arrancar el test directamente al terminar, sin
+                # una segunda llamada a /banco-preguntas. Se usan las
+                # versiones YA normalizadas/barajadas (mismas que se
+                # persistieron), no el valor de retorno crudo de
+                # generar_banco_preguntas_adaptativo.
+                estado_final = "completo" if preguntas_normalizadas else "error"
+                resultado = {
+                    "total": len(preguntas_normalizadas), "documento_id": documento_id,
+                    "nombre_archivo": nombre_archivo, "preguntas": preguntas_normalizadas,
+                }
+                if not preguntas_normalizadas:
                     resultado["error"] = "No se pudo generar ninguna pregunta a partir de este documento."
             except Exception:
-                logger.exception("Error en /generar-banco-preguntas")
+                logger.exception("Error en /generar-banco-preguntas-desde-pdf")
                 estado_final = "error"
                 resultado = {"error": "Error al generar el banco de preguntas."}
             finalizar_banco(db, uid, documento_id, "preguntas", estado=estado_final, mensaje_error=resultado.get("error"))
@@ -726,22 +749,26 @@ def generar_banco_preguntas(documento_id):
     )
 
 
-@bp.route('/documento/<documento_id>/generar-banco-tarjetas', methods=['POST'])
+@bp.route('/generar-banco-tarjetas-desde-pdf', methods=['POST'])
 @limiter.limit("5 per minute")
 @requiere_plan(db, "premium", global_check=True)
-def generar_banco_tarjetas(documento_id):
-    documento = obtener_documento(db, g.uid, documento_id)
-    if not documento:
-        return jsonify({"error": "No se encontró el documento indicado."}), 404
-    banco_existente = obtener_banco(db, g.uid, documento_id, "tarjetas")
-    if banco_existente and banco_existente.get("estado") == "generando":
-        return jsonify({"error": "Ya se está generando el banco de tarjetas de este documento."}), 409
+def generar_banco_tarjetas_desde_pdf():
+    # Ruta de entrada única: ver el comentario largo en
+    # generar_banco_preguntas_desde_pdf -- mismo motivo y mismo patrón,
+    # aplicado a tarjetas.
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
+    text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
+    if error:
+        return error
+    banco_existente = obtener_banco(db, g.uid, documento_id, "tarjetas")
+    if banco_existente and banco_existente.get("estado") == "generando":
+        return jsonify({"error": "Ya se está generando el banco de tarjetas de este documento."}), 409
 
-    text = documento["texto"]
-    nombre_archivo = documento.get("nombre_archivo", "documento.pdf")
+    max_length = 800000
+    if len(text) > max_length:
+        text = text[:max_length]
     uid = g.uid
     plan_actual = g.plan_actual
     registrar_uso(db, uid, "pdf_ia", plan_actual)
@@ -750,26 +777,33 @@ def generar_banco_tarjetas(documento_id):
     def generar():
         eventos = queue.Queue()
         acumulador_tokens = AcumuladorTokens()
+        tarjetas_generadas = []
 
         def _en_hilo_de_fondo():
             def on_progreso(evento_progreso):
                 if evento_progreso.get("tarjeta"):
                     anadir_al_banco(db, uid, documento_id, "tarjetas", evento_progreso["tarjeta"])
+                    tarjetas_generadas.append(evento_progreso["tarjeta"])
                 eventos.put({
                     "tipo": "progreso",
                     "completadas": evento_progreso["completadas"],
                     "objetivo": evento_progreso["objetivo"],
                 })
             try:
-                tarjetas = generar_banco_tarjetas_adaptativo(
+                generar_banco_tarjetas_adaptativo(
                     text, on_usage=acumulador_tokens.add, on_progreso=on_progreso,
                 )
-                estado_final = "completo" if tarjetas else "error"
-                resultado = {"total": len(tarjetas), "documento_id": documento_id, "nombre_archivo": nombre_archivo}
-                if not tarjetas:
+                # "tarjetas" en el evento "fin": ver el comentario largo en
+                # generar_banco_preguntas_desde_pdf -- mismo motivo.
+                estado_final = "completo" if tarjetas_generadas else "error"
+                resultado = {
+                    "total": len(tarjetas_generadas), "documento_id": documento_id,
+                    "nombre_archivo": nombre_archivo, "tarjetas": tarjetas_generadas,
+                }
+                if not tarjetas_generadas:
                     resultado["error"] = "No se pudo generar ninguna tarjeta a partir de este documento."
             except Exception:
-                logger.exception("Error en /generar-banco-tarjetas")
+                logger.exception("Error en /generar-banco-tarjetas-desde-pdf")
                 estado_final = "error"
                 resultado = {"error": "Error al generar el banco de tarjetas."}
             finalizar_banco(db, uid, documento_id, "tarjetas", estado=estado_final, mensaje_error=resultado.get("error"))
