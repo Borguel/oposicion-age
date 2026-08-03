@@ -4,7 +4,8 @@ UNA sola vez -- si el mismo PDF se reutiliza en otra herramienta (mismo
 texto, mismo hash), no debe volver a sumarse."""
 from documentos_pdf import (
     obtener_o_crear_documento, actualizar_titulo, obtener_tests_en_progreso_por_documento,
-    eliminar_documento,
+    eliminar_documento, listar_documentos, iniciar_banco, anadir_al_banco, finalizar_banco,
+    obtener_banco,
 )
 
 
@@ -135,3 +136,73 @@ class TestObtenerTestsEnProgresoPorDocumento:
 
     def test_sin_tests_devuelve_vacio(self, db):
         assert obtener_tests_en_progreso_por_documento(db, "u1") == {}
+
+
+class TestBancoPreguntasYTarjetas:
+    # Banco de preguntas/tarjetas pre-generado en segundo plano (03/08/2026):
+    # iniciar_banco/anadir_al_banco/finalizar_banco persisten de forma
+    # incremental (ver el comentario largo junto a iniciar_banco en
+    # documentos_pdf.py) para que un banco a medio generar no se pierda si
+    # el proceso se corta a mitad.
+
+    def test_obtener_banco_inexistente_devuelve_none(self, db):
+        assert obtener_banco(db, "u1", "d1", "preguntas") is None
+
+    def test_iniciar_banco_deja_estado_generando_y_sin_items(self, db):
+        iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf")
+        banco = obtener_banco(db, "u1", "d1", "preguntas")
+        assert banco["estado"] == "generando"
+        assert banco["objetivo"] == 100
+        assert banco["total"] == 0
+        assert banco["preguntas"] == []
+        assert banco["nombre_archivo"] == "a.pdf"
+
+    def test_anadir_al_banco_acumula_items_y_total(self, db):
+        iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf")
+        anadir_al_banco(db, "u1", "d1", "preguntas", {"pregunta": "¿Uno?"})
+        anadir_al_banco(db, "u1", "d1", "preguntas", {"pregunta": "¿Dos?"})
+        banco = obtener_banco(db, "u1", "d1", "preguntas")
+        assert banco["total"] == 2
+        assert [p["pregunta"] for p in banco["preguntas"]] == ["¿Uno?", "¿Dos?"]
+
+    def test_anadir_al_banco_de_tarjetas_usa_su_propia_coleccion(self, db):
+        iniciar_banco(db, "u1", "d1", "tarjetas", objetivo=50, nombre_archivo="a.pdf")
+        anadir_al_banco(db, "u1", "d1", "tarjetas", {"pregunta": "¿Qué es X?", "respuesta": "Y"})
+        banco_tarjetas = obtener_banco(db, "u1", "d1", "tarjetas")
+        assert banco_tarjetas["total"] == 1
+        # No debe haber tocado el banco de preguntas del mismo documento.
+        assert obtener_banco(db, "u1", "d1", "preguntas") is None
+
+    def test_finalizar_banco_completo(self, db):
+        iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf")
+        finalizar_banco(db, "u1", "d1", "preguntas", estado="completo")
+        assert obtener_banco(db, "u1", "d1", "preguntas")["estado"] == "completo"
+
+    def test_finalizar_banco_error_guarda_mensaje(self, db):
+        iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf")
+        finalizar_banco(db, "u1", "d1", "preguntas", estado="error", mensaje_error="Fallo de generación")
+        banco = obtener_banco(db, "u1", "d1", "preguntas")
+        assert banco["estado"] == "error"
+        assert banco["mensaje_error"] == "Fallo de generación"
+
+    def test_listar_documentos_incluye_resumen_del_banco(self, db):
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Doc 1", "nombre_archivo": "a.pdf"})
+        iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf")
+        anadir_al_banco(db, "u1", "d1", "preguntas", {"pregunta": "¿Uno?"})
+        finalizar_banco(db, "u1", "d1", "preguntas", estado="completo")
+
+        documentos = {d["id"]: d for d in listar_documentos(db, "u1")}
+        assert documentos["d1"]["banco_preguntas_estado"] == "completo"
+        assert documentos["d1"]["banco_preguntas_total"] == 1
+        assert documentos["d1"]["banco_preguntas_objetivo"] == 100
+        # Sin banco de tarjetas para este documento: debe caer en los
+        # valores por defecto en vez de romper.
+        assert documentos["d1"]["banco_tarjetas_estado"] == "sin_generar"
+        assert documentos["d1"]["banco_tarjetas_total"] == 0
+
+    def test_listar_documentos_sin_ningun_banco_usa_valores_por_defecto(self, db):
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Doc 1", "nombre_archivo": "a.pdf"})
+        documentos = {d["id"]: d for d in listar_documentos(db, "u1")}
+        assert documentos["d1"]["banco_preguntas_estado"] == "sin_generar"
+        assert documentos["d1"]["banco_preguntas_total"] == 0
+        assert documentos["d1"]["banco_tarjetas_estado"] == "sin_generar"

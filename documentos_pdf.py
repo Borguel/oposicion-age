@@ -145,6 +145,73 @@ def obtener_tests_en_progreso_por_documento(db, uid):
     return {documento_id: test_id for documento_id, (test_id, _fecha) in por_documento.items()}
 
 
+def _banco_ref(db, uid, documento_id, tipo):
+    coleccion = "banco_preguntas_pdf" if tipo == "preguntas" else "banco_tarjetas_pdf"
+    return db.collection("usuarios").document(uid).collection(coleccion).document(documento_id)
+
+
+def obtener_banco(db, uid, documento_id, tipo):
+    doc = _banco_ref(db, uid, documento_id, tipo).get()
+    return doc.to_dict() if doc.exists else None
+
+
+def iniciar_banco(db, uid, documento_id, tipo, objetivo, nombre_archivo):
+    """Crea (o reinicia) el banco de preguntas/tarjetas de un documento antes
+    de arrancar la generación adaptativa en segundo plano (ver
+    generar_banco_preguntas_adaptativo / generar_banco_tarjetas_adaptativo),
+    para que "Mis documentos" pueda mostrar "Generando..." desde el primer
+    momento y anadir_al_banco tenga un documento donde ir acumulando."""
+    ahora = datetime.utcnow().isoformat()
+    campo_items = "preguntas" if tipo == "preguntas" else "tarjetas"
+    _banco_ref(db, uid, documento_id, tipo).set({
+        "documento_id": documento_id,
+        "nombre_archivo": nombre_archivo,
+        campo_items: [],
+        "estado": "generando",
+        "objetivo": objetivo,
+        "total": 0,
+        "iniciado": ahora,
+        "actualizado": ahora,
+    })
+
+
+def anadir_al_banco(db, uid, documento_id, tipo, item):
+    """Persiste una pregunta/tarjeta aceptada en cuanto se genera (on_progreso
+    de la generación adaptativa), en vez de esperar al final: así un banco a
+    medio generar sigue siendo utilizable aunque el proceso se corte a
+    mitad (reinicio del dyno, error de DeepSeek, etc.)."""
+    from firebase_admin import firestore
+    campo_items = "preguntas" if tipo == "preguntas" else "tarjetas"
+    _banco_ref(db, uid, documento_id, tipo).update({
+        campo_items: firestore.ArrayUnion([item]),
+        "total": firestore.Increment(1),
+        "actualizado": datetime.utcnow().isoformat(),
+    })
+
+
+def finalizar_banco(db, uid, documento_id, tipo, estado="completo", mensaje_error=None):
+    actualizacion = {"estado": estado, "actualizado": datetime.utcnow().isoformat()}
+    if mensaje_error:
+        actualizacion["mensaje_error"] = mensaje_error
+    _banco_ref(db, uid, documento_id, tipo).update(actualizacion)
+
+
+def _resumen_bancos(db, uid, tipo):
+    """{documento_id: {estado, total, objetivo}} de todos los bancos de un
+    tipo (preguntas o tarjetas) del usuario, para listar_documentos: una
+    sola lectura de colección en vez de una por documento."""
+    coleccion = "banco_preguntas_pdf" if tipo == "preguntas" else "banco_tarjetas_pdf"
+    resultado = {}
+    for doc in db.collection("usuarios").document(uid).collection(coleccion).stream():
+        datos = doc.to_dict() or {}
+        resultado[doc.id] = {
+            "estado": datos.get("estado", "sin_generar"),
+            "total": datos.get("total", 0),
+            "objetivo": datos.get("objetivo", 0),
+        }
+    return resultado
+
+
 def marcar_generado(db, uid, documento_id, tipo, num_tarjetas_nuevas=0):
     """Actualiza los indicadores del documento tras guardar contenido nuevo
     generado a partir de él (se llama desde las rutas /guardar-*-pdf)."""
@@ -165,9 +232,13 @@ def marcar_generado(db, uid, documento_id, tipo, num_tarjetas_nuevas=0):
 
 def listar_documentos(db, uid):
     docs_ref = db.collection("usuarios").document(uid).collection("documentos")
+    bancos_preguntas = _resumen_bancos(db, uid, "preguntas")
+    bancos_tarjetas = _resumen_bancos(db, uid, "tarjetas")
     resultado = []
     for doc in docs_ref.stream():
         datos = doc.to_dict()
+        banco_preguntas = bancos_preguntas.get(doc.id, {})
+        banco_tarjetas = bancos_tarjetas.get(doc.id, {})
         resultado.append({
             "id": doc.id,
             "titulo": datos.get("titulo"),
@@ -180,6 +251,16 @@ def listar_documentos(db, uid):
             "num_tarjetas": datos.get("num_tarjetas", 0),
             "num_tests": datos.get("num_tests", 0),
             "ultima_actividad": datos.get("ultima_actividad"),
+            # Banco de preguntas/tarjetas pre-generado (03/08/2026, ver el
+            # comentario largo junto a iniciar_banco): estado="sin_generar"
+            # cuando nunca se ha pedido, para que el frontend pueda decidir
+            # entre "Generar banco" y "Generando.../N disponibles".
+            "banco_preguntas_estado": banco_preguntas.get("estado", "sin_generar"),
+            "banco_preguntas_total": banco_preguntas.get("total", 0),
+            "banco_preguntas_objetivo": banco_preguntas.get("objetivo", 0),
+            "banco_tarjetas_estado": banco_tarjetas.get("estado", "sin_generar"),
+            "banco_tarjetas_total": banco_tarjetas.get("total", 0),
+            "banco_tarjetas_objetivo": banco_tarjetas.get("objetivo", 0),
         })
     resultado.sort(key=lambda d: d.get("ultima_actividad") or "", reverse=True)
     return resultado

@@ -618,3 +618,166 @@ class TestMisDocumentos:
         assert resp.status_code == 200
         documentos = {d["id"]: d for d in resp.get_json()["documentos"]}
         assert documentos[documento_sembrado]["test_en_progreso"] is None
+
+
+class TestBancoPreguntasYTarjetas:
+    """Rutas del banco pre-generado (03/08/2026): generan en segundo plano
+    hasta el tope del documento y persisten cada item aceptado de forma
+    incremental (ver documentos_pdf.iniciar_banco/anadir_al_banco/
+    finalizar_banco), en vez de perderse si nadie escucha el evento "fin"
+    del SSE."""
+
+    def test_generar_banco_preguntas_persiste_de_forma_incremental_y_finaliza_completo(
+            self, client, db, documento_sembrado):
+        preguntas_generadas = [
+            {"pregunta": "¿P1?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+             "respuesta_correcta": "A", "explicacion": "porque sí"},
+            {"pregunta": "¿P2?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+             "respuesta_correcta": "B", "explicacion": "porque sí"},
+        ]
+
+        def fake_adaptativo(construir_prompt, texto, on_usage=None, on_progreso=None, preguntas_a_evitar=None):
+            for i, p in enumerate(preguntas_generadas, start=1):
+                if on_progreso:
+                    on_progreso({"completadas": i, "objetivo": 100, "pregunta": p})
+            return preguntas_generadas
+
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", side_effect=fake_adaptativo):
+                resp = client.post(f"/documento/{documento_sembrado}/generar-banco-preguntas",
+                                    headers={"Authorization": "Bearer x"})
+                eventos = _eventos_sse(resp.get_data(as_text=True))
+        finally:
+            parche.stop()
+
+        assert resp.status_code == 200
+        assert eventos[-1]["tipo"] == "fin"
+        assert eventos[-1]["total"] == 2
+        banco = db.leer(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado))
+        assert banco["estado"] == "completo"
+        assert banco["total"] == 2
+        assert [p["pregunta"] for p in banco["preguntas"]] == ["¿P1?", "¿P2?"]
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+
+    def test_generar_banco_preguntas_sin_resultados_marca_error_y_devuelve_uso(
+            self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", return_value=[]):
+                resp = client.post(f"/documento/{documento_sembrado}/generar-banco-preguntas",
+                                    headers={"Authorization": "Bearer x"})
+                eventos = _eventos_sse(resp.get_data(as_text=True))
+        finally:
+            parche.stop()
+
+        assert eventos[-1]["tipo"] == "fin"
+        assert "error" in eventos[-1]
+        banco = db.leer(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado))
+        assert banco["estado"] == "error"
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0
+
+    def test_generar_banco_preguntas_documento_inexistente_da_404(self, client, db):
+        sembrar_usuario_activo(db, "u1", plan="premium")
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/documento/no_existe/generar-banco-preguntas",
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 404
+
+    def test_generar_banco_preguntas_ya_en_marcha_da_409(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado),
+                    {"estado": "generando", "total": 3, "objetivo": 100})
+        parche = _con_sesion(client)
+        try:
+            resp = client.post(f"/documento/{documento_sembrado}/generar-banco-preguntas",
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 409
+
+    def test_generar_banco_tarjetas_persiste_de_forma_incremental_y_finaliza_completo(
+            self, client, db, documento_sembrado):
+        tarjetas_generadas = [{"pregunta": "¿Qué es X?", "respuesta": "Y"}]
+
+        def fake_adaptativo(texto, on_usage=None, on_progreso=None):
+            for i, t in enumerate(tarjetas_generadas, start=1):
+                if on_progreso:
+                    on_progreso({"completadas": i, "objetivo": 100, "tarjeta": t})
+            return tarjetas_generadas
+
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_tarjetas_adaptativo", side_effect=fake_adaptativo):
+                resp = client.post(f"/documento/{documento_sembrado}/generar-banco-tarjetas",
+                                    headers={"Authorization": "Bearer x"})
+                eventos = _eventos_sse(resp.get_data(as_text=True))
+        finally:
+            parche.stop()
+
+        assert resp.status_code == 200
+        assert eventos[-1]["tipo"] == "fin"
+        assert eventos[-1]["total"] == 1
+        banco = db.leer(("usuarios", "u1", "banco_tarjetas_pdf", documento_sembrado))
+        assert banco["estado"] == "completo"
+        assert banco["tarjetas"] == tarjetas_generadas
+
+    def test_get_banco_preguntas_devuelve_estado_y_contenido(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {
+            "estado": "completo", "total": 2, "objetivo": 100, "nombre_archivo": "doc.pdf",
+            "preguntas": [{"pregunta": "¿P1?"}, {"pregunta": "¿P2?"}],
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.get(f"/documento/{documento_sembrado}/banco-preguntas",
+                               headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        datos = resp.get_json()
+        assert datos["estado"] == "completo"
+        assert datos["total"] == 2
+        assert len(datos["preguntas"]) == 2
+
+    def test_get_banco_preguntas_sin_generar_devuelve_valores_por_defecto(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.get(f"/documento/{documento_sembrado}/banco-preguntas",
+                               headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        datos = resp.get_json()
+        assert datos["estado"] == "sin_generar"
+        assert datos["preguntas"] == []
+
+    def test_get_banco_preguntas_modo_aleatorias_recorta_a_la_cantidad_pedida(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {
+            "estado": "completo", "total": 5, "objetivo": 100,
+            "preguntas": [{"pregunta": f"¿P{i}?"} for i in range(5)],
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.get(f"/documento/{documento_sembrado}/banco-preguntas?modo=aleatorias&cantidad=2",
+                               headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert len(resp.get_json()["preguntas"]) == 2
+
+    def test_get_banco_tarjetas_devuelve_estado_y_contenido(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "banco_tarjetas_pdf", documento_sembrado), {
+            "estado": "generando", "total": 1, "objetivo": 100,
+            "tarjetas": [{"pregunta": "¿Qué es X?", "respuesta": "Y"}],
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.get(f"/documento/{documento_sembrado}/banco-tarjetas",
+                               headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        datos = resp.get_json()
+        assert datos["estado"] == "generando"
+        assert datos["tarjetas"] == [{"pregunta": "¿Qué es X?", "respuesta": "Y"}]

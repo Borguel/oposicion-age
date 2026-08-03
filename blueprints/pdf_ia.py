@@ -21,14 +21,19 @@ from rate_limiter import limiter
 from documentos_pdf import (
     obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta,
     listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo, obtener_preguntas_previas,
-    obtener_tests_en_progreso_por_documento, eliminar_documento
+    obtener_tests_en_progreso_por_documento, eliminar_documento,
+    iniciar_banco, anadir_al_banco, finalizar_banco, obtener_banco,
 )
 from guardar_resultado import guardar_resultado_en_firestore
-from test_generator import generar_preguntas_ia_en_lotes
+from test_generator import (
+    generar_preguntas_ia_en_lotes, generar_banco_preguntas_adaptativo, TOPE_BANCO_PREGUNTAS,
+)
 from utils import barajar_opciones_pregunta
 from deepseek_utils import generar_documento_largo_por_partes
 from coste_ia import AcumuladorTokens
-from tarjetas_generator import generar_tarjetas_verificadas
+from tarjetas_generator import (
+    generar_tarjetas_verificadas, generar_banco_tarjetas_adaptativo, TOPE_BANCO_TARJETAS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +80,26 @@ def _resolver_texto_documento(plan_actual):
         return None, None, None, (jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400)
     documento_id, documento = obtener_o_crear_documento(db, g.uid, text, pdf_file.filename, numero_paginas)
     return text, documento_id, pdf_file.filename, None
+
+
+def _normalizar_pregunta_pdf(p):
+    """Deja una pregunta cruda de generar_preguntas_ia_en_lotes/
+    generar_banco_preguntas_adaptativo lista para mostrarse o guardarse:
+    rellena campos opcionales que falten, homogeneiza tipos y baraja las
+    opciones (para que la correcta no caiga siempre en la misma letra).
+    Devuelve None si la pregunta no trae lo mínimo imprescindible."""
+    if not all(k in p for k in ["pregunta", "opciones", "respuesta_correcta"]):
+        return None
+    if "explicacion" not in p:
+        p["explicacion"] = "Explicación no disponible."
+    p["pregunta"] = str(p["pregunta"]).strip() if p["pregunta"] else "Pregunta no disponible"
+    p["explicacion"] = str(p["explicacion"]).strip() if p["explicacion"] else "Explicación no disponible"
+    if not isinstance(p["opciones"], dict):
+        p["opciones"] = {}
+    for key in list(p["opciones"].keys()):
+        p["opciones"][key] = str(p["opciones"][key]).strip() if p["opciones"][key] else "Opción no disponible"
+    p["respuesta_correcta"] = str(p["respuesta_correcta"]).upper() if p["respuesta_correcta"] else "A"
+    return barajar_opciones_pregunta(p)
 
 
 def _extraer_json_array(texto):
@@ -451,19 +476,10 @@ def generar_test_desde_pdf():
                         "respuesta_cruda": "; ".join(errores_lotes)[:500]
                     }
                 else:
-                    preguntas_validadas = []
-                    for p in preguntas:
-                        if all(k in p for k in ["pregunta", "opciones", "respuesta_correcta"]):
-                            if "explicacion" not in p:
-                                p["explicacion"] = "Explicación no disponible."
-                            p["pregunta"] = str(p["pregunta"]).strip() if p["pregunta"] else "Pregunta no disponible"
-                            p["explicacion"] = str(p["explicacion"]).strip() if p["explicacion"] else "Explicación no disponible"
-                            if not isinstance(p["opciones"], dict):
-                                p["opciones"] = {}
-                            for key in list(p["opciones"].keys()):
-                                p["opciones"][key] = str(p["opciones"][key]).strip() if p["opciones"][key] else "Opción no disponible"
-                            p["respuesta_correcta"] = str(p["respuesta_correcta"]).upper() if p["respuesta_correcta"] else "A"
-                            preguntas_validadas.append(barajar_opciones_pregunta(p))
+                    preguntas_validadas = [
+                        normalizada for p in preguntas
+                        if (normalizada := _normalizar_pregunta_pdf(p)) is not None
+                    ]
                     if not preguntas_validadas:
                         resultado = {"test": [], "error": "La IA generó preguntas vacías o inválidas."}
                     else:
@@ -591,6 +607,235 @@ def generar_tarjetas_desde_pdf():
         mimetype="text/event-stream",
         headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
     )
+
+
+# ===================================================================
+# BANCO DE PREGUNTAS/TARJETAS (03/08/2026): en vez de generar un número fijo
+# de preguntas/tarjetas por petición y descartar el resto del documento, se
+# genera en segundo plano el máximo aprovechable de un documento (hasta
+# TOPE_BANCO_PREGUNTAS/TOPE_BANCO_TARJETAS, ver generar_banco_preguntas_
+# adaptativo/generar_banco_tarjetas_adaptativo) y se guarda de forma
+# incremental en Firestore (usuarios/{uid}/banco_preguntas_pdf|
+# banco_tarjetas_pdf/{documento_id}, ver documentos_pdf.py) para que quede
+# disponible en "Mis documentos" aunque el usuario cierre la pestaña antes
+# de que termine -- mismo motivo que ya justificaba correr la generación en
+# un hilo daemon desligado de la petición SSE (ver el comentario en
+# generar_test_desde_pdf), llevado un paso más allá: antes, si nadie estaba
+# escuchando cuando llegaba el evento "fin", el contenido generado se
+# perdía por completo pese a haberse cobrado ya el uso.
+# ===================================================================
+@bp.route('/documento/<documento_id>/generar-banco-preguntas', methods=['POST'])
+@limiter.limit("5 per minute")
+@requiere_plan(db, "premium", global_check=True)
+def generar_banco_preguntas(documento_id):
+    documento = obtener_documento(db, g.uid, documento_id)
+    if not documento:
+        return jsonify({"error": "No se encontró el documento indicado."}), 404
+    banco_existente = obtener_banco(db, g.uid, documento_id, "preguntas")
+    if banco_existente and banco_existente.get("estado") == "generando":
+        return jsonify({"error": "Ya se está generando el banco de preguntas de este documento."}), 409
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
+
+    text = documento["texto"]
+    nombre_archivo = documento.get("nombre_archivo", "documento.pdf")
+    preguntas_previas = obtener_preguntas_previas(db, g.uid, documento_id)
+
+    def construir_prompt(n, fragmento=None):
+        documento_texto = fragmento if fragmento is not None else text
+        system_prompt = (
+            f"Eres un experto en la elaboración de preguntas tipo test para oposiciones oficiales en España. "
+            f"Tu tarea es generar EXACTAMENTE {n} preguntas de opción múltiple de alta calidad, "
+            f"basadas únicamente en el documento proporcionado. Cada pregunta debe cumplir lo siguiente:\n"
+            f"1. **Formato**: pregunta clara y directa, seguida de cuatro opciones (A, B, C, D).\n"
+            f"2. **Precisión**: si el documento menciona leyes, artículos, plazos, funciones, definiciones, principios o procedimientos, la pregunta debe reflejarlos con exactitud. Si citas un número de artículo, di TAMBIÉN en la misma frase el nombre de la ley o norma a la que pertenece (tal como aparece en el documento) -- un artículo mencionado sin decir de qué norma es deja a quien lo lee sin poder ubicarlo.\n"
+            f"3. **Respuesta correcta**: debe ser inequívoca y extraída directamente del texto.\n"
+            f"4. **Distractores**: deben ser técnicamente plausibles, basados en confusiones comunes, errores típicos o elementos similares del propio documento.\n"
+            f"5. **Neutralidad**: evita lenguaje coloquial, ambigüedades, opiniones o preguntas triviales.\n"
+            f"6. **Explicación**: repasa TODAS las opciones, una por línea y en orden, con este formato exacto: \"A) es correcta/incorrecta porque... B) es correcta/incorrecta porque... C) ... D) ...\", citando o basándote en el contenido del documento.\n"
+            f"7. **Autocontenida**: quien responde el test NUNCA ve el documento de origen, solo la pregunta. Nunca remitas a \"el documento\", \"el contenido\", \"el texto\" o \"lo mencionado/anterior\" (p. ej. \"¿qué tienen en común los X mencionados en el contenido?\") -- nombra tú mismo, explícitamente, de qué elementos concretos hablas.\n"
+            f"8. **Sin siglas**: nunca abrevies el nombre de una ley o norma con siglas (\"CE\", \"TREBEP\", \"LPAC\"...) ni escribas \"art.\" en vez de \"artículo\" -- los exámenes oficiales de esta oposición escriben siempre el nombre completo, tal como aparece en el documento. Esto incluye también abreviar el tipo de norma delante de su número (\"LO 3/2007\", \"RD 203/2021\"...) en vez de escribirlo entero (\"Ley Orgánica 3/2007\", \"Real Decreto 203/2021\").\n"
+            f"9. **Diversidad**: las {n} preguntas deben tratar {n} hechos, artículos, plazos o cifras DISTINTOS entre sí -- si el documento repite el mismo dato en varios sitios, pregúntalo como mucho una vez; no reformules la misma pregunta con otro enunciado ni dediques dos preguntas al mismo hecho central.\n"
+            f"Devuelve SOLO un array JSON válido con este formato exacto:\n"
+            f"[{{\"pregunta\": \"...\", \"opciones\": {{\"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\"}}, \"respuesta_correcta\": \"A\", \"explicacion\": \"...\"}}]\n"
+            f"NO añadas texto adicional antes ni después del array JSON."
+        )
+        if fragmento is not None:
+            system_prompt += (
+                "\n\nIMPORTANTE: el documento de abajo es SOLO UNA PARTE del documento completo -- hay más "
+                "contenido en otras partes que no ves aquí (ya se están generando preguntas sobre ellas por "
+                "separado). Basa tus preguntas ÚNICAMENTE en lo que aparece en este fragmento, sin dar por "
+                "hecho ni inventar contenido de las partes que no ves."
+            )
+        return f"{system_prompt}\n\nDocumento para crear preguntas test:\n{documento_texto}"
+
+    uid = g.uid
+    plan_actual = g.plan_actual
+    registrar_uso(db, uid, "pdf_ia", plan_actual)
+    iniciar_banco(db, uid, documento_id, "preguntas", TOPE_BANCO_PREGUNTAS, nombre_archivo)
+
+    def generar():
+        eventos = queue.Queue()
+        acumulador_tokens = AcumuladorTokens()
+
+        def _en_hilo_de_fondo():
+            def on_progreso(evento_progreso):
+                pregunta_normalizada = None
+                if evento_progreso.get("pregunta"):
+                    pregunta_normalizada = _normalizar_pregunta_pdf(dict(evento_progreso["pregunta"]))
+                    if pregunta_normalizada:
+                        anadir_al_banco(db, uid, documento_id, "preguntas", pregunta_normalizada)
+                eventos.put({
+                    "tipo": "progreso",
+                    "completadas": evento_progreso["completadas"],
+                    "objetivo": evento_progreso["objetivo"],
+                })
+            try:
+                preguntas = generar_banco_preguntas_adaptativo(
+                    construir_prompt, text, on_usage=acumulador_tokens.add, on_progreso=on_progreso,
+                    preguntas_a_evitar=preguntas_previas,
+                )
+                estado_final = "completo" if preguntas else "error"
+                resultado = {"total": len(preguntas), "documento_id": documento_id, "nombre_archivo": nombre_archivo}
+                if not preguntas:
+                    resultado["error"] = "No se pudo generar ninguna pregunta a partir de este documento."
+            except Exception:
+                logger.exception("Error en /generar-banco-preguntas")
+                estado_final = "error"
+                resultado = {"error": "Error al generar el banco de preguntas."}
+            finalizar_banco(db, uid, documento_id, "preguntas", estado=estado_final, mensaje_error=resultado.get("error"))
+            if estado_final == "error":
+                devolver_uso(db, uid, "pdf_ia", plan_actual)
+            acumulador_tokens.volcar_directo(db, uid)
+            eventos.put({"tipo": "fin", **resultado})
+
+        hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
+        hilo.start()
+
+        while True:
+            evento = eventos.get()
+            yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
+            if evento["tipo"] == "fin":
+                break
+
+    return Response(
+        stream_with_context(generar()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
+    )
+
+
+@bp.route('/documento/<documento_id>/generar-banco-tarjetas', methods=['POST'])
+@limiter.limit("5 per minute")
+@requiere_plan(db, "premium", global_check=True)
+def generar_banco_tarjetas(documento_id):
+    documento = obtener_documento(db, g.uid, documento_id)
+    if not documento:
+        return jsonify({"error": "No se encontró el documento indicado."}), 404
+    banco_existente = obtener_banco(db, g.uid, documento_id, "tarjetas")
+    if banco_existente and banco_existente.get("estado") == "generando":
+        return jsonify({"error": "Ya se está generando el banco de tarjetas de este documento."}), 409
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
+
+    text = documento["texto"]
+    nombre_archivo = documento.get("nombre_archivo", "documento.pdf")
+    uid = g.uid
+    plan_actual = g.plan_actual
+    registrar_uso(db, uid, "pdf_ia", plan_actual)
+    iniciar_banco(db, uid, documento_id, "tarjetas", TOPE_BANCO_TARJETAS, nombre_archivo)
+
+    def generar():
+        eventos = queue.Queue()
+        acumulador_tokens = AcumuladorTokens()
+
+        def _en_hilo_de_fondo():
+            def on_progreso(evento_progreso):
+                if evento_progreso.get("tarjeta"):
+                    anadir_al_banco(db, uid, documento_id, "tarjetas", evento_progreso["tarjeta"])
+                eventos.put({
+                    "tipo": "progreso",
+                    "completadas": evento_progreso["completadas"],
+                    "objetivo": evento_progreso["objetivo"],
+                })
+            try:
+                tarjetas = generar_banco_tarjetas_adaptativo(
+                    text, on_usage=acumulador_tokens.add, on_progreso=on_progreso,
+                )
+                estado_final = "completo" if tarjetas else "error"
+                resultado = {"total": len(tarjetas), "documento_id": documento_id, "nombre_archivo": nombre_archivo}
+                if not tarjetas:
+                    resultado["error"] = "No se pudo generar ninguna tarjeta a partir de este documento."
+            except Exception:
+                logger.exception("Error en /generar-banco-tarjetas")
+                estado_final = "error"
+                resultado = {"error": "Error al generar el banco de tarjetas."}
+            finalizar_banco(db, uid, documento_id, "tarjetas", estado=estado_final, mensaje_error=resultado.get("error"))
+            if estado_final == "error":
+                devolver_uso(db, uid, "pdf_ia", plan_actual)
+            acumulador_tokens.volcar_directo(db, uid)
+            eventos.put({"tipo": "fin", **resultado})
+
+        hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
+        hilo.start()
+
+        while True:
+            evento = eventos.get()
+            yield f"data: {json.dumps(evento, ensure_ascii=False)}\n\n"
+            if evento["tipo"] == "fin":
+                break
+
+    return Response(
+        stream_with_context(generar()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
+    )
+
+
+@bp.route('/documento/<documento_id>/banco-preguntas', methods=['GET'])
+@requiere_plan(db, "premium", global_check=True)
+def documento_banco_preguntas(documento_id):
+    banco = obtener_banco(db, g.uid, documento_id, "preguntas") or {}
+    preguntas = banco.get("preguntas", [])
+    modo = request.args.get("modo", "todas")
+    if modo == "aleatorias" and preguntas:
+        try:
+            cantidad = int(request.args.get("cantidad", 10))
+        except (TypeError, ValueError):
+            cantidad = 10
+        cantidad = max(1, min(cantidad, len(preguntas)))
+        preguntas = random.sample(preguntas, cantidad)
+    return jsonify({
+        "estado": banco.get("estado", "sin_generar"),
+        "total": banco.get("total", 0),
+        "objetivo": banco.get("objetivo", 0),
+        "nombre_archivo": banco.get("nombre_archivo"),
+        "preguntas": preguntas,
+    })
+
+
+@bp.route('/documento/<documento_id>/banco-tarjetas', methods=['GET'])
+@requiere_plan(db, "premium", global_check=True)
+def documento_banco_tarjetas(documento_id):
+    banco = obtener_banco(db, g.uid, documento_id, "tarjetas") or {}
+    tarjetas = banco.get("tarjetas", [])
+    modo = request.args.get("modo", "todas")
+    if modo == "aleatorias" and tarjetas:
+        try:
+            cantidad = int(request.args.get("cantidad", 10))
+        except (TypeError, ValueError):
+            cantidad = 10
+        cantidad = max(1, min(cantidad, len(tarjetas)))
+        tarjetas = random.sample(tarjetas, cantidad)
+    return jsonify({
+        "estado": banco.get("estado", "sin_generar"),
+        "total": banco.get("total", 0),
+        "objetivo": banco.get("objetivo", 0),
+        "nombre_archivo": banco.get("nombre_archivo"),
+        "tarjetas": tarjetas,
+    })
 
 
 # Nº de caracteres del PDF que se guardan para poder chatear sobre él. Se
