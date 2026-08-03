@@ -1200,11 +1200,33 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         # agotar -- y el dedup atómico (_intentar_aceptar) puede actuar en
         # cuanto CADA candidata individual termina, en vez de esperar a que
         # el lote entero de 5 resuelva su veredicto conjunto.
+        # texto_fuente_lote: el FRAGMENTO de este lote si lo hay, no el
+        # documento completo -- optimización de tiempo (03/08/2026, bug
+        # real, documento real): la verificación individual de arriba
+        # pasaba SIEMPRE texto_fuente (el documento COMPLETO, hasta
+        # 300000+ caracteres en documentos grandes) a cada llamada de
+        # verificación, aunque la candidata se hubiera generado
+        # ÚNICAMENTE a partir de 'fragmento' -- el propio prompt de
+        # generación se lo exige explícitamente ("Basa tus preguntas
+        # ÚNICAMENTE en lo que aparece en este fragmento", ver
+        # blueprints/pdf_ia.py). Verificar contra el documento entero
+        # cuando basta con el fragmento multiplicaba sin necesidad el
+        # contexto que el verificador (con thinking_enabled=True) tiene
+        # que leer y razonar en cada llamada -- la causa más probable de
+        # varias llamadas de más de 60s y un caso real de finish_reason
+        # truncado (8000 tokens SOLO razonando) vistos en producción con
+        # documentos de más de 300000 caracteres. Verificar contra el
+        # fragmento es igual de riguroso (es la MISMA porción de texto de
+        # la que la candidata debía salir) y mucho más rápido. Cuando no
+        # hay fragmento (documento corto, sin fragmentar) se sigue usando
+        # texto_fuente completo, como antes.
+        texto_fuente_lote = fragmento if fragmento is not None else texto_fuente
+
         aceptadas = []
         if candidatas_ok_local:
             with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(candidatas_ok_local))) as executor:
                 futuros = {
-                    executor.submit(_verificar_pregunta, candidata, texto_fuente, on_usage): candidata
+                    executor.submit(_verificar_pregunta, candidata, texto_fuente_lote, on_usage): candidata
                     for candidata in candidatas_ok_local
                 }
                 for futuro in as_completed(futuros):

@@ -1299,6 +1299,60 @@ class TestGenerarPreguntasIaEnLotes:
         assert errores == []
         assert llamadas["total"] == 6
 
+    def test_verificacion_individual_usa_el_fragmento_del_lote_no_el_documento_completo(self):
+        # Optimización de tiempo (03/08/2026, bug real, documento real):
+        # cada llamada de verificación pasaba SIEMPRE texto_fuente (el
+        # documento COMPLETO, hasta 300000+ caracteres en documentos
+        # grandes) aunque la candidata se hubiera generado ÚNICAMENTE a
+        # partir de 'fragmento' -- el propio prompt de generación se lo
+        # exige explícitamente (ver blueprints/pdf_ia.py: "Basa tus
+        # preguntas ÚNICAMENTE en lo que aparece en este fragmento").
+        # Verificar contra el documento entero cuando basta con el
+        # fragmento multiplicaba sin necesidad el contexto que el
+        # verificador (con thinking_enabled=True) tiene que leer y
+        # razonar -- causa más probable de varias llamadas de más de 60s
+        # (una de más de 130s) y un finish_reason truncado vistos en
+        # producción con un documento de más de 300000 caracteres. Aquí,
+        # con un documento real de 10 artículos repartido en 4 lotes
+        # (mismo texto que test_un_articulo_largo_no_se_reparte_entre_dos_lotes),
+        # cada llamada de verificación debe recibir solo el FRAGMENTO de
+        # su lote (más corto que el documento completo), no el documento
+        # entero.
+        relleno = "Frase de relleno para simular contenido real de un artículo constitucional. " * 8
+        texto = "\n\n".join(f"Artículo {n}.\n1. {relleno}" for n in range(160, 170))
+        assert len(texto) >= 4 * 400
+
+        def construir_prompt(n, fragmento=None):
+            documento = fragmento if fragmento is not None else texto
+            return f"Genera {n} preguntas.\n\nDocumento para crear preguntas test:\n{documento}"
+
+        mensajes_de_verificacion = []
+        contador = itertools.count()
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                mensajes_de_verificacion.append(messages[1]["content"])
+                return json.dumps({"valido": True, "problemas": []})
+            # Cada lote debe generar una candidata DISTINTA (si todas fueran
+            # idénticas, el dedup rechazaría las de los lotes 2-4 y forzaría
+            # un recambio -- que sí verifica contra texto_fuente completo a
+            # propósito, contaminando esta comprobación).
+            return json.dumps([
+                {"pregunta": f"¿Pregunta {next(contador)}?",
+                 "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
+            ])
+
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            generar_preguntas_ia_en_lotes(construir_prompt, 4, texto, tamano_lote=1)
+
+        assert mensajes_de_verificacion
+        for mensaje in mensajes_de_verificacion:
+            documento_verificado = mensaje.split("DOCUMENTO:\n", 1)[1].split("\n\nPREGUNTA A VERIFICAR:", 1)[0]
+            assert len(documento_verificado) < len(texto), (
+                "la verificación recibió el documento completo, no el fragmento"
+            )
+
 
 class TestFragmentosPorLote:
     def test_reparto_intercalado_cada_fragmento_abarca_todo_el_documento(self):
