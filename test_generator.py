@@ -1557,7 +1557,20 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
 # es solo el TECHO de seguridad, nunca el objetivo a forzar. Ver el
 # comentario largo de generar_banco_preguntas_adaptativo.
 TOPE_BANCO_PREGUNTAS = 100
-_TAMANO_RONDA_BANCO = 20
+# 40 (03/08/2026, subido de 20 -- optimización de tiempo): con
+# tamano_lote=5 fijo, una ronda de 40 pide 8 lotes en paralelo, exactamente
+# el max_workers=8 del ThreadPoolExecutor de generar_preguntas_ia_en_lotes
+# (ya asumido como seguro para peticiones grandes, ver el comentario largo
+# ahí) -- una ronda de 20 solo ocupaba 4 de esos 8 huecos a la vez, dejando
+# la mitad del paralelismo disponible sin usar. Al no aumentar la
+# concurrencia pico (ya estaba aprobada hasta 8 lotes) pero sí las
+# preguntas por ronda, se necesitan la mitad de rondas para llegar al
+# mismo tope (100/40 ~ 3 rondas en vez de 100/20 = 5), y cada ronda tarda
+# aproximadamente lo mismo (el cuello de botella es la respuesta más lenta
+# de los lotes en paralelo, no cuántos lotes caben bajo el límite) -- el
+# banco completo tarda notablemente menos sin cambiar el riesgo de carga
+# sobre la API de DeepSeek.
+_TAMANO_RONDA_BANCO = 40
 # Si una ronda rinde menos de este porcentaje de lo pedido en preguntas
 # NUEVAS (no duplicadas de rondas anteriores), se considera que el
 # documento ya no da más contenido distinto y se para -- seguir insistiendo

@@ -437,7 +437,17 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
 # es solo el TECHO de seguridad, nunca el objetivo a forzar. Ver el
 # comentario largo de generar_banco_tarjetas_adaptativo.
 TOPE_BANCO_TARJETAS = 100
-_TAMANO_RONDA_BANCO = 20
+# 40 (03/08/2026, subido de 20 -- optimización de tiempo, mismo motivo que
+# test_generator.py._TAMANO_RONDA_BANCO): la generación aquí reparte cupo
+# entre TODOS los fragmentos del documento en cada ronda (ver
+# _repartir_cupos), así que el NÚMERO de llamadas de generación de una
+# ronda depende del número de fragmentos, no del tamaño de la ronda -- una
+# ronda más grande no pide más llamadas, solo un cupo mayor por fragmento
+# en las mismas llamadas. Menos rondas para llegar al mismo tope (100/40 ~
+# 3 en vez de 100/20 = 5) significa muchas menos llamadas de generación
+# TOTALES sin subir la concurrencia pico (_MAX_WORKERS_GENERACION/
+# _MAX_WORKERS_VERIFICACION no cambian).
+_TAMANO_RONDA_BANCO = 40
 # Si una ronda rinde menos de este porcentaje de lo pedido en tarjetas
 # NUEVAS (no duplicadas de rondas anteriores), se considera que el
 # documento ya no da más contenido distinto y se para -- seguir insistiendo
