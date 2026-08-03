@@ -85,6 +85,52 @@ def _normalizar(texto):
     return re.sub(r"\s+", " ", str(texto or "").strip().lower())
 
 
+# Umbral para la contención de respuestas (ver _es_duplicado_por_contencion):
+# más alto que _LONGITUD_MINIMA_DEDUP_RESPUESTA (10) a propósito, para no
+# confundir dos preguntas legítimamente distintas del mismo artículo que
+# comparten una respuesta corta y genérica por coincidencia (p.ej. "Mayoría
+# absoluta.", 16 caracteres) con un duplicado real.
+_LONGITUD_MINIMA_CONTENCION = 25
+
+
+def _respuesta_correcta_normalizada(pregunta):
+    opciones = pregunta.get("opciones") or {}
+    letra = str(pregunta.get("respuesta_correcta", "")).upper()
+    return _normalizar(opciones.get(letra, ""))
+
+
+def _es_duplicado_por_contencion(pregunta, candidatas_existentes):
+    """Duplicado adicional (03/08/2026, bug real, documento real): dos
+    preguntas sobre el MISMO artículo, una más amplia ("¿qué establece el
+    artículo 8 sobre las Fuerzas Armadas?" -> composición Y misión) y otra
+    más concreta ("¿cuál es la misión de las Fuerzas Armadas según el
+    artículo 8?" -> solo la misión), cuya respuesta correcta de la concreta
+    es un FRAGMENTO LITERAL de la respuesta de la amplia. Ninguna de las
+    dos claves de _claves_dedup las detecta: el texto de la pregunta es
+    distinto, el texto completo de la respuesta también (una es más larga
+    que la otra), y sin cifras concretas tampoco se genera la clave
+    artículo+cifras (ese hecho -- composición y misión de un órgano -- no
+    es una cifra). Se compara aquí el artículo base citado junto con
+    CONTENCIÓN de texto entre las respuestas correctas normalizadas, ya que
+    _claves_dedup exige coincidencia casi literal y esto necesita detectar
+    que una es un subconjunto de la otra."""
+    articulos = set(_PATRON_ARTICULO_BASE.findall(pregunta.get("pregunta", "")))
+    if not articulos:
+        return False
+    respuesta = _respuesta_correcta_normalizada(pregunta)
+    if len(respuesta) < _LONGITUD_MINIMA_CONTENCION:
+        return False
+    for otra in candidatas_existentes:
+        if not (articulos & set(_PATRON_ARTICULO_BASE.findall(otra.get("pregunta", "")))):
+            continue
+        otra_respuesta = _respuesta_correcta_normalizada(otra)
+        if len(otra_respuesta) < _LONGITUD_MINIMA_CONTENCION:
+            continue
+        if respuesta in otra_respuesta or otra_respuesta in respuesta:
+            return True
+    return False
+
+
 def _claves_dedup(pregunta):
     """Claves de deduplicación de una pregunta ya aceptada: siempre el
     texto de la pregunta normalizado, y ADEMÁS el texto de la respuesta
@@ -241,126 +287,6 @@ def _verificar_pregunta(pregunta, texto_fuente, on_usage):
         return False
 
 
-def _prompt_verificacion_lote(preguntas, texto_fuente):
-    listado = "\n\n".join(
-        f"PREGUNTA {i}:\n{json.dumps(p, ensure_ascii=False)}"
-        for i, p in enumerate(preguntas)
-    )
-    system = (
-        "Eres un verificador independiente. Te llegan varias preguntas tipo test YA REDACTADAS por "
-        "otro proceso, y el ÚNICO documento del que deberían haber salido. No des por hecho que son "
-        "correctas solo porque parecen bien escritas: comprueba cada afirmación de CADA pregunta contra "
-        "el documento, como si las vieras por primera vez y no supieras nada más. Evalúa cada pregunta "
-        "de forma INDEPENDIENTE de las demás -- que unas sean válidas no debe influir en el juicio sobre "
-        "el resto.\n\n"
-        "Marca una pregunta como inválida si detectas CUALQUIERA de estos problemas EN ELLA:\n"
-        "1. El contenido de la pregunta no coincide con lo que dice el documento.\n"
-        "2. La respuesta marcada como correcta no es completamente correcta según el documento.\n"
-        "3. Alguna de las otras tres opciones podría considerarse también correcta o parcialmente "
-        "correcta -- ninguna debe ser defendible.\n"
-        "4. La explicación no repasa las 4 opciones en el formato \"A) ... B) ... C) ... D) ...\", o no "
-        "coincide exactamente con la respuesta marcada como correcta.\n"
-        "5. Cualquier plazo, cifra, porcentaje, artículo, órgano competente o fecha no coincide "
-        "EXACTAMENTE con el documento.\n"
-        "6. Hay cualquier dato o afirmación que no puedas verificar literalmente en el documento "
-        "proporcionado (posible alucinación).\n"
-        "7. La pregunta o la explicación citan un número de artículo sin decir en la misma frase de qué "
-        "ley o norma es (tal como aparece en el documento) -- un artículo mencionado sin decir de qué "
-        "norma es deja a quien lo lee sin poder ubicarlo.\n"
-        "8. La pregunta o la explicación remiten a \"el documento\", \"el contenido\", \"el texto\" o "
-        "\"lo mencionado/anterior\" en vez de nombrar directamente de qué elementos concretos habla -- "
-        "quien responde el test nunca ve el documento de origen, solo la pregunta, así que una remisión "
-        "de ese tipo la deja sin sentido.\n"
-        "9. Se usa una sigla o abreviatura (\"CE\", \"TREBEP\", \"LPAC\", \"art.\" en vez de "
-        "\"artículo\"...) para nombrar una ley o norma en vez de su nombre completo tal como aparece en "
-        "el documento -- los exámenes oficiales de esta oposición nunca abrevian. Esto incluye también "
-        "abreviar el tipo de norma delante de su número (\"LO 3/2007\", \"RD 203/2021\"...) en vez de "
-        "escribirlo entero (\"Ley Orgánica 3/2007\", \"Real Decreto 203/2021\").\n\n"
-        "Devuelve ÚNICAMENTE un JSON con esta forma exacta, con UNA entrada por cada pregunta recibida "
-        "(el mismo número que en el enunciado, empezando en 0), sin texto adicional:\n"
-        '{"resultados": [{"indice": 0, "valido": true, "problemas": []}]}'
-    )
-    user = f"DOCUMENTO:\n{texto_fuente}\n\nPREGUNTAS A VERIFICAR:\n{listado}"
-    return system, user
-
-
-def _verificar_lote(preguntas, texto_fuente, on_usage):
-    """Verifica TODAS las preguntas candidatas de un lote en UNA sola
-    llamada, en vez de una llamada de verificación por pregunta (ver
-    _verificar_pregunta) -- bug real reportado: generar un test de 30
-    preguntas podía disparar más de 50 llamadas a DeepSeek en total, cada
-    una compitiendo por el mismo cupo de conexiones simultáneas (ver
-    deepseek_utils._semaforo_deepseek) y aumentando el riesgo de que
-    alguna se quedara colgada varios segundos. Verificar el lote entero de
-    una vez reduce las llamadas de generación+verificación de este lote de
-    (1 + n) a 2 en el caso normal, sin perder rigor: el modelo sigue
-    mirando cada pregunta contra el documento, solo que dentro de la misma
-    llamada en vez de una por separado -- las que no pasan se descartan
-    igual que antes y se piden de recambio de una en una
-    (_asegurar_pregunta_valida no cambia).
-
-    Devuelve {indice: bool}. Los índices ausentes de la respuesta (por un
-    JSON no parseable, sin respuesta de DeepSeek, o que el modelo se dejó
-    fuera) se tratan como NO válidos por el llamante -- nunca se asume
-    válida una pregunta que no se pudo confirmar."""
-    if not preguntas:
-        return {}
-    system, user = _prompt_verificacion_lote(preguntas, texto_fuente)
-    raw = call_deepseek_api(
-        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-        temperature=0.0,
-        # Escala con el tamaño del lote: la mayoría de preguntas solo
-        # necesitan un veredicto corto ({"valido": true, "problemas": []}),
-        # pero si varias resultan inválidas a la vez y el modelo detalla
-        # los motivos de cada una, el conjunto puede pesar bastante más que
-        # una sola verificación individual (tope 8000, ver
-        # _verificar_pregunta). Sin coste extra si no hace falta -- pedir
-        # más max_tokens de los que se usan no cuesta nada (DeepSeek
-        # factura por tokens generados, no por el tope pedido).
-        #
-        # Coeficiente subido de 700 a 1500 por pregunta (03/08/2026, bug
-        # real de producción): con tamano_lote=5 (el tamaño normal de un
-        # lote, ver generar_preguntas_ia_en_lotes) el cálculo anterior daba
-        # exactamente 4000 (500 + 700*5), y en un test real de 21
-        # preguntas 3 de esos lotes truncaron la verificación en bloque a
-        # ese tope -- las 5 candidatas de cada uno de esos lotes se
-        # trataban entonces como "no verificadas" y tenían que repetirse
-        # una a una por el camino de recambio individual, más lento y sin
-        # aprovechar el ahorro de la verificación en bloque. Con 1500 por
-        # pregunta, un lote lleno de 5 ya llega directo al tope real de
-        # 8000 sin pasar por un truncamiento-y-reintento de por medio.
-        max_tokens=min(8000, 500 + 1500 * len(preguntas)),
-        response_format_json=True,
-        on_usage=on_usage,
-        # thinking_enabled=True: ver el comentario en _verificar_pregunta --
-        # misma verificación, misma razón para mantener el razonamiento
-        # encendido pese a que deepseek-v4-flash lo desactiva por defecto.
-        thinking_enabled=True,
-        # stream=True: ver el comentario largo en _verificar_pregunta --
-        # mismo arreglo real de producción (este archivo se había quedado
-        # sin streaming, provocando "Error de conexión" en llamadas largas).
-        stream=True,
-    )
-    if not raw:
-        return {}
-    try:
-        datos = json.loads(raw)
-    except json.JSONDecodeError:
-        return {}
-    if not isinstance(datos, dict):
-        return {}
-    resultados = {}
-    for item in (datos.get("resultados") or []):
-        if not isinstance(item, dict):
-            continue
-        try:
-            indice = int(item.get("indice"))
-        except (TypeError, ValueError):
-            continue
-        resultados[indice] = item.get("valido") is True
-    return resultados
-
-
 def _fragmentos_por_lote(texto_fuente, n_lotes):
     """Devuelve una lista de n_lotes fragmentos del documento, uno por lote,
     para que cada llamada de generación en paralelo se apoye en una parte
@@ -504,8 +430,9 @@ def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente
     tarjetas_generator.py.
 
     forzar_recambio (03/08/2026, bug real de dedup entre lotes): si
-    pregunta_candidata YA superó la verificación de precisión (en bloque, en
-    otro lote) y el único motivo por el que llega aquí es ser un duplicado
+    pregunta_candidata YA superó su propia verificación de precisión
+    (individual, en otro lote) y el único motivo por el que llega aquí es
+    ser un duplicado
     de otra pregunta ya aceptada (ver _intentar_aceptar en
     generar_preguntas_ia_en_lotes), no tiene sentido volver a verificarla
     tal cual -- su contenido no ha cambiado, así que pasaría otra vez y
@@ -564,11 +491,12 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     que devuelven menos candidatas de las pedidas (fallo parcial de
     DeepSeek), "completadas" puede quedarse por debajo de "total" al
     acabar -- el llamante ya remata la barra al 100% con el evento "fin".
-    Con la verificación EN BLOQUE (ver _verificar_lote más abajo), las
-    candidatas que sí pasan llegan casi todas a la vez (justo tras la única
-    llamada de verificación del lote) en vez de una a una según se iban
-    verificando por separado -- progreso-conversador.js ya rellena huecos
-    entre eventos reales para que la barra no se note a saltos.
+    Cada candidata se verifica de forma INDIVIDUAL y en paralelo (ver
+    _verificar_pregunta más abajo, mismo principio que
+    generador_preguntas_verificado.py usa para el temario oficial), así
+    que las que pasan van llegando una a una según van terminando, no todas
+    de golpe -- progreso-conversador.js ya rellena huecos entre eventos
+    reales para que la barra no se note a saltos.
 
     on_usage, si se pasa, recibe el usage de cada llamada a DeepSeek (de
     generación Y de verificación) -- esta función corre siempre dentro de
@@ -686,10 +614,15 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         no puedan aceptar el mismo hecho a la vez. Devuelve True si se
         aceptó (el llamante debe reportarla por SSE) o False si ya había una
         equivalente (el llamante debe tratarla como descartada y, si puede,
-        pedir una de recambio -- nunca reportarla)."""
+        pedir una de recambio -- nunca reportarla).
+
+        _es_duplicado_por_contencion se comprueba bajo el MISMO lock que
+        _claves_dedup, no antes por separado: compara contra
+        preguntas_unicas, que otro hilo podría estar mutando a la vez si no
+        se protegiera aquí dentro."""
         claves = _claves_dedup(pregunta)
         with lock_dedup:
-            if not claves or (claves & vistas):
+            if not claves or (claves & vistas) or _es_duplicado_por_contencion(pregunta, preguntas_unicas):
                 return False
             vistas.update(claves)
             preguntas_unicas.append(pregunta)
@@ -736,25 +669,24 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
                     _reportar_avance_pregunta(candidata)
             return aceptadas, None
 
-        # validar_pregunta ANTES de la verificación en bloque (02/08/2026,
-        # bug real, mismo motivo que en _asegurar_pregunta_valida): una
-        # candidata que ya viola el filtro local determinista (frases como
-        # "según el contenido"/"el documento indica que...", siglas sin
-        # desarrollar, estructura incompleta) no necesita gastar la
-        # llamada de verificación en bloque para saber que hace falta
-        # regenerarla -- se manda directa al camino de recambio individual,
-        # que si acepta la reemplaza por una limpia.
+        # validar_pregunta ANTES de verificar (02/08/2026, bug real, mismo
+        # motivo que en _asegurar_pregunta_valida): una candidata que ya
+        # viola el filtro local determinista (frases como "según el
+        # contenido"/"el documento indica que...", siglas sin desarrollar,
+        # estructura incompleta) no necesita gastar una llamada de
+        # verificación para saber que hace falta regenerarla -- se manda
+        # directa al camino de recambio individual, que si acepta la
+        # reemplaza por una limpia.
         #
-        # 'pendientes' es una lista de (candidata, forzar_recambio): la
-        # mayoría de motivos para acabar aquí (filtro local o verificación
-        # en bloque fallidos) todavía no saben si la candidata en sí es
+        # 'pendientes' es una lista de (candidata, forzar_recambio):
+        # filtro local fallido todavía no sabe si la candidata en sí es
         # válida, así que _asegurar_pregunta_valida la vuelve a intentar tal
-        # cual antes de pedir recambio (forzar_recambio=False). La excepción
-        # es un duplicado detectado DESPUÉS de pasar la verificación en
-        # bloque (ver más abajo): esa candidata ya se sabe que es correcta,
-        # solo que repite un hecho que otro lote ya cubrió, así que
-        # reintentarla tal cual siempre daría el mismo duplicado --
-        # forzar_recambio=True salta directo a pedir una distinta.
+        # cual antes de pedir recambio (forzar_recambio=False). Una
+        # candidata que YA pasó su propia verificación individual (ver más
+        # abajo) y falla después -- por no superarla, o por resultar
+        # duplicada de otro lote -- va con forzar_recambio=True: repetir la
+        # MISMA verificación que ya se hizo, o la MISMA candidata que ya se
+        # sabe duplicada, no cambiaría el resultado.
         candidatas_ok_local = []
         pendientes = []
         for candidata in candidatas:
@@ -763,31 +695,46 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
             else:
                 pendientes.append((candidata, False))
 
-        # Verificación EN BLOQUE (ver _verificar_lote): una sola llamada
-        # juzga TODAS las candidatas de este lote a la vez, en vez de una
-        # llamada de verificación por candidata -- reduce las llamadas de
-        # este lote de (1 generación + n verificaciones) a (1 + 1) en el
-        # caso normal. Las que no pasan se descartan POR COMPLETO y se
-        # piden de recambio evitando su tema, de una en una y en paralelo,
-        # exactamente igual que antes (_asegurar_pregunta_valida no
-        # cambia): el ahorro de llamadas está en esta primera pasada, no en
-        # el rigor del reintento sobre las que fallan.
-        resultados_lote = _verificar_lote(candidatas_ok_local, texto_fuente, on_usage)
+        # Verificación INDIVIDUAL en paralelo, una llamada por candidata --
+        # NO en bloque (03/08/2026, bug real de producción, mismo principio
+        # que generador_preguntas_verificado.py ya usa para el temario
+        # oficial). La verificación en bloque anterior (_verificar_lote,
+        # retirada) juzgaba las hasta 5 candidatas de un lote en UNA sola
+        # llamada para ahorrar llamadas totales, pero con
+        # thinking_enabled=True (necesario para no perder precisión, ver
+        # _verificar_pregunta) el razonamiento interno del modelo escala
+        # con cuántas candidatas hay que juzgar A LA VEZ, no con el número
+        # de llamadas -- en producción, un lote de 5 agotó los 8000 tokens
+        # SOLO PENSANDO, sin llegar a escribir el veredicto, obligando a un
+        # reintento de 126s para una sola llamada. Verificando cada
+        # candidata por separado, cada llamada solo tiene que razonar sobre
+        # UNA pregunta -- mismo margen de 8000 tokens, mucho más difícil de
+        # agotar -- y el dedup atómico (_intentar_aceptar) puede actuar en
+        # cuanto CADA candidata individual termina, en vez de esperar a que
+        # el lote entero de 5 resuelva su veredicto conjunto.
         aceptadas = []
-        for i, candidata in enumerate(candidatas_ok_local):
-            if not resultados_lote.get(i):
-                pendientes.append((candidata, False))
-            elif _intentar_aceptar(candidata):
-                aceptadas.append(candidata)
-                _reportar_avance_pregunta(candidata)
-            else:
-                # Superó la verificación pero es un duplicado (mismo
-                # artículo + mismas cifras, o mismo texto) de una pregunta
-                # ya aceptada por OTRO lote en paralelo -- ver el comentario
-                # largo junto a vistas/preguntas_unicas más arriba. Se manda
-                # a recambio en vez de descartarse sin más, para no perder
-                # el hueco.
-                pendientes.append((candidata, True))
+        if candidatas_ok_local:
+            with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(candidatas_ok_local))) as executor:
+                futuros = {
+                    executor.submit(_verificar_pregunta, candidata, texto_fuente, on_usage): candidata
+                    for candidata in candidatas_ok_local
+                }
+                for futuro in as_completed(futuros):
+                    candidata = futuros[futuro]
+                    if not futuro.result():
+                        pendientes.append((candidata, True))
+                    elif _intentar_aceptar(candidata):
+                        aceptadas.append(candidata)
+                        _reportar_avance_pregunta(candidata)
+                    else:
+                        # Superó la verificación pero es un duplicado (mismo
+                        # artículo + mismas cifras, o mismo texto) de una
+                        # pregunta ya aceptada por OTRO lote en paralelo --
+                        # ver el comentario largo junto a
+                        # vistas/preguntas_unicas más arriba. Se manda a
+                        # recambio en vez de descartarse sin más, para no
+                        # perder el hueco.
+                        pendientes.append((candidata, True))
 
         if pendientes:
             with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION_LOTE, len(pendientes))) as executor:

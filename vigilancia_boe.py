@@ -386,8 +386,8 @@ def _prompt_relevancia_temario(titulos):
 
 def _clasificar_relevancia_temario_con_ia(titulos):
     """Una sola llamada a DeepSeek para TODOS los títulos candidatos del
-    ciclo (nunca una por título -- mismo principio de coste que
-    test_generator._verificar_lote). Devuelve {indice: {"oposiciones": [...],
+    ciclo (nunca una por título, para no multiplicar llamadas). Devuelve
+    {indice: {"oposiciones": [...],
     "motivo": "..."}} solo para los índices que la IA considera relevantes;
     ante cualquier fallo (sin respuesta, JSON inválido) devuelve {} -- un
     ciclo sin esta clasificación extra no es peor que el comportamiento

@@ -496,14 +496,12 @@ class TestCosteIaEnHerramientasPdf:
         def fake_call(messages, on_usage=None, **kwargs):
             if on_usage:
                 on_usage({"prompt_tokens": 20, "completion_tokens": 10})
-            # La verificación EN BLOQUE (ver test_generator._verificar_lote)
-            # manda system+user con "PREGUNTAS A VERIFICAR:" (plural) --
-            # se distingue así de la generación (un único mensaje "user").
+            # La verificación es INDIVIDUAL, una llamada por candidata (ver
+            # el comentario largo junto a _pedir_lote_verificado en
+            # test_generator.py) -- manda system+user, se distingue así de
+            # la generación (un único mensaje "user").
             if len(messages) == 2 and messages[0]["role"] == "system":
-                textos = re.findall(r'"pregunta":\s*"([^"]*)"', messages[1]["content"])
-                return json.dumps({"resultados": [
-                    {"indice": i, "valido": True, "problemas": []} for i in range(len(textos))
-                ]})
+                return json.dumps({"valido": True, "problemas": []})
             # Cada lote genera tantas preguntas (únicas) como se le pidieron
             # -- así se completan las 20 solicitadas sin relleno, que
             # multiplicaría las llamadas de forma impredecible para este
@@ -539,19 +537,16 @@ class TestCosteIaEnHerramientasPdf:
         assert resp.status_code == 200
         assert eventos[-1]["tipo"] == "fin"
         # num_preguntas=20 con tamano_lote=5 (valor por defecto) -> 4 lotes
-        # (5+5+5+5); cada lote hace 1 llamada de generación + 1 de
-        # verificación EN BLOQUE (todas las candidatas del lote de una vez,
-        # ver test_generator._verificar_lote) = 2 llamadas por lote, 8 en
-        # total -- antes de la verificación en bloque eran 6 por lote (24
-        # en total): la reducción de llamadas es el propio objetivo de este
-        # cambio (bug real: un test de 30 preguntas podía disparar más de
-        # 50 llamadas). Este hilo de fondo vuelca DIRECTO a Firestore
-        # (volcar_directo), sin depender de flask.g -- el caso que antes
-        # perdía el coste por completo.
+        # (5+5+5+5); cada lote hace 1 llamada de generación + 1 llamada de
+        # verificación INDIVIDUAL por candidata (ver el comentario largo
+        # junto a _pedir_lote_verificado en test_generator.py) = 1 + 5 = 6
+        # llamadas por lote, 24 en total. Este hilo de fondo vuelca DIRECTO
+        # a Firestore (volcar_directo), sin depender de flask.g -- el caso
+        # que antes perdía el coste por completo.
         coste = db.leer(("usuarios", "u1"))["coste_ia"][self._mes_actual()]
-        assert coste["tokens_in"] == 160
-        assert coste["tokens_out"] == 80
-        assert coste["llamadas"] == 8
+        assert coste["tokens_in"] == 480
+        assert coste["tokens_out"] == 240
+        assert coste["llamadas"] == 24
         # Las preguntas aceptadas se retransmiten individualmente en un
         # evento "pregunta" aparte según van llegando, para que el
         # frontend pueda empezar el test en cuanto tenga las primeras N
