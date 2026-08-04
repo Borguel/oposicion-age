@@ -9,6 +9,23 @@ def test_coste_estimado_usa_precios():
     assert coste_ia.coste_estimado(0, 0) == 0
 
 
+def test_precio_input_mezcla_cache_hit_y_miss_segun_el_ratio_asumido():
+    # 04/08/2026: antes se usaba siempre el precio caro (cache miss) para
+    # toda la entrada, lo que desfasaba el panel admin en un orden de
+    # magnitud frente al gasto real de DeepSeek (91-95% de aciertos de
+    # caché reales). Ahora PRECIO_INPUT_EUR_MILLON es una mezcla ponderada
+    # por RATIO_CACHE_HIT_ASUMIDO.
+    esperado = round(
+        coste_ia.RATIO_CACHE_HIT_ASUMIDO * coste_ia.PRECIO_INPUT_CACHE_HIT_EUR_MILLON
+        + (1 - coste_ia.RATIO_CACHE_HIT_ASUMIDO) * coste_ia.PRECIO_INPUT_CACHE_MISS_EUR_MILLON,
+        6,
+    )
+    assert coste_ia.PRECIO_INPUT_EUR_MILLON == esperado
+    # Debe quedar muy por debajo del precio de cache miss a secas (el
+    # comportamiento antiguo), no solo ligeramente más barato.
+    assert coste_ia.PRECIO_INPUT_EUR_MILLON < coste_ia.PRECIO_INPUT_CACHE_MISS_EUR_MILLON / 5
+
+
 def test_resumen_coste_usuario_suma_meses():
     datos = {"coste_ia": {
         "2026-06": {"tokens_in": 1000, "tokens_out": 500, "coste": 0.01},

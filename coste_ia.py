@@ -31,15 +31,37 @@ def _precio(env, defecto):
 # € por cada 1.000.000 de tokens. Valores por defecto según las tarifas
 # oficiales de DeepSeek para deepseek-v4-flash (el modelo usado en toda la
 # app salvo que TUTOR_MODELO_IA diga lo contrario -- ver chat_controller.py),
-# convertidas de dólares a euros al cambio aproximado (~0,92 €/$):
-#   entrada cache miss $0,14/M -> ~0,13 €/M   (usamos el precio caro, sin
-#     descuento de caché, para que la estimación quede siempre por lo alto)
-#   salida            $0,28/M -> ~0,26 €/M
-# Se pueden ajustar sin tocar código con las variables de entorno de abajo
-# (p. ej. si se usa deepseek-v4-pro, más caro: revisa el precio real vigente
-# en la documentación de DeepSeek antes de ajustar estas dos variables).
-PRECIO_INPUT_EUR_MILLON = _precio("IA_PRECIO_INPUT_EUR_MILLON", 0.13)
+# convertidas de dólares a euros al cambio aproximado (~0,92 €/$).
+#
+# DeepSeek factura el TOKEN DE ENTRADA a dos tarifas muy distintas según si
+# hace "cache hit" en su caché de contexto (frecuentísimo aquí: el mismo
+# documento/fragmento se reenvía en muchas llamadas seguidas de una misma
+# generación) o "cache miss":
+#   entrada cache MISS  $0,14/M -> ~0,13 €/M
+#   entrada cache HIT   $0,0028/M -> ~0,0026 €/M  (50 veces más barato)
+#   salida              $0,28/M -> ~0,26 €/M
+# Antes esta estimación usaba SIEMPRE el precio de cache miss para toda la
+# entrada ("para que quedara siempre por lo alto"), pero en la práctica eso
+# la dejaba muy por encima del gasto real: las exportaciones de uso reales
+# de DeepSeek (04/08/2026) muestran 91-95% de aciertos de caché en el
+# tráfico real de la app, lo que hacía que el panel admin pareciera
+# mostrar costes disparatados (p. ej. un solo test pareciendo más caro que
+# el gasto real de todo el día). Ahora se mezcla el precio de entrada
+# asumiendo una proporción de aciertos de caché realista pero conservadora
+# (algo por debajo de lo observado, para no quedarse corto): sigue siendo
+# una ESTIMACIÓN -- no hay forma de saber el acierto real de cada llamada
+# sin que DeepSeek lo devuelva en el usage -- pero ya no está desfasada en
+# un orden de magnitud. Solo alimenta el panel admin y la alerta interna de
+# gasto diario; nunca se muestra a usuarios.
+PRECIO_INPUT_CACHE_MISS_EUR_MILLON = _precio("IA_PRECIO_INPUT_EUR_MILLON", 0.13)
+PRECIO_INPUT_CACHE_HIT_EUR_MILLON = _precio("IA_PRECIO_INPUT_CACHE_HIT_EUR_MILLON", 0.0026)
 PRECIO_OUTPUT_EUR_MILLON = _precio("IA_PRECIO_OUTPUT_EUR_MILLON", 0.26)
+RATIO_CACHE_HIT_ASUMIDO = _precio("IA_RATIO_CACHE_HIT_ASUMIDO", 0.90)
+PRECIO_INPUT_EUR_MILLON = round(
+    RATIO_CACHE_HIT_ASUMIDO * PRECIO_INPUT_CACHE_HIT_EUR_MILLON
+    + (1 - RATIO_CACHE_HIT_ASUMIDO) * PRECIO_INPUT_CACHE_MISS_EUR_MILLON,
+    6,
+)
 
 
 def coste_estimado(tokens_in, tokens_out):
