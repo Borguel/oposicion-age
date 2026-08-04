@@ -83,6 +83,17 @@ LIMITES = {
         "basico": ("dia", 0),
         "premium": ("dia", 100),
     },
+    # Tope MENSUAL de documentos con banco de preguntas/tarjetas generado
+    # (/generar-banco-preguntas-desde-pdf y /generar-banco-tarjetas-desde-pdf).
+    # Se comprueba y se cobra en paralelo al cupo diario "pdf_ia" de arriba
+    # (mismo patrón que test_avanzado_verificado_mensual), como red de
+    # seguridad de margen: cada banco recorre el documento completo en
+    # varias rondas con verificación jurídica por IA, así que es la
+    # herramienta de PDF con más coste real por uso.
+    "banco_pdf_mensual": {
+        "basico": ("mes", 0),
+        "premium": ("mes", 20),
+    },
 }
 
 
@@ -99,6 +110,8 @@ TIPOS_META = [
      "descripcion": "Análisis de fortalezas/debilidades por tema, generado con IA, a partir del temario."},
     {"id": "pdf_ia", "nombre": "Subir PDF (resumen / esquema / tarjetas / test)", "unidad": "usos",
      "descripcion": "Herramientas de IA sobre un PDF que sube el propio usuario."},
+    {"id": "banco_pdf_mensual", "nombre": "Banco de preguntas/tarjetas desde PDF (tope mensual)", "unidad": "documentos",
+     "descripcion": "Tope adicional AL MES de documentos con banco generado, aparte del cupo diario de pdf_ia -- ambos se comprueban a la vez."},
     {"id": "chat_pdf", "nombre": "Chat con PDF", "unidad": "usos",
      "descripcion": "Conversar con la IA sobre un PDF subido."},
     {"id": "chat_temario", "nombre": "Tu Tutor (chat del temario)", "unidad": "usos",

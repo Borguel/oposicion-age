@@ -39,6 +39,13 @@ logger = logging.getLogger(__name__)
 
 bp = Blueprint("pdf_ia", __name__)
 
+# Cupos que se comprueban y cobran juntos al generar un banco de preguntas/
+# tarjetas desde PDF: el diario "pdf_ia" (compartido con el resto de
+# herramientas de PDF) y el mensual "banco_pdf_mensual" (tope de documentos
+# procesados al mes, ver limites_uso.py), mismo patrón que
+# TIPOS_CUOTA_TEST_PERSONALIZADO en blueprints/test_ia.py.
+TIPOS_CUOTA_BANCO_PDF = ("pdf_ia", "banco_pdf_mensual")
+
 
 def _resolver_texto_documento(plan_actual):
     """Punto de entrada común de las 4 rutas de generación desde PDF: o bien
@@ -639,9 +646,10 @@ def generar_banco_preguntas_desde_pdf():
     # lo generado -- si luego quiere repetir con menos, ya puede elegir
     # "Test de 10" desde "Mis documentos" sobre el mismo banco, sin volver
     # a gastar en IA.
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
-    if not permitido:
-        return jsonify({"error": mensaje_error}), 429
+    for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
+        permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, tipo_cuota)
+        if not permitido:
+            return jsonify({"error": mensaje_error}), 429
     text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
     if error:
         return error
@@ -684,7 +692,8 @@ def generar_banco_preguntas_desde_pdf():
 
     uid = g.uid
     plan_actual = g.plan_actual
-    registrar_uso(db, uid, "pdf_ia", plan_actual)
+    for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
+        registrar_uso(db, uid, tipo_cuota, plan_actual)
     iniciar_banco(db, uid, documento_id, "preguntas", TOPE_BANCO_PREGUNTAS, nombre_archivo)
 
     def generar():
@@ -729,7 +738,8 @@ def generar_banco_preguntas_desde_pdf():
                 resultado = {"error": "Error al generar el banco de preguntas."}
             finalizar_banco(db, uid, documento_id, "preguntas", estado=estado_final, mensaje_error=resultado.get("error"))
             if estado_final == "error":
-                devolver_uso(db, uid, "pdf_ia", plan_actual)
+                for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
+                    devolver_uso(db, uid, tipo_cuota, plan_actual)
             acumulador_tokens.volcar_directo(db, uid)
             eventos.put({"tipo": "fin", **resultado})
 
@@ -766,9 +776,10 @@ def generar_banco_tarjetas_desde_pdf():
     # Ruta de entrada única: ver el comentario largo en
     # generar_banco_preguntas_desde_pdf -- mismo motivo y mismo patrón,
     # aplicado a tarjetas.
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
-    if not permitido:
-        return jsonify({"error": mensaje_error}), 429
+    for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
+        permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, tipo_cuota)
+        if not permitido:
+            return jsonify({"error": mensaje_error}), 429
     text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
     if error:
         return error
@@ -781,7 +792,8 @@ def generar_banco_tarjetas_desde_pdf():
         text = text[:max_length]
     uid = g.uid
     plan_actual = g.plan_actual
-    registrar_uso(db, uid, "pdf_ia", plan_actual)
+    for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
+        registrar_uso(db, uid, tipo_cuota, plan_actual)
     iniciar_banco(db, uid, documento_id, "tarjetas", TOPE_BANCO_TARJETAS, nombre_archivo)
 
     def generar():
@@ -818,7 +830,8 @@ def generar_banco_tarjetas_desde_pdf():
                 resultado = {"error": "Error al generar el banco de tarjetas."}
             finalizar_banco(db, uid, documento_id, "tarjetas", estado=estado_final, mensaje_error=resultado.get("error"))
             if estado_final == "error":
-                devolver_uso(db, uid, "pdf_ia", plan_actual)
+                for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
+                    devolver_uso(db, uid, tipo_cuota, plan_actual)
             acumulador_tokens.volcar_directo(db, uid)
             eventos.put({"tipo": "fin", **resultado})
 

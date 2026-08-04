@@ -669,7 +669,12 @@ class TestBancoPreguntasYTarjetas:
         assert banco["estado"] == "completo"
         assert banco["total"] == 2
         assert {p["pregunta"] for p in banco["preguntas"]} == {"¿P1?", "¿P2?"}
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+        limites = db.leer(("usuarios", "u1"))["limites_uso"]
+        assert limites["pdf_ia"]["contador"] == 1
+        # Tope mensual de documentos con banco generado (04/08/2026): se
+        # cobra en paralelo al cupo diario "pdf_ia", ver
+        # TIPOS_CUOTA_BANCO_PDF en blueprints/pdf_ia.py.
+        assert limites["banco_pdf_mensual"]["contador"] == 1
 
     def test_generar_banco_preguntas_sin_resultados_marca_error_y_devuelve_uso(
             self, client, db, documento_sembrado):
@@ -687,7 +692,30 @@ class TestBancoPreguntasYTarjetas:
         assert "error" in eventos[-1]
         banco = db.leer(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado))
         assert banco["estado"] == "error"
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0
+        limites = db.leer(("usuarios", "u1"))["limites_uso"]
+        assert limites["pdf_ia"]["contador"] == 0
+        assert limites["banco_pdf_mensual"]["contador"] == 0
+
+    def test_generar_banco_preguntas_respeta_tope_mensual_de_documentos(
+            self, client, db, documento_sembrado):
+        # Límite de negocio (04/08/2026): máximo 20 documentos con banco
+        # generado al mes en Premium, como red de seguridad de margen --
+        # ver limites_uso.LIMITES["banco_pdf_mensual"]. Se agota el cupo a
+        # mano y se comprueba que bloquea con 429 SIN mensaje de coste.
+        from datetime import date
+        mes_actual = date.today().strftime("%Y-%m")
+        sembrar_usuario_activo(db, "u1", plan="premium",
+                                limites_uso={"banco_pdf_mensual": {"periodo": mes_actual, "contador": 20}})
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                data={"documento_id": documento_sembrado},
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 429
+        assert "coste" not in resp.get_json()["error"].lower()
+        assert "€" not in resp.get_json()["error"] and "$" not in resp.get_json()["error"]
 
     def test_generar_banco_preguntas_documento_inexistente_da_404(self, client, db):
         sembrar_usuario_activo(db, "u1", plan="premium")
