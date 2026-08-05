@@ -40,8 +40,9 @@
   <div id="documentos-vacio" class="documentos-vacio hidden">
     <div class="documentos-vacio-icono" data-icon="documento" data-icon-size="36"></div>
     <h2>Todavía no has subido ningún documento</h2>
-    <p>Sube un PDF en Herramientas IA para generar resúmenes, esquemas, tarjetas o tests, y aparecerá aquí para que puedas repasarlo cuando quieras.</p>
-    <a class="age-btn age-btn-primary" href="/subida-pdf-pagina-principal/">Ir a Herramientas IA</a>
+    <p>Sube tu primer PDF y decide después si quieres generar preguntas tipo test o tarjetas de repaso a partir de él.</p>
+    <button type="button" class="age-btn age-btn-primary" id="btn-subir-documento-vacio"><span data-icon="subir" data-icon-size="16"></span> Subir documento</button>
+    <p class="documentos-vacio-alt">o ve a <a href="/subida-pdf-pagina-principal/">Herramientas IA</a> para resúmenes y esquemas</p>
   </div>
 
   <div id="documentos-contenido" class="hidden">
@@ -49,7 +50,8 @@
     <div id="vista-carpetas">
       <div class="carpetas-toolbar">
         <input type="search" id="filtro-busqueda" placeholder="Buscar documento por nombre…" />
-        <button type="button" class="age-btn age-btn-primary" id="btn-crear-carpeta">+ Crear carpeta</button>
+        <button type="button" class="age-btn age-btn-primary" id="btn-subir-documento"><span data-icon="subir" data-icon-size="16"></span> Subir documento</button>
+        <button type="button" class="age-btn age-btn-outline" id="btn-crear-carpeta">+ Crear carpeta</button>
       </div>
       <div id="carpetas-grid" class="carpetas-grid"></div>
       <div id="busqueda-resultados" class="documentos-lista hidden"></div>
@@ -62,7 +64,8 @@
         <h2 id="carpeta-detalle-titulo"></h2>
         <div class="carpeta-detalle-acciones">
           <button type="button" class="age-btn age-btn-outline" id="btn-eliminar-carpeta">Eliminar carpeta</button>
-          <button type="button" class="age-btn age-btn-primary" id="btn-anadir-documentos">+ Añadir documentos</button>
+          <button type="button" class="age-btn age-btn-outline" id="btn-anadir-documentos">+ Añadir documentos</button>
+          <button type="button" class="age-btn age-btn-primary" id="btn-subir-documento-carpeta"><span data-icon="subir" data-icon-size="16"></span> Subir documento</button>
         </div>
       </div>
       <div id="carpeta-detalle-lista" class="documentos-lista"></div>
@@ -79,6 +82,40 @@
     <div id="modal-anadir-lista" class="documentos-modal-lista"></div>
     <div class="documentos-modal-acciones">
       <button type="button" class="age-btn age-btn-primary" id="modal-anadir-confirmar">Añadir seleccionados</button>
+    </div>
+  </div>
+</div>
+
+<div class="documentos-modal-overlay hidden" id="modal-subir-documento">
+  <div class="age-card documentos-modal-card">
+    <div class="documentos-modal-cabecera">
+      <h3>Subir documento</h3>
+      <button type="button" class="documentos-modal-cerrar" id="modal-subir-cerrar" aria-label="Cerrar"><span data-icon="cruz" data-icon-size="16"></span></button>
+    </div>
+
+    <div id="subir-doc-paso-archivo">
+      <div class="subir-doc-dropzone" id="subir-doc-dropzone">
+        <div class="subir-doc-dropzone-icono" data-icon="subir" data-icon-size="26"></div>
+        <h4>Arrastra y suelta aquí tu PDF</h4>
+        <p>o pincha para elegirlo (máx. 10 MB)</p>
+        <input type="file" id="subir-doc-input" accept=".pdf" class="subir-doc-input-oculto">
+      </div>
+      <p class="subir-doc-nota">Lo analizamos y lo dejamos guardado en tu biblioteca. Después eliges si quieres generar preguntas tipo test o tarjetas de repaso a partir de él.</p>
+    </div>
+
+    <div id="subir-doc-paso-cargando" class="hidden subir-doc-cargando">
+      <div class="subir-doc-spinner" aria-hidden="true"></div>
+      <p>Subiendo y analizando tu documento…</p>
+    </div>
+
+    <div id="subir-doc-paso-elegir" class="hidden">
+      <p class="subir-doc-confirmacion"><span data-icon="check" data-icon-size="16"></span> "<span id="subir-doc-nombre"></span>" ya está en tu biblioteca.</p>
+      <p class="subir-doc-pregunta">¿Qué quieres generar primero?</p>
+      <div class="subir-doc-opciones">
+        <button type="button" class="age-btn age-btn-primary" id="subir-doc-generar-preguntas"><span data-icon="matraz" data-icon-size="16"></span> Banco de preguntas</button>
+        <button type="button" class="age-btn age-btn-outline" id="subir-doc-generar-tarjetas"><span data-icon="tarjeta" data-icon-size="16"></span> Banco de tarjetas</button>
+      </div>
+      <button type="button" class="subir-doc-ahora-no" id="subir-doc-ahora-no">Ahora no, solo guardarlo</button>
     </div>
   </div>
 </div>

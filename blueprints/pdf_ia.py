@@ -1201,6 +1201,23 @@ def mis_documentos():
     })
 
 
+@bp.route('/subir-documento', methods=['POST'])
+@limiter.limit("10 per minute")
+@requiere_plan(db, "premium", global_check=True)
+def subir_documento():
+    """Sube un PDF y lo deja guardado en "Mis documentos" sin generar
+    ningún contenido todavía (reutiliza _resolver_texto_documento, que ya
+    crea la entrada en la biblioteca la primera vez que se ve un texto).
+    Pensado para el botón "Subir documento" de Mis Documentos: el usuario
+    decide DESPUÉS si quiere generar preguntas o tarjetas, en vez de tener
+    que elegir la herramienta antes de subir el archivo. No genera nada
+    con IA, así que no consume ninguna cuota de uso."""
+    _texto, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
+    if error:
+        return error
+    return jsonify({"documento_id": documento_id, "nombre_archivo": nombre_archivo})
+
+
 @bp.route('/carpetas-documentos', methods=['POST'])
 @requiere_plan(db, "premium", global_check=True)
 def crear_carpeta_documentos():

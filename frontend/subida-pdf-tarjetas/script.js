@@ -548,7 +548,7 @@ async function obtenerAuthHeaders() {
       if (!authHeaders) return;
 
       try {
-        const documentoId = await conEsperaMinima(iniciarGeneracionBancoTarjetas(formData, authHeaders), 5500);
+        const documentoId = await conEsperaMinima(iniciarGeneracionBancoTarjetas(formData, authHeaders), 9000);
         window.location.href = documentoId
           ? `/mis-documentos/?destacar=${encodeURIComponent(documentoId)}`
           : "/mis-documentos/";

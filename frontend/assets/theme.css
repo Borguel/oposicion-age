@@ -1055,6 +1055,13 @@ body {
   font-family: var(--age-font);
   font-size: 12.5px;
   color: var(--age-ink-soft);
+  /* Antes heredaba el mismo fondo que el resto de la página y quedaba
+     indistinguible del contenido -- un tono ligeramente distinto (mismo
+     token que ya usan otras secciones de contraste sutil) más un borde
+     superior lo separan visualmente sin convertirlo en una barra oscura
+     pesada como la navegación. */
+  background: var(--age-neutral-bg);
+  border-top: 1px solid var(--age-border);
 }
 
 .age-footer a {

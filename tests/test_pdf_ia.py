@@ -620,6 +620,66 @@ class TestMisDocumentos:
         assert documentos[documento_sembrado]["test_en_progreso"] is None
 
 
+class TestSubirDocumento:
+    """/subir-documento (05/08/2026): sube un PDF y lo deja guardado en la
+    biblioteca sin generar ningún contenido -- el botón "Subir documento"
+    de Mis Documentos, que deja elegir DESPUÉS si se quiere banco de
+    preguntas o de tarjetas, en vez de tener que elegir la herramienta
+    antes de subir el archivo."""
+
+    def test_subir_documento_con_documento_id_existente_no_genera_nada(self, client, documento_sembrado):
+        # Reenviar un documento ya subido (p. ej. tras reintentar) debe
+        # devolver el mismo documento_id sin duplicar la entrada ni tocar
+        # ningún contador de IA.
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/subir-documento", data={"documento_id": documento_sembrado},
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        datos = resp.get_json()
+        assert datos["documento_id"] == documento_sembrado
+        assert "nombre_archivo" in datos
+
+    def test_subir_documento_archivo_no_pdf_da_400_claro(self, client, documento_sembrado):
+        from io import BytesIO
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/subir-documento",
+                                data={"pdf": (BytesIO(b"MZ\x90\x00\x03esto no es un PDF de verdad"), "falso.pdf")},
+                                headers={"Authorization": "Bearer x"},
+                                content_type="multipart/form-data")
+        finally:
+            parche.stop()
+        assert resp.status_code == 400
+        assert "no es un PDF válido" in resp.get_json()["error"]
+
+    def test_subir_documento_documento_inexistente_da_404(self, client, db):
+        sembrar_usuario_activo(db, "u1", plan="premium")
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/subir-documento", data={"documento_id": "no_existe"},
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 404
+
+    def test_subir_documento_no_consume_cuota_pdf_ia(self, client, db, documento_sembrado):
+        # No llama a ninguna IA -- a diferencia de las rutas de generación,
+        # no debe cobrar ni la cuota diaria "pdf_ia" ni el tope mensual de
+        # bancos.
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/subir-documento", data={"documento_id": documento_sembrado},
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        limites = (db.leer(("usuarios", "u1")) or {}).get("limites_uso") or {}
+        assert limites == {}
+
+
 class TestBancoPreguntasYTarjetas:
     """Rutas del banco pre-generado (03/08/2026): generan en segundo plano
     hasta el tope del documento y persisten cada item aceptado de forma

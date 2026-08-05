@@ -584,6 +584,134 @@ function cerrarModalAnadir() {
   document.getElementById("modal-anadir-documentos").classList.add("hidden");
 }
 
+// === Subir documento directamente desde "Mis documentos" (05/08/2026) ===
+// Antes solo se podía subir un PDF nuevo desde cada herramienta por
+// separado (Resumen/Esquema/Tarjetas/Test), eligiendo qué generar ANTES de
+// subir el archivo. Este flujo invierte el orden: se sube y se guarda en la
+// biblioteca primero (sin gastar nada en IA, ver /subir-documento), y solo
+// DESPUÉS se pregunta qué banco generar -- reutilizando iniciarBanco(), que
+// ya sabe pintar el progreso en vivo sobre la tarjeta del documento.
+let subirDocCarpetaDestino = null;
+let subirDocIdActual = null;
+
+function abrirModalSubirDocumento(carpetaDestino) {
+  subirDocCarpetaDestino = carpetaDestino || null;
+  subirDocIdActual = null;
+  document.getElementById("subir-doc-input").value = "";
+  document.getElementById("subir-doc-paso-elegir").classList.add("hidden");
+  document.getElementById("subir-doc-paso-cargando").classList.add("hidden");
+  document.getElementById("subir-doc-paso-archivo").classList.remove("hidden");
+  document.getElementById("modal-subir-documento").classList.remove("hidden");
+}
+
+function cerrarModalSubirDocumento() {
+  document.getElementById("modal-subir-documento").classList.add("hidden");
+}
+
+// Vuelve a pedir la lista completa (mismo endpoint que cargarDocumentos) --
+// más simple y fiable que reconstruir a mano el documento recién creado con
+// todos sus campos (banco_*_estado, num_paginas...), y cubre también el
+// caso de "primer documento" (pasar de la biblioteca vacía a tener contenido).
+async function recargarDocumentos() {
+  const token = await idToken();
+  const res = await fetch(`${BACKEND_URL}/mis-documentos`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error("No se pudo actualizar tu biblioteca.");
+  const datos = await res.json();
+  documentos = datos.documentos || [];
+  carpetas = datos.carpetas || [];
+  if (documentos.length > 0) {
+    document.getElementById("documentos-vacio").classList.add("hidden");
+    document.getElementById("documentos-contenido").classList.remove("hidden");
+  }
+}
+
+async function subirArchivo(archivo) {
+  if (archivo.type !== "application/pdf") {
+    mostrarErrorGlobal("El archivo debe ser un PDF.");
+    return;
+  }
+  if (archivo.size > 10 * 1024 * 1024) {
+    mostrarErrorGlobal("El PDF no puede superar los 10 MB.");
+    return;
+  }
+  document.getElementById("subir-doc-paso-archivo").classList.add("hidden");
+  document.getElementById("subir-doc-paso-cargando").classList.remove("hidden");
+
+  try {
+    const token = await idToken();
+    const formData = new FormData();
+    formData.append("pdf", archivo);
+    const res = await fetch(`${BACKEND_URL}/subir-documento`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+    const datos = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(datos.error || "No se pudo subir el documento.");
+
+    subirDocIdActual = datos.documento_id;
+    if (subirDocCarpetaDestino) {
+      await asignarCarpeta(subirDocIdActual, subirDocCarpetaDestino);
+    }
+    await recargarDocumentos();
+
+    document.getElementById("subir-doc-paso-cargando").classList.add("hidden");
+    document.getElementById("subir-doc-nombre").textContent = datos.nombre_archivo || "Tu documento";
+    document.getElementById("subir-doc-paso-elegir").classList.remove("hidden");
+
+    const doc = documentos.find((d) => d.id === subirDocIdActual);
+    abrirCarpeta(doc ? (doc.carpeta || SIN_CARPETA) : SIN_CARPETA);
+    requestAnimationFrame(() => {
+      const tarjeta = document.querySelector(`.documento-card[data-id="${CSS.escape(subirDocIdActual)}"]`);
+      tarjeta?.classList.add("documento-card-destacada");
+    });
+  } catch (e) {
+    cerrarModalSubirDocumento();
+    mostrarErrorGlobal(e.message || "No se pudo subir el documento.");
+  }
+}
+
+function inicializarSubidaDocumento() {
+  const dropzone = document.getElementById("subir-doc-dropzone");
+  const inputArchivo = document.getElementById("subir-doc-input");
+
+  dropzone.addEventListener("click", () => inputArchivo.click());
+  inputArchivo.addEventListener("change", () => {
+    const archivo = inputArchivo.files[0];
+    if (archivo) subirArchivo(archivo);
+  });
+  ["dragenter", "dragover", "dragleave", "drop"].forEach((evt) => {
+    dropzone.addEventListener(evt, (e) => { e.preventDefault(); e.stopPropagation(); });
+  });
+  ["dragenter", "dragover"].forEach((evt) => dropzone.addEventListener(evt, () => dropzone.classList.add("dragover")));
+  ["dragleave", "drop"].forEach((evt) => dropzone.addEventListener(evt, () => dropzone.classList.remove("dragover")));
+  dropzone.addEventListener("drop", (e) => {
+    const archivo = e.dataTransfer.files[0];
+    if (archivo) subirArchivo(archivo);
+  });
+
+  document.getElementById("btn-subir-documento").addEventListener("click", () => abrirModalSubirDocumento(null));
+  document.getElementById("btn-subir-documento-vacio")?.addEventListener("click", () => abrirModalSubirDocumento(null));
+  document.getElementById("btn-subir-documento-carpeta").addEventListener("click", () => {
+    abrirModalSubirDocumento(carpetaActual && carpetaActual !== SIN_CARPETA ? carpetaActual : null);
+  });
+  document.getElementById("modal-subir-cerrar").addEventListener("click", cerrarModalSubirDocumento);
+  document.getElementById("modal-subir-documento").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-subir-documento") cerrarModalSubirDocumento();
+  });
+  document.getElementById("subir-doc-ahora-no").addEventListener("click", cerrarModalSubirDocumento);
+  document.getElementById("subir-doc-generar-preguntas").addEventListener("click", () => {
+    const id = subirDocIdActual;
+    cerrarModalSubirDocumento();
+    if (id) iniciarBanco(id, "preguntas");
+  });
+  document.getElementById("subir-doc-generar-tarjetas").addEventListener("click", () => {
+    const id = subirDocIdActual;
+    cerrarModalSubirDocumento();
+    if (id) iniciarBanco(id, "tarjetas");
+  });
+}
+
 async function confirmarAnadirDocumentos() {
   const seleccionados = [...document.querySelectorAll("#modal-anadir-lista input:checked")].map((i) => i.value);
   cerrarModalAnadir();
@@ -633,6 +761,8 @@ function inicializarEventos() {
   });
 
   document.getElementById("filtro-busqueda").addEventListener("input", (evento) => renderizarBusqueda(evento.target.value));
+
+  inicializarSubidaDocumento();
 }
 
 // Sondeo del progreso de bancos en generación (03/08/2026): cuando se
@@ -729,6 +859,9 @@ async function cargarDocumentos() {
     const datos = await res.json();
     documentos = datos.documentos || [];
     carpetas = datos.carpetas || [];
+    // Se inicializa siempre, incluso con la biblioteca vacía: el botón
+    // "Subir documento" del estado vacío usa el mismo modal que el resto.
+    inicializarEventos();
 
     if (documentos.length === 0) {
       document.getElementById("documentos-vacio").classList.remove("hidden");
@@ -736,7 +869,6 @@ async function cargarDocumentos() {
     }
 
     document.getElementById("documentos-contenido").classList.remove("hidden");
-    inicializarEventos();
     renderizarCarpetas();
 
     const qInicial = new URLSearchParams(window.location.search).get("q");

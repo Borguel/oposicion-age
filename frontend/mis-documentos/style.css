@@ -63,6 +63,11 @@ body {
   line-height: 1.5;
 }
 
+.documentos-vacio-alt {
+  margin: 16px 0 0 !important;
+  font-size: 0.85rem;
+}
+
 .carpetas-toolbar {
   display: flex;
   align-items: center;
@@ -501,6 +506,123 @@ body {
 .documentos-modal-acciones {
   display: flex;
   justify-content: flex-end;
+}
+
+.subir-doc-dropzone {
+  border: 2px dashed var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 30px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s var(--age-ease), background 0.2s var(--age-ease);
+  background: var(--age-neutral-bg);
+}
+
+.subir-doc-dropzone:hover,
+.subir-doc-dropzone.dragover {
+  border-color: var(--age-primary);
+  background: var(--age-primary-soft);
+}
+
+.subir-doc-dropzone-icono {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subir-doc-dropzone h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--age-ink);
+  margin: 0 0 4px;
+}
+
+.subir-doc-dropzone p {
+  color: var(--age-ink-soft);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.subir-doc-input-oculto {
+  display: none;
+}
+
+.subir-doc-nota {
+  color: var(--age-ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin: 12px 0 0;
+}
+
+.subir-doc-cargando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 30px 10px;
+  color: var(--age-ink-soft);
+  font-weight: 600;
+}
+
+.subir-doc-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--age-border);
+  border-top-color: var(--age-primary);
+  animation: subirDocGirar 0.8s linear infinite;
+}
+
+@keyframes subirDocGirar {
+  to { transform: rotate(360deg); }
+}
+
+.subir-doc-confirmacion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--age-success);
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin: 0 0 10px;
+}
+
+.subir-doc-pregunta {
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0 0 14px;
+}
+
+.subir-doc-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subir-doc-ahora-no {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--age-ink-soft);
+  font-family: var(--age-font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.subir-doc-ahora-no:hover {
+  color: var(--age-ink);
+  text-decoration: underline;
 }
 
 @media (max-width: 640px) {
