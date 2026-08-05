@@ -182,9 +182,26 @@ function filaContenido({ label, iconoHtml, existe, cantidad, urlVer, urlGenerar,
     acciones.push(`<a class="documento-card-btn${urlContinuar ? "" : " principal"}" href="${urlGenerar}">${textoGenerar}</a>`);
   }
   const etiquetaCantidad = existe && cantidad ? ` (${cantidad})` : "";
+  // Estado (05/08/2026, rediseño visual): antes la única señal de si un
+  // tipo de contenido ya existía era el propio texto del botón ("Ver" vs.
+  // "Generar resumen") -- fácil de pasar por alto en un vistazo rápido.
+  // Ahora cada tipo lleva un estado explícito (Generado/En progreso/Aún no
+  // generado) junto al icono, igual que ya hacía el banco adaptativo con
+  // sus propios estados más abajo.
+  const estadoHtml = urlContinuar
+    ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Test en progreso</span>`
+    : existe
+      ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-generado">${icono("check", 12)} Generado</span>`
+      : `<span class="documento-card-tipo-estado">Aún no generado</span>`;
   return `
-    <div class="documento-card-fila">
-      <span class="documento-card-fila-label">${iconoHtml} ${label}${etiquetaCantidad}</span>
+    <div class="documento-card-tipo">
+      <div class="documento-card-tipo-cabecera">
+        <span class="documento-card-tipo-icono">${iconoHtml}</span>
+        <div class="documento-card-tipo-info">
+          <span class="documento-card-tipo-label">${label}${etiquetaCantidad}</span>
+          ${estadoHtml}
+        </div>
+      </div>
       <div class="documento-card-fila-acciones">${acciones.join("")}</div>
     </div>
   `;
@@ -237,6 +254,12 @@ function filaBanco(doc, tipo) {
   const paramVer = esPreguntas ? "banco" : "banco-tarjetas";
   const etiquetaAccion = esPreguntas ? "Test" : "Repasar";
 
+  // Estado (05/08/2026, rediseño visual): antes este texto vivía mezclado
+  // dentro de "acciones" (la fila de botones), así que el aviso de
+  // "generando"/"completo"/"error" acababa al lado de un botón con el
+  // mismo peso visual que él -- ahora vive junto al icono y la etiqueta,
+  // igual que el estado Generado/Aún no generado de filaContenido.
+  let estadoHtml = `<span class="documento-card-tipo-estado">Sin generar todavía</span>`;
   const acciones = [];
   if (!estado || estado === "sin_generar") {
     acciones.push(`<button type="button" class="documento-card-btn principal" data-banco-generar="${tipo}" data-id="${doc.id}">Generar banco de ${tipo}</button>`);
@@ -246,16 +269,16 @@ function filaBanco(doc, tipo) {
       // saber cuál es el techo de seguridad del banco, solo cuántas lleva
       // generadas hasta ahora -- este número se actualiza en vivo según
       // van llegando eventos de progreso (ver iniciarBanco).
-      acciones.push(`<span class="documento-card-banco-estado">Generando… ${total} ${nombreItem}${total === 1 ? "" : "s"} hasta ahora</span>`);
+      estadoHtml = `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Generando… ${total} ${nombreItem}${total === 1 ? "" : "s"} hasta ahora</span>`;
     } else if (estado === "completo") {
       // Aviso explícito de que la generación YA terminó (03/08/2026, a
       // petición del usuario: antes, al pasar de "generando" a completo,
       // no había ninguna señal clara de que el sistema hubiera acabado de
       // trabajar -- solo aparecían los botones de practicar, fáciles de
       // confundir con "sigue generando").
-      acciones.push(`<span class="documento-card-banco-estado documento-card-banco-completo">${icono("check", 14)} ${total} ${nombreItem}${total === 1 ? "" : "s"} generada${total === 1 ? "" : "s"}</span>`);
+      estadoHtml = `<span class="documento-card-tipo-estado documento-card-tipo-estado-generado">${icono("check", 12)} ${total} ${nombreItem}${total === 1 ? "" : "s"} generada${total === 1 ? "" : "s"}</span>`;
     } else if (estado === "error") {
-      acciones.push(`<span class="documento-card-banco-estado documento-card-banco-error">No se pudo generar</span>`);
+      estadoHtml = `<span class="documento-card-tipo-estado documento-card-tipo-estado-error">No se pudo generar</span>`;
       acciones.push(`<button type="button" class="documento-card-btn" data-banco-generar="${tipo}" data-id="${doc.id}">Reintentar</button>`);
     } else if (estado === "atascado") {
       // "atascado" (03/08/2026, bug real): el backend deja de reportar un
@@ -265,7 +288,7 @@ function filaBanco(doc, tipo) {
       // despliegue del servidor, por ejemplo) sin llegar a terminar. Antes
       // esto dejaba el documento mostrando "Generando..." para siempre,
       // sin ninguna forma de reintentar.
-      acciones.push(`<span class="documento-card-banco-estado documento-card-banco-error">La generación se interrumpió${total > 0 ? ` (se quedaron ${total} guardadas)` : ""}</span>`);
+      estadoHtml = `<span class="documento-card-tipo-estado documento-card-tipo-estado-error">La generación se interrumpió${total > 0 ? ` (se quedaron ${total} guardadas)` : ""}</span>`;
       acciones.push(`<button type="button" class="documento-card-btn" data-banco-generar="${tipo}" data-id="${doc.id}">Reintentar</button>`);
     }
     if (total > 0) {
@@ -286,11 +309,15 @@ function filaBanco(doc, tipo) {
     }
   }
 
-  // Sin el tope interno en la etiqueta tampoco -- mismo motivo que arriba.
-  const etiquetaCantidad = total > 0 ? ` (${total})` : "";
   return `
-    <div class="documento-card-fila">
-      <span class="documento-card-fila-label">${iconoHtml} ${label}${etiquetaCantidad}</span>
+    <div class="documento-card-tipo">
+      <div class="documento-card-tipo-cabecera">
+        <span class="documento-card-tipo-icono">${iconoHtml}</span>
+        <div class="documento-card-tipo-info">
+          <span class="documento-card-tipo-label">${label}</span>
+          ${estadoHtml}
+        </div>
+      </div>
       <div class="documento-card-fila-acciones">${acciones.join("")}</div>
     </div>
   `;
@@ -409,37 +436,42 @@ function tarjetaDocumento(doc, modoCarpeta) {
     doc.fecha_subida ? `subido el ${formatearFecha(doc.fecha_subida)}` : null
   ].filter(Boolean).join(" · ");
 
-  const filas = [
+  // Iconos distintos por tipo (05/08/2026, rediseño visual): "Resumen"
+  // usaba el mismo icono genérico de "documento" que ahora identifica a
+  // los documentos sueltos en la vista de carpetas -- para no repetir ese
+  // significado aquí, usa "lista" (afín a un resumen en puntos clave).
+  // Esquema/Tarjetas/Test mantienen los iconos que ya usa el resto del
+  // sitio para cada herramienta (esquema, tarjeta, matraz).
+  const filasContenido = [
     filaContenido({
-      label: "Resumen", iconoHtml: icono("documento", 16), existe: doc.tiene_resumen,
+      label: "Resumen", iconoHtml: icono("lista", 18), existe: doc.tiene_resumen,
       urlVer: `/subida-pdf-resumen/?documento_id=${doc.id}&ver=resumen`,
       urlGenerar: `/subida-pdf-resumen/?documento_id=${doc.id}`,
       textoGenerar: "Generar resumen"
     }),
     filaContenido({
-      label: "Esquema", iconoHtml: icono("esquema", 16), existe: doc.tiene_esquema,
+      label: "Esquema", iconoHtml: icono("esquema", 18), existe: doc.tiene_esquema,
       urlVer: `/subida-pdf-esquemas/?documento_id=${doc.id}&ver=esquema`,
       urlGenerar: `/subida-pdf-esquemas/?documento_id=${doc.id}`,
       textoGenerar: "Generar esquema"
     }),
     filaContenido({
-      label: "Tarjetas", iconoHtml: icono("tarjeta", 16), existe: doc.num_tarjetas > 0, cantidad: doc.num_tarjetas,
+      label: "Tarjetas", iconoHtml: icono("tarjeta", 18), existe: doc.num_tarjetas > 0, cantidad: doc.num_tarjetas,
       urlVer: `/subida-pdf-tarjetas/?documento_id=${doc.id}&ver=tarjetas&modo=todas`,
       urlAleatorias: `/subida-pdf-tarjetas/?documento_id=${doc.id}&ver=tarjetas&modo=aleatorias&cantidad=10`,
       urlGenerar: `/subida-pdf-tarjetas/?documento_id=${doc.id}`,
       textoGenerar: "Generar tarjetas"
     }),
     filaContenido({
-      label: "Test", iconoHtml: icono("matraz", 16), existe: doc.num_tests > 0,
+      label: "Test", iconoHtml: icono("matraz", 18), existe: doc.num_tests > 0,
       cantidad: doc.num_tests ? `${doc.num_tests} intento${doc.num_tests > 1 ? "s" : ""}` : null,
       urlVer: `/subida-pdf-generar-test/?documento_id=${doc.id}&ver=test`,
       urlGenerar: `/subida-pdf-generar-test/?documento_id=${doc.id}`,
       urlContinuar: doc.test_en_progreso ? `/subida-pdf-generar-test/?resume=${doc.test_en_progreso}` : null,
       textoGenerar: "Generar test"
-    }),
-    filaBanco(doc, "preguntas"),
-    filaBanco(doc, "tarjetas")
+    })
   ].join("");
+  const filasBanco = [filaBanco(doc, "preguntas"), filaBanco(doc, "tarjetas")].join("");
 
   return `
     <div class="documento-card" data-id="${doc.id}">
@@ -455,7 +487,10 @@ function tarjetaDocumento(doc, modoCarpeta) {
         </div>
       </div>
       ${seccionCarpeta(doc, modoCarpeta)}
-      ${filas}
+      <p class="documento-card-seccion-titulo">Contenido generado</p>
+      <div class="documento-card-tipos">${filasContenido}</div>
+      <p class="documento-card-seccion-titulo">Banco de práctica</p>
+      <div class="documento-card-tipos">${filasBanco}</div>
     </div>
   `;
 }

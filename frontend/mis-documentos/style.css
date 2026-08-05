@@ -142,8 +142,20 @@ body {
   background: var(--age-bg);
 }
 
+/* Color por tipo (05/08/2026, a petición del usuario): antes carpetas y
+   documentos sueltos usaban el mismo color de icono en esta vista mixta --
+   había que leer el nombre o el contador ("N documentos" vs. "Sin
+   carpeta") para distinguirlos. Ahora el color del icono lo dice de un
+   vistazo: azul (--age-info) para carpetas, el naranja de marca
+   (--age-primary-dark, el mismo que ya usa el icono de cabecera al abrir
+   un documento) para documentos sueltos. */
 .carpeta-tile-icono {
   font-size: 1.8rem;
+  color: var(--age-info);
+}
+
+.carpeta-tile-especial .carpeta-tile-icono {
+  color: var(--age-primary-dark);
 }
 
 .carpeta-tile-nombre {
@@ -336,31 +348,104 @@ body {
   font-size: 0.82rem;
 }
 
-.documento-card-fila {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 0;
-  border-top: 1px solid var(--age-border);
-  flex-wrap: wrap;
+/* Rediseño de "Contenido generado"/"Banco de práctica" (05/08/2026, a
+   petición del usuario: la lista de filas finas anterior era difícil de
+   escanear -- resumen, esquema, tarjetas, test y los dos bancos se veían
+   todos igual, solo diferenciados por un icono pequeño y texto). Ahora
+   cada tipo es un panel propio con icono en una insignia de color, estado
+   explícito (Generado/Aún no generado/En progreso) y sus acciones debajo,
+   dentro de dos grupos con título. */
+.documento-card-seccion-titulo {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--age-ink-faint, var(--age-ink-soft));
+  margin: 20px 0 10px;
 }
 
-.documento-card-fila-label {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--age-ink);
+.documento-card-seccion-titulo:first-of-type {
+  margin-top: 16px;
+}
+
+.documento-card-tipos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.documento-card-tipo {
   display: flex;
   align-items: center;
-  gap: 6px;
-  white-space: nowrap;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  border-radius: var(--age-radius-md);
+  border: 1px solid var(--age-border);
+  background: var(--age-bg);
+}
+
+.documento-card-tipo-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 170px;
+}
+
+.documento-card-tipo-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--age-radius-sm);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+}
+
+.documento-card-tipo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.documento-card-tipo-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--age-ink);
+}
+
+.documento-card-tipo-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--age-ink-soft);
+  width: fit-content;
+}
+
+.documento-card-tipo-estado-generado {
+  color: var(--age-success);
+}
+
+.documento-card-tipo-estado-progreso {
+  color: var(--age-primary-dark);
+}
+
+.documento-card-tipo-estado-error {
+  color: var(--age-danger);
 }
 
 .documento-card-fila-acciones {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .documento-card-btn {
@@ -409,25 +494,6 @@ body {
 .documento-card-banco-input:focus {
   outline: none;
   border-color: var(--age-primary);
-}
-
-.documento-card-banco-estado {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--age-ink-soft, var(--age-ink));
-  align-self: center;
-  white-space: nowrap;
-}
-
-.documento-card-banco-error {
-  color: var(--age-danger, #c0392b);
-}
-
-.documento-card-banco-completo {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--age-success, #2f9e44);
 }
 
 .documento-card-btn.principal:hover {
@@ -707,12 +773,13 @@ body {
   .documentos-lista {
     grid-template-columns: 1fr;
   }
-  .documento-card-fila {
+  .documento-card-tipo {
     flex-direction: column;
     align-items: flex-start;
   }
   .documento-card-fila-acciones {
     width: 100%;
+    margin-left: 0;
   }
   .carpeta-detalle-cabecera {
     flex-direction: column;
