@@ -277,6 +277,22 @@ async function obtenerAuthHeaders() {
         speechSynthesis.speak(utterance);
       }
     }
+    // La tarjeta usa altura fija para el volteo 3D (las dos caras van
+    // superpuestas con position:absolute, así que necesitan la misma
+    // altura) -- con una pregunta o respuesta larga, el texto se salía por
+    // debajo del borde redondeado en vez de quedarse dentro (05/08/2026,
+    // bug real reportado con capturas). pregunta-tarjeta/respuesta-tarjeta
+    // son hijos normales dentro de un flex en columna (no estirados por
+    // align-items), así que su altura natural ya refleja lo que ocupa el
+    // texto real aunque el padre tenga una altura fija -- se mide esa
+    // altura y se agranda la tarjeta para que quepa siempre entera.
+    function ajustarAlturaTarjeta() {
+      const ALTURA_MINIMA = window.innerWidth <= 768 ? 250 : 300;
+      const ALTURA_EXTRAS = 140; // relleno + separación + botón "Escuchar" (cara trasera) + hueco para el indicador de volteo
+      const necesaria = Math.max(preguntaTarjeta.scrollHeight, respuestaTarjeta.scrollHeight) + ALTURA_EXTRAS;
+      tarjetaElement.style.height = Math.max(ALTURA_MINIMA, necesaria) + 'px';
+    }
+
     function mostrarTarjetaActual() {
       if (tarjetas.length === 0) return;
       const tarjeta = tarjetas[tarjetaActual];
@@ -287,9 +303,16 @@ async function obtenerAuthHeaders() {
       tarjetaElement.classList.remove('volteada');
       btnAnterior.disabled = tarjetaActual === 0;
       btnSiguiente.disabled = tarjetaActual === tarjetas.length - 1;
+      ajustarAlturaTarjeta();
       // Auto-guardar al cambiar de tarjeta
       guardarEstado();
     }
+
+    let temporizadorRedimension = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(temporizadorRedimension);
+      temporizadorRedimension = setTimeout(ajustarAlturaTarjeta, 150);
+    });
     // Las tarjetas las genera la IA a partir de un PDF subido por el
     // usuario: se escapan antes de pintarlas para que un documento con
     // "<script>" o similar como texto plano no se ejecute al mostrarlas.
@@ -564,6 +587,16 @@ async function obtenerAuthHeaders() {
       }
       // ✅ ALEATORIZAR
       tarjetas = shuffleArray(tarjetasEntrada);
+      // "Volver al documento" (05/08/2026): visible durante el repaso, para
+      // poder generar más test o tarjetas del mismo documento sin tener
+      // que salir del todo y buscarlo a mano en Mis Documentos.
+      if (documentoIdActual) {
+        const enlaceVolver = document.getElementById('enlace-volver-documento');
+        if (enlaceVolver) {
+          enlaceVolver.href = `/mis-documentos/?destacar=${encodeURIComponent(documentoIdActual)}`;
+          enlaceVolver.classList.remove('hidden');
+        }
+      }
       if (advertencia) {
         alertaPreguntas.innerHTML = `
           <div class="alerta-aviso">

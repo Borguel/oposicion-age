@@ -5,10 +5,43 @@
    propios iconos de Font Awesome, etc.) */
 
 .pdfherr-header {
+  position: relative;
   background: var(--age-navy);
   color: #fff;
   padding: 40px 20px 32px;
   text-align: center;
+}
+
+/* Volver a Mis Documentos (05/08/2026): visible durante todo el test/
+   repaso cuando viene de un documento ya subido en la biblioteca, para
+   poder volver fácilmente a generar más test o tarjetas del mismo
+   documento sin tener que navegar a mano por los menús. */
+.enlace-volver-documento {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--age-radius-pill);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.enlace-volver-documento:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+@media (max-width: 640px) {
+  .enlace-volver-documento {
+    position: static;
+    display: inline-flex;
+    margin-bottom: 14px;
+  }
 }
 
 .pdfherr-header .pdfherr-icon {

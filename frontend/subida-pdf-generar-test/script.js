@@ -383,6 +383,17 @@ async function obtenerAuthHeaders() {
       indicePreguntaActual = 0;
       document.getElementById('contenedor-carga').style.display = 'none';
 
+      // "Volver al documento" (05/08/2026): visible mientras se hace el
+      // test, para poder generar más test o tarjetas del mismo documento
+      // sin tener que salir del todo y buscarlo a mano en Mis Documentos.
+      if (documentoIdActual) {
+        const enlaceVolver = document.getElementById('enlace-volver-documento');
+        if (enlaceVolver) {
+          enlaceVolver.href = `/mis-documentos/?destacar=${encodeURIComponent(documentoIdActual)}`;
+          enlaceVolver.classList.remove('hidden');
+        }
+      }
+
       const { obtenerOposicionActual } = await import("/assets/oposicion.js");
       oposicionActual = obtenerOposicionActual();
       const favoritasApi = await import("/assets/favoritas.js");
