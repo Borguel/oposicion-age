@@ -44,6 +44,66 @@ def _normalizar(texto):
     return re.sub(r"\s+", " ", str(texto or "").strip().lower())
 
 
+# Longitud mínima de la respuesta normalizada para entrar en la comparación
+# de contención/solapamiento de abajo (05/08/2026, mismo valor y mismo
+# motivo que _LONGITUD_MINIMA_CONTENCION en test_generator.py: por debajo
+# de esto una coincidencia de texto es demasiado corta para ser una señal
+# fiable de que dos tarjetas tratan el mismo hecho -- daría falsos
+# positivos con respuestas cortas tipo "Sí." o "El Consejo.").
+_LONGITUD_MINIMA_CONTENCION_TARJETA = 25
+# Umbral de solapamiento de palabras (índice de Jaccard) para considerar dos
+# respuestas el mismo hecho reformulado -- mismo valor 0.5 ya probado con
+# datos reales en test_generator.py._UMBRAL_SOLAPAMIENTO_RESPUESTA (separa
+# con margen amplio una reformulación del mismo hecho, 0.5-0.9, de dos
+# hechos legítimamente distintos, que dan como mucho ~0.2).
+_UMBRAL_SOLAPAMIENTO_TARJETA = 0.5
+
+
+def _solapamiento_palabras(texto_a, texto_b):
+    """Proporción de Jaccard entre las palabras de dos textos (intersección
+    entre unión) -- ver _UMBRAL_SOLAPAMIENTO_TARJETA."""
+    palabras_a = set(re.findall(r"\w+", texto_a))
+    palabras_b = set(re.findall(r"\w+", texto_b))
+    if not palabras_a or not palabras_b:
+        return 0.0
+    return len(palabras_a & palabras_b) / len(palabras_a | palabras_b)
+
+
+def _es_semanticamente_duplicada(tarjeta, tarjetas_existentes):
+    """Red de seguridad SEMÁNTICA adicional al dedup por texto exacto de
+    _normalizar (05/08/2026, bug real reportado por el usuario: comparando
+    un banco de 100 tarjetas generadas contra su PDF de origen, ~40-50 eran
+    reformulaciones del mismo puñado de hechos -- p.ej. 10 tarjetas
+    distintas preguntando, cada una con otras palabras, qué mecanismos de
+    ayuda financiera creó la UE. El dedup por _normalizar solo caza el
+    texto IDÉNTICO de la pregunta, así que ninguna de esas reformulaciones
+    se detectaba entre sí).
+
+    Mismo enfoque que _es_duplicado_por_contencion en test_generator.py
+    (deliberadamente simplificado: sin el filtro de "mismo artículo citado"
+    de ahí, porque las tarjetas no siempre citan un número de artículo y
+    exigirlo aquí solo perdería recall) -- compara la RESPUESTA normalizada
+    de la tarjeta candidata contra la de cada tarjeta ya aceptada, por
+    CONTENCIÓN (una es un fragmento literal de la otra) o por SOLAPAMIENTO
+    DE PALABRAS (mismo hecho con las palabras reordenadas o alguna
+    distinta). No compara el enunciado de la pregunta -- dos preguntas
+    pueden abordar el mismo hecho desde ángulos de redacción muy distintos,
+    pero si la respuesta correcta es esencialmente la misma, es la misma
+    tarjeta en la práctica."""
+    respuesta = _normalizar(tarjeta.get("respuesta", ""))
+    if len(respuesta) < _LONGITUD_MINIMA_CONTENCION_TARJETA:
+        return False
+    for otra in tarjetas_existentes:
+        otra_respuesta = _normalizar(otra.get("respuesta", ""))
+        if len(otra_respuesta) < _LONGITUD_MINIMA_CONTENCION_TARJETA:
+            continue
+        if respuesta in otra_respuesta or otra_respuesta in respuesta:
+            return True
+        if _solapamiento_palabras(respuesta, otra_respuesta) >= _UMBRAL_SOLAPAMIENTO_TARJETA:
+            return True
+    return False
+
+
 def _parsear_tarjetas(texto_bruto):
     """Extrae la lista de tarjetas candidatas de la respuesta cruda de
     DeepSeek. Con response_format_json=True el modo JSON nativo de la API
@@ -241,21 +301,31 @@ def _regenerar_una_tarjeta(fragmento, pregunta_descartada, on_usage):
     return None
 
 
-def _asegurar_tarjeta_valida(candidata, fragmento, dedup_lock, claves_vistas, on_usage,
+def _asegurar_tarjeta_valida(candidata, fragmento, dedup_lock, claves_vistas, tarjetas_aceptadas, on_usage,
                               max_intentos=MAX_INTENTOS_POR_TARJETA):
+    """tarjetas_aceptadas: lista compartida (protegida por dedup_lock) de
+    las tarjetas ya aceptadas -- tanto de rondas anteriores del banco
+    (sembrada por el llamante, ver tarjetas_previas en
+    generar_tarjetas_verificadas) como las que otros hilos de ESTA misma
+    llamada vayan aceptando mientras tanto. Se usa para
+    _es_semanticamente_duplicada además del dedup por texto exacto de
+    claves_vistas -- unificar ambos en la misma lista compartida hace que
+    una sola comprobación cubra a la vez duplicados dentro de la ronda,
+    entre fragmentos en paralelo, y entre rondas del banco."""
     tarjeta = candidata
     intentos_restantes = max_intentos
     while intentos_restantes > 0:
         clave = _normalizar(tarjeta["pregunta"])
         with dedup_lock:
-            es_duplicada = clave in claves_vistas
+            es_duplicada = clave in claves_vistas or _es_semanticamente_duplicada(tarjeta, tarjetas_aceptadas)
         if (not es_duplicada and not _contiene_frase_prohibida(tarjeta)
                 and _verificar_tarjeta(tarjeta, fragmento, on_usage)):
             with dedup_lock:
-                if clave in claves_vistas:
-                    es_duplicada = True  # otro hilo aceptó lo mismo mientras se verificaba esta
+                if clave in claves_vistas or _es_semanticamente_duplicada(tarjeta, tarjetas_aceptadas):
+                    es_duplicada = True  # otro hilo aceptó lo mismo (o algo semánticamente igual) mientras se verificaba esta
                 else:
                     claves_vistas.add(clave)
+                    tarjetas_aceptadas.append(tarjeta)
                     return tarjeta
         intentos_restantes -= 1
         if intentos_restantes <= 0:
@@ -267,7 +337,7 @@ def _asegurar_tarjeta_valida(candidata, fragmento, dedup_lock, claves_vistas, on
 
 
 def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso=None,
-                                  tarjetas_a_evitar=None, claves_iniciales=None):
+                                  tarjetas_a_evitar=None, tarjetas_previas=None):
     """Genera hasta num_tarjetas tarjetas de memoria verificadas a partir de
     texto (ya extraído de un PDF). on_usage, si se pasa, recibe el usage de
     cada llamada a DeepSeek (ver AcumuladorTokens en coste_ia.py) -- esta
@@ -285,13 +355,18 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
     dejar empezar a repasar tarjetas ya listas sin esperar a que termine
     todo el documento.
 
-    tarjetas_a_evitar/claves_iniciales (03/08/2026, banco adaptativo, ver
-    generar_banco_tarjetas_adaptativo): permiten encadenar varias llamadas
-    a esta función sobre el MISMO documento sin que cada una parta de cero
-    -- tarjetas_a_evitar se añade al prompt de generación (aviso "no
-    repitas esto"), y claves_iniciales siembra claves_vistas para que el
-    dedup interno de ESTA llamada ya sepa qué se aceptó en rondas
-    anteriores, no solo dentro de sí misma.
+    tarjetas_a_evitar/tarjetas_previas (03/08/2026, banco adaptativo, ver
+    generar_banco_tarjetas_adaptativo; tarjetas_previas añadido 05/08/2026,
+    ver _es_semanticamente_duplicada): permiten encadenar varias llamadas a
+    esta función sobre el MISMO documento sin que cada una parta de cero --
+    tarjetas_a_evitar se añade al prompt de generación (aviso "no repitas
+    esto"), y tarjetas_previas siembra claves_vistas/tarjetas_aceptadas
+    (texto exacto de la pregunta y contención/solapamiento de la respuesta)
+    para que el dedup interno de ESTA llamada ya sepa qué se aceptó en
+    rondas anteriores, no solo dentro de sí misma. A diferencia del antiguo
+    claves_iniciales (solo el texto normalizado de la pregunta),
+    tarjetas_previas son las tarjetas completas -- hace falta la respuesta
+    para la comprobación semántica.
 
     Devuelve {"tarjetas": [...], "descartadas": int, "advertencia": str
     opcional si se generaron menos tarjetas de las pedidas}."""
@@ -319,8 +394,10 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
             "advertencia": "La IA no generó ninguna tarjeta a partir del documento.",
         }
 
+    tarjetas_previas = list(tarjetas_previas or [])
     dedup_lock = threading.Lock()
-    claves_vistas = set(claves_iniciales or [])
+    claves_vistas = {_normalizar(t.get("pregunta", "")) for t in tarjetas_previas}
+    tarjetas_aceptadas = list(tarjetas_previas)
     tarjetas = []
     descartadas = 0
     total_candidatas = len(pares_candidata_fragmento)
@@ -328,7 +405,8 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
 
     with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_VERIFICACION, len(pares_candidata_fragmento))) as executor:
         futuros = [
-            executor.submit(_asegurar_tarjeta_valida, candidata, fragmento, dedup_lock, claves_vistas, on_usage)
+            executor.submit(_asegurar_tarjeta_valida, candidata, fragmento, dedup_lock, claves_vistas,
+                             tarjetas_aceptadas, on_usage)
             for candidata, fragmento in pares_candidata_fragmento
         ]
         for futuro in as_completed(futuros):
@@ -400,7 +478,8 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
             for fragmento in fragmentos_candidatos:
                 candidatas = _generar_candidatas_fragmento(fragmento, 1, on_usage)
                 resultado = (
-                    _asegurar_tarjeta_valida(candidatas[0], fragmento, dedup_lock, claves_vistas, on_usage)
+                    _asegurar_tarjeta_valida(candidatas[0], fragmento, dedup_lock, claves_vistas,
+                                              tarjetas_aceptadas, on_usage)
                     if candidatas else None
                 )
                 if resultado:
@@ -467,12 +546,22 @@ def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ro
         disparar el gasto en un documento raro que rinda poco ronda tras
         ronda sin llegar nunca a 0).
 
-    Cada ronda usa tarjetas_a_evitar/claves_iniciales (ver
+    Cada ronda usa tarjetas_a_evitar/tarjetas_previas (ver
     generar_tarjetas_verificadas) para que no repita lo ya aceptado en
     rondas anteriores -- sin esto, cada ronda fragmentaría el MISMO
     documento de la MISMA forma y regeneraría tarjetas muy parecidas a las
     ya aceptadas, con un rendimiento decreciente artificial que pararía la
-    generación demasiado pronto.
+    generación demasiado pronto. Pasar las tarjetas completas (no solo sus
+    claves) es lo que permite que generar_tarjetas_verificadas aplique
+    _es_semanticamente_duplicada también CONTRA rondas anteriores, no solo
+    dentro de la ronda actual (05/08/2026, ver el comentario largo de esa
+    función) -- de rebote, esto hace que el freno de
+    _UMBRAL_RENDIMIENTO_MINIMO_BANCO de abajo sea fiable: antes, una ronda
+    podía contarse como "buen rendimiento" aunque sus tarjetas "nuevas"
+    fueran en realidad reformulaciones de hechos ya cubiertos (el dedup
+    entre rondas de aquí abajo solo comparaba texto EXACTO de la pregunta),
+    así que el banco seguía generando rondas hasta el tope aunque el
+    documento ya no diera contenido distinto.
 
     on_progreso(evento), si se pasa, se llama con {"completadas": N,
     "objetivo": tope, "tarjeta": t} por cada tarjeta NUEVA aceptada
@@ -492,7 +581,7 @@ def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ro
         objetivo_ronda = min(tamano_ronda, tope - len(acumuladas))
         resultado_ronda = generar_tarjetas_verificadas(
             texto, objetivo_ronda, on_usage=on_usage,
-            tarjetas_a_evitar=evitar_acumulado, claves_iniciales=claves_acumuladas,
+            tarjetas_a_evitar=evitar_acumulado, tarjetas_previas=acumuladas,
         )
         ronda += 1
         nuevas = []
@@ -504,7 +593,11 @@ def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ro
             if len(acumuladas) >= tope:
                 break
             clave = _normalizar(tarjeta.get("pregunta", ""))
-            if not clave or clave in claves_acumuladas:
+            # Red de seguridad adicional (debería ser redundante: generar_
+            # tarjetas_verificadas ya deduplicó esta tarjeta contra
+            # tarjetas_previas=acumuladas antes de aceptarla) -- se
+            # mantiene por si acaso, es una comprobación gratis.
+            if not clave or clave in claves_acumuladas or _es_semanticamente_duplicada(tarjeta, acumuladas):
                 continue
             claves_acumuladas.add(clave)
             acumuladas.append(tarjeta)

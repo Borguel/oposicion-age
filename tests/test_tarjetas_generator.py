@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from tarjetas_generator import (
     _repartir_cupos, _parsear_tarjetas, _contiene_frase_prohibida, generar_tarjetas_verificadas,
-    _verificar_tarjeta, generar_banco_tarjetas_adaptativo,
+    _verificar_tarjeta, generar_banco_tarjetas_adaptativo, _es_semanticamente_duplicada,
 )
 
 
@@ -56,6 +56,61 @@ class TestContieneFrasesProhibidas:
     def test_tarjeta_autonoma_pasa(self):
         tarjeta = {"pregunta": "¿Qué es la costumbre jurídica?", "respuesta": "Una fuente del derecho no escrita."}
         assert _contiene_frase_prohibida(tarjeta) is False
+
+
+class TestEsSemanticamenteDuplicada:
+    # _es_semanticamente_duplicada (05/08/2026, bug real reportado por el
+    # usuario: un banco de 100 tarjetas con ~40-50 reformulaciones del
+    # mismo puñado de hechos, invisibles al dedup por texto exacto porque
+    # cada una tenía el enunciado redactado de forma distinta).
+    def test_misma_respuesta_reformulada_se_detecta_por_solapamiento(self):
+        # Mismo hecho, mismas palabras, reordenadas -- el caso real
+        # reportado por el usuario (10 tarjetas preguntando por los
+        # mecanismos de ayuda financiera de la UE, cada una con la
+        # respuesta redactada en otro orden).
+        existentes = [{
+            "pregunta": "¿Qué mecanismos de ayuda financiera creó la UE?",
+            "respuesta": "La UE creó el MEEF, el FEEF y el MEDE como mecanismos de ayuda financiera para los Estados miembros.",
+        }]
+        nueva = {
+            "pregunta": "¿Qué instrumentos de asistencia financiera puso en marcha la Unión Europea?",
+            "respuesta": "La UE creó como mecanismos de ayuda financiera para los Estados miembros el MEEF, el FEEF y el MEDE.",
+        }
+        assert _es_semanticamente_duplicada(nueva, existentes) is True
+
+    def test_respuesta_contenida_en_otra_mas_amplia_se_detecta(self):
+        existentes = [{
+            "pregunta": "¿Qué establece el artículo 8 sobre las Fuerzas Armadas?",
+            "respuesta": "Tienen como misión garantizar la soberanía e independencia de España y defender su integridad territorial.",
+        }]
+        nueva = {
+            "pregunta": "¿Cuál es la misión de las Fuerzas Armadas según el artículo 8?",
+            "respuesta": "Garantizar la soberanía e independencia de España y defender su integridad territorial.",
+        }
+        assert _es_semanticamente_duplicada(nueva, existentes) is True
+
+    def test_hechos_distintos_del_mismo_tema_no_se_marcan_como_duplicados(self):
+        existentes = [{
+            "pregunta": "¿Qué mayoría exige el Congreso para aprobar la ley?",
+            "respuesta": "Mayoría absoluta en primera votación.",
+        }]
+        nueva = {
+            "pregunta": "¿Cuándo entra en vigor la ley?",
+            "respuesta": "A los veinte días de su publicación completa en el Boletín Oficial del Estado.",
+        }
+        assert _es_semanticamente_duplicada(nueva, existentes) is False
+
+    def test_respuestas_demasiado_cortas_no_se_comparan(self):
+        # Por debajo de _LONGITUD_MINIMA_CONTENCION_TARJETA una coincidencia
+        # de texto es demasiado corta para ser una señal fiable (daría
+        # falsos positivos con respuestas tipo "Sí." o "El Consejo.").
+        existentes = [{"pregunta": "¿Es obligatorio?", "respuesta": "Sí."}]
+        nueva = {"pregunta": "¿Hace falta hacerlo?", "respuesta": "Sí."}
+        assert _es_semanticamente_duplicada(nueva, existentes) is False
+
+    def test_lista_vacia_nunca_es_duplicada(self):
+        nueva = {"pregunta": "¿Qué es el TFUE?", "respuesta": "El Tratado de Funcionamiento de la Unión Europea."}
+        assert _es_semanticamente_duplicada(nueva, []) is False
 
 
 def _es_prompt_generacion(messages):
@@ -410,7 +465,7 @@ class TestGenerarBancoTarjetasAdaptativo:
         # prompt ya lleva el aviso "no repitas" (ver tarjetas_generator.
         # _prompt_con_exclusion) -- se simula que el documento ya no da más
         # devolviendo SIEMPRE la misma tarjeta de la ronda 1, que el dedup
-        # (interno vía claves_iniciales, y el de esta función) descarta por
+        # (interno vía tarjetas_previas, y el de esta función) descarta por
         # completo. El bajo rendimiento de la ronda 2 (0 nuevas) debe parar
         # la generación mucho antes de llegar al tope de 100.
         def fake_call(messages, **kwargs):
@@ -450,3 +505,31 @@ class TestGenerarBancoTarjetasAdaptativo:
         assert len(resultado) == 1
         assert len(eventos) == 1
         assert eventos[0] == {"completadas": 1, "objetivo": 20, "tarjeta": resultado[0]}
+
+    def test_para_por_bajo_rendimiento_con_duplicados_reformulados_entre_rondas(self):
+        # Caso real reportado por el usuario: la ronda 2 no repite el
+        # enunciado LITERAL de la ronda 1 (así que el dedup antiguo, solo
+        # por texto exacto, la aceptaba igual), pero pregunta por el MISMO
+        # hecho con la respuesta reordenada -- debe detectarse como
+        # duplicada vía _es_semanticamente_duplicada y contar como
+        # rendimiento 0 en la ronda 2, parando el banco antes del tope.
+        def fake_call(messages, **kwargs):
+            if _es_prompt_generacion(messages):
+                if "No repitas ninguna de estas tarjetas" in messages[0]["content"]:
+                    return json.dumps({"tarjetas": [{
+                        "pregunta": "¿Qué instrumentos de asistencia financiera puso en marcha la Unión Europea?",
+                        "respuesta": "La UE creó como mecanismos de ayuda financiera para los Estados miembros el MEEF, el FEEF y el MEDE.",
+                    }]})
+                return json.dumps({"tarjetas": [{
+                    "pregunta": "¿Qué mecanismos de ayuda financiera creó la UE?",
+                    "respuesta": "La UE creó el MEEF, el FEEF y el MEDE como mecanismos de ayuda financiera para los Estados miembros.",
+                }]})
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            raise AssertionError("prompt inesperado")
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
+            resultado = generar_banco_tarjetas_adaptativo("Documento.", tope=100, tamano_ronda=1)
+
+        assert len(resultado) == 1
