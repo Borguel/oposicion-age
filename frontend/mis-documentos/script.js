@@ -27,6 +27,23 @@ function normalizarTexto(texto) {
   return (texto || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
+// Cuota mensual de documentos con banco generado (05/08/2026): aviso
+// discreto para que no te enteres del límite solo cuando lo agotas y sale
+// el 429 -- sin ninguna cifra de coste, solo el conteo de documentos.
+function pintarCuotaDocumentosMes(cuota) {
+  const el = document.getElementById("cuota-documentos-mes");
+  if (!el) return;
+  const usados = cuota?.usados ?? 0;
+  const limite = cuota?.limite ?? 0;
+  if (!limite || limite <= 0) {
+    el.classList.add("hidden");
+    return;
+  }
+  el.textContent = `${usados} de ${limite} documentos generados este mes`;
+  el.classList.toggle("cuota-documentos-mes-alerta", usados / limite >= 0.8);
+  el.classList.remove("hidden");
+}
+
 function formatearFecha(iso) {
   if (!iso) return "";
   try {
@@ -34,6 +51,113 @@ function formatearFecha(iso) {
   } catch (e) {
     return "";
   }
+}
+
+// === Modales genéricos de confirmación/texto (05/08/2026) ===
+// Sustituyen a confirm()/prompt() nativos del navegador -- desentonaban con
+// el resto de la página, que ya tiene sus propios modales
+// (.documentos-modal-*). Ambos devuelven una Promise, como su equivalente
+// nativo, para poder seguir escribiendo `if (!(await mostrarConfirmacion(...)))
+// return;` en el sitio de la llamada.
+
+function mostrarConfirmacion({ titulo = "Confirmar", mensaje, textoAceptar = "Confirmar", peligro = false }) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("modal-confirmar");
+    const btnAceptar = document.getElementById("confirmar-aceptar");
+    const btnCancelar = document.getElementById("confirmar-cancelar");
+    const btnCerrar = document.getElementById("confirmar-cerrar");
+
+    document.getElementById("confirmar-titulo").textContent = titulo;
+    document.getElementById("confirmar-mensaje").textContent = mensaje;
+    btnAceptar.textContent = textoAceptar;
+    btnAceptar.classList.toggle("age-btn-danger", peligro);
+    btnAceptar.classList.toggle("age-btn-primary", !peligro);
+
+    const terminar = (resultado) => {
+      overlay.classList.add("hidden");
+      btnAceptar.removeEventListener("click", onAceptar);
+      btnCancelar.removeEventListener("click", onCancelar);
+      btnCerrar.removeEventListener("click", onCancelar);
+      overlay.removeEventListener("click", onOverlay);
+      resolve(resultado);
+    };
+    const onAceptar = () => terminar(true);
+    const onCancelar = () => terminar(false);
+    const onOverlay = (evento) => { if (evento.target === overlay) terminar(false); };
+
+    btnAceptar.addEventListener("click", onAceptar);
+    btnCancelar.addEventListener("click", onCancelar);
+    btnCerrar.addEventListener("click", onCancelar);
+    overlay.addEventListener("click", onOverlay);
+    overlay.classList.remove("hidden");
+  });
+}
+
+function mostrarPrompt({ titulo, label, valorInicial = "", placeholder = "", textoAceptar = "Guardar" }) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("modal-prompt");
+    const formulario = document.getElementById("prompt-formulario");
+    const input = document.getElementById("prompt-input");
+    const btnCancelar = document.getElementById("prompt-cancelar");
+    const btnCerrar = document.getElementById("prompt-cerrar");
+
+    document.getElementById("prompt-titulo").textContent = titulo;
+    document.getElementById("prompt-label").textContent = label;
+    document.getElementById("prompt-aceptar").textContent = textoAceptar;
+    input.value = valorInicial;
+    input.placeholder = placeholder;
+
+    const terminar = (resultado) => {
+      overlay.classList.add("hidden");
+      formulario.removeEventListener("submit", onSubmit);
+      btnCancelar.removeEventListener("click", onCancelar);
+      btnCerrar.removeEventListener("click", onCancelar);
+      overlay.removeEventListener("click", onOverlay);
+      resolve(resultado);
+    };
+    const onSubmit = (evento) => { evento.preventDefault(); terminar(input.value); };
+    const onCancelar = () => terminar(null);
+    const onOverlay = (evento) => { if (evento.target === overlay) terminar(null); };
+
+    formulario.addEventListener("submit", onSubmit);
+    btnCancelar.addEventListener("click", onCancelar);
+    btnCerrar.addEventListener("click", onCancelar);
+    overlay.addEventListener("click", onOverlay);
+    overlay.classList.remove("hidden");
+    input.focus();
+    input.select();
+  });
+}
+
+// Toast "Deshacer" (05/08/2026): sustituye al confirm() bloqueante de
+// eliminar documento -- el borrado se hace optimista (se quita YA de la
+// vista) y solo se llama de verdad al backend si el aviso desaparece sin
+// que se pulse "Deshacer". Los botones de renombrar/eliminar están muy
+// juntos en la tarjeta, así que este margen evita perder un documento por
+// un clic torpe.
+function mostrarToastDeshacer({ mensaje, alDeshacer, alConfirmar, duracionMs = 6000 }) {
+  const contenedor = document.getElementById("toast-contenedor");
+  const toast = document.createElement("div");
+  toast.className = "documentos-toast";
+  toast.innerHTML = `<span></span><button type="button" class="documentos-toast-deshacer">Deshacer</button>`;
+  toast.querySelector("span").textContent = mensaje;
+  contenedor.appendChild(toast);
+
+  let resuelto = false;
+  const temporizador = setTimeout(() => {
+    if (resuelto) return;
+    resuelto = true;
+    toast.remove();
+    alConfirmar();
+  }, duracionMs);
+
+  toast.querySelector(".documentos-toast-deshacer").addEventListener("click", () => {
+    if (resuelto) return;
+    resuelto = true;
+    clearTimeout(temporizador);
+    toast.remove();
+    alDeshacer();
+  });
 }
 
 function filaContenido({ label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar, urlContinuar }) {
@@ -370,13 +494,23 @@ function renderizarCarpetas() {
   });
 }
 
+// Filtro de texto dentro de una carpeta (05/08/2026): el buscador de arriba
+// solo funciona en la vista de carpetas -- este es su equivalente DENTRO de
+// una, para no depender de scroll cuando hay muchos documentos ahí. Se
+// reinicia cada vez que se entra en una carpeta (ver abrirCarpeta).
+let filtroCarpetaActual = "";
+
 function renderizarDocumentosDeCarpeta() {
   const contenedor = document.getElementById("carpeta-detalle-lista");
   const esSinCarpeta = carpetaActual === SIN_CARPETA;
-  const docsFiltrados = documentos.filter((d) => (esSinCarpeta ? !d.carpeta : d.carpeta === carpetaActual));
+  const q = normalizarTexto(filtroCarpetaActual);
+  const docsFiltrados = documentos.filter((d) => (esSinCarpeta ? !d.carpeta : d.carpeta === carpetaActual))
+    .filter((d) => !q || normalizarTexto(d.titulo || d.nombre_archivo).includes(q));
 
   if (docsFiltrados.length === 0) {
-    contenedor.innerHTML = `<p class="documentos-carpeta-vacia">No hay documentos aquí todavía.</p>`;
+    contenedor.innerHTML = q
+      ? `<p class="documentos-carpeta-vacia">Sin resultados para "${escaparHtml(filtroCarpetaActual)}".</p>`
+      : `<p class="documentos-carpeta-vacia">No hay documentos aquí todavía.</p>`;
     return;
   }
 
@@ -414,7 +548,10 @@ function renderizarDocumentosDeCarpeta() {
 async function renombrarDocumento(documentoId) {
   const doc = documentos.find((d) => d.id === documentoId);
   if (!doc) return;
-  const nuevoNombre = prompt("Nuevo nombre del documento:", doc.titulo || doc.nombre_archivo || "");
+  const nuevoNombre = await mostrarPrompt({
+    titulo: "Renombrar documento", label: "Nuevo nombre",
+    valorInicial: doc.titulo || doc.nombre_archivo || "",
+  });
   if (nuevoNombre === null) return;
   const limpio = nuevoNombre.trim();
   if (!limpio) return;
@@ -436,32 +573,52 @@ async function renombrarDocumento(documentoId) {
   }
 }
 
-async function eliminarDocumento(documentoId) {
+function refrescarVistasDocumentos() {
+  if (carpetaActual !== null) renderizarDocumentosDeCarpeta();
+  const query = document.getElementById("filtro-busqueda")?.value;
+  if (query) renderizarBusqueda(query);
+}
+
+// Borrado optimista con "Deshacer" (05/08/2026, ver mostrarToastDeshacer):
+// el documento desaparece de la vista al instante, pero el DELETE real al
+// backend no se dispara hasta que el toast expira sin deshacerse. No borra
+// en cascada lo ya generado a partir de él (ver documentos_pdf.
+// eliminar_documento) -- solo deja de aparecer agrupado aquí.
+function eliminarDocumento(documentoId) {
   const doc = documentos.find((d) => d.id === documentoId);
   if (!doc) return;
-  const nombre = doc.titulo || doc.nombre_archivo || "este documento";
-  // No borra en cascada lo ya generado a partir de él (ver
-  // documentos_pdf.eliminar_documento) -- se avisa para que no se
-  // interprete como "esto borra también mis tests/resúmenes".
-  const confirmado = confirm(
-    `¿Eliminar "${nombre}" de tu biblioteca? Los resúmenes, esquemas, tarjetas o tests que ya hubieras generado a partir de él no se borran, pero dejarán de aparecer agrupados aquí.`
-  );
-  if (!confirmado) return;
-  try {
-    const token = await idToken();
-    const res = await fetch(`${BACKEND_URL}/documento/${documentoId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const datos = await res.json();
-    if (!res.ok) throw new Error(datos.error || "No se pudo eliminar el documento.");
-    documentos = documentos.filter((d) => d.id !== documentoId);
-    if (carpetaActual !== null) renderizarDocumentosDeCarpeta();
-    const query = document.getElementById("filtro-busqueda")?.value;
-    if (query) renderizarBusqueda(query);
-  } catch (e) {
-    mostrarErrorGlobal(e.message || "No se pudo eliminar el documento.");
-  }
+  const nombre = doc.titulo || doc.nombre_archivo || "Documento";
+
+  documentos = documentos.filter((d) => d.id !== documentoId);
+  refrescarVistasDocumentos();
+
+  mostrarToastDeshacer({
+    mensaje: `"${nombre}" eliminado de tu biblioteca.`,
+    alDeshacer: () => {
+      documentos.push(doc);
+      refrescarVistasDocumentos();
+    },
+    alConfirmar: async () => {
+      try {
+        const token = await idToken();
+        const res = await fetch(`${BACKEND_URL}/documento/${documentoId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          const datos = await res.json().catch(() => ({}));
+          throw new Error(datos.error || "No se pudo eliminar el documento.");
+        }
+      } catch (e) {
+        // El borrado real falló DESPUÉS de haberlo quitado ya de la vista
+        // -- se restaura para no dejar el frontend desincronizado del
+        // servidor (donde el documento sigue existiendo).
+        documentos.push(doc);
+        refrescarVistasDocumentos();
+        mostrarErrorGlobal(e.message || "No se pudo eliminar el documento.");
+      }
+    },
+  });
 }
 
 function abrirCarpeta(idCarpeta) {
@@ -473,6 +630,9 @@ function abrirCarpeta(idCarpeta) {
   document.getElementById("carpeta-detalle-titulo").textContent = esSinCarpeta ? "Sin carpeta" : idCarpeta;
   document.getElementById("btn-eliminar-carpeta").classList.toggle("hidden", esSinCarpeta);
   document.getElementById("btn-anadir-documentos").classList.toggle("hidden", esSinCarpeta);
+  filtroCarpetaActual = "";
+  const inputFiltroCarpeta = document.getElementById("filtro-busqueda-carpeta");
+  if (inputFiltroCarpeta) inputFiltroCarpeta.value = "";
 
   renderizarDocumentosDeCarpeta();
 }
@@ -555,7 +715,9 @@ async function onMoverDesdeSinCarpeta(evento) {
   if (!nuevaCarpeta) return;
 
   if (nuevaCarpeta === NUEVA_CARPETA) {
-    const nombre = prompt('Nombre de la nueva carpeta (por ejemplo, "Tema 1"):');
+    const nombre = await mostrarPrompt({
+      titulo: "Nueva carpeta", label: "Nombre de la carpeta", placeholder: 'Por ejemplo, "Tema 1"',
+    });
     if (!nombre || !nombre.trim()) {
       renderizarDocumentosDeCarpeta();
       return;
@@ -578,22 +740,53 @@ async function quitarDeCarpeta(documentoId) {
   renderizarDocumentosDeCarpeta();
 }
 
+// candidatosModalAnadir/seleccionModalAnadir (05/08/2026): la selección se
+// guarda aparte de los checkboxes del DOM porque el buscador del modal
+// vuelve a pintar la lista al filtrar -- si se leyera con
+// querySelectorAll(":checked") al confirmar, cualquier documento marcado y
+// luego oculto por el filtro se perdería.
+let candidatosModalAnadir = [];
+let seleccionModalAnadir = new Set();
+
+function renderizarListaModalAnadir(query) {
+  const lista = document.getElementById("modal-anadir-lista");
+  if (candidatosModalAnadir.length === 0) {
+    lista.innerHTML = `<p class="documentos-modal-vacio">Todos tus documentos ya están en esta carpeta.</p>`;
+    return;
+  }
+  const q = normalizarTexto(query);
+  const filtrados = q
+    ? candidatosModalAnadir.filter((d) => normalizarTexto(d.titulo || d.nombre_archivo).includes(q))
+    : candidatosModalAnadir;
+  if (filtrados.length === 0) {
+    lista.innerHTML = `<p class="documentos-modal-vacio">Sin resultados para "${escaparHtml(query)}".</p>`;
+    return;
+  }
+  lista.innerHTML = filtrados.map((d) => `
+    <label class="documentos-modal-item">
+      <input type="checkbox" value="${d.id}" ${seleccionModalAnadir.has(d.id) ? "checked" : ""} />
+      <span class="documentos-modal-item-titulo">${escaparHtml(d.titulo || d.nombre_archivo || "Documento")}</span>
+      <span class="documentos-modal-item-carpeta">${d.carpeta ? escaparHtml(d.carpeta) : "Sin carpeta"}</span>
+    </label>
+  `).join("");
+  lista.querySelectorAll("input[type=checkbox]").forEach((casilla) => {
+    casilla.addEventListener("change", () => {
+      if (casilla.checked) seleccionModalAnadir.add(casilla.value);
+      else seleccionModalAnadir.delete(casilla.value);
+    });
+  });
+}
+
 function abrirModalAnadir() {
   document.getElementById("modal-anadir-carpeta-nombre").textContent = carpetaActual;
-  const candidatos = documentos.filter((d) => d.carpeta !== carpetaActual);
-  const lista = document.getElementById("modal-anadir-lista");
-
-  if (candidatos.length === 0) {
-    lista.innerHTML = `<p class="documentos-modal-vacio">Todos tus documentos ya están en esta carpeta.</p>`;
-  } else {
-    lista.innerHTML = candidatos.map((d) => `
-      <label class="documentos-modal-item">
-        <input type="checkbox" value="${d.id}" />
-        <span class="documentos-modal-item-titulo">${escaparHtml(d.titulo || d.nombre_archivo || "Documento")}</span>
-        <span class="documentos-modal-item-carpeta">${d.carpeta ? escaparHtml(d.carpeta) : "Sin carpeta"}</span>
-      </label>
-    `).join("");
-  }
+  candidatosModalAnadir = documentos.filter((d) => d.carpeta !== carpetaActual);
+  seleccionModalAnadir = new Set();
+  const busqueda = document.getElementById("modal-anadir-busqueda");
+  busqueda.value = "";
+  // Solo se muestra el buscador si hay candidatos de sobra para que merezca
+  // la pena filtrar -- con pocos, una lista corta ya se ve de un vistazo.
+  busqueda.classList.toggle("hidden", candidatosModalAnadir.length <= 6);
+  renderizarListaModalAnadir("");
   document.getElementById("modal-anadir-documentos").classList.remove("hidden");
 }
 
@@ -641,6 +834,7 @@ async function recargarDocumentos() {
   const datos = await res.json();
   documentos = datos.documentos || [];
   carpetas = datos.carpetas || [];
+  pintarCuotaDocumentosMes(datos.cuota_documentos_mes);
   if (documentos.length > 0) {
     document.getElementById("documentos-vacio").classList.add("hidden");
     document.getElementById("documentos-contenido").classList.remove("hidden");
@@ -738,7 +932,7 @@ function inicializarSubidaDocumento() {
 }
 
 async function confirmarAnadirDocumentos() {
-  const seleccionados = [...document.querySelectorAll("#modal-anadir-lista input:checked")].map((i) => i.value);
+  const seleccionados = [...seleccionModalAnadir];
   cerrarModalAnadir();
   if (seleccionados.length === 0) return;
   await Promise.all(seleccionados.map((id) => asignarCarpeta(id, carpetaActual)));
@@ -747,7 +941,9 @@ async function confirmarAnadirDocumentos() {
 
 function inicializarEventos() {
   document.getElementById("btn-crear-carpeta").addEventListener("click", async () => {
-    const nombre = prompt('Nombre de la nueva carpeta (por ejemplo, "Tema 1"):');
+    const nombre = await mostrarPrompt({
+      titulo: "Nueva carpeta", label: "Nombre de la carpeta", placeholder: 'Por ejemplo, "Tema 1"',
+    });
     if (!nombre || !nombre.trim()) return;
     try {
       await crearCarpetaEnBackend(nombre.trim());
@@ -763,9 +959,12 @@ function inicializarEventos() {
     if (carpetaActual === SIN_CARPETA) return;
     const cantidad = documentos.filter((d) => d.carpeta === carpetaActual).length;
     const mensaje = cantidad > 0
-      ? `¿Eliminar la carpeta "${carpetaActual}"? Los ${cantidad} documento${cantidad === 1 ? "" : "s"} que tiene dentro pasarán a "Sin carpeta" (no se borran).`
+      ? `Los ${cantidad} documento${cantidad === 1 ? "" : "s"} que tiene dentro pasarán a "Sin carpeta" (no se borran).`
       : `¿Eliminar la carpeta "${carpetaActual}"?`;
-    if (!confirm(mensaje)) return;
+    const confirmado = await mostrarConfirmacion({
+      titulo: `Eliminar carpeta "${carpetaActual}"`, mensaje, textoAceptar: "Eliminar", peligro: true,
+    });
+    if (!confirmado) return;
 
     const token = await idToken();
     await fetch(`${BACKEND_URL}/carpetas-documentos`, {
@@ -784,8 +983,15 @@ function inicializarEventos() {
   document.getElementById("modal-anadir-documentos").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-anadir-documentos") cerrarModalAnadir();
   });
+  document.getElementById("modal-anadir-busqueda").addEventListener("input", (evento) => {
+    renderizarListaModalAnadir(evento.target.value);
+  });
 
   document.getElementById("filtro-busqueda").addEventListener("input", (evento) => renderizarBusqueda(evento.target.value));
+  document.getElementById("filtro-busqueda-carpeta").addEventListener("input", (evento) => {
+    filtroCarpetaActual = evento.target.value;
+    renderizarDocumentosDeCarpeta();
+  });
 
   inicializarSubidaDocumento();
 }
@@ -818,6 +1024,7 @@ async function sondearBancosEnGeneracion() {
     const res = await fetch(`${BACKEND_URL}/mis-documentos`, { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) {
       const datos = await res.json();
+      pintarCuotaDocumentosMes(datos.cuota_documentos_mes);
       const porId = new Map((datos.documentos || []).map((d) => [d.id, d]));
       documentos.forEach((doc) => {
         const actualizado = porId.get(doc.id);
@@ -884,6 +1091,7 @@ async function cargarDocumentos() {
     const datos = await res.json();
     documentos = datos.documentos || [];
     carpetas = datos.carpetas || [];
+    pintarCuotaDocumentosMes(datos.cuota_documentos_mes);
     // Se inicializa siempre, incluso con la biblioteca vacía: el botón
     // "Subir documento" del estado vacío usa el mismo modal que el resto.
     inicializarEventos();

@@ -27,6 +27,30 @@ body {
   line-height: 1.5;
 }
 
+/* Cuota mensual de documentos con banco generado (05/08/2026): aviso
+   discreto de "X de Y este mes" para que no se entere solo al agotarla --
+   sin ninguna cifra de coste, igual que el resto de límites que sí se
+   enseñan al usuario. Fondo traslúcido pensado para el navy oscuro de la
+   cabecera (que no cambia con el tema claro/oscuro del sitio). */
+.cuota-documentos-mes {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px auto 0 !important;
+  padding: 5px 14px;
+  border-radius: var(--age-radius-pill);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--age-navy-ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.cuota-documentos-mes-alerta {
+  background: rgba(240, 185, 61, 0.22);
+  color: #ffd88a;
+}
+
 .documentos-wrap {
   padding: 32px 20px 60px;
 }
@@ -168,6 +192,22 @@ body {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+/* Buscador dentro de una carpeta (05/08/2026): antes solo existía el de la
+   vista de carpetas -- si entrabas en una con muchos documentos no había
+   forma de filtrar ahí dentro, solo scroll. */
+.filtro-carpeta-input {
+  display: block;
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 10px 16px;
+  border-radius: var(--age-radius-pill);
+  border: 1px solid var(--age-border);
+  background: var(--age-card);
+  color: var(--age-ink);
+  font-family: var(--age-font);
+  font-size: 0.9rem;
 }
 
 .documentos-carpeta-vacia {
@@ -472,6 +512,21 @@ body {
   color: var(--age-ink);
 }
 
+/* Buscador dentro del modal "Añadir documentos" (05/08/2026): con muchos
+   documentos sueltos, encontrar el que se quiere mover era solo scroll.
+   Se muestra solo cuando hay candidatos suficientes (ver abrirModalAnadir). */
+.documentos-modal-busqueda {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 9px 14px;
+  border-radius: var(--age-radius-pill);
+  border: 1px solid var(--age-border);
+  background: var(--age-bg);
+  color: var(--age-ink);
+  font-family: var(--age-font);
+  font-size: 0.85rem;
+}
+
 .documentos-modal-lista {
   overflow-y: auto;
   display: flex;
@@ -649,5 +704,114 @@ body {
   .carpeta-detalle-cabecera {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* ---------- Modales genéricos de confirmación/texto (05/08/2026) ----------
+   Sustituyen a confirm()/prompt() nativos -- mismo look que el resto de
+   modales de la página (.documentos-modal-*), solo más estrechos porque su
+   contenido es siempre corto (una pregunta o un campo de texto). */
+.documentos-modal-card-pequena {
+  max-width: 380px;
+}
+
+.documentos-modal-mensaje {
+  color: var(--age-ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.documentos-modal-prompt-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--age-ink-soft);
+  margin-bottom: 6px;
+}
+
+.documentos-modal-prompt-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--age-radius-sm);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-bg);
+  color: var(--age-ink);
+  font-family: var(--age-font);
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+}
+
+.documentos-modal-prompt-input:focus {
+  outline: none;
+  border-color: var(--age-primary);
+}
+
+.documentos-modal-acciones-doble {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ---------- Toast "Deshacer" (05/08/2026) ----------
+   Al eliminar un documento se quita ya de la vista, pero no se llama al
+   backend hasta que este aviso desaparece -- si se pulsa "Deshacer" antes,
+   nunca llega a borrarse de verdad. */
+.documentos-toast-contenedor {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 600;
+  width: calc(100% - 40px);
+  max-width: 420px;
+  pointer-events: none;
+}
+
+.documentos-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: var(--age-radius-md);
+  background: var(--age-navy);
+  color: #fff;
+  box-shadow: var(--age-shadow-hover);
+  font-size: 0.88rem;
+  font-weight: 600;
+  pointer-events: auto;
+  animation: documentosToastEntrada 0.2s var(--age-ease);
+}
+
+@keyframes documentosToastEntrada {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.documentos-toast-deshacer {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--age-primary);
+  font-family: var(--age-font);
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--age-radius-sm);
+}
+
+.documentos-toast-deshacer:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@media (max-width: 480px) {
+  .documentos-toast-contenedor {
+    bottom: 16px;
+    width: calc(100% - 24px);
   }
 }

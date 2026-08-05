@@ -619,6 +619,25 @@ class TestMisDocumentos:
         documentos = {d["id"]: d for d in resp.get_json()["documentos"]}
         assert documentos[documento_sembrado]["test_en_progreso"] is None
 
+    def test_expone_la_cuota_mensual_de_documentos_con_banco(self, client, db, documento_sembrado):
+        # 05/08/2026: para que el frontend pueda avisar de forma discreta
+        # antes de agotar el tope de 20 documentos/mes (sin mostrar coste).
+        from datetime import date
+        mes_actual = date.today().strftime("%Y-%m")
+        db.sembrar(("usuarios", "u1"), {
+            "email": "u1@example.com",
+            "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}},
+            "limites_uso": {"banco_pdf_mensual": {"periodo": mes_actual, "contador": 3}},
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.get("/mis-documentos", headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        cuota = resp.get_json()["cuota_documentos_mes"]
+        assert cuota == {"usados": 3, "limite": 20}
+
 
 class TestSubirDocumento:
     """/subir-documento (05/08/2026): sube un PDF y lo deja guardado en la

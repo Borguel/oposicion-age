@@ -31,6 +31,7 @@
   <div class="age-container">
     <h1><span aria-hidden="true" data-icon="libros" data-icon-size="28"></span> Mis documentos</h1>
     <p>Todos los PDF que has subido, organizados por carpetas, con todo lo que ya generaste de cada uno listo para repasar.</p>
+    <p id="cuota-documentos-mes" class="cuota-documentos-mes hidden"></p>
   </div>
 </div>
 
@@ -68,6 +69,7 @@
           <button type="button" class="age-btn age-btn-primary" id="btn-subir-documento-carpeta"><span data-icon="subir" data-icon-size="16"></span> Subir documento</button>
         </div>
       </div>
+      <input type="search" id="filtro-busqueda-carpeta" class="filtro-carpeta-input" placeholder="Buscar en esta carpeta…" />
       <div id="carpeta-detalle-lista" class="documentos-lista"></div>
     </div>
   </div>
@@ -79,6 +81,7 @@
       <h3>Añadir documentos a "<span id="modal-anadir-carpeta-nombre"></span>"</h3>
       <button type="button" class="documentos-modal-cerrar" id="modal-anadir-cerrar" aria-label="Cerrar"><span data-icon="cruz" data-icon-size="16"></span></button>
     </div>
+    <input type="search" id="modal-anadir-busqueda" class="documentos-modal-busqueda hidden" placeholder="Buscar documento por nombre…" />
     <div id="modal-anadir-lista" class="documentos-modal-lista"></div>
     <div class="documentos-modal-acciones">
       <button type="button" class="age-btn age-btn-primary" id="modal-anadir-confirmar">Añadir seleccionados</button>
@@ -119,6 +122,43 @@
     </div>
   </div>
 </div>
+
+<!-- Modales genéricos de confirmación y de texto (05/08/2026): sustituyen a
+     los confirm()/prompt() nativos del navegador, para que crear/eliminar
+     carpeta, renombrar documento, etc. tengan el mismo aspecto que el resto
+     de la página en vez de un diálogo del sistema operativo. -->
+<div class="documentos-modal-overlay hidden" id="modal-confirmar">
+  <div class="age-card documentos-modal-card documentos-modal-card-pequena">
+    <div class="documentos-modal-cabecera">
+      <h3 id="confirmar-titulo">Confirmar</h3>
+      <button type="button" class="documentos-modal-cerrar" id="confirmar-cerrar" aria-label="Cerrar"><span data-icon="cruz" data-icon-size="16"></span></button>
+    </div>
+    <p id="confirmar-mensaje" class="documentos-modal-mensaje"></p>
+    <div class="documentos-modal-acciones documentos-modal-acciones-doble">
+      <button type="button" class="age-btn age-btn-outline" id="confirmar-cancelar">Cancelar</button>
+      <button type="button" class="age-btn age-btn-primary" id="confirmar-aceptar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="documentos-modal-overlay hidden" id="modal-prompt">
+  <div class="age-card documentos-modal-card documentos-modal-card-pequena">
+    <div class="documentos-modal-cabecera">
+      <h3 id="prompt-titulo">Título</h3>
+      <button type="button" class="documentos-modal-cerrar" id="prompt-cerrar" aria-label="Cerrar"><span data-icon="cruz" data-icon-size="16"></span></button>
+    </div>
+    <form id="prompt-formulario">
+      <label class="documentos-modal-prompt-label" id="prompt-label" for="prompt-input"></label>
+      <input type="text" id="prompt-input" class="documentos-modal-prompt-input" maxlength="120" />
+      <div class="documentos-modal-acciones documentos-modal-acciones-doble">
+        <button type="button" class="age-btn age-btn-outline" id="prompt-cancelar">Cancelar</button>
+        <button type="submit" class="age-btn age-btn-primary" id="prompt-aceptar">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast-contenedor" class="documentos-toast-contenedor" aria-live="polite"></div>
 
 <script type="module" src="/assets/auth.js"></script>
 <script type="module" src="/mis-documentos/script.js"></script>

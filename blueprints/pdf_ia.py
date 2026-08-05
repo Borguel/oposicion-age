@@ -1195,9 +1195,16 @@ def mis_documentos():
     tests_en_progreso = obtener_tests_en_progreso_por_documento(db, g.uid)
     for documento in documentos:
         documento["test_en_progreso"] = tests_en_progreso.get(documento["id"])
+    # Cuota mensual de documentos con banco generado (ver limites_uso.py) --
+    # se expone aquí para que el frontend pueda avisar de forma discreta
+    # ANTES de que se agote (05/08/2026), en vez de que el usuario se entere
+    # solo cuando le sale el 429. Sin cifras de coste, solo el conteo de
+    # documentos, igual que el resto de límites que sí se enseñan al usuario.
+    _permitido, _mensaje, usados, limite = verificar_limite_uso(db, g.uid, g.plan_actual, "banco_pdf_mensual")
     return jsonify({
         "documentos": documentos,
         "carpetas": listar_carpetas(db, g.uid),
+        "cuota_documentos_mes": {"usados": usados, "limite": limite},
     })
 
 
