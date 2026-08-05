@@ -649,12 +649,25 @@ body {
 
 .subir-doc-confirmacion {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   color: var(--age-success);
   font-weight: 700;
   font-size: 0.92rem;
   margin: 0 0 10px;
+}
+
+.subir-doc-confirmacion-icono {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Nombres de archivo largos y sin espacios (frecuentes en PDF exportados
+   de otras herramientas) se salían del modal -- min-width:0 deja encoger
+   el texto dentro del flex, y overflow-wrap permite partirlo si hace falta. */
+.subir-doc-confirmacion-texto {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .subir-doc-pregunta {
@@ -720,6 +733,7 @@ body {
   font-size: 0.92rem;
   line-height: 1.5;
   margin: 0 0 20px;
+  overflow-wrap: anywhere;
 }
 
 .documentos-modal-prompt-label {
@@ -785,6 +799,11 @@ body {
   font-weight: 600;
   pointer-events: auto;
   animation: documentosToastEntrada 0.2s var(--age-ease);
+}
+
+.documentos-toast span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 @keyframes documentosToastEntrada {

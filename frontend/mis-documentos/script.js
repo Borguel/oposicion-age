@@ -584,10 +584,22 @@ function refrescarVistasDocumentos() {
 // backend no se dispara hasta que el toast expira sin deshacerse. No borra
 // en cascada lo ya generado a partir de él (ver documentos_pdf.
 // eliminar_documento) -- solo deja de aparecer agrupado aquí.
-function eliminarDocumento(documentoId) {
+async function eliminarDocumento(documentoId) {
   const doc = documentos.find((d) => d.id === documentoId);
   if (!doc) return;
   const nombre = doc.titulo || doc.nombre_archivo || "Documento";
+
+  // Confirmación previa (05/08/2026, a petición del usuario) + el toast
+  // "Deshacer" de después como última red de seguridad: los iconos de
+  // renombrar/eliminar están muy juntos en la tarjeta, así que conviene
+  // las dos capas, no solo una.
+  const confirmado = await mostrarConfirmacion({
+    titulo: "Eliminar documento",
+    mensaje: `¿Seguro que quieres eliminar "${nombre}"? Los resúmenes, esquemas, tarjetas o tests que ya hubieras generado a partir de él no se borran, pero dejarán de aparecer agrupados aquí.`,
+    textoAceptar: "Eliminar",
+    peligro: true,
+  });
+  if (!confirmado) return;
 
   documentos = documentos.filter((d) => d.id !== documentoId);
   refrescarVistasDocumentos();
