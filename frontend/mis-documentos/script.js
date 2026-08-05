@@ -188,7 +188,20 @@ function irABanco(evento, documentoId, tipo) {
   window.location.href = `${rutaPractica}?documento_id=${documentoId}&ver=${paramVer}&cantidad=${cantidad}`;
 }
 
-async function iniciarBanco(documentoId, tipo) {
+// archivoOriginal (opcional): el File recién subido, para la generación
+// que se dispara justo después de "Subir documento" (ver
+// inicializarSubidaDocumento). El documento en Firestore guarda el texto
+// recortado a 150.000 caracteres (~50 páginas, ver MAX_CARACTERES_DOCUMENTO
+// en documentos_pdf.py -- Firestore no admite más de 1 MB por documento),
+// así que tirar de documento_id para la PRIMERA generación de un PDF largo
+// se quedaría corto sin que el usuario lo note. Reenviar el archivo (en vez
+// de documento_id) hace que el backend use el texto recién extraído
+// COMPLETO para esa generación -- _resolver_texto_documento ya sabe
+// reutilizar el mismo documento (por hash del texto) en vez de duplicarlo.
+// El resto de llamadas a iniciarBanco (botón "Generar banco" de un
+// documento ya existente en la biblioteca) no tienen el archivo a mano y
+// siguen usando documento_id, con la misma limitación de siempre.
+async function iniciarBanco(documentoId, tipo, archivoOriginal) {
   const doc = documentos.find((d) => d.id === documentoId);
   if (doc) doc[`banco_${tipo}_estado`] = "generando";
   const refrescar = () => {
@@ -202,7 +215,11 @@ async function iniciarBanco(documentoId, tipo) {
     const token = await idToken();
     const ruta = tipo === "preguntas" ? "generar-banco-preguntas-desde-pdf" : "generar-banco-tarjetas-desde-pdf";
     const formData = new FormData();
-    formData.append("documento_id", documentoId);
+    if (archivoOriginal) {
+      formData.append("pdf", archivoOriginal);
+    } else {
+      formData.append("documento_id", documentoId);
+    }
     const res = await fetch(`${BACKEND_URL}/${ruta}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
@@ -593,10 +610,15 @@ function cerrarModalAnadir() {
 // ya sabe pintar el progreso en vivo sobre la tarjeta del documento.
 let subirDocCarpetaDestino = null;
 let subirDocIdActual = null;
+// El File recién subido, para que la primera generación (justo después de
+// subir) use el texto completo en vez del recortado guardado en Firestore
+// -- ver el comentario largo junto a iniciarBanco.
+let subirDocArchivoActual = null;
 
 function abrirModalSubirDocumento(carpetaDestino) {
   subirDocCarpetaDestino = carpetaDestino || null;
   subirDocIdActual = null;
+  subirDocArchivoActual = null;
   document.getElementById("subir-doc-input").value = "";
   document.getElementById("subir-doc-paso-elegir").classList.add("hidden");
   document.getElementById("subir-doc-paso-cargando").classList.add("hidden");
@@ -650,6 +672,7 @@ async function subirArchivo(archivo) {
     if (!res.ok) throw new Error(datos.error || "No se pudo subir el documento.");
 
     subirDocIdActual = datos.documento_id;
+    subirDocArchivoActual = archivo;
     if (subirDocCarpetaDestino) {
       await asignarCarpeta(subirDocIdActual, subirDocCarpetaDestino);
     }
@@ -702,13 +725,15 @@ function inicializarSubidaDocumento() {
   document.getElementById("subir-doc-ahora-no").addEventListener("click", cerrarModalSubirDocumento);
   document.getElementById("subir-doc-generar-preguntas").addEventListener("click", () => {
     const id = subirDocIdActual;
+    const archivo = subirDocArchivoActual;
     cerrarModalSubirDocumento();
-    if (id) iniciarBanco(id, "preguntas");
+    if (id) iniciarBanco(id, "preguntas", archivo);
   });
   document.getElementById("subir-doc-generar-tarjetas").addEventListener("click", () => {
     const id = subirDocIdActual;
+    const archivo = subirDocArchivoActual;
     cerrarModalSubirDocumento();
-    if (id) iniciarBanco(id, "tarjetas");
+    if (id) iniciarBanco(id, "tarjetas", archivo);
   });
 }
 
