@@ -431,6 +431,15 @@ body {
   display: flex;
   flex-direction: column;
   box-shadow: var(--age-shadow-hover);
+  /* Antes no tenía relleno propio: el contenido (sobre todo el de "Subir
+     documento") quedaba pegado a los bordes de la tarjeta. */
+  padding: 24px;
+}
+
+@media (max-width: 480px) {
+  .documentos-modal-card {
+    padding: 18px;
+  }
 }
 
 .documentos-modal-cabecera {
@@ -607,22 +616,23 @@ body {
 
 .subir-doc-ahora-no {
   display: block;
-  width: 100%;
-  margin-top: 12px;
-  padding: 8px;
+  width: fit-content;
+  margin: 14px auto 0;
+  padding: 6px 14px;
   border: none;
+  border-radius: var(--age-radius-pill);
   background: transparent;
   color: var(--age-ink-soft);
   font-family: var(--age-font);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 600;
   text-align: center;
   cursor: pointer;
 }
 
 .subir-doc-ahora-no:hover {
+  background: var(--age-neutral-bg);
   color: var(--age-ink);
-  text-decoration: underline;
 }
 
 @media (max-width: 640px) {
