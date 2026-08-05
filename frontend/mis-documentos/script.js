@@ -168,18 +168,22 @@ function filaContenido({ label, iconoHtml, existe, cantidad, urlVer, urlGenerar,
   // finalizado de este documento -- antes, un test empezado y no acabado
   // no aparecía por ningún sitio en la biblioteca, solo "Ver"/"Generar
   // más" (que dependen de haber finalizado al menos uno) o "Generar test"
-  // desde cero.
+  // desde cero. Es la única acción que se pinta sólida (".principal"): al
+  // ser la única realmente urgente/de sesión y aparecer sola (nunca varias
+  // a la vez), no se suma al "muro de naranja" que sí generarían varias
+  // acciones sólidas repetidas en la misma cuadrícula (ver ".orange" más
+  // abajo, a petición del usuario 05/08/2026).
   if (urlContinuar) {
     acciones.push(`<a class="documento-card-btn principal" href="${urlContinuar}">Continuar</a>`);
   }
   if (existe) {
-    acciones.push(`<a class="documento-card-btn${urlContinuar ? "" : " principal"}" href="${urlVer}">Ver</a>`);
+    acciones.push(`<a class="documento-card-btn orange" href="${urlVer}">Ver</a>`);
     if (urlAleatorias) {
       acciones.push(`<a class="documento-card-btn" href="${urlAleatorias}">10 aleatorias</a>`);
     }
     acciones.push(`<a class="documento-card-btn" href="${urlGenerar}">Generar más</a>`);
   } else {
-    acciones.push(`<a class="documento-card-btn${urlContinuar ? "" : " principal"}" href="${urlGenerar}">${textoGenerar}</a>`);
+    acciones.push(`<a class="documento-card-btn orange" href="${urlGenerar}">${textoGenerar}</a>`);
   }
   const etiquetaCantidad = existe && cantidad ? ` (${cantidad})` : "";
   // Estado (05/08/2026, rediseño visual): antes la única señal de si un
@@ -262,7 +266,7 @@ function filaBanco(doc, tipo) {
   let estadoHtml = `<span class="documento-card-tipo-estado">Sin generar todavía</span>`;
   const acciones = [];
   if (!estado || estado === "sin_generar") {
-    acciones.push(`<button type="button" class="documento-card-btn principal" data-banco-generar="${tipo}" data-id="${doc.id}">Generar banco de ${tipo}</button>`);
+    acciones.push(`<button type="button" class="documento-card-btn orange" data-banco-generar="${tipo}" data-id="${doc.id}">Generar</button>`);
   } else {
     if (estado === "generando") {
       // Sin el tope interno (antes "1/100"): el usuario no tiene por qué
@@ -305,7 +309,7 @@ function filaBanco(doc, tipo) {
           </span>
         `);
       }
-      acciones.push(`<a class="documento-card-btn${estado === "completo" ? " principal" : ""}" href="${rutaPractica}?documento_id=${doc.id}&ver=${paramVer}">${etiquetaAccion} de todas (${total})</a>`);
+      acciones.push(`<a class="documento-card-btn${estado === "completo" ? " orange" : ""}" href="${rutaPractica}?documento_id=${doc.id}&ver=${paramVer}">${etiquetaAccion} de todas (${total})</a>`);
     }
   }
 
@@ -447,20 +451,20 @@ function tarjetaDocumento(doc, modoCarpeta) {
       label: "Resumen", iconoHtml: icono("lista", 18), existe: doc.tiene_resumen,
       urlVer: `/subida-pdf-resumen/?documento_id=${doc.id}&ver=resumen`,
       urlGenerar: `/subida-pdf-resumen/?documento_id=${doc.id}`,
-      textoGenerar: "Generar resumen"
+      textoGenerar: "Generar"
     }),
     filaContenido({
       label: "Esquema", iconoHtml: icono("esquema", 18), existe: doc.tiene_esquema,
       urlVer: `/subida-pdf-esquemas/?documento_id=${doc.id}&ver=esquema`,
       urlGenerar: `/subida-pdf-esquemas/?documento_id=${doc.id}`,
-      textoGenerar: "Generar esquema"
+      textoGenerar: "Generar"
     }),
     filaContenido({
       label: "Tarjetas", iconoHtml: icono("tarjeta", 18), existe: doc.num_tarjetas > 0, cantidad: doc.num_tarjetas,
       urlVer: `/subida-pdf-tarjetas/?documento_id=${doc.id}&ver=tarjetas&modo=todas`,
       urlAleatorias: `/subida-pdf-tarjetas/?documento_id=${doc.id}&ver=tarjetas&modo=aleatorias&cantidad=10`,
       urlGenerar: `/subida-pdf-tarjetas/?documento_id=${doc.id}`,
-      textoGenerar: "Generar tarjetas"
+      textoGenerar: "Generar"
     }),
     filaContenido({
       label: "Test", iconoHtml: icono("matraz", 18), existe: doc.num_tests > 0,
@@ -468,7 +472,7 @@ function tarjetaDocumento(doc, modoCarpeta) {
       urlVer: `/subida-pdf-generar-test/?documento_id=${doc.id}&ver=test`,
       urlGenerar: `/subida-pdf-generar-test/?documento_id=${doc.id}`,
       urlContinuar: doc.test_en_progreso ? `/subida-pdf-generar-test/?resume=${doc.test_en_progreso}` : null,
-      textoGenerar: "Generar test"
+      textoGenerar: "Generar"
     })
   ].join("");
   const filasBanco = [filaBanco(doc, "preguntas"), filaBanco(doc, "tarjetas")].join("");
@@ -488,7 +492,7 @@ function tarjetaDocumento(doc, modoCarpeta) {
       </div>
       ${seccionCarpeta(doc, modoCarpeta)}
       <p class="documento-card-seccion-titulo">Contenido generado</p>
-      <div class="documento-card-tipos">${filasContenido}</div>
+      <div class="documento-card-tipos documento-card-tipos-grid">${filasContenido}</div>
       <p class="documento-card-seccion-titulo">Banco de práctica</p>
       <div class="documento-card-tipos">${filasBanco}</div>
     </div>

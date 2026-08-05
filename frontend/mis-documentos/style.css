@@ -374,6 +374,22 @@ body {
   gap: 10px;
 }
 
+/* Cuadrícula compacta para "Contenido generado" (05/08/2026, a petición
+   del usuario, con una app de referencia en la que resumen/esquema/
+   tarjetas/test caben en una sola fila de casillas): reduce mucho el alto
+   de la tarjeta de un documento frente a la lista de filas apiladas de
+   antes. "Banco de práctica" NO usa esta cuadrícula (sigue con
+   .documento-card-tipos): sus paneles llevan además un campo de cantidad,
+   que no cabe bien en una casilla estrecha. auto-fill hace que el número
+   de columnas dependa del ancho real disponible (2 en una tarjeta
+   estrecha, más en resultados de búsqueda más anchos), sin un punto de
+   corte fijo. */
+.documento-card-tipos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
 .documento-card-tipo {
   display: flex;
   align-items: center;
@@ -383,6 +399,27 @@ body {
   border-radius: var(--age-radius-md);
   border: 1px solid var(--age-border);
   background: var(--age-bg);
+}
+
+.documento-card-tipos-grid .documento-card-tipo {
+  flex-direction: column;
+  justify-content: flex-start;
+  text-align: center;
+  padding: 14px 10px;
+}
+
+.documento-card-tipos-grid .documento-card-tipo-cabecera {
+  flex-direction: column;
+  min-width: 0;
+}
+
+.documento-card-tipos-grid .documento-card-tipo-info {
+  align-items: center;
+}
+
+.documento-card-tipos-grid .documento-card-fila-acciones {
+  justify-content: center;
+  margin-left: 0;
 }
 
 .documento-card-tipo-cabecera {
@@ -471,6 +508,25 @@ body {
   background: var(--age-primary);
   border-color: var(--age-primary);
   color: #1b1f2e;
+}
+
+/* ".orange" (05/08/2026, a petición del usuario): la acción principal de
+   cada tipo de contenido (Ver/Generar) ya no se pinta sólida -- con hasta
+   4 casillas seguidas en la cuadrícula de arriba, 4 botones sólidos
+   naranjas a la vez pesaban demasiado y competían entre sí por la
+   atención. Solo el borde y el texto quedan en naranja, fondo blanco/
+   tarjeta -- se nota que es la acción destacada de su casilla sin gritar.
+   ".principal" (sólido) se reserva para "Continuar" (test en progreso),
+   la única acción realmente urgente y que nunca aparece repetida varias
+   veces seguidas. */
+.documento-card-btn.orange {
+  border-color: var(--age-primary-dark);
+  color: var(--age-primary-dark);
+  background: var(--age-card);
+}
+
+.documento-card-btn.orange:hover {
+  background: var(--age-primary-soft);
 }
 
 .documento-card-banco-cantidad {
@@ -780,6 +836,19 @@ body {
   .documento-card-fila-acciones {
     width: 100%;
     margin-left: 0;
+  }
+  /* La cuadrícula de "Contenido generado" se queda centrada también en
+     móvil -- la regla de arriba es para los paneles de "Banco de
+     práctica" (que siguen a ancho completo, alineados a la izquierda). */
+  .documento-card-tipos-grid .documento-card-tipo {
+    align-items: center;
+  }
+  .documento-card-tipos-grid .documento-card-fila-acciones {
+    width: auto;
+    justify-content: center;
+  }
+  .documento-card-tipos-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
   .carpeta-detalle-cabecera {
     flex-direction: column;
