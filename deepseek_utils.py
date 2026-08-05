@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import logging
 import threading
@@ -569,6 +570,67 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
             "content": "Continúa exactamente donde lo dejaste, sin repetir nada de lo ya escrito y sin añadir ninguna introducción ni recordatorio de lo anterior."
         })
     return texto_completo or None
+
+
+# Detección de texto legal (05/08/2026): resumen/esquema desde PDF (ver
+# /resumir-pdf y /generar-esquema-desde-pdf en blueprints/pdf_ia.py) tratan
+# todo el contenido igual -- para una ley, un "resumen narrativo" pierde
+# justo lo que un opositor necesita (número de artículo, plazos,
+# excepciones). Esta heurística es puramente por regex, SIN llamar a
+# DeepSeek (gratis, instantánea): busca patrones típicos de texto legal
+# español y decide con dos condiciones, no solo una, para evitar falsos
+# positivos:
+#   1. Densidad de coincidencias por cada 1.000 caracteres por encima de
+#      _UMBRAL_DENSIDAD_LEGAL -- un conteo absoluto sin más se dispara
+#      igual en un documento de 5 páginas que en uno de 50, así que se
+#      normaliza por longitud.
+#   2. Al menos _UMBRAL_TIPOS_DISTINTOS_LEGAL patrones DISTINTOS con
+#      alguna coincidencia -- un temario "general" que cita de pasada UNA
+#      ley concreta (p. ej. "la Ley 39/2015 regula...") no debería bastar
+#      para activar el modo legal si es la única señal que aparece.
+# Además, _UMBRAL_MATCHES_ABSOLUTOS pone un suelo absoluto: sin él, un
+# extracto CORTO con un par de citas incidentales ("el artículo 14 de la
+# Ley 39/2015...") dispara una densidad alta solo por tener pocos
+# caracteres en el denominador, aunque en términos absolutos sean
+# clarísimamente pocas menciones. Los tres umbrales se calibraron con un
+# documento legal real de este mismo proyecto (Tema 3: fuentes del
+# derecho -- CE, Código Civil, Ley 50/1997 -- 58 "artículo N", 39 "ley
+# N/YYYY", 7 "real decreto" en 53.034 caracteres: densidad ~1,96/1000,
+# 3 tipos) frente a texto narrativo general (densidad 0) y un extracto
+# corto con solo 3 menciones incidentales (densidad ~5,4/1000 pero muy
+# por debajo del suelo absoluto).
+_PATRONES_TEXTO_LEGAL = (
+    re.compile(r'\bart[íi]culo\s+\d+', re.IGNORECASE),
+    re.compile(r'BOE-[AB]-\d{4}-\d+', re.IGNORECASE),
+    re.compile(r'\bley\s+\d+/\d{4}', re.IGNORECASE),
+    re.compile(r'real decreto', re.IGNORECASE),
+    re.compile(r'disposici[óo]n\s+(final|adicional|transitoria)', re.IGNORECASE),
+)
+_UMBRAL_DENSIDAD_LEGAL = 1.2  # coincidencias por cada 1.000 caracteres
+_UMBRAL_TIPOS_DISTINTOS_LEGAL = 2
+_UMBRAL_MATCHES_ABSOLUTOS_LEGAL = 8
+
+
+def detectar_texto_legal(texto):
+    """True si 'texto' tiene pinta de ser una ley/reglamento/BOE (en cuyo
+    caso resumen/esquema deberían generarse como mapa de artículos en vez
+    de narrativa -- ver blueprints/pdf_ia.py). Puramente heurístico y sin
+    coste: no llama a DeepSeek. Ver el comentario largo de arriba para el
+    razonamiento de los tres umbrales."""
+    texto = texto or ""
+    if not texto.strip():
+        return False
+    total_matches = 0
+    tipos_distintos = 0
+    for patron in _PATRONES_TEXTO_LEGAL:
+        n = len(patron.findall(texto))
+        if n:
+            tipos_distintos += 1
+            total_matches += n
+    if total_matches < _UMBRAL_MATCHES_ABSOLUTOS_LEGAL or tipos_distintos < _UMBRAL_TIPOS_DISTINTOS_LEGAL:
+        return False
+    densidad = total_matches / (len(texto) / 1000)
+    return densidad >= _UMBRAL_DENSIDAD_LEGAL
 
 
 TAMANO_CHUNK_CARACTERES = 15000

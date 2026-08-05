@@ -466,6 +466,13 @@ async function obtenerAuthHeaders() {
       }
       const formData = new FormData();
       formData.append('pdf', archivo);
+      // Override manual de tipo_contenido (05/08/2026, ver es_texto_legal
+      // en blueprints/pdf_ia.py): solo se envía si el usuario lo marcó a
+      // mano -- sin marcar, el backend decide en automático con lo ya
+      // guardado del documento o detectar_texto_legal.
+      if (document.getElementById('checkbox-texto-legal')?.checked) {
+        formData.append('es_texto_legal', 'true');
+      }
       mensajeError.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
       formularioCard.classList.add('hidden');
@@ -479,7 +486,7 @@ async function obtenerAuthHeaders() {
       try {
         const datosIA = await generarResumenConProgreso("https://oposicion-age.onrender.com/resumir-documento", formData, authHeaders);
         documentoIdActual = datosIA.documento_id || documentoIdActual;
-        mostrarResumenResultado(datosIA.resumen, true);
+        mostrarResumenResultado(datosIA.resumen, true, datosIA.tipo_contenido_detectado);
       } catch (err) {
         mostrarError(err.message || "Error al generar el resumen.");
       }
@@ -503,11 +510,17 @@ async function obtenerAuthHeaders() {
     // ya parseados), no en caracteres, para no cortar nunca a mitad de uno.
     const BLOQUES_PREVIEW_RESUMEN = 14;
 
-    function mostrarResumenResultado(textoResumen, guardar) {
+    function mostrarResumenResultado(textoResumen, guardar, tipoContenidoDetectado) {
       resumen = textoResumen || "No se pudo generar el resumen.";
       const fecha = new Date();
       fechaResumen.textContent = formatearFecha(fecha);
       resumenTitulo.textContent = `Resumen de ${nombreArchivo}`;
+      // Aviso "detectado como texto legal" (05/08/2026): solo se pinta
+      // cuando la respuesta trae el dato (una generación nueva) -- al
+      // solo VER un resumen ya guardado (endpoint /documento/.../resumen)
+      // no viaja este campo, así que se queda oculto en vez de mostrar
+      // algo potencialmente desactualizado.
+      document.getElementById('aviso-tipo-legal')?.classList.toggle('hidden', tipoContenidoDetectado !== 'legal');
       // Por si se muestra un resumen tras otro sin recargar la página (p.
       // ej. al cerrar y generar uno nuevo), se quita cualquier botón "ver
       // más" que quedara de la vez anterior antes de crear el nuevo.
@@ -590,7 +603,7 @@ async function obtenerAuthHeaders() {
         formData.append('documento_id', documentoId);
         const datos = await generarResumenConProgreso("https://oposicion-age.onrender.com/resumir-documento", formData, authHeaders);
         nombreArchivo = datos.nombre_archivo || nombreArchivo;
-        mostrarResumenResultado(datos.resumen, true);
+        mostrarResumenResultado(datos.resumen, true, datos.tipo_contenido_detectado);
       } catch (err) {
         mostrarError(err.message);
       }

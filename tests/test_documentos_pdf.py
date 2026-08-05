@@ -6,6 +6,7 @@ from documentos_pdf import (
     obtener_o_crear_documento, actualizar_titulo, obtener_tests_en_progreso_por_documento,
     eliminar_documento, listar_documentos, iniciar_banco, anadir_al_banco, finalizar_banco,
     obtener_banco, _recortar_a_bytes_utf8, LIMITE_BYTES_TEXTO_DOCUMENTO,
+    actualizar_tipo_contenido, resolver_tipo_contenido,
 )
 
 
@@ -101,6 +102,112 @@ def test_actualizar_titulo_vacio_no_hace_nada(db):
 
 def test_actualizar_titulo_documento_inexistente_devuelve_false(db):
     assert actualizar_titulo(db, "u1", "no_existe", "Nuevo nombre") is False
+
+
+# Extractos usados en TestTipoContenido -- mismos umbrales calibrados que
+# TestDetectarTextoLegal en tests/test_deepseek_utils.py (densidad,
+# diversidad de patrones y suelo absoluto de coincidencias).
+_TEXTO_LEGAL = (
+    "Artículo 1. Objeto y ámbito de aplicación.\n"
+    "La presente Ley 39/2015 regula los requisitos de validez y eficacia de los "
+    "actos administrativos y el procedimiento administrativo común.\n\n"
+    "Artículo 2. Ámbito subjetivo de aplicación.\n"
+    "Esta ley se aplica al sector público, que comprende la Administración General "
+    "del Estado y las Administraciones de las Comunidades Autónomas.\n\n"
+    "Artículo 3. Principios generales.\n"
+    "Las Administraciones Públicas actúan de acuerdo con los principios de "
+    "eficacia, jerarquía, descentralización, desconcentración y coordinación.\n\n"
+    "Artículo 4. Interesados en el procedimiento.\n"
+    "Se consideran interesados en el procedimiento administrativo quienes lo "
+    "promuevan como titulares de derechos o intereses legítimos.\n\n"
+    "Disposición adicional primera. Especialidades por razón de materia.\n"
+    "Las previsiones de esta Ley se aplicarán sin perjuicio de las especialidades "
+    "de su legislación específica.\n\n"
+    "El Real Decreto 203/2021, de 30 de marzo, desarrolla lo previsto en el "
+    "artículo 14 de esta misma norma."
+)
+_TEXTO_GENERAL = (
+    "El proceso de construcción europea comenzó tras la Segunda Guerra Mundial, "
+    "con el objetivo de garantizar la paz y la prosperidad en el continente a "
+    "través de la cooperación económica. Los llamados Padres Fundadores de "
+    "Europa impulsaron la creación de la Comunidad Europea del Carbón y del "
+    "Acero en 1951, germen de lo que hoy conocemos como la Unión Europea."
+) * 3
+
+
+class TestTipoContenido:
+    # tipo_contenido (05/08/2026): auto-detectado con detectar_texto_legal
+    # al crear el documento (ver obtener_o_crear_documento) para no
+    # re-analizarlo cada vez que se regenera resumen/esquema/tarjetas/test
+    # desde el mismo documento_id -- y resolver_tipo_contenido decide qué
+    # usar en cada generación concreta, con el override manual del usuario
+    # por delante de lo ya guardado.
+    def test_obtener_o_crear_documento_detecta_y_guarda_legal(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 0})
+        _id, datos = obtener_o_crear_documento(db, "u1", _TEXTO_LEGAL, "ley.pdf", num_paginas=3)
+        assert datos["tipo_contenido"] == "legal"
+
+    def test_obtener_o_crear_documento_detecta_y_guarda_general(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 0})
+        _id, datos = obtener_o_crear_documento(db, "u1", _TEXTO_GENERAL, "tema.pdf", num_paginas=3)
+        assert datos["tipo_contenido"] == "general"
+
+    def test_actualizar_tipo_contenido_persiste_el_cambio(self, db):
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"tipo_contenido": "general"})
+        ok = actualizar_tipo_contenido(db, "u1", "d1", "legal")
+        assert ok is True
+        assert db.leer(("usuarios", "u1", "documentos", "d1"))["tipo_contenido"] == "legal"
+
+    def test_actualizar_tipo_contenido_documento_inexistente_devuelve_false(self, db):
+        assert actualizar_tipo_contenido(db, "u1", "no_existe", "legal") is False
+
+    def test_resolver_tipo_contenido_override_true_gana_y_persiste(self, db):
+        # El texto es narrativo (auto-detección daría "general"), pero el
+        # usuario fuerza "legal" a mano -- debe ganar Y guardarse para que
+        # la siguiente regeneración de este documento no necesite que lo
+        # repita.
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"tipo_contenido": "general"})
+        tipo = resolver_tipo_contenido(db, "u1", "d1", {"tipo_contenido": "general"}, _TEXTO_GENERAL, True)
+        assert tipo == "legal"
+        assert db.leer(("usuarios", "u1", "documentos", "d1"))["tipo_contenido"] == "legal"
+
+    def test_resolver_tipo_contenido_override_false_gana_y_persiste(self, db):
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"tipo_contenido": "legal"})
+        tipo = resolver_tipo_contenido(db, "u1", "d1", {"tipo_contenido": "legal"}, _TEXTO_LEGAL, False)
+        assert tipo == "general"
+        assert db.leer(("usuarios", "u1", "documentos", "d1"))["tipo_contenido"] == "general"
+
+    def test_resolver_tipo_contenido_usa_lo_ya_guardado_sin_override(self, db):
+        # El texto ahora sería "general" según detectar_texto_legal, pero
+        # el documento ya tenía "legal" guardado (de una detección o un
+        # override anterior) -- sin override en ESTA petición, debe
+        # respetar lo ya guardado en vez de re-detectar.
+        documento = {"tipo_contenido": "legal"}
+        tipo = resolver_tipo_contenido(db, "u1", "d1", documento, _TEXTO_GENERAL, None)
+        assert tipo == "legal"
+
+    def test_resolver_tipo_contenido_sin_nada_guardado_detecta_y_persiste(self, db):
+        # Documento sin tipo_contenido (p. ej. creado antes de este campo
+        # existir): se detecta sobre la marcha Y se persiste, para que la
+        # siguiente llamada ya no vuelva a pasar por aquí.
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {})
+        tipo = resolver_tipo_contenido(db, "u1", "d1", {}, _TEXTO_LEGAL, None)
+        assert tipo == "legal"
+        assert db.leer(("usuarios", "u1", "documentos", "d1"))["tipo_contenido"] == "legal"
+
+
+def test_listar_documentos_expone_tipo_contenido(db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 0})
+    obtener_o_crear_documento(db, "u1", _TEXTO_LEGAL, "ley.pdf", num_paginas=3)
+    resultado = listar_documentos(db, "u1")
+    assert resultado[0]["tipo_contenido"] == "legal"
+
+
+def test_listar_documentos_usa_general_por_defecto_si_falta_el_campo(db):
+    # Documentos creados antes de que tipo_contenido existiera como campo.
+    db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Viejo", "ultima_actividad": "2026-01-01"})
+    resultado = listar_documentos(db, "u1")
+    assert resultado[0]["tipo_contenido"] == "general"
 
 
 class TestEliminarDocumento:

@@ -676,3 +676,86 @@ class TestGenerarDocumentoLargoPorPartes:
         assert resultado == "único parcial válido"
         # No hay llamada extra de fusión cuando solo sobrevive un fragmento.
         assert mock_gen.call_count == 2
+
+
+class TestDetectarTextoLegal:
+    # detectar_texto_legal (05/08/2026): heurística por regex, SIN llamar a
+    # DeepSeek, para que /resumir-pdf y /generar-esquema-desde-pdf puedan
+    # aplicar un formato de "mapa de artículos" a texto legal en vez del
+    # resumen/esquema narrativo de siempre. Exige densidad de coincidencias
+    # (por 1.000 caracteres), al menos dos TIPOS de patrón distintos y un
+    # suelo absoluto de coincidencias -- ver el comentario largo junto a
+    # _PATRONES_TEXTO_LEGAL para el porqué de cada uno.
+    _EXTRACTO_LEGAL = (
+        "Artículo 1. Objeto y ámbito de aplicación.\n"
+        "La presente Ley 39/2015 regula los requisitos de validez y eficacia de los "
+        "actos administrativos, el procedimiento administrativo común y los principios "
+        "a los que se ha de ajustar el ejercicio de la iniciativa legislativa y la "
+        "potestad reglamentaria.\n\n"
+        "Artículo 2. Ámbito subjetivo de aplicación.\n"
+        "Esta ley se aplica al sector público, que comprende la Administración General "
+        "del Estado, las Administraciones de las Comunidades Autónomas y las Entidades "
+        "que integran la Administración Local.\n\n"
+        "Artículo 3. Principios generales.\n"
+        "Las Administraciones Públicas sirven con objetividad los intereses generales "
+        "y actúan de acuerdo con los principios de eficacia, jerarquía, "
+        "descentralización, desconcentración y coordinación.\n\n"
+        "Artículo 4. Interesados en el procedimiento.\n"
+        "Se consideran interesados en el procedimiento administrativo quienes lo "
+        "promuevan como titulares de derechos o intereses legítimos.\n\n"
+        "Disposición adicional primera. Especialidades por razón de materia.\n"
+        "Las previsiones de esta Ley se aplicarán sin perjuicio de las especialidades "
+        "que resulten de su legislación específica en las materias que así lo "
+        "requieran.\n\n"
+        "Disposición final primera. Título competencial.\n"
+        "Esta Ley se dicta al amparo del artículo 149.1.18ª de la Constitución "
+        "Española, que atribuye al Estado la competencia sobre las bases del régimen "
+        "jurídico de las Administraciones Públicas.\n\n"
+        "El Real Decreto 203/2021, de 30 de marzo, aprueba el Reglamento de actuación "
+        "y funcionamiento del sector público por medios electrónicos, desarrollando lo "
+        "previsto en el artículo 14 de esta misma norma."
+    )
+    _EXTRACTO_NARRATIVO = (
+        "El proceso de construcción europea comenzó tras la Segunda Guerra Mundial, con "
+        "el objetivo de garantizar la paz y la prosperidad en el continente a través de "
+        "la cooperación económica. Los llamados Padres Fundadores de Europa, entre los "
+        "que destacan Jean Monnet y Robert Schuman, impulsaron la creación de la "
+        "Comunidad Europea del Carbón y del Acero en 1951, germen de lo que hoy "
+        "conocemos como la Unión Europea.\n\n"
+        "A lo largo de las décadas siguientes, el proyecto europeo fue ampliándose tanto "
+        "en número de países miembros como en ámbitos de actuación. España se incorporó "
+        "a la entonces Comunidad Económica Europea en 1986, un hito que marcó un antes y "
+        "un después en la modernización de su economía y sus instituciones."
+    ) * 3
+
+    def test_texto_legal_real_se_detecta_como_legal(self):
+        assert deepseek_utils.detectar_texto_legal(self._EXTRACTO_LEGAL) is True
+
+    def test_texto_narrativo_normal_no_se_detecta_como_legal(self):
+        assert deepseek_utils.detectar_texto_legal(self._EXTRACTO_NARRATIVO) is False
+
+    def test_texto_vacio_no_es_legal(self):
+        assert deepseek_utils.detectar_texto_legal("") is False
+        assert deepseek_utils.detectar_texto_legal(None) is False
+
+    def test_una_mencion_incidental_corta_no_basta_por_el_suelo_absoluto(self):
+        # Solo 3 coincidencias en total (una por tipo) -- por debajo de
+        # _UMBRAL_MATCHES_ABSOLUTOS_LEGAL aunque la DENSIDAD por ser un
+        # texto corto sea alta. Sin el suelo absoluto, este extracto se
+        # marcaría como legal solo por tener pocos caracteres.
+        texto = (
+            "La reforma de la Administración Pública ha sido un proceso constante. "
+            "Recientemente, el Real Decreto 203/2021 aprobó el reglamento de "
+            "actuación por medios electrónicos, consolidando lo que ya apuntaba el "
+            "artículo 14 de la Ley 39/2015 sobre relación electrónica con las "
+            "Administraciones Públicas."
+        )
+        assert deepseek_utils.detectar_texto_legal(texto) is False
+
+    def test_un_unico_tipo_de_patron_repetido_no_basta_por_falta_de_diversidad(self):
+        # Muchas coincidencias, pero todas del MISMO tipo ("artículo N") --
+        # _UMBRAL_TIPOS_DISTINTOS_LEGAL exige al menos dos tipos de patrón
+        # distintos, para no disparar el modo legal solo porque un temario
+        # general cita bastante la palabra "artículo".
+        texto = " ".join(f"El artículo {n} trata un aspecto distinto del tema." for n in range(1, 20))
+        assert deepseek_utils.detectar_texto_legal(texto) is False

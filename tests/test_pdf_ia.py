@@ -337,6 +337,142 @@ class TestGenerarEsquemaDesdePdf:
         assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0
 
 
+# Extracto legal calibrado (05/08/2026, ver detectar_texto_legal en
+# deepseek_utils.py) -- mismo texto que tests/test_documentos_pdf.py
+# _TEXTO_LEGAL, para que la detección automática dé "legal" de verdad.
+_TEXTO_LEGAL = (
+    "Artículo 1. Objeto y ámbito de aplicación.\n"
+    "La presente Ley 39/2015 regula los requisitos de validez y eficacia de los "
+    "actos administrativos y el procedimiento administrativo común.\n\n"
+    "Artículo 2. Ámbito subjetivo de aplicación.\n"
+    "Esta ley se aplica al sector público, que comprende la Administración General "
+    "del Estado y las Administraciones de las Comunidades Autónomas.\n\n"
+    "Artículo 3. Principios generales.\n"
+    "Las Administraciones Públicas actúan de acuerdo con los principios de "
+    "eficacia, jerarquía, descentralización, desconcentración y coordinación.\n\n"
+    "Artículo 4. Interesados en el procedimiento.\n"
+    "Se consideran interesados en el procedimiento administrativo quienes lo "
+    "promuevan como titulares de derechos o intereses legítimos.\n\n"
+    "Disposición adicional primera. Especialidades por razón de materia.\n"
+    "Las previsiones de esta Ley se aplicarán sin perjuicio de las especialidades "
+    "de su legislación específica.\n\n"
+    "El Real Decreto 203/2021, de 30 de marzo, desarrolla lo previsto en el "
+    "artículo 14 de esta misma norma."
+)
+
+
+@pytest.fixture
+def documento_legal_sembrado(db):
+    sembrar_usuario_activo(db, "u1", plan="premium")
+    db.sembrar(("usuarios", "u1", "documentos", "d1"), {
+        "texto": _TEXTO_LEGAL,
+        "nombre_archivo": "ley.pdf",
+    })
+    return "d1"
+
+
+class TestTipoContenidoEnResumenYEsquema:
+    """tipo_contenido (05/08/2026): /resumir-pdf y /generar-esquema-desde-pdf
+    detectan texto legal (o respetan el override manual) y usan un
+    system_prompt de "mapa de artículos" en vez del narrativo de siempre --
+    ver resolver_tipo_contenido en documentos_pdf.py."""
+
+    def test_resumir_pdf_documento_general_no_activa_el_modo_legal(self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo_contenido_detectado"] == "general"
+        system_prompt_usado = mock_gen.call_args.args[0]
+        assert "MAPA DE ARTÍCULOS" not in system_prompt_usado
+        assert db.leer(("usuarios", "u1", "documentos", "d1"))["tipo_contenido"] == "general"
+
+    def test_resumir_pdf_documento_legal_activa_el_mapa_de_articulos(self, client, db, documento_legal_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_legal_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo_contenido_detectado"] == "legal"
+        system_prompt_usado = mock_gen.call_args.args[0]
+        assert "MAPA DE ARTÍCULOS" in system_prompt_usado
+        assert db.leer(("usuarios", "u1", "documentos", "d1"))["tipo_contenido"] == "legal"
+
+    def test_resumir_pdf_override_manual_fuerza_legal_y_lo_persiste(self, client, db, documento_sembrado):
+        # documento_sembrado es narrativo (la auto-detección daría
+        # "general"), pero el usuario marca el checkbox -- debe forzar el
+        # mapa de artículos y quedar guardado para la próxima vez.
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={
+                    "documento_id": documento_sembrado, "es_texto_legal": "true",
+                }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo_contenido_detectado"] == "legal"
+        assert "MAPA DE ARTÍCULOS" in mock_gen.call_args.args[0]
+        assert db.leer(("usuarios", "u1", "documentos", "d1"))["tipo_contenido"] == "legal"
+
+    def test_resumir_pdf_override_manual_fuerza_general_y_lo_persiste(self, client, db, documento_legal_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={
+                    "documento_id": documento_legal_sembrado, "es_texto_legal": "false",
+                }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo_contenido_detectado"] == "general"
+        assert "MAPA DE ARTÍCULOS" not in mock_gen.call_args.args[0]
+        assert db.leer(("usuarios", "u1", "documentos", "d1"))["tipo_contenido"] == "general"
+
+    def test_generar_esquema_desde_pdf_documento_legal_refuerza_la_fusion(self, client, db, documento_legal_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_legal_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo_contenido_detectado"] == "legal"
+        instrucciones_fusion = mock_gen.call_args.kwargs["instrucciones_fusion_extra"]
+        # La regla de siempre contra duplicar epígrafes a distinta
+        # profundidad se mantiene (reforzada, no sustituida)...
+        assert "no aparezca dos veces a distinta profundidad" in instrucciones_fusion
+        # ...y se le suma la regla nueva del eje de artículos.
+        assert "eje del esquema" in instrucciones_fusion
+
+    def test_generar_esquema_desde_pdf_documento_general_no_refuerza_la_fusion(self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo_contenido_detectado"] == "general"
+        instrucciones_fusion = mock_gen.call_args.kwargs["instrucciones_fusion_extra"]
+        assert "eje del esquema" not in instrucciones_fusion
+
+
 class TestGenerarTarjetasDesdePdf:
     """Ruta rediseñada sobre tarjetas_generator.generar_tarjetas_verificadas
     (pipeline generar->verificar->reintentar) -- hasta ahora sin ningún

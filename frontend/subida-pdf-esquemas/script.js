@@ -590,6 +590,13 @@ async function obtenerAuthHeaders() {
       }
       const formData = new FormData();
       formData.append('pdf', archivo);
+      // Override manual de tipo_contenido (05/08/2026, ver es_texto_legal
+      // en blueprints/pdf_ia.py): solo se envía si el usuario lo marcó a
+      // mano -- sin marcar, el backend decide en automático con lo ya
+      // guardado del documento o detectar_texto_legal.
+      if (document.getElementById('checkbox-texto-legal')?.checked) {
+        formData.append('es_texto_legal', 'true');
+      }
       mensajeError.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
       formularioCard.classList.add('hidden');
@@ -603,7 +610,7 @@ async function obtenerAuthHeaders() {
       try {
         const datosIA = await generarEsquemaConProgreso("https://oposicion-age.onrender.com/generar-esquema-desde-pdf", formData, authHeaders);
         documentoIdActual = datosIA.documento_id || documentoIdActual;
-        mostrarEsquemaResultado(datosIA.esquema, true);
+        mostrarEsquemaResultado(datosIA.esquema, true, datosIA.tipo_contenido_detectado);
       } catch (err) {
         mostrarError(err.message || "Error al generar el esquema.");
       }
@@ -628,11 +635,15 @@ async function obtenerAuthHeaders() {
       return bloques.length;
     }
 
-    function mostrarEsquemaResultado(textoEsquema, guardar) {
+    function mostrarEsquemaResultado(textoEsquema, guardar, tipoContenidoDetectado) {
       esquema = textoEsquema || "No se pudo generar el esquema.";
       const fecha = new Date();
       fechaEsquema.textContent = formatearFecha(fecha);
       esquemaTitulo.textContent = `Esquema de ${nombreArchivo}`;
+      // Aviso "detectado como texto legal" (05/08/2026): solo se pinta con
+      // una generación nueva -- al solo VER un esquema ya guardado no
+      // viaja este campo, así que se queda oculto.
+      document.getElementById('aviso-tipo-legal')?.classList.toggle('hidden', tipoContenidoDetectado !== 'legal');
       // Por si se muestra un esquema tras otro sin recargar la página, se
       // quita cualquier botón "ver más" que quedara de la vez anterior.
       const verMasAnterior = document.getElementById('esquema-ver-mas-bloque');
@@ -713,7 +724,7 @@ async function obtenerAuthHeaders() {
         formData.append('documento_id', documentoId);
         const datos = await generarEsquemaConProgreso("https://oposicion-age.onrender.com/generar-esquema-desde-pdf", formData, authHeaders);
         nombreArchivo = datos.nombre_archivo || nombreArchivo;
-        mostrarEsquemaResultado(datos.esquema, true);
+        mostrarEsquemaResultado(datos.esquema, true, datos.tipo_contenido_detectado);
       } catch (err) {
         mostrarError(err.message);
       }

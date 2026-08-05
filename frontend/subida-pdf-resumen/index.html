@@ -56,6 +56,15 @@
           </div>
           <div id="file-name" class="file-name hidden"></div>
         </div>
+        <div class="form-group">
+          <label class="checkbox-legal">
+            <input type="checkbox" id="checkbox-texto-legal">
+            <span class="checkbox-legal-texto">
+              <span class="checkbox-legal-titulo">Es un texto legal (ley, BOE, reglamento)</span>
+              <span class="checkbox-legal-nota">Sin marcar, lo detectamos automáticamente y generamos un mapa de artículos si hace falta.</span>
+            </span>
+          </label>
+        </div>
         <button type="submit" class="btn btn-primary btn-full"><span data-icon="destellos" data-icon-size="16"></span> Generar Resumen Automático</button>
       </form>
     </div>
@@ -81,6 +90,7 @@
         <div class="card-icon" data-icon="documento" data-icon-size="20"></div>
         <h2 class="card-title">Resumen Generado</h2>
       </div>
+      <div id="aviso-tipo-legal" class="alert alert-info hidden">Detectado como texto legal: hemos generado un mapa de artículos en vez de un resumen narrativo.</div>
       <div id="resumen-profesional">
         <div class="resumen-header">
           <div class="resumen-titulo" id="resumen-titulo">Resumen del Documento</div>

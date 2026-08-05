@@ -56,6 +56,15 @@
           </div>
           <div id="file-name" class="file-name hidden"></div>
         </div>
+        <div class="form-group">
+          <label class="checkbox-legal">
+            <input type="checkbox" id="checkbox-texto-legal">
+            <span class="checkbox-legal-texto">
+              <span class="checkbox-legal-titulo">Es un texto legal (ley, BOE, reglamento)</span>
+              <span class="checkbox-legal-nota">Sin marcar, lo detectamos automáticamente y reforzamos el esquema por artículos si hace falta.</span>
+            </span>
+          </label>
+        </div>
         <button type="submit" class="btn btn-primary btn-full"><span data-icon="destellos" data-icon-size="16"></span> Generar Esquema Automático</button>
       </form>
     </div>
@@ -81,6 +90,7 @@
         <div class="card-icon" data-icon="esquema" data-icon-size="20"></div>
         <h2 class="card-title">Esquema Generado</h2>
       </div>
+      <div id="aviso-tipo-legal" class="alert alert-info hidden">Detectado como texto legal: hemos reforzado el esquema para que respete la numeración de artículos.</div>
       <div id="esquema-profesional">
         <div class="esquema-header">
           <div class="esquema-titulo" id="esquema-titulo">Esquema del Documento</div>

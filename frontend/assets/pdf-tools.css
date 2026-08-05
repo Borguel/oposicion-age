@@ -291,6 +291,50 @@
   color: var(--age-danger);
   border: 1px solid #f5b9b3;
 }
+/* Aviso "detectado como texto legal" (05/08/2026, ver
+   subida-pdf-resumen/subida-pdf-esquemas) -- usa los tokens --age-info/
+   --age-info-bg (ya definidos por tema claro/oscuro en theme.css), a
+   diferencia de alert-warning/alert-error de arriba que llevan colores
+   fijos sin variante oscura. */
+.pdfherr-body .alert-info {
+  background: var(--age-info-bg);
+  color: var(--age-info);
+  border: 1px solid var(--age-info);
+}
+
+/* Checkbox "Es un texto legal..." (05/08/2026, override manual de
+   tipo_contenido -- ver es_texto_legal en blueprints/pdf_ia.py): caja
+   propia en vez de un <label> suelto para que se note que es una opción,
+   no un campo obligatorio más del formulario. */
+.pdfherr-body .checkbox-legal {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--age-primary-soft);
+  border-radius: var(--age-radius-md);
+  padding: 12px 14px;
+  cursor: pointer;
+  font-weight: 400;
+}
+.pdfherr-body .checkbox-legal input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 3px;
+  width: auto;
+}
+.pdfherr-body .checkbox-legal-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pdfherr-body .checkbox-legal-titulo {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--age-ink);
+}
+.pdfherr-body .checkbox-legal-nota {
+  font-size: 0.78rem;
+  color: var(--age-ink-soft);
+}
 
 /* Estado de carga: barra indeterminada honesta (no un % inventado) */
 .pdfherr-body .loading-container {

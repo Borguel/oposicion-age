@@ -11,6 +11,8 @@ cada entrada etiquetada con su documento_id."""
 import hashlib
 from datetime import datetime, timedelta
 
+from deepseek_utils import detectar_texto_legal
+
 # Se guarda un extracto generoso del texto (bastante más que en el chat con
 # PDF, donde se reenvía en cada mensaje y sí conviene recortarlo mucho): aquí
 # solo se usa para volver a generar contenido más tarde sin re-subir el PDF,
@@ -79,6 +81,13 @@ def obtener_o_crear_documento(db, uid, texto, nombre_archivo, num_paginas):
         "num_tarjetas": 0,
         "num_tests": 0,
         "ultima_actividad": datetime.utcnow().isoformat(),
+        # tipo_contenido (05/08/2026, ver detectar_texto_legal en
+        # deepseek_utils.py): auto-detectado UNA vez, al crear el
+        # documento -- así no se re-analiza cada vez que el usuario
+        # regenera resumen/esquema/tarjetas/test desde el mismo
+        # documento_id. Un override manual posterior (ver
+        # resolver_tipo_contenido) lo sobrescribe y persiste igual.
+        "tipo_contenido": "legal" if detectar_texto_legal(texto) else "general",
     }
     nuevo_ref = docs_ref.document()
     nuevo_ref.set(datos)
@@ -132,6 +141,54 @@ def obtener_documento(db, uid, documento_id):
     datos = doc.to_dict()
     datos["id"] = doc.id
     return datos
+
+
+def actualizar_tipo_contenido(db, uid, documento_id, tipo_contenido):
+    """Persiste un override manual de tipo_contenido ("legal"/"general",
+    ver resolver_tipo_contenido) para que sobreviva a la próxima
+    regeneración de resumen/esquema/tarjetas/test desde el mismo
+    documento_id -- sin esto, el override solo valdría para la petición en
+    curso y la siguiente volvería a caer en la auto-detección de
+    obtener_o_crear_documento (calculada la primera vez que se subió el
+    documento, antes de que el usuario pudiera decir nada)."""
+    ref = db.collection("usuarios").document(uid).collection("documentos").document(documento_id)
+    if not ref.get().exists:
+        return False
+    ref.update({"tipo_contenido": tipo_contenido})
+    return True
+
+
+def resolver_tipo_contenido(db, uid, documento_id, documento, texto, es_legal_override=None):
+    """Decide "legal" o "general" para ESTA generación de resumen/esquema
+    (ver /resumir-pdf, /generar-esquema-desde-pdf en blueprints/pdf_ia.py),
+    en este orden de prioridad:
+
+    1. Override manual explícito del usuario en la propia petición
+       (es_legal_override True/False) -- si viene, además se PERSISTE en
+       el documento (ver actualizar_tipo_contenido) para que las próximas
+       generaciones sobre el mismo documento_id ya no necesiten que el
+       usuario lo repita.
+    2. tipo_contenido ya guardado en el documento (auto-detectado al
+       subirlo, ver obtener_o_crear_documento, o un override anterior).
+    3. Si no hay ninguno de los dos -- típicamente un documento creado
+       ANTES de que este campo existiera -- detecta sobre la marcha con
+       detectar_texto_legal y lo persiste igual que un override, para que
+       quede cacheado y la siguiente regeneración de este mismo
+       documento_id ya no vuelva a pasar por aquí.
+
+    Devuelve "legal" o "general"."""
+    if es_legal_override is not None:
+        tipo = "legal" if es_legal_override else "general"
+        if documento_id:
+            actualizar_tipo_contenido(db, uid, documento_id, tipo)
+        return tipo
+    tipo_guardado = (documento or {}).get("tipo_contenido")
+    if tipo_guardado in ("legal", "general"):
+        return tipo_guardado
+    tipo = "legal" if detectar_texto_legal(texto) else "general"
+    if documento_id:
+        actualizar_tipo_contenido(db, uid, documento_id, tipo)
+    return tipo
 
 
 def obtener_tests_en_progreso_por_documento(db, uid):
@@ -304,6 +361,13 @@ def listar_documentos(db, uid):
             "fecha_subida": datos.get("fecha_subida"),
             "num_paginas": datos.get("num_paginas"),
             "carpeta": datos.get("carpeta", ""),
+            # tipo_contenido (05/08/2026): "legal"/"general", ver
+            # detectar_texto_legal/resolver_tipo_contenido -- documentos
+            # creados antes de este cambio no lo tienen guardado, de ahí
+            # el "general" por defecto (el más neutro: si en realidad es
+            # legal, la próxima generación de resumen/esquema lo
+            # auto-detectará y lo guardará).
+            "tipo_contenido": datos.get("tipo_contenido", "general"),
             "tiene_resumen": datos.get("tiene_resumen", False),
             "tiene_esquema": datos.get("tiene_esquema", False),
             "num_tarjetas": datos.get("num_tarjetas", 0),

@@ -23,6 +23,7 @@ from documentos_pdf import (
     listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo, obtener_preguntas_previas,
     obtener_tests_en_progreso_por_documento, eliminar_documento,
     iniciar_banco, anadir_al_banco, finalizar_banco, obtener_banco,
+    resolver_tipo_contenido,
 )
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import (
@@ -45,6 +46,21 @@ bp = Blueprint("pdf_ia", __name__)
 # procesados al mes, ver limites_uso.py), mismo patrón que
 # TIPOS_CUOTA_TEST_PERSONALIZADO en blueprints/test_ia.py.
 TIPOS_CUOTA_BANCO_PDF = ("pdf_ia", "banco_pdf_mensual")
+
+# Cláusula de fidelidad compartida por los prompts de resumen/esquema (los
+# 3 modos: narrativo general, narrativo legal-mapa-de-artículos, esquema) --
+# factorizada aquí el 05/08/2026 al añadir el modo legal para no
+# cuadruplicar el mismo párrafo palabra por palabra en el archivo.
+_CLAUSULA_FIDELIDAD_DOCUMENTO = (
+    "IMPORTANTE -- fidelidad al documento: basa tu respuesta ÚNICAMENTE en el "
+    "contenido del documento proporcionado. No añadas información externa, no "
+    "completes huecos con conocimiento propio, y no inventes datos, fechas, "
+    "artículos, cifras o nombres que no aparezcan literalmente en el texto. Si el "
+    "documento no aporta un dato que normalmente se esperaría, no lo inventes: "
+    "sencillamente no lo incluyas. Antes de dar tu respuesta por buena, revisa "
+    "mentalmente que cada dato concreto que has escrito (fecha, cifra, ley, "
+    "artículo, plazo) aparezca efectivamente en el documento que se te ha dado."
+)
 
 
 def _resolver_texto_documento(plan_actual):
@@ -87,6 +103,17 @@ def _resolver_texto_documento(plan_actual):
         return None, None, None, (jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400)
     documento_id, documento = obtener_o_crear_documento(db, g.uid, text, pdf_file.filename, numero_paginas)
     return text, documento_id, pdf_file.filename, None
+
+
+def _leer_override_texto_legal():
+    """Override manual de tipo_contenido para /resumir-pdf y
+    /generar-esquema-desde-pdf (ver resolver_tipo_contenido en
+    documentos_pdf.py): "true"/"false" fuerza legal/general, cualquier
+    otro valor (incluido ausente) deja la decisión en automático."""
+    valor = request.form.get("es_texto_legal")
+    if valor is None:
+        return None
+    return valor.strip().lower() == "true"
 
 
 def _normalizar_pregunta_pdf(p):
@@ -150,32 +177,72 @@ def resumir_pdf():
     max_length = 300000
     if len(text) > max_length:
         text = text[:max_length]
-    system_prompt = (
-        "Eres un experto en oposiciones. Crea un resumen de estudio claro y bien "
-        "estructurado a partir del siguiente documento, destacando conceptos "
-        "fundamentales, leyes importantes y fechas relevantes. Usa EXACTAMENTE este "
-        "formato Markdown, sin desviarte de él:\n"
-        "- Encabezados de nivel 1 con \"# \" para los bloques temáticos principales.\n"
-        "- Encabezados de nivel 2 con \"## \" para subapartados.\n"
-        "- Texto en **negrita** para términos clave, leyes, artículos o fechas, la "
-        "primera vez que aparecen.\n"
-        "- Listas con \"- \" para viñetas normales.\n"
-        "- Listas numeradas con \"1. \", \"2. \", etc. cuando el orden importe (por "
-        "ejemplo, fases de un procedimiento).\n"
-        "- Cuando definas formalmente un concepto clave, usa el prefijo \"> \" para esa "
-        "línea, de forma que se pueda destacar como una caja de definición aparte.\n"
-        "No uses tablas, bloques de código, ni HTML. Cada línea de texto debe ir en su "
-        "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga. El "
-        "resumen debe ser útil para un opositor.\n"
-        "IMPORTANTE -- fidelidad al documento: basa el resumen ÚNICAMENTE en el "
-        "contenido del documento proporcionado. No añadas información externa, no "
-        "completes huecos con conocimiento propio, y no inventes datos, fechas, "
-        "artículos, cifras o nombres que no aparezcan literalmente en el texto. Si el "
-        "documento no aporta un dato que normalmente se esperaría, no lo inventes: "
-        "sencillamente no lo incluyas. Antes de dar tu respuesta por buena, revisa "
-        "mentalmente que cada dato concreto que has escrito (fecha, cifra, ley, "
-        "artículo, plazo) aparezca efectivamente en el documento que se te ha dado."
+
+    # tipo_contenido (05/08/2026, ver resolver_tipo_contenido en
+    # documentos_pdf.py): documento_id ya viene resuelto/creado por
+    # _resolver_texto_documento, así que aquí solo hace falta releerlo para
+    # saber si ya tiene tipo_contenido guardado (auto-detectado la primera
+    # vez que se subió) u override de una generación anterior.
+    documento_actual = obtener_documento(db, g.uid, documento_id) if documento_id else None
+    tipo_contenido = resolver_tipo_contenido(
+        db, g.uid, documento_id, documento_actual, text, _leer_override_texto_legal(),
     )
+    es_legal = tipo_contenido == "legal"
+
+    if es_legal:
+        # Mapa de artículos (05/08/2026): un resumen NARRATIVO de una ley
+        # pierde justo lo que un opositor necesita para el examen -- número
+        # de artículo, plazos, excepciones, mayorías, órganos competentes.
+        # Aquí no se pide prosa conectada entre artículos, sino una entrada
+        # breve y autocontenida por cada uno, en el mismo orden del
+        # documento y sin omitir ninguno.
+        system_prompt = (
+            "Eres un experto en oposiciones especializado en textos legales (leyes, "
+            "reglamentos, BOE). El documento que se te da es un texto legal: en vez de un "
+            "resumen narrativo, crea un MAPA DE ARTÍCULOS que recorra el documento "
+            "artículo por artículo, EN ORDEN y SIN OMITIR NINGUNO. Usa EXACTAMENTE este "
+            "formato Markdown, sin desviarte de él:\n"
+            "- Encabezados de nivel 1 con \"# \" para cada título/capítulo del documento, "
+            "en el orden en que aparecen (si el documento no tiene esa división, usa un "
+            "único encabezado con su nombre).\n"
+            "- Por cada artículo, una viñeta \"- \" que empiece con su número EXACTO tal "
+            "como aparece en el documento en **negrita** (p. ej. \"**Artículo 14.**\" o "
+            "\"**Artículo 26.9.**\" si el documento ya lo numera así), seguido de 1-2 "
+            "líneas -- nunca más -- con el concepto clave de ese artículo y los términos "
+            "concretos que suelen preguntarse en examen: plazos exactos, mayorías, "
+            "excepciones, órganos competentes, cifras. Nada de narrativa que conecte un "
+            "artículo con el siguiente: cada uno es una entrada independiente y "
+            "autocontenida.\n"
+            "- Si un artículo tiene apartados numerados relevantes para el examen (a, b, "
+            "c... o 1, 2, 3...), anídalos como sub-viñetas debajo, indentadas 2 espacios, "
+            "con el mismo criterio de brevedad.\n"
+            "- Las disposiciones adicionales, transitorias o finales se tratan igual que "
+            "un artículo más (mismo formato de viñeta con su número/nombre en negrita), "
+            "agrupadas bajo su propio encabezado de nivel 1 si el documento tiene varias.\n"
+            "No uses tablas, bloques de código, ni HTML. No resumas varios artículos "
+            "juntos en una sola viñeta ni te saltes ninguno aunque parezca poco "
+            "relevante -- el mapa debe permitir comprobar de un vistazo que no falta "
+            "ningún artículo del documento.\n" + _CLAUSULA_FIDELIDAD_DOCUMENTO
+        )
+    else:
+        system_prompt = (
+            "Eres un experto en oposiciones. Crea un resumen de estudio claro y bien "
+            "estructurado a partir del siguiente documento, destacando conceptos "
+            "fundamentales, leyes importantes y fechas relevantes. Usa EXACTAMENTE este "
+            "formato Markdown, sin desviarte de él:\n"
+            "- Encabezados de nivel 1 con \"# \" para los bloques temáticos principales.\n"
+            "- Encabezados de nivel 2 con \"## \" para subapartados.\n"
+            "- Texto en **negrita** para términos clave, leyes, artículos o fechas, la "
+            "primera vez que aparecen.\n"
+            "- Listas con \"- \" para viñetas normales.\n"
+            "- Listas numeradas con \"1. \", \"2. \", etc. cuando el orden importe (por "
+            "ejemplo, fases de un procedimiento).\n"
+            "- Cuando definas formalmente un concepto clave, usa el prefijo \"> \" para esa "
+            "línea, de forma que se pueda destacar como una caja de definición aparte.\n"
+            "No uses tablas, bloques de código, ni HTML. Cada línea de texto debe ir en su "
+            "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga. El "
+            "resumen debe ser útil para un opositor.\n" + _CLAUSULA_FIDELIDAD_DOCUMENTO
+        )
 
     uid = g.uid
     plan_actual = g.plan_actual
@@ -196,8 +263,10 @@ def resumir_pdf():
                     system_prompt, text, etiqueta_documento="Documento para resumir",
                     on_usage=acumulador_tokens.add, on_progreso=on_progreso,
                 )
-                resultado = {"resumen": resumen, "documento_id": documento_id, "nombre_archivo": nombre_archivo} if resumen \
-                    else {"error": "Error en DeepSeek API"}
+                resultado = {
+                    "resumen": resumen, "documento_id": documento_id, "nombre_archivo": nombre_archivo,
+                    "tipo_contenido_detectado": tipo_contenido,
+                } if resumen else {"error": "Error en DeepSeek API"}
             except Exception:
                 logger.exception("Error en /resumir-pdf")
                 resultado = {"error": "Error al procesar el PDF."}
@@ -247,6 +316,15 @@ def generar_esquema_desde_pdf():
     max_length = 300000
     if len(text) > max_length:
         text = text[:max_length]
+
+    # tipo_contenido (05/08/2026, ver resolver_tipo_contenido en
+    # documentos_pdf.py): mismo criterio que /resumir-pdf.
+    documento_actual = obtener_documento(db, g.uid, documento_id) if documento_id else None
+    tipo_contenido = resolver_tipo_contenido(
+        db, g.uid, documento_id, documento_actual, text, _leer_override_texto_legal(),
+    )
+    es_legal = tipo_contenido == "legal"
+
     system_prompt = (
         "Eres un experto en oposiciones. Crea un ESQUEMA de estudio: no es un resumen "
         "en prosa, es un árbol jerárquico de epígrafes y sub-epígrafes que refleje la "
@@ -285,14 +363,7 @@ def generar_esquema_desde_pdf():
         "una sección quede muy desarrollada y las demás apenas esbozadas.\n"
         "No uses tablas, bloques de código, ni HTML. Cada línea de texto debe ir en su "
         "propio párrafo o viñeta, sin mezclar varias ideas en una misma línea larga.\n"
-        "IMPORTANTE -- fidelidad al documento: basa el esquema ÚNICAMENTE en el "
-        "contenido del documento proporcionado. No añadas información externa, no "
-        "completes huecos con conocimiento propio, y no inventes datos, fechas, "
-        "artículos, cifras o nombres que no aparezcan literalmente en el texto. Si el "
-        "documento no aporta un dato que normalmente se esperaría, no lo inventes: "
-        "sencillamente no lo incluyas. Antes de dar tu respuesta por buena, revisa "
-        "mentalmente que cada dato concreto que has escrito (fecha, cifra, ley, "
-        "artículo, plazo) aparezca efectivamente en el documento que se te ha dado."
+        + _CLAUSULA_FIDELIDAD_DOCUMENTO
     )
     instrucciones_fusion_esquema = (
         "Al fusionar los fragmentos, presta especial atención a que un mismo epígrafe o "
@@ -306,6 +377,23 @@ def generar_esquema_desde_pdf():
         "por venir de un fragmento distinto, resúmela ligeramente para igualar el nivel "
         "de detalle general del esquema."
     )
+    if es_legal:
+        # Reforzado, no sustituido (05/08/2026): la regla de arriba contra
+        # duplicar un mismo epígrafe a distinta profundidad sigue haciendo
+        # falta en un texto legal (un índice + desarrollo del mismo título
+        # es un patrón habitual también en leyes) -- esto se SUMA, pidiendo
+        # además que la numeración de artículos sea el eje del esquema y
+        # que dos artículos distintos nunca se fusionen bajo un mismo
+        # epígrafe aunque traten un tema parecido.
+        instrucciones_fusion_esquema += (
+            "\n\nAdemás, al ser un documento legal: la numeración de artículos debe ser "
+            "el eje del esquema -- cada artículo mantiene su propio epígrafe con su "
+            "número exacto, y NUNCA se fusionan dos artículos distintos bajo un mismo "
+            "epígrafe aunque traten un tema similar, ni siquiera para simplificar. Si dos "
+            "fragmentos citan el mismo artículo (por repetirse en el documento), fusiona "
+            "esas dos versiones en una sola entrada para ESE artículo, pero mantenlo "
+            "separado de cualquier otro artículo distinto."
+        )
 
     uid = g.uid
     plan_actual = g.plan_actual
@@ -327,8 +415,10 @@ def generar_esquema_desde_pdf():
                     on_usage=acumulador_tokens.add,
                     on_progreso=on_progreso,
                 )
-                resultado = {"esquema": esquema, "documento_id": documento_id, "nombre_archivo": nombre_archivo} if esquema \
-                    else {"error": "Error en DeepSeek API"}
+                resultado = {
+                    "esquema": esquema, "documento_id": documento_id, "nombre_archivo": nombre_archivo,
+                    "tipo_contenido_detectado": tipo_contenido,
+                } if esquema else {"error": "Error en DeepSeek API"}
             except Exception:
                 logger.exception("Error en /generar-esquema-desde-pdf")
                 resultado = {"error": "Error al procesar el PDF."}
