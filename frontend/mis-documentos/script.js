@@ -334,6 +334,15 @@ async function iniciarBanco(documentoId, tipo, archivoOriginal) {
     if (query) renderizarBusqueda(query);
   };
   refrescar();
+  // Red de seguridad (05/08/2026, bug real): la lectura del SSE de abajo
+  // depende de que la respuesta llegue sin bufferizar por el camino --
+  // algunos proxies/CDN delante del backend no lo respetan (o el propio
+  // hosting), y el contador se quedaba clavado en 0 hasta recargar la
+  // página a mano (que sí funcionaba, porque cargarDocumentos() arranca
+  // este mismo sondeo). Arrancarlo aquí también asegura que el contador
+  // avance cada 4s aunque la lectura directa del stream no llegue a
+  // tiempo real, sin esperar a un reload manual.
+  iniciarSondeoBancosSiHaceFalta();
 
   try {
     const token = await idToken();
