@@ -34,15 +34,15 @@
   <div class="pdfherr-header">
     <div class="pdfherr-icon" data-icon="matraz" data-icon-size="32"></div>
     <h1 id="titulo-formulario">Generar Test desde PDF</h1>
-    <p>Sube tu documento y ponte a prueba con un test generado por IA a partir de su contenido.</p>
+    <p id="subtitulo-formulario">Sube tu documento y ponte a prueba con un test generado por IA a partir de su contenido.</p>
   </div>
 
   <div class="pdfherr-body">
     <!-- Formulario PDF -->
     <div class="card fade-in" id="tarjeta-formulario">
       <div class="card-header">
-        <div class="card-icon" data-icon="subir" data-icon-size="20"></div>
-        <h2 class="card-title">Subir Documento PDF</h2>
+        <div class="card-icon" data-icon="subir" data-icon-size="20" id="card-icono-formulario"></div>
+        <h2 class="card-title" id="card-titulo-formulario">Subir Documento PDF</h2>
       </div>
       <form id="form-subir-pdf">
         <div class="form-group" id="grupo-archivo">
@@ -58,7 +58,7 @@
           </div>
           <div id="file-name" class="file-name"></div>
         </div>
-        <p class="limite-paginas-nota hidden" id="aviso-documento-existente">Vas a generar preguntas a partir del documento ya subido.</p>
+        <p class="limite-paginas-nota hidden" id="aviso-documento-existente">Este documento ya está en tu biblioteca: no hace falta volver a subirlo, solo pulsa el botón de abajo.</p>
         <p class="limite-paginas-nota">Se generarán todas las preguntas que dé de sí el documento (hasta 100). Al terminar podrás repetir el test con todas o solo con una parte, tantas veces como quieras, sin volver a gastar en IA.</p>
         <button type="submit" class="btn btn-primary btn-full"><span data-icon="destellos" data-icon-size="16"></span> Generar preguntas desde PDF</button>
       </form>

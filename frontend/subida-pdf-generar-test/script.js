@@ -539,6 +539,17 @@ async function obtenerAuthHeaders() {
       if (archivoInput) archivoInput.required = false;
       const aviso = document.getElementById('aviso-documento-existente');
       if (aviso) aviso.classList.remove('hidden');
+      // La cabecera de la tarjeta seguía diciendo "Subir Documento PDF" con
+      // el icono de subida aunque ya no hiciera falta subir nada -- (05/08/2026,
+      // a petición del usuario, confuso porque parecía que había que volver
+      // a subir el PDF) se cambia por un mensaje acorde a lo que se va a
+      // hacer de verdad: generar, no subir.
+      const cardIcono = document.getElementById('card-icono-formulario');
+      if (cardIcono) cardIcono.innerHTML = icono('matraz', 20);
+      const cardTitulo = document.getElementById('card-titulo-formulario');
+      if (cardTitulo) cardTitulo.textContent = 'Generar test desde tu documento';
+      const subtitulo = document.getElementById('subtitulo-formulario');
+      if (subtitulo) subtitulo.textContent = 'Ya tienes este documento en tu biblioteca. Genera un test a partir de él con un clic.';
     })();
 
     // === RENDERIZADO DE PREGUNTAS ===

@@ -31,15 +31,15 @@
   <div class="pdfherr-header">
     <div class="pdfherr-icon" data-icon="tarjeta" data-icon-size="32"></div>
     <h1>Tarjetas de Memoria</h1>
-    <p>Sube tu documento PDF y crea tarjetas de estudio automáticamente</p>
+    <p id="subtitulo-formulario">Sube tu documento PDF y crea tarjetas de estudio automáticamente</p>
   </div>
 
   <div class="pdfherr-body">
     <!-- Formulario PDF -->
     <div id="formulario-pdf" class="card fade-in">
       <div class="card-header">
-        <div class="card-icon" data-icon="subir" data-icon-size="20"></div>
-        <h2 class="card-title">Subir Documento PDF</h2>
+        <div class="card-icon" data-icon="subir" data-icon-size="20" id="card-icono-formulario"></div>
+        <h2 class="card-title" id="card-titulo-formulario">Subir Documento PDF</h2>
       </div>
       <form id="form-subir-pdf">
         <div class="form-group" id="grupo-archivo">
@@ -56,7 +56,7 @@
           </div>
           <div id="file-name" class="file-name hidden"></div>
         </div>
-        <p class="limite-paginas-nota hidden" id="aviso-documento-existente">Vas a generar tarjetas a partir del documento ya subido.</p>
+        <p class="limite-paginas-nota hidden" id="aviso-documento-existente">Este documento ya está en tu biblioteca: no hace falta volver a subirlo, solo pulsa el botón de abajo.</p>
         <p class="limite-paginas-nota">Se generarán todas las tarjetas que dé de sí el documento (hasta 100). Al terminar podrás repasar con todas o solo con una parte, tantas veces como quieras, sin volver a gastar en IA.</p>
         <button type="submit" class="btn btn-primary btn-full"><span data-icon="destellos" data-icon-size="16"></span> Generar Tarjetas de Memoria</button>
       </form>
