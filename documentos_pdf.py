@@ -15,9 +15,27 @@ from datetime import datetime, timedelta
 # PDF, donde se reenvía en cada mensaje y sí conviene recortarlo mucho): aquí
 # solo se usa para volver a generar contenido más tarde sin re-subir el PDF,
 # así que interesa mantener la misma calidad de origen que una subida nueva,
-# sin disparar el tamaño del documento en Firestore (bien dentro del límite
-# de 1 MB por documento).
-MAX_CARACTERES_DOCUMENTO = 150000
+# sin disparar el tamaño del documento en Firestore (que admite hasta 1 MiB
+# = 1.048.576 bytes por documento, contando TODOS sus campos).
+#
+# El recorte se hace en BYTES de UTF-8, no en nº de caracteres: el español
+# (con tildes, ñ, viñetas...) mide en la práctica ~1,02 bytes/carácter
+# (medido sobre un documento real de esta app), así que limitar por
+# caracteres sin más deja mucho margen sin usar Y, al reves, no protege de
+# verdad frente a texto con muchos caracteres multibyte. El resto de campos
+# del documento (título, nombre de archivo, fechas, contadores, el hash) no
+# llegan a un par de KB en total, así que el presupuesto de abajo deja de
+# sobra 148 KB de margen sobre el límite real de 1 MiB.
+LIMITE_BYTES_TEXTO_DOCUMENTO = 900_000
+
+
+def _recortar_a_bytes_utf8(texto, limite_bytes):
+    """Recorta `texto` para que no supere `limite_bytes` una vez codificado
+    en UTF-8, sin dejar a medias el último carácter multibyte del corte."""
+    codificado = texto.encode("utf-8")
+    if len(codificado) <= limite_bytes:
+        return texto
+    return codificado[:limite_bytes].decode("utf-8", errors="ignore")
 
 
 def _hash_texto(texto):
@@ -53,7 +71,7 @@ def obtener_o_crear_documento(db, uid, texto, nombre_archivo, num_paginas):
         "nombre_archivo": nombre_archivo,
         "fecha_subida": datetime.utcnow().isoformat(),
         "num_paginas": num_paginas,
-        "texto": texto[:MAX_CARACTERES_DOCUMENTO],
+        "texto": _recortar_a_bytes_utf8(texto, LIMITE_BYTES_TEXTO_DOCUMENTO),
         "hash_texto": hash_texto,
         "carpeta": "",
         "tiene_resumen": False,

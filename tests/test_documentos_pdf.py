@@ -5,7 +5,7 @@ texto, mismo hash), no debe volver a sumarse."""
 from documentos_pdf import (
     obtener_o_crear_documento, actualizar_titulo, obtener_tests_en_progreso_por_documento,
     eliminar_documento, listar_documentos, iniciar_banco, anadir_al_banco, finalizar_banco,
-    obtener_banco,
+    obtener_banco, _recortar_a_bytes_utf8, LIMITE_BYTES_TEXTO_DOCUMENTO,
 )
 
 
@@ -31,6 +31,51 @@ def test_dos_documentos_distintos_suman_sus_paginas_por_separado(db):
     obtener_o_crear_documento(db, "u1", "Primer documento con su propio texto.", "a.pdf", num_paginas=5)
     obtener_o_crear_documento(db, "u1", "Segundo documento con texto diferente.", "b.pdf", num_paginas=7)
     assert db.leer(("usuarios", "u1"))["paginas_analizadas"] == 12
+
+
+class TestRecortarABytesUtf8:
+    """05/08/2026: el texto guardado se recorta por BYTES de UTF-8 (no por
+    nº de caracteres) para respetar de verdad el límite de 1 MiB por
+    documento de Firestore -- con caracteres multibyte (tildes, ñ...) un
+    recorte por caracteres no garantiza un tamaño en bytes concreto."""
+
+    def test_texto_corto_no_se_toca(self):
+        texto = "Un documento corto con tildes: ñ, á, é."
+        assert _recortar_a_bytes_utf8(texto, 1000) == texto
+
+    def test_texto_justo_en_el_limite_no_se_toca(self):
+        texto = "a" * 500
+        assert _recortar_a_bytes_utf8(texto, 500) == texto
+
+    def test_recorta_cuando_supera_el_limite(self):
+        texto = "a" * 1000
+        recortado = _recortar_a_bytes_utf8(texto, 500)
+        assert len(recortado.encode("utf-8")) <= 500
+        assert recortado == "a" * 500
+
+    def test_no_deja_a_medias_un_caracter_multibyte_en_el_corte(self):
+        # "ñ" ocupa 2 bytes en UTF-8 -- un límite que caiga justo en medio
+        # de uno no debe producir un carácter roto ni lanzar excepción.
+        texto = "a" * 9 + "ñ" + "a" * 9  # 9 + 2 + 9 = 20 bytes en UTF-8
+        recortado = _recortar_a_bytes_utf8(texto, 10)
+        assert len(recortado.encode("utf-8")) <= 10
+        # decode(errors="ignore") no debe dejar bytes sueltos que rompan la cadena.
+        recortado.encode("utf-8").decode("utf-8")
+
+    def test_documento_dentro_del_limite_guarda_el_texto_completo(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 0})
+        texto = "Fuentes del derecho, con tildes: artículo, según, ratificación. " * 200
+        _id, documento = obtener_o_crear_documento(db, "u1", texto, "temario.pdf", num_paginas=20)
+        assert documento["texto"] == texto
+
+    def test_documento_muy_largo_se_recorta_por_debajo_del_limite_de_firestore(self, db):
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "paginas_analizadas": 0})
+        texto = "Texto con tildes y eñes: artículo, según, año. " * 30000  # ~1,4M caracteres
+        _id, documento = obtener_o_crear_documento(db, "u1", texto, "temario_largo.pdf", num_paginas=400)
+        assert len(documento["texto"].encode("utf-8")) <= LIMITE_BYTES_TEXTO_DOCUMENTO
+        # Muy por encima de lo que se guardaba con el límite antiguo de
+        # 150.000 caracteres -- confirma que ahora aprovecha el margen real.
+        assert len(documento["texto"]) > 150000
 
 
 def test_actualizar_titulo_permite_renombrar_el_documento(db):
