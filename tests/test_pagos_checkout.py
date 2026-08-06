@@ -149,7 +149,7 @@ def test_crear_sesion_checkout_crea_customer_nuevo_si_el_guardado_esta_huerfano(
     mock_customer = MagicMock(id="cus_nuevo_2")
     mock_session = MagicMock(url="https://checkout.stripe.com/nueva-2")
     try:
-        with patch("blueprints.pagos.stripe.Customer.retrieve", side_effect=stripe.InvalidRequestError("No such customer: 'cus_huerfano'", param="id")), \
+        with patch("blueprints.pagos.stripe.Customer.retrieve", side_effect=stripe.InvalidRequestError("No such customer: 'cus_huerfano'", param="id", code="resource_missing")), \
              patch("blueprints.pagos.stripe.Customer.create", return_value=mock_customer) as mock_crear_customer, \
              patch("blueprints.pagos.stripe.Price.retrieve", return_value=_mock_precio()), \
              patch("blueprints.pagos.stripe.checkout.Session.create", return_value=mock_session) as mock_crear_sesion:
@@ -163,6 +163,29 @@ def test_crear_sesion_checkout_crea_customer_nuevo_si_el_guardado_esta_huerfano(
         assert db.leer(("usuarios", "u1"))["stripe_customer_id"] == "cus_nuevo_2"
         _, kwargs = mock_crear_sesion.call_args
         assert kwargs["customer"] == "cus_nuevo_2"
+    finally:
+        parche.stop()
+
+
+def test_crear_sesion_checkout_no_regenera_el_customer_si_el_error_no_es_resource_missing(client, db):
+    # Solo un InvalidRequestError con code == "resource_missing" significa
+    # "el customer ya no existe" -- cualquier otro motivo (p. ej. la cuenta
+    # de Stripe mal configurada) es un fallo real que debe propagarse como
+    # error 500 en vez de camuflarse como un customer_id caducado y crear
+    # uno nuevo de todos modos.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "stripe_customer_id": "cus_existente_1"})
+    parche = _con_sesion(client)
+    try:
+        with patch("blueprints.pagos.stripe.Customer.retrieve", side_effect=stripe.InvalidRequestError("Invalid API Key provided", param=None, code="api_key_expired")), \
+             patch("blueprints.pagos.stripe.Customer.create") as mock_crear_customer:
+            resp = client.post(
+                "/crear-sesion-checkout",
+                json={"plan": "basico", "oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 500
+        mock_crear_customer.assert_not_called()
+        assert db.leer(("usuarios", "u1"))["stripe_customer_id"] == "cus_existente_1"
     finally:
         parche.stop()
 
@@ -337,13 +360,34 @@ def test_crear_sesion_portal_con_customer_huerfano_limpia_el_estado_local(client
     })
     parche = _con_sesion(client)
     try:
-        with patch("blueprints.pagos.stripe.billing_portal.Session.create", side_effect=stripe.InvalidRequestError("No such customer: 'cus_huerfano'", param="customer")):
+        with patch("blueprints.pagos.stripe.billing_portal.Session.create", side_effect=stripe.InvalidRequestError("No such customer: 'cus_huerfano'", param="customer", code="resource_missing")):
             resp = client.post("/crear-sesion-portal", headers={"Authorization": "Bearer x"})
         assert resp.status_code == 400
         assert "no hemos encontrado" in resp.get_json()["error"].lower()
         usuario = db.leer(("usuarios", "u1"))
         assert "stripe_customer_id" not in usuario
         assert usuario["suscripciones"]["AGE"]["plan"] == "gratis"
+    finally:
+        parche.stop()
+
+
+def test_crear_sesion_portal_no_limpia_el_estado_si_el_error_no_es_resource_missing(client, db):
+    # Igual que en checkout: solo code == "resource_missing" significa
+    # customer huérfano. Otro InvalidRequestError no debe borrar
+    # stripe_customer_id ni las suscripciones del usuario.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "stripe_customer_id": "cus_existente_1",
+        "suscripciones": {"AGE": {"plan": "premium", "stripe_subscription_id": "sub_1"}},
+    })
+    parche = _con_sesion(client)
+    try:
+        with patch("blueprints.pagos.stripe.billing_portal.Session.create", side_effect=stripe.InvalidRequestError("Invalid API Key provided", param=None, code="api_key_expired")):
+            resp = client.post("/crear-sesion-portal", headers={"Authorization": "Bearer x"})
+        assert resp.status_code == 500
+        usuario = db.leer(("usuarios", "u1"))
+        assert usuario["stripe_customer_id"] == "cus_existente_1"
+        assert usuario["suscripciones"]["AGE"]["plan"] == "premium"
     finally:
         parche.stop()
 
@@ -478,7 +522,7 @@ def test_cancelar_suscripcion_con_subscription_id_huerfano_se_marca_gratis_local
     })
     parche = _con_sesion(client)
     try:
-        with patch("blueprints.pagos.stripe.Subscription.modify", side_effect=stripe.InvalidRequestError("No such subscription: 'sub_huerfana'", param="id")), \
+        with patch("blueprints.pagos.stripe.Subscription.modify", side_effect=stripe.InvalidRequestError("No such subscription: 'sub_huerfana'", param="id", code="resource_missing")), \
              patch("blueprints.pagos.enviar_email_cancelacion_suscripcion") as mock_email:
             resp = client.post(
                 "/cancelar-suscripcion",
@@ -491,6 +535,31 @@ def test_cancelar_suscripcion_con_subscription_id_huerfano_se_marca_gratis_local
         suscripcion = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
         assert suscripcion["plan"] == "gratis"
         assert suscripcion["subscription_status"] == "canceled"
+    finally:
+        parche.stop()
+
+
+def test_cancelar_suscripcion_no_marca_gratis_si_el_error_no_es_resource_missing(client, db):
+    # Igual que en checkout/portal: solo code == "resource_missing" significa
+    # suscripción huérfana. Otro InvalidRequestError no debe marcar la
+    # suscripción como cancelada -- eso ocultaría un fallo real.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "stripe_subscription_id": "sub_1"}},
+    })
+    parche = _con_sesion(client)
+    try:
+        with patch("blueprints.pagos.stripe.Subscription.modify", side_effect=stripe.InvalidRequestError("Invalid API Key provided", param=None, code="api_key_expired")), \
+             patch("blueprints.pagos.enviar_email_cancelacion_suscripcion") as mock_email:
+            resp = client.post(
+                "/cancelar-suscripcion",
+                json={"oposicion": "AGE", "motivo": "precio"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 500
+        mock_email.assert_not_called()
+        suscripcion = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+        assert suscripcion["plan"] == "premium"
     finally:
         parche.stop()
 

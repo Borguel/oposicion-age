@@ -122,16 +122,32 @@ def crear_sesion_checkout():
             # El ID guardado puede quedar huérfano si se cambió de clave de
             # Stripe (p. ej. de test a live: ese Customer solo existe en la
             # cuenta antigua) -- se valida antes de reutilizarlo y, si ya no
-            # existe, se trata como si no hubiera ninguno guardado.
+            # existe, se trata como si no hubiera ninguno guardado. Solo se
+            # asume "huérfano" con code == "resource_missing" (Sentry
+            # PYTHON-FLASK-B); cualquier otro InvalidRequestError (p. ej. la
+            # cuenta de Stripe mal configurada) es un fallo real y debe
+            # seguir subiendo al except genérico de más abajo en vez de
+            # camuflarse como un simple customer_id caducado.
             try:
                 stripe.Customer.retrieve(stripe_customer_id)
-            except stripe.InvalidRequestError:
-                logger.warning("stripe_customer_id huérfano para %s (%s); se crea uno nuevo", g.uid, stripe_customer_id)
+            except stripe.InvalidRequestError as e:
+                if getattr(e, "code", None) != "resource_missing":
+                    raise
+                logger.warning(
+                    "[stripe_id_huerfano] customer_id huérfano detectado para uid=%s (id=%s); se regenera",
+                    g.uid, stripe_customer_id,
+                )
                 stripe_customer_id = None
         if not stripe_customer_id:
+            id_anterior = usuario.get("stripe_customer_id")
             customer = stripe.Customer.create(email=g.email, metadata={"uid": g.uid})
             stripe_customer_id = customer.id
             actualizar_suscripcion(db, g.uid, oposicion, stripe_customer_id=stripe_customer_id)
+            if id_anterior:
+                logger.warning(
+                    "[stripe_id_huerfano] customer_id regenerado para uid=%s: %s -> %s",
+                    g.uid, id_anterior, stripe_customer_id,
+                )
         # El Price configurado (STRIPE_PRICE_ID_BASICO/PREMIUM) es uno solo,
         # compartido por las 3 oposiciones -- así que su Product en Stripe se
         # llama simplemente "Básico"/"Premium" y, en el portal de facturación,
@@ -218,13 +234,19 @@ def cancelar_suscripcion():
 
     try:
         subscription = stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
-    except stripe.InvalidRequestError:
+    except stripe.InvalidRequestError as e:
+        if getattr(e, "code", None) != "resource_missing":
+            logger.exception("Error cancelando suscripción de Stripe %s", subscription_id)
+            return jsonify({"error": str(e)}), 500
         # La suscripción guardada ya no existe en Stripe (p. ej. quedó de
         # cuando la web usaba la clave de pruebas y se cambió a la de
         # producción) -- no hay nada que cancelar en Stripe, así que se
         # refleja localmente que ya no está activa en vez de dar un error
         # sobre algo que el usuario no puede arreglar.
-        logger.warning("stripe_subscription_id huérfano para %s (%s); se marca como cancelada localmente", g.uid, subscription_id)
+        logger.warning(
+            "[stripe_id_huerfano] stripe_subscription_id huérfano detectado para uid=%s (id=%s); se marca como cancelada localmente",
+            g.uid, subscription_id,
+        )
         actualizar_suscripcion(db, g.uid, oposicion, plan="gratis", subscription_status="canceled")
         return jsonify({"mensaje": "Tu suscripción ya no estaba activa; tu cuenta ha quedado en el plan gratuito."})
     except Exception as e:
@@ -294,13 +316,22 @@ def crear_sesion_portal():
             return_url=f"{FRONTEND_URL}/mi-cuenta/"
         )
         return jsonify({"url": session.url})
-    except stripe.InvalidRequestError:
+    except stripe.InvalidRequestError as e:
+        if getattr(e, "code", None) != "resource_missing":
+            logger.exception("Error creando sesión del portal de Stripe")
+            return jsonify({"error": str(e)}), 500
         # El customer guardado quedó huérfano (p. ej. de cuando la web usaba
         # la clave de pruebas de Stripe) -- no hay ninguna suscripción real
         # detrás de lo que muestre Firestore, así que se limpia el estado
         # local para que el usuario pueda volver a contratar un plan desde
         # cero en vez de quedarse atascado con un botón que siempre falla.
-        logger.warning("stripe_customer_id huérfano para %s (%s); se limpia el estado local", g.uid, stripe_customer_id)
+        # (No se crea un customer nuevo aquí como en /crear-sesion-checkout:
+        # un customer recién creado no tendría ninguna suscripción/método de
+        # pago que mostrar en el portal, así que no arreglaría nada.)
+        logger.warning(
+            "[stripe_id_huerfano] customer_id huérfano detectado para uid=%s (id=%s); se limpia el estado local",
+            g.uid, stripe_customer_id,
+        )
         doc_ref.update({"stripe_customer_id": firestore.DELETE_FIELD})
         for oposicion, sub in (usuario.get("suscripciones", {}) or {}).items():
             if (sub or {}).get("plan", "gratis") != "gratis":
