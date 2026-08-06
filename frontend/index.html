@@ -295,15 +295,68 @@
       margin: 0 auto;
     }
 
-    .home-hero-imagen {
+    /* ---------- Escena animada del hero (ver home-hero-anim.js) ----------
+       Reemplaza la ilustración estática anterior por un pequeño montaje:
+       3 "hojas" sueltas (el temario disperso) que se recomponen en una
+       pregunta de test resuelta -- dramatiza el propio H1 en vez de decorar
+       la carga. Reutiliza las clases del mock de la sección "showcase"
+       (.showcase-mock, .mock-linea, .mock-opcion, .letra, más abajo en este
+       mismo fichero) para que la tarjeta final sea idéntica a las que ya
+       usa el resto de la página. */
+    .hero-escena {
+      position: relative;
       display: block;
-      width: 190px;
-      height: 190px;
-      margin: 12px auto 0;
-      background-image: url('/assets/hero-estudio.svg');
-      background-repeat: no-repeat;
-      background-size: contain;
-      background-position: center;
+      width: 220px;
+      height: 220px;
+      margin: 20px auto 0;
+    }
+
+    .hero-hoja {
+      position: absolute;
+      inset: 10% 14%;
+      background: var(--age-card);
+      border-radius: var(--age-radius-md);
+      box-shadow: var(--age-shadow-hover);
+      padding: 16px 18px;
+    }
+    .hero-hoja-1 { transform: rotate(-9deg) translate(-14px, 8px); }
+    .hero-hoja-2 { transform: rotate(7deg) translate(12px, -6px); z-index: 1; }
+    .hero-hoja-3 { transform: rotate(-3deg) translate(2px, 12px); z-index: 2; }
+
+    .hero-hoja-linea {
+      display: block;
+      height: 8px;
+      border-radius: 5px;
+      background: var(--age-border);
+      margin-bottom: 9px;
+    }
+    .hero-hoja-linea.corta { width: 60%; margin-bottom: 0; }
+
+    .hero-pregunta {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: none;
+      width: 100%;
+    }
+
+    .hero-check {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    /* Quien prefiere menos movimiento llega igual al desenlace (la opción
+       correcta ya marcada), solo que sin la coreografía -- home-hero-anim.js
+       hace lo mismo por JS (salto directo, sin timeline) para cuando el
+       script sí llega a cargar. */
+    @media (prefers-reduced-motion: reduce) {
+      .hero-hoja { display: none; }
+      .hero-pregunta { opacity: 1; }
     }
 
     @media (min-width: 960px) {
@@ -329,10 +382,10 @@
         text-align: left;
       }
 
-      .home-hero-imagen {
-        flex: 0 0 380px;
-        width: 380px;
-        height: 380px;
+      .hero-escena {
+        flex: 0 0 340px;
+        width: 340px;
+        height: 340px;
         margin: 0;
       }
     }
@@ -697,6 +750,10 @@
       margin-top: 8px;
       font-size: 0.8rem;
       color: var(--age-ink-soft);
+      /* Sin efecto en el mock estático del showcase (nace ya con/sin
+         .correcta, no hay "de" que animar) -- solo se nota en el hero,
+         donde home-hero-anim.js añade la clase a mitad de la coreografía. */
+      transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
     }
     .mock-opcion.correcta {
       border-color: var(--age-success);
@@ -1084,7 +1141,39 @@
         </div>
         <a href="/demo/" class="home-hero-demo-link" style="display:none"><span data-icon="rayo" data-icon-size="16"></span> Prueba 5 preguntas gratis, sin registrarte</a>
       </div>
-      <div class="home-hero-imagen" aria-hidden="true"></div>
+      <!-- Momento de autor de la landing (ver home-hero-anim.js): de un
+           montón de apuntes sueltos a una pregunta de test resuelta --
+           dramatiza literalmente la promesa del H1 en vez de decorar la
+           carga con una animación genérica. Estado por defecto (sin JS):
+           las 3 "hojas" sueltas quedan visibles como ilustración estática
+           -- nunca queda contenido oculto si el script no llega a cargar. -->
+      <div class="hero-escena" aria-hidden="true">
+        <div class="hero-hoja hero-hoja-1">
+          <span class="hero-hoja-linea"></span>
+          <span class="hero-hoja-linea corta"></span>
+          <span class="hero-hoja-linea"></span>
+        </div>
+        <div class="hero-hoja hero-hoja-2">
+          <span class="hero-hoja-linea"></span>
+          <span class="hero-hoja-linea corta"></span>
+          <span class="hero-hoja-linea"></span>
+        </div>
+        <div class="hero-hoja hero-hoja-3">
+          <span class="hero-hoja-linea"></span>
+          <span class="hero-hoja-linea corta"></span>
+          <span class="hero-hoja-linea"></span>
+        </div>
+        <div class="hero-pregunta showcase-mock" id="hero-pregunta">
+          <div class="mock-linea"></div>
+          <div class="mock-linea corta"></div>
+          <div class="mock-opcion"><span class="letra">A</span> Primera opción</div>
+          <div class="mock-opcion" id="hero-opcion-correcta">
+            <span class="letra">B</span> Segunda opción
+            <svg class="hero-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>
+          </div>
+          <div class="mock-opcion"><span class="letra">C</span> Tercera opción</div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1380,6 +1469,7 @@
   </section>
 
   <script type="module" src="/assets/auth.js"></script>
+  <script type="module" src="/assets/home-hero-anim.js"></script>
   <script type="module">
     import { icono } from "/assets/icons.js";
     import { esperarUsuario } from "/assets/auth.js";
