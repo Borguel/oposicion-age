@@ -1,0 +1,84 @@
+/* Páginas "examen resuelto" (/blog/examen-*): muestra de preguntas reales
+   de un examen oficial ya celebrado, con la respuesta correcta resaltada y
+   una explicación plegable. Pensado para reutilizarse en varias páginas
+   (una por convocatoria/oposición), de ahí vivir en su propio archivo en
+   vez de mezclarse con blog.css (que es solo del listado del blog). */
+
+.examen-bloque-titulo {
+  margin: 28px 0 14px;
+}
+
+.examen-pregunta {
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+
+.examen-pregunta-num {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--age-ink-soft);
+  margin-bottom: 8px;
+}
+
+.examen-pregunta-enunciado {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.examen-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.examen-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--age-radius-sm);
+  font-size: 13.5px;
+  line-height: 1.45;
+  border: 1.5px solid var(--age-border);
+  color: var(--age-ink);
+}
+
+.examen-opcion--correcta {
+  border-color: var(--age-success);
+  background: var(--age-success-bg);
+  color: var(--age-success);
+  font-weight: 600;
+}
+
+.examen-opcion-letra {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.examen-explicacion summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--age-primary-dark, var(--age-ink));
+  list-style: none;
+}
+.examen-explicacion summary::-webkit-details-marker { display: none; }
+.examen-explicacion summary::before {
+  content: "▸ ";
+}
+.examen-explicacion[open] summary::before {
+  content: "▾ ";
+}
+.examen-explicacion p {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  color: var(--age-ink-soft);
+  line-height: 1.55;
+}
