@@ -306,8 +306,8 @@
     .hero-escena {
       position: relative;
       display: block;
-      width: 220px;
-      height: 220px;
+      width: 250px;
+      height: 300px;
       margin: 20px auto 0;
     }
 
@@ -342,6 +342,16 @@
       justify-content: center;
       max-width: none;
       width: 100%;
+    }
+
+    /* Mismo peso visual que .mock-flashcard .pregunta (el otro mock de
+       pregunta real que ya usa la página, en el showcase de tarjetas). */
+    .hero-enunciado {
+      font-weight: 700;
+      color: var(--age-ink);
+      font-size: 0.92rem;
+      line-height: 1.4;
+      margin: 0 0 14px;
     }
 
     .hero-check {
@@ -383,9 +393,9 @@
       }
 
       .hero-escena {
-        flex: 0 0 340px;
-        width: 340px;
-        height: 340px;
+        flex: 0 0 380px;
+        width: 380px;
+        height: 400px;
         margin: 0;
       }
     }
@@ -1169,14 +1179,17 @@
           <span class="hero-hoja-linea"></span>
         </div>
         <div class="hero-pregunta showcase-mock" id="hero-pregunta">
-          <div class="mock-linea"></div>
-          <div class="mock-linea corta"></div>
-          <div class="mock-opcion"><span class="letra">A</span> Primera opción</div>
+          <!-- Art. 1.3 CE: "La forma política del Estado español es la
+               Monarquía parlamentaria." Un enunciado real y corto en vez
+               de las barras grises genéricas -- sigue siendo decorativo
+               (aria-hidden en el contenedor), pero el dato es exacto. -->
+          <p class="hero-enunciado">¿Cuál es la forma política del Estado español?</p>
+          <div class="mock-opcion"><span class="letra">A</span> República</div>
           <div class="mock-opcion" id="hero-opcion-correcta">
-            <span class="letra">B</span> Segunda opción
+            <span class="letra">B</span> Monarquía parlamentaria
             <svg class="hero-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"/></svg>
           </div>
-          <div class="mock-opcion"><span class="letra">C</span> Tercera opción</div>
+          <div class="mock-opcion"><span class="letra">C</span> Estado federal</div>
         </div>
       </div>
     </div>
