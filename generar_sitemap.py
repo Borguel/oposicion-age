@@ -39,6 +39,7 @@ PRIORIDADES = {
     "/login/": ("0.5", "monthly"),
     "/oposiciones/": ("0.7", "monthly"),
     "/blog/": ("0.7", "weekly"),
+    "/blog/como-inscribirse-oposicion-estado/": ("0.6", "monthly"),
     "/oposicion-administrativo-estado-c1/": ("0.8", "monthly"),
     "/oposicion-gace/": ("0.8", "monthly"),
     "/oposicion-auxiliar-administrativo-estado/": ("0.8", "monthly"),
