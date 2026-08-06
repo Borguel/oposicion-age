@@ -37,11 +37,16 @@ from publicacion_estatica_boe import (
     actualizar_pagina_estatica_avisos,
 )
 
-_URL_INAP_AGE = (
-    "https://sede.inap.gob.es/es/procedimientos-y-servicios/seleccion/"
-    "procesos-selectivos-de-cuerpos-y-escalas-generales/"
-    "cuerpo-general-administrativo-de-la-administracion-del-estado-ingreso-libre-convocatoria-2025"
-)
+# Genérica a propósito: un aviso solo tiene UN url_inap en Firestore (el
+# mismo para las 3 oposiciones que afecta, ver publicacion_estatica_boe.py),
+# así que no puede apuntar a la vez a las páginas específicas de AGE, GACE Y
+# Auxiliar. El HTML estático de cada frontend/oposicion-*/ (ver el commit
+# que corrige el enlace equivocado que tenía antes) sí usa el enlace
+# específico de esa oposición como excepción manual -- si se ejecuta este
+# script, la próxima regeneración desde Firestore sustituye esos enlaces
+# específicos por este genérico. Es una limitación real del modelo de
+# datos, no un descuido.
+_URL_INAP_GENERAL = "https://www.inap.es/es/seleccion/procesos-selectivos-de-cuerposescalas-generales"
 
 # Mismos datos (mismo orden, mismos textos) que el HTML ya escrito a mano en
 # el frontend -- ver el commit que introdujo este script para el HTML
@@ -59,7 +64,7 @@ AVISOS_HISTORICOS = [
             "de 2025 al 22 de enero de 2026."
         ),
         "url_boe": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2025-26262",
-        "url_inap": _URL_INAP_AGE,
+        "url_inap": _URL_INAP_GENERAL,
         "fecha_boe": "20251218",
     },
     {
@@ -75,7 +80,7 @@ AVISOS_HISTORICOS = [
             "en su solicitud."
         ),
         "url_boe": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-6249",
-        "url_inap": _URL_INAP_AGE,
+        "url_inap": _URL_INAP_GENERAL,
         "fecha_boe": "20260317",
     },
     {
@@ -93,7 +98,7 @@ AVISOS_HISTORICOS = [
         # resolución (a diferencia de las otras dos) -- mejor omitirlo que
         # inventar un enlace que no existe. Queda el enlace a INAP.
         "url_boe": "",
-        "url_inap": _URL_INAP_AGE,
+        "url_inap": _URL_INAP_GENERAL,
         "fecha_boe": "20260506",
     },
 ]
