@@ -1,17 +1,16 @@
 name: Comprobación de salud del backend
 
+# El disparo automático cada 10 minutos (cron) se ha quitado a propósito
+# (06/08/2026): un ping periódico a /health no necesita gastar minutos de
+# Actions de un repo privado -- ese cupo es limitado y este workflow, solo
+# por sí solo, disparaba ~144 ejecuciones/día. El keep-alive del backend
+# en el plan gratuito de Render (que lo duerme tras un rato sin
+# peticiones) y el aviso si cae ahora los hace un servicio externo
+# gratuito (UptimeRobot o cron-job.org) pegando a
+# https://oposicion-age.onrender.com/health cada 5-10 minutos, sin
+# consumir nada de esta cuenta de GitHub. Se deja workflow_dispatch para
+# poder lanzar la comprobación a mano si hace falta depurar algo.
 on:
-  schedule:
-    # Cada 10 minutos: además de servir de monitor de disponibilidad (si
-    # este workflow falla, GitHub avisa por email automáticamente al dueño
-    # del repositorio), mantiene "despierto" el backend en el plan gratuito
-    # de Render, que lo duerme tras un rato sin peticiones. En la práctica,
-    # GitHub retrasa bastante el disparo de "schedule" en repos con poca
-    # actividad (huecos reales de ~1h en vez de 10 min), así que Render
-    # puede llegar a dormirse entre comprobaciones -- por eso el timeout de
-    # abajo tiene que aguantar un arranque en frío completo, no solo un
-    # backend ya despierto.
-    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 jobs:
