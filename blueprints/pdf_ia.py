@@ -12,6 +12,7 @@ from io import BytesIO
 
 import requests
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
+from google.api_core import exceptions as google_exceptions
 from pypdf import PdfReader
 
 from firebase_setup import db
@@ -618,7 +619,18 @@ def generar_test_desde_pdf():
     # generando y gastando en DeepSeek aunque el cliente corte la conexión SSE,
     # así que cobrar al final permitía saltarse la cuota abortando la petición
     # en bucle. Si la generación falla de verdad (0 preguntas), se devuelve.
-    registrar_uso(db, uid, "pdf_ia", plan_actual)
+    #
+    # Sentry PYTHON-FLASK-1: la transacción de Firestore que incrementa el
+    # contador puede expirar (InvalidArgument) por un problema transitorio
+    # de Firestore ajeno a esta petición -- no debe convertirse en un 500
+    # para el usuario por el fallo de un simple contador de cuota.
+    try:
+        registrar_uso(db, uid, "pdf_ia", plan_actual)
+    except google_exceptions.InvalidArgument:
+        logger.warning(
+            "No se pudo registrar el uso de pdf_ia (transacción de Firestore expirada) para uid=%s en %s",
+            uid, datetime.utcnow().isoformat(),
+        )
 
     def generar():
         eventos = queue.Queue()

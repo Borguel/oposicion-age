@@ -10,6 +10,8 @@ import re
 import pytest
 from unittest.mock import patch
 
+from google.api_core import exceptions as google_exceptions
+
 from blueprints.pdf_ia import _extraer_json_array, _parece_documento_generado_valido
 from conftest import sembrar_usuario_activo
 
@@ -279,6 +281,35 @@ class TestResumirPdfYGenerarTestDesdePdf:
         assert len(eventos[-1]["test"]) == 1
         # También se factura el uso solo cuando la generación tuvo éxito.
         assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+
+    def test_generar_test_desde_pdf_devuelve_test_aunque_expire_la_transaccion_de_uso(self, client, db, documento_sembrado):
+        # Sentry PYTHON-FLASK-1: la transacción de Firestore de registrar_uso
+        # (cobrada por adelantado, ANTES de generar nada) puede expirar por un
+        # problema transitorio de Firestore -- eso no debe tumbar la petición
+        # con un 500 ni impedir que el usuario reciba su test ya generado.
+        preguntas_generadas = [{
+            "pregunta": "¿Pregunta?",
+            "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+            "respuesta_correcta": "A",
+            "explicacion": "porque sí",
+        }]
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.registrar_uso",
+                       side_effect=google_exceptions.InvalidArgument("The referenced transaction has expired or is no longer valid.")), \
+                 patch("blueprints.pdf_ia.generar_preguntas_ia_en_lotes", return_value=(preguntas_generadas, [])):
+                resp = client.post("/generar-test-desde-pdf", data={
+                    "documento_id": documento_sembrado, "num_preguntas": "1"
+                }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["tipo"] == "fin"
+        assert len(eventos[-1]["test"]) == 1
+        # El contador de uso no llegó a incrementarse (la transacción
+        # "expiró"), pero eso no debe impedir que el test se sirva.
+        assert "pdf_ia" not in (db.leer(("usuarios", "u1")).get("limites_uso") or {})
 
     def test_generar_test_desde_pdf_sin_preguntas_no_factura_uso(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
