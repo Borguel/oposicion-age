@@ -116,6 +116,50 @@ def _leer_override_texto_legal():
     return valor.strip().lower() == "true"
 
 
+def _parece_documento_generado_valido(texto):
+    """Filtro barato (sin gastar IA) contra un fallo real reportado por un
+    usuario (06/08/2026): al pedir un esquema, el modelo devolvió UNA sola
+    frase de METACOMENTARIO sobre el propio resultado ("El esquema ya está
+    completo: cubre todas las secciones del documento... No hay ningún
+    epígrafe pendiente de desarrollo...") en vez del esquema en Markdown
+    pedido -- y esa frase se guardó y se mostró tal cual, sin ningún aviso
+    de que la generación había fallado.
+
+    Los CUATRO system_prompt de /resumir-pdf y /generar-esquema-desde-pdf
+    (narrativo y mapa de artículos, resumen y esquema) exigen SIEMPRE al
+    menos un encabezado de nivel 1 ("# ") como parte del formato -- su
+    ausencia es una señal barata y fiable de que la respuesta no es el
+    documento pedido, sea cual sea la causa exacta (metacomentario,
+    respuesta vacía, texto cortado de forma rara). No hace falta detectar
+    la frase de metacomentario en sí -- eso sería frágil ante la próxima
+    reformulación distinta del mismo problema -- basta con comprobar que
+    se cumplió el contrato de formato que el propio prompt exige."""
+    if not texto:
+        return False
+    return any(linea.strip().startswith("# ") for linea in texto.splitlines())
+
+
+def _generar_documento_validado(*args, **kwargs):
+    """Envoltorio de generar_documento_largo_por_partes que reintenta UNA
+    vez si el resultado no supera _parece_documento_generado_valido, en vez
+    de dar por buena una respuesta que no es el documento pedido -- ver el
+    comentario largo de esa función. Si el reintento TAMBIÉN falla el
+    formato, se rinde (devuelve None), igual que ante cualquier otro fallo
+    de generación -- el llamante ya sabe convertir un None en el mensaje de
+    error habitual y devolver la cuota consumida."""
+    resultado = generar_documento_largo_por_partes(*args, **kwargs)
+    if resultado and not _parece_documento_generado_valido(resultado):
+        logger.warning(
+            "generar_documento_largo_por_partes devolvió una respuesta sin encabezado "
+            "Markdown válido, reintentando una vez: %r", resultado[:200],
+        )
+        resultado = generar_documento_largo_por_partes(*args, **kwargs)
+        if resultado and not _parece_documento_generado_valido(resultado):
+            logger.warning("Segundo intento tampoco tiene un encabezado Markdown válido, se abandona.")
+            return None
+    return resultado
+
+
 def _normalizar_pregunta_pdf(p):
     """Deja una pregunta cruda de generar_preguntas_ia_en_lotes/
     generar_banco_preguntas_adaptativo lista para mostrarse o guardarse:
@@ -259,7 +303,7 @@ def resumir_pdf():
             def on_progreso(evento_progreso):
                 eventos.put({"tipo": "progreso", **evento_progreso})
             try:
-                resumen = generar_documento_largo_por_partes(
+                resumen = _generar_documento_validado(
                     system_prompt, text, etiqueta_documento="Documento para resumir",
                     on_usage=acumulador_tokens.add, on_progreso=on_progreso,
                 )
@@ -407,7 +451,7 @@ def generar_esquema_desde_pdf():
             def on_progreso(evento_progreso):
                 eventos.put({"tipo": "progreso", **evento_progreso})
             try:
-                esquema = generar_documento_largo_por_partes(
+                esquema = _generar_documento_validado(
                     system_prompt,
                     text,
                     etiqueta_documento="Documento para crear esquema",

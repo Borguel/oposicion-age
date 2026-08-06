@@ -10,7 +10,7 @@ import re
 import pytest
 from unittest.mock import patch
 
-from blueprints.pdf_ia import _extraer_json_array
+from blueprints.pdf_ia import _extraer_json_array, _parece_documento_generado_valido
 from conftest import sembrar_usuario_activo
 
 
@@ -337,6 +337,84 @@ class TestGenerarEsquemaDesdePdf:
         assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0
 
 
+class TestParaceDocumentoGeneradoValido:
+    # _parece_documento_generado_valido (06/08/2026, bug real reportado por
+    # un usuario): al pedir un esquema, el modelo devolvió una sola frase
+    # de metacomentario ("El esquema ya está completo: cubre todas las
+    # secciones del documento... No hay ningún epígrafe pendiente de
+    # desarrollo...") en vez del esquema en Markdown pedido, y esa frase se
+    # guardó y se mostró tal cual sin ningún aviso de que algo había fallado.
+    def test_documento_con_encabezado_es_valido(self):
+        assert _parece_documento_generado_valido("# Título\n\nContenido normal del resumen.") is True
+
+    def test_metacomentario_sin_encabezado_no_es_valido(self):
+        texto = (
+            "El esquema ya está completo: cubre todas las secciones del documento "
+            "(base jurídica, objetivos, avances y herramientas, aplicación y papel "
+            "del Parlamento) con su jerarquía de epígrafes y sub-epígrafes. No hay "
+            "ningún epígrafe pendiente de desarrollo ni contenido adicional en el "
+            "documento proporcionado que no se haya reflejado."
+        )
+        assert _parece_documento_generado_valido(texto) is False
+
+    def test_vacio_o_none_no_es_valido(self):
+        assert _parece_documento_generado_valido("") is False
+        assert _parece_documento_generado_valido(None) is False
+
+
+class TestGenerarDocumentoValidadoIntegracion:
+    """/resumir-pdf y /generar-esquema-desde-pdf reintentan UNA vez si la
+    respuesta no tiene un encabezado Markdown válido (ver
+    _generar_documento_validado), en vez de guardar/mostrar un
+    metacomentario como si fuera el documento pedido."""
+
+    def test_resumir_pdf_reintenta_si_la_primera_respuesta_no_es_valida(self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes",
+                       side_effect=["El resumen ya está completo, no hay más que añadir.", "# Resumen real"]) as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["resumen"] == "# Resumen real"
+        assert mock_gen.call_count == 2
+        # Factura el uso con normalidad -- al final sí hubo un resultado válido.
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+
+    def test_resumir_pdf_sin_encabezado_ni_al_reintentar_da_error_y_devuelve_uso(self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes",
+                       side_effect=["Metacomentario sin formato.", "Otro metacomentario distinto."]) as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert "resumen" not in eventos[-1]
+        assert "error" in eventos[-1]
+        assert mock_gen.call_count == 2
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0
+
+    def test_generar_esquema_desde_pdf_reintenta_si_la_primera_respuesta_no_es_valida(self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes",
+                       side_effect=["El esquema ya está completo, no falta nada.", "# Esquema real"]) as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos[-1]["esquema"] == "# Esquema real"
+        assert mock_gen.call_count == 2
+
+
 # Extracto legal calibrado (05/08/2026, ver detectar_texto_legal en
 # deepseek_utils.py) -- mismo texto que tests/test_documentos_pdf.py
 # _TEXTO_LEGAL, para que la detección automática dé "legal" de verdad.
@@ -602,7 +680,10 @@ class TestCosteIaEnHerramientasPdf:
         db.sembrar(("usuarios", "u1", "documentos", "d1"), {"texto": texto, "nombre_archivo": "doc.pdf"})
 
         def fake_post(url, headers=None, json=None, timeout=None, stream=False):
-            return _FakeRespuestaDeepSeek("Resumen parcial.", {"prompt_tokens": 100, "completion_tokens": 50})
+            # Con encabezado "# " (05/08/2026, ver _parece_documento_generado_valido):
+            # sin él, la respuesta se trataría como inválida y se reintentaría
+            # una vez, duplicando el coste que este test mide.
+            return _FakeRespuestaDeepSeek("# Resumen parcial.", {"prompt_tokens": 100, "completion_tokens": 50})
 
         parche = _con_sesion(client)
         try:
