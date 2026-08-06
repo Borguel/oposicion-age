@@ -3,6 +3,7 @@ from google.cloud import firestore
 
 from oposiciones import OPOSICION_POR_DEFECTO
 from email_utils import enviar_email_bienvenida
+from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketing
 from planes import DURACION_PRUEBA_DIAS, prueba_activa, resolver_plan_efectivo, tiene_plan_de_pago_activo
 from dominios_desechables import es_dominio_email_desechable
 from utils import calcular_resultado_test, ejecutar_en_transaccion
@@ -110,6 +111,7 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificad
             "suscripciones": {},
         })
         enviar_email_bienvenida(email)
+        sincronizar_contacto_marketing(email, estado="prueba")
         return
 
     # El documento ya existía: si el email se acaba de verificar (o, más
