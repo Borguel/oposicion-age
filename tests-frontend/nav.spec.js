@@ -197,7 +197,7 @@ test.describe("nav -- enlaces principales según sesión", () => {
     await page.goto("/");
 
     const enlaces = page.locator(".age-nav-links-items a");
-    await expect(enlaces).toHaveText(["Inicio", "Oposiciones", "Cómo funciona", "Planes"]);
+    await expect(enlaces).toHaveText(["Inicio", "Oposiciones", "Blog", "Cómo funciona", "Planes"]);
 
     const overflow = await page.locator(".age-nav-links").evaluate((el) => el.scrollWidth - el.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
