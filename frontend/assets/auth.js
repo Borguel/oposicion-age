@@ -298,6 +298,7 @@ export async function obtenerAuthHeaders() {
 const NAV_LINKS_ANONIMO = [
   { href: "/", label: "Inicio", match: ["/"] },
   { href: "/oposiciones/", label: "Oposiciones", match: ["/oposiciones/", "/oposicion-administrativo-estado-c1/", "/oposicion-gace/", "/oposicion-auxiliar-administrativo-estado/"] },
+  { href: "/blog/", label: "Blog", match: ["/blog/", "/comparativa-oposiciones-estado/", "/sueldo-funcionario-administracion-estado/", "/como-estudiar-oposicion-trabajando/", "/estudiar-oposiciones-con-inteligencia-artificial/", "/avisos-oficiales/"] },
   { href: "/como-funciona/", label: "Cómo funciona", match: ["/como-funciona/"] },
   { href: "/planes/", label: "Planes", match: ["/planes/"] }
 ];
@@ -1116,6 +1117,7 @@ function inyectarFooter() {
   const anio = new Date().getFullYear();
   footer.innerHTML = `
     <span>© ${anio} Domina tu Opo</span>
+    <a href="/blog/">Blog</a>
     <a href="/avisos-oficiales/">Avisos oficiales</a>
     <a href="/aviso-legal/">Aviso legal</a>
     <a href="/terminos/">Términos y condiciones</a>
