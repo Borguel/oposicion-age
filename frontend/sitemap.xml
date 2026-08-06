@@ -67,6 +67,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://www.dominatuopo.com/blog/calendario-oposiciones-estado/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.dominatuopo.com/blog/como-inscribirse-oposicion-estado/</loc>
     <lastmod>2026-08-06</lastmod>
     <changefreq>monthly</changefreq>
@@ -93,6 +98,16 @@
   <url>
     <loc>https://www.dominatuopo.com/blog/examen-gace-2025/</loc>
     <lastmod>2026-08-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/blog/glosario-terminos-oposiciones/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.dominatuopo.com/blog/que-pasa-despues-de-aprobar-oposicion/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

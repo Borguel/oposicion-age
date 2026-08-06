@@ -30,6 +30,21 @@
   box-shadow: 0 0 0 2px var(--age-primary);
 }
 
+/* Paso que solo aplica a una de las oposiciones (p. ej. el curso
+   selectivo, exclusivo de GACE): mismo formato, con el punto y un borde
+   izquierdo en un tono distinto para que se note que es una bifurcación,
+   no un paso común a todas. */
+.cronologia-item--gace {
+  border-left: 2px solid var(--age-primary);
+  margin-left: -18px;
+  padding-left: 16px;
+}
+.cronologia-item--gace .cronologia-punto {
+  background: var(--age-card);
+  border: 3px solid var(--age-primary);
+  box-shadow: none;
+}
+
 .cronologia-fecha {
   display: block;
   font-size: 12px;
