@@ -160,7 +160,10 @@ function mostrarToastDeshacer({ mensaje, alDeshacer, alConfirmar, duracionMs = 6
   });
 }
 
-function filaContenido({ label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar, urlContinuar }) {
+function filaContenido({
+  label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar, urlContinuar,
+  textoGenerarDeNuevo = "Generar más",
+}) {
   const acciones = [];
   // "Continuar" (test autoguardado sin terminar, ver
   // obtener_tests_en_progreso_por_documento en documentos_pdf.py) se
@@ -181,7 +184,7 @@ function filaContenido({ label, iconoHtml, existe, cantidad, urlVer, urlGenerar,
     if (urlAleatorias) {
       acciones.push(`<a class="documento-card-btn" href="${urlAleatorias}">10 aleatorias</a>`);
     }
-    acciones.push(`<a class="documento-card-btn" href="${urlGenerar}">Generar más</a>`);
+    acciones.push(`<a class="documento-card-btn" href="${urlGenerar}">${textoGenerarDeNuevo}</a>`);
   } else {
     acciones.push(`<a class="documento-card-btn orange" href="${urlGenerar}">${textoGenerar}</a>`);
   }
@@ -451,13 +454,20 @@ function tarjetaDocumento(doc, modoCarpeta) {
       label: "Resumen", iconoHtml: icono("lista", 18), existe: doc.tiene_resumen,
       urlVer: `/subida-pdf-resumen/?documento_id=${doc.id}&ver=resumen`,
       urlGenerar: `/subida-pdf-resumen/?documento_id=${doc.id}`,
-      textoGenerar: "Generar"
+      textoGenerar: "Generar",
+      // "Regenerar" (05/08/2026, a petición del usuario), no "Generar más":
+      // a diferencia de tarjetas/test (que SÍ acumulan, "más" es literal),
+      // solo existe UN resumen/esquema por documento -- volver a pulsar
+      // sustituye el que ya había, no añade otro. "Generar más" daba a
+      // entender que se acumulaba algo, cuando en realidad se sobrescribe.
+      textoGenerarDeNuevo: "Regenerar"
     }),
     filaContenido({
       label: "Esquema", iconoHtml: icono("esquema", 18), existe: doc.tiene_esquema,
       urlVer: `/subida-pdf-esquemas/?documento_id=${doc.id}&ver=esquema`,
       urlGenerar: `/subida-pdf-esquemas/?documento_id=${doc.id}`,
-      textoGenerar: "Generar"
+      textoGenerar: "Generar",
+      textoGenerarDeNuevo: "Regenerar"
     }),
     filaContenido({
       label: "Tarjetas", iconoHtml: icono("tarjeta", 18), existe: doc.num_tarjetas > 0, cantidad: doc.num_tarjetas,
@@ -1066,8 +1076,27 @@ function inicializarEventos() {
 // ninguno.
 let temporizadorSondeoBancos = null;
 
+// Resumen/esquema "sin esperar" (05/08/2026): igual que el banco, ahora
+// /resumir-pdf y /generar-esquema-desde-pdf redirigen aquí ANTES de que la
+// generación termine (ver mostrarRedireccionAMisDocumentos en subida-pdf-
+// resumen/subida-pdf-esquemas), guardándose sola en el servidor. A
+// diferencia del banco (que tiene su propio estado "generando" explícito),
+// tiene_resumen/tiene_esquema son solo un booleano sin estado intermedio,
+// así que aquí no hay forma de saber "sigue generando" mirando el propio
+// documento -- se usa en su lugar un contador de intentos, armado por
+// destacarDocumentoDesdeUrl() al llegar con ?generando=resumen|esquema, que
+// para en cuanto el campo esperado se pone a true o se agota el margen.
+let documentoEsperandoContenido = null;
+let tipoContenidoEsperando = null; // "resumen" | "esquema"
+let intentosSondeoContenido = 0;
+const MAX_INTENTOS_SONDEO_CONTENIDO = 20; // ~80s a 4s cada uno, margen amplio
+
 function hayBancosGenerando() {
   return documentos.some((d) => d.banco_preguntas_estado === "generando" || d.banco_tarjetas_estado === "generando");
+}
+
+function hayAlgoGenerando() {
+  return hayBancosGenerando() || intentosSondeoContenido > 0;
 }
 
 function detenerSondeoBancos() {
@@ -1095,7 +1124,18 @@ async function sondearBancosEnGeneracion() {
         doc.banco_tarjetas_estado = actualizado.banco_tarjetas_estado;
         doc.banco_tarjetas_total = actualizado.banco_tarjetas_total;
         doc.banco_tarjetas_objetivo = actualizado.banco_tarjetas_objetivo;
+        doc.tiene_resumen = actualizado.tiene_resumen;
+        doc.tiene_esquema = actualizado.tiene_esquema;
       });
+      if (intentosSondeoContenido > 0) {
+        intentosSondeoContenido--;
+        const docEsperado = documentos.find((d) => d.id === documentoEsperandoContenido);
+        const listo = docEsperado && (
+          (tipoContenidoEsperando === "resumen" && docEsperado.tiene_resumen) ||
+          (tipoContenidoEsperando === "esquema" && docEsperado.tiene_esquema)
+        );
+        if (listo) intentosSondeoContenido = 0;
+      }
       if (carpetaActual !== null) renderizarDocumentosDeCarpeta();
       const query = document.getElementById("filtro-busqueda")?.value;
       if (query) renderizarBusqueda(query);
@@ -1108,7 +1148,7 @@ async function sondearBancosEnGeneracion() {
 }
 
 function iniciarSondeoBancosSiHaceFalta() {
-  if (temporizadorSondeoBancos || !hayBancosGenerando()) return;
+  if (temporizadorSondeoBancos || !hayAlgoGenerando()) return;
   temporizadorSondeoBancos = setTimeout(sondearBancosEnGeneracion, 4000);
 }
 
@@ -1116,10 +1156,20 @@ function iniciarSondeoBancosSiHaceFalta() {
 // vez de dejar al usuario buscando en qué carpeta cayó el documento recién
 // subido, se abre directamente la vista donde está (o "Sin carpeta") y se
 // resalta su tarjeta un momento, para que sea evidente de un vistazo dónde
-// seguir el progreso de su banco.
+// seguir el progreso de su banco. Con &generando=resumen|esquema
+// (05/08/2026, ver subida-pdf-resumen/subida-pdf-esquemas) arranca además
+// el sondeo de ese contenido concreto -- ver intentosSondeoContenido.
 function destacarDocumentoDesdeUrl() {
-  const id = new URLSearchParams(window.location.search).get("destacar");
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("destacar");
   if (!id) return;
+  const generando = params.get("generando");
+  if (generando === "resumen" || generando === "esquema") {
+    documentoEsperandoContenido = id;
+    tipoContenidoEsperando = generando;
+    intentosSondeoContenido = MAX_INTENTOS_SONDEO_CONTENIDO;
+    iniciarSondeoBancosSiHaceFalta();
+  }
   const doc = documentos.find((d) => d.id === id);
   if (!doc) return;
   abrirCarpeta(doc.carpeta || SIN_CARPETA);

@@ -1,5 +1,4 @@
 import { icono } from "/assets/icons.js";
-import { leerStreamConTimeout } from "/assets/stream-utils.js";
 import { marcarContenidoListo } from "/assets/auth.js";
 
 (async () => {
@@ -43,41 +42,13 @@ async function obtenerAuthHeaders() {
     const fechaResumen = document.getElementById('fecha-resumen');
     const btnDescargarPdf = document.getElementById('btn-descargar-pdf');
     const btnCerrar = document.getElementById('btn-cerrar');
-    const autoSaveIndicator = document.getElementById('auto-save-indicator');
-    // === Guardado Automático en Firebase ===
-    async function guardarResumenAutomaticamente() {
-      const nombreArchivoActual = nombreArchivo;
-      try {
-        const authHeaders = await obtenerAuthHeaders();
-        if (!authHeaders) return;
-        const res = await fetch("https://oposicion-age.onrender.com/guardar-resumen-pdf", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({
-            resumen: resumen,
-            nombre_archivo: nombreArchivoActual,
-            documento_id: documentoIdActual
-          })
-        });
-        const datos = await res.json();
-        if (!res.ok) {
-          console.error("❌ Error al guardar resumen en Firebase:", datos.error);
-          const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
-          mostrarErrorGlobal("No se pudo guardar el resumen en tu cuenta. El texto sigue visible en pantalla, pero no ha quedado guardado.");
-        } else {
-          console.log("✅ Resumen guardado automáticamente en Firebase");
-          // Mostrar indicador
-          autoSaveIndicator.classList.add('show');
-          setTimeout(() => {
-            autoSaveIndicator.classList.remove('show');
-          }, 2000);
-        }
-      } catch (e) {
-        console.error("⚠️ Error al guardar resumen en Firebase:", e);
-        const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
-        mostrarErrorGlobal("No se pudo guardar el resumen en tu cuenta. El texto sigue visible en pantalla, pero no ha quedado guardado.");
-      }
-    }
+    // El guardado en Firestore ya no depende de esta pestaña (05/08/2026):
+    // ahora ocurre desde el propio hilo de fondo del backend nada más
+    // terminar de generar (ver el comentario largo en blueprints/pdf_ia.py)
+    // -- esta página solo GENERA (redirige a Mis documentos antes de que
+    // termine, ver mostrarRedireccionAMisDocumentos) o MUESTRA un resumen
+    // ya guardado (ver=resumen), nunca ambas cosas a la vez, así que ya no
+    // hace falta un guardado explícito desde aquí.
     // === Funciones auxiliares ===
     function mostrarError(mensaje) {
       mensajeError.innerHTML = `${icono("alerta", 18)} <strong>Error:</strong> ${mensaje}`;
@@ -287,99 +258,83 @@ async function obtenerAuthHeaders() {
 
       doc.save(`resumen_${nombreArchivo.replace('.pdf', '')}.pdf`);
     }
-    // Consume el stream SSE de /resumir-documento (progreso real por
-    // fragmento del map-reduce, ver deepseek_utils.generar_documento_largo_por_partes)
-    // y devuelve el evento "fin" -- usado tanto al subir un PDF nuevo como al
-    // generar desde un documento ya guardado en "Mis documentos". Con un
-    // documento corto (un único fragmento) solo llega UN evento de progreso
-    // real, justo al final -- ver /assets/progreso-conversador.js para cómo
-    // se evita que la barra se quede "pillada" ese rato.
-    async function generarResumenConProgreso(url, formData, authHeaders) {
-      const { crearProgresoConversador } = await import("/assets/progreso-conversador.js");
-      const progreso = crearProgresoConversador({
-        elBarra: document.getElementById('progreso-generacion-pdf'),
-        elTextoBarra: document.getElementById('texto-progreso-generacion-pdf'),
-        elTexto: document.getElementById('texto-estado'),
-        elIcono: document.getElementById('ai-icon'),
-        etapasLeyendo: [
-          { mensaje: "Leyendo el texto del PDF…", icono: "documento" },
-          { mensaje: "Analizando la estructura del documento…", icono: "buscar" },
-        ],
-        etapasGenerando: [
-          { mensaje: "Extrayendo los puntos clave…", icono: "buscar" },
-          { mensaje: "Sintetizando la información relevante…", icono: "cerebro" },
-          { mensaje: "Redactando el resumen con IA…", icono: "cerebro" },
-          { mensaje: "Revisando que no falte ningún dato importante…", icono: "check" },
-        ],
-        etapasFusionando: [
-          { mensaje: "Uniendo las partes en un resumen final…", icono: "cerebro" },
-          { mensaje: "Comprobando la coherencia entre secciones…", icono: "check" },
-        ],
-      });
+    // Espera 'ms' como mínimo junto a 'promesa' -- para que el aviso de
+    // redirección (ver mostrarRedireccionAMisDocumentos) no aparezca y
+    // desaparezca en un parpadeo con un documento corto. Mismo patrón que
+    // subida-pdf-tarjetas/subida-pdf-generar-test.
+    function conEsperaMinima(promesa, ms) {
+      return Promise.all([promesa, new Promise((resolve) => setTimeout(resolve, ms))]).then(([resultado]) => resultado);
+    }
 
+    // Sustituye el formulario por un aviso de que la generación ya ha
+    // arrancado en el servidor y de que el resumen aparecerá en "Mis
+    // documentos" en cuanto esté listo (05/08/2026, a petición del usuario:
+    // antes había que quedarse en esta pantalla viendo la barra de progreso
+    // hasta el final). El guardado ya no depende de que esta pestaña siga
+    // abierta -- ver el comentario largo en blueprints/pdf_ia.py.
+    function mostrarRedireccionAMisDocumentos() {
+      formularioCard.classList.add('hidden');
+      contenedorCarga.classList.remove('hidden');
+      document.getElementById('ai-icon').innerHTML = icono('cerebro', 32);
+      document.getElementById('texto-estado').textContent = 'Nos ponemos a generar el resumen de tu documento…';
+      const detalle = document.getElementById('texto-estado-detalle');
+      detalle.textContent = 'Puede tardar un poco según lo largo que sea el documento. Te llevamos a "Mis documentos" para que lo veas en cuanto esté listo, sin tener que esperar aquí.';
+      detalle.classList.remove('hidden');
+      document.getElementById('progress-container-numerico').classList.add('hidden');
+      document.getElementById('barra-indeterminada-redireccion').classList.remove('hidden');
+      document.getElementById('enlace-ir-a-mis-documentos').classList.remove('hidden');
+      document.getElementById('sugerencia-mientras-tanto').classList.remove('hidden');
+    }
+
+    // Consume SOLO el evento "inicio" del stream SSE de /resumir-documento
+    // (documento_id, ver blueprints/pdf_ia.py) y cancela la conexión -- el
+    // resto de la generación sigue en el servidor y se guarda sola, así
+    // que no hace falta seguir escuchando para que termine. Mismo patrón
+    // que iniciarGeneracionBancoTarjetas en subida-pdf-tarjetas/script.js.
+    async function iniciarGeneracionResumenConRedireccion(url, formData, authHeaders) {
+      const res = await fetch(url, { method: "POST", headers: authHeaders, body: formData });
+      if (res.status === 403) {
+        throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
+      }
+      if (res.status === 429) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
+      }
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+      }
+      if (!res.body) return null;
+
+      const lector = res.body.getReader();
+      const decodificador = new TextDecoder();
+      let buffer = "";
+      let documentoId = null;
       try {
-        const res = await fetch(url, { method: "POST", headers: authHeaders, body: formData });
-        if (res.status === 403) {
-          throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
-        }
-        if (res.status === 429) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
-        }
-        if (!res.ok || !res.body) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
-        }
-
-        const lector = res.body.getReader();
-        const decodificador = new TextDecoder();
-        let buffer = "";
-        let datosFinales = null;
-
-        // "fin" es SIEMPRE el último evento del stream (el backend termina
-        // justo después de emitirlo): en cuanto llega (queda en datosFinales)
-        // se sale sin esperar al cierre de la conexión (done) -- en
-        // iPhone/WebKit esa señal a veces no llega nunca aunque todo esté ya
-        // recibido, y quedarse esperándola dejaba la pantalla congelada.
-        while (!datosFinales) {
-          const { done, value } = await leerStreamConTimeout(lector);
+        for (let intentos = 0; intentos < 5 && !documentoId; intentos++) {
+          const { done, value } = await lector.read();
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
           const bloques = buffer.split("\n\n");
-          buffer = bloques.pop(); // el último trozo puede venir incompleto
+          buffer = bloques.pop();
           for (const bloque of bloques) {
             const linea = bloque.trim();
             if (!linea.startsWith("data: ")) continue;
-            let evento;
             try {
-              evento = JSON.parse(linea.slice(6));
+              const evento = JSON.parse(linea.slice(6));
+              if (evento.tipo === "inicio") {
+                documentoId = evento.documento_id;
+                break;
+              }
             } catch {
-              continue;
-            }
-            if (evento.tipo === "progreso") {
-              const mensajeExacto = evento.fase === "fusionando"
-                ? null
-                : `Analizando el documento (parte ${evento.completadas} de ${evento.total})…`;
-              progreso.avanzar(evento, mensajeExacto);
-            } else if (evento.tipo === "fin") {
-              datosFinales = evento;
+              // ignorar trozo no parseable
             }
           }
         }
-
-        lector.cancel().catch(() => {});
-
-        if (!datosFinales) {
-          throw new Error("Error al generar el resumen. Vuelve a intentarlo.");
-        }
-        if (!datosFinales.resumen) {
-          throw new Error(datosFinales.error || "No se pudo generar el resumen.");
-        }
-        progreso.completar();
-        return datosFinales;
       } finally {
-        progreso.detener();
+        lector.cancel().catch(() => {});
       }
+      return documentoId;
     }
 
     // === Eventos ===
@@ -475,18 +430,19 @@ async function obtenerAuthHeaders() {
       }
       mensajeError.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
-      formularioCard.classList.add('hidden');
-      contenedorCarga.classList.remove('hidden');
-      document.getElementById('texto-estado').textContent = "Leyendo texto del PDF…";
-      document.getElementById('ai-icon').innerHTML = icono("documento", 32);
+      mostrarRedireccionAMisDocumentos();
 
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
 
       try {
-        const datosIA = await generarResumenConProgreso("https://oposicion-age.onrender.com/resumir-documento", formData, authHeaders);
-        documentoIdActual = datosIA.documento_id || documentoIdActual;
-        mostrarResumenResultado(datosIA.resumen, true, datosIA.tipo_contenido_detectado);
+        const documentoId = await conEsperaMinima(
+          iniciarGeneracionResumenConRedireccion("https://oposicion-age.onrender.com/resumir-documento", formData, authHeaders),
+          9000,
+        );
+        window.location.href = documentoId
+          ? `/mis-documentos/?destacar=${encodeURIComponent(documentoId)}&generando=resumen`
+          : "/mis-documentos/";
       } catch (err) {
         mostrarError(err.message || "Error al generar el resumen.");
       }
@@ -510,7 +466,7 @@ async function obtenerAuthHeaders() {
     // ya parseados), no en caracteres, para no cortar nunca a mitad de uno.
     const BLOQUES_PREVIEW_RESUMEN = 14;
 
-    function mostrarResumenResultado(textoResumen, guardar, tipoContenidoDetectado) {
+    function mostrarResumenResultado(textoResumen, tipoContenidoDetectado) {
       resumen = textoResumen || "No se pudo generar el resumen.";
       const fecha = new Date();
       fechaResumen.textContent = formatearFecha(fecha);
@@ -550,9 +506,6 @@ async function obtenerAuthHeaders() {
 
       contenedorCarga.classList.add('hidden');
       resultadoResumen.classList.remove('hidden');
-      // ✅ Guardar en Firebase (solo si es contenido recién generado, no al
-      // solo visualizar un resumen que ya estaba guardado)
-      if (guardar) guardarResumenAutomaticamente();
 
       import('/assets/otras-herramientas-pdf.js').then(({ pintarAccesosOtrasHerramientas }) => {
         pintarAccesosOtrasHerramientas({
@@ -574,36 +527,40 @@ async function obtenerAuthHeaders() {
       if (!documentoId) return;
 
       documentoIdActual = documentoId;
-      formularioCard.classList.add('hidden');
-      contenedorCarga.classList.remove('hidden');
-      const textoEstado = document.getElementById('texto-estado');
-      const aiIcon = document.getElementById('ai-icon');
 
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
 
       if (ver === 'resumen') {
-        textoEstado.textContent = 'Cargando tu resumen guardado…';
+        formularioCard.classList.add('hidden');
+        contenedorCarga.classList.remove('hidden');
+        document.getElementById('texto-estado').textContent = 'Cargando tu resumen guardado…';
         try {
           const res = await fetch(`https://oposicion-age.onrender.com/documento/${documentoId}/resumen`, { headers: authHeaders });
           const datos = await res.json();
           if (!res.ok) throw new Error(datos.error || 'No se pudo cargar el resumen.');
           nombreArchivo = datos.nombre_archivo || nombreArchivo;
-          mostrarResumenResultado(datos.resumen, false);
+          mostrarResumenResultado(datos.resumen);
         } catch (err) {
           mostrarError(err.message);
         }
         return;
       }
 
-      textoEstado.textContent = 'Generando resumen desde tu documento…';
-      aiIcon.innerHTML = icono('cerebro', 32);
+      // Sin "ver": generar un resumen NUEVO desde un documento ya en la
+      // biblioteca (botón "Regenerar"/"Generar resumen" de la ficha en Mis
+      // documentos) -- mismo aviso de redirección que la subida de un PDF
+      // nuevo, sin checkbox de texto legal disponible aquí (se mantiene en
+      // automático, como ya era el caso).
+      mostrarRedireccionAMisDocumentos();
       try {
         const formData = new FormData();
         formData.append('documento_id', documentoId);
-        const datos = await generarResumenConProgreso("https://oposicion-age.onrender.com/resumir-documento", formData, authHeaders);
-        nombreArchivo = datos.nombre_archivo || nombreArchivo;
-        mostrarResumenResultado(datos.resumen, true, datos.tipo_contenido_detectado);
+        const idConfirmado = await conEsperaMinima(
+          iniciarGeneracionResumenConRedireccion("https://oposicion-age.onrender.com/resumir-documento", formData, authHeaders),
+          9000,
+        );
+        window.location.href = `/mis-documentos/?destacar=${encodeURIComponent(idConfirmado || documentoId)}&generando=resumen`;
       } catch (err) {
         mostrarError(err.message);
       }

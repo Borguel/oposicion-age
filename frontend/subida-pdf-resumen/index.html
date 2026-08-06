@@ -75,9 +75,19 @@
         <div class="mensaje-estado">
           <span id="texto-estado">Leyendo texto del PDF…</span>
         </div>
-        <div class="progress-container">
+        <p id="texto-estado-detalle" class="texto-estado-detalle hidden"></p>
+        <div class="progress-container" id="progress-container-numerico">
           <div class="progress-bar"><div id="progreso-generacion-pdf" class="progress-fill" style="width:0%"></div></div>
           <div id="texto-progreso-generacion-pdf" class="progress-text">0%</div>
+        </div>
+        <div class="barra-indeterminada hidden" id="barra-indeterminada-redireccion"><div class="barra-indeterminada-fill"></div></div>
+        <a href="/mis-documentos/" class="enlace-ir-ahora hidden" id="enlace-ir-a-mis-documentos">Ir a Mis documentos ahora →</a>
+        <div class="sugerencia-mientras-tanto hidden" id="sugerencia-mientras-tanto">
+          <p class="sugerencia-mientras-tanto-gancho">Mientras tanto, no pierdas ni un minuto: sigue sumando aciertos con un test oficial o uno a tu medida.</p>
+          <div class="sugerencia-mientras-tanto-enlaces">
+            <a href="/test-oficial/" class="enlace-sugerencia"><span data-icon="documento" data-icon-size="16"></span> Test Oficial</a>
+            <a href="/test-personalizado/" class="enlace-sugerencia"><span data-icon="destellos" data-icon-size="16"></span> Test Personalizado</a>
+          </div>
         </div>
       </div>
     </div>

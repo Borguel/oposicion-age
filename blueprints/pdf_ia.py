@@ -307,10 +307,35 @@ def resumir_pdf():
                     system_prompt, text, etiqueta_documento="Documento para resumir",
                     on_usage=acumulador_tokens.add, on_progreso=on_progreso,
                 )
-                resultado = {
-                    "resumen": resumen, "documento_id": documento_id, "nombre_archivo": nombre_archivo,
-                    "tipo_contenido_detectado": tipo_contenido,
-                } if resumen else {"error": "Error en DeepSeek API"}
+                if resumen:
+                    resultado = {
+                        "resumen": resumen, "documento_id": documento_id, "nombre_archivo": nombre_archivo,
+                        "tipo_contenido_detectado": tipo_contenido,
+                    }
+                    # Guardado en Firestore DESDE EL PROPIO hilo de fondo
+                    # (05/08/2026, a petición del usuario: quiere poder irse a
+                    # "Mis documentos" nada más pedir el resumen, sin quedarse
+                    # esperando aquí, igual que ya podía con el banco de
+                    # tarjetas/preguntas). Antes este guardado dependía de que
+                    # el FRONTEND recibiera el evento "fin" y llamara aparte a
+                    # /guardar-resumen-pdf -- si el usuario navegaba fuera de
+                    # esta página antes de que el stream terminara, el
+                    # resumen se generaba y se pagaba igual pero se perdía
+                    # sin guardar. Guardarlo aquí lo hace depender solo de
+                    # que la generación termine, no de que alguien siga
+                    # escuchando el SSE.
+                    if documento_id:
+                        guardar_resultado_en_firestore(
+                            db=db, tipo="resumen_pdf", contenido=resumen, usuario_id=uid,
+                            metadatos={
+                                "nombre_archivo": nombre_archivo,
+                                "documento_id": documento_id,
+                                "longitud": len(resumen),
+                                "fecha_procesamiento": datetime.utcnow().isoformat(),
+                            },
+                        )
+                else:
+                    resultado = {"error": "Error en DeepSeek API"}
             except Exception:
                 logger.exception("Error en /resumir-pdf")
                 resultado = {"error": "Error al procesar el PDF."}
@@ -321,6 +346,14 @@ def resumir_pdf():
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
         hilo.start()
+
+        # "inicio" (05/08/2026): se manda ANTES de esperar nada del hilo de
+        # fondo -- documento_id ya se conoce en cuanto se resolvió el PDF,
+        # sin necesidad de esperar a que termine la generación. El frontend
+        # puede leer solo este evento, cancelar la conexión y llevar al
+        # usuario a "Mis documentos" sin esperar más, mismo patrón que
+        # /generar-banco-tarjetas-desde-pdf.
+        yield f"data: {json.dumps({'tipo': 'inicio', 'documento_id': documento_id}, ensure_ascii=False)}\n\n"
 
         while True:
             evento = eventos.get()
@@ -459,10 +492,25 @@ def generar_esquema_desde_pdf():
                     on_usage=acumulador_tokens.add,
                     on_progreso=on_progreso,
                 )
-                resultado = {
-                    "esquema": esquema, "documento_id": documento_id, "nombre_archivo": nombre_archivo,
-                    "tipo_contenido_detectado": tipo_contenido,
-                } if esquema else {"error": "Error en DeepSeek API"}
+                if esquema:
+                    resultado = {
+                        "esquema": esquema, "documento_id": documento_id, "nombre_archivo": nombre_archivo,
+                        "tipo_contenido_detectado": tipo_contenido,
+                    }
+                    # Guardado desde el propio hilo de fondo -- mismo motivo
+                    # que en /resumir-pdf (ver el comentario largo ahí).
+                    if documento_id:
+                        guardar_resultado_en_firestore(
+                            db=db, tipo="esquema_pdf", contenido=esquema, usuario_id=uid,
+                            metadatos={
+                                "nombre_archivo": nombre_archivo,
+                                "documento_id": documento_id,
+                                "longitud": len(esquema),
+                                "fecha_procesamiento": datetime.utcnow().isoformat(),
+                            },
+                        )
+                else:
+                    resultado = {"error": "Error en DeepSeek API"}
             except Exception:
                 logger.exception("Error en /generar-esquema-desde-pdf")
                 resultado = {"error": "Error al procesar el PDF."}
@@ -473,6 +521,8 @@ def generar_esquema_desde_pdf():
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
         hilo.start()
+
+        yield f"data: {json.dumps({'tipo': 'inicio', 'documento_id': documento_id}, ensure_ascii=False)}\n\n"
 
         while True:
             evento = eventos.get()

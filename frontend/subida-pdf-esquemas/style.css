@@ -135,6 +135,16 @@
   font-weight: 700;
   font-size: 0.8rem;
 }
+/* sin-prefijo (05/08/2026, bug real: doble numeración cuando el propio
+   documento ya etiqueta sus subsecciones, p. ej. "A. Defensa de la
+   competencia..." -- ver yaEtiquetado en script.js): el contador sigue
+   incrementándose igual (para que lo que cuelgue después no se desajuste),
+   solo se oculta el texto generado, confiando en la etiqueta que ya trae
+   el propio encabezado. */
+.esquema-contenido h3.sin-prefijo::before,
+.esquema-contenido h4.sin-prefijo::before {
+  content: none;
+}
 .esquema-contenido ul, .esquema-contenido ol {
   padding-left: 20px;
   margin: 10px 0 10px 6px;

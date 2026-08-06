@@ -207,6 +207,44 @@ class TestResumirPdfYGenerarTestDesdePdf:
         assert eventos[-1]["tipo"] == "fin"
         assert eventos[-1]["resumen"] == "# Resumen generado"
 
+    def test_resumir_pdf_manda_evento_inicio_con_documento_id_antes_de_generar(self, client, documento_sembrado):
+        # "inicio" (05/08/2026): permite al frontend leer documento_id y
+        # dejar de escuchar el resto del stream sin esperar a que la
+        # generación termine -- mismo patrón que /generar-banco-tarjetas-
+        # desde-pdf, para poder redirigir a "Mis documentos" sin esperar.
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                texto_cuerpo = resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(texto_cuerpo)
+        assert eventos[0]["tipo"] == "inicio"
+        assert eventos[0]["documento_id"] == documento_sembrado
+
+    def test_resumir_pdf_guarda_en_firestore_sin_que_el_cliente_llame_a_guardar_resumen_pdf(self, client, db, documento_sembrado):
+        # El guardado ahora ocurre DESDE EL PROPIO hilo de fondo (05/08/2026):
+        # antes dependía de que el frontend recibiera "fin" y llamara aparte
+        # a /guardar-resumen-pdf -- si el usuario se iba de la página antes,
+        # el resumen se generaba y se pagaba igual pero se perdía sin
+        # guardar. Aquí no se llama a /guardar-resumen-pdf en ningún momento.
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        assert db.leer(("usuarios", "u1", "documentos", documento_sembrado))["tiene_resumen"] is True
+        guardados = list(db.collection("usuarios").document("u1").collection("resumenes_pdf").stream())
+        assert len(guardados) == 1
+        assert guardados[0].to_dict()["resumen"] == "# Resumen generado"
+
     def test_resumir_pdf_sin_api_key_da_error_500(self, client, documento_sembrado, monkeypatch):
         monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
         parche = _con_sesion(client)
@@ -306,6 +344,35 @@ class TestGenerarEsquemaDesdePdf:
         assert eventos[-1]["esquema"] == "# Esquema generado"
         assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
 
+    def test_generar_esquema_desde_pdf_manda_evento_inicio_con_documento_id(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                texto_cuerpo = resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(texto_cuerpo)
+        assert eventos[0]["tipo"] == "inicio"
+        assert eventos[0]["documento_id"] == documento_sembrado
+
+    def test_generar_esquema_desde_pdf_guarda_en_firestore_sin_que_el_cliente_llame_a_guardar_esquema_pdf(self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        assert db.leer(("usuarios", "u1", "documentos", documento_sembrado))["tiene_esquema"] is True
+        guardados = list(db.collection("usuarios").document("u1").collection("esquemas_pdf").stream())
+        assert len(guardados) == 1
+        assert guardados[0].to_dict()["esquema"] == "# Esquema generado"
+
     def test_generar_esquema_desde_pdf_sin_api_key_da_error_500(self, client, documento_sembrado, monkeypatch):
         monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
         parche = _con_sesion(client)
@@ -376,9 +443,17 @@ class TestGenerarDocumentoValidadoIntegracion:
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
+                # Drenar el cuerpo DENTRO del "with patch" (ver el comentario
+                # largo en test_resumen_chunked_no_pierde_el_coste_del_map):
+                # con el evento "inicio" nuevo (05/08/2026, ver _resumir_pdf),
+                # client.post() ya no espera a que el hilo de fondo termine
+                # antes de devolver la respuesta -- si se drena fuera del
+                # "with", el segundo intento (el reintento) puede llegar a
+                # ejecutarse ya con el parche desactivado y golpear la red real.
+                texto_cuerpo = resp.get_data(as_text=True)
         finally:
             parche.stop()
-        eventos = _eventos_sse(resp.get_data(as_text=True))
+        eventos = _eventos_sse(texto_cuerpo)
         assert eventos[-1]["resumen"] == "# Resumen real"
         assert mock_gen.call_count == 2
         # Factura el uso con normalidad -- al final sí hubo un resultado válido.
@@ -392,9 +467,10 @@ class TestGenerarDocumentoValidadoIntegracion:
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
+                texto_cuerpo = resp.get_data(as_text=True)
         finally:
             parche.stop()
-        eventos = _eventos_sse(resp.get_data(as_text=True))
+        eventos = _eventos_sse(texto_cuerpo)
         assert "resumen" not in eventos[-1]
         assert "error" in eventos[-1]
         assert mock_gen.call_count == 2
@@ -408,9 +484,10 @@ class TestGenerarDocumentoValidadoIntegracion:
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
+                texto_cuerpo = resp.get_data(as_text=True)
         finally:
             parche.stop()
-        eventos = _eventos_sse(resp.get_data(as_text=True))
+        eventos = _eventos_sse(texto_cuerpo)
         assert eventos[-1]["esquema"] == "# Esquema real"
         assert mock_gen.call_count == 2
 

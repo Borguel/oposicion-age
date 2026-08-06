@@ -1,5 +1,4 @@
 import { icono } from "/assets/icons.js";
-import { leerStreamConTimeout } from "/assets/stream-utils.js";
 import { marcarContenidoListo } from "/assets/auth.js";
 
 (async () => {
@@ -42,41 +41,13 @@ async function obtenerAuthHeaders() {
     const fechaEsquema = document.getElementById('fecha-esquema');
     const btnDescargarPdf = document.getElementById('btn-descargar-pdf');
     const btnCerrar = document.getElementById('btn-cerrar');
-    const autoSaveIndicator = document.getElementById('auto-save-indicator');
-    // === Guardado Automático en Firebase ===
-    async function guardarEsquemaAutomaticamente() {
-      const nombreArchivoActual = nombreArchivo;
-      try {
-        const authHeaders = await obtenerAuthHeaders();
-        if (!authHeaders) return;
-        const res = await fetch("https://oposicion-age.onrender.com/guardar-esquema-pdf", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({
-            esquema: esquema,
-            nombre_archivo: nombreArchivoActual,
-            documento_id: documentoIdActual
-          })
-        });
-        const datos = await res.json();
-        if (!res.ok) {
-          console.error("❌ Error al guardar esquema en Firebase:", datos.error);
-          const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
-          mostrarErrorGlobal("No se pudo guardar el esquema en tu cuenta. El contenido sigue visible en pantalla, pero no ha quedado guardado.");
-        } else {
-          console.log("✅ Esquema guardado automáticamente en Firebase");
-          // Mostrar indicador
-          autoSaveIndicator.classList.add('show');
-          setTimeout(() => {
-            autoSaveIndicator.classList.remove('show');
-          }, 2000);
-        }
-      } catch (e) {
-        console.error("⚠️ Error al guardar esquema en Firebase:", e);
-        const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
-        mostrarErrorGlobal("No se pudo guardar el esquema en tu cuenta. El contenido sigue visible en pantalla, pero no ha quedado guardado.");
-      }
-    }
+    // El guardado en Firestore ya no depende de esta pestaña (05/08/2026):
+    // ahora ocurre desde el propio hilo de fondo del backend nada más
+    // terminar de generar (ver el comentario largo en blueprints/pdf_ia.py)
+    // -- esta página solo GENERA (redirige a Mis documentos antes de que
+    // termine, ver mostrarRedireccionAMisDocumentos) o MUESTRA un esquema
+    // ya guardado (ver=esquema), nunca ambas cosas a la vez, así que ya no
+    // hace falta un guardado explícito desde aquí.
     // === Funciones auxiliares ===
     function mostrarError(mensaje) {
       mensajeError.innerHTML = `${icono("alerta", 18)} <strong>Error:</strong> ${mensaje}`;
@@ -120,7 +91,20 @@ async function obtenerAuthHeaders() {
         if (matchEncabezado) {
           const profundidad = matchEncabezado[1].length;
           const tipo = profundidad === 1 ? "h2" : profundidad === 2 ? "h3" : "h4";
-          bloques.push({ tipo, texto: matchEncabezado[2].trim() });
+          const textoEncabezado = matchEncabezado[2].trim();
+          // yaEtiquetado (05/08/2026, bug real reportado por un usuario):
+          // h3/h4 llevan un prefijo numérico auto-generado ("I.1", "3.a"...
+          // ver el ::before de style.css y el "prefijo" de descargarPDF) --
+          // pero si el documento original YA numeraba sus propias
+          // subsecciones con letras/números (p. ej. "A. Defensa de la
+          // competencia...", tal cual las preserva el modelo), el prefijo
+          // auto-generado se pega delante SIN que el modelo lo sepa,
+          // produciendo dobles numeraciones sin sentido ("3.a A. Defensa
+          // de la competencia..."). Si el propio texto ya empieza con su
+          // propia etiqueta, se marca para que el renderer (pantalla y PDF)
+          // NO añada la suya encima -- se confía en la del documento.
+          const yaEtiquetado = /^(?:[A-ZÁÉÍÓÚÑ]|\d+|[IVXLCDM]+)[.)]\s+/.test(textoEncabezado);
+          bloques.push({ tipo, texto: textoEncabezado, yaEtiquetado });
           continue;
         }
         if (linea.startsWith("> ")) {
@@ -132,8 +116,14 @@ async function obtenerAuthHeaders() {
           bloques.push({ tipo: "numero", numero: matchNumerado[1], texto: matchNumerado[2].trim(), nivel });
           continue;
         }
-        if (linea.startsWith("- ") || linea.startsWith("* ")) {
-          bloques.push({ tipo: "bullet", texto: linea.slice(2).trim(), nivel });
+        // Admite CUALQUIER número de marcadores "- "/"* " repetidos al
+        // principio de la línea (defensivo, 05/08/2026, bug real: el
+        // modelo a veces duplica el guión de la propia viñeta, "- -
+        // Se aplica desde...", dejando un "-" suelto como texto si solo se
+        // quita uno).
+        const matchBullet = linea.match(/^(?:[-*]\s+)+(.*)$/);
+        if (matchBullet) {
+          bloques.push({ tipo: "bullet", texto: matchBullet[1].trim(), nivel });
           continue;
         }
         // Cualquier línea que no encaje en un marcador conocido se trata
@@ -169,11 +159,46 @@ async function obtenerAuthHeaders() {
       div.textContent = texto ?? '';
       return div.innerHTML;
     }
+    // Negrita "**texto**" -> <strong>, cursiva "*texto*" -> <em> (05/08/2026,
+    // bug real: el modelo usa a veces cursiva -- p. ej. "*ex ante*", un
+    // latinismo jurídico habitual -- aunque el prompt no la pida
+    // explícitamente; antes se colaban los asteriscos literales sin
+    // convertir). El orden importa: se resuelve primero "**" para que no
+    // quede ningún "*" suelto que la segunda pasada pudiera interpretar
+    // mal, y al final se limpia cualquier asterisco que no haya llegado a
+    // formar un par completo (fallo puntual de formato del modelo) en vez
+    // de dejarlo como texto literal.
     function negritaInlineHtml(texto) {
-      return escaparHtml(texto).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      return escaparHtml(texto)
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\*/g, '');
     }
     function quitarMarcadoresNegrita(texto) {
-      return texto.replace(/\*\*(.*?)\*\*/g, '$1');
+      return texto.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/\*/g, '');
+    }
+    // Detecta una viñeta con forma "Término: explicación" para resaltar el
+    // término en negrita automáticamente (05/08/2026, a petición del
+    // usuario: "alguna parte importante más resaltada") -- muy habitual en
+    // los esquemas generados (p. ej. "Reglamento (CE) n.º 139/2004: marco
+    // de la Unión para el examen de las concentraciones..."), y el modelo
+    // no siempre lo marca en negrita por su cuenta. Si el texto YA empieza
+    // con "**" es que el modelo decidió qué resaltar -- se respeta tal
+    // cual y no se toca.
+    function detectarEtiquetaBullet(texto) {
+      if (texto.startsWith("**")) return null;
+      const m = texto.match(/^([^:*]{3,70}):\s+(.+)$/s);
+      if (!m) return null;
+      return { etiqueta: `${m[1]}:`, resto: m[2] };
+    }
+    // Igual que negritaInlineHtml pero aplicando además el auto-resaltado
+    // de detectarEtiquetaBullet -- solo para el texto de una viñeta/ítem
+    // numerado, no para encabezados ni definiciones (ahí el modelo ya
+    // controla el énfasis con su propio "**").
+    function lineaListaHtml(texto) {
+      const et = detectarEtiquetaBullet(texto);
+      if (!et) return negritaInlineHtml(texto);
+      return `<strong>${negritaInlineHtml(et.etiqueta)}</strong> ${negritaInlineHtml(et.resto)}`;
     }
     // Renderiza un árbol de viñetas (ver construirArbolLista) a HTML anidado
     // de verdad: cada <ul>/<ol> hijo va DENTRO del <li> de su padre, no como
@@ -192,7 +217,7 @@ async function obtenerAuthHeaders() {
         const etiqueta = tipoActual === "numero" ? "ol" : "ul";
         const items = grupo.map((n) => {
           const hijosHtml = n.hijos.length ? renderizarListaHtml(n.hijos) : "";
-          return `<li>${negritaInlineHtml(n.texto)}${hijosHtml}</li>`;
+          return `<li>${lineaListaHtml(n.texto)}${hijosHtml}</li>`;
         }).join("");
         partes.push(`<${etiqueta}>${items}</${etiqueta}>`);
       }
@@ -212,9 +237,14 @@ async function obtenerAuthHeaders() {
           html.push(renderizarListaHtml(construirArbolLista(grupo)));
           continue;
         }
+        // sin-prefijo (ver yaEtiquetado en parsearEsquemaABloques): la
+        // numeración auto-generada de h3/h4 vive en el ::before de
+        // style.css -- esta clase le dice a esa regla que no la pinte
+        // cuando el propio encabezado ya trae su etiqueta.
+        const claseEtiqueta = b.yaEtiquetado ? ' class="sin-prefijo"' : "";
         if (b.tipo === "h2") { html.push(`<h2>${negritaInlineHtml(b.texto)}</h2>`); i++; continue; }
-        if (b.tipo === "h3") { html.push(`<h3>${negritaInlineHtml(b.texto)}</h3>`); i++; continue; }
-        if (b.tipo === "h4") { html.push(`<h4>${negritaInlineHtml(b.texto)}</h4>`); i++; continue; }
+        if (b.tipo === "h3") { html.push(`<h3${claseEtiqueta}>${negritaInlineHtml(b.texto)}</h3>`); i++; continue; }
+        if (b.tipo === "h4") { html.push(`<h4${claseEtiqueta}>${negritaInlineHtml(b.texto)}</h4>`); i++; continue; }
         if (b.tipo === "definicion") { html.push(`<div class="esquema-definicion">${negritaInlineHtml(b.texto)}</div>`); i++; continue; }
         html.push(`<p>${negritaInlineHtml(b.texto)}</p>`);
         i++;
@@ -324,14 +354,35 @@ async function obtenerAuthHeaders() {
         } else if (b.tipo === "h3") {
           contadorH3++; contadorH4 = 0;
           fontSize = 12.5; fontStyle = "bold"; extraArriba = 4; indent = 4; color = NARANJA_OSCURO;
-          prefijo = `${aRomano(contadorH2)}.${contadorH3} `;
+          // yaEtiquetado (ver parsearEsquemaABloques): sin prefijo propio
+          // cuando el encabezado ya trae su propia etiqueta -- mismo
+          // criterio que el CSS "sin-prefijo" en pantalla.
+          if (!b.yaEtiquetado) prefijo = `${aRomano(contadorH2)}.${contadorH3} `;
         } else if (b.tipo === "h4") {
           contadorH4++;
-          fontSize = 11; fontStyle = "bold"; extraArriba = 3; indent = 8; color = [90, 90, 90];
-          prefijo = `${contadorH3}.${aLetra(contadorH4)} `;
-        } else if (b.tipo === "bullet") {
+          // Color oscuro casi negro (antes gris [90,90,90], 05/08/2026, a
+          // petición del usuario): con gris y el mismo tamaño que el texto
+          // normal de las viñetas, un h4 apenas se distinguía como
+          // encabezado real -- se confundía con el cuerpo del esquema.
+          fontSize = 11.5; fontStyle = "bold"; extraArriba = 4; indent = 8; color = [35, 35, 35];
+          if (!b.yaEtiquetado) prefijo = `${contadorH3}.${aLetra(contadorH4)} `;
+        } else if (b.tipo === "etiqueta-vineta") {
+          // Término resaltado en negrita en su propia línea, justo encima
+          // de la explicación (ver expandirEtiquetas/detectarEtiquetaBullet)
+          // -- la misma idea que <strong> en pantalla, pero como línea
+          // propia en vez de negrita dentro del párrafo: jsPDF dibuja cada
+          // bloque con UN solo estilo de letra, así que mezclar negrita y
+          // texto normal en la misma línea habría exigido medir y dibujar
+          // varios "runs" por línea -- esto consigue el mismo resaltado
+          // visual sin esa complejidad.
+          fontSize = 11; fontStyle = "bold"; extraArriba = 2; indent = 5 + nivel * 5;
           prefijo = `${GLIFOS_VIÑETA[Math.min(nivel, GLIFOS_VIÑETA.length - 1)]} `;
+        } else if (b.tipo === "bullet") {
           indent = 5 + nivel * 5;
+          // continuacion (ver expandirEtiquetas): esta viñeta ya mostró su
+          // glifo en la línea "etiqueta-vineta" justo encima -- aquí no se
+          // repite, se sangra igual para que quede como continuación.
+          prefijo = b.continuacion ? "" : `${GLIFOS_VIÑETA[Math.min(nivel, GLIFOS_VIÑETA.length - 1)]} `;
         } else if (b.tipo === "numero") {
           prefijo = `${b.numero}. `;
           indent = 5 + nivel * 5;
@@ -344,6 +395,30 @@ async function obtenerAuthHeaders() {
         const altoLinea = fontSize * 0.42;
         const alturaBloque = extraArriba + lineas.length * altoLinea + (esDefinicion ? 4 : 2);
         return { tipo: b.tipo, nivel, esDefinicion, esH2, esEncabezado, fontSize, fontStyle, indent, extraArriba, color, lineas, altoLinea, alturaBloque };
+      }
+
+      // Expande una viñeta/ítem numerado con forma "Término: explicación"
+      // (ver detectarEtiquetaBullet) en DOS bloques -- el término, como
+      // línea propia en negrita, y la explicación justo debajo como
+      // continuación de la misma viñeta -- para poder resaltarlo en el PDF
+      // sin tener que mezclar estilos de letra dentro de una misma línea
+      // dibujada (ver el comentario largo de "etiqueta-vineta" en
+      // medirBloque). Solo para el PDF: en pantalla esto ya lo resuelve
+      // lineaListaHtml con un <strong> normal dentro del mismo <li>.
+      function expandirEtiquetas(bloques) {
+        const resultado = [];
+        for (const b of bloques) {
+          if (b.tipo === "bullet" || b.tipo === "numero") {
+            const et = detectarEtiquetaBullet(b.texto);
+            if (et) {
+              resultado.push({ tipo: "etiqueta-vineta", texto: et.etiqueta, nivel: b.nivel });
+              resultado.push({ ...b, texto: et.resto, continuacion: true });
+              continue;
+            }
+          }
+          resultado.push(b);
+        }
+        return resultado;
       }
 
       // Dibuja una línea vertical de estructura (el equivalente en PDF del
@@ -361,7 +436,7 @@ async function obtenerAuthHeaders() {
         doc.setLineWidth(0.2);
       }
 
-      const medidos = parsearEsquemaABloques(esquema).map(medirBloque);
+      const medidos = expandirEtiquetas(parsearEsquemaABloques(esquema)).map(medirBloque);
       medidos.forEach((m, i) => {
         // Evita que un bloque se quede "huérfano" solo al final de una
         // página con lo que cuelga de él empujado a la siguiente (lo que se
@@ -372,8 +447,12 @@ async function obtenerAuthHeaders() {
         const siguiente = medidos[i + 1];
         const esPadreDeSubViñeta = (m.tipo === "bullet" || m.tipo === "numero") && siguiente &&
           (siguiente.tipo === "bullet" || siguiente.tipo === "numero") && siguiente.nivel > m.nivel;
+        // Una "etiqueta-vineta" nunca va sola: su explicación (el bullet
+        // "continuacion" que expandirEtiquetas puso justo detrás) tiene
+        // que caer en la misma página que el término al que pertenece.
+        const esEtiquetaConContinuacion = m.tipo === "etiqueta-vineta" && siguiente && siguiente.continuacion;
         let alturaNecesaria = m.alturaBloque;
-        if ((m.esEncabezado || esPadreDeSubViñeta) && siguiente) alturaNecesaria += siguiente.alturaBloque;
+        if ((m.esEncabezado || esPadreDeSubViñeta || esEtiquetaConContinuacion) && siguiente) alturaNecesaria += siguiente.alturaBloque;
         asegurarEspacio(alturaNecesaria);
         yPos += m.extraArriba;
 
@@ -396,7 +475,7 @@ async function obtenerAuthHeaders() {
           dibujarLineaEstructura(m, margin + 1.5, NARANJA_PRIMARIO, false);
         } else if (m.tipo === "h4") {
           dibujarLineaEstructura(m, margin + 3, GRIS_LINEA, true);
-        } else if (m.tipo === "bullet" || m.tipo === "numero") {
+        } else if (m.tipo === "etiqueta-vineta" || m.tipo === "bullet" || m.tipo === "numero") {
           // Misma línea gris que el "border-left" del <ul>/<ol> en pantalla:
           // sólida en el primer nivel, punteada a partir del segundo, para
           // que las sub-viñetas se distingan de un vistazo del tronco
@@ -415,99 +494,84 @@ async function obtenerAuthHeaders() {
 
       doc.save(`esquema_${nombreArchivo.replace('.pdf', '')}.pdf`);
     }
-    // Consume el stream SSE de /generar-esquema-desde-pdf (progreso real por
-    // fragmento del map-reduce, ver deepseek_utils.generar_documento_largo_por_partes)
-    // y devuelve el evento "fin" -- usado tanto al subir un PDF nuevo como al
-    // generar desde un documento ya guardado en "Mis documentos". Con un
-    // documento corto (un único fragmento) solo llega UN evento de progreso
-    // real, justo al final -- ver /assets/progreso-conversador.js para cómo
-    // se evita que la barra se quede "pillada" ese rato.
-    async function generarEsquemaConProgreso(url, formData, authHeaders) {
-      const { crearProgresoConversador } = await import("/assets/progreso-conversador.js");
-      const progreso = crearProgresoConversador({
-        elBarra: document.getElementById('progreso-generacion-pdf'),
-        elTextoBarra: document.getElementById('texto-progreso-generacion-pdf'),
-        elTexto: document.getElementById('texto-estado'),
-        elIcono: document.getElementById('ai-icon'),
-        etapasLeyendo: [
-          { mensaje: "Leyendo el texto del PDF…", icono: "documento" },
-          { mensaje: "Detectando la estructura del documento…", icono: "buscar" },
-        ],
-        etapasGenerando: [
-          { mensaje: "Identificando temas y subtemas…", icono: "buscar" },
-          { mensaje: "Organizando la jerarquía de conceptos…", icono: "cerebro" },
-          { mensaje: "Construyendo el árbol del esquema…", icono: "cerebro" },
-          { mensaje: "Revisando que no se repita ningún epígrafe…", icono: "check" },
-        ],
-        etapasFusionando: [
-          { mensaje: "Uniendo las partes en un esquema final…", icono: "cerebro" },
-          { mensaje: "Comprobando que la jerarquía quede equilibrada…", icono: "check" },
-        ],
-      });
+    // Espera 'ms' como mínimo junto a 'promesa' -- para que el aviso de
+    // redirección (ver mostrarRedireccionAMisDocumentos) no aparezca y
+    // desaparezca en un parpadeo con un documento corto. Mismo patrón que
+    // subida-pdf-tarjetas/subida-pdf-generar-test.
+    function conEsperaMinima(promesa, ms) {
+      return Promise.all([promesa, new Promise((resolve) => setTimeout(resolve, ms))]).then(([resultado]) => resultado);
+    }
 
+    // Sustituye el formulario por un aviso de que la generación ya ha
+    // arrancado en el servidor y de que el esquema aparecerá en "Mis
+    // documentos" en cuanto esté listo (05/08/2026, a petición del usuario:
+    // antes había que quedarse en esta pantalla viendo la barra de progreso
+    // hasta el final). El guardado ya no depende de que esta pestaña siga
+    // abierta -- ver el comentario largo en blueprints/pdf_ia.py.
+    function mostrarRedireccionAMisDocumentos() {
+      formularioCard.classList.add('hidden');
+      contenedorCarga.classList.remove('hidden');
+      document.getElementById('ai-icon').innerHTML = icono('cerebro', 32);
+      document.getElementById('texto-estado').textContent = 'Nos ponemos a generar el esquema de tu documento…';
+      const detalle = document.getElementById('texto-estado-detalle');
+      detalle.textContent = 'Puede tardar un poco según lo largo que sea el documento. Te llevamos a "Mis documentos" para que lo veas en cuanto esté listo, sin tener que esperar aquí.';
+      detalle.classList.remove('hidden');
+      document.getElementById('progress-container-numerico').classList.add('hidden');
+      document.getElementById('barra-indeterminada-redireccion').classList.remove('hidden');
+      document.getElementById('enlace-ir-a-mis-documentos').classList.remove('hidden');
+      document.getElementById('sugerencia-mientras-tanto').classList.remove('hidden');
+    }
+
+    // Consume SOLO el evento "inicio" del stream SSE de
+    // /generar-esquema-desde-pdf (documento_id, ver blueprints/pdf_ia.py) y
+    // cancela la conexión -- el resto de la generación sigue en el
+    // servidor y se guarda sola, así que no hace falta seguir escuchando
+    // para que termine. Mismo patrón que iniciarGeneracionBancoTarjetas en
+    // subida-pdf-tarjetas/script.js.
+    async function iniciarGeneracionEsquemaConRedireccion(url, formData, authHeaders) {
+      const res = await fetch(url, { method: "POST", headers: authHeaders, body: formData });
+      if (res.status === 403) {
+        throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
+      }
+      if (res.status === 429) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
+      }
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+      }
+      if (!res.body) return null;
+
+      const lector = res.body.getReader();
+      const decodificador = new TextDecoder();
+      let buffer = "";
+      let documentoId = null;
       try {
-        const res = await fetch(url, { method: "POST", headers: authHeaders, body: formData });
-        if (res.status === 403) {
-          throw new Error('Necesitas iniciar sesión o mejorar de plan para usar esta herramienta. <a href="/planes/">Ver planes</a>');
-        }
-        if (res.status === 429) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(`${errorData.error || "Has alcanzado el límite de uso de esta herramienta por ahora."} <a href="/planes/">Ver planes</a>`);
-        }
-        if (!res.ok || !res.body) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || `Error del servidor: ${res.status}`);
-        }
-
-        const lector = res.body.getReader();
-        const decodificador = new TextDecoder();
-        let buffer = "";
-        let datosFinales = null;
-
-        // "fin" es SIEMPRE el último evento del stream (el backend termina
-        // justo después de emitirlo): en cuanto llega (queda en datosFinales)
-        // se sale sin esperar al cierre de la conexión (done) -- en
-        // iPhone/WebKit esa señal a veces no llega nunca aunque todo esté ya
-        // recibido, y quedarse esperándola dejaba la pantalla congelada.
-        while (!datosFinales) {
-          const { done, value } = await leerStreamConTimeout(lector);
+        for (let intentos = 0; intentos < 5 && !documentoId; intentos++) {
+          const { done, value } = await lector.read();
           if (done) break;
           buffer += decodificador.decode(value, { stream: true });
           const bloques = buffer.split("\n\n");
-          buffer = bloques.pop(); // el último trozo puede venir incompleto
+          buffer = bloques.pop();
           for (const bloque of bloques) {
             const linea = bloque.trim();
             if (!linea.startsWith("data: ")) continue;
-            let evento;
             try {
-              evento = JSON.parse(linea.slice(6));
+              const evento = JSON.parse(linea.slice(6));
+              if (evento.tipo === "inicio") {
+                documentoId = evento.documento_id;
+                break;
+              }
             } catch {
-              continue;
-            }
-            if (evento.tipo === "progreso") {
-              const mensajeExacto = evento.fase === "fusionando"
-                ? null
-                : `Analizando el documento (parte ${evento.completadas} de ${evento.total})…`;
-              progreso.avanzar(evento, mensajeExacto);
-            } else if (evento.tipo === "fin") {
-              datosFinales = evento;
+              // ignorar trozo no parseable
             }
           }
         }
-
-        lector.cancel().catch(() => {});
-
-        if (!datosFinales) {
-          throw new Error("Error al generar el esquema. Vuelve a intentarlo.");
-        }
-        if (!datosFinales.esquema) {
-          throw new Error(datosFinales.error || "No se pudo generar el esquema.");
-        }
-        progreso.completar();
-        return datosFinales;
       } finally {
-        progreso.detener();
+        lector.cancel().catch(() => {});
       }
+      return documentoId;
     }
 
     // === Eventos ===
@@ -599,18 +663,19 @@ async function obtenerAuthHeaders() {
       }
       mensajeError.classList.add('hidden');
       alertaPreguntas.classList.add('hidden');
-      formularioCard.classList.add('hidden');
-      contenedorCarga.classList.remove('hidden');
-      document.getElementById('texto-estado').textContent = "Leyendo texto del PDF…";
-      document.getElementById('ai-icon').innerHTML = icono("documento", 32);
+      mostrarRedireccionAMisDocumentos();
 
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
 
       try {
-        const datosIA = await generarEsquemaConProgreso("https://oposicion-age.onrender.com/generar-esquema-desde-pdf", formData, authHeaders);
-        documentoIdActual = datosIA.documento_id || documentoIdActual;
-        mostrarEsquemaResultado(datosIA.esquema, true, datosIA.tipo_contenido_detectado);
+        const documentoId = await conEsperaMinima(
+          iniciarGeneracionEsquemaConRedireccion("https://oposicion-age.onrender.com/generar-esquema-desde-pdf", formData, authHeaders),
+          9000,
+        );
+        window.location.href = documentoId
+          ? `/mis-documentos/?destacar=${encodeURIComponent(documentoId)}&generando=esquema`
+          : "/mis-documentos/";
       } catch (err) {
         mostrarError(err.message || "Error al generar el esquema.");
       }
@@ -635,7 +700,7 @@ async function obtenerAuthHeaders() {
       return bloques.length;
     }
 
-    function mostrarEsquemaResultado(textoEsquema, guardar, tipoContenidoDetectado) {
+    function mostrarEsquemaResultado(textoEsquema, tipoContenidoDetectado) {
       esquema = textoEsquema || "No se pudo generar el esquema.";
       const fecha = new Date();
       fechaEsquema.textContent = formatearFecha(fecha);
@@ -675,8 +740,6 @@ async function obtenerAuthHeaders() {
       }
       contenedorCarga.classList.add('hidden');
       resultadoEsquema.classList.remove('hidden');
-      // ✅ Guardar en Firebase (solo si es contenido recién generado)
-      if (guardar) guardarEsquemaAutomaticamente();
 
       import('/assets/otras-herramientas-pdf.js').then(({ pintarAccesosOtrasHerramientas }) => {
         pintarAccesosOtrasHerramientas({
@@ -695,36 +758,40 @@ async function obtenerAuthHeaders() {
       if (!documentoId) return;
 
       documentoIdActual = documentoId;
-      formularioCard.classList.add('hidden');
-      contenedorCarga.classList.remove('hidden');
-      const textoEstado = document.getElementById('texto-estado');
-      const aiIcon = document.getElementById('ai-icon');
 
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
 
       if (ver === 'esquema') {
-        textoEstado.textContent = 'Cargando tu esquema guardado…';
+        formularioCard.classList.add('hidden');
+        contenedorCarga.classList.remove('hidden');
+        document.getElementById('texto-estado').textContent = 'Cargando tu esquema guardado…';
         try {
           const res = await fetch(`https://oposicion-age.onrender.com/documento/${documentoId}/esquema`, { headers: authHeaders });
           const datos = await res.json();
           if (!res.ok) throw new Error(datos.error || 'No se pudo cargar el esquema.');
           nombreArchivo = datos.nombre_archivo || nombreArchivo;
-          mostrarEsquemaResultado(datos.esquema, false);
+          mostrarEsquemaResultado(datos.esquema);
         } catch (err) {
           mostrarError(err.message);
         }
         return;
       }
 
-      textoEstado.textContent = 'Generando esquema desde tu documento…';
-      aiIcon.innerHTML = icono('cerebro', 32);
+      // Sin "ver": generar un esquema NUEVO desde un documento ya en la
+      // biblioteca (botón "Regenerar"/"Generar esquema" de la ficha en Mis
+      // documentos) -- mismo aviso de redirección que la subida de un PDF
+      // nuevo, sin checkbox de texto legal disponible aquí (se mantiene en
+      // automático, como ya era el caso).
+      mostrarRedireccionAMisDocumentos();
       try {
         const formData = new FormData();
         formData.append('documento_id', documentoId);
-        const datos = await generarEsquemaConProgreso("https://oposicion-age.onrender.com/generar-esquema-desde-pdf", formData, authHeaders);
-        nombreArchivo = datos.nombre_archivo || nombreArchivo;
-        mostrarEsquemaResultado(datos.esquema, true, datos.tipo_contenido_detectado);
+        const idConfirmado = await conEsperaMinima(
+          iniciarGeneracionEsquemaConRedireccion("https://oposicion-age.onrender.com/generar-esquema-desde-pdf", formData, authHeaders),
+          9000,
+        );
+        window.location.href = `/mis-documentos/?destacar=${encodeURIComponent(idConfirmado || documentoId)}&generando=esquema`;
       } catch (err) {
         mostrarError(err.message);
       }
