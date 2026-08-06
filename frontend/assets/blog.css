@@ -1,0 +1,58 @@
+/* Página /blog/: hub de contenido con filtro por oposición, sobre el mismo
+   patrón que /avisos-oficiales/ (misma clase .guia-avisos-filtro-btn para
+   los tabs, ver el <script> al final de esa página y de esta). Aquí solo
+   van las piezas propias del listado de artículos: la rejilla de tarjetas
+   y su etiqueta de oposición/tipo. */
+
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+
+/* .age-option-card fuerza display:flex, que en la cascada gana a la regla
+   [hidden] del navegador (misma especificidad, pero display:flex es una
+   regla de autor y pisa la de user-agent) -- sin esto el filtro de arriba
+   marcaría las tarjetas como ocultas sin que desaparecieran de verdad. */
+.blog-card[hidden] {
+  display: none;
+}
+
+.blog-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Reutiliza el color de marca para las 3 oposiciones concretas y un tono
+   neutro para "General", así se distingue de un vistazo qué tarjetas son
+   de una oposición y cuáles son transversales a las tres. */
+.blog-card-badge {
+  display: inline-block;
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark, var(--age-ink));
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.blog-card-badge--general {
+  background: transparent;
+  border: 1px solid var(--age-border);
+  color: var(--age-ink-soft);
+}
+
+.blog-card-tipo {
+  font-size: 11.5px;
+  color: var(--age-ink-soft);
+}
+
+.blog-vacio {
+  color: var(--age-ink-soft);
+  font-size: 13.5px;
+  font-style: italic;
+  margin: 8px 0 16px;
+}
