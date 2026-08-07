@@ -6,7 +6,6 @@ import { icono } from "/assets/icons.js";
 import { fijarTexto, fijarHTML } from "/assets/dom.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { inicializarCuentaAtras } from "/assets/cuenta-atras.js";
-import anime from "/assets/vendor/anime.esm.js";
 
 const MENSAJES_RACHA = [
   { minimo: 0, texto: "Empieza hoy tu racha: haz un test o repasa algo para arrancar." },
@@ -33,13 +32,18 @@ function mensajeParaRacha(dias) {
  * cuando la racha ha subido de verdad desde la última vez que se vio esta
  * pantalla (ver comparación con localStorage en cargarRacha), no en cada
  * carga de página: es una celebración real, no decoración de entrada.
+ * anime.js se importa de forma perezosa (import() dinámico) porque esto
+ * solo se dispara cuando la racha ha subido de verdad -- la mayoría de
+ * cargas de página no lo necesitan, así que no tiene sentido pagar su
+ * descarga siempre.
  */
-function animarSubidaRacha() {
+async function animarSubidaRacha() {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const iconoEl = document.getElementById("racha-icono");
   const destello = document.getElementById("racha-destello");
   if (!iconoEl || !destello) return;
 
+  const { default: anime } = await import("/assets/vendor/anime.esm.js");
   anime.set(destello, { opacity: 0.4, scale: 0.6 });
   anime({
     targets: destello,
