@@ -46,81 +46,13 @@
   </div>
 
   <div class="age-container zona-wrap">
-    <!-- Qué hacer ahora: fusiona lo que antes eran 3 tarjetas sueltas
-         (continuar test a medias, preguntas falladas pendientes, tema de
-         hoy/tema flojo) en una sola, con el mismo patrón de fila que "Tu
-         progreso"/"Lo tuyo" -- antes "tema de hoy" y "tu tema más flojo"
-         eran literalmente la misma recomendación mostrada dos veces en
-         sitios distintos de la página. -->
-    <section class="age-card zona-hacer-ahora-card" id="zona-hacer-ahora" style="display:none;">
-      <h3><span data-icon="rayo" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Qué hacer ahora</h3>
-      <p class="zona-plan-ritmo" id="zona-plan-ritmo" style="display:none;"></p>
-      <div class="zona-mis-cosas-card" id="zona-hacer-ahora-lista"></div>
-    </section>
-
-    <!-- Avisos oficiales (convocatorias, listas de admitidos, fechas de
-         examen...) detectados por la vigilancia del BOE y aprobados a mano
-         desde el panel de admin -- ver blueprints/temario.py:avisos_oficiales.
-         Oculta por defecto: solo se muestra si hay al menos un aviso
-         publicado para la oposición actual. -->
-    <section class="age-card zona-avisos-oficiales-card" id="zona-avisos-oficiales" style="display:none;">
-      <h3><span data-icon="bandera" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Avisos oficiales</h3>
-      <div id="zona-avisos-oficiales-lista"></div>
-    </section>
-
-    <section class="age-card zona-onboarding-card" id="zona-onboarding" style="display:none;">
-      <div class="zona-onboarding-cabecera">
-        <h3>Primeros pasos</h3>
-        <button type="button" class="zona-onboarding-cerrar" id="zona-onboarding-cerrar" aria-label="Cerrar" data-icon="cruz" data-icon-size="15"></button>
-      </div>
-      <p class="zona-onboarding-subtitulo" id="zona-onboarding-subtitulo" style="display:none;">Estás en tu prueba gratuita de 7 días con acceso Premium completo. Aprovecha para probarlo todo.</p>
-      <ul class="zona-onboarding-lista" id="zona-onboarding-lista"></ul>
-    </section>
-
-    <section class="age-card zona-racha-card">
-      <div class="zona-racha-icono-wrap">
-        <span class="zona-racha-destello" id="racha-destello" aria-hidden="true"></span>
-        <div class="zona-racha-icono" id="racha-icono" data-icon="fuego" data-icon-size="24"></div>
-      </div>
-      <div class="zona-racha-info">
-        <div class="zona-racha-numero"><span id="racha-numero">0</span> día<span id="racha-plural">s</span> seguidos</div>
-        <div class="zona-racha-mensaje" id="racha-mensaje">Cargando tu racha de estudio…</div>
-        <div class="zona-racha-maxima" id="racha-maxima" style="display:none;"></div>
-      </div>
-      <button type="button" class="age-btn age-btn-outline zona-racha-notif-boton" id="racha-notif-boton" style="display:none;"></button>
-    </section>
-
-    <section class="age-card zona-cuenta-atras-card" id="zona-cuenta-atras">
-      <div class="zona-cuenta-atras-icono" data-icon="calendario" data-icon-size="24"></div>
-      <div class="zona-cuenta-atras-info">
-        <div class="zona-cuenta-atras-numero" id="cuenta-atras-numero">—</div>
-        <div class="zona-cuenta-atras-mensaje" id="cuenta-atras-mensaje">Cargando…</div>
-      </div>
-      <button type="button" class="age-btn age-btn-outline zona-cuenta-atras-boton" id="cuenta-atras-boton">Configurar</button>
-      <form class="zona-cuenta-atras-form" id="cuenta-atras-form" style="display:none;">
-        <input type="date" id="cuenta-atras-input" required />
-        <button type="submit" class="age-btn age-btn-primary">Guardar</button>
-        <button type="button" class="zona-cuenta-atras-quitar" id="cuenta-atras-quitar" style="display:none;">Quitar fecha</button>
-      </form>
-    </section>
-
-    <!-- Tu progreso: antes eran 2 enlaces separados a /estadisticas/
-         (insignias y nota media); ahora es una sola tarjeta con los dos
-         números, mismo patrón de color que su gemela en "Más
-         herramientas" (teal, --stats) ya que llevan al mismo sitio. -->
-    <section class="zona-accesos" id="zona-progreso" style="display:none;">
-      <h2>Tu progreso</h2>
-      <div class="age-option-grid zona-herramientas-grid">
-        <a class="age-option-card age-option-card--stats" href="/estadisticas/">
-          <span class="age-option-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="14" width="3" height="6"/><rect x="11" y="10" width="3" height="10"/><rect x="16" y="6" width="3" height="14"/></svg></span>
-          <span class="age-option-title">Ver tus estadísticas</span>
-          <span class="age-option-desc"><strong id="zona-progreso-insignias">0/10</strong> insignias · nota media <strong id="zona-progreso-nota">—</strong></span>
-        </a>
-      </div>
-    </section>
-
-    <section class="zona-avisos" id="zona-avisos"></section>
-
+    <!-- Cuadrícula principal de herramientas: antes iba al final de la
+         página, detrás de hasta 6 tarjetas de estado/recomendación (qué
+         hacer ahora, primeros pasos, racha, cuenta atrás, tu progreso,
+         avisos) -- quien entraba a por algo concreto (hacer un test, ver
+         sus documentos...) tenía que pasar por todo eso primero. Ahora es
+         lo primero que se ve tras la cabecera; las tarjetas de estado van
+         debajo, como contexto complementario en vez de barrera de entrada. -->
     <section class="zona-accesos">
       <h2>Lo tuyo</h2>
       <div class="age-option-grid zona-herramientas-grid">
@@ -169,8 +101,83 @@
           <span class="age-option-desc">Apúntate de forma anónima y compara tu racha con otros opositores.</span>
         </a>
       </div>
-      <button type="button" class="zona-reabrir-onboarding" id="zona-reabrir-onboarding"><span data-icon="actualizar" data-icon-size="14" style="display:inline-flex;vertical-align:middle;"></span> Ver guía de primeros pasos</button>
     </section>
+
+    <section class="age-card zona-onboarding-card" id="zona-onboarding" style="display:none;">
+      <div class="zona-onboarding-cabecera">
+        <h3>Primeros pasos</h3>
+        <button type="button" class="zona-onboarding-cerrar" id="zona-onboarding-cerrar" aria-label="Cerrar" data-icon="cruz" data-icon-size="15"></button>
+      </div>
+      <p class="zona-onboarding-subtitulo" id="zona-onboarding-subtitulo" style="display:none;">Estás en tu prueba gratuita de 7 días con acceso Premium completo. Aprovecha para probarlo todo.</p>
+      <ul class="zona-onboarding-lista" id="zona-onboarding-lista"></ul>
+    </section>
+    <button type="button" class="zona-reabrir-onboarding" id="zona-reabrir-onboarding"><span data-icon="actualizar" data-icon-size="14" style="display:inline-flex;vertical-align:middle;"></span> Ver guía de primeros pasos</button>
+
+    <!-- Qué hacer ahora: fusiona lo que antes eran 3 tarjetas sueltas
+         (continuar test a medias, preguntas falladas pendientes, tema de
+         hoy/tema flojo) en una sola, con el mismo patrón de fila que "Tu
+         progreso"/"Lo tuyo" -- antes "tema de hoy" y "tu tema más flojo"
+         eran literalmente la misma recomendación mostrada dos veces en
+         sitios distintos de la página. -->
+    <section class="age-card zona-hacer-ahora-card" id="zona-hacer-ahora" style="display:none;">
+      <h3><span data-icon="rayo" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Qué hacer ahora</h3>
+      <p class="zona-plan-ritmo" id="zona-plan-ritmo" style="display:none;"></p>
+      <div class="zona-mis-cosas-card" id="zona-hacer-ahora-lista"></div>
+    </section>
+
+    <section class="age-card zona-racha-card">
+      <div class="zona-racha-icono-wrap">
+        <span class="zona-racha-destello" id="racha-destello" aria-hidden="true"></span>
+        <div class="zona-racha-icono" id="racha-icono" data-icon="fuego" data-icon-size="24"></div>
+      </div>
+      <div class="zona-racha-info">
+        <div class="zona-racha-numero"><span id="racha-numero">0</span> día<span id="racha-plural">s</span> seguidos</div>
+        <div class="zona-racha-mensaje" id="racha-mensaje">Cargando tu racha de estudio…</div>
+        <div class="zona-racha-maxima" id="racha-maxima" style="display:none;"></div>
+      </div>
+      <button type="button" class="age-btn age-btn-outline zona-racha-notif-boton" id="racha-notif-boton" style="display:none;"></button>
+    </section>
+
+    <section class="age-card zona-cuenta-atras-card" id="zona-cuenta-atras">
+      <div class="zona-cuenta-atras-icono" data-icon="calendario" data-icon-size="24"></div>
+      <div class="zona-cuenta-atras-info">
+        <div class="zona-cuenta-atras-numero" id="cuenta-atras-numero">—</div>
+        <div class="zona-cuenta-atras-mensaje" id="cuenta-atras-mensaje">Cargando…</div>
+      </div>
+      <button type="button" class="age-btn age-btn-outline zona-cuenta-atras-boton" id="cuenta-atras-boton">Configurar</button>
+      <form class="zona-cuenta-atras-form" id="cuenta-atras-form" style="display:none;">
+        <input type="date" id="cuenta-atras-input" required />
+        <button type="submit" class="age-btn age-btn-primary">Guardar</button>
+        <button type="button" class="zona-cuenta-atras-quitar" id="cuenta-atras-quitar" style="display:none;">Quitar fecha</button>
+      </form>
+    </section>
+
+    <!-- Tu progreso: antes eran 2 enlaces separados a /estadisticas/
+         (insignias y nota media); ahora es una sola tarjeta con los dos
+         números, mismo patrón de color que su gemela en "Más
+         herramientas" (teal, --stats) ya que llevan al mismo sitio. -->
+    <section class="zona-accesos" id="zona-progreso" style="display:none;">
+      <h2>Tu progreso</h2>
+      <div class="age-option-grid zona-herramientas-grid">
+        <a class="age-option-card age-option-card--stats" href="/estadisticas/">
+          <span class="age-option-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="14" width="3" height="6"/><rect x="11" y="10" width="3" height="10"/><rect x="16" y="6" width="3" height="14"/></svg></span>
+          <span class="age-option-title">Ver tus estadísticas</span>
+          <span class="age-option-desc"><strong id="zona-progreso-insignias">0/10</strong> insignias · nota media <strong id="zona-progreso-nota">—</strong></span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Avisos oficiales (convocatorias, listas de admitidos, fechas de
+         examen...) detectados por la vigilancia del BOE y aprobados a mano
+         desde el panel de admin -- ver blueprints/temario.py:avisos_oficiales.
+         Oculta por defecto: solo se muestra si hay al menos un aviso
+         publicado para la oposición actual. -->
+    <section class="age-card zona-avisos-oficiales-card" id="zona-avisos-oficiales" style="display:none;">
+      <h3><span data-icon="bandera" data-icon-size="18" style="display:inline-flex;vertical-align:middle;"></span> Avisos oficiales</h3>
+      <div id="zona-avisos-oficiales-lista"></div>
+    </section>
+
+    <section class="zona-avisos" id="zona-avisos"></section>
   </div>
 
   <script type="module" src="/assets/auth.js"></script>
