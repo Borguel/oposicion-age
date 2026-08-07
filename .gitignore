@@ -1,3 +1,8 @@
+# Worktrees temporales de agentes con isolation:"worktree" (limpieza
+# automática al terminar el agente si no hizo cambios; si hizo cambios,
+# quedan aquí como referencia local, no como parte del repo).
+.claude/worktrees/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
