@@ -1647,10 +1647,12 @@ async function renderReportes() {
   const panel = document.getElementById("panel-reportes");
   panel.innerHTML = `
     <div class="age-card admin-filtros">
-      ${segmentoHtml([
-        { id: "r-vista-preguntas", label: "Preguntas reportadas", activo: vistaReportes === "preguntas", tieneBadge: true, badge: _reportesPreguntasPendientesCache },
-        { id: "r-vista-soporte", label: "Mensajes de soporte", activo: vistaReportes === "soporte", tieneBadge: true, badge: _reportesSoportePendientesCache },
-      ])}
+      <div class="admin-reportes-selector">
+        ${segmentoHtml([
+          { id: "r-vista-preguntas", label: "Preguntas reportadas", activo: vistaReportes === "preguntas", tieneBadge: true, badge: _reportesPreguntasPendientesCache },
+          { id: "r-vista-soporte", label: "Mensajes de soporte", activo: vistaReportes === "soporte", tieneBadge: true, badge: _reportesSoportePendientesCache },
+        ])}
+      </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-top:12px;">Estado
         <select id="r-estado" class="age-input" style="max-width:180px;">
           <option value="pendiente">Pendientes</option>

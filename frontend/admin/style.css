@@ -758,6 +758,16 @@ tr.sis-opt .sis-punto { background: #d9a300; }
      dos líneas dentro de cada celda, se lee entero. */
   .ficha-selector .admin-segmentado { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; }
   .ficha-selector .admin-segmento { white-space: normal; padding: 8px 6px; font-size: 12px; line-height: 1.25; }
+
+  /* Mismo problema que .ficha-selector de arriba: "Preguntas reportadas" y
+     "Mensajes de soporte" (más su badge numérico) no caben en una fila en
+     móvil -- al envolver dentro de un inline-flex con border-radius de
+     pastilla, el contenedor entero se deformaba en un óvalo gigante
+     abarcando las dos líneas en vez de verse como dos pastillas. En
+     rejilla 2x2 cada una es su propia pastilla, aunque el texto se parta
+     en dos líneas. */
+  .admin-reportes-selector .admin-segmentado { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; }
+  .admin-reportes-selector .admin-segmento { white-space: normal; padding: 8px 6px; font-size: 12px; line-height: 1.25; }
 }
 
 /* Responsive */
