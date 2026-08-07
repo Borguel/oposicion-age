@@ -1,66 +1,92 @@
 // Firebase Authentication (email + contraseña) + construcción dinámica de la
 // barra de navegación compartida (.age-nav) y su menú de cuenta. Se importa
 // como módulo en cada página del frontend.
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-  EmailAuthProvider,
-  getAdditionalUserInfo,
-  linkWithCredential,
-  verifyBeforeUpdateEmail,
-  reauthenticateWithCredential,
-  updatePassword,
-  signOut as firebaseSignOut
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { firebaseConfig, BACKEND_URL, RECAPTCHA_SITE_KEY } from "/assets/firebase-config.js";
 import { inyectarSelectorOposicion, obtenerOposicionActual } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
 import { iniciarAnalitica, CLAVE_COOKIES_ACEPTADAS } from "/assets/analytics.js";
 import { activarPopover } from "/assets/popover.js";
 
-const app = initializeApp(firebaseConfig);
-
-// App Check (reCAPTCHA v3, invisible -- no le pide al usuario resolver
-// nada): certifica ante Firebase que quien llama es de verdad esta web, no
-// un script saltándose el navegador. Aplica solo a Authentication/Firestore
-// desde la consola de Firebase (App Check → modo "Monitorizar" primero,
-// "Aplicar" después de comprobar que no bloquea tráfico real).
-//
-// Import DINÁMICO a propósito (no junto a los de arriba): auth.js se carga
-// en TODAS las páginas y construye la nav -- un import estático de un script
-// de terceros (gstatic.com) que no cargase (red, extensión del navegador
-// bloqueando reCAPTCHA, o un test que sustituye firebase-app.js/-auth.js
-// pero no este) rompería la carga de todo el módulo de golpe. Así, si falla,
-// solo se deja de mandar el token de App Check -- el resto de la web sigue
-// funcionando igual que hasta ahora.
-(async () => {
+// El SDK de Firebase (firebase-app.js/firebase-auth.js, servidos desde
+// gstatic.com) se carga con import() dinámico y protegido con try/catch a
+// propósito, no con imports estáticos como antes: este módulo se importa en
+// TODAS las páginas y construye la nav/footer/banner de cookies -- un
+// import ESTÁTICO de un script de terceros que no cargase (red corporativa,
+// bloqueador de anuncios, extensión de privacidad, blip del CDN) tiraba
+// abajo la evaluación de TODO este módulo de golpe, dejando la web entera
+// en blanco (sin nav, sin footer, sin ningún mensaje de error), incluso
+// para páginas que solo importan de aquí utilidades que no necesitan
+// Firebase (marcarContenidoListo, etc.). Con import() dinámico, si falla,
+// el resto de la web (nav en modo "sin sesión", footer, banner de cookies)
+// sigue funcionando -- solo se pierde el login real, que de todas formas no
+// puede funcionar sin Firebase.
+export let auth = null;
+let _fb = null; // funciones del SDK de Auth, rellenadas solo si la carga sale bien
+const _firebaseListo = (async () => {
   try {
-    const { initializeAppCheck, ReCaptchaV3Provider } = await import(
-      "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js"
-    );
-    initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
-      isTokenAutoRefreshEnabled: true,
-    });
+    const [{ initializeApp }, authModulo] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js"),
+    ]);
+    const app = initializeApp(firebaseConfig);
+    auth = authModulo.getAuth(app);
+    _fb = authModulo;
+
+    // App Check (reCAPTCHA v3, invisible -- no le pide al usuario resolver
+    // nada): certifica ante Firebase que quien llama es de verdad esta web,
+    // no un script saltándose el navegador. Aplica solo a
+    // Authentication/Firestore desde la consola de Firebase (App Check →
+    // modo "Monitorizar" primero, "Aplicar" después de comprobar que no
+    // bloquea tráfico real). Va en su propio import() dinámico sin esperar
+    // a que resuelva: si SOLO falla este script (los dos de arriba sí
+    // cargaron), la autenticación debe seguir funcionando igual -- se deja
+    // de mandar el token de App Check, nada más.
+    (async () => {
+      try {
+        const { initializeAppCheck, ReCaptchaV3Provider } = await import(
+          "https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js"
+        );
+        initializeAppCheck(app, {
+          provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+          isTokenAutoRefreshEnabled: true,
+        });
+      } catch (e) {
+        console.error("No se pudo inicializar App Check:", e);
+      }
+    })();
+
+    return true;
   } catch (e) {
-    console.error("No se pudo inicializar App Check:", e);
+    console.error("No se pudo cargar Firebase Authentication:", e);
+    return false;
   }
 })();
 
-export const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
-
-export function signIn(email, password) {
-  return signInWithEmailAndPassword(auth, email, password);
+// Punto de paso obligatorio de toda función que necesite hablar de verdad
+// con Firebase (iniciar sesión, leer/renovar el token...). Lanza un error
+// con el mismo formato { code } que ya usan los propios errores de
+// Firebase, para que las páginas que traducen error.code a un mensaje (ver
+// MENSAJES_ERROR en login/script.js) puedan mostrar algo útil en vez de un
+// mensaje genérico sin explicación.
+async function requerirFirebase() {
+  const ok = await _firebaseListo;
+  if (!ok || !auth) {
+    throw Object.assign(
+      new Error("No se pudo cargar el sistema de autenticación."),
+      { code: "auth/carga-fallida" }
+    );
+  }
+  return auth;
 }
 
-export function signUp(email, password) {
-  return createUserWithEmailAndPassword(auth, email, password);
+export async function signIn(email, password) {
+  const auth = await requerirFirebase();
+  return _fb.signInWithEmailAndPassword(auth, email, password);
+}
+
+export async function signUp(email, password) {
+  const auth = await requerirFirebase();
+  return _fb.createUserWithEmailAndPassword(auth, email, password);
 }
 
 // Envía (o reenvía) el correo de verificación de dirección. No bloquea el
@@ -84,8 +110,10 @@ export async function enviarVerificacionEmail() {
 // { user, esNuevo, nombre, apellidos } para poder pedir el resto de datos
 // del perfil solo quien entra por primera vez.
 export async function signInWithGoogle() {
-  const resultado = await signInWithPopup(auth, googleProvider);
-  const esNuevo = getAdditionalUserInfo(resultado)?.isNewUser ?? false;
+  const auth = await requerirFirebase();
+  const googleProvider = new _fb.GoogleAuthProvider();
+  const resultado = await _fb.signInWithPopup(auth, googleProvider);
+  const esNuevo = _fb.getAdditionalUserInfo(resultado)?.isNewUser ?? false;
   const nombreCompleto = (resultado.user.displayName || "").trim();
   const partes = nombreCompleto.split(/\s+/).filter(Boolean);
   return {
@@ -101,15 +129,18 @@ export async function signInWithGoogle() {
 // credencial de Google pendiente; hay que guardarla para completar la
 // vinculación en cuanto el usuario confirme su contraseña con signIn().
 export function credencialGoogleDesdeError(error) {
-  return GoogleAuthProvider.credentialFromError(error);
+  // Solo se llama tras un signInWithGoogle() que ya falló, así que _fb ya
+  // está resuelto en el camino normal -- el `?.` es solo por si acaso.
+  return _fb?.GoogleAuthProvider.credentialFromError(error) ?? null;
 }
 
 // Une la credencial de Google pendiente a la cuenta (ya autenticada por
 // contraseña) del mismo correo, para que a partir de ahora sirvan los dos
 // métodos de acceso en vez de dejar al usuario sin poder usar Google nunca
 // con ese correo.
-export function vincularCredencialGoogle(user, pendingCredential) {
-  return linkWithCredential(user, pendingCredential);
+export async function vincularCredencialGoogle(user, pendingCredential) {
+  await requerirFirebase();
+  return _fb.linkWithCredential(user, pendingCredential);
 }
 
 // La cuenta tiene contraseña (además de, o en vez de, Google) si Firebase
@@ -117,32 +148,35 @@ export function vincularCredencialGoogle(user, pendingCredential) {
 // reautenticar con contraseña para operaciones sensibles como cambiar el
 // correo.
 export function tieneProveedorPassword() {
-  const user = auth.currentUser;
+  const user = auth?.currentUser;
   return !!user && user.providerData.some((p) => p.providerId === "password");
 }
 
 // Reautentica con la contraseña actual (paso previo obligatorio de Firebase
 // para operaciones sensibles como cambiar el correo, si hace tiempo que no
 // se inició sesión: error "auth/requires-recent-login").
-export function reautenticarConPassword(password) {
+export async function reautenticarConPassword(password) {
+  const auth = await requerirFirebase();
   const user = auth.currentUser;
-  const credencial = EmailAuthProvider.credential(user.email, password);
-  return reauthenticateWithCredential(user, credencial);
+  const credencial = _fb.EmailAuthProvider.credential(user.email, password);
+  return _fb.reauthenticateWithCredential(user, credencial);
 }
 
 // Pide el cambio de correo: Firebase manda un enlace de verificación a la
 // NUEVA dirección y el cambio no se hace efectivo hasta que el usuario lo
 // confirma -- así se evita que alguien cambie el correo de una cuenta ajena
 // sin acceso real a esa bandeja de entrada.
-export function cambiarEmail(nuevoEmail) {
-  return verifyBeforeUpdateEmail(auth.currentUser, nuevoEmail);
+export async function cambiarEmail(nuevoEmail) {
+  const auth = await requerirFirebase();
+  return _fb.verifyBeforeUpdateEmail(auth.currentUser, nuevoEmail);
 }
 
 // Cambia la contraseña directamente (a diferencia del correo, no hace falta
 // confirmación por email: Firebase ya exige haberse reautenticado hace poco
 // para poder llamar a esto, que es la propia prueba de que eres tú).
-export function cambiarContrasena(nuevaContrasena) {
-  return updatePassword(auth.currentUser, nuevaContrasena);
+export async function cambiarContrasena(nuevaContrasena) {
+  const auth = await requerirFirebase();
+  return _fb.updatePassword(auth.currentUser, nuevaContrasena);
 }
 
 // Pide al backend el correo de "restablecer contraseña" (lo genera con
@@ -164,9 +198,11 @@ export async function recuperarContrasena(email) {
   });
 }
 
-export function signOut() {
+export async function signOut() {
   sessionStorage.clear();
-  return firebaseSignOut(auth);
+  const ok = await _firebaseListo;
+  if (!ok || !auth) return;
+  return _fb.signOut(auth);
 }
 
 // Devuelve una promesa que se resuelve con "valorSiTarda" si "promesa" no
@@ -182,10 +218,12 @@ function conLimiteDeTiempo(promesa, ms, valorSiTarda) {
 // Espera a que Firebase resuelva el estado inicial de sesión (evita
 // redirecciones prematuras a /login/ mientras el SDK todavía está
 // comprobando si hay una sesión guardada).
-export function esperarUsuario() {
-  if (auth.currentUser) return Promise.resolve(auth.currentUser);
+export async function esperarUsuario() {
+  const ok = await _firebaseListo;
+  if (!ok || !auth) return null;
+  if (auth.currentUser) return auth.currentUser;
   const promesa = new Promise((resolve) => {
-    const quitar = onAuthStateChanged(auth, (user) => {
+    const quitar = _fb.onAuthStateChanged(auth, (user) => {
       quitar();
       resolve(user);
     });
@@ -1169,10 +1207,24 @@ function inyectarBannerCookies() {
   });
 }
 
-onAuthStateChanged(auth, inyectarNav);
+// Footer y banner de cookies no dependen de Firebase en absoluto -- se
+// pintan siempre, cargue o no el SDK de autenticación.
 inyectarFooter();
 inyectarBannerCookies();
-iniciarAnalitica(auth);
+
+_firebaseListo.then((ok) => {
+  if (ok && auth) {
+    _fb.onAuthStateChanged(auth, inyectarNav);
+    iniciarAnalitica(auth, _fb.onAuthStateChanged);
+  } else {
+    // Sin Firebase no hay forma de saber si hay sesión real -- se pinta la
+    // nav igualmente en modo "sin sesión" (enlaces públicos, botón de
+    // "Iniciar sesión") para que la web nunca se quede sin cabecera ni pie,
+    // aunque el login en sí no vaya a funcionar hasta que se resuelva lo
+    // que esté bloqueando la carga de Firebase.
+    inyectarNav(null);
+  }
+});
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

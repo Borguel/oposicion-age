@@ -17,7 +17,7 @@ import { auth } from "/assets/auth.js";
 // mismo "ya visto" y la segunda cuenta nunca ve el tour aunque sea su
 // primera vez de verdad.
 function claveParaUsuario(clave) {
-  return auth.currentUser ? `${clave}_${auth.currentUser.uid}` : clave;
+  return auth?.currentUser ? `${clave}_${auth.currentUser.uid}` : clave;
 }
 
 function iniciarTourGenerico(pasos, claveBase) {

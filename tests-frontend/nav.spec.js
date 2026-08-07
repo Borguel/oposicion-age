@@ -183,6 +183,39 @@ test.describe("nav -- sin sesión", () => {
   });
 });
 
+// Reproduce el bug del hallazgo P0 de la auditoría: si el SDK de Firebase
+// (gstatic.com) no carga -- red corporativa, bloqueador de anuncios,
+// extensión de privacidad, blip del CDN -- la web entera se quedaba en
+// blanco sin nav, sin footer y sin ningún mensaje de error, porque
+// auth.js tenía imports ESTÁTICOS de firebase-app.js/firebase-auth.js: un
+// fallo ahí tiraba abajo la evaluación de todo el módulo. Ahora son
+// import() dinámicos protegidos con try/catch (ver auth.js), así que el
+// resto de la web debe seguir en pie en modo "sin sesión".
+test.describe("nav -- Firebase no carga (red bloqueada)", () => {
+  test("la nav, el footer y el banner de cookies se pintan igual en modo degradado", async ({ page }) => {
+    await page.route("**/firebase-app.js", (route) => route.abort("failed"));
+    await page.route("**/firebase-auth.js", (route) => route.abort("failed"));
+    await page.route("**/banner-global*", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify({ activo: false }) })
+    );
+    await page.route("**/promocion-activa*", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify({ activo: false }) })
+    );
+
+    await page.goto("/");
+
+    // Nav en modo "sin sesión": enlaces públicos + botón de login, nada de
+    // pantalla en blanco.
+    await expect(page.locator(".age-nav-links-items a")).toHaveText(["Inicio", "Oposiciones", "Blog", "Cómo funciona", "Planes"]);
+    await expect(page.locator(".age-account a.age-btn-primary")).toContainText("Iniciar sesión");
+    await expect(page.locator(".age-skip-link")).toBeAttached();
+
+    // Footer y banner de cookies no dependen de Firebase en absoluto.
+    await expect(page.locator(".age-footer")).toBeVisible();
+    await expect(page.locator(".age-cookies-banner")).toBeVisible();
+  });
+});
+
 // Los enlaces principales varían según haya sesión o no (ver
 // actualizarEnlacesNav en auth.js): antes eran los mismos 9 siempre, la
 // mitad de ellos inaccesibles sin cuenta, y además desbordaban la barra en

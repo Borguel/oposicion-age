@@ -109,7 +109,8 @@ const MENSAJES_ERROR = {
   "auth/unauthorized-domain": "Este dominio no está autorizado para iniciar sesión con Google. Contacta con el soporte de la web.",
   "auth/account-exists-with-different-credential": "Ya existe una cuenta con ese correo usando otro método de acceso (contraseña). Inicia sesión con tu contraseña.",
   "auth/operation-not-allowed": "El inicio de sesión con Google no está disponible ahora mismo. Inténtalo más tarde o usa correo y contraseña.",
-  "auth/network-request-failed": "No se pudo conectar. Revisa tu conexión a internet e inténtalo de nuevo."
+  "auth/network-request-failed": "No se pudo conectar. Revisa tu conexión a internet e inténtalo de nuevo.",
+  "auth/carga-fallida": "No se pudo cargar el sistema de acceso. Revisa tu conexión, desactiva bloqueadores de anuncios o extensiones de privacidad para este sitio y recarga la página."
 };
 
 form.addEventListener("submit", async (evento) => {

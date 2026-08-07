@@ -24,7 +24,7 @@ const ORDEN_PLANES = { gratis: 0, basico: 1, premium: 2 };
 // sin pasar por "Cerrar sesión") se serviría tal cual para la cuenta nueva,
 // sin ninguna comprobación de a quién pertenece.
 function claveCache(oposicion) {
-  const uid = auth.currentUser?.uid || "anonimo";
+  const uid = auth?.currentUser?.uid || "anonimo";
   return `age_plan_cache_${uid}_${oposicion}`;
 }
 

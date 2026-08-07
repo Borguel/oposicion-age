@@ -1,5 +1,3 @@
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-
 // Analítica de producto (PostHog), autoalojada para no depender de sus
 // dominios en la CSP y para no ser bloqueada por bloqueadores de anuncios
 // que sí reconocen posthog.com. El bundle en /assets/posthog-array.js es
@@ -42,10 +40,14 @@ function cargarPostHog(auth) {
   document.head.appendChild(script);
 }
 
-// auth: instancia de Firebase Auth ya inicializada (la exporta auth.js), se
-// reutiliza aquí en vez de volver a inicializar Firebase para evitar
-// duplicar configuración.
-export function iniciarAnalitica(auth) {
+// auth: instancia de Firebase Auth ya inicializada (la exporta auth.js).
+// onAuthStateChanged: la misma función del SDK que ya cargó auth.js -- este
+// módulo no importa firebase-auth.js por su cuenta a propósito: auth.js lo
+// importa a SU VEZ de forma estática desde aquí arriba, así que si
+// analytics.js tuviera su propia dependencia dura del SDK, un fallo de red
+// al cargarlo volvería a tirar abajo auth.js entero (el mismo problema que
+// se acaba de arreglar ahí).
+export function iniciarAnalitica(auth, onAuthStateChanged) {
   if (!POSTHOG_API_KEY) return;
 
   if (localStorage.getItem(CLAVE_COOKIES_ACEPTADAS) === "1") {
