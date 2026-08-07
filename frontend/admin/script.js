@@ -65,7 +65,12 @@ function paginacionHtml(d, etiqueta, clasePrefijo) {
 function segmentoHtml(botones) {
   return `<div class="admin-segmentado" role="tablist">${botones.map((b) => {
     const dataTab = b.tab ? ` data-tab="${escapeHtml(b.tab)}"` : "";
-    return `<button type="button" class="admin-segmento${b.activo ? " active" : ""}" id="${b.id}" role="tab" aria-selected="${b.activo ? "true" : "false"}"${dataTab}>${escapeHtml(b.label)}</button>`;
+    // El badge se pinta siempre (oculto con "hidden" si b.badge es 0/undefined)
+    // en vez de solo cuando hay algo, para que las actualizaciones en vivo
+    // (ver _actualizarBadgesReportesDesglose) puedan des-ocultarlo con solo
+    // tocar el atributo, sin tener que reconstruir el botón entero.
+    const badge = b.tieneBadge ? `<span class="admin-segmento-badge" ${b.badge ? "" : "hidden"}>${b.badge || 0}</span>` : "";
+    return `<button type="button" class="admin-segmento${b.activo ? " active" : ""}" id="${b.id}" role="tab" aria-selected="${b.activo ? "true" : "false"}"${dataTab}>${escapeHtml(b.label)}${badge}</button>`;
   }).join("")}</div>`;
 }
 
@@ -263,7 +268,11 @@ function renderSelectorGrupo(grupoId) {
   const visibles = grupo && grupo.enPanel ? grupo.pestanas.filter((p) => puedeVer(p)) : [];
   if (visibles.length <= 1) { cont.hidden = true; cont.innerHTML = ""; return; }
   cont.hidden = false;
-  cont.innerHTML = segmentoHtml(visibles.map((p) => ({ id: `subtab-${p}`, tab: p, label: LABEL_SUBTAB[p], activo: p === pestanaActual })));
+  cont.innerHTML = segmentoHtml(visibles.map((p) => ({
+    id: `subtab-${p}`, tab: p, label: LABEL_SUBTAB[p], activo: p === pestanaActual,
+    tieneBadge: p === "reportes",
+    badge: p === "reportes" ? _reportesPreguntasPendientesCache + _reportesSoportePendientesCache : 0,
+  })));
   cont.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => activarPestana(b.dataset.tab)));
 }
 
@@ -339,6 +348,31 @@ function actualizarBadgeReportes(n) {
   badge.hidden = !n;
 }
 
+// Desglose de reportes_pendientes por bandeja (preguntas reportadas /
+// mensajes de soporte), para poder avisar en cada pestaña de cuál de las
+// dos tiene algo nuevo -- se actualizan con lo último que se sepa (el
+// dashboard al cargar, o la propia lista al visitarla en estado
+// "pendiente"), igual que ya hacía _cambiosPendientesCache/
+// _avisosPendientesCache para Vigilancia BOE.
+let _reportesPreguntasPendientesCache = 0;
+let _reportesSoportePendientesCache = 0;
+
+// Pinta los tres avisos que dependen de este desglose: los dos badges de
+// las sub-pestañas dentro del panel Reportes (si está montado) y el badge
+// de la propia pastilla "Reportes" del selector de grupo (si está
+// montada) -- se llama tanto al construir esas pastillas como cada vez
+// que cambia el desglose, para no dejar un número obsoleto en pantalla
+// tras marcar algo como revisado/descartado.
+function _actualizarBadgesReportesDesglose() {
+  const bp = document.getElementById("r-vista-preguntas")?.querySelector(".admin-segmento-badge");
+  if (bp) { bp.textContent = _reportesPreguntasPendientesCache; bp.hidden = !_reportesPreguntasPendientesCache; }
+  const bs = document.getElementById("r-vista-soporte")?.querySelector(".admin-segmento-badge");
+  if (bs) { bs.textContent = _reportesSoportePendientesCache; bs.hidden = !_reportesSoportePendientesCache; }
+  const total = _reportesPreguntasPendientesCache + _reportesSoportePendientesCache;
+  const bpill = document.getElementById("subtab-reportes")?.querySelector(".admin-segmento-badge");
+  if (bpill) { bpill.textContent = total; bpill.hidden = !total; }
+}
+
 function actualizarBadgeBoe(n) {
   const badge = document.getElementById("badge-boe");
   if (badge) { badge.textContent = n; badge.hidden = !n; }
@@ -358,6 +392,9 @@ async function renderDashboard() {
   const d = await apiGet(`/admin/api/resumen?oposicion=${oposicionActual()}`);
   if (!d) return;
   actualizarBadgeReportes(d.reportes_pendientes || 0);
+  _reportesPreguntasPendientesCache = d.reportes_pendientes_preguntas || 0;
+  _reportesSoportePendientesCache = d.reportes_pendientes_soporte || 0;
+  _actualizarBadgesReportesDesglose();
   actualizarBadgeBoe((d.cambios_temario_pendientes || 0) + (d.avisos_oficiales_pendientes || 0));
 
   const salud = d.salud_contenido || {};
@@ -1611,8 +1648,8 @@ async function renderReportes() {
   panel.innerHTML = `
     <div class="age-card admin-filtros">
       ${segmentoHtml([
-        { id: "r-vista-preguntas", label: "Preguntas reportadas", activo: vistaReportes === "preguntas" },
-        { id: "r-vista-soporte", label: "Mensajes de soporte", activo: vistaReportes === "soporte" },
+        { id: "r-vista-preguntas", label: "Preguntas reportadas", activo: vistaReportes === "preguntas", tieneBadge: true, badge: _reportesPreguntasPendientesCache },
+        { id: "r-vista-soporte", label: "Mensajes de soporte", activo: vistaReportes === "soporte", tieneBadge: true, badge: _reportesSoportePendientesCache },
       ])}
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-top:12px;">Estado
         <select id="r-estado" class="age-input" style="max-width:180px;">
@@ -1641,8 +1678,13 @@ async function cargarReportes() {
   if (!d) return;
   // d.total (no la longitud de esta página) -- el backend ya filtra por
   // "pendiente" en la consulta, así que es el recuento real, no solo el de
-  // la página actual.
-  if (estadoReportes === "pendiente") actualizarBadgeReportes(d.total || 0);
+  // la página actual. El badge combinado suma esto con el de soporte (no
+  // se sustituye sin más por d.total, o se perdería de vista el otro).
+  if (estadoReportes === "pendiente") {
+    _reportesPreguntasPendientesCache = d.total || 0;
+    actualizarBadgeReportes(_reportesPreguntasPendientesCache + _reportesSoportePendientesCache);
+    _actualizarBadgesReportesDesglose();
+  }
   if (!(d.reportes || []).length) {
     cont.innerHTML = `<p class="admin-vacio">No hay reportes en este estado. ${icono("check", 14)}</p>`;
     return;
@@ -2022,6 +2064,15 @@ async function cargarSoporte() {
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/soporte?estado=${estadoReportes}`);
   if (!d) return;
+  // Mismo criterio que cargarReportes: el nº real de mensajes en este
+  // estado (no solo si la lista está vacía) para no dejar el badge
+  // desactualizado -- va antes del "vacío" de abajo a propósito, si no
+  // nunca se llegaría a poner a 0.
+  if (estadoReportes === "pendiente") {
+    _reportesSoportePendientesCache = (d.mensajes || []).length;
+    actualizarBadgeReportes(_reportesPreguntasPendientesCache + _reportesSoportePendientesCache);
+    _actualizarBadgesReportesDesglose();
+  }
   if (!(d.mensajes || []).length) {
     cont.innerHTML = `<p class="admin-vacio">No hay mensajes en este estado. ${icono("check", 14)}</p>`;
     return;

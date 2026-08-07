@@ -59,6 +59,12 @@
   font-size: 14px; font-weight: 600; color: var(--age-ink-soft);
   font-family: var(--age-font); white-space: nowrap;
 }
+/* [hidden] por sí solo ya ocultaría #tab-boe (ver actualizarBadgeBoe), pero
+   la regla de autor de arriba (display:flex) gana a la del user-agent --
+   bug real encontrado al verificar los badges nuevos de Reportes: la
+   pestaña "Vigilancia BOE" se quedaba siempre visible aunque no hubiera
+   nada pendiente. Mismo motivo ya documentado en .admin-submenu[hidden]. */
+.admin-tab[hidden] { display: none; }
 .admin-tab-ico { font-size: 1.05rem; flex: 0 0 auto; width: 22px; text-align: center; }
 .admin-tab:hover { background: var(--age-primary-soft); color: var(--age-ink); }
 .admin-tab.active { background: var(--age-primary-soft); color: var(--age-primary-dark); font-weight: 800; }
@@ -72,6 +78,10 @@
   display: inline-flex; align-items: center; justify-content: center; padding: 0 5px;
   flex: 0 0 auto;
 }
+/* Mismo bug de especificidad que .admin-tab[hidden]: badge-reportes y
+   badge-boe se quedaban mostrando "0" de forma permanente en vez de
+   ocultarse cuando no hay nada pendiente. */
+.admin-tab-badge[hidden] { display: none; }
 
 /* Desplegable de un grupo (Contenido/Usuarios/Configuración) dentro de la
    propia barra lateral, para ir directo a una vista concreta sin pasar
@@ -155,6 +165,19 @@
   background: var(--age-primary); color: #1b1f2e;
   box-shadow: var(--age-shadow);
 }
+/* Aviso de "hay algo nuevo" en una pastilla (Reportes, Preguntas
+   reportadas, Mensajes de soporte) -- mismo formato que .admin-tab-badge
+   de la barra lateral, en miniatura para caber junto al texto corto de
+   una pastilla. */
+.admin-segmento-badge {
+  margin-left: 6px; background: var(--age-danger); color: #fff; border-radius: 999px;
+  font-size: 10.5px; font-weight: 800; min-width: 16px; height: 16px;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0 4px;
+}
+/* [hidden] por sí solo lo ocultaría, pero la regla de autor de arriba
+   (display:inline-flex) gana a la del user-agent -- mismo bug real que ya
+   documentado en .admin-submenu[hidden] más arriba en este fichero. */
+.admin-segmento-badge[hidden] { display: none; }
 
 /* Cabecera */
 .admin-header {

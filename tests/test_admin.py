@@ -267,6 +267,23 @@ def test_resumen_agrega_planes_y_fallos(client, db):
     assert datos["top_temas_fallados"][0]["fallos"] == 5  # 3 + 2, agregado
 
 
+def test_resumen_desglosa_reportes_pendientes_por_bandeja(client, db):
+    # El dashboard necesita el desglose (no solo la suma) para poder avisar
+    # en cada pestaña -- "Preguntas reportadas" y "Mensajes de soporte" -- de
+    # cuál de las dos tiene algo nuevo, sin que un admin tenga que entrar a
+    # mirar las dos para saberlo.
+    db.sembrar(("errores_generacion", "r1"), {"fuente": "usuario_admin", "estado": "pendiente"})
+    db.sembrar(("errores_generacion", "r2"), {"fuente": "usuario_admin", "estado": "pendiente"})
+    db.sembrar(("errores_generacion", "r3"), {"fuente": "usuario_admin", "estado": "revisado"})
+    db.sembrar(("mensajes_soporte", "s1"), {"estado": "pendiente"})
+    db.sembrar(("mensajes_soporte", "s2"), {"estado": "revisado"})
+    with _como():
+        d = client.get("/admin/api/resumen", headers=_AUTH).get_json()
+    assert d["reportes_pendientes_preguntas"] == 2
+    assert d["reportes_pendientes_soporte"] == 1
+    assert d["reportes_pendientes"] == 3
+
+
 def test_resumen_salud_contenido_detecta_temas_sin_fichas(client, db):
     # Un tema con ficha y otro sin ninguna.
     db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Bloque I", "publicado": True})

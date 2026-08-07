@@ -429,12 +429,18 @@ def resumen():
         {"tema_id": tid, "titulo": _titulo_tema(coleccion_temario("AGE"), tid) if tid.startswith("bloque") else tid, "fallos": n}
         for tid, n in sorted(fallos_por_tema.items(), key=lambda kv: kv[1], reverse=True)[:5]
     ]
-    reportes_pendientes = sum(
+    # Desglosados (no solo la suma) para poder pintar un aviso propio en
+    # cada pestaña -- "Preguntas reportadas" y "Mensajes de soporte" son dos
+    # bandejas independientes y un admin puede querer saber cuál de las dos
+    # tiene algo nuevo sin entrar a mirar las dos.
+    preguntas_reportadas_pendientes = sum(
         1 for doc in db.collection("errores_generacion").where("fuente", "==", "usuario_admin").stream()
         if (doc.to_dict() or {}).get("estado", "pendiente") == "pendiente"
-    ) + sum(
+    )
+    soporte_pendientes = sum(
         1 for _ in db.collection("mensajes_soporte").where("estado", "==", "pendiente").stream()
     )
+    reportes_pendientes = preguntas_reportadas_pendientes + soporte_pendientes
     cambios_temario_pendientes = sum(
         1 for _ in db.collection("cambios_temario_propuestos").where("estado", "==", "pendiente").stream()
     )
@@ -456,6 +462,8 @@ def resumen():
         "tests_total": tests_total,
         "top_temas_fallados": top_temas,
         "reportes_pendientes": reportes_pendientes,
+        "reportes_pendientes_preguntas": preguntas_reportadas_pendientes,
+        "reportes_pendientes_soporte": soporte_pendientes,
         "cambios_temario_pendientes": cambios_temario_pendientes,
         "avisos_oficiales_pendientes": avisos_oficiales_pendientes,
         "oposicion": oposicion,
