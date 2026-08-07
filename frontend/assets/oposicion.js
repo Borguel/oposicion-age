@@ -77,6 +77,7 @@ export function inyectarSelectorOposicion(haySesion) {
     const bloque = document.createElement("div");
     bloque.className = "age-oposicion-movil";
     const select = document.createElement("select");
+    select.id = "age-oposicion-movil-select";
     select.setAttribute("data-nav-oposicion", "");
     OPOSICIONES.forEach((o) => {
       const opcion = document.createElement("option");
@@ -86,7 +87,7 @@ export function inyectarSelectorOposicion(haySesion) {
     });
     select.value = actual;
     select.addEventListener("change", () => cambiarOposicionYRecargar(select.value));
-    bloque.innerHTML = `<label class="age-oposicion-movil-label">Oposición</label>`;
+    bloque.innerHTML = `<label class="age-oposicion-movil-label" for="age-oposicion-movil-select">Oposición</label>`;
     bloque.appendChild(select);
     drawer.prepend(bloque);
   }

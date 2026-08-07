@@ -585,7 +585,7 @@ function construirBusquedaGlobal(user) {
     buscador.innerHTML = `
       <button type="button" class="age-nav-icon-btn" data-popover-toggle aria-label="Buscar temas y documentos">${icono("buscar", 18)}</button>
       <div class="age-popover age-buscador-panel" data-popover-panel>
-        <input type="search" class="age-buscador-input" placeholder="Buscar temas o documentos…" />
+        <input type="search" class="age-buscador-input" placeholder="Buscar temas o documentos…" aria-label="Buscar temas o documentos" />
         <div class="age-buscador-resultados">${MARCADOR_RESULTADOS_VACIO}</div>
       </div>
     `;
@@ -611,7 +611,7 @@ function construirBusquedaGlobal(user) {
     const bloque = document.createElement("div");
     bloque.className = "age-buscador-movil";
     bloque.innerHTML = `
-      <input type="search" class="age-buscador-input" placeholder="Buscar temas o documentos…" />
+      <input type="search" class="age-buscador-input" placeholder="Buscar temas o documentos…" aria-label="Buscar temas o documentos" />
       <div class="age-buscador-resultados">${MARCADOR_RESULTADOS_VACIO}</div>
     `;
     drawer.prepend(bloque);
