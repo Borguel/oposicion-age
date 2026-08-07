@@ -1,14 +1,17 @@
 // Motor genérico de tours de "spotlight" (resalta un elemento real de la
 // página con un halo y muestra un bocadillo explicativo al lado, paso a
-// paso). Dos usos concretos hoy, cada uno con su propia clave de
-// localStorage para no repetirse ni interferir entre sí:
+// paso). Un único uso hoy:
 //
-// 1. mostrarTourTest(): tutorial de bienvenida al primer test -- estrella
-//    (favorita), marcador (revisar en este test), interrogación (duda) y
-//    el navegador de preguntas. Compartido por las 6 páginas de test.
-// 2. mostrarTourZonaOpositor(): tour de primeros pasos en Zona Opositor la
-//    primera vez que se entra -- generar test, herramientas IA, tu tutor
-//    y estadísticas.
+// mostrarTourTest(): tutorial de bienvenida al primer test -- estrella
+// (favorita), marcador (revisar en este test), interrogación (duda) y el
+// navegador de preguntas. Compartido por las 6 páginas de test.
+//
+// Zona Opositor tuvo antes un segundo tour aquí (mostrarTourZonaOpositor)
+// que señalaba prácticamente las mismas tarjetas que ya cubre el checklist
+// "Primeros pasos" de esa página (ver renderOnboarding en
+// zona-opositor/script.js) -- los dos aparecían a la vez en la primera
+// visita, duplicando el mismo aviso de bienvenida. Se quitó el tour y el
+// checklist quedó como único mecanismo de onboarding ahí.
 import { auth } from "/assets/auth.js";
 
 // La clave de localStorage se namespacea por uid (no solo por navegador):
@@ -174,43 +177,4 @@ const PASOS_TEST = [
 // no interrumpir a quien ya conoce estos botones.
 export function mostrarTourTest() {
   iniciarTourGenerico(PASOS_TEST, CLAVE_TOUR_TEST_VISTO);
-}
-
-// ---------- Tour 2: primeros pasos en Zona Opositor ----------
-const CLAVE_TOUR_ZONA_VISTO = "age_tour_zona_visto";
-
-// Los selectores apuntan a `.age-option-card`, la tarjeta de la propia
-// página, y no a `a[href="..."]` a secas: desde que la barra de navegación
-// también tiene enlaces a estas mismas URLs (selector de sesión en
-// auth.js), un selector genérico por href encontraba antes el enlace del
-// nav -- fijo arriba de la página -- en vez de la tarjeta del dashboard,
-// y el tour se quedaba "pegado" arriba sin recorrer la página.
-const PASOS_ZONA = [
-  {
-    selector: '.age-option-card[href="/test-generator/"]',
-    titulo: "Genera tu primer test",
-    texto: "Aquí creas un test personalizado con IA sobre los temas que elijas, o uno oficial con preguntas de exámenes reales."
-  },
-  {
-    selector: '.age-option-card[href="/subida-pdf-pagina-principal/"]',
-    titulo: "Tus propios apuntes",
-    texto: "Si tienes tus PDF, aquí genera resúmenes, esquemas, tarjetas de memoria y tests a partir de ellos."
-  },
-  {
-    selector: '.age-option-card[href="/tu-tutor/"]',
-    titulo: "Tu Tutor",
-    texto: "Resuelve al momento cualquier duda sobre el temario o el proceso selectivo, charlando como con un profesor particular."
-  },
-  {
-    selector: '.age-option-card[href="/estadisticas/"]',
-    titulo: "Tu progreso",
-    texto: "Según vayas haciendo tests, aquí verás tu nota media y qué temas te cuestan más, para saber qué repasar."
-  }
-];
-
-// Se muestra una sola vez por navegador, la primera vez que se entra en
-// Zona Opositor -- complementa (no sustituye) al checklist de onboarding
-// ya existente en la propia página.
-export function mostrarTourZonaOpositor() {
-  iniciarTourGenerico(PASOS_ZONA, CLAVE_TOUR_ZONA_VISTO);
 }

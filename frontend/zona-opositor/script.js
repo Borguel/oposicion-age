@@ -6,7 +6,6 @@ import { icono } from "/assets/icons.js";
 import { fijarTexto, fijarHTML } from "/assets/dom.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { inicializarCuentaAtras } from "/assets/cuenta-atras.js";
-import { mostrarTourZonaOpositor } from "/assets/onboarding-tour.js";
 import anime from "/assets/vendor/anime.esm.js";
 
 const MENSAJES_RACHA = [
@@ -475,20 +474,30 @@ function renderAviso() {
   });
 }
 
-// Checklist de bienvenida: 3 pasos que ayudan a un usuario nuevo a
-// descubrir lo esencial de la web. Se oculta sola en cuanto los 3 pasos
-// están hechos, o si el usuario la cierra manualmente (persistido en
+// Checklist de bienvenida: pasos que ayudan a un usuario nuevo a descubrir
+// lo esencial de la web. Se oculta sola en cuanto todos los pasos están
+// hechos, o si el usuario la cierra manualmente (persistido en
 // localStorage, no hace falta seguir preguntando al backend en ese caso).
+// Único mecanismo de onboarding de la página -- antes convivía con un tour
+// de spotlight aparte (mostrarTourZonaOpositor, ver onboarding-tour.js) que
+// señalaba prácticamente las mismas tarjetas, mostrando dos avisos de
+// bienvenida distintos y superpuestos en la primera visita.
 const CLAVE_ONBOARDING_CERRADO = "age_onboarding_cerrado";
 
 const PASOS_ONBOARDING = [
   { id: "test", texto: "Haz tu primer test", href: "/test-generator/" },
   { id: "ia", texto: "Prueba las Herramientas IA con un PDF", href: "/subida-pdf-pagina-principal/" },
+  { id: "tutor", texto: "Pregúntale una duda a Tu Tutor", href: "/tu-tutor/" },
   { id: "estadisticas", texto: "Consulta tus estadísticas", href: "/estadisticas/" }
 ];
 
 async function comprobarPasosOnboarding(token) {
-  const completado = { test: false, ia: false, estadisticas: localStorage.getItem("age_visito_estadisticas") === "1" };
+  const completado = {
+    test: false,
+    ia: false,
+    tutor: localStorage.getItem("age_visito_tutor") === "1",
+    estadisticas: localStorage.getItem("age_visito_estadisticas") === "1"
+  };
   try {
     const oposicion = obtenerOposicionActual();
     const [resTests, resDocs] = await Promise.all([
@@ -584,7 +593,6 @@ async function iniciar() {
   renderAviso();
   renderSwitcher();
   renderOnboarding();
-  mostrarTourZonaOpositor();
   document.getElementById("zona-reabrir-onboarding").addEventListener("click", () => {
     localStorage.removeItem(CLAVE_ONBOARDING_CERRADO);
     renderOnboarding();

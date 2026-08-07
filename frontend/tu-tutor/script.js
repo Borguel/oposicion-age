@@ -119,6 +119,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     return;
   }
 
+  // Mismo patrón que age_visito_estadisticas (ver estadisticas/script.js):
+  // marca el paso "Tu Tutor" del checklist de bienvenida de Zona Opositor
+  // (ver zona-opositor/script.js) como hecho en cuanto se entra de verdad
+  // en la página, sin depender de ninguna llamada al backend.
+  localStorage.setItem("age_visito_tutor", "1");
+
   const contenedor = document.getElementById("tutor-container");
   const input = document.getElementById("chat-input");
   const sendBtn = document.getElementById("chat-send");

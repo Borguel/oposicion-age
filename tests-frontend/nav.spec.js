@@ -40,13 +40,6 @@ const USUARIO_FALSO = `{
 }`;
 
 async function mockNav(page, { conSesion }) {
-  // Con sesión, /zona-opositor/ lanza el tour guiado de bienvenida en la
-  // primera visita (ver onboarding-tour.js): su overlay a pantalla completa
-  // tapa el resto de la nav y hace fallar los clics de estos tests. Se marca
-  // como ya visto de antemano, igual que un navegador que ya lo completó.
-  if (conSesion) {
-    await page.addInitScript(() => localStorage.setItem("age_tour_zona_visto", "1"));
-  }
   await page.route("**/firebase-app.js", (route) =>
     route.fulfill({ contentType: "application/javascript", body: "export function initializeApp() { return {}; }" })
   );
