@@ -691,6 +691,24 @@ def test_reportes_adjuntan_pregunta_oficial(client, db):
     assert reportes[0]["pregunta_oficial"]["respuesta_correcta"] == "C"
 
 
+def test_reportes_y_soporte_incluyen_uid_para_abrir_la_ficha(client, db):
+    # El panel necesita el uid (no solo el email, que ni siquiera se guarda
+    # en los reportes de preguntas) para poder abrir la ficha del usuario
+    # que reportó/escribió directamente desde la lista.
+    db.sembrar(("errores_generacion", "r1"), {
+        "fuente": "usuario_admin", "pregunta_texto": "¿Pregunta?", "oposicion": "AGE",
+        "detalle": "dudosa", "estado": "pendiente", "fecha": "2026-01-01", "uid": "u1",
+    })
+    db.sembrar(("mensajes_soporte", "s1"), {
+        "uid": "u2", "email": "u2@x.com", "mensaje": "Hola", "estado": "pendiente", "fecha": "2026-01-01",
+    })
+    with _como():
+        reportes = client.get("/admin/api/reportes?estado=pendiente", headers=_AUTH).get_json()["reportes"]
+        mensajes = client.get("/admin/api/soporte?estado=pendiente", headers=_AUTH).get_json()["mensajes"]
+    assert reportes[0]["uid"] == "u1"
+    assert mensajes[0]["uid"] == "u2"
+
+
 def test_reportes_paginados(client, db):
     # Antes traía TODOS los reportes de golpe sin límite -- con muchos
     # acumulados, cada carga del panel iba leyendo (y facturando) cada vez

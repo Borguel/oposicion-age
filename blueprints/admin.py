@@ -1541,6 +1541,7 @@ def reportes_listar():
             "motivo": d.get("detalle", ""),
             "estado": d.get("estado", "pendiente"),
             "fecha": d.get("fecha", ""),
+            "uid": d.get("uid", ""),
         })
     reportes.sort(key=lambda r: r.get("fecha", ""), reverse=True)
     total = len(reportes)
@@ -1908,6 +1909,7 @@ def soporte_listar():
             "mensaje": d.get("mensaje", ""),
             "estado": d.get("estado", "pendiente"),
             "fecha": d.get("fecha", ""),
+            "uid": d.get("uid", ""),
         })
     mensajes.sort(key=lambda m: m.get("fecha", ""), reverse=True)
     return jsonify({"mensajes": mensajes})

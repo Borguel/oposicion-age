@@ -1712,12 +1712,14 @@ async function cargarReportes() {
         <button class="age-btn age-btn-primary admin-mini" data-editar-preg="${escapeHtml(r.pregunta_texto)}">Editar pregunta</button>
         ${r.estado !== "revisado" ? `<button class="age-btn age-btn-outline admin-mini" data-revisado="${escapeHtml(r.id)}">Marcar revisado</button>` : ""}
         ${r.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-descartar="${escapeHtml(r.id)}">Descartar</button>` : ""}
+        ${r.uid && puedeVer("usuarios") ? `<button class="age-btn age-btn-outline admin-mini" data-ver-perfil="${escapeHtml(r.uid)}">${icono("usuario", 13)} Ver perfil</button>` : ""}
       </div>
     </div>`;
   }).join("") + paginacionHtml(d, "reportes", "rep-pag");
   cont.querySelectorAll("[data-revisado]").forEach((b) => b.addEventListener("click", () => cambiarEstadoReporte(b.dataset.revisado, "revisado")));
   cont.querySelectorAll("[data-descartar]").forEach((b) => b.addEventListener("click", () => cambiarEstadoReporte(b.dataset.descartar, "descartado")));
   cont.querySelectorAll("[data-editar-preg]").forEach((b) => b.addEventListener("click", () => buscarYEditarPregunta(b.dataset.editarPreg)));
+  cont.querySelectorAll("[data-ver-perfil]").forEach((b) => b.addEventListener("click", () => abrirUsuario(b.dataset.verPerfil)));
   wirePaginacion(cont, "rep-pag", (delta) => { paginaReportes += delta; cargarReportes(); });
 }
 
@@ -2088,8 +2090,10 @@ async function cargarSoporte() {
       <div class="admin-reporte-acciones">
         ${m.estado !== "revisado" ? `<button class="age-btn age-btn-outline admin-mini" data-soporte-revisado="${escapeHtml(m.id)}">Marcar revisado</button>` : ""}
         ${m.estado !== "descartado" ? `<button class="age-btn age-btn-outline admin-mini" data-soporte-descartar="${escapeHtml(m.id)}">Descartar</button>` : ""}
+        ${m.uid && puedeVer("usuarios") ? `<button class="age-btn age-btn-outline admin-mini" data-ver-perfil="${escapeHtml(m.uid)}">${icono("usuario", 13)} Ver perfil</button>` : ""}
       </div>
     </div>`).join("");
+  cont.querySelectorAll("[data-ver-perfil]").forEach((b) => b.addEventListener("click", () => abrirUsuario(b.dataset.verPerfil)));
   cont.querySelectorAll("[data-soporte-revisado]").forEach((b) => b.addEventListener("click", () => cambiarEstadoSoporte(b.dataset.soporteRevisado, "revisado")));
   cont.querySelectorAll("[data-soporte-descartar]").forEach((b) => b.addEventListener("click", () => cambiarEstadoSoporte(b.dataset.soporteDescartar, "descartado")));
 }
