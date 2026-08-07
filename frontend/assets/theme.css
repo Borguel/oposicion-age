@@ -72,6 +72,14 @@
   --age-shadow-hover: 0 16px 36px rgba(20, 24, 34, 0.12);
   --age-shadow-nav: 0 2px 16px rgba(20, 24, 34, 0.08);
 
+  /* "Plus Jakarta Sans" no se carga en ningún sitio (ni @font-face ni
+     <link> a un webfont) -- a propósito, mismo motivo que FUENTES_AVISO
+     en auth.js: evitar peticiones a terceros (Google Fonts) y las dudas
+     de privacidad que conllevan en una web pensada para la UE. El
+     navegador la ignora sin más y usa el siguiente de la lista (fuente
+     del sistema) -- si algún día se autoaloja el propio .woff2, esta es
+     la única línea que hay que tocar para que empiece a usarse de
+     verdad. */
   --age-font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
     Inter, Roboto, Helvetica, Arial, sans-serif;
   --age-ease: cubic-bezier(0.4, 0, 0.2, 1);
