@@ -7,6 +7,7 @@
 // Requiere que la página ya tenga cargado jsPDF (para la descarga) via
 // <script> normal antes de este módulo.
 import { icono } from "/assets/icons.js";
+import anime from "/assets/vendor/anime.esm.js";
 
 function calcularEstadisticas(preguntas, respuestasUsuario) {
   let aciertos = 0;
@@ -118,6 +119,66 @@ function calcularMejorRacha(preguntas, respuestasUsuario) {
     }
   });
   return mejor;
+}
+
+/**
+ * Momento de autor de la pantalla de resultados (05/08/2026, a petición del
+ * usuario: "más profesional, no animaciones básicas"): el veredicto entra
+ * solo y decidido (sin rebote, es un examen, no un juego), las dos cifras
+ * principales cuentan desde 0 -- el número ES el contenido de esta
+ * pantalla, no decoración -- y el resto se revela en el orden en que se
+ * lee, con la nota alternativa (si hay preguntas marcadas como duda)
+ * teniendo su propio gesto de aparición para que se lea como una variante
+ * aparte, no como una casilla más. Se coloca aquí (no en cada página) para
+ * que las 8 pantallas que reutilizan este módulo lo hereden igual.
+ */
+function animarEntradaResultado(contenedor) {
+  const veredicto = contenedor.querySelector(".resultado-veredicto");
+  if (!veredicto || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const cajasNota = contenedor.querySelectorAll(".resultado-resumen-card > .resultado-notas-grid > .resultado-nota-box");
+  const numeros = contenedor.querySelectorAll(".resultado-resumen-card > .resultado-notas-grid .resultado-nota-num");
+  const notaAlternativa = contenedor.querySelector(".resultado-nota-alternativa");
+  const tiles = contenedor.querySelectorAll(".resultado-resumen-tile");
+  const racha = contenedor.querySelector(".mensaje-racha-test");
+
+  anime.set(veredicto, { opacity: 0, scale: 0.85 });
+  anime.set(cajasNota, { opacity: 0, translateY: 10 });
+  if (notaAlternativa) anime.set(notaAlternativa, { opacity: 0, translateY: 14 });
+  anime.set(tiles, { opacity: 0, translateY: 10 });
+  if (racha) anime.set(racha, { opacity: 0, translateY: 8 });
+
+  const tl = anime.timeline({ easing: "cubicBezier(0.16, 1, 0.3, 1)" });
+
+  tl.add({ targets: veredicto, opacity: 1, scale: 1, duration: 450 }, 0);
+
+  tl.add({ targets: cajasNota, opacity: 1, translateY: 0, duration: 350, delay: anime.stagger(70) }, 250);
+  const duracionConteo = 650;
+  numeros.forEach((el) => {
+    const hasta = Number(el.dataset.hasta);
+    const decimales = Number(el.dataset.decimales);
+    el.textContent = (0).toFixed(decimales);
+    const contador = { valor: 0 };
+    tl.add({
+      targets: contador,
+      valor: hasta,
+      duration: duracionConteo,
+      easing: "easeOutQuad",
+      update: () => { el.textContent = contador.valor.toFixed(decimales); },
+    }, 300);
+  });
+
+  const finNotas = 300 + duracionConteo;
+  if (notaAlternativa) {
+    tl.add({ targets: notaAlternativa, opacity: 1, translateY: 0, duration: 400 }, finNotas);
+  }
+  const inicioTiles = notaAlternativa ? finNotas + 300 : finNotas - 150;
+  tl.add({ targets: tiles, opacity: 1, translateY: 0, duration: 220, delay: anime.stagger(60) }, inicioTiles);
+
+  if (racha) {
+    const finTiles = inicioTiles + Math.max(0, tiles.length - 1) * 60 + 220;
+    tl.add({ targets: racha, opacity: 1, translateY: 0, duration: 300 }, finTiles);
+  }
 }
 
 function mensajeMotivacional(mejorRacha) {
@@ -257,11 +318,11 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
       <div class="resultado-notas-grid">
         <div class="resultado-nota-box">
           <span class="resultado-nota-label">Nota de este test</span>
-          <span class="resultado-nota-valor">${statsPrincipales.nota}<small> / ${usaStatsSinDudas ? statsSinDudas.numRestantes : preguntas.length}</small></span>
+          <span class="resultado-nota-valor"><span class="resultado-nota-num" data-hasta="${statsPrincipales.nota}" data-decimales="2">${statsPrincipales.nota}</span><small> / ${usaStatsSinDudas ? statsSinDudas.numRestantes : preguntas.length}</small></span>
         </div>
         <div class="resultado-nota-box">
           <span class="resultado-nota-label">Nota examen oficial</span>
-          <span class="resultado-nota-valor">${statsPrincipales.notaOficial100}<small> / 100</small></span>
+          <span class="resultado-nota-valor"><span class="resultado-nota-num" data-hasta="${statsPrincipales.notaOficial100}" data-decimales="1">${statsPrincipales.notaOficial100}</span><small> / 100</small></span>
         </div>
       </div>
       ${notaAlternativaHTML}
@@ -316,6 +377,8 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     </div>
     <div class="lista-detalle-preguntas">${detalleHTML}</div>
   `;
+
+  animarEntradaResultado(contenedor);
 
   // Desplegable de estadísticas por tema (no se usa <details> nativo porque
   // en algunos navegadores móviles el summary con marcador personalizado no
