@@ -185,6 +185,43 @@ def obtener_catalogo_temas(db, coleccion="Temario AGE") -> List[dict]:
         return catalogo
     return _desde_cache_o_calcular(("catalogo", coleccion), _calcular)
 
+
+# Temas navegables (bloque_id y bloque_titulo por separado, respetando
+# "publicado" a nivel de bloque y de tema) para el selector de Test
+# Personalizado/Test Oficial -- 07/08/2026: antes /temas-disponibles hacía
+# esta misma consulta N+1 (una lectura de "temas" por cada bloque) sin
+# ninguna caché en cada carga de esas páginas; usa el mismo store que
+# obtener_catalogo_temas (ver _desde_cache_o_calcular) así que ya se
+# invalida sola con las llamadas a _limpiar_cache_temario() que hace el
+# panel admin al editar el temario. No se reutiliza obtener_catalogo_temas
+# directamente porque esa no filtra "publicado" ni expone bloque_id aparte
+# -- son formas del mismo dato para consumidores distintos (Tu Tutor vs.
+# navegación de usuario), no el mismo cálculo.
+def obtener_temas_navegables(db, coleccion) -> List[dict]:
+    def _calcular():
+        temas_disponibles = []
+        for bloque in db.collection(coleccion).stream():
+            bloque_id = bloque.id
+            bloque_dict = bloque.to_dict() or {}
+            if bloque_dict.get("publicado", True) is False:
+                continue
+            bloque_titulo = bloque_dict.get("titulo", bloque_id)
+            temas_ref = db.collection(coleccion).document(bloque_id).collection("temas").stream()
+            for tema in temas_ref:
+                tema_data = tema.to_dict()
+                tema_id = tema.id
+                if tema_data.get("publicado", True) is False:
+                    continue
+                titulo = tema_data.get("titulo", f"{tema_id}")
+                temas_disponibles.append({
+                    "id": f"{bloque_id}-{tema_id}",
+                    "titulo": titulo,
+                    "bloque_id": bloque_id,
+                    "bloque_titulo": bloque_titulo,
+                })
+        return temas_disponibles
+    return _desde_cache_o_calcular(("temas_navegables", coleccion), _calcular)
+
 # ✅ Datos oficiales de la convocatoria vigente (plazas, estructura de los
 # ejercicios, tiempos, penalización, calificación), transcritos a mano de las
 # normas específicas publicadas en el BOE -- para que Tu Tutor no tenga que
@@ -377,10 +414,12 @@ def calcular_pesos_reales_por_bloque(db, oposicion):
     def _calcular():
         coleccion = coleccion_examenes_oficiales(oposicion)
         contador = {}
-        for doc in db.collection(coleccion).stream():
+        # Filtro "tipo"=="pregunta" ya en la propia consulta (07/08/2026,
+        # igual que en tiene_preguntas_psicotecnicas): sigue habiendo que
+        # traer todas las preguntas para contar por bloque, pero al menos no
+        # se transfieren los documentos que no son de tipo "pregunta".
+        for doc in db.collection(coleccion).where("tipo", "==", "pregunta").stream():
             d = doc.to_dict() or {}
-            if d.get("tipo") != "pregunta":
-                continue
             tema_id = d.get("tema_id") or ""
             if "-" not in tema_id:
                 continue
@@ -410,12 +449,14 @@ def obtener_preguntas_examenes_oficiales(db, oposicion):
     barrido completo."""
     def _calcular():
         coleccion = coleccion_examenes_oficiales(oposicion)
-        # Se excluyen las desactivadas desde el panel admin (activa=false, un
-        # soft delete). Sin el campo se consideran activas, para no ocultar
-        # las ya cargadas.
+        # "tipo"=="pregunta" ya en la consulta (07/08/2026); "activa" se
+        # sigue filtrando en Python a propósito -- un "!=" de Firestore
+        # excluiría también los documentos que NO tienen el campo "activa"
+        # en absoluto, cambiando el criterio de "sin el campo se consideran
+        # activas" que ya usa este mismo filtro.
         return [
-            d for d in (doc.to_dict() or {} for doc in db.collection(coleccion).stream())
-            if d.get("tipo") == "pregunta" and d.get("activa", True) is not False
+            d for d in (doc.to_dict() or {} for doc in db.collection(coleccion).where("tipo", "==", "pregunta").stream())
+            if d.get("activa", True) is not False
         ]
     return _desde_cache_o_calcular(("preguntas_oficiales", oposicion), _calcular, ttl_segundos=1800)
 
@@ -533,11 +574,20 @@ def tiene_preguntas_psicotecnicas(db, oposicion):
     excluir."""
     def _calcular():
         coleccion = coleccion_examenes_oficiales(oposicion)
-        for doc in db.collection(coleccion).stream():
-            d = doc.to_dict() or {}
-            if d.get("tipo") == "pregunta" and d.get("psicotecnico"):
-                return True
-        return False
+        # Consulta filtrada + limit(1) en vez de traer la colección entera y
+        # mirar documento a documento en Python (07/08/2026: para AGE y GACE,
+        # que hoy no tienen ninguna psicotécnica, esto recorría TODA la
+        # colección -- cientos de documentos -- solo para concluir "no hay
+        # ninguna"). Dos filtros de igualdad no requieren índice compuesto en
+        # Firestore.
+        docs = (
+            db.collection(coleccion)
+            .where("tipo", "==", "pregunta")
+            .where("psicotecnico", "==", True)
+            .limit(1)
+            .stream()
+        )
+        return next(docs, None) is not None
     # Mismo TTL largo que calcular_pesos_reales_por_bloque y por el mismo
     # motivo: recorre toda la colección de exámenes oficiales.
     return _desde_cache_o_calcular(("tiene_psicotecnicas", oposicion), _calcular, ttl_segundos=1800)

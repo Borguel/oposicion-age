@@ -4,7 +4,7 @@ from flask import Blueprint, g, jsonify, request
 from firebase_setup import db
 from auth_utils import requiere_plan, requiere_login, obtener_oposicion_solicitada
 from oposiciones import OPOSICIONES, coleccion_temario
-from utils import calcular_pesos_reales_por_bloque, tiene_preguntas_psicotecnicas
+from utils import calcular_pesos_reales_por_bloque, tiene_preguntas_psicotecnicas, obtener_temas_navegables
 
 bp = Blueprint("temario", __name__)
 
@@ -40,30 +40,13 @@ def obtener_oposiciones_disponibles():
 def obtener_temas_disponibles():
     oposicion = obtener_oposicion_solicitada()
     coleccion = coleccion_temario(oposicion)
-    temas_disponibles = []
-    bloques = db.collection(coleccion).stream()
-    for bloque in bloques:
-        bloque_id = bloque.id
-        bloque_dict = bloque.to_dict() or {}
-        # Bloques marcados como borrador desde el panel admin (publicado=false)
-        # no aparecen en la navegación normal de usuarios. Por defecto (sin el
-        # campo) se consideran publicados, para no ocultar lo ya visible.
-        if bloque_dict.get("publicado", True) is False:
-            continue
-        bloque_titulo = bloque_dict.get("titulo", bloque_id)
-        temas_ref = db.collection(coleccion).document(bloque_id).collection("temas").stream()
-        for tema in temas_ref:
-            tema_data = tema.to_dict()
-            tema_id = tema.id
-            if tema_data.get("publicado", True) is False:
-                continue
-            titulo = tema_data.get("titulo", f"{tema_id}")
-            temas_disponibles.append({
-                "id": f"{bloque_id}-{tema_id}",
-                "titulo": titulo,
-                "bloque_id": bloque_id,
-                "bloque_titulo": bloque_titulo
-            })
+    # Bloques/temas marcados como borrador desde el panel admin
+    # (publicado=false) no aparecen en la navegación normal de usuarios --
+    # por defecto (sin el campo) se consideran publicados, para no ocultar
+    # lo ya visible. Cacheada (ver utils.obtener_temas_navegables): antes
+    # esta consulta N+1 (una lectura de "temas" por bloque) se repetía sin
+    # caché en cada carga de Test Oficial/Test Personalizado.
+    temas_disponibles = obtener_temas_navegables(db, coleccion)
     return jsonify({"temas": temas_disponibles, "oposicion": oposicion})
 
 

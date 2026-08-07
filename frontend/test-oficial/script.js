@@ -150,13 +150,12 @@ async function obtenerAuthHeaders() {
     // Los tres inicializadores de abajo (simulacro, reparto realista,
     // psicotécnicas) necesitan la misma info de /oposiciones-disponibles --
     // antes cada uno hacía su propio fetch, así que cada carga de página
-    // disparaba 3 peticiones idénticas en paralelo. Esa ruta ya es lenta de
-    // por sí (calcula el reparto real y si hay psicotécnicas recorriendo
-    // TODA la colección de exámenes oficiales de cada oposición, ver
-    // utils.calcular_pesos_reales_por_bloque/tiene_preguntas_psicotecnicas),
-    // así que triplicar la petición solo empeoraba la espera. Se memoiza en
-    // una única promesa compartida para que solo se pida una vez por carga
-    // de página.
+    // disparaba 3 peticiones idénticas en paralelo. Se memoiza en una única
+    // promesa compartida para que solo se pida una vez por carga de página
+    // (el backend ya cachea el resultado por su cuenta, ver
+    // utils.calcular_pesos_reales_por_bloque/tiene_preguntas_psicotecnicas,
+    // pero triplicar la petición en el mismo instante seguía siendo
+    // desperdicio).
     let promesaInfoOposiciones = null;
     async function obtenerInfoOposicionActual() {
       if (!promesaInfoOposiciones) {
@@ -777,11 +776,18 @@ async function obtenerAuthHeaders() {
         marcarContenidoListo();
         return;
       }
-      await cargarTemas();
-      marcarContenidoListo();
+      // cargarTemas() (fetch a /temas-disponibles) y los tres inicializadores
+      // de abajo (fetch a /oposiciones-disponibles, memoizado en
+      // obtenerInfoOposicionActual) se lanzan a la vez -- antes
+      // cargarTemas() se esperaba entera ANTES de que empezara siquiera la
+      // petición del simulacro, sumando ambas esperas en vez de solaparlas
+      // (07/08/2026, la tarjeta de "Simulacro oficial" tardaba en salir).
+      const promesaTemas = cargarTemas();
       iniciarBotonSimulacroOficial();
       iniciarSelectorRepartoRealista();
       iniciarSelectorPsicotecnicas();
+      await promesaTemas;
+      marcarContenidoListo();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
       if (resumeId) {
