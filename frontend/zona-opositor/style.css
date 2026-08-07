@@ -118,6 +118,17 @@ body {
   gap: 24px;
 }
 
+/* El solape de -60px de .zona-wrap está pensado para que una TARJETA con
+   fondo propio (.age-card, blanca) asome sobre el degradado oscuro de la
+   cabecera -- funcionaba bien mientras el primer hijo siempre era una de
+   esas tarjetas. Desde que "Lo tuyo" (sin fondo propio, solo un <h2> y la
+   cuadrícula) pasó a ser el primer hijo, ese título quedaba dentro de la
+   zona oscura con su color de texto normal (pensado para fondo claro),
+   prácticamente invisible -- se cancela el solape solo para este bloque. */
+.zona-wrap > .zona-accesos:first-child {
+  padding-top: 60px;
+}
+
 .zona-racha-card {
   display: flex;
   align-items: center;
