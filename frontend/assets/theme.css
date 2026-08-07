@@ -28,7 +28,9 @@
 
   --age-ink: #16181d;
   --age-ink-soft: #6b7280;
-  --age-ink-faint: #767676;
+  /* #6b6b6b (antes #767676): #767676 daba 4.24:1 sobre --age-bg, por
+     debajo del 4.5:1 mínimo AA para texto normal -- ver auditoría UX. */
+  --age-ink-faint: #6b6b6b;
 
   --age-bg: #f6f7f9;
   --age-card: #ffffff;
@@ -47,6 +49,19 @@
      --age-primary (que es el ámbar de marca), para que destaque como
      "llama" y no se confunda con un botón o acento normal de la web. */
   --age-fuego: #ff5722;
+
+  /* Texto sobre fondos "tintados" (pills/etiquetas: fondo pastel del mismo
+     color de la familia -- neutro, ámbar, verde). Los tokens de color base
+     (--age-ink-soft, --age-primary-dark, --age-success) no dan suficiente
+     contraste como TEXTO pequeño y en negrita sobre esos fondos claros
+     (2.4:1-4.2:1 medidos), aunque sí sirven bien para iconos, bordes o
+     texto sobre --age-card/--age-bg. Estos tres son más oscuros/saturados
+     a propósito, solo para ese uso concreto. En oscuro se igualan a los
+     tokens base de siempre (el contraste ya era correcto ahí).
+  */
+  --age-pill-ink: #545b68;
+  --age-pill-primary-ink: #a35c0d;
+  --age-pill-success-ink: #147a4d;
 
   --age-radius-lg: 20px;
   --age-radius-md: 14px;
@@ -77,7 +92,9 @@
 
   --age-ink: #e8eaf0;
   --age-ink-soft: #a7acba;
-  --age-ink-faint: #7c8296;
+  /* #838a9e (antes #7c8296): #7c8296 daba 4.39:1 sobre --age-card, por
+     debajo del 4.5:1 mínimo AA para texto normal -- ver auditoría UX. */
+  --age-ink-faint: #838a9e;
 
   --age-bg: #0f1117;
   --age-card: #1a1d29;
@@ -93,6 +110,13 @@
   --age-info-bg: rgba(122, 167, 255, 0.16);
   --age-neutral-bg: #232734;
   --age-fuego: #ff7a50;
+
+  /* Igual que en claro (--age-pill-ink etc.), pero aquí el contraste ya
+     era correcto con los tokens base de siempre -- se repiten sus mismos
+     valores para no cambiar nada visualmente en oscuro. */
+  --age-pill-ink: var(--age-ink-soft);
+  --age-pill-primary-ink: var(--age-primary-dark);
+  --age-pill-success-ink: var(--age-success);
 
   --age-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   --age-shadow-hover: 0 16px 36px rgba(0, 0, 0, 0.45);
@@ -968,12 +992,12 @@ body {
   font-size: 12.5px;
   font-weight: 700;
   background: var(--age-neutral-bg);
-  color: var(--age-ink-soft);
+  color: var(--age-pill-ink);
 }
 
 .age-pill-success {
   background: var(--age-success-bg);
-  color: var(--age-success);
+  color: var(--age-pill-success-ink);
 }
 
 .age-pill-danger {
@@ -983,7 +1007,7 @@ body {
 
 .age-pill-primary {
   background: var(--age-primary-soft);
-  color: var(--age-primary-dark);
+  color: var(--age-pill-primary-ink);
 }
 
 /* Tarjetas de opción tipo "elige qué quieres hacer" (hubs) */

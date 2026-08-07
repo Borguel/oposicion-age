@@ -240,7 +240,9 @@ body {
   border-radius: 999px;
   padding: 2px 10px;
   background: var(--age-primary-soft);
-  color: var(--age-primary);
+  /* var(--age-primary) daba solo 1.76:1 aquí (texto pequeño y en negrita
+     sobre fondo pastel) -- ver auditoría UX. */
+  color: var(--age-pill-primary-ink);
   margin-bottom: 6px;
 }
 

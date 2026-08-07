@@ -864,14 +864,22 @@
       align-items: baseline;
       gap: 6px;
       font-size: 0.78rem;
-      /* El fondo de este showcase (#eef1fb) es fijo y no cambia con el
-         tema, así que el color también se fija (var(--age-primary-dark)
-         solo daba 2.37:1 en claro y aún menos en oscuro). */
+      /* El fondo fijo (#eef1fb) del div exterior .showcase-visual NO es
+         el que de verdad queda detrás de este texto: .showcase-mock, un
+         contenedor anidado dentro, pinta encima su propio fondo con
+         var(--age-card) -- ese SÍ cambia con el tema (blanco en claro,
+         azul marino oscuro en oscuro), así que el color no puede ser
+         fijo tampoco (var(--age-primary-dark) solo daba 2.37:1 en claro;
+         este color fijo daba 6.22:1 en claro pero solo 2.70:1 en oscuro
+         sobre --age-card oscuro -- ver auditoría UX). */
       color: #8f5209;
       font-weight: 700;
       margin: 6px 0 6px 14px;
       padding-left: 10px;
       border-left: 2px solid var(--age-primary);
+    }
+    :root[data-theme="dark"] .eq-h3 {
+      color: var(--age-primary-dark);
     }
     .eq-num {
       color: var(--age-ink-soft);
