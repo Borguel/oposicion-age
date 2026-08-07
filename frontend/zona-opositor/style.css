@@ -71,6 +71,9 @@ body {
 }
 
 .zona-switch-pill {
+  /* min-height: 44px de zona táctil recomendada (medido en 33px) -- ver
+     auditoría UX. */
+  min-height: 44px;
   padding: 8px 16px;
   border-radius: var(--age-radius-pill);
   border: 1.5px solid rgba(255, 255, 255, 0.18);
@@ -351,8 +354,17 @@ body {
 }
 
 .zona-onboarding-cerrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 23x25px medido, por debajo del mínimo WCAG 2.5.8 AA de 24x24px -- ver
+     auditoría UX. Se deja en 32px (no 44px) para no desproporcionar un
+     botón de cerrar dentro de una cabecera de tarjeta pequeña. */
+  min-width: 32px;
+  min-height: 32px;
   border: none;
   background: transparent;
+  border-radius: var(--age-radius-sm);
   color: var(--age-ink-faint);
   font-size: 15px;
   cursor: pointer;

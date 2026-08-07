@@ -285,6 +285,10 @@ body {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
+  /* min-height: 44px de zona táctil recomendada (medido en 34px en
+     escritorio) -- el cajón móvil ya la supera con su propio padding
+     (línea ~741), esto solo afecta a la barra de escritorio. */
+  min-height: 44px;
   gap: 7px;
   padding: 9px 16px;
   border-radius: var(--age-radius-pill);
@@ -868,6 +872,10 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  /* min-height (no solo padding) para llegar a los 44px recomendados de
+     zona táctil incluso donde el texto/line-height deja el botón un poco
+     por debajo (medido en 43px) -- ver auditoría UX. */
+  min-height: 44px;
   padding: 13px 24px;
   border-radius: var(--age-radius-sm);
   font-family: var(--age-font);
@@ -941,7 +949,8 @@ body {
 .age-nav-icon-btn:focus-visible,
 .age-nav-op-btn:focus-visible,
 .age-popover-opcion:focus-visible,
-.age-tema-movil:focus-visible {
+.age-tema-movil:focus-visible,
+.age-option-card:focus-visible {
   outline: 2px solid var(--age-primary);
   outline-offset: 2px;
 }
