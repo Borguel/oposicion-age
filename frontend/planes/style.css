@@ -347,6 +347,15 @@ body {
   .planes-tabla-scroll-hint {
     display: block;
   }
+
+  /* Además del texto, un difuminado en el borde derecho -- el único
+     aviso de que la tabla continúa era esa frase, fácil de pasar por
+     alto; el difuminado es la misma señal visual "hay más" que ya se
+     reconoce en carruseles y listas horizontales de cualquier app. */
+  .planes-comparativa-scroll {
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  }
 }
 
 .planes-tabla {
