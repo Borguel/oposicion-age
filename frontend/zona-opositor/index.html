@@ -21,7 +21,14 @@
   <meta name="twitter:card" content="summary" />
   <link rel="canonical" href="https://www.dominatuopo.com/zona-opositor/" />
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
-  <link rel="stylesheet" href="/assets/theme.css" />
+  <!-- theme.css (~50KB, compartido por toda la web) no bloquea el parseo
+       del resto de la página -- mismo patrón que index.html. Sin CSS
+       crítico duplicado a propósito (ver el comentario del mismo cambio
+       en planes/index.html): aquí además el body ya está oculto hasta
+       "auth-listo" (línea 5), así que no hay ningún riesgo de flash sin
+       estilos que evitar con una copia de tokens. -->
+  <link rel="preload" href="/assets/theme.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/assets/theme.css" /></noscript>
   <link rel="stylesheet" href="/zona-opositor/style.css" />
 </head>
 <body>

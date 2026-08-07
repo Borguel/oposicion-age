@@ -78,7 +78,15 @@
   }
   </script>
     <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
-  <link rel="stylesheet" href="/assets/theme.css" />
+  <!-- theme.css (~50KB, compartido por toda la web) no bloquea el parseo
+       del resto de la página -- mismo patrón que index.html. Sin CSS
+       crítico duplicado aquí a propósito: esta página normalmente no es
+       la primera visita (se llega desde la home o ya con sesión), así
+       que theme.css casi siempre está ya en caché del navegador; duplicar
+       sus tokens solo añadiría otra copia que mantener sincronizada a
+       mano (ver el bug real que causó eso en index.html). -->
+  <link rel="preload" href="/assets/theme.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/assets/theme.css" /></noscript>
   <link rel="stylesheet" href="/planes/style.css" />
 </head>
 <body>
