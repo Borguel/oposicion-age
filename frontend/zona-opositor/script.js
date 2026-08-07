@@ -7,6 +7,7 @@ import { fijarTexto, fijarHTML } from "/assets/dom.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { inicializarCuentaAtras } from "/assets/cuenta-atras.js";
 import { mostrarTourZonaOpositor } from "/assets/onboarding-tour.js";
+import anime from "/assets/vendor/anime.esm.js";
 
 const MENSAJES_RACHA = [
   { minimo: 0, texto: "Empieza hoy tu racha: haz un test o repasa algo para arrancar." },
@@ -26,7 +27,59 @@ function mensajeParaRacha(dias) {
   return elegido.texto;
 }
 
-async function cargarRacha() {
+/**
+ * Destello + pulso del icono de racha (07/08/2026, a petición del
+ * usuario): un anillo se expande y se apaga detrás del icono mientras este
+ * da un pulso rápido y decidido, sin rebote elástico -- solo se llama
+ * cuando la racha ha subido de verdad desde la última vez que se vio esta
+ * pantalla (ver comparación con localStorage en cargarRacha), no en cada
+ * carga de página: es una celebración real, no decoración de entrada.
+ */
+function animarSubidaRacha() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const iconoEl = document.getElementById("racha-icono");
+  const destello = document.getElementById("racha-destello");
+  if (!iconoEl || !destello) return;
+
+  anime.set(destello, { opacity: 0.4, scale: 0.6 });
+  anime({
+    targets: destello,
+    opacity: 0,
+    scale: 1.9,
+    duration: 700,
+    easing: "easeOutQuad",
+  });
+  anime({
+    targets: iconoEl,
+    scale: [
+      { value: 1.3, duration: 220, easing: "easeOutQuad" },
+      { value: 1, duration: 280, easing: "cubicBezier(0.16, 1, 0.3, 1)" },
+    ],
+  });
+}
+
+/**
+ * Compara la racha recién cargada con la última vez que este navegador vio
+ * esta pantalla (guardada en localStorage, por uid -- varios usuarios
+ * pueden compartir dispositivo) para saber si hay que celebrar una subida
+ * real. La primera vez que se ve la racha (sin valor guardado todavía) no
+ * cuenta como "subida": no hay nada con qué compararla.
+ */
+function comprobarSubidaRacha(uid, rachaActual) {
+  try {
+    const clave = `racha-vista-${uid}`;
+    const previaTexto = localStorage.getItem(clave);
+    localStorage.setItem(clave, String(rachaActual));
+    if (previaTexto === null) return;
+    const previa = Number(previaTexto);
+    if (Number.isFinite(previa) && rachaActual > previa) animarSubidaRacha();
+  } catch {
+    // localStorage no disponible (modo privado estricto, etc.) -- sin
+    // celebración de subida, pero la racha se sigue mostrando con normalidad.
+  }
+}
+
+async function cargarRacha(uid) {
   try {
     const token = await idToken();
     const res = await fetch(`${BACKEND_URL}/mi-racha`, { headers: { Authorization: `Bearer ${token}` } });
@@ -41,6 +94,7 @@ async function cargarRacha() {
       const elMaxima = document.getElementById("racha-maxima");
       if (elMaxima) elMaxima.style.display = "block";
     }
+    if (uid) comprobarSubidaRacha(uid, racha_actual);
   } catch (e) {
     console.error("Error cargando racha:", e);
   }
@@ -520,7 +574,7 @@ async function iniciar() {
 
   document.getElementById("zona-nombre").textContent = (usuario.email || "").split("@")[0] || "opositor/a";
 
-  cargarRacha();
+  cargarRacha(usuario.uid);
   cargarProgresoInsignias();
   cargarTestEnProgreso();
   cargarRepasoPendiente();
