@@ -2,12 +2,19 @@ import { idToken, marcarContenidoListo } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { icono } from "/assets/icons.js";
 
+// Mismos tipos e iconos que TIPO_INFO en mis-tests/script.js (el listado),
+// para que el título de esta página no muestre el valor en crudo de
+// "tipo" cuando se llega desde una tarjeta de un tipo que faltase aquí --
+// bug real reportado: un test generado desde PDF salía como "Resultados —
+// test_pdf".
 const TIPO_INFO = {
   personalizado: { iconoHtml: icono("lapiz", 30), label: "Personalizado" },
   oficial: { iconoHtml: icono("edificio", 30), label: "Oficial" },
   inteligente: { iconoHtml: icono("robot", 30), label: "Inteligente IA" },
   repetido: { iconoHtml: icono("repetir", 30), label: "Repetido" },
   falladas: { iconoHtml: icono("cruz", 30), label: "Preguntas falladas" },
+  favoritas: { iconoHtml: icono("estrella", 30), label: "Preguntas favoritas" },
+  test_pdf: { iconoHtml: icono("subir", 30), label: "Desde un PDF" },
 };
 
 function tipoInfo(tipo) {
