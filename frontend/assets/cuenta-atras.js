@@ -22,14 +22,27 @@ export function formatearCuentaAtras(fechaISO) {
 // Requiere que la página incluya el bloque con estos IDs: cuenta-atras-numero,
 // cuenta-atras-mensaje, cuenta-atras-boton, cuenta-atras-form,
 // cuenta-atras-input, cuenta-atras-quitar (ver zona-opositor/index.html).
+//
+// Zona Opositor puede llamar a esta función más de una vez en la misma
+// carga de página (al cambiar de oposición con el selector, sin recargar)
+// -- boton y form (input/quitar viven DENTRO de form, así que se clonan
+// con él) se sustituyen por su propio clon antes de nada para que cada
+// llamada parta de nodos sin listeners previos; si no, una segunda
+// llamada dejaría dos listeners activos (el de la oposición anterior y el
+// de la nueva) sobre los mismos botones, disparando ambos a la vez en
+// cada clic.
 export async function inicializarCuentaAtras() {
   const numeroEl = document.getElementById("cuenta-atras-numero");
   const mensajeEl = document.getElementById("cuenta-atras-mensaje");
-  const boton = document.getElementById("cuenta-atras-boton");
-  const form = document.getElementById("cuenta-atras-form");
-  const input = document.getElementById("cuenta-atras-input");
-  const quitar = document.getElementById("cuenta-atras-quitar");
-  if (!numeroEl || !mensajeEl || !boton || !form || !input || !quitar) return;
+  let boton = document.getElementById("cuenta-atras-boton");
+  let form = document.getElementById("cuenta-atras-form");
+  if (!numeroEl || !mensajeEl || !boton || !form) return;
+
+  boton.replaceWith((boton = boton.cloneNode(true)));
+  form.replaceWith((form = form.cloneNode(true)));
+  const input = form.querySelector("#cuenta-atras-input");
+  const quitar = form.querySelector("#cuenta-atras-quitar");
+  if (!input || !quitar) return;
 
   const token = await idToken();
   const oposicion = obtenerOposicionActual();

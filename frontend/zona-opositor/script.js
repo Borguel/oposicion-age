@@ -75,11 +75,32 @@ function comprobarSubidaRacha(uid, rachaActual) {
     localStorage.setItem(clave, String(rachaActual));
     if (previaTexto === null) return;
     const previa = Number(previaTexto);
-    if (Number.isFinite(previa) && rachaActual > previa) animarSubidaRacha();
+    if (Number.isFinite(previa) && rachaActual > previa) programarAnimacionSubidaRacha();
   } catch {
     // localStorage no disponible (modo privado estricto, etc.) -- sin
     // celebración de subida, pero la racha se sigue mostrando con normalidad.
   }
+}
+
+// La tarjeta de racha vive bastante más abajo que la cabecera (accesos +
+// onboarding + "qué hacer ahora" van primero) -- si la animación se
+// lanzara nada más cargar la página, en la mayoría de los casos habría
+// terminado antes de que el usuario llegara a bajar hasta verla, así que
+// se perdería siempre. Se espera a que la tarjeta entre en pantalla, mismo
+// patrón que animarLineaTiempo() en estadisticas/script.js.
+function programarAnimacionSubidaRacha() {
+  const tarjeta = document.querySelector(".zona-racha-card");
+  if (!tarjeta) return;
+  if (!("IntersectionObserver" in window)) {
+    animarSubidaRacha();
+    return;
+  }
+  const observador = new IntersectionObserver((entradas) => {
+    if (!entradas[0].isIntersecting) return;
+    observador.disconnect();
+    animarSubidaRacha();
+  }, { threshold: 0.4 });
+  observador.observe(tarjeta);
 }
 
 async function cargarRacha(uid) {
@@ -91,7 +112,7 @@ async function cargarRacha(uid) {
     fijarTexto("racha-numero", racha_actual);
     fijarTexto("racha-plural", racha_actual === 1 ? "" : "s");
     fijarTexto("racha-mensaje", mensajeParaRacha(racha_actual));
-    fijarHTML("racha-icono", racha_actual > 0 ? icono("fuego", 22) : icono("luna", 22));
+    fijarHTML("racha-icono", racha_actual > 0 ? icono("fuego", 40) : icono("luna", 40));
     if (racha_maxima > racha_actual) {
       fijarTexto("racha-maxima", `Tu mejor racha: ${racha_maxima} día${racha_maxima === 1 ? "" : "s"}`);
       const elMaxima = document.getElementById("racha-maxima");
@@ -564,7 +585,8 @@ function renderSwitcher() {
       if (boton.dataset.op === actual) return;
       establecerOposicionActual(boton.dataset.op);
       sessionStorage.clear();
-      window.location.reload();
+      renderSwitcher();
+      cargarDatosOposicion();
     });
   });
 }
@@ -575,6 +597,54 @@ function inyectarIconosEstaticos() {
   document.querySelectorAll("[data-icon]").forEach((el) => {
     el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 20));
   });
+}
+
+// Todo lo que depende de QUÉ oposición está activa (a diferencia de la
+// racha, que es una sola por cuenta, no por oposición -- ver /mi-racha,
+// sin parámetro ?oposicion=). Se agrupa aquí para poder llamarlo tanto en
+// la carga inicial como al cambiar de oposición con el selector, sin
+// recargar la página entera solo para refrescar estos bloques.
+//
+// Antes de volver a pedir los datos se ocultan/vacían las secciones que
+// solo se muestran cuando hay algo que enseñar (progreso, avisos
+// oficiales, "qué hacer ahora", onboarding): cada cargarXxx() de más
+// abajo se limita a devolver sin hacer nada si la nueva oposición no
+// tiene datos para esa sección, así que sin este reseteo previo se vería
+// -- hasta que decidas cambiar de opinión sobre alguna sección -- la
+// información de la oposición anterior en vez de desaparecer.
+function resetSeccionesOposicion() {
+  ESTADO_HACER_AHORA.continuar = null;
+  ESTADO_HACER_AHORA.repaso = null;
+  ESTADO_HACER_AHORA.tema = null;
+  renderizarQueHacerAhora();
+  const ritmo = document.getElementById("zona-plan-ritmo");
+  if (ritmo) ritmo.style.display = "none";
+  const progreso = document.getElementById("zona-progreso");
+  if (progreso) progreso.style.display = "none";
+  const avisosOficiales = document.getElementById("zona-avisos-oficiales");
+  if (avisosOficiales) avisosOficiales.style.display = "none";
+  const onboarding = document.getElementById("zona-onboarding");
+  if (onboarding) onboarding.style.display = "none";
+}
+
+async function cargarDatosOposicion() {
+  resetSeccionesOposicion();
+
+  const opActual = OPOSICIONES.find((o) => o.id === obtenerOposicionActual());
+  document.getElementById("zona-oposicion-nombre").textContent = opActual ? opActual.nombre : "—";
+
+  cargarProgresoInsignias();
+  cargarTestEnProgreso();
+  cargarRepasoPendiente();
+  cargarAvisosOficiales();
+  inicializarCuentaAtras();
+  renderOnboarding();
+
+  const { nombre, plan } = await obtenerPlan(true);
+  if (nombre) document.getElementById("zona-nombre").textContent = nombre;
+  const pillPlan = document.getElementById("zona-plan-pill");
+  pillPlan.className = PILL_PLAN[plan] || "age-pill";
+  pillPlan.textContent = plan || "gratis";
 }
 
 async function iniciar() {
@@ -588,39 +658,25 @@ async function iniciar() {
   document.getElementById("zona-nombre").textContent = (usuario.email || "").split("@")[0] || "opositor/a";
 
   cargarRacha(usuario.uid);
-  cargarProgresoInsignias();
-  cargarTestEnProgreso();
-  cargarRepasoPendiente();
-  cargarAvisosOficiales();
   iniciarBotonNotificaciones();
-  inicializarCuentaAtras();
   renderAviso();
   renderSwitcher();
-  renderOnboarding();
+  cargarDatosOposicion();
   document.getElementById("zona-reabrir-onboarding").addEventListener("click", () => {
     localStorage.removeItem(CLAVE_ONBOARDING_CERRADO);
     renderOnboarding();
   });
 
-  const opActual = OPOSICIONES.find((o) => o.id === obtenerOposicionActual());
-  document.getElementById("zona-oposicion-nombre").textContent = opActual ? opActual.nombre : "—";
-
   // La página se revela en cuanto se confirma la sesión (lo único que
   // de verdad hace falta para no dejar pasar a quien no tiene cuenta) --
-  // no se espera aquí a obtenerPlan(true), un fetch a /mi-perfil forzado
-  // a ignorar la caché de sessionStorage, que antes retrasaba la
-  // revelación de TODA la página por un solo dato (nombre + pill de
-  // plan) que ya tiene un valor por defecto razonable en el propio HTML
-  // ("Cargando…" / "gratis"). El resto de la página (racha, progreso,
-  // avisos...) ya se cargaba así, sin bloquear -- esto solo alinea el
-  // nombre/plan con ese mismo criterio.
+  // no se espera aquí a cargarDatosOposicion() (que a su vez espera a
+  // obtenerPlan(true), un fetch a /mi-perfil forzado a ignorar la caché
+  // de sessionStorage), que antes retrasaba la revelación de TODA la
+  // página por un solo dato (nombre + pill de plan) que ya tiene un valor
+  // por defecto razonable en el propio HTML ("Cargando…" / "gratis"). El
+  // resto de la página (racha, progreso, avisos...) ya se cargaba así,
+  // sin bloquear -- esto solo alinea el nombre/plan con ese mismo criterio.
   marcarContenidoListo();
-
-  const { nombre, plan } = await obtenerPlan(true);
-  if (nombre) document.getElementById("zona-nombre").textContent = nombre;
-  const pillPlan = document.getElementById("zona-plan-pill");
-  pillPlan.className = PILL_PLAN[plan] || "age-pill";
-  pillPlan.textContent = plan || "gratis";
 }
 
 iniciar();
