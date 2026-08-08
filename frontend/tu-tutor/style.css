@@ -356,6 +356,11 @@ html { scroll-behavior: smooth; }
   line-height: 1.5;
   word-break: break-word;
   border: 1px solid var(--age-border);
+  /* Los saltos de línea del textarea (Mayús+Intro) van literales en el
+     texto -- sin esto el navegador los colapsa y el mensaje se ve como un
+     único párrafo corrido. Mismo criterio que .tw-msg-user en theme.css
+     (la burbuja equivalente del widget flotante). */
+  white-space: pre-wrap;
 }
 .bubble-bot {
   background: var(--age-neutral-bg);
