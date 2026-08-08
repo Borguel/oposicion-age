@@ -2,6 +2,8 @@
 
 `main` es la rama de despliegue real en Render (la que usan ambos servicios,
 `oposicion-age` y `oposicion-age-frontend`) y la rama de trabajo principal.
+`claude/exam-prep-web-platform-07flxz` fue la rama de despliegue anterior;
+ya no la usa Render.
 
 Todo el desarrollo, commits y push deben ir a `main` salvo que el usuario
 pida explícitamente lo contrario.
