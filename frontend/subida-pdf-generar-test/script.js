@@ -93,16 +93,10 @@ async function obtenerAuthHeaders() {
       tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
       tiempoInicio = Date.now();
       const temporizadorEl = document.getElementById("temporizador");
-      temporizadorEl.style.display = "block";
-      temporizadorEl.style.textAlign = "center";
-      temporizadorEl.style.fontSize = "1.5rem";
-      temporizadorEl.style.fontWeight = "bold";
-      temporizadorEl.style.padding = "15px";
-      temporizadorEl.style.margin = "20px 0";
-      temporizadorEl.style.background = "linear-gradient(135deg, #d0ebff, #a5d8ff)";
-      temporizadorEl.style.color = "#1c7ed6";
-      temporizadorEl.style.borderRadius = "12px";
-      temporizadorEl.style.boxShadow = "0 4px 10px rgba(0,0,0,0.1)";
+      // El HTML lo arranca con display:none en línea (ver index.html) --
+      // se limpia aquí para que gane el display:block de la clase.
+      temporizadorEl.style.display = "";
+      temporizadorEl.classList.add("pdf-test-temporizador");
       temporizadorEl.textContent = `⏱ Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
       intervaloTemporizador = setInterval(() => {
         const transcurrido = tiempoTranscurridoActual();

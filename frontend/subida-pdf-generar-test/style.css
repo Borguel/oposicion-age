@@ -104,6 +104,24 @@
   gap: 6px;
 }
 
+/* Cronómetro (tiempo transcurrido, sin límite -- a diferencia del
+   temporizador con cuenta atrás de test-oficial/test-personalizado, que
+   usa su propio componente en test-generator/style.css). Antes se pintaba
+   con estilos en línea con colores fijos (celeste/azul), ignorando el
+   tema: en modo oscuro quedaba una caja clara brillante fuera de lugar. */
+#temporizador.pdf-test-temporizador {
+  display: block;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  padding: 15px;
+  margin: 20px 0;
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  border-radius: 12px;
+  box-shadow: var(--age-shadow);
+}
+
 .stats-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
