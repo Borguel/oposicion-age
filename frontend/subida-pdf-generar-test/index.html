@@ -98,8 +98,12 @@
       </div>
     </div>
 
-    <!-- Temporizador -->
-    <div id="temporizador" style="display:none;"></div>
+    <!-- Temporizador (mismo componente compartido que el resto de tests,
+         ver test-generator/style.css) -->
+    <div id="temporizador" style="display:none;">
+      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <span id="temporizador-texto" class="icono-inline"></span>
+    </div>
 
     <!-- Mapa de preguntas (mismo componente compartido que el resto de tests) -->
     <div id="navegador-preguntas" class="navegador-preguntas" style="display:none;"></div>

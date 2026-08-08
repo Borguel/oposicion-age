@@ -88,19 +88,21 @@ async function obtenerAuthHeaders() {
       document.getElementById('contenedor-carga').style.display = 'none';
     }
 
-    // === TEMPORIZADOR ===
+    // === TEMPORIZADOR (mismo componente compartido que el resto de tests,
+    // ver test-generator/style.css e id="temporizador"/"temporizador-texto"
+    // en test-oficial/test-personalizado) ===
     function iniciarTemporizador(tiempoTranscurridoReanudado) {
       tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
       tiempoInicio = Date.now();
       const temporizadorEl = document.getElementById("temporizador");
-      // El HTML lo arranca con display:none en línea (ver index.html) --
-      // se limpia aquí para que gane el display:block de la clase.
-      temporizadorEl.style.display = "";
-      temporizadorEl.classList.add("pdf-test-temporizador");
-      temporizadorEl.textContent = `⏱ Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
+      const textoEl = document.getElementById("temporizador-texto");
+      temporizadorEl.style.display = "flex";
+      const botonToggle = document.getElementById("btn-toggle-temporizador");
+      if (botonToggle) botonToggle.onclick = () => temporizadorEl.classList.toggle("temporizador-oculto");
+      textoEl.innerHTML = `${icono("reloj", 16)} Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
       intervaloTemporizador = setInterval(() => {
         const transcurrido = tiempoTranscurridoActual();
-        temporizadorEl.textContent = `⏱ Tiempo: ${formatearTiempo(transcurrido)}`;
+        textoEl.innerHTML = `${icono("reloj", 16)} Tiempo: ${formatearTiempo(transcurrido)}`;
         if (transcurrido % 10 === 0) {
           import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
             autoguardarProgreso({
