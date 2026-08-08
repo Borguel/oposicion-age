@@ -459,6 +459,36 @@
       }
     }
 
+    /* Texto de carga para las secciones que están vacías en el HTML hasta
+       que llegan los datos (mapa de temario, evolución, insignias) --
+       ahora que la página se revela sin esperar a esa petición (ver
+       marcarContenidoListo en script.js), sin esto se verían como un
+       hueco en blanco durante ese tiempo en vez de dar alguna señal de
+       que hay algo cargando. Se sustituye entero por el contenido real
+       en cuanto está listo (innerHTML), no hace falta quitarlo a mano. */
+    .esqueleto-cargando {
+      grid-column: 1 / -1;
+      width: 100%;
+      margin: 0;
+      padding: 28px 0;
+      text-align: center;
+      color: var(--age-ink-faint);
+      font-size: 0.88rem;
+      animation: esqueleto-pulso 1.4s ease-in-out infinite;
+    }
+
+    @keyframes esqueleto-pulso {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 0.25; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .esqueleto-cargando {
+        animation: none;
+        opacity: 0.6;
+      }
+    }
+
     /* Respuestas: barra apilada + leyenda en vez de 3 tarjetas sueltas.
        A todo lo ancho, para que la barra y la leyenda respiren en una sola
        fila en vez de apretarse en una columna estrecha de la rejilla. */

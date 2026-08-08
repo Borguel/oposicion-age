@@ -165,6 +165,18 @@ document.addEventListener("DOMContentLoaded", async function () {
   let temasTocados = new Set();
   let datosParaExportarPDF = null;
 
+  // Revela la página en cuanto se confirma el acceso, sin esperar a que
+  // termine cargarDatos() -- antes se quedaba oculta hasta que las 3
+  // peticiones de datos (estadísticas + temas + racha) terminaban, así
+  // que en una conexión lenta la página entera parecía "quedarse
+  // pillada" en blanco. El HTML ya trae de fábrica su propio esqueleto
+  // (los "—" de "de un vistazo", los textos "Cargando…" del mapa de
+  // temario/evolución/insignias) para ese hueco de tiempo -- es
+  // exactamente lo que auth.js pide para llamar a marcarContenidoListo:
+  // no hace falta esperar a los datos reales, solo a tener algo que
+  // enseñar nada más entrar.
+  marcarContenidoListo();
+
   // Función para cargar datos
   async function cargarDatos() {
     try {
@@ -224,13 +236,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     } finally {
       refreshBtn.classList.remove('loading');
       refreshBtn.disabled = false;
-      // Revela la página primero: animarLineaTiempo mide el <path> con
-      // getTotalLength/getPointAtLength, que fuerza a recalcular el
-      // layout del SVG. Hecho aquí mismo, ese cálculo entraba en el
-      // mismo tick que revela el body y podía notarse como un pequeño
-      // parón justo al aparecer la página -- con requestAnimationFrame
-      // se aplaza al siguiente frame, ya con el contenido pintado.
-      marcarContenidoListo();
+      // marcarContenidoListo() ya se llamó al entrar (ver más arriba);
+      // aquí solo queda lanzar la animación de la bola, aplazada con
+      // requestAnimationFrame porque animarLineaTiempo mide el <path>
+      // con getTotalLength/getPointAtLength, que fuerza a recalcular el
+      // layout del SVG.
       requestAnimationFrame(() => {
         animarLineaTiempo(primeraVisitaTiempo && !animacionTiempoYaLanzada);
         animacionTiempoYaLanzada = true;
