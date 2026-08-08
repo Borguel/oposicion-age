@@ -7,6 +7,62 @@ function inyectarIconosEstaticos() {
   });
 }
 
+// Anillos de progreso (Nota media / Aprobados): el círculo relleno es en
+// realidad un trazo con stroke-dasharray = circunferencia y
+// stroke-dashoffset = circunferencia * (1 - pct/100) -- a "pct" en 100%
+// no queda offset y el trazo se ve completo; a 0% el offset es la
+// circunferencia entera y no se ve nada.
+function actualizarAnillo(id, pct, nivel) {
+  const circulo = document.getElementById(id);
+  if (!circulo) return;
+  const r = parseFloat(circulo.getAttribute("r")) || 42;
+  const circunferencia = 2 * Math.PI * r;
+  const pctSeguro = Math.max(0, Math.min(100, pct));
+  circulo.style.strokeDasharray = `${circunferencia}`;
+  circulo.style.strokeDashoffset = `${circunferencia * (1 - pctSeguro / 100)}`;
+  circulo.classList.remove("nivel-bajo", "nivel-medio", "nivel-alto");
+  if (nivel) circulo.classList.add(nivel);
+}
+
+// Línea+bola de "Tiempo dedicado": puramente decorativa (no representa
+// datos reales, como tampoco lo hace en la referencia visual de la que
+// parte este diseño). La bola recorre la línea de izquierda a derecha
+// solo la primera vez que el usuario visita esta página -- en visitas
+// siguientes aparece ya fija en el punto final, sin repetir la animación
+// en cada carga. Se usa getPointAtLength en vez de CSS offset-path para
+// que la posición encaje siempre con el trazado real del <path>,
+// cualquiera que sea el ancho al que el SVG se escale en pantalla.
+function animarLineaTiempo(primeraVisita) {
+  const trazado = document.getElementById("tiempo-linea");
+  const bola = document.getElementById("tiempo-bola");
+  if (!trazado || !bola) return;
+  const longitudTotal = trazado.getTotalLength();
+  const puntoFinal = trazado.getPointAtLength(longitudTotal);
+  const sinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (!primeraVisita || sinMovimiento) {
+    bola.setAttribute("cx", puntoFinal.x);
+    bola.setAttribute("cy", puntoFinal.y);
+    return;
+  }
+
+  const puntoInicial = trazado.getPointAtLength(0);
+  bola.setAttribute("cx", puntoInicial.x);
+  bola.setAttribute("cy", puntoInicial.y);
+  const duracionMs = 1400;
+  let inicio = null;
+  function paso(marcaTiempo) {
+    if (inicio === null) inicio = marcaTiempo;
+    const progreso = Math.min((marcaTiempo - inicio) / duracionMs, 1);
+    const suavizado = 1 - Math.pow(1 - progreso, 3);
+    const punto = trazado.getPointAtLength(longitudTotal * suavizado);
+    bola.setAttribute("cx", punto.x);
+    bola.setAttribute("cy", punto.y);
+    if (progreso < 1) requestAnimationFrame(paso);
+  }
+  requestAnimationFrame(paso);
+}
+
 // "puntuacion_final" guardado en historial_tests es la puntuación en
 // bruto (aciertos - fallos/3, sin normalizar -- puede ser cualquier rango
 // según el nº de preguntas del test), NO la nota sobre 10. Se recalcula
@@ -59,6 +115,13 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   localStorage.setItem("age_visito_estadisticas", "1");
 
+  const primeraVisitaTiempo = !localStorage.getItem("age_estadisticas_tiempo_animado");
+  localStorage.setItem("age_estadisticas_tiempo_animado", "1");
+  // Solo se reproduce una vez por carga de página, aunque el usuario pulse
+  // "actualizar" varias veces (cada pulsación vuelve a llamar a
+  // cargarDatos, que dispara animarLineaTiempo en su bloque finally).
+  let animacionTiempoYaLanzada = false;
+
   const refreshBtn = document.getElementById("estadisticas-refresh");
   const exportarPdfBtn = document.getElementById("estadisticas-exportar-pdf");
   let temasTest = [];
@@ -76,6 +139,8 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
       });
       document.querySelectorAll('.vistazo-mini-fill, .respuestas-segmento').forEach(el => el.style.width = '0%');
+      document.querySelectorAll('.anillo-progreso').forEach(el => actualizarAnillo(el.id, 0, null));
+      document.getElementById('tile-nota-media').removeAttribute('data-nivel');
       fijarHTML("tendencia-media", '<span>...</span>');
       fijarTexto("vistazo-aprobados-detalle", '— aprobados · — suspendidos');
       // Resetear valores PDF
@@ -122,6 +187,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     } finally {
       refreshBtn.classList.remove('loading');
       refreshBtn.disabled = false;
+      animarLineaTiempo(primeraVisitaTiempo && !animacionTiempoYaLanzada);
+      animacionTiempoYaLanzada = true;
       marcarContenidoListo();
     }
   }
@@ -171,16 +238,23 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("vistazo-tests").textContent = totalTests;
     document.getElementById("vistazo-media").textContent = puntuacionMedia.toFixed(1);
     document.getElementById("vistazo-racha").textContent = racha.racha_actual ?? 0;
+
+    // Nota media (0-10): mismos umbrales que la tendencia de más abajo
+    // (rojo por debajo de 3, verde a partir de más de 5, ámbar en medio)
+    // para que el color del anillo, el tinte de la tarjeta y la pastilla
+    // de tendencia cuenten siempre la misma historia.
+    const nivelNota = puntuacionMedia < 3 ? "nivel-bajo" : puntuacionMedia > 5 ? "nivel-alto" : "nivel-medio";
+    document.getElementById("tile-nota-media").dataset.nivel = nivelNota.replace("nivel-", "");
+    actualizarAnillo("anillo-media", (puntuacionMedia / 10) * 100, nivelNota);
+
     // Por debajo del 25% es una mala señal (rojo), de 25% a 50% aviso
     // (ámbar), y solo a partir del 50% es un dato realmente positivo
     // (verde) -- antes salía siempre en verde, dando la sensación de que
     // iba bien aunque el % de aprobados fuera muy bajo.
     const nivelAprobados = porcentajeAprobados < 25 ? "nivel-bajo" : porcentajeAprobados < 50 ? "nivel-medio" : "nivel-alto";
-    const pctEl = document.getElementById("vistazo-aprobados-pct");
     const fillEl = document.getElementById("vistazo-aprobados-fill");
-    pctEl.textContent = `${porcentajeAprobados}%`;
-    pctEl.classList.remove("nivel-bajo", "nivel-medio", "nivel-alto");
-    pctEl.classList.add(nivelAprobados);
+    document.getElementById("vistazo-aprobados-pct").textContent = `${porcentajeAprobados}%`;
+    actualizarAnillo("anillo-aprobados", porcentajeAprobados, nivelAprobados);
     fillEl.classList.remove("nivel-bajo", "nivel-medio", "nivel-alto");
     fillEl.classList.add(nivelAprobados);
     document.getElementById("vistazo-aprobados-detalle").textContent = `${aprobados} aprobados · ${suspendidos} suspendidos`;

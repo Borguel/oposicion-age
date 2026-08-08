@@ -164,13 +164,15 @@
     }
 
     /* "De un vistazo": lo primero que se ve al entrar, antes de bajar nada.
-       5 números (el 5º, Tiempo dedicado, vivía antes en su propia tarjeta
-       ancha más abajo). */
+       Nota media y Aprobados usan un anillo de progreso (el color se lee
+       antes que la cifra); Tests realizados y Racha van en tarjetas
+       simples con icono en insignia. Tiempo dedicado vive aparte, a todo
+       lo ancho (ver .tarjeta-tiempo más abajo). */
     .resumen-vistazo {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 14px;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
 
     .vistazo-tile {
@@ -180,15 +182,160 @@
       box-shadow: var(--age-shadow);
       padding: 18px 14px;
       text-align: center;
+      transition: background 0.3s var(--age-ease, ease), border-color 0.3s var(--age-ease, ease);
     }
 
-    .vistazo-icono {
-      font-size: 1.5rem;
-      line-height: 1;
-      margin-bottom: 6px;
+    .vistazo-label {
+      font-size: 0.82rem;
+      color: var(--age-ink-soft);
+      margin-top: 2px;
     }
 
-    .vistazo-icono[data-icon="fuego"] {
+    /* --- Tiles con anillo (Nota media / Aprobados) --- */
+
+    .vistazo-tile-cabecera {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .vistazo-tile-cabecera .vistazo-label {
+      margin-top: 0;
+      font-weight: 700;
+    }
+
+    .vistazo-icono-mini {
+      display: inline-flex;
+      color: var(--age-ink-faint);
+    }
+
+    .anillo-wrap {
+      position: relative;
+      width: 84px;
+      height: 84px;
+      margin: 0 auto 10px;
+    }
+
+    .anillo {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .anillo-pista {
+      fill: none;
+      stroke: var(--age-border);
+      stroke-width: 9;
+    }
+
+    .anillo-progreso {
+      fill: none;
+      stroke: var(--age-ink-faint);
+      stroke-width: 9;
+      stroke-linecap: round;
+      stroke-dasharray: 263.9;
+      stroke-dashoffset: 263.9;
+      transition: stroke-dashoffset 1s var(--age-ease, ease), stroke 0.3s ease;
+    }
+
+    .anillo-progreso.nivel-bajo { stroke: var(--age-danger); }
+    .anillo-progreso.nivel-medio { stroke: var(--age-warning); }
+    .anillo-progreso.nivel-alto { stroke: var(--age-success); }
+
+    .anillo-valor {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--age-ink);
+    }
+
+    /* Nota media: la tarjeta entera se tiñe según el nivel -- es el dato
+       más "titular" de la página, así que avisa antes de leer la cifra.
+       Mismo patrón que .tarjeta-recomendacion (fondo suave + borde del
+       color), aplicado aquí a los 3 niveles en vez de solo al de aviso. */
+    .vistazo-nota[data-nivel="bajo"] { background: var(--age-danger-bg); border-color: var(--age-danger); }
+    .vistazo-nota[data-nivel="medio"] { background: var(--age-warning-bg); border-color: var(--age-warning); }
+    .vistazo-nota[data-nivel="alto"] { background: var(--age-success-bg); border-color: var(--age-success); }
+
+    .tendencia-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 0 auto;
+      padding: 3px 10px;
+      border-radius: var(--age-radius-pill);
+      font-size: 0.7rem;
+      font-weight: 700;
+      width: fit-content;
+      background: var(--age-neutral-bg);
+      color: var(--age-ink-soft);
+    }
+
+    /* Fondo sólido (--age-card) en vez del -bg suave de nivel: la tarjeta
+       de Nota media ya usa ese mismo -bg como fondo propio, así que la
+       pastilla necesita contraste real contra ella, no el mismo tono. */
+    .vistazo-nota[data-nivel="bajo"] .tendencia-pill { background: var(--age-card); color: var(--age-danger); }
+    .vistazo-nota[data-nivel="medio"] .tendencia-pill { background: var(--age-card); color: var(--age-warning); }
+    .vistazo-nota[data-nivel="alto"] .tendencia-pill { background: var(--age-card); color: var(--age-success); }
+
+    .vistazo-detalle {
+      font-size: 0.72rem;
+      color: var(--age-ink-faint);
+      margin-top: 4px;
+    }
+
+    .vistazo-mini-barra {
+      height: 6px;
+      background: var(--age-neutral-bg);
+      border-radius: 3px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .vistazo-mini-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--age-success);
+      transition: width 0.8s var(--age-ease, ease);
+    }
+
+    .vistazo-mini-fill.nivel-bajo {
+      background: linear-gradient(90deg, var(--age-danger), var(--age-warning));
+    }
+
+    .vistazo-mini-fill.nivel-medio {
+      background: linear-gradient(90deg, var(--age-warning), var(--age-success));
+    }
+
+    /* --- Tiles simples (Tests realizados / Racha actual) --- */
+
+    .vistazo-simple {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .vistazo-icono-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      background: var(--age-info-bg);
+      color: var(--age-info);
+    }
+
+    .vistazo-icono-badge-racha {
+      background: var(--age-primary-soft);
       color: var(--age-fuego);
     }
 
@@ -199,59 +346,96 @@
       margin: 0;
     }
 
-    .vistazo-label {
-      font-size: 0.82rem;
-      color: var(--age-ink-soft);
-      margin-top: 2px;
-    }
-
-    /* Color según el % de aprobados: por debajo del 25% es una señal de
-       alarma real (rojo), entre 25% y 50% aviso (ámbar), y solo a partir
-       del 50% es un dato positivo (verde) -- antes siempre salía en
-       verde, dando la impresión de ir bien aunque el % fuera bajo. */
-    .vistazo-resultado .vistazo-valor.nivel-bajo {
-      color: var(--age-danger);
-    }
-
-    .vistazo-resultado .vistazo-valor.nivel-medio {
-      color: var(--age-warning);
-    }
-
-    .vistazo-resultado .vistazo-valor.nivel-alto {
-      color: var(--age-success);
-    }
-
-    .vistazo-detalle {
-      font-size: 0.72rem;
-      color: var(--age-ink-faint);
-      margin-top: 4px;
-    }
-
-    .vistazo-mini-barra {
-      height: 5px;
-      background: var(--age-danger-bg);
-      border-radius: 3px;
-      margin-top: 8px;
-      overflow: hidden;
-    }
-
-    .vistazo-mini-fill {
-      height: 100%;
-      background: var(--age-success);
-      transition: width 0.5s ease;
-    }
-
-    .vistazo-mini-fill.nivel-bajo {
-      background: var(--age-danger);
-    }
-
-    .vistazo-mini-fill.nivel-medio {
-      background: var(--age-warning);
-    }
-
     @media (max-width: 640px) {
       .resumen-vistazo {
         grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* --- Tiempo dedicado: a todo lo ancho, mismo lenguaje navy + naranja
+       que las cajas CTA/tutor del resto del sitio (theme.css), para que
+       destaque como el cierre visual de "de un vistazo" en vez de ser una
+       quinta tarjeta más apretada en la rejilla. --- */
+    .tarjeta-tiempo {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      background:
+        radial-gradient(1.5px 1.5px at 15% 25%, rgba(255, 255, 255, 0.35), transparent),
+        radial-gradient(1.5px 1.5px at 40% 70%, rgba(255, 255, 255, 0.25), transparent),
+        radial-gradient(1.5px 1.5px at 65% 20%, rgba(255, 255, 255, 0.3), transparent),
+        radial-gradient(1.5px 1.5px at 85% 55%, rgba(255, 255, 255, 0.22), transparent),
+        radial-gradient(1.5px 1.5px at 92% 80%, rgba(255, 255, 255, 0.3), transparent),
+        linear-gradient(135deg, var(--age-navy), var(--age-navy-soft));
+      border-radius: var(--age-radius-lg);
+      padding: 20px 26px;
+      margin-bottom: 24px;
+      box-shadow: var(--age-shadow);
+    }
+
+    .tiempo-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      z-index: 1;
+    }
+
+    .tiempo-icono-badge {
+      background: rgba(255, 166, 51, 0.18);
+      color: var(--age-primary-light);
+      flex-shrink: 0;
+      margin-bottom: 0;
+    }
+
+    .tiempo-valor {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .tarjeta-tiempo .vistazo-label {
+      color: var(--age-navy-ink);
+      margin-top: 0;
+    }
+
+    .tiempo-grafica {
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+      height: 60px;
+      z-index: 1;
+    }
+
+    .tiempo-linea {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.28);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+    }
+
+    .tiempo-bola {
+      fill: var(--age-primary);
+      filter: drop-shadow(0 0 5px rgba(255, 166, 51, 0.85));
+    }
+
+    @media (max-width: 640px) {
+      .tarjeta-tiempo {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      .tiempo-grafica {
+        height: 46px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .anillo-progreso {
+        transition: stroke 0.3s ease;
       }
     }
 

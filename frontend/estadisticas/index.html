@@ -60,39 +60,70 @@
     </div>
   </div>
 
-  <!-- De un vistazo: lo primero que se ve, sin scroll, con los 4 números
-       que de verdad importan al entrar (antes eran 4 tarjetas grandes
-       repartidas por "Resumen general"). -->
+  <!-- De un vistazo: lo primero que se ve, sin scroll, con los números
+       que de verdad importan al entrar. Nota media y Aprobados usan un
+       anillo de progreso (se lee el color antes que la cifra); Tests
+       realizados y Racha van en tarjetas simples con icono en insignia. -->
   <section class="resumen-vistazo" id="resumen-vistazo">
-    <div class="vistazo-tile">
-      <div class="vistazo-icono" data-icon="grafico" data-icon-size="22"></div>
-      <div class="valor vistazo-valor" id="vistazo-media">—</div>
-      <div class="vistazo-label">Nota media</div>
-      <div class="tendencia" id="tendencia-media"><span>...</span></div>
+    <div class="vistazo-tile vistazo-anillo vistazo-nota" id="tile-nota-media">
+      <div class="vistazo-tile-cabecera">
+        <span class="vistazo-icono-mini" data-icon="grafico" data-icon-size="14"></span>
+        <span class="vistazo-label">Nota media</span>
+      </div>
+      <div class="anillo-wrap">
+        <svg class="anillo" viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="anillo-pista" cx="50" cy="50" r="42"></circle>
+          <circle class="anillo-progreso" id="anillo-media" cx="50" cy="50" r="42"></circle>
+        </svg>
+        <span class="anillo-valor valor" id="vistazo-media">—</span>
+      </div>
+      <div class="tendencia-pill" id="tendencia-media"><span>...</span></div>
     </div>
-    <div class="vistazo-tile vistazo-resultado">
-      <div class="vistazo-icono" data-icon="check" data-icon-size="22"></div>
-      <div class="valor vistazo-valor" id="vistazo-aprobados-pct">—</div>
-      <div class="vistazo-label">Aprobados</div>
+    <div class="vistazo-tile vistazo-anillo" id="tile-aprobados">
+      <div class="vistazo-tile-cabecera">
+        <span class="vistazo-icono-mini" data-icon="check" data-icon-size="14"></span>
+        <span class="vistazo-label">Aprobados</span>
+      </div>
+      <div class="anillo-wrap">
+        <svg class="anillo" viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="anillo-pista" cx="50" cy="50" r="42"></circle>
+          <circle class="anillo-progreso" id="anillo-aprobados" cx="50" cy="50" r="42"></circle>
+        </svg>
+        <span class="anillo-valor valor" id="vistazo-aprobados-pct">—</span>
+      </div>
       <div class="vistazo-detalle" id="vistazo-aprobados-detalle">— aprobados · — suspendidos</div>
       <div class="vistazo-mini-barra"><div class="vistazo-mini-fill" id="vistazo-aprobados-fill" style="width:0%"></div></div>
     </div>
-    <div class="vistazo-tile">
-      <div class="vistazo-icono" data-icon="lapiz" data-icon-size="22"></div>
+    <div class="vistazo-tile vistazo-simple">
+      <div class="vistazo-icono-badge vistazo-icono-badge-tests" data-icon="lapiz" data-icon-size="18"></div>
       <div class="valor vistazo-valor" id="vistazo-tests">—</div>
       <div class="vistazo-label">Tests realizados</div>
     </div>
-    <div class="vistazo-tile">
-      <div class="vistazo-icono" data-icon="fuego" data-icon-size="22"></div>
+    <div class="vistazo-tile vistazo-simple">
+      <div class="vistazo-icono-badge vistazo-icono-badge-racha" data-icon="fuego" data-icon-size="18"></div>
       <div class="valor vistazo-valor" id="vistazo-racha">—</div>
       <div class="vistazo-label">Racha actual</div>
     </div>
-    <div class="vistazo-tile">
-      <div class="vistazo-icono" data-icon="reloj" data-icon-size="22"></div>
-      <div class="valor vistazo-valor" id="tiempo">—</div>
-      <div class="vistazo-label">Tiempo dedicado</div>
-    </div>
   </section>
+
+  <!-- Tiempo dedicado: a todo lo ancho, con una línea decorativa y una
+       bola que recorre el trayecto de izquierda a derecha solo la primera
+       vez que se visita esta página (ver animarLineaTiempo en script.js);
+       en visitas siguientes aparece ya fija en su posición final, sin
+       repetir la animación cada vez. -->
+  <div class="tarjeta-tiempo" id="tarjeta-tiempo">
+    <div class="tiempo-info">
+      <span class="vistazo-icono-badge tiempo-icono-badge" data-icon="reloj" data-icon-size="18"></span>
+      <div>
+        <div class="valor tiempo-valor" id="tiempo">—</div>
+        <div class="vistazo-label">Tiempo dedicado</div>
+      </div>
+    </div>
+    <svg class="tiempo-grafica" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true">
+      <path class="tiempo-linea" id="tiempo-linea" d="M4,42 C50,14 85,52 130,30 C175,10 205,48 240,26 C260,15 275,24 296,18"></path>
+      <circle class="tiempo-bola" id="tiempo-bola" r="5" cx="296" cy="18"></circle>
+    </svg>
+  </div>
 
   <!-- Mapa de tu temario: justo debajo de "de un vistazo", antes de
        cualquier otra cosa -- es el dato más accionable de toda la página
