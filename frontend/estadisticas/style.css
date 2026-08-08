@@ -407,6 +407,7 @@
       width: 100%;
       height: 60px;
       z-index: 1;
+      overflow: visible;
     }
 
     .tiempo-linea {
@@ -530,15 +531,31 @@
       color: var(--age-ink-soft);
     }
 
+    /* Aviso compacto y desplegable (<details>/<summary>, mismo patrón que
+       el acordeón de /planes/): la cabecera es lo único visible por
+       defecto, con el contenido (descripción + lista de temas) oculto
+       hasta que el usuario la pulsa. El botón de cerrar vive fuera del
+       <summary> a propósito -- así pulsarlo no abre ni cierra el
+       desplegable de paso, solo oculta la tarjeta entera. */
     .tarjeta-recomendacion {
-      display: flex;
-      gap: 18px;
       background: var(--age-primary-soft);
       border: 1.5px solid var(--age-primary);
       border-radius: var(--age-radius-lg);
-      padding: 24px 26px;
       margin-bottom: 28px;
       position: relative;
+    }
+
+    .recomendacion-cabecera {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 54px 16px 20px;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .recomendacion-cabecera::-webkit-details-marker {
+      display: none;
     }
 
     .recomendacion-cerrar {
@@ -565,21 +582,33 @@
     }
 
     .tarjeta-recomendacion .recomendacion-icono {
-      font-size: 2rem;
+      font-size: 1.3rem;
       line-height: 1;
       flex-shrink: 0;
+      color: var(--age-primary-dark);
     }
 
-    .tarjeta-recomendacion .recomendacion-texto {
-      min-width: 0;
-      flex: 1;
-      padding-right: 24px;
+    .recomendacion-chevron {
+      color: var(--age-ink-faint);
+      font-size: 0.85em;
+      flex-shrink: 0;
+      transition: transform 0.15s var(--age-ease);
+    }
+
+    .tarjeta-recomendacion[open] .recomendacion-chevron {
+      transform: rotate(180deg);
+    }
+
+    .recomendacion-contenido {
+      padding: 0 20px 20px;
     }
 
     .tarjeta-recomendacion h4 {
-      margin: 0 0 4px;
-      font-size: 1.1rem;
+      margin: 0;
+      font-size: 1rem;
       color: var(--age-ink);
+      flex: 1;
+      min-width: 0;
     }
 
     .tarjeta-recomendacion p {
@@ -648,12 +677,6 @@
 
     .tarjeta-recomendacion .btn-repasar-tema:hover {
       background: var(--age-primary-dark);
-    }
-
-    @media (max-width: 640px) {
-      .tarjeta-recomendacion {
-        flex-direction: column;
-      }
     }
 
     @media (max-width: 480px) {

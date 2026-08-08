@@ -32,10 +32,19 @@ function actualizarAnillo(id, pct, nivel) {
 // en cada carga. Se usa getPointAtLength en vez de CSS offset-path para
 // que la posición encaje siempre con el trazado real del <path>,
 // cualquiera que sea el ancho al que el SVG se escale en pantalla.
+//
+// La animación no se lanza nada más cargar la página: la tarjeta queda
+// por debajo de "de un vistazo" (y a veces del aviso de temas flojos),
+// así que si se animara en ese momento terminaría antes de que el
+// usuario llegara a bajar hasta ahí -- se ve la bola ya quieta y parece
+// que nunca se movió. En su lugar se espera a que la tarjeta entre en
+// pantalla (IntersectionObserver) para reproducirla en el momento en que
+// de verdad se puede ver.
 function animarLineaTiempo(primeraVisita) {
   const trazado = document.getElementById("tiempo-linea");
   const bola = document.getElementById("tiempo-bola");
-  if (!trazado || !bola) return;
+  const tarjeta = document.getElementById("tarjeta-tiempo");
+  if (!trazado || !bola || !tarjeta) return;
   const longitudTotal = trazado.getTotalLength();
   const puntoFinal = trazado.getPointAtLength(longitudTotal);
   const sinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -49,18 +58,32 @@ function animarLineaTiempo(primeraVisita) {
   const puntoInicial = trazado.getPointAtLength(0);
   bola.setAttribute("cx", puntoInicial.x);
   bola.setAttribute("cy", puntoInicial.y);
-  const duracionMs = 1400;
-  let inicio = null;
-  function paso(marcaTiempo) {
-    if (inicio === null) inicio = marcaTiempo;
-    const progreso = Math.min((marcaTiempo - inicio) / duracionMs, 1);
-    const suavizado = 1 - Math.pow(1 - progreso, 3);
-    const punto = trazado.getPointAtLength(longitudTotal * suavizado);
-    bola.setAttribute("cx", punto.x);
-    bola.setAttribute("cy", punto.y);
-    if (progreso < 1) requestAnimationFrame(paso);
+
+  function reproducir() {
+    const duracionMs = 1400;
+    let inicio = null;
+    function paso(marcaTiempo) {
+      if (inicio === null) inicio = marcaTiempo;
+      const progreso = Math.min((marcaTiempo - inicio) / duracionMs, 1);
+      const suavizado = 1 - Math.pow(1 - progreso, 3);
+      const punto = trazado.getPointAtLength(longitudTotal * suavizado);
+      bola.setAttribute("cx", punto.x);
+      bola.setAttribute("cy", punto.y);
+      if (progreso < 1) requestAnimationFrame(paso);
+    }
+    requestAnimationFrame(paso);
   }
-  requestAnimationFrame(paso);
+
+  if (!("IntersectionObserver" in window)) {
+    reproducir();
+    return;
+  }
+  const observador = new IntersectionObserver((entradas) => {
+    if (!entradas[0].isIntersecting) return;
+    observador.disconnect();
+    reproducir();
+  }, { threshold: 0.4 });
+  observador.observe(tarjeta);
 }
 
 // "puntuacion_final" guardado en historial_tests es la puntuación en
@@ -563,7 +586,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       `;
       lista.appendChild(li);
     });
-    tarjeta.style.display = "flex";
+    tarjeta.style.display = "block";
   }
 
   // Mapa de temario: bloques x temas coloreados por % de acierto real,

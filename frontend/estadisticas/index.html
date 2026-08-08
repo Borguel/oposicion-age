@@ -50,15 +50,24 @@
       </button>
     </div>
   </div>
-  <div class="tarjeta-recomendacion" id="tarjeta-temas-flojos" style="display:none;">
-    <button type="button" class="recomendacion-cerrar" id="recomendacion-cerrar" aria-label="Cerrar" data-icon="cruz" data-icon-size="15"></button>
-    <div class="recomendacion-icono" data-icon="bombilla" data-icon-size="24"></div>
-    <div class="recomendacion-texto">
+  <!-- Cerrado por defecto: antes salía siempre desplegada a tamaño
+       completo nada más entrar, compitiendo con el resto de la página.
+       Ahora es un aviso compacto (<details>/<summary>, igual que el
+       acordeón de preguntas frecuentes de /planes/) que el usuario abre
+       si quiere ver el detalle; el botón de cerrar sigue funcionando
+       igual, esté abierto o cerrado. -->
+  <details class="tarjeta-recomendacion" id="tarjeta-temas-flojos" style="display:none;">
+    <summary class="recomendacion-cabecera">
+      <span class="recomendacion-icono" data-icon="bombilla" data-icon-size="20"></span>
       <h4>Tus temas con más margen de mejora</h4>
+      <span class="recomendacion-chevron">▾</span>
+    </summary>
+    <button type="button" class="recomendacion-cerrar" id="recomendacion-cerrar" aria-label="Cerrar" data-icon="cruz" data-icon-size="15"></button>
+    <div class="recomendacion-contenido">
       <p id="recomendacion-descripcion">Estos son los temas donde menos aciertas. Un repaso rápido ahora mismo puede subirte mucho la nota.</p>
       <ul id="lista-temas-flojos"></ul>
     </div>
-  </div>
+  </details>
 
   <!-- De un vistazo: lo primero que se ve, sin scroll, con los números
        que de verdad importan al entrar. Nota media y Aprobados usan un
@@ -120,8 +129,8 @@
       </div>
     </div>
     <svg class="tiempo-grafica" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true">
-      <path class="tiempo-linea" id="tiempo-linea" d="M4,42 C50,14 85,52 130,30 C175,10 205,48 240,26 C260,15 275,24 296,18"></path>
-      <circle class="tiempo-bola" id="tiempo-bola" r="5" cx="296" cy="18"></circle>
+      <path class="tiempo-linea" id="tiempo-linea" d="M4,42 C46,14 78,52 118,30 C156,12 184,46 214,28 C230,18 244,24 260,20"></path>
+      <circle class="tiempo-bola" id="tiempo-bola" r="5" cx="260" cy="20"></circle>
     </svg>
   </div>
 
