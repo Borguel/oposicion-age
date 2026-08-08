@@ -1,53 +1,11 @@
-:root {
-      --primary: #ffa633; /* Naranja vibrante (tu color principal) */
-      --primary-dark: #ff8c00;
-      --secondary: #4caf50;
-      --secondary-dark: #388e3c;
-      --accent: #2196f3;
-      --accent-dark: #1976d2;
-      --danger: #f44336;
-      --danger-dark: #d32f2f;
-      --warning: #ffc107;
-      --warning-dark: #ffa000;
-      --info: #00bcd4;
-      --info-dark: #0097a7;
-      --dark: #2e3440;
-      --darker: #1d2229;
-      --light: #ffffff;
-      --gray: #ebebeb;
-      --border: #ebebeb;
-      --shadow: rgba(0, 0, 0, 0.1);
-      --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      --font-mono: 'Courier New', Courier, monospace;
-      --transition-fast: 0.2s ease-in-out;
-      --transition-normal: 0.3s ease-in-out;
-      --transition-slow: 0.5s ease-in-out;
-      --card-radius: 12px;
-      --btn-radius: 8px;
-      --modal-radius: 16px;
-      /* Colores específicos de tu tema */
-      --theme-bg: #ffffff;
-      --theme-text: #333;
-      --theme-link-hover: #ffa633;
-      --theme-header-bg: #ffffff;
-      --theme-header-text: #333;
-      --theme-content-bg: #ffffff;
-      --theme-content-alt-bg: #f6f6f6;
-      --theme-border: #ebebeb;
-      --theme-heading: #000;
-      --theme-primary: #ffa633;
-      --theme-secondary: #333;
-      --theme-disabled-text: #999;
-    }
-
-    * {
+* {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
 
     body {
-      font-family: var(--age-font, var(--font-main));
+      font-family: var(--age-font);
       background: var(--age-bg);
       color: var(--age-ink);
       min-height: 100vh;
@@ -72,7 +30,7 @@
     #estadisticas-header h1 {
       font-size: 1.8rem;
       font-weight: 800;
-      color: var(--theme-heading);
+      color: var(--age-ink);
       display: flex;
       align-items: center;
       gap: 12px;
@@ -95,7 +53,7 @@
     }
 
     #estadisticas-refresh {
-      background: var(--theme-primary);
+      background: var(--age-primary);
       color: white;
       border: none;
       width: 42px;
@@ -118,7 +76,7 @@
     }
 
     #estadisticas-refresh:hover:not(:disabled) {
-      background: var(--primary-dark);
+      background: var(--age-primary-dark);
       transform: translateY(-2px);
       box-shadow: 0 6px 15px rgba(255, 166, 51, 0.4);
     }
@@ -863,7 +821,7 @@
       text-align: center;
       padding: 20px 0;
       margin: 20px 0;
-      border-bottom: 2px solid var(--theme-border);
+      border-bottom: 2px solid var(--age-border);
       position: relative;
     }
 
@@ -872,12 +830,12 @@
     }
 
     .seccion-separador h3 {
-      color: var(--theme-primary);
+      color: var(--age-primary);
       font-size: 1.4rem;
       font-weight: 700;
       display: inline-block;
       padding: 0 20px;
-      background: var(--theme-bg);
+      background: var(--age-bg);
       position: relative;
       top: -10px;
     }
@@ -958,19 +916,66 @@
     .mapa-temario-celda {
       width: 34px;
       height: 34px;
+      border: none;
       border-radius: var(--age-radius-sm);
       display: flex;
       align-items: center;
       justify-content: center;
+      font-family: inherit;
       font-size: 0.82rem;
       font-weight: 700;
       text-decoration: none;
+      cursor: pointer;
       transition: transform 0.15s var(--age-ease), box-shadow 0.15s var(--age-ease);
     }
 
     .mapa-temario-celda:hover {
       transform: translateY(-2px) scale(1.06);
       box-shadow: var(--age-shadow-hover);
+    }
+
+    .mapa-temario-celda:focus-visible {
+      outline: 2px solid var(--age-primary);
+      outline-offset: 2px;
+    }
+
+    /* Panel del popover: el % exacto como texto, no solo como color, para
+       que no dependa de distinguir tonos (daltonismo) ni de poder hacer
+       hover (móvil). Mismo mecanismo que activarPopover() usa en el resto
+       del sitio (popover.js + .age-popover de theme.css). */
+    .mapa-temario-celda-root {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .mapa-temario-celda-panel {
+      left: 50%;
+      right: auto;
+      top: calc(100% + 8px);
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 220px;
+      text-align: left;
+    }
+
+    .mapa-temario-celda-panel-titulo {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--age-ink);
+    }
+
+    .mapa-temario-celda-panel-detalle {
+      margin: 0;
+      font-size: 12.5px;
+      color: var(--age-ink-soft);
+      line-height: 1.4;
+    }
+
+    .mapa-temario-celda-panel-cta {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--age-primary-dark);
     }
 
     .mapa-temario-celda.sin-datos {
@@ -1039,14 +1044,14 @@
     }
 
     .evolucion-linea {
-      stroke: var(--theme-primary);
+      stroke: var(--age-primary);
       stroke-width: 2.5;
       stroke-linejoin: round;
       stroke-linecap: round;
     }
 
     .evolucion-linea-aprobado {
-      stroke: var(--theme-border);
+      stroke: var(--age-border);
       stroke-width: 1;
       stroke-dasharray: 4 4;
     }
@@ -1054,7 +1059,7 @@
     .evolucion-eje-texto {
       font-size: 9px;
       fill: var(--age-ink-faint);
-      font-family: var(--age-font, var(--font-main));
+      font-family: var(--age-font);
     }
 
     .evolucion-punto-extremo {
@@ -1063,7 +1068,7 @@
     }
 
     .evolucion-vacio {
-      color: var(--theme-text);
+      color: var(--age-ink-soft);
       font-size: 0.92rem;
       margin: 8px 0 0;
     }
@@ -1378,31 +1383,4 @@
         margin-bottom: 10px;
       }
     }
-
-/* --- Unificación de marca (Domina tu Opo) ---
-   Esta página nació con su propio sistema de variables (--theme-*, --primary,
-   --secondary...) antes de que existiera el sistema compartido de
-   /assets/theme.css. En vez de reescribir cada regla una a una, se
-   redefinen aquí esas variables para que apunten a los tokens --age-* --
-   así toda la página (tarjetas, modal, resumen de PDF...) hereda el mismo
-   aspecto que el resto del sitio sin duplicar reglas. */
-:root {
-  --primary: var(--age-primary);
-  --primary-dark: var(--age-primary-dark);
-  --secondary: var(--age-success);
-  --danger: var(--age-danger);
-  --warning: var(--age-primary);
-  --theme-primary: var(--age-primary);
-  --theme-link-hover: var(--age-primary);
-  --theme-bg: var(--age-bg);
-  --theme-text: var(--age-ink-soft);
-  --theme-heading: var(--age-ink);
-  --theme-content-bg: var(--age-card);
-  --theme-content-alt-bg: var(--age-neutral-bg);
-  --theme-border: var(--age-border);
-  --shadow: rgba(20, 24, 34, 0.06);
-  --card-radius: var(--age-radius-lg);
-  --btn-radius: var(--age-radius-pill);
-  --modal-radius: var(--age-radius-lg);
-}
 

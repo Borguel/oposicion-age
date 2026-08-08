@@ -1,5 +1,6 @@
 import { icono } from "/assets/icons.js";
 import { marcarContenidoListo } from "/assets/auth.js";
+import { activarPopover } from "/assets/popover.js";
 
 function inyectarIconosEstaticos() {
   document.querySelectorAll("[data-icon]").forEach((el) => {
@@ -232,7 +233,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     } catch (err) {
       console.error("Error cargando estadísticas:", err);
       const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
-      mostrarErrorGlobal("Hubo un problema al cargar tus estadísticas: " + err.message);
+      mostrarErrorGlobal("No se han podido cargar tus estadísticas. Comprueba tu conexión e inténtalo de nuevo.");
     } finally {
       refreshBtn.classList.remove('loading');
       refreshBtn.disabled = false;
@@ -657,8 +658,22 @@ document.addEventListener("DOMContentLoaded", async function () {
           ? "Todavía sin preguntas respondidas"
           : `${porcentaje}% de acierto (${respondidas} pregunta${respondidas === 1 ? "" : "s"})${pocasPreguntas ? " -- pocas preguntas todavía" : ""}`;
         const clases = ["mapa-temario-celda", nivel, pocasPreguntas ? "pocas-preguntas" : ""].filter(Boolean).join(" ");
+        const href = `/test-personalizado/?temas=${encodeURIComponent(t.id)}`;
 
-        return `<a class="${clases}" href="/test-personalizado/?temas=${encodeURIComponent(t.id)}" title="Tema ${t.numeroTema}: ${t.titulo} — ${detalle}">${t.numeroTema}</a>`;
+        // El nivel de acierto no puede depender solo del color de la
+        // celda (daltonismo, y en móvil no hay hover para el title): el
+        // popover muestra el % exacto como texto antes de ir a practicar,
+        // con el mismo patrón de activarPopover() que el resto del sitio.
+        return `
+          <div class="mapa-temario-celda-root">
+            <button type="button" class="${clases}" data-popover-toggle aria-label="Tema ${t.numeroTema}: ${t.titulo}, ${detalle}">${t.numeroTema}</button>
+            <div class="age-popover mapa-temario-celda-panel" data-popover-panel>
+              <p class="mapa-temario-celda-panel-titulo">Tema ${t.numeroTema}: ${t.titulo}</p>
+              <p class="mapa-temario-celda-panel-detalle">${detalle}</p>
+              <a class="mapa-temario-celda-panel-cta" href="${href}">Practicar este tema →</a>
+            </div>
+          </div>
+        `;
       }).join("");
 
       return `
@@ -668,6 +683,32 @@ document.addEventListener("DOMContentLoaded", async function () {
         </div>
       `;
     }).join("");
+
+    // El panel se centra sobre la celda por defecto (ver CSS), pero en
+    // celdas pegadas al borde de la rejilla eso lo saca de la pantalla --
+    // se corrige aquí midiendo su posición real cada vez que se abre, en
+    // vez de fijar un único borde que solo funciona en el resto de casos.
+    contenedor.querySelectorAll(".mapa-temario-celda-root").forEach((raiz) => {
+      activarPopover(raiz, {
+        onAbrir: () => {
+          const panel = raiz.querySelector(".mapa-temario-celda-panel");
+          if (!panel) return;
+          panel.style.left = "";
+          panel.style.right = "";
+          panel.style.transform = "";
+          const margen = 8;
+          const rect = panel.getBoundingClientRect();
+          if (rect.left < margen) {
+            panel.style.left = "0";
+            panel.style.transform = "none";
+          } else if (rect.right > window.innerWidth - margen) {
+            panel.style.left = "auto";
+            panel.style.right = "0";
+            panel.style.transform = "none";
+          }
+        },
+      });
+    });
   }
 
   function renderizarCoberturaTemario(totalTocados, totalTemas) {
