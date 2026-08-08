@@ -602,17 +602,25 @@ async function iniciar() {
     renderOnboarding();
   });
 
-  const { nombre, plan } = await obtenerPlan(true);
-  if (nombre) document.getElementById("zona-nombre").textContent = nombre;
-
   const opActual = OPOSICIONES.find((o) => o.id === obtenerOposicionActual());
   document.getElementById("zona-oposicion-nombre").textContent = opActual ? opActual.nombre : "—";
 
+  // La página se revela en cuanto se confirma la sesión (lo único que
+  // de verdad hace falta para no dejar pasar a quien no tiene cuenta) --
+  // no se espera aquí a obtenerPlan(true), un fetch a /mi-perfil forzado
+  // a ignorar la caché de sessionStorage, que antes retrasaba la
+  // revelación de TODA la página por un solo dato (nombre + pill de
+  // plan) que ya tiene un valor por defecto razonable en el propio HTML
+  // ("Cargando…" / "gratis"). El resto de la página (racha, progreso,
+  // avisos...) ya se cargaba así, sin bloquear -- esto solo alinea el
+  // nombre/plan con ese mismo criterio.
+  marcarContenidoListo();
+
+  const { nombre, plan } = await obtenerPlan(true);
+  if (nombre) document.getElementById("zona-nombre").textContent = nombre;
   const pillPlan = document.getElementById("zona-plan-pill");
   pillPlan.className = PILL_PLAN[plan] || "age-pill";
   pillPlan.textContent = plan || "gratis";
-
-  marcarContenidoListo();
 }
 
 iniciar();

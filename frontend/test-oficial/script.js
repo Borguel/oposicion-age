@@ -180,18 +180,28 @@ async function obtenerAuthHeaders() {
       const descripcion = document.getElementById("simulacro-descripcion");
       const separador = document.getElementById("separador-o");
       if (!tarjeta || !boton) return;
+      // La tarjeta empieza VISIBLE en estado "cargando" (ver el HTML) --
+      // si al final no aplica (esta oposición no tiene simulacro
+      // verificado, el usuario ya empezó el test por otro lado, o falla la
+      // petición) se oculta del todo en vez de dejarla pulsando para
+      // siempre.
+      const ocultar = () => {
+        tarjeta.style.display = "none";
+        if (separador) separador.style.display = "none";
+      };
       try {
         const infoOposicion = await obtenerInfoOposicionActual();
         const simulacro = infoOposicion && infoOposicion.simulacro_oficial;
-        if (!simulacro) return; // sin datos verificados para esta oposición -- no se ofrece
-        if (testYaIniciado) return; // el usuario ya empezó el test por otro camino mientras se esperaba esta respuesta
+        if (!simulacro) { ocultar(); return; } // sin datos verificados para esta oposición -- no se ofrece
+        if (testYaIniciado) { ocultar(); return; } // el usuario ya empezó el test por otro camino mientras se esperaba esta respuesta
         if (descripcion) {
           descripcion.textContent = simulacro.minutos
             ? `Genera un examen con el mismo formato del examen real: ${simulacro.num_preguntas} preguntas en ${simulacro.minutos} minutos.`
             : `Genera un examen con el mismo número de preguntas del examen real: ${simulacro.num_preguntas} preguntas.`;
         }
-        tarjeta.style.display = "flex";
-        if (separador) separador.style.display = "flex";
+        tarjeta.classList.remove("cargando");
+        boton.disabled = false;
+        boton.textContent = "Empezar simulacro";
         boton.addEventListener("click", () => {
           document.getElementById("num_preguntas").value = simulacro.num_preguntas;
           if (simulacro.minutos) {
@@ -203,6 +213,7 @@ async function obtenerAuthHeaders() {
         });
       } catch (e) {
         console.error("No se pudo cargar el formato del simulacro oficial:", e);
+        ocultar();
       }
     }
 
@@ -778,28 +789,25 @@ async function obtenerAuthHeaders() {
       }
       // cargarTemas() (fetch a /temas-disponibles) y los tres inicializadores
       // de abajo (fetch a /oposiciones-disponibles, memoizado en
-      // obtenerInfoOposicionActual, una sola petición real de verdad
-      // compartida entre los tres) se lanzan a la vez -- antes cargarTemas()
-      // se esperaba entera ANTES de que empezara siquiera la petición del
-      // simulacro, sumando ambas esperas en vez de solaparlas (07/08/2026).
+      // obtenerInfoOposicionActual, una sola petición real compartida entre
+      // los tres) se lanzan a la vez -- antes cargarTemas() se esperaba
+      // entera ANTES de que empezara siquiera la petición del simulacro,
+      // sumando ambas esperas en vez de solaparlas (07/08/2026).
       //
-      // Y aquí se espera a los CUATRO (no solo a temas) antes de revelar la
-      // página: la tarjeta de "Simulacro oficial" empieza oculta en el HTML
-      // y solo se muestra cuando termina su propia petición -- si solo se
-      // esperaba a temas, la página ya se revelaba (auth-listo) antes de
-      // que la tarjeta apareciera, y esta terminaba saliendo "de la nada"
-      // unos instantes después de que el usuario ya estuviera mirando el
-      // resto de la pantalla, fácil de no notarla del todo (mismo problema,
-      // más sutil, para el filtro de psicotécnicas y la nota de reparto
-      // realista). Como las tres comparten la misma petición memoizada, no
-      // se paga tiempo extra por esperarlas: el conjunto tarda lo que tarde
-      // la más lenta de las dos peticiones reales (temas u
-      // oposiciones-disponibles), igual que antes.
+      // La página se revela en cuanto termina cargarTemas(), SIN esperar a
+      // los otros tres -- llegó a probarse lo contrario (esperar también a
+      // oposiciones-disponibles antes de revelar nada) y el resultado era
+      // peor: si esa petición iba lenta, se notaba como "la página entera
+      // tarda más", no solo el simulacro. En vez de bloquear toda la
+      // página por una tarjeta, esa tarjeta empieza ya VISIBLE en estado
+      // "cargando" (ver el HTML y .simulacro-card.cargando en el CSS) --
+      // así nunca aparece de la nada, cargue rápido o lento, sin retrasar
+      // el resto de la página.
       const promesaTemas = cargarTemas();
-      const promesaSimulacro = iniciarBotonSimulacroOficial();
-      const promesaReparto = iniciarSelectorRepartoRealista();
-      const promesaPsicotecnicas = iniciarSelectorPsicotecnicas();
-      await Promise.all([promesaTemas, promesaSimulacro, promesaReparto, promesaPsicotecnicas]);
+      iniciarBotonSimulacroOficial();
+      iniciarSelectorRepartoRealista();
+      iniciarSelectorPsicotecnicas();
+      await promesaTemas;
       marcarContenidoListo();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();

@@ -52,16 +52,22 @@
       </label>
     </div>
 
-    <div class="card fade-in simulacro-card" id="tarjeta-simulacro" style="display:none;">
+    <!-- Visible desde el principio en estado "cargando" (no display:none):
+         antes se quedaba invisible hasta que terminaba su propia petición,
+         y para entonces el resto de la página ya se había revelado -- la
+         tarjeta aparecía de golpe después, fácil de no notarla. Así el
+         usuario ve desde el primer instante que hay algo comprobándose
+         aquí, en vez de que surja de la nada más tarde. -->
+    <div class="card fade-in simulacro-card cargando" id="tarjeta-simulacro">
       <div class="simulacro-icono"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21h16M5 21V10M9 21V10M12 21V10M15 21V10M19 21V10M3 10l9-6 9 6"/></svg></div>
       <div class="simulacro-info">
         <div class="simulacro-titulo">Simulacro oficial</div>
-        <div class="simulacro-descripcion" id="simulacro-descripcion">Genera un examen con el mismo formato exacto de la convocatoria real.</div>
+        <div class="simulacro-descripcion" id="simulacro-descripcion">Comprobando si hay simulacro oficial disponible para tu oposición…</div>
       </div>
-      <button type="button" id="btn-simulacro-oficial" class="age-btn age-btn-primary">Empezar simulacro</button>
+      <button type="button" id="btn-simulacro-oficial" class="age-btn age-btn-primary" disabled>Cargando…</button>
     </div>
 
-    <div class="separador-o" id="separador-o" style="display:none;"><span>o bien</span></div>
+    <div class="separador-o" id="separador-o"><span>o bien</span></div>
 
     <div class="card fade-in" id="tarjeta-formulario">
       <h3 class="tarjeta-formulario-titulo">Configura tu propio test</h3>

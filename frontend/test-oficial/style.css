@@ -16,6 +16,23 @@
   border: 1px solid var(--age-primary);
 }
 
+/* Estado inicial mientras se comprueba si hay simulacro oficial para la
+   oposición actual (ver iniciarBotonSimulacroOficial en script.js) -- un
+   pulso suave dice "esto sigue cargando" sin depender solo del texto. Se
+   quita la clase (y con ella la animación) en cuanto se resuelve, quede
+   la tarjeta visible con los datos reales o se oculte del todo. */
+.simulacro-card.cargando {
+  opacity: 0.7;
+  animation: simulacro-pulso 1.4s ease-in-out infinite;
+}
+@keyframes simulacro-pulso {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .simulacro-card.cargando { animation: none; opacity: 0.7; }
+}
+
 /* Agrupa un icono SVG con el texto que lo acompaña (botones, cronómetro)
    para que quede centrado verticalmente en vez de desalineado con la línea
    base del texto. */
