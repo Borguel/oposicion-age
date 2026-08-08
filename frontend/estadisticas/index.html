@@ -116,10 +116,12 @@
   </section>
 
   <!-- Tiempo dedicado: a todo lo ancho, con una línea decorativa y una
-       bola que recorre el trayecto de izquierda a derecha solo la primera
-       vez que se visita esta página (ver animarLineaTiempo en script.js);
-       en visitas siguientes aparece ya fija en su posición final, sin
-       repetir la animación cada vez. -->
+       bola que recorre el trayecto de izquierda a derecha la primera vez
+       que se visita esta página en cada sesión de navegador (ver
+       animarLineaTiempo en script.js); después aparece ya fija en su
+       posición final, sin repetir la animación cada vez. El gráfico tiene
+       un ancho máximo (ver .tiempo-grafica en style.css) para que no se
+       estire hasta perder proporción en pantallas anchas. -->
   <div class="tarjeta-tiempo" id="tarjeta-tiempo">
     <div class="tiempo-info">
       <span class="vistazo-icono-badge tiempo-icono-badge" data-icon="reloj" data-icon-size="18"></span>
@@ -129,7 +131,14 @@
       </div>
     </div>
     <svg class="tiempo-grafica" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true">
-      <path class="tiempo-linea" id="tiempo-linea" d="M4,42 C46,14 78,52 118,30 C156,12 184,46 214,28 C230,18 244,24 260,20"></path>
+      <defs>
+        <linearGradient id="tiempo-gradiente-linea" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.04)"></stop>
+          <stop offset="65%" stop-color="rgba(255,255,255,0.22)"></stop>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.55)"></stop>
+        </linearGradient>
+      </defs>
+      <path class="tiempo-linea" id="tiempo-linea" stroke="url(#tiempo-gradiente-linea)" d="M4,42 C46,14 78,52 118,30 C156,12 184,46 214,28 C230,18 244,24 260,20"></path>
       <circle class="tiempo-bola" id="tiempo-bola" r="5" cx="260" cy="20"></circle>
     </svg>
   </div>

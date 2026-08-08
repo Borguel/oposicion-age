@@ -27,11 +27,13 @@ function actualizarAnillo(id, pct, nivel) {
 // Línea+bola de "Tiempo dedicado": puramente decorativa (no representa
 // datos reales, como tampoco lo hace en la referencia visual de la que
 // parte este diseño). La bola recorre la línea de izquierda a derecha
-// solo la primera vez que el usuario visita esta página -- en visitas
-// siguientes aparece ya fija en el punto final, sin repetir la animación
-// en cada carga. Se usa getPointAtLength en vez de CSS offset-path para
-// que la posición encaje siempre con el trazado real del <path>,
-// cualquiera que sea el ancho al que el SVG se escale en pantalla.
+// la primera vez que se visita esta página en cada sesión de navegador
+// (sessionStorage) -- dentro de la misma sesión, en cargas o
+// actualizaciones posteriores aparece ya fija en el punto final, sin
+// repetir la animación cada vez. Se usa getPointAtLength en vez de CSS
+// offset-path para que la posición encaje siempre con el trazado real
+// del <path>, cualquiera que sea el ancho al que el SVG se escale en
+// pantalla.
 //
 // La animación no se lanza nada más cargar la página: la tarjeta queda
 // por debajo de "de un vistazo" (y a veces del aviso de temas flojos),
@@ -60,12 +62,19 @@ function animarLineaTiempo(primeraVisita) {
   bola.setAttribute("cy", puntoInicial.y);
 
   function reproducir() {
-    const duracionMs = 1400;
+    // 2.6s y easeInOutCubic (arranca y termina suave, más rápida solo en
+    // el tramo central) en vez de 1.4s con easeOut -- a menos de 1.5s el
+    // movimiento pasaba casi desapercibido si no se estaba mirando fijo
+    // a la tarjeta en el instante exacto en que entraba en pantalla.
+    const duracionMs = 2600;
     let inicio = null;
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
     function paso(marcaTiempo) {
       if (inicio === null) inicio = marcaTiempo;
       const progreso = Math.min((marcaTiempo - inicio) / duracionMs, 1);
-      const suavizado = 1 - Math.pow(1 - progreso, 3);
+      const suavizado = easeInOutCubic(progreso);
       const punto = trazado.getPointAtLength(longitudTotal * suavizado);
       bola.setAttribute("cx", punto.x);
       bola.setAttribute("cy", punto.y);
@@ -138,8 +147,13 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   localStorage.setItem("age_visito_estadisticas", "1");
 
-  const primeraVisitaTiempo = !localStorage.getItem("age_estadisticas_tiempo_animado");
-  localStorage.setItem("age_estadisticas_tiempo_animado", "1");
+  // sessionStorage (no localStorage): se anima una vez por sesión de
+  // navegador, no una única vez en la vida de la cuenta -- con
+  // localStorage, en cuanto se veía una vez ya no volvía a jugarse jamás
+  // en ese navegador, así que era fácil no llegar a verla nunca (por
+  // ejemplo, si la tarjeta quedaba fuera de pantalla la primera vez).
+  const primeraVisitaTiempo = !sessionStorage.getItem("age_estadisticas_tiempo_animado");
+  sessionStorage.setItem("age_estadisticas_tiempo_animado", "1");
   // Solo se reproduce una vez por carga de página, aunque el usuario pulse
   // "actualizar" varias veces (cada pulsación vuelve a llamar a
   // cargarDatos, que dispara animarLineaTiempo en su bloque finally).
@@ -210,9 +224,17 @@ document.addEventListener("DOMContentLoaded", async function () {
     } finally {
       refreshBtn.classList.remove('loading');
       refreshBtn.disabled = false;
-      animarLineaTiempo(primeraVisitaTiempo && !animacionTiempoYaLanzada);
-      animacionTiempoYaLanzada = true;
+      // Revela la página primero: animarLineaTiempo mide el <path> con
+      // getTotalLength/getPointAtLength, que fuerza a recalcular el
+      // layout del SVG. Hecho aquí mismo, ese cálculo entraba en el
+      // mismo tick que revela el body y podía notarse como un pequeño
+      // parón justo al aparecer la página -- con requestAnimationFrame
+      // se aplaza al siguiente frame, ya con el contenido pintado.
       marcarContenidoListo();
+      requestAnimationFrame(() => {
+        animarLineaTiempo(primeraVisitaTiempo && !animacionTiempoYaLanzada);
+        animacionTiempoYaLanzada = true;
+      });
     }
   }
 

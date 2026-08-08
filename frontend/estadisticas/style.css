@@ -401,25 +401,36 @@
       margin-top: 0;
     }
 
+    /* flex-grow:0 + margin-left:auto en vez de flex:1 -- con flex:1 el
+       gráfico se estiraba para llenar todo el ancho sobrante de la
+       tarjeta (que en portátil/escritorio puede ser enorme), quedando
+       una línea fina perdida en medio de mucho vacío. Con un tope de
+       ancho se mantiene proporcionado en cualquier pantalla y queda
+       pegado a la derecha, como un sparkline de panel de control. */
     .tiempo-grafica {
-      flex: 1;
-      min-width: 0;
+      flex: 0 1 440px;
+      min-width: 200px;
+      max-width: 440px;
       width: 100%;
-      height: 60px;
+      height: 64px;
       z-index: 1;
       overflow: visible;
+      margin-left: auto;
     }
 
+    /* El trazo usa un gradiente (definido en el <defs> del propio SVG,
+       ver index.html) que empieza casi invisible y se aviva hacia la
+       bola -- refuerza la idea de "recorrido hasta ahora" en vez de una
+       línea plana decorativa. */
     .tiempo-linea {
       fill: none;
-      stroke: rgba(255, 255, 255, 0.28);
-      stroke-width: 2.5;
+      stroke-width: 3;
       stroke-linecap: round;
     }
 
     .tiempo-bola {
       fill: var(--age-primary);
-      filter: drop-shadow(0 0 5px rgba(255, 166, 51, 0.85));
+      filter: drop-shadow(0 0 6px rgba(255, 166, 51, 0.9));
     }
 
     @media (max-width: 640px) {
@@ -429,8 +440,16 @@
         gap: 14px;
       }
 
+      /* flex-basis (el "440px" de .tiempo-grafica) se aplica al eje
+         principal, que en flex-direction:column pasa a ser el ALTO, no
+         el ancho -- sin resetearlo aquí, el gráfico intentaba ocupar
+         ~440px de alto en vez de los 46px pretendidos, deformando la
+         curva y la bola. */
       .tiempo-grafica {
+        flex: 0 0 auto;
+        max-width: none;
         height: 46px;
+        margin-left: 0;
       }
     }
 
