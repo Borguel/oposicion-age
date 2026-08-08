@@ -4,6 +4,15 @@
   <script>if(location.hostname==="oposicion-age-1.onrender.com"){location.replace("https://www.dominatuopo.com"+location.pathname+location.search+location.hash);}</script>
   <style>html:not(.auth-listo) body { visibility: hidden; }</style>
   <script type="module" src="/assets/auth-guard.js"></script>
+  <!-- Arranca la descarga del SDK de Firebase en paralelo con el resto
+       de recursos de la página, sin esperar a que se evalúe auth.js --
+       el import() dinámico de auth.js (protegido con try/catch, ver ese
+       fichero) ya no se descubre solo con analizar el HTML como pasaba
+       con un import estático, así que sin esta pista tardaba en
+       arrancar hasta que auth.js terminaba de evaluar sus propios
+       imports (medido: ~130ms de más antes de empezar la descarga). -->
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js" crossorigin />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js" crossorigin />
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />

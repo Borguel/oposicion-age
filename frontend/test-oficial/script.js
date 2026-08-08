@@ -778,15 +778,28 @@ async function obtenerAuthHeaders() {
       }
       // cargarTemas() (fetch a /temas-disponibles) y los tres inicializadores
       // de abajo (fetch a /oposiciones-disponibles, memoizado en
-      // obtenerInfoOposicionActual) se lanzan a la vez -- antes
-      // cargarTemas() se esperaba entera ANTES de que empezara siquiera la
-      // petición del simulacro, sumando ambas esperas en vez de solaparlas
-      // (07/08/2026, la tarjeta de "Simulacro oficial" tardaba en salir).
+      // obtenerInfoOposicionActual, una sola petición real de verdad
+      // compartida entre los tres) se lanzan a la vez -- antes cargarTemas()
+      // se esperaba entera ANTES de que empezara siquiera la petición del
+      // simulacro, sumando ambas esperas en vez de solaparlas (07/08/2026).
+      //
+      // Y aquí se espera a los CUATRO (no solo a temas) antes de revelar la
+      // página: la tarjeta de "Simulacro oficial" empieza oculta en el HTML
+      // y solo se muestra cuando termina su propia petición -- si solo se
+      // esperaba a temas, la página ya se revelaba (auth-listo) antes de
+      // que la tarjeta apareciera, y esta terminaba saliendo "de la nada"
+      // unos instantes después de que el usuario ya estuviera mirando el
+      // resto de la pantalla, fácil de no notarla del todo (mismo problema,
+      // más sutil, para el filtro de psicotécnicas y la nota de reparto
+      // realista). Como las tres comparten la misma petición memoizada, no
+      // se paga tiempo extra por esperarlas: el conjunto tarda lo que tarde
+      // la más lenta de las dos peticiones reales (temas u
+      // oposiciones-disponibles), igual que antes.
       const promesaTemas = cargarTemas();
-      iniciarBotonSimulacroOficial();
-      iniciarSelectorRepartoRealista();
-      iniciarSelectorPsicotecnicas();
-      await promesaTemas;
+      const promesaSimulacro = iniciarBotonSimulacroOficial();
+      const promesaReparto = iniciarSelectorRepartoRealista();
+      const promesaPsicotecnicas = iniciarSelectorPsicotecnicas();
+      await Promise.all([promesaTemas, promesaSimulacro, promesaReparto, promesaPsicotecnicas]);
       marcarContenidoListo();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
