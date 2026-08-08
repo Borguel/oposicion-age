@@ -17,6 +17,11 @@ eggs/
 lib/
 lib64/
 parts/
+# lib/ arriba es para builds de Python (venv/lib, etc.), pero al no ir
+# anclado también ignoraba .claude/skills/impeccable/scripts/lib/ -- los
+# módulos internos que ese skill necesita para funcionar. Sin esto, cada
+# clon fresco del repo pierde esa carpeta y el skill queda roto.
+!.claude/skills/impeccable/scripts/lib/
 sdist/
 var/
 wheels/
