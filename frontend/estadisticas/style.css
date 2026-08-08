@@ -660,19 +660,66 @@
     .mapa-temario-celda {
       width: 34px;
       height: 34px;
+      border: none;
       border-radius: var(--age-radius-sm);
       display: flex;
       align-items: center;
       justify-content: center;
+      font-family: inherit;
       font-size: 0.82rem;
       font-weight: 700;
       text-decoration: none;
+      cursor: pointer;
       transition: transform 0.15s var(--age-ease), box-shadow 0.15s var(--age-ease);
     }
 
     .mapa-temario-celda:hover {
       transform: translateY(-2px) scale(1.06);
       box-shadow: var(--age-shadow-hover);
+    }
+
+    .mapa-temario-celda:focus-visible {
+      outline: 2px solid var(--age-primary);
+      outline-offset: 2px;
+    }
+
+    /* Panel del popover: el % exacto como texto, no solo como color, para
+       que no dependa de distinguir tonos (daltonismo) ni de poder hacer
+       hover (móvil). Mismo mecanismo que activarPopover() usa en el resto
+       del sitio (popover.js + .age-popover de theme.css). */
+    .mapa-temario-celda-root {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .mapa-temario-celda-panel {
+      left: 50%;
+      right: auto;
+      top: calc(100% + 8px);
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 220px;
+      text-align: left;
+    }
+
+    .mapa-temario-celda-panel-titulo {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--age-ink);
+    }
+
+    .mapa-temario-celda-panel-detalle {
+      margin: 0;
+      font-size: 12.5px;
+      color: var(--age-ink-soft);
+      line-height: 1.4;
+    }
+
+    .mapa-temario-celda-panel-cta {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--age-primary-dark);
     }
 
     .mapa-temario-celda.sin-datos {
