@@ -47,6 +47,7 @@ PRIORIDADES = {
     "/blog/calendario-oposiciones-estado/": ("0.6", "monthly"),
     "/blog/glosario-terminos-oposiciones/": ("0.6", "monthly"),
     "/blog/que-pasa-despues-de-aprobar-oposicion/": ("0.6", "monthly"),
+    "/blog/descarga-temario-oficial-gratis/": ("0.6", "monthly"),
     "/oposicion-administrativo-estado-c1/": ("0.8", "monthly"),
     "/oposicion-gace/": ("0.8", "monthly"),
     "/oposicion-auxiliar-administrativo-estado/": ("0.8", "monthly"),
