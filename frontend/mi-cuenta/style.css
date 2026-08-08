@@ -339,9 +339,15 @@ body {
   color: var(--age-danger);
 }
 
+/* .cuenta-layout se solapa hacia arriba sobre la cabecera navy
+   (margin-top: -34px, ver más abajo) y este es su primer elemento, así
+   que cae encima de esa banda oscura -- --age-ink-soft (pensado para
+   texto sobre tarjetas claras) daba muy poco contraste ahí. --age-navy-ink
+   es el mismo tono que ya usa el subtítulo de .cuenta-header y no cambia
+   entre claro/oscuro (la cabecera tampoco cambia). */
 .cuenta-volver-zona {
   display: inline-block;
-  color: var(--age-ink-soft);
+  color: var(--age-navy-ink);
   font-weight: 700;
   font-size: 13.5px;
   text-decoration: none;
@@ -349,7 +355,7 @@ body {
 }
 
 .cuenta-volver-zona:hover {
-  color: var(--age-ink);
+  color: #fff;
 }
 
 .cuenta-datos-resumen {

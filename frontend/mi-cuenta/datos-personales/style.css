@@ -4,9 +4,12 @@
   margin-top: -34px;
 }
 
+/* Mismo motivo que .cuenta-volver-zona en mi-cuenta/style.css: cae encima
+   de la cabecera navy (.dp-layout también tiene margin-top negativo), así
+   que necesita el tono pensado para fondos navy, no --age-ink-soft. */
 .dp-volver {
   display: inline-block;
-  color: var(--age-ink-soft);
+  color: var(--age-navy-ink);
   font-weight: 700;
   font-size: 13.5px;
   text-decoration: none;
@@ -14,7 +17,7 @@
 }
 
 .dp-volver:hover {
-  color: var(--age-ink);
+  color: #fff;
 }
 
 .dp-modal-overlay {

@@ -272,7 +272,10 @@ async function iniciar() {
     } catch (error) {
       mostrarErrorGlobal(error.message);
       btnPortal.disabled = false;
-      btnPortal.textContent = "Gestionar suscripción";
+      // Solo se llega aquí con el botón habilitado (algunaDePago), así que
+      // este es siempre el texto correcto al que volver (ver
+      // renderizarOposiciones), no un texto distinto inventado aquí.
+      btnPortal.textContent = "Gestionar facturación y suscripciones";
     }
   });
 }
