@@ -31,6 +31,7 @@ def marcar_favorita(db, usuario_id, oposicion, pregunta):
         "opciones": pregunta.get("opciones", {}),
         "respuesta_correcta": pregunta.get("respuesta_correcta"),
         "explicacion": pregunta.get("explicacion", "Sin explicación."),
+        "imagen": pregunta.get("imagen", ""),
         "fecha_marcada": datetime.utcnow().isoformat(),
     }, merge=True)
 

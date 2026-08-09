@@ -18,19 +18,7 @@
   width: 100%;
 }
 
-/* Figura de las preguntas de razonamiento espacial (ver
-   cargar_psicotecnico_metro.py / blueprints/test_ia.py
-   generar_test_psicotecnico) -- ninguna otra pregunta de la web trae
-   imagen todavía, así que este bloque solo existe en esta página. */
-.pregunta-imagen {
-  margin: 14px 0 18px;
-  text-align: center;
-}
-
-.pregunta-imagen img {
-  max-width: 100%;
-  max-height: 380px;
-  border: 1px solid var(--age-border);
-  border-radius: 8px;
-  background: #fff;
-}
+/* .pregunta-imagen vive en /assets/theme.css (no aquí) -- una pregunta con
+   imagen (hoy, solo la prueba de razonamiento espacial de Metro) puede
+   reaparecer en Repetir test, Preguntas falladas/favoritas o la pantalla
+   de resultados, no solo en esta página. */
