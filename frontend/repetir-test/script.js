@@ -95,7 +95,6 @@ function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudad
       tiempoLimite = tiempoRestanteReanudado;
       // tiempoTotalAsignado ya lo fija quien llama (restaurado del guardado)
     }
-    document.getElementById("barra-progreso-tiempo").style.display = "block";
     elTexto.innerHTML = `${icono("reloj", 16)} Tiempo restante: <span class="pulse">${formatearMinSeg(tiempoLimite)}</span>`;
     elTemporizador.classList.toggle("temporizador-urgente", tiempoLimite <= 300);
     intervaloTemporizador = setInterval(() => {
@@ -112,10 +111,6 @@ function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudad
       }
       elTexto.innerHTML = `${icono("reloj", 16)} Tiempo restante: <span class="pulse">${formatearMinSeg(tiempoLimite)}</span>`;
       elTemporizador.classList.toggle("temporizador-urgente", tiempoLimite <= 300);
-      const porcentajeTiempo = ((tiempoTotalAsignado - tiempoLimite) / tiempoTotalAsignado) * 100;
-      document.getElementById("progreso-tiempo").style.width = `${porcentajeTiempo}%`;
-      const elTextoProgresoTiempo = document.getElementById("texto-progreso-tiempo");
-      if (elTextoProgresoTiempo) elTextoProgresoTiempo.textContent = `${Math.round(porcentajeTiempo)}%`;
       if (tiempoLimite % 10 === 0) {
         import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
           autoguardarProgreso({

@@ -163,6 +163,14 @@ h1, h2, h3 {
   font-size: 1.8rem;
   font-weight: bold;
   padding: 15px;
+  /* Hueco a ambos lados reservado para el botón de ocultar (30px + 14px de
+     separación del borde + margen): el texto va centrado en TODO el ancho
+     del bloque, así que sin esto un texto largo ("Tiempo restante: 04:31",
+     en un test cronometrado) podía llegar a pegarse o solaparse con el
+     botón, sobre todo en móvil. Mismo hueco a la izquierda para que el
+     texto siga centrado de verdad, no descentrado hacia la izquierda. */
+  padding-left: 54px;
+  padding-right: 54px;
   margin: 20px 0;
   background: var(--age-neutral-bg);
   color: var(--age-ink);
@@ -865,10 +873,16 @@ h1, h2, h3 {
 }
 
 @media (max-width: 480px) {
+  #temporizador {
+    font-size: 1.3rem;
+    padding-left: 46px;
+    padding-right: 46px;
+  }
+
   .test-type-card {
     padding: 15px;
   }
-  
+
   .test-type-card .icon {
     font-size: 2rem;
   }
