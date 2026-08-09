@@ -529,11 +529,15 @@ async function obtenerAuthHeaders() {
         marcarContenidoListo();
         return;
       }
-      await cargarTemas();
-      marcarContenidoListo();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
+      await cargarTemas();
+      // Al reanudar un test guardado no se revela la página hasta que el
+      // test ya está listo para mostrarse -- si no, se veía un parpadeo
+      // del formulario a tamaño completo antes de que apareciera el test
+      // de verdad (bug real reportado con capturas, 09/08/2026).
       if (resumeId) {
-        reanudarTest(resumeId);
+        await reanudarTest(resumeId);
       }
+      marcarContenidoListo();
     });

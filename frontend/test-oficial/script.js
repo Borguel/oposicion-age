@@ -144,7 +144,6 @@ async function obtenerAuthHeaders() {
       if (separador) separador.style.display = "none";
       const filtroPsicotecnicas = document.getElementById('filtro-psicotecnicas');
       if (filtroPsicotecnicas) filtroPsicotecnicas.style.display = "none";
-      document.querySelector('.test-type-container')?.classList.add('test-type-compacto');
     }
 
     // Los tres inicializadores de abajo (simulacro, reparto realista,
@@ -808,10 +807,15 @@ async function obtenerAuthHeaders() {
       iniciarSelectorRepartoRealista();
       iniciarSelectorPsicotecnicas();
       await promesaTemas;
-      marcarContenidoListo();
+      // Al reanudar un test guardado no se revela la página hasta que el
+      // test ya está listo para mostrarse -- si no, se veía un parpadeo
+      // del selector de tipo de test/formulario a tamaño completo antes
+      // de que apareciera el test de verdad (bug real reportado con
+      // capturas, 09/08/2026).
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
       if (resumeId) {
-        reanudarTest(resumeId);
+        await reanudarTest(resumeId);
       }
+      marcarContenidoListo();
     });

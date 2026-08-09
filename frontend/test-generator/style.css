@@ -35,6 +35,57 @@ body {
   padding: 24px 20px;
 }
 
+/* Cabecera unificada de las páginas de "hacer test" (test-oficial,
+   test-personalizado, repetir-test, preguntas-falladas/favoritas) --
+   mismo lenguaje navy a todo lo ancho que ya usan el resto de secciones
+   de la web (Mi cuenta, Ranking, Mis tests, Herramientas IA), en vez de
+   la tarjeta de color suelta que tenía cada una antes (a petición del
+   usuario, 09/08/2026: quería un mismo formato en todas las pantallas de
+   hacer test). Se queda fija durante todo el flujo (config, test en
+   curso, resultados) -- no se encoge ni cambia, igual que en
+   subida-pdf-generar-test. */
+.testherr-header {
+  position: relative;
+  background: var(--age-navy);
+  color: #fff;
+  padding: 40px 20px 32px;
+  text-align: center;
+}
+
+.testherr-header .testherr-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: var(--age-radius-md);
+  background: rgba(255, 166, 51, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.7rem;
+}
+
+.testherr-header h1 {
+  color: #fff;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.testherr-header p {
+  color: var(--age-navy-ink);
+  max-width: 620px;
+  margin: 0 auto;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .testherr-header {
+    padding: 30px 16px 26px;
+  }
+}
+
 .card {
   background: var(--color-card);
   border-radius: var(--age-radius-lg);

@@ -4,6 +4,13 @@ import { marcarContenidoListo } from "/assets/auth.js";
 (async () => {
   const { protegerPagina } = await import("/assets/plan.js");
   await protegerPagina("premium");
+  // Al reanudar un test guardado no se revela la página hasta que el
+  // test ya está listo para mostrarse -- si no, esta IIFE y
+  // intentarReanudarTest (antes cada una arrancaba por su cuenta) podían
+  // acabar en cualquier orden, y a veces se veía un parpadeo del
+  // formulario a tamaño completo antes de que apareciera el test de
+  // verdad (bug real reportado con capturas, 09/08/2026).
+  await intentarReanudarTest();
   marcarContenidoListo();
 })();
 
@@ -423,8 +430,10 @@ async function obtenerAuthHeaders() {
     }
 
     // === Reanudar un test guardado "en_progreso" (llegado desde "Mis
-    // Tests" con ?resume=<id>) ===
-    (async function intentarReanudarTest() {
+    // Tests" con ?resume=<id>) -- llamada (y esperada) desde la IIFE de
+    // arriba, no se auto-invoca aquí para que marcarContenidoListo() no
+    // revele la página hasta que esta termine. ===
+    async function intentarReanudarTest() {
       const { idDesdeUrlResume, usarTestId, cargarTestEnProgreso, activarGuardadoAlSalir } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
       if (!resumeId) return;
@@ -477,7 +486,7 @@ async function obtenerAuthHeaders() {
         indice_actual: indicePreguntaActual,
         tiempo_transcurrido_segundos: tiempoTranscurridoActual()
       }));
-    })();
+    }
 
     // === Llegar desde "Mis documentos" ===
     (async function inicializarDesdeDocumento() {

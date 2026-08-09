@@ -58,7 +58,6 @@ async function obtenerAuthHeaders() {
     function ocultarSelectorTestPersonalizado() {
       testYaIniciado = true;
       document.getElementById('tarjeta-formulario').style.display = "none";
-      document.querySelector('.test-type-container')?.classList.add('test-type-compacto');
     }
 
     function tiempoTranscurridoActual() {
@@ -994,12 +993,17 @@ async function obtenerAuthHeaders() {
         marcarContenidoListo();
         return;
       }
-      await cargarTemas();
-      marcarContenidoListo();
-      iniciarSelectorRepartoRealista();
       const { idDesdeUrlResume } = await import("/assets/test-progreso.js");
       const resumeId = idDesdeUrlResume();
+      await cargarTemas();
+      // Al reanudar un test guardado no se revela la página hasta que el
+      // test ya está listo para mostrarse -- si no, se veía un parpadeo
+      // del selector de tipo de test/formulario a tamaño completo antes
+      // de que apareciera el test de verdad (bug real reportado con
+      // capturas, 09/08/2026).
       if (resumeId) {
-        reanudarTest(resumeId);
+        await reanudarTest(resumeId);
       }
+      marcarContenidoListo();
+      iniciarSelectorRepartoRealista();
     });
