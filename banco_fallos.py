@@ -9,18 +9,19 @@ que se corrige un test:
 
   usuarios/{uid}/preguntas_falladas/{hash(oposicion+pregunta)}
 
-Solo los tests "personalizado", "oficial" y el propio repaso de "falladas"
-alimentan/vacían este banco (un test "inteligente" o "repetido" nunca lo
-toca, tal y como se pidió). Una pregunta desaparece del banco en cuanto se
-acierta en cualquiera de esos tres tipos; si se vuelve a fallar en el
-repaso de "falladas" se actualiza la misma entrada (nunca se duplica).
+Solo los tests "personalizado", "oficial", "psicotecnico" y el propio repaso
+de "falladas" alimentan/vacían este banco (un test "inteligente" o
+"repetido" nunca lo toca, tal y como se pidió). Una pregunta desaparece del
+banco en cuanto se acierta en cualquiera de esos tipos; si se vuelve a
+fallar en el repaso de "falladas" se actualiza la misma entrada (nunca se
+duplica).
 """
 import hashlib
 import random
 from datetime import datetime
 from firebase_admin import firestore
 
-TIPOS_QUE_ALIMENTAN_BANCO = {"personalizado", "oficial", "falladas"}
+TIPOS_QUE_ALIMENTAN_BANCO = {"personalizado", "oficial", "psicotecnico", "falladas"}
 
 
 def _id_pregunta(oposicion, pregunta):

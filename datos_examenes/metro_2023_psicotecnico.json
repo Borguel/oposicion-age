@@ -1,0 +1,677 @@
+[
+  {
+    "numero": 1,
+    "prueba": "verbal",
+    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nEl poder adquisitivo de una ………. es el reflejo del enriquecimiento o ………. de un país.",
+    "opciones": {
+      "A": "transacción - desarrollo.",
+      "B": "mercancía - avance.",
+      "C": "moneda – empobrecimiento.",
+      "D": "actividad – prosperidad."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La frase habla del poder adquisitivo de una moneda, que refleja el enriquecimiento o empobrecimiento de un país. Las demás opciones no encajan semánticamente."
+  },
+  {
+    "numero": 2,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de ALEGATO:",
+    "opciones": {
+      "A": "Defensa",
+      "B": "Derecho",
+      "C": "Discurso",
+      "D": "Confirmación"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Alegato significa discurso o argumentación en defensa de algo. Sinónimo directo es discurso."
+  },
+  {
+    "numero": 3,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a ARRECIAR?",
+    "opciones": {
+      "A": "Amainar",
+      "B": "Anticipar",
+      "C": "Aceptar",
+      "D": "Reembolsar"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Arreciar significa «hacerse más fuerte» (ej. una tormenta). Su antónimo es amainar (disminuir la intensidad)."
+  },
+  {
+    "numero": 4,
+    "prueba": "verbal",
+    "pregunta": "Entre las siguientes, hay una palabra con un error ortográfico:",
+    "opciones": {
+      "A": "Aljibe",
+      "B": "Genciana",
+      "C": "Gélido",
+      "D": "Jenjibre."
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La forma correcta es jengibre. Es el único error ortográfico (las demás: aljibe, genciana, gélido están bien)."
+  },
+  {
+    "numero": 5,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra que no se corresponde con las del grupo:",
+    "opciones": {
+      "A": "Sublimar",
+      "B": "Persistir",
+      "C": "Ensalzar",
+      "D": "Enaltecer"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Sublimar, ensalzar y enaltecer significan «alabar / elevar»; persistir significa «mantenerse firme» y no guarda relación con el grupo."
+  },
+  {
+    "numero": 6,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra incorrectamente escrita:",
+    "opciones": {
+      "A": "Estrujar",
+      "B": "Estraperlo",
+      "C": "Exculpir",
+      "D": "Expirar"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La forma correcta es esculpir. Estrujar, estraperlo y expirar están escritas correctamente."
+  },
+  {
+    "numero": 7,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra que define esta sentencia: “Hecho asombroso cuya causa se desconoce y se atribuye a potencias sobrenaturales”.",
+    "opciones": {
+      "A": "Mito",
+      "B": "Paradigma",
+      "C": "Fenómeno",
+      "D": "Meta-cognición"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La definición «hecho asombroso cuya causa se desconoce y se atribuye a poderes sobrenaturales» corresponde a fenómeno."
+  },
+  {
+    "numero": 8,
+    "prueba": "verbal",
+    "pregunta": "Bondad es a cualidad como:",
+    "opciones": {
+      "A": "Pájaro es a aire.",
+      "B": "Estrofa es a verso.",
+      "C": "Blanco es a negro.",
+      "D": "Negrura es a atributo."
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La relación es concepto abstracto → cualidad/característica. Bondad es una cualidad; negrura es un atributo."
+  },
+  {
+    "numero": 9,
+    "prueba": "verbal",
+    "pregunta": "Ordene las palabras sueltas para formar una frase que tenga sentido. Luego halle la respuesta:\n\nMAYOR – EL – SE – LLAMA – LADO – DE – TRIANGULO - UN",
+    "opciones": {
+      "A": "Mediana",
+      "B": "Hipotenusa",
+      "C": "Apotema",
+      "D": "Bisectriz"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Ordenando: «El lado mayor de un triángulo se llama hipotenusa»."
+  },
+  {
+    "numero": 10,
+    "prueba": "verbal",
+    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nLa oportunidad ………. enriquecer cada idea, con ………. de los otros, abre ………. espacios de la creatividad.",
+    "opciones": {
+      "A": "de – todos – aquellos.",
+      "B": "de – las – los.",
+      "C": "para – lo – algunos.",
+      "D": "para – algo – unos."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La frase con sentido es: «La oportunidad para enriquecer cada idea, con lo de los otros, abre algunos espacios de la creatividad». Es la combinación más natural y gramatical."
+  },
+  {
+    "numero": 11,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a EVAPORACIÓN?",
+    "opciones": {
+      "A": "Gasificación",
+      "B": "Condensación",
+      "C": "Sublimación",
+      "D": "Solidificación"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Evaporación es paso de líquido a gas; su antónimo es condensación (paso de gas a líquido)."
+  },
+  {
+    "numero": 12,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra que no se corresponde con las del grupo:",
+    "opciones": {
+      "A": "Rielar",
+      "B": "Brillar",
+      "C": "Resplandecer",
+      "D": "Revolver"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Rielar, brillar y resplandecer son sinónimos (relucientes); revolver (agitar) es el que no se corresponde con el grupo."
+  },
+  {
+    "numero": 13,
+    "prueba": "verbal",
+    "pregunta": "En las siguientes frases hay una que no contiene ningún error ortográfico:",
+    "opciones": {
+      "A": "La idea tuvo una larga jestación.",
+      "B": "Se tiene que cambiar la bujía del coche.",
+      "C": "Se comio un plato de berenjenas.",
+      "D": "Fuí de vacaciones a Algeciras."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Es la única sin errores: bujía y coche están bien. Las otras tienen faltas (jestación→gestación, comio→comió, Fuí→Fui)."
+  },
+  {
+    "numero": 14,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de NECROSIS:",
+    "opciones": {
+      "A": "Enfermedad",
+      "B": "Necrología",
+      "C": "Gangrena",
+      "D": "Avitaminosis"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Necrosis es la muerte de tejidos; sinónimo habitual es gangrena."
+  },
+  {
+    "numero": 15,
+    "prueba": "verbal",
+    "pregunta": "¿Con qué se relaciona la palabra CÓNDILO?",
+    "opciones": {
+      "A": "Hueso",
+      "B": "Pájaro",
+      "C": "Vegetal",
+      "D": "Mineral"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "El cóndilo es una prominencia redondeada que se encuentra en los huesos (ej. en las articulaciones)."
+  },
+  {
+    "numero": 16,
+    "prueba": "verbal",
+    "pregunta": "Comprensión lectora. Lea el siguiente texto y conteste:\n\n«Vida salvaje. El último refugio.\n\nLos puercoespines ingleses están en riesgo. Estos tímidos insectívoros, que suelen ocultarse en los arbustos cuando se ven amenazados, están desapareciendo con tal celeridad que podrían extinguirse en la campiña inglesa para el año 2025. El principal obstáculo para salvarlos es que nadie sabe con certeza qué los está matando. Se culpa a los plaguicidas, pero los científicos aún no han establecido una relación directa; pruebas recientes sugieren que estos animales viven mejor en los jardines de los suburbios que en tierras agrícolas. En tanto se cuenta con más información para desarrollar una estrategia a gran escala, los conservacionistas instan a los jardineros a tolerar las madrigueras de los puercoespines, aunque esto implique descuidar un poco sus jardines. Una propuesta difícil de aceptar en una nación que se enorgullece de ellos.»\n\nSegún lo planteado en el texto se puede concluir que:",
+    "opciones": {
+      "A": "Los puercoespines son insectívoros muy tímidos.",
+      "B": "Los conservacionistas quieren acabar con los jardines ingleses.",
+      "C": "Estos animales viven mejor en jardines que en tierras agrícolas.",
+      "D": "En el 2025 los puercoespines habrán desaparecido en su totalidad."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "El texto dice literalmente: «pruebas recientes sugieren que estos animales viven mejor en los jardines de los suburbios que en tierras agrícolas»."
+  },
+  {
+    "numero": 17,
+    "prueba": "verbal",
+    "pregunta": "Sobre el mismo texto de los puercoespines ingleses (pregunta anterior): una propuesta viable para conservar a los puercoespines es:",
+    "opciones": {
+      "A": "Ocultarlos en los arbustos de los jardines cuando se ven amenazados.",
+      "B": "Prohibir el uso de plaguicidas en lugares cercanos a sus madrigueras.",
+      "C": "Permitirles vivir en los jardines mientras se desarrolla una estrategia de conservación.",
+      "D": "Incrementar los estudios científicos para determinar las razones de su extinción."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "El texto indica que «los conservacionistas instan a los jardineros a tolerar las madrigueras» mientras se obtiene más información."
+  },
+  {
+    "numero": 18,
+    "prueba": "verbal",
+    "pregunta": "¿Qué opción define correctamente a la palabra HERALDO?",
+    "opciones": {
+      "A": "Estudioso de la historia de los apellidos.",
+      "B": "Mensajero.",
+      "C": "El que administra una herencia.",
+      "D": "Fuerte, robusto."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Heraldo es la persona que lleva un mensaje o anuncio; sinónimo: mensajero."
+  },
+  {
+    "numero": 19,
+    "prueba": "verbal",
+    "pregunta": "Equidad es a justicia como:",
+    "opciones": {
+      "A": "Televisor es a difusión.",
+      "B": "Preso es a esposas.",
+      "C": "Llanura es a pradera.",
+      "D": "Cenestesia es a equilibrio."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Equidad y justicia son casi sinónimos; de las opciones, llanura y pradera son los términos más próximos semánticamente (ambos designan terrenos)."
+  },
+  {
+    "numero": 20,
+    "prueba": "verbal",
+    "pregunta": "¿Qué opción define correctamente a la palabra PUERICULTURA?",
+    "opciones": {
+      "A": "Arte de cultivar flores ornamentales.",
+      "B": "Disciplina que estudia la cultura infantil, nanas, cuentos, ...",
+      "C": "Cría de cerdos en cautividad.",
+      "D": "Arte de criar y cuidar a los niños."
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Puericultura es la rama de la medicina/pedagogía dedicada al cuidado y crianza de los niños."
+  },
+  {
+    "numero": 21,
+    "prueba": "verbal",
+    "pregunta": "Las siguientes preguntas constan de un grupo de oraciones ordenadas y numeradas, seguidas de cuatro opciones señaladas con las letras A, B, C y D. Seleccione la opción que representa la oración que podría SER EXCLUIDA DEL TEXTO, por no añadir ninguna información adicional al contenido de éste o por encontrarse fuera de su contexto:\n\n1. Cuando Juan toma café siempre come pan.\n2. Lo suele hacer a la hora del desayuno.\n3. Si no hay pan come tostadas con queso.\n4. Hoy no ha encontrado el café en la cocina.\n5. Es de suponer que no ha comido pan.\n6. No ha preparado las tostadas con queso.\n7. Esta mañana Juan no ha desayunado.",
+    "opciones": {
+      "A": "4",
+      "B": "5",
+      "C": "6",
+      "D": "7"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La oración 5 («es de suponer que no ha comido pan») es una deducción redundante que ya se desprende de la 7 («no ha desayunado»); se puede eliminar sin perder información esencial."
+  },
+  {
+    "numero": 22,
+    "prueba": "verbal",
+    "pregunta": "Ordene de manera lógica las siguientes palabras hasta elaborar la frase:\n\n1. existe / 2. educación / 3. investigación / 4. Colombia / 5. un / 6. importante / 7. núcleo / 8. matemática / 9. de / 10. en / 11. En\n\nEl ordenamiento lógico del anterior escrito es:",
+    "opciones": {
+      "A": "11-4-1-5-7-6-9-2-8-10-3",
+      "B": "11-2-10-4-1-5-6-7-9-3-8",
+      "C": "1-5-7-6-9-3-10-2-8-11-4",
+      "D": "11-4-1-5-6-7-9-3-10-2-8"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Orden: «En Colombia existe un importante núcleo de investigación en educación matemática»."
+  },
+  {
+    "numero": 23,
+    "prueba": "verbal",
+    "pregunta": "Opera es a cantante como:",
+    "opciones": {
+      "A": "Poema es a declamador.",
+      "B": "Riel es a tren.",
+      "C": "Libro es a biblioteca.",
+      "D": "Cama es a enfermo."
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La ópera la interpreta un cantante; el poema lo interpreta un declamador (relación de arte → intérprete)."
+  },
+  {
+    "numero": 24,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra cuyo significado sea igual o más parecido a MISÁNTROPO.",
+    "opciones": {
+      "A": "Religioso",
+      "B": "Huraño",
+      "C": "Cariñoso",
+      "D": "Humano"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Misántropo significa «que huye del trato humano»; sinónimo: huraño."
+  },
+  {
+    "numero": 25,
+    "prueba": "verbal",
+    "pregunta": "¿Cuál es el antónimo de PROLIJO?",
+    "opciones": {
+      "A": "Positivo",
+      "B": "Sentencioso",
+      "C": "Pacífico",
+      "D": "Tarugo"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Aunque no es un antónimo perfecto, en el contexto de la prueba prolijo (extenso, minucioso) se opone a sentencioso (breve y cortante), que es la única opción con ese matiz de concisión."
+  },
+  {
+    "numero": 26,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas caras presenta la siguiente figura?",
+    "opciones": {
+      "A": "22",
+      "B": "19",
+      "C": "20",
+      "D": "21"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Contando todas las superficies planas del sólido (caras superiores, inferiores, frontales, traseras y las paredes internas de los recortes) se obtienen 21 caras.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_26.png"
+  },
+  {
+    "numero": 27,
+    "prueba": "espacial",
+    "pregunta": "Escoja la figura que encaja en el interrogante.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La pieza C es la única cuyo contorno dentado encaja exactamente con el hueco marcado con el interrogante.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_27.png"
+  },
+  {
+    "numero": 28,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál es la figura distinta a la del modelo?",
+    "opciones": {
+      "A": "1",
+      "B": "2",
+      "C": "3",
+      "D": "4"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Girando mentalmente el modelo, las figuras 1, 3 y 4 son rotaciones válidas; la figura 2 no se corresponde con ninguna rotación del modelo.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_28.png"
+  },
+  {
+    "numero": 29,
+    "prueba": "espacial",
+    "pregunta": "¿Qué figura continuaría la serie?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La serie gira la figura progresivamente en el mismo sentido; la opción C continúa ese giro de forma coherente.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_29.png"
+  },
+  {
+    "numero": 30,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "A": "19",
+      "B": "15",
+      "C": "17",
+      "D": "20"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Contando cubo a cubo, incluidos los ocultos que sostienen a los visibles, el total es de 17 cubos.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_30.png"
+  },
+  {
+    "numero": 31,
+    "prueba": "espacial",
+    "pregunta": "En el modelo aparece una figura geométrica plegada. Una vez desplegada, indique en qué figura quedaría convertida.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Solo el desarrollo D respeta la posición y orientación relativa de las caras del dado del modelo al desplegarlo.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_31.png"
+  },
+  {
+    "numero": 32,
+    "prueba": "espacial",
+    "pregunta": "A continuación, señale la figura que es exactamente igual al modelo.",
+    "opciones": {
+      "A": "a",
+      "B": "b",
+      "C": "c",
+      "D": "d"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Es la única opción que mantiene idénticos todos los detalles del modelo (banderas, velas y casco) sin ninguna variación.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_32.png"
+  },
+  {
+    "numero": 33,
+    "prueba": "espacial",
+    "pregunta": "En el modelo aparece una figura geométrica desplegada. Una vez plegada, indique en qué figura quedaría convertida.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Siguiendo las reglas de adyacencia de las caras al plegar la red, solo en la opción A los símbolos quedan en las caras y posiciones correctas.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_33.png"
+  },
+  {
+    "numero": 34,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "A": "17",
+      "B": "23",
+      "C": "20",
+      "D": "19"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Sumando los cubos visibles y los ocultos necesarios para sostener la estructura se obtienen 20 cubos.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_34.png"
+  },
+  {
+    "numero": 35,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál es la figura igual al modelo?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Girando mentalmente el modelo, la disposición de las líneas diagonales y el punto solo coincide con la opción B.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_35.png"
+  },
+  {
+    "numero": 36,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos ladrillos tocan con alguna de sus caras al ladrillo marcado con el círculo negro?",
+    "opciones": {
+      "A": "5",
+      "B": "6",
+      "C": "8",
+      "D": "7"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "El ladrillo marcado contacta con 7 ladrillos: uno a cada lado, uno delante, uno detrás y los que forman el escalón superior.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_36.png"
+  },
+  {
+    "numero": 37,
+    "prueba": "espacial",
+    "pregunta": "¿Qué figura continuaría la serie?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La figura gira 45° en sentido horario en cada paso de la serie; la opción D continúa ese giro correctamente.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_37.png"
+  },
+  {
+    "numero": 38,
+    "prueba": "espacial",
+    "pregunta": "¿Qué cubo corresponde al siguiente despliegue?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Al plegar la red mostrada, los símbolos solo quedan en las caras visibles correctas en la opción C.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_38.png"
+  },
+  {
+    "numero": 39,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "A": "33",
+      "B": "31",
+      "C": "27",
+      "D": "35"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Contando la estructura completa en forma de escalera, incluidos los cubos ocultos que la sostienen, el total es 35.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_39.png"
+  },
+  {
+    "numero": 40,
+    "prueba": "espacial",
+    "pregunta": "En el modelo aparece una figura geométrica plegada. Una vez desplegada, indique en qué figura quedaría convertida.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Es el único desarrollo que, al plegarlo, reproduce la posición de los símbolos y la dirección de la flecha del modelo.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_40.png"
+  },
+  {
+    "numero": 41,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál es la figura igual al modelo?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Girando mentalmente el cubo del modelo, solo la opción C mantiene la misma posición relativa de las líneas y los puntos.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_41.png"
+  },
+  {
+    "numero": 42,
+    "prueba": "espacial",
+    "pregunta": "En el modelo aparece una figura geométrica desplegada. Una vez plegada, indique en qué figura quedaría convertida.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Al plegar la red, los símbolos de las ondas, el reloj y el rombo solo coinciden con las caras visibles de la opción A.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_42.png"
+  },
+  {
+    "numero": 43,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas líneas, tanto visibles como ocultas para el observador (que ocuparía el lugar de la flecha), se pueden contar en esta figura?",
+    "opciones": {
+      "A": "12",
+      "B": "9",
+      "C": "10",
+      "D": "11"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Se trata de un prisma con varias diagonales internas; contando aristas visibles y ocultas se obtienen 12 líneas.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_43.png"
+  },
+  {
+    "numero": 44,
+    "prueba": "espacial",
+    "pregunta": "En el modelo aparece una figura geométrica plegada. Una vez desplegada, indique en qué figura quedaría convertida.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Solo el desarrollo D sitúa el óvalo, el corazón y el rombo en las caras adyacentes correctas respecto al modelo plegado.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_44.png"
+  },
+  {
+    "numero": 45,
+    "prueba": "espacial",
+    "pregunta": "A continuación, señale la figura que es exactamente igual al modelo.",
+    "opciones": {
+      "A": "a",
+      "B": "b",
+      "C": "c",
+      "D": "d"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Las demás opciones tienen pequeños errores respecto al modelo (detalles de la chimenea, las ruedas o su color); solo c es idéntica.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_45.png"
+  },
+  {
+    "numero": 46,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál es la figura igual al modelo?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Girando mentalmente el cubo, la posición de los puntos y el triángulo negro solo coincide con la opción C.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_46.png"
+  },
+  {
+    "numero": 47,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál es la figura distinta a la del modelo?",
+    "opciones": {
+      "A": "1",
+      "B": "2",
+      "C": "3",
+      "D": "4"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Las figuras 1, 3 y 4 son rotaciones del modelo; la figura 2 es un reflejo (imagen especular), no una rotación, por lo que es la distinta.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_47.png"
+  },
+  {
+    "numero": 48,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas líneas, tanto visibles como ocultas para el observador (que ocuparía el lugar de la flecha), se pueden contar en esta figura?",
+    "opciones": {
+      "A": "20",
+      "B": "17",
+      "C": "19",
+      "D": "18"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Contando todas las aristas visibles y ocultas del sólido se obtienen 18 líneas.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_48.png"
+  },
+  {
+    "numero": 49,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál es la figura igual al modelo? Si gira mentalmente cada una de estas cuatro figuras macizas, encontrará una que es igual a la figura de la izquierda.",
+    "opciones": {
+      "A": "1",
+      "B": "2",
+      "C": "3",
+      "D": "4"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Girando mentalmente la figura 2 sobre su eje, se obtiene exactamente la misma figura maciza que el modelo.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_49.png"
+  },
+  {
+    "numero": 50,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos ladrillos tocan con alguna de sus caras al ladrillo marcado con el círculo negro?",
+    "opciones": {
+      "A": "7",
+      "B": "6",
+      "C": "8",
+      "D": "5"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "El ladrillo marcado está en contacto con otros 7 ladrillos adyacentes.",
+    "imagen": "/assets/psicotecnico-metro/pregunta_50.png"
+  }
+]

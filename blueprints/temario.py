@@ -4,7 +4,7 @@ from flask import Blueprint, g, jsonify, request
 from firebase_setup import db
 from auth_utils import requiere_plan, requiere_login, obtener_oposicion_solicitada, obtener_identidad_desde_token
 from oposiciones import OPOSICIONES, coleccion_temario, oposicion_valida
-from utils import calcular_pesos_reales_por_bloque, tiene_preguntas_psicotecnicas, obtener_temas_navegables
+from utils import calcular_pesos_reales_por_bloque, tiene_preguntas_psicotecnicas, tiene_prueba_psicotecnica, obtener_temas_navegables
 
 bp = Blueprint("temario", __name__)
 
@@ -60,6 +60,13 @@ def obtener_oposiciones_disponibles():
                 # frontend usa esta flag para ofrecer el filtro "excluir
                 # psicotécnicas" únicamente donde tiene sentido.
                 "tiene_psicotecnicas": tiene_preguntas_psicotecnicas(db, oid),
+                # Oposiciones con una prueba psicotécnica PROPIA y separada
+                # (hoy, solo Metro -- ver oposiciones.coleccion_psicotecnico):
+                # el frontend usa esta flag para mostrar la tarjeta
+                # "Psicotécnico" en /test-generator/, distinta de
+                # "tiene_psicotecnicas" (que es el filtro dentro de Test
+                # Oficial, solo para Auxiliar).
+                "tiene_prueba_psicotecnica": tiene_prueba_psicotecnica(db, oid),
             }
             for oid, datos in OPOSICIONES.items()
             if oid in ids_visibles

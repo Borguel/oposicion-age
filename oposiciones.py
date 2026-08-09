@@ -73,3 +73,17 @@ def coleccion_examenes_oficiales(oposicion):
     if not oposicion_valida(oposicion):
         oposicion = OPOSICION_POR_DEFECTO
     return f"examenes_oficiales_{oposicion}"
+
+
+def coleccion_psicotecnico(oposicion):
+    """Colección de la prueba psicotécnica (razonamiento verbal/espacial) de
+    una oposición -- hoy solo Metro (ver cargar_psicotecnico_metro.py). Vive
+    aparte de examenes_oficiales_<oposicion> a propósito: en Metro el
+    ejercicio aptitudinal se hace COMPLETO Y POR SEPARADO del resto del
+    proceso (nunca mezclado con preguntas de temario, a diferencia de
+    Auxiliar -- ver utils.tiene_preguntas_psicotecnicas), así que tiene su
+    propia página (/test-psicotecnico/) en vez de ser un filtro dentro de
+    Test Oficial."""
+    if not oposicion_valida(oposicion):
+        oposicion = OPOSICION_POR_DEFECTO
+    return f"psicotecnico_{oposicion}"

@@ -12,8 +12,8 @@ from firebase_setup import db
 from auth_utils import requiere_plan, obtener_oposicion_solicitada
 from rate_limiter import limiter
 from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
-from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
-from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales
+from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales, coleccion_psicotecnico, oposicion_valida
+from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales, obtener_preguntas_psicotecnico
 from generador_preguntas_verificado import generar_test_verificado
 from errores_generacion import registrar_error_generacion
 from deepseek_utils import call_deepseek_api
@@ -225,6 +225,47 @@ def generar_test_oficial():
     if seleccionadas:
         registrar_uso(db, g.uid, "test_oficial", g.plan_actual, cantidad=len(seleccionadas))
     return jsonify({"test": seleccionadas})
+
+
+@bp.route("/generar-test-psicotecnico", methods=["POST"])
+@requiere_plan(db, "basico")
+def generar_test_psicotecnico():
+    """Prueba psicotécnica (razonamiento verbal/espacial) de una oposición
+    -- hoy solo Metro, ver oposiciones.coleccion_psicotecnico. A propósito
+    NO comparte lógica con /generar-test-oficial: en Metro esta prueba se
+    hace completa y por separado (25 preguntas de razonamiento verbal O 25
+    de razonamiento espacial, nunca mezcladas ni filtradas por tema), así
+    que aquí no hay selección de temas ni reparto ni checkbox de exclusión."""
+    data = request.get_json()
+    prueba = data.get("prueba")
+    if prueba not in ("verbal", "espacial"):
+        return jsonify({"error": "El parámetro 'prueba' debe ser 'verbal' o 'espacial'"}), 400
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "test_oficial")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
+    try:
+        docs_pregunta = obtener_preguntas_psicotecnico(db, g.oposicion)
+    except Exception:
+        logger.exception("Error accediendo a Firestore")
+        return jsonify({"error": "No se pudo acceder a Firestore"}), 500
+    seleccionadas = sorted(
+        (d for d in docs_pregunta if d.get("prueba") == prueba),
+        key=lambda d: d.get("numero", 0),
+    )
+    if not seleccionadas:
+        return jsonify({"test": [], "mensaje": "Todavía no hay preguntas de esta prueba psicotécnica cargadas"}), 404
+    test = [{
+        "pregunta": d.get("pregunta", ""),
+        "opciones": {k.upper(): v for k, v in d.get("opciones", {}).items()},
+        "respuesta_correcta": d.get("respuesta_correcta", "").upper(),
+        "explicacion": d.get("explicacion", ""),
+        "examen": d.get("examen", ""),
+        "numero": d.get("numero", 0),
+        "imagen": d.get("imagen", ""),
+        "prueba": prueba,
+    } for d in seleccionadas]
+    registrar_uso(db, g.uid, "test_oficial", g.plan_actual, cantidad=len(test))
+    return jsonify({"test": test})
 
 
 @bp.route("/guardar-test-oficial", methods=["POST"])
