@@ -97,9 +97,23 @@
     // empíricamente en vez de fijarse a una oposición concreta.
     (async () => {
       try {
+        // Sin cabecera de autenticación, el backend trata la petición como
+        // anónima y NUNCA incluye oposiciones "ocultas" como Metro en la
+        // respuesta (ver blueprints/temario.py
+        // _oposiciones_visibles_para_la_peticion) -- así que hay que mandar
+        // el token para que esta tarjeta pueda aparecer. Se usa idToken()
+        // (no el obtenerAuthHeaders() que sí usa el resto de páginas de
+        // test) porque ese redirige a /login/ si no hay sesión -- válido en
+        // una página protegida, pero este hub se puede visitar sin sesión y
+        // no debe forzar un login solo por decidir si mostrar una tarjeta.
+        const { idToken } = await import("/assets/auth.js");
+        const token = await idToken();
+        if (!token) return;
         const { obtenerOposicionActual } = await import("/assets/oposicion.js");
         const oposicionActual = obtenerOposicionActual();
-        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
+        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles", {
+          headers: { "Authorization": "Bearer " + token }
+        });
         const datos = await res.json();
         const info = (datos.oposiciones || []).find((o) => o.id === oposicionActual);
         if (info && info.tiene_prueba_psicotecnica) {
