@@ -39,6 +39,22 @@ OPOSICIONES = {
         # lanzar el simulacro.
         "simulacro_oficial": {"num_preguntas": 110, "minutos": 90},
     },
+    "METRO": {
+        "nombre": "Agente de Movilidad - Metro de Madrid",
+        "coleccion_temario": "Temario Metro",
+        # Sin exámenes oficiales pasados cargados todavía (a diferencia de
+        # AGE/GACE/Auxiliar) -- sin datos verificados no se ofrece el botón
+        # "Simulacro oficial" (ver frontend/test-oficial/script.js, que
+        # oculta el botón si este campo es None).
+        "simulacro_oficial": None,
+        # Oposición dada de alta solo para un grupo cerrado de usuarios (no
+        # es una de las oposiciones de Estado en las que se basa la web).
+        # No aparece en el selector público (frontend/assets/oposicion.js)
+        # ni en /oposiciones-disponibles salvo para quien ya tenga una
+        # entrada en suscripciones.METRO -- se activa a mano por usuario
+        # desde el panel admin (PATCH /admin/api/usuarios/<uid>/plan).
+        "oculta": True,
+    },
 }
 
 OPOSICION_POR_DEFECTO = "AGE"

@@ -151,7 +151,7 @@ def test_banco_preguntas_totales_por_oposicion(client, db):
     db.sembrar(("banco_preguntas_ia_GACE", "p1"), {"tema_id": "bloque_01-tema_01"})
     with _como():
         d = client.get("/admin/api/banco-preguntas?oposicion=AGE", headers=_AUTH).get_json()
-    assert d["totales_por_oposicion"] == {"AGE": 2, "GACE": 1, "AUXILIAR": 0}
+    assert d["totales_por_oposicion"] == {"AGE": 2, "GACE": 1, "AUXILIAR": 0, "METRO": 0}
     assert d["total_oposicion"] == 2
     assert d["oposicion"] == "AGE"
 

@@ -989,7 +989,7 @@ async function renderAnalitica() {
   const peores = temas.filter((t) => t.respondidas >= 20)
     .sort((a, b) => (a.tasa_acierto ?? 101) - (b.tasa_acierto ?? 101)).slice(0, 10);
 
-  const ETIQUETA_OPOSICION = { AGE: "AGE", GACE: "GACE", AUXILIAR: "Auxiliar" };
+  const ETIQUETA_OPOSICION = { AGE: "AGE", GACE: "GACE", AUXILIAR: "Auxiliar", METRO: "Metro" };
   const bancoHtml = !banco ? "" : `
     <div class="age-card admin-bloque">
       <h3>Banco de preguntas IA (Test Personalizado)</h3>
@@ -1137,7 +1137,7 @@ function modalCrearUsuario() {
         <select class="age-input" id="nu-plan"><option value="">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
       </div>
       <div><label>Para la oposición</label>
-        <select class="age-input" id="nu-oposicion"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
+        <select class="age-input" id="nu-oposicion"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option><option value="METRO">Metro</option></select>
       </div>
     </div>
     <label class="admin-rol-check" style="margin-top:12px;"><input type="checkbox" id="nu-verificado"> <span>Marcar email como verificado</span></label>
@@ -1444,7 +1444,7 @@ function fichaVistaHtml(vista, u) {
         <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("tarjeta", 17)}</span><h3>Cambiar plan</h3></div>
         <div class="admin-form-fila">
           <select id="up-plan" class="age-input"><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
-          <select id="up-oposicion" class="age-input"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
+          <select id="up-oposicion" class="age-input"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option><option value="METRO">Metro</option></select>
         </div>
         <input id="up-motivo" class="age-input" placeholder="Motivo (queda registrado)" style="margin-top:8px;">
         <button class="age-btn age-btn-primary" id="up-guardar" style="margin-top:10px;">Cambiar plan</button>

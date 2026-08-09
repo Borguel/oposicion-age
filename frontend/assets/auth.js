@@ -1093,7 +1093,7 @@ function inyectarNav(user) {
   inyectarSaltoDeContenido();
   construirEsqueletoNav();
   actualizarEnlacesNav(user);
-  inyectarSelectorOposicion(!!user);
+  inyectarSelectorOposicion(user);
   construirBusquedaGlobal(user);
   construirMenuCuenta(user);
   inyectarBannerVerificacion(user);
