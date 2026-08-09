@@ -206,9 +206,15 @@ document.addEventListener("DOMContentLoaded", async function () {
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
 
-      const { obtenerOposicionActual, OPOSICIONES } = await import("/assets/oposicion.js");
+      const { obtenerOposicionActual, OPOSICIONES, obtenerOposicionesOcultasConToken } = await import("/assets/oposicion.js");
       const oposicion = obtenerOposicionActual();
       const sufijo = `?oposicion=${encodeURIComponent(oposicion)}`;
+      // Si la oposición activa es una oculta (activada a mano desde admin,
+      // ver oposicion.js), no está en OPOSICIONES -- se amplía la lista solo
+      // para poder resolver su nombre real más abajo, sin ella
+      // "nombreOposicion" caería al genérico "Domina tu Opo".
+      const token = authHeaders.Authorization.replace(/^Bearer /, "");
+      const oposicionesConOcultas = [...OPOSICIONES, ...(await obtenerOposicionesOcultasConToken(token))];
 
       // NUEVO: Usar la ruta de estadísticas completas que incluye datos PDF
       const [estadisticasRes, temasRes, rachaRes] = await Promise.all([
@@ -226,9 +232,9 @@ document.addEventListener("DOMContentLoaded", async function () {
         console.warn("Usando ruta antigua como fallback");
         const resumenRes = await fetch(`https://oposicion-age.onrender.com/resumen-progreso${sufijo}`, { headers: authHeaders });
         const resumenData = await resumenRes.json();
-        procesarDatos(resumenData.resumen ?? {}, temasData.temas || [], racha, oposicion, OPOSICIONES);
+        procesarDatos(resumenData.resumen ?? {}, temasData.temas || [], racha, oposicion, oposicionesConOcultas);
       } else {
-        procesarDatos(estadisticas, temasData.temas || [], racha, oposicion, OPOSICIONES);
+        procesarDatos(estadisticas, temasData.temas || [], racha, oposicion, oposicionesConOcultas);
       }
     } catch (err) {
       console.error("Error cargando estadísticas:", err);

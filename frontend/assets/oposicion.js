@@ -100,26 +100,44 @@ function _pintarSelectorOposicion(lista) {
 
 // Consulta /oposiciones-disponibles (ya filtrado por el backend: solo
 // devuelve las ocultas en las que este usuario tenga una entrada en
-// suscripciones, ver blueprints/temario.py) y, si el usuario tiene acceso
-// a alguna, repinta el selector para incluirla. Fire-and-forget, sin
-// bloquear el primer pintado -- igual que el resto de piezas de la nav que
-// dependen de una llamada a la API (ver inyectarBannerPrueba en auth.js).
-async function _anadirOposicionesOcultasDelUsuario(user) {
-  if (!user || OPOSICIONES_OCULTAS.length === 0) return;
+// suscripciones, ver blueprints/temario.py) y devuelve las de
+// OPOSICIONES_OCULTAS a las que el usuario tiene acceso concedido (normalmente
+// ninguna). Exportada para que cualquier página -- no solo el selector de la
+// nav -- pueda enterarse de si el usuario actual tiene alguna oposición
+// oculta activada (ver zona-opositor/script.js, que también necesita
+// pintarla en su propio selector de chips y en "Estás preparando").
+export async function obtenerOposicionesOcultasDisponibles(user) {
+  if (!user) return [];
+  return obtenerOposicionesOcultasConToken(await user.getIdToken());
+}
+
+// Misma consulta que obtenerOposicionesOcultasDisponibles, pero para
+// páginas que ya tienen un token de sesión a mano (p. ej. estadisticas,
+// que ya llama a obtenerAuthHeaders() para sus propias peticiones) y no
+// necesitan volver a pedírselo al objeto de usuario de Firebase.
+export async function obtenerOposicionesOcultasConToken(token) {
+  if (!token || OPOSICIONES_OCULTAS.length === 0) return [];
   try {
-    const token = await user.getIdToken();
     const res = await fetch(`${BACKEND_URL}/oposiciones-disponibles`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) return;
+    if (!res.ok) return [];
     const datos = await res.json();
     const idsDisponibles = new Set((datos.oposiciones || []).map((o) => o.id));
-    const extra = OPOSICIONES_OCULTAS.filter((o) => idsDisponibles.has(o.id));
-    if (extra.length > 0) _pintarSelectorOposicion([...OPOSICIONES, ...extra]);
+    return OPOSICIONES_OCULTAS.filter((o) => idsDisponibles.has(o.id));
   } catch (e) {
-    // Sin conexión o backend caído: se queda con el selector público ya
-    // pintado, nada que romper -- la próxima carga de página lo reintenta.
+    // Sin conexión o backend caído: se trata como "sin oposiciones ocultas"
+    // -- la próxima carga de página lo reintenta.
+    return [];
   }
+}
+
+// Fire-and-forget, sin bloquear el primer pintado del selector de la nav --
+// igual que el resto de piezas de la nav que dependen de una llamada a la
+// API (ver inyectarBannerPrueba en auth.js).
+async function _anadirOposicionesOcultasDelUsuario(user) {
+  const extra = await obtenerOposicionesOcultasDisponibles(user);
+  if (extra.length > 0) _pintarSelectorOposicion([...OPOSICIONES, ...extra]);
 }
 
 // Inserta (si no existe ya) el selector de oposición en la barra de
