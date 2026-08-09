@@ -51,8 +51,10 @@ import os
 import re
 import sys
 import time
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
+import fitz  # PyMuPDF -- solo para reconstruir la tabla "Estaciones por línea"
 from dotenv import load_dotenv
 from pypdf import PdfReader
 
@@ -87,16 +89,19 @@ TEMAS_METRO = [
         "titulo": "Conocimientos específicos sobre Metro de Madrid",
         "patron": PATRON_CAPITULO, "primer_valor": "1", "etiqueta": "Capítulo {n}",
         # El cuadro "Estaciones por línea" (Capítulo 2) está maquetado en
-        # columnas -- pypdf lo extrae como una lista plana de nombres de
-        # estación, TODAS bajo un único "ESTACIÓN" compartido por las 4
-        # líneas de la tabla, sin ninguna marca que diga a qué línea
-        # pertenece cada una. Subir ese texto tal cual arriesga que la IA
-        # empareje mal estación-línea al generar preguntas (verificado a
-        # mano: imposible saber, solo con el texto extraído, si una
-        # estación dada de la lista es de la Línea 1, 2, 3 o 4). Se recorta
-        # en vez de subirlo, igual que otros loaders recortan páginas de
-        # publicidad que no aportan contenido examinable fiable.
-        "excluir_entre": ("ESTACIONES POR LÍNEA", "INSTALACIONES"),
+        # columnas -- pypdf (que solo lee texto, sin posición) lo extrae
+        # como una lista plana de nombres de estación, TODAS bajo un único
+        # "ESTACIÓN" compartido por varias líneas de la tabla, sin ninguna
+        # marca de a qué línea pertenece cada una. Es contenido real e
+        # importante (las paradas de cada línea son material de examen), así
+        # que en vez de descartarlo se reconstruye leyendo las coordenadas
+        # x/y de cada palabra con PyMuPDF -- ver _extraer_tabla_estaciones --
+        # y se sustituye el texto plano y ambiguo por una lista clara
+        # "Línea N: estación, estación, ..." con cada estación ya emparejada
+        # con su línea real.
+        # (marca de inicio, marca de fin, primera página, última página --
+        # 0-indexadas -- del cuadro dentro del PDF).
+        "reconstruir_tabla_entre": ("ESTACIONES POR LÍNEA", "INSTALACIONES", 18, 21),
     },
     {
         "num": 2, "prefijo": "2.",
@@ -182,18 +187,160 @@ def _recortar_indice(texto, patron, primer_valor):
     return texto
 
 
-def _excluir_seccion(texto, inicio, fin):
-    """Quita el tramo entre la ÚLTIMA aparición de `inicio` y la siguiente
-    aparición de `fin` (ambos excluidos) -- ver TEMAS_METRO["excluir_entre"]
-    para el porqué. Si alguno de los dos marcadores no aparece, se deja el
-    texto tal cual en vez de arriesgarse a recortar de más."""
+def _reemplazar_seccion(texto, inicio, fin, reemplazo):
+    """Sustituye el tramo entre la ÚLTIMA aparición de `inicio` y la
+    siguiente aparición de `fin` (ambos incluidos) por `reemplazo`. Si
+    alguno de los dos marcadores no aparece, se deja el texto tal cual en
+    vez de arriesgarse a tocar de más."""
     pos_inicio = texto.rfind(inicio)
     if pos_inicio == -1:
         return texto
     pos_fin = texto.find(fin, pos_inicio + len(inicio))
     if pos_fin == -1:
         return texto
-    return texto[:pos_inicio] + texto[pos_fin:]
+    return texto[:pos_inicio] + reemplazo + texto[pos_fin:]
+
+
+_CONECTORES_MINUSCULA = {"de", "del", "la", "las", "el", "los", "y"}
+
+
+_NUMERO_ROMANO = re.compile(r"^[IVXLCDM]+$")
+
+
+def _capitalizar_estacion(nombre):
+    """"PINAR DE CHAMARTÍN" -> "Pinar de Chamartín" -- capitaliza cada
+    palabra (respetando conectores en minúscula salvo al principio) sin
+    tocar los códigos alfanuméricos (p. ej. "T1-T2-T3", "ML1") ni los
+    números romanos (p. ej. "Alfonso XIII", "Pío XII"), que se quedan tal
+    cual."""
+    def cap_palabra(p):
+        prefijo = ""
+        if p.startswith("*"):
+            prefijo, p = "*", p[1:]
+        if any(c.isdigit() for c in p) or _NUMERO_ROMANO.match(p):
+            return prefijo + p
+        return prefijo + "-".join(seg[:1].upper() + seg[1:].lower() if seg else seg for seg in p.split("-"))
+
+    palabras = nombre.split(" ")
+    return " ".join(
+        p.lower() if i > 0 and p.lower() in _CONECTORES_MINUSCULA else cap_palabra(p)
+        for i, p in enumerate(palabras)
+    )
+
+
+def _extraer_tabla_estaciones(ruta_pdf, pagina_inicio, pagina_fin):
+    """Reconstruye el cuadro "Estaciones por línea" leyendo la posición
+    (x, y) de cada palabra con PyMuPDF -- pypdf no la conserva y aplana la
+    tabla en una sola lista sin distinguir columnas. Devuelve un dict
+    ordenado {"Línea N": [estaciones...], ...} con cada estación ya
+    emparejada con su línea real.
+
+    Cada página de la tabla tiene una fila de cabeceras "LÍNEA N" (o "ML1")
+    que define las columnas por su posición x; alguna columna tiene además
+    una sub-cabecera más abajo (p. ej. "RAMAL" dentro de la columna de la
+    Línea 2) que reetiqueta las filas que vengan después. El resto de
+    palabras de la página se asigna a la columna cuyo rango de x le
+    corresponde y se agrupa en filas por proximidad de y (cada fila es el
+    nombre de una estación, de una o varias palabras)."""
+    doc = fitz.open(ruta_pdf)
+    resultado = defaultdict(list)
+
+    for num_pagina in range(pagina_inicio, pagina_fin + 1):
+        words = doc[num_pagina].get_text("words")  # (x0, y0, x1, y1, texto, bloque, línea, palabra)
+
+        cabeceras = []  # (x0, y0, etiqueta, [palabras que forman la cabecera])
+        for w in words:
+            if w[4] == "LÍNEA":
+                num = next((w2 for w2 in words if w2[4].replace(".", "").isdigit()
+                            and abs(w2[1] - w[1]) < 3 and 0 < (w2[0] - w[0]) < 60), None)
+                if num:
+                    cabeceras.append((w[0], w[1], f"Línea {num[4]}", [w, num]))
+            elif w[4] == "ML1":
+                cabeceras.append((w[0], w[1], "ML1", [w]))
+            elif w[4] == "RAMAL":
+                cabeceras.append((w[0], w[1], "Ramal", [w]))
+        if not cabeceras:
+            continue
+
+        y_fila_principal = min(y for _, y, _, _ in cabeceras)
+        principales = [c for c in cabeceras if abs(c[1] - y_fila_principal) < 3]
+        secundarias = [c for c in cabeceras if abs(c[1] - y_fila_principal) >= 3]
+
+        columnas_x = sorted(round(x) for x, y, _, _ in principales)
+        limites = [-1] + [(columnas_x[i] + columnas_x[i + 1]) // 2 for i in range(len(columnas_x) - 1)] + [10000]
+
+        def columna_de(x):
+            for i in range(len(columnas_x)):
+                if limites[i] <= x < limites[i + 1]:
+                    return columnas_x[i]
+            return columnas_x[-1]
+
+        cab_por_columna = defaultdict(list)
+        for x, y, etiqueta, _ in principales + secundarias:
+            cab_por_columna[columna_de(x)].append((y, etiqueta))
+        for col in cab_por_columna:
+            cab_por_columna[col].sort()
+
+        # Posiciones exactas de las propias palabras de cabecera, para no
+        # contarlas también como si fueran una fila de datos.
+        posiciones_cabecera = {
+            (round(w[0]), round(w[1]))
+            for _, _, _, palabras in principales + secundarias
+            for w in palabras
+        }
+
+        filas = defaultdict(list)
+        for x0, y0, x1, y1, texto, *_ in words:
+            if y0 < 50 or y0 > 770:  # cabecera/pie de página corridos de "Metro de Madrid, S.A. ..."
+                continue
+            if (round(x0), round(y0)) in posiciones_cabecera:
+                continue
+            # El subtítulo "ESTACIÓN" se repite justo debajo de cada
+            # cabecera de columna -- se descarta solo ahí, no en cualquier
+            # otro sitio, porque también forma parte del nombre real de una
+            # estación ("Estación del Arte", Línea 1).
+            if texto == "ESTACIÓN" and any(abs(y0 - y) < 40 for _, y, _, _ in principales + secundarias):
+                continue
+            col = columna_de(x0)
+            if col not in cab_por_columna or y0 < cab_por_columna[col][0][0]:
+                continue
+            filas[(col, round(y0 / 2) * 2)].append((x0, texto))
+
+        for col in sorted(cab_por_columna):
+            subcabeceras = cab_por_columna[col]
+            entradas = sorted((y, xs) for (c, y), xs in filas.items() if c == col)
+            for y, palabras_fila in entradas:
+                etiqueta = subcabeceras[0][1]
+                for sy, sn in subcabeceras:
+                    if sy <= y + 1:
+                        etiqueta = sn
+                nombre = " ".join(t for _, t in sorted(palabras_fila)).strip()
+                if nombre:
+                    resultado[etiqueta].append(_capitalizar_estacion(nombre))
+
+    return resultado
+
+
+# Corrección puntual de un carácter perdido en la extracción -- "Príncipe
+# Pío" aparece bien escrito en las Líneas 6 y 10 de la misma tabla, así que
+# se sabe con certeza que es una errata de origen y no una abreviatura
+# real; el resto de nombres se sube tal cual los extrae PyMuPDF.
+_CORRECCIONES_ESTACION = {"Prícipe Pío": "Príncipe Pío"}
+
+
+def _formatear_tabla_estaciones(tabla):
+    """{"Línea 1": ["Pinar de Chamartín", ...]} -> texto legible, una línea
+    de Metro por renglón, para sustituir el cuadro original en el texto del
+    tema."""
+    orden = [f"Línea {i}" for i in range(1, 13)] + ["Ramal", "ML1"]
+    renglones = []
+    for etiqueta in orden:
+        estaciones = tabla.get(etiqueta)
+        if not estaciones:
+            continue
+        estaciones = [_CORRECCIONES_ESTACION.get(e, e) for e in estaciones]
+        renglones.append(f"{etiqueta}: " + ", ".join(estaciones) + ".")
+    return "ESTACIONES POR LÍNEA\n\n" + "\n".join(renglones) + "\n\n"
 
 
 def _estimar_tokens(texto):
@@ -367,9 +514,10 @@ def procesar_tema(config, ruta_pdf, reparar=True):
     print(f"📄 Tema {config['num']}: {os.path.basename(ruta_pdf)}")
     texto = extraer_texto_tema(ruta_pdf)
 
-    if config.get("excluir_entre"):
-        inicio, fin = config["excluir_entre"]
-        texto = _excluir_seccion(texto, inicio, fin)
+    if config.get("reconstruir_tabla_entre"):
+        inicio, fin, pag_inicio, pag_fin = config["reconstruir_tabla_entre"]
+        tabla = _extraer_tabla_estaciones(ruta_pdf, pag_inicio, pag_fin)
+        texto = _reemplazar_seccion(texto, inicio, fin, _formatear_tabla_estaciones(tabla))
 
     if config["patron"] and config["primer_valor"]:
         texto = _recortar_indice(texto, config["patron"], config["primer_valor"])
