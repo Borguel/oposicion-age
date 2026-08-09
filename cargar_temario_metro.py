@@ -86,6 +86,17 @@ TEMAS_METRO = [
         "num": 1, "prefijo": "1.",
         "titulo": "Conocimientos específicos sobre Metro de Madrid",
         "patron": PATRON_CAPITULO, "primer_valor": "1", "etiqueta": "Capítulo {n}",
+        # El cuadro "Estaciones por línea" (Capítulo 2) está maquetado en
+        # columnas -- pypdf lo extrae como una lista plana de nombres de
+        # estación, TODAS bajo un único "ESTACIÓN" compartido por las 4
+        # líneas de la tabla, sin ninguna marca que diga a qué línea
+        # pertenece cada una. Subir ese texto tal cual arriesga que la IA
+        # empareje mal estación-línea al generar preguntas (verificado a
+        # mano: imposible saber, solo con el texto extraído, si una
+        # estación dada de la lista es de la Línea 1, 2, 3 o 4). Se recorta
+        # en vez de subirlo, igual que otros loaders recortan páginas de
+        # publicidad que no aportan contenido examinable fiable.
+        "excluir_entre": ("ESTACIONES POR LÍNEA", "INSTALACIONES"),
     },
     {
         "num": 2, "prefijo": "2.",
@@ -169,6 +180,20 @@ def _recortar_indice(texto, patron, primer_valor):
     if len(coincidencias) >= 2:
         return texto[coincidencias[-1].start():]
     return texto
+
+
+def _excluir_seccion(texto, inicio, fin):
+    """Quita el tramo entre la ÚLTIMA aparición de `inicio` y la siguiente
+    aparición de `fin` (ambos excluidos) -- ver TEMAS_METRO["excluir_entre"]
+    para el porqué. Si alguno de los dos marcadores no aparece, se deja el
+    texto tal cual en vez de arriesgarse a recortar de más."""
+    pos_inicio = texto.rfind(inicio)
+    if pos_inicio == -1:
+        return texto
+    pos_fin = texto.find(fin, pos_inicio + len(inicio))
+    if pos_fin == -1:
+        return texto
+    return texto[:pos_inicio] + texto[pos_fin:]
 
 
 def _estimar_tokens(texto):
@@ -341,6 +366,10 @@ def reparar_espaciado(texto_subbloque):
 def procesar_tema(config, ruta_pdf, reparar=True):
     print(f"📄 Tema {config['num']}: {os.path.basename(ruta_pdf)}")
     texto = extraer_texto_tema(ruta_pdf)
+
+    if config.get("excluir_entre"):
+        inicio, fin = config["excluir_entre"]
+        texto = _excluir_seccion(texto, inicio, fin)
 
     if config["patron"] and config["primer_valor"]:
         texto = _recortar_indice(texto, config["patron"], config["primer_valor"])
