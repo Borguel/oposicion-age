@@ -1125,6 +1125,231 @@
     "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
   },
   {
+    "numero": 101,
+    "prueba": "espacial",
+    "pregunta": "Observe la matriz y señale la figura que falta, siguiendo la misma lógica de las demás casillas.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Cada fila mantiene la misma forma (rombo, cuadrado y triángulo) y cada columna aumenta el relleno de izquierda a derecha (sin relleno, gris, negro); la casilla que falta es un triángulo con relleno negro.",
+    "imagen": "/assets/psicotecnico-metro/gen_raven_relleno_101.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 102,
+    "prueba": "espacial",
+    "pregunta": "Observe la matriz y señale la figura que falta, siguiendo la misma lógica de las demás casillas.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Cada fila mantiene la misma forma (círculo, triángulo y rombo) y cada columna aumenta el relleno de izquierda a derecha (sin relleno, gris, negro); la casilla que falta es un rombo con relleno negro.",
+    "imagen": "/assets/psicotecnico-metro/gen_raven_relleno_102.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 103,
+    "prueba": "espacial",
+    "pregunta": "Observe la matriz y señale la figura que falta, siguiendo la misma lógica de las demás casillas.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Cada fila mantiene la misma forma (rombo, cuadrado y triángulo) y cada columna aumenta el relleno de izquierda a derecha (sin relleno, gris, negro); la casilla que falta es un triángulo con relleno negro.",
+    "imagen": "/assets/psicotecnico-metro/gen_raven_relleno_103.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 104,
+    "prueba": "espacial",
+    "pregunta": "Observe la matriz y señale la figura que falta, siguiendo la misma lógica de las demás casillas.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Cada fila mantiene la misma forma (cuadrado, rombo y triángulo) y cada columna aumenta el relleno de izquierda a derecha (sin relleno, gris, negro); la casilla que falta es un triángulo con relleno negro.",
+    "imagen": "/assets/psicotecnico-metro/gen_raven_relleno_104.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 105,
+    "prueba": "espacial",
+    "pregunta": "Observe la matriz y señale la figura que falta, siguiendo la misma lógica de las demás casillas.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Cada fila mantiene la misma forma (triángulo, cuadrado y círculo) y cada columna añade un punto más de izquierda a derecha (1, 2 y 3 puntos); la casilla que falta es un círculo con 3 puntos.",
+    "imagen": "/assets/psicotecnico-metro/gen_raven_puntos_105.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 106,
+    "prueba": "espacial",
+    "pregunta": "Observe la matriz y señale la figura que falta, siguiendo la misma lógica de las demás casillas.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Cada fila mantiene la misma forma (rombo, círculo y triángulo) y cada columna añade un punto más de izquierda a derecha (1, 2 y 3 puntos); la casilla que falta es un triángulo con 3 puntos.",
+    "imagen": "/assets/psicotecnico-metro/gen_raven_puntos_106.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 107,
+    "prueba": "espacial",
+    "pregunta": "Observe la matriz y señale la figura que falta, siguiendo la misma lógica de las demás casillas.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Cada fila mantiene la misma forma (triángulo, círculo y cuadrado) y cada columna añade un punto más de izquierda a derecha (1, 2 y 3 puntos); la casilla que falta es un cuadrado con 3 puntos.",
+    "imagen": "/assets/psicotecnico-metro/gen_raven_puntos_107.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 108,
+    "prueba": "espacial",
+    "pregunta": "Observe la matriz y señale la figura que falta, siguiendo la misma lógica de las demás casillas.",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Cada fila mantiene la misma forma (triángulo, círculo y rombo) y cada columna añade un punto más de izquierda a derecha (1, 2 y 3 puntos); la casilla que falta es un rombo con 3 puntos.",
+    "imagen": "/assets/psicotecnico-metro/gen_raven_puntos_108.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 109,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál de las siguientes opciones es la imagen reflejada (en espejo) del modelo?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La opción B es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
+    "imagen": "/assets/psicotecnico-metro/gen_simetrica_109.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 110,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál de las siguientes opciones es la imagen reflejada (en espejo) del modelo?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La opción A es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
+    "imagen": "/assets/psicotecnico-metro/gen_simetrica_110.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 111,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál de las siguientes opciones es la imagen reflejada (en espejo) del modelo?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La opción D es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
+    "imagen": "/assets/psicotecnico-metro/gen_simetrica_111.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 112,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál de las siguientes opciones es la imagen reflejada (en espejo) del modelo?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La opción A es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
+    "imagen": "/assets/psicotecnico-metro/gen_simetrica_112.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 113,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál de las siguientes opciones es la imagen reflejada (en espejo) del modelo?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La opción B es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
+    "imagen": "/assets/psicotecnico-metro/gen_simetrica_113.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 114,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál de las siguientes opciones es la imagen reflejada (en espejo) del modelo?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La opción D es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
+    "imagen": "/assets/psicotecnico-metro/gen_simetrica_114.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 115,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál de las siguientes opciones es la imagen reflejada (en espejo) del modelo?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La opción A es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
+    "imagen": "/assets/psicotecnico-metro/gen_simetrica_115.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
     "numero": 1,
     "prueba": "verbal",
     "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nEl poder adquisitivo de una ………. es el reflejo del enriquecimiento o ………. de un país.",
@@ -2172,6 +2397,356 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "El texto atribuye la disminución al «uso de pesticidas, la pérdida de hábitats naturales y el cambio climático».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 76,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de ADUSTO:",
+    "opciones": {
+      "C": "Hosco",
+      "D": "Cordial",
+      "A": "Alegre",
+      "B": "Afable"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Adusto significa de trato serio, hosco o severo.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 77,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de PUSILÁNIME:",
+    "opciones": {
+      "D": "Apocado",
+      "A": "Decidido",
+      "B": "Valeroso",
+      "C": "Audaz"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Pusilánime es quien carece de ánimo o valor para afrontar algo; apocado, cobarde.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 78,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de VACUO:",
+    "opciones": {
+      "A": "Superficial",
+      "B": "Profundo",
+      "C": "Sustancioso",
+      "D": "Denso"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Vacuo significa vacío de contenido, superficial.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 79,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de PROBO:",
+    "opciones": {
+      "B": "Íntegro",
+      "C": "Deshonesto",
+      "D": "Corrupto",
+      "A": "Ruin"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Probo significa honrado, recto en su actuar.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 80,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de ACRISOLADO:",
+    "opciones": {
+      "C": "Intachable",
+      "D": "Corrupto",
+      "A": "Adulterado",
+      "B": "Impuro"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Acrisolado significa purificado por la prueba, intachable (p. ej. «virtud acrisolada»).",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 81,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a PARVO?",
+    "opciones": {
+      "D": "Copioso",
+      "A": "Escaso",
+      "B": "Exiguo",
+      "C": "Reducido"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Parvo significa pequeño o escaso; su antónimo es copioso, abundante.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 82,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a INICUO?",
+    "opciones": {
+      "A": "Justo",
+      "B": "Perverso",
+      "C": "Injusto",
+      "D": "Inmoral"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Inicuo significa injusto o malvado; su antónimo es justo.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 83,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a PRÓVIDO?",
+    "opciones": {
+      "B": "Mezquino",
+      "C": "Generoso",
+      "D": "Dadivoso",
+      "A": "Munificente"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Próvido significa dispuesto a proveer con generosidad; su antónimo es mezquino.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 84,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a YERTO?",
+    "opciones": {
+      "C": "Flexible",
+      "D": "Tieso",
+      "A": "Rígido",
+      "B": "Envarado"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Yerto significa tieso, rígido (p. ej. por el frío); su antónimo es flexible.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 85,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a LÁBIL?",
+    "opciones": {
+      "D": "Estable",
+      "A": "Inestable",
+      "B": "Inconstante",
+      "C": "Voluble"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Lábil significa que se desliza o cambia con facilidad, poco firme; su antónimo es estable.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 86,
+    "prueba": "verbal",
+    "pregunta": "Juez es a sentencia como:",
+    "opciones": {
+      "A": "Legislador es a ley.",
+      "B": "Abogado es a defensa.",
+      "C": "Testigo es a declaración.",
+      "D": "Fiscal es a acusación."
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La relación es quien dicta un acto con fuerza vinculante: el legislador dicta la ley igual que el juez dicta la sentencia; defender, declarar o acusar no son actos resolutivos.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 87,
+    "prueba": "verbal",
+    "pregunta": "Ignorancia es a instrucción como:",
+    "opciones": {
+      "B": "Enfermedad es a tratamiento.",
+      "C": "Enfermedad es a síntoma.",
+      "D": "Enfermedad es a diagnóstico.",
+      "A": "Enfermedad es a contagio."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La relación es el estado negativo y el remedio que lo revierte: la instrucción remedia la ignorancia igual que el tratamiento remedia la enfermedad.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 88,
+    "prueba": "verbal",
+    "pregunta": "Génesis es a origen como:",
+    "opciones": {
+      "C": "Epílogo es a conclusión.",
+      "D": "Epílogo es a desarrollo.",
+      "A": "Epílogo es a comienzo.",
+      "B": "Epílogo es a prólogo."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La relación es el término narrativo y la fase de la obra a la que corresponde: génesis es principio, epílogo es cierre.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 89,
+    "prueba": "verbal",
+    "pregunta": "Célula es a tejido como:",
+    "opciones": {
+      "D": "Ladrillo es a muro.",
+      "A": "Ladrillo es a casa.",
+      "B": "Ladrillo es a cemento.",
+      "C": "Ladrillo es a arquitecto."
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La relación es la unidad básica y la estructura del nivel inmediatamente superior: varias células forman un tejido, igual que varios ladrillos forman un muro (una casa ya es un nivel superior, formado por muros).",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 90,
+    "prueba": "verbal",
+    "pregunta": "Según la normativa vigente de la RAE, señale la opción correctamente escrita:",
+    "opciones": {
+      "A": "Solo quería ayudar.",
+      "B": "Solo, quería ayudar.",
+      "C": "Solo queria ayudar.",
+      "D": "Sólo quería ayudar."
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Desde la ortografía de 2010, «solo» (adverbio) ya no lleva tilde ni siquiera para distinguirlo del adjetivo; «quería» sí la lleva por ser palabra llana terminada en vocal con hiato.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 91,
+    "prueba": "verbal",
+    "pregunta": "Señale la opción correctamente escrita:",
+    "opciones": {
+      "B": "No entiendo por qué te fuiste.",
+      "C": "No entiendo porqué te fuiste.",
+      "D": "No entiendo por que te fuiste.",
+      "A": "No entiendo el porque te fuiste."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "«Por qué» (dos palabras, con tilde) se usa en preguntas directas o indirectas; «porqué» (una palabra) es un sustantivo (\"el porqué de todo\") y «porque» explica una causa.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 92,
+    "prueba": "verbal",
+    "pregunta": "Señale la opción correctamente escrita según la adaptación de la RAE:",
+    "opciones": {
+      "C": "No hay cobertura de wifi en esta planta.",
+      "D": "No hay cobertura de Wifi en esta planta.",
+      "A": "No hay cobertura de Wi-Fi en esta planta.",
+      "B": "No hay cobertura de wi fi en esta planta."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La RAE adaptó el término al español como «wifi», en minúscula y sin guion.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 93,
+    "prueba": "verbal",
+    "pregunta": "Señale la opción correctamente escrita:",
+    "opciones": {
+      "D": "Aún no ha llegado, aunque prometió venir aun así.",
+      "A": "Aún no ha llegado, aunque prometió venir aún así.",
+      "B": "Aun no ha llegado, aunque prometió venir aun así.",
+      "C": "Aun no ha llegado, aunque prometió venir aún así."
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«Aún» lleva tilde cuando equivale a «todavía»; «aun» no la lleva cuando equivale a «incluso» (como en la locución «aun así»).",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 94,
+    "prueba": "verbal",
+    "pregunta": "Complete el refrán: «A quien madruga, ...»",
+    "opciones": {
+      "A": "Dios le ayuda.",
+      "B": "la suerte le abandona.",
+      "C": "el sueño se le escapa.",
+      "D": "el trabajo le agobia."
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Refrán popular que anima a empezar pronto las tareas.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 95,
+    "prueba": "verbal",
+    "pregunta": "Complete el refrán: «En boca cerrada...»",
+    "opciones": {
+      "B": "no entran moscas.",
+      "C": "nace la sabiduría.",
+      "D": "hay silencio.",
+      "A": "se guarda el secreto."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Refrán que aconseja prudencia al hablar.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 96,
+    "prueba": "verbal",
+    "pregunta": "¿Qué significa el refrán «Cría cuervos y te sacarán los ojos»?",
+    "opciones": {
+      "C": "Quien ayuda a alguien sin merecerlo puede recibir ingratitud a cambio.",
+      "D": "Los cuervos son animales agresivos por naturaleza.",
+      "A": "Es bueno criar animales desde pequeños.",
+      "B": "Nunca hay que confiar en los pájaros."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Es un refrán sobre la ingratitud de quien recibe ayuda o favores inmerecidos.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 97,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra que no pertenece al mismo grupo semántico que las demás:",
+    "opciones": {
+      "D": "Zanahoria",
+      "A": "Pera",
+      "B": "Manzana",
+      "C": "Plátano"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Zanahoria es una hortaliza; las demás son frutas.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 98,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra que no pertenece al mismo grupo semántico que las demás:",
+    "opciones": {
+      "A": "Trompeta",
+      "B": "Violín",
+      "C": "Violonchelo",
+      "D": "Viola"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Trompeta es un instrumento de viento; los demás son instrumentos de cuerda frotada de la familia del violín.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 99,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra que no pertenece al mismo grupo semántico que las demás:",
+    "opciones": {
+      "B": "Locuacidad",
+      "C": "Cautela",
+      "D": "Discreción",
+      "A": "Sigilo"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Sigilo, discreción y cautela remiten a la reserva y la prudencia; locuacidad es justo lo contrario, hablar en exceso.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 100,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra que no pertenece al mismo grupo semántico que las demás:",
+    "opciones": {
+      "C": "Perpetuo",
+      "D": "Efímero",
+      "A": "Fugaz",
+      "B": "Pasajero"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Efímero, fugaz y pasajero significan de corta duración; perpetuo es lo contrario, de duración indefinida.",
     "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
   }
 ]
