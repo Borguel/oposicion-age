@@ -5,7 +5,8 @@
 // reparto, ni checkbox de exclusión -- cada prueba se hace siempre por
 // separado, nunca mezclada con la otra ni con el temario. Pero, igual que
 // en Test Oficial, el usuario sí elige cuántas preguntas quiere (hasta el
-// tamaño de cada banco -- 100 en verbal, 90 en espacial) y si quiere
+// tamaño de cada banco -- 100 en verbal, 134 en espacial, ambos en
+// ampliación progresiva hacia un objetivo de 500 cada uno) y si quiere
 // cronometrarlo o no.
 // El motor de hacer el test en sí (temporizador, autoguardado, navegador de
 // preguntas, resultados, reanudar) es el mismo que usan las demás páginas

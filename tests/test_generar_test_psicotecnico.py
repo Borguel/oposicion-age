@@ -12,7 +12,7 @@ def _con_sesion(cliente, uid="u1", email="u1@example.com"):
     return parche
 
 
-def _pregunta_psico(numero, prueba, imagen=None):
+def _pregunta_psico(numero, prueba, imagen=None, categoria=None):
     datos = {
         "tipo": "pregunta",
         "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
@@ -25,6 +25,8 @@ def _pregunta_psico(numero, prueba, imagen=None):
     }
     if imagen:
         datos["imagen"] = imagen
+    if categoria:
+        datos["categoria"] = categoria
     return datos
 
 
@@ -92,8 +94,7 @@ def test_ruta_generar_test_psicotecnico_respeta_num_preguntas(client, db):
         assert resp.status_code == 200
         test = resp.get_json()["test"]
         assert len(test) == 10
-        # sigue viniendo ordenado por número aunque sea un subconjunto al azar
-        assert test == sorted(test, key=lambda p: p["numero"])
+        assert len(set(p["numero"] for p in test)) == 10  # sin repetidas
     finally:
         parche.stop()
 
@@ -127,9 +128,41 @@ def test_ruta_generar_test_psicotecnico_num_preguntas_por_encima_del_total_se_re
             headers={"Authorization": "Bearer x"}
         )
         assert resp.status_code == 200
-        # el tope duro del endpoint es 75, pero solo hay 25 cargadas -> se
+        # el tope duro del endpoint es 100, pero solo hay 25 cargadas -> se
         # recorta al total disponible, no al tope.
         assert len(resp.get_json()["test"]) == 25
+    finally:
+        parche.stop()
+
+
+def test_ruta_generar_test_psicotecnico_reparte_entre_categorias(client, db):
+    # 20 preguntas de "sinonimos" (numero 1-20) y 1 sola de cada una de
+    # otras 4 categorías (numero 21-24) -- si el reparto fuese un
+    # random.sample() liso, sería facilísimo que un test de 5 preguntas
+    # saliera todo de "sinonimos". Con el reparto equilibrado, un test de 5
+    # preguntas tiene que sacar sí o sí las 4 categorías pequeñas antes de
+    # repetir "sinonimos" una segunda vez.
+    for i in range(1, 21):
+        db.sembrar(("psicotecnico_METRO", f"v{i:02d}"), _pregunta_psico(i, "verbal", categoria="sinonimos"))
+    otras = ["antonimos", "analogias", "ortografia", "refranes"]
+    for i, cat in zip(range(21, 25), otras):
+        db.sembrar(("psicotecnico_METRO", f"v{i:02d}"), _pregunta_psico(i, "verbal", categoria=cat))
+    _sembrar_usuario_metro(db)
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/generar-test-psicotecnico",
+            json={"oposicion": "METRO", "prueba": "verbal", "num_preguntas": 5},
+            headers={"Authorization": "Bearer x"}
+        )
+        assert resp.status_code == 200
+        test = resp.get_json()["test"]
+        assert len(test) == 5
+        numeros = {p["numero"] for p in test}
+        # las 4 categorías pequeñas (numero 21-24) tienen que estar todas,
+        # y la quinta pregunta es la única "sinonimos" que cabe
+        assert numeros.issuperset({21, 22, 23, 24})
+        assert len(numeros & set(range(1, 21))) == 1
     finally:
         parche.stop()
 
