@@ -14,6 +14,14 @@
   display: none;
 }
 
+/* Variante para "todavía no tienes preguntas" -- no es un error (nadie ha
+   roto nada, es el estado normal de quien aún no ha usado esto), así que
+   no debe alarmar con el mismo rojo que un fallo real de red/servidor. */
+.aviso.aviso-info {
+  color: var(--age-info);
+  background: var(--age-info-bg);
+}
+
 /* Agrupa un icono SVG con el texto que lo acompaña (botones, avisos,
    cronómetro) para que quede centrado verticalmente en vez de desalineado
    con la línea base del texto. */

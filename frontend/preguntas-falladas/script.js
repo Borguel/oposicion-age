@@ -35,9 +35,14 @@ async function obtenerAuthHeaders() {
 
     let listaTemasGlobal = [];
 
-    function mostrarAviso(texto) {
+    // tipo "info" (por defecto "error"): el caso de "todavía no tienes
+    // preguntas falladas" no es un fallo, es el estado normal de quien aún
+    // no ha usado esto -- no debe verse igual de alarmante que un error
+    // real de red/servidor.
+    function mostrarAviso(texto, tipo = "error") {
       const aviso = document.getElementById('aviso-falladas');
       aviso.innerHTML = texto;
+      aviso.classList.toggle('aviso-info', tipo === 'info');
       aviso.style.display = 'block';
     }
 
@@ -134,7 +139,7 @@ async function obtenerAuthHeaders() {
         preguntas = datos.test || [];
 
         if (preguntas.length === 0) {
-          mostrarAviso(datos.mensaje || "No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.");
+          mostrarAviso(datos.mensaje || "No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.", "info");
           document.getElementById("contenedor-test").innerHTML = "";
           document.getElementById("contenedor-test").style.display = "none";
           document.getElementById('tarjeta-formulario').style.display = "";

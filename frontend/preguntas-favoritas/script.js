@@ -35,9 +35,14 @@ async function obtenerAuthHeaders() {
 
     let listaTemasGlobal = [];
 
-    function mostrarAviso(texto) {
+    // tipo "info" (por defecto "error"): el caso de "todavía no tienes
+    // preguntas favoritas" no es un fallo, es el estado normal de quien aún
+    // no ha usado esto -- no debe verse igual de alarmante que un error
+    // real de red/servidor.
+    function mostrarAviso(texto, tipo = "error") {
       const aviso = document.getElementById('aviso-favoritas');
       aviso.innerHTML = texto;
+      aviso.classList.toggle('aviso-info', tipo === 'info');
       aviso.style.display = 'block';
     }
 
@@ -134,7 +139,7 @@ async function obtenerAuthHeaders() {
         preguntas = datos.test || [];
 
         if (preguntas.length === 0) {
-          mostrarAviso(datos.mensaje || `No tienes preguntas favoritas marcadas en tu cuenta. Marca la estrella <span class="icono-inline">${icono("estrella", 14)}</span> durante cualquier test para guardarlas aquí.`);
+          mostrarAviso(datos.mensaje || `No tienes preguntas favoritas marcadas en tu cuenta. Marca la estrella <span class="icono-inline">${icono("estrella", 14)}</span> durante cualquier test para guardarlas aquí.`, "info");
           document.getElementById("contenedor-test").innerHTML = "";
           document.getElementById("contenedor-test").style.display = "none";
           document.getElementById('tarjeta-formulario').style.display = "";
