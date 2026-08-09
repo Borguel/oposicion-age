@@ -48,6 +48,11 @@
           <div class="title">Oficial</div>
           <div class="description">Preguntas reales de exámenes de convocatorias anteriores, tal como se hicieron el día del examen.</div>
         </a>
+        <a class="test-type-card test-type-card--psicotecnico" href="/test-psicotecnico/" id="tarjeta-psicotecnico" style="display:none;">
+          <div class="icon" data-icon="cerebro" data-icon-size="30"></div>
+          <div class="title">Psicotécnico</div>
+          <div class="description">Razonamiento verbal y espacial de la prueba aptitudinal, cada una completa y por separado.</div>
+        </a>
       </div>
     </section>
 
@@ -84,6 +89,26 @@
     document.querySelectorAll("[data-icon]").forEach((el) => {
       el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
     });
+
+    // Tarjeta "Psicotécnico": solo se muestra en oposiciones con una prueba
+    // psicotécnica propia cargada (hoy, solo Metro -- ver
+    // blueprints/temario.py "tiene_prueba_psicotecnica"), igual que el
+    // filtro "excluir psicotécnicas" de /test-oficial/ se calcula
+    // empíricamente en vez de fijarse a una oposición concreta.
+    (async () => {
+      try {
+        const { obtenerOposicionActual } = await import("/assets/oposicion.js");
+        const oposicionActual = obtenerOposicionActual();
+        const res = await fetch("https://oposicion-age.onrender.com/oposiciones-disponibles");
+        const datos = await res.json();
+        const info = (datos.oposiciones || []).find((o) => o.id === oposicionActual);
+        if (info && info.tiene_prueba_psicotecnica) {
+          document.getElementById("tarjeta-psicotecnico").style.display = "";
+        }
+      } catch (e) {
+        console.error("No se pudo comprobar si hay prueba psicotécnica:", e);
+      }
+    })();
   </script>
 </body>
 </html>

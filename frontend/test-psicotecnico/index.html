@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script>if(location.hostname==="oposicion-age-1.onrender.com"){location.replace("https://www.dominatuopo.com"+location.pathname+location.search+location.hash);}</script>
+  <style>html:not(.auth-listo) body { visibility: hidden; }</style>
+  <script type="module" src="/assets/auth-guard.js"></script>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js" crossorigin />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js" crossorigin />
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <title>Test Psicotécnico - Domina tu Opo</title>
+  <meta name="description" content="Prueba aptitudinal de razonamiento verbal y espacial, tal como se hace el día del examen." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Test Psicotécnico - Domina tu Opo" />
+  <meta property="og:description" content="Prueba aptitudinal de razonamiento verbal y espacial, tal como se hace el día del examen." />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="canonical" href="https://www.dominatuopo.com/test-psicotecnico/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/test-generator/style.css" />
+  <link rel="stylesheet" href="/test-psicotecnico/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+  <div class="testherr-header">
+    <div class="testherr-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="13.2" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="13.2" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/><line x1="12" y1="8" x2="8" y2="13.2"/><line x1="12" y1="8" x2="16" y2="13.2"/><line x1="8" y1="13.2" x2="12" y2="17"/><line x1="16" y1="13.2" x2="12" y2="17"/><line x1="8" y1="13.2" x2="16" y2="13.2"/></svg></div>
+    <h1>Test Psicotécnico</h1>
+    <p>Las dos pruebas aptitudinales del examen real, cada una completa y por separado: razonamiento verbal y razonamiento espacial.</p>
+  </div>
+
+  <div class="container">
+    <div class="card fade-in" id="selector-psicotecnico">
+      <h3 class="tarjeta-formulario-titulo">Elige qué prueba quieres hacer</h3>
+      <p class="tarjeta-formulario-subtitulo">Cada prueba son 25 preguntas con un límite de 20 minutos, igual que en el examen real. Se hacen siempre por separado, nunca mezcladas entre sí ni con el temario.</p>
+      <div class="test-type-container">
+        <button type="button" class="test-type-card" id="btn-prueba-verbal" data-prueba="verbal">
+          <div class="icon" data-icon="chat" data-icon-size="30"></div>
+          <div class="title">Prueba 1: Razonamiento verbal</div>
+          <div class="description">25 preguntas · 20 minutos</div>
+        </button>
+        <button type="button" class="test-type-card" id="btn-prueba-espacial" data-prueba="espacial">
+          <div class="icon" data-icon="destellos" data-icon-size="30"></div>
+          <div class="title">Prueba 2: Razonamiento espacial</div>
+          <div class="description">25 preguntas · 20 minutos</div>
+        </button>
+      </div>
+    </div>
+
+    <div id="temporizador" style="display:none;">
+      <button type="button" id="btn-toggle-temporizador" class="btn-toggle-temporizador" aria-label="Ocultar temporizador" title="Ocultar temporizador"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <span id="temporizador-texto" class="icono-inline"></span>
+    </div>
+    <div id="barra-progreso-tiempo" class="progress-container" style="display: none;">
+      <div id="progreso-tiempo" class="progress-bar" style="background: linear-gradient(90deg, #4caf50, #66bb6a);"></div>
+      <div id="texto-progreso-tiempo" class="progress-text"></div>
+    </div>
+    <div id="navegador-preguntas" class="navegador-preguntas" style="display:none;"></div>
+    <div id="contenedor-test" class="card fade-in" style="display:none;"></div>
+    <div id="contenedor-resultados" class="fade-in" style="display:none;"></div>
+    <div class="acciones-test-footer">
+      <button id="btn-guardar-salir" type="button" class="btn-guardar-salir-estatico icono-inline" style="display:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v6h8V4"/><path d="M8 21v-7h8v7"/></svg> Guardar y salir</button>
+      <button id="btn-finalizar" class="age-btn age-btn-danger-outline age-btn-block" style="display:none;">Finalizar Test</button>
+    </div>
+    <button id="btn-descargar-pdf" class="btn btn-secondary btn-block" style="display:none;">Descargar PDF del test</button>
+  </div>
+
+  <!-- Librerías externas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script type="module" src="/test-psicotecnico/script.js"></script>
+  <script type="module" src="/assets/auth.js"></script>
+</body>
+</html>

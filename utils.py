@@ -6,7 +6,7 @@ import tiktoken
 from typing import List, Dict, Tuple
 from google.cloud import firestore
 
-from oposiciones import coleccion_examenes_oficiales
+from oposiciones import coleccion_examenes_oficiales, coleccion_psicotecnico
 from banco_preguntas_ia import coleccion_banco_preguntas
 
 logger = logging.getLogger(__name__)
@@ -459,6 +459,33 @@ def obtener_preguntas_examenes_oficiales(db, oposicion):
             if d.get("activa", True) is not False
         ]
     return _desde_cache_o_calcular(("preguntas_oficiales", oposicion), _calcular, ttl_segundos=1800)
+
+
+def obtener_preguntas_psicotecnico(db, oposicion):
+    """Todas las preguntas (activas) de la prueba psicotécnica de la
+    oposición -- ver oposiciones.coleccion_psicotecnico y
+    cargar_psicotecnico_metro.py. Mismo patrón de caché con TTL largo que
+    obtener_preguntas_examenes_oficiales: es una colección pequeña y estable
+    que no cambia salvo carga manual."""
+    def _calcular():
+        coleccion = coleccion_psicotecnico(oposicion)
+        return [
+            d for d in (doc.to_dict() or {} for doc in db.collection(coleccion).stream())
+            if d.get("activa", True) is not False
+        ]
+    return _desde_cache_o_calcular(("preguntas_psicotecnico", oposicion), _calcular, ttl_segundos=1800)
+
+
+def tiene_prueba_psicotecnica(db, oposicion):
+    """True si la oposición tiene una prueba psicotécnica propia cargada
+    (hoy, solo Metro) -- usado para mostrar/ocultar la tarjeta
+    "Psicotécnico" en /test-generator/ sin fijarlo a una oposición
+    concreta, igual que tiene_preguntas_psicotecnicas."""
+    def _calcular():
+        coleccion = coleccion_psicotecnico(oposicion)
+        docs = db.collection(coleccion).limit(1).stream()
+        return next(docs, None) is not None
+    return _desde_cache_o_calcular(("tiene_psicotecnico", oposicion), _calcular, ttl_segundos=1800)
 
 
 def _normalizar_enunciado(texto):

@@ -618,6 +618,7 @@ _NOMBRE_TIPO_TEST = {
     "personalizado": "personalizado",
     "avanzado_verificado": "personalizado",
     "oficial": "de examen oficial",
+    "psicotecnico": "psicotécnico",
     "inteligente": "inteligente",
     "fallos": "de preguntas falladas",
     "favoritas": "de preguntas marcadas",

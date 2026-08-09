@@ -316,6 +316,7 @@ async function iniciarBotonNotificaciones() {
 const PAGINA_POR_TIPO_TEST = {
   personalizado: "/test-personalizado/",
   oficial: "/test-oficial/",
+  psicotecnico: "/test-psicotecnico/",
   repetido: "/repetir-test/",
   falladas: "/preguntas-falladas/",
   favoritas: "/preguntas-favoritas/"
