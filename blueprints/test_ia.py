@@ -236,14 +236,16 @@ def generar_test_psicotecnico():
     hace siempre UNA prueba completa (verbal O espacial, nunca mezcladas ni
     filtradas por tema), así que aquí no hay selección de temas ni reparto
     ni checkbox de exclusión -- pero, igual que en Test Oficial, el usuario
-    sí elige cuántas preguntas quiere (por defecto 25; tope 75, el tamaño
-    del banco de cada prueba tras la ampliación con preguntas propias)."""
+    sí elige cuántas preguntas quiere (por defecto 25; tope 100, por encima
+    del tamaño de cualquiera de los dos bancos tras la ampliación con
+    preguntas propias -- si se pide más de las que hay, se recorta al
+    total disponible más abajo, no hace falta que el tope encaje exacto)."""
     data = request.get_json()
     prueba = data.get("prueba")
     if prueba not in ("verbal", "espacial"):
         return jsonify({"error": "El parámetro 'prueba' debe ser 'verbal' o 'espacial'"}), 400
     try:
-        num_preguntas = max(1, min(75, int(data.get("num_preguntas", 25))))
+        num_preguntas = max(1, min(100, int(data.get("num_preguntas", 25))))
     except (TypeError, ValueError):
         num_preguntas = 25
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "test_oficial")

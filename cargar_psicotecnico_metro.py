@@ -5,20 +5,23 @@ Metro (ver oposiciones.coleccion_psicotecnico).
 A diferencia de las preguntas "psicotecnico" de Auxiliar (que viven mezcladas
 con el resto del examen oficial en examenes_oficiales_AUXILIAR y se pueden
 excluir con un checkbox en /test-oficial/), en Metro esta prueba tiene su
-propia página (/test-psicotecnico/): 25 preguntas de razonamiento verbal y 25
-de razonamiento espacial, cada una como un examen completo y separado -- así
-que se guardan en una colección aparte, nunca mezclada con temario.
+propia página (/test-psicotecnico/): 100 preguntas de razonamiento verbal y
+90 de razonamiento espacial, cada una como un examen completo y separado --
+así que se guardan en una colección aparte, nunca mezclada con temario.
 
 Las preguntas viven en datos_examenes/metro_2023_psicotecnico.json. Dos
 orígenes distintos, cada uno marcado con su propio campo "examen" en el
 JSON:
   - Las 50 originales, extraídas y revisadas de la "Prueba Tipo Examen,
     Convocatoria 2023 Metro de Madrid" (Empleo Maquinistas).
-  - 100 preguntas propias añadidas después para ampliar el banco de
-    práctica (50 de razonamiento verbal redactadas a mano; 50 de
+  - 140 preguntas propias añadidas después en dos tandas para ampliar el
+    banco de práctica, todas de razonamiento verbal redactadas a mano o de
     razonamiento espacial generadas por código con la respuesta calculada,
-    no adivinada -- ver frontend/assets/psicotecnico-metro/gen_*.py en el
-    histórico de esta carga).
+    no adivinada (ver frontend/assets/psicotecnico-metro/gen_*.py en el
+    histórico de esta carga): 75 de verbal + 50 de espacial (cubos, caras,
+    líneas, contacto entre cubos, rotación/reflejo 2D) en la primera tanda;
+    25 de verbal (nivel avanzado) + 15 de espacial (matrices tipo Raven y
+    simetría) en la segunda.
 Las preguntas de razonamiento espacial llevan un campo "imagen" con la
 ruta de la figura recortada/generada en frontend/assets/psicotecnico-metro/.
 
