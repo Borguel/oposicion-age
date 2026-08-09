@@ -169,28 +169,44 @@ def _estimar_tokens(texto):
     return int(len(texto.split()) * 1.3)
 
 
+def _contar_palabras(texto):
+    return len(texto.split())
+
+
 def _trocear_por_parrafos_o_lineas(texto, max_tokens):
+    """Agrupa unidades (párrafos, o líneas si el texto no tiene párrafos
+    separados por línea en blanco -- ver _limpiar_pagina, que ya descarta
+    esas líneas en blanco al extraer) sin pasar de max_tokens por grupo.
+
+    Acumula PALABRAS, no la estimación de tokens de cada unidad por
+    separado: sumar `_estimar_tokens(unidad)` unidad a unidad trunca
+    (int()) en cada paso y puede quedarse corto frente al token real del
+    grupo ya unido -- con textos de muchas líneas cortas (línea a línea, no
+    por párrafo) esa deriva llegó a colar grupos de hasta ~2000 tokens
+    reales con el límite puesto en 1800. Contar palabras y convertir a
+    tokens una sola vez, al comparar, evita la deriva por acumular
+    redondeos."""
     unidades = [p.strip() for p in re.split(r"\n\s*\n", texto) if p.strip()]
     if len(unidades) <= 1:
         unidades = [l.strip() for l in texto.split("\n") if l.strip()]
 
     subbloques = []
-    actual, tokens_actual = [], 0
+    actual, palabras_actual = [], 0
     for unidad in unidades:
-        tokens_unidad = _estimar_tokens(unidad)
-        if tokens_unidad > max_tokens:
+        palabras_unidad = _contar_palabras(unidad)
+        if int(palabras_unidad * 1.3) > max_tokens:
             if actual:
                 subbloques.append("\n\n".join(actual))
-                actual, tokens_actual = [], 0
+                actual, palabras_actual = [], 0
             paso = max_tokens * 4
             for i in range(0, len(unidad), paso):
                 subbloques.append(unidad[i:i + paso])
             continue
-        if tokens_actual + tokens_unidad > max_tokens and actual:
+        if int((palabras_actual + palabras_unidad) * 1.3) > max_tokens and actual:
             subbloques.append("\n\n".join(actual))
-            actual, tokens_actual = [], 0
+            actual, palabras_actual = [], 0
         actual.append(unidad)
-        tokens_actual += tokens_unidad
+        palabras_actual += palabras_unidad
     if actual:
         subbloques.append("\n\n".join(actual))
     return subbloques
@@ -216,7 +232,9 @@ def _trocear_por_patron(texto, patron, etiqueta_formato, max_tokens=MAX_TOKENS_S
         unidades.append((numero, texto[m.start():fin].strip()))
 
     subbloques = []
-    actual, tokens_actual, numeros_actual = [], 0, []
+    # Acumula palabras, no tokens ya redondeados por unidad -- misma razón
+    # que en _trocear_por_parrafos_o_lineas.
+    actual, palabras_actual, numeros_actual = [], 0, []
 
     def cerrar():
         if not actual:
@@ -230,18 +248,18 @@ def _trocear_por_patron(texto, patron, etiqueta_formato, max_tokens=MAX_TOKENS_S
         subbloques.append({"texto": "\n\n".join(actual), "etiqueta": etiqueta})
 
     for numero, unidad_texto in unidades:
-        tokens_unidad = _estimar_tokens(unidad_texto)
-        if tokens_unidad > max_tokens:
+        palabras_unidad = _contar_palabras(unidad_texto)
+        if int(palabras_unidad * 1.3) > max_tokens:
             cerrar()
-            actual, tokens_actual, numeros_actual = [], 0, []
+            actual, palabras_actual, numeros_actual = [], 0, []
             for trozo in _trocear_por_parrafos_o_lineas(unidad_texto, max_tokens):
                 subbloques.append({"texto": trozo, "etiqueta": etiqueta_formato.format(n=numero) if numero else None})
             continue
-        if tokens_actual + tokens_unidad > max_tokens and actual:
+        if int((palabras_actual + palabras_unidad) * 1.3) > max_tokens and actual:
             cerrar()
-            actual, tokens_actual, numeros_actual = [], 0, []
+            actual, palabras_actual, numeros_actual = [], 0, []
         actual.append(unidad_texto)
-        tokens_actual += tokens_unidad
+        palabras_actual += palabras_unidad
         numeros_actual.append(numero)
     cerrar()
     return subbloques
