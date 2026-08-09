@@ -200,11 +200,13 @@ h1, h2, h3 {
   text-shadow: 0 0 5px #fff, 0 0 5px #fff, 0 0 9px #fff;
 }
 
-/* Color de reposo neutro (antes un azul saturado, muy llamativo para algo
-   que está en pantalla todo el test sin pedir atención -- a petición del
-   usuario, 09/08/2026). --age-neutral-bg/--age-border/--age-ink ya son
-   tokens de tema, así que esta regla vale igual en claro y oscuro sin
-   necesitar su propio override oscuro (antes sí lo tenía). */
+/* Color de reposo (antes un azul saturado, muy llamativo para algo que
+   está en pantalla todo el test sin pedir atención -- a petición del
+   usuario, 09/08/2026). Naranja suave de marca (--age-primary-soft/
+   --age-primary-dark), el mismo criterio que ya usan otros bloques
+   informativos del sitio (aviso de modo cronometrado, badges de plan...);
+   son tokens de tema, así que vale igual en claro y oscuro sin necesitar
+   su propio override oscuro. */
 #temporizador {
   position: relative;
   display: flex;
@@ -223,8 +225,8 @@ h1, h2, h3 {
   padding-left: 54px;
   padding-right: 54px;
   margin: 20px 0;
-  background: var(--age-neutral-bg);
-  color: var(--age-ink);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
   border: 1px solid var(--age-border);
   border-radius: 12px;
   transition: background 0.3s ease, color 0.3s ease;
