@@ -230,6 +230,9 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
 
     detalleHTML += `<div class="${claseCompleta}">
       <div class="pregunta-en-negrita">${i + 1}. ${escaparHtml(quitarNumeracion(p.pregunta))}${avisoDudaHTML}</div>`;
+    if (p.imagen) {
+      detalleHTML += `<div class="pregunta-imagen"><img src="${escaparHtml(p.imagen)}" alt="Figura de la pregunta ${i + 1}" loading="lazy"></div>`;
+    }
     for (const letra in p.opciones) {
       let tipoRespuesta = "detalle-opcion";
       let iconoOpcion = "";

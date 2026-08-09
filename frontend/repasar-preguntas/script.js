@@ -135,6 +135,10 @@ function tarjetaHTML(pregunta, tipo, indice) {
     </div>
   ` : "";
 
+  const imagenHTML = pregunta.imagen
+    ? `<div class="pregunta-imagen"><img src="${escaparHtml(pregunta.imagen)}" alt="Figura de la pregunta" loading="lazy"></div>`
+    : "";
+
   return `
     <div class="rp-tarjeta" data-indice="${indice}">
       <div class="rp-tarjeta-cabecera">
@@ -142,6 +146,7 @@ function tarjetaHTML(pregunta, tipo, indice) {
         <div class="rp-tarjeta-pregunta">${escaparHtml(pregunta.pregunta)}</div>
       </div>
       ${temaHTML}
+      ${imagenHTML}
       <div class="rp-opciones">${opcionesHTML}</div>
       <div class="rp-tarjeta-acciones">
         <button type="button" class="rp-btn-ver-respuesta" data-ver="${indice}">${icono("ojo", 15)} Ver respuesta correcta</button>

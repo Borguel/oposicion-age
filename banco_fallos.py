@@ -82,6 +82,7 @@ def actualizar_banco_fallos(db, usuario_id, oposicion, tipo_test, contenido, res
                 "opciones": p.get("opciones", {}),
                 "respuesta_correcta": correcta,
                 "explicacion": p.get("explicacion", "Sin explicación."),
+                "imagen": p.get("imagen", ""),
                 "origen": tipo_test,
                 "fecha_ultimo_fallo": datetime.utcnow().isoformat(),
                 "veces_fallada": firestore.Increment(1),

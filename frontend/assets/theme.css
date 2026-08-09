@@ -1730,6 +1730,25 @@ body {
    los colapsaría y la tabla se leería como un párrafo corrido ilegible. */
 .pregunta-en-negrita > span { display: block; white-space: pre-wrap; }
 
+/* Figura de una pregunta (hoy, solo la prueba de razonamiento espacial de
+   Metro -- ver cargar_psicotecnico_metro.py / blueprints/test_ia.py
+   generar_test_psicotecnico). Aquí en vez de en la hoja de estilos de una
+   sola página porque una pregunta con imagen puede reaparecer en
+   cualquier pantalla que muestre preguntas: Repetir test, Preguntas
+   falladas/favoritas, Repasar preguntas o la de resultados. */
+.pregunta-imagen {
+  margin: 14px 0 18px;
+  text-align: center;
+}
+
+.pregunta-imagen img {
+  max-width: 100%;
+  max-height: 380px;
+  border: 1px solid var(--age-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
 .btn-favorita {
   flex-shrink: 0;
   display: inline-flex;

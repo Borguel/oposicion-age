@@ -236,6 +236,10 @@ async function obtenerAuthHeaders() {
           </div>
         </div>`;
 
+      if (p.imagen) {
+        html += `<div class="pregunta-imagen"><img src="${escaparHtml(p.imagen)}" alt="Figura de la pregunta ${i + 1}" loading="lazy"></div>`;
+      }
+
       for (const letra in p.opciones) {
         const opcion = escaparHtml(p.opciones[letra]);
         const checked = respuestasUsuario[i] === letra ? "checked" : "";
