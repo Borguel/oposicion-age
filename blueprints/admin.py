@@ -26,7 +26,7 @@ from firebase_admin import auth as firebase_auth
 
 from firebase_setup import db
 from auth_utils import requiere_admin, requiere_permiso, PERMISOS_VALIDOS
-from planes import resolver_plan_efectivo, prueba_activa
+from planes import resolver_plan_efectivo, resumen_prueba_cuenta
 from promociones import leer_promocion, promocion_vigente, PLANES_PROMOCIONABLES
 from banco_fallos import _id_pregunta
 from coste_ia import resumen_coste_usuario
@@ -1043,12 +1043,13 @@ def usuarios_listar():
         if filtro_plan and plan != filtro_plan:
             continue
         uso_pct, uso_tool = _uso_pico(datos, plan, tools_efectivos)
+        en_prueba, _prueba_fin = resumen_prueba_cuenta(datos)
         filtrados.append({
             "uid": doc.id,
             "email": datos.get("email", ""),
             "nombre": datos.get("nombre", ""),
             "plan": plan,
-            "en_prueba": prueba_activa(datos),
+            "en_prueba": en_prueba,
             "oposiciones_activas": _oposiciones_activas(datos),
             "fecha_creacion": datos.get("fecha_creacion"),
             "ultima_actividad": datos.get("ultima_actividad"),
@@ -1210,6 +1211,7 @@ def usuarios_detalle(uid):
     except Exception:
         es_admin = False
         permisos = []
+    en_prueba, prueba_fin = resumen_prueba_cuenta(datos)
     return jsonify({
         "uid": uid,
         "es_admin": es_admin,
@@ -1219,8 +1221,12 @@ def usuarios_detalle(uid):
         "email": datos.get("email", ""),
         "nombre": datos.get("nombre", ""),
         "plan": _plan_usuario(datos),
-        "en_prueba": prueba_activa(datos),
-        "prueba_fin": datos.get("prueba_fin"),
+        # Resumen agregado (ver resumen_prueba_cuenta en planes.py): "en
+        # prueba" si CUALQUIERA de sus oposiciones activadas sigue dentro de
+        # su propia ventana de 7 días -- ya no es un único campo de cuenta,
+        # cada oposición tiene la suya (ver suscripciones más abajo).
+        "en_prueba": en_prueba,
+        "prueba_fin": prueba_fin,
         "suscripciones": suscripciones,
         "oposiciones_activas": _oposiciones_activas(datos),
         "fecha_creacion": datos.get("fecha_creacion"),
@@ -1407,22 +1413,33 @@ def usuarios_cambiar_roles(uid):
 @requiere_permiso("usuarios")
 def usuarios_otorgar_prueba(uid):
     """Otorga o alarga la prueba gratuita de acceso Premium de un usuario
-    (soporte: p. ej. compensar un problema, o dar más margen antes de que
-    se bloquee). Vuelve a fijar prueba_fin desde AHORA + `dias`, sin sumar
-    a lo que quedara antes."""
+    PARA UNA OPOSICIÓN CONCRETA (soporte: p. ej. compensar un problema, o
+    dar más margen antes de que se bloquee -- cada oposición tiene su
+    propia prueba, ver planes.prueba_activa). Vuelve a fijar
+    suscripciones.<OP>.prueba_fin desde AHORA + `dias`, sin sumar a lo que
+    quedara antes; si el usuario todavía no tenía esa oposición activada,
+    la activa con plan gratis de paso."""
     ref = db.collection("usuarios").document(uid)
     if not ref.get().exists:
         return jsonify({"error": "Usuario no encontrado"}), 404
+    data = request.get_json(silent=True) or {}
+    oposicion = data.get("oposicion") or OPOSICION_POR_DEFECTO
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
     try:
-        dias = int((request.get_json(silent=True) or {}).get("dias", 7))
+        dias = int(data.get("dias", 7))
     except (TypeError, ValueError):
         return jsonify({"error": "Número de días no válido"}), 400
     if dias <= 0:
         return jsonify({"error": "El número de días debe ser mayor que 0"}), 400
     fin = (datetime.utcnow() + timedelta(days=dias)).isoformat()
-    ref.set({"prueba_fin": fin}, merge=True)
-    _registrar_auditoria("usuario_otorgar_prueba", uid, f"{dias} días")
-    return jsonify({"mensaje": f"Prueba otorgada hasta {fin}", "prueba_fin": fin})
+    plan_actual = ((ref.get().to_dict() or {}).get("suscripciones", {}) or {}).get(oposicion, {}).get("plan")
+    campos = {f"suscripciones.{oposicion}.prueba_fin": fin}
+    if not plan_actual:
+        campos[f"suscripciones.{oposicion}.plan"] = "gratis"
+    ref.update(campos)
+    _registrar_auditoria("usuario_otorgar_prueba", uid, f"{oposicion}: {dias} días")
+    return jsonify({"mensaje": f"Prueba otorgada hasta {fin}", "prueba_fin": fin, "oposicion": oposicion})
 
 
 @bp.route("/admin/api/usuarios/<uid>/resetear-racha", methods=["POST"])

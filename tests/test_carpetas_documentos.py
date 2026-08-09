@@ -5,6 +5,7 @@ carpeta" a los documentos que tuviera en vez de borrarlos."""
 from unittest.mock import patch
 
 from documentos_pdf import listar_carpetas, crear_carpeta, eliminar_carpeta
+from conftest import sembrar_usuario_activo
 
 
 def _con_sesion(cliente, uid="u1", email="u1@example.com"):
@@ -40,7 +41,8 @@ def test_eliminar_carpeta_deja_sin_carpeta_los_documentos_dentro(db):
     assert db.leer(("usuarios", "u1", "documentos", "d1"))["carpeta"] == ""
 
 
-def test_ruta_crear_carpeta_devuelve_error_si_esta_vacio(client):
+def test_ruta_crear_carpeta_devuelve_error_si_esta_vacio(client, db):
+    sembrar_usuario_activo(db, "u1")
     parche = _con_sesion(client)
     try:
         resp = client.post("/carpetas-documentos", json={"nombre": ""}, headers={"Authorization": "Bearer x"})
@@ -50,6 +52,7 @@ def test_ruta_crear_carpeta_devuelve_error_si_esta_vacio(client):
 
 
 def test_ruta_crear_y_ver_carpeta_en_mis_documentos(client, db):
+    sembrar_usuario_activo(db, "u1")
     parche = _con_sesion(client)
     try:
         resp = client.post("/carpetas-documentos", json={"nombre": "Constitución"}, headers={"Authorization": "Bearer x"})
@@ -63,6 +66,7 @@ def test_ruta_crear_y_ver_carpeta_en_mis_documentos(client, db):
 
 
 def test_ruta_eliminar_carpeta(client, db):
+    sembrar_usuario_activo(db, "u1")
     parche = _con_sesion(client)
     try:
         client.post("/carpetas-documentos", json={"nombre": "Temporal"}, headers={"Authorization": "Bearer x"})

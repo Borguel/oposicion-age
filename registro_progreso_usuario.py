@@ -3,9 +3,17 @@ from google.cloud import firestore
 
 from oposiciones import OPOSICION_POR_DEFECTO
 from email_utils import enviar_email_bienvenida
-from planes import DURACION_PRUEBA_DIAS, prueba_activa, resolver_plan_efectivo, tiene_plan_de_pago_activo
+from planes import DURACION_PRUEBA_DIAS, prueba_activa, resolver_plan_efectivo, resumen_prueba_cuenta, tiene_plan_de_pago_activo
 from dominios_desechables import es_dominio_email_desechable
 from utils import calcular_resultado_test, ejecutar_en_transaccion
+
+# Ya no hay una prueba gratuita global por cuenta: cada oposición arranca la
+# suya al activarse explícitamente (ver activar_oposicion_usuario más abajo),
+# no todas de golpe al crear la cuenta -- así una cuenta nueva solo puede
+# "gastar" la prueba de 7 días en UNA oposición a la vez salvo que el propio
+# usuario decida añadir otra, en vez de tener las 3 activas desde el
+# principio (que permitía multiplicar el uso efectivo contra los límites por
+# herramienta durante esos 7 días).
 
 
 def registrar_actividad_racha(db, usuario_id):
@@ -48,21 +56,9 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificad
     """Crea el documento usuarios/{uid} la primera vez que se ve a este
     usuario (se llama en cada petición autenticada, ver
     auth_utils.requiere_login, así que en el resto de peticiones no hace
-    nada más que la comprobación de existencia).
-
-    `email_verificado` (calculado por auth_utils.requiere_login a partir
-    del claim email_verified del token de Firebase -- True para Google, que
-    ya verifica la dirección por su cuenta; el valor real del token para
-    email+contraseña) decide, junto con que el dominio del email no sea de
-    correo desechable conocido (ver dominios_desechables.py), si esta
-    primera creación arranca ya la prueba gratuita de 7 días o la deja sin
-    activar (prueba_fin=None, cuenta tratada como "gratis" hasta entonces --
-    prueba_activa() en planes.py ya trata None como "sin prueba"). Así una
-    cuenta creada solo para farmear el acceso Premium gratuito no lo
-    consigue con solo rellenar un formulario. Si más tarde el email SÍ se
-    verifica, la siguiente petición autenticada arranca la prueba en ese
-    momento (ver más abajo, rama "ya existe")."""
-    permite_prueba = bool(email_verificado) and not es_dominio_email_desechable(email)
+    nada más que la comprobación de existencia). No activa ninguna oposición
+    por sí sola -- eso es una acción explícita del usuario, ver
+    activar_oposicion_usuario más abajo."""
     doc_ref = db.collection("usuarios").document(usuario_id)
     snap = doc_ref.get()
     if not snap.exists:
@@ -89,12 +85,6 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificad
             # documentos_pdf.obtener_o_crear_documento, no aquí).
             "paginas_analizadas": 0,
             "fecha_creacion": datetime.utcnow().isoformat(),
-            # Prueba gratuita de acceso Premium, una única vez por cuenta (no
-            # por oposición): pasados estos días, si no hay ninguna
-            # suscripción de pago, el usuario queda bloqueado (ver planes.py).
-            # None si todavía no procede (email sin verificar, o dominio
-            # desechable) -- se arranca más abajo en cuanto proceda.
-            "prueba_fin": (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat() if permite_prueba else None,
             # CAMPOS DE IDENTIDAD Y SUSCRIPCIÓN (Firebase Auth + Stripe)
             "email": email,
             "nombre": "",
@@ -103,9 +93,13 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificad
             "direccion": "",
             # Un usuario tiene un único cliente de Stripe (global), pero puede
             # tener una suscripción independiente POR OPOSICIÓN, ya que cada
-            # oposición se contrata y se paga por separado.
-            # suscripciones: { "AGE": {plan, stripe_subscription_id, subscription_status,
-            #                          plan_updated_at, current_period_end}, "GACE": {...} }
+            # oposición se contrata, se prueba y se paga por separado.
+            # suscripciones: { "AGE": {plan, prueba_fin, stripe_subscription_id,
+            #                          subscription_status, plan_updated_at,
+            #                          current_period_end}, "GACE": {...} }
+            # Vacío hasta que el usuario active su primera oposición (ver
+            # activar_oposicion_usuario) -- una cuenta recién creada no ve
+            # ninguna herramienta todavía, solo el selector para elegirla.
             "stripe_customer_id": None,
             "suscripciones": {},
         })
@@ -113,14 +107,54 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificad
         return
 
     # El documento ya existía: si el email se acaba de verificar (o, más
-    # raro, se detecta ahora que su dominio no era desechable) y la prueba
-    # todavía no se había activado, arrancarla en este momento -- no se
-    # pierde por no haberse verificado el email en la primera petición.
+    # raro, se detecta ahora que su dominio no era desechable) y había
+    # alguna oposición ya activada pero con la prueba todavía pendiente de
+    # arrancar (ver activar_oposicion_usuario), arrancarla ahora en todas
+    # ellas -- no se pierde por no haberse verificado el email en el momento
+    # de activarla.
+    permite_prueba = bool(email_verificado) and not es_dominio_email_desechable(email)
+    if not permite_prueba:
+        return
     datos = snap.to_dict() or {}
-    if permite_prueba and datos.get("prueba_fin") is None:
-        doc_ref.update({
-            "prueba_fin": (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat(),
-        })
+    pendientes = [
+        oid for oid, sub in (datos.get("suscripciones", {}) or {}).items()
+        if (sub or {}).get("plan", "gratis") == "gratis" and not (sub or {}).get("prueba_fin")
+    ]
+    if pendientes:
+        fin = (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat()
+        doc_ref.update({f"suscripciones.{oid}.prueba_fin": fin for oid in pendientes})
+
+
+def activar_oposicion_usuario(db, usuario_id, oposicion, email=None, email_verificado=True):
+    """Da de alta al usuario en una oposición nueva, a petición suya (p. ej.
+    el botón "Quiero estudiar esta oposición" de Zona opositor): crea su
+    entrada suscripciones.<OP> con plan "gratis" y arranca su prueba
+    gratuita de 7 días PARA ESA OPOSICIÓN CONCRETA, si el email ya está
+    verificado y su dominio no es de correo desechable conocido (mismas
+    comprobaciones antiabuso que antes se hacían una sola vez por cuenta,
+    ver inicializar_estadisticas_usuario) -- si no, la deja con
+    prueba_fin=None (pendiente) y el siguiente inicializar_estadisticas_usuario
+    la arrancará en cuanto proceda.
+
+    Idempotente: si el usuario ya tenía esta oposición activada (aunque solo
+    sea con el plan gratis, o con una prueba ya terminada) no la toca, para
+    no poder alargar una prueba en marcha ni reiniciar la de alguien a quien
+    ya se le terminó -- "activar" solo tiene efecto la primera vez."""
+    doc_ref = db.collection("usuarios").document(usuario_id)
+    snap = doc_ref.get()
+    if not snap.exists:
+        inicializar_estadisticas_usuario(db, usuario_id, email=email, email_verificado=email_verificado)
+        snap = doc_ref.get()
+    datos = snap.to_dict() or {}
+    if oposicion in (datos.get("suscripciones", {}) or {}):
+        return
+
+    permite_prueba = bool(email_verificado) and not es_dominio_email_desechable(email)
+    doc_ref.update({
+        f"suscripciones.{oposicion}.plan": "gratis",
+        f"suscripciones.{oposicion}.prueba_fin": (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat() if permite_prueba else None,
+        f"suscripciones.{oposicion}.plan_updated_at": datetime.utcnow().isoformat(),
+    })
 
 def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None, rendimiento_temas=None, blancos=0):
     # Lectura + cálculo + escritura van dentro de una única transacción de
@@ -345,11 +379,18 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
                 "plan": "premium" if es_admin else "gratis",
                 "subscription_status": "active" if es_admin else None,
                 "current_period_end": None,
+                "oposicion_activada": False,
             })
         return perfil
 
     datos = doc.to_dict() or {}
     suscripciones = datos.get("suscripciones", {}) or {}
+    # Sin oposición concreta, "prueba_activa"/"prueba_fin" son un resumen
+    # agregado de CUALQUIER oposición que siga en prueba (ver
+    # resumen_prueba_cuenta) -- se sobrescriben más abajo con los de la
+    # oposición pedida en cuanto se conoce, que es el caso normal (el
+    # frontend siempre pide /mi-perfil con ?oposicion=, ver assets/plan.js).
+    en_prueba_cuenta, prueba_fin_cuenta = resumen_prueba_cuenta(datos)
     perfil = {
         "email": datos.get("email"),
         "nombre": datos.get("nombre", ""),
@@ -359,8 +400,8 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
         "suscripciones": suscripciones,
         # El frontend usa esto para pintar el banner de cuenta atrás y saber
         # si tiene que bloquear la página (ver assets/plan.js).
-        "prueba_activa": prueba_activa(datos),
-        "prueba_fin": datos.get("prueba_fin"),
+        "prueba_activa": en_prueba_cuenta,
+        "prueba_fin": prueba_fin_cuenta,
         # Si ya paga por otra oposición, el frontend no debe hablarle de
         # "prueba" (ni cuenta atrás ni "ha terminado") al mirar una que
         # todavía no ha contratado -- ver tiene_plan_de_pago_activo en
@@ -368,6 +409,7 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
         "tiene_plan_de_pago": tiene_plan_de_pago_activo(datos),
     }
     if oposicion:
+        sub_oposicion = suscripciones.get(oposicion, {}) or {}
         if es_admin:
             plan, sub = "premium", {"subscription_status": "active"}
         else:
@@ -377,5 +419,17 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
             "plan": plan,
             "subscription_status": sub.get("subscription_status"),
             "current_period_end": sub.get("current_period_end"),
+            # Prueba DE ESTA OPOSICIÓN concreta -- ver prueba_activa en
+            # planes.py: cada oposición tiene la suya, independiente de las
+            # demás. sub (arriba) puede venir ya "aumentado" a trialing por
+            # resolver_plan_efectivo; sub_oposicion es siempre el dato crudo
+            # guardado, que es lo que hace falta para saber la fecha real.
+            "prueba_activa": prueba_activa(sub_oposicion),
+            "prueba_fin": sub_oposicion.get("prueba_fin"),
+            # ¿Ya tiene esta oposición activada (aunque sea en gratis/prueba)
+            # o todavía no ha dado el primer paso en ella? El frontend lo usa
+            # para decidir si ofrece "Empieza tu prueba gratis" o ya pasa
+            # directo a las opciones de pago (ver planes/script.js).
+            "oposicion_activada": oposicion in suscripciones,
         })
     return perfil

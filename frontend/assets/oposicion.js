@@ -15,15 +15,17 @@ export const OPOSICIONES = [
 // Oposiciones dadas de alta pero NO ofrecidas a todo el mundo (grupo
 // cerrado, activado a mano por usuario desde el panel admin -- ver
 // oposiciones.py, campo "oculta"). Fuera de OPOSICIONES a propósito para
-// que el selector público no las muestre ni las anuncie; solo se añaden en
-// el selector de quien ya tenga acceso concedido, ver
-// _anadirOposicionesOcultasDelUsuario más abajo.
+// que el selector público no las muestre ni las anuncie; solo entran en el
+// selector de quien ya tenga acceso concedido, ver
+// obtenerOposicionesVisiblesDelUsuario más abajo.
 const OPOSICIONES_OCULTAS = [
   { id: "METRO", nombre: "Agente de Movilidad (Metro de Madrid)", siglas: "Metro" }
 ];
 
+const CATALOGO_COMPLETO = [...OPOSICIONES, ...OPOSICIONES_OCULTAS];
+
 function _porId(id) {
-  return OPOSICIONES.find((o) => o.id === id) || OPOSICIONES_OCULTAS.find((o) => o.id === id);
+  return CATALOGO_COMPLETO.find((o) => o.id === id);
 }
 
 const CLAVE = "age_oposicion_actual";
@@ -45,11 +47,9 @@ function cambiarOposicionYRecargar(id) {
 }
 
 // Dibuja (reemplazando lo que hubiera) el popover de escritorio + el
-// <select> móvil a partir de la lista de oposiciones dada. Separado de
-// inyectarSelectorOposicion para poder llamarlo dos veces: un primer
-// pintado inmediato y síncrono con la lista pública, y un repintado
-// posterior (solo si hace falta) cuando se sabe si el usuario tiene alguna
-// oposición oculta activada -- ver _anadirOposicionesOcultasDelUsuario.
+// <select> móvil a partir de la lista de oposiciones dada -- ver
+// _refrescarSelectorConOposicionesDelUsuario, que la llama en cuanto se
+// conoce la lista real de oposiciones visibles para este usuario.
 function _pintarSelectorOposicion(lista) {
   const utilidades = document.querySelector(".age-nav-utilidades");
   const drawer = document.querySelector(".age-nav-links");
@@ -98,46 +98,83 @@ function _pintarSelectorOposicion(lista) {
   }
 }
 
-// Consulta /oposiciones-disponibles (ya filtrado por el backend: solo
-// devuelve las ocultas en las que este usuario tenga una entrada en
-// suscripciones, ver blueprints/temario.py) y devuelve las de
-// OPOSICIONES_OCULTAS a las que el usuario tiene acceso concedido (normalmente
-// ninguna). Exportada para que cualquier página -- no solo el selector de la
-// nav -- pueda enterarse de si el usuario actual tiene alguna oposición
-// oculta activada (ver zona-opositor/script.js, que también necesita
-// pintarla en su propio selector de chips y en "Estás preparando").
-export async function obtenerOposicionesOcultasDisponibles(user) {
-  if (!user) return [];
-  return obtenerOposicionesOcultasConToken(await user.getIdToken());
+// Consulta /oposiciones-disponibles -- ya filtrado por el backend (ver
+// blueprints/temario.py:_oposiciones_visibles_para_la_peticion) a solo las
+// oposiciones que este usuario puede ver: las públicas que ya ha activado
+// él mismo (o el catálogo público completo si todavía no ha activado
+// ninguna, para poder elegir la primera) más cualquier oposición oculta
+// (p. ej. METRO) que se le haya concedido a mano desde el panel admin.
+//
+// Devuelve `null` si la consulta falla (sin red, backend caído...) -- para
+// que cada llamador pueda distinguir "no se pudo saber" (mejor no tocar lo
+// que ya hubiera pintado, o caer al catálogo público como red de
+// seguridad) de "se sabe con certeza que no tiene ninguna" (array vacío:
+// cuenta nueva sin ninguna oposición activada todavía, ver
+// zona-opositor/script.js, que en ese caso ofrece elegir la primera en vez
+// de pintar un selector vacío).
+export async function obtenerOposicionesVisiblesDelUsuario(user) {
+  if (!user) return null;
+  return obtenerOposicionesVisiblesConToken(await user.getIdToken());
 }
 
-// Misma consulta que obtenerOposicionesOcultasDisponibles, pero para
+// Misma consulta que obtenerOposicionesVisiblesDelUsuario, pero para
 // páginas que ya tienen un token de sesión a mano (p. ej. estadisticas,
 // que ya llama a obtenerAuthHeaders() para sus propias peticiones) y no
 // necesitan volver a pedírselo al objeto de usuario de Firebase.
-export async function obtenerOposicionesOcultasConToken(token) {
-  if (!token || OPOSICIONES_OCULTAS.length === 0) return [];
+export async function obtenerOposicionesVisiblesConToken(token) {
+  if (!token) return null;
   try {
     const res = await fetch(`${BACKEND_URL}/oposiciones-disponibles`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) return [];
+    if (!res.ok) return null;
     const datos = await res.json();
-    const idsDisponibles = new Set((datos.oposiciones || []).map((o) => o.id));
-    return OPOSICIONES_OCULTAS.filter((o) => idsDisponibles.has(o.id));
+    const idsVisibles = new Set((datos.oposiciones || []).map((o) => o.id));
+    return CATALOGO_COMPLETO.filter((o) => idsVisibles.has(o.id));
   } catch (e) {
-    // Sin conexión o backend caído: se trata como "sin oposiciones ocultas"
-    // -- la próxima carga de página lo reintenta.
-    return [];
+    return null;
   }
 }
 
-// Fire-and-forget, sin bloquear el primer pintado del selector de la nav --
-// igual que el resto de piezas de la nav que dependen de una llamada a la
-// API (ver inyectarBannerPrueba en auth.js).
-async function _anadirOposicionesOcultasDelUsuario(user) {
-  const extra = await obtenerOposicionesOcultasDisponibles(user);
-  if (extra.length > 0) _pintarSelectorOposicion([...OPOSICIONES, ...extra]);
+// POST /activar-oposicion: autoservicio, el propio usuario elige "quiero
+// estudiar esta oposición" (ver zona-opositor/script.js) y eso arranca su
+// prueba gratuita de 7 días PARA ESA OPOSICIÓN CONCRETA (ver
+// registro_progreso_usuario.activar_oposicion_usuario). Lanza si el
+// backend rechaza la petición -- el llamador decide cómo mostrarlo.
+export async function activarOposicion(token, oposicionId) {
+  const res = await fetch(`${BACKEND_URL}/activar-oposicion`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ oposicion: oposicionId })
+  });
+  if (!res.ok) {
+    const datos = await res.json().catch(() => ({}));
+    throw new Error(datos.error || "No se pudo activar la oposición.");
+  }
+}
+
+// Fire-and-forget, sin bloquear el primer pintado de la nav -- igual que el
+// resto de piezas que dependen de una llamada a la API (ver
+// inyectarBannerPrueba en auth.js). Repinta el selector con la lista
+// AUTORITATIVA del backend (no la añade a OPOSICIONES: desde que cada
+// oposición pública también hay que activarla, ya no se puede asumir que
+// las 3 públicas sean siempre visibles) -- solo si de verdad hace falta
+// corregir el pintado optimista de más abajo, para no repintar (y
+// reordenar dentro del cajón móvil, ver inyectarSelectorOposicion) sin
+// necesidad.
+async function _corregirSelectorConOposicionesDelUsuario(user, listaOptimista) {
+  const lista = await obtenerOposicionesVisiblesDelUsuario(user);
+  // null (fallo de red): se deja el pintado optimista tal cual -- mejor
+  // eso que vaciarlo por un fallo transitorio.
+  if (lista === null) return;
+  // []: cuenta sin ninguna oposición activada todavía -- no hay nada entre
+  // lo que cambiar, así que no tiene sentido pintar un selector vacío; el
+  // propio usuario elige su primera oposición desde Zona opositor. Se dejа
+  // el pintado optimista (mostraba el catálogo público) tal cual: no hay
+  // nada mejor que ofrecer aquí mismo.
+  if (lista.length === 0) return;
+  const mismosIds = lista.length === listaOptimista.length && lista.every((o, i) => o.id === listaOptimista[i]?.id);
+  if (!mismosIds) _pintarSelectorOposicion(lista);
 }
 
 // Inserta (si no existe ya) el selector de oposición en la barra de
@@ -152,9 +189,17 @@ async function _anadirOposicionesOcultasDelUsuario(user) {
 // un popover anidado dentro de otro cajón. Solo tiene sentido con sesión
 // iniciada (sin cuenta no hay temario/tests que cambiar de oposición), así
 // que si no hay usuario se quita si ya estuviera puesto. `user` es el
-// objeto de usuario de Firebase Auth (o null/undefined sin sesión) -- se
-// usa también para pedirle su token y ver si tiene alguna oposición oculta
-// activada (ver _anadirOposicionesOcultasDelUsuario).
+// objeto de usuario de Firebase Auth (o null/undefined sin sesión).
+//
+// Se pinta primero de forma optimista con el catálogo público completo
+// (síncrono, sin esperar a ninguna petición -- IMPORTANTE: esto también
+// mantiene el orden relativo con el resto de piezas que se insertan por
+// delante del cajón móvil vía prepend(), ver construirBusquedaGlobal en
+// auth.js, que se llama justo después de esta función) y se corrige en
+// cuanto se conoce la lista real de oposiciones activadas por el usuario
+// (_corregirSelectorConOposicionesDelUsuario) -- puede ser una oposición
+// oculta concedida a mano, o (más frecuente ahora) solo un subconjunto de
+// las públicas si no las ha activado todas.
 export function inyectarSelectorOposicion(user) {
   const utilidades = document.querySelector(".age-nav-utilidades");
   const drawer = document.querySelector(".age-nav-links");
@@ -168,5 +213,5 @@ export function inyectarSelectorOposicion(user) {
   if (!utilidades?.querySelector(".age-oposicion-popover") && !drawer?.querySelector(".age-oposicion-movil")) {
     _pintarSelectorOposicion(OPOSICIONES);
   }
-  _anadirOposicionesOcultasDelUsuario(user);
+  _corregirSelectorConOposicionesDelUsuario(user, OPOSICIONES);
 }

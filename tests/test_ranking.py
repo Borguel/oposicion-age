@@ -25,7 +25,8 @@ def test_ranking_vacio_si_nadie_se_ha_apuntado(client, db):
         parche.stop()
 
 
-def test_unirse_con_alias_invalido_devuelve_error(client):
+def test_unirse_con_alias_invalido_devuelve_error(client, db):
+    sembrar_usuario_activo(db, "u1")
     parche = _con_sesion(client)
     try:
         resp = client.post("/ranking/unirse", json={"alias": "ab"}, headers={"Authorization": "Bearer x"})
@@ -35,6 +36,7 @@ def test_unirse_con_alias_invalido_devuelve_error(client):
 
 
 def test_unirse_aparece_en_el_ranking_con_alias_no_con_email(client, db):
+    sembrar_usuario_activo(db, "u1")
     parche = _con_sesion(client)
     try:
         resp = client.post("/ranking/unirse", json={"alias": "Opositor Anónimo"}, headers={"Authorization": "Bearer x"})
@@ -52,6 +54,7 @@ def test_unirse_aparece_en_el_ranking_con_alias_no_con_email(client, db):
 
 
 def test_ranking_ordenado_por_racha_actual_descendente(client, db):
+    sembrar_usuario_activo(db, "u1")
     db.sembrar(("usuarios", "u2"), {"racha": {"racha_actual": 10}, "ranking_optin": True, "ranking_alias": "Rápido"})
     db.sembrar(("usuarios", "u3"), {"racha": {"racha_actual": 3}, "ranking_optin": True, "ranking_alias": "Lento"})
     parche = _con_sesion(client)
@@ -64,6 +67,7 @@ def test_ranking_ordenado_por_racha_actual_descendente(client, db):
 
 
 def test_salir_del_ranking_lo_oculta_sin_borrar_la_racha(client, db):
+    sembrar_usuario_activo(db, "u1")
     parche = _con_sesion(client)
     try:
         client.post("/ranking/unirse", json={"alias": "Temporal"}, headers={"Authorization": "Bearer x"})

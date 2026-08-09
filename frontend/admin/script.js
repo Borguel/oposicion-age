@@ -1452,8 +1452,9 @@ function fichaVistaHtml(vista, u) {
       <div class="ficha-panel">
         <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("arena", 17)}</span><h3>Prueba gratuita Premium</h3></div>
         <p class="ficha-prueba-estado">${u.en_prueba
-          ? `En prueba hasta el <strong>${escapeHtml(fechaCorta(u.prueba_fin))}</strong>.`
-          : (u.prueba_fin ? `Su prueba terminó el ${escapeHtml(fechaCorta(u.prueba_fin))}.` : "Nunca ha tenido una prueba.")}</p>
+          ? `En prueba en alguna oposición hasta el <strong>${escapeHtml(fechaCorta(u.prueba_fin))}</strong>.`
+          : (u.prueba_fin ? `Su última prueba terminó el ${escapeHtml(fechaCorta(u.prueba_fin))}.` : "Nunca ha tenido una prueba.")}</p>
+        <p class="ficha-prueba-nota"><small>Cada oposición tiene su propia prueba. Esto otorga/alarga la de la oposición seleccionada arriba (Cambiar plan).</small></p>
         <div class="admin-form-fila">
           <input id="up-prueba-dias" class="age-input" type="number" min="1" max="90" value="7" style="max-width:100px;">
           <button class="age-btn age-btn-outline admin-mini" id="up-prueba-otorgar">Otorgar/alargar prueba</button>
@@ -1587,7 +1588,8 @@ function wireFichaVista(vista, u) {
     });
     document.getElementById("up-prueba-otorgar")?.addEventListener("click", async () => {
       const dias = parseInt(document.getElementById("up-prueba-dias").value, 10) || 7;
-      const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/prueba`, { dias });
+      const oposicion = document.getElementById("up-oposicion").value;
+      const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/prueba`, { dias, oposicion });
       if (r) { toast(r.mensaje || "Prueba actualizada."); cerrarModal(); cargarUsuarios(); }
     });
     const mostrarEnlace = async (tipo) => {

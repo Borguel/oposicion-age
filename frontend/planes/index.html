@@ -106,19 +106,15 @@
     <p>Todas las cuentas nuevas empiezan con 7 días de prueba Premium gratis, sin tarjeta. Después, sube de nivel cuando quieras. Puedes cancelar cuando quieras desde "Mi cuenta".</p>
   </div>
 
-  <div id="cta-prueba" class="cta-prueba" style="display:none;">
-    <div class="cta-prueba-texto">
-      <strong>Empieza gratis: 7 días de Premium sin tarjeta.</strong>
-      <span>Crea tu cuenta y accede de inmediato a todas las herramientas. Sin compromiso.</span>
-    </div>
-    <a class="btn-plan btn-plan-primary" href="/login/?next=/planes/">Crear cuenta gratis</a>
-  </div>
+  <div id="cta-prueba" class="cta-prueba" style="display:none;"></div>
 
   <div class="planes-confianza" id="planes-confianza"></div>
 
   <div class="selector-oposicion-planes">
-    <label for="selector-oposicion">¿Para qué oposición?</label>
-    <select id="selector-oposicion"></select>
+    <span>¿Para qué oposición?</span>
+    <strong id="selector-oposicion-actual"></strong>
+    <button type="button" id="selector-oposicion-cambiar" class="selector-oposicion-cambiar">Cambiar</button>
+    <select id="selector-oposicion" style="display:none;"></select>
   </div>
 
   <div id="mensaje-checkout" class="mensaje-checkout" style="display:none;"></div>

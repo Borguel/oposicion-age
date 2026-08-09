@@ -94,7 +94,10 @@ def test_recordatorios_prueba_sin_clave_devuelve_401(client):
 
 
 def test_avisa_a_quien_le_quedan_2_dias_de_prueba(client, db):
-    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "prueba_fin": _prueba_fin_en(2)})
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "gratis", "prueba_fin": _prueba_fin_en(2)}},
+    })
     with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
          patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
          patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:
@@ -106,7 +109,10 @@ def test_avisa_a_quien_le_quedan_2_dias_de_prueba(client, db):
 
 
 def test_avisa_a_quien_la_prueba_termino_ayer(client, db):
-    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "prueba_fin": _prueba_fin_en(-1)})
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "gratis", "prueba_fin": _prueba_fin_en(-1)}},
+    })
     with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
          patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
          patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:
@@ -116,11 +122,29 @@ def test_avisa_a_quien_la_prueba_termino_ayer(client, db):
         mock_terminando.assert_not_called()
 
 
-def test_no_avisa_a_quien_ya_tiene_plan_de_pago(client, db):
+def test_avisa_por_cada_oposicion_cuya_prueba_cruce_el_umbral(client, db):
+    # Cada oposición tiene su propia prueba independiente -- si dos cruzan
+    # el mismo umbral el mismo día, se avisa una vez por cada una.
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
-        "prueba_fin": _prueba_fin_en(2),
-        "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
+        "suscripciones": {
+            "AGE": {"plan": "gratis", "prueba_fin": _prueba_fin_en(2)},
+            "GACE": {"plan": "gratis", "prueba_fin": _prueba_fin_en(2)},
+        },
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:
+        resp = client.post("/tareas/recordatorios-prueba", headers={"X-Cron-Key": "secreta"})
+        assert resp.get_json() == {"terminando": 2, "terminada": 0}
+        assert mock_terminando.call_count == 2
+        mock_terminada.assert_not_called()
+
+
+def test_no_avisa_a_quien_ya_tiene_plan_de_pago_en_esa_oposicion(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active", "prueba_fin": _prueba_fin_en(2)}},
     })
     with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
          patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
@@ -132,7 +156,10 @@ def test_no_avisa_a_quien_ya_tiene_plan_de_pago(client, db):
 
 
 def test_no_avisa_fuera_de_los_dias_exactos(client, db):
-    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "prueba_fin": _prueba_fin_en(5)})
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "gratis", "prueba_fin": _prueba_fin_en(5)}},
+    })
     with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
          patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
          patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:
@@ -143,8 +170,8 @@ def test_no_avisa_fuera_de_los_dias_exactos(client, db):
 
 
 def test_ignora_usuarios_sin_email_o_sin_prueba_fin(client, db):
-    db.sembrar(("usuarios", "sin_email"), {"prueba_fin": _prueba_fin_en(2)})
-    db.sembrar(("usuarios", "sin_prueba"), {"email": "x@example.com"})
+    db.sembrar(("usuarios", "sin_email"), {"suscripciones": {"AGE": {"plan": "gratis", "prueba_fin": _prueba_fin_en(2)}}})
+    db.sembrar(("usuarios", "sin_prueba"), {"email": "x@example.com", "suscripciones": {"AGE": {"plan": "gratis"}}})
     with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
          patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
          patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:

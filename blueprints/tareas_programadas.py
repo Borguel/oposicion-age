@@ -16,7 +16,7 @@ from email_utils import (
     enviar_email_prueba_terminada,
     enviar_email_alerta_coste_ia,
 )
-from planes import ORDEN_PLANES, mejor_plan
+from planes import ORDEN_PLANES
 from push_utils import enviar_push
 from coste_ia import resumen_coste_usuario
 from vigilancia_boe import (
@@ -94,11 +94,14 @@ def enviar_recordatorios_racha():
 @bp.route("/tareas/recordatorios-prueba", methods=["POST"])
 def enviar_recordatorios_prueba():
     """Avisa por email del final de la prueba gratuita Premium (planes.py):
-    2 días antes de que termine, y el primer día después de haber terminado
-    si el usuario sigue sin ningún plan de pago. No avisa a quien ya
-    contrató Básico o Premium (mejor_plan mira solo las suscripciones
-    reales, sin la prueba, así que un plan de pago vigente lo excluye sin
-    necesidad de comprobar nada más)."""
+    2 días antes de que termine, y el primer día después de haber terminado,
+    para cada oposición del usuario cuya prueba cruce ese umbral -- cada
+    oposición activada tiene su propia prueba independiente (ver
+    activar_oposicion_usuario en registro_progreso_usuario.py), así que ya
+    no es un único aviso por cuenta como antes. No avisa de una oposición ya
+    contratada con Básico o Premium (el plan real de esa entrada ya no es
+    "gratis", que es la única condición que necesita la prueba para haber
+    llegado a arrancar en ella)."""
     if not _clave_cron_valida():
         return jsonify({"error": "No autorizado"}), 401
 
@@ -109,28 +112,30 @@ def enviar_recordatorios_prueba():
     for doc in db.collection("usuarios").stream():
         datos = doc.to_dict() or {}
         email = datos.get("email")
-        prueba_fin = datos.get("prueba_fin")
-        if not email or not prueba_fin:
+        if not email:
             continue
-
-        plan_pago, _sub = mejor_plan(datos.get("suscripciones"))
-        if ORDEN_PLANES.get(plan_pago, 0) >= ORDEN_PLANES["basico"]:
-            continue
-
-        try:
-            fin_fecha = date.fromisoformat(prueba_fin[:10])
-        except ValueError:
-            continue
-
-        dias_restantes = (fin_fecha - hoy).days
         nombre = datos.get("nombre") or ""
 
-        if dias_restantes == 2:
-            enviar_email_prueba_terminando(email, dias_restantes, nombre=nombre)
-            terminando += 1
-        elif dias_restantes == -1:
-            enviar_email_prueba_terminada(email, nombre=nombre)
-            terminada += 1
+        for sub in (datos.get("suscripciones", {}) or {}).values():
+            prueba_fin = (sub or {}).get("prueba_fin")
+            if not prueba_fin:
+                continue
+            plan_pago = (sub or {}).get("plan", "gratis")
+            if ORDEN_PLANES.get(plan_pago, 0) >= ORDEN_PLANES["basico"]:
+                continue
+
+            try:
+                fin_fecha = date.fromisoformat(prueba_fin[:10])
+            except ValueError:
+                continue
+
+            dias_restantes = (fin_fecha - hoy).days
+            if dias_restantes == 2:
+                enviar_email_prueba_terminando(email, dias_restantes, nombre=nombre)
+                terminando += 1
+            elif dias_restantes == -1:
+                enviar_email_prueba_terminada(email, nombre=nombre)
+                terminada += 1
 
     logger.info("Recordatorios de prueba enviados: %s terminando, %s terminada", terminando, terminada)
     return jsonify({"terminando": terminando, "terminada": terminada})

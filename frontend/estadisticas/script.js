@@ -206,15 +206,17 @@ document.addEventListener("DOMContentLoaded", async function () {
       const authHeaders = await obtenerAuthHeaders();
       if (!authHeaders) return;
 
-      const { obtenerOposicionActual, OPOSICIONES, obtenerOposicionesOcultasConToken } = await import("/assets/oposicion.js");
+      const { obtenerOposicionActual, OPOSICIONES, obtenerOposicionesVisiblesConToken } = await import("/assets/oposicion.js");
       const oposicion = obtenerOposicionActual();
       const sufijo = `?oposicion=${encodeURIComponent(oposicion)}`;
-      // Si la oposición activa es una oculta (activada a mano desde admin,
-      // ver oposicion.js), no está en OPOSICIONES -- se amplía la lista solo
-      // para poder resolver su nombre real más abajo, sin ella
-      // "nombreOposicion" caería al genérico "Domina tu Opo".
+      // La oposición activa puede ser una oculta (activada a mano desde
+      // admin, ver oposicion.js) y por tanto no estar en OPOSICIONES -- se
+      // pide la lista real (autoritativa) al backend solo para poder
+      // resolver su nombre más abajo, sin ella "nombreOposicion" caería al
+      // genérico "Domina tu Opo". Si la consulta falla (null), se cae a
+      // OPOSICIONES sin más -- ya haría lo mismo antes de este cambio.
       const token = authHeaders.Authorization.replace(/^Bearer /, "");
-      const oposicionesConOcultas = [...OPOSICIONES, ...(await obtenerOposicionesOcultasConToken(token))];
+      const oposicionesConOcultas = (await obtenerOposicionesVisiblesConToken(token)) || OPOSICIONES;
 
       // NUEVO: Usar la ruta de estadísticas completas que incluye datos PDF
       const [estadisticasRes, temasRes, rachaRes] = await Promise.all([
