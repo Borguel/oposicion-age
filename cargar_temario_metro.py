@@ -182,6 +182,19 @@ def _contar_palabras(texto):
     return len(texto.split())
 
 
+def _dividir_en_unidades(texto):
+    """Intenta dividir en unidades cada vez más finas: por párrafo (línea en
+    blanco), si no hay, por línea suelta -- nunca por debajo de una línea,
+    para no cortar nunca una palabra por la mitad. Con len(unidades) <= 1
+    (nada por lo que dividir con ese criterio) se devuelve tal cual, para
+    que el llamador decida qué hacer."""
+    unidades = [p.strip() for p in re.split(r"\n\s*\n", texto) if p.strip()]
+    if len(unidades) > 1:
+        return unidades
+    unidades = [l.strip() for l in texto.split("\n") if l.strip()]
+    return unidades if unidades else [texto]
+
+
 def _trocear_por_parrafos_o_lineas(texto, max_tokens):
     """Agrupa unidades (párrafos, o líneas si el texto no tiene párrafos
     separados por línea en blanco -- ver _limpiar_pagina, que ya descarta
@@ -194,10 +207,14 @@ def _trocear_por_parrafos_o_lineas(texto, max_tokens):
     por párrafo) esa deriva llegó a colar grupos de hasta ~2000 tokens
     reales con el límite puesto en 1800. Contar palabras y convertir a
     tokens una sola vez, al comparar, evita la deriva por acumular
-    redondeos."""
-    unidades = [p.strip() for p in re.split(r"\n\s*\n", texto) if p.strip()]
-    if len(unidades) <= 1:
-        unidades = [l.strip() for l in texto.split("\n") if l.strip()]
+    redondeos.
+
+    Una unidad (un párrafo entero, o -- caso real visto en el Manual PRL --
+    prácticamente el documento entero cuando casi no hay líneas en blanco
+    internas) puede en sí misma superar max_tokens: en ese caso se
+    subdivide recursivamente por línea en vez de cortarla por un número
+    fijo de caracteres, para no partir palabras por la mitad."""
+    unidades = _dividir_en_unidades(texto)
 
     subbloques = []
     actual, palabras_actual = [], 0
@@ -207,9 +224,15 @@ def _trocear_por_parrafos_o_lineas(texto, max_tokens):
             if actual:
                 subbloques.append("\n\n".join(actual))
                 actual, palabras_actual = [], 0
-            paso = max_tokens * 4
-            for i in range(0, len(unidad), paso):
-                subbloques.append(unidad[i:i + paso])
+            sub_unidades = _dividir_en_unidades(unidad)
+            if len(sub_unidades) > 1:
+                subbloques.extend(_trocear_por_parrafos_o_lineas(unidad, max_tokens))
+            else:
+                # Unidad indivisible por línea (una única línea gigantesca
+                # sin espacios internos que la partan) -- no visto en
+                # ninguno de los 7 PDFs, pero se sube entera antes que
+                # cortarla a mitad de palabra.
+                subbloques.append(unidad)
             continue
         if int((palabras_actual + palabras_unidad) * 1.3) > max_tokens and actual:
             subbloques.append("\n\n".join(actual))
@@ -274,6 +297,16 @@ def _trocear_por_patron(texto, patron, etiqueta_formato, max_tokens=MAX_TOKENS_S
     return subbloques
 
 
+# Si la respuesta de DeepSeek tiene menos palabras que este porcentaje del
+# original, se descarta y se sube el texto sin reparar -- de vez en cuando
+# el propio "si empre" queda en el texto final, pero eso es un defecto
+# cosmético menor; perder contenido real (un corte a mitad de artículo por
+# una respuesta truncada, o que el modelo decida "resumir" pese a la
+# instrucción) sería mucho peor y pasaría desapercibido, ya que la llamada
+# no falla -- simplemente devuelve menos texto del que se le pasó.
+UMBRAL_PALABRAS_REPARACION = 0.85
+
+
 def reparar_espaciado(texto_subbloque):
     """Los PDFs de origen introducen espacios erróneos dentro de algunas
     palabras al extraer el texto (p. ej. "si empre" en vez de "siempre").
@@ -294,7 +327,15 @@ def reparar_espaciado(texto_subbloque):
         temperature=0,
         max_tokens=4000,
     )
-    return (respuesta or "").strip() or texto_subbloque
+    respuesta = (respuesta or "").strip()
+    if not respuesta:
+        return texto_subbloque
+    palabras_originales = _contar_palabras(texto_subbloque)
+    if palabras_originales and _contar_palabras(respuesta) < palabras_originales * UMBRAL_PALABRAS_REPARACION:
+        print(f"   ⚠️  Respuesta de DeepSeek sospechosamente corta ({_contar_palabras(respuesta)} "
+              f"palabras vs {palabras_originales} originales) -- se descarta, se sube sin reparar.")
+        return texto_subbloque
+    return respuesta
 
 
 def procesar_tema(config, ruta_pdf, reparar=True):
