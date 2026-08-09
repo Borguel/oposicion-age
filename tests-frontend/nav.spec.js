@@ -61,6 +61,13 @@ async function mockNav(page, { conSesion }) {
   await page.route("**/mis-documentos*", (route) =>
     route.fulfill({ contentType: "application/json", body: JSON.stringify({ documentos: [] }) })
   );
+  // Usuario de prueba sin ninguna oposición oculta activada (ver
+  // oposicion.js _anadirOposicionesOcultasDelUsuario) -- solo las 3
+  // públicas, igual que devolvería el backend real para alguien sin
+  // suscripciones.METRO.
+  await page.route("**/oposiciones-disponibles*", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ oposiciones: [{ id: "AGE" }, { id: "GACE" }, { id: "AUXILIAR" }] }) })
+  );
 }
 
 async function clicFuera(page) {

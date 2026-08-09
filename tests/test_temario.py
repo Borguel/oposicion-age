@@ -53,6 +53,35 @@ def test_oposiciones_disponibles_marca_tiene_pesos_reales_si_hay_examenes(client
     assert por_id["GACE"]["tiene_pesos_reales"] is False
 
 
+def test_oposiciones_disponibles_no_incluye_ocultas_sin_sesion(client):
+    resp = client.get("/oposiciones-disponibles")
+    ids = [o["id"] for o in resp.get_json()["oposiciones"]]
+    assert "METRO" not in ids
+
+
+def test_oposiciones_disponibles_no_incluye_ocultas_sin_acceso_concedido(client, db):
+    parche = _con_sesion(client)
+    sembrar_usuario_activo(db, "u1", plan="premium", oposicion="AGE")
+    try:
+        resp = client.get("/oposiciones-disponibles", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+    ids = [o["id"] for o in resp.get_json()["oposiciones"]]
+    assert "METRO" not in ids
+
+
+def test_oposiciones_disponibles_incluye_ocultas_si_usuario_tiene_suscripcion(client, db):
+    parche = _con_sesion(client)
+    sembrar_usuario_activo(db, "u1", plan="premium", oposicion="METRO")
+    try:
+        resp = client.get("/oposiciones-disponibles", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+    por_id = {o["id"]: o for o in resp.get_json()["oposiciones"]}
+    assert "METRO" in por_id
+    assert por_id["METRO"]["simulacro_oficial"] is None
+
+
 def test_temas_disponibles_requiere_login(client):
     resp = client.get("/temas-disponibles")
     assert resp.status_code == 401

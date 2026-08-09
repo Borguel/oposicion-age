@@ -2,15 +2,34 @@
 from flask import Blueprint, g, jsonify, request
 
 from firebase_setup import db
-from auth_utils import requiere_plan, requiere_login, obtener_oposicion_solicitada
+from auth_utils import requiere_plan, requiere_login, obtener_oposicion_solicitada, obtener_identidad_desde_token
 from oposiciones import OPOSICIONES, coleccion_temario
 from utils import calcular_pesos_reales_por_bloque, tiene_preguntas_psicotecnicas, obtener_temas_navegables
 
 bp = Blueprint("temario", __name__)
 
 
+def _oposiciones_visibles_para_la_peticion():
+    """IDs de OPOSICIONES que debe ver quien hace la petición: todas las que
+    no estén marcadas como "oculta" (AGE/GACE/Auxiliar, de cara a todo el
+    mundo) más, si la petición trae un token válido, las ocultas en las que
+    ese usuario ya tenga una entrada en suscripciones (activada a mano desde
+    el panel admin) -- así una oposición "oculta" (p. ej. METRO) no aparece
+    en este listado público para nadie más."""
+    visibles = {oid for oid, datos in OPOSICIONES.items() if not datos.get("oculta")}
+    identidad = obtener_identidad_desde_token(request)
+    if not identidad:
+        return visibles
+    uid = identidad[0]
+    doc = db.collection("usuarios").document(uid).get()
+    if doc.exists:
+        visibles |= set((doc.to_dict() or {}).get("suscripciones", {}).keys())
+    return visibles
+
+
 @bp.route("/oposiciones-disponibles", methods=["GET"])
 def obtener_oposiciones_disponibles():
+    ids_visibles = _oposiciones_visibles_para_la_peticion()
     return jsonify({
         "oposiciones": [
             {
@@ -31,6 +50,7 @@ def obtener_oposiciones_disponibles():
                 "tiene_psicotecnicas": tiene_preguntas_psicotecnicas(db, oid),
             }
             for oid, datos in OPOSICIONES.items()
+            if oid in ids_visibles
         ]
     })
 
