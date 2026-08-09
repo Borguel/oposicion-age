@@ -9,11 +9,18 @@ propia página (/test-psicotecnico/): 25 preguntas de razonamiento verbal y 25
 de razonamiento espacial, cada una como un examen completo y separado -- así
 que se guardan en una colección aparte, nunca mezclada con temario.
 
-Las preguntas ya están extraídas y revisadas en
-datos_examenes/metro_2023_psicotecnico.json (fuente: "Prueba Tipo Examen,
-Convocatoria 2023 Metro de Madrid", Empleo Maquinistas). Las preguntas de
-razonamiento espacial llevan un campo "imagen" con la ruta de la figura
-recortada en frontend/assets/psicotecnico-metro/.
+Las preguntas viven en datos_examenes/metro_2023_psicotecnico.json. Dos
+orígenes distintos, cada uno marcado con su propio campo "examen" en el
+JSON:
+  - Las 50 originales, extraídas y revisadas de la "Prueba Tipo Examen,
+    Convocatoria 2023 Metro de Madrid" (Empleo Maquinistas).
+  - 100 preguntas propias añadidas después para ampliar el banco de
+    práctica (50 de razonamiento verbal redactadas a mano; 50 de
+    razonamiento espacial generadas por código con la respuesta calculada,
+    no adivinada -- ver frontend/assets/psicotecnico-metro/gen_*.py en el
+    histórico de esta carga).
+Las preguntas de razonamiento espacial llevan un campo "imagen" con la
+ruta de la figura recortada/generada en frontend/assets/psicotecnico-metro/.
 
 Requiere las mismas variables de entorno que el resto del proyecto (ver
 app.py / .env): FIREBASE_CREDENTIALS_JSON (o FIREBASE_KEY_PATH apuntando a
@@ -46,7 +53,7 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
-NOMBRE_EXAMEN = "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+NOMBRE_EXAMEN_POR_DEFECTO = "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
 PRUEBA_CODIGO = {"verbal": "v", "espacial": "e"}
 
 
@@ -59,10 +66,14 @@ def cargar():
     print(f"Subiendo {len(preguntas)} preguntas a Firestore -> colección '{coleccion}'")
 
     for p in preguntas:
+        # :02d es solo un ANCHO MÍNIMO (no trunca): numero=5 -> "05",
+        # numero=100 -> "100" -- a propósito el mismo formato que la carga
+        # original, para que sobrescriba los documentos ya existentes en
+        # vez de duplicarlos.
         doc_id = f"metro_2023_psico_{PRUEBA_CODIGO[p['prueba']]}_{p['numero']:02d}"
         datos = {
             "tipo": "pregunta",
-            "examen": NOMBRE_EXAMEN,
+            "examen": p.get("examen") or NOMBRE_EXAMEN_POR_DEFECTO,
             "prueba": p["prueba"],
             "numero": p["numero"],
             "pregunta": p["pregunta"],

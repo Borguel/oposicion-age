@@ -39,17 +39,17 @@
   <div class="container">
     <div class="card fade-in" id="selector-psicotecnico">
       <h3 class="tarjeta-formulario-titulo">Elige qué prueba quieres hacer</h3>
-      <p class="tarjeta-formulario-subtitulo">Cada prueba tiene 25 preguntas propias. Se hacen siempre por separado, nunca mezcladas entre sí ni con el temario -- practica solo la que quieras.</p>
+      <p class="tarjeta-formulario-subtitulo">Cada prueba tiene su propio banco de preguntas. Se hacen siempre por separado, nunca mezcladas entre sí ni con el temario -- practica solo la que quieras.</p>
       <div class="test-type-container">
         <button type="button" class="test-type-card" id="btn-prueba-verbal" data-prueba="verbal">
           <div class="icon" data-icon="chat" data-icon-size="30"></div>
           <div class="title">Prueba 1: Razonamiento verbal</div>
-          <div class="description">Hasta 25 preguntas</div>
+          <div class="description">Hasta 75 preguntas</div>
         </button>
         <button type="button" class="test-type-card" id="btn-prueba-espacial" data-prueba="espacial">
           <div class="icon" data-icon="destellos" data-icon-size="30"></div>
           <div class="title">Prueba 2: Razonamiento espacial</div>
-          <div class="description">Hasta 25 preguntas</div>
+          <div class="description">Hasta 75 preguntas</div>
         </button>
       </div>
     </div>
@@ -59,8 +59,8 @@
       <p class="tarjeta-formulario-subtitulo">Elige cuántas preguntas quieres y si quieres cronometrarlo, igual que en Test Oficial.</p>
       <form id="form-generar-test">
         <input type="hidden" id="prueba_elegida" value="">
-        <label for="num_preguntas">Número de preguntas (máximo 25):</label>
-        <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="25" value="25" required>
+        <label for="num_preguntas">Número de preguntas (máximo 75):</label>
+        <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="75" value="25" required>
         <div class="timer-settings">
           <label>
             <input type="checkbox" id="modo_cronometrado" checked> <span>Activar modo examen cronometrado</span>

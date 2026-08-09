@@ -1,330 +1,5 @@
 [
   {
-    "numero": 1,
-    "prueba": "verbal",
-    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nEl poder adquisitivo de una ………. es el reflejo del enriquecimiento o ………. de un país.",
-    "opciones": {
-      "A": "transacción - desarrollo.",
-      "B": "mercancía - avance.",
-      "C": "moneda – empobrecimiento.",
-      "D": "actividad – prosperidad."
-    },
-    "respuesta_correcta": "C",
-    "explicacion": "La frase habla del poder adquisitivo de una moneda, que refleja el enriquecimiento o empobrecimiento de un país. Las demás opciones no encajan semánticamente."
-  },
-  {
-    "numero": 2,
-    "prueba": "verbal",
-    "pregunta": "Señale el sinónimo de ALEGATO:",
-    "opciones": {
-      "A": "Defensa",
-      "B": "Derecho",
-      "C": "Discurso",
-      "D": "Confirmación"
-    },
-    "respuesta_correcta": "C",
-    "explicacion": "Alegato significa discurso o argumentación en defensa de algo. Sinónimo directo es discurso."
-  },
-  {
-    "numero": 3,
-    "prueba": "verbal",
-    "pregunta": "¿Qué palabra tiene un significado opuesto a ARRECIAR?",
-    "opciones": {
-      "A": "Amainar",
-      "B": "Anticipar",
-      "C": "Aceptar",
-      "D": "Reembolsar"
-    },
-    "respuesta_correcta": "A",
-    "explicacion": "Arreciar significa «hacerse más fuerte» (ej. una tormenta). Su antónimo es amainar (disminuir la intensidad)."
-  },
-  {
-    "numero": 4,
-    "prueba": "verbal",
-    "pregunta": "Entre las siguientes, hay una palabra con un error ortográfico:",
-    "opciones": {
-      "A": "Aljibe",
-      "B": "Genciana",
-      "C": "Gélido",
-      "D": "Jenjibre."
-    },
-    "respuesta_correcta": "D",
-    "explicacion": "La forma correcta es jengibre. Es el único error ortográfico (las demás: aljibe, genciana, gélido están bien)."
-  },
-  {
-    "numero": 5,
-    "prueba": "verbal",
-    "pregunta": "Señale la palabra que no se corresponde con las del grupo:",
-    "opciones": {
-      "A": "Sublimar",
-      "B": "Persistir",
-      "C": "Ensalzar",
-      "D": "Enaltecer"
-    },
-    "respuesta_correcta": "B",
-    "explicacion": "Sublimar, ensalzar y enaltecer significan «alabar / elevar»; persistir significa «mantenerse firme» y no guarda relación con el grupo."
-  },
-  {
-    "numero": 6,
-    "prueba": "verbal",
-    "pregunta": "Señale la palabra incorrectamente escrita:",
-    "opciones": {
-      "A": "Estrujar",
-      "B": "Estraperlo",
-      "C": "Exculpir",
-      "D": "Expirar"
-    },
-    "respuesta_correcta": "C",
-    "explicacion": "La forma correcta es esculpir. Estrujar, estraperlo y expirar están escritas correctamente."
-  },
-  {
-    "numero": 7,
-    "prueba": "verbal",
-    "pregunta": "Señale la palabra que define esta sentencia: “Hecho asombroso cuya causa se desconoce y se atribuye a potencias sobrenaturales”.",
-    "opciones": {
-      "A": "Mito",
-      "B": "Paradigma",
-      "C": "Fenómeno",
-      "D": "Meta-cognición"
-    },
-    "respuesta_correcta": "C",
-    "explicacion": "La definición «hecho asombroso cuya causa se desconoce y se atribuye a poderes sobrenaturales» corresponde a fenómeno."
-  },
-  {
-    "numero": 8,
-    "prueba": "verbal",
-    "pregunta": "Bondad es a cualidad como:",
-    "opciones": {
-      "A": "Pájaro es a aire.",
-      "B": "Estrofa es a verso.",
-      "C": "Blanco es a negro.",
-      "D": "Negrura es a atributo."
-    },
-    "respuesta_correcta": "D",
-    "explicacion": "La relación es concepto abstracto → cualidad/característica. Bondad es una cualidad; negrura es un atributo."
-  },
-  {
-    "numero": 9,
-    "prueba": "verbal",
-    "pregunta": "Ordene las palabras sueltas para formar una frase que tenga sentido. Luego halle la respuesta:\n\nMAYOR – EL – SE – LLAMA – LADO – DE – TRIANGULO - UN",
-    "opciones": {
-      "A": "Mediana",
-      "B": "Hipotenusa",
-      "C": "Apotema",
-      "D": "Bisectriz"
-    },
-    "respuesta_correcta": "B",
-    "explicacion": "Ordenando: «El lado mayor de un triángulo se llama hipotenusa»."
-  },
-  {
-    "numero": 10,
-    "prueba": "verbal",
-    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nLa oportunidad ………. enriquecer cada idea, con ………. de los otros, abre ………. espacios de la creatividad.",
-    "opciones": {
-      "A": "de – todos – aquellos.",
-      "B": "de – las – los.",
-      "C": "para – lo – algunos.",
-      "D": "para – algo – unos."
-    },
-    "respuesta_correcta": "C",
-    "explicacion": "La frase con sentido es: «La oportunidad para enriquecer cada idea, con lo de los otros, abre algunos espacios de la creatividad». Es la combinación más natural y gramatical."
-  },
-  {
-    "numero": 11,
-    "prueba": "verbal",
-    "pregunta": "¿Qué palabra tiene un significado opuesto a EVAPORACIÓN?",
-    "opciones": {
-      "A": "Gasificación",
-      "B": "Condensación",
-      "C": "Sublimación",
-      "D": "Solidificación"
-    },
-    "respuesta_correcta": "B",
-    "explicacion": "Evaporación es paso de líquido a gas; su antónimo es condensación (paso de gas a líquido)."
-  },
-  {
-    "numero": 12,
-    "prueba": "verbal",
-    "pregunta": "Señale la palabra que no se corresponde con las del grupo:",
-    "opciones": {
-      "A": "Rielar",
-      "B": "Brillar",
-      "C": "Resplandecer",
-      "D": "Revolver"
-    },
-    "respuesta_correcta": "D",
-    "explicacion": "Rielar, brillar y resplandecer son sinónimos (relucientes); revolver (agitar) es el que no se corresponde con el grupo."
-  },
-  {
-    "numero": 13,
-    "prueba": "verbal",
-    "pregunta": "En las siguientes frases hay una que no contiene ningún error ortográfico:",
-    "opciones": {
-      "A": "La idea tuvo una larga jestación.",
-      "B": "Se tiene que cambiar la bujía del coche.",
-      "C": "Se comio un plato de berenjenas.",
-      "D": "Fuí de vacaciones a Algeciras."
-    },
-    "respuesta_correcta": "B",
-    "explicacion": "Es la única sin errores: bujía y coche están bien. Las otras tienen faltas (jestación→gestación, comio→comió, Fuí→Fui)."
-  },
-  {
-    "numero": 14,
-    "prueba": "verbal",
-    "pregunta": "Señale el sinónimo de NECROSIS:",
-    "opciones": {
-      "A": "Enfermedad",
-      "B": "Necrología",
-      "C": "Gangrena",
-      "D": "Avitaminosis"
-    },
-    "respuesta_correcta": "C",
-    "explicacion": "Necrosis es la muerte de tejidos; sinónimo habitual es gangrena."
-  },
-  {
-    "numero": 15,
-    "prueba": "verbal",
-    "pregunta": "¿Con qué se relaciona la palabra CÓNDILO?",
-    "opciones": {
-      "A": "Hueso",
-      "B": "Pájaro",
-      "C": "Vegetal",
-      "D": "Mineral"
-    },
-    "respuesta_correcta": "A",
-    "explicacion": "El cóndilo es una prominencia redondeada que se encuentra en los huesos (ej. en las articulaciones)."
-  },
-  {
-    "numero": 16,
-    "prueba": "verbal",
-    "pregunta": "Comprensión lectora. Lea el siguiente texto y conteste:\n\n«Vida salvaje. El último refugio.\n\nLos puercoespines ingleses están en riesgo. Estos tímidos insectívoros, que suelen ocultarse en los arbustos cuando se ven amenazados, están desapareciendo con tal celeridad que podrían extinguirse en la campiña inglesa para el año 2025. El principal obstáculo para salvarlos es que nadie sabe con certeza qué los está matando. Se culpa a los plaguicidas, pero los científicos aún no han establecido una relación directa; pruebas recientes sugieren que estos animales viven mejor en los jardines de los suburbios que en tierras agrícolas. En tanto se cuenta con más información para desarrollar una estrategia a gran escala, los conservacionistas instan a los jardineros a tolerar las madrigueras de los puercoespines, aunque esto implique descuidar un poco sus jardines. Una propuesta difícil de aceptar en una nación que se enorgullece de ellos.»\n\nSegún lo planteado en el texto se puede concluir que:",
-    "opciones": {
-      "A": "Los puercoespines son insectívoros muy tímidos.",
-      "B": "Los conservacionistas quieren acabar con los jardines ingleses.",
-      "C": "Estos animales viven mejor en jardines que en tierras agrícolas.",
-      "D": "En el 2025 los puercoespines habrán desaparecido en su totalidad."
-    },
-    "respuesta_correcta": "C",
-    "explicacion": "El texto dice literalmente: «pruebas recientes sugieren que estos animales viven mejor en los jardines de los suburbios que en tierras agrícolas»."
-  },
-  {
-    "numero": 17,
-    "prueba": "verbal",
-    "pregunta": "Sobre el mismo texto de los puercoespines ingleses (pregunta anterior): una propuesta viable para conservar a los puercoespines es:",
-    "opciones": {
-      "A": "Ocultarlos en los arbustos de los jardines cuando se ven amenazados.",
-      "B": "Prohibir el uso de plaguicidas en lugares cercanos a sus madrigueras.",
-      "C": "Permitirles vivir en los jardines mientras se desarrolla una estrategia de conservación.",
-      "D": "Incrementar los estudios científicos para determinar las razones de su extinción."
-    },
-    "respuesta_correcta": "C",
-    "explicacion": "El texto indica que «los conservacionistas instan a los jardineros a tolerar las madrigueras» mientras se obtiene más información."
-  },
-  {
-    "numero": 18,
-    "prueba": "verbal",
-    "pregunta": "¿Qué opción define correctamente a la palabra HERALDO?",
-    "opciones": {
-      "A": "Estudioso de la historia de los apellidos.",
-      "B": "Mensajero.",
-      "C": "El que administra una herencia.",
-      "D": "Fuerte, robusto."
-    },
-    "respuesta_correcta": "B",
-    "explicacion": "Heraldo es la persona que lleva un mensaje o anuncio; sinónimo: mensajero."
-  },
-  {
-    "numero": 19,
-    "prueba": "verbal",
-    "pregunta": "Equidad es a justicia como:",
-    "opciones": {
-      "A": "Televisor es a difusión.",
-      "B": "Preso es a esposas.",
-      "C": "Llanura es a pradera.",
-      "D": "Cenestesia es a equilibrio."
-    },
-    "respuesta_correcta": "C",
-    "explicacion": "Equidad y justicia son casi sinónimos; de las opciones, llanura y pradera son los términos más próximos semánticamente (ambos designan terrenos)."
-  },
-  {
-    "numero": 20,
-    "prueba": "verbal",
-    "pregunta": "¿Qué opción define correctamente a la palabra PUERICULTURA?",
-    "opciones": {
-      "A": "Arte de cultivar flores ornamentales.",
-      "B": "Disciplina que estudia la cultura infantil, nanas, cuentos, ...",
-      "C": "Cría de cerdos en cautividad.",
-      "D": "Arte de criar y cuidar a los niños."
-    },
-    "respuesta_correcta": "D",
-    "explicacion": "Puericultura es la rama de la medicina/pedagogía dedicada al cuidado y crianza de los niños."
-  },
-  {
-    "numero": 21,
-    "prueba": "verbal",
-    "pregunta": "Las siguientes preguntas constan de un grupo de oraciones ordenadas y numeradas, seguidas de cuatro opciones señaladas con las letras A, B, C y D. Seleccione la opción que representa la oración que podría SER EXCLUIDA DEL TEXTO, por no añadir ninguna información adicional al contenido de éste o por encontrarse fuera de su contexto:\n\n1. Cuando Juan toma café siempre come pan.\n2. Lo suele hacer a la hora del desayuno.\n3. Si no hay pan come tostadas con queso.\n4. Hoy no ha encontrado el café en la cocina.\n5. Es de suponer que no ha comido pan.\n6. No ha preparado las tostadas con queso.\n7. Esta mañana Juan no ha desayunado.",
-    "opciones": {
-      "A": "4",
-      "B": "5",
-      "C": "6",
-      "D": "7"
-    },
-    "respuesta_correcta": "B",
-    "explicacion": "La oración 5 («es de suponer que no ha comido pan») es una deducción redundante que ya se desprende de la 7 («no ha desayunado»); se puede eliminar sin perder información esencial."
-  },
-  {
-    "numero": 22,
-    "prueba": "verbal",
-    "pregunta": "Ordene de manera lógica las siguientes palabras hasta elaborar la frase:\n\n1. existe / 2. educación / 3. investigación / 4. Colombia / 5. un / 6. importante / 7. núcleo / 8. matemática / 9. de / 10. en / 11. En\n\nEl ordenamiento lógico del anterior escrito es:",
-    "opciones": {
-      "A": "11-4-1-5-7-6-9-2-8-10-3",
-      "B": "11-2-10-4-1-5-6-7-9-3-8",
-      "C": "1-5-7-6-9-3-10-2-8-11-4",
-      "D": "11-4-1-5-6-7-9-3-10-2-8"
-    },
-    "respuesta_correcta": "D",
-    "explicacion": "Orden: «En Colombia existe un importante núcleo de investigación en educación matemática»."
-  },
-  {
-    "numero": 23,
-    "prueba": "verbal",
-    "pregunta": "Opera es a cantante como:",
-    "opciones": {
-      "A": "Poema es a declamador.",
-      "B": "Riel es a tren.",
-      "C": "Libro es a biblioteca.",
-      "D": "Cama es a enfermo."
-    },
-    "respuesta_correcta": "A",
-    "explicacion": "La ópera la interpreta un cantante; el poema lo interpreta un declamador (relación de arte → intérprete)."
-  },
-  {
-    "numero": 24,
-    "prueba": "verbal",
-    "pregunta": "Señale la palabra cuyo significado sea igual o más parecido a MISÁNTROPO.",
-    "opciones": {
-      "A": "Religioso",
-      "B": "Huraño",
-      "C": "Cariñoso",
-      "D": "Humano"
-    },
-    "respuesta_correcta": "B",
-    "explicacion": "Misántropo significa «que huye del trato humano»; sinónimo: huraño."
-  },
-  {
-    "numero": 25,
-    "prueba": "verbal",
-    "pregunta": "¿Cuál es el antónimo de PROLIJO?",
-    "opciones": {
-      "A": "Positivo",
-      "B": "Sentencioso",
-      "C": "Pacífico",
-      "D": "Tarugo"
-    },
-    "respuesta_correcta": "B",
-    "explicacion": "Aunque no es un antónimo perfecto, en el contexto de la prueba prolijo (extenso, minucioso) se opone a sentencioso (breve y cortante), que es la única opción con ese matiz de concisión."
-  },
-  {
     "numero": 26,
     "prueba": "espacial",
     "pregunta": "¿Cuántas caras presenta la siguiente figura?",
@@ -336,7 +11,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Contando todas las superficies planas del sólido (caras superiores, inferiores, frontales, traseras y las paredes internas de los recortes) se obtienen 20 caras.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_26.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_26.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 27,
@@ -350,7 +26,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La pieza C es la única cuyo contorno dentado encaja exactamente con el hueco marcado con el interrogante.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_27.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_27.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 28,
@@ -364,7 +41,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Girando mentalmente el modelo, las figuras 1, 2 y 4 son rotaciones válidas; la figura 3 no se corresponde con ninguna rotación del modelo.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_28.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_28.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 29,
@@ -378,7 +56,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "La serie gira la figura progresivamente en el mismo sentido; la opción A continúa ese giro de forma coherente.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_29.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_29.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 30,
@@ -392,7 +71,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Contando cubo a cubo, incluidos los ocultos que sostienen a los visibles, el total es de 19 cubos.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_30.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_30.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 31,
@@ -406,7 +86,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Solo el desarrollo B respeta la posición y orientación relativa de las caras del dado del modelo al desplegarlo.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_31.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_31.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 32,
@@ -420,7 +101,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Es la única opción que mantiene idénticos todos los detalles del modelo (banderas, velas y casco) sin ninguna variación.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_32.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_32.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 33,
@@ -434,7 +116,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Siguiendo las reglas de adyacencia de las caras al plegar la red, solo en la opción A los símbolos quedan en las caras y posiciones correctas.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_33.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_33.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 34,
@@ -448,7 +131,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Sumando los cubos visibles y los ocultos necesarios para sostener la estructura se obtienen 20 cubos.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_34.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_34.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 35,
@@ -462,7 +146,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Girando mentalmente el modelo, la disposición de las líneas diagonales y el punto solo coincide con la opción B.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_35.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_35.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 36,
@@ -476,7 +161,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "El ladrillo marcado contacta con 6 ladrillos adyacentes.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_36.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_36.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 37,
@@ -490,7 +176,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "La figura gira 45° en sentido horario en cada paso de la serie; la opción D continúa ese giro correctamente.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_37.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_37.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 38,
@@ -504,7 +191,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Al plegar la red mostrada, los símbolos solo quedan en las caras visibles correctas en la opción A.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_38.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_38.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 39,
@@ -518,7 +206,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Contando la estructura completa en forma de escalera, incluidos los cubos ocultos que la sostienen, el total es 33.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_39.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_39.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 40,
@@ -532,7 +221,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Es el único desarrollo que, al plegarlo, reproduce la posición de los símbolos y la dirección de la flecha del modelo.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_40.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_40.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 41,
@@ -546,7 +236,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Girando mentalmente el cubo del modelo, solo la opción D mantiene la misma posición relativa de las líneas y los puntos.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_41.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_41.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 42,
@@ -560,7 +251,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Al plegar la red, los símbolos de las ondas, el reloj y el rombo solo coinciden con las caras visibles de la opción A.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_42.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_42.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 43,
@@ -574,7 +266,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Se trata de un prisma con varias diagonales internas; contando aristas visibles y ocultas se obtienen 11 líneas.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_43.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_43.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 44,
@@ -588,7 +281,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Solo el desarrollo A sitúa el óvalo, el corazón y el rombo en las caras adyacentes correctas respecto al modelo plegado.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_44.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_44.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 45,
@@ -602,7 +296,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Las demás opciones tienen pequeños errores respecto al modelo (detalles de la chimenea, las ruedas o su color); solo c es idéntica.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_45.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_45.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 46,
@@ -616,7 +311,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Girando mentalmente el cubo, la posición de los puntos y el triángulo negro solo coincide con la opción B.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_46.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_46.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 47,
@@ -630,7 +326,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Las figuras 1, 3 y 4 son rotaciones del modelo; la figura 2 es un reflejo (imagen especular), no una rotación, por lo que es la distinta.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_47.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_47.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 48,
@@ -644,7 +341,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Contando todas las aristas visibles y ocultas del sólido se obtienen 18 líneas.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_48.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_48.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 49,
@@ -658,7 +356,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Girando mentalmente la figura 3 sobre su eje, se obtiene exactamente la misma figura maciza que el modelo.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_49.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_49.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
   },
   {
     "numero": 50,
@@ -672,6 +371,1807 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "El ladrillo marcado está en contacto con otros 6 ladrillos adyacentes.",
-    "imagen": "/assets/psicotecnico-metro/pregunta_50.png"
+    "imagen": "/assets/psicotecnico-metro/pregunta_50.png",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 51,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "A": "9",
+      "B": "6",
+      "C": "12",
+      "D": "11"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 9.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_51.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 52,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "B": "7",
+      "C": "10",
+      "D": "9",
+      "A": "8"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 7.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_52.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 53,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "C": "17",
+      "D": "16",
+      "A": "14",
+      "B": "18"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 17.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_53.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 54,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "D": "19",
+      "A": "21",
+      "B": "18",
+      "C": "22"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 19.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_54.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 55,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "A": "8",
+      "B": "9",
+      "C": "7",
+      "D": "5"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 8.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_55.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 56,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "B": "26",
+      "C": "27",
+      "D": "25",
+      "A": "29"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 26.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_56.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 57,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "C": "14",
+      "D": "13",
+      "A": "17",
+      "B": "16"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 14.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_57.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 58,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "D": "43",
+      "A": "44",
+      "B": "45",
+      "C": "41"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 43.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_58.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 59,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "A": "17",
+      "B": "18",
+      "C": "14",
+      "D": "19"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 17.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_59.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 60,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "B": "24",
+      "C": "23",
+      "D": "21",
+      "A": "25"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 24.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_60.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 61,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "C": "22",
+      "D": "25",
+      "A": "24",
+      "B": "21"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 22.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_61.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 62,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "D": "19",
+      "A": "21",
+      "B": "17",
+      "C": "16"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 19.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_62.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 63,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "A": "17",
+      "B": "19",
+      "C": "20",
+      "D": "15"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 17.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_63.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 64,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "B": "36",
+      "C": "34",
+      "D": "38",
+      "A": "33"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 36.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_64.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 65,
+    "prueba": "espacial",
+    "pregunta": "Señale cuántos cubos hay en la siguiente figura.",
+    "opciones": {
+      "C": "15",
+      "D": "17",
+      "A": "18",
+      "B": "13"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 15.",
+    "imagen": "/assets/psicotecnico-metro/gen_cubos_65.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 66,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas caras presenta la siguiente figura?",
+    "opciones": {
+      "D": "32",
+      "A": "35",
+      "B": "31",
+      "C": "33"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 32 caras.",
+    "imagen": "/assets/psicotecnico-metro/gen_caras_66.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 67,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas caras presenta la siguiente figura?",
+    "opciones": {
+      "A": "24",
+      "B": "22",
+      "C": "25",
+      "D": "26"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 24 caras.",
+    "imagen": "/assets/psicotecnico-metro/gen_caras_67.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 68,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas caras presenta la siguiente figura?",
+    "opciones": {
+      "B": "42",
+      "C": "39",
+      "D": "44",
+      "A": "40"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 42 caras.",
+    "imagen": "/assets/psicotecnico-metro/gen_caras_68.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 69,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas caras presenta la siguiente figura?",
+    "opciones": {
+      "C": "32",
+      "D": "33",
+      "A": "35",
+      "B": "31"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 32 caras.",
+    "imagen": "/assets/psicotecnico-metro/gen_caras_69.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 70,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas caras presenta la siguiente figura?",
+    "opciones": {
+      "D": "28",
+      "A": "29",
+      "B": "25",
+      "C": "30"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 28 caras.",
+    "imagen": "/assets/psicotecnico-metro/gen_caras_70.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 71,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas caras presenta la siguiente figura?",
+    "opciones": {
+      "A": "38",
+      "B": "35",
+      "C": "39",
+      "D": "40"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 38 caras.",
+    "imagen": "/assets/psicotecnico-metro/gen_caras_71.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 72,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas caras presenta la siguiente figura?",
+    "opciones": {
+      "B": "42",
+      "C": "40",
+      "D": "43",
+      "A": "45"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 42 caras.",
+    "imagen": "/assets/psicotecnico-metro/gen_caras_72.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 73,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas caras presenta la siguiente figura?",
+    "opciones": {
+      "C": "36",
+      "D": "38",
+      "A": "35",
+      "B": "34"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 36 caras.",
+    "imagen": "/assets/psicotecnico-metro/gen_caras_73.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 74,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas caras presenta la siguiente figura?",
+    "opciones": {
+      "D": "36",
+      "A": "33",
+      "B": "38",
+      "C": "39"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 36 caras.",
+    "imagen": "/assets/psicotecnico-metro/gen_caras_74.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 75,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas caras presenta la siguiente figura?",
+    "opciones": {
+      "A": "42",
+      "B": "40",
+      "C": "41",
+      "D": "44"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 42 caras.",
+    "imagen": "/assets/psicotecnico-metro/gen_caras_75.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 76,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
+    "opciones": {
+      "B": "4",
+      "C": "6",
+      "D": "5",
+      "A": "3"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
+    "imagen": "/assets/psicotecnico-metro/gen_contacto_76.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 77,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
+    "opciones": {
+      "C": "4",
+      "D": "2",
+      "A": "6",
+      "B": "3"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
+    "imagen": "/assets/psicotecnico-metro/gen_contacto_77.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 78,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
+    "opciones": {
+      "D": "4",
+      "A": "6",
+      "B": "2",
+      "C": "3"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
+    "imagen": "/assets/psicotecnico-metro/gen_contacto_78.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 79,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
+    "opciones": {
+      "A": "4",
+      "B": "6",
+      "C": "5",
+      "D": "2"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
+    "imagen": "/assets/psicotecnico-metro/gen_contacto_79.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 80,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
+    "opciones": {
+      "B": "3",
+      "C": "4",
+      "D": "5",
+      "A": "2"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 3 cubos de la figura.",
+    "imagen": "/assets/psicotecnico-metro/gen_contacto_80.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 81,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
+    "opciones": {
+      "C": "3",
+      "D": "6",
+      "A": "1",
+      "B": "5"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 3 cubos de la figura.",
+    "imagen": "/assets/psicotecnico-metro/gen_contacto_81.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 82,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
+    "opciones": {
+      "D": "3",
+      "A": "4",
+      "B": "2",
+      "C": "1"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 3 cubos de la figura.",
+    "imagen": "/assets/psicotecnico-metro/gen_contacto_82.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 83,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
+    "opciones": {
+      "A": "3",
+      "B": "6",
+      "C": "2",
+      "D": "4"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 3 cubos de la figura.",
+    "imagen": "/assets/psicotecnico-metro/gen_contacto_83.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 84,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
+    "opciones": {
+      "B": "4",
+      "C": "5",
+      "D": "2",
+      "A": "6"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
+    "imagen": "/assets/psicotecnico-metro/gen_contacto_84.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 85,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
+    "opciones": {
+      "C": "4",
+      "D": "2",
+      "A": "3",
+      "B": "6"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
+    "imagen": "/assets/psicotecnico-metro/gen_contacto_85.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 86,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas líneas, tanto visibles como ocultas, se pueden contar en esta figura?",
+    "opciones": {
+      "C": "11",
+      "D": "12",
+      "A": "10",
+      "B": "13"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Contando todas las aristas del sólido junto con las diagonales marcadas se obtienen 11 líneas.",
+    "imagen": "/assets/psicotecnico-metro/gen_lineas_86.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 87,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas líneas, tanto visibles como ocultas, se pueden contar en esta figura?",
+    "opciones": {
+      "D": "10",
+      "A": "9",
+      "B": "11",
+      "C": "8"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Contando todas las aristas del sólido junto con las diagonales marcadas se obtienen 10 líneas.",
+    "imagen": "/assets/psicotecnico-metro/gen_lineas_87.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 88,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas líneas, tanto visibles como ocultas, se pueden contar en esta figura?",
+    "opciones": {
+      "A": "15",
+      "B": "14",
+      "C": "13",
+      "D": "17"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Contando todas las aristas del sólido junto con las diagonales marcadas se obtienen 15 líneas.",
+    "imagen": "/assets/psicotecnico-metro/gen_lineas_88.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 89,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas líneas, tanto visibles como ocultas, se pueden contar en esta figura?",
+    "opciones": {
+      "B": "10",
+      "C": "9",
+      "D": "12",
+      "A": "8"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Contando todas las aristas del sólido junto con las diagonales marcadas se obtienen 10 líneas.",
+    "imagen": "/assets/psicotecnico-metro/gen_lineas_89.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 90,
+    "prueba": "espacial",
+    "pregunta": "¿Cuántas líneas, tanto visibles como ocultas, se pueden contar en esta figura?",
+    "opciones": {
+      "C": "14",
+      "D": "15",
+      "A": "12",
+      "B": "13"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Contando todas las aristas del sólido junto con las diagonales marcadas se obtienen 14 líneas.",
+    "imagen": "/assets/psicotecnico-metro/gen_lineas_90.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 91,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál es la figura distinta a la del modelo?",
+    "opciones": {
+      "D": "2",
+      "A": "1",
+      "B": "3",
+      "C": "4"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Girando mentalmente el modelo, las otras tres opciones son rotaciones válidas; la figura 2 es un reflejo (imagen especular) del modelo, no una rotación, así que es la distinta.",
+    "imagen": "/assets/psicotecnico-metro/gen_distinta_91.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 92,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál es la figura distinta a la del modelo?",
+    "opciones": {
+      "A": "3",
+      "B": "2",
+      "C": "1",
+      "D": "4"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Girando mentalmente el modelo, las otras tres opciones son rotaciones válidas; la figura 3 es un reflejo (imagen especular) del modelo, no una rotación, así que es la distinta.",
+    "imagen": "/assets/psicotecnico-metro/gen_distinta_92.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 93,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál es la figura distinta a la del modelo?",
+    "opciones": {
+      "B": "1",
+      "A": "2",
+      "C": "3",
+      "D": "4"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Girando mentalmente el modelo, las otras tres opciones son rotaciones válidas; la figura 1 es un reflejo (imagen especular) del modelo, no una rotación, así que es la distinta.",
+    "imagen": "/assets/psicotecnico-metro/gen_distinta_93.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 94,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál es la figura distinta a la del modelo?",
+    "opciones": {
+      "C": "4",
+      "A": "1",
+      "B": "3",
+      "D": "2"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Girando mentalmente el modelo, las otras tres opciones son rotaciones válidas; la figura 4 es un reflejo (imagen especular) del modelo, no una rotación, así que es la distinta.",
+    "imagen": "/assets/psicotecnico-metro/gen_distinta_94.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 95,
+    "prueba": "espacial",
+    "pregunta": "¿Cuál es la figura distinta a la del modelo?",
+    "opciones": {
+      "D": "3",
+      "A": "1",
+      "B": "4",
+      "C": "2"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Girando mentalmente el modelo, las otras tres opciones son rotaciones válidas; la figura 3 es un reflejo (imagen especular) del modelo, no una rotación, así que es la distinta.",
+    "imagen": "/assets/psicotecnico-metro/gen_distinta_95.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 96,
+    "prueba": "espacial",
+    "pregunta": "¿Qué figura continuaría la serie?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La figura gira 45° en el mismo sentido en cada paso de la serie; la opción A continúa ese giro de forma coherente.",
+    "imagen": "/assets/psicotecnico-metro/gen_serie_96.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 97,
+    "prueba": "espacial",
+    "pregunta": "¿Qué figura continuaría la serie?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La figura gira 30° en el mismo sentido en cada paso de la serie; la opción B continúa ese giro de forma coherente.",
+    "imagen": "/assets/psicotecnico-metro/gen_serie_97.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 98,
+    "prueba": "espacial",
+    "pregunta": "¿Qué figura continuaría la serie?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La figura gira 30° en el mismo sentido en cada paso de la serie; la opción C continúa ese giro de forma coherente.",
+    "imagen": "/assets/psicotecnico-metro/gen_serie_98.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 99,
+    "prueba": "espacial",
+    "pregunta": "¿Qué figura continuaría la serie?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La figura gira 30° en el mismo sentido en cada paso de la serie; la opción D continúa ese giro de forma coherente.",
+    "imagen": "/assets/psicotecnico-metro/gen_serie_99.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 100,
+    "prueba": "espacial",
+    "pregunta": "¿Qué figura continuaría la serie?",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La figura gira 60° en el mismo sentido en cada paso de la serie; la opción A continúa ese giro de forma coherente.",
+    "imagen": "/assets/psicotecnico-metro/gen_serie_100.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 1,
+    "prueba": "verbal",
+    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nEl poder adquisitivo de una ………. es el reflejo del enriquecimiento o ………. de un país.",
+    "opciones": {
+      "A": "transacción - desarrollo.",
+      "B": "mercancía - avance.",
+      "C": "moneda – empobrecimiento.",
+      "D": "actividad – prosperidad."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La frase habla del poder adquisitivo de una moneda, que refleja el enriquecimiento o empobrecimiento de un país. Las demás opciones no encajan semánticamente.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 2,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de ALEGATO:",
+    "opciones": {
+      "A": "Defensa",
+      "B": "Derecho",
+      "C": "Discurso",
+      "D": "Confirmación"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Alegato significa discurso o argumentación en defensa de algo. Sinónimo directo es discurso.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 3,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a ARRECIAR?",
+    "opciones": {
+      "A": "Amainar",
+      "B": "Anticipar",
+      "C": "Aceptar",
+      "D": "Reembolsar"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Arreciar significa «hacerse más fuerte» (ej. una tormenta). Su antónimo es amainar (disminuir la intensidad).",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 4,
+    "prueba": "verbal",
+    "pregunta": "Entre las siguientes, hay una palabra con un error ortográfico:",
+    "opciones": {
+      "A": "Aljibe",
+      "B": "Genciana",
+      "C": "Gélido",
+      "D": "Jenjibre."
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La forma correcta es jengibre. Es el único error ortográfico (las demás: aljibe, genciana, gélido están bien).",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 5,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra que no se corresponde con las del grupo:",
+    "opciones": {
+      "A": "Sublimar",
+      "B": "Persistir",
+      "C": "Ensalzar",
+      "D": "Enaltecer"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Sublimar, ensalzar y enaltecer significan «alabar / elevar»; persistir significa «mantenerse firme» y no guarda relación con el grupo.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 6,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra incorrectamente escrita:",
+    "opciones": {
+      "A": "Estrujar",
+      "B": "Estraperlo",
+      "C": "Exculpir",
+      "D": "Expirar"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La forma correcta es esculpir. Estrujar, estraperlo y expirar están escritas correctamente.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 7,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra que define esta sentencia: “Hecho asombroso cuya causa se desconoce y se atribuye a potencias sobrenaturales”.",
+    "opciones": {
+      "A": "Mito",
+      "B": "Paradigma",
+      "C": "Fenómeno",
+      "D": "Meta-cognición"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La definición «hecho asombroso cuya causa se desconoce y se atribuye a poderes sobrenaturales» corresponde a fenómeno.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 8,
+    "prueba": "verbal",
+    "pregunta": "Bondad es a cualidad como:",
+    "opciones": {
+      "A": "Pájaro es a aire.",
+      "B": "Estrofa es a verso.",
+      "C": "Blanco es a negro.",
+      "D": "Negrura es a atributo."
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La relación es concepto abstracto → cualidad/característica. Bondad es una cualidad; negrura es un atributo.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 9,
+    "prueba": "verbal",
+    "pregunta": "Ordene las palabras sueltas para formar una frase que tenga sentido. Luego halle la respuesta:\n\nMAYOR – EL – SE – LLAMA – LADO – DE – TRIANGULO - UN",
+    "opciones": {
+      "A": "Mediana",
+      "B": "Hipotenusa",
+      "C": "Apotema",
+      "D": "Bisectriz"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Ordenando: «El lado mayor de un triángulo se llama hipotenusa».",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 10,
+    "prueba": "verbal",
+    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nLa oportunidad ………. enriquecer cada idea, con ………. de los otros, abre ………. espacios de la creatividad.",
+    "opciones": {
+      "A": "de – todos – aquellos.",
+      "B": "de – las – los.",
+      "C": "para – lo – algunos.",
+      "D": "para – algo – unos."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La frase con sentido es: «La oportunidad para enriquecer cada idea, con lo de los otros, abre algunos espacios de la creatividad». Es la combinación más natural y gramatical.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 11,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a EVAPORACIÓN?",
+    "opciones": {
+      "A": "Gasificación",
+      "B": "Condensación",
+      "C": "Sublimación",
+      "D": "Solidificación"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Evaporación es paso de líquido a gas; su antónimo es condensación (paso de gas a líquido).",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 12,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra que no se corresponde con las del grupo:",
+    "opciones": {
+      "A": "Rielar",
+      "B": "Brillar",
+      "C": "Resplandecer",
+      "D": "Revolver"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Rielar, brillar y resplandecer son sinónimos (relucientes); revolver (agitar) es el que no se corresponde con el grupo.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 13,
+    "prueba": "verbal",
+    "pregunta": "En las siguientes frases hay una que no contiene ningún error ortográfico:",
+    "opciones": {
+      "A": "La idea tuvo una larga jestación.",
+      "B": "Se tiene que cambiar la bujía del coche.",
+      "C": "Se comio un plato de berenjenas.",
+      "D": "Fuí de vacaciones a Algeciras."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Es la única sin errores: bujía y coche están bien. Las otras tienen faltas (jestación→gestación, comio→comió, Fuí→Fui).",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 14,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de NECROSIS:",
+    "opciones": {
+      "A": "Enfermedad",
+      "B": "Necrología",
+      "C": "Gangrena",
+      "D": "Avitaminosis"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Necrosis es la muerte de tejidos; sinónimo habitual es gangrena.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 15,
+    "prueba": "verbal",
+    "pregunta": "¿Con qué se relaciona la palabra CÓNDILO?",
+    "opciones": {
+      "A": "Hueso",
+      "B": "Pájaro",
+      "C": "Vegetal",
+      "D": "Mineral"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "El cóndilo es una prominencia redondeada que se encuentra en los huesos (ej. en las articulaciones).",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 16,
+    "prueba": "verbal",
+    "pregunta": "Comprensión lectora. Lea el siguiente texto y conteste:\n\n«Vida salvaje. El último refugio.\n\nLos puercoespines ingleses están en riesgo. Estos tímidos insectívoros, que suelen ocultarse en los arbustos cuando se ven amenazados, están desapareciendo con tal celeridad que podrían extinguirse en la campiña inglesa para el año 2025. El principal obstáculo para salvarlos es que nadie sabe con certeza qué los está matando. Se culpa a los plaguicidas, pero los científicos aún no han establecido una relación directa; pruebas recientes sugieren que estos animales viven mejor en los jardines de los suburbios que en tierras agrícolas. En tanto se cuenta con más información para desarrollar una estrategia a gran escala, los conservacionistas instan a los jardineros a tolerar las madrigueras de los puercoespines, aunque esto implique descuidar un poco sus jardines. Una propuesta difícil de aceptar en una nación que se enorgullece de ellos.»\n\nSegún lo planteado en el texto se puede concluir que:",
+    "opciones": {
+      "A": "Los puercoespines son insectívoros muy tímidos.",
+      "B": "Los conservacionistas quieren acabar con los jardines ingleses.",
+      "C": "Estos animales viven mejor en jardines que en tierras agrícolas.",
+      "D": "En el 2025 los puercoespines habrán desaparecido en su totalidad."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "El texto dice literalmente: «pruebas recientes sugieren que estos animales viven mejor en los jardines de los suburbios que en tierras agrícolas».",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 17,
+    "prueba": "verbal",
+    "pregunta": "Sobre el mismo texto de los puercoespines ingleses (pregunta anterior): una propuesta viable para conservar a los puercoespines es:",
+    "opciones": {
+      "A": "Ocultarlos en los arbustos de los jardines cuando se ven amenazados.",
+      "B": "Prohibir el uso de plaguicidas en lugares cercanos a sus madrigueras.",
+      "C": "Permitirles vivir en los jardines mientras se desarrolla una estrategia de conservación.",
+      "D": "Incrementar los estudios científicos para determinar las razones de su extinción."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "El texto indica que «los conservacionistas instan a los jardineros a tolerar las madrigueras» mientras se obtiene más información.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 18,
+    "prueba": "verbal",
+    "pregunta": "¿Qué opción define correctamente a la palabra HERALDO?",
+    "opciones": {
+      "A": "Estudioso de la historia de los apellidos.",
+      "B": "Mensajero.",
+      "C": "El que administra una herencia.",
+      "D": "Fuerte, robusto."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Heraldo es la persona que lleva un mensaje o anuncio; sinónimo: mensajero.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 19,
+    "prueba": "verbal",
+    "pregunta": "Equidad es a justicia como:",
+    "opciones": {
+      "A": "Televisor es a difusión.",
+      "B": "Preso es a esposas.",
+      "C": "Llanura es a pradera.",
+      "D": "Cenestesia es a equilibrio."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Equidad y justicia son casi sinónimos; de las opciones, llanura y pradera son los términos más próximos semánticamente (ambos designan terrenos).",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 20,
+    "prueba": "verbal",
+    "pregunta": "¿Qué opción define correctamente a la palabra PUERICULTURA?",
+    "opciones": {
+      "A": "Arte de cultivar flores ornamentales.",
+      "B": "Disciplina que estudia la cultura infantil, nanas, cuentos, ...",
+      "C": "Cría de cerdos en cautividad.",
+      "D": "Arte de criar y cuidar a los niños."
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Puericultura es la rama de la medicina/pedagogía dedicada al cuidado y crianza de los niños.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 21,
+    "prueba": "verbal",
+    "pregunta": "Las siguientes preguntas constan de un grupo de oraciones ordenadas y numeradas, seguidas de cuatro opciones señaladas con las letras A, B, C y D. Seleccione la opción que representa la oración que podría SER EXCLUIDA DEL TEXTO, por no añadir ninguna información adicional al contenido de éste o por encontrarse fuera de su contexto:\n\n1. Cuando Juan toma café siempre come pan.\n2. Lo suele hacer a la hora del desayuno.\n3. Si no hay pan come tostadas con queso.\n4. Hoy no ha encontrado el café en la cocina.\n5. Es de suponer que no ha comido pan.\n6. No ha preparado las tostadas con queso.\n7. Esta mañana Juan no ha desayunado.",
+    "opciones": {
+      "A": "4",
+      "B": "5",
+      "C": "6",
+      "D": "7"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La oración 5 («es de suponer que no ha comido pan») es una deducción redundante que ya se desprende de la 7 («no ha desayunado»); se puede eliminar sin perder información esencial.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 22,
+    "prueba": "verbal",
+    "pregunta": "Ordene de manera lógica las siguientes palabras hasta elaborar la frase:\n\n1. existe / 2. educación / 3. investigación / 4. Colombia / 5. un / 6. importante / 7. núcleo / 8. matemática / 9. de / 10. en / 11. En\n\nEl ordenamiento lógico del anterior escrito es:",
+    "opciones": {
+      "A": "11-4-1-5-7-6-9-2-8-10-3",
+      "B": "11-2-10-4-1-5-6-7-9-3-8",
+      "C": "1-5-7-6-9-3-10-2-8-11-4",
+      "D": "11-4-1-5-6-7-9-3-10-2-8"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Orden: «En Colombia existe un importante núcleo de investigación en educación matemática».",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 23,
+    "prueba": "verbal",
+    "pregunta": "Opera es a cantante como:",
+    "opciones": {
+      "A": "Poema es a declamador.",
+      "B": "Riel es a tren.",
+      "C": "Libro es a biblioteca.",
+      "D": "Cama es a enfermo."
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La ópera la interpreta un cantante; el poema lo interpreta un declamador (relación de arte → intérprete).",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 24,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra cuyo significado sea igual o más parecido a MISÁNTROPO.",
+    "opciones": {
+      "A": "Religioso",
+      "B": "Huraño",
+      "C": "Cariñoso",
+      "D": "Humano"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Misántropo significa «que huye del trato humano»; sinónimo: huraño.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 25,
+    "prueba": "verbal",
+    "pregunta": "¿Cuál es el antónimo de PROLIJO?",
+    "opciones": {
+      "A": "Positivo",
+      "B": "Sentencioso",
+      "C": "Pacífico",
+      "D": "Tarugo"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Aunque no es un antónimo perfecto, en el contexto de la prueba prolijo (extenso, minucioso) se opone a sentencioso (breve y cortante), que es la única opción con ese matiz de concisión.",
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+  },
+  {
+    "numero": 26,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de EFÍMERO:",
+    "opciones": {
+      "A": "Pasajero",
+      "B": "Antiguo",
+      "C": "Sólido",
+      "D": "Duradero"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Efímero significa lo mismo que «pasajero».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 27,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de PARCO:",
+    "opciones": {
+      "B": "Sobrio",
+      "C": "Ruidoso",
+      "D": "Extenso",
+      "A": "Generoso"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Parco significa moderado o sobrio, especialmente al hablar o consumir.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 28,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de DIÁFANO:",
+    "opciones": {
+      "C": "Transparente",
+      "D": "Oscuro",
+      "A": "Opaco",
+      "B": "Denso"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Diáfano significa lo mismo que «transparente».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 29,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de INDÓMITO:",
+    "opciones": {
+      "D": "Indomable",
+      "A": "Sumiso",
+      "B": "Manso",
+      "C": "Dócil"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Indómito significa lo mismo que «indomable».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 30,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de PERSPICAZ:",
+    "opciones": {
+      "A": "Sagaz",
+      "B": "Ingenuo",
+      "C": "Torpe",
+      "D": "Distraído"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Perspicaz significa lo mismo que «sagaz».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 31,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de LACÓNICO:",
+    "opciones": {
+      "B": "Conciso",
+      "C": "Extenso",
+      "D": "Confuso",
+      "A": "Elocuente"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Lacónico significa breve y conciso al expresarse.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 32,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de OBSTINADO:",
+    "opciones": {
+      "C": "Terco",
+      "D": "Flexible",
+      "A": "Indeciso",
+      "B": "Dócil"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Obstinado significa lo mismo que «terco».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 33,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de EXIGUO:",
+    "opciones": {
+      "D": "Escaso",
+      "A": "Enorme",
+      "B": "Suficiente",
+      "C": "Abundante"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Exiguo significa lo mismo que «escaso».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 34,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de PRÍSTINO:",
+    "opciones": {
+      "A": "Original",
+      "B": "Antiguo",
+      "C": "Corrompido",
+      "D": "Deteriorado"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Prístino significa puro, en su estado original, sin alteración.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 35,
+    "prueba": "verbal",
+    "pregunta": "Señale el sinónimo de VERAZ:",
+    "opciones": {
+      "B": "Sincero",
+      "C": "Mentiroso",
+      "D": "Ambiguo",
+      "A": "Dudoso"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Veraz significa lo mismo que «sincero».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 36,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a MAGNÁNIMO?",
+    "opciones": {
+      "C": "Mezquino",
+      "D": "Noble",
+      "A": "Compasivo",
+      "B": "Generoso"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Magnánimo es lo contrario de «mezquino».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 37,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a COBARDE?",
+    "opciones": {
+      "D": "Valiente",
+      "A": "Tímido",
+      "B": "Temeroso",
+      "C": "Prudente"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Cobarde es lo contrario de «valiente».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 38,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a PRÓDIGO?",
+    "opciones": {
+      "A": "Tacaño",
+      "B": "Espléndido",
+      "C": "Derrochador",
+      "D": "Generoso"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Pródigo es quien gasta con generosidad excesiva; su antónimo es tacaño.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 39,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a TEMERARIO?",
+    "opciones": {
+      "B": "Prudente",
+      "C": "Audaz",
+      "D": "Arriesgado",
+      "A": "Osado"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Temerario es lo contrario de «prudente».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 40,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a ARDUO?",
+    "opciones": {
+      "C": "Sencillo",
+      "D": "Difícil",
+      "A": "Complicado",
+      "B": "Penoso"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Arduo es lo contrario de «sencillo».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 41,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a COHERENTE?",
+    "opciones": {
+      "D": "Incongruente",
+      "A": "Razonable",
+      "B": "Lógico",
+      "C": "Ordenado"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Coherente es lo contrario de «incongruente».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 42,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a FRUGAL?",
+    "opciones": {
+      "A": "Derrochador",
+      "B": "Sobrio",
+      "C": "Austero",
+      "D": "Moderado"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "Frugal es quien gasta con moderación; su antónimo es derrochador.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 43,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a SOLÍCITO?",
+    "opciones": {
+      "B": "Desatento",
+      "C": "Servicial",
+      "D": "Atento",
+      "A": "Diligente"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "Solícito es lo contrario de «desatento».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 44,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a EXPANSIVO?",
+    "opciones": {
+      "C": "Reservado",
+      "D": "Sociable",
+      "A": "Comunicativo",
+      "B": "Abierto"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Expansivo es lo contrario de «reservado».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 45,
+    "prueba": "verbal",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a VERSÁTIL?",
+    "opciones": {
+      "D": "Rígido",
+      "A": "Adaptable",
+      "B": "Flexible",
+      "C": "Polivalente"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Versátil es lo contrario de «rígido».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 46,
+    "prueba": "verbal",
+    "pregunta": "Pintor es a pincel como:",
+    "opciones": {
+      "A": "Carpintero es a martillo.",
+      "B": "Actor es a escenario.",
+      "C": "Escritor es a libro.",
+      "D": "Médico es a paciente."
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La relación es profesional y la herramienta con la que trabaja; el carpintero usa el martillo igual que el pintor usa el pincel.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 47,
+    "prueba": "verbal",
+    "pregunta": "Semilla es a árbol como:",
+    "opciones": {
+      "B": "Huevo es a ave.",
+      "C": "Río es a mar.",
+      "D": "Rama es a hoja.",
+      "A": "Nube es a lluvia."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La relación es el origen y el ser desarrollado al que da lugar; el huevo da lugar al ave igual que la semilla al árbol.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 48,
+    "prueba": "verbal",
+    "pregunta": "Tímido es a extrovertido como:",
+    "opciones": {
+      "C": "Alto es a bajo.",
+      "D": "Rápido es a veloz.",
+      "A": "Feliz es a contento.",
+      "B": "Grande es a enorme."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La relación es de antonimia; alto y bajo son opuestos, igual que tímido y extrovertido.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 49,
+    "prueba": "verbal",
+    "pregunta": "Pétalo es a flor como:",
+    "opciones": {
+      "D": "Escama es a pez.",
+      "A": "Puerta es a casa.",
+      "B": "Ala es a avión.",
+      "C": "Rama es a árbol."
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La relación es una pieza pequeña e idéntica a otras que cubre el cuerpo de un ser; las escamas cubren al pez igual que los pétalos a la flor.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 50,
+    "prueba": "verbal",
+    "pregunta": "Reloj es a tiempo como:",
+    "opciones": {
+      "A": "Termómetro es a temperatura.",
+      "B": "Libro es a página.",
+      "C": "Vaso es a agua.",
+      "D": "Coche es a velocidad."
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La relación es instrumento que mide una magnitud; el termómetro mide la temperatura igual que el reloj mide el tiempo.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 51,
+    "prueba": "verbal",
+    "pregunta": "Llave es a cerradura como:",
+    "opciones": {
+      "B": "Contraseña es a cuenta.",
+      "C": "Coche es a garaje.",
+      "D": "Camisa es a armario.",
+      "A": "Libro es a estantería."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La relación es el elemento que da acceso a algo protegido; la contraseña da acceso a la cuenta igual que la llave a la cerradura.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 52,
+    "prueba": "verbal",
+    "pregunta": "Abeja es a colmena como:",
+    "opciones": {
+      "C": "Hormiga es a hormiguero.",
+      "D": "Pez es a acuario.",
+      "A": "Perro es a caseta.",
+      "B": "Pájaro es a nido."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La relación es insecto social y su nido colectivo; la hormiga y el hormiguero comparten esa misma relación que la abeja y la colmena.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 53,
+    "prueba": "verbal",
+    "pregunta": "Podar es a planta como:",
+    "opciones": {
+      "D": "Cortar es a pelo.",
+      "A": "Sembrar es a semilla.",
+      "B": "Cosechar es a fruto.",
+      "C": "Regar es a jardín."
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La relación es una acción periódica de recorte y mantenimiento; cortar el pelo es a la persona lo que podar es a la planta.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 54,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra escrita correctamente:",
+    "opciones": {
+      "A": "Exuberante",
+      "B": "Exhuberante",
+      "C": "Esuberante",
+      "D": "Ezuberante"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La forma correcta es «Exuberante»; las demás opciones tienen una falta de ortografía.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 55,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra escrita correctamente:",
+    "opciones": {
+      "B": "Excavación",
+      "C": "Ecscavación",
+      "D": "Escavación",
+      "A": "Exkavación"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La forma correcta es «Excavación»; las demás opciones tienen una falta de ortografía.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 56,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra escrita correctamente:",
+    "opciones": {
+      "C": "Herbívoro",
+      "D": "Erbívoro",
+      "A": "Ervíboro",
+      "B": "Hervívoro"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La forma correcta es «Herbívoro»; las demás opciones tienen una falta de ortografía.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 57,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra escrita correctamente:",
+    "opciones": {
+      "D": "Absorber",
+      "A": "Absorver",
+      "B": "Azorber",
+      "C": "Asorber"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La forma correcta es «Absorber»; las demás opciones tienen una falta de ortografía.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 58,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra escrita correctamente:",
+    "opciones": {
+      "A": "Exhaustivo",
+      "B": "Exaustivo",
+      "C": "Ehaustivo",
+      "D": "Esshaustivo"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La forma correcta es «Exhaustivo»; las demás opciones tienen una falta de ortografía.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 59,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra escrita correctamente:",
+    "opciones": {
+      "B": "Vehemente",
+      "C": "Bejemente",
+      "D": "Vejemente",
+      "A": "Veemente"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La forma correcta es «Vehemente»; las demás opciones tienen una falta de ortografía.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 60,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra escrita correctamente:",
+    "opciones": {
+      "C": "Idiosincrasia",
+      "D": "Idiosinkrasia",
+      "A": "Ideosincrasia",
+      "B": "Idiosincracia"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La forma correcta es «Idiosincrasia»; las demás opciones tienen una falta de ortografía.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 61,
+    "prueba": "verbal",
+    "pregunta": "Señale la palabra escrita correctamente:",
+    "opciones": {
+      "D": "Perspicacia",
+      "A": "Perspikacia",
+      "B": "Perspicasia",
+      "C": "Perspicazia"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La forma correcta es «Perspicacia»; las demás opciones tienen una falta de ortografía.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 62,
+    "prueba": "verbal",
+    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nLa eficacia de un plan depende, sobre todo, de la ………. con la que se ejecuta y de los recursos que se le ……….",
+    "opciones": {
+      "A": "constancia – dediquen",
+      "B": "precisión – eliminen",
+      "C": "casualidad – prohíban",
+      "D": "rapidez – felicitan"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La combinación «constancia – dediquen» es la única que da sentido lógico y gramatical completo a la frase.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 63,
+    "prueba": "verbal",
+    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nEl éxito de una negociación exige ………. para escuchar al otro y ………. para defender los intereses propios.",
+    "opciones": {
+      "B": "paciencia – firmeza",
+      "C": "prisa – debilidad",
+      "D": "ruido – indiferencia",
+      "A": "silencio – abandono"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La combinación «paciencia – firmeza» es la única que da sentido lógico y gramatical completo a la frase.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 64,
+    "prueba": "verbal",
+    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nUn buen líder debe mostrar ………. ante las dificultades y ………. a la hora de tomar decisiones.",
+    "opciones": {
+      "C": "serenidad – decisión",
+      "D": "pánico – duda",
+      "A": "indiferencia – lentitud",
+      "B": "debilidad – improvisación"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La combinación «serenidad – decisión» es la única que da sentido lógico y gramatical completo a la frase.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 65,
+    "prueba": "verbal",
+    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nLa transparencia en la gestión pública genera ………. en los ciudadanos y refuerza la ………. de las instituciones.",
+    "opciones": {
+      "D": "confianza – legitimidad",
+      "A": "desconfianza – fragilidad",
+      "B": "sospecha – debilidad",
+      "C": "indiferencia – corrupción"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La combinación «confianza – legitimidad» es la única que da sentido lógico y gramatical completo a la frase.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 66,
+    "prueba": "verbal",
+    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nAquella empresa optó por la ………. de sus procesos para reducir costes y mejorar la ………. del servicio.",
+    "opciones": {
+      "A": "automatización – calidad",
+      "B": "improvisación – lentitud",
+      "C": "complicación – torpeza",
+      "D": "paralización – confusión"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La combinación «automatización – calidad» es la única que da sentido lógico y gramatical completo a la frase.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 67,
+    "prueba": "verbal",
+    "pregunta": "Seleccione la opción que restaura el sentido original de la siguiente construcción gramatical:\n\nEl estudio reveló que la falta de sueño afecta a la ………. y reduce la ………. para concentrarse.",
+    "opciones": {
+      "B": "memoria – capacidad",
+      "C": "fuerza – anchura",
+      "D": "estatura – amplitud",
+      "A": "altura – velocidad"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La combinación «memoria – capacidad» es la única que da sentido lógico y gramatical completo a la frase.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 68,
+    "prueba": "verbal",
+    "pregunta": "Ordene las palabras sueltas para formar una frase que tenga sentido. Luego halle la respuesta:\n\nÓRGANO – CUERPO – BOMBEA – SANGRE – DEL – EL – LA – QUE",
+    "opciones": {
+      "C": "El corazón",
+      "D": "El riñón",
+      "A": "El hígado",
+      "B": "El pulmón"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Ordenando: «El órgano que bombea la sangre del cuerpo» es el corazón.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 69,
+    "prueba": "verbal",
+    "pregunta": "Ordene las palabras sueltas para formar una frase que tenga sentido. Luego halle la respuesta:\n\nTIERRA – SATÉLITE – NATURAL – LA – DE – LUNA – LA – ES – EL",
+    "opciones": {
+      "D": "La Luna",
+      "A": "Venus",
+      "B": "El Sol",
+      "C": "Marte"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "Ordenando: «El satélite natural de la Tierra es la Luna».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 70,
+    "prueba": "verbal",
+    "pregunta": "Ordene de manera lógica los siguientes fragmentos y señale la secuencia correcta:\n\n1. importante  2. La  3. constituye  4. educación  5. pilar  6. un  7. de  8. la sociedad  9. moderna\n\nEl ordenamiento lógico es:",
+    "opciones": {
+      "A": "2-4-3-6-5-1-7-8-9",
+      "B": "4-2-3-6-5-1-7-8-9",
+      "C": "2-4-3-1-5-6-7-8-9",
+      "D": "2-3-4-6-5-1-7-8-9"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "El orden correcto forma la frase: «La educación constituye un pilar importante de la sociedad moderna.».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 71,
+    "prueba": "verbal",
+    "pregunta": "Ordene de manera lógica los siguientes fragmentos y señale la secuencia correcta:\n\n1. eficiente  2. El  3. transporte  4. público  5. reduce  6. la  7. contaminación  8. urbana\n\nEl ordenamiento lógico es:",
+    "opciones": {
+      "B": "2-3-4-1-5-6-7-8",
+      "C": "2-3-1-4-5-6-7-8",
+      "D": "2-4-3-1-5-6-7-8",
+      "A": "1-2-3-4-5-6-7-8"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "El orden correcto forma la frase: «El transporte público eficiente reduce la contaminación urbana.».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 72,
+    "prueba": "verbal",
+    "pregunta": "Comprensión lectora. Lea el siguiente texto y conteste:\n\n«El teletrabajo y sus retos.\n\nEl teletrabajo ha transformado la manera en que millones de personas desarrollan su actividad profesional. Aunque ofrece ventajas evidentes, como el ahorro de tiempo en desplazamientos y una mayor flexibilidad horaria, también plantea retos importantes: la dificultad para separar la vida laboral de la personal, el aislamiento social y la necesidad de una fuerte disciplina individual. Numerosas empresas han optado por modelos híbridos, que combinan días de trabajo presencial con jornadas desde casa, en un intento de aprovechar lo mejor de ambos sistemas.»\n\nSegún el texto, una desventaja del teletrabajo es:",
+    "opciones": {
+      "C": "La dificultad para separar vida laboral y personal",
+      "D": "El ahorro de tiempo en desplazamientos",
+      "A": "La mayor flexibilidad horaria",
+      "B": "La reducción de la disciplina de las empresas"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "El texto menciona expresamente «la dificultad para separar la vida laboral de la personal» como uno de los retos del teletrabajo.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 73,
+    "prueba": "verbal",
+    "pregunta": "Comprensión lectora. Lea el siguiente texto y conteste:\n\n«El teletrabajo y sus retos.\n\nEl teletrabajo ha transformado la manera en que millones de personas desarrollan su actividad profesional. Aunque ofrece ventajas evidentes, como el ahorro de tiempo en desplazamientos y una mayor flexibilidad horaria, también plantea retos importantes: la dificultad para separar la vida laboral de la personal, el aislamiento social y la necesidad de una fuerte disciplina individual. Numerosas empresas han optado por modelos híbridos, que combinan días de trabajo presencial con jornadas desde casa, en un intento de aprovechar lo mejor de ambos sistemas.»\n\nSegún el texto, muchas empresas han optado por:",
+    "opciones": {
+      "D": "Modelos híbridos que combinan ambos sistemas",
+      "A": "Prohibir el teletrabajo",
+      "B": "Aumentar los desplazamientos de sus empleados",
+      "C": "Eliminar por completo el trabajo presencial"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "El texto dice que «numerosas empresas han optado por modelos híbridos, que combinan días de trabajo presencial con jornadas desde casa».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 74,
+    "prueba": "verbal",
+    "pregunta": "Comprensión lectora. Lea el siguiente texto y conteste:\n\n«El papel esencial de las abejas.\n\nLas abejas desempeñan un papel esencial en los ecosistemas, ya que son responsables de la polinización de una gran parte de las plantas con flor, incluidas muchas de las que forman parte de la alimentación humana. En las últimas décadas, sin embargo, sus poblaciones han disminuido de forma notable debido al uso de pesticidas, la pérdida de hábitats naturales y el cambio climático. Diversas organizaciones ambientales advierten de que su desaparición tendría consecuencias graves para la seguridad alimentaria mundial.»\n\nSegún el texto, las abejas son importantes porque:",
+    "opciones": {
+      "A": "Polinizan gran parte de las plantas con flor",
+      "B": "Controlan la población de otros insectos",
+      "C": "Producen la mayor parte del oxígeno del planeta",
+      "D": "Generan la mayoría de los pesticidas"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "El texto dice que las abejas «son responsables de la polinización de una gran parte de las plantas con flor».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 75,
+    "prueba": "verbal",
+    "pregunta": "Comprensión lectora. Lea el siguiente texto y conteste:\n\n«El papel esencial de las abejas.\n\nLas abejas desempeñan un papel esencial en los ecosistemas, ya que son responsables de la polinización de una gran parte de las plantas con flor, incluidas muchas de las que forman parte de la alimentación humana. En las últimas décadas, sin embargo, sus poblaciones han disminuido de forma notable debido al uso de pesticidas, la pérdida de hábitats naturales y el cambio climático. Diversas organizaciones ambientales advierten de que su desaparición tendría consecuencias graves para la seguridad alimentaria mundial.»\n\nSegún el texto, la disminución de las abejas se debe, entre otras causas, a:",
+    "opciones": {
+      "B": "El uso de pesticidas",
+      "C": "El exceso de polinización",
+      "D": "El aumento de zonas naturales protegidas",
+      "A": "La reducción del cambio climático"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "El texto atribuye la disminución al «uso de pesticidas, la pérdida de hábitats naturales y el cambio climático».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
   }
 ]
