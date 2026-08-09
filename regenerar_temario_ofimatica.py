@@ -125,7 +125,7 @@ SYSTEM_PROMPT = (
 )
 
 
-def _localizar_pdf(prefijo, carpeta="temario-examenes/AUX"):
+def _localizar_pdf(prefijo, carpeta="temario-examenes/AUXILIAR"):
     for nombre in os.listdir(carpeta):
         if nombre.startswith(f"{prefijo} -") and nombre.lower().endswith(".pdf"):
             return os.path.join(carpeta, nombre)

@@ -56,7 +56,7 @@ from cargar_temario_boe import (
 from deepseek_utils import call_deepseek_api
 
 PDF_FUENTE = (
-    "temario-examenes/AUX/BOE-435_Normativa_para_ingreso_en_el_Cuerpo_General_Auxiliar_de_la_"
+    "temario-examenes/AUXILIAR/BOE-435_Normativa_para_ingreso_en_el_Cuerpo_General_Auxiliar_de_la_"
     "Administracion_del_Estado.pdf"
 )
 
