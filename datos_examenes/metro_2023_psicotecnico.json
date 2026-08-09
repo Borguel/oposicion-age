@@ -12,7 +12,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Contando todas las superficies planas del sólido (caras superiores, inferiores, frontales, traseras y las paredes internas de los recortes) se obtienen 20 caras.",
     "imagen": "/assets/psicotecnico-metro/pregunta_26.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "contar_caras"
   },
   {
     "numero": 27,
@@ -27,7 +28,8 @@
     "respuesta_correcta": "C",
     "explicacion": "La pieza C es la única cuyo contorno dentado encaja exactamente con el hueco marcado con el interrogante.",
     "imagen": "/assets/psicotecnico-metro/pregunta_27.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "pieza_encaje"
   },
   {
     "numero": 28,
@@ -42,7 +44,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Girando mentalmente el modelo, las figuras 1, 2 y 4 son rotaciones válidas; la figura 3 no se corresponde con ninguna rotación del modelo.",
     "imagen": "/assets/psicotecnico-metro/pregunta_28.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 29,
@@ -57,7 +60,8 @@
     "respuesta_correcta": "A",
     "explicacion": "La serie gira la figura progresivamente en el mismo sentido; la opción A continúa ese giro de forma coherente.",
     "imagen": "/assets/psicotecnico-metro/pregunta_29.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "serie_rotacion"
   },
   {
     "numero": 30,
@@ -72,7 +76,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Contando cubo a cubo, incluidos los ocultos que sostienen a los visibles, el total es de 19 cubos.",
     "imagen": "/assets/psicotecnico-metro/pregunta_30.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 31,
@@ -87,7 +92,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Solo el desarrollo B respeta la posición y orientación relativa de las caras del dado del modelo al desplegarlo.",
     "imagen": "/assets/psicotecnico-metro/pregunta_31.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "plegado_cubo"
   },
   {
     "numero": 32,
@@ -102,7 +108,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Es la única opción que mantiene idénticos todos los detalles del modelo (banderas, velas y casco) sin ninguna variación.",
     "imagen": "/assets/psicotecnico-metro/pregunta_32.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 33,
@@ -117,7 +124,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Siguiendo las reglas de adyacencia de las caras al plegar la red, solo en la opción A los símbolos quedan en las caras y posiciones correctas.",
     "imagen": "/assets/psicotecnico-metro/pregunta_33.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "plegado_cubo"
   },
   {
     "numero": 34,
@@ -132,7 +140,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Sumando los cubos visibles y los ocultos necesarios para sostener la estructura se obtienen 20 cubos.",
     "imagen": "/assets/psicotecnico-metro/pregunta_34.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 35,
@@ -147,7 +156,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Girando mentalmente el modelo, la disposición de las líneas diagonales y el punto solo coincide con la opción B.",
     "imagen": "/assets/psicotecnico-metro/pregunta_35.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 36,
@@ -162,7 +172,8 @@
     "respuesta_correcta": "B",
     "explicacion": "El ladrillo marcado contacta con 6 ladrillos adyacentes.",
     "imagen": "/assets/psicotecnico-metro/pregunta_36.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 37,
@@ -177,7 +188,8 @@
     "respuesta_correcta": "D",
     "explicacion": "La figura gira 45° en sentido horario en cada paso de la serie; la opción D continúa ese giro correctamente.",
     "imagen": "/assets/psicotecnico-metro/pregunta_37.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "serie_rotacion"
   },
   {
     "numero": 38,
@@ -192,7 +204,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Al plegar la red mostrada, los símbolos solo quedan en las caras visibles correctas en la opción A.",
     "imagen": "/assets/psicotecnico-metro/pregunta_38.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "plegado_cubo"
   },
   {
     "numero": 39,
@@ -207,7 +220,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Contando la estructura completa en forma de escalera, incluidos los cubos ocultos que la sostienen, el total es 33.",
     "imagen": "/assets/psicotecnico-metro/pregunta_39.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 40,
@@ -222,7 +236,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Es el único desarrollo que, al plegarlo, reproduce la posición de los símbolos y la dirección de la flecha del modelo.",
     "imagen": "/assets/psicotecnico-metro/pregunta_40.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "plegado_cubo"
   },
   {
     "numero": 41,
@@ -237,7 +252,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Girando mentalmente el cubo del modelo, solo la opción D mantiene la misma posición relativa de las líneas y los puntos.",
     "imagen": "/assets/psicotecnico-metro/pregunta_41.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 42,
@@ -252,7 +268,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Al plegar la red, los símbolos de las ondas, el reloj y el rombo solo coinciden con las caras visibles de la opción A.",
     "imagen": "/assets/psicotecnico-metro/pregunta_42.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "plegado_cubo"
   },
   {
     "numero": 43,
@@ -267,7 +284,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Se trata de un prisma con varias diagonales internas; contando aristas visibles y ocultas se obtienen 11 líneas.",
     "imagen": "/assets/psicotecnico-metro/pregunta_43.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "contar_lineas"
   },
   {
     "numero": 44,
@@ -282,7 +300,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Solo el desarrollo A sitúa el óvalo, el corazón y el rombo en las caras adyacentes correctas respecto al modelo plegado.",
     "imagen": "/assets/psicotecnico-metro/pregunta_44.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "plegado_cubo"
   },
   {
     "numero": 45,
@@ -297,7 +316,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Las demás opciones tienen pequeños errores respecto al modelo (detalles de la chimenea, las ruedas o su color); solo c es idéntica.",
     "imagen": "/assets/psicotecnico-metro/pregunta_45.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 46,
@@ -312,7 +332,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Girando mentalmente el cubo, la posición de los puntos y el triángulo negro solo coincide con la opción B.",
     "imagen": "/assets/psicotecnico-metro/pregunta_46.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 47,
@@ -327,7 +348,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Las figuras 1, 3 y 4 son rotaciones del modelo; la figura 2 es un reflejo (imagen especular), no una rotación, por lo que es la distinta.",
     "imagen": "/assets/psicotecnico-metro/pregunta_47.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 48,
@@ -342,7 +364,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Contando todas las aristas visibles y ocultas del sólido se obtienen 18 líneas.",
     "imagen": "/assets/psicotecnico-metro/pregunta_48.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "contar_lineas"
   },
   {
     "numero": 49,
@@ -357,7 +380,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Girando mentalmente la figura 3 sobre su eje, se obtiene exactamente la misma figura maciza que el modelo.",
     "imagen": "/assets/psicotecnico-metro/pregunta_49.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 50,
@@ -372,7 +396,8 @@
     "respuesta_correcta": "B",
     "explicacion": "El ladrillo marcado está en contacto con otros 6 ladrillos adyacentes.",
     "imagen": "/assets/psicotecnico-metro/pregunta_50.png",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 51,
@@ -387,7 +412,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 9.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_51.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 52,
@@ -402,7 +428,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 7.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_52.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 53,
@@ -417,7 +444,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 17.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_53.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 54,
@@ -432,7 +460,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 19.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_54.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 55,
@@ -447,7 +476,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 8.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_55.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 56,
@@ -462,7 +492,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 26.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_56.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 57,
@@ -477,7 +508,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 14.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_57.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 58,
@@ -492,7 +524,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 43.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_58.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 59,
@@ -507,7 +540,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 17.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_59.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 60,
@@ -522,7 +556,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 24.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_60.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 61,
@@ -537,7 +572,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 22.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_61.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 62,
@@ -552,7 +588,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 19.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_62.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 63,
@@ -567,7 +604,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 17.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_63.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 64,
@@ -582,7 +620,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 36.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_64.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 65,
@@ -597,7 +636,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Contando cubo a cubo, incluidos los que quedan ocultos sosteniendo a los visibles, el total es 15.",
     "imagen": "/assets/psicotecnico-metro/gen_cubos_65.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_cubos"
   },
   {
     "numero": 66,
@@ -612,7 +652,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 32 caras.",
     "imagen": "/assets/psicotecnico-metro/gen_caras_66.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_caras"
   },
   {
     "numero": 67,
@@ -627,7 +668,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 24 caras.",
     "imagen": "/assets/psicotecnico-metro/gen_caras_67.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_caras"
   },
   {
     "numero": 68,
@@ -642,7 +684,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 42 caras.",
     "imagen": "/assets/psicotecnico-metro/gen_caras_68.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_caras"
   },
   {
     "numero": 69,
@@ -657,7 +700,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 32 caras.",
     "imagen": "/assets/psicotecnico-metro/gen_caras_69.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_caras"
   },
   {
     "numero": 70,
@@ -672,7 +716,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 28 caras.",
     "imagen": "/assets/psicotecnico-metro/gen_caras_70.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_caras"
   },
   {
     "numero": 71,
@@ -687,7 +732,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 38 caras.",
     "imagen": "/assets/psicotecnico-metro/gen_caras_71.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_caras"
   },
   {
     "numero": 72,
@@ -702,7 +748,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 42 caras.",
     "imagen": "/assets/psicotecnico-metro/gen_caras_72.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_caras"
   },
   {
     "numero": 73,
@@ -717,7 +764,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 36 caras.",
     "imagen": "/assets/psicotecnico-metro/gen_caras_73.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_caras"
   },
   {
     "numero": 74,
@@ -732,7 +780,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 36 caras.",
     "imagen": "/assets/psicotecnico-metro/gen_caras_74.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_caras"
   },
   {
     "numero": 75,
@@ -747,7 +796,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Contando todas las superficies planas del sólido (superiores, laterales y las paredes internas de los escalones) se obtienen 42 caras.",
     "imagen": "/assets/psicotecnico-metro/gen_caras_75.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_caras"
   },
   {
     "numero": 76,
@@ -762,7 +812,8 @@
     "respuesta_correcta": "B",
     "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_76.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 77,
@@ -777,7 +828,8 @@
     "respuesta_correcta": "C",
     "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_77.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 78,
@@ -792,7 +844,8 @@
     "respuesta_correcta": "D",
     "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_78.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 79,
@@ -807,7 +860,8 @@
     "respuesta_correcta": "A",
     "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_79.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 80,
@@ -822,7 +876,8 @@
     "respuesta_correcta": "B",
     "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 3 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_80.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 81,
@@ -837,7 +892,8 @@
     "respuesta_correcta": "C",
     "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 3 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_81.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 82,
@@ -852,7 +908,8 @@
     "respuesta_correcta": "D",
     "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 3 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_82.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 83,
@@ -867,7 +924,8 @@
     "respuesta_correcta": "A",
     "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 3 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_83.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 84,
@@ -882,7 +940,8 @@
     "respuesta_correcta": "B",
     "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_84.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 85,
@@ -897,7 +956,8 @@
     "respuesta_correcta": "C",
     "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_85.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contacto_cubos"
   },
   {
     "numero": 86,
@@ -912,7 +972,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Contando todas las aristas del sólido junto con las diagonales marcadas se obtienen 11 líneas.",
     "imagen": "/assets/psicotecnico-metro/gen_lineas_86.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_lineas"
   },
   {
     "numero": 87,
@@ -927,7 +988,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Contando todas las aristas del sólido junto con las diagonales marcadas se obtienen 10 líneas.",
     "imagen": "/assets/psicotecnico-metro/gen_lineas_87.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_lineas"
   },
   {
     "numero": 88,
@@ -942,7 +1004,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Contando todas las aristas del sólido junto con las diagonales marcadas se obtienen 15 líneas.",
     "imagen": "/assets/psicotecnico-metro/gen_lineas_88.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_lineas"
   },
   {
     "numero": 89,
@@ -957,7 +1020,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Contando todas las aristas del sólido junto con las diagonales marcadas se obtienen 10 líneas.",
     "imagen": "/assets/psicotecnico-metro/gen_lineas_89.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_lineas"
   },
   {
     "numero": 90,
@@ -972,7 +1036,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Contando todas las aristas del sólido junto con las diagonales marcadas se obtienen 14 líneas.",
     "imagen": "/assets/psicotecnico-metro/gen_lineas_90.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "contar_lineas"
   },
   {
     "numero": 91,
@@ -987,7 +1052,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Girando mentalmente el modelo, las otras tres opciones son rotaciones válidas; la figura 2 es un reflejo (imagen especular) del modelo, no una rotación, así que es la distinta.",
     "imagen": "/assets/psicotecnico-metro/gen_distinta_91.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 92,
@@ -1002,7 +1068,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Girando mentalmente el modelo, las otras tres opciones son rotaciones válidas; la figura 3 es un reflejo (imagen especular) del modelo, no una rotación, así que es la distinta.",
     "imagen": "/assets/psicotecnico-metro/gen_distinta_92.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 93,
@@ -1017,7 +1084,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Girando mentalmente el modelo, las otras tres opciones son rotaciones válidas; la figura 1 es un reflejo (imagen especular) del modelo, no una rotación, así que es la distinta.",
     "imagen": "/assets/psicotecnico-metro/gen_distinta_93.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 94,
@@ -1032,7 +1100,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Girando mentalmente el modelo, las otras tres opciones son rotaciones válidas; la figura 4 es un reflejo (imagen especular) del modelo, no una rotación, así que es la distinta.",
     "imagen": "/assets/psicotecnico-metro/gen_distinta_94.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 95,
@@ -1047,7 +1116,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Girando mentalmente el modelo, las otras tres opciones son rotaciones válidas; la figura 3 es un reflejo (imagen especular) del modelo, no una rotación, así que es la distinta.",
     "imagen": "/assets/psicotecnico-metro/gen_distinta_95.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "rotacion_2d"
   },
   {
     "numero": 96,
@@ -1062,7 +1132,8 @@
     "respuesta_correcta": "A",
     "explicacion": "La figura gira 45° en el mismo sentido en cada paso de la serie; la opción A continúa ese giro de forma coherente.",
     "imagen": "/assets/psicotecnico-metro/gen_serie_96.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "serie_rotacion"
   },
   {
     "numero": 97,
@@ -1077,7 +1148,8 @@
     "respuesta_correcta": "B",
     "explicacion": "La figura gira 30° en el mismo sentido en cada paso de la serie; la opción B continúa ese giro de forma coherente.",
     "imagen": "/assets/psicotecnico-metro/gen_serie_97.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "serie_rotacion"
   },
   {
     "numero": 98,
@@ -1092,7 +1164,8 @@
     "respuesta_correcta": "C",
     "explicacion": "La figura gira 30° en el mismo sentido en cada paso de la serie; la opción C continúa ese giro de forma coherente.",
     "imagen": "/assets/psicotecnico-metro/gen_serie_98.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "serie_rotacion"
   },
   {
     "numero": 99,
@@ -1107,7 +1180,8 @@
     "respuesta_correcta": "D",
     "explicacion": "La figura gira 30° en el mismo sentido en cada paso de la serie; la opción D continúa ese giro de forma coherente.",
     "imagen": "/assets/psicotecnico-metro/gen_serie_99.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "serie_rotacion"
   },
   {
     "numero": 100,
@@ -1122,7 +1196,8 @@
     "respuesta_correcta": "A",
     "explicacion": "La figura gira 60° en el mismo sentido en cada paso de la serie; la opción A continúa ese giro de forma coherente.",
     "imagen": "/assets/psicotecnico-metro/gen_serie_100.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "serie_rotacion"
   },
   {
     "numero": 101,
@@ -1137,7 +1212,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Cada fila mantiene la misma forma (rombo, cuadrado y triángulo) y cada columna aumenta el relleno de izquierda a derecha (sin relleno, gris, negro); la casilla que falta es un triángulo con relleno negro.",
     "imagen": "/assets/psicotecnico-metro/gen_raven_relleno_101.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "matriz_raven"
   },
   {
     "numero": 102,
@@ -1152,7 +1228,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Cada fila mantiene la misma forma (círculo, triángulo y rombo) y cada columna aumenta el relleno de izquierda a derecha (sin relleno, gris, negro); la casilla que falta es un rombo con relleno negro.",
     "imagen": "/assets/psicotecnico-metro/gen_raven_relleno_102.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "matriz_raven"
   },
   {
     "numero": 103,
@@ -1167,7 +1244,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Cada fila mantiene la misma forma (rombo, cuadrado y triángulo) y cada columna aumenta el relleno de izquierda a derecha (sin relleno, gris, negro); la casilla que falta es un triángulo con relleno negro.",
     "imagen": "/assets/psicotecnico-metro/gen_raven_relleno_103.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "matriz_raven"
   },
   {
     "numero": 104,
@@ -1182,7 +1260,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Cada fila mantiene la misma forma (cuadrado, rombo y triángulo) y cada columna aumenta el relleno de izquierda a derecha (sin relleno, gris, negro); la casilla que falta es un triángulo con relleno negro.",
     "imagen": "/assets/psicotecnico-metro/gen_raven_relleno_104.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "matriz_raven"
   },
   {
     "numero": 105,
@@ -1197,7 +1276,8 @@
     "respuesta_correcta": "A",
     "explicacion": "Cada fila mantiene la misma forma (triángulo, cuadrado y círculo) y cada columna añade un punto más de izquierda a derecha (1, 2 y 3 puntos); la casilla que falta es un círculo con 3 puntos.",
     "imagen": "/assets/psicotecnico-metro/gen_raven_puntos_105.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "matriz_raven"
   },
   {
     "numero": 106,
@@ -1212,7 +1292,8 @@
     "respuesta_correcta": "B",
     "explicacion": "Cada fila mantiene la misma forma (rombo, círculo y triángulo) y cada columna añade un punto más de izquierda a derecha (1, 2 y 3 puntos); la casilla que falta es un triángulo con 3 puntos.",
     "imagen": "/assets/psicotecnico-metro/gen_raven_puntos_106.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "matriz_raven"
   },
   {
     "numero": 107,
@@ -1227,7 +1308,8 @@
     "respuesta_correcta": "C",
     "explicacion": "Cada fila mantiene la misma forma (triángulo, círculo y cuadrado) y cada columna añade un punto más de izquierda a derecha (1, 2 y 3 puntos); la casilla que falta es un cuadrado con 3 puntos.",
     "imagen": "/assets/psicotecnico-metro/gen_raven_puntos_107.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "matriz_raven"
   },
   {
     "numero": 108,
@@ -1242,7 +1324,8 @@
     "respuesta_correcta": "D",
     "explicacion": "Cada fila mantiene la misma forma (triángulo, círculo y rombo) y cada columna añade un punto más de izquierda a derecha (1, 2 y 3 puntos); la casilla que falta es un rombo con 3 puntos.",
     "imagen": "/assets/psicotecnico-metro/gen_raven_puntos_108.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "matriz_raven"
   },
   {
     "numero": 109,
@@ -1257,7 +1340,8 @@
     "respuesta_correcta": "B",
     "explicacion": "La opción B es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
     "imagen": "/assets/psicotecnico-metro/gen_simetrica_109.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "simetria"
   },
   {
     "numero": 110,
@@ -1272,7 +1356,8 @@
     "respuesta_correcta": "A",
     "explicacion": "La opción A es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
     "imagen": "/assets/psicotecnico-metro/gen_simetrica_110.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "simetria"
   },
   {
     "numero": 111,
@@ -1287,7 +1372,8 @@
     "respuesta_correcta": "D",
     "explicacion": "La opción D es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
     "imagen": "/assets/psicotecnico-metro/gen_simetrica_111.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "simetria"
   },
   {
     "numero": 112,
@@ -1302,7 +1388,8 @@
     "respuesta_correcta": "A",
     "explicacion": "La opción A es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
     "imagen": "/assets/psicotecnico-metro/gen_simetrica_112.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "simetria"
   },
   {
     "numero": 113,
@@ -1317,7 +1404,8 @@
     "respuesta_correcta": "B",
     "explicacion": "La opción B es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
     "imagen": "/assets/psicotecnico-metro/gen_simetrica_113.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "simetria"
   },
   {
     "numero": 114,
@@ -1332,7 +1420,8 @@
     "respuesta_correcta": "D",
     "explicacion": "La opción D es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
     "imagen": "/assets/psicotecnico-metro/gen_simetrica_114.png",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "simetria"
   },
   {
     "numero": 115,
@@ -1347,6 +1436,711 @@
     "respuesta_correcta": "A",
     "explicacion": "La opción A es el auténtico reflejo especular del modelo; las demás son giros del modelo (nunca un reflejo, por mucho que se giren) o un reflejo respecto a un eje distinto, así que no valen.",
     "imagen": "/assets/psicotecnico-metro/gen_simetrica_115.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "simetria"
+  },
+  {
+    "numero": 116,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de planta (desde arriba).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La opción A es la silueta real de la figura vista de planta (desde arriba); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_116.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 117,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de alzado (de frente).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La opción B es la silueta real de la figura vista de alzado (de frente); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_117.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 118,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de alzado (de frente).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La opción C es la silueta real de la figura vista de alzado (de frente); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_118.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 119,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de perfil (de lado).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La opción D es la silueta real de la figura vista de perfil (de lado); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_119.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 120,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de planta (desde arriba).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La opción A es la silueta real de la figura vista de planta (desde arriba); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_120.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 121,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de alzado (de frente).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La opción B es la silueta real de la figura vista de alzado (de frente); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_121.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 122,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de alzado (de frente).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La opción C es la silueta real de la figura vista de alzado (de frente); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_122.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 123,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de perfil (de lado).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La opción D es la silueta real de la figura vista de perfil (de lado); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_123.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 124,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de perfil (de lado).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La opción A es la silueta real de la figura vista de perfil (de lado); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_124.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 125,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de planta (desde arriba).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La opción B es la silueta real de la figura vista de planta (desde arriba); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_125.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 126,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de perfil (de lado).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La opción C es la silueta real de la figura vista de perfil (de lado); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_126.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 127,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de alzado (de frente).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La opción D es la silueta real de la figura vista de alzado (de frente); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_127.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 128,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de planta (desde arriba).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La opción A es la silueta real de la figura vista de planta (desde arriba); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_128.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 129,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de planta (desde arriba).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La opción B es la silueta real de la figura vista de planta (desde arriba); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_129.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 130,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de planta (desde arriba).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La opción C es la silueta real de la figura vista de planta (desde arriba); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_130.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 131,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de perfil (de lado).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La opción D es la silueta real de la figura vista de perfil (de lado); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_131.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 132,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de perfil (de lado).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La opción A es la silueta real de la figura vista de perfil (de lado); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_132.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 133,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de perfil (de lado).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La opción B es la silueta real de la figura vista de perfil (de lado); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_133.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 134,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de alzado (de frente).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La opción C es la silueta real de la figura vista de alzado (de frente); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_134.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 135,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de alzado (de frente).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "La opción D es la silueta real de la figura vista de alzado (de frente); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_135.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 136,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de alzado (de frente).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La opción A es la silueta real de la figura vista de alzado (de frente); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_136.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 137,
+    "prueba": "espacial",
+    "categoria": "vistas_objeto",
+    "pregunta": "Observe la figura y señale cuál de las opciones es su vista de planta (desde arriba).",
+    "opciones": {
+      "A": "A",
+      "B": "B",
+      "C": "C",
+      "D": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La opción B es la silueta real de la figura vista de planta (desde arriba); las demás casillas no coinciden exactamente con los cubos que hay en esa proyección.",
+    "imagen": "/assets/psicotecnico-metro/gen_vistas_137.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 138,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «F»?",
+    "opciones": {
+      "A": "Y",
+      "B": "T",
+      "C": "V",
+      "D": "Q"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "«F» aparece en las dos vistas junto a V, A, T, Q, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «Y».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_138.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 139,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «F»?",
+    "opciones": {
+      "B": "N",
+      "C": "A",
+      "D": "U",
+      "A": "H"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "«F» aparece en las dos vistas junto a Z, H, U, A, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «N».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_139.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 140,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «C»?",
+    "opciones": {
+      "C": "B",
+      "D": "Y",
+      "A": "T",
+      "B": "F"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "«C» aparece en las dos vistas junto a Y, T, D, F, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «B».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_140.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 141,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «Y»?",
+    "opciones": {
+      "D": "L",
+      "A": "T",
+      "B": "C",
+      "C": "Z"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«Y» aparece en las dos vistas junto a A, T, Z, C, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «L».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_141.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 142,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «R»?",
+    "opciones": {
+      "A": "X",
+      "B": "W",
+      "C": "Y",
+      "D": "T"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "«R» aparece en las dos vistas junto a P, T, W, Y, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «X».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_142.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 143,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «L»?",
+    "opciones": {
+      "B": "F",
+      "C": "E",
+      "D": "J",
+      "A": "Y"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "«L» aparece en las dos vistas junto a E, Z, J, Y, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «F».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_143.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 144,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «J»?",
+    "opciones": {
+      "C": "L",
+      "D": "V",
+      "A": "A",
+      "B": "G"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "«J» aparece en las dos vistas junto a G, V, A, R, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «L».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_144.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 145,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «S»?",
+    "opciones": {
+      "D": "T",
+      "A": "C",
+      "B": "K",
+      "C": "L"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«S» aparece en las dos vistas junto a C, K, L, X, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «T».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_145.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 146,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «C»?",
+    "opciones": {
+      "A": "D",
+      "B": "J",
+      "C": "U",
+      "D": "B"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "«C» aparece en las dos vistas junto a B, J, S, U, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «D».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_146.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 147,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «C»?",
+    "opciones": {
+      "B": "F",
+      "C": "Q",
+      "D": "B",
+      "A": "A"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "«C» aparece en las dos vistas junto a B, A, K, Q, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «F».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_147.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 148,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «J»?",
+    "opciones": {
+      "C": "A",
+      "D": "H",
+      "A": "D",
+      "B": "X"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "«J» aparece en las dos vistas junto a Y, D, H, X, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «A».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_148.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 149,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «C»?",
+    "opciones": {
+      "D": "X",
+      "A": "K",
+      "B": "S",
+      "C": "W"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«C» aparece en las dos vistas junto a S, W, K, U, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «X».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_149.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 150,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «E»?",
+    "opciones": {
+      "A": "N",
+      "B": "D",
+      "C": "Q",
+      "D": "H"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "«E» aparece en las dos vistas junto a R, D, Q, H, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «N».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_150.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 151,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «R»?",
+    "opciones": {
+      "B": "N",
+      "C": "H",
+      "D": "J",
+      "A": "P"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "«R» aparece en las dos vistas junto a J, H, K, P, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «N».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_151.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 152,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «M»?",
+    "opciones": {
+      "C": "K",
+      "D": "J",
+      "A": "L",
+      "B": "X"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "«M» aparece en las dos vistas junto a R, X, L, J, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «K».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_152.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 153,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «R»?",
+    "opciones": {
+      "D": "D",
+      "A": "E",
+      "B": "N",
+      "C": "S"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«R» aparece en las dos vistas junto a E, Y, N, S, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «D».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_153.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 154,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «S»?",
+    "opciones": {
+      "A": "K",
+      "B": "L",
+      "C": "E",
+      "D": "R"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "«S» aparece en las dos vistas junto a E, R, L, U, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «K».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_154.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 155,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «V»?",
+    "opciones": {
+      "B": "P",
+      "C": "T",
+      "D": "W",
+      "A": "D"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "«V» aparece en las dos vistas junto a W, D, M, T, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «P».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_155.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 156,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «N»?",
+    "opciones": {
+      "C": "U",
+      "D": "D",
+      "A": "M",
+      "B": "F"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "«N» aparece en las dos vistas junto a F, B, D, M, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «U».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_156.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 157,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «M»?",
+    "opciones": {
+      "D": "H",
+      "A": "D",
+      "B": "T",
+      "C": "N"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«M» aparece en las dos vistas junto a D, J, T, N, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «H».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_157.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 158,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «Y»?",
+    "opciones": {
+      "A": "P",
+      "B": "C",
+      "C": "N",
+      "D": "J"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "«Y» aparece en las dos vistas junto a J, C, N, W, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «P».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_158.png",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 159,
+    "prueba": "espacial",
+    "categoria": "cubo_simbolos",
+    "pregunta": "Las dos imágenes son vistas del mismo cubo. ¿Qué símbolo hay en la cara opuesta a «F»?",
+    "opciones": {
+      "B": "N",
+      "C": "U",
+      "D": "A",
+      "A": "K"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "«F» aparece en las dos vistas junto a Y, A, K, U, así que su cara opuesta es la única letra que no aparece en ninguna de las dos vistas: «N».",
+    "imagen": "/assets/psicotecnico-metro/gen_cubosimb_159.png",
     "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
   },
   {
@@ -1361,7 +2155,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La frase habla del poder adquisitivo de una moneda, que refleja el enriquecimiento o empobrecimiento de un país. Las demás opciones no encajan semánticamente.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "huecos_gramaticales"
   },
   {
     "numero": 2,
@@ -1375,7 +2170,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Alegato significa discurso o argumentación en defensa de algo. Sinónimo directo es discurso.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 3,
@@ -1389,7 +2185,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Arreciar significa «hacerse más fuerte» (ej. una tormenta). Su antónimo es amainar (disminuir la intensidad).",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "antonimos"
   },
   {
     "numero": 4,
@@ -1403,7 +2200,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "La forma correcta es jengibre. Es el único error ortográfico (las demás: aljibe, genciana, gélido están bien).",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "ortografia"
   },
   {
     "numero": 5,
@@ -1417,7 +2215,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Sublimar, ensalzar y enaltecer significan «alabar / elevar»; persistir significa «mantenerse firme» y no guarda relación con el grupo.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "intruso_semantico"
   },
   {
     "numero": 6,
@@ -1431,7 +2230,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La forma correcta es esculpir. Estrujar, estraperlo y expirar están escritas correctamente.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "ortografia"
   },
   {
     "numero": 7,
@@ -1445,7 +2245,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La definición «hecho asombroso cuya causa se desconoce y se atribuye a poderes sobrenaturales» corresponde a fenómeno.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "definicion"
   },
   {
     "numero": 8,
@@ -1459,7 +2260,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "La relación es concepto abstracto → cualidad/característica. Bondad es una cualidad; negrura es un atributo.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "analogias"
   },
   {
     "numero": 9,
@@ -1473,7 +2275,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Ordenando: «El lado mayor de un triángulo se llama hipotenusa».",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "ordenar_frase"
   },
   {
     "numero": 10,
@@ -1487,7 +2290,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La frase con sentido es: «La oportunidad para enriquecer cada idea, con lo de los otros, abre algunos espacios de la creatividad». Es la combinación más natural y gramatical.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "huecos_gramaticales"
   },
   {
     "numero": 11,
@@ -1501,7 +2305,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Evaporación es paso de líquido a gas; su antónimo es condensación (paso de gas a líquido).",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "antonimos"
   },
   {
     "numero": 12,
@@ -1515,7 +2320,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Rielar, brillar y resplandecer son sinónimos (relucientes); revolver (agitar) es el que no se corresponde con el grupo.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "intruso_semantico"
   },
   {
     "numero": 13,
@@ -1529,7 +2335,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Es la única sin errores: bujía y coche están bien. Las otras tienen faltas (jestación→gestación, comio→comió, Fuí→Fui).",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "ortografia"
   },
   {
     "numero": 14,
@@ -1543,7 +2350,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Necrosis es la muerte de tejidos; sinónimo habitual es gangrena.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 15,
@@ -1557,7 +2365,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "El cóndilo es una prominencia redondeada que se encuentra en los huesos (ej. en las articulaciones).",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "definicion"
   },
   {
     "numero": 16,
@@ -1571,7 +2380,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "El texto dice literalmente: «pruebas recientes sugieren que estos animales viven mejor en los jardines de los suburbios que en tierras agrícolas».",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "comprension_lectora"
   },
   {
     "numero": 17,
@@ -1585,7 +2395,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "El texto indica que «los conservacionistas instan a los jardineros a tolerar las madrigueras» mientras se obtiene más información.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "comprension_lectora"
   },
   {
     "numero": 18,
@@ -1599,7 +2410,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Heraldo es la persona que lleva un mensaje o anuncio; sinónimo: mensajero.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "definicion"
   },
   {
     "numero": 19,
@@ -1613,7 +2425,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Equidad y justicia son casi sinónimos; de las opciones, llanura y pradera son los términos más próximos semánticamente (ambos designan terrenos).",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "analogias"
   },
   {
     "numero": 20,
@@ -1627,7 +2440,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Puericultura es la rama de la medicina/pedagogía dedicada al cuidado y crianza de los niños.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "definicion"
   },
   {
     "numero": 21,
@@ -1641,7 +2455,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "La oración 5 («es de suponer que no ha comido pan») es una deducción redundante que ya se desprende de la 7 («no ha desayunado»); se puede eliminar sin perder información esencial.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "ordenar_frase"
   },
   {
     "numero": 22,
@@ -1655,7 +2470,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Orden: «En Colombia existe un importante núcleo de investigación en educación matemática».",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "ordenar_frase"
   },
   {
     "numero": 23,
@@ -1669,7 +2485,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "La ópera la interpreta un cantante; el poema lo interpreta un declamador (relación de arte → intérprete).",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "analogias"
   },
   {
     "numero": 24,
@@ -1683,7 +2500,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Misántropo significa «que huye del trato humano»; sinónimo: huraño.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 25,
@@ -1697,7 +2515,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Aunque no es un antónimo perfecto, en el contexto de la prueba prolijo (extenso, minucioso) se opone a sentencioso (breve y cortante), que es la única opción con ese matiz de concisión.",
-    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)"
+    "examen": "METRO 2023 - Prueba tipo examen, parte aptitudinal (Empleo Maquinistas)",
+    "categoria": "antonimos"
   },
   {
     "numero": 26,
@@ -1711,7 +2530,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Efímero significa lo mismo que «pasajero».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 27,
@@ -1725,7 +2545,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Parco significa moderado o sobrio, especialmente al hablar o consumir.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 28,
@@ -1739,7 +2560,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Diáfano significa lo mismo que «transparente».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 29,
@@ -1753,7 +2575,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Indómito significa lo mismo que «indomable».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 30,
@@ -1767,7 +2590,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Perspicaz significa lo mismo que «sagaz».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 31,
@@ -1781,7 +2605,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Lacónico significa breve y conciso al expresarse.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 32,
@@ -1795,7 +2620,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Obstinado significa lo mismo que «terco».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 33,
@@ -1809,7 +2635,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Exiguo significa lo mismo que «escaso».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 34,
@@ -1823,7 +2650,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Prístino significa puro, en su estado original, sin alteración.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 35,
@@ -1837,7 +2665,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Veraz significa lo mismo que «sincero».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 36,
@@ -1851,7 +2680,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Magnánimo es lo contrario de «mezquino».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 37,
@@ -1865,7 +2695,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Cobarde es lo contrario de «valiente».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 38,
@@ -1879,7 +2710,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Pródigo es quien gasta con generosidad excesiva; su antónimo es tacaño.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 39,
@@ -1893,7 +2725,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Temerario es lo contrario de «prudente».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 40,
@@ -1907,7 +2740,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Arduo es lo contrario de «sencillo».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 41,
@@ -1921,7 +2755,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Coherente es lo contrario de «incongruente».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 42,
@@ -1935,7 +2770,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Frugal es quien gasta con moderación; su antónimo es derrochador.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 43,
@@ -1949,7 +2785,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Solícito es lo contrario de «desatento».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 44,
@@ -1963,7 +2800,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Expansivo es lo contrario de «reservado».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 45,
@@ -1977,7 +2815,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Versátil es lo contrario de «rígido».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 46,
@@ -1991,7 +2830,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "La relación es profesional y la herramienta con la que trabaja; el carpintero usa el martillo igual que el pintor usa el pincel.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 47,
@@ -2005,7 +2845,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "La relación es el origen y el ser desarrollado al que da lugar; el huevo da lugar al ave igual que la semilla al árbol.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 48,
@@ -2019,7 +2860,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La relación es de antonimia; alto y bajo son opuestos, igual que tímido y extrovertido.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 49,
@@ -2033,7 +2875,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "La relación es una pieza pequeña e idéntica a otras que cubre el cuerpo de un ser; las escamas cubren al pez igual que los pétalos a la flor.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 50,
@@ -2047,7 +2890,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "La relación es instrumento que mide una magnitud; el termómetro mide la temperatura igual que el reloj mide el tiempo.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 51,
@@ -2061,7 +2905,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "La relación es el elemento que da acceso a algo protegido; la contraseña da acceso a la cuenta igual que la llave a la cerradura.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 52,
@@ -2075,7 +2920,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La relación es insecto social y su nido colectivo; la hormiga y el hormiguero comparten esa misma relación que la abeja y la colmena.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 53,
@@ -2089,7 +2935,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "La relación es una acción periódica de recorte y mantenimiento; cortar el pelo es a la persona lo que podar es a la planta.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 54,
@@ -2103,7 +2950,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "La forma correcta es «Exuberante»; las demás opciones tienen una falta de ortografía.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 55,
@@ -2117,7 +2965,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "La forma correcta es «Excavación»; las demás opciones tienen una falta de ortografía.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 56,
@@ -2131,7 +2980,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La forma correcta es «Herbívoro»; las demás opciones tienen una falta de ortografía.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 57,
@@ -2145,7 +2995,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "La forma correcta es «Absorber»; las demás opciones tienen una falta de ortografía.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 58,
@@ -2159,7 +3010,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "La forma correcta es «Exhaustivo»; las demás opciones tienen una falta de ortografía.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 59,
@@ -2173,7 +3025,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "La forma correcta es «Vehemente»; las demás opciones tienen una falta de ortografía.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 60,
@@ -2187,7 +3040,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La forma correcta es «Idiosincrasia»; las demás opciones tienen una falta de ortografía.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 61,
@@ -2201,7 +3055,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "La forma correcta es «Perspicacia»; las demás opciones tienen una falta de ortografía.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 62,
@@ -2215,7 +3070,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "La combinación «constancia – dediquen» es la única que da sentido lógico y gramatical completo a la frase.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "huecos_gramaticales"
   },
   {
     "numero": 63,
@@ -2229,7 +3085,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "La combinación «paciencia – firmeza» es la única que da sentido lógico y gramatical completo a la frase.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "huecos_gramaticales"
   },
   {
     "numero": 64,
@@ -2243,7 +3100,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La combinación «serenidad – decisión» es la única que da sentido lógico y gramatical completo a la frase.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "huecos_gramaticales"
   },
   {
     "numero": 65,
@@ -2257,7 +3115,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "La combinación «confianza – legitimidad» es la única que da sentido lógico y gramatical completo a la frase.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "huecos_gramaticales"
   },
   {
     "numero": 66,
@@ -2271,7 +3130,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "La combinación «automatización – calidad» es la única que da sentido lógico y gramatical completo a la frase.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "huecos_gramaticales"
   },
   {
     "numero": 67,
@@ -2285,7 +3145,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "La combinación «memoria – capacidad» es la única que da sentido lógico y gramatical completo a la frase.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "huecos_gramaticales"
   },
   {
     "numero": 68,
@@ -2299,7 +3160,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Ordenando: «El órgano que bombea la sangre del cuerpo» es el corazón.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ordenar_frase"
   },
   {
     "numero": 69,
@@ -2313,7 +3175,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Ordenando: «El satélite natural de la Tierra es la Luna».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ordenar_frase"
   },
   {
     "numero": 70,
@@ -2327,7 +3190,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "El orden correcto forma la frase: «La educación constituye un pilar importante de la sociedad moderna.».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ordenar_frase"
   },
   {
     "numero": 71,
@@ -2341,7 +3205,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "El orden correcto forma la frase: «El transporte público eficiente reduce la contaminación urbana.».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ordenar_frase"
   },
   {
     "numero": 72,
@@ -2355,7 +3220,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "El texto menciona expresamente «la dificultad para separar la vida laboral de la personal» como uno de los retos del teletrabajo.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "comprension_lectora"
   },
   {
     "numero": 73,
@@ -2369,7 +3235,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "El texto dice que «numerosas empresas han optado por modelos híbridos, que combinan días de trabajo presencial con jornadas desde casa».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "comprension_lectora"
   },
   {
     "numero": 74,
@@ -2383,7 +3250,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "El texto dice que las abejas «son responsables de la polinización de una gran parte de las plantas con flor».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "comprension_lectora"
   },
   {
     "numero": 75,
@@ -2397,7 +3265,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "El texto atribuye la disminución al «uso de pesticidas, la pérdida de hábitats naturales y el cambio climático».",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "comprension_lectora"
   },
   {
     "numero": 76,
@@ -2411,7 +3280,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Adusto significa de trato serio, hosco o severo.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 77,
@@ -2425,7 +3295,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Pusilánime es quien carece de ánimo o valor para afrontar algo; apocado, cobarde.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 78,
@@ -2439,7 +3310,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Vacuo significa vacío de contenido, superficial.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 79,
@@ -2453,7 +3325,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Probo significa honrado, recto en su actuar.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 80,
@@ -2467,7 +3340,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Acrisolado significa purificado por la prueba, intachable (p. ej. «virtud acrisolada»).",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "sinonimos"
   },
   {
     "numero": 81,
@@ -2481,7 +3355,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Parvo significa pequeño o escaso; su antónimo es copioso, abundante.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 82,
@@ -2495,7 +3370,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Inicuo significa injusto o malvado; su antónimo es justo.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 83,
@@ -2509,7 +3385,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Próvido significa dispuesto a proveer con generosidad; su antónimo es mezquino.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 84,
@@ -2523,7 +3400,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Yerto significa tieso, rígido (p. ej. por el frío); su antónimo es flexible.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 85,
@@ -2537,7 +3415,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Lábil significa que se desliza o cambia con facilidad, poco firme; su antónimo es estable.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "antonimos"
   },
   {
     "numero": 86,
@@ -2551,7 +3430,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "La relación es quien dicta un acto con fuerza vinculante: el legislador dicta la ley igual que el juez dicta la sentencia; defender, declarar o acusar no son actos resolutivos.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 87,
@@ -2565,7 +3445,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "La relación es el estado negativo y el remedio que lo revierte: la instrucción remedia la ignorancia igual que el tratamiento remedia la enfermedad.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 88,
@@ -2579,7 +3460,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La relación es el término narrativo y la fase de la obra a la que corresponde: génesis es principio, epílogo es cierre.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 89,
@@ -2593,7 +3475,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "La relación es la unidad básica y la estructura del nivel inmediatamente superior: varias células forman un tejido, igual que varios ladrillos forman un muro (una casa ya es un nivel superior, formado por muros).",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "analogias"
   },
   {
     "numero": 90,
@@ -2607,7 +3490,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Desde la ortografía de 2010, «solo» (adverbio) ya no lleva tilde ni siquiera para distinguirlo del adjetivo; «quería» sí la lleva por ser palabra llana terminada en vocal con hiato.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 91,
@@ -2621,7 +3505,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "«Por qué» (dos palabras, con tilde) se usa en preguntas directas o indirectas; «porqué» (una palabra) es un sustantivo (\"el porqué de todo\") y «porque» explica una causa.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 92,
@@ -2635,7 +3520,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "La RAE adaptó el término al español como «wifi», en minúscula y sin guion.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 93,
@@ -2649,7 +3535,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "«Aún» lleva tilde cuando equivale a «todavía»; «aun» no la lleva cuando equivale a «incluso» (como en la locución «aun así»).",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "ortografia"
   },
   {
     "numero": 94,
@@ -2663,7 +3550,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Refrán popular que anima a empezar pronto las tareas.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "refranes"
   },
   {
     "numero": 95,
@@ -2677,7 +3565,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Refrán que aconseja prudencia al hablar.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "refranes"
   },
   {
     "numero": 96,
@@ -2691,7 +3580,8 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Es un refrán sobre la ingratitud de quien recibe ayuda o favores inmerecidos.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "refranes"
   },
   {
     "numero": 97,
@@ -2705,7 +3595,8 @@
     },
     "respuesta_correcta": "D",
     "explicacion": "Zanahoria es una hortaliza; las demás son frutas.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "intruso_semantico"
   },
   {
     "numero": 98,
@@ -2719,7 +3610,8 @@
     },
     "respuesta_correcta": "A",
     "explicacion": "Trompeta es un instrumento de viento; los demás son instrumentos de cuerda frotada de la familia del violín.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "intruso_semantico"
   },
   {
     "numero": 99,
@@ -2733,7 +3625,8 @@
     },
     "respuesta_correcta": "B",
     "explicacion": "Sigilo, discreción y cautela remiten a la reserva y la prudencia; locuacidad es justo lo contrario, hablar en exceso.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "intruso_semantico"
   },
   {
     "numero": 100,
@@ -2747,6 +3640,7 @@
     },
     "respuesta_correcta": "C",
     "explicacion": "Efímero, fugaz y pasajero significan de corta duración; perpetuo es lo contrario, de duración indefinida.",
-    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
+    "categoria": "intruso_semantico"
   }
 ]

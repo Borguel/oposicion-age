@@ -49,7 +49,7 @@
         <button type="button" class="test-type-card" id="btn-prueba-espacial" data-prueba="espacial">
           <div class="icon" data-icon="destellos" data-icon-size="30"></div>
           <div class="title">Prueba 2: Razonamiento espacial</div>
-          <div class="description">Hasta 90 preguntas</div>
+          <div class="description">Hasta 134 preguntas</div>
         </button>
       </div>
     </div>
@@ -59,8 +59,12 @@
       <p class="tarjeta-formulario-subtitulo">Elige cuántas preguntas quieres y si quieres cronometrarlo, igual que en Test Oficial.</p>
       <form id="form-generar-test">
         <input type="hidden" id="prueba_elegida" value="">
-        <label for="num_preguntas">Número de preguntas (máximo 100):</label>
-        <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="100" value="25" required>
+        <!-- max=500 a propósito por encima del banco real actual (menos de
+             500 por prueba, ver frontend/test-psicotecnico/script.js): así
+             no hace falta tocar este HTML cada vez que se amplía el banco.
+             El backend recorta igualmente al total disponible. -->
+        <label for="num_preguntas">Número de preguntas:</label>
+        <input type="number" id="num_preguntas" name="num_preguntas" min="1" max="500" value="25" required>
         <div class="timer-settings">
           <label>
             <input type="checkbox" id="modo_cronometrado" checked> <span>Activar modo examen cronometrado</span>

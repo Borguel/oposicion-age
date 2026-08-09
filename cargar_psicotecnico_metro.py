@@ -6,24 +6,34 @@ A diferencia de las preguntas "psicotecnico" de Auxiliar (que viven mezcladas
 con el resto del examen oficial en examenes_oficiales_AUXILIAR y se pueden
 excluir con un checkbox en /test-oficial/), en Metro esta prueba tiene su
 propia página (/test-psicotecnico/): 100 preguntas de razonamiento verbal y
-90 de razonamiento espacial, cada una como un examen completo y separado --
-así que se guardan en una colección aparte, nunca mezclada con temario.
+134 de razonamiento espacial (objetivo: seguir ampliando hasta 500 de cada
+una), cada una como un examen completo y separado -- así que se guardan en
+una colección aparte, nunca mezclada con temario.
 
 Las preguntas viven en datos_examenes/metro_2023_psicotecnico.json. Dos
 orígenes distintos, cada uno marcado con su propio campo "examen" en el
 JSON:
   - Las 50 originales, extraídas y revisadas de la "Prueba Tipo Examen,
     Convocatoria 2023 Metro de Madrid" (Empleo Maquinistas).
-  - 140 preguntas propias añadidas después en dos tandas para ampliar el
+  - El resto, preguntas propias añadidas en varias tandas para ampliar el
     banco de práctica, todas de razonamiento verbal redactadas a mano o de
     razonamiento espacial generadas por código con la respuesta calculada,
     no adivinada (ver frontend/assets/psicotecnico-metro/gen_*.py en el
     histórico de esta carga): 75 de verbal + 50 de espacial (cubos, caras,
     líneas, contacto entre cubos, rotación/reflejo 2D) en la primera tanda;
     25 de verbal (nivel avanzado) + 15 de espacial (matrices tipo Raven y
-    simetría) en la segunda.
+    simetría) en la segunda; 44 de espacial (vistas de un objeto -- planta/
+    alzado/perfil -- y deducir la cara opuesta de un cubo con símbolos) en
+    la tercera.
 Las preguntas de razonamiento espacial llevan un campo "imagen" con la
 ruta de la figura recortada/generada en frontend/assets/psicotecnico-metro/.
+
+Cada pregunta también lleva "categoria" (sinónimos, antónimos, analogías,
+contar_cubos, matriz_raven...) -- ver blueprints/test_ia.py
+generar_test_psicotecnico, que reparte el test entre categorías en vez de
+tomarlas por orden, para no encadenar 20 preguntas seguidas del mismo tipo.
+Se llama "categoria" y no "tipo" para no chocar con el campo "tipo" del
+propio documento de Firestore (que vale siempre "pregunta").
 
 Requiere las mismas variables de entorno que el resto del proyecto (ver
 app.py / .env): FIREBASE_CREDENTIALS_JSON (o FIREBASE_KEY_PATH apuntando a
@@ -79,6 +89,7 @@ def cargar():
             "examen": p.get("examen") or NOMBRE_EXAMEN_POR_DEFECTO,
             "prueba": p["prueba"],
             "numero": p["numero"],
+            "categoria": p.get("categoria", ""),
             "pregunta": p["pregunta"],
             "opciones": p["opciones"],
             "respuesta_correcta": p["respuesta_correcta"],

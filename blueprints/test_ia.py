@@ -227,6 +227,39 @@ def generar_test_oficial():
     return jsonify({"test": seleccionadas})
 
 
+def _seleccionar_preguntas_psicotecnico_equilibradas(candidatas, num_preguntas):
+    """Reparte la selección entre categorías (sinónimos, antónimos, contar
+    cubos, matriz Raven...) en vez de un random.sample() liso, que con un
+    banco tan desigual (unas categorías tienen 18 preguntas, otras 3) podía
+    perfectamente encadenar un montón de preguntas seguidas del mismo tipo
+    -- justo lo que se quiere evitar en un test que se practica para pillar
+    el truco de cada tipo, no para hacer 20 seguidas de "contar cubos".
+
+    Ronda tipo round-robin con el orden de categorías barajado UNA vez (no
+    en cada vuelta): se coge una pregunta de cada categoría por turno y se
+    vuelve a empezar. Con un orden fijo por vuelta, dos preguntas de la
+    misma categoría nunca quedan seguidas salvo que ya no queden preguntas
+    de ninguna otra (p. ej. al pedir más preguntas de las que hay en las
+    categorías pequeñas). Preguntas sin categoría se tratan como una
+    categoría más ("" agrupa a todas)."""
+    por_categoria = {}
+    for c in candidatas:
+        por_categoria.setdefault(c.get("categoria") or "", []).append(c)
+    for grupo in por_categoria.values():
+        random.shuffle(grupo)
+    orden_categorias = list(por_categoria.keys())
+    random.shuffle(orden_categorias)
+
+    seleccionadas = []
+    while len(seleccionadas) < num_preguntas and any(por_categoria.values()):
+        for cat in orden_categorias:
+            if por_categoria[cat]:
+                seleccionadas.append(por_categoria[cat].pop())
+                if len(seleccionadas) == num_preguntas:
+                    break
+    return seleccionadas
+
+
 @bp.route("/generar-test-psicotecnico", methods=["POST"])
 @requiere_plan(db, "basico")
 def generar_test_psicotecnico():
@@ -236,16 +269,17 @@ def generar_test_psicotecnico():
     hace siempre UNA prueba completa (verbal O espacial, nunca mezcladas ni
     filtradas por tema), así que aquí no hay selección de temas ni reparto
     ni checkbox de exclusión -- pero, igual que en Test Oficial, el usuario
-    sí elige cuántas preguntas quiere (por defecto 25; tope 100, por encima
-    del tamaño de cualquiera de los dos bancos tras la ampliación con
-    preguntas propias -- si se pide más de las que hay, se recorta al
-    total disponible más abajo, no hace falta que el tope encaje exacto)."""
+    sí elige cuántas preguntas quiere (por defecto 25; tope 500, el
+    objetivo final de tamaño de banco por prueba -- de momento hay bastante
+    menos, así que en la práctica esto casi siempre se recorta al total
+    disponible más abajo; el tope es solo un límite de seguridad, no hace
+    falta ir subiéndolo cada vez que se amplía el banco)."""
     data = request.get_json()
     prueba = data.get("prueba")
     if prueba not in ("verbal", "espacial"):
         return jsonify({"error": "El parámetro 'prueba' debe ser 'verbal' o 'espacial'"}), 400
     try:
-        num_preguntas = max(1, min(100, int(data.get("num_preguntas", 25))))
+        num_preguntas = max(1, min(500, int(data.get("num_preguntas", 25))))
     except (TypeError, ValueError):
         num_preguntas = 25
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "test_oficial")
@@ -258,8 +292,14 @@ def generar_test_psicotecnico():
         return jsonify({"error": "No se pudo acceder a Firestore"}), 500
     candidatas = [d for d in docs_pregunta if d.get("prueba") == prueba]
     if num_preguntas < len(candidatas):
-        candidatas = random.sample(candidatas, num_preguntas)
-    seleccionadas = sorted(candidatas, key=lambda d: d.get("numero", 0))
+        # Reparto equilibrado entre categorías en vez de random.sample()
+        # liso -- ver _seleccionar_preguntas_psicotecnico_equilibradas. El
+        # orden ya sale entreverado (no hace falta ni conviene volver a
+        # ordenar por número: las categorías tienen rangos de número
+        # contiguos, así que ordenar por número deshacía el entreverado).
+        seleccionadas = _seleccionar_preguntas_psicotecnico_equilibradas(candidatas, num_preguntas)
+    else:
+        seleccionadas = sorted(candidatas, key=lambda d: d.get("numero", 0))
     if not seleccionadas:
         return jsonify({"test": [], "mensaje": "Todavía no hay preguntas de esta prueba psicotécnica cargadas"}), 404
     test = [{
