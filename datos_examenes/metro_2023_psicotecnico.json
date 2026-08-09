@@ -334,8 +334,8 @@
       "C": "20",
       "D": "21"
     },
-    "respuesta_correcta": "D",
-    "explicacion": "Contando todas las superficies planas del sólido (caras superiores, inferiores, frontales, traseras y las paredes internas de los recortes) se obtienen 21 caras.",
+    "respuesta_correcta": "C",
+    "explicacion": "Contando todas las superficies planas del sólido (caras superiores, inferiores, frontales, traseras y las paredes internas de los recortes) se obtienen 20 caras.",
     "imagen": "/assets/psicotecnico-metro/pregunta_26.png"
   },
   {
@@ -362,8 +362,8 @@
       "C": "3",
       "D": "4"
     },
-    "respuesta_correcta": "B",
-    "explicacion": "Girando mentalmente el modelo, las figuras 1, 3 y 4 son rotaciones válidas; la figura 2 no se corresponde con ninguna rotación del modelo.",
+    "respuesta_correcta": "C",
+    "explicacion": "Girando mentalmente el modelo, las figuras 1, 2 y 4 son rotaciones válidas; la figura 3 no se corresponde con ninguna rotación del modelo.",
     "imagen": "/assets/psicotecnico-metro/pregunta_28.png"
   },
   {
@@ -376,8 +376,8 @@
       "C": "C",
       "D": "D"
     },
-    "respuesta_correcta": "C",
-    "explicacion": "La serie gira la figura progresivamente en el mismo sentido; la opción C continúa ese giro de forma coherente.",
+    "respuesta_correcta": "A",
+    "explicacion": "La serie gira la figura progresivamente en el mismo sentido; la opción A continúa ese giro de forma coherente.",
     "imagen": "/assets/psicotecnico-metro/pregunta_29.png"
   },
   {
@@ -390,8 +390,8 @@
       "C": "17",
       "D": "20"
     },
-    "respuesta_correcta": "C",
-    "explicacion": "Contando cubo a cubo, incluidos los ocultos que sostienen a los visibles, el total es de 17 cubos.",
+    "respuesta_correcta": "A",
+    "explicacion": "Contando cubo a cubo, incluidos los ocultos que sostienen a los visibles, el total es de 19 cubos.",
     "imagen": "/assets/psicotecnico-metro/pregunta_30.png"
   },
   {
@@ -404,8 +404,8 @@
       "C": "C",
       "D": "D"
     },
-    "respuesta_correcta": "D",
-    "explicacion": "Solo el desarrollo D respeta la posición y orientación relativa de las caras del dado del modelo al desplegarlo.",
+    "respuesta_correcta": "B",
+    "explicacion": "Solo el desarrollo B respeta la posición y orientación relativa de las caras del dado del modelo al desplegarlo.",
     "imagen": "/assets/psicotecnico-metro/pregunta_31.png"
   },
   {
@@ -474,8 +474,8 @@
       "C": "8",
       "D": "7"
     },
-    "respuesta_correcta": "D",
-    "explicacion": "El ladrillo marcado contacta con 7 ladrillos: uno a cada lado, uno delante, uno detrás y los que forman el escalón superior.",
+    "respuesta_correcta": "B",
+    "explicacion": "El ladrillo marcado contacta con 6 ladrillos adyacentes.",
     "imagen": "/assets/psicotecnico-metro/pregunta_36.png"
   },
   {
@@ -502,8 +502,8 @@
       "C": "C",
       "D": "D"
     },
-    "respuesta_correcta": "C",
-    "explicacion": "Al plegar la red mostrada, los símbolos solo quedan en las caras visibles correctas en la opción C.",
+    "respuesta_correcta": "A",
+    "explicacion": "Al plegar la red mostrada, los símbolos solo quedan en las caras visibles correctas en la opción A.",
     "imagen": "/assets/psicotecnico-metro/pregunta_38.png"
   },
   {
@@ -516,8 +516,8 @@
       "C": "27",
       "D": "35"
     },
-    "respuesta_correcta": "D",
-    "explicacion": "Contando la estructura completa en forma de escalera, incluidos los cubos ocultos que la sostienen, el total es 35.",
+    "respuesta_correcta": "A",
+    "explicacion": "Contando la estructura completa en forma de escalera, incluidos los cubos ocultos que la sostienen, el total es 33.",
     "imagen": "/assets/psicotecnico-metro/pregunta_39.png"
   },
   {
@@ -544,8 +544,8 @@
       "C": "C",
       "D": "D"
     },
-    "respuesta_correcta": "C",
-    "explicacion": "Girando mentalmente el cubo del modelo, solo la opción C mantiene la misma posición relativa de las líneas y los puntos.",
+    "respuesta_correcta": "D",
+    "explicacion": "Girando mentalmente el cubo del modelo, solo la opción D mantiene la misma posición relativa de las líneas y los puntos.",
     "imagen": "/assets/psicotecnico-metro/pregunta_41.png"
   },
   {
@@ -572,8 +572,8 @@
       "C": "10",
       "D": "11"
     },
-    "respuesta_correcta": "A",
-    "explicacion": "Se trata de un prisma con varias diagonales internas; contando aristas visibles y ocultas se obtienen 12 líneas.",
+    "respuesta_correcta": "D",
+    "explicacion": "Se trata de un prisma con varias diagonales internas; contando aristas visibles y ocultas se obtienen 11 líneas.",
     "imagen": "/assets/psicotecnico-metro/pregunta_43.png"
   },
   {
@@ -586,8 +586,8 @@
       "C": "C",
       "D": "D"
     },
-    "respuesta_correcta": "D",
-    "explicacion": "Solo el desarrollo D sitúa el óvalo, el corazón y el rombo en las caras adyacentes correctas respecto al modelo plegado.",
+    "respuesta_correcta": "A",
+    "explicacion": "Solo el desarrollo A sitúa el óvalo, el corazón y el rombo en las caras adyacentes correctas respecto al modelo plegado.",
     "imagen": "/assets/psicotecnico-metro/pregunta_44.png"
   },
   {
@@ -614,8 +614,8 @@
       "C": "C",
       "D": "D"
     },
-    "respuesta_correcta": "C",
-    "explicacion": "Girando mentalmente el cubo, la posición de los puntos y el triángulo negro solo coincide con la opción C.",
+    "respuesta_correcta": "B",
+    "explicacion": "Girando mentalmente el cubo, la posición de los puntos y el triángulo negro solo coincide con la opción B.",
     "imagen": "/assets/psicotecnico-metro/pregunta_46.png"
   },
   {
@@ -656,8 +656,8 @@
       "C": "3",
       "D": "4"
     },
-    "respuesta_correcta": "B",
-    "explicacion": "Girando mentalmente la figura 2 sobre su eje, se obtiene exactamente la misma figura maciza que el modelo.",
+    "respuesta_correcta": "C",
+    "explicacion": "Girando mentalmente la figura 3 sobre su eje, se obtiene exactamente la misma figura maciza que el modelo.",
     "imagen": "/assets/psicotecnico-metro/pregunta_49.png"
   },
   {
@@ -670,8 +670,8 @@
       "C": "8",
       "D": "5"
     },
-    "respuesta_correcta": "A",
-    "explicacion": "El ladrillo marcado está en contacto con otros 7 ladrillos adyacentes.",
+    "respuesta_correcta": "B",
+    "explicacion": "El ladrillo marcado está en contacto con otros 6 ladrillos adyacentes.",
     "imagen": "/assets/psicotecnico-metro/pregunta_50.png"
   }
 ]
