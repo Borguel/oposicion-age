@@ -78,6 +78,43 @@ def test_ruta_generar_test_psicotecnico_espacial_incluye_imagen(client, db):
         parche.stop()
 
 
+def test_ruta_generar_test_psicotecnico_respeta_num_preguntas(client, db):
+    for i in range(1, 26):
+        db.sembrar(("psicotecnico_METRO", f"v{i:02d}"), _pregunta_psico(i, "verbal"))
+    _sembrar_usuario_metro(db)
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/generar-test-psicotecnico",
+            json={"oposicion": "METRO", "prueba": "verbal", "num_preguntas": 10},
+            headers={"Authorization": "Bearer x"}
+        )
+        assert resp.status_code == 200
+        test = resp.get_json()["test"]
+        assert len(test) == 10
+        # sigue viniendo ordenado por número aunque sea un subconjunto al azar
+        assert test == sorted(test, key=lambda p: p["numero"])
+    finally:
+        parche.stop()
+
+
+def test_ruta_generar_test_psicotecnico_num_preguntas_por_encima_del_total_se_recorta(client, db):
+    for i in range(1, 26):
+        db.sembrar(("psicotecnico_METRO", f"v{i:02d}"), _pregunta_psico(i, "verbal"))
+    _sembrar_usuario_metro(db)
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/generar-test-psicotecnico",
+            json={"oposicion": "METRO", "prueba": "verbal", "num_preguntas": 999},
+            headers={"Authorization": "Bearer x"}
+        )
+        assert resp.status_code == 200
+        assert len(resp.get_json()["test"]) == 25
+    finally:
+        parche.stop()
+
+
 def test_ruta_generar_test_psicotecnico_prueba_invalida_400(client, db):
     _sembrar_usuario_metro(db)
     parche = _con_sesion(client)

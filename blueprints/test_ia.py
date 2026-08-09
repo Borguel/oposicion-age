@@ -233,13 +233,18 @@ def generar_test_psicotecnico():
     """Prueba psicotécnica (razonamiento verbal/espacial) de una oposición
     -- hoy solo Metro, ver oposiciones.coleccion_psicotecnico. A propósito
     NO comparte lógica con /generar-test-oficial: en Metro esta prueba se
-    hace completa y por separado (25 preguntas de razonamiento verbal O 25
-    de razonamiento espacial, nunca mezcladas ni filtradas por tema), así
-    que aquí no hay selección de temas ni reparto ni checkbox de exclusión."""
+    hace siempre UNA prueba completa (verbal O espacial, nunca mezcladas ni
+    filtradas por tema), así que aquí no hay selección de temas ni reparto
+    ni checkbox de exclusión -- pero, igual que en Test Oficial, el usuario
+    sí elige cuántas preguntas quiere (por defecto las 25 de la prueba)."""
     data = request.get_json()
     prueba = data.get("prueba")
     if prueba not in ("verbal", "espacial"):
         return jsonify({"error": "El parámetro 'prueba' debe ser 'verbal' o 'espacial'"}), 400
+    try:
+        num_preguntas = max(1, min(25, int(data.get("num_preguntas", 25))))
+    except (TypeError, ValueError):
+        num_preguntas = 25
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "test_oficial")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
@@ -248,10 +253,10 @@ def generar_test_psicotecnico():
     except Exception:
         logger.exception("Error accediendo a Firestore")
         return jsonify({"error": "No se pudo acceder a Firestore"}), 500
-    seleccionadas = sorted(
-        (d for d in docs_pregunta if d.get("prueba") == prueba),
-        key=lambda d: d.get("numero", 0),
-    )
+    candidatas = [d for d in docs_pregunta if d.get("prueba") == prueba]
+    if num_preguntas < len(candidatas):
+        candidatas = random.sample(candidatas, num_preguntas)
+    seleccionadas = sorted(candidatas, key=lambda d: d.get("numero", 0))
     if not seleccionadas:
         return jsonify({"test": [], "mensaje": "Todavía no hay preguntas de esta prueba psicotécnica cargadas"}), 404
     test = [{

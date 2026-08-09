@@ -2,8 +2,10 @@
 // razonamiento espacial) de una oposición con prueba psicotécnica propia
 // (hoy, solo Metro -- ver oposiciones.coleccion_psicotecnico). A propósito
 // NO comparte página con /test-oficial/: aquí no hay selector de temas, ni
-// reparto, ni checkbox de exclusión -- cada prueba se hace completa y por
-// separado, tal como el examen real (25 preguntas, 20 minutos cada una).
+// reparto, ni checkbox de exclusión -- cada prueba se hace siempre por
+// separado, nunca mezclada con la otra ni con el temario. Pero, igual que
+// en Test Oficial, el usuario sí elige cuántas preguntas quiere (hasta 25,
+// las que tiene cada prueba) y si quiere cronometrarlo o no.
 // El motor de hacer el test en sí (temporizador, autoguardado, navegador de
 // preguntas, resultados, reanudar) es el mismo que usan las demás páginas
 // de test (ver /test-oficial/, /test-personalizado/).
@@ -12,7 +14,7 @@ import { marcarContenidoListo } from "/assets/auth.js";
 
 const TIPO_TEST = "psicotecnico";
 const ENDPOINT_GENERAR = "/generar-test-psicotecnico";
-const MINUTOS_POR_PRUEBA = 20;
+const NOMBRE_PRUEBA = { verbal: "razonamiento verbal", espacial: "razonamiento espacial" };
 
 document.querySelectorAll("[data-icon]").forEach((el) => {
   el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
@@ -43,14 +45,37 @@ let oposicionActual = "";
 let textosFavoritas = new Set();
 let botonFavoritaHTML = () => "";
 let activarBotonFavorita = () => {};
+let pruebaElegida = "";
 
 function tiempoTranscurridoActual() {
   if (tiempoLimite !== null) return tiempoTotalAsignado - tiempoLimite;
   return tiempoTranscurridoBase + Math.floor((Date.now() - tiempoInicio) / 1000);
 }
 
+document.addEventListener("DOMContentLoaded", function() {
+  document.getElementById('modo_cronometrado').addEventListener('change', function() {
+    document.getElementById('tiempo_cronometro').style.display = this.checked ? 'flex' : 'none';
+  });
+});
+
+// Elegir una prueba (verbal/espacial) no la arranca directamente -- revela
+// el formulario de "cuántas preguntas / cronómetro o no", igual que Test
+// Oficial deja configurar el test antes de generarlo.
+function elegirPrueba(prueba) {
+  pruebaElegida = prueba;
+  document.getElementById("prueba_elegida").value = prueba;
+  document.getElementById("btn-prueba-verbal").classList.toggle("selected", prueba === "verbal");
+  document.getElementById("btn-prueba-espacial").classList.toggle("selected", prueba === "espacial");
+  document.getElementById("titulo-formulario-psicotecnico").textContent =
+    `Configura tu prueba de ${NOMBRE_PRUEBA[prueba]}`;
+  document.getElementById("tarjeta-formulario").style.display = "block";
+}
+document.getElementById("btn-prueba-verbal").addEventListener("click", () => elegirPrueba("verbal"));
+document.getElementById("btn-prueba-espacial").addEventListener("click", () => elegirPrueba("espacial"));
+
 function ocultarSelectorPsicotecnico() {
   document.getElementById("selector-psicotecnico").style.display = "none";
+  document.getElementById("tarjeta-formulario").style.display = "none";
 }
 
 async function guardarTestAutomaticamente() {
@@ -87,8 +112,8 @@ function formatearTiempo(segundos) {
 }
 
 // tiempoRestanteReanudado/tiempoTranscurridoReanudado: igual que en
-// /test-oficial/, para que al reanudar un test guardado el cronómetro
-// continúe desde donde se dejó en vez de reiniciarse.
+// /test-oficial/, para que al reanudar un test guardado el cronómetro (o el
+// contador libre) continúe desde donde se dejó en vez de reiniciarse.
 function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudado) {
   tiempoInicio = Date.now();
   const elTemporizador = document.getElementById("temporizador");
@@ -96,50 +121,78 @@ function iniciarTemporizador(tiempoRestanteReanudado, tiempoTranscurridoReanudad
   elTemporizador.style.display = "flex";
   const botonToggle = document.getElementById("btn-toggle-temporizador");
   botonToggle.onclick = () => elTemporizador.classList.toggle("temporizador-oculto");
-  if (tiempoRestanteReanudado == null) {
-    tiempoLimite = MINUTOS_POR_PRUEBA * 60;
-    tiempoTotalAsignado = tiempoLimite;
-  } else {
-    tiempoLimite = tiempoRestanteReanudado;
-  }
-  document.getElementById("barra-progreso-tiempo").style.display = "block";
-  elTexto.innerHTML = `${icono("reloj", 16)} Tiempo restante: <span class="pulse">${formatearTiempo(tiempoLimite)}</span>`;
-  elTemporizador.classList.toggle("temporizador-urgente", tiempoLimite <= 300);
-  intervaloTemporizador = setInterval(() => {
-    tiempoLimite--;
-    if (tiempoLimite <= 0) {
-      clearInterval(intervaloTemporizador);
-      Swal.fire({
-        title: '¡Tiempo terminado!',
-        text: 'Se ha finalizado el test automáticamente.',
-        icon: 'warning',
-        confirmButtonText: 'Ver resultados'
-      }).then(() => {
-        mostrarResultados();
-      });
-      return;
+  if (document.getElementById('modo_cronometrado').checked) {
+    if (tiempoRestanteReanudado == null) {
+      const minutos = parseInt(document.getElementById('minutos_cronometro').value) || 20;
+      tiempoLimite = minutos * 60;
+      tiempoTotalAsignado = tiempoLimite;
+    } else {
+      tiempoLimite = tiempoRestanteReanudado;
     }
+    document.getElementById("barra-progreso-tiempo").style.display = "block";
     elTexto.innerHTML = `${icono("reloj", 16)} Tiempo restante: <span class="pulse">${formatearTiempo(tiempoLimite)}</span>`;
     elTemporizador.classList.toggle("temporizador-urgente", tiempoLimite <= 300);
-    const porcentajeTiempo = ((tiempoTotalAsignado - tiempoLimite) / tiempoTotalAsignado) * 100;
-    document.getElementById("progreso-tiempo").style.width = `${porcentajeTiempo}%`;
-    const elTextoProgresoTiempo = document.getElementById("texto-progreso-tiempo");
-    if (elTextoProgresoTiempo) elTextoProgresoTiempo.textContent = `${Math.round(porcentajeTiempo)}%`;
-    if (tiempoLimite % 10 === 0) {
-      import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
-        autoguardarProgreso({
-          respuestas_usuario: respuestasUsuario,
-          marcadas_revision: marcadasRevision,
-          marcadas_duda: marcadasDuda,
-          indice_actual: indicePreguntaActual,
-          tiempo_restante_segundos: tiempoLimite
+    intervaloTemporizador = setInterval(() => {
+      tiempoLimite--;
+      if (tiempoLimite <= 0) {
+        clearInterval(intervaloTemporizador);
+        Swal.fire({
+          title: '¡Tiempo terminado!',
+          text: 'Se ha finalizado el test automáticamente.',
+          icon: 'warning',
+          confirmButtonText: 'Ver resultados'
+        }).then(() => {
+          mostrarResultados();
         });
-      });
-    }
-  }, 1000);
+        return;
+      }
+      elTexto.innerHTML = `${icono("reloj", 16)} Tiempo restante: <span class="pulse">${formatearTiempo(tiempoLimite)}</span>`;
+      elTemporizador.classList.toggle("temporizador-urgente", tiempoLimite <= 300);
+      const porcentajeTiempo = ((tiempoTotalAsignado - tiempoLimite) / tiempoTotalAsignado) * 100;
+      document.getElementById("progreso-tiempo").style.width = `${porcentajeTiempo}%`;
+      const elTextoProgresoTiempo = document.getElementById("texto-progreso-tiempo");
+      if (elTextoProgresoTiempo) elTextoProgresoTiempo.textContent = `${Math.round(porcentajeTiempo)}%`;
+      if (tiempoLimite % 10 === 0) {
+        import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+          autoguardarProgreso({
+            respuestas_usuario: respuestasUsuario,
+            marcadas_revision: marcadasRevision,
+            marcadas_duda: marcadasDuda,
+            indice_actual: indicePreguntaActual,
+            tiempo_restante_segundos: tiempoLimite
+          });
+        });
+      }
+    }, 1000);
+  } else {
+    tiempoTranscurridoBase = tiempoTranscurridoReanudado || 0;
+    elTexto.innerHTML = `${icono("reloj", 16)} Tiempo: ${formatearTiempo(tiempoTranscurridoBase)}`;
+    intervaloTemporizador = setInterval(() => {
+      const transcurrido = tiempoTranscurridoActual();
+      elTexto.innerHTML = `${icono("reloj", 16)} Tiempo: ${formatearTiempo(transcurrido)}`;
+      if (transcurrido % 10 === 0) {
+        import("/assets/test-progreso.js").then(({ autoguardarProgreso }) => {
+          autoguardarProgreso({
+            respuestas_usuario: respuestasUsuario,
+            marcadas_revision: marcadasRevision,
+            marcadas_duda: marcadasDuda,
+            indice_actual: indicePreguntaActual,
+            tiempo_transcurrido_segundos: transcurrido
+          });
+        });
+      }
+    }, 1000);
+  }
 }
 
-async function iniciarPrueba(prueba) {
+document.getElementById("form-generar-test").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  if (!pruebaElegida) return;
+  const prueba = pruebaElegida;
+  const numPreguntas = parseInt(document.getElementById("num_preguntas").value) || 25;
+  const modoCronometrado = document.getElementById('modo_cronometrado').checked;
+  const minutosCronometro = parseInt(document.getElementById('minutos_cronometro').value) || 20;
+
   document.getElementById("barra-progreso-tiempo").style.display = "none";
   ocultarSelectorPsicotecnico();
   document.getElementById("contenedor-test").style.display = "block";
@@ -169,7 +222,7 @@ async function iniciarPrueba(prueba) {
     const res = await fetch("https://oposicion-age.onrender.com" + ENDPOINT_GENERAR, {
       method: "POST",
       headers: {"Content-Type": "application/json", ...authHeaders},
-      body: JSON.stringify({ oposicion, prueba })
+      body: JSON.stringify({ oposicion, prueba, num_preguntas: numPreguntas })
     });
     clearInterval(intervalCarga);
     if (res.status === 403) {
@@ -214,9 +267,9 @@ async function iniciarPrueba(prueba) {
       marcadas_revision: marcadasRevision,
       marcadas_duda: marcadasDuda,
       indice_actual: indicePreguntaActual,
-      modo_cronometrado: true,
-      tiempo_restante_segundos: MINUTOS_POR_PRUEBA * 60,
-      tiempo_total_asignado_segundos: MINUTOS_POR_PRUEBA * 60,
+      modo_cronometrado: modoCronometrado,
+      tiempo_restante_segundos: modoCronometrado ? minutosCronometro * 60 : null,
+      tiempo_total_asignado_segundos: modoCronometrado ? minutosCronometro * 60 : null,
       pagina_origen: "/test-psicotecnico/"
     });
     activarGuardadoAlSalir(() => ({
@@ -224,7 +277,7 @@ async function iniciarPrueba(prueba) {
       marcadas_revision: marcadasRevision,
       marcadas_duda: marcadasDuda,
       indice_actual: indicePreguntaActual,
-      modo_cronometrado: true,
+      modo_cronometrado: tiempoLimite !== null,
       tiempo_restante_segundos: tiempoLimite,
       tiempo_transcurrido_segundos: tiempoTranscurridoActual()
     }));
@@ -243,10 +296,7 @@ async function iniciarPrueba(prueba) {
     document.getElementById('btn-volver-a-intentar').addEventListener('click', () => location.reload());
     console.error(error);
   }
-}
-
-document.getElementById("btn-prueba-verbal").addEventListener("click", () => iniciarPrueba("verbal"));
-document.getElementById("btn-prueba-espacial").addEventListener("click", () => iniciarPrueba("espacial"));
+});
 
 function actualizarNavegadorPreguntas() {
   const contenedor = document.getElementById("navegador-preguntas");
@@ -523,8 +573,14 @@ async function reanudarTest(resumeId) {
   ocultarSelectorPsicotecnico();
   document.getElementById("contenedor-test").style.display = "block";
 
-  tiempoTotalAsignado = guardado.tiempo_total_asignado_segundos || guardado.tiempo_restante_segundos || MINUTOS_POR_PRUEBA * 60;
-  iniciarTemporizador(guardado.tiempo_restante_segundos ?? tiempoTotalAsignado);
+  if (guardado.modo_cronometrado) {
+    document.getElementById('modo_cronometrado').checked = true;
+    tiempoTotalAsignado = guardado.tiempo_total_asignado_segundos || guardado.tiempo_restante_segundos || 0;
+    iniciarTemporizador(guardado.tiempo_restante_segundos ?? tiempoTotalAsignado);
+  } else {
+    document.getElementById('modo_cronometrado').checked = false;
+    iniciarTemporizador(null, guardado.tiempo_transcurrido_segundos || 0);
+  }
   document.getElementById("navegador-preguntas").style.display = "flex";
   mostrarPregunta(indicePreguntaActual);
   activarGuardadoAlSalir(() => ({
@@ -532,7 +588,7 @@ async function reanudarTest(resumeId) {
     marcadas_revision: marcadasRevision,
     marcadas_duda: marcadasDuda,
     indice_actual: indicePreguntaActual,
-    modo_cronometrado: true,
+    modo_cronometrado: tiempoLimite !== null,
     tiempo_restante_segundos: tiempoLimite,
     tiempo_transcurrido_segundos: tiempoTranscurridoActual()
   }));
