@@ -1,7 +1,7 @@
 import { idToken, esperarUsuario, marcarContenidoListo } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
-import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual } from "/assets/oposicion.js";
+import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual, obtenerOposicionesOcultasDisponibles } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
 import { fijarTexto, fijarHTML } from "/assets/dom.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
@@ -574,10 +574,16 @@ async function renderOnboarding() {
   });
 }
 
+// Lista de oposiciones a mostrar en el switcher de chips y en "Estás
+// preparando" -- empieza siendo la pública (OPOSICIONES) y, si el usuario
+// tiene alguna oposición oculta activada (ver oposicion.js), se amplía tras
+// consultar al backend, tal como hace el propio selector de la nav.
+let oposicionesDisponibles = OPOSICIONES;
+
 function renderSwitcher() {
   const contenedor = document.getElementById("zona-oposicion-switcher");
   const actual = obtenerOposicionActual();
-  contenedor.innerHTML = OPOSICIONES.map((o) => `
+  contenedor.innerHTML = oposicionesDisponibles.map((o) => `
     <button type="button" class="zona-switch-pill${o.id === actual ? " activo" : ""}" data-op="${o.id}">${o.siglas || o.nombre}</button>
   `).join("");
   contenedor.querySelectorAll("[data-op]").forEach((boton) => {
@@ -630,7 +636,7 @@ function resetSeccionesOposicion() {
 async function cargarDatosOposicion() {
   resetSeccionesOposicion();
 
-  const opActual = OPOSICIONES.find((o) => o.id === obtenerOposicionActual());
+  const opActual = oposicionesDisponibles.find((o) => o.id === obtenerOposicionActual());
   document.getElementById("zona-oposicion-nombre").textContent = opActual ? opActual.nombre : "—";
 
   cargarProgresoInsignias();
@@ -662,6 +668,16 @@ async function iniciar() {
   renderAviso();
   renderSwitcher();
   cargarDatosOposicion();
+  // Fire-and-forget, sin bloquear el pintado inicial (igual que el
+  // selector de oposición de la nav, ver oposicion.js): si el usuario
+  // tiene alguna oposición oculta activada, se amplía la lista y se
+  // repintan el switcher y "Estás preparando" para incluirla.
+  obtenerOposicionesOcultasDisponibles(usuario).then((extra) => {
+    if (extra.length === 0) return;
+    oposicionesDisponibles = [...OPOSICIONES, ...extra];
+    renderSwitcher();
+    cargarDatosOposicion();
+  });
   document.getElementById("zona-reabrir-onboarding").addEventListener("click", () => {
     localStorage.removeItem(CLAVE_ONBOARDING_CERRADO);
     renderOnboarding();
