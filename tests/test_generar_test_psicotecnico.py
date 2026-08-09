@@ -98,6 +98,23 @@ def test_ruta_generar_test_psicotecnico_respeta_num_preguntas(client, db):
         parche.stop()
 
 
+def test_ruta_generar_test_psicotecnico_admite_bancos_ampliados_de_75(client, db):
+    for i in range(1, 76):
+        db.sembrar(("psicotecnico_METRO", f"v{i:02d}"), _pregunta_psico(i, "verbal"))
+    _sembrar_usuario_metro(db)
+    parche = _con_sesion(client)
+    try:
+        resp = client.post(
+            "/generar-test-psicotecnico",
+            json={"oposicion": "METRO", "prueba": "verbal", "num_preguntas": 75},
+            headers={"Authorization": "Bearer x"}
+        )
+        assert resp.status_code == 200
+        assert len(resp.get_json()["test"]) == 75
+    finally:
+        parche.stop()
+
+
 def test_ruta_generar_test_psicotecnico_num_preguntas_por_encima_del_total_se_recorta(client, db):
     for i in range(1, 26):
         db.sembrar(("psicotecnico_METRO", f"v{i:02d}"), _pregunta_psico(i, "verbal"))
@@ -110,6 +127,8 @@ def test_ruta_generar_test_psicotecnico_num_preguntas_por_encima_del_total_se_re
             headers={"Authorization": "Bearer x"}
         )
         assert resp.status_code == 200
+        # el tope duro del endpoint es 75, pero solo hay 25 cargadas -> se
+        # recorta al total disponible, no al tope.
         assert len(resp.get_json()["test"]) == 25
     finally:
         parche.stop()
