@@ -53,9 +53,18 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+from dotenv import load_dotenv
 from pypdf import PdfReader
 
 from deepseek_utils import call_deepseek_api
+
+# A diferencia de los demás cargar_temario_*.py (que exigen exportar
+# DEEPSEEK_API_KEY/FIREBASE_KEY_PATH a mano en cada sesión de terminal),
+# aquí se cargan también desde un archivo .env en la raíz del repo si
+# existe -- igual que ya hacen cargar_datos_convocatoria.py y
+# cargar_examen_oficial_*.py -- para no tener que volver a escribirlas cada
+# vez que se abre una terminal nueva.
+load_dotenv()
 
 COLECCION = "Temario Metro"
 BLOQUE_ID = "bloque_01"
