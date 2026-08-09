@@ -1,7 +1,7 @@
 import { idToken, esperarUsuario, marcarContenidoListo } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
-import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual, obtenerOposicionesOcultasDisponibles } from "/assets/oposicion.js";
+import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual, obtenerOposicionesVisiblesDelUsuario, activarOposicion } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
 import { fijarTexto, fijarHTML } from "/assets/dom.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
@@ -575,10 +575,11 @@ async function renderOnboarding() {
 }
 
 // Lista de oposiciones a mostrar en el switcher de chips y en "Estás
-// preparando" -- empieza siendo la pública (OPOSICIONES) y, si el usuario
-// tiene alguna oposición oculta activada (ver oposicion.js), se amplía tras
-// consultar al backend, tal como hace el propio selector de la nav.
-let oposicionesDisponibles = OPOSICIONES;
+// preparando" -- las que este usuario ha activado él mismo (ver
+// /activar-oposicion), resuelta en iniciar() ANTES de pintar nada (a
+// diferencia de antes, ya no se puede asumir que las 3 públicas estén
+// siempre disponibles: hay que saber la lista real primero).
+let oposicionesDisponibles = [];
 
 function renderSwitcher() {
   const contenedor = document.getElementById("zona-oposicion-switcher");
@@ -595,6 +596,65 @@ function renderSwitcher() {
       cargarDatosOposicion();
     });
   });
+}
+
+// Botón "+ Añadir otra oposición": solo se muestra si le queda alguna
+// pública por activar. Abre el mismo selector de tarjetas que ve quien
+// todavía no ha elegido ninguna (ver renderElegirOposicion), sin ocultar
+// el resto del panel -- a diferencia del estado "cuenta nueva", aquí el
+// usuario ya tiene contenido real que no tiene sentido tapar.
+function renderBotonAnadirOposicion() {
+  const boton = document.getElementById("zona-oposicion-anadir");
+  if (!boton) return;
+  const faltantes = OPOSICIONES.filter((o) => !oposicionesDisponibles.some((d) => d.id === o.id));
+  boton.style.display = faltantes.length === 0 ? "none" : "";
+  boton.onclick = () => {
+    renderElegirOposicion(faltantes, { permitirCancelar: true });
+    const seccion = document.getElementById("zona-elige-oposicion");
+    seccion.style.display = "block";
+    seccion.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+}
+
+// Pinta las tarjetas para elegir/activar una oposición nueva -- se usa
+// tanto para el estado de cuenta nueva (sin ninguna activada todavía,
+// candidatas = OPOSICIONES) como para "+ Añadir otra oposición"
+// (candidatas = solo las que le faltan, con opción de cancelar). Activar
+// una llama a POST /activar-oposicion (arranca su prueba de 7 días) y
+// recarga la página -- más simple y fiable que intentar sincronizar a mano
+// todo el estado ya cargado (switcher, plan, herramientas...) con la
+// oposición recién añadida.
+function renderElegirOposicion(candidatas, { permitirCancelar = false } = {}) {
+  const grid = document.getElementById("zona-elige-oposicion-grid");
+  grid.innerHTML = candidatas.map((o) => `
+    <div class="age-card zona-elige-oposicion-item">
+      <strong>${o.nombre}</strong>
+      <button type="button" class="age-btn age-btn-primary" data-activar="${o.id}">Empezar prueba gratis</button>
+    </div>
+  `).join("");
+  grid.querySelectorAll("[data-activar]").forEach((boton) => {
+    boton.addEventListener("click", async () => {
+      boton.disabled = true;
+      boton.textContent = "Activando…";
+      try {
+        const token = await idToken();
+        await activarOposicion(token, boton.dataset.activar);
+        establecerOposicionActual(boton.dataset.activar);
+        sessionStorage.clear();
+        window.location.reload();
+      } catch (e) {
+        mostrarErrorGlobal(e.message || "No se pudo activar la oposición.");
+        boton.disabled = false;
+        boton.textContent = "Empezar prueba gratis";
+      }
+    });
+  });
+
+  const cancelar = document.getElementById("zona-elige-oposicion-cancelar");
+  cancelar.style.display = permitirCancelar ? "" : "none";
+  cancelar.onclick = () => {
+    document.getElementById("zona-elige-oposicion").style.display = "none";
+  };
 }
 
 const PILL_PLAN = { gratis: "age-pill", basico: "age-pill age-pill-primary", premium: "age-pill age-pill-success" };
@@ -663,35 +723,52 @@ async function iniciar() {
 
   document.getElementById("zona-nombre").textContent = (usuario.email || "").split("@")[0] || "opositor/a";
 
-  cargarRacha(usuario.uid);
-  iniciarBotonNotificaciones();
-  renderAviso();
-  renderSwitcher();
-  cargarDatosOposicion();
-  // Fire-and-forget, sin bloquear el pintado inicial (igual que el
-  // selector de oposición de la nav, ver oposicion.js): si el usuario
-  // tiene alguna oposición oculta activada, se amplía la lista y se
-  // repintan el switcher y "Estás preparando" para incluirla.
-  obtenerOposicionesOcultasDisponibles(usuario).then((extra) => {
-    if (extra.length === 0) return;
-    oposicionesDisponibles = [...OPOSICIONES, ...extra];
-    renderSwitcher();
-    cargarDatosOposicion();
-  });
+  // A diferencia de antes, se espera aquí a saber qué oposiciones ha
+  // activado realmente este usuario ANTES de pintar nada del panel: ya no
+  // se puede asumir que las 3 públicas estén siempre disponibles (cada una
+  // hay que activarla, ver /activar-oposicion), así que un pintado
+  // optimista con las 3 mostraría contenido que no es del usuario. El
+  // body sigue oculto hasta marcarContenidoListo() (ver auth-guard.js), así
+  // que esta espera extra no se nota como un parpadeo.
+  const lista = await obtenerOposicionesVisiblesDelUsuario(usuario);
+  // null (fallo de red): se sigue con el catálogo público completo como
+  // mejor opción disponible -- mejor eso que dejar la página en blanco.
+  oposicionesDisponibles = lista === null ? OPOSICIONES : lista;
+
   document.getElementById("zona-reabrir-onboarding").addEventListener("click", () => {
     localStorage.removeItem(CLAVE_ONBOARDING_CERRADO);
     renderOnboarding();
   });
 
-  // La página se revela en cuanto se confirma la sesión (lo único que
-  // de verdad hace falta para no dejar pasar a quien no tiene cuenta) --
-  // no se espera aquí a cargarDatosOposicion() (que a su vez espera a
-  // obtenerPlan(true), un fetch a /mi-perfil forzado a ignorar la caché
-  // de sessionStorage), que antes retrasaba la revelación de TODA la
-  // página por un solo dato (nombre + pill de plan) que ya tiene un valor
-  // por defecto razonable en el propio HTML ("Cargando…" / "gratis"). El
-  // resto de la página (racha, progreso, avisos...) ya se cargaba así,
-  // sin bloquear -- esto solo alinea el nombre/plan con ese mismo criterio.
+  if (oposicionesDisponibles.length === 0) {
+    // Cuenta nueva: todavía no ha elegido ninguna oposición. Se oculta el
+    // panel normal (no hay nada suyo que mostrar) y se ofrece elegir la
+    // primera -- activarla arranca su prueba de 7 días y recarga la
+    // página, que a partir de ahí ya entra por la rama de abajo.
+    document.querySelector(".zona-wrap").style.display = "none";
+    document.getElementById("zona-oposicion-actual").style.display = "none";
+    document.getElementById("zona-oposicion-switcher").style.display = "none";
+    renderElegirOposicion(OPOSICIONES);
+    document.getElementById("zona-elige-oposicion").style.display = "block";
+    marcarContenidoListo();
+    return;
+  }
+
+  // La oposición guardada en localStorage puede no estar entre las que el
+  // usuario tiene activadas de verdad (primera visita en este navegador,
+  // o activó/perdió el acceso a la que tuviera guardada) -- se corrige a
+  // la primera disponible para no dejar "Estás preparando —" en blanco.
+  if (!oposicionesDisponibles.some((o) => o.id === obtenerOposicionActual())) {
+    establecerOposicionActual(oposicionesDisponibles[0].id);
+  }
+
+  cargarRacha(usuario.uid);
+  iniciarBotonNotificaciones();
+  renderAviso();
+  renderSwitcher();
+  renderBotonAnadirOposicion();
+  cargarDatosOposicion();
+
   marcarContenidoListo();
 }
 

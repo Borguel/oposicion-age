@@ -6,6 +6,8 @@ import json
 from contextlib import contextmanager
 from unittest.mock import patch
 
+from conftest import sembrar_usuario_activo
+
 
 @contextmanager
 def _como(admin=True, uid="admin1", email="admin@example.com", permisos=None):
@@ -419,6 +421,7 @@ def test_temario_editar_y_borrar_chunk(client, db):
 
 def test_temario_publicar_borrador_oculta_de_navegacion(client, db):
     _sembrar_tema(db)
+    sembrar_usuario_activo(db, "u1")
     with _como():
         client.patch("/admin/api/temario/AGE/bloque_01/publicado",
                      json={"publicado": False}, headers=_AUTH)
@@ -485,14 +488,18 @@ def test_usuarios_resetear_racha(client, db):
 
 
 def test_usuarios_otorgar_prueba_fija_prueba_fin(client, db):
+    # Sin oposicion en el body, se aplica a AGE (OPOSICION_POR_DEFECTO) --
+    # cada oposición tiene su propia prueba, ver planes.prueba_activa.
     db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
     with _como():
         resp = client.patch("/admin/api/usuarios/u1/prueba", json={"dias": 14}, headers=_AUTH)
     assert resp.status_code == 200
     datos = db.leer(("usuarios", "u1"))
-    assert datos["prueba_fin"] == resp.get_json()["prueba_fin"]
+    sub = datos["suscripciones"]["AGE"]
+    assert sub["prueba_fin"] == resp.get_json()["prueba_fin"]
+    assert sub["plan"] == "gratis"
     from datetime import datetime
-    dias_restantes = (datetime.fromisoformat(datos["prueba_fin"]) - datetime.utcnow()).days
+    dias_restantes = (datetime.fromisoformat(sub["prueba_fin"]) - datetime.utcnow()).days
     assert 12 <= dias_restantes <= 14
 
 
@@ -512,7 +519,10 @@ def test_usuarios_otorgar_prueba_dias_invalidos(client, db):
 def test_usuarios_detalle_incluye_en_prueba(client, db):
     from datetime import datetime, timedelta
     prueba_fin = (datetime.utcnow() + timedelta(days=3)).isoformat()
-    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "prueba_fin": prueba_fin})
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com",
+        "suscripciones": {"AGE": {"plan": "gratis", "prueba_fin": prueba_fin}},
+    })
     with _como():
         d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
     assert d["en_prueba"] is True
@@ -983,6 +993,7 @@ def test_auditoria_paginada(client, db):
 # ---------- Reportes ----------
 def test_usuario_reporta_y_admin_lo_revisa(client, db):
     # Un usuario normal reporta.
+    sembrar_usuario_activo(db, "u1")
     with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com", "email_verified": True}):
         r = client.post("/reportar-pregunta",
                         json={"pregunta_texto": "¿Pregunta con error?", "motivo": "La B también es correcta", "oposicion": "AGE"},

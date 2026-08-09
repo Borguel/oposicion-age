@@ -87,38 +87,53 @@ export function mostrarPantallaBloqueo(planMinimo, perfil) {
   if (document.querySelector(".age-bloqueo-overlay")) return;
   const nombrePlan = NOMBRE_PLAN[planMinimo] || planMinimo;
   const sinNingunPlan = perfil.plan === "gratis";
-  // "gratis" con prueba_fin todavía sin fijar (null, no una fecha ya
-  // pasada) es un registro por email+contraseña que aún no ha confirmado
-  // su correo -- la prueba de 7 días arranca en cuanto lo confirme (ver
-  // auth_utils.requiere_login), así que el mensaje debe ser "confirma tu
-  // correo", no "tu prueba ha terminado" (sonaría a que la perdió).
-  const pruebaPendienteDeVerificar = sinNingunPlan && !perfil.prueba_fin;
+  // "gratis" sin haber activado nunca ESTA oposición concreta (ver
+  // perfil.oposicion_activada, registro_progreso_usuario.py) es el caso
+  // normal de quien llega aquí directamente (enlace, favorito) sin haber
+  // pasado antes por Zona opositor a elegirla -- se le ofrece activarla
+  // (arranca su prueba de 7 días) en vez de mandarlo sin más a "Ver
+  // planes", ya que ni siquiera ha llegado a probarla todavía.
+  const noActivada = sinNingunPlan && !perfil.oposicion_activada;
   // Alguien que YA paga por otra oposición (perfil.tiene_plan_de_pago) no
   // ha "perdido ninguna prueba" al mirar una oposición que sencillamente
-  // todavía no ha contratado -- decirle "tu prueba ha terminado" (pensado
+  // todavía no ha activado -- decirle "tu prueba ha terminado" (pensado
   // para quien nunca ha pagado nada) sonaría a que se le acabó algo que en
   // realidad nunca llegó a empezar aquí. Ver tiene_plan_de_pago_activo en
   // planes.py.
-  const yaEsClienteDeOtraOposicion = sinNingunPlan && !pruebaPendienteDeVerificar && perfil.tiene_plan_de_pago;
+  const yaEsClienteDeOtraOposicion = noActivada && perfil.tiene_plan_de_pago;
+  // Ya activada pero con prueba_fin todavía sin fijar (null, no una fecha
+  // ya pasada): un registro por email+contraseña que activó la oposición
+  // antes de confirmar su correo -- la prueba arranca en cuanto lo
+  // confirme (ver inicializar_estadisticas_usuario en
+  // registro_progreso_usuario.py), así que el mensaje debe ser "confirma
+  // tu correo", no "tu prueba ha terminado" (sonaría a que la perdió).
+  const pruebaPendienteDeVerificar = sinNingunPlan && perfil.oposicion_activada && !perfil.prueba_fin;
   const titulo = pruebaPendienteDeVerificar
     ? "Confirma tu correo para empezar tu prueba gratuita"
     : yaEsClienteDeOtraOposicion
       ? "Añade esta oposición a tu plan"
-      : sinNingunPlan
-        ? "Tu prueba gratuita ha terminado"
-        : `Esta herramienta requiere el plan ${nombrePlan}`;
+      : noActivada
+        ? "Empieza tu prueba gratuita de 7 días"
+        : sinNingunPlan
+          ? "Tu prueba gratuita ha terminado"
+          : `Esta herramienta requiere el plan ${nombrePlan}`;
   const cuerpo = pruebaPendienteDeVerificar
     ? "En cuanto confirmes tu correo electrónico se activarán tus 7 días de prueba con acceso Premium. Revisa tu bandeja de entrada (y la carpeta de spam), o pide que te lo reenviemos."
     : yaEsClienteDeOtraOposicion
       ? "Ya tienes un plan activo en Domina tu Opo, pero todavía no incluye esta oposición. Añádela desde Planes para acceder a esta herramienta aquí también."
-      : sinNingunPlan
-        ? "Elige un plan para seguir usando Domina tu Opo. Tu progreso y tus datos siguen a salvo, y podrás retomarlo en cuanto te suscribas."
-        : `Tu plan actual (${NOMBRE_PLAN[perfil.plan] || perfil.plan}) no incluye esta herramienta.`;
+      : noActivada
+        ? "Activa esta oposición para empezar tu prueba gratuita de 7 días con acceso Premium completo, sin tarjeta ni compromiso."
+        : sinNingunPlan
+          ? "Elige un plan para seguir usando Domina tu Opo. Tu progreso y tus datos siguen a salvo, y podrás retomarlo en cuanto te suscribas."
+          : `Tu plan actual (${NOMBRE_PLAN[perfil.plan] || perfil.plan}) no incluye esta herramienta.`;
   const botones = pruebaPendienteDeVerificar
     ? `<button type="button" class="age-btn age-btn-primary" id="age-bloqueo-reenviar">Reenviar correo de confirmación</button>
        <a class="age-btn age-btn-outline" href="/zona-opositor/">Volver a Zona Opositor</a>`
-    : `<a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>
-       <a class="age-btn age-btn-outline" href="/zona-opositor/">Volver a Zona Opositor</a>`;
+    : noActivada
+      ? `<button type="button" class="age-btn age-btn-primary" id="age-bloqueo-activar">Empezar prueba gratis</button>
+         <a class="age-btn age-btn-outline" href="/zona-opositor/">Volver a Zona Opositor</a>`
+      : `<a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>
+         <a class="age-btn age-btn-outline" href="/zona-opositor/">Volver a Zona Opositor</a>`;
 
   const overlay = document.createElement("div");
   overlay.className = "age-bloqueo-overlay";
@@ -150,6 +165,26 @@ export function mostrarPantallaBloqueo(planMinimo, perfil) {
         boton.textContent = "Correo enviado";
       } catch {
         boton.textContent = "Reenviar correo de confirmación";
+        boton.disabled = false;
+      }
+    });
+  }
+
+  if (noActivada) {
+    const boton = document.getElementById("age-bloqueo-activar");
+    boton.addEventListener("click", async () => {
+      boton.disabled = true;
+      boton.textContent = "Activando…";
+      try {
+        // Import perezoso, mismo motivo que enviarVerificacionEmail arriba:
+        // así una página que sustituya /assets/oposicion.js por un stub
+        // mínimo en pruebas (sin este export en concreto) no rompe el
+        // resto de plan.js.
+        const { activarOposicion } = await import("/assets/oposicion.js");
+        await activarOposicion(await idToken(), perfil.oposicion || obtenerOposicionActual());
+        window.location.reload();
+      } catch (e) {
+        boton.textContent = "Empezar prueba gratis";
         boton.disabled = false;
       }
     });

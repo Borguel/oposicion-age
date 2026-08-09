@@ -15,17 +15,36 @@ ESTADOS_SUSCRIPCION_ACTIVA = {"active", "trialing"}
 DURACION_PRUEBA_DIAS = 7
 
 
-def prueba_activa(datos_usuario):
-    """¿Sigue dentro de los 7 días de prueba gratuita? `datos_usuario` es el
-    dict completo del documento usuarios/{uid} (necesita el campo
-    prueba_fin, fijado una única vez al crear la cuenta)."""
-    fin = (datos_usuario or {}).get("prueba_fin")
+def prueba_activa(sub_oposicion):
+    """¿Sigue dentro de los 7 días de prueba gratuita DE UNA OPOSICIÓN
+    CONCRETA? `sub_oposicion` es la entrada suscripciones.<OP> de esa
+    oposición (o {}/None) -- cada oposición arranca su propia prueba al
+    activarse (ver registro_progreso_usuario.activar_oposicion_usuario), no
+    hay una única prueba compartida por toda la cuenta."""
+    fin = (sub_oposicion or {}).get("prueba_fin")
     if not fin:
         return False
     try:
         return datetime.utcnow() < datetime.fromisoformat(fin)
     except (TypeError, ValueError):
         return False
+
+
+def resumen_prueba_cuenta(datos_usuario):
+    """(en_prueba, prueba_fin) agregados a nivel de CUENTA, solo para vistas
+    globales que no pueden anclarse a una oposición concreta (panel admin:
+    lista y ficha de usuarios). "en_prueba" es True si CUALQUIER oposición
+    activada por el usuario sigue dentro de su ventana de prueba, y
+    prueba_fin es la fecha de fin más lejana entre esas -- no un campo real
+    guardado en Firestore, se calcula al vuelo a partir de suscripciones."""
+    fines_activos = [
+        sub.get("prueba_fin")
+        for sub in ((datos_usuario or {}).get("suscripciones", {}) or {}).values()
+        if prueba_activa(sub)
+    ]
+    if not fines_activos:
+        return False, None
+    return True, max(fines_activos)
 
 
 def mejor_plan(suscripciones):
@@ -55,32 +74,38 @@ def tiene_plan_de_pago_activo(datos_usuario):
 
 def resolver_plan_efectivo(datos_usuario, oposicion=None):
     """Plan real que debe aplicarse a un usuario: su mejor plan de pago
-    (global, o el de una oposición concreta si se pasa `oposicion`) o, si
-    ese plan es menor que premium y todavía está dentro de la prueba
-    gratuita de 7 días, "premium" con subscription_status "trialing" (para
-    que pase igual la comprobación de suscripción activa en auth_utils).
+    (el de una oposición concreta si se pasa `oposicion`, o el mejor entre
+    TODAS sus oposiciones activadas si no) o, si ese plan es menor que
+    premium y esa oposición todavía está dentro de sus propios 7 días de
+    prueba gratuita, "premium" con subscription_status "trialing" (para que
+    pase igual la comprobación de suscripción activa en auth_utils).
+
+    La prueba es POR OPOSICIÓN (ver prueba_activa): cada una arranca la
+    suya al activarse (registro_progreso_usuario.activar_oposicion_usuario),
+    así que ya no hace falta comprobar aparte si el usuario paga en otra
+    oposición distinta -- una oposición sin activar sencillamente no tiene
+    prueba_fin propio, y no se ve empujada por la de ninguna otra.
 
     No "degrada" nunca a quien ya pagó premium y sigue dentro de la
     ventana de prueba: la prueba solo sirve para SUBIR el plan efectivo,
-    nunca para bajarlo.
-
-    La prueba tampoco se aplica a quien YA es cliente de pago en otra
-    oposición (tiene_plan_de_pago_activo): esa prueba de 7 días es para
-    captar cuentas nuevas que todavía no han pagado nada, no un regalo
-    adicional cada vez que alguien que ya paga explora una oposición más --
-    para esa persona, no tener plan aquí debe verse como "actívalo cuando
-    quieras", nunca como "tu prueba ha terminado"."""
+    nunca para bajarlo."""
     suscripciones = (datos_usuario or {}).get("suscripciones", {}) or {}
+
+    def _con_prueba(plan, sub):
+        if ORDEN_PLANES.get(plan, 0) < ORDEN_PLANES["premium"] and prueba_activa(sub):
+            return "premium", {**sub, "subscription_status": "trialing"}
+        return plan, sub
+
     if oposicion:
         sub = suscripciones.get(oposicion, {}) or {}
-        plan = sub.get("plan", "gratis")
-    else:
-        plan, sub = mejor_plan(suscripciones)
+        return _con_prueba(sub.get("plan", "gratis"), sub)
 
-    if (
-        ORDEN_PLANES.get(plan, 0) < ORDEN_PLANES["premium"]
-        and prueba_activa(datos_usuario)
-        and not tiene_plan_de_pago_activo(datos_usuario)
-    ):
-        return "premium", {**sub, "subscription_status": "trialing"}
-    return plan, sub
+    # Sin oposición concreta (herramientas globales, p. ej. subir un PDF
+    # propio): el mejor plan efectivo entre todas las oposiciones activadas,
+    # resolviendo la prueba de cada una por separado antes de comparar.
+    mejor, mejor_sub = "gratis", {}
+    for sub in suscripciones.values():
+        plan, sub_resuelta = _con_prueba(sub.get("plan", "gratis"), sub)
+        if ORDEN_PLANES.get(plan, 0) > ORDEN_PLANES.get(mejor, 0):
+            mejor, mejor_sub = plan, sub_resuelta
+    return mejor, mejor_sub

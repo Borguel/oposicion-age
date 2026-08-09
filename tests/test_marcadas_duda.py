@@ -15,6 +15,7 @@ def _con_sesion(cliente, uid="u1", email="u1@example.com"):
 
 
 def test_autosave_guarda_marcadas_duda(client, db):
+    sembrar_usuario_activo(db, "u1")
     parche = _con_sesion(client)
     try:
         resp = client.post("/autosave-test", json={
@@ -36,6 +37,7 @@ def test_autosave_guarda_marcadas_duda(client, db):
 
 
 def test_autosave_sin_marcadas_duda_por_defecto_vacio(client, db):
+    sembrar_usuario_activo(db, "u1")
     parche = _con_sesion(client)
     try:
         resp = client.post("/autosave-test", json={

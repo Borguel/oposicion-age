@@ -97,6 +97,47 @@ body {
   color: #1b1f2e;
 }
 
+.zona-oposicion-anadir {
+  margin-bottom: 14px;
+  font-size: 0.85rem;
+  padding: 7px 14px;
+}
+
+.zona-elige-oposicion-wrap {
+  margin-top: -40px;
+  margin-bottom: 24px;
+}
+
+.zona-elige-oposicion-card h2 {
+  margin: 0 0 8px;
+}
+
+.zona-elige-oposicion-card p {
+  color: var(--age-ink-soft);
+  margin: 0 0 20px;
+}
+
+.zona-elige-oposicion-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.zona-elige-oposicion-item strong {
+  font-size: 1.05rem;
+}
+
+.zona-elige-oposicion-cancelar {
+  background: none;
+  border: none;
+  color: var(--age-ink-soft);
+  font-size: 0.85rem;
+  margin-top: 16px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 .zona-hero-link {
   color: #fff;
   font-size: 0.88rem;

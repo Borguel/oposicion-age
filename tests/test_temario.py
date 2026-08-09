@@ -82,6 +82,81 @@ def test_oposiciones_disponibles_incluye_ocultas_si_usuario_tiene_suscripcion(cl
     assert por_id["METRO"]["simulacro_oficial"] is None
 
 
+def test_oposiciones_disponibles_con_sesion_pero_sin_activar_ninguna_muestra_las_publicas(client, db):
+    # Cuenta recién creada (sin ninguna entrada en suscripciones todavía):
+    # se le sigue mostrando el catálogo público completo, para que pueda
+    # elegir la primera (ver /activar-oposicion) -- no se queda sin ver
+    # nada por no haber activado todavía.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "suscripciones": {}})
+    parche = _con_sesion(client)
+    try:
+        resp = client.get("/oposiciones-disponibles", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+    ids = {o["id"] for o in resp.get_json()["oposiciones"]}
+    assert ids == {"AGE", "GACE", "AUXILIAR"}
+
+
+def test_oposiciones_disponibles_solo_muestra_las_activadas_por_el_usuario(client, db):
+    # En cuanto ha activado AL MENOS una oposición pública, deja de verse
+    # el catálogo completo: solo las que ha elegido de verdad, no las 3 a
+    # la vez por defecto -- esto es justo lo que evita que una cuenta
+    # nueva pueda usar las 3 pruebas gratuitas a la vez.
+    sembrar_usuario_activo(db, "u1", plan="gratis", oposicion="AGE")
+    parche = _con_sesion(client)
+    try:
+        resp = client.get("/oposiciones-disponibles", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+    ids = {o["id"] for o in resp.get_json()["oposiciones"]}
+    assert ids == {"AGE"}
+
+
+def test_activar_oposicion_requiere_login(client):
+    resp = client.post("/activar-oposicion", json={"oposicion": "AGE"})
+    assert resp.status_code == 401
+
+
+def test_activar_oposicion_rechaza_oposicion_no_valida(client):
+    parche = _con_sesion(client)
+    try:
+        resp = client.post("/activar-oposicion", json={"oposicion": "NO_EXISTE"}, headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+    assert resp.status_code == 400
+
+
+def test_activar_oposicion_crea_la_suscripcion_con_prueba(client, db):
+    parche = _con_sesion(client)
+    try:
+        resp = client.post("/activar-oposicion", json={"oposicion": "GACE"}, headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+    assert resp.status_code == 200
+    sub = db.leer(("usuarios", "u1"))["suscripciones"]["GACE"]
+    assert sub["plan"] == "gratis"
+    assert sub["prueba_fin"] is not None
+    # Y a partir de ahora, la propia oposición activada aparece en el listado.
+    parche = _con_sesion(client)
+    try:
+        ids = {o["id"] for o in client.get("/oposiciones-disponibles", headers={"Authorization": "Bearer x"}).get_json()["oposiciones"]}
+    finally:
+        parche.stop()
+    assert ids == {"GACE"}
+
+
+def test_activar_oposicion_es_idempotente_via_ruta(client, db):
+    parche = _con_sesion(client)
+    try:
+        client.post("/activar-oposicion", json={"oposicion": "AGE"}, headers={"Authorization": "Bearer x"})
+        fin_original = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]["prueba_fin"]
+        resp = client.post("/activar-oposicion", json={"oposicion": "AGE"}, headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+    assert resp.status_code == 200
+    assert db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]["prueba_fin"] == fin_original
+
+
 def test_temas_disponibles_requiere_login(client):
     resp = client.get("/temas-disponibles")
     assert resp.status_code == 401
@@ -90,6 +165,7 @@ def test_temas_disponibles_requiere_login(client):
 def test_temas_disponibles_devuelve_bloque_y_tema(client, db):
     db.collection("Temario AGE").document("bloque_01").set({"titulo": "Derecho constitucional"})
     db.collection("Temario AGE").document("bloque_01").collection("temas").document("tema_01").set({"titulo": "La Constitución"})
+    sembrar_usuario_activo(db, "u1")
 
     parche = _con_sesion(client)
     try:
@@ -113,6 +189,7 @@ def test_temas_disponibles_usa_la_coleccion_de_la_oposicion_pedida(client, db):
     db.collection("Temario GACE").document("bloque_01").collection("temas").document("tema_01").set({"titulo": "Tema GACE"})
     # AGE queda vacío a propósito -- si la ruta ignorase ?oposicion=GACE y
     # mirase siempre "Temario AGE", esto devolvería una lista vacía.
+    sembrar_usuario_activo(db, "u1", oposicion="GACE")
 
     parche = _con_sesion(client)
     try:
@@ -193,10 +270,12 @@ def test_progreso_usuario_404_si_no_existe(client, db):
     finally:
         parche.stop()
     # requiere_login ya crea al usuario en su primera petición autenticada,
-    # así que en la práctica nunca da 404 -- pero si algún día esa garantía
-    # cambiase, la ruta debe seguir respondiendo con un 404 explícito y no
-    # con un error 500 al leer campos de un documento inexistente.
-    assert resp.status_code in (200, 404)
+    # pero eso ya no basta para pasar requiere_plan: una cuenta recién
+    # creada no tiene ninguna oposición activada todavía (ver
+    # activar_oposicion_usuario), así que lo normal es un 403 -- lo que
+    # importa aquí es que nunca sea un 500 al leer campos de un documento a
+    # medio crear.
+    assert resp.status_code in (200, 403, 404)
 
 
 def test_progreso_usuario_devuelve_los_campos_esperados(client, db):

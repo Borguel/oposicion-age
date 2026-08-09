@@ -107,6 +107,11 @@ def requiere_login(db):
             g.uid = uid
             g.email = email
             g.es_admin = es_admin
+            # Expuesto para rutas que necesiten el mismo criterio antiabuso
+            # que ya usa inicializar_estadisticas_usuario (p. ej.
+            # /activar-oposicion en blueprints/temario.py), sin tener que
+            # volver a decodificar el token.
+            g.email_verificado = email_verificado
             return f(*args, **kwargs)
         return envoltura
     return decorador

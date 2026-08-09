@@ -39,9 +39,24 @@ body {
   flex-wrap: wrap;
 }
 
-.selector-oposicion-planes label {
+.selector-oposicion-planes span {
   font-weight: 600;
   font-size: 14px;
+}
+
+.selector-oposicion-planes strong {
+  font-size: 14px;
+}
+
+.selector-oposicion-cambiar {
+  background: none;
+  border: none;
+  color: var(--age-primary-dark, var(--age-primary));
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
 }
 
 .selector-oposicion-planes select {

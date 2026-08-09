@@ -49,17 +49,32 @@
       <h1>Esta es tu zona de estudio</h1>
       <p class="zona-hero-frase">Todo lo que necesitas para preparar tu oposición, en un solo sitio.</p>
 
-      <div class="zona-oposicion-actual">
+      <div class="zona-oposicion-actual" id="zona-oposicion-actual">
         <span class="zona-oposicion-label">Estás preparando</span>
         <div class="zona-oposicion-nombre" id="zona-oposicion-nombre">Cargando…</div>
         <span class="age-pill" id="zona-plan-pill">gratis</span>
       </div>
 
       <div class="zona-oposicion-switcher" id="zona-oposicion-switcher"></div>
+      <button type="button" class="age-btn age-btn-outline zona-oposicion-anadir" id="zona-oposicion-anadir" style="display:none;">+ Añadir otra oposición</button>
 
       <a href="/mi-cuenta/" class="zona-hero-link">Gestionar oposiciones y facturación →</a>
     </div>
   </div>
+
+  <!-- Selector de primera oposición (cuenta nueva, sin ninguna activada
+       todavía) o de una oposición adicional (botón "+ Añadir otra
+       oposición" de arriba) -- ver zona-opositor/script.js:iniciar() y
+       renderElegirOposicion(). Activar una oposición aquí arranca su
+       prueba gratuita de 7 días, ver POST /activar-oposicion. -->
+  <section class="age-container zona-elige-oposicion-wrap" id="zona-elige-oposicion" style="display:none;">
+    <div class="age-card zona-elige-oposicion-card">
+      <h2 id="zona-elige-oposicion-titulo">¿Qué oposición quieres estudiar?</h2>
+      <p id="zona-elige-oposicion-subtitulo">Elige una para empezar tu prueba gratuita de 7 días con acceso Premium completo. Más adelante podrás añadir otra oposición cuando quieras, desde este mismo sitio.</p>
+      <div class="age-option-grid" id="zona-elige-oposicion-grid"></div>
+      <button type="button" class="zona-elige-oposicion-cancelar" id="zona-elige-oposicion-cancelar" style="display:none;">Cancelar</button>
+    </div>
+  </section>
 
   <div class="age-container zona-wrap">
     <!-- Cuadrícula principal de herramientas: antes iba al final de la
