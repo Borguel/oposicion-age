@@ -145,6 +145,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
                     "opciones": p.get("opciones"),
                     "explicacion": p.get("explicacion", "Sin explicación."),
                     "tema_id": p.get("tema_id"),
+                    "imagen": p.get("imagen", ""),
                     "acierto": (respuestas[i] if i < len(respuestas) else None) == p.get("respuesta_correcta"),
                     "marcada_duda": bool(marcadas_duda[i]) if marcadas_duda and i < len(marcadas_duda) else False,
                 } for i, p in enumerate(contenido)
