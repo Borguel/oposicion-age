@@ -367,6 +367,22 @@ def _dividir_en_unidades(texto):
     return unidades if unidades else [texto]
 
 
+def _es_fragmento_huerfano(linea):
+    """Una línea corta y sin puntuación de cierre de frase -- probablemente
+    un título o subtítulo (p. ej. "Consejo de Administración") en vez de
+    una frase completa. Dejarla como ÚLTIMA línea de un subbloque
+    separaría el encabezado del párrafo que lo desarrolla -- ese párrafo
+    quedaría solo al principio del subbloque siguiente, sin decir de qué
+    está hablando ("Corresponde a este órgano de gobierno..." sin que se
+    sepa que ese "órgano" es el Consejo de Administración)."""
+    linea = linea.strip()
+    if not linea:
+        return False
+    if linea[-1] in ".:;,?!”\"":
+        return False
+    return len(linea.split()) <= 8
+
+
 def _trocear_por_parrafos_o_lineas(texto, max_tokens):
     """Agrupa unidades (párrafos, o líneas si el texto no tiene párrafos
     separados por línea en blanco -- ver _limpiar_pagina, que ya descarta
@@ -406,7 +422,8 @@ def _trocear_por_parrafos_o_lineas(texto, max_tokens):
                 # cortarla a mitad de palabra.
                 subbloques.append(unidad)
             continue
-        if int((palabras_actual + palabras_unidad) * 1.3) > max_tokens and actual:
+        if (int((palabras_actual + palabras_unidad) * 1.3) > max_tokens and actual
+                and not _es_fragmento_huerfano(actual[-1])):
             subbloques.append("\n\n".join(actual))
             actual, palabras_actual = [], 0
         actual.append(unidad)
