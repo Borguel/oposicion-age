@@ -209,7 +209,7 @@ class TestResumirPdfYGenerarTestDesdePdf:
         # resultado llega en el evento "fin" del cuerpo, no como JSON directo.
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -237,7 +237,7 @@ class TestResumirPdfYGenerarTestDesdePdf:
 
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", side_effect=fake_generar), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", side_effect=fake_generar), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                             headers={"Authorization": "Bearer x"})
@@ -257,7 +257,7 @@ class TestResumirPdfYGenerarTestDesdePdf:
         # desde-pdf, para poder redirigir a "Mis documentos" sin esperar.
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -276,7 +276,7 @@ class TestResumirPdfYGenerarTestDesdePdf:
         # guardar. Aquí no se llama a /guardar-resumen-pdf en ningún momento.
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -303,7 +303,7 @@ class TestResumirPdfYGenerarTestDesdePdf:
         )
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value=resumen_parcial), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value=resumen_parcial), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -338,7 +338,7 @@ class TestResumirPdfYGenerarTestDesdePdf:
 
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", side_effect=fake_generar), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", side_effect=fake_generar), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -362,7 +362,7 @@ class TestResumirPdfYGenerarTestDesdePdf:
         # hubiera pedido nada nuevo.
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value=None), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value=None), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -381,7 +381,7 @@ class TestResumirPdfYGenerarTestDesdePdf:
         })
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -506,7 +506,7 @@ class TestGenerarEsquemaDesdePdf:
         # En streaming (SSE): el resultado llega en el evento "fin".
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -521,7 +521,7 @@ class TestGenerarEsquemaDesdePdf:
     def test_generar_esquema_desde_pdf_manda_evento_inicio_con_documento_id(self, client, documento_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -535,7 +535,7 @@ class TestGenerarEsquemaDesdePdf:
     def test_generar_esquema_desde_pdf_guarda_en_firestore_sin_que_el_cliente_llame_a_guardar_esquema_pdf(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -560,7 +560,7 @@ class TestGenerarEsquemaDesdePdf:
 
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", side_effect=fake_generar), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", side_effect=fake_generar), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -576,7 +576,7 @@ class TestGenerarEsquemaDesdePdf:
     def test_generar_esquema_desde_pdf_fallido_marca_error_visible_en_el_documento(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value=None), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value=None), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -595,7 +595,7 @@ class TestGenerarEsquemaDesdePdf:
         })
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -622,7 +622,7 @@ class TestGenerarEsquemaDesdePdf:
         # contador neto queda en 0 (no ausente).
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value=None), \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value=None), \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -669,7 +669,7 @@ class TestGenerarDocumentoValidadoIntegracion:
     def test_resumir_pdf_reintenta_si_la_primera_respuesta_no_es_valida(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes",
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes",
                        side_effect=["El resumen ya está completo, no hay más que añadir.", "# Resumen real"]) as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
@@ -693,7 +693,7 @@ class TestGenerarDocumentoValidadoIntegracion:
     def test_resumir_pdf_sin_encabezado_ni_al_reintentar_da_error_y_devuelve_uso(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes",
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes",
                        side_effect=["Metacomentario sin formato.", "Otro metacomentario distinto."]) as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
@@ -710,7 +710,7 @@ class TestGenerarDocumentoValidadoIntegracion:
     def test_generar_esquema_desde_pdf_reintenta_si_la_primera_respuesta_no_es_valida(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes",
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes",
                        side_effect=["El esquema ya está completo, no falta nada.", "# Esquema real"]) as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
@@ -766,7 +766,7 @@ class TestTipoContenidoEnResumenYEsquema:
     def test_resumir_pdf_documento_general_no_activa_el_modo_legal(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -781,7 +781,7 @@ class TestTipoContenidoEnResumenYEsquema:
     def test_resumir_pdf_documento_legal_activa_el_mapa_de_articulos(self, client, db, documento_legal_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={"documento_id": documento_legal_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -801,7 +801,7 @@ class TestTipoContenidoEnResumenYEsquema:
         # mismo max_tokens) para no quedarse corto en un fragmento denso.
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 client.post("/resumir-pdf", data={"documento_id": documento_legal_sembrado},
                             headers={"Authorization": "Bearer x"})
@@ -820,7 +820,7 @@ class TestTipoContenidoEnResumenYEsquema:
         # no se pasa ningún tamano_chunk propio.
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 client.post("/resumir-pdf", data={"documento_id": documento_legal_sembrado},
                             headers={"Authorization": "Bearer x"})
@@ -831,7 +831,7 @@ class TestTipoContenidoEnResumenYEsquema:
     def test_resumir_pdf_documento_general_usa_max_tokens_normal(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                             headers={"Authorization": "Bearer x"})
@@ -846,7 +846,7 @@ class TestTipoContenidoEnResumenYEsquema:
         # mapa de artículos y quedar guardado para la próxima vez.
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={
                     "documento_id": documento_sembrado, "es_texto_legal": "true",
@@ -861,7 +861,7 @@ class TestTipoContenidoEnResumenYEsquema:
     def test_resumir_pdf_override_manual_fuerza_general_y_lo_persiste(self, client, db, documento_legal_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/resumir-pdf", data={
                     "documento_id": documento_legal_sembrado, "es_texto_legal": "false",
@@ -876,7 +876,7 @@ class TestTipoContenidoEnResumenYEsquema:
     def test_generar_esquema_desde_pdf_documento_legal_refuerza_la_fusion(self, client, db, documento_legal_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_legal_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -894,7 +894,7 @@ class TestTipoContenidoEnResumenYEsquema:
     def test_generar_esquema_desde_pdf_documento_legal_usa_mas_max_tokens(self, client, db, documento_legal_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_legal_sembrado},
                             headers={"Authorization": "Bearer x"})
@@ -907,7 +907,7 @@ class TestTipoContenidoEnResumenYEsquema:
         # comentario largo ahí.
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_legal_sembrado},
                             headers={"Authorization": "Bearer x"})
@@ -925,7 +925,7 @@ class TestTipoContenidoEnResumenYEsquema:
         # usa /resumir-pdf.
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
                             headers={"Authorization": "Bearer x"})
@@ -939,7 +939,7 @@ class TestTipoContenidoEnResumenYEsquema:
     def test_resumir_pdf_usa_los_umbrales_de_colapso_generales_no_los_del_esquema(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
                             headers={"Authorization": "Bearer x"})
@@ -951,7 +951,7 @@ class TestTipoContenidoEnResumenYEsquema:
     def test_generar_esquema_desde_pdf_documento_general_no_refuerza_la_fusion(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
                  patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
                 resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})

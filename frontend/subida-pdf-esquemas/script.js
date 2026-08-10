@@ -126,6 +126,18 @@ async function obtenerAuthHeaders() {
           bloques.push({ tipo: "bullet", texto: matchBullet[1].trim(), nivel });
           continue;
         }
+        // Título en negrita sin "#" (10/08/2026, bug real: un título como
+        // "**PAPEL DEL PARLAMENTO EUROPEO**" -- deriva habitual de formato
+        // en LLMs pese a que el prompt pide "#" -- caía como párrafo normal
+        // y se veía como texto plano sin el estilo de encabezado). Una
+        // línea entera envuelta en "**...**" (sin más "**" dentro, para no
+        // confundirla con un párrafo que solo tiene un par de términos en
+        // negrita) se trata como título de sección, igual que un "# ".
+        const matchNegritaComoTitulo = linea.match(/^\*\*([^*]+)\*\*[:.]?$/);
+        if (matchNegritaComoTitulo) {
+          bloques.push({ tipo: "h2", texto: matchNegritaComoTitulo[1].trim() });
+          continue;
+        }
         // Cualquier línea que no encaje en un marcador conocido se trata
         // como párrafo normal -- así nunca se pierde texto aunque la IA no
         // siga el formato al pie de la letra.
