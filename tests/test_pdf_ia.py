@@ -835,6 +835,39 @@ class TestTipoContenidoEnResumenYEsquema:
             parche.stop()
         assert mock_gen.call_args.kwargs["tamano_chunk"] == 8000
 
+    def test_generar_esquema_desde_pdf_usa_umbrales_de_colapso_mas_bajos_que_el_resumen(self, client, db, documento_sembrado):
+        # Bug real (10/08/2026): un esquema (árbol de epígrafes en viñetas,
+        # sin prosa) es, por diseño, mucho más compacto que su fuente
+        # incluso completo y bien hecho -- con los umbrales generales
+        # (pensados para prosa) un esquema correcto se marcaba como
+        # "colapsado" y se abandonaba. /generar-esquema-desde-pdf debe pasar
+        # los umbrales propios y más bajos del esquema, no los generales que
+        # usa /resumir-pdf.
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                            headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert mock_gen.call_args.kwargs["fraccion_minima_map"] == deepseek_utils.FRACCION_MINIMA_MAP_ESQUEMA
+        assert mock_gen.call_args.kwargs["fraccion_minima_fusion"] == deepseek_utils.FRACCION_MINIMA_FUSION_ESQUEMA
+        assert mock_gen.call_args.kwargs["fraccion_minima_map"] < deepseek_utils._FRACCION_MINIMA_MAP
+        assert mock_gen.call_args.kwargs["fraccion_minima_fusion"] < deepseek_utils._FRACCION_MINIMA_FUSION
+
+    def test_resumir_pdf_usa_los_umbrales_de_colapso_generales_no_los_del_esquema(self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                            headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert "fraccion_minima_map" not in mock_gen.call_args.kwargs
+        assert "fraccion_minima_fusion" not in mock_gen.call_args.kwargs
+
     def test_generar_esquema_desde_pdf_documento_general_no_refuerza_la_fusion(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:

@@ -939,6 +939,51 @@ class TestGenerarDocumentoLargoPorPartes:
         # fusión, así que no hay una 4ª llamada.
         assert mock_gen.call_count == 3
 
+    def test_fraccion_minima_personalizada_acepta_un_resultado_compacto_pero_completo(self):
+        # Bug real (10/08/2026): un esquema (árbol de epígrafes en viñetas,
+        # sin prosa) es, por diseño, mucho más compacto que su fuente
+        # incluso estando completo y bien hecho -- con los umbrales por
+        # defecto (calibrados para un resumen narrativo) un esquema así se
+        # marcaba como "colapsado" y acababa abandonándose. Con un umbral
+        # más bajo pasado explícitamente (el mismo que usa la ruta real de
+        # /generar-esquema-desde-pdf), el mismo resultado compacto se acepta
+        # sin reintentar.
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        # Cada parcial cubre ~9% de su fragmento de entrada (10.000
+        # caracteres) -- por debajo de _FRACCION_MINIMA_MAP (0.15) pero por
+        # encima de FRACCION_MINIMA_MAP_ESQUEMA (0.08).
+        parcial_compacto_1 = "# Uno\n" + ("- **Art. 1.** contenido breve.\n" * 30)
+        parcial_compacto_2 = "# Dos\n" + ("- **Art. 2.** contenido breve.\n" * 30)
+        fusion_compacta = "# Fusión\n" + ("- **Art. 1.** contenido breve.\n" * 55)
+        respuestas = [parcial_compacto_1, parcial_compacto_2, fusion_compacta]
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes(
+                "system", texto_largo,
+                fraccion_minima_map=deepseek_utils.FRACCION_MINIMA_MAP_ESQUEMA,
+                fraccion_minima_fusion=deepseek_utils.FRACCION_MINIMA_FUSION_ESQUEMA,
+            )
+        assert resultado == fusion_compacta
+        # Sin reintentos: ni el MAP ni la fusión se consideraron sospechosos.
+        assert mock_gen.call_count == 3
+
+    def test_fraccion_minima_por_defecto_rechaza_ese_mismo_resultado_compacto(self):
+        # Contraprueba de la anterior: el MISMO par de parciales, con los
+        # umbrales GENERALES (los que usa /resumir-pdf), sí se considera
+        # sospechoso -- confirma que el umbral más bajo del esquema es lo
+        # que marca la diferencia, no un cambio de comportamiento general.
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        parcial_compacto_1 = "# Uno\n" + ("- **Art. 1.** contenido breve.\n" * 30)
+        parcial_compacto_2 = "# Dos\n" + ("- **Art. 2.** contenido breve.\n" * 30)
+        # Reintentos del MAP: devuelven lo mismo (igual de compacto), así
+        # que siguen sospechosos y la función se rinde sin llegar a fundir.
+        respuestas = [parcial_compacto_1, parcial_compacto_2, parcial_compacto_1, parcial_compacto_2]
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+        assert resultado is None
+        assert mock_gen.call_count == 4
+
 
 class TestDetectarTextoLegal:
     # detectar_texto_legal (05/08/2026): heurística por regex, SIN llamar a

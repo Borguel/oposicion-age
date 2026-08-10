@@ -38,7 +38,9 @@ from test_generator import (
     generar_preguntas_ia_en_lotes, generar_banco_preguntas_adaptativo, TOPE_BANCO_PREGUNTAS,
 )
 from coste_ia import AcumuladorTokens
-from deepseek_utils import TAMANO_CHUNK_CARACTERES
+from deepseek_utils import (
+    TAMANO_CHUNK_CARACTERES, FRACCION_MINIMA_MAP_ESQUEMA, FRACCION_MINIMA_FUSION_ESQUEMA,
+)
 from tarjetas_generator import (
     generar_tarjetas_verificadas, generar_banco_tarjetas_adaptativo, TOPE_BANCO_TARJETAS,
 )
@@ -411,6 +413,16 @@ def generar_esquema_desde_pdf():
                     tamano_chunk=8000 if es_legal else TAMANO_CHUNK_CARACTERES,
                     on_usage=acumulador_tokens.add,
                     on_progreso=on_progreso,
+                    # Umbrales de colapso propios del esquema (10/08/2026,
+                    # bug real: fallaba mientras el resumen del mismo
+                    # documento no) -- ver el comentario largo junto a
+                    # FRACCION_MINIMA_MAP_ESQUEMA en deepseek_utils.py: un
+                    # árbol de epígrafes en viñetas es, por diseño, mucho
+                    # más compacto que su fuente incluso estando completo,
+                    # así que los umbrales generales (pensados para prosa)
+                    # lo marcaban como "colapsado" sin estarlo.
+                    fraccion_minima_map=FRACCION_MINIMA_MAP_ESQUEMA,
+                    fraccion_minima_fusion=FRACCION_MINIMA_FUSION_ESQUEMA,
                 )
                 if esquema:
                     resultado = {

@@ -679,6 +679,20 @@ _TIEMPO_MAXIMO_GENERACION_SEGUNDOS = 150
 # (es su función), no solo lo reorganiza como hace la fusión.
 _FRACCION_MINIMA_MAP = 0.15
 
+# Umbrales propios para el ESQUEMA (10/08/2026, bug real: un usuario reportó
+# que el esquema fallaba sistemáticamente mientras el resumen del MISMO
+# documento no). Un esquema es, por diseño de su propio prompt, un árbol de
+# epígrafes en viñetas cortas -- no prosa -- así que, incluso completo y
+# bien hecho, es mucho más compacto frente a su fuente que un resumen
+# narrativo o que un mapa de artículos. Con los umbrales generales (0.15 /
+# 0.4, calibrados pensando en prosa) un esquema correcto pero condensado se
+# marcaba como "colapsado", se reintentaba y acababa abandonándose sin
+# devolver nada. Más bajos que los generales pero no cero: siguen
+# detectando el colapso real (una sola frase o apartado en vez del árbol
+# completo, muy por debajo incluso de estos umbrales).
+FRACCION_MINIMA_MAP_ESQUEMA = 0.08
+FRACCION_MINIMA_FUSION_ESQUEMA = 0.2
+
 
 # Separadores que _trocear_en_parrafos prueba en cascada, del más "natural"
 # (mejor punto de corte) al más forzado.
@@ -746,7 +760,13 @@ def _trocear_recursivo(texto, tamano, separadores):
     return resultado
 
 
-def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096, instrucciones_fusion_extra=None, on_usage=None, on_progreso=None, tamano_chunk=TAMANO_CHUNK_CARACTERES):
+def generar_documento_largo_por_partes(
+    system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096,
+    instrucciones_fusion_extra=None, on_usage=None, on_progreso=None,
+    tamano_chunk=TAMANO_CHUNK_CARACTERES,
+    fraccion_minima_map=_FRACCION_MINIMA_MAP,
+    fraccion_minima_fusion=_FRACCION_MINIMA_FUSION,
+):
     """Para documentos largos, en vez de meter todo el texto de golpe en un
     único prompt (peor calidad: el modelo tiene que abarcar decenas de
     miles de palabras a la vez, y es más fácil que se pierda o mezcle
@@ -791,7 +811,20 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
     (visto en producción: fallaba una y otra vez con el mismo documento,
     incluso tras reintentar). Fragmentos más pequeños bajan de verdad la
     exigencia por llamada, en vez de solo darle más presupuesto de salida
-    para la misma tarea."""
+    para la misma tarea.
+
+    fraccion_minima_map / fraccion_minima_fusion (10/08/2026, bug real): los
+    umbrales de _FRACCION_MINIMA_MAP/_FRACCION_MINIMA_FUSION por defecto se
+    calibraron pensando en un resumen NARRATIVO, que se queda cerca del
+    tamaño del texto de origen. Un ESQUEMA (árbol de epígrafes en viñetas,
+    sin prosa) es, por diseño de su propio prompt, mucho más compacto que su
+    fuente incluso estando completo y bien hecho -- con el umbral por
+    defecto, un esquema correcto pero condensado se podía marcar como
+    "colapsado", reintentar y acabar abandonándose (visto en producción: el
+    esquema fallaba mientras el resumen del mismo documento no). Estos dos
+    parámetros permiten que cada llamante pase un umbral más bajo y
+    realista para su propio formato de salida, en vez de forzar el mismo
+    listón a todos los documentos por igual."""
     limite_tiempo = time.monotonic() + _TIEMPO_MAXIMO_GENERACION_SEGUNDOS
     fragmentos = _trocear_en_parrafos(texto, tamano=tamano_chunk)
     if len(fragmentos) == 1:
@@ -857,7 +890,7 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
         parcial = parciales_por_indice.get(indice)
         if not parcial:
             return True
-        return len(parcial) < len(fragmentos[indice]) * _FRACCION_MINIMA_MAP
+        return len(parcial) < len(fragmentos[indice]) * fraccion_minima_map
 
     # Reintento de fragmentos fallidos o sospechosos (10/08/2026, bug real
     # reportado por un usuario: un resumen de 14 páginas se guardó con un
@@ -957,7 +990,7 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
     # la suma de lo que se le pidió fusionar es una señal barata y fiable
     # de que se perdió contenido real, sin tener que comparar dato por
     # dato -- se reintenta una vez antes de rendirse.
-    if fusionado and len(fusionado) < len(bloque_parciales) * _FRACCION_MINIMA_FUSION:
+    if fusionado and len(fusionado) < len(bloque_parciales) * fraccion_minima_fusion:
         if time.monotonic() >= limite_tiempo:
             logger.warning(
                 "generar_documento_largo_por_partes: la fusión colapsó y se agotó el tiempo "
@@ -971,7 +1004,7 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
             len(parciales), len(fusionado), len(bloque_parciales),
         )
         fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens, on_usage=on_usage)
-        if fusionado and len(fusionado) < len(bloque_parciales) * _FRACCION_MINIMA_FUSION:
+        if fusionado and len(fusionado) < len(bloque_parciales) * fraccion_minima_fusion:
             logger.warning(
                 "generar_documento_largo_por_partes: la fusión sigue devolviendo muy poco "
                 "contenido tras reintentar -- se abandona en vez de devolver un documento incompleto."
