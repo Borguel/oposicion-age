@@ -30,7 +30,7 @@ from documentos_pdf import (
     listar_carpetas, crear_carpeta, eliminar_carpeta, actualizar_titulo, obtener_preguntas_previas,
     obtener_tests_en_progreso_por_documento, eliminar_documento,
     iniciar_banco, anadir_al_banco, finalizar_banco, obtener_banco,
-    resolver_tipo_contenido,
+    resolver_tipo_contenido, actualizar_progreso_generacion, limpiar_progreso_generacion,
 )
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import (
@@ -153,6 +153,17 @@ def resumir_pdf():
         def _en_hilo_de_fondo():
             def on_progreso(evento_progreso):
                 eventos.put({"tipo": "progreso", **evento_progreso})
+                # Progreso real persistido (10/08/2026, a petición del
+                # usuario: "no sé qué está pasando, pon una barra o un
+                # contador") -- el evento SSE de arriba no le sirve a nadie
+                # porque el frontend ya redirigió a "Mis documentos" y
+                # cortó la conexión; esto sí lo puede leer el sondeo de esa
+                # página (ver actualizar_progreso_generacion).
+                if documento_id:
+                    try:
+                        actualizar_progreso_generacion(db, uid, documento_id, "resumen", **evento_progreso)
+                    except Exception:
+                        logger.exception("No se pudo guardar el progreso de /resumir-pdf")
             try:
                 resumen = _generar_documento_validado(
                     system_prompt, text, etiqueta_documento="Documento para resumir",
@@ -204,6 +215,15 @@ def resumir_pdf():
             if not resultado.get("resumen"):
                 devolver_uso(db, uid, "pdf_ia", plan_actual)
             acumulador_tokens.volcar_directo(db, uid)
+            # Progreso limpiado SIEMPRE al terminar, con éxito o sin él
+            # (10/08/2026) -- si no, el último "3 de 7" guardado se
+            # quedaría pegado indefinidamente para la próxima vez que se
+            # mire este documento, aunque la generación ya hubiera acabado.
+            if documento_id:
+                try:
+                    limpiar_progreso_generacion(db, uid, documento_id, "resumen")
+                except Exception:
+                    logger.exception("No se pudo limpiar el progreso de /resumir-pdf")
             eventos.put({"tipo": "fin", **resultado})
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
@@ -345,6 +365,11 @@ def generar_esquema_desde_pdf():
         def _en_hilo_de_fondo():
             def on_progreso(evento_progreso):
                 eventos.put({"tipo": "progreso", **evento_progreso})
+                if documento_id:
+                    try:
+                        actualizar_progreso_generacion(db, uid, documento_id, "esquema", **evento_progreso)
+                    except Exception:
+                        logger.exception("No se pudo guardar el progreso de /generar-esquema-desde-pdf")
             try:
                 esquema = _generar_documento_validado(
                     system_prompt,
@@ -386,6 +411,11 @@ def generar_esquema_desde_pdf():
             if not resultado.get("esquema"):
                 devolver_uso(db, uid, "pdf_ia", plan_actual)
             acumulador_tokens.volcar_directo(db, uid)
+            if documento_id:
+                try:
+                    limpiar_progreso_generacion(db, uid, documento_id, "esquema")
+                except Exception:
+                    logger.exception("No se pudo limpiar el progreso de /generar-esquema-desde-pdf")
             eventos.put({"tipo": "fin", **resultado})
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)

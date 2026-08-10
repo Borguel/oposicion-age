@@ -345,6 +345,30 @@ def marcar_generado(db, uid, documento_id, tipo, num_tarjetas_nuevas=0):
     ref.update(actualizacion)
 
 
+# Progreso real de una generación de resumen/esquema en curso (10/08/2026,
+# a petición del usuario: quejarse de que "no sé qué está pasando, pon una
+# barra o un contador" mientras espera). resumir-pdf/generar-esquema-desde-
+# pdf redirigen a "Mis documentos" antes de terminar (ver el comentario
+# largo en blueprints/pdf_ia), así que el único sitio donde el usuario
+# puede seguir el progreso es sondeando GET /mis-documentos -- pero ese
+# progreso solo existe de verdad dentro del propio proceso de generación
+# (on_progreso de generar_documento_largo_por_partes), que corre en un
+# hilo de fondo sin conexión abierta con el cliente. Guardarlo aquí, en el
+# propio documento, es lo que permite que el sondeo lo lea.
+def actualizar_progreso_generacion(db, uid, documento_id, tipo, completadas, total, fase):
+    ref = db.collection("usuarios").document(uid).collection("documentos").document(documento_id)
+    ref.update({f"progreso_{tipo}": {"completadas": completadas, "total": total, "fase": fase}})
+
+
+def limpiar_progreso_generacion(db, uid, documento_id, tipo):
+    """Se llama SIEMPRE al terminar una generación (con éxito o sin él) --
+    sin esto, el último progreso guardado (p. ej. "3 de 7") se quedaría
+    pegado indefinidamente la próxima vez que alguien mire este documento,
+    aunque la generación ya hubiera terminado hace rato."""
+    ref = db.collection("usuarios").document(uid).collection("documentos").document(documento_id)
+    ref.update({f"progreso_{tipo}": None})
+
+
 def listar_documentos(db, uid):
     docs_ref = db.collection("usuarios").document(uid).collection("documentos")
     bancos_preguntas = _resumen_bancos(db, uid, "preguntas")
@@ -370,6 +394,10 @@ def listar_documentos(db, uid):
             "tipo_contenido": datos.get("tipo_contenido", "general"),
             "tiene_resumen": datos.get("tiene_resumen", False),
             "tiene_esquema": datos.get("tiene_esquema", False),
+            # progreso_resumen/progreso_esquema (10/08/2026): None si no hay
+            # ninguna generación en curso -- ver actualizar_progreso_generacion.
+            "progreso_resumen": datos.get("progreso_resumen"),
+            "progreso_esquema": datos.get("progreso_esquema"),
             "num_tarjetas": datos.get("num_tarjetas", 0),
             "num_tests": datos.get("num_tests", 0),
             "ultima_actividad": datos.get("ultima_actividad"),

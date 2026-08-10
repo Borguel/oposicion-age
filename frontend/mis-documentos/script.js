@@ -162,7 +162,7 @@ function mostrarToastDeshacer({ mensaje, alDeshacer, alConfirmar, duracionMs = 6
 
 function filaContenido({
   label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar, urlContinuar,
-  textoGenerarDeNuevo = "Generar más", generando = false,
+  textoGenerarDeNuevo = "Generar más", generando = false, progreso = null,
 }) {
   const acciones = [];
   // "Continuar" (test autoguardado sin terminar, ver
@@ -211,10 +211,21 @@ function filaContenido({
   // estuviera trabajando en ello -- solo "Aún no generado", indistinguible
   // de no haberlo pedido nunca. El estado lo arma destacarDocumentoDesdeUrl
   // a partir de ?generando=resumen|esquema y lo sondea sondearBancosEnGeneracion.
+  // Texto de progreso real (10/08/2026, a petición del usuario: "no sé qué
+  // está pasando, pon una barra o un contador") -- progreso viene de
+  // doc.progreso_resumen/progreso_esquema, que refleja de verdad en qué
+  // fragmento va la generación en el servidor (ver actualizar_progreso_
+  // generacion en documentos_pdf.py), no una estimación ni una barra
+  // decorativa.
+  const textoGenerando = progreso && progreso.total
+    ? progreso.fase === "fusionando"
+      ? "Generando… uniendo las partes"
+      : `Generando… (${progreso.completadas}/${progreso.total})`
+    : "Generando…";
   const estadoHtml = urlContinuar
     ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Test en progreso</span>`
     : generando
-      ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Generando…</span>`
+      ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} ${textoGenerando}</span>`
       : existe
         ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-generado">${icono("check", 12)} Generado</span>`
         : `<span class="documento-card-tipo-estado">Aún no generado</span>`;
@@ -479,7 +490,8 @@ function tarjetaDocumento(doc, modoCarpeta) {
       // sustituye el que ya había, no añade otro. "Generar más" daba a
       // entender que se acumulaba algo, cuando en realidad se sobrescribe.
       textoGenerarDeNuevo: "Regenerar",
-      generando: esperandoGeneracionDe(doc, "resumen")
+      generando: esperandoGeneracionDe(doc, "resumen"),
+      progreso: doc.progreso_resumen
     }),
     filaContenido({
       label: "Esquema", iconoHtml: icono("esquema", 18), existe: doc.tiene_esquema,
@@ -487,7 +499,8 @@ function tarjetaDocumento(doc, modoCarpeta) {
       urlGenerar: `/subida-pdf-esquemas/?documento_id=${doc.id}`,
       textoGenerar: "Generar",
       textoGenerarDeNuevo: "Regenerar",
-      generando: esperandoGeneracionDe(doc, "esquema")
+      generando: esperandoGeneracionDe(doc, "esquema"),
+      progreso: doc.progreso_esquema
     }),
     filaContenido({
       label: "Tarjetas", iconoHtml: icono("tarjeta", 18), existe: doc.num_tarjetas > 0, cantidad: doc.num_tarjetas,
@@ -1099,17 +1112,44 @@ let temporizadorSondeoBancos = null;
 // Resumen/esquema "sin esperar" (05/08/2026): igual que el banco, ahora
 // /resumir-pdf y /generar-esquema-desde-pdf redirigen aquí ANTES de que la
 // generación termine (ver mostrarRedireccionAMisDocumentos en subida-pdf-
-// resumen/subida-pdf-esquemas), guardándose sola en el servidor. A
-// diferencia del banco (que tiene su propio estado "generando" explícito),
-// tiene_resumen/tiene_esquema son solo un booleano sin estado intermedio,
-// así que aquí no hay forma de saber "sigue generando" mirando el propio
-// documento -- se usa en su lugar un contador de intentos, armado por
-// destacarDocumentoDesdeUrl() al llegar con ?generando=resumen|esquema, que
-// para en cuanto el campo esperado se pone a true o se agota el margen.
+// resumen/subida-pdf-esquemas), guardándose sola en el servidor.
+//
+// documentoEsperandoContenido/tipoContenidoEsperando/intentosSondeoContenido
+// (armados por destacarDocumentoDesdeUrl al llegar con
+// ?generando=resumen|esquema) cubren "acabo de llegar redirigido, sigo
+// atento un rato" -- pero un usuario real puede haber cerrado la pestaña
+// y vuelto más tarde, o refrescado la página, perdiendo ese estado aunque
+// el servidor SIGA generando de verdad. doc.progreso_resumen/
+// progreso_esquema (10/08/2026, ver actualizar_progreso_generacion en
+// documentos_pdf.py) es la fuente de verdad real -- lo pone el propio
+// servidor mientras trabaja y lo quita al terminar, así que decir
+// "generando" en base a esto es fiable pase lo que pase en el navegador.
 let documentoEsperandoContenido = null;
 let tipoContenidoEsperando = null; // "resumen" | "esquema"
 let intentosSondeoContenido = 0;
 const MAX_INTENTOS_SONDEO_CONTENIDO = 20; // ~80s a 4s cada uno, margen amplio
+
+// Tope de seguridad del lado del cliente (10/08/2026): el servidor limpia
+// progreso_resumen/progreso_esquema SIEMPRE al terminar, con éxito o sin
+// él -- pero un fallo catastrófico de verdad (el proceso muriendo a media
+// generación, no un error normal ya cubierto) podría dejarlo pegado en
+// Firestore para siempre, lo que enseñaría "Generando…" de forma
+// indefinida a cualquiera que mirara ese documento en el futuro. Pasado
+// este margen desde que se VIO por primera vez el progreso de un
+// documento+tipo concreto, se deja de confiar en él aunque Firestore siga
+// diciendo que sigue activo.
+const MAX_ESPERA_PROGRESO_SERVIDOR_MS = 5 * 60 * 1000; // 5 minutos
+const horaInicioProgresoPorClave = {};
+
+function progresoDelServidorSigueSiendoValido(doc, tipo) {
+  const clave = `${doc.id}:${tipo}`;
+  if (!doc[`progreso_${tipo}`]) {
+    delete horaInicioProgresoPorClave[clave];
+    return false;
+  }
+  if (!horaInicioProgresoPorClave[clave]) horaInicioProgresoPorClave[clave] = Date.now();
+  return Date.now() - horaInicioProgresoPorClave[clave] < MAX_ESPERA_PROGRESO_SERVIDOR_MS;
+}
 
 // Usado por tarjetaDocumento/filaContenido (10/08/2026) para pintar el
 // estado "Generando…" del tipo concreto que se está sondeando -- antes
@@ -1117,15 +1157,23 @@ const MAX_INTENTOS_SONDEO_CONTENIDO = 20; // ~80s a 4s cada uno, margen amplio
 // sin ningún reflejo visual mientras tanto, así que el usuario no tenía
 // forma de saber si había pasado algo al pulsar "Generar" y volver aquí.
 function esperandoGeneracionDe(doc, tipo) {
-  return intentosSondeoContenido > 0 && documentoEsperandoContenido === doc.id && tipoContenidoEsperando === tipo;
+  const porLlegadaReciente =
+    intentosSondeoContenido > 0 && documentoEsperandoContenido === doc.id && tipoContenidoEsperando === tipo;
+  return porLlegadaReciente || progresoDelServidorSigueSiendoValido(doc, tipo);
 }
 
 function hayBancosGenerando() {
   return documentos.some((d) => d.banco_preguntas_estado === "generando" || d.banco_tarjetas_estado === "generando");
 }
 
+function hayResumenesOEsquemasGenerando() {
+  return documentos.some((d) =>
+    progresoDelServidorSigueSiendoValido(d, "resumen") || progresoDelServidorSigueSiendoValido(d, "esquema")
+  );
+}
+
 function hayAlgoGenerando() {
-  return hayBancosGenerando() || intentosSondeoContenido > 0;
+  return hayBancosGenerando() || hayResumenesOEsquemasGenerando() || intentosSondeoContenido > 0;
 }
 
 function detenerSondeoBancos() {
@@ -1155,6 +1203,13 @@ async function sondearBancosEnGeneracion() {
         doc.banco_tarjetas_objetivo = actualizado.banco_tarjetas_objetivo;
         doc.tiene_resumen = actualizado.tiene_resumen;
         doc.tiene_esquema = actualizado.tiene_esquema;
+        // progreso_resumen/progreso_esquema (10/08/2026, a petición del
+        // usuario: "no sé qué está pasando, pon una barra o un contador"):
+        // {completadas, total, fase} mientras el servidor sigue
+        // generando, o null si no hay ninguna generación en curso -- ver
+        // actualizar_progreso_generacion en documentos_pdf.py.
+        doc.progreso_resumen = actualizado.progreso_resumen;
+        doc.progreso_esquema = actualizado.progreso_esquema;
       });
       if (intentosSondeoContenido > 0) {
         intentosSondeoContenido--;

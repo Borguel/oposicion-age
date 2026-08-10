@@ -7,6 +7,7 @@ from documentos_pdf import (
     eliminar_documento, listar_documentos, iniciar_banco, anadir_al_banco, finalizar_banco,
     obtener_banco, _recortar_a_bytes_utf8, LIMITE_BYTES_TEXTO_DOCUMENTO,
     actualizar_tipo_contenido, resolver_tipo_contenido,
+    actualizar_progreso_generacion, limpiar_progreso_generacion,
 )
 
 
@@ -208,6 +209,35 @@ def test_listar_documentos_usa_general_por_defecto_si_falta_el_campo(db):
     db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Viejo", "ultima_actividad": "2026-01-01"})
     resultado = listar_documentos(db, "u1")
     assert resultado[0]["tipo_contenido"] == "general"
+
+
+def test_listar_documentos_sin_generacion_en_curso_progreso_es_none(db):
+    db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Doc", "ultima_actividad": "2026-01-01"})
+    resultado = listar_documentos(db, "u1")
+    assert resultado[0]["progreso_resumen"] is None
+    assert resultado[0]["progreso_esquema"] is None
+
+
+class TestProgresoGeneracion:
+    """actualizar_progreso_generacion/limpiar_progreso_generacion (10/08/2026):
+    permiten que /mis-documentos enseñe el progreso real de una generación
+    de resumen/esquema en curso -- ver el comentario largo junto a su
+    definición en documentos_pdf.py."""
+
+    def test_actualizar_progreso_generacion_lo_deja_visible_en_listar_documentos(self, db):
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Doc", "ultima_actividad": "2026-01-01"})
+        actualizar_progreso_generacion(db, "u1", "d1", "resumen", completadas=2, total=5, fase="generando")
+        resultado = listar_documentos(db, "u1")
+        assert resultado[0]["progreso_resumen"] == {"completadas": 2, "total": 5, "fase": "generando"}
+        # El esquema no se ha tocado -- no debe verse afectado.
+        assert resultado[0]["progreso_esquema"] is None
+
+    def test_limpiar_progreso_generacion_lo_deja_en_none(self, db):
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Doc", "ultima_actividad": "2026-01-01"})
+        actualizar_progreso_generacion(db, "u1", "d1", "esquema", completadas=1, total=3, fase="generando")
+        limpiar_progreso_generacion(db, "u1", "d1", "esquema")
+        resultado = listar_documentos(db, "u1")
+        assert resultado[0]["progreso_esquema"] is None
 
 
 class TestEliminarDocumento:

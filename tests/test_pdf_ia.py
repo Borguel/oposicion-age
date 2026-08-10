@@ -248,6 +248,40 @@ class TestResumirPdfYGenerarTestDesdePdf:
         assert len(guardados) == 1
         assert guardados[0].to_dict()["resumen"] == "# Resumen generado"
 
+    def test_resumir_pdf_guarda_progreso_real_mientras_genera_y_lo_limpia_al_terminar(self, client, db, documento_sembrado):
+        # 10/08/2026, a petición del usuario ("no sé qué está pasando, pon
+        # una barra o un contador"): el progreso real de
+        # generar_documento_largo_por_partes se guarda en el propio
+        # documento mientras se genera, para que /mis-documentos pueda
+        # enseñarlo -- y se limpia siempre al terminar, para no dejar un
+        # "3 de 7" pegado en generaciones futuras.
+        progreso_visto_durante_la_generacion = {}
+
+        def fake_generar(*args, **kwargs):
+            on_progreso = kwargs["on_progreso"]
+            on_progreso({"completadas": 2, "total": 4, "fase": "generando"})
+            # Comprobado DESDE DENTRO de la propia generación (antes de que
+            # termine y se limpie el progreso): así se distingue de verdad
+            # "se guardó mientras generaba" de "solo quedó lo último".
+            progreso_visto_durante_la_generacion["valor"] = db.leer(
+                ("usuarios", "u1", "documentos", documento_sembrado)
+            )["progreso_resumen"]
+            return "# Resumen generado"
+
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", side_effect=fake_generar), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        assert progreso_visto_durante_la_generacion["valor"] == {"completadas": 2, "total": 4, "fase": "generando"}
+        # Tras terminar, el progreso queda limpio (None) -- no se queda
+        # pegado el último valor visto durante la generación.
+        assert db.leer(("usuarios", "u1", "documentos", documento_sembrado))["progreso_resumen"] is None
+
     def test_resumir_pdf_sin_api_key_da_error_500(self, client, documento_sembrado, monkeypatch):
         monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
         parche = _con_sesion(client)
@@ -404,6 +438,29 @@ class TestGenerarEsquemaDesdePdf:
         guardados = list(db.collection("usuarios").document("u1").collection("esquemas_pdf").stream())
         assert len(guardados) == 1
         assert guardados[0].to_dict()["esquema"] == "# Esquema generado"
+
+    def test_generar_esquema_desde_pdf_guarda_progreso_real_mientras_genera_y_lo_limpia_al_terminar(self, client, db, documento_sembrado):
+        progreso_visto_durante_la_generacion = {}
+
+        def fake_generar(*args, **kwargs):
+            on_progreso = kwargs["on_progreso"]
+            on_progreso({"completadas": 1, "total": 3, "fase": "generando"})
+            progreso_visto_durante_la_generacion["valor"] = db.leer(
+                ("usuarios", "u1", "documentos", documento_sembrado)
+            )["progreso_esquema"]
+            return "# Esquema generado"
+
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", side_effect=fake_generar), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        assert progreso_visto_durante_la_generacion["valor"] == {"completadas": 1, "total": 3, "fase": "generando"}
+        assert db.leer(("usuarios", "u1", "documentos", documento_sembrado))["progreso_esquema"] is None
 
     def test_generar_esquema_desde_pdf_sin_api_key_da_error_500(self, client, documento_sembrado, monkeypatch):
         monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
