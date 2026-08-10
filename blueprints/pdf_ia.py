@@ -147,23 +147,31 @@ def _parece_documento_generado_valido(texto):
 
 
 def _generar_documento_validado(*args, **kwargs):
-    """Envoltorio de generar_documento_largo_por_partes que reintenta UNA
-    vez si el resultado no supera _parece_documento_generado_valido, en vez
-    de dar por buena una respuesta que no es el documento pedido -- ver el
-    comentario largo de esa función. Si el reintento TAMBIÉN falla el
-    formato, se rinde (devuelve None), igual que ante cualquier otro fallo
-    de generación -- el llamante ya sabe convertir un None en el mensaje de
-    error habitual y devolver la cuota consumida."""
+    """Envoltorio de generar_documento_largo_por_partes que, si el resultado
+    no supera _parece_documento_generado_valido (ver el comentario largo de
+    esa función), lo devuelve de todas formas con un aviso visible en vez de
+    regenerarlo entero.
+
+    Hasta el 10/08/2026 esto reintentaba la generación COMPLETA una segunda
+    vez (todos los fragmentos + fusión) -- el multiplicador ×2 más caro de
+    todo el pipeline, para un fallo (metacomentario del modelo en vez del
+    documento pedido) que en la práctica es raro. Cambiado a petición
+    explícita del usuario ("no tiene que consumir muchas llamadas... calidad
+    media, no alta"): se acepta el resultado tal cual, con el mismo tipo de
+    aviso ya usado en generar_documento_largo_por_partes para fragmentos
+    perdidos, y el usuario puede pulsar «Regenerar» si de verdad hace falta
+    -- mismo criterio que la degradación parcial ya establecida, sin pagar
+    una segunda generación entera por adelantado en cada intento."""
     resultado = generar_documento_largo_por_partes(*args, **kwargs)
     if resultado and not _parece_documento_generado_valido(resultado):
         logger.warning(
             "generar_documento_largo_por_partes devolvió una respuesta sin encabezado "
-            "Markdown válido, reintentando una vez: %r", resultado[:200],
+            "Markdown válido, se devuelve con aviso en vez de regenerar: %r", resultado[:200],
         )
-        resultado = generar_documento_largo_por_partes(*args, **kwargs)
-        if resultado and not _parece_documento_generado_valido(resultado):
-            logger.warning("Segundo intento tampoco tiene un encabezado Markdown válido, se abandona.")
-            return None
+        resultado = (
+            "> **Aviso:** la IA no ha devuelto el documento en el formato esperado. Pulsa "
+            "«Regenerar» para intentarlo de nuevo.\n\n"
+        ) + resultado
     return resultado
 
 

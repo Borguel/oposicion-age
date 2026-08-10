@@ -507,7 +507,7 @@ def _post_deepseek_con_reintentos(headers, payload, timeout, stream=False):
         return response
 
 
-def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, temperature=0.3, max_continuaciones=2, on_usage=None):
+def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, temperature=0.3, max_continuaciones=1, on_usage=None):
     """Genera texto largo (resúmenes/esquemas a partir de un PDF) sin
     arriesgarse a que se corte a mitad de frase -- o directamente a mitad
     del documento -- si el texto de origen es largo. Si DeepSeek corta la
@@ -517,6 +517,14 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
     max_tokens=2000 y, si el documento era largo, el resumen simplemente se
     quedaba a medias (p. ej. cortado en mitad del índice de artículos) sin
     ningún aviso.
+
+    max_continuaciones=1 (bajado de 2 el 10/08/2026, a petición explícita del
+    usuario: "no tiene que consumir muchas llamadas... calidad media, no
+    alta"): con los max_tokens ya generosos por llamada (4096 general/8192
+    legal, ver blueprints/pdf_ia.py) una sola continuación de margen basta
+    para el caso normal -- permitir hasta 2 (3 peticiones HTTP en total)
+    multiplicaba innecesariamente el peor caso de coste para un beneficio de
+    calidad marginal.
 
     on_usage, igual que en call_deepseek_api: si se pasa (llamadas hechas
     desde un hilo de trabajo que no ve flask.g, p. ej. dentro del
@@ -903,6 +911,14 @@ def generar_documento_largo_por_partes(
         def _sospechoso(r):
             return not r or len(r) < len(texto) * fraccion_minima_map
 
+        # Evento de progreso AL EMPEZAR, no solo al terminar (10/08/2026, bug
+        # real: sin esto, on_progreso solo se llamaba una vez al final, así
+        # que progreso_resumen/progreso_esquema en Firestore no reflejaba
+        # "generando" hasta que YA había terminado -- inútil como señal de
+        # que sigue vivo mientras el usuario espera, ver el comentario largo
+        # en blueprints/pdf_ia.py sobre el sondeo del frontend).
+        if on_progreso:
+            on_progreso({"completadas": 0, "total": 1, "fase": "generando"})
         resultado = _intento_unico()
         if _sospechoso(resultado):
             logger.warning(
@@ -967,6 +983,13 @@ def generar_documento_largo_por_partes(
     # restringir TAMBIÉN el executor de un único documento por debajo de
     # ese límite solo servía para forzar tandas innecesarias y hacer más
     # fácil agotar _TIEMPO_MAXIMO_GENERACION_SEGUNDOS).
+    # Evento de progreso AL EMPEZAR (10/08/2026, mismo motivo que en la rama
+    # de un solo fragmento, ver el comentario ahí): sin esto, el primer
+    # evento de progreso no llega hasta que el primer fragmento termina, que
+    # puede tardar bastante -- el usuario no ve ninguna señal de que la
+    # generación arrancó de verdad hasta ese momento.
+    if on_progreso:
+        on_progreso({"completadas": 0, "total": len(fragmentos), "fase": "generando"})
     executor_inicial = ThreadPoolExecutor(max_workers=min(_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK, len(fragmentos)))
     futuro_a_indice = {executor_inicial.submit(_generar_parcial, item): item[0] for item in enumerate(fragmentos)}
     try:

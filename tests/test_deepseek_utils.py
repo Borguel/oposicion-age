@@ -492,6 +492,18 @@ class TestGenerarConContinuacion:
         assert mock_post.call_count == 3  # 1 inicial + 2 continuaciones, nunca más
         assert resultado == "trozo trozo trozo "
 
+    def test_max_continuaciones_por_defecto_es_1(self, monkeypatch):
+        # Bajado de 2 a 1 el 10/08/2026 (a petición explícita del usuario:
+        # "no tiene que consumir muchas llamadas... calidad media, no
+        # alta") -- con max_tokens ya generosos por llamada, una sola
+        # continuación de margen basta para el caso normal.
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post",
+                   return_value=_respuesta_con_status("trozo ", "length")) as mock_post:
+            resultado = deepseek_utils.generar_con_continuacion("system", "user")
+        assert mock_post.call_count == 2  # 1 inicial + 1 continuación por defecto, nunca más
+        assert resultado == "trozo trozo "
+
     def test_devuelve_none_si_falla_la_primera_llamada(self, monkeypatch):
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
         with patch("deepseek_utils.requests.post", return_value=_respuesta_con_status("", "stop", status_code=500)):
@@ -696,6 +708,30 @@ class TestGenerarDocumentoLargoPorPartes:
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", "texto corto")
         assert resultado == "resumen completo"
         assert mock_gen.call_count == 1
+
+    def test_documento_corto_avisa_de_progreso_al_empezar_no_solo_al_terminar(self):
+        # Bug real (10/08/2026): on_progreso solo se llamaba UNA vez, al
+        # terminar -- así que progreso_resumen/progreso_esquema en Firestore
+        # no reflejaba "generando" hasta que YA había acabado, y el sondeo
+        # del frontend (que depende de esa señal para saber que sigue vivo)
+        # se quedaba sin nada que mirar mientras esperaba, viéndose obligado
+        # a caducar a los ~80s aunque la generación siguiera en marcha.
+        eventos = []
+        with patch("deepseek_utils.generar_con_continuacion", return_value="resumen completo"):
+            deepseek_utils.generar_documento_largo_por_partes("system", "texto corto", on_progreso=eventos.append)
+        assert eventos[0] == {"completadas": 0, "total": 1, "fase": "generando"}
+        assert eventos[-1] == {"completadas": 1, "total": 1, "fase": "generando"}
+
+    def test_documento_troceado_avisa_de_progreso_al_empezar(self):
+        parrafo = "a" * 5000
+        texto_largo = "\n\n".join([parrafo] * 3)
+        respuestas = ["parcial. " * 100] * 3 + ["fusión. " * 300]
+        eventos = []
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas):
+            deepseek_utils.generar_documento_largo_por_partes(
+                "system", texto_largo, tamano_chunk=5000, on_progreso=eventos.append,
+            )
+        assert eventos[0] == {"completadas": 0, "total": 3, "fase": "generando"}
 
     def test_documento_sin_trocear_respuesta_corta_se_reintenta_y_se_recupera(self):
         # Bug real (10/08/2026): al subir TAMANO_CHUNK_CARACTERES a 90000,
