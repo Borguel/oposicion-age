@@ -593,6 +593,33 @@ class TestTipoContenidoEnResumenYEsquema:
         assert "MAPA DE ARTÍCULOS" in system_prompt_usado
         assert db.leer(("usuarios", "u1", "documentos", "d1"))["tipo_contenido"] == "legal"
 
+    def test_resumir_pdf_documento_legal_usa_mas_max_tokens(self, client, db, documento_legal_sembrado):
+        # 10/08/2026, bug real: el mapa de artículos exige cubrir CADA
+        # artículo sin omitir ninguno -- un listón más exigente que el
+        # resumen narrativo general -- así que necesita más margen por
+        # llamada (tanto en el MAP como en la fusión, que comparten el
+        # mismo max_tokens) para no quedarse corto en un fragmento denso.
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                client.post("/resumir-pdf", data={"documento_id": documento_legal_sembrado},
+                            headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert mock_gen.call_args.kwargs["max_tokens"] == 8192
+
+    def test_resumir_pdf_documento_general_usa_max_tokens_normal(self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Resumen") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                            headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert mock_gen.call_args.kwargs["max_tokens"] == 4096
+
     def test_resumir_pdf_override_manual_fuerza_legal_y_lo_persiste(self, client, db, documento_sembrado):
         # documento_sembrado es narrativo (la auto-detección daría
         # "general"), pero el usuario marca el checkbox -- debe forzar el
@@ -643,6 +670,17 @@ class TestTipoContenidoEnResumenYEsquema:
         assert "no aparezca dos veces a distinta profundidad" in instrucciones_fusion
         # ...y se le suma la regla nueva del eje de artículos.
         assert "eje del esquema" in instrucciones_fusion
+
+    def test_generar_esquema_desde_pdf_documento_legal_usa_mas_max_tokens(self, client, db, documento_legal_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_legal_sembrado},
+                            headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert mock_gen.call_args.kwargs["max_tokens"] == 8192
 
     def test_generar_esquema_desde_pdf_documento_general_no_refuerza_la_fusion(self, client, db, documento_sembrado):
         parche = _con_sesion(client)

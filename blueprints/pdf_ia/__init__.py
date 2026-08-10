@@ -155,6 +155,13 @@ def resumir_pdf():
             try:
                 resumen = _generar_documento_validado(
                     system_prompt, text, etiqueta_documento="Documento para resumir",
+                    # max_tokens más alto en modo legal (10/08/2026, bug real):
+                    # el prompt de "mapa de artículos" exige cubrir CADA
+                    # artículo sin omitir ninguno -- un listón mucho más
+                    # exigente que el resumen narrativo general -- así que un
+                    # fragmento denso en artículos necesita más margen por
+                    # llamada para poder cumplirlo sin quedarse corto.
+                    max_tokens=8192 if es_legal else 4096,
                     on_usage=acumulador_tokens.add, on_progreso=on_progreso,
                 )
                 if resumen:
@@ -339,6 +346,11 @@ def generar_esquema_desde_pdf():
                     text,
                     etiqueta_documento="Documento para crear esquema",
                     instrucciones_fusion_extra=instrucciones_fusion_esquema,
+                    # max_tokens más alto en modo legal -- ver el comentario
+                    # largo en resumir_pdf, mismo motivo (el esquema legal
+                    # también exige que cada artículo mantenga su propio
+                    # epígrafe, sin fusionar dos distintos).
+                    max_tokens=8192 if es_legal else 4096,
                     on_usage=acumulador_tokens.add,
                     on_progreso=on_progreso,
                 )
