@@ -51,6 +51,13 @@
   font-weight: 800;
   color: var(--age-ink);
   margin-bottom: 6px;
+  /* overflow-wrap (10/08/2026, bug real): un nombre de archivo largo con
+     guiones bajos en vez de espacios (típico en PDFs del BOE) no tiene
+     ningún punto de corte para el ajuste de línea por defecto del
+     navegador -- sin esto, se salía del contenedor en vez de partirse en
+     varias líneas. Mismo bug/arreglo que .documento-card-titulo en
+     mis-documentos/style.css. */
+  overflow-wrap: anywhere;
 }
 .resumen-meta {
   color: var(--age-ink-soft);

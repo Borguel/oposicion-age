@@ -51,6 +51,9 @@
   font-weight: 800;
   color: var(--age-ink);
   margin-bottom: 6px;
+  /* overflow-wrap (10/08/2026, ver el comentario largo en
+     subida-pdf-resumen/style.css -- mismo bug, mismo arreglo). */
+  overflow-wrap: anywhere;
 }
 .esquema-meta {
   color: var(--age-ink-soft);
