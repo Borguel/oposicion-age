@@ -282,6 +282,43 @@ class TestResumirPdfYGenerarTestDesdePdf:
         # pegado el último valor visto durante la generación.
         assert db.leer(("usuarios", "u1", "documentos", documento_sembrado))["progreso_resumen"] is None
 
+    def test_resumir_pdf_fallido_marca_error_visible_en_el_documento(self, client, db, documento_sembrado):
+        # 10/08/2026, a petición del usuario ("que regenere de verdad, no
+        # que cargue datos antiguos"): si la generación falla, el resumen
+        # anterior (si lo había) se queda intacto -- correcto -- pero ahora
+        # queda una señal explícita de que el ÚLTIMO intento falló, en vez
+        # de que "Mis documentos" se vea exactamente igual que si nunca se
+        # hubiera pedido nada nuevo.
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value=None), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        error = db.leer(("usuarios", "u1", "documentos", documento_sembrado))["error_resumen"]
+        assert error is not None
+        assert error["mensaje"]
+
+    def test_resumir_pdf_con_exito_limpia_el_error_del_intento_anterior(self, client, db, documento_sembrado):
+        doc_ref = ("usuarios", "u1", "documentos", documento_sembrado)
+        db.sembrar(doc_ref, {
+            **db.leer(doc_ref),
+            "error_resumen": {"mensaje": "fallo anterior", "fecha": "2026-01-01T00:00:00"},
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        assert db.leer(("usuarios", "u1", "documentos", documento_sembrado))["error_resumen"] is None
+
     def test_resumir_pdf_sin_api_key_da_error_500(self, client, documento_sembrado, monkeypatch):
         monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
         parche = _con_sesion(client)
@@ -461,6 +498,37 @@ class TestGenerarEsquemaDesdePdf:
             parche.stop()
         assert progreso_visto_durante_la_generacion["valor"] == {"completadas": 1, "total": 3, "fase": "generando"}
         assert db.leer(("usuarios", "u1", "documentos", documento_sembrado))["progreso_esquema"] is None
+
+    def test_generar_esquema_desde_pdf_fallido_marca_error_visible_en_el_documento(self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value=None), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        error = db.leer(("usuarios", "u1", "documentos", documento_sembrado))["error_esquema"]
+        assert error is not None
+        assert error["mensaje"]
+
+    def test_generar_esquema_desde_pdf_con_exito_limpia_el_error_del_intento_anterior(self, client, db, documento_sembrado):
+        doc_ref = ("usuarios", "u1", "documentos", documento_sembrado)
+        db.sembrar(doc_ref, {
+            **db.leer(doc_ref),
+            "error_esquema": {"mensaje": "fallo anterior", "fecha": "2026-01-01T00:00:00"},
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        assert db.leer(("usuarios", "u1", "documentos", documento_sembrado))["error_esquema"] is None
 
     def test_generar_esquema_desde_pdf_sin_api_key_da_error_500(self, client, documento_sembrado, monkeypatch):
         monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)

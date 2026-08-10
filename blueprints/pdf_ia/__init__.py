@@ -31,6 +31,7 @@ from documentos_pdf import (
     obtener_tests_en_progreso_por_documento, eliminar_documento,
     iniciar_banco, anadir_al_banco, finalizar_banco, obtener_banco,
     resolver_tipo_contenido, actualizar_progreso_generacion, limpiar_progreso_generacion,
+    marcar_error_generacion, limpiar_error_generacion,
 )
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import (
@@ -164,6 +165,16 @@ def resumir_pdf():
                         actualizar_progreso_generacion(db, uid, documento_id, "resumen", **evento_progreso)
                     except Exception:
                         logger.exception("No se pudo guardar el progreso de /resumir-pdf")
+            # Error del intento ANTERIOR limpiado al empezar uno nuevo
+            # (10/08/2026, a petición del usuario: "que regenere de verdad,
+            # no que cargue datos antiguos") -- si no, un "Regenerar" que sí
+            # funciona podría quedarse mostrando el aviso de fallo de la
+            # vez anterior.
+            if documento_id:
+                try:
+                    limpiar_error_generacion(db, uid, documento_id, "resumen")
+                except Exception:
+                    logger.exception("No se pudo limpiar el error previo de /resumir-pdf")
             try:
                 resumen = _generar_documento_validado(
                     system_prompt, text, etiqueta_documento="Documento para resumir",
@@ -214,6 +225,16 @@ def resumir_pdf():
                 resultado = {"error": "Error al procesar el PDF."}
             if not resultado.get("resumen"):
                 devolver_uso(db, uid, "pdf_ia", plan_actual)
+                # Fallo visible en "Mis documentos" (10/08/2026) -- sin
+                # esto, un intento de regenerar que falla es indistinguible
+                # de uno que nunca se pidió: el resumen anterior (si lo
+                # había) se queda tal cual, sin ninguna señal de que el
+                # intento nuevo no funcionó.
+                if documento_id:
+                    try:
+                        marcar_error_generacion(db, uid, documento_id, "resumen", resultado.get("error", "Error desconocido"))
+                    except Exception:
+                        logger.exception("No se pudo marcar el error de /resumir-pdf")
             acumulador_tokens.volcar_directo(db, uid)
             # Progreso limpiado SIEMPRE al terminar, con éxito o sin él
             # (10/08/2026) -- si no, el último "3 de 7" guardado se
@@ -370,6 +391,11 @@ def generar_esquema_desde_pdf():
                         actualizar_progreso_generacion(db, uid, documento_id, "esquema", **evento_progreso)
                     except Exception:
                         logger.exception("No se pudo guardar el progreso de /generar-esquema-desde-pdf")
+            if documento_id:
+                try:
+                    limpiar_error_generacion(db, uid, documento_id, "esquema")
+                except Exception:
+                    logger.exception("No se pudo limpiar el error previo de /generar-esquema-desde-pdf")
             try:
                 esquema = _generar_documento_validado(
                     system_prompt,
@@ -410,6 +436,11 @@ def generar_esquema_desde_pdf():
                 resultado = {"error": "Error al procesar el PDF."}
             if not resultado.get("esquema"):
                 devolver_uso(db, uid, "pdf_ia", plan_actual)
+                if documento_id:
+                    try:
+                        marcar_error_generacion(db, uid, documento_id, "esquema", resultado.get("error", "Error desconocido"))
+                    except Exception:
+                        logger.exception("No se pudo marcar el error de /generar-esquema-desde-pdf")
             acumulador_tokens.volcar_directo(db, uid)
             if documento_id:
                 try:

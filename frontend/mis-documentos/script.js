@@ -162,7 +162,7 @@ function mostrarToastDeshacer({ mensaje, alDeshacer, alConfirmar, duracionMs = 6
 
 function filaContenido({
   label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar, urlContinuar,
-  textoGenerarDeNuevo = "Generar más", generando = false, progreso = null,
+  textoGenerarDeNuevo = "Generar más", generando = false, progreso = null, error = null,
 }) {
   const acciones = [];
   // "Continuar" (test autoguardado sin terminar, ver
@@ -229,6 +229,16 @@ function filaContenido({
       : existe
         ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-generado">${icono("check", 12)} Generado</span>`
         : `<span class="documento-card-tipo-estado">Aún no generado</span>`;
+  // Aviso de que el ÚLTIMO intento falló (10/08/2026, a petición del
+  // usuario: "que regenere de verdad, no que cargue datos antiguos") --
+  // sin esto, un "Regenerar" que falla es indistinguible de uno que nunca
+  // se pidió: el resumen/esquema anterior (si lo había) se queda tal
+  // cual, sin ninguna señal de que el intento nuevo no funcionó. No se
+  // muestra mientras generando (el aviso de arriba ya lo deja claro) ni
+  // se pisa a sí mismo si justo se acaba de generar bien.
+  const avisoErrorHtml = (!generando && error)
+    ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-error">${icono("alerta", 12)} El último intento de generar falló${existe ? " -- sigue viéndose la versión anterior" : ""}</span>`
+    : "";
   return `
     <div class="documento-card-tipo">
       <div class="documento-card-tipo-cabecera">
@@ -236,6 +246,7 @@ function filaContenido({
         <div class="documento-card-tipo-info">
           <span class="documento-card-tipo-label">${label}${etiquetaCantidad}</span>
           ${estadoHtml}
+          ${avisoErrorHtml}
         </div>
       </div>
       <div class="documento-card-fila-acciones">${acciones.join("")}</div>
@@ -491,7 +502,8 @@ function tarjetaDocumento(doc, modoCarpeta) {
       // entender que se acumulaba algo, cuando en realidad se sobrescribe.
       textoGenerarDeNuevo: "Regenerar",
       generando: esperandoGeneracionDe(doc, "resumen"),
-      progreso: doc.progreso_resumen
+      progreso: doc.progreso_resumen,
+      error: doc.error_resumen
     }),
     filaContenido({
       label: "Esquema", iconoHtml: icono("esquema", 18), existe: doc.tiene_esquema,
@@ -500,7 +512,8 @@ function tarjetaDocumento(doc, modoCarpeta) {
       textoGenerar: "Generar",
       textoGenerarDeNuevo: "Regenerar",
       generando: esperandoGeneracionDe(doc, "esquema"),
-      progreso: doc.progreso_esquema
+      progreso: doc.progreso_esquema,
+      error: doc.error_esquema
     }),
     filaContenido({
       label: "Tarjetas", iconoHtml: icono("tarjeta", 18), existe: doc.num_tarjetas > 0, cantidad: doc.num_tarjetas,
@@ -1210,6 +1223,11 @@ async function sondearBancosEnGeneracion() {
         // actualizar_progreso_generacion en documentos_pdf.py.
         doc.progreso_resumen = actualizado.progreso_resumen;
         doc.progreso_esquema = actualizado.progreso_esquema;
+        // error_resumen/error_esquema (10/08/2026, a petición del usuario:
+        // "que regenere de verdad, no que cargue datos antiguos"): último
+        // intento fallido, ver marcar_error_generacion en documentos_pdf.py.
+        doc.error_resumen = actualizado.error_resumen;
+        doc.error_esquema = actualizado.error_esquema;
       });
       if (intentosSondeoContenido > 0) {
         intentosSondeoContenido--;

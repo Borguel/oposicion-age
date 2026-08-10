@@ -369,6 +369,24 @@ def limpiar_progreso_generacion(db, uid, documento_id, tipo):
     ref.update({f"progreso_{tipo}": None})
 
 
+# error_resumen/error_esquema (10/08/2026, a petición del usuario: "cuando
+# le das al botón de regenerar que regenere de verdad, no que cargue datos
+# antiguos"): cuando una generación falla, el resumen/esquema ANTERIOR (si
+# lo había) se queda intacto sin que nada lo sustituya -- correcto para no
+# perder lo que ya había, pero antes no había NINGUNA señal de que el
+# intento de regenerar hubiera fallado, así que al ver el de siempre daba
+# la sensación de que "regenerar no hace nada". Se marca al fallar y se
+# limpia al empezar un intento nuevo o al conseguir uno con éxito.
+def marcar_error_generacion(db, uid, documento_id, tipo, mensaje):
+    ref = db.collection("usuarios").document(uid).collection("documentos").document(documento_id)
+    ref.update({f"error_{tipo}": {"mensaje": mensaje, "fecha": datetime.utcnow().isoformat()}})
+
+
+def limpiar_error_generacion(db, uid, documento_id, tipo):
+    ref = db.collection("usuarios").document(uid).collection("documentos").document(documento_id)
+    ref.update({f"error_{tipo}": None})
+
+
 def listar_documentos(db, uid):
     docs_ref = db.collection("usuarios").document(uid).collection("documentos")
     bancos_preguntas = _resumen_bancos(db, uid, "preguntas")
@@ -398,6 +416,11 @@ def listar_documentos(db, uid):
             # ninguna generación en curso -- ver actualizar_progreso_generacion.
             "progreso_resumen": datos.get("progreso_resumen"),
             "progreso_esquema": datos.get("progreso_esquema"),
+            # error_resumen/error_esquema (10/08/2026): último intento de
+            # generar que falló, ver marcar_error_generacion. None si el
+            # último intento (o el único que ha habido) fue bien.
+            "error_resumen": datos.get("error_resumen"),
+            "error_esquema": datos.get("error_esquema"),
             "num_tarjetas": datos.get("num_tarjetas", 0),
             "num_tests": datos.get("num_tests", 0),
             "ultima_actividad": datos.get("ultima_actividad"),
