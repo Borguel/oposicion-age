@@ -524,7 +524,15 @@ async function obtenerAuthHeaders() {
       detalle.classList.remove('hidden');
       document.getElementById('progress-container-numerico').classList.add('hidden');
       document.getElementById('barra-indeterminada-redireccion').classList.remove('hidden');
-      document.getElementById('enlace-ir-a-mis-documentos').classList.remove('hidden');
+      // El enlace "Ir a Mis documentos ahora" NO se muestra aquí todavía
+      // (10/08/2026, bug real: es un <a href> normal, sin JS de por medio --
+      // pulsarlo dispara una navegación completa que el navegador usa para
+      // CANCELAR cualquier fetch todavía en marcha de esta página. Si el
+      // usuario lo pulsaba antes de que el POST a /generar-esquema-desde-pdf
+      // llegara siquiera al servidor, la generación no llegaba ni a
+      // arrancar -- "le doy rápido y no genera nada"). Se revela más abajo,
+      // en iniciarGeneracionEsquemaConRedireccion, solo una vez que la
+      // respuesta del servidor confirma que la generación YA empezó.
       document.getElementById('sugerencia-mientras-tanto').classList.remove('hidden');
     }
 
@@ -547,6 +555,11 @@ async function obtenerAuthHeaders() {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || `Error del servidor: ${res.status}`);
       }
+      // A partir de aquí la respuesta ya ha llegado -- el servidor ha
+      // aceptado la petición y ha empezado a generar (ver el comentario
+      // largo en mostrarRedireccionAMisDocumentos) -- ahora sí es seguro
+      // ofrecer el enlace manual, navegar ya no puede impedir que arranque.
+      document.getElementById('enlace-ir-a-mis-documentos').classList.remove('hidden');
       if (!res.body) return null;
 
       const lector = res.body.getReader();
