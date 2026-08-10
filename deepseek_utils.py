@@ -6,6 +6,7 @@ import threading
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import TimeoutError as _FuturesTimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -815,14 +816,36 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
 
     parciales_por_indice = {}
     completadas = 0
-    with ThreadPoolExecutor(max_workers=min(4, len(fragmentos))) as executor:
-        futuro_a_indice = {executor.submit(_generar_parcial, item): item[0] for item in enumerate(fragmentos)}
-        for futuro in as_completed(futuro_a_indice):
+    # Ronda inicial acotada al tiempo máximo (10/08/2026, bug real: con esta
+    # ronda sin límite, el tiempo total podía superar los _TIEMPO_MAXIMO_...
+    # 150s pactados -- en producción se vieron 221s porque el límite solo se
+    # comprobaba en el reintento y en la fusión, nunca aquí). No se usa
+    # "with ThreadPoolExecutor(...) as executor" a propósito: su __exit__
+    # llama a shutdown(wait=True) incondicionalmente y bloquearía hasta que
+    # TODAS las llamadas en curso terminen, anulando el propio timeout de
+    # as_completed. En su lugar se crea el executor a mano y se cierra con
+    # shutdown(wait=False): los fragmentos que no respondieron a tiempo
+    # siguen su llamada HTTP en segundo plano (no es seguro cancelar una
+    # petición de requests ya en vuelo) pero la función no espera por ellos.
+    executor_inicial = ThreadPoolExecutor(max_workers=min(4, len(fragmentos)))
+    futuro_a_indice = {executor_inicial.submit(_generar_parcial, item): item[0] for item in enumerate(fragmentos)}
+    try:
+        restante_inicial = max(limite_tiempo - time.monotonic(), 0)
+        for futuro in as_completed(futuro_a_indice, timeout=restante_inicial):
             indice = futuro_a_indice[futuro]
             parciales_por_indice[indice] = futuro.result()
             completadas += 1
             if on_progreso:
                 on_progreso({"completadas": completadas, "total": len(fragmentos), "fase": "generando"})
+    except _FuturesTimeoutError:
+        logger.warning(
+            "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) durante la "
+            "primera ronda -- %d de %d fragmentos no respondieron a tiempo y se tratan como "
+            "fallidos, sin esperar a que esas llamadas terminen en segundo plano.",
+            _TIEMPO_MAXIMO_GENERACION_SEGUNDOS, len(fragmentos) - completadas, len(fragmentos),
+        )
+    finally:
+        executor_inicial.shutdown(wait=False)
 
     def _fragmento_sospechoso(indice):
         """True si el parcial de ese índice es None, o si es sospechosamente
@@ -851,13 +874,26 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
     # rinda con un fragmento concreto -- se lleve por delante contenido real.
     indices_fallidos = [i for i in range(len(fragmentos)) if _fragmento_sospechoso(i)]
     if indices_fallidos and time.monotonic() < limite_tiempo:
-        with ThreadPoolExecutor(max_workers=min(4, len(indices_fallidos))) as executor:
-            futuro_a_indice = {
-                executor.submit(_generar_parcial, (i, fragmentos[i])): i for i in indices_fallidos
-            }
-            for futuro in as_completed(futuro_a_indice):
+        # Mismo motivo que en la ronda inicial: no usar "with executor" porque
+        # su shutdown(wait=True) implícito bloquearía sin límite si algún
+        # reintento no responde a tiempo, anulando el timeout de as_completed.
+        executor_reintento = ThreadPoolExecutor(max_workers=min(4, len(indices_fallidos)))
+        futuro_a_indice = {
+            executor_reintento.submit(_generar_parcial, (i, fragmentos[i])): i for i in indices_fallidos
+        }
+        try:
+            restante_reintento = max(limite_tiempo - time.monotonic(), 0)
+            for futuro in as_completed(futuro_a_indice, timeout=restante_reintento):
                 indice = futuro_a_indice[futuro]
                 parciales_por_indice[indice] = futuro.result()
+        except _FuturesTimeoutError:
+            logger.warning(
+                "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) durante el "
+                "reintento -- algún fragmento no respondió a tiempo y sigue sospechoso.",
+                _TIEMPO_MAXIMO_GENERACION_SEGUNDOS,
+            )
+        finally:
+            executor_reintento.shutdown(wait=False)
     elif indices_fallidos:
         logger.warning(
             "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) antes de poder "

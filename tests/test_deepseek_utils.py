@@ -2,6 +2,8 @@
 usado hasta ahora) y los reintentos acotados ante fallos TRANSITORIOS
 (timeout/conexión/5xx) -- nunca ante errores 4xx, que no se arreglan
 reintentando."""
+import time
+from concurrent.futures import as_completed
 from unittest.mock import MagicMock, patch
 
 import requests
@@ -23,6 +25,19 @@ def _respuesta_http_error(status_code):
     mock = MagicMock()
     mock.raise_for_status.side_effect = error
     return mock
+
+
+def _as_completed_sin_timeout(fs, timeout=None):
+    """Sustituto de concurrent.futures.as_completed para pruebas que mockean
+    time.monotonic(): la implementación real, al recibir un `timeout`,
+    consulta time.monotonic() ella misma internamente (para calcular su
+    propio plazo) -- lo que consumiría, de forma no determinista según el
+    scheduling real de threads, valores extra del side_effect mockeado en el
+    módulo bajo prueba. Este sustituto delega en la implementación real pero
+    IGNORANDO el timeout, para que las únicas llamadas a time.monotonic()
+    durante la prueba sean las explícitas de generar_documento_largo_por_partes,
+    y así el número de llamadas mockeadas necesarias sea exacto y estable."""
+    return as_completed(fs)
 
 
 def test_response_format_json_se_incluye_en_el_payload(monkeypatch):
@@ -792,10 +807,17 @@ class TestGenerarDocumentoLargoPorPartes:
         parcial_1 = "# Parcial uno\n" + ("contenido real del fragmento uno. " * 50)
         parcial_2 = "# Parcial dos\n" + ("contenido real del fragmento dos. " * 50)
         respuestas = [parcial_1, parcial_2]
-        # time.monotonic(): 1ª llamada arma el límite (T0), 2ª llamada (justo
-        # antes de fundir) ya está muy por encima de T0 + el tope.
+        # time.monotonic(): 1ª llamada arma el límite (T0), 2ª llamada es la
+        # ronda inicial del MAP calculando el tiempo que le queda (de sobra,
+        # T0+1 -- debe completarse con éxito), 3ª llamada es la comprobación
+        # justo antes de fundir, ya muy por encima de T0 + el tope. Se
+        # sustituye as_completed por una versión que ignora el `timeout` (la
+        # real, al recibirlo, consulta time.monotonic() ella misma
+        # internamente de forma no determinista según el scheduling de
+        # threads, lo que descuadraría este side_effect de longitud exacta).
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen, \
-             patch("deepseek_utils.time.monotonic", side_effect=[0, 10_000]):
+             patch("deepseek_utils.as_completed", side_effect=_as_completed_sin_timeout), \
+             patch("deepseek_utils.time.monotonic", side_effect=[0, 1, 10_000]):
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
         assert resultado is None
         # Solo las 2 llamadas del MAP -- nunca llega a intentar la fusión.
@@ -807,12 +829,42 @@ class TestGenerarDocumentoLargoPorPartes:
         parcial_valido = "único parcial válido. " * 100
         respuestas = [None, parcial_valido]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen, \
-             patch("deepseek_utils.time.monotonic", side_effect=[0, 10_000]):
+             patch("deepseek_utils.as_completed", side_effect=_as_completed_sin_timeout), \
+             patch("deepseek_utils.time.monotonic", side_effect=[0, 1, 10_000]):
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
         assert resultado is None
         # 2 llamadas del MAP inicial -- se agota el tiempo antes de
         # reintentar el fragmento fallido, así que no hay una 3ª llamada.
         assert mock_gen.call_count == 2
+
+    def test_documento_largo_ronda_inicial_no_espera_mas_alla_del_tiempo_maximo(self):
+        # Bug real (10/08/2026), visto en logs de producción: el tiempo total
+        # (221s) superó el límite pactado (150s) porque la ronda inicial del
+        # MAP, a diferencia del reintento y de la fusión, no tenía ningún
+        # tope de tiempo propio -- solo se comprobaba el límite DESPUÉS de
+        # esa primera ronda. Aquí se simulan fragmentos que tardan claramente
+        # más que el presupuesto total: la función no debe quedarse
+        # esperándolos, sino tratarlos como fallidos en cuanto se agota el
+        # tiempo y (al no quedar presupuesto para reintentar) rendirse sin
+        # devolver un documento incompleto -- con tiempo real de ejecución
+        # acotado al presupuesto, no a la duración de los fragmentos lentos.
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+
+        def _lento(*_args, **_kwargs):
+            time.sleep(0.4)
+            return "# Parcial\n" + ("contenido real y suficientemente largo. " * 50)
+
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=_lento), \
+             patch("deepseek_utils._TIEMPO_MAXIMO_GENERACION_SEGUNDOS", 0.1):
+            inicio = time.monotonic()
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            duracion = time.monotonic() - inicio
+        assert resultado is None
+        # No debe esperar los 0.4s completos de los fragmentos -- se
+        # abandona en cuanto se agota el presupuesto (0.1s), con margen
+        # amplio para el resto de comprobaciones (reintento saltado, etc.).
+        assert duracion < 0.3
 
     def test_documento_largo_fusion_colapsada_se_reintenta_y_se_recupera(self):
         # Bug real (10/08/2026), distinto del de fragmentos fallidos de
