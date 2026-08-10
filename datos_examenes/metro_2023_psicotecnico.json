@@ -3897,5 +3897,140 @@
     "respuesta_correcta": "B",
     "explicacion": "El texto desarrolla un hilo lógico sobre el teletrabajo: consolidación (1), ventajas (2), productividad (3), inconvenientes (5) y soluciones (6). La oración 4, sobre zonas verdes en parques empresariales, es un dato ajeno que no aporta nada al argumento central.",
     "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 118,
+    "prueba": "verbal",
+    "categoria": "huecos_gramaticales",
+    "pregunta": "A pesar de los ______ tecnológicos logrados en la última década, el avance en ciberseguridad resulta ______ ante la velocidad de las nuevas amenazas.",
+    "opciones": {
+      "D": "hitos – insuficiente",
+      "A": "reveses – inapelable",
+      "B": "logros – contraproducente",
+      "C": "impedimentos – notable"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«A pesar de» exige contraste: «hitos» (logros importantes) encaja en el primer hueco, e «insuficiente ante» es la construcción idiomática natural para expresar que esos hitos no bastan frente a la velocidad de las amenazas. «Notable ante» o «inapelable» no son combinaciones idiomáticas naturales en este contexto.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 119,
+    "prueba": "verbal",
+    "categoria": "antonimos",
+    "pregunta": "\"Su carácter irascible provocaba que ningún compañero quisiera abordar temas polémicos con él.\"\n¿Qué palabra tiene un significado opuesto a «irascible» en este contexto?",
+    "opciones": {
+      "A": "Flemático",
+      "B": "Excitable",
+      "C": "Vehemente",
+      "D": "Colérico"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "«Irascible» significa propenso a enfadarse; su antónimo es «flemático» (sosegado, impasible). «Colérico» y «excitable» son sinónimos de irascible.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 120,
+    "prueba": "verbal",
+    "categoria": "intruso_semantico",
+    "pregunta": "Señale la palabra que NO se corresponde con las del grupo:",
+    "opciones": {
+      "B": "Inocuo",
+      "C": "Inherente",
+      "D": "Innato",
+      "A": "Intrínseco"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "«Inherente», «intrínseco» e «innato» comparten el significado de propio o natural de algo, que forma parte de su esencia. «Inocuo» significa que no causa daño: un campo semántico completamente distinto.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 121,
+    "prueba": "verbal",
+    "categoria": "ortografia",
+    "pregunta": "Señale la palabra incorrectamente escrita:",
+    "opciones": {
+      "C": "Sútil",
+      "D": "Excepción",
+      "A": "Bricolaje",
+      "B": "Expatriar"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "La forma correcta es «sutil», sin tilde: es una palabra aguda terminada en «l», y las agudas solo llevan tilde si terminan en n, s o vocal.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 122,
+    "prueba": "verbal",
+    "categoria": "definicion",
+    "pregunta": "¿Qué opción define correctamente la palabra HERMENÉUTICA?",
+    "opciones": {
+      "D": "Disciplina que estudia la interpretación de textos, especialmente los sagrados o filosóficos.",
+      "A": "Rama de la medicina que trata las enfermedades de los huesos.",
+      "B": "Conjunto de normas para redactar documentos administrativos.",
+      "C": "Teoría política que defiende la abolición del Estado."
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«Hermenéutica» es el arte o la teoría de la interpretación textual, aplicada originalmente a los textos sagrados y luego a cualquier texto.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 123,
+    "prueba": "verbal",
+    "categoria": "huecos_gramaticales",
+    "pregunta": "\"No es tanto la capacidad de almacenar datos ______ poseemos, ______ la habilidad para procesarlos ______ realmente marca la diferencia en la era digital.\"",
+    "opciones": {
+      "A": "que – sino – la que",
+      "B": "que – sino – quien",
+      "C": "la que – aunque – lo que",
+      "D": "la cual – si no – que"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "El primer hueco es un relativo sin preposición: «datos que poseemos» («la cual» no concuerda con «datos», masculino plural). El tercer hueco necesita un relativo con artículo femenino porque se refiere a «la habilidad»: «la que» marca la diferencia («quien» es solo para personas). Y solo «sino... la que» encaja como estructura enfática; «aunque» rompe el contraste «no es tanto... sino...».",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 124,
+    "prueba": "verbal",
+    "categoria": "comprension_lectora",
+    "pregunta": "Lee el siguiente texto:\n\"La inteligencia artificial generativa ha permitido crear obras artísticas en segundos, lo que ha desatado un intenso debate en los tribunales. Mientras los desarrolladores defienden que la máquina es solo una herramienta, los abogados de los autores tradicionales sostienen que estas obras vulneran el derecho de autor, pues se nutren de miles de creaciones previas sin licencia explícita. La legislación actual, redactada antes de esta revolución tecnológica, no contempla esta casuística.\"\n\nSegún el texto, se puede inferir que el principal problema radica en:",
+    "opciones": {
+      "B": "El desfase entre el avance tecnológico y el marco legal existente.",
+      "C": "La lentitud de los tribunales para resolver conflictos.",
+      "D": "La negativa de los artistas a utilizar nuevas herramientas.",
+      "A": "La falta de originalidad de las obras creadas por IA."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "El texto dice expresamente que la legislación «fue redactada antes de esta revolución tecnológica» y «no contempla esta casuística», lo que permite inferir un desfase entre tecnología y ley. Las demás opciones no se mencionan ni se deducen del texto.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 125,
+    "prueba": "verbal",
+    "categoria": "ordenar_frase",
+    "pregunta": "Ordene las palabras sueltas para formar una frase con sentido. Luego, indique qué palabra ocupa la quinta posición (contando desde la primera):\nmáquina – siendo – la – Pese – humana – de – creación – sigue – la – superior – a – la – inteligencia",
+    "opciones": {
+      "C": "de",
+      "D": "creación",
+      "A": "superior",
+      "B": "Pese"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "Ordenando: «Pese a la creación de la máquina, la inteligencia humana sigue siendo superior». Posiciones: 1=Pese, 2=a, 3=la, 4=creación, 5=de.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 126,
+    "prueba": "verbal",
+    "categoria": "oracion_intrusa",
+    "pregunta": "Lee el siguiente grupo de oraciones y señala la que podría excluirse por no añadir información esencial al razonamiento:\n1. El cambio climático está acelerando el deshielo de los polos.\n2. Como consecuencia, el nivel del mar ha aumentado de forma constante en las últimas décadas.\n3. Este fenómeno afecta especialmente a las ciudades costeras.\n4. La gastronomía de los países del sur de Europa es muy variada y apreciada.\n5. Para mitigar estos efectos, los gobiernos deberían invertir en infraestructuras de defensa costera.\n6. Sin embargo, los presupuestos destinados a medio ambiente suelen ser recortados.",
+    "opciones": {
+      "D": "4",
+      "A": "5",
+      "B": "3",
+      "C": "2"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "El hilo argumental es: causa (1), consecuencia (2, 3), solución (5) y obstáculo (6). La oración 4, sobre gastronomía, es un tema completamente ajeno que rompe la cohesión temática.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
   }
 ]
