@@ -634,7 +634,24 @@ def detectar_texto_legal(texto):
     return densidad >= _UMBRAL_DENSIDAD_LEGAL
 
 
-TAMANO_CHUNK_CARACTERES = 15000
+# Subido de 15000 a 90000 (10/08/2026, a petición explícita del usuario:
+# "si hay que bajar un poco de calidad no pasa nada... que se genere un
+# poco más rápido... tampoco quiero que esto suponga un gasto muy grande de
+# tokens"). La mayoría de documentos reales (un "tema" de oposición) tienen
+# menos de 90.000 caracteres (~20-25 páginas) y ahora caben en UN solo
+# fragmento -- una sola llamada (con continuación si hace falta, ver
+# generar_con_continuacion) en vez de repartirse en 4-7 llamadas de MAP más
+# una de fusión. Esto no es solo más barato (el system_prompt, ~1.500
+# caracteres, se paga UNA vez en vez de una por fragmento) y más rápido (una
+# llamada secuencial en vez de esperar a la más lenta de varias en
+# paralelo): también evita de raíz el motivo más común de generación
+# incompleta ("N de M secciones no se pudieron generar") y los artículos
+# duplicados a caballo entre dos fragmentos que la fusión no siempre
+# deduplicaba bien -- sin fragmentos, no hay frontera que duplicar. El
+# límite de MAP-reduce con reintento/aviso parcial sigue existiendo como
+# red de seguridad para el minoritario documento realmente largo (por
+# encima de 90.000 caracteres) que aun así lo necesite.
+TAMANO_CHUNK_CARACTERES = 90000
 
 # Umbral de la comprobación de tamaño de la fusión en
 # generar_documento_largo_por_partes (10/08/2026, ver el comentario largo
@@ -798,7 +815,7 @@ def generar_documento_largo_por_partes(
     mayoría se hubiera generado bien). Si sobrevivió al menos un fragmento,
     se devuelve el documento construido con lo que sí se generó bien
     (fundido si hay tiempo y la fusión sale bien, sin fundir si no) con un
-    aviso "> ⚠️ **Aviso:** ..." antepuesto en Markdown -- visible para el
+    aviso "> **Aviso:** ..." antepuesto en Markdown -- visible para el
     usuario, no un fallo silencioso (eso fue el bug original de esta misma
     función).
 
@@ -994,8 +1011,13 @@ def generar_documento_largo_por_partes(
             "el documento.",
             n_fallidos, len(fragmentos), len(indices_disponibles),
         )
+        # Sin emoji (10/08/2026, bug real): las fuentes estándar de jsPDF
+        # (helvetica) no tienen esos glifos -- un emoji aquí se veía como
+        # caracteres sueltos ilegibles en el PDF descargado, y además
+        # descuadraba el cálculo de ancho de splitTextToSize, cortando el
+        # texto del aviso a mitad de palabra en vez de ajustarlo al recuadro.
         advertencia_parcial = (
-            f"> ⚠️ **Aviso:** no se ha podido generar {n_fallidos} de {len(fragmentos)} "
+            f"> **Aviso:** no se ha podido generar {n_fallidos} de {len(fragmentos)} "
             "secciones de este documento por un problema temporal con la IA. Pulsa «Regenerar» "
             "para completarlas.\n\n"
         )

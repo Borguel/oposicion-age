@@ -180,26 +180,24 @@ def resumir_pdf():
             try:
                 resumen = _generar_documento_validado(
                     system_prompt, text, etiqueta_documento="Documento para resumir",
-                    # max_tokens más alto y fragmentos algo más pequeños en
-                    # modo legal (10/08/2026, bug real): el prompt de "mapa
-                    # de artículos" exige cubrir CADA artículo sin omitir
-                    # ninguno -- un listón mucho más exigente que el resumen
-                    # narrativo general, y fragmentos más pequeños bajan de
-                    # verdad cuántos artículos hay que cubrir en una sola
-                    # llamada. Antes se bajaba hasta 8000 -- con un
-                    # documento de ~51.000 caracteres eso da 7 fragmentos,
-                    # cada uno una llamada más a DeepSeek que puede fallar o
-                    # no llegar a tiempo (visto en producción: 3-4 de 7
-                    # fragmentos sin completar). Subido a 12000: sigue
-                    # siendo bastante más pequeño que el general (15000)
-                    # para la exigencia de cobertura, pero con ~5
-                    # fragmentos en vez de 7 hay menos llamadas que puedan
-                    # fallar y el conjunto termina antes -- y si alguna
-                    # falla igualmente, generar_documento_largo_por_partes
-                    # ya no descarta todo el documento por eso (ver el
-                    # comentario largo junto a su definición).
+                    # max_tokens más alto en modo legal: el prompt de "mapa
+                    # de artículos" exige cubrir cada artículo, un listón
+                    # más exigente que el resumen narrativo general, así que
+                    # necesita más presupuesto de salida por llamada.
+                    #
+                    # tamano_chunk YA NO se reduce en modo legal (10/08/2026,
+                    # a petición explícita del usuario: "si hay que bajar un
+                    # poco de calidad no pasa nada... rápido, barato, calidad
+                    # media"). Antes se bajaba a 8000/12000 para que el
+                    # modelo cubriera mejor CADA artículo -- pero eso
+                    # multiplicaba el número de llamadas a DeepSeek (hasta 7
+                    # para un documento de ~51.000 caracteres), cada una un
+                    # punto más de fallo, más lento y con el system_prompt
+                    # pagado una vez por fragmento. Con TAMANO_CHUNK_CARACTERES
+                    # ya subido a 90000 (ver deepseek_utils.py), la inmensa
+                    # mayoría de documentos -- incluido ese de 51.000
+                    # caracteres -- caben en una sola llamada sin trocear.
                     max_tokens=8192 if es_legal else 4096,
-                    tamano_chunk=12000 if es_legal else TAMANO_CHUNK_CARACTERES,
                     on_usage=acumulador_tokens.add, on_progreso=on_progreso,
                 )
                 if resumen:
@@ -413,14 +411,15 @@ def generar_esquema_desde_pdf():
                     text,
                     etiqueta_documento="Documento para crear esquema",
                     instrucciones_fusion_extra=instrucciones_fusion_esquema,
-                    # max_tokens más alto y fragmentos algo más pequeños en
-                    # modo legal -- ver el comentario largo en resumir_pdf,
-                    # mismo motivo (el esquema legal también exige que cada
-                    # artículo mantenga su propio epígrafe, sin fusionar dos
-                    # distintos) y mismo ajuste (12000, no 8000: menos
-                    # llamadas que puedan fallar o no llegar a tiempo).
+                    # max_tokens más alto en modo legal -- ver el comentario
+                    # largo en resumir_pdf, mismo motivo (el esquema legal
+                    # también exige que cada artículo mantenga su propio
+                    # epígrafe) y misma decisión de no reducir tamano_chunk
+                    # (usa el TAMANO_CHUNK_CARACTERES general, ya subido a
+                    # 90000): menos llamadas, más barato y más rápido, a
+                    # cambio de algo de exhaustividad -- aceptable a
+                    # petición explícita del usuario.
                     max_tokens=8192 if es_legal else 4096,
-                    tamano_chunk=12000 if es_legal else TAMANO_CHUNK_CARACTERES,
                     on_usage=acumulador_tokens.add,
                     on_progreso=on_progreso,
                     # Umbrales de colapso propios del esquema (10/08/2026,

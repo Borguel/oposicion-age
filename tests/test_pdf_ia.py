@@ -251,13 +251,14 @@ class TestResumirPdfYGenerarTestDesdePdf:
     def test_resumir_pdf_parcial_con_aviso_se_guarda_como_exito_no_como_error(self, client, db, documento_sembrado):
         # 10/08/2026: generar_documento_largo_por_partes ya no descarta todo
         # el documento si falló algún fragmento -- devuelve lo que sí se
-        # generó con un aviso "> ⚠️ **Aviso:** ..." antepuesto (ver el
-        # comentario largo en deepseek_utils.py). La ruta debe tratar eso
-        # como CUALQUIER resumen normal (guardarlo, no marcar error_resumen)
-        # -- el aviso ya va dentro del propio contenido, visible para el
-        # usuario al abrirlo, no como un estado de fallo aparte.
+        # generó con un aviso "> **Aviso:** ..." antepuesto, sin emoji (ver
+        # el comentario largo en deepseek_utils.py -- un emoji ahí rompía el
+        # PDF descargado). La ruta debe tratar eso como CUALQUIER resumen
+        # normal (guardarlo, no marcar error_resumen) -- el aviso ya va
+        # dentro del propio contenido, visible para el usuario al abrirlo,
+        # no como un estado de fallo aparte.
         resumen_parcial = (
-            "> ⚠️ **Aviso:** no se ha podido generar 1 de 2 secciones de este documento por un "
+            "> **Aviso:** no se ha podido generar 1 de 2 secciones de este documento por un "
             "problema temporal con la IA. Pulsa «Regenerar» para completarlas.\n\n# Resumen parcial"
         )
         parche = _con_sesion(client)
@@ -762,11 +763,15 @@ class TestTipoContenidoEnResumenYEsquema:
             parche.stop()
         assert mock_gen.call_args.kwargs["max_tokens"] == 8192
 
-    def test_resumir_pdf_documento_legal_usa_fragmentos_mas_pequenos(self, client, db, documento_legal_sembrado):
-        # Más margen de tokens por sí solo no bastó en producción -- un
-        # fragmento más pequeño baja de verdad cuántos artículos hay que
-        # cubrir en una sola llamada, en vez de solo dar más presupuesto de
-        # salida para la misma tarea.
+    def test_resumir_pdf_documento_legal_ya_no_reduce_tamano_chunk(self, client, db, documento_legal_sembrado):
+        # 10/08/2026, a petición explícita del usuario ("si hay que bajar
+        # un poco de calidad no pasa nada... rápido, barato, calidad
+        # media"): antes, en modo legal, se pasaba un tamano_chunk más
+        # pequeño para mejorar la cobertura de artículos -- pero eso
+        # multiplicaba las llamadas a DeepSeek necesarias (más lento, más
+        # caro, más puntos de fallo con documentos largos). Ahora usa el
+        # mismo TAMANO_CHUNK_CARACTERES general (ya subido a 90000) que el
+        # resumen narrativo -- no se pasa ningún tamano_chunk propio.
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
@@ -775,7 +780,7 @@ class TestTipoContenidoEnResumenYEsquema:
                             headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
-        assert mock_gen.call_args.kwargs["tamano_chunk"] == 12000
+        assert "tamano_chunk" not in mock_gen.call_args.kwargs
 
     def test_resumir_pdf_documento_general_usa_max_tokens_normal(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
@@ -787,7 +792,7 @@ class TestTipoContenidoEnResumenYEsquema:
         finally:
             parche.stop()
         assert mock_gen.call_args.kwargs["max_tokens"] == 4096
-        assert mock_gen.call_args.kwargs["tamano_chunk"] == deepseek_utils.TAMANO_CHUNK_CARACTERES
+        assert "tamano_chunk" not in mock_gen.call_args.kwargs
 
     def test_resumir_pdf_override_manual_fuerza_legal_y_lo_persiste(self, client, db, documento_sembrado):
         # documento_sembrado es narrativo (la auto-detección daría
@@ -851,7 +856,9 @@ class TestTipoContenidoEnResumenYEsquema:
             parche.stop()
         assert mock_gen.call_args.kwargs["max_tokens"] == 8192
 
-    def test_generar_esquema_desde_pdf_documento_legal_usa_fragmentos_mas_pequenos(self, client, db, documento_legal_sembrado):
+    def test_generar_esquema_desde_pdf_documento_legal_ya_no_reduce_tamano_chunk(self, client, db, documento_legal_sembrado):
+        # Mismo motivo y misma decisión que en resumir_pdf -- ver el
+        # comentario largo ahí.
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
@@ -860,7 +867,7 @@ class TestTipoContenidoEnResumenYEsquema:
                             headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
-        assert mock_gen.call_args.kwargs["tamano_chunk"] == 12000
+        assert "tamano_chunk" not in mock_gen.call_args.kwargs
 
     def test_generar_esquema_desde_pdf_usa_umbrales_de_colapso_mas_bajos_que_el_resumen(self, client, db, documento_sembrado):
         # Bug real (10/08/2026): un esquema (árbol de epígrafes en viñetas,
@@ -1029,24 +1036,27 @@ class TestCosteIaEnHerramientasPdf:
         return datetime.utcnow().strftime("%Y-%m")
 
     def test_resumen_chunked_no_pierde_el_coste_del_map(self, client, db):
-        # 3 párrafos de 8000 caracteres cada uno (24000 en total): con el
-        # tamaño de trozo real (15000), ningún par de párrafos consecutivos
-        # cabe junto en un mismo fragmento (8000+8000+2 > 15000), así que
-        # cada uno acaba en su propio fragmento -- el MAP corre de verdad
-        # dentro del ThreadPoolExecutor (el caso que antes perdía el coste).
+        # 3 párrafos de 45.000 caracteres cada uno: con el tamaño de trozo
+        # real (TAMANO_CHUNK_CARACTERES, subido a 90000 el 10/08/2026 a
+        # petición del usuario -- ver el comentario largo junto a su
+        # definición en deepseek_utils.py), ningún par de párrafos
+        # consecutivos cabe junto en un mismo fragmento (45000+45000+2 >
+        # 90000), así que cada uno acaba en su propio fragmento -- el MAP
+        # corre de verdad dentro del ThreadPoolExecutor (el caso que antes
+        # perdía el coste).
         sembrar_usuario_activo(db, "u1", plan="premium")
-        texto = ("A" * 8000) + "\n\n" + ("B" * 8000) + "\n\n" + ("C" * 8000)
+        texto = ("A" * 45000) + "\n\n" + ("B" * 45000) + "\n\n" + ("C" * 45000)
         db.sembrar(("usuarios", "u1", "documentos", "d1"), {"texto": texto, "nombre_archivo": "doc.pdf"})
 
         contador_llamadas = itertools.count()
         # Con encabezado "# " (05/08/2026, ver _parece_documento_generado_valido)
-        # y con un tamaño realista frente al fragmento de entrada de 8000
+        # y con un tamaño realista frente al fragmento de entrada de 45.000
         # caracteres (10/08/2026, ver la comprobación de colapso del MAP en
         # generar_documento_largo_por_partes): un parcial demasiado corto se
         # vería como "colapsado" y se reintentaría, duplicando el coste que
         # este test mide.
-        parcial = "# Resumen parcial.\n" + ("Contenido real del fragmento. " * 60)
-        fusion = "# Resumen fusionado final.\n" + ("Todo el contenido de los tres parciales combinados. " * 60)
+        parcial = "# Resumen parcial.\n" + ("Contenido real del fragmento. " * 300)
+        fusion = "# Resumen fusionado final.\n" + ("Todo el contenido de los tres parciales combinados. " * 300)
 
         def fake_post(url, headers=None, json=None, timeout=None, stream=False):
             # La 4ª llamada (la fusión de los 3 parciales) también se deja

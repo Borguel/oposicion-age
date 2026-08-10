@@ -717,11 +717,14 @@ class TestGenerarDocumentoLargoPorPartes:
 
     def test_documento_largo_trocea_resume_por_partes_y_funde(self):
         # Dos párrafos de ~10.000 caracteres cada uno: por separado caben en
-        # un fragmento (tamaño 15.000), pero juntos no, así que se trocean en
-        # exactamente 2 fragmentos.
+        # un fragmento de tamaño 15.000 (el que se pasa explícitamente en
+        # este test para poder ejercitar el trocear/fundir -- el tamaño por
+        # defecto real, TAMANO_CHUNK_CARACTERES, se subió a 90000 a
+        # petición del usuario, ver el comentario largo junto a su
+        # definición), pero juntos no, así que se trocean en exactamente 2.
         parrafo = "a" * 10000
         texto_largo = f"{parrafo}\n\n{parrafo}"
-        assert len(deepseek_utils._trocear_en_parrafos(texto_largo)) == 2
+        assert len(deepseek_utils._trocear_en_parrafos(texto_largo, tamano=15000)) == 2
 
         # Los parciales y la fusión final se dejan largos a propósito -- por
         # debajo de _FRACCION_MINIMA_MAP/_FRACCION_MINIMA_FUSION del tamaño
@@ -733,7 +736,7 @@ class TestGenerarDocumentoLargoPorPartes:
         fusion_final = "fusión final. " * 300
         respuestas = [parcial_1, parcial_2, fusion_final]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
 
         assert resultado == fusion_final
         # Al menos una llamada de "map" por fragmento + 1 de fusión al final.
@@ -746,7 +749,7 @@ class TestGenerarDocumentoLargoPorPartes:
         parrafo = "a" * 10000
         texto_largo = f"{parrafo}\n\n{parrafo}"
         with patch("deepseek_utils.generar_con_continuacion", return_value=None):
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
         assert resultado is None
 
     def test_documento_largo_reintenta_fragmento_fallido_y_lo_recupera(self):
@@ -768,7 +771,7 @@ class TestGenerarDocumentoLargoPorPartes:
         fusion_final = "fusión final. " * 300
         respuestas = [None, parcial_2, parcial_1_reintentado, fusion_final]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
         assert resultado == fusion_final
         assert mock_gen.call_count == 4
 
@@ -795,11 +798,17 @@ class TestGenerarDocumentoLargoPorPartes:
         parcial_valido = "único parcial válido. " * 100
         respuestas = [None, parcial_valido, None]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
         assert resultado is not None
         assert "Aviso" in resultado
         assert "1 de 2" in resultado
         assert parcial_valido in resultado
+        # Sin emoji (10/08/2026, bug real: rompía el PDF descargado -- las
+        # fuentes estándar de jsPDF (WinAnsi/Latin-1) no tienen esos glifos
+        # y el texto del aviso salía cortado a mitad de palabra en vez de
+        # ajustarse al recuadro). Los acentos y « » sí son Latin-1 válido
+        # -- solo se comprueba que no haya nada por encima de ese rango.
+        assert all(ord(c) <= 255 for c in resultado.split("\n\n", 1)[0])
         # 2 llamadas del MAP inicial + 1 del reintento (que también falla).
         # Con un único fragmento aprovechable no hay fusión que intentar.
         assert mock_gen.call_count == 3
@@ -812,7 +821,7 @@ class TestGenerarDocumentoLargoPorPartes:
         texto_largo = f"{parrafo}\n\n{parrafo}"
         respuestas = [None, None, None, None]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
         assert resultado is None
         assert mock_gen.call_count == 4
 
@@ -841,7 +850,7 @@ class TestGenerarDocumentoLargoPorPartes:
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen, \
              patch("deepseek_utils.as_completed", side_effect=_as_completed_sin_timeout), \
              patch("deepseek_utils.time.monotonic", side_effect=[0, 1, 10_000]):
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
         # No hubo fragmentos fallidos (los 2 se generaron bien) -- sin
         # fundir por falta de tiempo, pero SIN aviso de sección faltante,
         # solo sin la fusión de coherencia.
@@ -859,7 +868,7 @@ class TestGenerarDocumentoLargoPorPartes:
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen, \
              patch("deepseek_utils.as_completed", side_effect=_as_completed_sin_timeout), \
              patch("deepseek_utils.time.monotonic", side_effect=[0, 1, 10_000]):
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
         assert parcial_valido in resultado
         assert "Aviso" in resultado
         # 2 llamadas del MAP inicial -- se agota el tiempo antes de
@@ -887,7 +896,7 @@ class TestGenerarDocumentoLargoPorPartes:
         with patch("deepseek_utils.generar_con_continuacion", side_effect=_lento), \
              patch("deepseek_utils._TIEMPO_MAXIMO_GENERACION_SEGUNDOS", 0.1):
             inicio = time.monotonic()
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
             duracion = time.monotonic() - inicio
         assert resultado is None
         # No debe esperar los 0.4s completos de los fragmentos -- se
@@ -943,7 +952,7 @@ class TestGenerarDocumentoLargoPorPartes:
         fusion_completa = "# Fusión completa\n" + ("todo el contenido fusionado. " * 80)
         respuestas = [parcial_1, parcial_2, fusion_colapsada, fusion_completa]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
         assert resultado == fusion_completa
         assert mock_gen.call_count == 4
 
@@ -960,7 +969,7 @@ class TestGenerarDocumentoLargoPorPartes:
         fusion_colapsada = "# Solo esto"
         respuestas = [parcial_1, parcial_2, fusion_colapsada, fusion_colapsada]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
         assert parcial_1 in resultado
         assert parcial_2 in resultado
         assert "Aviso" not in resultado
@@ -986,7 +995,7 @@ class TestGenerarDocumentoLargoPorPartes:
         fusion_completa = "# Fusión completa\n" + ("todo el contenido fusionado. " * 80)
         respuestas = [parcial_1_colapsado, parcial_2, parcial_1_recuperado, fusion_completa]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
         assert resultado == fusion_completa
         assert mock_gen.call_count == 4
 
@@ -997,7 +1006,7 @@ class TestGenerarDocumentoLargoPorPartes:
         parcial_2 = "# Parcial dos\n" + ("contenido real del fragmento dos. " * 50)
         respuestas = [parcial_1_colapsado, parcial_2, parcial_1_colapsado]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
         assert parcial_2 in resultado
         assert "Aviso" in resultado
         assert "1 de 2" in resultado
@@ -1027,7 +1036,7 @@ class TestGenerarDocumentoLargoPorPartes:
         respuestas = [parcial_compacto_1, parcial_compacto_2, fusion_compacta]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
             resultado = deepseek_utils.generar_documento_largo_por_partes(
-                "system", texto_largo,
+                "system", texto_largo, tamano_chunk=15000,
                 fraccion_minima_map=deepseek_utils.FRACCION_MINIMA_MAP_ESQUEMA,
                 fraccion_minima_fusion=deepseek_utils.FRACCION_MINIMA_FUSION_ESQUEMA,
             )
@@ -1048,7 +1057,7 @@ class TestGenerarDocumentoLargoPorPartes:
         # que siguen sospechosos y la función se rinde sin llegar a fundir.
         respuestas = [parcial_compacto_1, parcial_compacto_2, parcial_compacto_1, parcial_compacto_2]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
-            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=15000)
         assert resultado is None
         assert mock_gen.call_count == 4
 
