@@ -20,6 +20,7 @@ from email_utils import (
     enviar_email_reactivacion_suscripcion,
 )
 from promociones import leer_promocion, promocion_vigente
+from utils import invalidar_cache
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,20 @@ NOMBRE_PLAN = {"basico": "Básico", "premium": "Premium"}
 # producto que ve el usuario en el Checkout/portal de Stripe distinga de
 # qué oposición es cada suscripción (ver /crear-sesion-checkout).
 SIGLAS_OPOSICION = {"AGE": "AGE", "GACE": "GACE", "AUXILIAR": "Auxiliar"}
+
+
+def _invalidar_cache_admin_tras_cambio_suscripcion():
+    """Los agregados del panel admin (dashboard, Bajas, Ingresos) se
+    cachean unos minutos (ver _TTL_CACHE_ADMIN_SEGUNDOS en admin.py) para
+    no recorrer TODA la colección de usuarios en cada apertura del panel.
+    Se invalida aquí, justo al cancelar/reactivar una suscripción, para
+    que una baja recién dada no tarde hasta 3 minutos en aparecer en
+    "Bajas recientes" -- exactamente el problema que se pidió arreglar."""
+    invalidar_cache(("admin_bajas", True))
+    invalidar_cache(("admin_bajas", False))
+    invalidar_cache(("admin_ingresos_filas",))
+    for oid in OPOSICIONES:
+        invalidar_cache(("admin_resumen", oid))
 
 
 @bp.route("/mi-perfil", methods=["GET"])
@@ -248,6 +263,7 @@ def cancelar_suscripcion():
             g.uid, subscription_id,
         )
         actualizar_suscripcion(db, g.uid, oposicion, plan="gratis", subscription_status="canceled")
+        _invalidar_cache_admin_tras_cambio_suscripcion()
         return jsonify({"mensaje": "Tu suscripción ya no estaba activa; tu cuenta ha quedado en el plan gratuito."})
     except Exception as e:
         logger.exception("Error cancelando suscripción de Stripe %s", subscription_id)
@@ -260,6 +276,7 @@ def cancelar_suscripcion():
         "fecha": datetime.utcnow().isoformat(),
     })
     actualizar_suscripcion(db, g.uid, oposicion, cancelar_al_final_periodo=True)
+    _invalidar_cache_admin_tras_cambio_suscripcion()
 
     periodo_fin = _current_period_end(subscription)
     fecha_fin_iso = datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None
@@ -306,6 +323,7 @@ def reactivar_suscripcion():
             g.uid, subscription_id,
         )
         actualizar_suscripcion(db, g.uid, oposicion, plan="gratis", subscription_status="canceled", cancelar_al_final_periodo=False)
+        _invalidar_cache_admin_tras_cambio_suscripcion()
         return jsonify({
             "error": "No hemos encontrado ninguna suscripción activa que reactivar; tu cuenta ha quedado en el plan gratuito. Si quieres seguir con Premium o Básico, contrátalo de nuevo desde la página de planes."
         }), 400
@@ -314,6 +332,7 @@ def reactivar_suscripcion():
         return jsonify({"error": str(e)}), 500
 
     actualizar_suscripcion(db, g.uid, oposicion, cancelar_al_final_periodo=False)
+    _invalidar_cache_admin_tras_cambio_suscripcion()
     oposicion_nombre = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
     enviar_email_reactivacion_suscripcion(g.email, oposicion_nombre)
     return jsonify({"mensaje": "Tu suscripción se ha reactivado."})
@@ -484,5 +503,10 @@ def webhook_stripe():
         logger.exception("Error procesando webhook de Stripe (%s)", tipo)
         return jsonify({"error": "Error interno procesando el evento"}), 500
 
+    # Los 4 tipos de evento de arriba cambian el plan/estado de una
+    # suscripción -- este es el camino MÁS habitual en producción para que
+    # cambie de verdad (renovaciones, altas y pagos fallidos reales sí
+    # llegan por aquí, no por los botones de cancelar/reactivar de la app).
+    _invalidar_cache_admin_tras_cambio_suscripcion()
     evento_ref.set({"type": tipo, "processed_at": datetime.utcnow().isoformat()})
     return jsonify({"mensaje": "Evento procesado"}), 200

@@ -33,7 +33,7 @@ from coste_ia import resumen_coste_usuario
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
 from blueprints.pagos import MOTIVOS_BAJA_VALIDOS
 from limites_uso import cargar_limites_config, guardar_limites_config, TIPOS_META, limites_efectivos, _clave_periodo
-from utils import _limpiar_cache_temario
+from utils import _desde_cache_o_calcular, _limpiar_cache_temario, invalidar_cache
 from banco_preguntas_ia import coleccion_banco_preguntas
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,36 @@ bp = Blueprint("admin", __name__)
 # Precio mensual por plan (€), para estimar los ingresos recurrentes (MRR)
 # en el panel. Debe cuadrar con la página de Planes.
 _PRECIO_PLAN = {"basico": 4.99, "premium": 9.99}
+
+def _invalidar_cache_admin_usuarios():
+    """Se llama tras crear/eliminar un usuario o cambiarle el plan o la
+    prueba gratuita -- son los campos que salen en las vistas cacheadas de
+    Usuarios/Ingresos/dashboard (ver _TTL_CACHE_ADMIN_SEGUNDOS), así que
+    sin esto el propio admin no vería su cambio reflejado hasta que
+    venciera la caché."""
+    invalidar_cache(("admin_usuarios_decorados",))
+    invalidar_cache(("admin_ingresos_filas",))
+    for oid in OPOSICIONES:
+        invalidar_cache(("admin_resumen", oid))
+
+
+# TTL de la caché en memoria (ver _desde_cache_o_calcular en utils.py) para
+# las vistas del panel que agregan TODA la colección de usuarios (o un
+# collection_group sobre todos ellos): dashboard, analítica, bajas,
+# ingresos y la lista de usuarios. Sin esto, cada apertura del panel
+# vuelve a leer y sumar TODOS los documentos de Firestore -- con pocos
+# usuarios no se nota, pero el coste (lecturas reales facturadas) y el
+# tiempo de respuesta crecen de forma lineal con el nº de usuarios, hasta
+# arriesgar timeout. 3 minutos es un compromiso deliberado: de sobra para
+# que abrir/cambiar de pestaña varias veces seguidas no repita el barrido,
+# sin que el dashboard se quede desactualizado tanto tiempo como para que
+# un admin lo note revisándolo con la frecuencia normal de uso. No hay
+# invalidación activa al escribir (a diferencia de _limpiar_cache_temario,
+# que sí se dispara al editar temario) porque aquí la frescura al segundo
+# no importa -- es exactamente el trueque que se acepta a cambio de no
+# montar una pieza de infraestructura nueva (Cloud Functions/triggers)
+# solo para esto.
+_TTL_CACHE_ADMIN_SEGUNDOS = 180
 
 
 # ============================================================
@@ -242,18 +272,24 @@ def _uso_pico(datos, plan, tools):
 def _fallos_agregados(oposicion=None):
     """Agrega el banco de falladas de TODOS los usuarios (collection_group)
     -- solo cifras agregadas, nunca qué usuario falló qué. Devuelve
-    (fallos_por_tema, fallos_por_hash_de_pregunta)."""
-    fallos_por_tema = {}
-    fallos_por_hash = {}
-    for doc in db.collection_group("preguntas_falladas").stream():
-        datos = doc.to_dict() or {}
-        if oposicion and datos.get("oposicion") != oposicion:
-            continue
-        veces = datos.get("veces_fallada", 1) or 1
-        tema = datos.get("tema_id") or "(sin tema)"
-        fallos_por_tema[tema] = fallos_por_tema.get(tema, 0) + veces
-        fallos_por_hash[doc.id] = fallos_por_hash.get(doc.id, 0) + veces
-    return fallos_por_tema, fallos_por_hash
+    (fallos_por_tema, fallos_por_hash_de_pregunta).
+
+    Cacheado (ver _TTL_CACHE_ADMIN_SEGUNDOS): se llama tanto desde resumen()
+    del dashboard como desde preguntas_listar() en cada carga de "Preguntas"
+    -- sin caché, cada una vuelve a recorrer TODO el collection_group."""
+    def _calcular():
+        fallos_por_tema = {}
+        fallos_por_hash = {}
+        for doc in db.collection_group("preguntas_falladas").stream():
+            datos = doc.to_dict() or {}
+            if oposicion and datos.get("oposicion") != oposicion:
+                continue
+            veces = datos.get("veces_fallada", 1) or 1
+            tema = datos.get("tema_id") or "(sin tema)"
+            fallos_por_tema[tema] = fallos_por_tema.get(tema, 0) + veces
+            fallos_por_hash[doc.id] = fallos_por_hash.get(doc.id, 0) + veces
+        return fallos_por_tema, fallos_por_hash
+    return _desde_cache_o_calcular(("admin_fallos", oposicion), _calcular, ttl_segundos=_TTL_CACHE_ADMIN_SEGUNDOS)
 
 
 LIMITE_BAJAS_RECIENTES = 30
@@ -270,60 +306,70 @@ def _bajas_agregadas(incluir_recientes=False):
     seguimiento u ofrecerles algo antes de que el periodo ya pagado
     termine de verdad -- bajas_motivos se escribe en el momento en que se
     pulsa "cancelar", no cuando el periodo vence, así que esto incluye
-    tanto bajas ya efectivas como canceladas pero todavía activas."""
-    por_motivo = {m: 0 for m in MOTIVOS_BAJA_VALIDOS}
-    por_oposicion = {}
-    comentarios = []
-    crudos = []  # (fecha, uid, motivo, comentario, oposicion) -- para "recientes"
-    total = 0
-    for doc in db.collection_group("bajas_motivos").stream():
-        datos = doc.to_dict() or {}
-        motivo = datos.get("motivo")
-        if motivo not in por_motivo:
-            continue
-        total += 1
-        por_motivo[motivo] += 1
-        oposicion = datos.get("oposicion") or "(sin oposición)"
-        por_oposicion[oposicion] = por_oposicion.get(oposicion, 0) + 1
-        comentario = (datos.get("comentario") or "").strip()
-        fecha = datos.get("fecha", "")
-        if comentario:
-            comentarios.append({"motivo": motivo, "comentario": comentario, "oposicion": oposicion, "fecha": fecha})
-        if incluir_recientes:
-            # bajas_motivos siempre cuelga de usuarios/<uid>/bajas_motivos/<id>
-            # -- se lee el uid del propio path en vez de .reference.parent.parent
-            # para que funcione igual contra el Firestore real y contra el
-            # doble de pruebas (tests/fakes.py), que no implementa .parent.
-            partes = doc.reference.path.split("/")
-            if len(partes) >= 3 and partes[0] == "usuarios":
-                crudos.append((fecha, partes[1], motivo, comentario, oposicion))
-    comentarios.sort(key=lambda c: c.get("fecha", ""), reverse=True)
-    resultado = {"total": total, "por_motivo": por_motivo, "por_oposicion": por_oposicion,
-                 "comentarios_recientes": comentarios[:50]}
+    tanto bajas ya efectivas como canceladas pero todavía activas.
 
-    if incluir_recientes:
-        crudos.sort(key=lambda c: c[0], reverse=True)
-        recientes = []
-        for fecha, uid, motivo, comentario, oposicion in crudos[:LIMITE_BAJAS_RECIENTES]:
-            u = (db.collection("usuarios").document(uid).get().to_dict() or {})
-            sub = (u.get("suscripciones") or {}).get(oposicion, {}) or {}
-            recientes.append({
-                "uid": uid,
-                "email": u.get("email", ""),
-                "nombre": u.get("nombre", ""),
-                "oposicion": oposicion,
-                "motivo": motivo,
-                "comentario": comentario,
-                "fecha": fecha,
-                # Si ya volvió a "gratis" es que el periodo ya venció de verdad;
-                # si sigue en básico/premium es que la baja todavía está
-                # pendiente (cancelar_al_final_periodo) -- justo la que más
-                # interesa para intentar retenerla a tiempo.
-                "efectiva": sub.get("plan", "gratis") == "gratis",
-                "proxima_renovacion": sub.get("current_period_end"),
-            })
-        resultado["recientes"] = recientes
-    return resultado
+    Cacheado por separado según incluir_recientes (ver
+    _TTL_CACHE_ADMIN_SEGUNDOS): NUNCA se comparte la misma entrada de
+    caché entre True y False, porque "recientes" lleva uid/email/nombre y
+    solo debe verlo quien tenga permiso 'usuarios' -- compartir la
+    entrada filtraría esos datos a quien solo tiene 'reportes' (o los
+    ocultaría a quien sí debería verlos) según quién hubiera pedido la
+    lista primero."""
+    def _calcular():
+        por_motivo = {m: 0 for m in MOTIVOS_BAJA_VALIDOS}
+        por_oposicion = {}
+        comentarios = []
+        crudos = []  # (fecha, uid, motivo, comentario, oposicion) -- para "recientes"
+        total = 0
+        for doc in db.collection_group("bajas_motivos").stream():
+            datos = doc.to_dict() or {}
+            motivo = datos.get("motivo")
+            if motivo not in por_motivo:
+                continue
+            total += 1
+            por_motivo[motivo] += 1
+            oposicion = datos.get("oposicion") or "(sin oposición)"
+            por_oposicion[oposicion] = por_oposicion.get(oposicion, 0) + 1
+            comentario = (datos.get("comentario") or "").strip()
+            fecha = datos.get("fecha", "")
+            if comentario:
+                comentarios.append({"motivo": motivo, "comentario": comentario, "oposicion": oposicion, "fecha": fecha})
+            if incluir_recientes:
+                # bajas_motivos siempre cuelga de usuarios/<uid>/bajas_motivos/<id>
+                # -- se lee el uid del propio path en vez de .reference.parent.parent
+                # para que funcione igual contra el Firestore real y contra el
+                # doble de pruebas (tests/fakes.py), que no implementa .parent.
+                partes = doc.reference.path.split("/")
+                if len(partes) >= 3 and partes[0] == "usuarios":
+                    crudos.append((fecha, partes[1], motivo, comentario, oposicion))
+        comentarios.sort(key=lambda c: c.get("fecha", ""), reverse=True)
+        resultado = {"total": total, "por_motivo": por_motivo, "por_oposicion": por_oposicion,
+                     "comentarios_recientes": comentarios[:50]}
+
+        if incluir_recientes:
+            crudos.sort(key=lambda c: c[0], reverse=True)
+            recientes = []
+            for fecha, uid, motivo, comentario, oposicion in crudos[:LIMITE_BAJAS_RECIENTES]:
+                u = (db.collection("usuarios").document(uid).get().to_dict() or {})
+                sub = (u.get("suscripciones") or {}).get(oposicion, {}) or {}
+                recientes.append({
+                    "uid": uid,
+                    "email": u.get("email", ""),
+                    "nombre": u.get("nombre", ""),
+                    "oposicion": oposicion,
+                    "motivo": motivo,
+                    "comentario": comentario,
+                    "fecha": fecha,
+                    # Si ya volvió a "gratis" es que el periodo ya venció de verdad;
+                    # si sigue en básico/premium es que la baja todavía está
+                    # pendiente (cancelar_al_final_periodo) -- justo la que más
+                    # interesa para intentar retenerla a tiempo.
+                    "efectiva": sub.get("plan", "gratis") == "gratis",
+                    "proxima_renovacion": sub.get("current_period_end"),
+                })
+            resultado["recientes"] = recientes
+        return resultado
+    return _desde_cache_o_calcular(("admin_bajas", incluir_recientes), _calcular, ttl_segundos=_TTL_CACHE_ADMIN_SEGUNDOS)
 
 
 def _titulo_tema(coleccion, tema_id):
@@ -420,98 +466,106 @@ def _preguntas_stats(oposicion):
 @requiere_permiso(*PERMISOS_VALIDOS)  # cualquier miembro del equipo
 def resumen():
     oposicion = request.args.get("oposicion") or "AGE"
-    ahora = datetime.utcnow()
-    hace_7, hace_30 = ahora - timedelta(days=7), ahora - timedelta(days=30)
-    total_usuarios = 0
-    por_plan = {}
-    tests_7 = tests_30 = tests_total = 0
-    usuarios_nuevos_7 = usuarios_nuevos_30 = 0
-    activos_7 = 0
-    suscripciones_pago = 0
-    mrr = 0.0
-    coste_ia_mes_total = 0.0
-    gastadores = []  # (coste_mes, email, plan, uid)
 
-    for doc in db.collection("usuarios").stream():
-        datos = doc.to_dict() or {}
-        total_usuarios += 1
-        plan = _plan_usuario(datos)
-        por_plan[plan] = por_plan.get(plan, 0) + 1
-        coste_mes, _coste_total, _tok = resumen_coste_usuario(datos)
-        if coste_mes > 0:
-            coste_ia_mes_total += coste_mes
-            gastadores.append({"uid": doc.id, "email": datos.get("email", ""), "plan": plan, "coste_mes": coste_mes})
-        # MRR: se cuenta CADA suscripción de pago (una por oposición).
-        for _oid, sub in (datos.get("suscripciones") or {}).items():
-            precio = _PRECIO_PLAN.get((sub or {}).get("plan"))
-            if precio:
-                suscripciones_pago += 1
-                mrr += precio
-        alta = _parse_fecha(datos.get("fecha_creacion"))
-        if alta and alta >= hace_7:
-            usuarios_nuevos_7 += 1
-        if alta and alta >= hace_30:
-            usuarios_nuevos_30 += 1
-        ult = _parse_fecha(datos.get("ultima_actividad"))
-        if ult and ult >= hace_7:
-            activos_7 += 1
-        for _op, e in (datos.get("estadisticas") or {}).items():
-            for t in (e.get("historial_tests") or []):
-                tests_total += 1
-                fecha = _parse_fecha(t.get("fecha"))
-                if not fecha:
-                    continue
-                if fecha >= hace_7:
-                    tests_7 += 1
-                if fecha >= hace_30:
-                    tests_30 += 1
+    # Todo el cuerpo cacheado como una unidad (ver _TTL_CACHE_ADMIN_SEGUNDOS):
+    # antes esta ruta recorría TODA la colección de usuarios en cada
+    # apertura del dashboard -- con pocos usuarios no se nota, pero el
+    # coste (lecturas reales de Firestore) y el tiempo de respuesta crecen
+    # con el nº de usuarios, hasta arriesgar timeout.
+    def _calcular():
+        ahora = datetime.utcnow()
+        hace_7, hace_30 = ahora - timedelta(days=7), ahora - timedelta(days=30)
+        total_usuarios = 0
+        por_plan = {}
+        tests_7 = tests_30 = tests_total = 0
+        usuarios_nuevos_7 = usuarios_nuevos_30 = 0
+        activos_7 = 0
+        suscripciones_pago = 0
+        mrr = 0.0
+        coste_ia_mes_total = 0.0
+        gastadores = []  # (coste_mes, email, plan, uid)
 
-    fallos_por_tema, _ = _fallos_agregados()
-    top_temas = [
-        {"tema_id": tid, "titulo": _titulo_tema(coleccion_temario("AGE"), tid) if tid.startswith("bloque") else tid, "fallos": n}
-        for tid, n in sorted(fallos_por_tema.items(), key=lambda kv: kv[1], reverse=True)[:5]
-    ]
-    # Desglosados (no solo la suma) para poder pintar un aviso propio en
-    # cada pestaña -- "Preguntas reportadas" y "Mensajes de soporte" son dos
-    # bandejas independientes y un admin puede querer saber cuál de las dos
-    # tiene algo nuevo sin entrar a mirar las dos.
-    preguntas_reportadas_pendientes = sum(
-        1 for doc in db.collection("errores_generacion").where("fuente", "==", "usuario_admin").stream()
-        if (doc.to_dict() or {}).get("estado", "pendiente") == "pendiente"
-    )
-    soporte_pendientes = sum(
-        1 for _ in db.collection("mensajes_soporte").where("estado", "==", "pendiente").stream()
-    )
-    reportes_pendientes = preguntas_reportadas_pendientes + soporte_pendientes
-    cambios_temario_pendientes = sum(
-        1 for _ in db.collection("cambios_temario_propuestos").where("estado", "==", "pendiente").stream()
-    )
-    avisos_oficiales_pendientes = sum(
-        1 for _ in db.collection("avisos_oficiales").where("estado", "==", "pendiente").stream()
-    )
-    return jsonify({
-        "usuarios_totales": total_usuarios,
-        "usuarios_por_plan": por_plan,
-        "suscripciones_pago": suscripciones_pago,
-        "mrr": round(mrr, 2),
-        "coste_ia_mes": round(coste_ia_mes_total, 2),
-        "top_gastadores_ia": sorted(gastadores, key=lambda g: g["coste_mes"], reverse=True)[:5],
-        "usuarios_nuevos_7_dias": usuarios_nuevos_7,
-        "usuarios_nuevos_30_dias": usuarios_nuevos_30,
-        "usuarios_activos_7_dias": activos_7,
-        "tests_ultimos_7_dias": tests_7,
-        "tests_ultimos_30_dias": tests_30,
-        "tests_total": tests_total,
-        "top_temas_fallados": top_temas,
-        "reportes_pendientes": reportes_pendientes,
-        "reportes_pendientes_preguntas": preguntas_reportadas_pendientes,
-        "reportes_pendientes_soporte": soporte_pendientes,
-        "cambios_temario_pendientes": cambios_temario_pendientes,
-        "avisos_oficiales_pendientes": avisos_oficiales_pendientes,
-        "oposicion": oposicion,
-        "salud_contenido": _salud_contenido(oposicion),
-        "preguntas_stats": _preguntas_stats(oposicion),
-    })
+        for doc in db.collection("usuarios").stream():
+            datos = doc.to_dict() or {}
+            total_usuarios += 1
+            plan = _plan_usuario(datos)
+            por_plan[plan] = por_plan.get(plan, 0) + 1
+            coste_mes, _coste_total, _tok = resumen_coste_usuario(datos)
+            if coste_mes > 0:
+                coste_ia_mes_total += coste_mes
+                gastadores.append({"uid": doc.id, "email": datos.get("email", ""), "plan": plan, "coste_mes": coste_mes})
+            # MRR: se cuenta CADA suscripción de pago (una por oposición).
+            for _oid, sub in (datos.get("suscripciones") or {}).items():
+                precio = _PRECIO_PLAN.get((sub or {}).get("plan"))
+                if precio:
+                    suscripciones_pago += 1
+                    mrr += precio
+            alta = _parse_fecha(datos.get("fecha_creacion"))
+            if alta and alta >= hace_7:
+                usuarios_nuevos_7 += 1
+            if alta and alta >= hace_30:
+                usuarios_nuevos_30 += 1
+            ult = _parse_fecha(datos.get("ultima_actividad"))
+            if ult and ult >= hace_7:
+                activos_7 += 1
+            for _op, e in (datos.get("estadisticas") or {}).items():
+                for t in (e.get("historial_tests") or []):
+                    tests_total += 1
+                    fecha = _parse_fecha(t.get("fecha"))
+                    if not fecha:
+                        continue
+                    if fecha >= hace_7:
+                        tests_7 += 1
+                    if fecha >= hace_30:
+                        tests_30 += 1
+
+        fallos_por_tema, _ = _fallos_agregados()
+        top_temas = [
+            {"tema_id": tid, "titulo": _titulo_tema(coleccion_temario("AGE"), tid) if tid.startswith("bloque") else tid, "fallos": n}
+            for tid, n in sorted(fallos_por_tema.items(), key=lambda kv: kv[1], reverse=True)[:5]
+        ]
+        # Desglosados (no solo la suma) para poder pintar un aviso propio en
+        # cada pestaña -- "Preguntas reportadas" y "Mensajes de soporte" son dos
+        # bandejas independientes y un admin puede querer saber cuál de las dos
+        # tiene algo nuevo sin entrar a mirar las dos.
+        preguntas_reportadas_pendientes = sum(
+            1 for doc in db.collection("errores_generacion").where("fuente", "==", "usuario_admin").stream()
+            if (doc.to_dict() or {}).get("estado", "pendiente") == "pendiente"
+        )
+        soporte_pendientes = sum(
+            1 for _ in db.collection("mensajes_soporte").where("estado", "==", "pendiente").stream()
+        )
+        reportes_pendientes = preguntas_reportadas_pendientes + soporte_pendientes
+        cambios_temario_pendientes = sum(
+            1 for _ in db.collection("cambios_temario_propuestos").where("estado", "==", "pendiente").stream()
+        )
+        avisos_oficiales_pendientes = sum(
+            1 for _ in db.collection("avisos_oficiales").where("estado", "==", "pendiente").stream()
+        )
+        return {
+            "usuarios_totales": total_usuarios,
+            "usuarios_por_plan": por_plan,
+            "suscripciones_pago": suscripciones_pago,
+            "mrr": round(mrr, 2),
+            "coste_ia_mes": round(coste_ia_mes_total, 2),
+            "top_gastadores_ia": sorted(gastadores, key=lambda g: g["coste_mes"], reverse=True)[:5],
+            "usuarios_nuevos_7_dias": usuarios_nuevos_7,
+            "usuarios_nuevos_30_dias": usuarios_nuevos_30,
+            "usuarios_activos_7_dias": activos_7,
+            "tests_ultimos_7_dias": tests_7,
+            "tests_ultimos_30_dias": tests_30,
+            "tests_total": tests_total,
+            "top_temas_fallados": top_temas,
+            "reportes_pendientes": reportes_pendientes,
+            "reportes_pendientes_preguntas": preguntas_reportadas_pendientes,
+            "reportes_pendientes_soporte": soporte_pendientes,
+            "cambios_temario_pendientes": cambios_temario_pendientes,
+            "avisos_oficiales_pendientes": avisos_oficiales_pendientes,
+            "oposicion": oposicion,
+            "salud_contenido": _salud_contenido(oposicion),
+            "preguntas_stats": _preguntas_stats(oposicion),
+        }
+    return jsonify(_desde_cache_o_calcular(("admin_resumen", oposicion), _calcular, ttl_segundos=_TTL_CACHE_ADMIN_SEGUNDOS))
 
 
 # ============================================================
@@ -528,43 +582,46 @@ def analitica_contenido():
     if not oposicion_valida(oposicion):
         return jsonify({"error": "Oposición no válida"}), 400
 
-    agg = {}
-    for doc in db.collection("usuarios").stream():
-        e = ((doc.to_dict() or {}).get("estadisticas") or {}).get(oposicion) or {}
-        for tid, r in (e.get("rendimiento_por_tema") or {}).items():
-            a = agg.setdefault(tid, {"aciertos": 0, "fallos": 0, "blancos": 0})
-            a["aciertos"] += (r or {}).get("aciertos", 0)
-            a["fallos"] += (r or {}).get("fallos", 0)
-            a["blancos"] += (r or {}).get("blancos", 0)
+    # Cacheado (ver _TTL_CACHE_ADMIN_SEGUNDOS): recorre TODA la colección de
+    # usuarios en cada carga, igual que resumen() del dashboard.
+    def _calcular():
+        agg = {}
+        for doc in db.collection("usuarios").stream():
+            e = ((doc.to_dict() or {}).get("estadisticas") or {}).get(oposicion) or {}
+            for tid, r in (e.get("rendimiento_por_tema") or {}).items():
+                a = agg.setdefault(tid, {"aciertos": 0, "fallos": 0, "blancos": 0})
+                a["aciertos"] += (r or {}).get("aciertos", 0)
+                a["fallos"] += (r or {}).get("fallos", 0)
+                a["blancos"] += (r or {}).get("blancos", 0)
 
-    coleccion = coleccion_temario(oposicion)
-    temas = []
-    for tid, r in agg.items():
-        respondidas = r["aciertos"] + r["fallos"]
-        intentos = respondidas + r["blancos"]
-        temas.append({
-            "tema_id": tid,
-            "titulo": _titulo_tema(coleccion, tid) if str(tid).startswith("bloque") else tid,
-            "intentos": intentos,
-            "respondidas": respondidas,
-            "aciertos": r["aciertos"],
-            "fallos": r["fallos"],
-            "blancos": r["blancos"],
-            "tasa_acierto": round(100 * r["aciertos"] / respondidas, 1) if respondidas else None,
-        })
-    temas.sort(key=lambda t: t["intentos"], reverse=True)
+        coleccion = coleccion_temario(oposicion)
+        temas = []
+        for tid, r in agg.items():
+            respondidas = r["aciertos"] + r["fallos"]
+            intentos = respondidas + r["blancos"]
+            temas.append({
+                "tema_id": tid,
+                "titulo": _titulo_tema(coleccion, tid) if str(tid).startswith("bloque") else tid,
+                "intentos": intentos,
+                "respondidas": respondidas,
+                "aciertos": r["aciertos"],
+                "fallos": r["fallos"],
+                "blancos": r["blancos"],
+                "tasa_acierto": round(100 * r["aciertos"] / respondidas, 1) if respondidas else None,
+            })
+        temas.sort(key=lambda t: t["intentos"], reverse=True)
 
-    # Temas del temario que no registran ninguna actividad.
-    con_actividad = set(agg.keys())
-    sin_actividad = []
-    for bloque in db.collection(coleccion).stream():
-        for tema in db.collection(coleccion).document(bloque.id).collection("temas").stream():
-            tid = f"{bloque.id}-{tema.id}"
-            if tid not in con_actividad:
-                sin_actividad.append({"tema_id": tid, "titulo": (tema.to_dict() or {}).get("titulo", tid)})
-    sin_actividad.sort(key=lambda t: t["tema_id"])
-
-    return jsonify({"oposicion": oposicion, "temas": temas, "sin_actividad": sin_actividad})
+        # Temas del temario que no registran ninguna actividad.
+        con_actividad = set(agg.keys())
+        sin_actividad = []
+        for bloque in db.collection(coleccion).stream():
+            for tema in db.collection(coleccion).document(bloque.id).collection("temas").stream():
+                tid = f"{bloque.id}-{tema.id}"
+                if tid not in con_actividad:
+                    sin_actividad.append({"tema_id": tid, "titulo": (tema.to_dict() or {}).get("titulo", tid)})
+        sin_actividad.sort(key=lambda t: t["tema_id"])
+        return {"oposicion": oposicion, "temas": temas, "sin_actividad": sin_actividad}
+    return jsonify(_desde_cache_o_calcular(("admin_analitica", oposicion), _calcular, ttl_segundos=_TTL_CACHE_ADMIN_SEGUNDOS))
 
 
 @bp.route("/admin/api/banco-preguntas", methods=["GET"])
@@ -1063,6 +1120,44 @@ def preguntas_export():
 # ============================================================
 # Usuarios
 # ============================================================
+def _todos_usuarios_decorados():
+    """Todos los usuarios ya decorados (plan efectivo, % de uso, oposiciones
+    activas...) -- cacheado como unidad (ver _TTL_CACHE_ADMIN_SEGUNDOS) para
+    que usuarios_listar/usuarios_export filtren, ordenen y paginen esta
+    MISMA lista en memoria en vez de repetir el barrido completo de
+    Firestore en cada combinación de búsqueda/plan/página/exportación."""
+    def _calcular():
+        tools_efectivos = limites_efectivos(db)["tools"]  # ya cacheado aparte
+        decorados = []
+        for doc in db.collection("usuarios").stream():
+            datos = doc.to_dict() or {}
+            plan = _plan_usuario(datos)
+            uso_pct, uso_tool = _uso_pico(datos, plan, tools_efectivos)
+            en_prueba, _prueba_fin = resumen_prueba_cuenta(datos)
+            decorados.append({
+                "uid": doc.id,
+                "email": datos.get("email", ""),
+                "nombre": datos.get("nombre", ""),
+                "plan": plan,
+                "en_prueba": en_prueba,
+                "oposiciones_activas": _oposiciones_activas(datos),
+                "fecha_creacion": datos.get("fecha_creacion"),
+                "ultima_actividad": datos.get("ultima_actividad"),
+                "uso_pct": uso_pct,
+                "uso_tool": uso_tool,
+            })
+        return decorados
+    return _desde_cache_o_calcular(("admin_usuarios_decorados",), _calcular, ttl_segundos=_TTL_CACHE_ADMIN_SEGUNDOS)
+
+
+def _usuarios_filtrados(busqueda, filtro_plan):
+    return [
+        u for u in _todos_usuarios_decorados()
+        if (not busqueda or busqueda in u["email"].lower())
+        and (not filtro_plan or u["plan"] == filtro_plan)
+    ]
+
+
 @bp.route("/admin/api/usuarios", methods=["GET"])
 @requiere_permiso("usuarios")
 def usuarios_listar():
@@ -1073,31 +1168,8 @@ def usuarios_listar():
     except (TypeError, ValueError):
         pagina = 1
     por_pagina = 20
-    tools_efectivos = limites_efectivos(db)["tools"]  # una vez, cacheado
 
-    filtrados = []
-    for doc in db.collection("usuarios").stream():
-        datos = doc.to_dict() or {}
-        email = (datos.get("email") or "").lower()
-        plan = _plan_usuario(datos)
-        if busqueda and busqueda not in email:
-            continue
-        if filtro_plan and plan != filtro_plan:
-            continue
-        uso_pct, uso_tool = _uso_pico(datos, plan, tools_efectivos)
-        en_prueba, _prueba_fin = resumen_prueba_cuenta(datos)
-        filtrados.append({
-            "uid": doc.id,
-            "email": datos.get("email", ""),
-            "nombre": datos.get("nombre", ""),
-            "plan": plan,
-            "en_prueba": en_prueba,
-            "oposiciones_activas": _oposiciones_activas(datos),
-            "fecha_creacion": datos.get("fecha_creacion"),
-            "ultima_actividad": datos.get("ultima_actividad"),
-            "uso_pct": uso_pct,
-            "uso_tool": uso_tool,
-        })
+    filtrados = _usuarios_filtrados(busqueda, filtro_plan)
 
     orden = request.args.get("orden") or ""
     if orden == "uso":
@@ -1120,21 +1192,15 @@ def usuarios_export():
     """Descarga todos los usuarios (con los filtros aplicados) en CSV."""
     busqueda = (request.args.get("busqueda") or "").strip().lower()
     filtro_plan = request.args.get("plan") or ""
-    filas = []
-    for doc in db.collection("usuarios").stream():
-        datos = doc.to_dict() or {}
-        email = (datos.get("email") or "").lower()
-        plan = _plan_usuario(datos)
-        if busqueda and busqueda not in email:
-            continue
-        if filtro_plan and plan != filtro_plan:
-            continue
-        filas.append([
-            doc.id, datos.get("email", ""), datos.get("nombre", ""), plan,
-            ", ".join(_oposiciones_activas(datos)),
-            (datos.get("fecha_creacion") or "")[:10],
-            (datos.get("ultima_actividad") or "")[:10],
-        ])
+    filas = [
+        [
+            u["uid"], u["email"], u["nombre"], u["plan"],
+            ", ".join(u["oposiciones_activas"]),
+            (u["fecha_creacion"] or "")[:10],
+            (u["ultima_actividad"] or "")[:10],
+        ]
+        for u in _usuarios_filtrados(busqueda, filtro_plan)
+    ]
     filas.sort(key=lambda f: f[6], reverse=True)
     cabecera = ["uid", "email", "nombre", "plan", "oposiciones_activas", "alta", "ultima_actividad"]
     return _respuesta_csv(cabecera, filas, "usuarios.csv")
@@ -1143,7 +1209,7 @@ def usuarios_export():
 ESTADOS_CLIENTE_VALIDOS = ("activo", "cancelando", "baja", "prueba")
 
 
-def _filas_ingresos(busqueda, filtro_plan, filtro_oposicion, filtro_estado):
+def _todas_filas_ingresos():
     """Una fila por cada oposición que un usuario ha activado alguna vez,
     con su "estado de cliente" -- no solo quién paga ahora mismo (como
     antes), sino todo el ciclo de vida que hace falta para llevar un
@@ -1160,61 +1226,68 @@ def _filas_ingresos(busqueda, filtro_plan, filtro_oposicion, filtro_estado):
 
     Un usuario sin nada de esto (nunca pagó, no está en prueba) no aporta
     nada a un "control de clientes" y se omite -- si se necesitara alguna
-    vez, ya está la lista completa de Usuarios para eso."""
-    ahora = datetime.utcnow()
-    hace_7 = ahora - timedelta(days=7)
-    filas = []
-    for doc in db.collection("usuarios").stream():
-        datos = doc.to_dict() or {}
-        email = (datos.get("email") or "").lower()
-        if busqueda and busqueda not in email:
-            continue
-        ult = _parse_fecha(datos.get("ultima_actividad"))
-        activo_7_dias = bool(ult and ult >= hace_7)
-        for oid, sub in (datos.get("suscripciones") or {}).items():
-            sub = sub or {}
-            if filtro_oposicion and oid != filtro_oposicion:
-                continue
-            plan_contratado = sub.get("plan", "gratis")
-            cancela_al_final = bool(sub.get("cancelar_al_final_periodo"))
+    vez, ya está la lista completa de Usuarios para eso.
 
-            if plan_contratado in _PRECIO_PLAN:
-                estado_cliente = "cancelando" if cancela_al_final else "activo"
-                plan_mostrado = plan_contratado
-                precio = _PRECIO_PLAN[plan_contratado]
-            elif prueba_activa(sub):
-                estado_cliente = "prueba"
-                plan_mostrado = "premium"  # la prueba da acceso Premium completo
-                precio = 0.0
-            elif sub.get("stripe_subscription_id") or sub.get("subscription_status") == "canceled":
-                estado_cliente = "baja"
-                plan_mostrado = None
-                precio = 0.0
-            else:
-                continue
+    Sin filtros y cacheada como unidad (ver _TTL_CACHE_ADMIN_SEGUNDOS):
+    _filas_ingresos filtra esta MISMA lista en memoria en vez de repetir
+    el barrido completo de usuarios en cada combinación de
+    búsqueda/plan/oposición/estado/exportación."""
+    def _calcular():
+        ahora = datetime.utcnow()
+        hace_7 = ahora - timedelta(days=7)
+        filas = []
+        for doc in db.collection("usuarios").stream():
+            datos = doc.to_dict() or {}
+            ult = _parse_fecha(datos.get("ultima_actividad"))
+            activo_7_dias = bool(ult and ult >= hace_7)
+            for oid, sub in (datos.get("suscripciones") or {}).items():
+                sub = sub or {}
+                plan_contratado = sub.get("plan", "gratis")
+                cancela_al_final = bool(sub.get("cancelar_al_final_periodo"))
 
-            if filtro_plan and plan_mostrado != filtro_plan:
-                continue
-            if filtro_estado and estado_cliente != filtro_estado:
-                continue
+                if plan_contratado in _PRECIO_PLAN:
+                    estado_cliente = "cancelando" if cancela_al_final else "activo"
+                    plan_mostrado = plan_contratado
+                    precio = _PRECIO_PLAN[plan_contratado]
+                elif prueba_activa(sub):
+                    estado_cliente = "prueba"
+                    plan_mostrado = "premium"  # la prueba da acceso Premium completo
+                    precio = 0.0
+                elif sub.get("stripe_subscription_id") or sub.get("subscription_status") == "canceled":
+                    estado_cliente = "baja"
+                    plan_mostrado = None
+                    precio = 0.0
+                else:
+                    continue
 
-            filas.append({
-                "uid": doc.id,
-                "email": datos.get("email", ""),
-                "nombre": datos.get("nombre", ""),
-                "oposicion": oid,
-                "estado_cliente": estado_cliente,
-                "plan": plan_mostrado,
-                "precio": precio,
-                "estado_suscripcion": sub.get("subscription_status", ""),
-                "proxima_renovacion": sub.get("current_period_end"),
-                "cancela_al_final": cancela_al_final,
-                "prueba_fin": sub.get("prueba_fin"),
-                "cliente_desde": datos.get("fecha_creacion"),
-                "activo_7_dias": activo_7_dias,
-            })
-    filas.sort(key=lambda f: f.get("cliente_desde") or "", reverse=True)
-    return filas
+                filas.append({
+                    "uid": doc.id,
+                    "email": datos.get("email", ""),
+                    "nombre": datos.get("nombre", ""),
+                    "oposicion": oid,
+                    "estado_cliente": estado_cliente,
+                    "plan": plan_mostrado,
+                    "precio": precio,
+                    "estado_suscripcion": sub.get("subscription_status", ""),
+                    "proxima_renovacion": sub.get("current_period_end"),
+                    "cancela_al_final": cancela_al_final,
+                    "prueba_fin": sub.get("prueba_fin"),
+                    "cliente_desde": datos.get("fecha_creacion"),
+                    "activo_7_dias": activo_7_dias,
+                })
+        filas.sort(key=lambda f: f.get("cliente_desde") or "", reverse=True)
+        return filas
+    return _desde_cache_o_calcular(("admin_ingresos_filas",), _calcular, ttl_segundos=_TTL_CACHE_ADMIN_SEGUNDOS)
+
+
+def _filas_ingresos(busqueda, filtro_plan, filtro_oposicion, filtro_estado):
+    return [
+        f for f in _todas_filas_ingresos()
+        if (not busqueda or busqueda in f["email"].lower())
+        and (not filtro_oposicion or f["oposicion"] == filtro_oposicion)
+        and (not filtro_plan or f["plan"] == filtro_plan)
+        and (not filtro_estado or f["estado_cliente"] == filtro_estado)
+    ]
 
 
 @bp.route("/admin/api/ingresos", methods=["GET"])
@@ -1348,6 +1421,7 @@ def usuarios_crear():
         db.collection("usuarios").document(uid).update(puntos)
 
     _registrar_auditoria("usuario_crear", uid, email + (" [admin]" if claims.get("admin") else ""))
+    _invalidar_cache_admin_usuarios()
     return jsonify({"mensaje": "Usuario creado", "uid": uid, "email": email}), 201
 
 
@@ -1540,6 +1614,7 @@ def usuarios_cambiar_plan(uid):
         },
     })
     _registrar_auditoria("usuario_cambiar_plan", uid, f"{oposicion} -> {nuevo_plan}: {(data.get('motivo') or '').strip()}")
+    _invalidar_cache_admin_usuarios()
     return jsonify({"mensaje": "Plan actualizado"})
 
 
@@ -1630,6 +1705,7 @@ def usuarios_otorgar_prueba(uid):
         campos[f"suscripciones.{oposicion}.plan"] = "gratis"
     ref.update(campos)
     _registrar_auditoria("usuario_otorgar_prueba", uid, f"{oposicion}: {dias} días")
+    _invalidar_cache_admin_usuarios()
     return jsonify({"mensaje": f"Prueba otorgada hasta {fin}", "prueba_fin": fin, "oposicion": oposicion})
 
 
@@ -1717,6 +1793,7 @@ def usuarios_eliminar(uid):
         logger.warning("Error eliminando cuenta %s: %s", uid, exc)
         return jsonify({"error": "No se pudo eliminar la cuenta por completo"}), 500
     _registrar_auditoria("usuario_eliminar", uid)
+    _invalidar_cache_admin_usuarios()
     return jsonify({"mensaje": "Cuenta eliminada"})
 
 

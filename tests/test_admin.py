@@ -7,7 +7,17 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
+import blueprints.admin as admin_module
 from conftest import sembrar_usuario_activo
+
+
+def _con_sesion_usuario(cliente, uid="u1", email="u1@example.com"):
+    """Sesión de un usuario normal (no admin) -- para probar rutas como
+    /cancelar-suscripcion, protegidas por requiere_login, no
+    requiere_permiso/requiere_admin."""
+    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
+    parche.start()
+    return parche
 
 
 @contextmanager
@@ -652,6 +662,73 @@ def test_resumen_calcula_mrr(client, db):
         d = client.get("/admin/api/resumen", headers=_AUTH).get_json()
     assert d["suscripciones_pago"] == 3
     assert d["mrr"] == round(9.99 + 4.99 + 9.99, 2)
+
+
+# ---------- Caché de las vistas agregadas (escalabilidad) ----------
+# El dashboard, Ingresos y la lista de Usuarios recorren TODA la colección
+# de usuarios; sin caché, cada apertura del panel repite ese barrido
+# completo -- con muchos usuarios eso significa lecturas reales de
+# Firestore (coste) y tiempo de respuesta crecientes. Estas pruebas
+# verifican que la caché de verdad evita recalcular dentro del TTL, y que
+# sí recalcula pasado el TTL o tras una invalidación explícita.
+def test_resumen_usa_cache_dentro_del_ttl(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "a@x.com"})
+    with _como():
+        primero = client.get("/admin/api/resumen?oposicion=AGE", headers=_AUTH).get_json()
+    assert primero["usuarios_totales"] == 1
+
+    # Usuario añadido directamente en el store, sin pasar por ninguna ruta
+    # -- si la caché funciona, la siguiente llamada dentro del TTL no debe
+    # verlo todavía.
+    db.sembrar(("usuarios", "u2"), {"email": "b@x.com"})
+    with _como():
+        segundo = client.get("/admin/api/resumen?oposicion=AGE", headers=_AUTH).get_json()
+    assert segundo["usuarios_totales"] == 1
+
+
+def test_resumen_recalcula_pasado_el_ttl(client, db):
+    import utils
+    db.sembrar(("usuarios", "u1"), {"email": "a@x.com"})
+    with _como():
+        client.get("/admin/api/resumen?oposicion=AGE", headers=_AUTH)
+    db.sembrar(("usuarios", "u2"), {"email": "b@x.com"})
+    ahora = utils.time.time()
+    with patch("utils.time.time", return_value=ahora + admin_module._TTL_CACHE_ADMIN_SEGUNDOS + 1), _como():
+        tras_ttl = client.get("/admin/api/resumen?oposicion=AGE", headers=_AUTH).get_json()
+    assert tras_ttl["usuarios_totales"] == 2
+
+
+def test_cancelar_suscripcion_invalida_la_cache_de_bajas_e_ingresos(client, db):
+    # El propio flujo de cancelar/reactivar invalida la caché al momento
+    # (ver _invalidar_cache_admin_tras_cambio_suscripcion en pagos.py) --
+    # sin esto, la baja recién dada no aparecería en "Bajas recientes"
+    # hasta que venciera el TTL, justo el problema que se pidió arreglar.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "stripe_subscription_id": "sub_1"}},
+    })
+    with _como():
+        antes = client.get("/admin/api/ingresos", headers=_AUTH).get_json()
+    assert antes["total"] == 1
+    assert antes["filas"][0]["estado_cliente"] == "activo"
+
+    parche = _con_sesion_usuario(client, uid="u1", email="u1@example.com")
+    try:
+        with patch("blueprints.pagos.stripe.Subscription.modify", return_value={}), \
+             patch("blueprints.pagos.enviar_email_cancelacion_suscripcion"):
+            client.post(
+                "/cancelar-suscripcion",
+                json={"oposicion": "AGE", "motivo": "precio"},
+                headers={"Authorization": "Bearer x"},
+            )
+    finally:
+        parche.stop()
+
+    with _como():
+        despues = client.get("/admin/api/ingresos", headers=_AUTH).get_json()
+    # Sin invalidación, esto seguiría devolviendo "activo" (el valor
+    # cacheado de la llamada de arriba) en vez de "cancelando".
+    assert despues["filas"][0]["estado_cliente"] == "cancelando"
 
 
 def test_ingresos_lista_una_fila_por_suscripcion_de_pago(client, db):
