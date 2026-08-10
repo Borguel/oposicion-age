@@ -3642,5 +3642,260 @@
     "explicacion": "Efímero, fugaz y pasajero significan de corta duración; perpetuo es lo contrario, de duración indefinida.",
     "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
     "categoria": "intruso_semantico"
+  },
+  {
+    "numero": 101,
+    "prueba": "verbal",
+    "categoria": "sinonimos",
+    "pregunta": "Señale el sinónimo de la palabra ABSTRUSO:",
+    "opciones": {
+      "B": "Complejo",
+      "C": "Sencillo",
+      "D": "Lúcido",
+      "A": "Superficial"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "«Abstruso» significa de difícil comprensión, oscuro o hermético; su sinónimo es «complejo». Las demás opciones son antónimos.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 102,
+    "prueba": "verbal",
+    "categoria": "antonimos",
+    "pregunta": "\"El político demostró ser especialmente proclive a aceptar todo tipo de prebendas, lo que finalmente precipitó su caída.\"\n¿Qué palabra tiene un significado opuesto a «proclive» en este contexto?",
+    "opciones": {
+      "C": "Reacio",
+      "D": "Aficionado",
+      "A": "Inclinado",
+      "B": "Propenso"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "«Proclive» significa inclinado o tendente a algo; su antónimo es «reacio». «Aficionado», «inclinado» y «propenso» son sinónimos de proclive.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 103,
+    "prueba": "verbal",
+    "categoria": "ortografia",
+    "pregunta": "Señale la palabra que presenta un error ortográfico por acentuación indebida:",
+    "opciones": {
+      "D": "Vió",
+      "A": "Vino",
+      "B": "Dijo",
+      "C": "Tuvo"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«Vio» es un monosílabo y, según la ortografía vigente de la RAE, los monosílabos no llevan tilde salvo por tilde diacrítica. «Vió» es, por tanto, una grafía incorrecta.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 104,
+    "prueba": "verbal",
+    "categoria": "definicion",
+    "pregunta": "¿Qué opción define correctamente la expresión \"Trabajo de Sísifo\"?",
+    "opciones": {
+      "A": "Una tarea infinita e inútil que nunca se completa.",
+      "B": "Un castigo divino que consiste en la soledad eterna.",
+      "C": "Un esfuerzo que requiere una fuerza sobrehumana.",
+      "D": "Una obra de arte creada con gran perfección técnica."
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "El mito de Sísifo (condenado a subir una roca que siempre vuelve a caer) simboliza un esfuerzo inútil y eterno.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 105,
+    "prueba": "verbal",
+    "categoria": "analogias",
+    "pregunta": "\"Matraz\" es a \"químico\" como:",
+    "opciones": {
+      "B": "Estetoscopio es a médico.",
+      "C": "Partitura es a músico.",
+      "D": "Compás es a carpintero.",
+      "A": "Regla es a estudiante."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "El matraz es el instrumento más característico del químico en su laboratorio, igual que el estetoscopio lo es del médico en su consulta. La partitura es el objeto del músico, no su herramienta, y la regla no es exclusiva del estudiante.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 106,
+    "prueba": "verbal",
+    "categoria": "intruso_semantico",
+    "pregunta": "Señale la palabra que NO se corresponde con el grupo por su significado:",
+    "opciones": {
+      "C": "Sagaz",
+      "D": "Cándido",
+      "A": "Crédulo",
+      "B": "Ingenuo"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "«Cándido», «ingenuo» y «crédulo» comparten el rasgo de inocencia, de quien se cree todo con facilidad. «Sagaz» significa astuto, perspicaz: justo lo contrario, quien no se deja engañar.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 107,
+    "prueba": "verbal",
+    "categoria": "sinonimos",
+    "pregunta": "Señale el sinónimo de la palabra POMPOSO:",
+    "opciones": {
+      "D": "Grandilocuente",
+      "A": "Humilde",
+      "B": "Sobrio",
+      "C": "Sencillo"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«Pomposo» significa solemne, ostentoso, lleno de pompa; «grandilocuente» (que habla o escribe con exagerada solemnidad) es el sinónimo más ajustado. Las demás opciones son antónimos.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 108,
+    "prueba": "verbal",
+    "categoria": "antonimos",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a OPROBIO?",
+    "opciones": {
+      "A": "Elogio",
+      "B": "Infamia",
+      "C": "Vituperio",
+      "D": "Afrenta"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "«Oprobio» significa deshonra, afrenta, humillación pública; su antónimo es «elogio» (alabanza, reconocimiento). «Afrenta», «vituperio» e «infamia» son sinónimos de oprobio.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 109,
+    "prueba": "verbal",
+    "categoria": "ordenar_frase",
+    "pregunta": "Ordene las siguientes palabras para formar una oración coherente. Luego, indique qué palabra ocupa la quinta posición (contando desde la primera):\nenfrenta / crisis / mundial / humanidad / una / alimentaria / la",
+    "opciones": {
+      "B": "crisis",
+      "C": "alimentaria",
+      "D": "mundial",
+      "A": "enfrenta"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La oración ordenada es: «La humanidad enfrenta una crisis alimentaria mundial». Posiciones: 1=La, 2=humanidad, 3=enfrenta, 4=una, 5=crisis.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 110,
+    "prueba": "verbal",
+    "categoria": "analogias",
+    "pregunta": "\"Meticuloso\" es a \"esmero\" como:",
+    "opciones": {
+      "C": "Insolente es a descaro.",
+      "D": "Audaz es a temor.",
+      "A": "Prudente es a arrojo.",
+      "B": "Paciente es a impaciencia."
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "«Meticuloso» es quien actúa con «esmero»; la relación es adjetivo de cualidad → sustantivo de la conducta que manifiesta. «Insolente» es quien actúa con «descaro», misma relación. Las demás opciones enfrentan al adjetivo con su propio antónimo.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 111,
+    "prueba": "verbal",
+    "categoria": "huecos_gramaticales",
+    "pregunta": "Señale la opción que completa correctamente la siguiente frase:\n\"No solo llegó tarde a la reunión, ______ encima presentó un informe incompleto.\"",
+    "opciones": {
+      "D": "sino que",
+      "A": "si no que",
+      "B": "si no",
+      "C": "sino"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«Sino que» conecta con una oración que tiene verbo en forma personal («presentó»): «No solo llegó tarde..., sino que encima presentó...». «Sino» (sin «que») solo se usa cuando contrapone elementos sin verbo propio; «si no» (separado) expresa condición.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 112,
+    "prueba": "verbal",
+    "categoria": "comprension_lectora",
+    "pregunta": "Lea el siguiente texto y responda:\n«El auge de la moda rápida (\"fast fashion\") ha democratizado el acceso a las tendencias, pero a un coste medioambiental insostenible. Cada año se producen más de 100.000 millones de prendas, de las cuales el 60% acaba en vertederos o incineradoras en menos de un año. Aunque las marcas son las principales responsables de esta producción masiva, los consumidores sostienen este modelo con su demanda constante de novedad. Algunos países europeos ya han comenzado a regular la publicidad de estas marcas y a gravar sus residuos textiles.»\n\nSegún el texto, se puede inferir que:",
+    "opciones": {
+      "A": "Los consumidores tienen un papel activo en la perpetuación de este modelo.",
+      "B": "Las marcas ya han reducido su producción por las nuevas regulaciones.",
+      "C": "La responsabilidad del problema recae exclusivamente en los gobiernos.",
+      "D": "El problema desaparecerá cuando se prohíba la publicidad."
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "El texto dice expresamente que «los consumidores sostienen este modelo con su demanda constante de novedad», lo que permite inferir que no son meros espectadores. Las demás opciones afirman más de lo que el texto dice.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 113,
+    "prueba": "verbal",
+    "categoria": "definicion",
+    "pregunta": "¿Qué opción define correctamente la palabra CACOFONÍA?",
+    "opciones": {
+      "B": "Repetición desagradable o confusa de sonidos en una frase.",
+      "C": "Falta de coordinación entre los miembros de un grupo.",
+      "D": "Conjunto de reglas para la correcta pronunciación.",
+      "A": "Disciplina que estudia los dialectos regionales."
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "La cacofonía es el efecto sonoro desagradable producido por la repetición o combinación de sílabas o fonemas similares (p. ej. \"yo lo lavo solo\").",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 114,
+    "prueba": "verbal",
+    "categoria": "antonimos",
+    "pregunta": "¿Qué palabra tiene un significado opuesto a EXACERBAR?",
+    "opciones": {
+      "C": "Mitigar",
+      "D": "Intensificar",
+      "A": "Agravar",
+      "B": "Recrudecer"
+    },
+    "respuesta_correcta": "C",
+    "explicacion": "«Exacerbar» significa agravar o intensificar un mal; su antónimo es «mitigar» (suavizar, aliviar). «Intensificar», «agravar» y «recrudecer» son sinónimos de exacerbar.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 115,
+    "prueba": "verbal",
+    "categoria": "intruso_semantico",
+    "pregunta": "Señale la palabra que NO se corresponde con las del grupo:",
+    "opciones": {
+      "D": "Colérico",
+      "A": "Apatía",
+      "B": "Flemático",
+      "C": "Impasible"
+    },
+    "respuesta_correcta": "D",
+    "explicacion": "«Apatía», «impasible» y «flemático» pertenecen al campo de la indiferencia o la calma extrema. «Colérico» (irascible, iracundo) es su opuesto radical.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 116,
+    "prueba": "verbal",
+    "categoria": "ordenar_frase",
+    "pregunta": "Ordene las siguientes palabras para formar una oración coherente. Luego, indique qué palabra ocupa la séptima posición (contando desde la primera):\nha / el / estudio / revelado / que / factores / determinan / los / éxito / el",
+    "opciones": {
+      "A": "factores",
+      "B": "determinan",
+      "C": "éxito",
+      "D": "revelado"
+    },
+    "respuesta_correcta": "A",
+    "explicacion": "La oración ordenada es: «El estudio ha revelado que los factores determinan el éxito». Posiciones: 1=El, 2=estudio, 3=ha, 4=revelado, 5=que, 6=los, 7=factores.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
+  },
+  {
+    "numero": 117,
+    "prueba": "verbal",
+    "categoria": "oracion_intrusa",
+    "pregunta": "Lea el siguiente grupo de oraciones y señale la que podría excluirse por no añadir información esencial al razonamiento:\n1. El teletrabajo se ha consolidado como una modalidad laboral habitual en muchos sectores.\n2. Esta flexibilidad permite a los empleados ahorrar tiempo y dinero en desplazamientos diarios.\n3. Numerosos estudios señalan que la productividad puede aumentar en entornos sin distracciones presenciales.\n4. Los parques empresariales suelen disponer de amplias zonas verdes para el descanso.\n5. No obstante, algunos trabajadores experimentan sensación de aislamiento social al no compartir espacio físico con sus compañeros.\n6. Las empresas están implementando políticas híbridas para combinar lo mejor de ambos mundos.",
+    "opciones": {
+      "B": "4",
+      "C": "5",
+      "D": "3",
+      "A": "2"
+    },
+    "respuesta_correcta": "B",
+    "explicacion": "El texto desarrolla un hilo lógico sobre el teletrabajo: consolidación (1), ventajas (2), productividad (3), inconvenientes (5) y soluciones (6). La oración 4, sobre zonas verdes en parques empresariales, es un dato ajeno que no aporta nada al argumento central.",
+    "examen": "Domina tu Opo - Banco de práctica (preguntas propias)"
   }
 ]
