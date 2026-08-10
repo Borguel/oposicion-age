@@ -1658,7 +1658,7 @@ _UMBRAL_RENDIMIENTO_MINIMO_BANCO = 0.25
 
 def generar_banco_preguntas_adaptativo(construir_prompt, texto_fuente, tope=TOPE_BANCO_PREGUNTAS,
                                         tamano_ronda=_TAMANO_RONDA_BANCO, on_usage=None, on_progreso=None,
-                                        preguntas_a_evitar=None):
+                                        preguntas_a_evitar=None, evento_parada=None):
     """Genera el máximo de preguntas distintas que el documento realmente dé
     de sí, en rondas sucesivas de generar_preguntas_ia_en_lotes, hasta:
     (a) llegar a 'tope' (techo de seguridad, nunca objetivo forzado),
@@ -1686,9 +1686,27 @@ def generar_banco_preguntas_adaptativo(construir_prompt, texto_fuente, tope=TOPE
 
     on_progreso(evento), si se pasa, se llama con {"completadas": N,
     "objetivo": tope, "pregunta": p} por cada pregunta NUEVA aceptada
-    (después del dedup entre rondas) -- no se reenvían los eventos brutos
-    de cada ronda individual, que incluirían candidatas luego descartadas
-    por duplicar una ronda anterior.
+    (después del dedup entre rondas) -- nunca con una candidata que luego
+    resulte duplicar una ronda anterior.
+
+    10/08/2026, bug real reportado: el contador se quedaba clavado en 0
+    durante minutos y luego saltaba de golpe a las ~21 preguntas de la
+    ronda. Antes, la deduplicación ENTRE rondas se hacía en un bucle aparte
+    SOLO TRAS terminar la ronda entera (hasta 8 lotes en paralelo, cada uno
+    con su propia verificación) -- generar_preguntas_ia_en_lotes ya
+    reportaba cada candidata aceptada DENTRO de su ronda en tiempo real,
+    pero ese aviso se descartaba aquí y no llegaba al llamante hasta que la
+    ronda completa había terminado. Ahora la deduplicación entre rondas se
+    aplica de forma atómica (bajo lock_acumulacion) en el momento en que
+    llega cada candidata ya aceptada dentro de su propia ronda, así que el
+    progreso avanza pregunta a pregunta según se van verificando de
+    verdad, no en una ráfaga al final.
+
+    evento_parada (10/08/2026, threading.Event opcional, ver
+    generacion_control.py): si se pasa y está marcado, no se lanza ninguna
+    ronda nueva -- se devuelve lo acumulado hasta ese momento. No cancela
+    los lotes de la ronda YA en marcha (no es seguro interrumpir una
+    petición HTTP a mitad), solo evita empezar otra.
 
     Devuelve la lista de preguntas aceptadas."""
     acumuladas = []
@@ -1710,36 +1728,54 @@ def generar_banco_preguntas_adaptativo(construir_prompt, texto_fuente, tope=TOPE
     # recalcula solo para esa -- ver ahí mismo.
     n_lotes_ronda = -(-tamano_ronda // _TAMANO_LOTE_PREGUNTAS)  # ceil sin depender de math
     fragmentos_precalculados = _fragmentos_por_lote(texto_fuente, n_lotes_ronda, on_usage)
+
+    lock_acumulacion = threading.Lock()
+
+    def _intentar_aceptar_cruzando_rondas(pregunta):
+        """Comprueba-y-registra bajo lock_acumulacion, atómicamente, para
+        que dos lotes en paralelo (de la misma ronda o no) no puedan
+        aceptar la misma pregunta a la vez -- mismo principio que
+        _intentar_aceptar dentro de generar_preguntas_ia_en_lotes, un nivel
+        más arriba (entre rondas en vez de entre lotes de una ronda).
+        Devuelve True si se aceptó (el llamante debe avisar por SSE)."""
+        with lock_acumulacion:
+            if len(acumuladas) >= tope:
+                return False
+            claves = _claves_dedup(pregunta)
+            if not claves or (claves & claves_acumuladas) or _es_duplicado_por_contencion(pregunta, acumuladas):
+                return False
+            claves_acumuladas.update(claves)
+            acumuladas.append(pregunta)
+            valor = len(acumuladas)
+        if on_progreso:
+            on_progreso({"completadas": valor, "objetivo": tope, "pregunta": pregunta})
+        return True
+
     ronda = 0
-    while len(acumuladas) < tope and ronda < max_rondas:
+    while len(acumuladas) < tope and ronda < max_rondas and not (evento_parada and evento_parada.is_set()):
         objetivo_ronda = min(tamano_ronda, tope - len(acumuladas))
-        preguntas_ronda, _errores_ronda = generar_preguntas_ia_en_lotes(
+        nuevas_ronda = []
+
+        def _on_avance_lote(evento, _nuevas_ronda=nuevas_ronda):
+            # _nuevas_ronda=nuevas_ronda (valor por defecto, no nonlocal):
+            # cada iteración del while crea su PROPIA lista nuevas_ronda --
+            # sin este truco, un closure tardío haría que TODAS las rondas
+            # compartieran sin querer la lista de la ÚLTIMA iteración.
+            pregunta = evento.get("pregunta")
+            if pregunta and _intentar_aceptar_cruzando_rondas(pregunta):
+                _nuevas_ronda.append(pregunta)
+
+        generar_preguntas_ia_en_lotes(
             construir_prompt, objetivo_ronda, texto_fuente,
-            on_usage=on_usage, preguntas_a_evitar=evitar_acumulado,
+            on_usage=on_usage, on_progreso=_on_avance_lote, preguntas_a_evitar=evitar_acumulado,
             fragmentos_precalculados=fragmentos_precalculados,
         )
         ronda += 1
-        nuevas = []
-        for pregunta in preguntas_ronda:
-            # Un lote puede ignorar el "EXACTAMENTE N" pedido y devolver de
-            # más (mismo bug ya visto y arreglado en
-            # generar_preguntas_ia_en_lotes) -- aquí se corta al llegar al
-            # tope para no aceptar más de la cuenta.
-            if len(acumuladas) >= tope:
-                break
-            claves = _claves_dedup(pregunta)
-            if not claves or (claves & claves_acumuladas) or _es_duplicado_por_contencion(pregunta, acumuladas):
-                continue
-            claves_acumuladas.update(claves)
-            acumuladas.append(pregunta)
-            nuevas.append(pregunta)
-            if on_progreso:
-                on_progreso({"completadas": len(acumuladas), "objetivo": tope, "pregunta": pregunta})
         evitar_acumulado.extend(
             f"{p.get('pregunta', '')} (respuesta: "
             f"{(p.get('opciones') or {}).get(str(p.get('respuesta_correcta', '')).upper(), '')})"
-            for p in nuevas
+            for p in nuevas_ronda
         )
-        if not nuevas or len(nuevas) / objetivo_ronda < _UMBRAL_RENDIMIENTO_MINIMO_BANCO:
+        if not nuevas_ronda or len(nuevas_ronda) / objetivo_ronda < _UMBRAL_RENDIMIENTO_MINIMO_BANCO:
             break
     return acumuladas

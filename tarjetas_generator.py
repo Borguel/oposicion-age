@@ -535,7 +535,7 @@ _UMBRAL_RENDIMIENTO_MINIMO_BANCO = 0.25
 
 
 def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ronda=_TAMANO_RONDA_BANCO,
-                                       on_usage=None, on_progreso=None):
+                                       on_usage=None, on_progreso=None, evento_parada=None):
     """Genera el máximo de tarjetas distintas que el documento realmente dé
     de sí, en rondas sucesivas de generar_tarjetas_verificadas, hasta:
     (a) llegar a 'tope' (techo de seguridad, nunca objetivo forzado),
@@ -569,6 +569,12 @@ def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ro
     de cada ronda individual, que incluirían candidatas luego descartadas
     por duplicar una ronda anterior.
 
+    evento_parada (10/08/2026, threading.Event opcional, ver
+    generacion_control.py): si se pasa y está marcado, no se lanza ninguna
+    ronda nueva -- se devuelve lo acumulado hasta ese momento. No cancela
+    la ronda YA en marcha (no es seguro interrumpir una petición HTTP a
+    mitad), solo evita empezar otra.
+
     Devuelve la lista de tarjetas aceptadas (sin envoltorio, a diferencia
     de generar_tarjetas_verificadas: aquí no hay un "num_tarjetas pedido"
     único al que comparar para una advertencia de faltantes)."""
@@ -577,7 +583,7 @@ def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ro
     evitar_acumulado = []
     max_rondas = max(3, (tope // tamano_ronda) + 2)
     ronda = 0
-    while len(acumuladas) < tope and ronda < max_rondas:
+    while len(acumuladas) < tope and ronda < max_rondas and not (evento_parada and evento_parada.is_set()):
         objetivo_ronda = min(tamano_ronda, tope - len(acumuladas))
         resultado_ronda = generar_tarjetas_verificadas(
             texto, objetivo_ronda, on_usage=on_usage,

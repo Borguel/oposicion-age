@@ -293,7 +293,6 @@ async function obtenerAuthHeaders() {
       detalle.classList.remove('hidden');
       document.getElementById('progress-container-numerico').classList.add('hidden');
       document.getElementById('barra-indeterminada-redireccion').classList.remove('hidden');
-      document.getElementById('sugerencia-mientras-tanto').classList.remove('hidden');
     }
 
     // Consume SOLO el evento "inicio" del stream SSE de /resumir-documento

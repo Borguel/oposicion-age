@@ -4,6 +4,7 @@ generar->verificar->reintentar (con DeepSeek mockeado por CONTENIDO del
 prompt, no por orden de llamada -- el pipeline es paralelo)."""
 import itertools
 import json
+import threading
 from unittest.mock import patch
 
 from tarjetas_generator import (
@@ -505,6 +506,23 @@ class TestGenerarBancoTarjetasAdaptativo:
         assert len(resultado) == 1
         assert len(eventos) == 1
         assert eventos[0] == {"completadas": 1, "objetivo": 20, "tarjeta": resultado[0]}
+
+    def test_evento_parada_marcado_no_lanza_una_ronda_nueva(self):
+        # 10/08/2026, a petición del usuario ("quiero un botón para parar
+        # una generación mía en marcha para no gastar tokens de más"): con
+        # el evento ya marcado ANTES de la primera ronda, no debe lanzarse
+        # ninguna llamada.
+        def fake_call(messages, **kwargs):
+            raise AssertionError("no debería llamarse a la IA con evento_parada ya marcado")
+
+        evento_parada = threading.Event()
+        evento_parada.set()
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
+            resultado = generar_banco_tarjetas_adaptativo(
+                "Documento.", tope=20, tamano_ronda=8, evento_parada=evento_parada,
+            )
+        assert resultado == []
 
     def test_para_por_bajo_rendimiento_con_duplicados_reformulados_entre_rondas(self):
         # Caso real reportado por el usuario: la ronda 2 no repite el

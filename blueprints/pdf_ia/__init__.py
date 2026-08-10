@@ -22,7 +22,7 @@ from google.api_core import exceptions as google_exceptions
 from pypdf import PdfReader
 
 from firebase_setup import db
-from auth_utils import requiere_plan, obtener_oposicion_solicitada
+from auth_utils import requiere_plan, requiere_admin, obtener_oposicion_solicitada
 from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso, devolver_uso
 from rate_limiter import limiter
 from documentos_pdf import (
@@ -44,6 +44,7 @@ from deepseek_utils import (
 from tarjetas_generator import (
     generar_tarjetas_verificadas, generar_banco_tarjetas_adaptativo, TOPE_BANCO_TARJETAS,
 )
+import generacion_control
 
 from .comun import (
     TIPOS_CUOTA_BANCO_PDF, _CLAUSULA_FIDELIDAD_DOCUMENTO,
@@ -154,6 +155,13 @@ def resumir_pdf():
         acumulador_tokens = AcumuladorTokens()
 
         def _en_hilo_de_fondo():
+            # evento_parada (10/08/2026, a petición explícita del usuario:
+            # "quiero un botón para parar una generación mía en curso, no
+            # quiero consumir tokens de más haciendo pruebas") -- ver
+            # generacion_control.py. Solo tiene sentido con documento_id
+            # (es la clave que usa la ruta de detener para encontrarla).
+            evento_parada = generacion_control.registrar(uid, documento_id, "resumen") if documento_id else None
+
             def on_progreso(evento_progreso):
                 eventos.put({"tipo": "progreso", **evento_progreso})
                 # Progreso real persistido (10/08/2026, a petición del
@@ -180,23 +188,24 @@ def resumir_pdf():
             try:
                 resumen = _generar_documento_validado(
                     system_prompt, text, etiqueta_documento="Documento para resumir",
+                    evento_parada=evento_parada,
                     # max_tokens más alto en modo legal: el prompt de "mapa
                     # de artículos" exige cubrir cada artículo, un listón
                     # más exigente que el resumen narrativo general, así que
                     # necesita más presupuesto de salida por llamada.
                     #
-                    # tamano_chunk YA NO se reduce en modo legal (10/08/2026,
-                    # a petición explícita del usuario: "si hay que bajar un
+                    # tamano_chunk NO se reduce en modo legal (10/08/2026, a
+                    # petición explícita del usuario: "si hay que bajar un
                     # poco de calidad no pasa nada... rápido, barato, calidad
                     # media"). Antes se bajaba a 8000/12000 para que el
                     # modelo cubriera mejor CADA artículo -- pero eso
                     # multiplicaba el número de llamadas a DeepSeek (hasta 7
                     # para un documento de ~51.000 caracteres), cada una un
                     # punto más de fallo, más lento y con el system_prompt
-                    # pagado una vez por fragmento. Con TAMANO_CHUNK_CARACTERES
-                    # ya subido a 90000 (ver deepseek_utils.py), la inmensa
-                    # mayoría de documentos -- incluido ese de 51.000
-                    # caracteres -- caben en una sola llamada sin trocear.
+                    # pagado una vez por fragmento. Con el
+                    # TAMANO_CHUNK_CARACTERES general (35000, ver
+                    # deepseek_utils.py) ese mismo documento ya baja a 2
+                    # fragmentos sin necesidad de un valor propio para legal.
                     max_tokens=8192 if es_legal else 4096,
                     on_usage=acumulador_tokens.add, on_progreso=on_progreso,
                 )
@@ -254,6 +263,8 @@ def resumir_pdf():
                     limpiar_progreso_generacion(db, uid, documento_id, "resumen")
                 except Exception:
                     logger.exception("No se pudo limpiar el progreso de /resumir-pdf")
+            if documento_id:
+                generacion_control.desregistrar(uid, documento_id, "resumen")
             eventos.put({"tipo": "fin", **resultado})
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
@@ -393,6 +404,8 @@ def generar_esquema_desde_pdf():
         acumulador_tokens = AcumuladorTokens()
 
         def _en_hilo_de_fondo():
+            evento_parada = generacion_control.registrar(uid, documento_id, "esquema") if documento_id else None
+
             def on_progreso(evento_progreso):
                 eventos.put({"tipo": "progreso", **evento_progreso})
                 if documento_id:
@@ -411,14 +424,15 @@ def generar_esquema_desde_pdf():
                     text,
                     etiqueta_documento="Documento para crear esquema",
                     instrucciones_fusion_extra=instrucciones_fusion_esquema,
+                    evento_parada=evento_parada,
                     # max_tokens más alto en modo legal -- ver el comentario
                     # largo en resumir_pdf, mismo motivo (el esquema legal
                     # también exige que cada artículo mantenga su propio
                     # epígrafe) y misma decisión de no reducir tamano_chunk
-                    # (usa el TAMANO_CHUNK_CARACTERES general, ya subido a
-                    # 90000): menos llamadas, más barato y más rápido, a
-                    # cambio de algo de exhaustividad -- aceptable a
-                    # petición explícita del usuario.
+                    # (usa el TAMANO_CHUNK_CARACTERES general): menos
+                    # llamadas, más barato y más rápido, a cambio de algo de
+                    # exhaustividad -- aceptable a petición explícita del
+                    # usuario.
                     max_tokens=8192 if es_legal else 4096,
                     on_usage=acumulador_tokens.add,
                     on_progreso=on_progreso,
@@ -468,6 +482,8 @@ def generar_esquema_desde_pdf():
                     limpiar_progreso_generacion(db, uid, documento_id, "esquema")
                 except Exception:
                     logger.exception("No se pudo limpiar el progreso de /generar-esquema-desde-pdf")
+            if documento_id:
+                generacion_control.desregistrar(uid, documento_id, "esquema")
             eventos.put({"tipo": "fin", **resultado})
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
@@ -848,6 +864,8 @@ def generar_banco_preguntas_desde_pdf():
         preguntas_normalizadas = []
 
         def _en_hilo_de_fondo():
+            evento_parada = generacion_control.registrar(uid, documento_id, "banco_preguntas") if documento_id else None
+
             def on_progreso(evento_progreso):
                 if evento_progreso.get("pregunta"):
                     normalizada = _normalizar_pregunta_pdf(dict(evento_progreso["pregunta"]))
@@ -862,7 +880,7 @@ def generar_banco_preguntas_desde_pdf():
             try:
                 generar_banco_preguntas_adaptativo(
                     construir_prompt, text, on_usage=acumulador_tokens.add, on_progreso=on_progreso,
-                    preguntas_a_evitar=preguntas_previas,
+                    preguntas_a_evitar=preguntas_previas, evento_parada=evento_parada,
                 )
                 # "preguntas" en el evento "fin" (03/08/2026): antes solo se
                 # mandaba el total -- el frontend necesita el contenido real
@@ -887,6 +905,8 @@ def generar_banco_preguntas_desde_pdf():
                 for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
                     devolver_uso(db, uid, tipo_cuota, plan_actual)
             acumulador_tokens.volcar_directo(db, uid)
+            if documento_id:
+                generacion_control.desregistrar(uid, documento_id, "banco_preguntas")
             eventos.put({"tipo": "fin", **resultado})
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
@@ -948,6 +968,8 @@ def generar_banco_tarjetas_desde_pdf():
         tarjetas_generadas = []
 
         def _en_hilo_de_fondo():
+            evento_parada = generacion_control.registrar(uid, documento_id, "banco_tarjetas") if documento_id else None
+
             def on_progreso(evento_progreso):
                 if evento_progreso.get("tarjeta"):
                     anadir_al_banco(db, uid, documento_id, "tarjetas", evento_progreso["tarjeta"])
@@ -959,7 +981,7 @@ def generar_banco_tarjetas_desde_pdf():
                 })
             try:
                 generar_banco_tarjetas_adaptativo(
-                    text, on_usage=acumulador_tokens.add, on_progreso=on_progreso,
+                    text, on_usage=acumulador_tokens.add, on_progreso=on_progreso, evento_parada=evento_parada,
                 )
                 # "tarjetas" en el evento "fin": ver el comentario largo en
                 # generar_banco_preguntas_desde_pdf -- mismo motivo.
@@ -979,6 +1001,8 @@ def generar_banco_tarjetas_desde_pdf():
                 for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
                     devolver_uso(db, uid, tipo_cuota, plan_actual)
             acumulador_tokens.volcar_directo(db, uid)
+            if documento_id:
+                generacion_control.desregistrar(uid, documento_id, "banco_tarjetas")
             eventos.put({"tipo": "fin", **resultado})
 
         hilo = threading.Thread(target=_en_hilo_de_fondo, daemon=True)
@@ -998,6 +1022,28 @@ def generar_banco_tarjetas_desde_pdf():
         mimetype="text/event-stream",
         headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
     )
+
+
+# /pdf-ia/documento/<id>/detener/<herramienta> (10/08/2026, a petición
+# explícita del usuario: "quiero un botón para parar una generación mía en
+# curso, no quiero consumir tokens de más haciendo pruebas" -- gated tras
+# requiere_admin porque así lo pidió, aunque en la práctica solo puede
+# parar generaciones DE SU PROPIA cuenta, ver generacion_control.py: la
+# clave registrada es g.uid + documento_id + herramienta, no hay forma de
+# apuntar a la generación de otro usuario desde aquí). herramienta es una
+# de "resumen"|"esquema"|"banco_preguntas"|"banco_tarjetas" -- las cuatro
+# que de verdad comprueban evento_parada en sus puntos de control (ver
+# deepseek_utils.generar_documento_largo_por_partes,
+# test_generator.generar_banco_preguntas_adaptativo,
+# tarjetas_generator.generar_banco_tarjetas_adaptativo). No cancela ninguna
+# llamada YA en marcha (no es seguro interrumpir una petición HTTP a
+# mitad) -- solo evita que se lance la siguiente ronda/fragmento/fusión.
+@bp.route('/pdf-ia/documento/<documento_id>/detener/<herramienta>', methods=['POST'])
+@requiere_admin
+def detener_generacion(documento_id, herramienta):
+    if not generacion_control.solicitar_parada(g.uid, documento_id, herramienta):
+        return jsonify({"error": "No hay ninguna generación en curso para detener."}), 404
+    return jsonify({"detenido": True})
 
 
 @bp.route('/documento/<documento_id>/banco-preguntas', methods=['GET'])

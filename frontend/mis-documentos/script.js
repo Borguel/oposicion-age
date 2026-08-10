@@ -1,4 +1,4 @@
-import { idToken, marcarContenidoListo } from "/assets/auth.js";
+import { idToken, marcarContenidoListo, esAdmin } from "/assets/auth.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { icono } from "/assets/icons.js";
 
@@ -16,6 +16,14 @@ document.querySelectorAll("[data-icon]").forEach((el) => {
 let documentos = [];
 let carpetas = [];
 let carpetaActual = null; // null = viendo el listado de carpetas
+// esUsuarioAdmin (10/08/2026, a petición del usuario: "quiero un botón
+// para parar una generación mía en curso"): se resuelve UNA vez al cargar
+// la página (ver cargarDocumentos) y se usa de forma síncrona en los
+// render -- esAdmin() es async y filaContenido/filaBanco no lo son, igual
+// que documentos/carpetas ya se cargan una vez y se leen sin volver a
+// pedirlas en cada render. Solo sirve para MOSTRAR/OCULTAR el botón -- la
+// protección real está en requiere_admin, en el backend.
+let esUsuarioAdmin = false;
 
 function escaparHtml(texto) {
   const div = document.createElement("div");
@@ -163,7 +171,18 @@ function mostrarToastDeshacer({ mensaje, alDeshacer, alConfirmar, duracionMs = 6
 function filaContenido({
   label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar, urlContinuar,
   textoGenerarDeNuevo = "Generar más", generando = false, progreso = null, error = null,
+  documentoId = null, tipoInline = null,
 }) {
+  // botonGenerar (10/08/2026, a petición del usuario: "que haga lo mismo
+  // que banco de preguntas, no te lleve a ningún sitio"): con tipoInline
+  // ("resumen"|"esquema") el botón dispara iniciarResumenOEsquema en el
+  // sitio en vez de navegar a /subida-pdf-resumen//subida-pdf-esquemas y
+  // volver -- mismo patrón data-* que ya usan tarjetas/banco de preguntas
+  // (ver data-banco-generar). Tarjetas/Test individuales no pasan
+  // tipoInline y se quedan como enlaces, sin cambios.
+  const botonGenerar = (texto, clases) => tipoInline
+    ? `<button type="button" class="documento-card-btn${clases}" data-generar-contenido="${tipoInline}" data-id="${documentoId}">${texto}</button>`
+    : `<a class="documento-card-btn${clases}" href="${urlGenerar}">${texto}</a>`;
   const acciones = [];
   // "Continuar" (test autoguardado sin terminar, ver
   // obtener_tests_en_progreso_por_documento en documentos_pdf.py) se
@@ -187,15 +206,23 @@ function filaContenido({
   // igual que la primera vez que se genera algo, hasta que el sondeo
   // confirma que la nueva versión ya está guardada.
   if (generando) {
-    // sin acciones: el estado "Generando…" de abajo ya lo deja claro
+    // Botón "Detener" (10/08/2026, a petición explícita del usuario:
+    // "quiero un botón para parar una generación mía en curso, no quiero
+    // consumir tokens de más haciendo pruebas") -- solo visible para
+    // cuentas admin (ver esUsuarioAdmin) y solo en resumen/esquema
+    // (tipoInline), las únicas dos que pasan por aquí con generando=true;
+    // el resto de las acciones se ocultan igual que antes.
+    if (esUsuarioAdmin && tipoInline) {
+      acciones.push(`<button type="button" class="documento-card-btn" data-detener-contenido="${tipoInline}" data-id="${documentoId}">Detener</button>`);
+    }
   } else if (existe) {
     acciones.push(`<a class="documento-card-btn orange" href="${urlVer}">Ver</a>`);
     if (urlAleatorias) {
       acciones.push(`<a class="documento-card-btn" href="${urlAleatorias}">10 aleatorias</a>`);
     }
-    acciones.push(`<a class="documento-card-btn" href="${urlGenerar}">${textoGenerarDeNuevo}</a>`);
+    acciones.push(botonGenerar(textoGenerarDeNuevo, ""));
   } else {
-    acciones.push(`<a class="documento-card-btn orange" href="${urlGenerar}">${textoGenerar}</a>`);
+    acciones.push(botonGenerar(textoGenerar, " orange"));
   }
   const etiquetaCantidad = existe && cantidad ? ` (${cantidad})` : "";
   // Estado (05/08/2026, rediseño visual): antes la única señal de si un
@@ -317,6 +344,11 @@ function filaBanco(doc, tipo) {
       // generadas hasta ahora -- este número se actualiza en vivo según
       // van llegando eventos de progreso (ver iniciarBanco).
       estadoHtml = `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Generando… ${total} ${nombreItem}${total === 1 ? "" : "s"} hasta ahora</span>`;
+      // Botón "Detener" (10/08/2026, a petición explícita del usuario) --
+      // ver el mismo comentario largo en filaContenido.
+      if (esUsuarioAdmin) {
+        acciones.push(`<button type="button" class="documento-card-btn" data-detener-banco="${tipo}" data-id="${doc.id}">Detener</button>`);
+      }
     } else if (estado === "completo") {
       // Aviso explícito de que la generación YA terminó (03/08/2026, a
       // petición del usuario: antes, al pasar de "generando" a completo,
@@ -475,6 +507,118 @@ async function iniciarBanco(documentoId, tipo, archivoOriginal) {
   }
 }
 
+// iniciarResumenOEsquema (10/08/2026, a petición explícita del usuario:
+// "que haga lo mismo que banco de preguntas, no te lleve a ningún sitio y
+// que salga lo de generando"): calcada de iniciarBanco -- POST en el
+// sitio, sin navegar, leyendo el SSE completo para reflejar el progreso
+// real de inmediato (no solo al llegar el siguiente sondeo de 4s). Antes,
+// Generar/Regenerar en Resumen/Esquema navegaban a /subida-pdf-resumen//
+// subida-pdf-esquemas y volvían -- las únicas dos herramientas de
+// "Contenido generado" que aún sacaban al usuario de "Mis documentos"
+// (Tarjetas/Test individuales, y el banco adaptativo, ya no lo hacían).
+//
+// documentoEsperandoContenido/tipoContenidoEsperando/intentosSondeoContenido
+// (ver más abajo, junto a esperandoGeneracionDe) son el mismo estado que
+// arma destacarDocumentoDesdeUrl al volver redirigido con
+// ?generando=resumen|esquema -- reutilizado aquí tal cual para que la
+// tarjeta muestre "Generando…" desde el primer instante, sin inventar un
+// mecanismo aparte.
+async function iniciarResumenOEsquema(documentoId, tipo) {
+  const doc = documentos.find((d) => d.id === documentoId);
+  documentoEsperandoContenido = documentoId;
+  tipoContenidoEsperando = tipo;
+  intentosSondeoContenido = MAX_INTENTOS_SONDEO_CONTENIDO;
+  const refrescar = () => {
+    if (carpetaActual !== null) renderizarDocumentosDeCarpeta();
+    const query = document.getElementById("filtro-busqueda")?.value;
+    if (query) renderizarBusqueda(query);
+  };
+  refrescar();
+  iniciarSondeoBancosSiHaceFalta();
+
+  try {
+    const token = await idToken();
+    const ruta = tipo === "resumen" ? "resumir-documento" : "generar-esquema-desde-pdf";
+    const formData = new FormData();
+    formData.append("documento_id", documentoId);
+    const res = await fetch(`${BACKEND_URL}/${ruta}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+    if (!res.ok || !res.body) {
+      const datos = await res.json().catch(() => ({}));
+      throw new Error(datos.error || "No se pudo iniciar la generación.");
+    }
+
+    const lector = res.body.getReader();
+    const decodificador = new TextDecoder();
+    let buffer = "";
+    let terminado = false;
+    while (!terminado) {
+      const { done, value } = await lector.read();
+      if (done) break;
+      buffer += decodificador.decode(value, { stream: true });
+      const bloques = buffer.split("\n\n");
+      buffer = bloques.pop();
+      for (const bloque of bloques) {
+        const linea = bloque.trim();
+        if (!linea.startsWith("data: ")) continue;
+        let evento;
+        try { evento = JSON.parse(linea.slice(6)); } catch { continue; }
+        if (evento.tipo === "progreso") {
+          if (doc) doc[`progreso_${tipo}`] = { completadas: evento.completadas, total: evento.total, fase: evento.fase };
+          refrescar();
+        } else if (evento.tipo === "fin") {
+          terminado = true;
+          intentosSondeoContenido = 0;
+          if (doc) {
+            doc[`progreso_${tipo}`] = null;
+            if (evento[tipo]) {
+              doc[tipo === "resumen" ? "tiene_resumen" : "tiene_esquema"] = true;
+              doc[`error_${tipo}`] = null;
+            } else {
+              doc[`error_${tipo}`] = { mensaje: evento.error || "Error desconocido" };
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    intentosSondeoContenido = 0;
+    if (doc) doc[`progreso_${tipo}`] = null;
+    mostrarErrorGlobal(e.message || "No se pudo generar el contenido.");
+  } finally {
+    refrescar();
+  }
+}
+
+// detenerGeneracion (10/08/2026, a petición explícita del usuario: "quiero
+// un botón para parar una generación mía en curso, no quiero consumir
+// tokens de más haciendo pruebas") -- solo llega aquí si esUsuarioAdmin
+// pintó el botón, pero la protección real es requiere_admin en el
+// backend. herramienta es "resumen"|"esquema"|"banco_preguntas"|
+// "banco_tarjetas". No cierra el stream SSE en curso ni cambia el estado
+// local al momento: el propio hilo de fondo (deepseek_utils.py/
+// test_generator.py/tarjetas_generator.py) deja de lanzar rondas nuevas en
+// su siguiente punto de control y termina con lo que ya tuviera, así que
+// el sondeo/SSE que ya está en marcha reflejará el resultado final solo.
+async function detenerGeneracion(documentoId, herramienta) {
+  try {
+    const token = await idToken();
+    const res = await fetch(`${BACKEND_URL}/pdf-ia/documento/${documentoId}/detener/${herramienta}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const datos = await res.json().catch(() => ({}));
+      throw new Error(datos.error || "No se pudo detener la generación.");
+    }
+  } catch (e) {
+    mostrarErrorGlobal(e.message || "No se pudo detener la generación.");
+  }
+}
+
 function tarjetaDocumento(doc, modoCarpeta) {
   const nombreCorto = (doc.titulo || doc.nombre_archivo || "Documento").slice(0, 90);
   const meta = [
@@ -493,7 +637,6 @@ function tarjetaDocumento(doc, modoCarpeta) {
     filaContenido({
       label: "Resumen", iconoHtml: icono("lista", 18), existe: doc.tiene_resumen,
       urlVer: `/subida-pdf-resumen/?documento_id=${doc.id}&ver=resumen`,
-      urlGenerar: `/subida-pdf-resumen/?documento_id=${doc.id}`,
       textoGenerar: "Generar",
       // "Regenerar" (05/08/2026, a petición del usuario), no "Generar más":
       // a diferencia de tarjetas/test (que SÍ acumulan, "más" es literal),
@@ -503,17 +646,20 @@ function tarjetaDocumento(doc, modoCarpeta) {
       textoGenerarDeNuevo: "Regenerar",
       generando: esperandoGeneracionDe(doc, "resumen"),
       progreso: doc.progreso_resumen,
-      error: doc.error_resumen
+      error: doc.error_resumen,
+      // documentoId/tipoInline (10/08/2026): genera en el sitio, sin
+      // navegar -- ver botonGenerar/iniciarResumenOEsquema.
+      documentoId: doc.id, tipoInline: "resumen"
     }),
     filaContenido({
       label: "Esquema", iconoHtml: icono("esquema", 18), existe: doc.tiene_esquema,
       urlVer: `/subida-pdf-esquemas/?documento_id=${doc.id}&ver=esquema`,
-      urlGenerar: `/subida-pdf-esquemas/?documento_id=${doc.id}`,
       textoGenerar: "Generar",
       textoGenerarDeNuevo: "Regenerar",
       generando: esperandoGeneracionDe(doc, "esquema"),
       progreso: doc.progreso_esquema,
-      error: doc.error_esquema
+      error: doc.error_esquema,
+      documentoId: doc.id, tipoInline: "esquema"
     }),
     filaContenido({
       label: "Tarjetas", iconoHtml: icono("tarjeta", 18), existe: doc.num_tarjetas > 0, cantidad: doc.num_tarjetas,
@@ -637,6 +783,15 @@ function renderizarDocumentosDeCarpeta() {
   });
   contenedor.querySelectorAll("[data-banco-generar]").forEach((boton) => {
     boton.addEventListener("click", () => iniciarBanco(boton.dataset.id, boton.dataset.bancoGenerar));
+  });
+  contenedor.querySelectorAll("[data-generar-contenido]").forEach((boton) => {
+    boton.addEventListener("click", () => iniciarResumenOEsquema(boton.dataset.id, boton.dataset.generarContenido));
+  });
+  contenedor.querySelectorAll("[data-detener-contenido]").forEach((boton) => {
+    boton.addEventListener("click", () => detenerGeneracion(boton.dataset.id, boton.dataset.detenerContenido));
+  });
+  contenedor.querySelectorAll("[data-detener-banco]").forEach((boton) => {
+    boton.addEventListener("click", () => detenerGeneracion(boton.dataset.id, `banco_${boton.dataset.detenerBanco}`));
   });
   contenedor.querySelectorAll("[data-banco-empezar]").forEach((boton) => {
     boton.addEventListener("click", (evento) => irABanco(evento, boton.dataset.id, boton.dataset.bancoEmpezar));
@@ -788,6 +943,15 @@ function renderizarBusqueda(query) {
   });
   resultados.querySelectorAll("[data-banco-generar]").forEach((boton) => {
     boton.addEventListener("click", () => iniciarBanco(boton.dataset.id, boton.dataset.bancoGenerar));
+  });
+  resultados.querySelectorAll("[data-generar-contenido]").forEach((boton) => {
+    boton.addEventListener("click", () => iniciarResumenOEsquema(boton.dataset.id, boton.dataset.generarContenido));
+  });
+  resultados.querySelectorAll("[data-detener-contenido]").forEach((boton) => {
+    boton.addEventListener("click", () => detenerGeneracion(boton.dataset.id, boton.dataset.detenerContenido));
+  });
+  resultados.querySelectorAll("[data-detener-banco]").forEach((boton) => {
+    boton.addEventListener("click", () => detenerGeneracion(boton.dataset.id, `banco_${boton.dataset.detenerBanco}`));
   });
   resultados.querySelectorAll("[data-banco-empezar]").forEach((boton) => {
     boton.addEventListener("click", (evento) => irABanco(evento, boton.dataset.id, boton.dataset.bancoEmpezar));
@@ -1295,6 +1459,7 @@ async function cargarDocumentos() {
     marcarContenidoListo();
     return;
   }
+  esUsuarioAdmin = await esAdmin();
 
   try {
     const res = await fetch(`${BACKEND_URL}/mis-documentos`, { headers: { Authorization: `Bearer ${token}` } });

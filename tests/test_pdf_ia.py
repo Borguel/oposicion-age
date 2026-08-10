@@ -13,12 +13,22 @@ from unittest.mock import patch
 from google.api_core import exceptions as google_exceptions
 
 import deepseek_utils
+import generacion_control
 from blueprints.pdf_ia import _extraer_json_array, _parece_documento_generado_valido
 from conftest import sembrar_usuario_activo
 
 
 def _con_sesion(cliente, uid="u1", email="u1@example.com"):
     parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
+    parche.start()
+    return parche
+
+
+def _con_sesion_admin(cliente, uid="u1", email="u1@example.com"):
+    # /pdf-ia/documento/<id>/detener/<herramienta> (ver test_admin.py para
+    # el mismo patrón): el claim admin=true es la única barrera real de
+    # requiere_admin.
+    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email, "admin": True})
     parche.start()
     return parche
 
@@ -210,6 +220,36 @@ class TestResumirPdfYGenerarTestDesdePdf:
         assert eventos[-1]["tipo"] == "fin"
         assert eventos[-1]["resumen"] == "# Resumen generado"
 
+    def test_resumir_pdf_registra_y_desregistra_el_control_de_parada(self, client, documento_sembrado):
+        # 10/08/2026, a petición del usuario ("quiero un botón para parar
+        # una generación mía en curso"): mientras la generación está en
+        # marcha debe haber un evento de parada registrado para este
+        # documento -- y debe desaparecer al terminar, para no dejar
+        # entradas colgadas que un futuro "detener" encuentre por error.
+        vistos_durante_la_generacion = {}
+
+        def fake_generar(*args, **kwargs):
+            vistos_durante_la_generacion["evento_parada"] = kwargs.get("evento_parada")
+            vistos_durante_la_generacion["registrado"] = generacion_control.solicitar_parada(
+                "u1", documento_sembrado, "resumen",
+            )
+            return "# Resumen generado"
+
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", side_effect=fake_generar), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                            headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert vistos_durante_la_generacion["evento_parada"] is not None
+        # solicitar_parada encontró un registro -- confirma que SÍ estaba
+        # registrado mientras la generación corría.
+        assert vistos_durante_la_generacion["registrado"] is True
+        # Tras terminar, ya no queda ningún registro para este documento.
+        assert generacion_control.solicitar_parada("u1", documento_sembrado, "resumen") is False
+
     def test_resumir_pdf_manda_evento_inicio_con_documento_id_antes_de_generar(self, client, documento_sembrado):
         # "inicio" (05/08/2026): permite al frontend leer documento_id y
         # dejar de escuchar el resto del stream sin esperar a que la
@@ -305,7 +345,10 @@ class TestResumirPdfYGenerarTestDesdePdf:
                 resp.get_data(as_text=True)
         finally:
             parche.stop()
-        assert progreso_visto_durante_la_generacion["valor"] == {"completadas": 2, "total": 4, "fase": "generando"}
+        progreso = progreso_visto_durante_la_generacion["valor"]
+        assert progreso["completadas"] == 2
+        assert progreso["total"] == 4
+        assert progreso["fase"] == "generando"
         # Tras terminar, el progreso queda limpio (None) -- no se queda
         # pegado el último valor visto durante la generación.
         assert db.leer(("usuarios", "u1", "documentos", documento_sembrado))["progreso_resumen"] is None
@@ -524,7 +567,10 @@ class TestGenerarEsquemaDesdePdf:
                 resp.get_data(as_text=True)
         finally:
             parche.stop()
-        assert progreso_visto_durante_la_generacion["valor"] == {"completadas": 1, "total": 3, "fase": "generando"}
+        progreso = progreso_visto_durante_la_generacion["valor"]
+        assert progreso["completadas"] == 1
+        assert progreso["total"] == 3
+        assert progreso["fase"] == "generando"
         assert db.leer(("usuarios", "u1", "documentos", documento_sembrado))["progreso_esquema"] is None
 
     def test_generar_esquema_desde_pdf_fallido_marca_error_visible_en_el_documento(self, client, db, documento_sembrado):
@@ -770,8 +816,8 @@ class TestTipoContenidoEnResumenYEsquema:
         # pequeño para mejorar la cobertura de artículos -- pero eso
         # multiplicaba las llamadas a DeepSeek necesarias (más lento, más
         # caro, más puntos de fallo con documentos largos). Ahora usa el
-        # mismo TAMANO_CHUNK_CARACTERES general (ya subido a 90000) que el
-        # resumen narrativo -- no se pasa ningún tamano_chunk propio.
+        # mismo TAMANO_CHUNK_CARACTERES general que el resumen narrativo --
+        # no se pasa ningún tamano_chunk propio.
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
@@ -1036,27 +1082,26 @@ class TestCosteIaEnHerramientasPdf:
         return datetime.utcnow().strftime("%Y-%m")
 
     def test_resumen_chunked_no_pierde_el_coste_del_map(self, client, db):
-        # 3 párrafos de 45.000 caracteres cada uno: con el tamaño de trozo
-        # real (TAMANO_CHUNK_CARACTERES, subido a 90000 el 10/08/2026 a
-        # petición del usuario -- ver el comentario largo junto a su
-        # definición en deepseek_utils.py), ningún par de párrafos
-        # consecutivos cabe junto en un mismo fragmento (45000+45000+2 >
-        # 90000), así que cada uno acaba en su propio fragmento -- el MAP
-        # corre de verdad dentro del ThreadPoolExecutor (el caso que antes
-        # perdía el coste).
+        # 3 párrafos de 18.000 caracteres cada uno: con el tamaño de trozo
+        # real (TAMANO_CHUNK_CARACTERES = 35000, ver el comentario largo
+        # junto a su definición en deepseek_utils.py), ningún par de
+        # párrafos consecutivos cabe junto en un mismo fragmento
+        # (18000+18000+2 > 35000), así que cada uno acaba en su propio
+        # fragmento -- el MAP corre de verdad dentro del ThreadPoolExecutor
+        # (el caso que antes perdía el coste).
         sembrar_usuario_activo(db, "u1", plan="premium")
-        texto = ("A" * 45000) + "\n\n" + ("B" * 45000) + "\n\n" + ("C" * 45000)
+        texto = ("A" * 18000) + "\n\n" + ("B" * 18000) + "\n\n" + ("C" * 18000)
         db.sembrar(("usuarios", "u1", "documentos", "d1"), {"texto": texto, "nombre_archivo": "doc.pdf"})
 
         contador_llamadas = itertools.count()
         # Con encabezado "# " (05/08/2026, ver _parece_documento_generado_valido)
-        # y con un tamaño realista frente al fragmento de entrada de 45.000
+        # y con un tamaño realista frente al fragmento de entrada de 18.000
         # caracteres (10/08/2026, ver la comprobación de colapso del MAP en
         # generar_documento_largo_por_partes): un parcial demasiado corto se
         # vería como "colapsado" y se reintentaría, duplicando el coste que
         # este test mide.
-        parcial = "# Resumen parcial.\n" + ("Contenido real del fragmento. " * 300)
-        fusion = "# Resumen fusionado final.\n" + ("Todo el contenido de los tres parciales combinados. " * 300)
+        parcial = "# Resumen parcial.\n" + ("Contenido real del fragmento. " * 150)
+        fusion = "# Resumen fusionado final.\n" + ("Todo el contenido de los tres parciales combinados. " * 150)
 
         def fake_post(url, headers=None, json=None, timeout=None, stream=False):
             # La 4ª llamada (la fusión de los 3 parciales) también se deja
@@ -1313,7 +1358,7 @@ class TestBancoPreguntasYTarjetas:
              "respuesta_correcta": "B", "explicacion": "porque sí"},
         ]
 
-        def fake_adaptativo(construir_prompt, texto, on_usage=None, on_progreso=None, preguntas_a_evitar=None):
+        def fake_adaptativo(construir_prompt, texto, on_usage=None, on_progreso=None, preguntas_a_evitar=None, evento_parada=None):
             for i, p in enumerate(preguntas_generadas, start=1):
                 if on_progreso:
                     on_progreso({"completadas": i, "objetivo": 100, "pregunta": p})
@@ -1447,7 +1492,7 @@ class TestBancoPreguntasYTarjetas:
             self, client, db, documento_sembrado):
         tarjetas_generadas = [{"pregunta": "¿Qué es X?", "respuesta": "Y"}]
 
-        def fake_adaptativo(texto, on_usage=None, on_progreso=None):
+        def fake_adaptativo(texto, on_usage=None, on_progreso=None, evento_parada=None):
             for i, t in enumerate(tarjetas_generadas, start=1):
                 if on_progreso:
                     on_progreso({"completadas": i, "objetivo": 100, "tarjeta": t})
@@ -1532,3 +1577,53 @@ class TestBancoPreguntasYTarjetas:
         datos = resp.get_json()
         assert datos["estado"] == "generando"
         assert datos["tarjetas"] == [{"pregunta": "¿Qué es X?", "respuesta": "Y"}]
+
+
+class TestDetenerGeneracion:
+    # /pdf-ia/documento/<id>/detener/<herramienta> (10/08/2026, a petición
+    # explícita del usuario: "quiero un botón para parar una generación
+    # mía en curso para no gastar tokens de más haciendo pruebas").
+    def test_sin_admin_da_403(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.post(f"/pdf-ia/documento/{documento_sembrado}/detener/resumen",
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 403
+
+    def test_admin_sin_generacion_en_curso_da_404(self, client, documento_sembrado):
+        parche = _con_sesion_admin(client)
+        try:
+            resp = client.post(f"/pdf-ia/documento/{documento_sembrado}/detener/resumen",
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 404
+
+    def test_admin_con_generacion_en_curso_marca_el_evento_de_parada(self, client, documento_sembrado):
+        evento = generacion_control.registrar("u1", documento_sembrado, "resumen")
+        parche = _con_sesion_admin(client)
+        try:
+            resp = client.post(f"/pdf-ia/documento/{documento_sembrado}/detener/resumen",
+                                headers={"Authorization": "Bearer x"})
+            assert resp.status_code == 200
+            assert resp.get_json()["detenido"] is True
+            assert evento.is_set()
+        finally:
+            generacion_control.desregistrar("u1", documento_sembrado, "resumen")
+            parche.stop()
+
+    def test_admin_solo_para_la_herramienta_pedida_no_otras(self, client, documento_sembrado):
+        evento_resumen = generacion_control.registrar("u1", documento_sembrado, "resumen")
+        evento_esquema = generacion_control.registrar("u1", documento_sembrado, "esquema")
+        parche = _con_sesion_admin(client)
+        try:
+            client.post(f"/pdf-ia/documento/{documento_sembrado}/detener/resumen",
+                        headers={"Authorization": "Bearer x"})
+            assert evento_resumen.is_set()
+            assert not evento_esquema.is_set()
+        finally:
+            generacion_control.desregistrar("u1", documento_sembrado, "resumen")
+            generacion_control.desregistrar("u1", documento_sembrado, "esquema")
+            parche.stop()

@@ -1098,6 +1098,63 @@ class TestGenerarDocumentoLargoPorPartes:
         assert resultado is None
         assert mock_gen.call_count == 4
 
+    def test_evento_parada_marcado_salta_el_reintento_del_map(self):
+        # 10/08/2026, a petición del usuario ("quiero un botón para parar
+        # una generación mía en marcha para no gastar tokens de más"): un
+        # evento_parada marcado se trata igual que agotar el tiempo máximo
+        # -- no se lanza el reintento del fragmento fallido, se devuelve lo
+        # disponible con aviso en vez de nada.
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        parcial_valido = "único parcial válido. " * 100
+        respuestas = [None, parcial_valido]
+        evento_parada = threading.Event()
+        evento_parada.set()
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes(
+                "system", texto_largo, tamano_chunk=15000, evento_parada=evento_parada,
+            )
+        assert parcial_valido in resultado
+        assert "Aviso" in resultado
+        # 2 llamadas del MAP inicial -- el evento de parada ya estaba
+        # marcado antes de decidir si reintentar, así que no hay una 3ª.
+        assert mock_gen.call_count == 2
+
+    def test_evento_parada_marcado_salta_la_fusion(self):
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        parcial_1 = "# Parcial uno\n" + ("contenido real del fragmento uno. " * 50)
+        parcial_2 = "# Parcial dos\n" + ("contenido real del fragmento dos. " * 50)
+        respuestas = [parcial_1, parcial_2]
+        evento_parada = threading.Event()
+        evento_parada.set()
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes(
+                "system", texto_largo, tamano_chunk=15000, evento_parada=evento_parada,
+            )
+        assert parcial_1 in resultado
+        assert parcial_2 in resultado
+        # Solo las 2 llamadas del MAP -- nunca llega a intentar la fusión.
+        assert mock_gen.call_count == 2
+
+    def test_evento_parada_no_marcado_no_afecta_a_la_generacion_normal(self):
+        # Contraprueba: pasar un evento_parada real pero SIN marcar no debe
+        # cambiar nada frente a no pasarlo -- confirma que is_set() es lo
+        # único que importa, no la mera presencia del evento.
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        parcial_1 = "# Parcial uno\n" + ("contenido real del fragmento uno. " * 50)
+        parcial_2 = "# Parcial dos\n" + ("contenido real del fragmento dos. " * 50)
+        fusion_final = "# Fusión completa\n" + ("todo el contenido fusionado. " * 80)
+        respuestas = [parcial_1, parcial_2, fusion_final]
+        evento_parada = threading.Event()
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes(
+                "system", texto_largo, tamano_chunk=15000, evento_parada=evento_parada,
+            )
+        assert resultado == fusion_final
+        assert mock_gen.call_count == 3
+
 
 class TestDetectarTextoLegal:
     # detectar_texto_legal (05/08/2026): heurística por regex, SIN llamar a

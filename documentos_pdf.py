@@ -357,7 +357,36 @@ def marcar_generado(db, uid, documento_id, tipo, num_tarjetas_nuevas=0):
 # propio documento, es lo que permite que el sondeo lo lea.
 def actualizar_progreso_generacion(db, uid, documento_id, tipo, completadas, total, fase):
     ref = db.collection("usuarios").document(uid).collection("documentos").document(documento_id)
-    ref.update({f"progreso_{tipo}": {"completadas": completadas, "total": total, "fase": fase}})
+    ref.update({
+        f"progreso_{tipo}": {
+            "completadas": completadas, "total": total, "fase": fase,
+            # "actualizado" (10/08/2026, mismo motivo y mismo criterio que
+            # _banco_atascado más arriba): sin marca de tiempo no hay forma
+            # de distinguir "sigue generando de verdad" de "el hilo de
+            # fondo murió a mitad -- p. ej. un redeploy de Render -- y este
+            # progreso se quedó pegado en Firestore para siempre". Ver
+            # _progreso_atascado/listar_documentos.
+            "actualizado": datetime.utcnow().isoformat(),
+        },
+    })
+
+
+def _progreso_atascado(progreso):
+    """Igual que _banco_atascado, pero para progreso_resumen/progreso_
+    esquema (10/08/2026): protege contra exactamente el mismo caso -- el
+    hilo de fondo muere a mitad de generación (un redeploy de Render, por
+    ejemplo) sin llegar a llamar a limpiar_progreso_generacion, y el
+    documento se quedaría mostrando "Generando..." para siempre."""
+    if not progreso:
+        return False
+    actualizado = progreso.get("actualizado")
+    if not actualizado:
+        return True
+    try:
+        momento = datetime.fromisoformat(actualizado)
+    except (TypeError, ValueError):
+        return True
+    return (datetime.utcnow() - momento) > timedelta(minutes=_BANCO_ATASCADO_MINUTOS)
 
 
 def limpiar_progreso_generacion(db, uid, documento_id, tipo):
@@ -396,6 +425,28 @@ def listar_documentos(db, uid):
         datos = doc.to_dict()
         banco_preguntas = bancos_preguntas.get(doc.id, {})
         banco_tarjetas = bancos_tarjetas.get(doc.id, {})
+        # progreso_resumen/progreso_esquema atascados (10/08/2026, ver
+        # _progreso_atascado): se presentan como si la generación hubiera
+        # terminado con error -- nunca se muestra "Generando..." para
+        # siempre, y el usuario ve una señal clara de que hay que
+        # regenerar, en vez de un dato de Firestore sucio sin ninguna
+        # explicación visible.
+        progreso_resumen = datos.get("progreso_resumen")
+        error_resumen = datos.get("error_resumen")
+        if _progreso_atascado(progreso_resumen):
+            progreso_resumen = None
+            error_resumen = {
+                "mensaje": "La generación se interrumpió antes de terminar.",
+                "fecha": datetime.utcnow().isoformat(),
+            }
+        progreso_esquema = datos.get("progreso_esquema")
+        error_esquema = datos.get("error_esquema")
+        if _progreso_atascado(progreso_esquema):
+            progreso_esquema = None
+            error_esquema = {
+                "mensaje": "La generación se interrumpió antes de terminar.",
+                "fecha": datetime.utcnow().isoformat(),
+            }
         resultado.append({
             "id": doc.id,
             "titulo": datos.get("titulo"),
@@ -413,14 +464,15 @@ def listar_documentos(db, uid):
             "tiene_resumen": datos.get("tiene_resumen", False),
             "tiene_esquema": datos.get("tiene_esquema", False),
             # progreso_resumen/progreso_esquema (10/08/2026): None si no hay
-            # ninguna generación en curso -- ver actualizar_progreso_generacion.
-            "progreso_resumen": datos.get("progreso_resumen"),
-            "progreso_esquema": datos.get("progreso_esquema"),
+            # ninguna generación en curso -- ver actualizar_progreso_generacion
+            # (y _progreso_atascado si lleva demasiado sin actualizarse).
+            "progreso_resumen": progreso_resumen,
+            "progreso_esquema": progreso_esquema,
             # error_resumen/error_esquema (10/08/2026): último intento de
             # generar que falló, ver marcar_error_generacion. None si el
             # último intento (o el único que ha habido) fue bien.
-            "error_resumen": datos.get("error_resumen"),
-            "error_esquema": datos.get("error_esquema"),
+            "error_resumen": error_resumen,
+            "error_esquema": error_esquema,
             "num_tarjetas": datos.get("num_tarjetas", 0),
             "num_tests": datos.get("num_tests", 0),
             "ultima_actividad": datos.get("ultima_actividad"),

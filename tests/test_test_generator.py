@@ -15,6 +15,7 @@ cada candidata por separado. Ver el comentario largo junto a
 _pedir_lote_verificado en test_generator.py."""
 import itertools
 import json
+import threading
 from unittest.mock import patch
 
 from test_generator import (
@@ -2009,6 +2010,62 @@ class TestGenerarBancoPreguntasAdaptativo:
         assert eventos[0]["pregunta"]["pregunta"] == "¿Pregunta 1?"
         assert eventos[0]["completadas"] == 1
         assert eventos[0]["objetivo"] == 20
+
+    def test_on_progreso_avanza_en_vivo_no_en_una_rafaga_al_final_de_la_ronda(self):
+        # Bug real (10/08/2026): el contador se quedaba clavado en 0 en
+        # "Mis documentos" durante toda la ronda (hasta 8 lotes en
+        # paralelo) y saltaba de golpe al final. Con una ronda de 10
+        # preguntas repartida en 2 lotes de 5 (_TAMANO_LOTE_PREGUNTAS), cada
+        # candidata aceptada debe disparar su PROPIO evento con un
+        # "completadas" que aumenta de uno en uno y sin huecos -- no un
+        # único evento final con el total de la ronda.
+        contador = itertools.count(1)
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            if _es_llamada_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            if _es_llamada_deduplicacion_final(messages):
+                return json.dumps({"grupos_duplicados": []})
+            return json.dumps([
+                {"pregunta": f"¿Pregunta {next(contador)}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "Explicación de prueba para el test."}
+                for _ in range(5)
+            ])
+
+        eventos = []
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            resultado = generar_banco_preguntas_adaptativo(
+                construir_prompt, "Texto de prueba.", tope=10, tamano_ronda=10, on_progreso=eventos.append,
+            )
+
+        assert len(resultado) == 10
+        # Un evento por pregunta aceptada, no uno solo con el total.
+        assert len(eventos) == 10
+        # "completadas" es una secuencia 1..10 sin huecos ni repetidos --
+        # confirma que la aceptación cruzando lotes en paralelo es atómica
+        # (bajo lock_acumulacion), no una ráfaga desordenada al final.
+        assert sorted(e["completadas"] for e in eventos) == list(range(1, 11))
+        assert all(e["objetivo"] == 10 for e in eventos)
+
+    def test_evento_parada_marcado_no_lanza_una_ronda_nueva(self):
+        # 10/08/2026, a petición del usuario ("quiero un botón para parar
+        # una generación mía en marcha para no gastar tokens de más"): con
+        # el evento ya marcado ANTES de la primera ronda, no debe lanzarse
+        # ninguna llamada -- se devuelve lo acumulado hasta el momento
+        # (nada, aquí).
+        construir_prompt = _construir_prompt_fabrica(None)
+
+        def fake_call(messages, **kwargs):
+            raise AssertionError("no debería llamarse a la IA con evento_parada ya marcado")
+
+        evento_parada = threading.Event()
+        evento_parada.set()
+        with patch("test_generator.call_deepseek_api", side_effect=fake_call):
+            resultado = generar_banco_preguntas_adaptativo(
+                construir_prompt, "Texto de prueba.", tope=20, tamano_ronda=8, evento_parada=evento_parada,
+            )
+        assert resultado == []
 
     def test_no_repite_la_llamada_a_la_ia_de_esquema_entre_rondas(self):
         # Optimización de coste real (03/08/2026): sin fragmentos_

@@ -634,24 +634,24 @@ def detectar_texto_legal(texto):
     return densidad >= _UMBRAL_DENSIDAD_LEGAL
 
 
-# Subido de 15000 a 90000 (10/08/2026, a petición explícita del usuario:
-# "si hay que bajar un poco de calidad no pasa nada... que se genere un
-# poco más rápido... tampoco quiero que esto suponga un gasto muy grande de
-# tokens"). La mayoría de documentos reales (un "tema" de oposición) tienen
-# menos de 90.000 caracteres (~20-25 páginas) y ahora caben en UN solo
-# fragmento -- una sola llamada (con continuación si hace falta, ver
-# generar_con_continuacion) en vez de repartirse en 4-7 llamadas de MAP más
-# una de fusión. Esto no es solo más barato (el system_prompt, ~1.500
-# caracteres, se paga UNA vez en vez de una por fragmento) y más rápido (una
-# llamada secuencial en vez de esperar a la más lenta de varias en
-# paralelo): también evita de raíz el motivo más común de generación
-# incompleta ("N de M secciones no se pudieron generar") y los artículos
-# duplicados a caballo entre dos fragmentos que la fusión no siempre
-# deduplicaba bien -- sin fragmentos, no hay frontera que duplicar. El
-# límite de MAP-reduce con reintento/aviso parcial sigue existiendo como
-# red de seguridad para el minoritario documento realmente largo (por
-# encima de 90.000 caracteres) que aun así lo necesite.
-TAMANO_CHUNK_CARACTERES = 90000
+# De 15000 a 90000 y de vuelta a 35000 (10/08/2026). El salto a 90000 (a
+# petición del usuario: "que se genere más rápido, sin gastar demasiados
+# tokens") buscaba que la mayoría de documentos cupieran en una sola
+# llamada -- pero un caso real lo desmintió: un documento de ~17-20.000
+# caracteres, MUY por debajo de 90000, tomó el camino de una sola llamada y
+# aun así se cortó a media palabra (red de seguridad de "respuesta
+# sospechosamente corta" incluida, ver más abajo). Eso confirma que incluso
+# documentos bastante más pequeños que 90000 ya son demasiado ambiciosos
+# para una única llamada fiable al 100% -- el umbral no estaba resolviendo
+# el problema que decía resolver. 35000 es el punto intermedio real: sigue
+# dejando la mayoría de documentos cortos/medios (hasta ~8-10 páginas) en
+# una sola llamada (barato, rápido), pero documentos más largos escalan a
+# 2, 3, N fragmentos en paralelo (hasta _MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK
+# a la vez) en vez de arriesgarse a una única llamada demasiado grande --
+# reduce cuánto puede perderse si UNA llamada falla, y baja de verdad la
+# frecuencia con la que se dispara el aviso de generación parcial (no lo
+# sustituye: sigue siendo la red de seguridad para cuando aun así pase).
+TAMANO_CHUNK_CARACTERES = 35000
 
 # Umbral de la comprobación de tamaño de la fusión en
 # generar_documento_largo_por_partes (10/08/2026, ver el comentario largo
@@ -795,6 +795,7 @@ def generar_documento_largo_por_partes(
     tamano_chunk=TAMANO_CHUNK_CARACTERES,
     fraccion_minima_map=_FRACCION_MINIMA_MAP,
     fraccion_minima_fusion=_FRACCION_MINIMA_FUSION,
+    evento_parada=None,
 ):
     """Para documentos largos, en vez de meter todo el texto de golpe en un
     único prompt (peor calidad: el modelo tiene que abarcar decenas de
@@ -867,8 +868,20 @@ def generar_documento_largo_por_partes(
     esquema fallaba mientras el resumen del mismo documento no). Estos dos
     parámetros permiten que cada llamante pase un umbral más bajo y
     realista para su propio formato de salida, en vez de forzar el mismo
-    listón a todos los documentos por igual."""
+    listón a todos los documentos por igual.
+
+    evento_parada (10/08/2026, threading.Event opcional, ver
+    generacion_control.py): si se pasa y está marcado, se trata igual que
+    agotar el tiempo máximo -- se deja de lanzar RONDAS nuevas (reintento,
+    fusión, reintento de la fusión) y se devuelve lo que ya hubiera
+    disponible, con aviso si es parcial. No cancela ninguna llamada YA en
+    marcha (no es seguro interrumpir una petición HTTP a mitad), solo evita
+    lanzar más."""
     limite_tiempo = time.monotonic() + _TIEMPO_MAXIMO_GENERACION_SEGUNDOS
+
+    def _debe_abandonar():
+        return time.monotonic() >= limite_tiempo or bool(evento_parada and evento_parada.is_set())
+
     fragmentos = _trocear_en_parrafos(texto, tamano=tamano_chunk)
     if len(fragmentos) == 1:
         # Bug real (10/08/2026): al subir TAMANO_CHUNK_CARACTERES a 90000,
@@ -1000,7 +1013,7 @@ def generar_documento_largo_por_partes(
     # probabilidad de que un simple parpadeo de red -- o que el modelo se
     # rinda con un fragmento concreto -- se lleve por delante contenido real.
     indices_fallidos = [i for i in range(len(fragmentos)) if _fragmento_sospechoso(i)]
-    if indices_fallidos and time.monotonic() < limite_tiempo:
+    if indices_fallidos and not _debe_abandonar():
         # Mismo motivo que en la ronda inicial: no usar "with executor" porque
         # su shutdown(wait=True) implícito bloquearía sin límite si algún
         # reintento no responde a tiempo, anulando el timeout de as_completed.
@@ -1023,8 +1036,9 @@ def generar_documento_largo_por_partes(
             executor_reintento.shutdown(wait=False)
     elif indices_fallidos:
         logger.warning(
-            "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) antes de poder "
-            "reintentar %d fragmento(s) -- se abandona sin reintentar.",
+            "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) o se pidió "
+            "detener la generación antes de poder reintentar %d fragmento(s) -- se abandona sin "
+            "reintentar.",
             _TIEMPO_MAXIMO_GENERACION_SEGUNDOS, len(indices_fallidos),
         )
 
@@ -1076,10 +1090,11 @@ def generar_documento_largo_por_partes(
 
     bloque_parciales = "\n\n---\n\n".join(parciales)
 
-    if time.monotonic() >= limite_tiempo:
+    if _debe_abandonar():
         logger.warning(
-            "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) antes de llegar "
-            "a la fusión -- se devuelven los %d fragmentos sin fundir en vez de nada.",
+            "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) o se pidió "
+            "detener la generación antes de llegar a la fusión -- se devuelven los %d "
+            "fragmentos sin fundir en vez de nada.",
             _TIEMPO_MAXIMO_GENERACION_SEGUNDOS, len(parciales),
         )
         return advertencia_parcial + bloque_parciales
@@ -1117,11 +1132,11 @@ def generar_documento_largo_por_partes(
     # documento entero: si la fusión sigue colapsando, se devuelven los
     # parciales sin fundir en vez de nada -- misma filosofía que arriba).
     if fusionado and len(fusionado) < len(bloque_parciales) * fraccion_minima_fusion:
-        if time.monotonic() >= limite_tiempo:
+        if _debe_abandonar():
             logger.warning(
                 "generar_documento_largo_por_partes: la fusión colapsó y se agotó el tiempo "
-                "máximo (%ds) antes de poder reintentarla -- se devuelven los fragmentos sin "
-                "fundir en vez de nada.",
+                "máximo (%ds) o se pidió detener la generación antes de poder reintentarla -- "
+                "se devuelven los fragmentos sin fundir en vez de nada.",
                 _TIEMPO_MAXIMO_GENERACION_SEGUNDOS,
             )
             return advertencia_parcial + bloque_parciales

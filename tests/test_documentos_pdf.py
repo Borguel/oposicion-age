@@ -228,7 +228,11 @@ class TestProgresoGeneracion:
         db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Doc", "ultima_actividad": "2026-01-01"})
         actualizar_progreso_generacion(db, "u1", "d1", "resumen", completadas=2, total=5, fase="generando")
         resultado = listar_documentos(db, "u1")
-        assert resultado[0]["progreso_resumen"] == {"completadas": 2, "total": 5, "fase": "generando"}
+        progreso = resultado[0]["progreso_resumen"]
+        assert progreso["completadas"] == 2
+        assert progreso["total"] == 5
+        assert progreso["fase"] == "generando"
+        assert "actualizado" in progreso
         # El esquema no se ha tocado -- no debe verse afectado.
         assert resultado[0]["progreso_esquema"] is None
 
@@ -238,6 +242,57 @@ class TestProgresoGeneracion:
         limpiar_progreso_generacion(db, "u1", "d1", "esquema")
         resultado = listar_documentos(db, "u1")
         assert resultado[0]["progreso_esquema"] is None
+
+
+class TestProgresoAtascado:
+    # Mismo bug que TestBancoAtascado pero para progreso_resumen/progreso_
+    # esquema (10/08/2026): si el hilo de fondo que genera un resumen o un
+    # esquema muere a mitad (p. ej. un redeploy de Render), el progreso se
+    # queda pegado en Firestore como "generando" para siempre -- ver
+    # _progreso_atascado.
+
+    def test_progreso_reciente_se_mantiene_como_generando(self, db):
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Doc", "ultima_actividad": "2026-01-01"})
+        actualizar_progreso_generacion(db, "u1", "d1", "resumen", completadas=2, total=5, fase="generando")
+        resultado = listar_documentos(db, "u1")
+        assert resultado[0]["progreso_resumen"]["completadas"] == 2
+        assert resultado[0]["error_resumen"] is None
+
+    def test_progreso_sin_actualizar_en_mucho_tiempo_se_reporta_como_error(self, db):
+        from datetime import datetime, timedelta
+        viejo = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {
+            "titulo": "Doc", "ultima_actividad": "2026-01-01",
+            "progreso_resumen": {"completadas": 2, "total": 5, "fase": "generando", "actualizado": viejo},
+        })
+        resultado = listar_documentos(db, "u1")
+        assert resultado[0]["progreso_resumen"] is None
+        assert resultado[0]["error_resumen"]["mensaje"] == "La generación se interrumpió antes de terminar."
+        # El esquema no se ha tocado -- no debe verse afectado.
+        assert resultado[0]["progreso_esquema"] is None
+        assert resultado[0]["error_esquema"] is None
+
+    def test_progreso_sin_marca_de_tiempo_tambien_se_considera_atascado(self, db):
+        # Progreso guardado antes de que "actualizado" existiera como campo.
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {
+            "titulo": "Doc", "ultima_actividad": "2026-01-01",
+            "progreso_esquema": {"completadas": 1, "total": 3, "fase": "generando"},
+        })
+        resultado = listar_documentos(db, "u1")
+        assert resultado[0]["progreso_esquema"] is None
+        assert resultado[0]["error_esquema"] is not None
+
+    def test_error_de_una_generacion_normal_no_se_pisa_por_el_chequeo_de_atascado(self, db):
+        # Un error real (marcar_error_generacion) sin progreso en curso no
+        # debe verse afectado por _progreso_atascado (progreso=None -> nunca
+        # se considera atascado).
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {
+            "titulo": "Doc", "ultima_actividad": "2026-01-01",
+            "error_resumen": {"mensaje": "Fallo real de la IA", "fecha": "2026-01-01"},
+        })
+        resultado = listar_documentos(db, "u1")
+        assert resultado[0]["progreso_resumen"] is None
+        assert resultado[0]["error_resumen"]["mensaje"] == "Fallo real de la IA"
 
 
 class TestEliminarDocumento:

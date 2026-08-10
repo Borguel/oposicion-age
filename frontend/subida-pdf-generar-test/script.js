@@ -260,7 +260,6 @@ async function obtenerAuthHeaders() {
       detalle.classList.remove('hidden');
       document.getElementById('progress-container-numerico').classList.add('hidden');
       document.getElementById('barra-indeterminada-redireccion').classList.remove('hidden');
-      document.getElementById('sugerencia-mientras-tanto').classList.remove('hidden');
     }
 
     // Dispara la generación del banco completo de preguntas y devuelve en
