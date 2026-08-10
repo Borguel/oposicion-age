@@ -836,13 +836,13 @@
     "prueba": "espacial",
     "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
     "opciones": {
-      "D": "4",
-      "A": "6",
-      "B": "2",
-      "C": "3"
+      "D": "2",
+      "A": "3",
+      "B": "1",
+      "C": "0"
     },
     "respuesta_correcta": "D",
-    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 2 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_78.png",
     "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
     "categoria": "contacto_cubos"
@@ -852,13 +852,13 @@
     "prueba": "espacial",
     "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
     "opciones": {
-      "A": "4",
-      "B": "6",
+      "A": "3",
+      "B": "2",
       "C": "5",
-      "D": "2"
+      "D": "4"
     },
     "respuesta_correcta": "A",
-    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 3 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_79.png",
     "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
     "categoria": "contacto_cubos"
@@ -868,13 +868,13 @@
     "prueba": "espacial",
     "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
     "opciones": {
-      "B": "3",
-      "C": "4",
-      "D": "5",
-      "A": "2"
+      "B": "2",
+      "C": "3",
+      "D": "4",
+      "A": "5"
     },
     "respuesta_correcta": "B",
-    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 3 cubos de la figura.",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 2 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_80.png",
     "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
     "categoria": "contacto_cubos"
@@ -916,13 +916,13 @@
     "prueba": "espacial",
     "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
     "opciones": {
-      "A": "3",
-      "B": "6",
-      "C": "2",
+      "A": "2",
+      "B": "0",
+      "C": "1",
       "D": "4"
     },
     "respuesta_correcta": "A",
-    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 3 cubos de la figura.",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 2 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_83.png",
     "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
     "categoria": "contacto_cubos"
@@ -932,13 +932,13 @@
     "prueba": "espacial",
     "pregunta": "¿Cuántos cubos tocan con alguna de sus caras al cubo marcado en color?",
     "opciones": {
-      "B": "4",
-      "C": "5",
-      "D": "2",
-      "A": "6"
+      "B": "2",
+      "C": "3",
+      "D": "4",
+      "A": "0"
     },
     "respuesta_correcta": "B",
-    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 4 cubos de la figura.",
+    "explicacion": "El cubo marcado está en contacto (cara con cara) con otros 2 cubos de la figura.",
     "imagen": "/assets/psicotecnico-metro/gen_contacto_84.png",
     "examen": "Domina tu Opo - Banco de práctica (preguntas propias)",
     "categoria": "contacto_cubos"
