@@ -772,15 +772,20 @@ class TestGenerarDocumentoLargoPorPartes:
         assert resultado == fusion_final
         assert mock_gen.call_count == 4
 
-    def test_documento_largo_fragmento_fallido_tras_reintentar_no_devuelve_resultado_parcial(self):
-        # Antes de este fix, si solo sobrevivía un fragmento, se devolvía
-        # tal cual como si fuera el documento completo -- pasaba la
-        # validación de formato porque sí traía un encabezado "# ", pero le
-        # faltaba el resto del documento sin ningún aviso (así es como un
-        # usuario real acabó con un "resumen" de 14 páginas que solo tenía
-        # un párrafo). Ahora, si un fragmento sigue fallando incluso tras
-        # reintentar, se abandona la generación entera en vez de devolver
-        # un documento incompleto.
+    def test_documento_largo_fragmento_fallido_tras_reintentar_devuelve_lo_disponible_con_aviso(self):
+        # ANTES de este fix (versión intermedia, 10/08/2026): si solo
+        # sobrevivía un fragmento, se devolvía tal cual como si fuera el
+        # documento completo -- pasaba la validación de formato porque sí
+        # traía un encabezado "# ", pero le faltaba el resto del documento
+        # SIN NINGÚN AVISO (así es como un usuario real acabó con un
+        # "resumen" de 14 páginas que solo tenía un párrafo). La primera
+        # versión de este fix pasó al otro extremo: si un fragmento seguía
+        # fallando tras reintentar, se abandonaba TODO el documento, aunque
+        # el resto se hubiera generado bien -- con documentos de varios
+        # fragmentos esto significaba quedarse sin nada una y otra vez.
+        # AHORA: se devuelve lo que sí se generó bien, con un aviso VISIBLE
+        # (no silencioso) de que falta contenido y hay que regenerar --ni
+        # el fallo silencioso de antes, ni tirar contenido bueno ya pagado.
         parrafo = "a" * 10000
         texto_largo = f"{parrafo}\n\n{parrafo}"
         # El parcial que SÍ sobrevive se deja largo a propósito, para que no
@@ -791,9 +796,25 @@ class TestGenerarDocumentoLargoPorPartes:
         respuestas = [None, parcial_valido, None]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
-        assert resultado is None
+        assert resultado is not None
+        assert "Aviso" in resultado
+        assert "1 de 2" in resultado
+        assert parcial_valido in resultado
         # 2 llamadas del MAP inicial + 1 del reintento (que también falla).
+        # Con un único fragmento aprovechable no hay fusión que intentar.
         assert mock_gen.call_count == 3
+
+    def test_documento_largo_todos_los_fragmentos_fallan_devuelve_none(self):
+        # Contraprueba del anterior: si NINGÚN fragmento sobrevive ni
+        # siquiera tras reintentar, no hay nada aprovechable -- ahí sí se
+        # sigue devolviendo None, como cualquier otro fallo total.
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        respuestas = [None, None, None, None]
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+        assert resultado is None
+        assert mock_gen.call_count == 4
 
     def test_documento_largo_agota_el_tiempo_maximo_antes_de_la_fusion(self):
         # Bug real (10/08/2026): un usuario reportó una generación que se
@@ -802,7 +823,8 @@ class TestGenerarDocumentoLargoPorPartes:
         # secuenciales (MAP, reintento del MAP, fusión, reintento de la
         # fusión). Con los 2 fragmentos del MAP ya generados bien (sin
         # necesitar reintento), si para cuando tocaría fundir ya se agotó
-        # el tiempo máximo, se abandona sin ni siquiera intentar la fusión.
+        # el tiempo máximo, se devuelven sin fundir (con aviso) en vez de
+        # tirar dos fragmentos ya generados y pagados.
         parrafo = "a" * 10000
         texto_largo = f"{parrafo}\n\n{parrafo}"
         parcial_1 = "# Parcial uno\n" + ("contenido real del fragmento uno. " * 50)
@@ -820,7 +842,12 @@ class TestGenerarDocumentoLargoPorPartes:
              patch("deepseek_utils.as_completed", side_effect=_as_completed_sin_timeout), \
              patch("deepseek_utils.time.monotonic", side_effect=[0, 1, 10_000]):
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
-        assert resultado is None
+        # No hubo fragmentos fallidos (los 2 se generaron bien) -- sin
+        # fundir por falta de tiempo, pero SIN aviso de sección faltante,
+        # solo sin la fusión de coherencia.
+        assert parcial_1 in resultado
+        assert parcial_2 in resultado
+        assert "Aviso" not in resultado
         # Solo las 2 llamadas del MAP -- nunca llega a intentar la fusión.
         assert mock_gen.call_count == 2
 
@@ -833,7 +860,8 @@ class TestGenerarDocumentoLargoPorPartes:
              patch("deepseek_utils.as_completed", side_effect=_as_completed_sin_timeout), \
              patch("deepseek_utils.time.monotonic", side_effect=[0, 1, 10_000]):
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
-        assert resultado is None
+        assert parcial_valido in resultado
+        assert "Aviso" in resultado
         # 2 llamadas del MAP inicial -- se agota el tiempo antes de
         # reintentar el fragmento fallido, así que no hay una 3ª llamada.
         assert mock_gen.call_count == 2
@@ -919,7 +947,12 @@ class TestGenerarDocumentoLargoPorPartes:
         assert resultado == fusion_completa
         assert mock_gen.call_count == 4
 
-    def test_documento_largo_fusion_colapsada_tras_reintentar_devuelve_none(self):
+    def test_documento_largo_fusion_colapsada_tras_reintentar_devuelve_los_parciales_sin_fundir(self):
+        # Si la fusión sigue colapsando tras reintentar, los DOS parciales
+        # ya se generaron bien por separado -- tirarlos sería desperdiciar
+        # contenido bueno y ya pagado solo porque el paso de FUSIÓN (que
+        # solo reordena/dedup, no genera contenido nuevo) falló. Se
+        # devuelven sin fundir en vez de nada.
         parrafo = "a" * 10000
         texto_largo = f"{parrafo}\n\n{parrafo}"
         parcial_1 = "# Parcial uno\n" + ("contenido real del fragmento uno. " * 50)
@@ -928,7 +961,9 @@ class TestGenerarDocumentoLargoPorPartes:
         respuestas = [parcial_1, parcial_2, fusion_colapsada, fusion_colapsada]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
-        assert resultado is None
+        assert parcial_1 in resultado
+        assert parcial_2 in resultado
+        assert "Aviso" not in resultado
         assert mock_gen.call_count == 4
 
     def test_documento_largo_fragmento_map_colapsado_se_reintenta_y_se_recupera(self):
@@ -955,7 +990,7 @@ class TestGenerarDocumentoLargoPorPartes:
         assert resultado == fusion_completa
         assert mock_gen.call_count == 4
 
-    def test_documento_largo_fragmento_map_colapsado_tras_reintentar_devuelve_none(self):
+    def test_documento_largo_fragmento_map_colapsado_tras_reintentar_devuelve_lo_disponible_con_aviso(self):
         parrafo = "a" * 10000
         texto_largo = f"{parrafo}\n\n{parrafo}"
         parcial_1_colapsado = "# Solo esto"
@@ -963,10 +998,13 @@ class TestGenerarDocumentoLargoPorPartes:
         respuestas = [parcial_1_colapsado, parcial_2, parcial_1_colapsado]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
-        assert resultado is None
+        assert parcial_2 in resultado
+        assert "Aviso" in resultado
+        assert "1 de 2" in resultado
         # 2 llamadas del MAP inicial + 1 del reintento del fragmento
-        # colapsado (que sigue devolviendo lo mismo) -- nunca llega a la
-        # fusión, así que no hay una 4ª llamada.
+        # colapsado (que sigue devolviendo lo mismo) -- con un único
+        # fragmento aprovechable no hay fusión que intentar, así que no hay
+        # una 4ª llamada.
         assert mock_gen.call_count == 3
 
     def test_fraccion_minima_personalizada_acepta_un_resultado_compacto_pero_completo(self):

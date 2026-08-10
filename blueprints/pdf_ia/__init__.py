@@ -180,17 +180,26 @@ def resumir_pdf():
             try:
                 resumen = _generar_documento_validado(
                     system_prompt, text, etiqueta_documento="Documento para resumir",
-                    # max_tokens más alto y fragmentos más pequeños en modo
-                    # legal (10/08/2026, bug real): el prompt de "mapa de
-                    # artículos" exige cubrir CADA artículo sin omitir
+                    # max_tokens más alto y fragmentos algo más pequeños en
+                    # modo legal (10/08/2026, bug real): el prompt de "mapa
+                    # de artículos" exige cubrir CADA artículo sin omitir
                     # ninguno -- un listón mucho más exigente que el resumen
-                    # narrativo general. Más margen de salida por sí solo no
-                    # bastó (visto en producción, fallaba una y otra vez con
-                    # el mismo documento incluso tras reintentar) -- un
-                    # fragmento más pequeño baja de verdad cuántos artículos
-                    # hay que cubrir en una sola llamada.
+                    # narrativo general, y fragmentos más pequeños bajan de
+                    # verdad cuántos artículos hay que cubrir en una sola
+                    # llamada. Antes se bajaba hasta 8000 -- con un
+                    # documento de ~51.000 caracteres eso da 7 fragmentos,
+                    # cada uno una llamada más a DeepSeek que puede fallar o
+                    # no llegar a tiempo (visto en producción: 3-4 de 7
+                    # fragmentos sin completar). Subido a 12000: sigue
+                    # siendo bastante más pequeño que el general (15000)
+                    # para la exigencia de cobertura, pero con ~5
+                    # fragmentos en vez de 7 hay menos llamadas que puedan
+                    # fallar y el conjunto termina antes -- y si alguna
+                    # falla igualmente, generar_documento_largo_por_partes
+                    # ya no descarta todo el documento por eso (ver el
+                    # comentario largo junto a su definición).
                     max_tokens=8192 if es_legal else 4096,
-                    tamano_chunk=8000 if es_legal else TAMANO_CHUNK_CARACTERES,
+                    tamano_chunk=12000 if es_legal else TAMANO_CHUNK_CARACTERES,
                     on_usage=acumulador_tokens.add, on_progreso=on_progreso,
                 )
                 if resumen:
@@ -404,13 +413,14 @@ def generar_esquema_desde_pdf():
                     text,
                     etiqueta_documento="Documento para crear esquema",
                     instrucciones_fusion_extra=instrucciones_fusion_esquema,
-                    # max_tokens más alto y fragmentos más pequeños en modo
-                    # legal -- ver el comentario largo en resumir_pdf, mismo
-                    # motivo (el esquema legal también exige que cada
+                    # max_tokens más alto y fragmentos algo más pequeños en
+                    # modo legal -- ver el comentario largo en resumir_pdf,
+                    # mismo motivo (el esquema legal también exige que cada
                     # artículo mantenga su propio epígrafe, sin fusionar dos
-                    # distintos).
+                    # distintos) y mismo ajuste (12000, no 8000: menos
+                    # llamadas que puedan fallar o no llegar a tiempo).
                     max_tokens=8192 if es_legal else 4096,
-                    tamano_chunk=8000 if es_legal else TAMANO_CHUNK_CARACTERES,
+                    tamano_chunk=12000 if es_legal else TAMANO_CHUNK_CARACTERES,
                     on_usage=acumulador_tokens.add,
                     on_progreso=on_progreso,
                     # Umbrales de colapso propios del esquema (10/08/2026,

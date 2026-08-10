@@ -791,6 +791,17 @@ def generar_documento_largo_por_partes(
        un único documento coherente, sin secciones duplicadas ni solapadas
        entre fragmentos.
 
+    Devuelve None SOLO si no se pudo aprovechar NINGÚN fragmento (10/08/2026,
+    bug real: antes, si fallaba UN SOLO fragmento incluso tras reintentar, se
+    descartaba TODO el documento -- con un documento de varios fragmentos
+    era habitual que el usuario se quedara sin nada una y otra vez aunque la
+    mayoría se hubiera generado bien). Si sobrevivió al menos un fragmento,
+    se devuelve el documento construido con lo que sí se generó bien
+    (fundido si hay tiempo y la fusión sale bien, sin fundir si no) con un
+    aviso "> ⚠️ **Aviso:** ..." antepuesto en Markdown -- visible para el
+    usuario, no un fallo silencioso (eso fue el bug original de esta misma
+    función).
+
     Con un documento que ya cabe en un único prompt (la inmensa mayoría),
     se comporta exactamente igual que antes: una sola llamada a
     generar_con_continuacion, sin trocear ni fusionar nada.
@@ -955,30 +966,56 @@ def generar_documento_largo_por_partes(
             _TIEMPO_MAXIMO_GENERACION_SEGUNDOS, len(indices_fallidos),
         )
 
-    # Si, incluso tras reintentar, sigue faltando o siendo sospechoso algún
-    # fragmento, NO se devuelve un resultado parcial: mejor ceder (que el
-    # llamante convierte en un error normal y devuelve la cuota consumida)
-    # que un "resumen" o "esquema" que se ve perfectamente válido -- pasa
-    # la comprobación de formato porque sí trae un encabezado "# " -- pero
-    # al que en realidad le falta la mayor parte del documento sin que nada
-    # lo indique.
-    if any(_fragmento_sospechoso(i) for i in range(len(fragmentos))):
-        n_fallidos = sum(1 for i in range(len(fragmentos)) if _fragmento_sospechoso(i))
+    # Degradación con aviso, no todo o nada (10/08/2026, bug real: incluso
+    # tras el reintento, era habitual que 3-4 de 7 fragmentos de un
+    # documento largo no llegaran a tiempo -- con la política anterior
+    # ("si falta CUALQUIERA, se descarta TODO") eso significaba tirar
+    # fragmentos ya generados y pagados, y el usuario se quedaba sin nada
+    # una y otra vez pase lo que pase. Ahora solo se rinde del todo si NO
+    # sobrevivió NINGÚN fragmento; si sobrevivió al menos uno, se construye
+    # el documento con lo que sí se generó bien y se antepone un aviso
+    # visible (no un fallo silencioso -- eso fue el bug original de esta
+    # misma función) de que faltan secciones y hay que regenerar.
+    indices_disponibles = [i for i in range(len(fragmentos)) if not _fragmento_sospechoso(i)]
+    n_fallidos = len(fragmentos) - len(indices_disponibles)
+    if not indices_disponibles:
         logger.warning(
-            "generar_documento_largo_por_partes: %d de %d fragmentos siguen sin generarse bien "
-            "ni siquiera tras reintentar -- se abandona en vez de devolver un documento incompleto.",
-            n_fallidos, len(fragmentos),
+            "generar_documento_largo_por_partes: los %d fragmentos fallaron o siguen sospechosos "
+            "ni siquiera tras reintentar -- no hay nada aprovechable, se abandona.",
+            len(fragmentos),
         )
         return None
-    parciales = [parciales_por_indice[i] for i in range(len(fragmentos))]
+
+    advertencia_parcial = ""
+    if n_fallidos:
+        logger.warning(
+            "generar_documento_largo_por_partes: %d de %d fragmentos no se generaron bien ni "
+            "siquiera tras reintentar -- se continúa con los %d restantes en vez de descartar todo "
+            "el documento.",
+            n_fallidos, len(fragmentos), len(indices_disponibles),
+        )
+        advertencia_parcial = (
+            f"> ⚠️ **Aviso:** no se ha podido generar {n_fallidos} de {len(fragmentos)} "
+            "secciones de este documento por un problema temporal con la IA. Pulsa «Regenerar» "
+            "para completarlas.\n\n"
+        )
+    parciales = [parciales_por_indice[i] for i in indices_disponibles]
+
+    # Con un único fragmento aprovechable no hay nada que fusionar de
+    # verdad -- usarlo tal cual en vez de gastar una llamada más a fundir
+    # "un solo trozo consigo mismo".
+    if len(parciales) == 1:
+        return advertencia_parcial + parciales[0]
+
+    bloque_parciales = "\n\n---\n\n".join(parciales)
 
     if time.monotonic() >= limite_tiempo:
         logger.warning(
             "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) antes de llegar "
-            "a la fusión -- se abandona sin fundir.",
-            _TIEMPO_MAXIMO_GENERACION_SEGUNDOS,
+            "a la fusión -- se devuelven los %d fragmentos sin fundir en vez de nada.",
+            _TIEMPO_MAXIMO_GENERACION_SEGUNDOS, len(parciales),
         )
-        return None
+        return advertencia_parcial + bloque_parciales
 
     if on_progreso:
         on_progreso({"completadas": len(fragmentos), "total": len(fragmentos), "fase": "fusionando"})
@@ -994,7 +1031,6 @@ def generar_documento_largo_por_partes(
         "solo combinar y reorganizar lo ya generado."
         + (f"\n\n{instrucciones_fusion_extra}" if instrucciones_fusion_extra else "")
     )
-    bloque_parciales = "\n\n---\n\n".join(parciales)
     fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens, on_usage=on_usage)
 
     # Comprobación de tamaño de la fusión (10/08/2026, bug real: con los
@@ -1010,15 +1046,18 @@ def generar_documento_largo_por_partes(
     # un solo párrafo. Un resultado de fusión drásticamente más corto que
     # la suma de lo que se le pidió fusionar es una señal barata y fiable
     # de que se perdió contenido real, sin tener que comparar dato por
-    # dato -- se reintenta una vez antes de rendirse.
+    # dato -- se reintenta una vez antes de renunciar A LA FUSIÓN (no al
+    # documento entero: si la fusión sigue colapsando, se devuelven los
+    # parciales sin fundir en vez de nada -- misma filosofía que arriba).
     if fusionado and len(fusionado) < len(bloque_parciales) * fraccion_minima_fusion:
         if time.monotonic() >= limite_tiempo:
             logger.warning(
                 "generar_documento_largo_por_partes: la fusión colapsó y se agotó el tiempo "
-                "máximo (%ds) antes de poder reintentarla -- se abandona sin reintentar.",
+                "máximo (%ds) antes de poder reintentarla -- se devuelven los fragmentos sin "
+                "fundir en vez de nada.",
                 _TIEMPO_MAXIMO_GENERACION_SEGUNDOS,
             )
-            return None
+            return advertencia_parcial + bloque_parciales
         logger.warning(
             "generar_documento_largo_por_partes: la fusión de %d fragmentos devolvió solo %d "
             "caracteres frente a los %d de entrada -- reintentando una vez.",
@@ -1028,10 +1067,19 @@ def generar_documento_largo_por_partes(
         if fusionado and len(fusionado) < len(bloque_parciales) * fraccion_minima_fusion:
             logger.warning(
                 "generar_documento_largo_por_partes: la fusión sigue devolviendo muy poco "
-                "contenido tras reintentar -- se abandona en vez de devolver un documento incompleto."
+                "contenido tras reintentar -- se devuelven los fragmentos sin fundir en vez de nada."
             )
-            return None
-    return fusionado
+            return advertencia_parcial + bloque_parciales
+    if not fusionado:
+        # generar_con_continuacion devolvió None (fallo de red/HTTP en la
+        # propia llamada de fusión, no colapso de contenido) -- mismo
+        # motivo: los parciales YA generados siguen siendo aprovechables.
+        logger.warning(
+            "generar_documento_largo_por_partes: la llamada de fusión falló -- se devuelven los "
+            "fragmentos sin fundir en vez de nada."
+        )
+        return advertencia_parcial + bloque_parciales
+    return advertencia_parcial + fusionado
 
 
 # Versión en streaming de call_deepseek_api: en vez de devolver el texto

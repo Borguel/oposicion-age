@@ -248,6 +248,33 @@ class TestResumirPdfYGenerarTestDesdePdf:
         assert len(guardados) == 1
         assert guardados[0].to_dict()["resumen"] == "# Resumen generado"
 
+    def test_resumir_pdf_parcial_con_aviso_se_guarda_como_exito_no_como_error(self, client, db, documento_sembrado):
+        # 10/08/2026: generar_documento_largo_por_partes ya no descarta todo
+        # el documento si falló algún fragmento -- devuelve lo que sí se
+        # generó con un aviso "> ⚠️ **Aviso:** ..." antepuesto (ver el
+        # comentario largo en deepseek_utils.py). La ruta debe tratar eso
+        # como CUALQUIER resumen normal (guardarlo, no marcar error_resumen)
+        # -- el aviso ya va dentro del propio contenido, visible para el
+        # usuario al abrirlo, no como un estado de fallo aparte.
+        resumen_parcial = (
+            "> ⚠️ **Aviso:** no se ha podido generar 1 de 2 secciones de este documento por un "
+            "problema temporal con la IA. Pulsa «Regenerar» para completarlas.\n\n# Resumen parcial"
+        )
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value=resumen_parcial), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        documento = db.leer(("usuarios", "u1", "documentos", documento_sembrado))
+        assert documento["tiene_resumen"] is True
+        assert documento["error_resumen"] is None
+        guardados = list(db.collection("usuarios").document("u1").collection("resumenes_pdf").stream())
+        assert guardados[0].to_dict()["resumen"] == resumen_parcial
+
     def test_resumir_pdf_guarda_progreso_real_mientras_genera_y_lo_limpia_al_terminar(self, client, db, documento_sembrado):
         # 10/08/2026, a petición del usuario ("no sé qué está pasando, pon
         # una barra o un contador"): el progreso real de
@@ -748,7 +775,7 @@ class TestTipoContenidoEnResumenYEsquema:
                             headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
-        assert mock_gen.call_args.kwargs["tamano_chunk"] == 8000
+        assert mock_gen.call_args.kwargs["tamano_chunk"] == 12000
 
     def test_resumir_pdf_documento_general_usa_max_tokens_normal(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
@@ -833,7 +860,7 @@ class TestTipoContenidoEnResumenYEsquema:
                             headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
-        assert mock_gen.call_args.kwargs["tamano_chunk"] == 8000
+        assert mock_gen.call_args.kwargs["tamano_chunk"] == 12000
 
     def test_generar_esquema_desde_pdf_usa_umbrales_de_colapso_mas_bajos_que_el_resumen(self, client, db, documento_sembrado):
         # Bug real (10/08/2026): un esquema (árbol de epígrafes en viñetas,
