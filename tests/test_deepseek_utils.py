@@ -779,6 +779,41 @@ class TestGenerarDocumentoLargoPorPartes:
         # 2 llamadas del MAP inicial + 1 del reintento (que también falla).
         assert mock_gen.call_count == 3
 
+    def test_documento_largo_agota_el_tiempo_maximo_antes_de_la_fusion(self):
+        # Bug real (10/08/2026): un usuario reportó una generación que se
+        # quedó "Generando..." más de 10 minutos sin terminar nunca --
+        # antes no había ningún tope conjunto entre las hasta 4 rondas
+        # secuenciales (MAP, reintento del MAP, fusión, reintento de la
+        # fusión). Con los 2 fragmentos del MAP ya generados bien (sin
+        # necesitar reintento), si para cuando tocaría fundir ya se agotó
+        # el tiempo máximo, se abandona sin ni siquiera intentar la fusión.
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        parcial_1 = "# Parcial uno\n" + ("contenido real del fragmento uno. " * 50)
+        parcial_2 = "# Parcial dos\n" + ("contenido real del fragmento dos. " * 50)
+        respuestas = [parcial_1, parcial_2]
+        # time.monotonic(): 1ª llamada arma el límite (T0), 2ª llamada (justo
+        # antes de fundir) ya está muy por encima de T0 + el tope.
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen, \
+             patch("deepseek_utils.time.monotonic", side_effect=[0, 10_000]):
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+        assert resultado is None
+        # Solo las 2 llamadas del MAP -- nunca llega a intentar la fusión.
+        assert mock_gen.call_count == 2
+
+    def test_documento_largo_agota_el_tiempo_maximo_antes_de_reintentar_un_fragmento(self):
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        parcial_valido = "único parcial válido. " * 100
+        respuestas = [None, parcial_valido]
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen, \
+             patch("deepseek_utils.time.monotonic", side_effect=[0, 10_000]):
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+        assert resultado is None
+        # 2 llamadas del MAP inicial -- se agota el tiempo antes de
+        # reintentar el fragmento fallido, así que no hay una 3ª llamada.
+        assert mock_gen.call_count == 2
+
     def test_documento_largo_fusion_colapsada_se_reintenta_y_se_recupera(self):
         # Bug real (10/08/2026), distinto del de fragmentos fallidos de
         # arriba: con TODOS los fragmentos del MAP generados y válidos por

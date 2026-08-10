@@ -645,6 +645,24 @@ TAMANO_CHUNK_CARACTERES = 15000
 # que se quedó en un solo apartado, <5% de la entrada).
 _FRACCION_MINIMA_FUSION = 0.4
 
+# Tope de tiempo total (10/08/2026, bug real: un usuario reportó una
+# generación que se quedó "Generando..." durante más de 10 minutos sin
+# terminar nunca). Antes, generar_documento_largo_por_partes podía
+# encadenar hasta 4 rondas secuenciales (MAP inicial, reintento del MAP,
+# fusión, reintento de la fusión), cada una con su propio margen de
+# reintentos de red y continuación por truncamiento -- en el peor caso
+# (poco probable pero real, sobre todo con un documento que le cuesta a la
+# IA) esas rondas se sumaban sin ningún límite conjunto. Ahora se lleva la
+# cuenta del tiempo transcurrido desde que arrancó esta función: si al
+# empezar una ronda nueva (reintento del MAP, fusión, reintento de la
+# fusión) ya no queda margen, esa ronda se salta directamente y se
+# abandona la generación (mismo camino que cualquier otro fallo: no se
+# guarda nada incompleto, se devuelve la cuota) en vez de seguir
+# encadenando. No cancela una llamada YA en marcha (no es seguro
+# interrumpir a mitad una petición HTTP), pero sí evita que seguir
+# encadenando rondas dispare el tiempo total sin tope.
+_TIEMPO_MAXIMO_GENERACION_SEGUNDOS = 150
+
 # Igual que _FRACCION_MINIMA_FUSION pero para un fragmento INDIVIDUAL del
 # MAP frente a SU PROPIO texto de entrada (10/08/2026, bug real: con un
 # documento de 4 fragmentos de ~15.000 caracteres cada uno, el colapso no
@@ -773,6 +791,7 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
     incluso tras reintentar). Fragmentos más pequeños bajan de verdad la
     exigencia por llamada, en vez de solo darle más presupuesto de salida
     para la misma tarea."""
+    limite_tiempo = time.monotonic() + _TIEMPO_MAXIMO_GENERACION_SEGUNDOS
     fragmentos = _trocear_en_parrafos(texto, tamano=tamano_chunk)
     if len(fragmentos) == 1:
         resultado = generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens, on_usage=on_usage)
@@ -831,7 +850,7 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
     # probabilidad de que un simple parpadeo de red -- o que el modelo se
     # rinda con un fragmento concreto -- se lleve por delante contenido real.
     indices_fallidos = [i for i in range(len(fragmentos)) if _fragmento_sospechoso(i)]
-    if indices_fallidos:
+    if indices_fallidos and time.monotonic() < limite_tiempo:
         with ThreadPoolExecutor(max_workers=min(4, len(indices_fallidos))) as executor:
             futuro_a_indice = {
                 executor.submit(_generar_parcial, (i, fragmentos[i])): i for i in indices_fallidos
@@ -839,6 +858,12 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
             for futuro in as_completed(futuro_a_indice):
                 indice = futuro_a_indice[futuro]
                 parciales_por_indice[indice] = futuro.result()
+    elif indices_fallidos:
+        logger.warning(
+            "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) antes de poder "
+            "reintentar %d fragmento(s) -- se abandona sin reintentar.",
+            _TIEMPO_MAXIMO_GENERACION_SEGUNDOS, len(indices_fallidos),
+        )
 
     # Si, incluso tras reintentar, sigue faltando o siendo sospechoso algún
     # fragmento, NO se devuelve un resultado parcial: mejor ceder (que el
@@ -856,6 +881,14 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
         )
         return None
     parciales = [parciales_por_indice[i] for i in range(len(fragmentos))]
+
+    if time.monotonic() >= limite_tiempo:
+        logger.warning(
+            "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) antes de llegar "
+            "a la fusión -- se abandona sin fundir.",
+            _TIEMPO_MAXIMO_GENERACION_SEGUNDOS,
+        )
+        return None
 
     if on_progreso:
         on_progreso({"completadas": len(fragmentos), "total": len(fragmentos), "fase": "fusionando"})
@@ -889,6 +922,13 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
     # de que se perdió contenido real, sin tener que comparar dato por
     # dato -- se reintenta una vez antes de rendirse.
     if fusionado and len(fusionado) < len(bloque_parciales) * _FRACCION_MINIMA_FUSION:
+        if time.monotonic() >= limite_tiempo:
+            logger.warning(
+                "generar_documento_largo_por_partes: la fusión colapsó y se agotó el tiempo "
+                "máximo (%ds) antes de poder reintentarla -- se abandona sin reintentar.",
+                _TIEMPO_MAXIMO_GENERACION_SEGUNDOS,
+            )
+            return None
         logger.warning(
             "generar_documento_largo_por_partes: la fusión de %d fragmentos devolvió solo %d "
             "caracteres frente a los %d de entrada -- reintentando una vez.",
