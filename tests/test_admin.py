@@ -653,6 +653,53 @@ def test_resumen_calcula_mrr(client, db):
     assert d["mrr"] == round(9.99 + 4.99 + 9.99, 2)
 
 
+def test_ingresos_lista_una_fila_por_suscripcion_de_pago(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "a@x.com", "fecha_creacion": "2025-01-01T00:00:00",
+        "suscripciones": {
+            "AGE": {
+                "plan": "premium", "subscription_status": "active",
+                "current_period_end": "2026-09-01T00:00:00", "cancelar_al_final_periodo": False,
+            },
+        },
+    })
+    db.sembrar(("usuarios", "u2"), {
+        "email": "b@x.com", "fecha_creacion": "2025-02-01T00:00:00",
+        "suscripciones": {
+            "AGE": {"plan": "basico", "subscription_status": "past_due"},
+            "GACE": {"plan": "gratis"},  # no es de pago -- no debe aparecer
+        },
+    })
+    with _como():
+        d = client.get("/admin/api/ingresos", headers=_AUTH).get_json()
+    assert d["total"] == 2
+    assert d["resumen"]["mrr"] == round(9.99 + 4.99, 2)
+    assert d["resumen"]["suscripciones"] == 2
+    filas_por_email = {f["email"]: f for f in d["filas"]}
+    assert filas_por_email["a@x.com"]["estado"] == "active"
+    assert filas_por_email["a@x.com"]["precio"] == 9.99
+    assert filas_por_email["b@x.com"]["estado"] == "past_due"
+    assert all(f["oposicion"] == "AGE" for f in d["filas"])
+
+
+def test_ingresos_filtra_por_busqueda_y_plan(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "premium@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})
+    db.sembrar(("usuarios", "u2"), {"email": "basico@x.com", "suscripciones": {"AGE": {"plan": "basico"}}})
+    with _como():
+        d = client.get("/admin/api/ingresos?plan=basico", headers=_AUTH).get_json()
+    assert d["total"] == 1
+    assert d["filas"][0]["email"] == "basico@x.com"
+
+
+def test_export_ingresos_csv(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "a@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})
+    with _como():
+        resp = client.get("/admin/api/ingresos/export", headers=_AUTH)
+    assert resp.status_code == 200
+    assert "text/csv" in resp.content_type
+    assert "a@x.com" in resp.get_data(as_text=True)
+
+
 def test_toggle_admin_asigna_y_protege_autobloqueo(client, db):
     class _U:
         email = "otro@x.com"

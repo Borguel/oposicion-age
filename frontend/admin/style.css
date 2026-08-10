@@ -254,8 +254,20 @@
 .admin-hero-cab { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.85; }
 .admin-hero-num { font-size: 2.4rem; font-weight: 800; line-height: 1.1; margin: 6px 0 4px; }
 .admin-hero-sub { font-size: 13px; opacity: 0.85; }
-.admin-hero-primary { background: linear-gradient(135deg, var(--age-primary-dark), var(--age-primary)); color: #1b1f2e; }
-.admin-hero-navy { background: linear-gradient(135deg, var(--age-navy), var(--age-navy-soft)); color: #fff; border: 1px solid rgba(255, 255, 255, 0.08); }
+/* Fondo suave + borde de color en vez del degradado sólido de antes --
+   dos bloques enteros a color plano competían por atención con el resto
+   del dashboard. Mismo patrón de "tinte + borde" que .admin-chip y las
+   tarjetas de aviso del resto del panel. */
+.admin-hero-primary { background: var(--age-primary-soft); border: 1.5px solid var(--age-primary); color: var(--age-ink); }
+.admin-hero-primary .admin-hero-num { color: var(--age-primary-dark); }
+.admin-hero-navy { background: var(--age-info-bg); border: 1.5px solid var(--age-info); color: var(--age-ink); }
+.admin-hero-navy .admin-hero-num { color: var(--age-info); }
+.admin-hero-cab,
+.admin-hero-sub { opacity: 1; color: var(--age-ink-soft); }
+
+.admin-hero-clic { cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.admin-hero-clic:hover { transform: translateY(-2px); box-shadow: var(--age-shadow-hover); }
+.admin-hero-clic:focus-visible { outline: 2px solid var(--age-primary); outline-offset: 2px; }
 
 .admin-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
 .admin-kpi { display: flex; flex-direction: column; gap: 6px; padding: 14px 12px; text-align: left; position: relative; }
@@ -299,6 +311,7 @@
 .admin-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-chip { background: var(--age-primary-soft); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
 .admin-chip-warn { background: var(--age-danger-bg); color: var(--age-danger, #b02a37); }
+.admin-chip-ok { background: var(--age-success-bg); color: var(--age-success); }
 .admin-chip-prueba { background: #fde9c8; color: #8a5a00; font-size: 11px; padding: 3px 9px; }
 
 /* Tablas -- envueltas en .admin-scroll para poder deslizarlas en móvil sin
@@ -308,8 +321,25 @@
 .admin-tabla th, .admin-tabla td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--age-border); vertical-align: middle; }
 .admin-tabla th { font-weight: 700; color: var(--age-ink-soft, var(--age-ink)); white-space: nowrap; }
 .admin-tabla td.admin-td-acciones { white-space: nowrap; }
+.admin-td-principal { font-weight: 700; color: var(--age-ink); }
+.admin-td-secundario { font-size: 12px; color: var(--age-ink-soft); }
 .admin-inactiva td { opacity: 0.5; }
 .admin-badge { background: var(--age-neutral-bg, var(--age-primary-soft)); border-radius: 999px; padding: 1px 8px; font-size: 12px; margin-left: 4px; }
+
+/* Ingresos: franja de métricas agregadas encima de la tabla de detalle,
+   coherente con las cifras "de un vistazo" que ya se usan en el resto del
+   panel (.admin-kpi) pero en una sola fila, ya que aquí son solo 3 números
+   más el desglose por plan. */
+.admin-ingresos-resumen { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; padding: 16px 18px; margin-bottom: 16px; background: var(--age-card); border: 1px solid var(--age-border); border-radius: var(--age-radius-lg); box-shadow: var(--age-shadow); }
+.admin-ingresos-metrica { display: flex; flex-direction: column; gap: 2px; }
+.admin-ingresos-num { font-size: 1.5rem; font-weight: 800; color: var(--age-ink); }
+.admin-ingresos-lbl { font-size: 12.5px; color: var(--age-ink-soft); }
+.admin-ingresos-metrica-desglose { margin-left: auto; }
+.admin-ingresos-metrica-desglose .admin-ingresos-lbl { font-size: 13px; }
+
+@media (max-width: 640px) {
+  .admin-ingresos-metrica-desglose { margin-left: 0; }
+}
 .admin-badge-off { color: var(--age-ink-soft, var(--age-ink)); font-size: 12px; }
 .admin-badge-alerta { background: var(--age-danger-bg); color: var(--age-danger, #b02a37); border-radius: 999px; padding: 1px 8px; font-size: 11.5px; }
 

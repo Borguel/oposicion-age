@@ -1098,6 +1098,108 @@ def usuarios_export():
     return _respuesta_csv(cabecera, filas, "usuarios.csv")
 
 
+def _filas_ingresos(busqueda, filtro_plan, filtro_oposicion):
+    """Una fila por cada suscripción de pago activa (un usuario puede tener
+    más de una, una por oposición) -- es el detalle que hay detrás del MRR
+    del dashboard: quién paga, cuánto, desde cuándo y cuándo renueva."""
+    ahora = datetime.utcnow()
+    hace_7 = ahora - timedelta(days=7)
+    filas = []
+    for doc in db.collection("usuarios").stream():
+        datos = doc.to_dict() or {}
+        email = (datos.get("email") or "").lower()
+        if busqueda and busqueda not in email:
+            continue
+        ult = _parse_fecha(datos.get("ultima_actividad"))
+        for oid, sub in (datos.get("suscripciones") or {}).items():
+            sub = sub or {}
+            plan = sub.get("plan")
+            precio = _PRECIO_PLAN.get(plan)
+            if not precio:
+                continue
+            if filtro_plan and plan != filtro_plan:
+                continue
+            if filtro_oposicion and oid != filtro_oposicion:
+                continue
+            filas.append({
+                "uid": doc.id,
+                "email": datos.get("email", ""),
+                "nombre": datos.get("nombre", ""),
+                "oposicion": oid,
+                "plan": plan,
+                "precio": precio,
+                "estado": sub.get("subscription_status", ""),
+                "proxima_renovacion": sub.get("current_period_end"),
+                "cancela_al_final": bool(sub.get("cancelar_al_final_periodo")),
+                "cliente_desde": datos.get("fecha_creacion"),
+                "activo_7_dias": bool(ult and ult >= hace_7),
+            })
+    filas.sort(key=lambda f: f.get("cliente_desde") or "", reverse=True)
+    return filas
+
+
+@bp.route("/admin/api/ingresos", methods=["GET"])
+@requiere_permiso("usuarios")
+def ingresos_listar():
+    """Detalle de cada suscripción de pago -- lo que hay detrás del MRR del
+    dashboard, para poder ver de un vistazo quién paga, cuánto y si está en
+    riesgo de baja (pago fallido, cancelación programada, sin actividad
+    reciente)."""
+    busqueda = (request.args.get("busqueda") or "").strip().lower()
+    filtro_plan = request.args.get("plan") or ""
+    filtro_oposicion = request.args.get("oposicion") or ""
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    por_pagina = 20
+
+    filas = _filas_ingresos(busqueda, filtro_plan, filtro_oposicion)
+    por_plan = {}
+    mrr = 0.0
+    for f in filas:
+        por_plan[f["plan"]] = por_plan.get(f["plan"], 0) + 1
+        mrr += f["precio"]
+
+    total = len(filas)
+    inicio = (pagina - 1) * por_pagina
+    return jsonify({
+        "filas": filas[inicio:inicio + por_pagina],
+        "total": total,
+        "pagina": pagina,
+        "por_pagina": por_pagina,
+        "resumen": {
+            "mrr": round(mrr, 2),
+            "suscripciones": total,
+            "por_plan": por_plan,
+            "arpu": round(mrr / total, 2) if total else 0,
+        },
+    })
+
+
+@bp.route("/admin/api/ingresos/export", methods=["GET"])
+@requiere_permiso("usuarios")
+def ingresos_export():
+    """Descarga todas las suscripciones de pago (con los filtros aplicados) en CSV."""
+    busqueda = (request.args.get("busqueda") or "").strip().lower()
+    filtro_plan = request.args.get("plan") or ""
+    filtro_oposicion = request.args.get("oposicion") or ""
+    filas = [
+        [
+            f["uid"], f["email"], f["nombre"], f["oposicion"], f["plan"], f["precio"],
+            f["estado"], (f["proxima_renovacion"] or "")[:10], "sí" if f["cancela_al_final"] else "no",
+            (f["cliente_desde"] or "")[:10], "sí" if f["activo_7_dias"] else "no",
+        ]
+        for f in _filas_ingresos(busqueda, filtro_plan, filtro_oposicion)
+    ]
+    cabecera = [
+        "uid", "email", "nombre", "oposicion", "plan", "precio_mensual",
+        "estado_suscripcion", "proxima_renovacion", "cancela_al_final_periodo",
+        "cliente_desde", "activo_ultimos_7_dias",
+    ]
+    return _respuesta_csv(cabecera, filas, "ingresos.csv")
+
+
 @bp.route("/admin/api/usuarios", methods=["POST"])
 @requiere_admin
 def usuarios_crear():

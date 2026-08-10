@@ -16,7 +16,7 @@ function inyectarIconosEstaticos() {
 // Qué permiso necesita cada pestaña. Las de 'admin' solo las ve el super-admin.
 const PERMISO_POR_PESTANA = {
   dashboard: "cualquiera", temario: "temario", preguntas: "temario", analitica: "temario",
-  usuarios: "usuarios", reportes: "reportes", boe: "temario", bajas: "reportes", limites: "admin", auditoria: "admin", sistema: "admin",
+  usuarios: "usuarios", ingresos: "usuarios", reportes: "reportes", boe: "temario", bajas: "reportes", limites: "admin", auditoria: "admin", sistema: "admin",
 };
 let _permisos = { admin: false, permisos: [] };
 function puedeVer(pestana) {
@@ -223,7 +223,7 @@ document.addEventListener("keydown", (e) => {
 const GRUPOS = {
   dashboard: { label: "Dashboard", pestanas: ["dashboard"], enPanel: false, enSidebar: false },
   contenido: { label: "Contenido", pestanas: ["temario", "preguntas", "analitica"], enPanel: true, enSidebar: true },
-  usuarios: { label: "Usuarios", pestanas: ["usuarios", "bajas", "reportes"], enPanel: true, enSidebar: true },
+  usuarios: { label: "Usuarios", pestanas: ["usuarios", "ingresos", "bajas", "reportes"], enPanel: true, enSidebar: true },
   boe: { label: "Vigilancia BOE", pestanas: ["boe"], enPanel: false, enSidebar: false },
   configuracion: { label: "Configuración", pestanas: ["limites", "sistema", "auditoria"], enPanel: false, enSidebar: true },
 };
@@ -233,6 +233,7 @@ const RENDERS = {
   preguntas: renderPreguntas,
   analitica: renderAnalitica,
   usuarios: renderUsuarios,
+  ingresos: renderIngresos,
   reportes: renderReportes,
   boe: renderBoe,
   bajas: renderBajas,
@@ -242,11 +243,11 @@ const RENDERS = {
 };
 const TITULO_POR_PESTANA = {
   dashboard: "Dashboard", temario: "Temario", preguntas: "Preguntas", analitica: "Analítica",
-  usuarios: "Usuarios", reportes: "Reportes", boe: "Vigilancia BOE", bajas: "Bajas", limites: "Límites", auditoria: "Auditoría", sistema: "Sistema",
+  usuarios: "Usuarios", ingresos: "Ingresos", reportes: "Reportes", boe: "Vigilancia BOE", bajas: "Bajas", limites: "Límites", auditoria: "Auditoría", sistema: "Sistema",
 };
 const LABEL_SUBTAB = {
   temario: "Temario", preguntas: "Preguntas", analitica: "Analítica",
-  usuarios: "Usuarios", bajas: "Bajas", reportes: "Reportes",
+  usuarios: "Usuarios", ingresos: "Ingresos", bajas: "Bajas", reportes: "Reportes",
   limites: "Límites", sistema: "Sistema", auditoria: "Auditoría",
 };
 function grupoDePestana(pestana) {
@@ -460,12 +461,12 @@ async function renderDashboard() {
 
   panel.innerHTML = `
     <div class="admin-hero-grid">
-      <div class="admin-hero admin-hero-primary">
+      <div class="admin-hero admin-hero-primary${puedeAbrirUsuario ? " admin-hero-clic" : ""}" id="hero-ingresos" ${puedeAbrirUsuario ? 'tabindex="0" role="button" aria-label="Ver el detalle de ingresos"' : ""}>
         <div class="admin-hero-cab"><span>${icono("euro", 18)} Ingresos / mes (MRR)</span></div>
         <div class="admin-hero-num">${(d.mrr || 0).toFixed(2)}€</div>
         <div class="admin-hero-sub">${d.suscripciones_pago || 0} suscripciones de pago</div>
       </div>
-      <div class="admin-hero admin-hero-navy">
+      <div class="admin-hero admin-hero-navy${puedeAbrirUsuario ? " admin-hero-clic" : ""}" id="hero-usuarios" ${puedeAbrirUsuario ? 'tabindex="0" role="button" aria-label="Ver la lista de usuarios"' : ""}>
         <div class="admin-hero-cab"><span>${icono("usuarios", 18)} Usuarios totales</span></div>
         <div class="admin-hero-num">${d.usuarios_totales}</div>
         <div class="admin-hero-sub">+${d.usuarios_nuevos_7_dias || 0} en los últimos 7 días</div>
@@ -518,6 +519,15 @@ async function renderDashboard() {
     </div>`;
 
   panel.querySelector("#stat-reportes")?.addEventListener("click", () => activarPestana("reportes"));
+
+  if (puedeAbrirUsuario) {
+    const irAIngresos = () => activarPestana("ingresos");
+    const irAUsuarios = () => activarPestana("usuarios");
+    panel.querySelector("#hero-ingresos")?.addEventListener("click", irAIngresos);
+    panel.querySelector("#hero-ingresos")?.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); irAIngresos(); } });
+    panel.querySelector("#hero-usuarios")?.addEventListener("click", irAUsuarios);
+    panel.querySelector("#hero-usuarios")?.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); irAUsuarios(); } });
+  }
 
   panel.querySelectorAll("[data-uid-gasto]").forEach((li) => {
     if (!puedeAbrirUsuario) return;
@@ -1120,6 +1130,104 @@ async function renderUsuarios() {
   });
   panel.querySelector("#u-busqueda").addEventListener("keydown", (e) => { if (e.key === "Enter") { paginaUsuarios = 1; cargarUsuarios(); } });
   cargarUsuarios();
+}
+
+// ===== Ingresos =====
+// Detalle de cada suscripción de pago (una fila por oposición suscrita,
+// no por usuario) -- lo que hay detrás del MRR del dashboard: quién paga,
+// cuánto, desde cuándo, cuándo renueva y si está en riesgo de baja (pago
+// fallido, cancelación programada, sin actividad reciente).
+let paginaIngresos = 1;
+
+const ESTADO_SUSCRIPCION_LABEL = {
+  active: ["Al día", "admin-chip-ok"],
+  trialing: ["En prueba", "admin-chip-ok"],
+  past_due: ["Pago fallido", "admin-chip-warn"],
+  unpaid: ["Impagada", "admin-chip-warn"],
+  canceled: ["Cancelada", "admin-chip-warn"],
+  incomplete: ["Incompleta", "admin-chip-warn"],
+  incomplete_expired: ["Incompleta (caducada)", "admin-chip-warn"],
+};
+
+function _paramsIngresos() {
+  const params = new URLSearchParams();
+  const busqueda = document.getElementById("i-busqueda")?.value.trim();
+  const plan = document.getElementById("i-plan")?.value;
+  const oposicion = document.getElementById("i-oposicion")?.value;
+  if (busqueda) params.set("busqueda", busqueda);
+  if (plan) params.set("plan", plan);
+  if (oposicion) params.set("oposicion", oposicion);
+  return params;
+}
+
+async function renderIngresos() {
+  const panel = document.getElementById("panel-ingresos");
+  panel.innerHTML = `
+    <div class="age-card admin-filtros">
+      <input id="i-busqueda" class="age-input" placeholder="Buscar por email…">
+      <select id="i-plan" class="age-input"><option value="">Todos los planes</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
+      <select id="i-oposicion" class="age-input"><option value="">Todas las oposiciones</option><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
+      <button class="age-btn age-btn-primary admin-filtros-btn" id="i-aplicar">Buscar</button>
+      <button class="age-btn age-btn-outline admin-filtros-btn" id="i-csv">${icono("descargar", 15)} CSV</button>
+    </div>
+    <div id="ingresos-contenido"><p class="admin-cargando">Cargando…</p></div>`;
+  panel.querySelector("#i-aplicar").addEventListener("click", () => { paginaIngresos = 1; cargarIngresos(); });
+  panel.querySelector("#i-csv").addEventListener("click", () => {
+    descargarCSV(`/admin/api/ingresos/export?${_paramsIngresos().toString()}`, "ingresos.csv");
+  });
+  panel.querySelector("#i-busqueda").addEventListener("keydown", (e) => { if (e.key === "Enter") { paginaIngresos = 1; cargarIngresos(); } });
+  cargarIngresos();
+}
+
+async function cargarIngresos() {
+  const cont = document.getElementById("ingresos-contenido");
+  if (!cont) return;
+  const params = _paramsIngresos();
+  params.set("pagina", paginaIngresos);
+  cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
+  const d = await apiGet(`/admin/api/ingresos?${params.toString()}`);
+  if (!d) return;
+  const r = d.resumen || {};
+  const desglosePlan = Object.entries(r.por_plan || {})
+    .map(([p, n]) => `${p === "premium" ? "Premium" : "Básico"}: ${n}`).join(" · ") || "—";
+
+  const filas = (d.filas || []).map((f) => {
+    const [estadoLbl, estadoCls] = ESTADO_SUSCRIPCION_LABEL[f.estado] || [f.estado || "—", "admin-chip"];
+    return `
+      <tr class="admin-fila-click" data-uid="${escapeHtml(f.uid)}" tabindex="0" role="button" aria-label="Ver ficha de ${escapeHtml(f.email || "usuario sin email")}">
+        <td>
+          <div class="admin-td-principal">${escapeHtml(f.nombre || f.email || "(sin email)")}</div>
+          ${f.nombre ? `<div class="admin-td-secundario">${escapeHtml(f.email || "")}</div>` : ""}
+        </td>
+        <td>${escapeHtml(f.oposicion)}</td>
+        <td>${f.plan === "premium" ? "Premium" : "Básico"}</td>
+        <td class="admin-num">${(f.precio || 0).toFixed(2)}€</td>
+        <td><span class="admin-chip ${estadoCls}">${escapeHtml(estadoLbl)}</span>${f.cancela_al_final ? ` <span class="admin-chip admin-chip-warn" title="Se cancela al terminar el periodo ya pagado">Se cancela</span>` : ""}</td>
+        <td>${fechaCorta(f.proxima_renovacion)}</td>
+        <td>${fechaCorta(f.cliente_desde)}</td>
+        <td>${f.activo_7_dias ? `${icono("check", 14)} Sí` : "No"}</td>
+      </tr>`;
+  }).join("");
+
+  cont.innerHTML = `
+    <div class="admin-ingresos-resumen">
+      <div class="admin-ingresos-metrica"><span class="admin-ingresos-num">${(r.mrr || 0).toFixed(2)}€</span><span class="admin-ingresos-lbl">MRR (de esta búsqueda)</span></div>
+      <div class="admin-ingresos-metrica"><span class="admin-ingresos-num">${r.suscripciones || 0}</span><span class="admin-ingresos-lbl">Suscripciones</span></div>
+      <div class="admin-ingresos-metrica"><span class="admin-ingresos-num">${(r.arpu || 0).toFixed(2)}€</span><span class="admin-ingresos-lbl">Ingreso medio (ARPU)</span></div>
+      <div class="admin-ingresos-metrica admin-ingresos-metrica-desglose"><span class="admin-ingresos-lbl">${escapeHtml(desglosePlan)}</span></div>
+    </div>
+    <div class="admin-scroll"><table class="admin-tabla">
+      <thead><tr><th>Cliente</th><th>Oposición</th><th>Plan</th><th class="admin-num">Precio</th><th>Estado</th><th>Renueva</th><th>Cliente desde</th><th>Activo (7d)</th></tr></thead>
+      <tbody>${filas || `<tr><td colspan="8"><p class="admin-vacio">Sin suscripciones de pago que coincidan.</p></td></tr>`}</tbody>
+    </table></div>
+    ${paginacionHtml(d, "suscripciones", "i")}`;
+
+  cont.querySelectorAll("[data-uid]").forEach((fila) => {
+    const abrir = () => abrirUsuario(fila.dataset.uid);
+    fila.addEventListener("click", abrir);
+    fila.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrir(); } });
+  });
+  wirePaginacion(cont, "i", (delta) => { paginaIngresos += delta; cargarIngresos(); });
 }
 
 function modalCrearUsuario() {
