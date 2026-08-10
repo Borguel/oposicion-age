@@ -667,15 +667,37 @@ class TestGenerarDocumentoLargoPorPartes:
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
         assert resultado is None
 
-    def test_documento_largo_con_un_solo_fragmento_valido_no_funde(self):
+    def test_documento_largo_reintenta_fragmento_fallido_y_lo_recupera(self):
+        # Bug real (10/08/2026): un fallo transitorio de red en SOLO UNO de
+        # varios fragmentos del MAP no debe hacer perder ese trozo del
+        # documento -- se reintenta antes de rendirse, y si el reintento
+        # tiene éxito, se funde igual que si hubiera funcionado a la
+        # primera.
         parrafo = "a" * 10000
         texto_largo = f"{parrafo}\n\n{parrafo}"
-        with patch("deepseek_utils.generar_con_continuacion",
-                   side_effect=[None, "único parcial válido"]) as mock_gen:
+        respuestas = [None, "parcial 2", "parcial 1 reintentado", "fusión final"]
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
-        assert resultado == "único parcial válido"
-        # No hay llamada extra de fusión cuando solo sobrevive un fragmento.
-        assert mock_gen.call_count == 2
+        assert resultado == "fusión final"
+        assert mock_gen.call_count == 4
+
+    def test_documento_largo_fragmento_fallido_tras_reintentar_no_devuelve_resultado_parcial(self):
+        # Antes de este fix, si solo sobrevivía un fragmento, se devolvía
+        # tal cual como si fuera el documento completo -- pasaba la
+        # validación de formato porque sí traía un encabezado "# ", pero le
+        # faltaba el resto del documento sin ningún aviso (así es como un
+        # usuario real acabó con un "resumen" de 14 páginas que solo tenía
+        # un párrafo). Ahora, si un fragmento sigue fallando incluso tras
+        # reintentar, se abandona la generación entera en vez de devolver
+        # un documento incompleto.
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        respuestas = [None, "único parcial válido", None]
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+        assert resultado is None
+        # 2 llamadas del MAP inicial + 1 del reintento (que también falla).
+        assert mock_gen.call_count == 3
 
 
 class TestDetectarTextoLegal:

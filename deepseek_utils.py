@@ -725,11 +725,44 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
             completadas += 1
             if on_progreso:
                 on_progreso({"completadas": completadas, "total": len(fragmentos), "fase": "generando"})
-    parciales = [parciales_por_indice[i] for i in range(len(fragmentos)) if parciales_por_indice.get(i)]
-    if not parciales:
+
+    # Reintento de fragmentos fallidos (10/08/2026, bug real reportado por un
+    # usuario: un resumen de 14 páginas se guardó con un solo párrafo, el de
+    # la última "Disposición adicional"). Antes, un fallo transitorio de red
+    # hacia DeepSeek (ver el comentario largo de _REINTENTOS_TRANSITORIOS más
+    # arriba -- ocurre de verdad, no es hipotético) en algún fragmento del
+    # MAP bastaba para que ese trozo del documento desapareciera del
+    # resultado sin ningún aviso -- y si solo sobrevivía uno, ANTES se
+    # devolvía tal cual como si fuera el documento completo (ver más abajo),
+    # pasando la validación de formato porque sí traía un encabezado "# "
+    # válido. Un reintento (mismo fragmento, misma llamada) antes de
+    # rendirse del todo con ese trozo reduce la probabilidad de que un
+    # simple parpadeo de red se lleve por delante contenido real.
+    indices_fallidos = [i for i in range(len(fragmentos)) if not parciales_por_indice.get(i)]
+    if indices_fallidos:
+        with ThreadPoolExecutor(max_workers=min(4, len(indices_fallidos))) as executor:
+            futuro_a_indice = {
+                executor.submit(_generar_parcial, (i, fragmentos[i])): i for i in indices_fallidos
+            }
+            for futuro in as_completed(futuro_a_indice):
+                indice = futuro_a_indice[futuro]
+                parciales_por_indice[indice] = futuro.result()
+
+    # Si, incluso tras reintentar, sigue faltando algún fragmento, NO se
+    # devuelve un resultado parcial: mejor ceder (que el llamante convierte
+    # en un error normal y devuelve la cuota consumida) que un "resumen" o
+    # "esquema" que se ve perfectamente válido -- pasa la comprobación de
+    # formato porque sí trae un encabezado "# " -- pero al que en realidad
+    # le falta la mayor parte del documento sin que nada lo indique.
+    if any(not parciales_por_indice.get(i) for i in range(len(fragmentos))):
+        n_fallidos = sum(1 for i in range(len(fragmentos)) if not parciales_por_indice.get(i))
+        logger.warning(
+            "generar_documento_largo_por_partes: %d de %d fragmentos no se pudieron generar "
+            "ni siquiera tras reintentar -- se abandona en vez de devolver un documento incompleto.",
+            n_fallidos, len(fragmentos),
+        )
         return None
-    if len(parciales) == 1:
-        return parciales[0]
+    parciales = [parciales_por_indice[i] for i in range(len(fragmentos))]
 
     if on_progreso:
         on_progreso({"completadas": len(fragmentos), "total": len(fragmentos), "fase": "fusionando"})
