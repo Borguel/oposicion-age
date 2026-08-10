@@ -697,6 +697,43 @@ class TestGenerarDocumentoLargoPorPartes:
         assert resultado == "resumen completo"
         assert mock_gen.call_count == 1
 
+    def test_documento_sin_trocear_respuesta_corta_se_reintenta_y_se_recupera(self):
+        # Bug real (10/08/2026): al subir TAMANO_CHUNK_CARACTERES a 90000,
+        # la inmensa mayoría de documentos pasan por el camino de UNA sola
+        # llamada (sin MAP ni fusión) -- que, a diferencia del camino de
+        # varios fragmentos, no tenía ninguna comprobación de que la
+        # respuesta cubriera de verdad el documento. Visto con un caso real:
+        # una llamada se cortaba a media palabra sin marcar finish_reason=
+        # length, muy por debajo de max_tokens -- el mismo "el modelo se
+        # rinde antes de tiempo" que ya se detectaba en el MAP, pero sin
+        # ningún control aquí. Con texto de sobra para que quepa en un solo
+        # fragmento (por debajo de TAMANO_CHUNK_CARACTERES) pero demasiado
+        # grande para que una respuesta corta sea creíble.
+        texto = "contenido real del documento. " * 400  # ~12.400 caracteres
+        respuesta_corta = "# Se corta aquí a media pala"
+        respuesta_completa = "# Documento completo\n" + ("contenido real generado. " * 300)
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=[respuesta_corta, respuesta_completa]) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto)
+        assert resultado == respuesta_completa
+        assert mock_gen.call_count == 2
+
+    def test_documento_sin_trocear_respuesta_corta_tras_reintentar_devuelve_con_aviso(self):
+        texto = "contenido real del documento. " * 400
+        respuesta_corta = "# Se corta aquí a media pala"
+        with patch("deepseek_utils.generar_con_continuacion", return_value=respuesta_corta) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto)
+        assert resultado is not None
+        assert "Aviso" in resultado
+        assert respuesta_corta in resultado
+        assert mock_gen.call_count == 2
+
+    def test_documento_sin_trocear_fallo_total_tras_reintentar_devuelve_none(self):
+        texto = "contenido real del documento. " * 400
+        with patch("deepseek_utils.generar_con_continuacion", return_value=None) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto)
+        assert resultado is None
+        assert mock_gen.call_count == 2
+
     def test_tamano_chunk_personalizado_trocea_mas_fino(self):
         # 10/08/2026, bug real: para texto legal (mapa de artículos, que
         # exige cubrir cada artículo sin omitir ninguno) el tamaño de trozo

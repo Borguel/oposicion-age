@@ -819,9 +819,12 @@ def generar_documento_largo_por_partes(
     usuario, no un fallo silencioso (eso fue el bug original de esta misma
     función).
 
-    Con un documento que ya cabe en un único prompt (la inmensa mayoría),
-    se comporta exactamente igual que antes: una sola llamada a
-    generar_con_continuacion, sin trocear ni fusionar nada.
+    Con un documento que ya cabe en un único prompt (la inmensa mayoría desde
+    que TAMANO_CHUNK_CARACTERES subió a 90000): una sola llamada a
+    generar_con_continuacion, sin fusión -- pero con el mismo criterio de
+    "¿es sospechosamente corta frente a lo que se le pidió cubrir?" que un
+    fragmento del MAP, reintento incluido, para no dejar pasar en silencio
+    una llamada que se rindió antes de tiempo.
 
     instrucciones_fusion_extra permite añadir, solo al paso de fusión, un
     aviso adicional específico del tipo de documento (p. ej. el esquema
@@ -868,7 +871,49 @@ def generar_documento_largo_por_partes(
     limite_tiempo = time.monotonic() + _TIEMPO_MAXIMO_GENERACION_SEGUNDOS
     fragmentos = _trocear_en_parrafos(texto, tamano=tamano_chunk)
     if len(fragmentos) == 1:
-        resultado = generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens, on_usage=on_usage)
+        # Bug real (10/08/2026): al subir TAMANO_CHUNK_CARACTERES a 90000,
+        # este camino de una sola llamada pasó de ser un caso raro a ser el
+        # habitual -- y, a diferencia del camino de varios fragmentos, no
+        # tenía NINGUNA comprobación de que la respuesta cubriera de verdad
+        # el documento. Visto en producción: una llamada que se cortaba a
+        # mitad de palabra, muy por debajo de max_tokens, sin marcar
+        # finish_reason=length (así que generar_con_continuacion no lo
+        # trata como truncado) -- el mismo "el modelo se rinde antes de
+        # tiempo" que ya se detectaba en el MAP y en la fusión, pero que
+        # aquí pasaba sin ningún control. Mismo criterio que un fragmento
+        # del MAP: si el resultado es sospechosamente corto frente a la
+        # entrada, se reintenta una vez; si sigue igual, se devuelve con
+        # aviso visible en vez de un documento silenciosamente incompleto.
+        def _intento_unico():
+            return generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens, on_usage=on_usage)
+
+        def _sospechoso(r):
+            return not r or len(r) < len(texto) * fraccion_minima_map
+
+        resultado = _intento_unico()
+        if _sospechoso(resultado):
+            logger.warning(
+                "generar_documento_largo_por_partes: la única llamada (documento sin trocear) "
+                "devolvió %s caracteres frente a los %d de entrada -- reintentando una vez.",
+                len(resultado) if resultado else 0, len(texto),
+            )
+            resultado = _intento_unico()
+            if not resultado:
+                logger.warning(
+                    "generar_documento_largo_por_partes: la única llamada sigue fallando tras "
+                    "reintentar -- se abandona."
+                )
+                return None
+            if _sospechoso(resultado):
+                logger.warning(
+                    "generar_documento_largo_por_partes: la única llamada sigue devolviendo muy "
+                    "poco contenido tras reintentar -- se devuelve con aviso en vez de un "
+                    "documento silenciosamente incompleto."
+                )
+                resultado = (
+                    "> **Aviso:** no se ha podido generar este documento por completo por un "
+                    "problema temporal con la IA. Pulsa «Regenerar» para intentarlo de nuevo.\n\n"
+                ) + resultado
         if on_progreso:
             on_progreso({"completadas": 1, "total": 1, "fase": "generando"})
         return resultado
