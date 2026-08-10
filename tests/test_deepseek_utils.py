@@ -2,6 +2,7 @@
 usado hasta ahora) y los reintentos acotados ante fallos TRANSITORIOS
 (timeout/conexión/5xx) -- nunca ante errores 4xx, que no se arreglan
 reintentando."""
+import threading
 import time
 from concurrent.futures import as_completed
 from unittest.mock import MagicMock, patch
@@ -865,6 +866,35 @@ class TestGenerarDocumentoLargoPorPartes:
         # abandona en cuanto se agota el presupuesto (0.1s), con margen
         # amplio para el resto de comprobaciones (reintento saltado, etc.).
         assert duracion < 0.3
+
+    def test_ronda_inicial_lanza_mas_de_4_fragmentos_a_la_vez(self):
+        # Bug real (10/08/2026): con max_workers fijo en 4, un documento de
+        # más de 4 fragmentos (nada raro en modo legal con tamano_chunk=8000
+        # -- un documento de ~51.000 caracteres da 7) se partía en tandas
+        # secuenciales de 4+3, duplicando el tiempo de pared necesario sin
+        # ninguna ventaja real: el semáforo global _MAX_LLAMADAS_SIMULTANEAS_
+        # DEEPSEEK ya limita la concurrencia hacia DeepSeek de toda la app.
+        # Con 6 fragmentos (más de los 4 de antes, por debajo de las 8
+        # llamadas simultáneas que ya permite ese semáforo) deben arrancar
+        # todos a la vez, no en dos tandas.
+        parrafo = "a" * 5000
+        texto_largo = "\n\n".join([parrafo] * 6)
+        maximo_concurrentes = {"valor": 0}
+        concurrentes_ahora = {"valor": 0}
+        lock = threading.Lock()
+
+        def _generar(*_args, **_kwargs):
+            with lock:
+                concurrentes_ahora["valor"] += 1
+                maximo_concurrentes["valor"] = max(maximo_concurrentes["valor"], concurrentes_ahora["valor"])
+            time.sleep(0.05)
+            with lock:
+                concurrentes_ahora["valor"] -= 1
+            return "# Parcial\n" + ("contenido real y suficientemente largo. " * 50)
+
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=_generar):
+            deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=5000)
+        assert maximo_concurrentes["valor"] > 4
 
     def test_documento_largo_fusion_colapsada_se_reintenta_y_se_recupera(self):
         # Bug real (10/08/2026), distinto del de fragmentos fallidos de

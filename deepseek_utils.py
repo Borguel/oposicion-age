@@ -662,7 +662,19 @@ _FRACCION_MINIMA_FUSION = 0.4
 # encadenando. No cancela una llamada YA en marcha (no es seguro
 # interrumpir a mitad una petición HTTP), pero sí evita que seguir
 # encadenando rondas dispare el tiempo total sin tope.
-_TIEMPO_MAXIMO_GENERACION_SEGUNDOS = 150
+# Subido de 150 a 240 (10/08/2026, bug real: seguía dando "se agotó el
+# tiempo máximo" con documentos de 7 fragmentos incluso tras juntar todos
+# los workers en una sola tanda -- ver el comentario de max_workers más
+# abajo). 150s no dejaba margen de verdad: una sola llamada de
+# generar_con_continuacion, en el peor caso (timeout de 60s + 2 reintentos
+# transitorios con su espera, multiplicado por hasta 3 rondas de
+# continuación si el modelo sigue cortando por longitud) puede tardar
+# varios minutos ella sola sin que eso sea ningún fallo -- es la política
+# de reintento normal ante inestabilidad real de DeepSeek (ver el
+# comentario de _MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK). 240s deja margen de
+# sobra por debajo de --timeout 300 del worker de gunicorn (ver
+# render.yaml) para que el propio proceso HTTP no se vea interrumpido antes.
+_TIEMPO_MAXIMO_GENERACION_SEGUNDOS = 240
 
 # Igual que _FRACCION_MINIMA_FUSION pero para un fragmento INDIVIDUAL del
 # MAP frente a SU PROPIO texto de entrada (10/08/2026, bug real: con un
@@ -860,7 +872,16 @@ def generar_documento_largo_por_partes(
     # shutdown(wait=False): los fragmentos que no respondieron a tiempo
     # siguen su llamada HTTP en segundo plano (no es seguro cancelar una
     # petición de requests ya en vuelo) pero la función no espera por ellos.
-    executor_inicial = ThreadPoolExecutor(max_workers=min(4, len(fragmentos)))
+    # max_workers = _MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK, no un tope fijo más
+    # bajo (10/08/2026, bug real: con un tope de 4, un documento legal de 7
+    # fragmentos -- nada raro con tamano_chunk=8000 -- se partía en 2 tandas
+    # secuenciales de 4+3, duplicando el tiempo de pared necesario sin
+    # ninguna ventaja real: el semáforo global _semaforo_deepseek ya limita
+    # la concurrencia total hacia DeepSeek de toda la app a la vez, así que
+    # restringir TAMBIÉN el executor de un único documento por debajo de
+    # ese límite solo servía para forzar tandas innecesarias y hacer más
+    # fácil agotar _TIEMPO_MAXIMO_GENERACION_SEGUNDOS).
+    executor_inicial = ThreadPoolExecutor(max_workers=min(_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK, len(fragmentos)))
     futuro_a_indice = {executor_inicial.submit(_generar_parcial, item): item[0] for item in enumerate(fragmentos)}
     try:
         restante_inicial = max(limite_tiempo - time.monotonic(), 0)
@@ -910,7 +931,7 @@ def generar_documento_largo_por_partes(
         # Mismo motivo que en la ronda inicial: no usar "with executor" porque
         # su shutdown(wait=True) implícito bloquearía sin límite si algún
         # reintento no responde a tiempo, anulando el timeout de as_completed.
-        executor_reintento = ThreadPoolExecutor(max_workers=min(4, len(indices_fallidos)))
+        executor_reintento = ThreadPoolExecutor(max_workers=min(_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK, len(indices_fallidos)))
         futuro_a_indice = {
             executor_reintento.submit(_generar_parcial, (i, fragmentos[i])): i for i in indices_fallidos
         }
