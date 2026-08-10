@@ -179,13 +179,22 @@ function filaContenido({
   if (urlContinuar) {
     acciones.push(`<a class="documento-card-btn principal" href="${urlContinuar}">Continuar</a>`);
   }
-  if (existe) {
+  // generando manda sobre existe (10/08/2026, a petición del usuario): al
+  // pulsar "Regenerar" sobre un tipo que YA existía, antes se seguían
+  // mostrando los botones "Ver"/"Regenerar" de la versión vieja mientras
+  // se generaba la nueva -- daba la sensación de que no había pasado nada
+  // al pulsar. Mientras se está regenerando no se ofrece ningún botón,
+  // igual que la primera vez que se genera algo, hasta que el sondeo
+  // confirma que la nueva versión ya está guardada.
+  if (generando) {
+    // sin acciones: el estado "Generando…" de abajo ya lo deja claro
+  } else if (existe) {
     acciones.push(`<a class="documento-card-btn orange" href="${urlVer}">Ver</a>`);
     if (urlAleatorias) {
       acciones.push(`<a class="documento-card-btn" href="${urlAleatorias}">10 aleatorias</a>`);
     }
     acciones.push(`<a class="documento-card-btn" href="${urlGenerar}">${textoGenerarDeNuevo}</a>`);
-  } else if (!generando) {
+  } else {
     acciones.push(`<a class="documento-card-btn orange" href="${urlGenerar}">${textoGenerar}</a>`);
   }
   const etiquetaCantidad = existe && cantidad ? ` (${cantidad})` : "";
