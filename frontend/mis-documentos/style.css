@@ -277,6 +277,17 @@ body {
   font-size: 1.3rem;
 }
 
+/* min-width:0 (06/08/2026, bug real reportado en móvil): sin esto, un
+   flex item se niega a encoger por debajo del ancho de su contenido más
+   largo -- y el nombre de archivo de .documento-card-meta suele venir sin
+   espacios (guiones bajos), así que sin ningún punto donde partir línea
+   ese "contenido más largo" podía ser más ancho que la propia pantalla,
+   empujando toda la tarjeta (y con ella la rejilla y la página entera) a
+   desbordar horizontalmente en móvil. */
+.documento-card-header-info {
+  min-width: 0;
+}
+
 .documento-card-titulo {
   font-size: 1.02rem;
   font-weight: 700;
@@ -286,6 +297,7 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  overflow-wrap: anywhere;
 }
 
 .documento-card-renombrar {
@@ -331,6 +343,7 @@ body {
 .documento-card-meta {
   color: var(--age-ink-soft);
   font-size: 0.82rem;
+  overflow-wrap: anywhere;
 }
 
 .documento-card-carpeta {

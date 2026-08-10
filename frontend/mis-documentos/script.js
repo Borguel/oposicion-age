@@ -491,7 +491,7 @@ function tarjetaDocumento(doc, modoCarpeta) {
     <div class="documento-card" data-id="${doc.id}">
       <div class="documento-card-header">
         <div class="documento-card-icon">${icono("libro", 26)}</div>
-        <div>
+        <div class="documento-card-header-info">
           <p class="documento-card-titulo">
             ${escaparHtml(nombreCorto)}
             <button type="button" class="documento-card-renombrar" data-id="${doc.id}" aria-label="Renombrar documento" title="Renombrar documento">${icono("lapiz", 14)}</button>
