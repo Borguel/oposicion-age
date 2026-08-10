@@ -646,27 +646,70 @@ TAMANO_CHUNK_CARACTERES = 15000
 _FRACCION_MINIMA_FUSION = 0.4
 
 
+# Separadores que _trocear_en_parrafos prueba en cascada, del más "natural"
+# (mejor punto de corte) al más forzado.
+_SEPARADORES_TROCEADO = ["\n\n", "\n", " "]
+
+
 def _trocear_en_parrafos(texto, tamano=TAMANO_CHUNK_CARACTERES):
     """Trocea el texto en fragmentos de como mucho 'tamano' caracteres,
-    cortando siempre en un salto de párrafo (nunca a mitad de frase) para no
-    partir una idea entre dos fragmentos si se puede evitar. Si un único
-    párrafo ya supera 'tamano' se deja tal cual como su propio fragmento en
-    vez de partirlo a la fuerza -- generar_con_continuacion ya sabe pedir
-    continuaciones si un fragmento resulta más largo de lo esperado."""
+    cortando siempre en un punto "natural" -- salto de párrafo si el texto
+    tiene, si no salto de línea, si no un espacio -- para no partir una
+    idea a mitad de palabra si se puede evitar.
+
+    Bug real (10/08/2026): pypdf's extract_text() a menudo NO deja ningún
+    "\\n\\n" en el texto extraído (depende de cómo esté maquetado el PDF
+    de origen -- comprobado con un BOE real: 0 dobles saltos en 51.000
+    caracteres). Con solo "\\n\\n" como separador, texto.split("\\n\\n")
+    devolvía UN SOLO "párrafo" con el documento entero, así que ni
+    siquiera intentaba trocearlo por mucho que superara 'tamano' -- el
+    documento completo se mandaba de una sola vez a la IA en un único
+    prompt gigante, que la desbordaba y devolvía un resultado válido en
+    formato pero catastróficamente incompleto (un resumen de 14 páginas
+    reducido a un párrafo). Ahora, si el separador actual no aparece en el
+    texto (o dividir por él deja algún trozo que sigue sin caber),
+    se prueba con el siguiente separador de la cascada antes de rendirse."""
+    return _trocear_recursivo(texto, tamano, _SEPARADORES_TROCEADO)
+
+
+def _trocear_recursivo(texto, tamano, separadores):
     if len(texto) <= tamano:
         return [texto]
-    parrafos = texto.split("\n\n")
+    if not separadores:
+        # Sin separadores que valgan (ni siquiera un espacio en todo el
+        # texto): último recurso, corte duro por número de caracteres, para
+        # no dejar nunca un fragmento sin trocear por muy patológico que
+        # sea el texto de entrada.
+        return [texto[i:i + tamano] for i in range(0, len(texto), tamano)]
+
+    separador, *resto = separadores
+    piezas = texto.split(separador)
+    if len(piezas) == 1:
+        # Este separador no aparece en el texto -- prueba con el siguiente.
+        return _trocear_recursivo(texto, tamano, resto)
+
     fragmentos = []
     actual = ""
-    for parrafo in parrafos:
-        if actual and len(actual) + len(parrafo) + 2 > tamano:
+    for pieza in piezas:
+        candidato = f"{actual}{separador}{pieza}" if actual else pieza
+        if actual and len(candidato) > tamano:
             fragmentos.append(actual)
-            actual = parrafo
+            actual = pieza
         else:
-            actual = f"{actual}\n\n{parrafo}" if actual else parrafo
+            actual = candidato
     if actual:
         fragmentos.append(actual)
-    return fragmentos
+
+    # Cualquier fragmento que aún así siga superando 'tamano' (una sola
+    # pieza, entre dos apariciones de este separador, ya demasiado larga
+    # por sí sola) se retrocea con el siguiente separador de la cascada.
+    resultado = []
+    for fragmento in fragmentos:
+        if len(fragmento) > tamano:
+            resultado.extend(_trocear_recursivo(fragmento, tamano, resto))
+        else:
+            resultado.append(fragmento)
+    return resultado
 
 
 def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096, instrucciones_fusion_extra=None, on_usage=None, on_progreso=None):

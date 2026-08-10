@@ -628,6 +628,46 @@ class TestTrocearEnParrafos:
             # Cada párrafo debe aparecer ENTERO dentro de un único fragmento.
             assert any(parrafo in f for f in fragmentos)
 
+    def test_sin_dobles_saltos_de_linea_cae_a_saltos_simples(self):
+        # Bug real (10/08/2026): pypdf.extract_text() de un PDF real (BOE)
+        # no dejó ni un solo "\n\n" en 51.000 caracteres -- con SOLO "\n\n"
+        # como separador, texto.split("\n\n") devolvía el documento entero
+        # como un único "párrafo", así que ni siquiera se intentaba
+        # trocear por mucho que superara TAMANO_CHUNK_CARACTERES, y se
+        # mandaba entero en un solo prompt a la IA (que lo desbordaba y
+        # devolvía un resultado catastróficamente incompleto). Ahora, si
+        # "\n\n" no aparece, se cae a "\n" como separador.
+        lineas = [f"Línea {i}: " + ("palabra " * 20) for i in range(30)]
+        texto = "\n".join(lineas)
+        assert "\n\n" not in texto
+        fragmentos = deepseek_utils._trocear_en_parrafos(texto, tamano=500)
+        assert len(fragmentos) > 1
+        for fragmento in fragmentos:
+            assert len(fragmento) <= 500
+        assert "\n".join(fragmentos) == texto
+
+    def test_sin_ningun_separador_corta_por_caracteres_como_ultimo_recurso(self):
+        # Caso extremo: ni "\n\n", ni "\n", ni siquiera un espacio -- no debe
+        # devolver nunca un único fragmento gigante sin trocear.
+        texto = "a" * 1000
+        fragmentos = deepseek_utils._trocear_en_parrafos(texto, tamano=300)
+        assert len(fragmentos) == 4
+        assert all(len(f) <= 300 for f in fragmentos)
+        assert "".join(fragmentos) == texto
+
+    def test_un_parrafo_de_un_solo_bloque_se_subdivide_por_lineas(self):
+        # Mezcla de ambos niveles: un documento con ALGÚN "\n\n" (por lo que
+        # el separador principal sí se usa), pero donde uno de los bloques
+        # resultantes sigue siendo, por sí solo, más largo que 'tamano' --
+        # ese bloque en concreto debe subdividirse por "\n" en vez de
+        # quedarse tal cual como antes de este fix.
+        bloque_corto = "Bloque corto."
+        lineas_largas = "\n".join(f"Línea {i} con algo de texto de relleno." for i in range(20))
+        texto = f"{bloque_corto}\n\n{lineas_largas}"
+        fragmentos = deepseek_utils._trocear_en_parrafos(texto, tamano=200)
+        assert len(fragmentos) > 2
+        assert all(len(f) <= 200 for f in fragmentos)
+
 
 class TestGenerarDocumentoLargoPorPartes:
     """generar_documento_largo_por_partes: documentos que ya caben en un
