@@ -649,11 +649,14 @@ class TestGenerarDocumentoLargoPorPartes:
         texto_largo = f"{parrafo}\n\n{parrafo}"
         assert len(deepseek_utils._trocear_en_parrafos(texto_largo)) == 2
 
-        respuestas = ["parcial 1", "parcial 2", "fusión final"]
+        # La fusión final se deja larga a propósito -- ver el comentario de
+        # la comprobación de colapso de la fusión más abajo en esta clase.
+        fusion_final = "fusión final. " * 10
+        respuestas = ["parcial 1", "parcial 2", fusion_final]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
 
-        assert resultado == "fusión final"
+        assert resultado == fusion_final
         # Al menos una llamada de "map" por fragmento + 1 de fusión al final.
         assert mock_gen.call_count == len(respuestas)
         ultima_llamada = mock_gen.call_args_list[-1]
@@ -675,10 +678,15 @@ class TestGenerarDocumentoLargoPorPartes:
         # primera.
         parrafo = "a" * 10000
         texto_largo = f"{parrafo}\n\n{parrafo}"
-        respuestas = [None, "parcial 2", "parcial 1 reintentado", "fusión final"]
+        # La fusión final se deja larga a propósito (no una frase suelta):
+        # por debajo de _FRACCION_MINIMA_FUSION del tamaño de los parciales
+        # de entrada, la comprobación de colapso de la fusión (ver más
+        # abajo) la reintentaría, algo que este test no quiere ejercitar.
+        fusion_final = "fusión final. " * 10
+        respuestas = [None, "parcial 2", "parcial 1 reintentado", fusion_final]
         with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
-        assert resultado == "fusión final"
+        assert resultado == fusion_final
         assert mock_gen.call_count == 4
 
     def test_documento_largo_fragmento_fallido_tras_reintentar_no_devuelve_resultado_parcial(self):
@@ -698,6 +706,41 @@ class TestGenerarDocumentoLargoPorPartes:
         assert resultado is None
         # 2 llamadas del MAP inicial + 1 del reintento (que también falla).
         assert mock_gen.call_count == 3
+
+    def test_documento_largo_fusion_colapsada_se_reintenta_y_se_recupera(self):
+        # Bug real (10/08/2026), distinto del de fragmentos fallidos de
+        # arriba: con TODOS los fragmentos del MAP generados y válidos por
+        # separado, la llamada de FUSIÓN en sí a veces colapsaba -- el
+        # modelo respondía con solo una fracción mínima del contenido y
+        # paraba de forma NATURAL (sin marcar finish_reason=length, así que
+        # generar_con_continuacion no lo detecta como truncado). Como el
+        # resultado sí tenía un encabezado Markdown válido, pasaba la
+        # validación de formato sin levantar sospecha -- así es como un
+        # usuario real acabó con un "resumen" de 14 páginas reducido a un
+        # solo párrafo. Se reintenta la fusión una vez antes de rendirse.
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        parcial_1 = "# Parcial uno\n" + ("contenido real del fragmento uno. " * 50)
+        parcial_2 = "# Parcial dos\n" + ("contenido real del fragmento dos. " * 50)
+        fusion_colapsada = "# Solo esto"
+        fusion_completa = "# Fusión completa\n" + ("todo el contenido fusionado. " * 80)
+        respuestas = [parcial_1, parcial_2, fusion_colapsada, fusion_completa]
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+        assert resultado == fusion_completa
+        assert mock_gen.call_count == 4
+
+    def test_documento_largo_fusion_colapsada_tras_reintentar_devuelve_none(self):
+        parrafo = "a" * 10000
+        texto_largo = f"{parrafo}\n\n{parrafo}"
+        parcial_1 = "# Parcial uno\n" + ("contenido real del fragmento uno. " * 50)
+        parcial_2 = "# Parcial dos\n" + ("contenido real del fragmento dos. " * 50)
+        fusion_colapsada = "# Solo esto"
+        respuestas = [parcial_1, parcial_2, fusion_colapsada, fusion_colapsada]
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo)
+        assert resultado is None
+        assert mock_gen.call_count == 4
 
 
 class TestDetectarTextoLegal:

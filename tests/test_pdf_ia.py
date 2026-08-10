@@ -787,10 +787,23 @@ class TestCosteIaEnHerramientasPdf:
         texto = ("A" * 8000) + "\n\n" + ("B" * 8000) + "\n\n" + ("C" * 8000)
         db.sembrar(("usuarios", "u1", "documentos", "d1"), {"texto": texto, "nombre_archivo": "doc.pdf"})
 
+        contador_llamadas = itertools.count()
+
         def fake_post(url, headers=None, json=None, timeout=None, stream=False):
             # Con encabezado "# " (05/08/2026, ver _parece_documento_generado_valido):
             # sin él, la respuesta se trataría como inválida y se reintentaría
-            # una vez, duplicando el coste que este test mide.
+            # una vez, duplicando el coste que este test mide. La 4ª llamada
+            # (la fusión de los 3 parciales) devuelve un texto más largo
+            # (10/08/2026, ver la comprobación de colapso de la fusión en
+            # generar_documento_largo_por_partes): con un texto tan corto
+            # como el de cada parcial, la fusión se vería como "colapsada"
+            # frente a los 3 parciales que se le pidió fundir, y se
+            # reintentaría, duplicando el coste que este test mide.
+            if next(contador_llamadas) >= 3:
+                return _FakeRespuestaDeepSeek(
+                    "# Resumen fusionado final con todo el contenido de los tres parciales combinados.",
+                    {"prompt_tokens": 100, "completion_tokens": 50},
+                )
             return _FakeRespuestaDeepSeek("# Resumen parcial.", {"prompt_tokens": 100, "completion_tokens": 50})
 
         parche = _con_sesion(client)

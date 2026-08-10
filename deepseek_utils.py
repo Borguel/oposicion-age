@@ -635,6 +635,16 @@ def detectar_texto_legal(texto):
 
 TAMANO_CHUNK_CARACTERES = 15000
 
+# Umbral de la comprobación de tamaño de la fusión en
+# generar_documento_largo_por_partes (10/08/2026, ver el comentario largo
+# junto a su uso): por debajo de esta fracción del tamaño de entrada, un
+# resultado de fusión se considera sospechoso y se reintenta en vez de
+# aceptarse tal cual. 0.4 deja margen de sobra para el resumen/reequilibrado
+# legítimo que algunos prompts de fusión piden entre secciones desiguales,
+# muy por encima del colapso real observado (una fusión de ~4 fragmentos
+# que se quedó en un solo apartado, <5% de la entrada).
+_FRACCION_MINIMA_FUSION = 0.4
+
 
 def _trocear_en_parrafos(texto, tamano=TAMANO_CHUNK_CARACTERES):
     """Trocea el texto en fragmentos de como mucho 'tamano' caracteres,
@@ -779,7 +789,36 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
         + (f"\n\n{instrucciones_fusion_extra}" if instrucciones_fusion_extra else "")
     )
     bloque_parciales = "\n\n---\n\n".join(parciales)
-    return generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens, on_usage=on_usage)
+    fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens, on_usage=on_usage)
+
+    # Comprobación de tamaño de la fusión (10/08/2026, bug real: con los
+    # fragmentos ya generados y válidos por separado, la llamada de fusión a
+    # veces "colapsaba" -- el modelo respondía con solo una fracción mínima
+    # del contenido (p. ej. un único apartado del último fragmento) y
+    # paraba de forma NATURAL (finish_reason distinto de "length", así que
+    # generar_con_continuacion no lo detecta como truncado) en vez de
+    # fusionar de verdad los fragmentos recibidos. Como el resultado sí
+    # tenía un encabezado Markdown válido, pasaba la validación de formato
+    # de _parece_documento_generado_valido sin levantar sospecha -- así es
+    # como un usuario real acabó con un "resumen" de 14 páginas reducido a
+    # un solo párrafo. Un resultado de fusión drásticamente más corto que
+    # la suma de lo que se le pidió fusionar es una señal barata y fiable
+    # de que se perdió contenido real, sin tener que comparar dato por
+    # dato -- se reintenta una vez antes de rendirse.
+    if fusionado and len(fusionado) < len(bloque_parciales) * _FRACCION_MINIMA_FUSION:
+        logger.warning(
+            "generar_documento_largo_por_partes: la fusión de %d fragmentos devolvió solo %d "
+            "caracteres frente a los %d de entrada -- reintentando una vez.",
+            len(parciales), len(fusionado), len(bloque_parciales),
+        )
+        fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens, on_usage=on_usage)
+        if fusionado and len(fusionado) < len(bloque_parciales) * _FRACCION_MINIMA_FUSION:
+            logger.warning(
+                "generar_documento_largo_por_partes: la fusión sigue devolviendo muy poco "
+                "contenido tras reintentar -- se abandona en vez de devolver un documento incompleto."
+            )
+            return None
+    return fusionado
 
 
 # Versión en streaming de call_deepseek_api: en vez de devolver el texto
