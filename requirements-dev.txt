@@ -2,5 +2,5 @@
 # (pip install -r requirements-dev.txt), no el de producción.
 -r requirements.txt
 pytest==9.1.1
-ruff==0.16.0
+ruff==0.16.2
 black==26.5.1
