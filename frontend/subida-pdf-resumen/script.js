@@ -176,8 +176,19 @@ async function obtenerAuthHeaders() {
       yPos = 26;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(20);
-      doc.text(`Resumen de ${nombreArchivo}`, pageWidth / 2, yPos, { align: "center" });
-      yPos += 10;
+      // Título envuelto en varias líneas (10/08/2026, bug real: un nombre
+      // de archivo largo con guiones bajos en vez de espacios -- típico en
+      // PDFs del BOE -- no le daba a jsPDF ningún punto de corte, así que a
+      // fontSize 20 se salía de la página por los dos lados en vez de
+      // partirse. Los guiones bajos se tratan como separadores de palabra
+      // (lo son, en la práctica) para que splitTextToSize pueda partir el
+      // título, y de paso queda más legible que con guiones bajos literales.
+      const lineasTitulo = doc.splitTextToSize(`Resumen de ${nombreArchivo.replace(/_/g, " ")}`, anchoTexto);
+      lineasTitulo.forEach((linea) => {
+        doc.text(linea, pageWidth / 2, yPos, { align: "center" });
+        yPos += 8;
+      });
+      yPos += 2;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
       doc.setTextColor(110);

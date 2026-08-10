@@ -292,8 +292,14 @@ async function obtenerAuthHeaders() {
       yPos = 26;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(20);
-      doc.text(`Esquema de ${nombreArchivo}`, pageWidth / 2, yPos, { align: "center" });
-      yPos += 10;
+      // Título envuelto en varias líneas (10/08/2026, ver el comentario
+      // largo en subida-pdf-resumen/script.js -- mismo bug, mismo arreglo).
+      const lineasTitulo = doc.splitTextToSize(`Esquema de ${nombreArchivo.replace(/_/g, " ")}`, anchoTexto);
+      lineasTitulo.forEach((linea) => {
+        doc.text(linea, pageWidth / 2, yPos, { align: "center" });
+        yPos += 8;
+      });
+      yPos += 2;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
       doc.setTextColor(110);
