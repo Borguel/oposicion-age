@@ -292,6 +292,23 @@ def reactivar_suscripcion():
 
     try:
         stripe.Subscription.modify(subscription_id, cancel_at_period_end=False)
+    except stripe.InvalidRequestError as e:
+        if getattr(e, "code", None) != "resource_missing":
+            logger.exception("Error reactivando suscripción de Stripe %s", subscription_id)
+            return jsonify({"error": str(e)}), 500
+        # Mismo caso huérfano que /cancelar-suscripcion (ver ese comentario):
+        # la suscripción guardada ya no existe en Stripe, así que no hay
+        # nada que "reactivar" de verdad -- sin este manejo, el error crudo
+        # de Stripe ("No such subscription: ...") le llegaba tal cual al
+        # usuario en vez de una explicación entendible.
+        logger.warning(
+            "[stripe_id_huerfano] stripe_subscription_id huérfano detectado para uid=%s (id=%s) al reactivar; se marca como cancelada localmente",
+            g.uid, subscription_id,
+        )
+        actualizar_suscripcion(db, g.uid, oposicion, plan="gratis", subscription_status="canceled", cancelar_al_final_periodo=False)
+        return jsonify({
+            "error": "No hemos encontrado ninguna suscripción activa que reactivar; tu cuenta ha quedado en el plan gratuito. Si quieres seguir con Premium o Básico, contrátalo de nuevo desde la página de planes."
+        }), 400
     except Exception as e:
         logger.exception("Error reactivando suscripción de Stripe %s", subscription_id)
         return jsonify({"error": str(e)}), 500

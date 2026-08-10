@@ -26,7 +26,7 @@ from firebase_admin import auth as firebase_auth
 
 from firebase_setup import db
 from auth_utils import requiere_admin, requiere_permiso, PERMISOS_VALIDOS
-from planes import resolver_plan_efectivo, resumen_prueba_cuenta
+from planes import prueba_activa, resolver_plan_efectivo, resumen_prueba_cuenta
 from promociones import leer_promocion, promocion_vigente, PLANES_PROMOCIONABLES
 from banco_fallos import _id_pregunta
 from coste_ia import resumen_coste_usuario
@@ -256,13 +256,25 @@ def _fallos_agregados(oposicion=None):
     return fallos_por_tema, fallos_por_hash
 
 
-def _bajas_agregadas():
+LIMITE_BAJAS_RECIENTES = 30
+
+
+def _bajas_agregadas(incluir_recientes=False):
     """Agrega los motivos de baja de TODOS los usuarios (collection_group)
-    -- solo cifras + comentarios sueltos, sin exponer qué usuario canceló
-    qué (mismo criterio de privacidad que _fallos_agregados)."""
+    -- por defecto solo cifras + comentarios sueltos, sin exponer qué
+    usuario canceló qué (mismo criterio de privacidad que _fallos_agregados).
+
+    Con incluir_recientes=True (solo para quien tenga permiso 'usuarios',
+    ver bajas_listar) añade además "recientes": las últimas cancelaciones
+    CON el usuario identificado (uid/email/nombre), para poder hacer
+    seguimiento u ofrecerles algo antes de que el periodo ya pagado
+    termine de verdad -- bajas_motivos se escribe en el momento en que se
+    pulsa "cancelar", no cuando el periodo vence, así que esto incluye
+    tanto bajas ya efectivas como canceladas pero todavía activas."""
     por_motivo = {m: 0 for m in MOTIVOS_BAJA_VALIDOS}
     por_oposicion = {}
     comentarios = []
+    crudos = []  # (fecha, uid, motivo, comentario, oposicion) -- para "recientes"
     total = 0
     for doc in db.collection_group("bajas_motivos").stream():
         datos = doc.to_dict() or {}
@@ -274,14 +286,44 @@ def _bajas_agregadas():
         oposicion = datos.get("oposicion") or "(sin oposición)"
         por_oposicion[oposicion] = por_oposicion.get(oposicion, 0) + 1
         comentario = (datos.get("comentario") or "").strip()
+        fecha = datos.get("fecha", "")
         if comentario:
-            comentarios.append({
-                "motivo": motivo, "comentario": comentario,
-                "oposicion": datos.get("oposicion", ""), "fecha": datos.get("fecha", ""),
-            })
+            comentarios.append({"motivo": motivo, "comentario": comentario, "oposicion": oposicion, "fecha": fecha})
+        if incluir_recientes:
+            # bajas_motivos siempre cuelga de usuarios/<uid>/bajas_motivos/<id>
+            # -- se lee el uid del propio path en vez de .reference.parent.parent
+            # para que funcione igual contra el Firestore real y contra el
+            # doble de pruebas (tests/fakes.py), que no implementa .parent.
+            partes = doc.reference.path.split("/")
+            if len(partes) >= 3 and partes[0] == "usuarios":
+                crudos.append((fecha, partes[1], motivo, comentario, oposicion))
     comentarios.sort(key=lambda c: c.get("fecha", ""), reverse=True)
-    return {"total": total, "por_motivo": por_motivo, "por_oposicion": por_oposicion,
-            "comentarios_recientes": comentarios[:50]}
+    resultado = {"total": total, "por_motivo": por_motivo, "por_oposicion": por_oposicion,
+                 "comentarios_recientes": comentarios[:50]}
+
+    if incluir_recientes:
+        crudos.sort(key=lambda c: c[0], reverse=True)
+        recientes = []
+        for fecha, uid, motivo, comentario, oposicion in crudos[:LIMITE_BAJAS_RECIENTES]:
+            u = (db.collection("usuarios").document(uid).get().to_dict() or {})
+            sub = (u.get("suscripciones") or {}).get(oposicion, {}) or {}
+            recientes.append({
+                "uid": uid,
+                "email": u.get("email", ""),
+                "nombre": u.get("nombre", ""),
+                "oposicion": oposicion,
+                "motivo": motivo,
+                "comentario": comentario,
+                "fecha": fecha,
+                # Si ya volvió a "gratis" es que el periodo ya venció de verdad;
+                # si sigue en básico/premium es que la baja todavía está
+                # pendiente (cancelar_al_final_periodo) -- justo la que más
+                # interesa para intentar retenerla a tiempo.
+                "efectiva": sub.get("plan", "gratis") == "gratis",
+                "proxima_renovacion": sub.get("current_period_end"),
+            })
+        resultado["recientes"] = recientes
+    return resultado
 
 
 def _titulo_tema(coleccion, tema_id):
@@ -1098,10 +1140,27 @@ def usuarios_export():
     return _respuesta_csv(cabecera, filas, "usuarios.csv")
 
 
-def _filas_ingresos(busqueda, filtro_plan, filtro_oposicion):
-    """Una fila por cada suscripción de pago activa (un usuario puede tener
-    más de una, una por oposición) -- es el detalle que hay detrás del MRR
-    del dashboard: quién paga, cuánto, desde cuándo y cuándo renueva."""
+ESTADOS_CLIENTE_VALIDOS = ("activo", "cancelando", "baja", "prueba")
+
+
+def _filas_ingresos(busqueda, filtro_plan, filtro_oposicion, filtro_estado):
+    """Una fila por cada oposición que un usuario ha activado alguna vez,
+    con su "estado de cliente" -- no solo quién paga ahora mismo (como
+    antes), sino todo el ciclo de vida que hace falta para llevar un
+    control real de la cartera:
+
+    - "activo": suscripción de pago al día.
+    - "cancelando": de pago todavía, pero con la baja ya programada para
+      el final del periodo (cancelar_al_final_periodo) -- la señal más
+      accionable para intentar retener antes de que se pierda de verdad.
+    - "baja": ya de vuelta al plan gratis después de haber pagado
+      (subscription_status "canceled" o quedó un id de Stripe guardado).
+    - "prueba": dentro de los 7 días de prueba gratuita, sin haber pagado
+      todavía.
+
+    Un usuario sin nada de esto (nunca pagó, no está en prueba) no aporta
+    nada a un "control de clientes" y se omite -- si se necesitara alguna
+    vez, ya está la lista completa de Usuarios para eso."""
     ahora = datetime.utcnow()
     hace_7 = ahora - timedelta(days=7)
     filas = []
@@ -1111,28 +1170,48 @@ def _filas_ingresos(busqueda, filtro_plan, filtro_oposicion):
         if busqueda and busqueda not in email:
             continue
         ult = _parse_fecha(datos.get("ultima_actividad"))
+        activo_7_dias = bool(ult and ult >= hace_7)
         for oid, sub in (datos.get("suscripciones") or {}).items():
             sub = sub or {}
-            plan = sub.get("plan")
-            precio = _PRECIO_PLAN.get(plan)
-            if not precio:
-                continue
-            if filtro_plan and plan != filtro_plan:
-                continue
             if filtro_oposicion and oid != filtro_oposicion:
                 continue
+            plan_contratado = sub.get("plan", "gratis")
+            cancela_al_final = bool(sub.get("cancelar_al_final_periodo"))
+
+            if plan_contratado in _PRECIO_PLAN:
+                estado_cliente = "cancelando" if cancela_al_final else "activo"
+                plan_mostrado = plan_contratado
+                precio = _PRECIO_PLAN[plan_contratado]
+            elif prueba_activa(sub):
+                estado_cliente = "prueba"
+                plan_mostrado = "premium"  # la prueba da acceso Premium completo
+                precio = 0.0
+            elif sub.get("stripe_subscription_id") or sub.get("subscription_status") == "canceled":
+                estado_cliente = "baja"
+                plan_mostrado = None
+                precio = 0.0
+            else:
+                continue
+
+            if filtro_plan and plan_mostrado != filtro_plan:
+                continue
+            if filtro_estado and estado_cliente != filtro_estado:
+                continue
+
             filas.append({
                 "uid": doc.id,
                 "email": datos.get("email", ""),
                 "nombre": datos.get("nombre", ""),
                 "oposicion": oid,
-                "plan": plan,
+                "estado_cliente": estado_cliente,
+                "plan": plan_mostrado,
                 "precio": precio,
-                "estado": sub.get("subscription_status", ""),
+                "estado_suscripcion": sub.get("subscription_status", ""),
                 "proxima_renovacion": sub.get("current_period_end"),
-                "cancela_al_final": bool(sub.get("cancelar_al_final_periodo")),
+                "cancela_al_final": cancela_al_final,
+                "prueba_fin": sub.get("prueba_fin"),
                 "cliente_desde": datos.get("fecha_creacion"),
-                "activo_7_dias": bool(ult and ult >= hace_7),
+                "activo_7_dias": activo_7_dias,
             })
     filas.sort(key=lambda f: f.get("cliente_desde") or "", reverse=True)
     return filas
@@ -1141,27 +1220,35 @@ def _filas_ingresos(busqueda, filtro_plan, filtro_oposicion):
 @bp.route("/admin/api/ingresos", methods=["GET"])
 @requiere_permiso("usuarios")
 def ingresos_listar():
-    """Detalle de cada suscripción de pago -- lo que hay detrás del MRR del
-    dashboard, para poder ver de un vistazo quién paga, cuánto y si está en
-    riesgo de baja (pago fallido, cancelación programada, sin actividad
-    reciente)."""
+    """Detalle de cada cliente (de pago, en prueba o dado de baja) -- lo
+    que hay detrás del MRR del dashboard, para llevar un control real de
+    la cartera: quién paga, cuánto, quién está en riesgo (cancelación
+    programada, pago fallido, sin actividad reciente), quién está en
+    prueba y quién se ha ido."""
     busqueda = (request.args.get("busqueda") or "").strip().lower()
     filtro_plan = request.args.get("plan") or ""
     filtro_oposicion = request.args.get("oposicion") or ""
+    filtro_estado = request.args.get("estado") or ""
+    if filtro_estado and filtro_estado not in ESTADOS_CLIENTE_VALIDOS:
+        return jsonify({"error": "Estado no válido"}), 400
     try:
         pagina = max(1, int(request.args.get("pagina", 1)))
     except (TypeError, ValueError):
         pagina = 1
     por_pagina = 20
 
-    filas = _filas_ingresos(busqueda, filtro_plan, filtro_oposicion)
+    filas = _filas_ingresos(busqueda, filtro_plan, filtro_oposicion, filtro_estado)
     por_plan = {}
+    por_estado = {e: 0 for e in ESTADOS_CLIENTE_VALIDOS}
     mrr = 0.0
     for f in filas:
-        por_plan[f["plan"]] = por_plan.get(f["plan"], 0) + 1
-        mrr += f["precio"]
+        por_estado[f["estado_cliente"]] = por_estado.get(f["estado_cliente"], 0) + 1
+        if f["precio"]:
+            por_plan[f["plan"]] = por_plan.get(f["plan"], 0) + 1
+            mrr += f["precio"]
 
     total = len(filas)
+    pagantes = por_estado["activo"] + por_estado["cancelando"]
     inicio = (pagina - 1) * por_pagina
     return jsonify({
         "filas": filas[inicio:inicio + por_pagina],
@@ -1170,9 +1257,10 @@ def ingresos_listar():
         "por_pagina": por_pagina,
         "resumen": {
             "mrr": round(mrr, 2),
-            "suscripciones": total,
+            "suscripciones": pagantes,
             "por_plan": por_plan,
-            "arpu": round(mrr / total, 2) if total else 0,
+            "por_estado": por_estado,
+            "arpu": round(mrr / pagantes, 2) if pagantes else 0,
         },
     })
 
@@ -1180,21 +1268,22 @@ def ingresos_listar():
 @bp.route("/admin/api/ingresos/export", methods=["GET"])
 @requiere_permiso("usuarios")
 def ingresos_export():
-    """Descarga todas las suscripciones de pago (con los filtros aplicados) en CSV."""
+    """Descarga el detalle de clientes (con los filtros aplicados) en CSV."""
     busqueda = (request.args.get("busqueda") or "").strip().lower()
     filtro_plan = request.args.get("plan") or ""
     filtro_oposicion = request.args.get("oposicion") or ""
+    filtro_estado = request.args.get("estado") or ""
     filas = [
         [
-            f["uid"], f["email"], f["nombre"], f["oposicion"], f["plan"], f["precio"],
-            f["estado"], (f["proxima_renovacion"] or "")[:10], "sí" if f["cancela_al_final"] else "no",
+            f["uid"], f["email"], f["nombre"], f["oposicion"], f["estado_cliente"], f["plan"] or "", f["precio"],
+            f["estado_suscripcion"], (f["proxima_renovacion"] or "")[:10], "sí" if f["cancela_al_final"] else "no",
             (f["cliente_desde"] or "")[:10], "sí" if f["activo_7_dias"] else "no",
         ]
-        for f in _filas_ingresos(busqueda, filtro_plan, filtro_oposicion)
+        for f in _filas_ingresos(busqueda, filtro_plan, filtro_oposicion, filtro_estado)
     ]
     cabecera = [
-        "uid", "email", "nombre", "oposicion", "plan", "precio_mensual",
-        "estado_suscripcion", "proxima_renovacion", "cancela_al_final_periodo",
+        "uid", "email", "nombre", "oposicion", "estado_cliente", "plan", "precio_mensual",
+        "estado_suscripcion_stripe", "proxima_renovacion", "cancela_al_final_periodo",
         "cliente_desde", "activo_ultimos_7_dias",
     ]
     return _respuesta_csv(cabecera, filas, "ingresos.csv")
@@ -2057,9 +2146,9 @@ def soporte_actualizar(mid):
 # Motivos de baja (por qué cancela la gente)
 # ============================================================
 @bp.route("/admin/api/bajas", methods=["GET"])
-@requiere_permiso("reportes")
+@requiere_permiso("reportes", "usuarios")
 def bajas_listar():
-    return jsonify(_bajas_agregadas())
+    return jsonify(_bajas_agregadas(incluir_recientes="usuarios" in g.permisos))
 
 
 # ============================================================

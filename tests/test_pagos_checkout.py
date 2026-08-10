@@ -610,3 +610,61 @@ def test_reactivar_suscripcion_deshace_la_baja_programada(client, db):
         assert mock_email.call_args.args[0] == "u1@example.com"
     finally:
         parche.stop()
+
+
+def test_reactivar_suscripcion_con_subscription_id_huerfano_se_marca_gratis_localmente(client, db):
+    # Mismo caso que cancelar-suscripcion: si la suscripción guardada ya no
+    # existe en Stripe, no hay nada que reactivar de verdad -- antes esto
+    # devolvía el error crudo de Stripe (500 con "No such subscription: ...")
+    # tal cual al usuario en vez de una respuesta entendible.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {
+            "plan": "premium", "stripe_subscription_id": "sub_huerfana",
+            "cancelar_al_final_periodo": True,
+        }},
+    })
+    parche = _con_sesion(client)
+    try:
+        with patch("blueprints.pagos.stripe.Subscription.modify", side_effect=stripe.InvalidRequestError("No such subscription: 'sub_huerfana'", param="id", code="resource_missing")), \
+             patch("blueprints.pagos.enviar_email_reactivacion_suscripcion") as mock_email:
+            resp = client.post(
+                "/reactivar-suscripcion",
+                json={"oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 400
+        assert "plan gratuito" in resp.get_json()["error"].lower()
+        mock_email.assert_not_called()
+        suscripcion = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+        assert suscripcion["plan"] == "gratis"
+        assert suscripcion["subscription_status"] == "canceled"
+        assert suscripcion["cancelar_al_final_periodo"] is False
+    finally:
+        parche.stop()
+
+
+def test_reactivar_suscripcion_no_marca_gratis_si_el_error_no_es_resource_missing(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {
+            "plan": "premium", "stripe_subscription_id": "sub_1",
+            "cancelar_al_final_periodo": True,
+        }},
+    })
+    parche = _con_sesion(client)
+    try:
+        with patch("blueprints.pagos.stripe.Subscription.modify", side_effect=stripe.InvalidRequestError("Invalid API Key provided", param=None, code="api_key_expired")), \
+             patch("blueprints.pagos.enviar_email_reactivacion_suscripcion") as mock_email:
+            resp = client.post(
+                "/reactivar-suscripcion",
+                json={"oposicion": "AGE"},
+                headers={"Authorization": "Bearer x"},
+            )
+        assert resp.status_code == 500
+        mock_email.assert_not_called()
+        suscripcion = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+        assert suscripcion["plan"] == "premium"
+        assert suscripcion["cancelar_al_final_periodo"] is True
+    finally:
+        parche.stop()

@@ -1061,8 +1061,37 @@ async function renderBajas() {
   const d = await apiGet(`/admin/api/bajas`);
   if (!d) return;
 
+  // "recientes" (con uid/email) solo llega si el permiso de quien pide la
+  // lista incluye "usuarios" -- ver bajas_listar en blueprints/admin.py.
+  // Va primero y siempre que haya alguna, aunque d.total sea 0 más abajo
+  // no puede pasar a la vez, pero se comprueba por separado por claridad.
+  const recientesHtml = Array.isArray(d.recientes) ? `
+    <div class="age-card admin-bloque">
+      <h3>Bajas recientes (${d.recientes.length})</h3>
+      <p class="admin-reporte-meta">Se escribe en cuanto alguien pulsa "cancelar", no cuando el periodo ya pagado termina -- para poder ofrecerle algo o hacerle seguimiento a tiempo, antes de que se vaya de verdad.</p>
+      ${d.recientes.length ? d.recientes.map((b) => `
+        <div class="admin-reporte admin-fila-click" data-uid="${escapeHtml(b.uid)}" tabindex="0" role="button" aria-label="Ver ficha de ${escapeHtml(b.email || "usuario sin email")}">
+          <div class="admin-reporte-cab">
+            <span class="admin-reporte-estado ${b.efectiva ? "admin-estado-descartado" : "admin-estado-pendiente"}">${b.efectiva ? "Baja efectiva" : "Pendiente · aún activo"}</span>
+            <span class="admin-reporte-meta">${escapeHtml(b.oposicion || "-")} · ${escapeHtml(fechaCorta(b.fecha))}</span>
+          </div>
+          <p class="admin-reporte-motivo">
+            <strong>${escapeHtml(b.nombre || b.email || "(sin email)")}</strong>
+            — ${escapeHtml(ETIQUETA_MOTIVO_BAJA[b.motivo] || b.motivo)}
+            ${!b.efectiva && b.proxima_renovacion ? ` · activo hasta ${fechaCorta(b.proxima_renovacion)}` : ""}
+          </p>
+          ${b.comentario ? `<p class="admin-reporte-motivo">"${escapeHtml(b.comentario)}"</p>` : ""}
+        </div>`).join("")
+        : '<p class="admin-vacio">Todavía no se ha dado de baja nadie.</p>'}
+    </div>` : "";
+
   if (!d.total) {
-    panel.innerHTML = `<div class="age-card"><p class="admin-vacio">Todavía no se ha dado de baja nadie. ${icono("check", 14)}</p></div>`;
+    panel.innerHTML = recientesHtml || `<div class="age-card"><p class="admin-vacio">Todavía no se ha dado de baja nadie. ${icono("check", 14)}</p></div>`;
+    panel.querySelectorAll("[data-uid]").forEach((fila) => {
+      const abrir = () => abrirUsuario(fila.dataset.uid);
+      fila.addEventListener("click", abrir);
+      fila.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrir(); } });
+    });
     return;
   }
 
@@ -1086,6 +1115,8 @@ async function renderBajas() {
     </div>`;
 
   panel.innerHTML = `
+    ${recientesHtml}
+
     <div class="age-card admin-bloque">
       <h3>Por qué cancela la gente (${d.total} baja${d.total === 1 ? "" : "s"} en total)</h3>
       ${motivosOrdenados.map(([motivo, veces]) => filaMotivo(motivo, veces)).join("")}
@@ -1104,6 +1135,12 @@ async function renderBajas() {
         ? d.comentarios_recientes.map(filaComentario).join("")
         : '<p class="admin-vacio">Nadie ha dejado un comentario todavía.</p>'}
     </div>`;
+
+  panel.querySelectorAll("[data-uid]").forEach((fila) => {
+    const abrir = () => abrirUsuario(fila.dataset.uid);
+    fila.addEventListener("click", abrir);
+    fila.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrir(); } });
+  });
 }
 
 // ===== Usuarios =====
@@ -1133,11 +1170,19 @@ async function renderUsuarios() {
 }
 
 // ===== Ingresos =====
-// Detalle de cada suscripción de pago (una fila por oposición suscrita,
-// no por usuario) -- lo que hay detrás del MRR del dashboard: quién paga,
-// cuánto, desde cuándo, cuándo renueva y si está en riesgo de baja (pago
-// fallido, cancelación programada, sin actividad reciente).
+// Detalle de cada cliente (una fila por oposición activada, no por
+// usuario) -- lo que hay detrás del MRR del dashboard, para llevar un
+// control real de la cartera: quién paga, cuánto, desde cuándo, si está
+// en riesgo (cancelación programada, pago fallido, sin actividad
+// reciente), quién está en prueba y quién se ha ido.
 let paginaIngresos = 1;
+
+const ESTADO_CLIENTE_LABEL = {
+  activo: ["Activo", "admin-chip-ok"],
+  cancelando: ["Cancelando", "admin-chip-warn"],
+  baja: ["Baja", "admin-chip-warn"],
+  prueba: ["En prueba", "admin-chip"],
+};
 
 const ESTADO_SUSCRIPCION_LABEL = {
   active: ["Al día", "admin-chip-ok"],
@@ -1154,9 +1199,11 @@ function _paramsIngresos() {
   const busqueda = document.getElementById("i-busqueda")?.value.trim();
   const plan = document.getElementById("i-plan")?.value;
   const oposicion = document.getElementById("i-oposicion")?.value;
+  const estado = document.getElementById("i-estado")?.value;
   if (busqueda) params.set("busqueda", busqueda);
   if (plan) params.set("plan", plan);
   if (oposicion) params.set("oposicion", oposicion);
+  if (estado) params.set("estado", estado);
   return params;
 }
 
@@ -1165,6 +1212,13 @@ async function renderIngresos() {
   panel.innerHTML = `
     <div class="age-card admin-filtros">
       <input id="i-busqueda" class="age-input" placeholder="Buscar por email…">
+      <select id="i-estado" class="age-input">
+        <option value="">Todos los estados</option>
+        <option value="activo">Activos</option>
+        <option value="cancelando">Cancelando</option>
+        <option value="baja">Bajas</option>
+        <option value="prueba">En prueba</option>
+      </select>
       <select id="i-plan" class="age-input"><option value="">Todos los planes</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
       <select id="i-oposicion" class="age-input"><option value="">Todas las oposiciones</option><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
       <button class="age-btn age-btn-primary admin-filtros-btn" id="i-aplicar">Buscar</button>
@@ -1172,6 +1226,7 @@ async function renderIngresos() {
     </div>
     <div id="ingresos-contenido"><p class="admin-cargando">Cargando…</p></div>`;
   panel.querySelector("#i-aplicar").addEventListener("click", () => { paginaIngresos = 1; cargarIngresos(); });
+  panel.querySelector("#i-estado").addEventListener("change", () => { paginaIngresos = 1; cargarIngresos(); });
   panel.querySelector("#i-csv").addEventListener("click", () => {
     descargarCSV(`/admin/api/ingresos/export?${_paramsIngresos().toString()}`, "ingresos.csv");
   });
@@ -1188,11 +1243,24 @@ async function cargarIngresos() {
   const d = await apiGet(`/admin/api/ingresos?${params.toString()}`);
   if (!d) return;
   const r = d.resumen || {};
+  const porEstado = r.por_estado || {};
   const desglosePlan = Object.entries(r.por_plan || {})
     .map(([p, n]) => `${p === "premium" ? "Premium" : "Básico"}: ${n}`).join(" · ") || "—";
+  const desgloseEstado = ["activo", "cancelando", "baja", "prueba"]
+    .filter((e) => porEstado[e]).map((e) => `${ESTADO_CLIENTE_LABEL[e][0]}: ${porEstado[e]}`).join(" · ") || "—";
 
   const filas = (d.filas || []).map((f) => {
-    const [estadoLbl, estadoCls] = ESTADO_SUSCRIPCION_LABEL[f.estado] || [f.estado || "—", "admin-chip"];
+    const [estadoClienteLbl, estadoClienteCls] = ESTADO_CLIENTE_LABEL[f.estado_cliente] || [f.estado_cliente || "—", "admin-chip"];
+    const planLbl = f.plan === "premium" ? "Premium" : f.plan === "basico" ? "Básico" : "—";
+    const fechaClave = f.proxima_renovacion || f.prueba_fin;
+    // El estado de cliente (activo/cancelando/...) no distingue un pago que
+    // está fallando de verdad (past_due/unpaid/incomplete en Stripe) de uno
+    // que está simplemente al día -- se añade aparte, solo cuando avisa de
+    // algo, para no duplicar información en la fila cuando todo va bien.
+    const estadoPago = ESTADO_SUSCRIPCION_LABEL[f.estado_suscripcion];
+    const avisoPago = estadoPago && estadoPago[1] === "admin-chip-warn"
+      ? ` <span class="admin-chip admin-chip-warn" title="Estado del pago en Stripe">${escapeHtml(estadoPago[0])}</span>`
+      : "";
     return `
       <tr class="admin-fila-click" data-uid="${escapeHtml(f.uid)}" tabindex="0" role="button" aria-label="Ver ficha de ${escapeHtml(f.email || "usuario sin email")}">
         <td>
@@ -1200,10 +1268,10 @@ async function cargarIngresos() {
           ${f.nombre ? `<div class="admin-td-secundario">${escapeHtml(f.email || "")}</div>` : ""}
         </td>
         <td>${escapeHtml(f.oposicion)}</td>
-        <td>${f.plan === "premium" ? "Premium" : "Básico"}</td>
+        <td><span class="admin-chip ${estadoClienteCls}">${escapeHtml(estadoClienteLbl)}</span>${f.cancela_al_final ? ` <span class="admin-chip admin-chip-warn" title="Se cancela al terminar el periodo ya pagado">Se cancela</span>` : ""}${avisoPago}</td>
+        <td>${planLbl}</td>
         <td class="admin-num">${(f.precio || 0).toFixed(2)}€</td>
-        <td><span class="admin-chip ${estadoCls}">${escapeHtml(estadoLbl)}</span>${f.cancela_al_final ? ` <span class="admin-chip admin-chip-warn" title="Se cancela al terminar el periodo ya pagado">Se cancela</span>` : ""}</td>
-        <td>${fechaCorta(f.proxima_renovacion)}</td>
+        <td>${fechaCorta(fechaClave)}</td>
         <td>${fechaCorta(f.cliente_desde)}</td>
         <td>${f.activo_7_dias ? `${icono("check", 14)} Sí` : "No"}</td>
       </tr>`;
@@ -1212,15 +1280,15 @@ async function cargarIngresos() {
   cont.innerHTML = `
     <div class="admin-ingresos-resumen">
       <div class="admin-ingresos-metrica"><span class="admin-ingresos-num">${(r.mrr || 0).toFixed(2)}€</span><span class="admin-ingresos-lbl">MRR (de esta búsqueda)</span></div>
-      <div class="admin-ingresos-metrica"><span class="admin-ingresos-num">${r.suscripciones || 0}</span><span class="admin-ingresos-lbl">Suscripciones</span></div>
+      <div class="admin-ingresos-metrica"><span class="admin-ingresos-num">${r.suscripciones || 0}</span><span class="admin-ingresos-lbl">Suscripciones de pago</span></div>
       <div class="admin-ingresos-metrica"><span class="admin-ingresos-num">${(r.arpu || 0).toFixed(2)}€</span><span class="admin-ingresos-lbl">Ingreso medio (ARPU)</span></div>
-      <div class="admin-ingresos-metrica admin-ingresos-metrica-desglose"><span class="admin-ingresos-lbl">${escapeHtml(desglosePlan)}</span></div>
+      <div class="admin-ingresos-metrica admin-ingresos-metrica-desglose"><span class="admin-ingresos-lbl">${escapeHtml(desgloseEstado)}</span><span class="admin-ingresos-lbl">${escapeHtml(desglosePlan)}</span></div>
     </div>
     <div class="admin-scroll"><table class="admin-tabla">
-      <thead><tr><th>Cliente</th><th>Oposición</th><th>Plan</th><th class="admin-num">Precio</th><th>Estado</th><th>Renueva</th><th>Cliente desde</th><th>Activo (7d)</th></tr></thead>
-      <tbody>${filas || `<tr><td colspan="8"><p class="admin-vacio">Sin suscripciones de pago que coincidan.</p></td></tr>`}</tbody>
+      <thead><tr><th>Cliente</th><th>Oposición</th><th>Estado</th><th>Plan</th><th class="admin-num">Precio</th><th>Renueva / vence</th><th>Cliente desde</th><th>Activo (7d)</th></tr></thead>
+      <tbody>${filas || `<tr><td colspan="8"><p class="admin-vacio">Sin clientes que coincidan.</p></td></tr>`}</tbody>
     </table></div>
-    ${paginacionHtml(d, "suscripciones", "i")}`;
+    ${paginacionHtml(d, "clientes", "i")}`;
 
   cont.querySelectorAll("[data-uid]").forEach((fila) => {
     const abrir = () => abrirUsuario(fila.dataset.uid);

@@ -4,6 +4,7 @@ claim admin=true, y que las operaciones (soft delete, admin_override,
 publicado, agregación de fallos) hagan lo que dicen."""
 import json
 from contextlib import contextmanager
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from conftest import sembrar_usuario_activo
@@ -676,9 +677,10 @@ def test_ingresos_lista_una_fila_por_suscripcion_de_pago(client, db):
     assert d["resumen"]["mrr"] == round(9.99 + 4.99, 2)
     assert d["resumen"]["suscripciones"] == 2
     filas_por_email = {f["email"]: f for f in d["filas"]}
-    assert filas_por_email["a@x.com"]["estado"] == "active"
+    assert filas_por_email["a@x.com"]["estado_cliente"] == "activo"
+    assert filas_por_email["a@x.com"]["estado_suscripcion"] == "active"
     assert filas_por_email["a@x.com"]["precio"] == 9.99
-    assert filas_por_email["b@x.com"]["estado"] == "past_due"
+    assert filas_por_email["b@x.com"]["estado_suscripcion"] == "past_due"
     assert all(f["oposicion"] == "AGE" for f in d["filas"])
 
 
@@ -689,6 +691,62 @@ def test_ingresos_filtra_por_busqueda_y_plan(client, db):
         d = client.get("/admin/api/ingresos?plan=basico", headers=_AUTH).get_json()
     assert d["total"] == 1
     assert d["filas"][0]["email"] == "basico@x.com"
+
+
+def test_ingresos_detecta_cancelando_baja_y_prueba(client, db):
+    # "activo" (u1) ya lo cubre el test de arriba. Aquí los otros 3 estados
+    # de cliente: cancelando (de pago con baja programada), baja (ya de
+    # vuelta a gratis tras haber pagado) y prueba (dentro de los 7 días
+    # gratis, sin haber pagado nunca).
+    db.sembrar(("usuarios", "u_cancelando"), {
+        "email": "cancelando@x.com",
+        "suscripciones": {"AGE": {"plan": "premium", "cancelar_al_final_periodo": True, "current_period_end": "2026-09-01T00:00:00"}},
+    })
+    db.sembrar(("usuarios", "u_baja"), {
+        "email": "baja@x.com",
+        "suscripciones": {"AGE": {"plan": "gratis", "subscription_status": "canceled", "stripe_subscription_id": "sub_1"}},
+    })
+    en_el_futuro = (datetime.utcnow() + timedelta(days=3)).isoformat()
+    db.sembrar(("usuarios", "u_prueba"), {
+        "email": "prueba@x.com",
+        "suscripciones": {"AGE": {"plan": "gratis", "prueba_fin": en_el_futuro}},
+    })
+    db.sembrar(("usuarios", "u_sin_nada"), {"email": "nunca@x.com", "suscripciones": {"AGE": {"plan": "gratis"}}})
+
+    with _como():
+        d = client.get("/admin/api/ingresos", headers=_AUTH).get_json()
+    por_email = {f["email"]: f for f in d["filas"]}
+    assert "nunca@x.com" not in por_email  # nunca pagó ni está en prueba -- no aporta nada, se omite
+    assert por_email["cancelando@x.com"]["estado_cliente"] == "cancelando"
+    assert por_email["cancelando@x.com"]["precio"] == 9.99  # sigue pagando hasta que venza
+    assert por_email["baja@x.com"]["estado_cliente"] == "baja"
+    assert por_email["baja@x.com"]["precio"] == 0
+    assert por_email["prueba@x.com"]["estado_cliente"] == "prueba"
+    assert por_email["prueba@x.com"]["plan"] == "premium"  # la prueba da acceso Premium
+    assert por_email["prueba@x.com"]["precio"] == 0
+    # El resumen desglosa por estado y el MRR/ARPU solo cuentan a quien paga de verdad.
+    assert d["resumen"]["por_estado"] == {"activo": 0, "cancelando": 1, "baja": 1, "prueba": 1}
+    assert d["resumen"]["mrr"] == 9.99
+    assert d["resumen"]["suscripciones"] == 1
+    assert d["resumen"]["arpu"] == 9.99
+
+
+def test_ingresos_filtra_por_estado(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "activo@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})
+    db.sembrar(("usuarios", "u2"), {
+        "email": "cancelando@x.com",
+        "suscripciones": {"AGE": {"plan": "basico", "cancelar_al_final_periodo": True}},
+    })
+    with _como():
+        d = client.get("/admin/api/ingresos?estado=cancelando", headers=_AUTH).get_json()
+    assert d["total"] == 1
+    assert d["filas"][0]["email"] == "cancelando@x.com"
+
+
+def test_ingresos_rechaza_estado_no_valido(client, db):
+    with _como():
+        resp = client.get("/admin/api/ingresos?estado=inventado", headers=_AUTH)
+    assert resp.status_code == 400
 
 
 def test_export_ingresos_csv(client, db):
@@ -1095,6 +1153,44 @@ def test_bajas_sin_ninguna_no_falla(client, db):
         d = client.get("/admin/api/bajas", headers=_AUTH).get_json()
     assert d["total"] == 0
     assert d["comentarios_recientes"] == []
+
+
+def test_bajas_incluye_recientes_con_usuario_solo_si_hay_permiso_usuarios(client, db):
+    # "recientes" (con uid/email, para poder hacer seguimiento) solo se
+    # calcula si quien pide la lista tiene permiso 'usuarios' -- con solo
+    # 'reportes' se sigue viendo el agregado anónimo de siempre, sin la
+    # lista nominal.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com", "nombre": "Ana",
+        "suscripciones": {"AGE": {"plan": "premium", "cancelar_al_final_periodo": True, "current_period_end": "2026-09-01T00:00:00"}},
+    })
+    db.sembrar(("usuarios", "u1", "bajas_motivos", "b1"), {
+        "motivo": "precio", "comentario": "Muy caro", "oposicion": "AGE", "fecha": "2026-01-01T00:00:00",
+    })
+    with _como(admin=False, uid="mod1", permisos=["reportes"]):
+        sin_permiso = client.get("/admin/api/bajas", headers=_AUTH).get_json()
+    assert "recientes" not in sin_permiso
+
+    with _como():
+        con_permiso = client.get("/admin/api/bajas", headers=_AUTH).get_json()
+    assert len(con_permiso["recientes"]) == 1
+    fila = con_permiso["recientes"][0]
+    assert fila["uid"] == "u1"
+    assert fila["email"] == "u1@x.com"
+    assert fila["motivo"] == "precio"
+    # Sigue en premium (cancelar_al_final_periodo=True, no "gratis" todavía)
+    # -- la baja está programada pero aún no es efectiva.
+    assert fila["efectiva"] is False
+
+
+def test_bajas_recientes_marca_efectiva_cuando_ya_volvio_a_gratis(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {"AGE": {"plan": "gratis"}}})
+    db.sembrar(("usuarios", "u1", "bajas_motivos", "b1"), {
+        "motivo": "precio", "comentario": "", "oposicion": "AGE", "fecha": "2026-01-01T00:00:00",
+    })
+    with _como():
+        d = client.get("/admin/api/bajas", headers=_AUTH).get_json()
+    assert d["recientes"][0]["efectiva"] is True
 
 
 # ---------- Vigilancia BOE: cambios de temario propuestos ----------
