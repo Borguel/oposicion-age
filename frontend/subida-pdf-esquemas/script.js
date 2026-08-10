@@ -705,9 +705,13 @@ async function obtenerAuthHeaders() {
       return bloques.length;
     }
 
-    function mostrarEsquemaResultado(textoEsquema, tipoContenidoDetectado) {
+    function mostrarEsquemaResultado(textoEsquema, tipoContenidoDetectado, fechaGeneracion) {
       esquema = textoEsquema || "No se pudo generar el esquema.";
-      const fecha = new Date();
+      // fechaGeneracion (10/08/2026, ver el comentario largo en
+      // subida-pdf-resumen/script.js -- mismo bug: usar new Date() aquí
+      // hacía que CUALQUIER esquema, por viejo que fuera, mostrara siempre
+      // "generado justo ahora").
+      const fecha = fechaGeneracion ? new Date(fechaGeneracion) : new Date();
       fechaEsquema.textContent = formatearFecha(fecha);
       esquemaTitulo.textContent = `Esquema de ${nombreArchivo}`;
       // Aviso "detectado como texto legal" (05/08/2026): solo se pinta con
@@ -776,7 +780,7 @@ async function obtenerAuthHeaders() {
           const datos = await res.json();
           if (!res.ok) throw new Error(datos.error || 'No se pudo cargar el esquema.');
           nombreArchivo = datos.nombre_archivo || nombreArchivo;
-          mostrarEsquemaResultado(datos.esquema);
+          mostrarEsquemaResultado(datos.esquema, undefined, datos.fecha);
         } catch (err) {
           mostrarError(err.message);
         }

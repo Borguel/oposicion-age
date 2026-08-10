@@ -476,9 +476,19 @@ async function obtenerAuthHeaders() {
     // ya parseados), no en caracteres, para no cortar nunca a mitad de uno.
     const BLOQUES_PREVIEW_RESUMEN = 14;
 
-    function mostrarResumenResultado(textoResumen, tipoContenidoDetectado) {
+    function mostrarResumenResultado(textoResumen, tipoContenidoDetectado, fechaGeneracion) {
       resumen = textoResumen || "No se pudo generar el resumen.";
-      const fecha = new Date();
+      // fechaGeneracion (10/08/2026, bug real): esta función SOLO se llama
+      // ya al ver un resumen YA GUARDADO (?ver=resumen) -- desde que
+      // resumir-pdf redirige antes de terminar, nunca se llama tras una
+      // generación en vivo en esta misma pestaña. Usar new Date() aquí
+      // hacía que CUALQUIER resumen, por viejo que fuera, mostrara siempre
+      // "generado justo ahora", así que no había forma de distinguir a
+      // simple vista un resumen recién regenerado de uno guardado de una
+      // sesión anterior. Ahora se usa la fecha real que devuelve el
+      // backend (datos.fecha, ver documento_resumen en blueprints/pdf_ia),
+      // con new Date() solo como último recurso si por lo que sea no viene.
+      const fecha = fechaGeneracion ? new Date(fechaGeneracion) : new Date();
       fechaResumen.textContent = formatearFecha(fecha);
       resumenTitulo.textContent = `Resumen de ${nombreArchivo}`;
       // Aviso "detectado como texto legal" (05/08/2026): solo se pinta
@@ -550,7 +560,7 @@ async function obtenerAuthHeaders() {
           const datos = await res.json();
           if (!res.ok) throw new Error(datos.error || 'No se pudo cargar el resumen.');
           nombreArchivo = datos.nombre_archivo || nombreArchivo;
-          mostrarResumenResultado(datos.resumen);
+          mostrarResumenResultado(datos.resumen, undefined, datos.fecha);
         } catch (err) {
           mostrarError(err.message);
         }
