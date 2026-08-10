@@ -162,7 +162,7 @@ function mostrarToastDeshacer({ mensaje, alDeshacer, alConfirmar, duracionMs = 6
 
 function filaContenido({
   label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar, urlContinuar,
-  textoGenerarDeNuevo = "Generar más",
+  textoGenerarDeNuevo = "Generar más", generando = false,
 }) {
   const acciones = [];
   // "Continuar" (test autoguardado sin terminar, ver
@@ -185,7 +185,7 @@ function filaContenido({
       acciones.push(`<a class="documento-card-btn" href="${urlAleatorias}">10 aleatorias</a>`);
     }
     acciones.push(`<a class="documento-card-btn" href="${urlGenerar}">${textoGenerarDeNuevo}</a>`);
-  } else {
+  } else if (!generando) {
     acciones.push(`<a class="documento-card-btn orange" href="${urlGenerar}">${textoGenerar}</a>`);
   }
   const etiquetaCantidad = existe && cantidad ? ` (${cantidad})` : "";
@@ -195,11 +195,20 @@ function filaContenido({
   // Ahora cada tipo lleva un estado explícito (Generado/En progreso/Aún no
   // generado) junto al icono, igual que ya hacía el banco adaptativo con
   // sus propios estados más abajo.
+  // "generando" (10/08/2026, a petición del usuario): resumen/esquema se
+  // generan en el servidor sin bloquear la pestaña (ver mostrarRedireccion
+  // AMisDocumentos en subida-pdf-resumen/subida-pdf-esquemas), así que al
+  // llegar aquí recién redirigido no había ninguna señal de que se
+  // estuviera trabajando en ello -- solo "Aún no generado", indistinguible
+  // de no haberlo pedido nunca. El estado lo arma destacarDocumentoDesdeUrl
+  // a partir de ?generando=resumen|esquema y lo sondea sondearBancosEnGeneracion.
   const estadoHtml = urlContinuar
     ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Test en progreso</span>`
-    : existe
-      ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-generado">${icono("check", 12)} Generado</span>`
-      : `<span class="documento-card-tipo-estado">Aún no generado</span>`;
+    : generando
+      ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Generando…</span>`
+      : existe
+        ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-generado">${icono("check", 12)} Generado</span>`
+        : `<span class="documento-card-tipo-estado">Aún no generado</span>`;
   return `
     <div class="documento-card-tipo">
       <div class="documento-card-tipo-cabecera">
@@ -460,14 +469,16 @@ function tarjetaDocumento(doc, modoCarpeta) {
       // solo existe UN resumen/esquema por documento -- volver a pulsar
       // sustituye el que ya había, no añade otro. "Generar más" daba a
       // entender que se acumulaba algo, cuando en realidad se sobrescribe.
-      textoGenerarDeNuevo: "Regenerar"
+      textoGenerarDeNuevo: "Regenerar",
+      generando: esperandoGeneracionDe(doc, "resumen")
     }),
     filaContenido({
       label: "Esquema", iconoHtml: icono("esquema", 18), existe: doc.tiene_esquema,
       urlVer: `/subida-pdf-esquemas/?documento_id=${doc.id}&ver=esquema`,
       urlGenerar: `/subida-pdf-esquemas/?documento_id=${doc.id}`,
       textoGenerar: "Generar",
-      textoGenerarDeNuevo: "Regenerar"
+      textoGenerarDeNuevo: "Regenerar",
+      generando: esperandoGeneracionDe(doc, "esquema")
     }),
     filaContenido({
       label: "Tarjetas", iconoHtml: icono("tarjeta", 18), existe: doc.num_tarjetas > 0, cantidad: doc.num_tarjetas,
@@ -1090,6 +1101,15 @@ let documentoEsperandoContenido = null;
 let tipoContenidoEsperando = null; // "resumen" | "esquema"
 let intentosSondeoContenido = 0;
 const MAX_INTENTOS_SONDEO_CONTENIDO = 20; // ~80s a 4s cada uno, margen amplio
+
+// Usado por tarjetaDocumento/filaContenido (10/08/2026) para pintar el
+// estado "Generando…" del tipo concreto que se está sondeando -- antes
+// este sondeo solo servía para saber cuándo parar y resaltar la tarjeta,
+// sin ningún reflejo visual mientras tanto, así que el usuario no tenía
+// forma de saber si había pasado algo al pulsar "Generar" y volver aquí.
+function esperandoGeneracionDe(doc, tipo) {
+  return intentosSondeoContenido > 0 && documentoEsperandoContenido === doc.id && tipoContenidoEsperando === tipo;
+}
 
 function hayBancosGenerando() {
   return documentos.some((d) => d.banco_preguntas_estado === "generando" || d.banco_tarjetas_estado === "generando");
