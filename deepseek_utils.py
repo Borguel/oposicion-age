@@ -727,7 +727,7 @@ def _trocear_recursivo(texto, tamano, separadores):
     return resultado
 
 
-def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096, instrucciones_fusion_extra=None, on_usage=None, on_progreso=None):
+def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento="Documento", max_tokens=4096, instrucciones_fusion_extra=None, on_usage=None, on_progreso=None, tamano_chunk=TAMANO_CHUNK_CARACTERES):
     """Para documentos largos, en vez de meter todo el texto de golpe en un
     único prompt (peor calidad: el modelo tiene que abarcar decenas de
     miles de palabras a la vez, y es más fácil que se pierda o mezcle
@@ -761,8 +761,19 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
     cada fragmento del MAP termina, y una última vez al empezar la fusión --
     pensado para retransmitir progreso real por SSE (ver /resumir-documento,
     /generar-esquema-desde-pdf en blueprints/pdf_ia.py) en vez de los
-    mensajes rotativos cosméticos que tenían antes."""
-    fragmentos = _trocear_en_parrafos(texto)
+    mensajes rotativos cosméticos que tenían antes.
+
+    tamano_chunk (10/08/2026, bug real): tamaño de fragmento a usar en vez
+    del TAMANO_CHUNK_CARACTERES por defecto -- para el mapa de artículos de
+    texto legal, que exige cubrir CADA artículo sin omitir ninguno (un
+    listón mucho más exigente que el resumen narrativo), un fragmento de
+    15.000 caracteres puede traer varias decenas de artículos, y ni
+    siquiera con más max_tokens el modelo los cubría todos de forma fiable
+    (visto en producción: fallaba una y otra vez con el mismo documento,
+    incluso tras reintentar). Fragmentos más pequeños bajan de verdad la
+    exigencia por llamada, en vez de solo darle más presupuesto de salida
+    para la misma tarea."""
+    fragmentos = _trocear_en_parrafos(texto, tamano=tamano_chunk)
     if len(fragmentos) == 1:
         resultado = generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens, on_usage=on_usage)
         if on_progreso:

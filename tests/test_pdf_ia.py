@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 from google.api_core import exceptions as google_exceptions
 
+import deepseek_utils
 from blueprints.pdf_ia import _extraer_json_array, _parece_documento_generado_valido
 from conftest import sembrar_usuario_activo
 
@@ -609,6 +610,21 @@ class TestTipoContenidoEnResumenYEsquema:
             parche.stop()
         assert mock_gen.call_args.kwargs["max_tokens"] == 8192
 
+    def test_resumir_pdf_documento_legal_usa_fragmentos_mas_pequenos(self, client, db, documento_legal_sembrado):
+        # Más margen de tokens por sí solo no bastó en producción -- un
+        # fragmento más pequeño baja de verdad cuántos artículos hay que
+        # cubrir en una sola llamada, en vez de solo dar más presupuesto de
+        # salida para la misma tarea.
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Mapa") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                client.post("/resumir-pdf", data={"documento_id": documento_legal_sembrado},
+                            headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert mock_gen.call_args.kwargs["tamano_chunk"] == 8000
+
     def test_resumir_pdf_documento_general_usa_max_tokens_normal(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
@@ -619,6 +635,7 @@ class TestTipoContenidoEnResumenYEsquema:
         finally:
             parche.stop()
         assert mock_gen.call_args.kwargs["max_tokens"] == 4096
+        assert mock_gen.call_args.kwargs["tamano_chunk"] == deepseek_utils.TAMANO_CHUNK_CARACTERES
 
     def test_resumir_pdf_override_manual_fuerza_legal_y_lo_persiste(self, client, db, documento_sembrado):
         # documento_sembrado es narrativo (la auto-detección daría
@@ -681,6 +698,17 @@ class TestTipoContenidoEnResumenYEsquema:
         finally:
             parche.stop()
         assert mock_gen.call_args.kwargs["max_tokens"] == 8192
+
+    def test_generar_esquema_desde_pdf_documento_legal_usa_fragmentos_mas_pequenos(self, client, db, documento_legal_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.comun.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_legal_sembrado},
+                            headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert mock_gen.call_args.kwargs["tamano_chunk"] == 8000
 
     def test_generar_esquema_desde_pdf_documento_general_no_refuerza_la_fusion(self, client, db, documento_sembrado):
         parche = _con_sesion(client)

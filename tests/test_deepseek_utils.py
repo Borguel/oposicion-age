@@ -681,6 +681,24 @@ class TestGenerarDocumentoLargoPorPartes:
         assert resultado == "resumen completo"
         assert mock_gen.call_count == 1
 
+    def test_tamano_chunk_personalizado_trocea_mas_fino(self):
+        # 10/08/2026, bug real: para texto legal (mapa de artículos, que
+        # exige cubrir cada artículo sin omitir ninguno) el tamaño de trozo
+        # por defecto podía dejar demasiados artículos por fragmento -- un
+        # tamano_chunk más pequeño debe respetarse y producir más
+        # fragmentos, cada uno con menos que cubrir.
+        parrafo = "a" * 5000
+        texto_largo = "\n\n".join([parrafo] * 3)  # 15.000 caracteres + separadores
+        respuestas = ["parcial. " * 100] * 3 + ["fusión. " * 300]
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes(
+                "system", texto_largo, tamano_chunk=5000,
+            )
+        assert resultado == respuestas[-1]
+        # 3 fragmentos (uno por párrafo de 5000) + 1 fusión = 4 llamadas --
+        # con el tamaño por defecto (15000) habría cabido en 1 sola llamada.
+        assert mock_gen.call_count == 4
+
     def test_documento_largo_trocea_resume_por_partes_y_funde(self):
         # Dos párrafos de ~10.000 caracteres cada uno: por separado caben en
         # un fragmento (tamaño 15.000), pero juntos no, así que se trocean en

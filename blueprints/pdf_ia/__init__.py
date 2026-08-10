@@ -37,6 +37,7 @@ from test_generator import (
     generar_preguntas_ia_en_lotes, generar_banco_preguntas_adaptativo, TOPE_BANCO_PREGUNTAS,
 )
 from coste_ia import AcumuladorTokens
+from deepseek_utils import TAMANO_CHUNK_CARACTERES
 from tarjetas_generator import (
     generar_tarjetas_verificadas, generar_banco_tarjetas_adaptativo, TOPE_BANCO_TARJETAS,
 )
@@ -155,13 +156,17 @@ def resumir_pdf():
             try:
                 resumen = _generar_documento_validado(
                     system_prompt, text, etiqueta_documento="Documento para resumir",
-                    # max_tokens más alto en modo legal (10/08/2026, bug real):
-                    # el prompt de "mapa de artículos" exige cubrir CADA
-                    # artículo sin omitir ninguno -- un listón mucho más
-                    # exigente que el resumen narrativo general -- así que un
-                    # fragmento denso en artículos necesita más margen por
-                    # llamada para poder cumplirlo sin quedarse corto.
+                    # max_tokens más alto y fragmentos más pequeños en modo
+                    # legal (10/08/2026, bug real): el prompt de "mapa de
+                    # artículos" exige cubrir CADA artículo sin omitir
+                    # ninguno -- un listón mucho más exigente que el resumen
+                    # narrativo general. Más margen de salida por sí solo no
+                    # bastó (visto en producción, fallaba una y otra vez con
+                    # el mismo documento incluso tras reintentar) -- un
+                    # fragmento más pequeño baja de verdad cuántos artículos
+                    # hay que cubrir en una sola llamada.
                     max_tokens=8192 if es_legal else 4096,
+                    tamano_chunk=8000 if es_legal else TAMANO_CHUNK_CARACTERES,
                     on_usage=acumulador_tokens.add, on_progreso=on_progreso,
                 )
                 if resumen:
@@ -346,11 +351,13 @@ def generar_esquema_desde_pdf():
                     text,
                     etiqueta_documento="Documento para crear esquema",
                     instrucciones_fusion_extra=instrucciones_fusion_esquema,
-                    # max_tokens más alto en modo legal -- ver el comentario
-                    # largo en resumir_pdf, mismo motivo (el esquema legal
-                    # también exige que cada artículo mantenga su propio
-                    # epígrafe, sin fusionar dos distintos).
+                    # max_tokens más alto y fragmentos más pequeños en modo
+                    # legal -- ver el comentario largo en resumir_pdf, mismo
+                    # motivo (el esquema legal también exige que cada
+                    # artículo mantenga su propio epígrafe, sin fusionar dos
+                    # distintos).
                     max_tokens=8192 if es_legal else 4096,
+                    tamano_chunk=8000 if es_legal else TAMANO_CHUNK_CARACTERES,
                     on_usage=acumulador_tokens.add,
                     on_progreso=on_progreso,
                 )
