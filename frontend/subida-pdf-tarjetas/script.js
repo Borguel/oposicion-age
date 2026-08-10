@@ -370,12 +370,6 @@ async function obtenerAuthHeaders() {
       detalle.classList.remove('hidden');
       document.getElementById('progress-container-numerico').classList.add('hidden');
       document.getElementById('barra-indeterminada-redireccion').classList.remove('hidden');
-      // El enlace "Ir a Mis documentos ahora" NO se muestra aquí todavía --
-      // ver el comentario largo en subida-pdf-resumen/script.js (mismo bug:
-      // es un <a href> normal, así que pulsarlo antes de que el POST llegue
-      // al servidor cancela la petición en marcha en vez de solo saltarse
-      // la espera). Se revela más abajo, en iniciarGeneracionBancoTarjetas,
-      // una vez confirmado que el servidor ya ha arrancado.
       document.getElementById('sugerencia-mientras-tanto').classList.remove('hidden');
     }
 
@@ -404,9 +398,6 @@ async function obtenerAuthHeaders() {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || `Error del servidor: ${res.status}`);
       }
-      // A partir de aquí el servidor ya ha aceptado la petición y ha
-      // empezado a generar -- ahora sí es seguro ofrecer el enlace manual.
-      document.getElementById('enlace-ir-a-mis-documentos').classList.remove('hidden');
       if (!res.body) return null;
 
       const lector = res.body.getReader();
