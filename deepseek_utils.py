@@ -645,6 +645,21 @@ TAMANO_CHUNK_CARACTERES = 15000
 # que se quedó en un solo apartado, <5% de la entrada).
 _FRACCION_MINIMA_FUSION = 0.4
 
+# Igual que _FRACCION_MINIMA_FUSION pero para un fragmento INDIVIDUAL del
+# MAP frente a SU PROPIO texto de entrada (10/08/2026, bug real: con un
+# documento de 4 fragmentos de ~15.000 caracteres cada uno, el colapso no
+# siempre pasaba en la fusión -- a veces el propio fragmento (p. ej. el
+# último, el que contenía las disposiciones adicionales del final de la
+# ley) ya venía degenerado del MAP, cubriendo solo su propio último
+# apartado en vez de todo su contenido. La comprobación de la fusión no lo
+# detectaba porque compara la fusión contra la SUMA de los parciales
+# recibidos -- si un parcial YA era pequeño, la fusión podía "conservarlo
+# fielmente" sin perder nada MÁS y aun así pasar esa comprobación, aunque
+# le faltara casi todo el fragmento original. Más bajo que el de fusión
+# porque un mapa de artículos SÍ condensa mucho un fragmento de entrada
+# (es su función), no solo lo reorganiza como hace la fusión.
+_FRACCION_MINIMA_MAP = 0.15
+
 
 # Separadores que _trocear_en_parrafos prueba en cascada, del más "natural"
 # (mejor punto de corte) al más forzado.
@@ -779,19 +794,32 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
             if on_progreso:
                 on_progreso({"completadas": completadas, "total": len(fragmentos), "fase": "generando"})
 
-    # Reintento de fragmentos fallidos (10/08/2026, bug real reportado por un
-    # usuario: un resumen de 14 páginas se guardó con un solo párrafo, el de
-    # la última "Disposición adicional"). Antes, un fallo transitorio de red
-    # hacia DeepSeek (ver el comentario largo de _REINTENTOS_TRANSITORIOS más
-    # arriba -- ocurre de verdad, no es hipotético) en algún fragmento del
-    # MAP bastaba para que ese trozo del documento desapareciera del
-    # resultado sin ningún aviso -- y si solo sobrevivía uno, ANTES se
-    # devolvía tal cual como si fuera el documento completo (ver más abajo),
-    # pasando la validación de formato porque sí traía un encabezado "# "
-    # válido. Un reintento (mismo fragmento, misma llamada) antes de
-    # rendirse del todo con ese trozo reduce la probabilidad de que un
-    # simple parpadeo de red se lleve por delante contenido real.
-    indices_fallidos = [i for i in range(len(fragmentos)) if not parciales_por_indice.get(i)]
+    def _fragmento_sospechoso(indice):
+        """True si el parcial de ese índice es None, o si es sospechosamente
+        corto respecto al fragmento de ENTRADA que se le pidió procesar --
+        ver _FRACCION_MINIMA_MAP. Cubre tanto "la llamada falló" como "la
+        llamada 'tuvo éxito' pero el modelo se rindió y solo cubrió una
+        fracción mínima de su propio fragmento", que es indistinguible de
+        un éxito real si solo se mira si hay o no resultado."""
+        parcial = parciales_por_indice.get(indice)
+        if not parcial:
+            return True
+        return len(parcial) < len(fragmentos[indice]) * _FRACCION_MINIMA_MAP
+
+    # Reintento de fragmentos fallidos o sospechosos (10/08/2026, bug real
+    # reportado por un usuario: un resumen de 14 páginas se guardó con un
+    # solo párrafo, el de la última "Disposición adicional"). Antes, un
+    # fallo transitorio de red hacia DeepSeek (ver el comentario largo de
+    # _REINTENTOS_TRANSITORIOS más arriba -- ocurre de verdad, no es
+    # hipotético) en algún fragmento del MAP bastaba para que ese trozo del
+    # documento desapareciera del resultado sin ningún aviso -- y si solo
+    # sobrevivía uno, ANTES se devolvía tal cual como si fuera el documento
+    # completo (ver más abajo), pasando la validación de formato porque sí
+    # traía un encabezado "# " válido. Un reintento (mismo fragmento, misma
+    # llamada) antes de rendirse del todo con ese trozo reduce la
+    # probabilidad de que un simple parpadeo de red -- o que el modelo se
+    # rinda con un fragmento concreto -- se lleve por delante contenido real.
+    indices_fallidos = [i for i in range(len(fragmentos)) if _fragmento_sospechoso(i)]
     if indices_fallidos:
         with ThreadPoolExecutor(max_workers=min(4, len(indices_fallidos))) as executor:
             futuro_a_indice = {
@@ -801,16 +829,17 @@ def generar_documento_largo_por_partes(system_prompt, texto, etiqueta_documento=
                 indice = futuro_a_indice[futuro]
                 parciales_por_indice[indice] = futuro.result()
 
-    # Si, incluso tras reintentar, sigue faltando algún fragmento, NO se
-    # devuelve un resultado parcial: mejor ceder (que el llamante convierte
-    # en un error normal y devuelve la cuota consumida) que un "resumen" o
-    # "esquema" que se ve perfectamente válido -- pasa la comprobación de
-    # formato porque sí trae un encabezado "# " -- pero al que en realidad
-    # le falta la mayor parte del documento sin que nada lo indique.
-    if any(not parciales_por_indice.get(i) for i in range(len(fragmentos))):
-        n_fallidos = sum(1 for i in range(len(fragmentos)) if not parciales_por_indice.get(i))
+    # Si, incluso tras reintentar, sigue faltando o siendo sospechoso algún
+    # fragmento, NO se devuelve un resultado parcial: mejor ceder (que el
+    # llamante convierte en un error normal y devuelve la cuota consumida)
+    # que un "resumen" o "esquema" que se ve perfectamente válido -- pasa
+    # la comprobación de formato porque sí trae un encabezado "# " -- pero
+    # al que en realidad le falta la mayor parte del documento sin que nada
+    # lo indique.
+    if any(_fragmento_sospechoso(i) for i in range(len(fragmentos))):
+        n_fallidos = sum(1 for i in range(len(fragmentos)) if _fragmento_sospechoso(i))
         logger.warning(
-            "generar_documento_largo_por_partes: %d de %d fragmentos no se pudieron generar "
+            "generar_documento_largo_por_partes: %d de %d fragmentos siguen sin generarse bien "
             "ni siquiera tras reintentar -- se abandona en vez de devolver un documento incompleto.",
             n_fallidos, len(fragmentos),
         )

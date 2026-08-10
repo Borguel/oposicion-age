@@ -788,23 +788,22 @@ class TestCosteIaEnHerramientasPdf:
         db.sembrar(("usuarios", "u1", "documentos", "d1"), {"texto": texto, "nombre_archivo": "doc.pdf"})
 
         contador_llamadas = itertools.count()
+        # Con encabezado "# " (05/08/2026, ver _parece_documento_generado_valido)
+        # y con un tamaño realista frente al fragmento de entrada de 8000
+        # caracteres (10/08/2026, ver la comprobación de colapso del MAP en
+        # generar_documento_largo_por_partes): un parcial demasiado corto se
+        # vería como "colapsado" y se reintentaría, duplicando el coste que
+        # este test mide.
+        parcial = "# Resumen parcial.\n" + ("Contenido real del fragmento. " * 60)
+        fusion = "# Resumen fusionado final.\n" + ("Todo el contenido de los tres parciales combinados. " * 60)
 
         def fake_post(url, headers=None, json=None, timeout=None, stream=False):
-            # Con encabezado "# " (05/08/2026, ver _parece_documento_generado_valido):
-            # sin él, la respuesta se trataría como inválida y se reintentaría
-            # una vez, duplicando el coste que este test mide. La 4ª llamada
-            # (la fusión de los 3 parciales) devuelve un texto más largo
-            # (10/08/2026, ver la comprobación de colapso de la fusión en
-            # generar_documento_largo_por_partes): con un texto tan corto
-            # como el de cada parcial, la fusión se vería como "colapsada"
-            # frente a los 3 parciales que se le pidió fundir, y se
-            # reintentaría, duplicando el coste que este test mide.
+            # La 4ª llamada (la fusión de los 3 parciales) también se deja
+            # larga frente a la suma de los 3 parciales -- si no, se vería
+            # como "colapsada" y se reintentaría, duplicando el coste.
             if next(contador_llamadas) >= 3:
-                return _FakeRespuestaDeepSeek(
-                    "# Resumen fusionado final con todo el contenido de los tres parciales combinados.",
-                    {"prompt_tokens": 100, "completion_tokens": 50},
-                )
-            return _FakeRespuestaDeepSeek("# Resumen parcial.", {"prompt_tokens": 100, "completion_tokens": 50})
+                return _FakeRespuestaDeepSeek(fusion, {"prompt_tokens": 100, "completion_tokens": 50})
+            return _FakeRespuestaDeepSeek(parcial, {"prompt_tokens": 100, "completion_tokens": 50})
 
         parche = _con_sesion(client)
         try:
