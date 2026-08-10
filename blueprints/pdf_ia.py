@@ -17,7 +17,7 @@ from pypdf import PdfReader
 
 from firebase_setup import db
 from auth_utils import requiere_plan, obtener_oposicion_solicitada
-from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso, devolver_uso
+from limites_uso import max_paginas_para_plan, verificar_limite_uso, devolver_uso, intentar_consumir_uso, intentar_consumir_varios
 from rate_limiter import limiter
 from documentos_pdf import (
     obtener_o_crear_documento, obtener_documento, listar_documentos, actualizar_carpeta,
@@ -291,10 +291,14 @@ def resumir_pdf():
 
     uid = g.uid
     plan_actual = g.plan_actual
-    # Uso cobrado por adelantado (no al llegar "fin"): el hilo de fondo sigue
+    # Comprobación y consumo del cupo en un único paso atómico (evita que
+    # dos peticiones concurrentes se cuelen ambas por debajo del límite),
+    # cobrado por adelantado (no al llegar "fin"): el hilo de fondo sigue
     # generando y gastando en DeepSeek aunque el cliente corte la conexión
     # SSE (mismo motivo que /generar-test-desde-pdf).
-    registrar_uso(db, uid, "pdf_ia", plan_actual)
+    permitido, mensaje_error, _usados, _limite = intentar_consumir_uso(db, uid, plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         eventos = queue.Queue()
@@ -475,7 +479,12 @@ def generar_esquema_desde_pdf():
 
     uid = g.uid
     plan_actual = g.plan_actual
-    registrar_uso(db, uid, "pdf_ia", plan_actual)
+    # Comprobación y consumo atómicos (ver el comentario largo en
+    # /resumir-pdf): cierra el hueco de concurrencia entre comprobar el
+    # cupo y sumarle uno.
+    permitido, mensaje_error, _usados, _limite = intentar_consumir_uso(db, uid, plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         eventos = queue.Queue()
@@ -615,22 +624,28 @@ def generar_test_desde_pdf():
     uid = g.uid
     plan_actual = g.plan_actual
 
-    # Uso cobrado por adelantado (no al llegar "fin"): el hilo de fondo sigue
-    # generando y gastando en DeepSeek aunque el cliente corte la conexión SSE,
-    # así que cobrar al final permitía saltarse la cuota abortando la petición
+    # Comprobación y consumo del cupo en un único paso atómico (evita que
+    # dos peticiones concurrentes se cuelen ambas por debajo del límite) y
+    # por adelantado (no al llegar "fin"): el hilo de fondo sigue generando
+    # y gastando en DeepSeek aunque el cliente corte la conexión SSE, así
+    # que cobrar al final permitía saltarse la cuota abortando la petición
     # en bucle. Si la generación falla de verdad (0 preguntas), se devuelve.
     #
-    # Sentry PYTHON-FLASK-1: la transacción de Firestore que incrementa el
-    # contador puede expirar (InvalidArgument) por un problema transitorio
-    # de Firestore ajeno a esta petición -- no debe convertirse en un 500
-    # para el usuario por el fallo de un simple contador de cuota.
+    # Sentry PYTHON-FLASK-1: la transacción de Firestore puede expirar
+    # (InvalidArgument) por un problema transitorio de Firestore ajeno a
+    # esta petición -- no debe convertirse en un 500 para el usuario por el
+    # fallo de un simple contador de cuota, así que en ese caso se deja
+    # pasar sin comprobar (igual que antes, cuando solo fallaba el registro).
     try:
-        registrar_uso(db, uid, "pdf_ia", plan_actual)
+        permitido, mensaje_error, _usados, _limite = intentar_consumir_uso(db, uid, plan_actual, "pdf_ia")
     except google_exceptions.InvalidArgument:
         logger.warning(
-            "No se pudo registrar el uso de pdf_ia (transacción de Firestore expirada) para uid=%s en %s",
+            "No se pudo comprobar/registrar el uso de pdf_ia (transacción de Firestore expirada) para uid=%s en %s",
             uid, datetime.utcnow().isoformat(),
         )
+        permitido = True
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         eventos = queue.Queue()
@@ -749,12 +764,15 @@ def generar_tarjetas_desde_pdf():
 
     uid = g.uid
     plan_actual = g.plan_actual
-    # Se cobra por adelantado (mismo motivo que /generar-test-desde-pdf: el
-    # hilo de fondo sigue gastando en DeepSeek aunque el cliente corte la
-    # conexión SSE, así que cobrar solo al final permitiría saltarse la
-    # cuota abortando la petición en bucle) y se devuelve si no se genera
-    # ninguna tarjeta válida.
-    registrar_uso(db, uid, "pdf_ia", plan_actual)
+    # Comprobación y consumo atómicos (ver el comentario largo en
+    # /resumir-pdf), cobrados por adelantado (mismo motivo que
+    # /generar-test-desde-pdf: el hilo de fondo sigue gastando en DeepSeek
+    # aunque el cliente corte la conexión SSE, así que cobrar solo al final
+    # permitiría saltarse la cuota abortando la petición en bucle) y se
+    # devuelve si no se genera ninguna tarjeta válida.
+    permitido, mensaje_error, _usados, _limite = intentar_consumir_uso(db, uid, plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         eventos = queue.Queue()
@@ -888,8 +906,16 @@ def generar_banco_preguntas_desde_pdf():
 
     uid = g.uid
     plan_actual = g.plan_actual
-    for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
-        registrar_uso(db, uid, tipo_cuota, plan_actual)
+    # Los dos cupos (mensual de banco + diario de pdf_ia) se comprueban y
+    # consumen a la vez en una única transacción todo-o-nada (ver
+    # limites_uso.intentar_consumir_varios): evita que dos peticiones
+    # concurrentes se cuelen ambas por debajo del límite, y que uno de los
+    # dos cupos quede cobrado sin el otro.
+    permitido, mensaje_error = intentar_consumir_varios(
+        db, uid, plan_actual, [(tipo_cuota, 1) for tipo_cuota in TIPOS_CUOTA_BANCO_PDF]
+    )
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     iniciar_banco(db, uid, documento_id, "preguntas", TOPE_BANCO_PREGUNTAS, nombre_archivo)
 
     def generar():
@@ -988,8 +1014,13 @@ def generar_banco_tarjetas_desde_pdf():
         text = text[:max_length]
     uid = g.uid
     plan_actual = g.plan_actual
-    for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
-        registrar_uso(db, uid, tipo_cuota, plan_actual)
+    # Los dos cupos se comprueban y consumen a la vez, todo-o-nada -- ver el
+    # comentario largo en generar_banco_preguntas_desde_pdf.
+    permitido, mensaje_error = intentar_consumir_varios(
+        db, uid, plan_actual, [(tipo_cuota, 1) for tipo_cuota in TIPOS_CUOTA_BANCO_PDF]
+    )
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     iniciar_banco(db, uid, documento_id, "tarjetas", TOPE_BANCO_TARJETAS, nombre_archivo)
 
     def generar():
@@ -1166,13 +1197,19 @@ def chat_pdf_mensaje():
     if not texto_pdf:
         return jsonify({"error": "Primero sube un PDF para poder chatear sobre él."}), 400
 
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_pdf")
+    # Comprobación y consumo del cupo en un único paso atómico, ANTES de
+    # llamar a DeepSeek (se devuelve más abajo si la llamada falla): con el
+    # patrón anterior (comprobar y registrar por separado, este último tras
+    # el éxito) dos peticiones concurrentes podían leer el mismo contador
+    # todavía sin actualizar y colarse ambas por debajo del límite.
+    permitido, mensaje_error, _usados, _limite = intentar_consumir_uso(db, g.uid, g.plan_actual, "chat_pdf")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
 
     try:
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
+            devolver_uso(db, g.uid, "chat_pdf", g.plan_actual)
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
         system_prompt = (
             "Eres un asistente que ayuda a un opositor a entender un documento que ha subido. "
@@ -1199,12 +1236,13 @@ def chat_pdf_mensaje():
         }
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
         if response.status_code != 200:
+            devolver_uso(db, g.uid, "chat_pdf", g.plan_actual)
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
-        registrar_uso(db, g.uid, "chat_pdf", g.plan_actual)
         data_resp = response.json()
         respuesta = data_resp['choices'][0]['message']['content']
         return jsonify({"respuesta": respuesta})
     except Exception as e:
+        devolver_uso(db, g.uid, "chat_pdf", g.plan_actual)
         logger.exception("Error en /chat-pdf-mensaje")
         return jsonify({"error": f"Error en el chat: {str(e)}"}), 500
 
@@ -1217,12 +1255,15 @@ def chat_deepseek():
     mensaje = data.get("mensaje")
     if not mensaje:
         return jsonify({"error": "Falta el mensaje"}), 400
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_pdf")
+    # Comprobación y consumo atómicos, ANTES de llamar a DeepSeek -- ver el
+    # comentario largo en /chat-pdf-mensaje.
+    permitido, mensaje_error, _usados, _limite = intentar_consumir_uso(db, g.uid, g.plan_actual, "chat_pdf")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
     try:
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
+            devolver_uso(db, g.uid, "chat_pdf", g.plan_actual)
             return jsonify({"error": "API key de DeepSeek no configurada"}), 500
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         payload = {
@@ -1236,12 +1277,13 @@ def chat_deepseek():
         }
         response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
         if response.status_code != 200:
+            devolver_uso(db, g.uid, "chat_pdf", g.plan_actual)
             return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
-        registrar_uso(db, g.uid, "chat_pdf", g.plan_actual)
         data = response.json()
         respuesta = data['choices'][0]['message']['content']
         return jsonify({"respuesta": respuesta})
     except Exception as e:
+        devolver_uso(db, g.uid, "chat_pdf", g.plan_actual)
         logger.exception("Error en /chat-deepseek")
         return jsonify({"error": f"Error en el servicio de chat: {str(e)}"}), 500
 

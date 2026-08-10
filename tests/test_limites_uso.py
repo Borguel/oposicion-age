@@ -4,7 +4,10 @@ bloqueados sin motivo, o cuotas que no frenan nada y dejan la puerta
 abierta al gasto en la API de IA."""
 from datetime import date
 
-from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso, max_paginas_para_plan
+from limites_uso import (
+    verificar_limite_uso, registrar_uso, devolver_uso, max_paginas_para_plan,
+    intentar_consumir_uso, intentar_consumir_varios,
+)
 
 
 def test_plan_sin_esta_herramienta_queda_bloqueado(db):
@@ -117,6 +120,99 @@ def test_devolver_uso_no_toca_un_contador_de_otro_periodo(db):
 
 def test_max_paginas_por_plan_tiene_valor_por_defecto_para_plan_desconocido():
     assert max_paginas_para_plan("plan-inexistente") == max_paginas_para_plan("basico")
+
+
+def test_intentar_consumir_uso_incrementa_si_hay_hueco(db):
+    permitido, mensaje, usados, limite = intentar_consumir_uso(db, "u1", "premium", "pdf_ia")
+    assert permitido is True
+    assert mensaje is None
+    assert usados == 0
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["pdf_ia"]["contador"] == 1
+
+
+def test_intentar_consumir_uso_no_incrementa_si_ya_esta_al_limite(db):
+    clave_dia = date.today().isoformat()
+    db.sembrar(("usuarios", "u1"), {"limites_uso": {"test_oficial": {"periodo": clave_dia, "contador": 50}}})
+    permitido, mensaje, usados, limite = intentar_consumir_uso(db, "u1", "basico", "test_oficial")
+    assert permitido is False
+    assert usados == 50
+    assert limite == 50
+    assert "diario" in mensaje
+    # No debe haber tocado el contador: sigue en 50, no 51.
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["test_oficial"]["contador"] == 50
+
+
+def test_intentar_consumir_uso_plan_sin_esta_herramienta_queda_bloqueado(db):
+    permitido, mensaje, usados, limite = intentar_consumir_uso(db, "u1", "basico", "chat_pdf")
+    assert permitido is False
+    assert "no incluye esta herramienta" in mensaje
+    assert db.leer(("usuarios", "u1")) is None
+
+
+def test_intentar_consumir_uso_cobra_por_cantidad(db):
+    permitido, _mensaje, _usados, _limite = intentar_consumir_uso(
+        db, "u1", "premium", "test_avanzado_verificado", cantidad=100
+    )
+    assert permitido is True
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["test_avanzado_verificado"]["contador"] == 100
+
+
+def test_intentar_consumir_uso_pasa_de_verdad_por_una_transaccion(db):
+    # Mismo motivo que test_registrar_uso_pasa_de_verdad_por_una_transaccion:
+    # comprueba que la comprobación Y el incremento van dentro de
+    # db.transaction() -- lo que los hace atómicos frente a otra petición
+    # concurrente en producción -- y no como dos pasos sueltos (un get() y
+    # luego un update() aparte), que es exactamente el hueco de
+    # concurrencia que esta función existe para cerrar.
+    llamadas = []
+    transaction_original = db.transaction
+
+    def transaction_espia():
+        llamadas.append(1)
+        return transaction_original()
+
+    db.transaction = transaction_espia
+    try:
+        intentar_consumir_uso(db, "u1", "premium", "pdf_ia")
+    finally:
+        db.transaction = transaction_original
+
+    assert len(llamadas) == 1
+    assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+
+
+def test_intentar_consumir_varios_incrementa_todos_si_hay_hueco(db):
+    permitido, mensaje = intentar_consumir_varios(
+        db, "u1", "premium",
+        [("test_avanzado_verificado", 20), ("test_avanzado_verificado_mensual", 20)],
+    )
+    assert permitido is True
+    assert mensaje is None
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["test_avanzado_verificado"]["contador"] == 20
+    assert datos["limites_uso"]["test_avanzado_verificado_mensual"]["contador"] == 20
+
+
+def test_intentar_consumir_varios_es_todo_o_nada(db):
+    # test_avanzado_verificado_mensual (básico) ya está al límite (400): el
+    # otro cupo (diario, con hueco de sobra) NO debe incrementarse tampoco.
+    clave_mes = date.today().strftime("%Y-%m")
+    db.sembrar(("usuarios", "u1"), {
+        "limites_uso": {"test_avanzado_verificado_mensual": {"periodo": clave_mes, "contador": 400}},
+    })
+    permitido, mensaje = intentar_consumir_varios(
+        db, "u1", "basico",
+        [("test_avanzado_verificado", 10), ("test_avanzado_verificado_mensual", 10)],
+    )
+    assert permitido is False
+    assert "mensual" in mensaje
+    datos = db.leer(("usuarios", "u1"))
+    # El cupo diario, que sí tenía hueco, no debe haberse tocado.
+    assert "test_avanzado_verificado" not in datos["limites_uso"]
+    assert datos["limites_uso"]["test_avanzado_verificado_mensual"]["contador"] == 400
 
 
 def test_registrar_uso_pasa_de_verdad_por_una_transaccion(db):

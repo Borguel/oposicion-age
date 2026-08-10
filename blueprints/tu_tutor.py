@@ -10,7 +10,7 @@ from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
 from firebase_setup import db
 from auth_utils import requiere_plan
-from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
+from limites_uso import devolver_uso, intentar_consumir_uso
 from rate_limiter import limiter
 from oposiciones import coleccion_temario
 from utils import obtener_catalogo_temas
@@ -44,7 +44,11 @@ def tu_tutor_route():
     mensaje = data.get("mensaje")
     if not mensaje:
         return jsonify({"error": "Falta el mensaje"}), 400
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_temario")
+    # Comprobación y consumo del cupo en un único paso atómico (ver
+    # limites_uso.intentar_consumir_uso): evita que dos peticiones
+    # concurrentes del mismo usuario lean el mismo contador todavía sin
+    # actualizar y se cuelen ambas por debajo del límite.
+    permitido, mensaje_error, _usados, _limite = intentar_consumir_uso(db, g.uid, g.plan_actual, "chat_temario")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
     chat_id = data.get("chat_id")
@@ -58,19 +62,20 @@ def tu_tutor_route():
         contexto_pagina=data.get("contexto_pagina")
     )
     if respuesta is None:
-        # No se registra uso: un fallo técnico de DeepSeek no debe consumir
-        # el cupo de mensajes del usuario.
+        # Un fallo técnico de DeepSeek no debe consumir el cupo de mensajes
+        # del usuario: se devuelve lo ya cobrado por adelantado arriba.
+        devolver_uso(db, g.uid, "chat_temario", g.plan_actual)
         return jsonify({"error": _ERROR_DEEPSEEK}), 502
-    registrar_uso(db, g.uid, "chat_temario", g.plan_actual)
     return jsonify({"respuesta": respuesta, "chat_id": chat_id})
 
 
 # Misma ruta que /tu-tutor pero en streaming (Server-Sent Events): cada
 # fragmento de la respuesta se manda al frontend según va llegando de
 # DeepSeek, para un efecto de "escritura" en vez de esperar a la respuesta
-# completa. Los permisos/límites se comprueban ANTES de abrir el stream
-# (igual que en la ruta normal); registrar_uso y el guardado en Firestore
-# ocurren dentro del propio generador, solo si se completa con éxito.
+# completa. Los permisos/límites se comprueban y el cupo se consume ANTES
+# de abrir el stream (igual que en la ruta normal); el guardado en
+# Firestore ocurre dentro del propio generador, solo si se completa con
+# éxito.
 @bp.route("/tu-tutor/stream", methods=["POST"])
 @limiter.limit("20 per minute")
 @requiere_plan(db, "premium")
@@ -79,20 +84,21 @@ def tu_tutor_stream_route():
     mensaje = data.get("mensaje")
     if not mensaje:
         return jsonify({"error": "Falta el mensaje"}), 400
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_temario")
-    if not permitido:
-        return jsonify({"error": mensaje_error}), 429
     chat_id = data.get("chat_id")
     contexto_pagina = data.get("contexto_pagina")
     uid = g.uid
     plan_actual = g.plan_actual
     oposicion = g.oposicion
 
-    # Uso cobrado por adelantado, no al llegar "fin": si el cliente corta la
-    # conexión a mitad de respuesta, el generador de abajo no llega a su
-    # registrar_uso y se podía saltar la cuota abortando en bucle. Si DeepSeek
-    # falla del todo (evento "error", sin "fin"), se devuelve el uso.
-    registrar_uso(db, uid, "chat_temario", plan_actual)
+    # Comprobación y consumo en un único paso atómico (evita que dos
+    # peticiones concurrentes se cuelen ambas por debajo del límite), y por
+    # adelantado, no al llegar "fin": si el cliente corta la conexión a
+    # mitad de respuesta, el generador de abajo no llega a devolver nada y
+    # se podía saltar la cuota abortando en bucle. Si DeepSeek falla del
+    # todo (evento "error", sin "fin"), se devuelve el uso.
+    permitido, mensaje_error, _usados, _limite = intentar_consumir_uso(db, uid, plan_actual, "chat_temario")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         exito = False

@@ -1086,8 +1086,12 @@ def test_ruta_tu_tutor_devuelve_502_si_deepseek_falla_y_no_gasta_cupo(client, db
             )
         assert resp.status_code == 502
         assert "error" in resp.get_json()
+        # El cupo se consume atómicamente ANTES de llamar a DeepSeek (ver
+        # limites_uso.intentar_consumir_uso) y se devuelve aquí al fallar la
+        # llamada -- el contador queda a 0 (no ausente): hubo cobro y
+        # devolución, no "nunca se cobró".
         datos_usuario = db.leer(("usuarios", "u1"))
-        assert (datos_usuario.get("limites_uso") or {}).get("chat_temario") is None
+        assert (datos_usuario.get("limites_uso") or {}).get("chat_temario", {}).get("contador") == 0
     finally:
         parche_auth.stop()
 

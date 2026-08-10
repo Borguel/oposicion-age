@@ -283,10 +283,11 @@ class TestResumirPdfYGenerarTestDesdePdf:
         assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
 
     def test_generar_test_desde_pdf_devuelve_test_aunque_expire_la_transaccion_de_uso(self, client, db, documento_sembrado):
-        # Sentry PYTHON-FLASK-1: la transacción de Firestore de registrar_uso
-        # (cobrada por adelantado, ANTES de generar nada) puede expirar por un
-        # problema transitorio de Firestore -- eso no debe tumbar la petición
-        # con un 500 ni impedir que el usuario reciba su test ya generado.
+        # Sentry PYTHON-FLASK-1: la transacción de Firestore de
+        # intentar_consumir_uso (cobrada por adelantado, ANTES de generar
+        # nada) puede expirar por un problema transitorio de Firestore --
+        # eso no debe tumbar la petición con un 500 ni impedir que el
+        # usuario reciba su test ya generado.
         preguntas_generadas = [{
             "pregunta": "¿Pregunta?",
             "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
@@ -295,7 +296,7 @@ class TestResumirPdfYGenerarTestDesdePdf:
         }]
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.registrar_uso",
+            with patch("blueprints.pdf_ia.intentar_consumir_uso",
                        side_effect=google_exceptions.InvalidArgument("The referenced transaction has expired or is no longer valid.")), \
                  patch("blueprints.pdf_ia.generar_preguntas_ia_en_lotes", return_value=(preguntas_generadas, [])):
                 resp = client.post("/generar-test-desde-pdf", data={
