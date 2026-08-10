@@ -5,7 +5,7 @@ Metro (ver oposiciones.coleccion_psicotecnico).
 A diferencia de las preguntas "psicotecnico" de Auxiliar (que viven mezcladas
 con el resto del examen oficial en examenes_oficiales_AUXILIAR y se pueden
 excluir con un checkbox en /test-oficial/), en Metro esta prueba tiene su
-propia página (/test-psicotecnico/): 117 preguntas de razonamiento verbal y
+propia página (/test-psicotecnico/): 126 preguntas de razonamiento verbal y
 134 de razonamiento espacial (objetivo: seguir ampliando hasta 500 de cada
 una), cada una como un examen completo y separado -- así que se guardan en
 una colección aparte, nunca mezclada con temario.
