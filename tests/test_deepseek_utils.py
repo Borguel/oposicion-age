@@ -832,6 +832,25 @@ class TestGenerarDocumentoLargoPorPartes:
         ultima_llamada = mock_gen.call_args_list[-1]
         assert parcial_1 in ultima_llamada.args[1]
         assert parcial_2 in ultima_llamada.args[1]
+        # Bug real (11/08/2026): la fusión de 2 fragmentos debe pedir MÁS
+        # presupuesto de tokens que un único fragmento del MAP (tiene que
+        # reproducir el contenido de los dos) -- ver el comentario largo
+        # junto a max_tokens_fusion en generar_documento_largo_por_partes.
+        assert ultima_llamada.kwargs["max_tokens"] == min(4096 * 2, 16384)
+        primera_llamada_map = mock_gen.call_args_list[0]
+        assert primera_llamada_map.kwargs["max_tokens"] == 4096
+
+    def test_fusion_de_muchos_fragmentos_no_supera_el_tope_de_max_tokens(self):
+        # Con muchos fragmentos, max_tokens_fusion no debe crecer sin límite
+        # -- 16384 es el techo (ver el comentario largo junto a su cálculo).
+        parrafo = "a" * 5000
+        texto_largo = "\n\n".join([parrafo] * 6)  # 6 fragmentos de 5000
+        respuestas = ["parcial. " * 100] * 6 + ["fusión. " * 300]
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+            deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=5000)
+        ultima_llamada = mock_gen.call_args_list[-1]
+        # 4096 * 6 = 24576, por encima del tope -- debe quedarse en 16384.
+        assert ultima_llamada.kwargs["max_tokens"] == 16384
 
     def test_documento_largo_donde_todos_los_fragmentos_fallan_devuelve_none(self):
         parrafo = "a" * 10000

@@ -1138,6 +1138,22 @@ def generar_documento_largo_por_partes(
 
     if on_progreso:
         on_progreso({"completadas": len(fragmentos), "total": len(fragmentos), "fase": "fusionando"})
+    # Presupuesto de la fusión escalado con cuántos fragmentos hay que
+    # combinar (11/08/2026, bug real: con el troceado más fino de esta
+    # misma sesión -- ver TAMANO_CHUNK_ESQUEMA/TAMANO_CHUNK_CARACTERES -- un
+    # documento de ~20-24.000 caracteres pasó a generar 2 fragmentos
+    # COMPLETOS, pero la fusión seguía cortándose cerca del final: tenía el
+    # MISMO presupuesto de tokens que un único fragmento del MAP (max_tokens,
+    # 4096/8192), pese a tener que reproducir el contenido de los dos
+    # fragmentos juntos, no de uno solo. Sin este escalado, cuantos más
+    # fragmentos hiciera falta trocear un documento -- que es justo lo que
+    # arregla el troceado más fino -- más corta saldría la fusión final,
+    # deshaciendo la mejora. Con tope (16384): escalar sin límite con
+    # documentos de muchos fragmentos pediría presupuestos desproporcionados
+    # por llamada -- para esos casos ya actúa la red de seguridad de tiempo
+    # máximo/aviso de documento parcial, no hace falta perseguir un
+    # presupuesto perfecto para el caso extremo.
+    max_tokens_fusion = min(max_tokens * len(parciales), 16384)
     prompt_fusion = (
         f"{system_prompt}\n\n"
         "A continuación tienes varios resultados YA generados a partir de distintos fragmentos "
@@ -1150,7 +1166,7 @@ def generar_documento_largo_por_partes(
         "solo combinar y reorganizar lo ya generado."
         + (f"\n\n{instrucciones_fusion_extra}" if instrucciones_fusion_extra else "")
     )
-    fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens, on_usage=on_usage)
+    fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens_fusion, on_usage=on_usage)
 
     # Comprobación de tamaño de la fusión (10/08/2026, bug real: con los
     # fragmentos ya generados y válidos por separado, la llamada de fusión a
@@ -1182,7 +1198,7 @@ def generar_documento_largo_por_partes(
             "caracteres frente a los %d de entrada -- reintentando una vez.",
             len(parciales), len(fusionado), len(bloque_parciales),
         )
-        fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens, on_usage=on_usage)
+        fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens_fusion, on_usage=on_usage)
         if fusionado and len(fusionado) < len(bloque_parciales) * fraccion_minima_fusion:
             logger.warning(
                 "generar_documento_largo_por_partes: la fusión sigue devolviendo muy poco "
