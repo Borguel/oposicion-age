@@ -51,6 +51,30 @@ def test_crear_cuenta_no_activa_ninguna_oposicion(db):
     assert usuario["suscripciones"] == {}
 
 
+def test_inicializar_estadisticas_usuario_manda_la_bienvenida_una_sola_vez(db):
+    # Bug real (11/08/2026, reportado por un usuario: "le han llegado tres
+    # mensajes de bienvenida"): al registrarse, el frontend dispara varias
+    # peticiones autenticadas casi a la vez (GET /mi-perfil desde el
+    # listener global de auth.js, POST /registrar-usuario del propio
+    # formulario...), todas pasando por requiere_login ->
+    # inicializar_estadisticas_usuario. Antes era un simple "lee, si no
+    # existe escribe" sin ninguna atomicidad -- varias peticiones podían ver
+    # "no existe" antes de que ninguna hubiera escrito, y cada una mandaba
+    # su propio correo. Ahora la creación va dentro de una transacción de
+    # Firestore (ver utils.ejecutar_en_transaccion): el fake no simula la
+    # concurrencia real entre hilos/peticiones (esa garantía la da el
+    # servidor de Firestore, no el fake), pero este test sí deja fijado que
+    # llamar repetidamente sobre el mismo usuario -- el caso normal de
+    # "cada petición autenticada pasa por aquí" -- nunca vuelve a mandar el
+    # correo una segunda vez.
+    with patch("registro_progreso_usuario.enviar_email_bienvenida") as mock_email:
+        inicializar_estadisticas_usuario(db, "u1", email="persona@gmail.com", email_verificado=True)
+        assert mock_email.call_count == 1
+        inicializar_estadisticas_usuario(db, "u1", email="persona@gmail.com", email_verificado=True)
+        inicializar_estadisticas_usuario(db, "u1", email="persona@gmail.com", email_verificado=True)
+        assert mock_email.call_count == 1
+
+
 def test_activar_oposicion_con_email_verificado_arranca_la_prueba(db):
     with patch("registro_progreso_usuario.enviar_email_bienvenida"):
         inicializar_estadisticas_usuario(db, "u1", email="persona@gmail.com", email_verificado=True)

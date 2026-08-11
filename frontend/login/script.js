@@ -145,7 +145,14 @@ form.addEventListener("submit", async (evento) => {
       await signUp(email, password);
       // Mejor esfuerzo: si falla el envío del correo de verificación no se
       // bloquea el alta -- el banner de auth.js ya ofrece reenviarlo luego.
-      enviarVerificacionEmail().catch(() => {});
+      // AWAIT (11/08/2026, bug real: "no le ha llegado el correo de
+      // verificación" -- esta llamada NO se esperaba, así que la
+      // navegación de más abajo (window.location.href) podía cortarla a
+      // mitad si guardarPerfilBasico terminaba antes: la petición al
+      // backend (que a su vez genera el enlace en Firebase y llama a
+      // Brevo) quedaba abortada por el propio cambio de página antes de
+      // completarse, sin que hubiera ningún error visible.
+      await enviarVerificacionEmail().catch(() => {});
       await guardarPerfilBasico(nombre, apellidos);
       // Igual que en el alta con Google: teléfono y dirección no son
       // imprescindibles para usar la web, y ya se pueden añadir después,

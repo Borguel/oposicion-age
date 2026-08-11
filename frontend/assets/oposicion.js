@@ -123,17 +123,32 @@ export async function obtenerOposicionesVisiblesDelUsuario(user) {
 // necesitan volver a pedírselo al objeto de usuario de Firebase.
 export async function obtenerOposicionesVisiblesConToken(token) {
   if (!token) return null;
-  try {
-    const res = await fetch(`${BACKEND_URL}/oposiciones-disponibles`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!res.ok) return null;
-    const datos = await res.json();
-    const idsVisibles = new Set((datos.oposiciones || []).map((o) => o.id));
-    return CATALOGO_COMPLETO.filter((o) => idsVisibles.has(o.id));
-  } catch (e) {
-    return null;
+  // Un reintento antes de rendirse (11/08/2026, bug real: justo al
+  // registrarse, el navegador dispara varias peticiones autenticadas casi
+  // a la vez -- ver el comentario largo de más arriba sobre el fallback a
+  // OPOSICIONES -- y esta consulta puede fallar por esa misma contención
+  // momentánea, no por un fallo real de red. Al fallar aquí, una cuenta
+  // recién creada (que en realidad no tiene ninguna oposición activada
+  // todavía) cae al catálogo público completo como si las 3 estuvieran ya
+  // disponibles -- confuso para el usuario, aunque no llega a activar nada
+  // de verdad en el servidor (ver activarOposicion más abajo, que es la
+  // única vía real de activación). Un solo reintento corto reduce mucho la
+  // probabilidad de toparse con ese fallback justo en ese momento.
+  for (let intento = 0; intento < 2; intento++) {
+    if (intento > 0) await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      const res = await fetch(`${BACKEND_URL}/oposiciones-disponibles`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) continue;
+      const datos = await res.json();
+      const idsVisibles = new Set((datos.oposiciones || []).map((o) => o.id));
+      return CATALOGO_COMPLETO.filter((o) => idsVisibles.has(o.id));
+    } catch (e) {
+      // Se reintenta en la siguiente vuelta del bucle.
+    }
   }
+  return null;
 }
 
 // POST /activar-oposicion: autoservicio, el propio usuario elige "quiero

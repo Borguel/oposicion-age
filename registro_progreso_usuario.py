@@ -58,11 +58,33 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificad
     auth_utils.requiere_login, así que en el resto de peticiones no hace
     nada más que la comprobación de existencia). No activa ninguna oposición
     por sí sola -- eso es una acción explícita del usuario, ver
-    activar_oposicion_usuario más abajo."""
+    activar_oposicion_usuario más abajo.
+
+    Bug real (11/08/2026, reportado por el usuario: "le han llegado tres
+    mensajes de bienvenida"): al registrarse, el frontend dispara varias
+    peticiones autenticadas casi a la vez (GET /mi-perfil desde el listener
+    global de auth.js, POST /registrar-usuario del propio formulario de
+    alta...), todas pasando por requiere_login -> esta función. La versión
+    anterior hacía un simple "snap = doc_ref.get(); if not snap.exists:
+    doc_ref.set(...)" -- comprobar-y-actuar sin ninguna atomicidad, así que
+    dos o tres de esas peticiones podían leer "no existe" ANTES de que
+    ninguna hubiera escrito todavía, y las tres acababan creando el
+    documento y mandando el correo de bienvenida. Envolver la comprobación
+    y la creación en una única transacción de Firestore (ver
+    utils.ejecutar_en_transaccion) hace que, ante ese mismo empate, solo
+    una gane y cree el documento de verdad -- las demás, al reintentar
+    dentro de la transacción, ya lo encuentran creado y no hacen nada. El
+    correo se manda FUERA de la transacción (una función de transacción
+    puede reintentarse varias veces ante contención real, y no queremos
+    mandar un correo por cada reintento), solo si esta llamada fue
+    realmente la que creó el documento."""
     doc_ref = db.collection("usuarios").document(usuario_id)
-    snap = doc_ref.get()
-    if not snap.exists:
-        doc_ref.set({
+
+    def _crear_si_no_existe(transaction):
+        snap = doc_ref.get(transaction=transaction)
+        if snap.exists:
+            return False
+        transaction.set(doc_ref, {
             # Estadísticas de tests/esquemas del temario oficial, UNA POR
             # OPOSICIÓN (un usuario que estudia AGE y GACE a la vez quiere ver
             # su progreso de cada una por separado):
@@ -103,6 +125,10 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificad
             "stripe_customer_id": None,
             "suscripciones": {},
         })
+        return True
+
+    creado = ejecutar_en_transaccion(db, _crear_si_no_existe)
+    if creado:
         enviar_email_bienvenida(email)
         return
 
@@ -115,7 +141,7 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificad
     permite_prueba = bool(email_verificado) and not es_dominio_email_desechable(email)
     if not permite_prueba:
         return
-    datos = snap.to_dict() or {}
+    datos = doc_ref.get().to_dict() or {}
     pendientes = [
         oid for oid, sub in (datos.get("suscripciones", {}) or {}).items()
         if (sub or {}).get("plan", "gratis") == "gratis" and not (sub or {}).get("prueba_fin")
