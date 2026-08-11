@@ -935,19 +935,29 @@ def generar_documento_largo_por_partes(
             on_progreso({"completadas": 0, "total": 1, "fase": "generando"})
         resultado = _intento_unico()
         if _sospechoso(resultado):
+            primer_intento = resultado
             logger.warning(
                 "generar_documento_largo_por_partes: la única llamada (documento sin trocear) "
                 "devolvió %s caracteres frente a los %d de entrada -- reintentando una vez.",
                 len(resultado) if resultado else 0, len(texto),
             )
             resultado = _intento_unico()
-            if not resultado:
+            # Se queda con el más largo de los dos intentos, no siempre con
+            # el segundo (11/08/2026, bug real visto en producción: el
+            # primer intento devolvió 1237 caracteres reales -- pocos, pero
+            # reales -- y el reintento falló del todo (None); el código
+            # descartaba ese contenido real y devolvía None de todas
+            # formas, dejando al usuario sin nada en vez de un documento
+            # parcial con aviso. Ningún intento con contenido real merece
+            # tirarse si el otro es peor).
+            mejor = max([primer_intento, resultado], key=lambda r: len(r) if r else 0)
+            if not mejor:
                 logger.warning(
                     "generar_documento_largo_por_partes: la única llamada sigue fallando tras "
                     "reintentar -- se abandona."
                 )
                 return None
-            if _sospechoso(resultado):
+            if _sospechoso(mejor):
                 logger.warning(
                     "generar_documento_largo_por_partes: la única llamada sigue devolviendo muy "
                     "poco contenido tras reintentar -- se devuelve con aviso en vez de un "
@@ -956,7 +966,9 @@ def generar_documento_largo_por_partes(
                 resultado = (
                     "> **Aviso:** no se ha podido generar este documento por completo por un "
                     "problema temporal con la IA. Pulsa «Regenerar» para intentarlo de nuevo.\n\n"
-                ) + resultado
+                ) + mejor
+            else:
+                resultado = mejor
         if on_progreso:
             on_progreso({"completadas": 1, "total": 1, "fase": "generando"})
         return resultado

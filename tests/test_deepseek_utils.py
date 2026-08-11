@@ -785,6 +785,24 @@ class TestGenerarDocumentoLargoPorPartes:
         assert resultado is None
         assert mock_gen.call_count == 2
 
+    def test_primer_intento_corto_y_reintento_fallido_conserva_el_primero_con_aviso(self):
+        # Bug real visto en producción (11/08/2026): el primer intento
+        # devolvió contenido real pero corto (sospechoso), y el reintento
+        # falló del todo (None, p. ej. un problema transitorio de
+        # DeepSeek) -- la versión anterior descartaba el primer intento y
+        # devolvía None de todas formas, dejando al usuario sin nada en vez
+        # de un documento parcial con aviso, pese a que sí había contenido
+        # real generado. Debe quedarse con el primer intento (el único con
+        # algo real) en vez de tirarlo.
+        texto = "contenido real del documento. " * 400
+        respuesta_corta = "# Se corta aquí a media pala"
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=[respuesta_corta, None]) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto)
+        assert resultado is not None
+        assert "Aviso" in resultado
+        assert respuesta_corta in resultado
+        assert mock_gen.call_count == 2
+
     def test_tamano_chunk_personalizado_trocea_mas_fino(self):
         # 10/08/2026, bug real: para texto legal (mapa de artículos, que
         # exige cubrir cada artículo sin omitir ninguno) el tamaño de trozo
