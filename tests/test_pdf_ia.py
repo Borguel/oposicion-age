@@ -883,9 +883,12 @@ class TestTipoContenidoEnResumenYEsquema:
             parche.stop()
         assert mock_gen.call_args.kwargs["max_tokens"] == 8192
 
-    def test_generar_esquema_desde_pdf_documento_legal_ya_no_reduce_tamano_chunk(self, client, db, documento_legal_sembrado):
-        # Mismo motivo y misma decisión que en resumir_pdf -- ver el
-        # comentario largo ahí.
+    def test_generar_esquema_desde_pdf_documento_legal_no_reduce_mas_el_tamano_chunk(self, client, db, documento_legal_sembrado):
+        # El modo legal NO baja el tamano_chunk propio del esquema todavía
+        # más (mismo motivo que en resumir_pdf: menos llamadas es más
+        # importante que exhaustividad por artículo, a petición explícita
+        # del usuario) -- usa TAMANO_CHUNK_ESQUEMA igual que el esquema no
+        # legal, ni el general TAMANO_CHUNK_CARACTERES de resumen.
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
@@ -894,7 +897,28 @@ class TestTipoContenidoEnResumenYEsquema:
                             headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
-        assert "tamano_chunk" not in mock_gen.call_args.kwargs
+        assert mock_gen.call_args.kwargs["tamano_chunk"] == deepseek_utils.TAMANO_CHUNK_ESQUEMA
+
+    def test_generar_esquema_desde_pdf_documento_general_usa_su_propio_tamano_chunk(self, client, db, documento_sembrado):
+        # Bug real (10/08/2026): con el tamano_chunk general (pensado para
+        # resumen, prosa condensada), un esquema de un documento de
+        # ~20-24.000 caracteres se generaba en una sola llamada y se cortaba
+        # antes de cubrir ni la mitad del documento -- un esquema reproduce
+        # la estructura completa en viñetas anidadas, así que necesita mucho
+        # más presupuesto de salida por carácter de entrada. TAMANO_CHUNK_
+        # ESQUEMA es menor que el general para que documentos de ese tamaño
+        # pasen por el reparto en fragmentos + fusión en vez de una sola
+        # llamada con un único límite de tokens para todo el árbol.
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema") as mock_gen, \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                            headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert mock_gen.call_args.kwargs["tamano_chunk"] == deepseek_utils.TAMANO_CHUNK_ESQUEMA
+        assert deepseek_utils.TAMANO_CHUNK_ESQUEMA < deepseek_utils.TAMANO_CHUNK_CARACTERES
 
     def test_generar_esquema_desde_pdf_usa_umbrales_de_colapso_mas_bajos_que_el_resumen(self, client, db, documento_sembrado):
         # Bug real (10/08/2026): un esquema (árbol de epígrafes en viñetas,

@@ -636,6 +636,21 @@ class TestTrocearEnParrafos:
     def test_texto_corto_no_se_trocea(self):
         assert deepseek_utils._trocear_en_parrafos("Texto corto.", tamano=100) == ["Texto corto."]
 
+    def test_documento_de_20000_caracteres_solo_se_trocea_con_el_umbral_de_esquema(self):
+        # Bug real (10/08/2026, ver el comentario largo junto a
+        # TAMANO_CHUNK_ESQUEMA): un documento de ~20.000 caracteres es
+        # exactamente el tamaño que reveló el bug -- con TAMANO_CHUNK_
+        # CARACTERES (el general, 22000) todavía cabe en una sola llamada,
+        # pero con TAMANO_CHUNK_ESQUEMA (14000, más bajo porque un esquema
+        # necesita mucho más presupuesto de salida por carácter de entrada
+        # que un resumen) ya se reparte en fragmentos -- que es justo el
+        # comportamiento que arregla el bug: el esquema deja de intentarlo
+        # todo en una sola llamada con un único límite de tokens.
+        parrafo = "a" * 10000
+        texto = f"{parrafo}\n\n{parrafo}"  # 20.002 caracteres
+        assert len(deepseek_utils._trocear_en_parrafos(texto, tamano=deepseek_utils.TAMANO_CHUNK_CARACTERES)) == 1
+        assert len(deepseek_utils._trocear_en_parrafos(texto, tamano=deepseek_utils.TAMANO_CHUNK_ESQUEMA)) == 2
+
     def test_agrupa_parrafos_sin_superar_el_tamano(self):
         parrafos = ["a" * 30, "b" * 30, "c" * 30]
         texto = "\n\n".join(parrafos)

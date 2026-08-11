@@ -13,6 +13,30 @@ document.querySelectorAll("[data-icon]").forEach((el) => {
   el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
 });
 
+// Contador de segundos transcurridos mientras se genera un resumen/esquema
+// (10/08/2026, a petición del usuario: "algo tipo cuenta atrás real...
+// para que el usuario no se desespere"). No es posible dar una cuenta atrás
+// exacta -- no hay forma de predecir cuánto tardará DeepSeek en responder --
+// pero un contador de tiempo TRANSCURRIDO, en vivo, deja claro que sigue
+// habiendo actividad real aunque pase un rato entre un fragmento y el
+// siguiente. Actualiza directamente los nodos [data-generando-desde] del
+// DOM en vez de volver a pintar la lista entera cada segundo (mucho más
+// barato) -- ver filaContenido, que es quien pinta esos nodos con el
+// timestamp de horaInicioProgresoPorClave.
+function formatearDuracionGenerando(segundos) {
+  if (segundos < 60) return `${segundos}s`;
+  const minutos = Math.floor(segundos / 60);
+  const resto = String(segundos % 60).padStart(2, "0");
+  return `${minutos}m ${resto}s`;
+}
+setInterval(() => {
+  document.querySelectorAll("[data-generando-desde]").forEach((el) => {
+    const desde = Number(el.dataset.generandoDesde);
+    if (!desde) return;
+    el.textContent = ` · ${formatearDuracionGenerando(Math.max(0, Math.floor((Date.now() - desde) / 1000)))}`;
+  });
+}, 1000);
+
 let documentos = [];
 let carpetas = [];
 let carpetaActual = null; // null = viendo el listado de carpetas
@@ -249,10 +273,21 @@ function filaContenido({
       ? "Generando… uniendo las partes"
       : `Generando… (${progreso.completadas}/${progreso.total})`
     : "Generando…";
+  // Timestamp para el contador de tiempo transcurrido (ver el setInterval
+  // global junto a formatearDuracionGenerando): horaInicioProgresoPorClave
+  // ya lo deja puesto la propia llamada a esperandoGeneracionDe que calculó
+  // "generando" (progresoDelServidorSigueSiendoValido lo arma la primera
+  // vez que ve progreso real de este documento+tipo), así que aquí solo
+  // hace falta leerlo, no hay que ponerlo de nuevo.
+  const claveGenerando = documentoId && tipoInline ? `${documentoId}:${tipoInline}` : null;
+  const desdeGenerando = claveGenerando ? horaInicioProgresoPorClave[claveGenerando] : null;
+  const contadorTiempoHtml = generando && desdeGenerando
+    ? `<span data-generando-desde="${desdeGenerando}"></span>`
+    : "";
   const estadoHtml = urlContinuar
     ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Test en progreso</span>`
     : generando
-      ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} ${textoGenerando}</span>`
+      ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} ${textoGenerando}${contadorTiempoHtml}</span>`
       : existe
         ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-generado">${icono("check", 12)} Generado</span>`
         : `<span class="documento-card-tipo-estado">Aún no generado</span>`;

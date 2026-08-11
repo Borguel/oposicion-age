@@ -642,24 +642,38 @@ def detectar_texto_legal(texto):
     return densidad >= _UMBRAL_DENSIDAD_LEGAL
 
 
-# De 15000 a 90000 y de vuelta a 35000 (10/08/2026). El salto a 90000 (a
-# petición del usuario: "que se genere más rápido, sin gastar demasiados
-# tokens") buscaba que la mayoría de documentos cupieran en una sola
-# llamada -- pero un caso real lo desmintió: un documento de ~17-20.000
-# caracteres, MUY por debajo de 90000, tomó el camino de una sola llamada y
-# aun así se cortó a media palabra (red de seguridad de "respuesta
-# sospechosamente corta" incluida, ver más abajo). Eso confirma que incluso
-# documentos bastante más pequeños que 90000 ya son demasiado ambiciosos
-# para una única llamada fiable al 100% -- el umbral no estaba resolviendo
-# el problema que decía resolver. 35000 es el punto intermedio real: sigue
-# dejando la mayoría de documentos cortos/medios (hasta ~8-10 páginas) en
-# una sola llamada (barato, rápido), pero documentos más largos escalan a
-# 2, 3, N fragmentos en paralelo (hasta _MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK
-# a la vez) en vez de arriesgarse a una única llamada demasiado grande --
-# reduce cuánto puede perderse si UNA llamada falla, y baja de verdad la
-# frecuencia con la que se dispara el aviso de generación parcial (no lo
-# sustituye: sigue siendo la red de seguridad para cuando aun así pase).
-TAMANO_CHUNK_CARACTERES = 35000
+# De 15000 a 90000 y de vuelta a 35000, y ahora a 22000 (10/08/2026). El
+# salto a 90000 (a petición del usuario: "que se genere más rápido, sin
+# gastar demasiados tokens") buscaba que la mayoría de documentos cupieran
+# en una sola llamada -- pero un caso real lo desmintió: un documento de
+# ~17-20.000 caracteres, MUY por debajo de 90000, tomó el camino de una sola
+# llamada y aun así se cortó a media palabra (red de seguridad de
+# "respuesta sospechosamente corta" incluida, ver más abajo). 35000 mejoró
+# eso, pero un caso posterior (un resumen y, sobre todo, un esquema de un
+# documento de ~20-24.000 caracteres) volvió a cortarse -- el esquema ni
+# siquiera llegó a cubrir la mitad del documento antes de agotar
+# max_tokens=4096 de la única llamada. Un esquema, al reproducir la
+# estructura completa en viñetas anidadas en vez de condensarla en prosa,
+# necesita MUCHO más presupuesto de salida por carácter de entrada que un
+# resumen -- por eso tiene su propio umbral, más bajo, en
+# TAMANO_CHUNK_ESQUEMA (ver más abajo). 22000 es el nuevo punto para
+# resumen (y cualquier otro llamante que no pase tamano_chunk explícito):
+# sigue dejando documentos cortos en una sola llamada barata, pero empuja a
+# documentos de tamaño medio (como el que reveló este bug) al reparto en
+# fragmentos + fusión, que sí escala con el tamaño del documento en vez de
+# depender de un único límite de tokens fijo.
+TAMANO_CHUNK_CARACTERES = 22000
+
+# Umbral de troceado propio del ESQUEMA (10/08/2026, ver el comentario largo
+# de TAMANO_CHUNK_CARACTERES): más bajo que el general porque un esquema
+# necesita mucho más presupuesto de salida que un resumen para la MISMA
+# entrada (viñetas anidadas que reproducen la estructura completa, no prosa
+# condensada). Con el umbral general (22000) un documento de ~20-24.000
+# caracteres seguía yendo por el camino de una sola llamada para el esquema
+# y se cortaba antes de cubrir ni la mitad del documento -- con 14000, ese
+# mismo documento pasa a 2 fragmentos, cada uno con su propio presupuesto de
+# max_tokens, en vez de un único límite para todo el árbol de epígrafes.
+TAMANO_CHUNK_ESQUEMA = 14000
 
 # Umbral de la comprobación de tamaño de la fusión en
 # generar_documento_largo_por_partes (10/08/2026, ver el comentario largo

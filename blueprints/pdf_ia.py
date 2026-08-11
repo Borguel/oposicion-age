@@ -33,7 +33,7 @@ from test_generator import (
 )
 from coste_ia import AcumuladorTokens
 from deepseek_utils import (
-    TAMANO_CHUNK_CARACTERES, FRACCION_MINIMA_MAP_ESQUEMA, FRACCION_MINIMA_FUSION_ESQUEMA,
+    TAMANO_CHUNK_CARACTERES, TAMANO_CHUNK_ESQUEMA, FRACCION_MINIMA_MAP_ESQUEMA, FRACCION_MINIMA_FUSION_ESQUEMA,
     generar_documento_largo_por_partes,
 )
 from tarjetas_generator import (
@@ -379,8 +379,8 @@ def resumir_pdf():
                     # para un documento de ~51.000 caracteres), cada una un
                     # punto más de fallo, más lento y con el system_prompt
                     # pagado una vez por fragmento. Con el
-                    # TAMANO_CHUNK_CARACTERES general (35000, ver
-                    # deepseek_utils.py) ese mismo documento ya baja a 2
+                    # TAMANO_CHUNK_CARACTERES general (22000, ver
+                    # deepseek_utils.py) ese mismo documento ya baja a 3
                     # fragmentos sin necesidad de un valor propio para legal.
                     max_tokens=8192 if es_legal else 4096,
                     on_usage=acumulador_tokens.add, on_progreso=on_progreso,
@@ -604,12 +604,21 @@ def generar_esquema_desde_pdf():
                     # max_tokens más alto en modo legal -- ver el comentario
                     # largo en resumir_pdf, mismo motivo (el esquema legal
                     # también exige que cada artículo mantenga su propio
-                    # epígrafe) y misma decisión de no reducir tamano_chunk
-                    # (usa el TAMANO_CHUNK_CARACTERES general): menos
-                    # llamadas, más barato y más rápido, a cambio de algo de
-                    # exhaustividad -- aceptable a petición explícita del
-                    # usuario.
+                    # epígrafe).
                     max_tokens=8192 if es_legal else 4096,
+                    # tamano_chunk propio, más bajo que el general
+                    # (TAMANO_CHUNK_ESQUEMA, ver el comentario largo junto a
+                    # su definición en deepseek_utils.py): un esquema
+                    # reproduce la estructura completa en viñetas anidadas en
+                    # vez de condensarla en prosa, así que necesita mucho más
+                    # presupuesto de salida por carácter de entrada que un
+                    # resumen -- bug real (10/08/2026): con el umbral
+                    # general, un documento de ~20-24.000 caracteres se
+                    # generaba en una sola llamada y el esquema se cortaba
+                    # antes de cubrir ni la mitad del documento, mientras que
+                    # el resumen del mismo documento (mismo umbral, mucho más
+                    # compacto de por sí) llegaba mucho más lejos.
+                    tamano_chunk=TAMANO_CHUNK_ESQUEMA,
                     on_usage=acumulador_tokens.add,
                     on_progreso=on_progreso,
                     # Umbrales de colapso propios del esquema (10/08/2026,
