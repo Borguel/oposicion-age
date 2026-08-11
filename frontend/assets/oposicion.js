@@ -120,20 +120,33 @@ export async function obtenerOposicionesVisiblesDelUsuario(user) {
 // Misma consulta que obtenerOposicionesVisiblesDelUsuario, pero para
 // páginas que ya tienen un token de sesión a mano (p. ej. estadisticas,
 // que ya llama a obtenerAuthHeaders() para sus propias peticiones) y no
-// necesitan volver a pedírselo al objeto de usuario de Firebase.
+// necesitan volver a pedírselo al objeto de usuario de Firebase. Solo
+// devuelve la lista -- si además hace falta saber si el usuario ha
+// activado alguna de verdad (ver el bug real de más abajo), usa
+// obtenerOposicionesVisiblesConDetalleToken.
 export async function obtenerOposicionesVisiblesConToken(token) {
+  const detalle = await obtenerOposicionesVisiblesConDetalleToken(token);
+  return detalle ? detalle.lista : null;
+}
+
+// Igual que obtenerOposicionesVisiblesConToken, pero también devuelve
+// algunaActivada -- 11/08/2026, bug real reportado por un usuario: al
+// registrarse, nunca le salió la pantalla de "elige tu oposición" (ver
+// zona-opositor/script.js). Antes, esa pantalla se decidía mirando si
+// `lista.length === 0` -- pero para una cuenta que todavía no ha activado
+// NINGUNA oposición, el backend YA devuelve el catálogo público completo
+// (para poder elegir la primera, ver el comentario largo en
+// blueprints/temario.py), así que esa longitud nunca es 0 ni siquiera para
+// una cuenta recién creada: el frontend nunca detectaba que lo era.
+// algunaActivada es la señal real y sin ambigüedad que hacía falta --
+// viene tal cual del campo "alguna_activada" de la respuesta.
+export async function obtenerOposicionesVisiblesConDetalleToken(token) {
   if (!token) return null;
-  // Un reintento antes de rendirse (11/08/2026, bug real: justo al
-  // registrarse, el navegador dispara varias peticiones autenticadas casi
-  // a la vez -- ver el comentario largo de más arriba sobre el fallback a
-  // OPOSICIONES -- y esta consulta puede fallar por esa misma contención
-  // momentánea, no por un fallo real de red. Al fallar aquí, una cuenta
-  // recién creada (que en realidad no tiene ninguna oposición activada
-  // todavía) cae al catálogo público completo como si las 3 estuvieran ya
-  // disponibles -- confuso para el usuario, aunque no llega a activar nada
-  // de verdad en el servidor (ver activarOposicion más abajo, que es la
-  // única vía real de activación). Un solo reintento corto reduce mucho la
-  // probabilidad de toparse con ese fallback justo en ese momento.
+  // Un reintento antes de rendirse: justo al registrarse, el navegador
+  // dispara varias peticiones autenticadas casi a la vez, y esta consulta
+  // puede fallar por esa misma contención momentánea, no por un fallo real
+  // de red -- un solo reintento corto reduce mucho la probabilidad de
+  // toparse con el fallback de más abajo (null) justo en ese momento.
   for (let intento = 0; intento < 2; intento++) {
     if (intento > 0) await new Promise((resolve) => setTimeout(resolve, 800));
     try {
@@ -143,7 +156,10 @@ export async function obtenerOposicionesVisiblesConToken(token) {
       if (!res.ok) continue;
       const datos = await res.json();
       const idsVisibles = new Set((datos.oposiciones || []).map((o) => o.id));
-      return CATALOGO_COMPLETO.filter((o) => idsVisibles.has(o.id));
+      return {
+        lista: CATALOGO_COMPLETO.filter((o) => idsVisibles.has(o.id)),
+        algunaActivada: Boolean(datos.alguna_activada),
+      };
     } catch (e) {
       // Se reintenta en la siguiente vuelta del bucle.
     }

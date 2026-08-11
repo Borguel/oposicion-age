@@ -1,7 +1,7 @@
 import { idToken, esperarUsuario, marcarContenidoListo } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
-import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual, obtenerOposicionesVisiblesDelUsuario, activarOposicion } from "/assets/oposicion.js";
+import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual, obtenerOposicionesVisiblesConDetalleToken, activarOposicion } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
 import { fijarTexto, fijarHTML } from "/assets/dom.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
@@ -731,21 +731,35 @@ async function iniciar() {
   // optimista con las 3 mostraría contenido que no es del usuario. El
   // body sigue oculto hasta marcarContenidoListo() (ver auth-guard.js), así
   // que esta espera extra no se nota como un parpadeo.
-  const lista = await obtenerOposicionesVisiblesDelUsuario(usuario);
-  // null (fallo de red): se sigue con el catálogo público completo como
-  // mejor opción disponible -- mejor eso que dejar la página en blanco.
-  oposicionesDisponibles = lista === null ? OPOSICIONES : lista;
+  const detalle = await obtenerOposicionesVisiblesConDetalleToken(await usuario.getIdToken());
+  // null (fallo de red incluso tras reintentar): se sigue con el catálogo
+  // público completo como mejor opción disponible -- mejor eso que dejar
+  // la página en blanco. En ese caso concreto no se puede saber si es una
+  // cuenta nueva o no, así que se asume que no lo es (no se le vuelve a
+  // ofrecer el selector de "elige tu oposición" a alguien que quizá ya
+  // tenía acceso real, solo por un fallo transitorio de red).
+  oposicionesDisponibles = detalle ? detalle.lista : OPOSICIONES;
+  const esCuentaNueva = detalle ? !detalle.algunaActivada : false;
 
   document.getElementById("zona-reabrir-onboarding").addEventListener("click", () => {
     localStorage.removeItem(CLAVE_ONBOARDING_CERRADO);
     renderOnboarding();
   });
 
-  if (oposicionesDisponibles.length === 0) {
+  if (esCuentaNueva) {
     // Cuenta nueva: todavía no ha elegido ninguna oposición. Se oculta el
     // panel normal (no hay nada suyo que mostrar) y se ofrece elegir la
     // primera -- activarla arranca su prueba de 7 días y recarga la
     // página, que a partir de ahí ya entra por la rama de abajo.
+    //
+    // Bug real (11/08/2026): antes esto se decidía con
+    // "oposicionesDisponibles.length === 0", pero el backend YA devuelve
+    // el catálogo público completo (3 oposiciones) cuando no se ha
+    // activado ninguna -- justo para poder elegir la primera -- así que
+    // esa longitud nunca era 0 ni para una cuenta recién creada, y esta
+    // pantalla nunca llegaba a mostrarse: se entraba directo al panel
+    // normal con las 3 pintadas como si ya estuvieran activadas, sin haber
+    // elegido ninguna de verdad.
     document.querySelector(".zona-wrap").style.display = "none";
     document.getElementById("zona-oposicion-actual").style.display = "none";
     document.getElementById("zona-oposicion-switcher").style.display = "none";

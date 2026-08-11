@@ -15,6 +15,8 @@ def _con_sesion(cliente, uid="u1", email="u1@example.com"):
 def test_oposiciones_disponibles_no_requiere_login(client):
     resp = client.get("/oposiciones-disponibles")
     assert resp.status_code == 200
+    # Sin sesión no hay forma de saber si tiene algo activado -- False.
+    assert resp.get_json()["alguna_activada"] is False
     oposiciones = resp.get_json()["oposiciones"]
     ids = [o["id"] for o in oposiciones]
     assert "AGE" in ids
@@ -93,8 +95,15 @@ def test_oposiciones_disponibles_con_sesion_pero_sin_activar_ninguna_muestra_las
         resp = client.get("/oposiciones-disponibles", headers={"Authorization": "Bearer x"})
     finally:
         parche.stop()
-    ids = {o["id"] for o in resp.get_json()["oposiciones"]}
+    datos = resp.get_json()
+    ids = {o["id"] for o in datos["oposiciones"]}
     assert ids == {"AGE", "GACE", "AUXILIAR"}
+    # Bug real (11/08/2026): el frontend no puede distinguir "esto es el
+    # catálogo para elegir" de "esto es lo que ya tienes" solo mirando
+    # cuántas hay (aquí hay 3 en ambos casos) -- alguna_activada es la
+    # señal explícita que hacía falta: False, porque no ha activado
+    # ninguna de verdad todavía.
+    assert datos["alguna_activada"] is False
 
 
 def test_oposiciones_disponibles_solo_muestra_las_activadas_por_el_usuario(client, db):
@@ -108,8 +117,10 @@ def test_oposiciones_disponibles_solo_muestra_las_activadas_por_el_usuario(clien
         resp = client.get("/oposiciones-disponibles", headers={"Authorization": "Bearer x"})
     finally:
         parche.stop()
-    ids = {o["id"] for o in resp.get_json()["oposiciones"]}
+    datos = resp.get_json()
+    ids = {o["id"] for o in datos["oposiciones"]}
     assert ids == {"AGE"}
+    assert datos["alguna_activada"] is True
 
 
 def test_activar_oposicion_requiere_login(client):

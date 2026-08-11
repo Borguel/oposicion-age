@@ -905,11 +905,28 @@ async function inyectarBannerPrueba(user) {
   const banner = document.createElement("div");
   banner.className = "age-banner-prueba";
 
-  if (perfil.plan === "gratis") {
-    // Prueba terminada y sin ningún plan de pago: aviso fijo, no se puede
-    // cerrar -- refuerza en toda la web el bloqueo que ya aplican las
-    // páginas de herramientas por su cuenta (ver assets/plan.js).
+  // perfil.oposicion_activada (11/08/2026, bug real: "Tu prueba gratuita
+  // ha terminado" le salía a una cuenta RECIÉN CREADA que nunca había
+  // activado ninguna oposición -- información errónea, algo que nunca
+  // llegó a empezar no puede haber "terminado"). Sin haber activado nada,
+  // perfil.plan también vale "gratis" por defecto (mismo valor que cuando
+  // la prueba de verdad terminó, ver resolver_plan_efectivo en
+  // registro_progreso_usuario.py) -- oposicion_activada es la señal real
+  // que distingue ambos casos.
+  if (perfil.plan === "gratis" && perfil.oposicion_activada) {
     banner.classList.add("age-banner-prueba-bloqueado");
+    if (!user.emailVerified) {
+      // Activó la oposición pero su prueba no ha arrancado todavía porque
+      // falta verificar el correo (ver activar_oposicion_usuario: sin
+      // verificar, prueba_fin se deja pendiente) -- avisar de eso en vez
+      // de decir que "ha terminado" algo que nunca llegó a empezar.
+      banner.innerHTML = `<p>Verifica tu correo electrónico para activar tus 7 días de prueba gratis.</p>`;
+      document.body.prepend(banner);
+      return;
+    }
+    // Prueba terminada de verdad y sin ningún plan de pago: aviso fijo, no
+    // se puede cerrar -- refuerza en toda la web el bloqueo que ya aplican
+    // las páginas de herramientas por su cuenta (ver assets/plan.js).
     banner.innerHTML = `
       <p>Tu prueba gratuita ha terminado. Elige un plan para seguir usando Domina tu Opo.</p>
       <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>

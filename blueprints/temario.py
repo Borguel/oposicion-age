@@ -10,7 +10,10 @@ bp = Blueprint("temario", __name__)
 
 
 def _oposiciones_visibles_para_la_peticion():
-    """IDs de OPOSICIONES que debe ver quien hace la petición.
+    """(ids_visibles, alguna_activada): IDs de OPOSICIONES que debe ver
+    quien hace la petición, y si tiene realmente AL MENOS una oposición
+    pública activada de verdad (o si ids_visibles es solo el catálogo para
+    elegir, sin haber activado nada todavía).
 
     Sin sesión (o sesión sin ninguna oposición activada todavía): el
     catálogo público completo (AGE/GACE/Auxiliar -- todo lo que no esté
@@ -24,25 +27,36 @@ def _oposiciones_visibles_para_la_peticion():
     usuario ha activado él mismo -- ni el resto de públicas sin activar ni
     ninguna oculta que no se le haya concedido. Así cada cuenta ve solo la
     oposición (o las oposiciones) que ha elegido estudiar, no las 3 a la vez
-    por defecto."""
+    por defecto.
+
+    alguna_activada (11/08/2026, bug real reportado por un usuario: al
+    registrarse, su pareja nunca vio la pantalla de "elige tu oposición" --
+    ver zona-opositor/script.js): antes de este campo, el frontend
+    intentaba distinguir "cuenta nueva sin elegir" de "ya tiene N
+    activadas" mirando solo la LONGITUD de ids_visibles -- pero para una
+    cuenta nueva esta función YA devuelve el catálogo completo (para poder
+    elegir), así que esa longitud nunca es 0 y el frontend nunca detectaba
+    que era una cuenta nueva. alguna_activada da la señal real y sin
+    ambigüedad que hacía falta."""
     publicas = {oid for oid, datos in OPOSICIONES.items() if not datos.get("oculta")}
     identidad = obtener_identidad_desde_token(request)
     if not identidad:
-        return publicas
+        return publicas, False
     uid = identidad[0]
     doc = db.collection("usuarios").document(uid).get()
     activadas = set((doc.to_dict() or {}).get("suscripciones", {}).keys()) if doc.exists else set()
     activadas_publicas = activadas & publicas
     activadas_ocultas = activadas - publicas
     if not activadas_publicas:
-        return publicas | activadas_ocultas
-    return activadas_publicas | activadas_ocultas
+        return publicas | activadas_ocultas, False
+    return activadas_publicas | activadas_ocultas, True
 
 
 @bp.route("/oposiciones-disponibles", methods=["GET"])
 def obtener_oposiciones_disponibles():
-    ids_visibles = _oposiciones_visibles_para_la_peticion()
+    ids_visibles, alguna_activada = _oposiciones_visibles_para_la_peticion()
     return jsonify({
+        "alguna_activada": alguna_activada,
         "oposiciones": [
             {
                 "id": oid,
