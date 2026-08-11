@@ -39,6 +39,23 @@ def test_eliminar_cuenta_borra_subcolecciones_y_documento(db):
     assert db.leer(("usuarios", "u1", "documentos", "d1")) is None
 
 
+def test_eliminar_cuenta_borra_firebase_auth_antes_que_firestore(db):
+    # Si el borrado de Firebase Auth falla por algo que no sea "ya no
+    # existe", los datos de Firestore deben seguir intactos para poder
+    # reintentar sin dejar una cuenta de Auth huérfana con datos perdidos.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    db.sembrar(("usuarios", "u1", "tests", "t1"), {"tipo": "oficial"})
+
+    with patch("gestion_cuenta.firebase_auth.delete_user", side_effect=RuntimeError("red caída")):
+        try:
+            eliminar_cuenta_usuario(db, "u1")
+        except RuntimeError:
+            pass
+
+    assert db.leer(("usuarios", "u1")) is not None
+    assert db.leer(("usuarios", "u1", "tests", "t1")) is not None
+
+
 def test_exportar_datos_incluye_conversaciones_de_tu_tutor(db):
     # Las conversaciones de Tu Tutor cuelgan de conversaciones_IA/{uid}/conversaciones,
     # NO de usuarios/{uid}/conversaciones (ver chat_controller.py: crear_conversacion).

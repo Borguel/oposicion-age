@@ -326,6 +326,34 @@ def test_detalle_usuario_agrega_tests_y_racha(client, db):
     assert d["plan"] == "premium"
 
 
+def test_detalle_usuario_email_verificado_viene_de_firebase_auth_no_de_firestore(client, db):
+    # email_verificado no se guarda nunca en Firestore -- viene de la cuenta
+    # real de Firebase Auth (registro.email_verified), no de datos.get(...).
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "email_verificado": True})
+
+    class _Reg:
+        custom_claims = None
+        email_verified = False
+    with _como(), patch("blueprints.admin.firebase_auth.get_user", return_value=_Reg()):
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["email_verificado"] is False
+
+    class _RegVerificado:
+        custom_claims = None
+        email_verified = True
+    db.sembrar(("usuarios", "u2"), {"email": "u2@x.com"})
+    with _como(), patch("blueprints.admin.firebase_auth.get_user", return_value=_RegVerificado()):
+        d2 = client.get("/admin/api/usuarios/u2", headers=_AUTH).get_json()
+    assert d2["email_verificado"] is True
+
+
+def test_detalle_usuario_email_verificado_falso_si_firebase_auth_falla(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    with _como(), patch("blueprints.admin.firebase_auth.get_user", side_effect=RuntimeError("caído")):
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["email_verificado"] is False
+
+
 def test_detalle_usuario_incluye_contenido_y_rendimiento(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@x.com",

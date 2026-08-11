@@ -1467,12 +1467,14 @@ def usuarios_detalle(uid):
         coste_historico = None
         coste_historico_diario = None
     bloqueado = False
+    email_verificado = False
     try:
         registro = firebase_auth.get_user(uid)
         claims = registro.custom_claims or {}
         es_admin = claims.get("admin") is True
         permisos = [p for p in (claims.get("permisos") or []) if p in PERMISOS_VALIDOS]
         bloqueado = bool(getattr(registro, "disabled", False))
+        email_verificado = bool(getattr(registro, "email_verified", False))
     except Exception:
         es_admin = False
         permisos = []
@@ -1501,7 +1503,7 @@ def usuarios_detalle(uid):
         "tests_total": tests_total,
         "tests_por_oposicion": tests_por_oposicion,
         "ultima_nota": ultima_nota,
-        "email_verificado": bool(datos.get("email_verificado", False)),
+        "email_verificado": email_verificado,
         "admin_override": datos.get("admin_override"),
         "notas_admin": datos.get("notas_admin", ""),
         "coste_ia_mes": _cim,

@@ -101,6 +101,29 @@ body {
   margin-bottom: 14px;
   font-size: 0.85rem;
   padding: 7px 14px;
+  /* Bug real (11/08/2026): heredaba el color de .age-btn-outline (texto
+     casi negro, borde gris claro), pensado para un fondo claro -- aquí
+     está sobre el degradado oscuro de .zona-hero, así que el texto era
+     prácticamente invisible. Mismo tratamiento que .zona-switch-pill, que
+     ya convive bien con este mismo fondo. */
+  background: transparent;
+  color: var(--age-navy-ink);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.zona-oposicion-anadir:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.zona-hero-link {
+  /* margin-top (11/08/2026): cuando "+ Añadir otra oposición" está visible
+     justo encima, necesitaba algo más de separación -- sin esto quedaban
+     los dos pegados, como si fueran una sola pieza confusa en vez de dos
+     acciones distintas. */
+  display: inline-block;
+  margin-top: 6px;
 }
 
 .zona-elige-oposicion-wrap {
@@ -118,6 +141,13 @@ body {
 }
 
 .zona-elige-oposicion-item {
+  /* padding (11/08/2026, bug real: "no respeta los bordes"): .age-card por
+     sí sola no define ningún padding -- lo añaden sus propios llamadores
+     según el caso (ver .age-option-card en theme.css). Esta tarjeta se
+     había quedado sin ninguno, así que el título y el botón tocaban
+     literalmente el borde de la tarjeta. Mismo valor que .age-option-card,
+     para quedar visualmente consistente con el resto de la web. */
+  padding: 26px 24px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;

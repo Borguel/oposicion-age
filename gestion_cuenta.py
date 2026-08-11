@@ -42,10 +42,13 @@ def exportar_datos_usuario(db, uid):
 
 
 def eliminar_cuenta_usuario(db, uid):
-    """Cancela cualquier suscripción de Stripe activa, borra todas las
-    subcolecciones y el documento del usuario, y por último la cuenta de
-    Firebase Auth -- en ese orden, para poder seguir leyendo sus datos
-    (p. ej. el id de suscripción) mientras todavía hacen falta."""
+    """Cancela cualquier suscripción de Stripe activa, borra la cuenta de
+    Firebase Auth y por último todas las subcolecciones y el documento del
+    usuario en Firestore -- en ese orden. Si el borrado en Firebase Auth
+    fallara por algo que no sea "ya no existe" (p. ej. un error transitorio
+    de red), los datos de Firestore siguen intactos y un reintento puede
+    completar el borrado sin dejar una cuenta de Auth huérfana con datos ya
+    perdidos en Firestore."""
     usuario_ref = db.collection("usuarios").document(uid)
     usuario = usuario_ref.get().to_dict() or {}
 
@@ -58,6 +61,11 @@ def eliminar_cuenta_usuario(db, uid):
         except Exception:
             logger.exception("Error cancelando suscripción de Stripe %s al borrar la cuenta %s", subscription_id, uid)
 
+    try:
+        firebase_auth.delete_user(uid)
+    except firebase_auth.UserNotFoundError:
+        pass
+
     for coleccion in COLECCIONES_USUARIO:
         for doc in usuario_ref.collection(coleccion).stream():
             doc.reference.delete()
@@ -68,8 +76,3 @@ def eliminar_cuenta_usuario(db, uid):
     db.collection("conversaciones_IA").document(uid).delete()
 
     usuario_ref.delete()
-
-    try:
-        firebase_auth.delete_user(uid)
-    except firebase_auth.UserNotFoundError:
-        pass

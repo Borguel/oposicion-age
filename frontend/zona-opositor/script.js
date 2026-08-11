@@ -630,7 +630,7 @@ function renderElegirOposicion(candidatas, { permitirCancelar = false } = {}) {
   grid.innerHTML = candidatas.map((o) => `
     <div class="age-card zona-elige-oposicion-item">
       <strong>${o.nombre}</strong>
-      <button type="button" class="age-btn age-btn-primary" data-activar="${o.id}">Empezar prueba gratis</button>
+      <button type="button" class="age-btn age-btn-primary age-btn-block" data-activar="${o.id}">Empezar prueba gratis</button>
     </div>
   `).join("");
   grid.querySelectorAll("[data-activar]").forEach((boton) => {
