@@ -116,9 +116,16 @@ def obtener_preguntas_previas(db, uid, documento_id, limite=60):
     sucesivos del mismo PDF podían acabar compartiendo preguntas."""
     if not documento_id:
         return []
+    # .limit(...) (12/08/2026, bug real: sin límite, un documento con
+    # muchos tests generados traía TODOS sus tests_pdf enteros para acabar
+    # recortando la lista final de preguntas a `limite` -- se acota
+    # directamente la propia consulta, con un margen generoso sobre
+    # `limite` (cada test trae varias preguntas) en vez de sobre el número
+    # final de preguntas.
     docs = (
         db.collection("usuarios").document(uid).collection("tests_pdf")
         .where("documento_id", "==", documento_id)
+        .limit(max(limite, 1) * 3)
         .stream()
     )
     formateadas = []
@@ -416,8 +423,19 @@ def limpiar_error_generacion(db, uid, documento_id, tipo):
     ref.update({f"error_{tipo}": None})
 
 
+_LIMITE_DOCUMENTOS_LISTADOS = 200
+
+
 def listar_documentos(db, uid):
-    docs_ref = db.collection("usuarios").document(uid).collection("documentos")
+    # .limit(...) (12/08/2026, bug real: sin límite, un usuario con muchos
+    # documentos subidos traía la colección entera en cada carga de "Mis
+    # Documentos" -- el tope es generoso a propósito, esto no sustituye a
+    # paginación real si algún día hiciera falta, solo evita una lectura sin
+    # fin.
+    docs_ref = (
+        db.collection("usuarios").document(uid).collection("documentos")
+        .limit(_LIMITE_DOCUMENTOS_LISTADOS)
+    )
     bancos_preguntas = _resumen_bancos(db, uid, "preguntas")
     bancos_tarjetas = _resumen_bancos(db, uid, "tarjetas")
     resultado = []

@@ -8,6 +8,7 @@ from documentos_pdf import (
     obtener_banco, _recortar_a_bytes_utf8, LIMITE_BYTES_TEXTO_DOCUMENTO,
     actualizar_tipo_contenido, resolver_tipo_contenido,
     actualizar_progreso_generacion, limpiar_progreso_generacion,
+    obtener_preguntas_previas, _LIMITE_DOCUMENTOS_LISTADOS,
 )
 
 
@@ -216,6 +217,30 @@ def test_listar_documentos_sin_generacion_en_curso_progreso_es_none(db):
     resultado = listar_documentos(db, "u1")
     assert resultado[0]["progreso_resumen"] is None
     assert resultado[0]["progreso_esquema"] is None
+
+
+def test_listar_documentos_no_trae_mas_de_un_limite_razonable(db):
+    # 12/08/2026, bug real: sin límite, un usuario con muchos documentos
+    # subidos traía la colección entera en cada carga de "Mis Documentos".
+    for i in range(_LIMITE_DOCUMENTOS_LISTADOS + 5):
+        db.sembrar(("usuarios", "u1", "documentos", f"d{i}"), {"titulo": f"Doc {i}", "ultima_actividad": "2026-01-01"})
+    resultado = listar_documentos(db, "u1")
+    assert len(resultado) == _LIMITE_DOCUMENTOS_LISTADOS
+
+
+def test_obtener_preguntas_previas_acota_la_consulta_no_solo_la_salida(db):
+    # 12/08/2026, bug real: se traían TODOS los tests_pdf del documento y
+    # solo se recortaba la lista final de preguntas -- ahora la propia
+    # consulta a Firestore se acota con un margen prudente sobre `limite`.
+    for i in range(30):
+        db.sembrar(("usuarios", "u1", "tests_pdf", f"t{i}"), {
+            "documento_id": "doc1",
+            "preguntas": [{"pregunta": f"¿Pregunta {i}?", "opciones": {"A": "1"}, "respuesta_correcta": "A"}],
+        })
+    resultado = obtener_preguntas_previas(db, "u1", "doc1", limite=5)
+    # Con el margen (limite * 3 = 15 tests_pdf leídos, 1 pregunta cada uno)
+    # sigue habiendo de sobra para completar el límite final pedido.
+    assert len(resultado) == 5
 
 
 class TestProgresoGeneracion:

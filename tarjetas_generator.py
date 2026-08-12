@@ -229,7 +229,11 @@ def _generar_candidatas_fragmento(fragmento, cupo, on_usage, tarjetas_a_evitar=N
     for c in _parsear_tarjetas(generado):
         if isinstance(c, dict) and c.get("pregunta") and c.get("respuesta"):
             candidatas.append({"pregunta": str(c["pregunta"]).strip(), "respuesta": str(c["respuesta"]).strip()})
-    return candidatas
+    # Recorte al cupo pedido (12/08/2026, bug real: el modelo a veces
+    # devuelve más tarjetas de las pedidas en "cupo" -- sin este recorte,
+    # todas pasaban a verificación igualmente, gastando llamadas de más sin
+    # ningún beneficio.
+    return candidatas[:cupo]
 
 
 def _verificar_tarjeta(tarjeta, fragmento, on_usage):
@@ -243,9 +247,12 @@ def _verificar_tarjeta(tarjeta, fragmento, on_usage):
         # cortado se trata como tarjeta inválida aunque no lo fuera,
         # disparando una regeneración de más. No tiene coste extra si no
         # hace falta (se cobra por tokens generados, no por el tope). Subido
-        # a 4000 (igual que en test_generator.py) tras ver en producción que
-        # 2000 seguía cortándose alguna vez para la verificación de test.
-        max_tokens=4000,
+        # a 8000 (12/08/2026, igual que test_generator.py._verificar_pregunta):
+        # con thinking_enabled=True el razonamiento interno cuenta contra
+        # este mismo tope, así que 4000 dejaba menos margen real para el
+        # JSON de salida en verificaciones con varios problemas detallados
+        # que en test_generator.py, pese a ser una tarea equivalente.
+        max_tokens=8000,
         response_format_json=True,
         on_usage=on_usage,
         # thinking_enabled=True (02/08/2026): call_deepseek_api desactiva el

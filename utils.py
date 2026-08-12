@@ -12,11 +12,15 @@ from banco_preguntas_ia import coleccion_banco_preguntas
 logger = logging.getLogger(__name__)
 
 # ✅ Cuenta los tokens de un texto
-def contar_tokens(texto: str, modelo="gpt-3.5-turbo") -> int:
-    try:
-        encoding = tiktoken.encoding_for_model(modelo)
-    except KeyError:
-        encoding = tiktoken.get_encoding("cl100k_base")
+def contar_tokens(texto: str) -> int:
+    # cl100k_base directamente (12/08/2026, bug real: antes se resolvía por
+    # nombre de modelo con tiktoken.encoding_for_model("gpt-3.5-turbo"), pero
+    # esta app llama a DeepSeek, no a un modelo de OpenAI -- el tokenizer no
+    # es idéntico, y encoding_for_model("gpt-3.5-turbo") ya resolvía a
+    # cl100k_base por debajo, así que pedirlo directamente evita el mapeo
+    # confuso a un modelo que no es el que se usa realmente (aunque el
+    # tokenizer exacto de DeepSeek siga sin estar disponible aquí).
+    encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(texto))
 
 

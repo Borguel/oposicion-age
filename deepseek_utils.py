@@ -507,7 +507,7 @@ def _post_deepseek_con_reintentos(headers, payload, timeout, stream=False):
         return response
 
 
-def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, temperature=0.3, max_continuaciones=1, on_usage=None):
+def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, temperature=0.3, max_continuaciones=1, on_usage=None, frequency_penalty=None):
     """Genera texto largo (resúmenes/esquemas a partir de un PDF) sin
     arriesgarse a que se corte a mitad de frase -- o directamente a mitad
     del documento -- si el texto de origen es largo. Si DeepSeek corta la
@@ -532,6 +532,11 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
     el usage de cada llamada en vez de contabilizarlo contra la petición
     actual.
 
+    frequency_penalty (opcional, None = no se manda): en documentos largos
+    el modelo puede caer en repeticiones que consumen presupuesto de tokens
+    sin avanzar contenido -- mismo mecanismo que ya usa la generación de
+    tests (ver generador_preguntas_verificado.py).
+
     Devuelve el texto completo, o None si la primera llamada falla."""
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
@@ -549,6 +554,8 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
+        if frequency_penalty is not None:
+            payload["frequency_penalty"] = frequency_penalty
         try:
             response = _post_deepseek_con_reintentos(headers, payload, timeout=60)
         except requests.exceptions.RequestException as e:
@@ -920,7 +927,7 @@ def generar_documento_largo_por_partes(
         # entrada, se reintenta una vez; si sigue igual, se devuelve con
         # aviso visible en vez de un documento silenciosamente incompleto.
         def _intento_unico():
-            return generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens, on_usage=on_usage)
+            return generar_con_continuacion(system_prompt, f"{etiqueta_documento}:\n{texto}", max_tokens=max_tokens, on_usage=on_usage, frequency_penalty=0.3)
 
         def _sospechoso(r):
             return not r or len(r) < len(texto) * fraccion_minima_map
@@ -985,7 +992,7 @@ def generar_documento_largo_por_partes(
         # este closure corre dentro del ThreadPoolExecutor de abajo, en un
         # hilo de trabajo sin flask.g, así que sin on_usage el coste de
         # TODAS las llamadas del MAP se perdería en silencio.
-        return generar_con_continuacion(system_prompt, mensaje, max_tokens=max_tokens, on_usage=on_usage)
+        return generar_con_continuacion(system_prompt, mensaje, max_tokens=max_tokens, on_usage=on_usage, frequency_penalty=0.3)
 
     parciales_por_indice = {}
     completadas = 0
@@ -1178,7 +1185,7 @@ def generar_documento_largo_por_partes(
         "solo combinar y reorganizar lo ya generado."
         + (f"\n\n{instrucciones_fusion_extra}" if instrucciones_fusion_extra else "")
     )
-    fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens_fusion, on_usage=on_usage)
+    fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens_fusion, on_usage=on_usage, frequency_penalty=0.3)
 
     # Comprobación de tamaño de la fusión (10/08/2026, bug real: con los
     # fragmentos ya generados y válidos por separado, la llamada de fusión a
@@ -1210,7 +1217,7 @@ def generar_documento_largo_por_partes(
             "caracteres frente a los %d de entrada -- reintentando una vez.",
             len(parciales), len(fusionado), len(bloque_parciales),
         )
-        fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens_fusion, on_usage=on_usage)
+        fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens_fusion, on_usage=on_usage, frequency_penalty=0.3)
         if fusionado and len(fusionado) < len(bloque_parciales) * fraccion_minima_fusion:
             logger.warning(
                 "generar_documento_largo_por_partes: la fusión sigue devolviendo muy poco "

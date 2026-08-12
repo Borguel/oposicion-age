@@ -510,6 +510,20 @@ class TestGenerarConContinuacion:
             resultado = deepseek_utils.generar_con_continuacion("system", "user")
         assert resultado is None
 
+    def test_frequency_penalty_se_incluye_si_se_pasa(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post",
+                   return_value=_respuesta_con_status("Resumen.", "stop")) as mock_post:
+            deepseek_utils.generar_con_continuacion("system", "user", frequency_penalty=0.3)
+        assert mock_post.call_args.kwargs["json"]["frequency_penalty"] == 0.3
+
+    def test_sin_frequency_penalty_no_se_incluye(self, monkeypatch):
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post",
+                   return_value=_respuesta_con_status("Resumen.", "stop")) as mock_post:
+            deepseek_utils.generar_con_continuacion("system", "user")
+        assert "frequency_penalty" not in mock_post.call_args.kwargs["json"]
+
     def test_sin_api_key_devuelve_none_sin_llamar(self, monkeypatch):
         monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
         with patch("deepseek_utils.requests.post") as mock_post:
@@ -723,6 +737,15 @@ class TestGenerarDocumentoLargoPorPartes:
             resultado = deepseek_utils.generar_documento_largo_por_partes("system", "texto corto")
         assert resultado == "resumen completo"
         assert mock_gen.call_count == 1
+
+    def test_pasa_frequency_penalty_para_evitar_bucles_de_repeticion(self):
+        # 12/08/2026, bug real: generar_con_continuacion no mandaba
+        # frequency_penalty (a diferencia de la generación de tests, que sí
+        # lo usa) -- en documentos largos el modelo podía entrar en bucles
+        # de repetición que agotan max_tokens sin avanzar contenido real.
+        with patch("deepseek_utils.generar_con_continuacion", return_value="resumen completo") as mock_gen:
+            deepseek_utils.generar_documento_largo_por_partes("system", "texto corto")
+        assert mock_gen.call_args.kwargs["frequency_penalty"] == 0.3
 
     def test_documento_corto_avisa_de_progreso_al_empezar_no_solo_al_terminar(self):
         # Bug real (10/08/2026): on_progreso solo se llamaba UNA vez, al

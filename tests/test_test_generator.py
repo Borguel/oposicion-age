@@ -23,7 +23,7 @@ from test_generator import (
     _claves_dedup, _fragmentos_por_lote, _es_duplicado_por_contencion,
     _bloques_estructurales, _repartir_bloques_en_lotes, _bloques_por_esquema_ia,
     _detectar_duplicados_finales, generar_banco_preguntas_adaptativo,
-    _recortar_fragmento_a_articulo_citado,
+    _recortar_fragmento_a_articulo_citado, _asegurar_pregunta_valida,
 )
 
 
@@ -174,8 +174,12 @@ class TestGenerarPreguntasIaEnLotes:
         # (la del lote + los recambios); el relleno (_MAX_RONDAS_RELLENO=3,
         # ver test_generator.py) le da al mismo hueco que sigue faltando
         # TRES tandas completas más del mismo tamaño -- el cuádruple en
-        # total, nunca más.
-        assert len(llamadas_generacion) == MAX_INTENTOS_POR_PREGUNTA_PDF * 4
+        # total, más 1 (12/08/2026: el recambio forzado de la primera
+        # candidata, que ya falló su verificación individual antes de
+        # entrar en _asegurar_pregunta_valida, ya no descuenta presupuesto
+        # de max_intentos -- ver el bug real documentado junto a
+        # _asegurar_pregunta_valida).
+        assert len(llamadas_generacion) == MAX_INTENTOS_POR_PREGUNTA_PDF * 4 + 1
 
     def test_on_progreso_se_llama_una_vez_por_pregunta_no_por_lote(self):
         # Con num_preguntas=2 y tamano_lote=1 hay 2 lotes, cada uno con su
@@ -2119,3 +2123,36 @@ class TestGenerarBancoPreguntasAdaptativo:
 
         assert len(resultado) == 16
         assert len(llamadas_esquema) == 1
+
+
+class TestForzarRecambioNoGastaUnIntentoCompleto:
+    """12/08/2026, bug real: cuando una candidata ya verificada se descarta
+    solo por ser duplicada de otra aceptada en otro lote (forzar_recambio),
+    _asegurar_pregunta_valida descontaba igualmente un intento del
+    presupuesto de MAX_INTENTOS_POR_PREGUNTA_PDF -- dejando menos intentos
+    reales de verificación que si esa primera comprobación hubiera
+    fallado de verdad. El recambio forzado no debe consumir presupuesto."""
+
+    def test_recambio_forzado_no_reduce_los_intentos_de_verificacion(self):
+        construir_prompt = _construir_prompt_fabrica(None)
+        pregunta_original = {
+            "pregunta": "¿Original duplicada?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+            "respuesta_correcta": "A", "explicacion": "Explicación de prueba.",
+        }
+        pregunta_recambio = {
+            "pregunta": "¿Recambio válido?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+            "respuesta_correcta": "A", "explicacion": "Explicación de prueba.",
+        }
+        with patch("test_generator._pedir_una_pregunta_de_recambio", return_value=pregunta_recambio), \
+             patch("test_generator.validar_pregunta", return_value=True), \
+             patch("test_generator._verificar_pregunta", return_value=True):
+            # max_intentos=1: con el bug real (forzar_recambio descontando
+            # un intento), intentos_restantes llegaría a 0 antes de llegar
+            # a verificar el recambio y la función devolvería None sin
+            # comprobar si el recambio era válido. Sin el bug, el recambio
+            # SÍ se verifica y se acepta.
+            resultado = _asegurar_pregunta_valida(
+                pregunta_original, construir_prompt, "Texto de prueba.", on_usage=None,
+                max_intentos=1, forzar_recambio=True,
+            )
+        assert resultado == pregunta_recambio

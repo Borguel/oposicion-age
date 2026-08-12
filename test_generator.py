@@ -1055,15 +1055,19 @@ def _asegurar_pregunta_valida(pregunta_candidata, construir_prompt, texto_fuente
     tal cual -- su contenido no ha cambiado, así que pasaría otra vez y
     seguiría siendo el mismo duplicado, sin llegar nunca a pedir una
     pregunta distinta. Con forzar_recambio=True se salta la comprobación
-    sobre pregunta_candidata y se pide directamente una de recambio, con el
-    resto del presupuesto de intentos igual que si esa primera comprobación
-    hubiera fallado."""
+    sobre pregunta_candidata y se pide directamente una de recambio, SIN
+    descontar presupuesto de max_intentos (12/08/2026, bug real: la
+    pregunta original ya había pasado su propia verificación en otro lote --
+    el único motivo de descartarla aquí es un duplicado detectado a
+    posteriori, no un fallo de verificación, así que no debería consumir uno
+    de los pocos intentos reales de verificación disponibles. Antes dejaba
+    solo max_intentos-1 intentos efectivos tras un recambio forzado,
+    agotándose antes de tiempo en documentos con pocos datos distintos)."""
     pregunta = pregunta_candidata
     intentos_restantes = max_intentos
     if forzar_recambio:
-        intentos_restantes -= 1
         pregunta = _pedir_una_pregunta_de_recambio(construir_prompt, pregunta.get("pregunta", ""), on_usage)
-        if not pregunta or intentos_restantes <= 0:
+        if not pregunta:
             return None
     while intentos_restantes > 0:
         if validar_pregunta(pregunta) and _verificar_pregunta(pregunta, texto_fuente, on_usage):

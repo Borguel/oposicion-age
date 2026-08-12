@@ -3,8 +3,11 @@ respuesta correcta en la opción A con mucha más frecuencia de la que
 correspondería al azar, así que hay que barajar la posición de las 4
 opciones tras generarlas (y remapear "respuesta_correcta" y la explicación
 para que sigan señalando a la opción correcta)."""
+from unittest.mock import patch
+
 from utils import (
     barajar_opciones_pregunta,
+    contar_tokens,
     limpiar_cache_preguntas_banco_ia,
     obtener_catalogo_temas,
     obtener_preguntas_banco_ia,
@@ -12,6 +15,22 @@ from utils import (
     parsear_explicacion_por_opcion,
     _limpiar_cache_temario,
 )
+
+
+class TestContarTokens:
+    def test_usa_cl100k_base_no_un_modelo_de_openai(self):
+        # 12/08/2026, bug real: contar_tokens resolvía el encoding por
+        # nombre de modelo de OpenAI ("gpt-3.5-turbo"), pese a que esta app
+        # llama a DeepSeek -- se usa cl100k_base directamente en vez de ese
+        # mapeo confuso a un modelo que no es el que se usa realmente. Se
+        # mockea tiktoken (no hay red hacia openaipublic.blob.core.windows.net
+        # en el entorno de pruebas) -- lo que se comprueba es qué encoding
+        # se pide, no el resultado real de tokenizar.
+        with patch("utils.tiktoken.get_encoding") as mock_get_encoding:
+            mock_get_encoding.return_value.encode.return_value = [1, 2, 3]
+            resultado = contar_tokens("Texto de prueba para contar tokens.")
+        mock_get_encoding.assert_called_once_with("cl100k_base")
+        assert resultado == 3
 
 
 def _pregunta_base():

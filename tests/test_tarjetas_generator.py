@@ -10,6 +10,7 @@ from unittest.mock import patch
 from tarjetas_generator import (
     _repartir_cupos, _parsear_tarjetas, _contiene_frase_prohibida, generar_tarjetas_verificadas,
     _verificar_tarjeta, generar_banco_tarjetas_adaptativo, _es_semanticamente_duplicada,
+    _generar_candidatas_fragmento,
 )
 
 
@@ -338,6 +339,17 @@ class TestGenerarTarjetasVerificadas:
         assert resultado["tarjetas"][0]["pregunta"] == "¿Pregunta B?"
         assert "advertencia" not in resultado
 
+    def test_generar_candidatas_fragmento_recorta_al_cupo_pedido(self):
+        # 12/08/2026, bug real: el modelo a veces devuelve más tarjetas de
+        # las pedidas en "cupo" -- sin recortar, todas pasaban a
+        # verificación, gastando llamadas de más sin ningún beneficio.
+        respuesta = json.dumps({"tarjetas": [
+            {"pregunta": f"¿Pregunta {i}?", "respuesta": f"Respuesta {i}"} for i in range(5)
+        ]})
+        with patch("tarjetas_generator.call_deepseek_api", return_value=respuesta):
+            candidatas = _generar_candidatas_fragmento("Fragmento", cupo=2, on_usage=None)
+        assert len(candidatas) == 2
+
     def test_sin_candidatas_generadas_da_advertencia(self):
         with patch("tarjetas_generator.call_deepseek_api", return_value=None):
             resultado = generar_tarjetas_verificadas("Texto corto.", 3)
@@ -361,13 +373,15 @@ class TestGenerarTarjetasVerificadas:
         # 1 llamada de generación + 1 de verificación = 2 avisos de usage.
         assert len(recibidos) == 2
 
-    def test_verificacion_pide_4000_tokens_no_400(self):
+    def test_verificacion_pide_8000_tokens_no_400(self):
         # Mismo bug real que en test_generator.py: con max_tokens=400,
         # deepseek-v4-flash podía truncar la respuesta de verificación al
         # detallar varios problemas, y el JSON cortado se trataba como
-        # tarjeta inválida aunque no lo fuera. Subido a 4000 (igual que en
-        # test_generator.py) tras ver en producción que 2000 seguía
-        # cortándose alguna vez para la verificación de test.
+        # tarjeta inválida aunque no lo fuera. Subido a 8000 (12/08/2026,
+        # igual que test_generator.py._verificar_pregunta): con
+        # thinking_enabled=True el razonamiento cuenta contra el mismo tope
+        # que el JSON de salida, así que 4000 dejaba menos margen real que
+        # en test_generator.py para una tarea equivalente.
         max_tokens_verificacion = []
 
         def fake_call(messages, max_tokens=None, **kwargs):
@@ -379,7 +393,7 @@ class TestGenerarTarjetasVerificadas:
         with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call):
             generar_tarjetas_verificadas("Texto corto.", 1)
 
-        assert max_tokens_verificacion == [4000]
+        assert max_tokens_verificacion == [8000]
 
     def test_verificacion_mantiene_el_thinking_encendido(self):
         # call_deepseek_api desactiva el razonamiento de deepseek-v4-flash
