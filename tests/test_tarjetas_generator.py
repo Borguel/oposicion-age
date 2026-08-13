@@ -10,7 +10,7 @@ from unittest.mock import patch
 from tarjetas_generator import (
     _repartir_cupos, _parsear_tarjetas, _contiene_frase_prohibida, generar_tarjetas_verificadas,
     _verificar_tarjeta, generar_banco_tarjetas_adaptativo, _es_semanticamente_duplicada,
-    _generar_candidatas_fragmento,
+    _generar_candidatas_fragmento, _claves_dedup, _articulos_citados,
 )
 
 
@@ -113,6 +113,79 @@ class TestEsSemanticamenteDuplicada:
     def test_lista_vacia_nunca_es_duplicada(self):
         nueva = {"pregunta": "¿Qué es el TFUE?", "respuesta": "El Tratado de Funcionamiento de la Unión Europea."}
         assert _es_semanticamente_duplicada(nueva, []) is False
+
+
+class TestClavesDedup:
+    # 12/08/2026, porte de test_generator.py._claves_dedup: detecta como
+    # duplicadas dos tarjetas que citan el MISMO artículo y el MISMO dato
+    # concreto (cifra o principio jurídico), aunque estén redactadas de
+    # formas completamente distintas -- un caso que _es_semanticamente_
+    # duplicada (contención/solapamiento de la respuesta) no siempre caza.
+
+    def test_dedupe_por_articulo_y_cifra_pese_a_redaccion_muy_distinta(self):
+        a = {
+            "pregunta": "¿Cuál es el plazo de alegaciones?",
+            "respuesta": "El artículo 14 establece un plazo de 15 días hábiles.",
+        }
+        b = {
+            "pregunta": "Según el artículo 14, ¿en cuántos días hábiles se pueden presentar alegaciones?",
+            "respuesta": "En 15 días hábiles.",
+        }
+        assert _claves_dedup(a) & _claves_dedup(b)
+
+    def test_mismo_articulo_cifra_distinta_no_se_confunde(self):
+        a = {"pregunta": "¿Plazo del artículo 14?", "respuesta": "El artículo 14 fija un plazo de 15 días hábiles."}
+        b = {"pregunta": "¿Plazo del artículo 14?", "respuesta": "El artículo 14 fija un plazo de 1 mes."}
+        claves_a = {c for c in _claves_dedup(a) if c.startswith("d:")}
+        claves_b = {c for c in _claves_dedup(b) if c.startswith("d:")}
+        assert claves_a.isdisjoint(claves_b)
+
+    def test_articulo_solo_en_respuesta_se_usa_como_respaldo(self):
+        tarjeta = {"pregunta": "¿Cuál es el plazo de alegaciones?", "respuesta": "El artículo 14 fija 15 días hábiles."}
+        assert _articulos_citados(tarjeta) == {"14"}
+
+    def test_articulo_en_pregunta_tiene_prioridad_sobre_respuesta(self):
+        tarjeta = {"pregunta": "¿Qué dice el artículo 14?", "respuesta": "El artículo 20 regula algo distinto."}
+        assert _articulos_citados(tarjeta) == {"14"}
+
+    def test_dedupe_de_fracciones_en_distintas_formas(self):
+        base = {"pregunta": "¿Mayoría del artículo 9?", "respuesta": "El artículo 9 exige dos tercios."}
+        barra = {"pregunta": "¿Qué mayoría exige el artículo 9?", "respuesta": "El artículo 9 exige 2/3."}
+        palabras = {"pregunta": "¿Fracción requerida por el artículo 9?", "respuesta": "El artículo 9 exige 2 tercios."}
+        claves_base = {c for c in _claves_dedup(base) if c.startswith("d:")}
+        claves_barra = {c for c in _claves_dedup(barra) if c.startswith("d:")}
+        claves_palabras = {c for c in _claves_dedup(palabras) if c.startswith("d:")}
+        assert claves_base == claves_barra == claves_palabras
+
+    def test_dedupe_por_principio_juridico_con_nombre_propio(self):
+        a = {
+            "pregunta": "¿Qué principio recoge el artículo 9.3?",
+            "respuesta": "El artículo 9.3 recoge el principio de seguridad jurídica.",
+        }
+        b = {
+            "pregunta": "El artículo 9.3, ¿a qué principio hace referencia?",
+            "respuesta": "Al principio de seguridad jurídica, entre otros.",
+        }
+        claves_a = {c for c in _claves_dedup(a) if c.startswith("c:")}
+        claves_b = {c for c in _claves_dedup(b) if c.startswith("c:")}
+        assert claves_a and claves_a == claves_b
+
+    def test_texto_pregunta_identico_sigue_detectando_duplicado_exacto(self):
+        a = {"pregunta": "¿Qué es el TFUE?", "respuesta": "El Tratado de Funcionamiento de la UE."}
+        b = {"pregunta": "¿Qué es el TFUE?", "respuesta": "Otra respuesta completamente distinta."}
+        assert _claves_dedup(a) & _claves_dedup(b)
+
+    def test_respuesta_larga_identica_distinta_pregunta_es_duplicado(self):
+        respuesta = "Es un texto de respuesta bastante largo y específico sobre un hecho concreto."
+        a = {"pregunta": "¿Pregunta A?", "respuesta": respuesta}
+        b = {"pregunta": "¿Pregunta B totalmente distinta?", "respuesta": respuesta}
+        assert _claves_dedup(a) & _claves_dedup(b)
+
+    def test_sin_articulo_ni_cifra_no_genera_clave_d_ni_c(self):
+        tarjeta = {"pregunta": "¿Qué es el TFUE?", "respuesta": "El Tratado de Funcionamiento de la Unión Europea."}
+        claves = _claves_dedup(tarjeta)
+        assert not any(c.startswith("d:") or c.startswith("c:") for c in claves)
+        assert any(c.startswith("p:") for c in claves)
 
 
 def _es_prompt_generacion(messages):
@@ -350,6 +423,35 @@ class TestGenerarTarjetasVerificadas:
             candidatas = _generar_candidatas_fragmento("Fragmento", cupo=2, on_usage=None)
         assert len(candidatas) == 2
 
+    def test_dedup_por_articulo_y_cifra_caza_lo_que_el_solapamiento_semantico_no_llega(self):
+        # 12/08/2026: dos fragmentos distintos generan tarjetas sobre el
+        # MISMO artículo y el MISMO dato (15 días hábiles), pero redactadas
+        # de forma tan distinta que el solapamiento de palabras de la
+        # respuesta (_es_semanticamente_duplicada, umbral 0.5) NO las
+        # detectaría como duplicadas -- solo _claves_dedup, por compartir
+        # artículo+cifra, las caza.
+        def fake_call(messages, **kwargs):
+            contenido = messages[0]["content"] + messages[1]["content"]
+            if _es_prompt_generacion(messages):
+                if "Fragmento A" in contenido:
+                    return json.dumps({"tarjetas": [{
+                        "pregunta": "¿Cuál es el plazo de alegaciones del expediente?",
+                        "respuesta": "El artículo 14 establece un plazo de 15 días hábiles para presentar alegaciones.",
+                    }]})
+                return json.dumps({"tarjetas": [{
+                    "pregunta": "Conforme al artículo 14, ¿de cuánto tiempo dispone el interesado?",
+                    "respuesta": "Dispone de 15 días hábiles conforme a la norma aplicable.",
+                }]})
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            raise AssertionError("prompt inesperado")
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento A", "Fragmento B"]):
+            resultado = generar_tarjetas_verificadas("Documento con dos fragmentos.", 2)
+
+        assert len(resultado["tarjetas"]) == 1
+
     def test_sin_candidatas_generadas_da_advertencia(self):
         with patch("tarjetas_generator.call_deepseek_api", return_value=None):
             resultado = generar_tarjetas_verificadas("Texto corto.", 3)
@@ -555,6 +657,33 @@ class TestGenerarBancoTarjetasAdaptativo:
                 return json.dumps({"tarjetas": [{
                     "pregunta": "¿Qué mecanismos de ayuda financiera creó la UE?",
                     "respuesta": "La UE creó el MEEF, el FEEF y el MEDE como mecanismos de ayuda financiera para los Estados miembros.",
+                }]})
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            raise AssertionError("prompt inesperado")
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
+            resultado = generar_banco_tarjetas_adaptativo("Documento.", tope=100, tamano_ronda=1)
+
+        assert len(resultado) == 1
+
+    def test_para_por_duplicado_de_articulo_y_cifra_entre_rondas(self):
+        # 12/08/2026: la ronda 2 reformula la tarjeta de la ronda 1 con
+        # palabras tan distintas que _es_semanticamente_duplicada no la
+        # cazaría (solapamiento de palabras por debajo del umbral), pero
+        # ambas citan el MISMO artículo y el MISMO dato -- debe detectarse
+        # vía _claves_dedup y parar el banco antes del tope.
+        def fake_call(messages, **kwargs):
+            if _es_prompt_generacion(messages):
+                if "No repitas ninguna de estas tarjetas" in messages[0]["content"]:
+                    return json.dumps({"tarjetas": [{
+                        "pregunta": "Conforme al artículo 14, ¿de cuánto tiempo dispone el interesado?",
+                        "respuesta": "Dispone de 15 días hábiles conforme a la norma aplicable.",
+                    }]})
+                return json.dumps({"tarjetas": [{
+                    "pregunta": "¿Cuál es el plazo de alegaciones del expediente?",
+                    "respuesta": "El artículo 14 establece un plazo de 15 días hábiles para presentar alegaciones.",
                 }]})
             if _es_prompt_verificacion(messages):
                 return json.dumps({"valido": True, "problemas": []})

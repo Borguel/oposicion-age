@@ -104,6 +104,152 @@ def _es_semanticamente_duplicada(tarjeta, tarjetas_existentes):
     return False
 
 
+# 12/08/2026: NO se reutiliza el 10 de test_generator.py._LONGITUD_MINIMA_
+# DEDUP_RESPUESTA a propósito -- ahí "respuesta" es el texto de una opción
+# de test (corta por naturaleza, "15 días", "El Congreso"), pero aquí
+# "respuesta" es el texto LIBRE completo de una tarjeta, mucho más largo en
+# general -- con 10 caracteres, dos tarjetas sobre hechos DISTINTOS que
+# coinciden en una respuesta corta genérica ("Sí.", "El Rey.") se marcarían
+# como duplicadas (bug real visto en un test de este archivo: dos tarjetas
+# de relleno legítimas y distintas compartían la misma respuesta corta de
+# prueba). Se reutiliza el mismo umbral y el mismo razonamiento que
+# _LONGITUD_MINIMA_CONTENCION_TARJETA, ya calibrado para este campo.
+_LONGITUD_MINIMA_DEDUP_RESPUESTA_TARJETA = _LONGITUD_MINIMA_CONTENCION_TARJETA
+
+_PATRON_ARTICULO_BASE = re.compile(r"art[íi]culo\s+(\d+)", re.IGNORECASE)
+
+_NUMEROS_EN_PALABRAS = {
+    "un": "1", "uno": "1", "una": "1", "dos": "2", "tres": "3", "cuatro": "4",
+    "cinco": "5", "seis": "6", "siete": "7", "ocho": "8", "nueve": "9", "diez": "10",
+}
+_DENOMINADORES_EN_PALABRAS = {
+    "tercio": "3", "cuarto": "4", "quinto": "5", "sexto": "6", "septimo": "7",
+    "octavo": "8", "noveno": "9", "decimo": "10",
+}
+_DENOMINADORES_ORDINAL_FEMENINO = {
+    "segunda": "2", "tercera": "3", "cuarta": "4", "quinta": "5", "sexta": "6",
+    "septima": "7", "octava": "8", "novena": "9", "decima": "10",
+}
+# _PATRON_CIFRA/_PATRON_PRINCIPIO_JURIDICO/_normalizar_cifra (12/08/2026,
+# porte de test_generator.py._claves_dedup, ver el comentario largo de
+# _claves_dedup más abajo): copia literal, sin adaptación -- son regex de
+# reconocimiento de cifras/principios jurídicos en español, no dependen de
+# la forma concreta de una pregunta ni de una tarjeta.
+_PATRON_CIFRA = re.compile(
+    r"\d+(?:[.,]\d+)?\s*(?:d[íi]as?\s+h[áa]biles?|d[íi]as?\s+naturales?|d[íi]as?|"
+    r"meses?|mes\b|a[ñn]os?|tercios?|cuartos?|%|por\s*ciento)"
+    r"|\d+\s*/\s*\d+"
+    r"|(?:un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+"
+    r"(?:tercios?|cuartos?|quintos?|sextos?|s[ée]ptimos?|octavos?|novenos?|d[ée]cimos?)"
+    r"|(?:un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+"
+    r"(?:segunda|tercera|cuarta|quinta|sexta|s[ée]ptima|octava|novena|d[ée]cima)s?\s+partes?"
+    r"|mayor[íi]a\s+(?:absoluta|simple|cualificada|relativa)",
+    re.IGNORECASE,
+)
+_PATRON_PRINCIPIO_JURIDICO = re.compile(
+    r"principio\s+de\s+legalidad"
+    r"|principio\s+de\s+jerarqu[íi]a\s+normativa"
+    r"|principio\s+de\s+publicidad(?:\s+de\s+las\s+normas)?"
+    r"|principio\s+de\s+irretroactividad"
+    r"|principio\s+de\s+seguridad\s+jur[íi]dica"
+    r"|principio\s+de\s+responsabilidad"
+    r"|interdicci[óo]n\s+de\s+la\s+arbitrariedad",
+    re.IGNORECASE,
+)
+
+
+def _normalizar_cifra(cifra):
+    """Reduce una cifra encontrada por _PATRON_CIFRA a una forma canónica
+    para que "dos tercios", "2/3" y "2 tercios" -- la misma fracción
+    escrita de tres formas distintas -- produzcan la MISMA clave de dedup
+    en vez de tres claves distintas que no se reconocen entre sí. Las
+    cifras que no son una fracción (p.ej. "15 días hábiles", "mayoría
+    absoluta") se devuelven tal cual, ya normalizadas en espacios por
+    _normalizar aguas arriba."""
+    coincide_barra = re.fullmatch(r"(\d+)\s*/\s*(\d+)", cifra)
+    if coincide_barra:
+        return f"{coincide_barra.group(1)}/{coincide_barra.group(2)}"
+    coincide_fraccion = re.fullmatch(
+        r"(\d+|[a-záéíóúñ]+)\s+(tercios?|cuartos?|quintos?|sextos?|s[ée]ptimos?|octavos?|novenos?|d[ée]cimos?)",
+        cifra,
+    )
+    if coincide_fraccion:
+        numerador = _NUMEROS_EN_PALABRAS.get(coincide_fraccion.group(1), coincide_fraccion.group(1))
+        denominador_singular = re.sub(r"s$", "", coincide_fraccion.group(2)).replace("é", "e")
+        denominador = _DENOMINADORES_EN_PALABRAS.get(denominador_singular)
+        if denominador:
+            return f"{numerador}/{denominador}"
+    coincide_parte = re.fullmatch(
+        r"(\d+|[a-záéíóúñ]+)\s+(segunda|tercera|cuarta|quinta|sexta|s[ée]ptima|octava|novena|d[ée]cima)s?\s+partes?",
+        cifra,
+    )
+    if coincide_parte:
+        numerador = _NUMEROS_EN_PALABRAS.get(coincide_parte.group(1), coincide_parte.group(1))
+        denominador_singular = coincide_parte.group(2).replace("é", "e")
+        denominador = _DENOMINADORES_ORDINAL_FEMENINO.get(denominador_singular)
+        if denominador:
+            return f"{numerador}/{denominador}"
+    coincide_porcentaje = re.fullmatch(r"(\d+(?:[.,]\d+)?)\s*(?:%|por\s*ciento)", cifra)
+    if coincide_porcentaje:
+        return f"{coincide_porcentaje.group(1)}%"
+    return cifra
+
+
+def _articulos_citados(tarjeta):
+    """Números base de artículo citados en la PREGUNTA (anverso) -- o, si
+    la pregunta no cita ninguno, en la RESPUESTA (reverso) como respaldo.
+    Adaptado de _articulos_citados en test_generator.py (enunciado/
+    explicación) a la forma de una tarjeta: el anverso es la analogía del
+    enunciado, y el reverso -- que suele citar el artículo, ver el punto
+    "Precisión normativa" del prompt de generación -- es la analogía de la
+    explicación como respaldo. NO se usa la unión de ambos campos, por el
+    mismo motivo que allí: la pregunta es la fuente fiable de qué artículo
+    trata la tarjeta cuando lo cita; la respuesta solo se consulta como
+    respaldo cuando la pregunta no cita ninguno."""
+    articulos_pregunta = set(_PATRON_ARTICULO_BASE.findall(tarjeta.get("pregunta", "")))
+    if articulos_pregunta:
+        return articulos_pregunta
+    return set(_PATRON_ARTICULO_BASE.findall(tarjeta.get("respuesta", "")))
+
+
+def _conceptos_juridicos_citados(tarjeta):
+    texto = f"{tarjeta.get('pregunta', '')} {_normalizar(tarjeta.get('respuesta', ''))}".lower()
+    return set(_PATRON_PRINCIPIO_JURIDICO.findall(texto))
+
+
+def _claves_dedup(tarjeta):
+    """Claves de deduplicación de una tarjeta candidata/aceptada -- porte de
+    _claves_dedup en test_generator.py a la forma {pregunta, respuesta} de
+    una tarjeta (aquí "respuesta" ya es el texto directo, no una letra que
+    mirar en un diccionario de opciones). Complementa, no sustituye, a
+    _es_semanticamente_duplicada: esa red no exige artículo citado a
+    propósito (para no perder recall en tarjetas sin cita normativa), esta
+    caza el caso de alta precisión -- mismo artículo Y mismo dato concreto
+    (cifra o principio jurídico con nombre propio) -- aunque la redacción
+    sea completamente distinta y no llegue al umbral de solapamiento de
+    palabras de la respuesta.
+
+    'p:' texto exacto de la pregunta, 'r:' texto exacto de la respuesta (si
+    es lo bastante larga para ser una señal fiable), 'd:' artículo base +
+    conjunto de cifras citadas en la respuesta, 'c:' artículo base +
+    principios jurídicos con nombre propio citados."""
+    claves = set()
+    clave_pregunta = _normalizar(tarjeta.get("pregunta", ""))
+    if clave_pregunta:
+        claves.add(f"p:{clave_pregunta}")
+    clave_respuesta = _normalizar(tarjeta.get("respuesta", ""))
+    if len(clave_respuesta) >= _LONGITUD_MINIMA_DEDUP_RESPUESTA_TARJETA:
+        claves.add(f"r:{clave_respuesta}")
+    articulos = sorted(_articulos_citados(tarjeta))
+    cifras = sorted({_normalizar_cifra(c) for c in _PATRON_CIFRA.findall(clave_respuesta)})
+    if articulos and cifras:
+        claves.add(f"d:{'|'.join(articulos)}:{'|'.join(cifras)}")
+    conceptos = sorted(_conceptos_juridicos_citados(tarjeta))
+    if articulos and conceptos:
+        claves.add(f"c:{'|'.join(articulos)}:{'|'.join(conceptos)}")
+    return claves
+
+
 def _parsear_tarjetas(texto_bruto):
     """Extrae la lista de tarjetas candidatas de la respuesta cruda de
     DeepSeek. Con response_format_json=True el modo JSON nativo de la API
@@ -315,23 +461,26 @@ def _asegurar_tarjeta_valida(candidata, fragmento, dedup_lock, claves_vistas, ta
     (sembrada por el llamante, ver tarjetas_previas en
     generar_tarjetas_verificadas) como las que otros hilos de ESTA misma
     llamada vayan aceptando mientras tanto. Se usa para
-    _es_semanticamente_duplicada además del dedup por texto exacto de
-    claves_vistas -- unificar ambos en la misma lista compartida hace que
+    _es_semanticamente_duplicada además del dedup por claves_vistas
+    (_claves_dedup: texto exacto de pregunta/respuesta, o mismo artículo +
+    misma cifra/principio jurídico citados, ver el comentario largo junto a
+    _claves_dedup) -- unificar ambos en la misma lista compartida hace que
     una sola comprobación cubra a la vez duplicados dentro de la ronda,
     entre fragmentos en paralelo, y entre rondas del banco."""
     tarjeta = candidata
     intentos_restantes = max_intentos
     while intentos_restantes > 0:
-        clave = _normalizar(tarjeta["pregunta"])
+        claves = _claves_dedup(tarjeta)
         with dedup_lock:
-            es_duplicada = clave in claves_vistas or _es_semanticamente_duplicada(tarjeta, tarjetas_aceptadas)
+            es_duplicada = (not claves or (claves & claves_vistas)
+                             or _es_semanticamente_duplicada(tarjeta, tarjetas_aceptadas))
         if (not es_duplicada and not _contiene_frase_prohibida(tarjeta)
                 and _verificar_tarjeta(tarjeta, fragmento, on_usage)):
             with dedup_lock:
-                if clave in claves_vistas or _es_semanticamente_duplicada(tarjeta, tarjetas_aceptadas):
+                if (claves & claves_vistas) or _es_semanticamente_duplicada(tarjeta, tarjetas_aceptadas):
                     es_duplicada = True  # otro hilo aceptó lo mismo (o algo semánticamente igual) mientras se verificaba esta
                 else:
-                    claves_vistas.add(clave)
+                    claves_vistas.update(claves)
                     tarjetas_aceptadas.append(tarjeta)
                     return tarjeta
         intentos_restantes -= 1
@@ -368,8 +517,9 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
     esta función sobre el MISMO documento sin que cada una parta de cero --
     tarjetas_a_evitar se añade al prompt de generación (aviso "no repitas
     esto"), y tarjetas_previas siembra claves_vistas/tarjetas_aceptadas
-    (texto exacto de la pregunta y contención/solapamiento de la respuesta)
-    para que el dedup interno de ESTA llamada ya sepa qué se aceptó en
+    (_claves_dedup: texto exacto de pregunta/respuesta, o mismo artículo +
+    misma cifra/principio jurídico citados; y contención/solapamiento de la
+    respuesta) para que el dedup interno de ESTA llamada ya sepa qué se aceptó en
     rondas anteriores, no solo dentro de sí misma. A diferencia del antiguo
     claves_iniciales (solo el texto normalizado de la pregunta),
     tarjetas_previas son las tarjetas completas -- hace falta la respuesta
@@ -403,7 +553,7 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
 
     tarjetas_previas = list(tarjetas_previas or [])
     dedup_lock = threading.Lock()
-    claves_vistas = {_normalizar(t.get("pregunta", "")) for t in tarjetas_previas}
+    claves_vistas = {clave for t in tarjetas_previas for clave in _claves_dedup(t)}
     tarjetas_aceptadas = list(tarjetas_previas)
     tarjetas = []
     descartadas = 0
@@ -605,14 +755,14 @@ def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ro
             # tope para no aceptar más de la cuenta.
             if len(acumuladas) >= tope:
                 break
-            clave = _normalizar(tarjeta.get("pregunta", ""))
+            claves = _claves_dedup(tarjeta)
             # Red de seguridad adicional (debería ser redundante: generar_
             # tarjetas_verificadas ya deduplicó esta tarjeta contra
             # tarjetas_previas=acumuladas antes de aceptarla) -- se
             # mantiene por si acaso, es una comprobación gratis.
-            if not clave or clave in claves_acumuladas or _es_semanticamente_duplicada(tarjeta, acumuladas):
+            if not claves or (claves & claves_acumuladas) or _es_semanticamente_duplicada(tarjeta, acumuladas):
                 continue
-            claves_acumuladas.add(clave)
+            claves_acumuladas.update(claves)
             acumuladas.append(tarjeta)
             nuevas.append(tarjeta)
             if on_progreso:
