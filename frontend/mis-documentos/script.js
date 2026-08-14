@@ -22,30 +22,76 @@ document.querySelectorAll("[data-icon]").forEach((el) => {
 // siguiente. Actualiza directamente los nodos [data-generando-desde] del
 // DOM en vez de volver a pintar la lista entera cada segundo (mucho más
 // barato) -- ver filaContenido, que es quien pinta esos nodos con el
-// timestamp de horaInicioProgresoPorClave.
+// timestamp guardado en el estado persistido (ver leerEstadoProgreso).
 function formatearDuracionGenerando(segundos) {
   if (segundos < 60) return `${segundos}s`;
   const minutos = Math.floor(segundos / 60);
   const resto = String(segundos % 60).padStart(2, "0");
   return `${minutos}m ${resto}s`;
 }
+
+// Estado de progreso persistido en localStorage (12/08/2026, a petición del
+// usuario: "quiero ver el tiempo exacto" -- antes horaInicioProgresoPorClave
+// era un objeto en memoria que se reiniciaba a 0 cada vez que se recargaba
+// la página, aunque la generación en el servidor siguiera exactamente por
+// donde iba). Clave = "documentoId:tipo" (resumen/esquema). Cada entrada
+// guarda cuándo empezó de verdad (inicio) y, aparte, en qué fragmento iba
+// (completadasEnActualizacion) y cuándo se vio por ÚLTIMA VEZ ese valor
+// (momentoActualizacion) -- ver el porqué de estos dos últimos en el
+// comentario largo del setInterval de más abajo.
+const PREFIJO_ALMACEN_PROGRESO = "mis-documentos:progreso:";
+
+function leerEstadoProgreso(clave) {
+  try {
+    const bruto = localStorage.getItem(PREFIJO_ALMACEN_PROGRESO + clave);
+    return bruto ? JSON.parse(bruto) : null;
+  } catch (e) {
+    return null; // localStorage deshabilitado/corrupto: se pierde la persistencia, no es crítico.
+  }
+}
+
+function guardarEstadoProgreso(clave, estado) {
+  try {
+    localStorage.setItem(PREFIJO_ALMACEN_PROGRESO + clave, JSON.stringify(estado));
+  } catch (e) {
+    // Igual que arriba: si falla, el contador simplemente no persiste.
+  }
+}
+
+function borrarEstadoProgreso(clave) {
+  try {
+    localStorage.removeItem(PREFIJO_ALMACEN_PROGRESO + clave);
+  } catch (e) {}
+}
+
 setInterval(() => {
   document.querySelectorAll("[data-generando-desde]").forEach((el) => {
     const desde = Number(el.dataset.generandoDesde);
     if (!desde) return;
     const transcurrido = Math.max(0, Math.floor((Date.now() - desde) / 1000));
     // Estimación de tiempo restante (12/08/2026, a petición del usuario:
-    // "que se vea cuánto falta, no solo cuánto lleva") -- extrapolada de
-    // la velocidad real observada hasta ahora (transcurrido/completadas),
-    // nunca una cuenta atrás inventada: sin datos reales de al menos 1
-    // fragmento completado (data-completadas), no se muestra nada más que
-    // el tiempo transcurrido, igual que antes de este cambio.
+    // "que se vea cuánto falta, no solo cuánto lleva") -- bug real
+    // reportado por el usuario en la primera versión de esto: la fórmula
+    // usaba (transcurrido/completadas), y como "transcurrido" crece cada
+    // segundo mientras "completadas" se queda fijo hasta el siguiente
+    // fragmento, el resultado SUBÍA a la misma velocidad que el propio
+    // contador de tiempo transcurrido -- daba la sensación de que cada vez
+    // faltaba MÁS, no menos. Ahora es una cuenta atrás real: se calcula UNA
+    // estimación fija en el momento en que se vio el último avance real
+    // (data-momento-actualizacion, ver filaContenido) y, a partir de ahí,
+    // se resta el tiempo que ha pasado desde entonces -- baja segundo a
+    // segundo como cualquier cuenta atrás, y solo se recalcula (puede subir
+    // o bajar de golpe) cuando de verdad llega un fragmento nuevo.
     const total = Number(el.dataset.total);
-    const completadas = Number(el.dataset.completadas);
+    const completadasEnActualizacion = Number(el.dataset.completadasEnActualizacion);
+    const momentoActualizacion = Number(el.dataset.momentoActualizacion);
     let estimacion = "";
-    if (total && completadas > 0 && completadas < total) {
-      const restantes = total - completadas;
-      const segundosRestantes = Math.round((transcurrido / completadas) * restantes);
+    if (total && completadasEnActualizacion > 0 && completadasEnActualizacion < total && momentoActualizacion) {
+      const transcurridoHastaEsaActualizacion = Math.max(0, (momentoActualizacion - desde) / 1000);
+      const tiempoPorFragmento = transcurridoHastaEsaActualizacion / completadasEnActualizacion;
+      const estimadoEnEseMomento = tiempoPorFragmento * (total - completadasEnActualizacion);
+      const segundosDesdeEsaActualizacion = Math.max(0, (Date.now() - momentoActualizacion) / 1000);
+      const segundosRestantes = Math.round(estimadoEnEseMomento - segundosDesdeEsaActualizacion);
       estimacion = ` (~${formatearDuracionGenerando(Math.max(1, segundosRestantes))} más)`;
     }
     el.textContent = ` · ${formatearDuracionGenerando(transcurrido)}${estimacion}`;
@@ -289,23 +335,32 @@ function filaContenido({
       : `Generando… (${progreso.completadas}/${progreso.total})`
     : "Generando…";
   // Timestamp para el contador de tiempo transcurrido (ver el setInterval
-  // global junto a formatearDuracionGenerando): horaInicioProgresoPorClave
-  // ya lo deja puesto la propia llamada a esperandoGeneracionDe que calculó
-  // "generando" (progresoDelServidorSigueSiendoValido lo arma la primera
-  // vez que ve progreso real de este documento+tipo), así que aquí solo
-  // hace falta leerlo, no hay que ponerlo de nuevo.
+  // global junto a formatearDuracionGenerando): el estado persistido (ver
+  // leerEstadoProgreso) ya lo deja puesto la propia llamada a
+  // esperandoGeneracionDe que calculó "generando"
+  // (progresoDelServidorSigueSiendoValido lo arma la primera vez que ve
+  // progreso real de este documento+tipo), así que aquí solo hace falta
+  // leerlo -- y, si el nº de fragmentos completados avanzó desde la última
+  // vez, actualizar también el punto de referencia de la estimación de
+  // tiempo restante (ver el comentario largo del setInterval).
   const claveGenerando = documentoId && tipoInline ? `${documentoId}:${tipoInline}` : null;
-  const desdeGenerando = claveGenerando ? horaInicioProgresoPorClave[claveGenerando] : null;
-  // data-total/data-completadas (12/08/2026, a petición del usuario: "que
-  // se vea cuánto falta, no solo cuánto lleva"): el setInterval global
-  // (ver formatearDuracionGenerando) los lee en cada tick para calcular una
-  // ESTIMACIÓN de tiempo restante -- transcurrido/completadas * pendientes
-  // -- a partir de la velocidad real observada hasta ahora, nunca de una
-  // cuenta atrás inventada. Solo tiene sentido en fase "generando" (con
-  // fracción real de progreso) y con al menos 1 completada -- con 0 no hay
-  // ninguna velocidad que extrapolar todavía.
-  const datosEstimacion = generando && progreso && progreso.fase !== "fusionando" && progreso.completadas > 0
-    ? ` data-total="${progreso.total}" data-completadas="${progreso.completadas}"`
+  let estadoGenerando = claveGenerando ? leerEstadoProgreso(claveGenerando) : null;
+  if (estadoGenerando && progreso && progreso.completadas > 0
+      && progreso.completadas !== estadoGenerando.completadasEnActualizacion) {
+    estadoGenerando = { ...estadoGenerando, completadasEnActualizacion: progreso.completadas, momentoActualizacion: Date.now() };
+    guardarEstadoProgreso(claveGenerando, estadoGenerando);
+  }
+  const desdeGenerando = estadoGenerando ? estadoGenerando.inicio : null;
+  // data-total/data-completadas-en-actualizacion/data-momento-actualizacion
+  // (12/08/2026, a petición del usuario: "que se vea cuánto falta, no solo
+  // cuánto lleva"): el setInterval global los lee en cada tick para
+  // calcular una ESTIMACIÓN de tiempo restante a partir de la velocidad
+  // real observada hasta el último avance, nunca de una cuenta atrás
+  // inventada. Solo tiene sentido en fase "generando" (con fracción real
+  // de progreso) y con al menos 1 completada -- con 0 no hay ninguna
+  // velocidad que extrapolar todavía.
+  const datosEstimacion = generando && progreso && progreso.fase !== "fusionando" && estadoGenerando && estadoGenerando.completadasEnActualizacion > 0
+    ? ` data-total="${progreso.total}" data-completadas-en-actualizacion="${estadoGenerando.completadasEnActualizacion}" data-momento-actualizacion="${estadoGenerando.momentoActualizacion}"`
     : "";
   const contadorTiempoHtml = generando && desdeGenerando
     ? `<span data-generando-desde="${desdeGenerando}"${datosEstimacion}></span>`
@@ -1383,17 +1438,33 @@ const MAX_INTENTOS_SONDEO_CONTENIDO = 20; // ~80s a 4s cada uno, margen amplio
 // este margen desde que se VIO por primera vez el progreso de un
 // documento+tipo concreto, se deja de confiar en él aunque Firestore siga
 // diciendo que sigue activo.
+// 5 minutos desde que empezó DE VERDAD (estado.inicio, persistido -- ver
+// leerEstadoProgreso/guardarEstadoProgreso más arriba), no desde que el
+// navegador lo vio por primera vez: antes, al recargar la página a mitad
+// de una generación larga, este margen se reiniciaba sin querer.
 const MAX_ESPERA_PROGRESO_SERVIDOR_MS = 5 * 60 * 1000; // 5 minutos
-const horaInicioProgresoPorClave = {};
 
 function progresoDelServidorSigueSiendoValido(doc, tipo) {
   const clave = `${doc.id}:${tipo}`;
   if (!doc[`progreso_${tipo}`]) {
-    delete horaInicioProgresoPorClave[clave];
+    borrarEstadoProgreso(clave);
     return false;
   }
-  if (!horaInicioProgresoPorClave[clave]) horaInicioProgresoPorClave[clave] = Date.now();
-  return Date.now() - horaInicioProgresoPorClave[clave] < MAX_ESPERA_PROGRESO_SERVIDOR_MS;
+  let estado = leerEstadoProgreso(clave);
+  if (!estado) {
+    estado = { inicio: Date.now(), completadasEnActualizacion: 0, momentoActualizacion: Date.now() };
+    guardarEstadoProgreso(clave, estado);
+  }
+  const sigueSiendoValido = Date.now() - estado.inicio < MAX_ESPERA_PROGRESO_SERVIDOR_MS;
+  // Si se supera el margen, se deja de confiar en el progreso Y se borra el
+  // estado guardado (12/08/2026, bug real evitado: al persistir en
+  // localStorage en vez de en memoria, un estado "atascado" que antes se
+  // perdía solo con recargar la página ahora podría sobrevivir para
+  // siempre -- y si el usuario vuelve a generar el mismo documento+tipo
+  // más adelante, reutilizaría por error el inicio/última actualización
+  // de aquel intento fallido en vez de empezar un cronómetro limpio).
+  if (!sigueSiendoValido) borrarEstadoProgreso(clave);
+  return sigueSiendoValido;
 }
 
 // Usado por tarjetaDocumento/filaContenido (10/08/2026) para pintar el
