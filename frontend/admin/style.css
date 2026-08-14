@@ -686,11 +686,28 @@ tr.sis-opt .sis-punto { background: #d9a300; }
 .ficha-coste-sec div { display: flex; flex-direction: column; }
 .ficha-coste-sec strong { font-size: 13.5px; }
 .ficha-coste-sec span { font-size: 10.5px; color: var(--age-ink-soft, var(--age-ink)); }
-.ficha-barras { display: flex; align-items: flex-end; gap: 6px; height: 64px; }
-.ficha-barra-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+/* Con 14 columnas (vista "Por día") no caben todas a la vez sin apretar
+   tanto que las etiquetas de fecha se solapen (bug real reportado en
+   móvil, 14/08/2026). En vez de encoger cada columna para que quepan
+   todas, ahora tienen un ancho fijo y el contenedor se desliza en
+   horizontal -- se ve siempre la fecha completa y sin solapar, a costa de
+   tener que arrastrar para ver los días más antiguos. Se hace scroll
+   hasta el final al abrir (wireFichaVista) para que el día más reciente
+   quede visible sin tener que arrastrar primero. */
+.ficha-barras {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 64px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  padding-bottom: 2px;
+}
+.ficha-barra-col { flex: 0 0 auto; min-width: 40px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 2px; }
 .ficha-barra-wrap { width: 100%; height: 48px; display: flex; align-items: flex-end; }
 .ficha-barra { width: 100%; max-width: 22px; margin: 0 auto; background: var(--age-primary); border-radius: 4px 4px 0 0; transition: height .2s ease; }
-.ficha-barra-lbl { font-size: 10px; color: var(--age-ink-soft, var(--age-ink)); }
+.ficha-barra-lbl { font-size: 10px; color: var(--age-ink-soft, var(--age-ink)); white-space: nowrap; }
 .ficha-vacio { font-size: 12.5px; color: var(--age-ink-soft, var(--age-ink)); }
 
 .ficha-minis { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 8px; }

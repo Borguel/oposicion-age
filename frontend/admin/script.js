@@ -1687,6 +1687,12 @@ function wireFichaVista(vista, u) {
     const hist = modoCosteFicha === "dia" ? (u.coste_ia_historico_diario || []) : (u.coste_ia_historico || []);
     const clave = modoCosteFicha === "dia" ? "dia" : "mes";
     const etiqueta = modoCosteFicha === "dia" ? diaLegible : mesLegible;
+    // Las barras se deslizan en horizontal en vez de apretarse todas en el
+    // ancho disponible (ver .ficha-barras en style.css) -- se arranca ya
+    // desplazado al final para que el día/mes más reciente se vea sin
+    // tener que arrastrar primero.
+    const barrasEl = document.querySelector(".ficha-barras");
+    if (barrasEl) barrasEl.scrollLeft = barrasEl.scrollWidth;
     const detalle = document.getElementById("up-coste-detalle");
     document.querySelectorAll(".ficha-barra-col").forEach((b) => b.addEventListener("click", () => {
       const h = hist.find((x) => String(x[clave]) === b.dataset.clave);
