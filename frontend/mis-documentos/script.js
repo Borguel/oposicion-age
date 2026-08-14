@@ -33,7 +33,22 @@ setInterval(() => {
   document.querySelectorAll("[data-generando-desde]").forEach((el) => {
     const desde = Number(el.dataset.generandoDesde);
     if (!desde) return;
-    el.textContent = ` · ${formatearDuracionGenerando(Math.max(0, Math.floor((Date.now() - desde) / 1000)))}`;
+    const transcurrido = Math.max(0, Math.floor((Date.now() - desde) / 1000));
+    // Estimación de tiempo restante (12/08/2026, a petición del usuario:
+    // "que se vea cuánto falta, no solo cuánto lleva") -- extrapolada de
+    // la velocidad real observada hasta ahora (transcurrido/completadas),
+    // nunca una cuenta atrás inventada: sin datos reales de al menos 1
+    // fragmento completado (data-completadas), no se muestra nada más que
+    // el tiempo transcurrido, igual que antes de este cambio.
+    const total = Number(el.dataset.total);
+    const completadas = Number(el.dataset.completadas);
+    let estimacion = "";
+    if (total && completadas > 0 && completadas < total) {
+      const restantes = total - completadas;
+      const segundosRestantes = Math.round((transcurrido / completadas) * restantes);
+      estimacion = ` (~${formatearDuracionGenerando(Math.max(1, segundosRestantes))} más)`;
+    }
+    el.textContent = ` · ${formatearDuracionGenerando(transcurrido)}${estimacion}`;
   });
 }, 1000);
 
@@ -281,13 +296,31 @@ function filaContenido({
   // hace falta leerlo, no hay que ponerlo de nuevo.
   const claveGenerando = documentoId && tipoInline ? `${documentoId}:${tipoInline}` : null;
   const desdeGenerando = claveGenerando ? horaInicioProgresoPorClave[claveGenerando] : null;
+  // data-total/data-completadas (12/08/2026, a petición del usuario: "que
+  // se vea cuánto falta, no solo cuánto lleva"): el setInterval global
+  // (ver formatearDuracionGenerando) los lee en cada tick para calcular una
+  // ESTIMACIÓN de tiempo restante -- transcurrido/completadas * pendientes
+  // -- a partir de la velocidad real observada hasta ahora, nunca de una
+  // cuenta atrás inventada. Solo tiene sentido en fase "generando" (con
+  // fracción real de progreso) y con al menos 1 completada -- con 0 no hay
+  // ninguna velocidad que extrapolar todavía.
+  const datosEstimacion = generando && progreso && progreso.fase !== "fusionando" && progreso.completadas > 0
+    ? ` data-total="${progreso.total}" data-completadas="${progreso.completadas}"`
+    : "";
   const contadorTiempoHtml = generando && desdeGenerando
-    ? `<span data-generando-desde="${desdeGenerando}"></span>`
+    ? `<span data-generando-desde="${desdeGenerando}"${datosEstimacion}></span>`
+    : "";
+  // Barra de progreso real (12/08/2026, refuerzo visual del texto de
+  // arriba): solo con fracción real disponible (progreso.total), igual que
+  // textoGenerando -- en fase "fusionando" completadas==total, así que se
+  // ve llena (correcto: el MAP ya terminó, solo falta el último paso).
+  const barraProgresoHtml = generando && progreso && progreso.total
+    ? `<div class="documento-card-progreso-barra"><div class="documento-card-progreso-barra-relleno" style="width: ${Math.round((progreso.completadas / progreso.total) * 100)}%"></div></div>`
     : "";
   const estadoHtml = urlContinuar
     ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Test en progreso</span>`
     : generando
-      ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} ${textoGenerando}${contadorTiempoHtml}</span>`
+      ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} ${textoGenerando}${contadorTiempoHtml}</span>${barraProgresoHtml}`
       : existe
         ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-generado">${icono("check", 12)} Generado</span>`
         : `<span class="documento-card-tipo-estado">Aún no generado</span>`;

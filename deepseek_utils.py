@@ -1144,35 +1144,35 @@ def generar_documento_largo_por_partes(
     if len(parciales) == 1:
         return advertencia_parcial + parciales[0]
 
-    bloque_parciales = "\n\n---\n\n".join(parciales)
+    # Fusión en cascada / por niveles (12/08/2026, bug real de escala: con
+    # documentos reales de 14 a 22-23 fragmentos -- ver TAMANO_CHUNK_...
+    # arriba -- una única llamada de fusión que intentara fundir TODOS los
+    # parciales de golpe superaba con creces el tope de max_tokens_fusion:
+    # con max_tokens=4096 (modo general) el tope ya se alcanza con solo 4
+    # parciales, y con max_tokens=8192 (modo legal) con solo 2 -- así que
+    # para cualquier documento real de más de un puñado de fragmentos, la
+    # fusión única de antes pedía reproducir el contenido de docenas de
+    # fragmentos con un presupuesto de tokens fijo YA saturado en el tope,
+    # muy por debajo de lo que hacía falta -- deshaciendo buena parte de la
+    # mejora de trocear más fino. En vez de una fusión gigante, se funde
+    # por NIVELES: cada nivel agrupa el nivel anterior en grupos de como
+    # mucho tamano_grupo elementos y funde cada grupo en paralelo, hasta
+    # que solo queda un resultado.
+    #
+    # tamano_grupo = max(4, 16384 // max_tokens), no max(2, ...) (el mayor
+    # tamaño sin tope alguno): con max(2, ...), en modo legal
+    # (max_tokens=8192) daría tamano_grupo=2 -- un árbol binario puro que,
+    # para el caso extremo real (23 fragmentos de un esquema legal), son
+    # 22 llamadas de fusión en ~5 niveles secuenciales, justo el peor sitio
+    # para disparar coste y tiempo (esquema legal es el caso que más
+    # fragmentos genera). Con el suelo de 4, el mismo caso extremo da 9
+    # llamadas en 3 niveles -- mucho más contenido en coste (9 llamadas de
+    # fusión frente a las 23 del MAP que ya se pagan) a cambio de casi toda
+    # la mejora de presupuesto por grupo. Con pocos fragmentos (hasta 4,
+    # cualquier modo -- la mayoría de documentos) esto se reduce a
+    # EXACTAMENTE 1 llamada de fusión, igual que antes de este cambio.
+    tamano_grupo = max(4, 16384 // max_tokens)
 
-    if _debe_abandonar():
-        logger.warning(
-            "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) o se pidió "
-            "detener la generación antes de llegar a la fusión -- se devuelven los %d "
-            "fragmentos sin fundir en vez de nada.",
-            _TIEMPO_MAXIMO_GENERACION_SEGUNDOS, len(parciales),
-        )
-        return advertencia_parcial + bloque_parciales
-
-    if on_progreso:
-        on_progreso({"completadas": len(fragmentos), "total": len(fragmentos), "fase": "fusionando"})
-    # Presupuesto de la fusión escalado con cuántos fragmentos hay que
-    # combinar (11/08/2026, bug real: con el troceado más fino de esta
-    # misma sesión -- ver TAMANO_CHUNK_ESQUEMA/TAMANO_CHUNK_CARACTERES -- un
-    # documento de ~20-24.000 caracteres pasó a generar 2 fragmentos
-    # COMPLETOS, pero la fusión seguía cortándose cerca del final: tenía el
-    # MISMO presupuesto de tokens que un único fragmento del MAP (max_tokens,
-    # 4096/8192), pese a tener que reproducir el contenido de los dos
-    # fragmentos juntos, no de uno solo. Sin este escalado, cuantos más
-    # fragmentos hiciera falta trocear un documento -- que es justo lo que
-    # arregla el troceado más fino -- más corta saldría la fusión final,
-    # deshaciendo la mejora. Con tope (16384): escalar sin límite con
-    # documentos de muchos fragmentos pediría presupuestos desproporcionados
-    # por llamada -- para esos casos ya actúa la red de seguridad de tiempo
-    # máximo/aviso de documento parcial, no hace falta perseguir un
-    # presupuesto perfecto para el caso extremo.
-    max_tokens_fusion = min(max_tokens * len(parciales), 16384)
     prompt_fusion = (
         f"{system_prompt}\n\n"
         "A continuación tienes varios resultados YA generados a partir de distintos fragmentos "
@@ -1185,55 +1185,157 @@ def generar_documento_largo_por_partes(
         "solo combinar y reorganizar lo ya generado."
         + (f"\n\n{instrucciones_fusion_extra}" if instrucciones_fusion_extra else "")
     )
-    fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens_fusion, on_usage=on_usage, frequency_penalty=0.3)
 
-    # Comprobación de tamaño de la fusión (10/08/2026, bug real: con los
-    # fragmentos ya generados y válidos por separado, la llamada de fusión a
-    # veces "colapsaba" -- el modelo respondía con solo una fracción mínima
-    # del contenido (p. ej. un único apartado del último fragmento) y
-    # paraba de forma NATURAL (finish_reason distinto de "length", así que
-    # generar_con_continuacion no lo detecta como truncado) en vez de
-    # fusionar de verdad los fragmentos recibidos. Como el resultado sí
-    # tenía un encabezado Markdown válido, pasaba la validación de formato
-    # de _parece_documento_generado_valido sin levantar sospecha -- así es
-    # como un usuario real acabó con un "resumen" de 14 páginas reducido a
-    # un solo párrafo. Un resultado de fusión drásticamente más corto que
-    # la suma de lo que se le pidió fusionar es una señal barata y fiable
-    # de que se perdió contenido real, sin tener que comparar dato por
-    # dato -- se reintenta una vez antes de renunciar A LA FUSIÓN (no al
-    # documento entero: si la fusión sigue colapsando, se devuelven los
-    # parciales sin fundir en vez de nada -- misma filosofía que arriba).
-    if fusionado and len(fusionado) < len(bloque_parciales) * fraccion_minima_fusion:
-        if _debe_abandonar():
+    def _fusionar_grupo(grupo):
+        """Funde UN grupo (2 o más resultados ya generados -- los grupos de
+        tamaño 1 no llegan aquí, los deja pasar sin cambios _fusionar_nivel)
+        en un solo texto. Mismo criterio de colapso + reintento que la
+        fusión única de antes de este cambio (10/08/2026, bug real: la
+        fusión a veces "colapsaba" -- el modelo respondía con solo una
+        fracción mínima del contenido y paraba de forma NATURAL, sin que
+        generar_con_continuacion lo detectara como truncado -- un resultado
+        drásticamente más corto que lo que se le pidió fundir es señal
+        barata y fiable de que se perdió contenido real), solo que ahora
+        escopado a ESTE grupo en vez de a todos los parciales del
+        documento. Nunca devuelve None ni pierde contenido: si la fusión de
+        este grupo falla o colapsa incluso tras reintentar, se devuelve el
+        propio bloque SIN fundir (los resultados de ESTE grupo, no de todo
+        el documento) -- el siguiente nivel del cascade lo trata entonces
+        como un resultado más grande, no se pierde nada, solo queda sin la
+        fusión de coherencia de ESTE grupo concreto (misma filosofía que
+        "un fallo parcial no tira todo el documento" del resto de esta
+        función)."""
+        bloque_grupo = "\n\n---\n\n".join(grupo)
+        max_tokens_grupo = min(max_tokens * len(grupo), 16384)
+        fusionado = generar_con_continuacion(
+            prompt_fusion, bloque_grupo, max_tokens=max_tokens_grupo, on_usage=on_usage, frequency_penalty=0.3
+        )
+        if fusionado and len(fusionado) < len(bloque_grupo) * fraccion_minima_fusion:
+            if _debe_abandonar():
+                logger.warning(
+                    "generar_documento_largo_por_partes: la fusión de un grupo de %d resultados "
+                    "colapsó y se agotó el tiempo máximo (%ds) o se pidió detener la generación "
+                    "antes de poder reintentarla -- se usa el grupo sin fundir en vez de perder "
+                    "su contenido.",
+                    len(grupo), _TIEMPO_MAXIMO_GENERACION_SEGUNDOS,
+                )
+                return bloque_grupo
             logger.warning(
-                "generar_documento_largo_por_partes: la fusión colapsó y se agotó el tiempo "
-                "máximo (%ds) o se pidió detener la generación antes de poder reintentarla -- "
-                "se devuelven los fragmentos sin fundir en vez de nada.",
+                "generar_documento_largo_por_partes: la fusión de un grupo de %d resultados "
+                "devolvió solo %d caracteres frente a los %d de entrada -- reintentando una vez.",
+                len(grupo), len(fusionado), len(bloque_grupo),
+            )
+            fusionado = generar_con_continuacion(
+                prompt_fusion, bloque_grupo, max_tokens=max_tokens_grupo, on_usage=on_usage, frequency_penalty=0.3
+            )
+            if fusionado and len(fusionado) < len(bloque_grupo) * fraccion_minima_fusion:
+                logger.warning(
+                    "generar_documento_largo_por_partes: la fusión de este grupo sigue "
+                    "devolviendo muy poco contenido tras reintentar -- se usa sin fundir."
+                )
+                return bloque_grupo
+        if not fusionado:
+            # generar_con_continuacion devolvió None (fallo de red/HTTP en
+            # la propia llamada, no colapso de contenido) -- mismo motivo:
+            # los resultados de este grupo YA generados siguen siendo
+            # aprovechables.
+            logger.warning(
+                "generar_documento_largo_por_partes: la llamada de fusión de un grupo de %d "
+                "resultados falló -- se usa el grupo sin fundir en vez de perder su contenido.",
+                len(grupo),
+            )
+            return bloque_grupo
+        return fusionado
+
+    def _fusionar_nivel(nivel):
+        """Funde UN nivel completo del cascade: agrupa nivel (una lista de
+        resultados, cada uno ya sea un parcial del MAP o el resultado
+        fundido de un nivel anterior) en grupos de como mucho tamano_grupo
+        elementos y funde cada grupo. Un grupo de tamaño 1 (el resto de
+        dividir len(nivel) entre tamano_grupo, si no es exacto) NO se
+        funde -- ya es un único resultado, "fundirlo consigo mismo" solo
+        gastaría una llamada más sin ningún beneficio (mismo criterio que
+        el atajo de "un único fragmento aprovechable" de más arriba en
+        esta misma función) -- pasa sin cambios y se agrupará en el
+        SIGUIENTE nivel. Devuelve el nivel siguiente, siempre más corto que
+        nivel (el llamante solo invoca esto con len(nivel) > 1, así que la
+        lista devuelta siempre tiene menos elementos -- garantiza que el
+        bucle de más abajo termina)."""
+        grupos = [nivel[i:i + tamano_grupo] for i in range(0, len(nivel), tamano_grupo)]
+
+        if len(grupos) == 1:
+            # Caso común (la inmensa mayoría de documentos reales, ver el
+            # comentario de tamano_grupo más arriba): un único grupo que
+            # fundir -- se llama a _fusionar_grupo directamente, SIN
+            # ThreadPoolExecutor ni tope de tiempo a mitad de la llamada,
+            # para que este camino se comporte EXACTAMENTE igual que la
+            # fusión única de antes de este cambio.
+            return [_fusionar_grupo(grupos[0])]
+
+        indices_a_fundir = [i for i, g in enumerate(grupos) if len(g) > 1]
+        resultado_por_indice = {i: g[0] for i, g in enumerate(grupos) if len(g) == 1}
+        # Mismo motivo que en el MAP para no usar "with executor": su
+        # shutdown(wait=True) implícito bloquearía sin límite si algún
+        # grupo no responde a tiempo, anulando el timeout de as_completed.
+        executor = ThreadPoolExecutor(max_workers=min(_MAX_LLAMADAS_SIMULTANEAS_DEEPSEEK, len(indices_a_fundir)))
+        futuro_a_indice = {executor.submit(_fusionar_grupo, grupos[i]): i for i in indices_a_fundir}
+        try:
+            restante = max(limite_tiempo - time.monotonic(), 0)
+            for futuro in as_completed(futuro_a_indice, timeout=restante):
+                indice = futuro_a_indice[futuro]
+                resultado_por_indice[indice] = futuro.result()
+        except _FuturesTimeoutError:
+            logger.warning(
+                "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) fundiendo "
+                "un nivel del cascade -- los grupos que no respondieron a tiempo se usan sin "
+                "fundir en vez de perder su contenido.",
                 _TIEMPO_MAXIMO_GENERACION_SEGUNDOS,
             )
-            return advertencia_parcial + bloque_parciales
+        finally:
+            executor.shutdown(wait=False)
+        for i in indices_a_fundir:
+            # Grupo que no llegó a tiempo (timeout de arriba, o cualquier
+            # otro motivo por el que su futuro no se resolvió): se usa sin
+            # fundir, con los resultados que YA tenía (ninguna llamada de
+            # más), en vez de perder contenido ya generado y pagado solo
+            # porque la fusión de ESE grupo concreto no llegó a tiempo.
+            resultado_por_indice.setdefault(i, "\n\n---\n\n".join(grupos[i]))
+        return [resultado_por_indice[i] for i in range(len(grupos))]
+
+    if _debe_abandonar():
         logger.warning(
-            "generar_documento_largo_por_partes: la fusión de %d fragmentos devolvió solo %d "
-            "caracteres frente a los %d de entrada -- reintentando una vez.",
-            len(parciales), len(fusionado), len(bloque_parciales),
+            "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) o se pidió "
+            "detener la generación antes de llegar a la fusión -- se devuelven los %d "
+            "fragmentos sin fundir en vez de nada.",
+            _TIEMPO_MAXIMO_GENERACION_SEGUNDOS, len(parciales),
         )
-        fusionado = generar_con_continuacion(prompt_fusion, bloque_parciales, max_tokens=max_tokens_fusion, on_usage=on_usage, frequency_penalty=0.3)
-        if fusionado and len(fusionado) < len(bloque_parciales) * fraccion_minima_fusion:
+        return advertencia_parcial + "\n\n---\n\n".join(parciales)
+
+    if on_progreso:
+        on_progreso({"completadas": len(fragmentos), "total": len(fragmentos), "fase": "fusionando"})
+
+    # Bucle del cascade: cada vuelta funde un nivel entero (ver
+    # _fusionar_nivel) y se queda con el resultado como nivel siguiente,
+    # hasta que solo quede un elemento. _debe_abandonar() se comprueba UNA
+    # vez por nivel, no por grupo -- igual que antes de este cambio se
+    # comprobaba una vez antes de la (única) fusión, no a mitad -- si se
+    # agota el tiempo entre dos niveles, se devuelve el nivel alcanzado
+    # (varios resultados ya parcialmente fundidos entre sí, unidos con
+    # '---') en vez de nada: mismo criterio de "no tirar contenido ya
+    # generado y pagado" que el resto de esta función.
+    nivel = parciales
+    while len(nivel) > 1:
+        if _debe_abandonar():
             logger.warning(
-                "generar_documento_largo_por_partes: la fusión sigue devolviendo muy poco "
-                "contenido tras reintentar -- se devuelven los fragmentos sin fundir en vez de nada."
+                "generar_documento_largo_por_partes: se agotó el tiempo máximo (%ds) o se pidió "
+                "detener la generación a mitad de la fusión en cascada -- se devuelven los %d "
+                "resultados del nivel alcanzado sin terminar de fundir, en vez de nada.",
+                _TIEMPO_MAXIMO_GENERACION_SEGUNDOS, len(nivel),
             )
-            return advertencia_parcial + bloque_parciales
-    if not fusionado:
-        # generar_con_continuacion devolvió None (fallo de red/HTTP en la
-        # propia llamada de fusión, no colapso de contenido) -- mismo
-        # motivo: los parciales YA generados siguen siendo aprovechables.
-        logger.warning(
-            "generar_documento_largo_por_partes: la llamada de fusión falló -- se devuelven los "
-            "fragmentos sin fundir en vez de nada."
-        )
-        return advertencia_parcial + bloque_parciales
-    return advertencia_parcial + fusionado
+            return advertencia_parcial + "\n\n---\n\n".join(nivel)
+        nivel = _fusionar_nivel(nivel)
+
+    return advertencia_parcial + nivel[0]
 
 
 # Versión en streaming de call_deepseek_api: en vez de devolver el texto

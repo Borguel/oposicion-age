@@ -250,7 +250,13 @@ def resumir_pdf():
         return jsonify({"error": "API key de DeepSeek no configurada"}), 500
 
     max_length = 300000
-    if len(text) > max_length:
+    # texto_truncado_por_longitud (12/08/2026, bug real: hasta ahora este
+    # truncado era completamente silencioso -- ni la subida ni el resultado
+    # avisaban de que el documento se había cortado, así que un usuario con
+    # un documento de 150+ páginas se quedaba con un resumen incompleto sin
+    # saberlo). Se guarda el aviso para anteponerlo al resultado más abajo.
+    texto_truncado_por_longitud = len(text) > max_length
+    if texto_truncado_por_longitud:
         text = text[:max_length]
 
     # tipo_contenido (05/08/2026, ver resolver_tipo_contenido en
@@ -386,6 +392,13 @@ def resumir_pdf():
                     on_usage=acumulador_tokens.add, on_progreso=on_progreso,
                 )
                 if resumen:
+                    if texto_truncado_por_longitud:
+                        resumen = (
+                            "> **Aviso:** este documento supera la longitud que esta herramienta "
+                            "puede analizar de una vez, así que el resumen se ha generado solo a "
+                            "partir de la primera parte. Para cubrirlo entero, divide el documento "
+                            "en partes más cortas y súbelas por separado.\n\n"
+                        ) + resumen
                     resultado = {
                         "resumen": resumen, "documento_id": documento_id, "nombre_archivo": nombre_archivo,
                         "tipo_contenido_detectado": tipo_contenido,
@@ -490,7 +503,11 @@ def generar_esquema_desde_pdf():
         return jsonify({"error": "API key de DeepSeek no configurada"}), 500
 
     max_length = 300000
-    if len(text) > max_length:
+    # texto_truncado_por_longitud: mismo motivo que en /resumir-pdf (ver el
+    # comentario largo ahí) -- se avisa más abajo si el resultado final se
+    # generó a partir de un documento truncado.
+    texto_truncado_por_longitud = len(text) > max_length
+    if texto_truncado_por_longitud:
         text = text[:max_length]
 
     # tipo_contenido (05/08/2026, ver resolver_tipo_contenido en
@@ -633,6 +650,13 @@ def generar_esquema_desde_pdf():
                     fraccion_minima_fusion=FRACCION_MINIMA_FUSION_ESQUEMA,
                 )
                 if esquema:
+                    if texto_truncado_por_longitud:
+                        esquema = (
+                            "> **Aviso:** este documento supera la longitud que esta herramienta "
+                            "puede analizar de una vez, así que el esquema se ha generado solo a "
+                            "partir de la primera parte. Para cubrirlo entero, divide el documento "
+                            "en partes más cortas y súbelas por separado.\n\n"
+                        ) + esquema
                     resultado = {
                         "esquema": esquema, "documento_id": documento_id, "nombre_archivo": nombre_archivo,
                         "tipo_contenido_detectado": tipo_contenido,

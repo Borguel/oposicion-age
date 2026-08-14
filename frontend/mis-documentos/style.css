@@ -490,6 +490,27 @@ body {
   color: var(--age-danger);
 }
 
+/* Barra de progreso real (12/08/2026, refuerzo visual de textoGenerando en
+   script.js -- "que se vea que esto avanza", no solo el texto): ancho
+   fijo pequeño a propósito, es un refuerzo junto al texto de estado, no
+   un elemento protagonista de la tarjeta. */
+.documento-card-progreso-barra {
+  width: 100%;
+  max-width: 140px;
+  height: 4px;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-primary-soft);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.documento-card-progreso-barra-relleno {
+  height: 100%;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-primary);
+  transition: width 0.4s ease;
+}
+
 .documento-card-fila-acciones {
   display: flex;
   align-items: center;
@@ -866,6 +887,26 @@ body {
   .carpeta-detalle-cabecera {
     flex-direction: column;
     align-items: flex-start;
+  }
+  /* Zona táctil recomendada (12/08/2026, mismo criterio que .zona-switch-
+     pill en zona-opositor/style.css): 24×24px se queda corto en móvil para
+     los botones de renombrar/eliminar. */
+  .documento-card-renombrar,
+  .documento-card-eliminar {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Pantallas muy estrechas (12/08/2026, a petición del usuario: "que se
+   vea bien toda la información posible en móvil"): con solo 640px de
+   breakpoint, "Contenido generado" se queda en 2 columnas incluso en un
+   móvil pequeño, comprimiendo cada tipo (con su estado, contador y
+   botones) en poco más de 150px de ancho. Por debajo de 400px pasa a 1
+   columna, igual que ya hace la propia lista de documentos. */
+@media (max-width: 400px) {
+  .documento-card-tipos-grid {
+    grid-template-columns: 1fr;
   }
 }
 

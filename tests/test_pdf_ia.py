@@ -316,6 +316,27 @@ class TestResumirPdfYGenerarTestDesdePdf:
         guardados = list(db.collection("usuarios").document("u1").collection("resumenes_pdf").stream())
         assert guardados[0].to_dict()["resumen"] == resumen_parcial
 
+    def test_resumir_pdf_truncado_por_longitud_avisa_en_el_resultado(self, client, db):
+        # 12/08/2026, bug real: el truncado a 300.000 caracteres era
+        # completamente silencioso -- ni la subida ni el resultado avisaban
+        # de que el documento se había cortado, así que un usuario con un
+        # documento largo se quedaba con un resumen incompleto sin saberlo.
+        sembrar_usuario_activo(db, "u1", plan="premium")
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {
+            "texto": "a" * 300001, "nombre_archivo": "doc.pdf",
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": "d1"},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert "Aviso" in eventos[-1]["resumen"]
+        assert "# Resumen generado" in eventos[-1]["resumen"]
+
     def test_resumir_pdf_guarda_progreso_real_mientras_genera_y_lo_limpia_al_terminar(self, client, db, documento_sembrado):
         # 10/08/2026, a petición del usuario ("no sé qué está pasando, pon
         # una barra o un contador"): el progreso real de
@@ -517,6 +538,25 @@ class TestGenerarEsquemaDesdePdf:
         assert eventos[-1]["tipo"] == "fin"
         assert eventos[-1]["esquema"] == "# Esquema generado"
         assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+
+    def test_generar_esquema_desde_pdf_truncado_por_longitud_avisa_en_el_resultado(self, client, db):
+        # 12/08/2026, mismo bug real que en /resumir-pdf (ver el comentario
+        # largo en TestResumirPdfYGenerarTestDesdePdf).
+        sembrar_usuario_activo(db, "u1", plan="premium")
+        db.sembrar(("usuarios", "u1", "documentos", "d1"), {
+            "texto": "a" * 300001, "nombre_archivo": "doc.pdf",
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": "d1"},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert "Aviso" in eventos[-1]["esquema"]
+        assert "# Esquema generado" in eventos[-1]["esquema"]
 
     def test_generar_esquema_desde_pdf_manda_evento_inicio_con_documento_id(self, client, documento_sembrado):
         parche = _con_sesion(client)

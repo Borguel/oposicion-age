@@ -882,16 +882,159 @@ class TestGenerarDocumentoLargoPorPartes:
         assert primera_llamada_map.kwargs["max_tokens"] == 4096
 
     def test_fusion_de_muchos_fragmentos_no_supera_el_tope_de_max_tokens(self):
-        # Con muchos fragmentos, max_tokens_fusion no debe crecer sin límite
-        # -- 16384 es el techo (ver el comentario largo junto a su cálculo).
+        # 12/08/2026: con muchos fragmentos, la fusión ya no es una única
+        # llamada -- se hace en cascada por grupos (ver tamano_grupo en
+        # generar_documento_largo_por_partes). Con 6 fragmentos y
+        # tamano_grupo=4 (modo general, max_tokens=4096 por defecto), el
+        # nivel 1 funde un grupo de 4 y un grupo de 2 (en paralelo -- orden
+        # no determinista, por eso el mock responde según el CONTENIDO del
+        # mensaje, no por posición), y el nivel 2 funde esos dos resultados
+        # en un grupo final de 2. Ningún grupo pide nunca más de 16384.
         parrafo = "a" * 5000
         texto_largo = "\n\n".join([parrafo] * 6)  # 6 fragmentos de 5000
-        respuestas = ["parcial. " * 100] * 6 + ["fusión. " * 300]
-        with patch("deepseek_utils.generar_con_continuacion", side_effect=respuestas) as mock_gen:
+        max_tokens_fusion_vistos = []
+
+        def fake_call(system_prompt, mensaje_usuario, max_tokens=None, **kwargs):
+            if "A continuación tienes varios resultados" in system_prompt:
+                max_tokens_fusion_vistos.append(max_tokens)
+                return "fusión. " * 300
+            return "parcial. " * 100
+
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=fake_call) as mock_gen:
             deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=5000)
-        ultima_llamada = mock_gen.call_args_list[-1]
-        # 4096 * 6 = 24576, por encima del tope -- debe quedarse en 16384.
-        assert ultima_llamada.kwargs["max_tokens"] == 16384
+
+        assert mock_gen.call_count == 9  # 6 MAP + 2 fusiones (nivel 1) + 1 fusión (nivel 2)
+        assert max(max_tokens_fusion_vistos) <= 16384
+        # 4096*4=16384 (grupo de 4, capado exacto) una vez; 4096*2=8192
+        # (grupo de 2) dos veces -- el grupo de 2 del nivel 1 y el grupo
+        # final de 2 del nivel 2 -- ninguno de los dos necesitaba tope, a
+        # diferencia de antes de este cambio (donde los 6 juntos SÍ lo
+        # habrían necesitado: 4096*6=24576).
+        assert max_tokens_fusion_vistos.count(16384) == 1
+        assert max_tokens_fusion_vistos.count(8192) == 2
+
+    def test_cascada_con_diez_fragmentos_usa_varios_niveles_y_no_todo_capado_a_16384(self):
+        # 12/08/2026: con 10 fragmentos y tamano_grupo=4 (modo general,
+        # max_tokens=4096), el nivel 1 funde grupos de 4, 4 y 2, y el
+        # nivel 2 funde esos 3 resultados en un único grupo final -- 4
+        # llamadas de fusión en 2 niveles, no todas capadas a 16384 (el
+        # grupo de 2 y el grupo final de 3 tienen presupuesto real, no el
+        # tope) -- justo el punto central de este cambio.
+        parrafo = "a" * 5000
+        texto_largo = "\n\n".join([parrafo] * 10)
+        max_tokens_fusion_vistos = []
+
+        def fake_call(system_prompt, mensaje_usuario, max_tokens=None, **kwargs):
+            if "A continuación tienes varios resultados" in system_prompt:
+                max_tokens_fusion_vistos.append(max_tokens)
+                # Eco de la entrada (nunca más corto que ella): a este nivel
+                # solo interesa el nº de llamadas y su max_tokens, no el
+                # criterio de colapso -- un eco nunca colapsa a ningún nivel
+                # del cascade, sea cual sea el tamaño del grupo.
+                return "FUSIONADO: " + mensaje_usuario
+            return "parcial. " * 100
+
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=fake_call) as mock_gen:
+            deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=5000)
+
+        assert mock_gen.call_count == 14  # 10 MAP + 4 fusiones (3 en nivel 1, 1 en nivel 2)
+        assert len(max_tokens_fusion_vistos) == 4
+        assert 8192 in max_tokens_fusion_vistos  # grupo de 2 del nivel 1
+        assert 12288 in max_tokens_fusion_vistos  # grupo final de 3 del nivel 2
+        assert max(max_tokens_fusion_vistos) <= 16384
+
+    def test_cascada_en_modo_legal_nunca_supera_16384_pese_a_varios_niveles(self):
+        # Mismo documento de 10 fragmentos, pero en modo legal
+        # (max_tokens=8192): tamano_grupo=max(4, 16384//8192)=4 -- IGUAL
+        # que en modo general, no 2 -- así el mismo documento solo necesita
+        # 4 llamadas de fusión en 2 niveles, no las 9 de un árbol binario
+        # puro (tamano_grupo=2) que tocaría con el suelo más bajo.
+        parrafo = "a" * 5000
+        texto_largo = "\n\n".join([parrafo] * 10)
+        max_tokens_fusion_vistos = []
+
+        def fake_call(system_prompt, mensaje_usuario, max_tokens=None, **kwargs):
+            if "A continuación tienes varios resultados" in system_prompt:
+                max_tokens_fusion_vistos.append(max_tokens)
+                return "FUSIONADO: " + mensaje_usuario
+            return "parcial. " * 100
+
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=fake_call) as mock_gen:
+            deepseek_utils.generar_documento_largo_por_partes(
+                "system", texto_largo, tamano_chunk=5000, max_tokens=8192
+            )
+
+        assert mock_gen.call_count == 14  # 10 MAP + 4 fusiones
+        assert len(max_tokens_fusion_vistos) == 4
+        assert max(max_tokens_fusion_vistos) <= 16384
+
+    def test_cascada_se_corta_a_mitad_por_tiempo_y_devuelve_el_nivel_alcanzado(self):
+        # Se agota el tiempo justo DESPUÉS de fundir el nivel 1 (10
+        # fragmentos -> grupos [4,4,2], 3 fusiones) y ANTES de fundir el
+        # nivel 2 -- el resultado debe ser el nivel alcanzado (3 resultados
+        # ya fundidos entre sí), no los fragmentos crudos del MAP ni nada
+        # perdido. Mismo patrón que test_documento_largo_agota_el_tiempo_
+        # maximo_antes_de_la_fusion, con más llamadas a time.monotonic()
+        # porque ahora hay un nivel intermedio de por medio (ver el
+        # recuento exacto en el comentario de la lista de abajo).
+        parrafo = "a" * 5000
+        texto_largo = "\n\n".join([parrafo] * 10)
+
+        def fake_call(system_prompt, mensaje_usuario, max_tokens=None, **kwargs):
+            if "A continuación tienes varios resultados" in system_prompt:
+                return "FUSIONADO: " + mensaje_usuario
+            return "parcial. " * 100
+
+        # time.monotonic(): 1) arma el límite (T0=0), 2) ronda inicial del
+        # MAP calculando el tiempo restante (de sobra), 3) comprobación
+        # antes de entrar al bucle de fusión, 4) comprobación del nivel 1
+        # (debe seguir dentro de plazo), 5) cálculo de tiempo restante
+        # dentro de _fusionar_nivel para el executor del nivel 1, 6)
+        # comprobación del nivel 2 -- aquí ya muy por encima del tope.
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=fake_call) as mock_gen, \
+             patch("deepseek_utils.as_completed", side_effect=_as_completed_sin_timeout), \
+             patch("deepseek_utils.time.monotonic", side_effect=[0, 1, 2, 3, 4, 10_000]):
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=5000)
+
+        assert mock_gen.call_count == 13  # 10 MAP + 3 fusiones del nivel 1, nunca llega al nivel 2
+        assert resultado.count("FUSIONADO: ") == 3
+        assert "Aviso" not in resultado
+
+    def test_un_grupo_colapsado_en_la_cascada_no_hunde_el_resto(self):
+        # 8 fragmentos, tamano_grupo=4 (modo general) -> nivel 1: 2 grupos
+        # de 4. El grupo B (fragmentos 4-7) colapsa en las dos llamadas que
+        # se le permiten -- su contenido crudo debe sobrevivir SIN fundir
+        # hasta el resultado final, mientras que el grupo A (fragmentos
+        # 0-3) se funde con normalidad -- un grupo que colapsa no debe
+        # hundir el resto del documento.
+        parrafo = "a" * 5000
+        texto_largo = "\n\n".join([parrafo] * 8)
+
+        def fake_call(system_prompt, mensaje_usuario, max_tokens=None, **kwargs):
+            if "A continuación tienes varios resultados" not in system_prompt:
+                for i in range(8):
+                    if f"FRAGMENTO {i + 1} de 8" in mensaje_usuario:
+                        return f"# Resultado\nRESULTADO_MAP_{i} " * 30
+                raise AssertionError("fragmento no identificado en el mensaje")
+            contiene_grupo_a = any(f"RESULTADO_MAP_{i}" in mensaje_usuario for i in range(4))
+            contiene_grupo_b = any(f"RESULTADO_MAP_{i}" in mensaje_usuario for i in range(4, 8))
+            if contiene_grupo_b and not contiene_grupo_a:
+                # El grupo B, solo, colapsa siempre (en las dos llamadas
+                # que se le permiten antes de rendirse con ese grupo).
+                return "corto"
+            return "FUSIONADO: " + mensaje_usuario
+
+        with patch("deepseek_utils.generar_con_continuacion", side_effect=fake_call) as mock_gen:
+            resultado = deepseek_utils.generar_documento_largo_por_partes("system", texto_largo, tamano_chunk=5000)
+
+        # El contenido de los 8 fragmentos sobrevive en el resultado final
+        # -- el del grupo A vía fusión real, el del grupo B sin fundir
+        # (crudo, tras colapsar dos veces) pero sin perderse.
+        for i in range(8):
+            assert f"RESULTADO_MAP_{i}" in resultado
+        # 8 MAP + 1 fusión grupo A + 2 fusiones grupo B (colapsa y
+        # reintenta) + 1 fusión final del nivel 2 = 12.
+        assert mock_gen.call_count == 12
 
     def test_documento_largo_donde_todos_los_fragmentos_fallan_devuelve_none(self):
         parrafo = "a" * 10000
