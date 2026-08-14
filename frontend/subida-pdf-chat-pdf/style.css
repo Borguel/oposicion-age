@@ -1,19 +1,21 @@
-/* Estilos propios de "Chat con tu PDF" -- la cabecera, tarjetas, botones,
-   zona de subida y estado de carga son compartidos (ver /assets/pdf-tools.css);
-   aquí solo queda lo específico de esta herramienta: la rejilla de dos
-   columnas, las burbujas de chat y la caja de escribir. Antes esta página
-   tenía su propia hoja de estilos suelta con colores fijos (verde/azul,
-   grises hardcodeados) que no seguían el resto de la web ni tenían modo
-   oscuro -- ahora usa las mismas variables --age-* que el resto. */
+/* Estilos propios de "Chat con tu PDF" -- la cabecera, tarjetas, botones y
+   zona de subida son compartidos (ver /assets/pdf-tools.css); aquí solo
+   queda lo específico de esta herramienta: el estado de subida, la barra
+   de documento activo y el propio chat (mensajes, burbujas, indicador de
+   escritura, caja de escribir). Usa las mismas variables --age-* que el
+   resto de la web, con modo claro/oscuro automático. */
 
-.pdf-chat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.3fr;
-  gap: 24px;
-  align-items: start;
+.chatpdf-shell {
+  display: flex;
+  flex-direction: column;
 }
 
-.pdf-chat-upload-card .file-upload-area {
+/* ===== SUBIDA ===== */
+/* Visible solo antes de tener un documento activo -- en cuanto se sube un
+   PDF nuevo o se entra con ?documento_id= desde Mis Documentos, se oculta
+   y da paso directamente al chat (12/08/2026, a petición del usuario: "no
+   hace falta que salga el recuadro de subir pdf" si ya hay un documento). */
+.chatpdf-upload-card .file-upload-area {
   margin-bottom: 0;
 }
 
@@ -22,78 +24,119 @@
   background: var(--age-primary-soft);
 }
 
-.pdf-info-box {
-  margin-top: 18px;
-  padding: 16px 18px;
-  background: var(--age-neutral-bg);
-  border-radius: var(--age-radius-md);
-  border-left: 4px solid var(--age-primary);
-}
-.pdf-info-box p {
-  margin: 0 0 8px;
-  color: var(--age-ink);
-  font-size: 0.92rem;
-}
-.pdf-info-box p:last-of-type {
-  margin-bottom: 0;
-}
-.pdf-preview-text {
-  color: var(--age-ink-soft) !important;
-}
-.pdf-stats {
+.chatpdf-upload-hint {
+  margin: 14px 0 0;
+  min-height: 1.3em;
+  font-size: 0.88rem;
+  color: var(--age-ink-soft);
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  align-items: center;
+  gap: 8px;
 }
-.stat-item {
-  padding: 10px 16px;
-  background: var(--age-card);
-  border: 1px solid var(--age-border);
-  border-radius: var(--age-radius-sm);
-  text-align: center;
+
+.chatpdf-upload-hint:empty {
+  display: none;
 }
-.stat-value {
-  font-size: 1.2rem;
-  font-weight: 800;
+
+.chatpdf-upload-hint-cargando::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 2px solid var(--age-border);
+  border-top-color: var(--age-primary);
+  border-radius: 50%;
+  animation: chatpdf-spin 0.8s linear infinite;
+}
+
+.chatpdf-upload-hint-error {
+  color: var(--age-danger);
+}
+
+.chatpdf-upload-hint a {
   color: var(--age-primary-dark);
+  font-weight: 700;
 }
-.stat-label {
+
+/* ===== TARJETA DE CHAT ===== */
+.chatpdf-card {
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  height: min(680px, 75vh);
+  overflow: hidden;
+}
+
+/* Barra de documento activo: icono + nombre + páginas, siempre visible
+   mientras se chatea -- reemplaza tanto el antiguo recuadro "Archivo: ..."
+   de la subida como la cabecera de sesión del chat, en un único sitio. */
+.chatpdf-docbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--age-neutral-bg);
+  border-bottom: 1.5px solid var(--age-border);
+  flex-shrink: 0;
+}
+
+.chatpdf-docbar-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--age-radius-md);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chatpdf-docbar-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.chatpdf-docbar-nombre {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--age-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chatpdf-docbar-meta {
   font-size: 0.78rem;
   color: var(--age-ink-soft);
 }
 
-/* Tarjeta del chat: mismo padding que .card pero sin el propio para poder
-   controlar cabecera/caja de mensajes/input como tres franjas pegadas. */
-.pdf-chat-card {
-  padding: 0 !important;
-  display: flex;
-  flex-direction: column;
-  height: 640px;
-  overflow: hidden;
-}
-
-.chat-header {
-  padding: 18px 22px;
-  background: var(--age-navy);
-  color: #fff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
+.chatpdf-docbar-cambiar {
   flex-shrink: 0;
-}
-.chat-header h2 {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #fff;
-}
-#session-info {
-  font-size: 0.85rem;
-  color: var(--age-navy-ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--age-radius-pill);
+  border: 1px solid var(--age-border);
+  color: var(--age-ink-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.15s var(--age-ease), color 0.15s var(--age-ease), background 0.15s var(--age-ease);
 }
 
-.chat-box {
+.chatpdf-docbar-cambiar:hover {
+  border-color: var(--age-primary);
+  color: var(--age-primary-dark);
+  background: var(--age-primary-soft);
+}
+
+.chatpdf-messages {
   flex: 1;
   min-height: 0;
   padding: 20px;
@@ -103,64 +146,117 @@
   flex-direction: column;
 }
 
-/* Cada .message ES la propia burbuja (script.js pone el texto de usuario
-   directamente como textContent del div, sin un <p> envolvente, así que la
-   burbuja no puede depender de un hijo). .chat-box es un flex column y cada
-   burbuja usa align-self para ir a la izquierda o a la derecha. */
-.message {
-  align-self: flex-start;
-  max-width: 82%;
-  margin-bottom: 14px;
+/* ===== MENSAJES / BURBUJAS ===== */
+.chatpdf-msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 16px;
+  animation: chatpdf-fade-in 0.3s ease-out;
+}
+
+.chatpdf-msg-user {
+  justify-content: flex-end;
+}
+
+@keyframes chatpdf-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chatpdf-avatar-bot {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chatpdf-bubble {
+  max-width: 78%;
   padding: 12px 16px;
   border-radius: 18px;
   font-size: 0.95rem;
   line-height: 1.55;
   box-shadow: var(--age-shadow);
-  animation: pdfchat-fade-in 0.3s ease-out;
   word-break: break-word;
 }
-.message p {
-  margin: 0;
+
+.chatpdf-bubble p {
+  margin: 0 0 8px;
 }
-.message p + p {
-  margin-top: 8px;
+.chatpdf-bubble p:last-child {
+  margin-bottom: 0;
 }
-@keyframes pdfchat-fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+.chatpdf-bubble h3 {
+  margin: 12px 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--age-ink);
+}
+.chatpdf-bubble h3:first-child {
+  margin-top: 0;
+}
+.chatpdf-bubble ul {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+.chatpdf-bubble li {
+  margin-bottom: 4px;
+}
+.chatpdf-bubble strong {
+  color: var(--age-ink);
+  font-weight: 700;
 }
 
-.user-message {
-  align-self: flex-end;
+.chatpdf-bubble-user {
   background: var(--age-primary);
   color: #1b1f2e;
-  border-bottom-right-radius: 5px;
+  border-bottom-right-radius: 6px;
   font-weight: 600;
+  white-space: pre-wrap;
 }
-.bot-message {
+
+.chatpdf-bubble-bot {
   background: var(--age-card);
   color: var(--age-ink);
   border: 1px solid var(--age-border);
-  border-bottom-left-radius: 5px;
-}
-.bot-message ul {
-  padding-left: 20px;
-  margin: 8px 0;
-}
-.bot-message li {
-  margin-bottom: 5px;
-}
-/* Indicador "Pensando...": contiene un spinner + texto, no un <p>. */
-.bot-message:has(.spinner) {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: fit-content;
-  color: var(--age-ink-soft);
-  font-size: 0.9rem;
+  border-bottom-left-radius: 6px;
 }
 
-.input-container {
+/* Indicador "escribiendo…": tres puntos con rebote, mismo criterio que
+   /tu-tutor/style.css::.typing-indicator -- sustituye al spinner+texto
+   anterior por algo más cercano a un chat real. */
+.chatpdf-typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 16px;
+}
+.chatpdf-typing span {
+  width: 6px;
+  height: 6px;
+  background: var(--age-ink-soft);
+  border-radius: 50%;
+  animation: chatpdf-typing-bounce 1.4s infinite;
+}
+.chatpdf-typing span:nth-child(2) { animation-delay: 0.2s; }
+.chatpdf-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes chatpdf-typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes chatpdf-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== ENTRADA ===== */
+.chatpdf-input-row {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -189,7 +285,7 @@
 #pdf-send-btn {
   flex-shrink: 0;
   /* 44x44px, zona táctil recomendada (mismo criterio que .zona-switch-pill
-     en zona-opositor/style.css) -- antes 40x40px. */
+     en zona-opositor/style.css). */
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -214,24 +310,14 @@
   cursor: default;
 }
 
-.spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2.5px solid var(--age-border);
-  border-radius: 50%;
-  border-top-color: var(--age-primary);
-  animation: pdfchat-spin 0.8s linear infinite;
-}
-@keyframes pdfchat-spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (max-width: 900px) {
-  .pdf-chat-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 640px) {
+  .chatpdf-card {
+    height: min(600px, 78vh);
   }
-  .pdf-chat-card {
-    height: 520px;
+  .chatpdf-docbar-cambiar-texto {
+    display: none;
+  }
+  .chatpdf-bubble {
+    max-width: 86%;
   }
 }

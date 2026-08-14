@@ -43,7 +43,8 @@ def test_limite_10_por_minuto_corta_pasado_el_limite():
 
 
 def test_limite_20_por_minuto_corta_pasado_el_limite():
-    # Chat conversacional: /tu-tutor, /tu-tutor/stream, /chat-pdf-mensaje.
+    # Chat conversacional: /tu-tutor, /tu-tutor/stream, /chat-pdf-mensaje,
+    # /chat-pdf-mensaje/stream.
     cliente = _app_con_limite("20 per minute")
     for _ in range(20):
         assert cliente.get("/ia").status_code == 200

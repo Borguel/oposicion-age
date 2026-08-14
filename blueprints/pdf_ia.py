@@ -33,7 +33,7 @@ from test_generator import (
 from coste_ia import AcumuladorTokens
 from deepseek_utils import (
     TAMANO_CHUNK_CARACTERES, TAMANO_CHUNK_ESQUEMA, FRACCION_MINIMA_MAP_ESQUEMA, FRACCION_MINIMA_FUSION_ESQUEMA,
-    generar_documento_largo_por_partes, call_deepseek_api,
+    generar_documento_largo_por_partes, call_deepseek_api, call_deepseek_api_stream,
 )
 from tarjetas_generator import (
     generar_tarjetas_verificadas, generar_banco_tarjetas_adaptativo, TOPE_BANCO_TARJETAS,
@@ -1319,35 +1319,30 @@ def subir_pdf_chat():
     })
 
 
-@bp.route('/chat-pdf-mensaje', methods=['POST'])
-@limiter.limit("20 per minute")
-@requiere_plan(db, "premium", global_check=True)
-def chat_pdf_mensaje():
-    datos = request.get_json(silent=True) or {}
+def _preparar_mensajes_chat_pdf(datos):
+    """Común a /chat-pdf-mensaje y /chat-pdf-mensaje/stream: valida la
+    petición, resuelve el documento (leído ENTERO de "Mis documentos" en
+    cada mensaje, no una copia recortada guardada aparte al subir -- así
+    reutiliza exactamente el mismo texto ya extraído para resumen/esquema/
+    test/tarjetas) y arma la lista de mensajes para DeepSeek. Devuelve
+    (mensajes, documento_id, respuesta_error_o_None); si el último
+    elemento no es None, la ruta debe devolverlo tal cual."""
     mensaje = (datos.get("mensaje") or "").strip()
     if not mensaje:
-        return jsonify({"error": "Falta el mensaje"}), 400
+        return None, None, (jsonify({"error": "Falta el mensaje"}), 400)
     documento_id = datos.get("documento_id")
     if not documento_id:
-        return jsonify({"error": "Primero sube o selecciona un documento para poder chatear sobre él."}), 400
+        return None, None, (jsonify({"error": "Primero sube o selecciona un documento para poder chatear sobre él."}), 400)
     historial = datos.get("historial") or []
     if not isinstance(historial, list):
         historial = []
 
-    # Se lee de "Mis documentos" en cada mensaje (en vez de una copia
-    # recortada guardada aparte al subir) -- así el chat ve el documento
-    # ENTERO, no solo sus primeras páginas, y reutiliza exactamente el
-    # mismo texto ya extraído para resumen/esquema/test/tarjetas.
     documento = obtener_documento(db, g.uid, documento_id)
     if not documento:
-        return jsonify({"error": "No se encontró el documento indicado."}), 404
+        return None, None, (jsonify({"error": "No se encontró el documento indicado."}), 404)
     texto_pdf = documento.get("texto")
     if not texto_pdf:
-        return jsonify({"error": "Primero sube o selecciona un documento para poder chatear sobre él."}), 400
-
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_pdf")
-    if not permitido:
-        return jsonify({"error": mensaje_error}), 429
+        return None, None, (jsonify({"error": "Primero sube o selecciona un documento para poder chatear sobre él."}), 400)
 
     system_prompt = (
         "Eres un asistente que ayuda a un opositor a entender un documento que ha subido. "
@@ -1364,6 +1359,21 @@ def chat_pdf_mensaje():
         if role in ("user", "assistant") and content:
             mensajes.append({"role": role, "content": str(content)[:2000]})
     mensajes.append({"role": "user", "content": mensaje})
+    return mensajes, documento_id, None
+
+
+@bp.route('/chat-pdf-mensaje', methods=['POST'])
+@limiter.limit("20 per minute")
+@requiere_plan(db, "premium", global_check=True)
+def chat_pdf_mensaje():
+    datos = request.get_json(silent=True) or {}
+    mensajes, documento_id, error = _preparar_mensajes_chat_pdf(datos)
+    if error:
+        return error
+
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_pdf")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     # call_deepseek_api (en vez de requests.post a pelo, como antes):
     # registra el coste real de la llamada automáticamente (vía flask.g,
@@ -1376,6 +1386,55 @@ def chat_pdf_mensaje():
         return jsonify({"error": "No se pudo generar la respuesta. Inténtalo de nuevo en unos segundos."}), 500
     registrar_uso(db, g.uid, "chat_pdf", g.plan_actual)
     return jsonify({"respuesta": respuesta, "documento_id": documento_id})
+
+
+# Misma ruta que /chat-pdf-mensaje pero en streaming (Server-Sent Events,
+# mismo patrón que /tu-tutor/stream): cada fragmento de la respuesta se
+# manda al frontend según va llegando de DeepSeek, para el efecto de
+# "escritura" en vez de esperar a la respuesta completa -- se percibe
+# mucho más rápido aunque el backend tarde lo mismo, y aquí el documento
+# entero va en el prompt, así que la generación puede tardar bastante más
+# que una pregunta corta. Permisos/límite se comprueban ANTES de abrir el
+# stream; registrar_uso ocurre por adelantado (si el cliente corta la
+# conexión a mitad, el generador no llega a "fin" y no se devuelve el
+# uso -- mismo criterio que /tu-tutor/stream) y se devuelve solo si
+# DeepSeek falla del todo con el cliente aún conectado.
+@bp.route('/chat-pdf-mensaje/stream', methods=['POST'])
+@limiter.limit("20 per minute")
+@requiere_plan(db, "premium", global_check=True)
+def chat_pdf_mensaje_stream():
+    datos = request.get_json(silent=True) or {}
+    mensajes, documento_id, error = _preparar_mensajes_chat_pdf(datos)
+    if error:
+        return error
+
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_pdf")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
+
+    uid = g.uid
+    plan_actual = g.plan_actual
+    registrar_uso(db, uid, "chat_pdf", plan_actual)
+
+    def generar():
+        fragmentos = []
+        for fragmento in call_deepseek_api_stream(mensajes, max_tokens=800, temperature=0.4):
+            if not fragmento:
+                continue
+            fragmentos.append(fragmento)
+            yield f"data: {json.dumps({'tipo': 'delta', 'texto': fragmento}, ensure_ascii=False)}\n\n"
+        texto_respuesta = "".join(fragmentos).strip()
+        if not texto_respuesta:
+            devolver_uso(db, uid, "chat_pdf", plan_actual)
+            yield f"data: {json.dumps({'tipo': 'error'}, ensure_ascii=False)}\n\n"
+            return
+        yield f"data: {json.dumps({'tipo': 'fin', 'documento_id': documento_id}, ensure_ascii=False)}\n\n"
+
+    return Response(
+        stream_with_context(generar()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"}
+    )
 
 
 # ===================================================================

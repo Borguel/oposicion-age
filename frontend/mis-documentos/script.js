@@ -809,7 +809,6 @@ function tarjetaDocumento(doc, modoCarpeta) {
         <div class="documento-card-header-info">
           <p class="documento-card-titulo">
             ${escaparHtml(nombreCorto)}
-            <a class="documento-card-chat" href="/subida-pdf-chat-pdf/?documento_id=${doc.id}" aria-label="Chatear sobre este documento" title="Chatear sobre este documento">${icono("chat", 14)}</a>
             <button type="button" class="documento-card-renombrar" data-id="${doc.id}" aria-label="Renombrar documento" title="Renombrar documento">${icono("lapiz", 14)}</button>
             <button type="button" class="documento-card-eliminar" data-id="${doc.id}" aria-label="Eliminar documento" title="Eliminar documento">${icono("papelera", 14)}</button>
           </p>
@@ -817,6 +816,7 @@ function tarjetaDocumento(doc, modoCarpeta) {
         </div>
       </div>
       ${seccionCarpeta(doc, modoCarpeta)}
+      <a class="documento-card-chat-btn" href="/subida-pdf-chat-pdf/?documento_id=${doc.id}">${icono("chat", 18)} Chat PDF</a>
       <p class="documento-card-seccion-titulo">Contenido generado</p>
       <div class="documento-card-tipos documento-card-tipos-grid">${filasContenido}</div>
       <p class="documento-card-seccion-titulo">Banco de práctica</p>

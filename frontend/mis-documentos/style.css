@@ -340,26 +340,37 @@ body {
   color: var(--age-danger);
 }
 
-/* Enlace a "Chat con tu PDF" para este documento (12/08/2026) -- mismo
-   tamaño/hover que renombrar/eliminar, pero es una navegación (<a>), no
-   una acción in-page. */
-.documento-card-chat {
-  flex-shrink: 0;
-  display: inline-flex;
+/* Botón "Chat PDF" para este documento (12/08/2026): a petición del
+   usuario, más visible que un icono suelto en el título -- su propia
+   fila, sólido en el color de marca, con icono + texto. Reutiliza los
+   mismos tokens que .documento-card-btn.principal (la única otra acción
+   "sólida" de la tarjeta) pero en su propio tamaño, porque aquí es la
+   acción destacada de la tarjeta entera, no una más dentro de la
+   cuadrícula de tipos de contenido. */
+.documento-card-chat-btn {
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: none;
-  border-radius: var(--age-radius-sm);
-  background: transparent;
-  color: var(--age-ink-soft);
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px 16px;
+  border-radius: var(--age-radius-md);
+  border: 1.5px solid var(--age-primary);
+  background: var(--age-primary);
+  color: #1b1f2e;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s var(--age-ease), border-color 0.15s var(--age-ease), transform 0.15s var(--age-ease);
 }
 
-.documento-card-chat:hover {
-  background: var(--age-primary-soft);
-  color: var(--age-primary-dark);
+.documento-card-chat-btn:hover {
+  background: var(--age-primary-dark);
+  border-color: var(--age-primary-dark);
+}
+
+.documento-card-chat-btn:active {
+  transform: scale(0.98);
 }
 
 .documento-card-meta {
@@ -914,8 +925,7 @@ body {
      pill en zona-opositor/style.css): 24×24px se queda corto en móvil para
      los botones de renombrar/eliminar. */
   .documento-card-renombrar,
-  .documento-card-eliminar,
-  .documento-card-chat {
+  .documento-card-eliminar {
     width: 44px;
     height: 44px;
   }

@@ -307,6 +307,63 @@ class TestChatPdfMensaje:
         assert resp.status_code == 500
         assert (db.leer(("usuarios", "u1")).get("limites_uso") or {}).get("chat_pdf", {}).get("contador", 0) == 0
 
+    def test_chat_pdf_mensaje_stream_emite_deltas_y_registra_uso(self, client, db, documento_sembrado):
+        # Mismo patrón que test_tu_tutor.py::test_ruta_tu_tutor_stream_emite_eventos_y_registra_uso.
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.call_deepseek_api_stream", return_value=iter(["Hola ", "que tal"])):
+                resp = client.post("/chat-pdf-mensaje/stream", json={
+                    "mensaje": "hola", "documento_id": documento_sembrado,
+                }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert [e["tipo"] for e in eventos] == ["delta", "delta", "fin"]
+        assert eventos[0]["texto"] == "Hola "
+        assert eventos[1]["texto"] == "que tal"
+        assert eventos[2]["documento_id"] == documento_sembrado
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["chat_pdf"]["contador"] == 1
+
+    def test_chat_pdf_mensaje_stream_sin_fragmentos_devuelve_el_uso(self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.call_deepseek_api_stream", return_value=iter([])):
+                resp = client.post("/chat-pdf-mensaje/stream", json={
+                    "mensaje": "hola", "documento_id": documento_sembrado,
+                }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        eventos = _eventos_sse(resp.get_data(as_text=True))
+        assert eventos == [{"tipo": "error"}]
+        # Cobrado por adelantado y devuelto al fallar del todo: neto 0
+        # (mismo criterio que /tu-tutor/stream).
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["chat_pdf"]["contador"] == 0
+
+    def test_chat_pdf_mensaje_stream_documento_inexistente_da_404(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/chat-pdf-mensaje/stream", json={
+                "mensaje": "hola", "documento_id": "no-existe",
+            }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 404
+
+    def test_chat_pdf_mensaje_stream_respeta_limite_diario(self, client, db, documento_sembrado):
+        from datetime import date
+        sembrar_usuario_activo(db, "u1", plan="premium",
+                                limites_uso={"chat_pdf": {"periodo": date.today().isoformat(), "contador": 80}})
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/chat-pdf-mensaje/stream", json={
+                "mensaje": "hola", "documento_id": documento_sembrado,
+            }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 429
+
 
 class TestResumirPdfYGenerarTestDesdePdf:
     """Test de humo: la ruta llega hasta el punto de generación con IA

@@ -40,12 +40,13 @@
   <div class="pdfherr-header">
     <div class="pdfherr-icon" data-icon="chat" data-icon-size="32"></div>
     <h1>Chat con tu PDF</h1>
-    <p>Sube un documento y pregúntale a la IA lo que quieras sobre su contenido, como si chatearas con alguien que se lo ha leído entero.</p>
+    <p>Pregúntale directamente a tu documento y obtén respuesta al momento, como si chatearas con alguien que se lo ha leído entero.</p>
   </div>
 
   <div class="pdfherr-body">
-    <div class="pdf-chat-grid">
-      <div class="card pdf-chat-upload-card">
+    <div class="chatpdf-shell">
+
+      <div class="card chatpdf-upload-card" id="chatpdf-upload-card">
         <div class="card-header">
           <div class="card-icon" data-icon="documento" data-icon-size="20"></div>
           <h2 class="card-title">Sube tu documento</h2>
@@ -58,34 +59,27 @@
           <input type="file" id="pdf-file" class="file-input" accept=".pdf" hidden>
           <button type="button" class="btn btn-primary" id="select-pdf-btn"><span data-icon="carpeta" data-icon-size="16"></span> Seleccionar PDF</button>
         </div>
-
-        <div id="pdf-info" class="pdf-info-box hidden">
-          <p><strong>Archivo:</strong> <span id="pdf-filename"></span></p>
-          <p id="pdf-preview-text" class="pdf-preview-text">Analizando documento...</p>
-          <div class="pdf-stats">
-            <div class="stat-item">
-              <div class="stat-value" id="page-count">-</div>
-              <div class="stat-label">Páginas</div>
-            </div>
-          </div>
-        </div>
+        <p class="chatpdf-upload-hint" id="chatpdf-upload-status"></p>
       </div>
 
-      <div class="card pdf-chat-card">
-        <div class="chat-header">
-          <h2>Asistente de Estudio</h2>
-          <p id="session-info">Esperando documento...</p>
-        </div>
-        <div class="chat-box" id="pdf-chat-box">
-          <div class="message bot-message">
-            <p>¡Hola! Sube un PDF y podrás preguntarme lo que quieras sobre su contenido: dudas, conceptos, artículos concretos, lo que necesites.</p>
+      <div class="card chatpdf-card hidden" id="chatpdf-card">
+        <div class="chatpdf-docbar">
+          <span class="chatpdf-docbar-icon" data-icon="documento" data-icon-size="18"></span>
+          <div class="chatpdf-docbar-info">
+            <span class="chatpdf-docbar-nombre" id="pdf-filename">Documento</span>
+            <span class="chatpdf-docbar-meta"><span id="page-count">-</span> páginas</span>
           </div>
+          <a class="chatpdf-docbar-cambiar" href="/mis-documentos/"><span data-icon="repetir" data-icon-size="14"></span><span class="chatpdf-docbar-cambiar-texto">Cambiar documento</span></a>
         </div>
-        <div class="input-container">
+
+        <div class="chatpdf-messages" id="pdf-chat-box"></div>
+
+        <div class="chatpdf-input-row">
           <input type="text" id="pdf-user-input" placeholder="Haz una pregunta sobre el documento..." disabled>
-          <button id="pdf-send-btn" disabled aria-label="Enviar pregunta"><span data-icon="reproducir" data-icon-size="16"></span></button>
+          <button id="pdf-send-btn" disabled aria-label="Enviar pregunta"><span data-icon="reproducir" data-icon-size="18"></span></button>
         </div>
       </div>
+
     </div>
   </div>
 
