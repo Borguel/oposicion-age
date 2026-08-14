@@ -508,6 +508,17 @@ class TestGenerarTarjetasVerificadas:
             _verificar_tarjeta({"pregunta": "¿?", "respuesta": "R"}, "Fragmento de prueba.", on_usage=None)
         assert mock.call_args.kwargs["thinking_enabled"] is True
 
+    def test_fragmentos_precalculados_evita_trocear_de_nuevo(self):
+        # 12/08/2026, optimización de coste: si se pasan fragmentos ya
+        # calculados, no debe volver a trocear el texto -- pensado para que
+        # generar_banco_tarjetas_adaptativo trocee una sola vez y reutilice
+        # en cada ronda.
+        with patch("tarjetas_generator.call_deepseek_api",
+                   return_value=json.dumps({"tarjetas": [{"pregunta": "¿Pregunta?", "respuesta": "Respuesta"}]})), \
+             patch("tarjetas_generator._trocear_en_parrafos") as mock_trocear:
+            generar_tarjetas_verificadas("Texto.", 1, fragmentos_precalculados=["Fragmento único"])
+        mock_trocear.assert_not_called()
+
     def test_relleno_de_varios_huecos_se_ejecuta_en_paralelo(self):
         # Regresión de lentitud: el relleno era un "for" secuencial, así que
         # con varios huecos pendientes (documento difícil que necesita
@@ -576,6 +587,29 @@ class TestGenerarBancoTarjetasAdaptativo:
             resultado = generar_banco_tarjetas_adaptativo("Documento.", tope=20, tamano_ronda=8)
 
         assert len(resultado) == 20
+
+    def test_trocea_el_documento_una_sola_vez_pese_a_varias_rondas(self):
+        # 12/08/2026, optimización de coste: mismo escenario de 3 rondas que
+        # el test anterior (tope=20, tamano_ronda=8 -> 8+8+4) -- el troceado
+        # del documento debe calcularse UNA vez y reutilizarse en las 3, no
+        # repetirse por ronda.
+        contador = itertools.count(1)
+
+        def fake_call(messages, **kwargs):
+            if _es_prompt_generacion(messages):
+                return json.dumps({"tarjetas": [
+                    {"pregunta": f"¿Pregunta {next(contador)}?", "respuesta": "R"} for _ in range(8)
+                ]})
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            raise AssertionError("prompt inesperado")
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]) as mock_trocear:
+            resultado = generar_banco_tarjetas_adaptativo("Documento.", tope=20, tamano_ronda=8)
+
+        assert len(resultado) == 20
+        mock_trocear.assert_called_once_with("Documento.")
 
     def test_para_por_bajo_rendimiento_aunque_no_haya_llegado_al_tope(self):
         # Ronda 1: el documento da 8 tarjetas nuevas de sobra. Ronda 2: el

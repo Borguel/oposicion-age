@@ -493,7 +493,8 @@ def _asegurar_tarjeta_valida(candidata, fragmento, dedup_lock, claves_vistas, ta
 
 
 def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso=None,
-                                  tarjetas_a_evitar=None, tarjetas_previas=None):
+                                  tarjetas_a_evitar=None, tarjetas_previas=None,
+                                  fragmentos_precalculados=None):
     """Genera hasta num_tarjetas tarjetas de memoria verificadas a partir de
     texto (ya extraído de un PDF). on_usage, si se pasa, recibe el usage de
     cada llamada a DeepSeek (ver AcumuladorTokens en coste_ia.py) -- esta
@@ -525,9 +526,22 @@ def generar_tarjetas_verificadas(texto, num_tarjetas, on_usage=None, on_progreso
     tarjetas_previas son las tarjetas completas -- hace falta la respuesta
     para la comprobación semántica.
 
+    fragmentos_precalculados (opcional, 12/08/2026, optimización de coste,
+    mismo principio que fragmentos_precalculados en
+    generar_preguntas_ia_en_lotes): si se pasa, se usa tal cual en vez de
+    volver a trocear el texto con _trocear_en_parrafos. Pensado para
+    generar_banco_tarjetas_adaptativo, que llama a esta función una vez POR
+    RONDA sobre el MISMO documento -- sin esto, cada ronda repetía el
+    troceado desde cero pese a ser siempre el mismo resultado
+    (_trocear_en_parrafos(texto) no depende de num_tarjetas). A diferencia
+    de fragmentos_precalculados en generar_preguntas_ia_en_lotes, aquí no
+    hace falta comprobar que la longitud coincida con nada -- no hay
+    concepto de "lotes" cuyo número varíe entre rondas, así que los
+    fragmentos precalculados siempre son válidos.
+
     Devuelve {"tarjetas": [...], "descartadas": int, "advertencia": str
     opcional si se generaron menos tarjetas de las pedidas}."""
-    fragmentos = _trocear_en_parrafos(texto)
+    fragmentos = fragmentos_precalculados if fragmentos_precalculados is not None else _trocear_en_parrafos(texto)
     cupos = _repartir_cupos(len(fragmentos), num_tarjetas)
 
     with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS_GENERACION, len(fragmentos))) as executor:
@@ -740,11 +754,19 @@ def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ro
     evitar_acumulado = []
     max_rondas = max(3, (tope // tamano_ronda) + 2)
     ronda = 0
+    # Troceado calculado UNA sola vez para todas las rondas (12/08/2026,
+    # optimización de coste real: ver el comentario largo de
+    # fragmentos_precalculados en generar_tarjetas_verificadas). Cada ronda
+    # trocea el MISMO texto, así que _trocear_en_parrafos siempre daría el
+    # mismo resultado -- repetirlo por ronda solo desperdiciaba tiempo sin
+    # ningún beneficio.
+    fragmentos_precalculados = _trocear_en_parrafos(texto)
     while len(acumuladas) < tope and ronda < max_rondas and not (evento_parada and evento_parada.is_set()):
         objetivo_ronda = min(tamano_ronda, tope - len(acumuladas))
         resultado_ronda = generar_tarjetas_verificadas(
             texto, objetivo_ronda, on_usage=on_usage,
             tarjetas_a_evitar=evitar_acumulado, tarjetas_previas=acumuladas,
+            fragmentos_precalculados=fragmentos_precalculados,
         )
         ronda += 1
         nuevas = []
