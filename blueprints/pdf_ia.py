@@ -10,7 +10,6 @@ import threading
 from datetime import datetime
 from io import BytesIO
 
-import requests
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 from google.api_core import exceptions as google_exceptions
 from pypdf import PdfReader
@@ -34,7 +33,7 @@ from test_generator import (
 from coste_ia import AcumuladorTokens
 from deepseek_utils import (
     TAMANO_CHUNK_CARACTERES, TAMANO_CHUNK_ESQUEMA, FRACCION_MINIMA_MAP_ESQUEMA, FRACCION_MINIMA_FUSION_ESQUEMA,
-    generar_documento_largo_por_partes,
+    generar_documento_largo_por_partes, call_deepseek_api,
 )
 from tarjetas_generator import (
     generar_tarjetas_verificadas, generar_banco_tarjetas_adaptativo, TOPE_BANCO_TARJETAS,
@@ -1299,58 +1298,25 @@ def documento_banco_tarjetas(documento_id):
     })
 
 
-# Nº de caracteres del PDF que se guardan para poder chatear sobre él. Se
-# recorta más que en resumen/esquema porque este texto se reenvía en el
-# prompt de CADA mensaje del chat (no una sola vez), así que hay que
-# mantenerlo comedido para no disparar el coste por conversación.
-MAX_CARACTERES_CHAT_PDF = 12000
-
-
 @bp.route('/subir-pdf-chat', methods=['POST'])
 @requiere_plan(db, "premium", global_check=True)
 def subir_pdf_chat():
-    if 'pdf' not in request.files:
-        return jsonify({"error": "No se encontró archivo PDF"}), 400
-    pdf_file = request.files['pdf']
-    if pdf_file.filename == '':
-        return jsonify({"error": "Nombre de archivo inválido"}), 400
-    # Parseo y extracción separados del resto: un archivo que no sea un PDF
-    # de verdad es un error del usuario (400 con mensaje claro), no un error
-    # del servidor (500), y su mensaje interno no debe llegar al cliente.
-    try:
-        pdf_reader = PdfReader(BytesIO(pdf_file.read()))
-        numero_paginas = len(pdf_reader.pages)
-    except Exception:
-        return jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400
-    limite_paginas = max_paginas_para_plan(g.plan_actual, db)
-    if numero_paginas > limite_paginas:
-        return jsonify({"error": f"El PDF tiene demasiadas páginas para tu plan (máx. {limite_paginas}). Divide el documento en partes más pequeñas o mejora de plan."}), 400
-    try:
-        text = ""
-        for page in pdf_reader.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + "\n"
-    except Exception:
-        return jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400
-    if not text.strip():
-        return jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400
-    try:
-        db.collection("usuarios").document(g.uid).update({
-            "chat_pdf_activo": {
-                "texto": text[:MAX_CARACTERES_CHAT_PDF],
-                "nombre_archivo": pdf_file.filename,
-                "fecha": datetime.utcnow().isoformat()
-            }
-        })
-        return jsonify({
-            "mensaje": "PDF cargado correctamente",
-            "nombre_archivo": pdf_file.filename,
-            "paginas": numero_paginas
-        })
-    except Exception:
-        logger.exception("Error en /subir-pdf-chat")
-        return jsonify({"error": "No se pudo guardar el documento. Inténtalo de nuevo en unos segundos."}), 500
+    # Comparte _resolver_texto_documento con resumen/esquema/test/tarjetas
+    # (12/08/2026): acepta tanto un 'pdf' nuevo como un 'documento_id' ya
+    # existente en "Mis documentos", y el texto queda en la misma
+    # biblioteca -- antes este endpoint tenía su propio parseo duplicado y
+    # guardaba el texto (recortado a 12.000 caracteres) en un campo aparte
+    # "chat_pdf_activo" que ninguna otra herramienta veía.
+    _text, documento_id, _nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
+    if error:
+        return error
+    documento = obtener_documento(db, g.uid, documento_id)
+    return jsonify({
+        "mensaje": "PDF cargado correctamente",
+        "documento_id": documento_id,
+        "nombre_archivo": documento.get("nombre_archivo", "documento.pdf") if documento else _nombre_archivo,
+        "paginas": documento.get("num_paginas", 0) if documento else 0,
+    })
 
 
 @bp.route('/chat-pdf-mensaje', methods=['POST'])
@@ -1361,94 +1327,55 @@ def chat_pdf_mensaje():
     mensaje = (datos.get("mensaje") or "").strip()
     if not mensaje:
         return jsonify({"error": "Falta el mensaje"}), 400
+    documento_id = datos.get("documento_id")
+    if not documento_id:
+        return jsonify({"error": "Primero sube o selecciona un documento para poder chatear sobre él."}), 400
     historial = datos.get("historial") or []
     if not isinstance(historial, list):
         historial = []
 
-    doc = db.collection("usuarios").document(g.uid).get()
-    sesion = (doc.to_dict() or {}).get("chat_pdf_activo") or {}
-    texto_pdf = sesion.get("texto")
+    # Se lee de "Mis documentos" en cada mensaje (en vez de una copia
+    # recortada guardada aparte al subir) -- así el chat ve el documento
+    # ENTERO, no solo sus primeras páginas, y reutiliza exactamente el
+    # mismo texto ya extraído para resumen/esquema/test/tarjetas.
+    documento = obtener_documento(db, g.uid, documento_id)
+    if not documento:
+        return jsonify({"error": "No se encontró el documento indicado."}), 404
+    texto_pdf = documento.get("texto")
     if not texto_pdf:
-        return jsonify({"error": "Primero sube un PDF para poder chatear sobre él."}), 400
+        return jsonify({"error": "Primero sube o selecciona un documento para poder chatear sobre él."}), 400
 
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_pdf")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
 
-    try:
-        api_key = os.getenv("DEEPSEEK_API_KEY")
-        if not api_key:
-            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
-        system_prompt = (
-            "Eres un asistente que ayuda a un opositor a entender un documento que ha subido. "
-            "Responde SOLO basándote en el contenido de este documento. Si la respuesta no está "
-            "en el documento, dilo claramente en vez de inventar información.\n\n"
-            f"Documento ({sesion.get('nombre_archivo', 'sin nombre')}):\n{texto_pdf}"
-        )
-        mensajes = [{"role": "system", "content": system_prompt}]
-        # Últimos turnos de la conversación, para que la IA recuerde el
-        # contexto sin dejar que el prompt crezca sin límite en chats largos.
-        for turno in historial[-12:]:
-            role = turno.get("role")
-            content = turno.get("content")
-            if role in ("user", "assistant") and content:
-                mensajes.append({"role": role, "content": str(content)[:2000]})
-        mensajes.append({"role": "user", "content": mensaje})
+    system_prompt = (
+        "Eres un asistente que ayuda a un opositor a entender un documento que ha subido. "
+        "Responde SOLO basándote en el contenido de este documento. Si la respuesta no está "
+        "en el documento, dilo claramente en vez de inventar información.\n\n"
+        f"Documento ({documento.get('nombre_archivo', 'sin nombre')}):\n{texto_pdf}"
+    )
+    mensajes = [{"role": "system", "content": system_prompt}]
+    # Últimos turnos de la conversación, para que la IA recuerde el
+    # contexto sin dejar que el prompt crezca sin límite en chats largos.
+    for turno in historial[-12:]:
+        role = turno.get("role")
+        content = turno.get("content")
+        if role in ("user", "assistant") and content:
+            mensajes.append({"role": role, "content": str(content)[:2000]})
+    mensajes.append({"role": "user", "content": mensaje})
 
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        payload = {
-            "model": "deepseek-v4-flash",
-            "messages": mensajes,
-            "temperature": 0.4,
-            "max_tokens": 800
-        }
-        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
-        if response.status_code != 200:
-            return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
-        registrar_uso(db, g.uid, "chat_pdf", g.plan_actual)
-        data_resp = response.json()
-        respuesta = data_resp['choices'][0]['message']['content']
-        return jsonify({"respuesta": respuesta})
-    except Exception as e:
-        logger.exception("Error en /chat-pdf-mensaje")
-        return jsonify({"error": f"Error en el chat: {str(e)}"}), 500
-
-
-@bp.route("/chat-deepseek", methods=["POST"])
-@limiter.limit("20 per minute")
-@requiere_plan(db, "premium", global_check=True)
-def chat_deepseek():
-    data = request.get_json()
-    mensaje = data.get("mensaje")
-    if not mensaje:
-        return jsonify({"error": "Falta el mensaje"}), 400
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_pdf")
-    if not permitido:
-        return jsonify({"error": mensaje_error}), 429
-    try:
-        api_key = os.getenv("DEEPSEEK_API_KEY")
-        if not api_key:
-            return jsonify({"error": "API key de DeepSeek no configurada"}), 500
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        payload = {
-            "model": "deepseek-v4-flash",
-            "messages": [
-                {"role": "system", "content": "Eres un asistente especializado en oposiciones. Responde de manera clara, concisa y útil."},
-                {"role": "user", "content": mensaje}
-            ],
-            "temperature": 0.7,
-            "max_tokens": 1000
-        }
-        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload, timeout=60)
-        if response.status_code != 200:
-            return jsonify({"error": f"Error en DeepSeek API: {response.status_code}"}), 500
-        registrar_uso(db, g.uid, "chat_pdf", g.plan_actual)
-        data = response.json()
-        respuesta = data['choices'][0]['message']['content']
-        return jsonify({"respuesta": respuesta})
-    except Exception as e:
-        logger.exception("Error en /chat-deepseek")
-        return jsonify({"error": f"Error en el servicio de chat: {str(e)}"}), 500
+    # call_deepseek_api (en vez de requests.post a pelo, como antes):
+    # registra el coste real de la llamada automáticamente (vía flask.g,
+    # el mismo mecanismo que ya usa el resto de la app) y no filtra nunca
+    # el texto interno de una excepción al cliente.
+    respuesta = call_deepseek_api(
+        mensajes, max_tokens=800, temperature=0.4, contexto=f"chat_pdf documento={documento_id}",
+    )
+    if not respuesta:
+        return jsonify({"error": "No se pudo generar la respuesta. Inténtalo de nuevo en unos segundos."}), 500
+    registrar_uso(db, g.uid, "chat_pdf", g.plan_actual)
+    return jsonify({"respuesta": respuesta, "documento_id": documento_id})
 
 
 # ===================================================================

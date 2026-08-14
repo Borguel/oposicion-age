@@ -199,6 +199,115 @@ class TestSubidaArchivoInvalido:
         assert "no es un PDF válido" in resp.get_json()["error"]
 
 
+class TestChatPdfMensaje:
+    """/subir-pdf-chat y /chat-pdf-mensaje (12/08/2026, reescritos para leer
+    el documento ENTERO desde "Mis documentos" en cada mensaje, en vez de
+    una copia recortada a 12.000 caracteres guardada aparte al subir --
+    ver _resolver_texto_documento, compartida con resumen/esquema/test/
+    tarjetas)."""
+
+    def test_subir_pdf_chat_con_documento_id_reutiliza_la_biblioteca(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/subir-pdf-chat", data={"documento_id": documento_sembrado},
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        cuerpo = resp.get_json()
+        assert cuerpo["documento_id"] == documento_sembrado
+        assert cuerpo["nombre_archivo"] == "doc.pdf"
+
+    def test_chat_pdf_mensaje_ok(self, client, db, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.call_deepseek_api", return_value="Respuesta de la IA") as mock_llamada:
+                resp = client.post("/chat-pdf-mensaje", json={
+                    "mensaje": "¿De qué trata el documento?",
+                    "documento_id": documento_sembrado,
+                    "historial": [],
+                }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        cuerpo = resp.get_json()
+        assert cuerpo["respuesta"] == "Respuesta de la IA"
+        assert cuerpo["documento_id"] == documento_sembrado
+        mensajes_enviados = mock_llamada.call_args[0][0]
+        assert "Texto del documento de prueba." in mensajes_enviados[0]["content"]
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["chat_pdf"]["contador"] == 1
+
+    def test_chat_pdf_mensaje_no_trunca_documentos_largos(self, client, db):
+        # Antes el texto guardado al subir se recortaba a
+        # MAX_CARACTERES_CHAT_PDF=12000 -- ahora el chat lee directamente
+        # el texto completo ya guardado en "Mis documentos", igual que
+        # resumen/esquema/test/tarjetas.
+        sembrar_usuario_activo(db, "u1", plan="premium")
+        texto_largo = "Palabra clave del documento. " * 1000
+        assert len(texto_largo) > 12000
+        db.sembrar(("usuarios", "u1", "documentos", "d-largo"), {
+            "texto": texto_largo, "nombre_archivo": "largo.pdf",
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.call_deepseek_api", return_value="ok") as mock_llamada:
+                resp = client.post("/chat-pdf-mensaje", json={
+                    "mensaje": "hola", "documento_id": "d-largo",
+                }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        mensajes_enviados = mock_llamada.call_args[0][0]
+        assert len(mensajes_enviados[0]["content"]) > 12000
+
+    def test_chat_pdf_mensaje_sin_documento_id_da_400(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/chat-pdf-mensaje", json={"mensaje": "hola"},
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 400
+
+    def test_chat_pdf_mensaje_documento_inexistente_da_404(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/chat-pdf-mensaje", json={
+                "mensaje": "hola", "documento_id": "no-existe",
+            }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 404
+
+    def test_chat_pdf_mensaje_respeta_limite_diario(self, client, db, documento_sembrado):
+        from datetime import date
+        sembrar_usuario_activo(db, "u1", plan="premium",
+                                limites_uso={"chat_pdf": {"periodo": date.today().isoformat(), "contador": 80}})
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/chat-pdf-mensaje", json={
+                "mensaje": "hola", "documento_id": documento_sembrado,
+            }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 429
+
+    def test_chat_pdf_mensaje_fallo_ia_no_filtra_excepcion(self, client, db, documento_sembrado):
+        # call_deepseek_api nunca lanza (atrapa sus propias excepciones y
+        # devuelve None) -- comprueba que el 500 lleva un mensaje genérico,
+        # nunca el texto interno de un error.
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.call_deepseek_api", return_value=None):
+                resp = client.post("/chat-pdf-mensaje", json={
+                    "mensaje": "hola", "documento_id": documento_sembrado,
+                }, headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 500
+        assert (db.leer(("usuarios", "u1")).get("limites_uso") or {}).get("chat_pdf", {}).get("contador", 0) == 0
+
+
 class TestResumirPdfYGenerarTestDesdePdf:
     """Test de humo: la ruta llega hasta el punto de generación con IA
     (mockeada) y devuelve el resultado esperado, sin ejercer aquí toda la
