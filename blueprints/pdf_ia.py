@@ -736,10 +736,10 @@ def generar_test_desde_pdf():
         return error
 
     # max_length=800000 (subido de 150000 el 02/08/2026): el límite de
-    # páginas por plan (ver limites_uso.MAX_PAGINAS_POR_PLAN) ya permite
-    # subir hasta 300-500 páginas, y los usuarios van a poder subir PDFs de
-    # hasta 200 -- con 150000 caracteres, un documento de texto legal denso
-    # (~2000-4000 caracteres/página) se cortaba ya a partir de ~40-75
+    # páginas por plan (ver limites_uso.MAX_PAGINAS_POR_PLAN, 200 páginas
+    # como tope, igualando a la competencia) permite subir PDFs de hasta
+    # 200 páginas -- con 150000 caracteres, un documento de texto legal
+    # denso (~2000-4000 caracteres/página) se cortaba ya a partir de ~40-75
     # páginas, y todo lo posterior se descartaba en silencio ANTES incluso
     # de llegar al reparto en lotes (ver _fragmentos_por_lote en
     # test_generator.py): por muy bien que se reparta el texto que SÍ

@@ -19,7 +19,7 @@ from datetime import date
 
 from utils import ejecutar_en_transaccion
 
-MAX_PAGINAS_POR_PLAN = {"basico": 300, "premium": 500}
+MAX_PAGINAS_POR_PLAN = {"basico": 200, "premium": 200}
 
 # Cada entrada es (periodo, límite). periodo: "dia" o "mes".
 #

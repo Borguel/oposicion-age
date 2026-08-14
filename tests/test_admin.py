@@ -1031,7 +1031,7 @@ def test_limites_obtener_devuelve_defaults(client, db):
     with _como():
         cfg = client.get("/admin/api/limites", headers=_AUTH).get_json()
     assert cfg["tools"]["test_avanzado_verificado"]["premium"] == {"periodo": "dia", "limite": 1500}
-    assert cfg["max_paginas"]["premium"] == 500
+    assert cfg["max_paginas"]["premium"] == 200
     assert any(m["id"] == "test_avanzado_verificado" for m in cfg["meta"])
 
 

@@ -5,11 +5,9 @@
 // barrera real la aplica el backend en _resolver_texto_documento.
 
 // Debe coincidir con MAX_PAGINAS_POR_PLAN en limites_uso.py.
-// Corregido (12/08/2026, bug real: estaba desactualizado desde que el
-// límite real del backend subió a basico:300/premium:500 -- este archivo
-// seguía mostrando basico:200/premium:200, un límite más bajo del que el
-// usuario realmente tiene).
-const MAX_PAGINAS_POR_PLAN = { gratis: 40, basico: 300, premium: 500 };
+// 200 páginas como tope para ambos planes de pago (12/08/2026, decisión
+// explícita del usuario: no superar el límite de la competencia).
+const MAX_PAGINAS_POR_PLAN = { gratis: 40, basico: 200, premium: 200 };
 const NOMBRE_PLAN = { gratis: "Gratis", basico: "Básico", premium: "Premium" };
 
 export async function mostrarLimitePaginas(idElemento = "limite-paginas-nota") {
