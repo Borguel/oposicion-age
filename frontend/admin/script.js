@@ -375,15 +375,15 @@ function _actualizarBadgesReportesDesglose() {
 }
 
 function actualizarBadgeBoe(n) {
+  // La pestaña en sí es siempre visible (con permiso, ver el bucle de
+  // inicio de DOMContentLoaded más abajo) -- a petición del usuario
+  // (15/08/2026): antes se ocultaba entera si no había nada pendiente, y
+  // eso la hacía imposible de encontrar para entrar a comprobar el estado
+  // o lanzar una revisión manual cuando no había avisos esperando. Solo el
+  // número en rojo es condicional, igual que el resto de badges (Usuarios,
+  // Reportes).
   const badge = document.getElementById("badge-boe");
   if (badge) { badge.textContent = n; badge.hidden = !n; }
-  // La pestaña entera es condicional: solo aparece en la barra si hay algo
-  // pendiente (avisos/cambios de temario), para no ocupar sitio siempre
-  // visible por una herramienta que se usa poco -- salvo que ya se esté
-  // viendo, para no hacerla desaparecer de golpe debajo del admin justo
-  // al aprobar/descartar el último pendiente.
-  const tab = document.getElementById("tab-boe");
-  if (tab) tab.hidden = !(puedeVer("boe") && (n > 0 || pestanaActual === "boe"));
 }
 
 // ===== Dashboard =====
@@ -2663,13 +2663,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Oculta grupos enteros sin NINGUNA vista visible para este admin (según
   // su permiso), y deja el resto cableado -- dentro de un grupo visible,
   // sus subvistas sin permiso ya se filtran solas al pintar el selector/
-  // desplegable (renderSelectorGrupo/pintarSubmenuSidebar). Vigilancia BOE
-  // es aparte: puede tener permiso y aun así empezar oculta (ver
-  // actualizarBadgeBoe), así que aquí solo se la oculta del todo si NI
-  // siquiera hay permiso. Un solo clic en cualquier grupo lleva a su
-  // última vista visitada (o a la primera visible la primera vez) --
-  // activarPestana ya se encarga de desplegar el submenú de ese grupo si
-  // lo tiene, no hace falta un manejador aparte solo para desplegar.
+  // desplegable (renderSelectorGrupo/pintarSubmenuSidebar). Un solo clic en
+  // cualquier grupo lleva a su última vista visitada (o a la primera
+  // visible la primera vez) -- activarPestana ya se encarga de desplegar
+  // el submenú de ese grupo si lo tiene, no hace falta un manejador aparte
+  // solo para desplegar.
   let primeraPestanaVisible = null;
   document.querySelectorAll(".admin-tab[data-grupo]").forEach((b) => {
     const grupoId = b.dataset.grupo;
