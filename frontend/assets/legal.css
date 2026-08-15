@@ -41,20 +41,3 @@ body {
 .legal-wrap a {
   color: var(--age-primary-dark);
 }
-
-.legal-aviso {
-  background: #fff4e5;
-  border: 1px solid var(--age-primary);
-  border-radius: var(--age-radius-md);
-  padding: 14px 18px;
-  font-size: 13.5px;
-  margin-bottom: 30px;
-}
-
-.legal-placeholder {
-  background: #fdecea;
-  color: #c62828;
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-weight: 600;
-}
