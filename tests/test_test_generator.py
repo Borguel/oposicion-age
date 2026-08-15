@@ -24,6 +24,7 @@ from test_generator import (
     _bloques_estructurales, _repartir_bloques_en_lotes, _bloques_por_esquema_ia,
     _detectar_duplicados_finales, generar_banco_preguntas_adaptativo,
     _recortar_fragmento_a_articulo_citado, _asegurar_pregunta_valida,
+    _indexar_por_articulo, _candidatas_por_articulo,
 )
 
 
@@ -878,6 +879,48 @@ class TestGenerarPreguntasIaEnLotes:
         }
         assert _claves_dedup(pregunta_amplia).isdisjoint(_claves_dedup(pregunta_concreta))
         assert _es_duplicado_por_contencion(pregunta_concreta, [pregunta_amplia])
+
+    def test_indice_por_articulo_filtra_candidatas_de_otros_articulos(self):
+        # _candidatas_por_articulo es la optimización que evita comparar
+        # cada pregunta nueva contra TODAS las ya aceptadas (O(n²) según
+        # crece el banco, ver TOPE_BANCO_PREGUNTAS): debe devolver solo las
+        # que comparten artículo citado, y _es_duplicado_por_contencion
+        # sobre ese subconjunto filtrado debe dar el mismo resultado que
+        # sobre la lista completa sin filtrar.
+        pregunta_amplia_art8 = {
+            "pregunta": "Según la Constitución Española de 1978, ¿qué se establece en su artículo 8 en "
+                        "relación con las Fuerzas Armadas?",
+            "opciones": {"A": "Que están constituidas por el Ejército de Tierra, la Armada y el Ejército "
+                              "del Aire, y tienen como misión garantizar la soberanía e independencia de "
+                              "España, defender su integridad territorial y el ordenamiento constitucional."},
+            "respuesta_correcta": "A",
+        }
+        pregunta_concreta_art8 = {
+            "pregunta": "Según el artículo 8 de la Constitución Española de 1978, ¿cuál es la misión de "
+                        "las Fuerzas Armadas?",
+            "opciones": {"A": "Garantizar la soberanía e independencia de España, defender su integridad "
+                              "territorial y el ordenamiento constitucional."},
+            "respuesta_correcta": "A",
+        }
+        pregunta_no_relacionada_art14 = {
+            "pregunta": "Según el artículo 14 de la Constitución Española, ¿qué se reconoce?",
+            "opciones": {"A": "La igualdad de los españoles ante la ley."},
+            "respuesta_correcta": "A",
+        }
+
+        indice = {}
+        _indexar_por_articulo(indice, pregunta_amplia_art8)
+        _indexar_por_articulo(indice, pregunta_no_relacionada_art14)
+
+        candidatas = _candidatas_por_articulo(indice, pregunta_concreta_art8)
+        assert pregunta_amplia_art8 in candidatas
+        assert pregunta_no_relacionada_art14 not in candidatas  # no comparte artículo -- ni se compara
+
+        # Mismo veredicto que comparando contra la lista completa sin filtrar.
+        lista_completa = [pregunta_amplia_art8, pregunta_no_relacionada_art14]
+        assert _es_duplicado_por_contencion(pregunta_concreta_art8, candidatas) == \
+            _es_duplicado_por_contencion(pregunta_concreta_art8, lista_completa)
+        assert _es_duplicado_por_contencion(pregunta_concreta_art8, candidatas) is True
 
     def test_no_dedupe_por_contencion_respuestas_cortas_coincidentes_por_azar(self):
         # Dos preguntas LEGÍTIMAMENTE distintas del mismo artículo con una
