@@ -152,8 +152,13 @@ def extraer_paginas(pdf_path):
     cache_paginas = _ruta_cache_paginas(pdf_path)
     if os.path.exists(cache_paginas):
         print(f"📄 Usando texto ya extraído de {cache_paginas} (bórralo si el PDF cambió)")
+        # pickle.load sobre datos NO confiables es inseguro (nosec B301)
+        # -- aquí no aplica: es una caché local que este mismo script
+        # escribe y lee (su propio texto ya extraído de un PDF), nunca un
+        # fichero que llegue de un usuario o de la red. Script puntual de
+        # carga de datos, no alcanzable desde ninguna ruta de la app.
         with open(cache_paginas, "rb") as f:
-            return pickle.load(f)
+            return pickle.load(f)  # nosec B301
 
     print(f"📄 Extrayendo texto de {pdf_path} (puede tardar uno o dos minutos)...")
     reader = PdfReader(pdf_path)

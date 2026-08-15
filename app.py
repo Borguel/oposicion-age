@@ -232,4 +232,11 @@ if __name__ == "__main__":
     # solo hilo -- una sola petición que se quede colgada (p. ej. una
     # conexión a Firestore sin proxy que no falla rápido, ver /health más
     # arriba) bloquea TODA la web para todo el mundo, no solo esa ruta.
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), threaded=True)
+    #
+    # host="0.0.0.0" a propósito (nosec B104): este bloque solo corre con
+    # `python app.py`, servidor de desarrollo local -- nunca en producción,
+    # que arranca con gunicorn (ver startCommand en render.yaml). Hace
+    # falta para que el proceso sea alcanzable desde fuera del contenedor
+    # en local/CI (Docker, Codespaces...), no sirve tráfico real de
+    # ningún usuario.
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), threaded=True)  # nosec B104

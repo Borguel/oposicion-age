@@ -495,7 +495,14 @@ def webhook_stripe():
                     sub_obj = stripe.Subscription.retrieve(subscription_id)
                     oposicion = _sget(_sget(sub_obj, "metadata", {}) or {}, "oposicion") or OPOSICION_POR_DEFECTO
                 except Exception:
-                    pass
+                    # Best-effort: si Stripe falla aquí, se sigue tratando el
+                    # pago fallido con la oposición por defecto en vez de
+                    # perder el evento entero -- pero sin log, un fallo
+                    # persistente (p. ej. credenciales caducadas) quedaba
+                    # invisible, y el email de "pago fallido" podía salir
+                    # mencionando la oposición equivocada sin que nadie se
+                    # enterase.
+                    logger.warning("No se pudo leer la oposición de la suscripción %s en invoice.payment_failed", subscription_id, exc_info=True)
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
                 actualizar_suscripcion(db, docs[0].id, oposicion, subscription_status="past_due")
