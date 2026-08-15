@@ -1,8 +1,38 @@
 # Auditoría de seguridad y calidad — Domina tu Opo (oposicion-age)
 
-**Fecha:** 15 de agosto de 2026
+**Fecha del informe:** 15 de agosto de 2026 · **Fecha de esta actualización de estado:** 15 de agosto de 2026
 **Alcance:** Backend Flask (`app.py`, `blueprints/`, módulos de dominio en raíz), frontend estático (`frontend/`), infraestructura (`render.yaml`, `.github/`, `.pre-commit-config.yaml`, `requirements*.txt`, `.env.example`)
 **Método:** Revisión línea a línea de los ficheros clave señalados en la petición, más los blueprints y módulos de negocio de mayor tamaño. Cada hallazgo está verificado contra el código real (archivo + línea); no se han incluido problemas especulativos.
+
+## Estado de implementación
+
+De los 16 puntos de acción del informe original, **11 ya están corregidos**, 1 está corregido solo en parte (por diseño, ver C2) y 4 quedan pendientes — de esos 4, uno (M5) espera datos reales de escala, y los otros tres son decisiones de equipo o refactors grandes que no se pidieron en esta ronda, no vulnerabilidades sin resolver. Además, al implementar los arreglos se encontraron y corrigieron 4 problemas más que no estaban en el informe original (3 dependencias con vulnerabilidades conocidas y 1 excepción silenciada adicional).
+
+| # | Hallazgo | Estado |
+|---|---|---|
+| C1 | CSV Injection en exportaciones de admin | ✅ Implementado |
+| C2 | Resultados de test no verificados en servidor | ⚠️ Implementado en parte (oficial/psicotécnico sí; Test Personalizado no) |
+| M1 | Fuga de mensajes de excepción al cliente | ✅ Implementado |
+| M2 | Inyección de HTML en avisos oficiales | ✅ Implementado |
+| M3 | `banco-preguntas` sin caché + N+1 | ✅ Implementado |
+| M4 | `/ranking` sin caché | ✅ Implementado |
+| M5 | Escaneos completos en tareas programadas | ❌ Pendiente (decisión: revisar cuando crezca la base de usuarios) |
+| M6 | Deduplicación O(n²) bajo lock | ✅ Implementado |
+| — | Timing attack en `X-Cron-Key` | ✅ Implementado |
+| — | Excepciones silenciadas sin log (`deepseek_utils.py`, `utils.py`) | ✅ Implementado |
+| — | `innerHTML` sin red de seguridad en frontend | ✅ Implementado |
+| — | Sin SAST de seguridad en pre-commit/CI | ✅ Implementado |
+| — | CI lint informativo, no bloqueante | ❌ Pendiente (decisión de equipo, no de código) |
+| — | Duplicación `_id_pregunta` (DRY) | ✅ Implementado |
+| — | Funciones monolíticas (`pdf_ia.py` y otras) | ❌ Pendiente (refactor grande, no solicitado) |
+| — | Otras duplicaciones de código IA | ❌ Pendiente (refactor grande, no solicitado) |
+
+**Encontrado y corregido durante la implementación (no estaba en el informe original):**
+
+- `pypdf` 6.14.2 → 6.15.0: dos vulnerabilidades de denegación de servicio por PDF manipulado — relevante de verdad, la web deja subir PDFs propios.
+- `cryptography` 49.0.0 → 50.0.0: oráculo de Bleichenbacher en descifrado PKCS#7 (bajo riesgo real para esta app, pero corregido).
+- `h2` 4.4.0 → 4.4.1: request smuggling por Host duplicado en HTTP/2 (uso aquí solo como cliente saliente).
+- `blueprints/pagos.py:497`: otro `except Exception: pass` silencioso en el webhook de Stripe, encontrado por `bandit` al añadirlo — ahora registra en el log.
 
 > **Nota sobre el stack real:** el backend no usa SQL/SQLAlchemy — usa **Firestore** (NoSQL) a través del Admin SDK de Firebase, y la autenticación es **Firebase ID Tokens** (no JWT propio ni sesiones Flask). Los apartados de la plantilla de auditoría referidos a "inyección SQL" y "JWT/sesiones" se han adaptado en consecuencia (inyección NoSQL / IDOR, y verificación de Firebase ID Tokens).
 
@@ -10,25 +40,26 @@
 
 ## Resumen ejecutivo
 
-**Nota: 8.3 / 10**
+**Nota original: 8.3 / 10 → prácticamente todo lo accionable ya está corregido y verificado con tests.**
 
 Es un backend inusualmente maduro para el tamaño del equipo: decoradores de autorización aplicados de forma sistemática y verificados uno a uno en **las dos ~2.500 líneas de `admin.py`** y las ~1.700 de `pdf_ia.py`, webhook de Stripe con verificación de firma correcta e idempotente, cabeceras de seguridad estrictas (Talisman + CSP sin `unsafe-inline` en `script-src`), rate limiting por IP y por ruta, manejador global de errores que no filtra trazas, más de 50 ficheros de test que corren en CI y bloquean el propio despliegue en Render si fallan, y `Dependabot` activo semanalmente para pip/npm/GitHub Actions. El frontend, pese a ser JS vanilla sin framework, escapa el HTML de forma consistente en absolutamente todos los puntos donde inserta contenido dinámico vía `innerHTML`, y el token de Firebase nunca se persiste en `localStorage`/`sessionStorage`.
 
-No se ha encontrado ninguna vulnerabilidad de bypass de autenticación/autorización, IDOR, ni inyección con impacto de ejecución remota. El hallazgo de mayor severidad es una **inyección de fórmulas CSV (CSV Injection)** en las exportaciones del panel de administración, explotable por cualquier usuario registrado a través de su propio `display_name`, con impacto real sobre la máquina de un administrador que abra el CSV en Excel/Sheets. El segundo hallazgo relevante no es de confidencialidad sino de **integridad**: el backend confía en el contenido y las respuestas correctas que el propio cliente envía al guardar un test, lo que permite fabricar resultados/estadísticas/ranking sin haber contestado nada.
+No se encontró ninguna vulnerabilidad de bypass de autenticación/autorización, IDOR, ni inyección con impacto de ejecución remota. El hallazgo de mayor severidad era una **inyección de fórmulas CSV (CSV Injection)** en las exportaciones del panel de administración, explotable por cualquier usuario registrado a través de su propio `display_name`, con impacto real sobre la máquina de un administrador que abra el CSV en Excel/Sheets — **ya corregido (C1)**. El segundo hallazgo relevante no era de confidencialidad sino de **integridad**: el backend confiaba en el contenido y las respuestas correctas que el propio cliente enviaba al guardar un test, lo que permitía fabricar resultados/estadísticas/ranking sin haber contestado nada — **corregido para los tests con banco fijo (oficial/psicotécnico); el Test Personalizado queda pendiente de un rediseño mayor, ver C2**.
 
-El resto de hallazgos son de severidad media o baja: fuga de mensajes de excepción cruda al cliente (patrón repetido en varios blueprints), inyección de HTML sin escapar en las páginas estáticas de "avisos oficiales" (mitigada en parte por la CSP), varios puntos sin caché con lecturas N+1 a Firestore, y ausencia de herramientas SAST específicas de seguridad (bandit/pip-audit) en el pipeline de pre-commit/CI.
+El resto de hallazgos eran de severidad media o baja: fuga de mensajes de excepción cruda al cliente (patrón repetido en varios blueprints), inyección de HTML sin escapar en las páginas estáticas de "avisos oficiales" (mitigada en parte por la CSP), varios puntos sin caché con lecturas N+1 a Firestore, y ausencia de herramientas SAST específicas de seguridad (bandit/pip-audit) en el pipeline de pre-commit/CI. **Todos corregidos** (ver tabla de estado arriba), salvo M5 (escaneos completos en tareas programadas, sin datos de escala reales todavía para decidir el diseño correcto).
 
-**Riesgos principales, de mayor a menor impacto real:**
-1. CSV Injection en exportaciones de admin (`blueprints/admin.py`).
-2. Resultados de test no verificados en servidor — manipulación de estadísticas/ranking (`save_controller.py`, `guardar_resultado.py`).
-3. Fuga de mensajes de excepción interna al cliente en múltiples rutas (`rutas_progreso.py`, `blueprints/pagos.py`, `blueprints/pdf_ia.py`, `blueprints/test_ia.py`).
-4. Inyección de HTML sin escapar en páginas estáticas públicas de avisos oficiales (`publicacion_estatica_boe.py`).
+**Riesgos principales del informe original, de mayor a menor impacto real — todos con su estado actualizado:**
+
+1. CSV Injection en exportaciones de admin (`blueprints/admin.py`) — ✅ corregido.
+2. Resultados de test no verificados en servidor — manipulación de estadísticas/ranking (`save_controller.py`, `guardar_resultado.py`) — ⚠️ corregido para oficial/psicotécnico, Test Personalizado pendiente.
+3. Fuga de mensajes de excepción interna al cliente en múltiples rutas (`rutas_progreso.py`, `blueprints/pagos.py`, `blueprints/pdf_ia.py`, `blueprints/test_ia.py`) — ✅ corregido.
+4. Inyección de HTML sin escapar en páginas estáticas públicas de avisos oficiales (`publicacion_estatica_boe.py`) — ✅ corregido.
 
 ---
 
 ## Hallazgos críticos (alta prioridad)
 
-### C1. Inyección de fórmulas CSV (CSV/Formula Injection) en exportaciones del panel admin
+### C1. Inyección de fórmulas CSV (CSV/Formula Injection) en exportaciones del panel admin — ✅ IMPLEMENTADO
 
 **Archivo/línea:** `blueprints/admin.py:80-90` (`_respuesta_csv`, helper compartido), usado por `preguntas_export` (~1094-1117), `usuarios_export` (~1189-1206) e `ingresos_export` (~1341-1362).
 
@@ -71,7 +102,7 @@ Aplicar `_celda_segura` a cada celda antes de escribirla neutraliza la fórmula 
 
 ---
 
-### C2. Resultados de test no verificados en servidor: manipulación de estadísticas y ranking
+### C2. Resultados de test no verificados en servidor: manipulación de estadísticas y ranking — ⚠️ IMPLEMENTADO EN PARTE
 
 **Archivo/línea:** `save_controller.py:5-27` (`guardar_test_route`), `guardar_resultado.py:46-156` (`guardar_resultado_en_firestore`), `rutas_progreso.py:217-285` (`/autosave-test`).
 
@@ -102,11 +133,13 @@ def _recuperar_respuestas_correctas(db, oposicion, tipo_test, contenido):
 ```
 Para el test "personalizado" (generado por IA bajo demanda, sin persistencia previa por pregunta) es más difícil eliminar la confianza en el cliente sin rediseño; como mitigación intermedia, guardar server-side una copia de las preguntas generadas (asociada al `test_id`) en el momento de generarlas, y corregir contra esa copia en vez de contra lo que llega en `/guardar-test`.
 
+**Estado real:** implementado para "oficial" y "psicotécnico" (`guardar_resultado.py:_corregir_con_banco_oficial`), que sí tienen un banco fijo contra el que verificar sin cambiar el contrato con el cliente — bajo riesgo, cambio contenido. El Test Personalizado queda **deliberadamente sin tocar**: cerrarlo exige el rediseño más grande descrito arriba (persistir lo generado en el momento de generarlo, tocar la ruta SSE más compleja del backend), y se decidió abordarlo en una sesión aparte en vez de mezclarlo con el resto de arreglos de bajo riesgo.
+
 ---
 
 ## Hallazgos medios
 
-### M1. Fuga de mensajes de excepción interna al cliente (`str(e)`)
+### M1. Fuga de mensajes de excepción interna al cliente (`str(e)`) — ✅ IMPLEMENTADO
 
 Patrón repetido de capturar la excepción y devolver su texto crudo en la respuesta JSON, en vez de un mensaje genérico (contraste con el manejador global `app.py:97-107`, que sí devuelve un mensaje genérico):
 
@@ -129,7 +162,7 @@ except Exception:
     return jsonify({"error": "No se pudo autoguardar el test."}), 500
 ```
 
-### M2. Inyección de HTML sin escapar en páginas estáticas públicas de avisos oficiales
+### M2. Inyección de HTML sin escapar en páginas estáticas públicas de avisos oficiales — ✅ IMPLEMENTADO
 
 **Archivo/línea:** `publicacion_estatica_boe.py:181-222` (`_tarjeta_aviso_html`).
 
@@ -159,7 +192,7 @@ def _tarjeta_aviso_html(aviso, ...):
 ```
 Escapar los cuatro campos de texto y las dos URLs (con `quote=True`, al ir dentro de un atributo `href="..."`) antes de interpolarlos en el f-string.
 
-### M3. Lectura sin caché y N+1 en el resumen del banco de preguntas (panel admin)
+### M3. Lectura sin caché y N+1 en el resumen del banco de preguntas (panel admin) — ✅ IMPLEMENTADO
 
 **Archivo/línea:** `blueprints/admin.py:627-670` (`banco_preguntas_resumen`).
 
@@ -169,7 +202,7 @@ A diferencia de las rutas hermanas del mismo fichero (`resumen`, `analitica_cont
 
 **Solución:** envolver en `_desde_cache_o_calcular` igual que las rutas hermanas, y agrupar las lecturas de título de bloque/tema en un solo batch (`db.get_all(refs)`) en vez de una `.get()` por tema.
 
-### M4. `/ranking` sin caché: lectura completa de la colección en cada petición
+### M4. `/ranking` sin caché: lectura completa de la colección en cada petición — ✅ IMPLEMENTADO
 
 **Archivo/línea:** `blueprints/ranking.py:56-79`.
 
@@ -177,7 +210,7 @@ A diferencia de las rutas hermanas del mismo fichero (`resumen`, `analitica_cont
 
 **Solución:** cachear el top-N ordenado (mismo patrón TTL que ya usa `admin.py` para sus paneles) e invalidar en `/ranking/unirse` y `/ranking/salir`.
 
-### M5. Escaneos completos de la colección `usuarios` en las tareas programadas
+### M5. Escaneos completos de la colección `usuarios` en las tareas programadas — ❌ PENDIENTE
 
 **Archivo/línea:** `blueprints/tareas_programadas.py:60, 113, 167` — tres rutas de cron (recordatorio de racha, aviso de fin de prueba, vigilancia de gasto de IA) hacen cada una `db.collection("usuarios").stream()` sobre la colección completa.
 
@@ -185,7 +218,9 @@ A diferencia de las rutas hermanas del mismo fichero (`resumen`, `analitica_cont
 
 **Solución:** cuando la colección crezca, sustituir por consultas Firestore acotadas (rango sobre `racha.ultima_fecha`, por ejemplo) en vez de traer y descartar en Python.
 
-### M6. Deduplicación O(n²) bajo lock en la generación de tests desde PDF
+**Por qué sigue pendiente:** no hay un arreglo concreto y seguro que aplicar hoy sin datos reales de escala — la propia recomendación es "revisar cuando crezca", no una acción inmediata.
+
+### M6. Deduplicación O(n²) bajo lock en la generación de tests desde PDF — ✅ IMPLEMENTADO
 
 **Archivo/línea:** `test_generator.py:256-317` (`_es_duplicado_por_contencion`), invocada bajo lock en `_intentar_aceptar` (línea 1264) y en `_intentar_aceptar_cruzando_rondas` (línea 1749); tope de banco en `TOPE_BANCO_PREGUNTAS = 100` (línea 1638).
 
@@ -197,20 +232,20 @@ Cada pregunta aceptada se compara contra **todas** las ya aceptadas, dentro de u
 
 ## Hallazgos bajos (code smells / malas prácticas)
 
-- **`tareas_programadas.py` (~línea 46-48), comparación de clave de cron no es de tiempo constante:** `request.headers.get("X-Cron-Key") == clave_esperada`. Riesgo teórico de timing attack para adivinar `CRON_SECRET_KEY`; impacto bajo (la ruta solo dispara emails/scraping del BOE, no toca planes ni pagos), pero trivial de corregir con `hmac.compare_digest(...)`.
-- **`deepseek_utils.py:183-184, 371-372, 570-571`:** `except Exception: pass` al acumular coste de IA, sin ningún log. Es un best-effort deliberado y documentado, pero un fallo persistente en `coste_ia.py` quedaría invisible en los logs. Añadir `logger.debug(...)` como mínimo.
-- **`utils.py:540-543, 583-587`:** `except Exception: return None` sin registrar la excepción al buscar la "respuesta verificada" para Tu Tutor. Degrada con gracia, pero un error real de configuración/permisos de Firestore es indistinguible de "no hay coincidencia" en los logs.
-- **`frontend/preguntas-falladas/script.js:44`, `frontend/preguntas-favoritas/script.js:44`, `frontend/repasar-preguntas/script.js:34`:** `mostrarAviso(texto)` asigna `texto` directamente a `innerHTML` en vez de `textContent`. Hoy no es explotable (el backend solo envía cadenas estáticas con un entero interpolado, ver `blueprints/test_ia.py:412-441`), pero es un punto sin red de seguridad ante un futuro cambio de backend que empiece a reflejar texto de usuario en ese campo `mensaje`.
-- **`.pre-commit-config.yaml`:** solo tiene hooks de formato/lint (`ruff`, `black`, `prettier`); no hay ningún hook de seguridad (`bandit` para Python, `pip-audit`/`safety` para dependencias, `detect-secrets` para evitar comitear claves). El repo sí tiene Dependabot activo (ver Puntos Fuertes), pero eso cubre actualizaciones, no un escaneo estático de vulnerabilidades conocidas en cada commit/PR.
-- **`.github/workflows/ci.yml`:** los jobs `lint` y `lighthouse` llevan `continue-on-error: true` explícitamente (decisión documentada en el propio YAML como "informativo, no bloquea el PR" mientras se recopila histórico). Razonable como decisión temporal, pero conviene revisar la fecha de "más adelante" mencionada en el comentario y, si ya ha pasado, endurecerlo.
+- **`tareas_programadas.py` (~línea 46-48), comparación de clave de cron no es de tiempo constante — ✅ IMPLEMENTADO:** `request.headers.get("X-Cron-Key") == clave_esperada`. Riesgo teórico de timing attack para adivinar `CRON_SECRET_KEY`; impacto bajo (la ruta solo dispara emails/scraping del BOE, no toca planes ni pagos), pero trivial de corregir con `hmac.compare_digest(...)`.
+- **`deepseek_utils.py:183-184, 371-372, 570-571` — ✅ IMPLEMENTADO:** `except Exception: pass` al acumular coste de IA, sin ningún log. Es un best-effort deliberado y documentado, pero un fallo persistente en `coste_ia.py` quedaría invisible en los logs. Añadir `logger.debug(...)` como mínimo.
+- **`utils.py:540-543, 583-587` — ✅ IMPLEMENTADO:** `except Exception: return None` sin registrar la excepción al buscar la "respuesta verificada" para Tu Tutor. Degrada con gracia, pero un error real de configuración/permisos de Firestore es indistinguible de "no hay coincidencia" en los logs.
+- **`frontend/preguntas-falladas/script.js:44`, `frontend/preguntas-favoritas/script.js:44`, `frontend/repasar-preguntas/script.js:34` — ✅ IMPLEMENTADO:** `mostrarAviso(texto)` asigna `texto` directamente a `innerHTML` en vez de `textContent`. Hoy no es explotable (el backend solo envía cadenas estáticas con un entero interpolado, ver `blueprints/test_ia.py:412-441`), pero es un punto sin red de seguridad ante un futuro cambio de backend que empiece a reflejar texto de usuario en ese campo `mensaje`.
+- **`.pre-commit-config.yaml` — ✅ IMPLEMENTADO:** solo tenía hooks de formato/lint (`ruff`, `black`, `prettier`); no había ningún hook de seguridad. Añadidos `bandit` (pre-commit, análisis estático offline) y `pip-audit` (paso de CI, necesita red). Al ejecutarlos de verdad contra el repo aparecieron 3 dependencias con vulnerabilidades conocidas ya corregidas aguas arriba (`pypdf`, `cryptography`, `h2` — ver arriba) y 1 excepción silenciada más en el webhook de Stripe, todo corregido.
+- **`.github/workflows/ci.yml` — ❌ PENDIENTE:** los jobs `lint` y `lighthouse` llevan `continue-on-error: true` explícitamente (decisión documentada en el propio YAML como "informativo, no bloquea el PR" mientras se recopila histórico). Sigue así a propósito: es una decisión de equipo sobre cuándo hay ya histórico suficiente, no algo que deba decidirse desde una sesión de arreglos.
 
-### Duplicación de código (DRY) — específicamente en `banco_fallos.py` / `banco_favoritas.py` / `banco_preguntas_ia.py`
+### Duplicación de código (DRY) — específicamente en `banco_fallos.py` / `banco_favoritas.py` / `banco_preguntas_ia.py` — ✅ IMPLEMENTADO
 
-- **`banco_fallos.py:27-29` y `banco_favoritas.py:19-21` definen la función `_id_pregunta(oposicion, pregunta)` de forma byte-a-byte idéntica** (mismo hash SHA-256 truncado sobre `f"{oposicion}||{pregunta.strip()}"`). Candidata directa a extraer a un módulo común (p. ej. `banco_preguntas_comun.py`) del que ambos importen, para no arriesgarse a que diverjan si algún día cambia el esquema de hash en uno y no en el otro (lo que rompería la deduplicación silenciosamente).
+- **`banco_fallos.py:27-29` y `banco_favoritas.py:19-21` definen la función `_id_pregunta(oposicion, pregunta)` de forma byte-a-byte idéntica** (mismo hash SHA-256 truncado sobre `f"{oposicion}||{pregunta.strip()}"`). Extraída a `banco_preguntas_comun.py`, del que ambos módulos ahora importan, para no arriesgarse a que diverjan si algún día cambia el esquema de hash en uno y no en el otro (lo que rompería la deduplicación silenciosamente).
 - Ambos módulos implementan además una función `ordenar_por_prioridad_repaso(candidatas)` con la misma estructura (`random.shuffle` + `sort` con criterio de antigüedad), aunque con criterios de prioridad legítimamente distintos (fallos con contador vs. favoritas sin él) — aquí la duplicación es más defendible, pero el patrón compartido (barajar-antes-de-ordenar para romper empates) podría extraerse como utilidad de orden superior si aparece una tercera variante.
 - `banco_preguntas_ia.py` usa una clave de deduplicación distinta (normalización de texto en minúsculas, no hash) porque cumple un propósito diferente (banco interno, aún sin ruta pública que lo lea) — no comparte lógica real con los otros dos, más allá del propósito general de "banco de preguntas por oposición".
 
-### Funciones monolíticas (>150-200 líneas)
+### Funciones monolíticas (>150-200 líneas) — ❌ PENDIENTE (refactor grande, no solicitado)
 
 | Archivo | Función | Líneas | Nota |
 |---|---|---|---|
@@ -224,7 +259,7 @@ Cada pregunta aceptada se compara contra **todas** las ya aceptadas, dentro de u
 
 Ninguna de estas resulta de complejidad accidental — el propio código documenta, con comentarios extensos, la casuística real de producción que motiva cada rama — pero su tamaño eleva el coste de incorporación de nuevas personas al equipo y el riesgo de introducir regresiones al tocarlas.
 
-### Otras duplicaciones (Código IA)
+### Otras duplicaciones (Código IA) — ❌ PENDIENTE (refactor grande, no solicitado)
 
 - `chat_controller.py:431-499` (`_bloque_explicar_fallo`) y `chat_controller.py:870-913` (`_bloque_respuesta_verificada`) repiten la misma lógica de parseo de explicación por opción y el mismo texto de aviso final ("no inviertas esta conclusión"), solo cambia el encabezado. Candidatas a un helper común `_bloque_letra_verificada(...)`.
 - `generador_preguntas_verificado.py:303-362, 365-428, 431-474` — tres prompts que repiten el mismo esqueleto de "reglas inquebrantables" con solo el dominio (jurídico/descriptivo/lote) cambiando. Plantillable para reducir el riesgo de que diverjan al ajustar una regla en solo uno de los tres.
@@ -234,21 +269,21 @@ Ninguna de estas resulta de complejidad accidental — el propio código documen
 
 ## Checklist de mejora continua
 
-- [ ] Sanear las celdas de todas las exportaciones CSV del panel admin contra CSV injection (C1).
-- [ ] Dejar de confiar en `respuesta_correcta`/`contenido` del cliente al guardar resultados de test oficial/psicotécnico; recalcular server-side contra el banco real (C2).
-- [ ] Unificar el manejo de errores en `rutas_progreso.py`, `pagos.py`, `pdf_ia.py` y `test_ia.py` para no devolver `str(e)` al cliente (M1).
-- [ ] Escapar HTML (`html.escape`) en `publicacion_estatica_boe.py._tarjeta_aviso_html` antes de comitear a las páginas estáticas (M2).
-- [ ] Envolver `banco_preguntas_resumen` en el mismo caché TTL que sus rutas hermanas de `admin.py`, y batchear las lecturas de título de tema/bloque (M3).
-- [ ] Cachear `/ranking` con invalidación en unirse/salir (M4).
-- [ ] Revisar el escaneo completo de `usuarios` en las tres tareas de `tareas_programadas.py` cuando la base de usuarios crezca (M5).
-- [ ] Indexar por artículo citado la deduplicación de `test_generator.py` para evitar el O(n²) bajo lock si se sube `TOPE_BANCO_PREGUNTAS` (M6).
-- [ ] Sustituir la comparación `==` de `X-Cron-Key` por `hmac.compare_digest`.
-- [ ] Añadir logging a los `except Exception: pass`/`return None` silenciosos de `deepseek_utils.py` y `utils.py`.
-- [ ] Cambiar `innerHTML` por `textContent` en `mostrarAviso` (`preguntas-falladas`, `preguntas-favoritas`, `repasar-preguntas`) como defensa en profundidad.
-- [ ] Añadir `bandit` (Python) y `pip-audit` o `safety` al pipeline de `pre-commit`/CI, complementando a Dependabot (que actualiza pero no escanea en cada commit).
-- [ ] Extraer `_id_pregunta` a un módulo común compartido entre `banco_fallos.py` y `banco_favoritas.py`.
-- [ ] Revisar si ya toca convertir `lint`/`lighthouse` en CI de informativos a bloqueantes, según lo previsto en el propio comentario del workflow.
-- [ ] Considerar dividir las rutas más largas de `pdf_ia.py` (`resumir_pdf`, `generar_esquema_desde_pdf`, `generar_test_desde_pdf`) extrayendo el esqueleto común "SSE + hilo de fondo + progreso + persistencia + devolución de cuota si falla".
+- [x] Sanear las celdas de todas las exportaciones CSV del panel admin contra CSV injection (C1).
+- [x] Dejar de confiar en `respuesta_correcta`/`contenido` del cliente al guardar resultados de test oficial/psicotécnico; recalcular server-side contra el banco real (C2) — hecho para oficial/psicotécnico; Test Personalizado pendiente de una sesión aparte.
+- [x] Unificar el manejo de errores en `rutas_progreso.py`, `pagos.py`, `pdf_ia.py` y `test_ia.py` para no devolver `str(e)` al cliente (M1).
+- [x] Escapar HTML (`html.escape`) en `publicacion_estatica_boe.py._tarjeta_aviso_html` antes de comitear a las páginas estáticas (M2).
+- [x] Envolver `banco_preguntas_resumen` en el mismo caché TTL que sus rutas hermanas de `admin.py`, y batchear las lecturas de título de tema/bloque (M3).
+- [x] Cachear `/ranking` con invalidación en unirse/salir (M4).
+- [ ] Revisar el escaneo completo de `usuarios` en las tres tareas de `tareas_programadas.py` cuando la base de usuarios crezca (M5) — pendiente, no hay datos de escala reales todavía.
+- [x] Indexar por artículo citado la deduplicación de `test_generator.py` para evitar el O(n²) bajo lock si se sube `TOPE_BANCO_PREGUNTAS` (M6).
+- [x] Sustituir la comparación `==` de `X-Cron-Key` por `hmac.compare_digest`.
+- [x] Añadir logging a los `except Exception: pass`/`return None` silenciosos de `deepseek_utils.py` y `utils.py`.
+- [x] Cambiar `innerHTML` por `textContent` en `mostrarAviso` (`preguntas-falladas`, `preguntas-favoritas`, `repasar-preguntas`) como defensa en profundidad.
+- [x] Añadir `bandit` (Python) y `pip-audit` al pipeline de `pre-commit`/CI, complementando a Dependabot — de paso, corrigieron 3 CVEs reales en dependencias y 1 excepción silenciada más.
+- [x] Extraer `_id_pregunta` a un módulo común compartido entre `banco_fallos.py` y `banco_favoritas.py`.
+- [ ] Revisar si ya toca convertir `lint`/`lighthouse` en CI de informativos a bloqueantes, según lo previsto en el propio comentario del workflow — decisión de equipo, pendiente.
+- [ ] Considerar dividir las rutas más largas de `pdf_ia.py` (`resumir_pdf`, `generar_esquema_desde_pdf`, `generar_test_desde_pdf`) extrayendo el esqueleto común "SSE + hilo de fondo + progreso + persistencia + devolución de cuota si falla" — refactor grande, pendiente.
 
 ---
 
@@ -273,3 +308,5 @@ Ninguna de estas resulta de complejidad accidental — el propio código documen
 ## Nota metodológica
 
 Todos los hallazgos anteriores han sido verificados leyendo el código real señalado (archivo y línea). No se ha reportado ningún problema sin confirmarlo contra el fichero correspondiente, y se ha descartado explícitamente al menos una hipótesis inicial (falta de rate limiting en `/recuperar-contrasena`) tras comprobar en `app.py:160-167` que sí está cubierta. No se han encontrado ficheros mencionados en la petición original que no existan en el repositorio.
+
+Los estados de implementación (Implementado / Implementado en parte / Pendiente) de esta actualización se han verificado ejecutando la suite de tests completa (1098 tests) y las propias herramientas añadidas (`bandit`, `pip-audit`, `ruff`) tras cada cambio, no solo revisando el código a simple vista.
