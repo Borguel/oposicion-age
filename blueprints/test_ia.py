@@ -336,9 +336,9 @@ def guardar_test_oficial():
         })
         logger.info("Test oficial guardado correctamente")
         return jsonify({"mensaje": "Test oficial guardado correctamente"}), 200
-    except Exception as e:
+    except Exception:
         logger.exception("Error al guardar test oficial")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "No se pudo guardar el test oficial."}), 500
 
 
 @bp.route("/analisis-rendimiento", methods=["GET"])

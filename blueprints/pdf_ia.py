@@ -1490,9 +1490,9 @@ def guardar_test_pdf():
             marcadas_duda=data.get('marcadas_duda', []),
         )
         return jsonify({'mensaje': 'Test desde PDF guardado correctamente'})
-    except Exception as e:
+    except Exception:
         logger.exception("Error en /guardar-test-pdf")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'No se pudo guardar el test.'}), 500
 
 
 @bp.route('/guardar-resumen-pdf', methods=['POST'])
@@ -1515,9 +1515,9 @@ def guardar_resumen_pdf():
             }
         )
         return jsonify({'mensaje': 'Resumen desde PDF guardado correctamente'})
-    except Exception as e:
+    except Exception:
         logger.exception("Error en /guardar-resumen-pdf")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'No se pudo guardar el resumen.'}), 500
 
 
 @bp.route('/guardar-esquema-pdf', methods=['POST'])
@@ -1540,9 +1540,9 @@ def guardar_esquema_pdf():
             }
         )
         return jsonify({'mensaje': 'Esquema desde PDF guardado correctamente'})
-    except Exception as e:
+    except Exception:
         logger.exception("Error en /guardar-esquema-pdf")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'No se pudo guardar el esquema.'}), 500
 
 
 @bp.route('/guardar-tarjetas-pdf', methods=['POST'])
@@ -1565,9 +1565,9 @@ def guardar_tarjetas_pdf():
             }
         )
         return jsonify({'mensaje': 'Tarjetas desde PDF guardadas correctamente'})
-    except Exception as e:
+    except Exception:
         logger.exception("Error en /guardar-tarjetas-pdf")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'No se pudieron guardar las tarjetas.'}), 500
 
 
 # ===================================================================

@@ -176,9 +176,9 @@ def crear_sesion_checkout():
         # en el Checkout y en el portal de Stripe.
         try:
             precio_base = stripe.Price.retrieve(price_id)
-        except Exception as e:
+        except Exception:
             logger.exception("Error obteniendo el precio de Stripe %s", price_id)
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "No se pudo iniciar el pago. Inténtalo de nuevo."}), 500
         nombre_producto = f"Domina tu Opo — Plan {NOMBRE_PLAN.get(plan, plan)} ({SIGLAS_OPOSICION.get(oposicion, oposicion)})"
 
         # La oposición viaja tanto en la metadata de la sesión de checkout
@@ -216,9 +216,9 @@ def crear_sesion_checkout():
             kwargs_checkout["discounts"] = [{"promotion_code": promo["stripe_promotion_code"]}]
         session = stripe.checkout.Session.create(**kwargs_checkout)
         return jsonify({"url": session.url})
-    except Exception as e:
+    except Exception:
         logger.exception("Error creando sesión de Stripe Checkout")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "No se pudo iniciar el pago. Inténtalo de nuevo."}), 500
 
 
 MOTIVOS_BAJA_VALIDOS = {"precio", "no_lo_uso", "aprobado", "faltan_funciones", "otro"}
@@ -253,7 +253,7 @@ def cancelar_suscripcion():
     except stripe.InvalidRequestError as e:
         if getattr(e, "code", None) != "resource_missing":
             logger.exception("Error cancelando suscripción de Stripe %s", subscription_id)
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "No se pudo cancelar la suscripción. Inténtalo de nuevo."}), 500
         # La suscripción guardada ya no existe en Stripe (p. ej. quedó de
         # cuando la web usaba la clave de pruebas y se cambió a la de
         # producción) -- no hay nada que cancelar en Stripe, así que se
@@ -266,9 +266,9 @@ def cancelar_suscripcion():
         actualizar_suscripcion(db, g.uid, oposicion, plan="gratis", subscription_status="canceled")
         _invalidar_cache_admin_tras_cambio_suscripcion()
         return jsonify({"mensaje": "Tu suscripción ya no estaba activa; tu cuenta ha quedado en el plan gratuito."})
-    except Exception as e:
+    except Exception:
         logger.exception("Error cancelando suscripción de Stripe %s", subscription_id)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "No se pudo cancelar la suscripción. Inténtalo de nuevo."}), 500
 
     usuario_ref.collection("bajas_motivos").document().set({
         "oposicion": oposicion,
@@ -313,7 +313,7 @@ def reactivar_suscripcion():
     except stripe.InvalidRequestError as e:
         if getattr(e, "code", None) != "resource_missing":
             logger.exception("Error reactivando suscripción de Stripe %s", subscription_id)
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "No se pudo reactivar la suscripción. Inténtalo de nuevo."}), 500
         # Mismo caso huérfano que /cancelar-suscripcion (ver ese comentario):
         # la suscripción guardada ya no existe en Stripe, así que no hay
         # nada que "reactivar" de verdad -- sin este manejo, el error crudo
@@ -328,9 +328,9 @@ def reactivar_suscripcion():
         return jsonify({
             "error": "No hemos encontrado ninguna suscripción activa que reactivar; tu cuenta ha quedado en el plan gratuito. Si quieres seguir con Premium o Básico, contrátalo de nuevo desde la página de planes."
         }), 400
-    except Exception as e:
+    except Exception:
         logger.exception("Error reactivando suscripción de Stripe %s", subscription_id)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "No se pudo reactivar la suscripción. Inténtalo de nuevo."}), 500
 
     actualizar_suscripcion(db, g.uid, oposicion, cancelar_al_final_periodo=False)
     _invalidar_cache_admin_tras_cambio_suscripcion()
@@ -357,7 +357,7 @@ def crear_sesion_portal():
     except stripe.InvalidRequestError as e:
         if getattr(e, "code", None) != "resource_missing":
             logger.exception("Error creando sesión del portal de Stripe")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "No se pudo abrir el portal de facturación. Inténtalo de nuevo."}), 500
         # El customer guardado quedó huérfano (p. ej. de cuando la web usaba
         # la clave de pruebas de Stripe) -- no hay ninguna suscripción real
         # detrás de lo que muestre Firestore, así que se limpia el estado
@@ -375,9 +375,9 @@ def crear_sesion_portal():
             if (sub or {}).get("plan", "gratis") != "gratis":
                 actualizar_suscripcion(db, g.uid, oposicion, plan="gratis", subscription_status="canceled", cancelar_al_final_periodo=False)
         return jsonify({"error": "No hemos encontrado ninguna suscripción de pago activa. Si quieres seguir con Premium o Básico, contrátalo de nuevo desde la página de planes."}), 400
-    except Exception as e:
+    except Exception:
         logger.exception("Error creando sesión del portal de Stripe")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "No se pudo abrir el portal de facturación. Inténtalo de nuevo."}), 500
 
 
 def _sget(obj, key, default=None):
