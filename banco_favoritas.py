@@ -11,14 +11,10 @@ A diferencia del banco de fallos, aquí no hay ninguna lógica automática
 guarda la pregunta completa (para poder generar un test después sin volver
 a buscarla), desmarcar simplemente borra ese documento.
 """
-import hashlib
 import random
 from datetime import datetime
 
-
-def _id_pregunta(oposicion, pregunta):
-    clave = f"{oposicion}||{(pregunta or '').strip()}"
-    return hashlib.sha256(clave.encode("utf-8", "ignore")).hexdigest()[:24]
+from banco_preguntas_comun import id_pregunta as _id_pregunta
 
 
 def marcar_favorita(db, usuario_id, oposicion, pregunta):
