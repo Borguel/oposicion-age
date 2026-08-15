@@ -896,6 +896,22 @@ def test_export_usuarios_csv(client, db):
     assert "a@x.com" in resp.get_data(as_text=True)
 
 
+def test_export_usuarios_csv_neutraliza_inyeccion_de_formula(client, db):
+    """CSV/Formula Injection: un "nombre" que empiece por "=" (o "+", "-",
+    "@") se interpreta como fórmula al abrir el CSV en Excel/Sheets -- debe
+    salir con una comilla simple por delante para que se trate como texto
+    literal, no como fórmula (ver blueprints/admin.py._celda_csv_segura)."""
+    db.sembrar(("usuarios", "u1"), {
+        "email": "atacante@x.com", "nombre": '=HYPERLINK("http://evil.example","click")',
+        "suscripciones": {"AGE": {"plan": "premium"}},
+    })
+    with _como():
+        resp = client.get("/admin/api/usuarios/export", headers=_AUTH)
+    texto = resp.get_data(as_text=True)
+    assert ",=HYPERLINK" not in texto  # nunca cruda justo tras el separador de columna
+    assert "'=HYPERLINK" in texto  # protegida con comilla simple por delante
+
+
 def test_reportes_adjuntan_pregunta_oficial(client, db):
     enunciado = "¿Pregunta oficial?"
     db.sembrar(("examenes_oficiales_AGE", "p1"), {

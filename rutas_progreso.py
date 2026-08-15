@@ -16,6 +16,7 @@ from push_utils import VAPID_PUBLIC_KEY, push_disponible, guardar_suscripcion, b
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 from planes import ORDEN_PLANES, resolver_plan_efectivo
 from utils import calcular_resultado_test
+from validacion_perfil import nombre_valido, telefono_valido, direccion_valida
 import random
 
 # Campos ligeros que devuelve /mis-tests -- deliberadamente sin el array
@@ -33,13 +34,28 @@ def registrar_rutas_progreso(app, db):
     def registrar_usuario():
         # requiere_login ya crea el documento del usuario si no existía.
         # Aquí solo completamos los datos básicos del perfil (si se mandan).
+        #
+        # Validado por campo (ver validacion_perfil.py) antes de guardar: sin
+        # esto, cualquiera podía registrar "nombre"/"apellidos" con un enlace,
+        # HTML o una fórmula de hoja de cálculo, que luego se enseña tal cual
+        # en el panel admin, en las exportaciones CSV (usuarios.csv,
+        # ingresos.csv) y en el saludo de los correos transaccionales.
         datos = request.get_json(silent=True) or {}
-        campos_permitidos = ("nombre", "apellidos", "telefono", "direccion")
+        validadores = {
+            "nombre": nombre_valido,
+            "apellidos": nombre_valido,
+            "telefono": telefono_valido,
+            "direccion": direccion_valida,
+        }
         actualizacion = {}
-        for campo in campos_permitidos:
+        for campo, es_valido in validadores.items():
             valor = datos.get(campo)
-            if isinstance(valor, str) and valor.strip():
-                actualizacion[campo] = valor.strip()
+            if not isinstance(valor, str) or not valor.strip():
+                continue
+            valor = valor.strip()
+            if not es_valido(valor):
+                return jsonify({"error": f"El campo '{campo}' no es válido."}), 400
+            actualizacion[campo] = valor
         if actualizacion:
             db.collection("usuarios").document(g.uid).update(actualizacion)
         return jsonify({"mensaje": "Usuario registrado correctamente"})

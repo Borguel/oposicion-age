@@ -35,6 +35,7 @@ from blueprints.pagos import MOTIVOS_BAJA_VALIDOS
 from limites_uso import cargar_limites_config, guardar_limites_config, TIPOS_META, limites_efectivos, _clave_periodo
 from utils import _desde_cache_o_calcular, _limpiar_cache_temario, invalidar_cache
 from banco_preguntas_ia import coleccion_banco_preguntas
+from validacion_perfil import nombre_valido
 
 logger = logging.getLogger(__name__)
 bp = Blueprint("admin", __name__)
@@ -77,13 +78,31 @@ _TTL_CACHE_ADMIN_SEGUNDOS = 180
 # ============================================================
 # Helpers
 # ============================================================
+_PREFIJOS_FORMULA_CSV = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _celda_csv_segura(valor):
+    """Neutraliza la inyección de fórmulas CSV (CSV/Formula Injection):
+    Excel/Sheets interpretan una celda que empieza por "=", "+", "-" o "@"
+    como una fórmula, no como texto. Como algunas de estas columnas vienen
+    de campos que el propio usuario escribe (p. ej. "nombre", validado en
+    /registrar-usuario pero no en todas las vías -- alta manual desde el
+    panel, cuentas creadas antes de esa validación), se antepone una comilla
+    simple a cualquier celda que empiece por uno de esos caracteres: Excel
+    la trata entonces como texto literal en vez de evaluarla."""
+    texto = "" if valor is None else str(valor)
+    if texto.startswith(_PREFIJOS_FORMULA_CSV):
+        return "'" + texto
+    return texto
+
+
 def _respuesta_csv(cabecera, filas, nombre_fichero):
     """Genera un CSV descargable (UTF-8 con BOM para que Excel respete los
     acentos)."""
     buffer = io.StringIO()
     escritor = csv.writer(buffer)
     escritor.writerow(cabecera)
-    escritor.writerows(filas)
+    escritor.writerows([[_celda_csv_segura(celda) for celda in fila] for fila in filas])
     datos = "﻿" + buffer.getvalue()
     return Response(datos, mimetype="text/csv; charset=utf-8", headers={
         "Content-Disposition": f'attachment; filename="{nombre_fichero}"',
@@ -1378,6 +1397,8 @@ def usuarios_crear():
         return jsonify({"error": "Email no válido"}), 400
     if len(password) < 6:
         return jsonify({"error": "La contraseña debe tener al menos 6 caracteres"}), 400
+    if nombre and not nombre_valido(nombre):
+        return jsonify({"error": "El nombre no es válido."}), 400
 
     try:
         usuario = firebase_auth.create_user(
