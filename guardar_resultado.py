@@ -5,9 +5,63 @@ from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_e
 from oposiciones import OPOSICION_POR_DEFECTO
 from documentos_pdf import marcar_generado
 from banco_fallos import actualizar_banco_fallos, _id_pregunta
-from utils import calcular_resultado_test
+from utils import calcular_resultado_test, obtener_preguntas_examenes_oficiales, obtener_preguntas_psicotecnico
 
 logger = logging.getLogger(__name__)
+
+# Tipos de test que salen de un banco FIJO ya cargado en Firestore -- para
+# estos sí hay una fuente de verdad contra la que comprobar la
+# "respuesta_correcta" que manda el cliente al guardar el resultado (ver
+# _corregir_con_banco_oficial). El Test Personalizado (generado por IA bajo
+# demanda) y los tipos que reutilizan preguntas ya vistas (falladas,
+# favoritas, repetido, historial) quedan fuera a propósito: no hay banco
+# previo que consultar sin un cambio más grande (persistir lo generado en
+# el momento de la generación) -- ver limitación conocida en el informe de
+# auditoría (docs/auditoria-seguridad-agosto-2026.md, hallazgo C2).
+_OBTENER_BANCO_POR_TIPO = {
+    "oficial": obtener_preguntas_examenes_oficiales,
+    "psicotecnico": obtener_preguntas_psicotecnico,
+}
+
+
+def _corregir_con_banco_oficial(db, oposicion, tipo_test, contenido):
+    """Sustituye, IN PLACE, la "respuesta_correcta" de cada pregunta de
+    `contenido` por la que de verdad tiene en el banco oficial de Firestore,
+    en vez de fiarse de la que manda el cliente -- sin esto, cualquiera
+    podía guardar un test "oficial"/"psicotécnico" con una respuesta_correcta
+    fabricada para sacar siempre nota máxima (las estadísticas y el ranking
+    público se calculan a partir de este resultado).
+
+    El emparejamiento es por el texto EXACTO de la pregunta (mismo texto que
+    /generar-test-oficial y /generar-test-psicotecnico ya entregaron, sin
+    normalizar) porque hoy no viaja ningún id estable de Firestore de vuelta
+    al cliente. Si una pregunta no aparece en el banco actual (p. ej. se
+    editó/desactivó entre que se generó el test y se corrigió, o un fallo
+    puntual leyendo Firestore), se deja tal cual la mandó el cliente para
+    esa pregunta en concreto -- mejor no bloquear ni puntuar mal la
+    corrección de un test legítimo por un desajuste puntual que arriesgarse
+    a romper el guardado entero."""
+    obtener_banco = _OBTENER_BANCO_POR_TIPO.get(tipo_test)
+    if obtener_banco is None:
+        return contenido
+    try:
+        banco = obtener_banco(db, oposicion)
+    except Exception:
+        logger.warning(
+            "No se pudo cargar el banco oficial para verificar un test '%s' (oposición %s); se mantiene la respuesta_correcta del cliente",
+            tipo_test, oposicion, exc_info=True,
+        )
+        return contenido
+
+    respuestas_reales = {
+        d.get("pregunta"): (d.get("respuesta_correcta") or "").upper()
+        for d in banco if d.get("pregunta")
+    }
+    for p in contenido:
+        real = respuestas_reales.get(p.get("pregunta"))
+        if real:
+            p["respuesta_correcta"] = real
+    return contenido
 
 
 def _actualizar_contadores_preguntas(db, oposicion, contenido, respuestas, excluir_dudas, es_duda):
@@ -51,6 +105,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
     if tipo == "test":
         respuestas = metadatos.get("respuestas", [])
         tipo_test = metadatos.get("tipo", "personalizado")
+        contenido = _corregir_con_banco_oficial(db, oposicion, tipo_test, contenido)
         actualizar_banco_fallos(db, usuario_id, oposicion, tipo_test, contenido, respuestas)
 
         marcadas_duda = marcadas_duda or []
