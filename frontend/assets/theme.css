@@ -2393,6 +2393,13 @@ body {
 .tour-resaltado {
   position: relative;
   z-index: 9999;
+  /* Fondo propio (15/08/2026, bug real: sin esto, un botón con fondo
+     transparente y color tenue por defecto -- .btn-favorita,
+     .btn-marcar-revision, .btn-marcar-duda -- quedaba flotando
+     directamente sobre la capa oscura del tour, casi invisible dentro de
+     su propio halo). #navegador-preguntas ya trae su propio fondo opaco
+     (selector por id, más específico), así que aquí no cambia nada. */
+  background: var(--age-card);
   border-radius: var(--age-radius-sm);
   box-shadow: 0 0 0 4px var(--age-primary), 0 0 24px 6px rgba(255, 166, 51, 0.55);
 }
