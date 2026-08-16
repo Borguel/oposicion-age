@@ -36,26 +36,53 @@ def _precio(env, defecto):
 # DeepSeek factura el TOKEN DE ENTRADA a dos tarifas muy distintas según si
 # hace "cache hit" en su caché de contexto (frecuentísimo aquí: el mismo
 # documento/fragmento se reenvía en muchas llamadas seguidas de una misma
-# generación) o "cache miss":
-#   entrada cache MISS  $0,14/M -> ~0,13 €/M
-#   entrada cache HIT   $0,0028/M -> ~0,0026 €/M  (50 veces más barato)
-#   salida              $0,28/M -> ~0,26 €/M
-# Antes esta estimación usaba SIEMPRE el precio de cache miss para toda la
-# entrada ("para que quedara siempre por lo alto"), pero en la práctica eso
-# la dejaba muy por encima del gasto real: las exportaciones de uso reales
-# de DeepSeek (04/08/2026) muestran 91-95% de aciertos de caché en el
-# tráfico real de la app, lo que hacía que el panel admin pareciera
-# mostrar costes disparatados (p. ej. un solo test pareciendo más caro que
-# el gasto real de todo el día). Ahora se mezcla el precio de entrada
-# asumiendo una proporción de aciertos de caché realista pero conservadora
-# (algo por debajo de lo observado, para no quedarse corto): sigue siendo
-# una ESTIMACIÓN -- no hay forma de saber el acierto real de cada llamada
-# sin que DeepSeek lo devuelva en el usage -- pero ya no está desfasada en
-# un orden de magnitud. Solo alimenta el panel admin y la alerta interna de
-# gasto diario; nunca se muestra a usuarios.
-PRECIO_INPUT_CACHE_MISS_EUR_MILLON = _precio("IA_PRECIO_INPUT_EUR_MILLON", 0.13)
-PRECIO_INPUT_CACHE_HIT_EUR_MILLON = _precio("IA_PRECIO_INPUT_CACHE_HIT_EUR_MILLON", 0.0026)
-PRECIO_OUTPUT_EUR_MILLON = _precio("IA_PRECIO_OUTPUT_EUR_MILLON", 0.26)
+# generación) o "cache miss". Antes esta estimación usaba SIEMPRE el precio
+# de cache miss para toda la entrada ("para que quedara siempre por lo
+# alto"), pero en la práctica eso la dejaba muy por encima del gasto real:
+# las exportaciones de uso reales de DeepSeek (04/08/2026) muestran 91-95%
+# de aciertos de caché en el tráfico real de la app. Ahora se mezcla el
+# precio de entrada asumiendo una proporción de aciertos de caché realista
+# pero conservadora (algo por debajo de lo observado, para no quedarse
+# corto): sigue siendo una ESTIMACIÓN -- no hay forma de saber el acierto
+# real de cada llamada sin que DeepSeek lo devuelva en el usage. Solo
+# alimenta el panel admin y la alerta interna de gasto diario; nunca se
+# muestra a usuarios.
+#
+# NUEVA TARIFA con franja horaria (16/08/2026): a partir de esta fecha
+# DeepSeek factura distinto en horas "peak" (01:00-04:00 y 06:00-10:00 UTC)
+# que en el resto del día ("off-peak"), con la peak en torno al doble de
+# cara. Precios oficiales ($/M -> €/M al cambio ~0,92 €/$):
+#   off-peak: entrada MISS $0,22 -> ~0,2024 €/M | entrada HIT $0,007 -> ~0,00644 €/M | salida $0,66 -> ~0,6072 €/M
+#   peak:     entrada MISS $0,44 -> ~0,4048 €/M | entrada HIT $0,014 -> ~0,01288 €/M | salida $1,32 -> ~1,2144 €/M
+# Se mezclan igual que el acierto de caché: una proporción asumida
+# (conservadora, ajustable por variable de entorno) de tráfico que cae en
+# horas peak. Los opositores estudian sobre todo por la tarde/noche en hora
+# española (claramente off-peak en UTC), pero el tramo peak 06:00-10:00 UTC
+# coincide con la franja de estudio matutina antes de trabajar, así que no
+# se asume 0%.
+PRECIO_INPUT_CACHE_MISS_OFFPEAK_EUR_MILLON = _precio("IA_PRECIO_INPUT_OFFPEAK_EUR_MILLON", 0.2024)
+PRECIO_INPUT_CACHE_HIT_OFFPEAK_EUR_MILLON = _precio("IA_PRECIO_INPUT_CACHE_HIT_OFFPEAK_EUR_MILLON", 0.00644)
+PRECIO_OUTPUT_OFFPEAK_EUR_MILLON = _precio("IA_PRECIO_OUTPUT_OFFPEAK_EUR_MILLON", 0.6072)
+PRECIO_INPUT_CACHE_MISS_PEAK_EUR_MILLON = _precio("IA_PRECIO_INPUT_PEAK_EUR_MILLON", 0.4048)
+PRECIO_INPUT_CACHE_HIT_PEAK_EUR_MILLON = _precio("IA_PRECIO_INPUT_CACHE_HIT_PEAK_EUR_MILLON", 0.01288)
+PRECIO_OUTPUT_PEAK_EUR_MILLON = _precio("IA_PRECIO_OUTPUT_PEAK_EUR_MILLON", 1.2144)
+RATIO_HORA_PICO_ASUMIDA = _precio("IA_RATIO_HORA_PICO_ASUMIDA", 0.25)
+
+PRECIO_INPUT_CACHE_MISS_EUR_MILLON = round(
+    RATIO_HORA_PICO_ASUMIDA * PRECIO_INPUT_CACHE_MISS_PEAK_EUR_MILLON
+    + (1 - RATIO_HORA_PICO_ASUMIDA) * PRECIO_INPUT_CACHE_MISS_OFFPEAK_EUR_MILLON,
+    6,
+)
+PRECIO_INPUT_CACHE_HIT_EUR_MILLON = round(
+    RATIO_HORA_PICO_ASUMIDA * PRECIO_INPUT_CACHE_HIT_PEAK_EUR_MILLON
+    + (1 - RATIO_HORA_PICO_ASUMIDA) * PRECIO_INPUT_CACHE_HIT_OFFPEAK_EUR_MILLON,
+    6,
+)
+PRECIO_OUTPUT_EUR_MILLON = round(
+    RATIO_HORA_PICO_ASUMIDA * PRECIO_OUTPUT_PEAK_EUR_MILLON
+    + (1 - RATIO_HORA_PICO_ASUMIDA) * PRECIO_OUTPUT_OFFPEAK_EUR_MILLON,
+    6,
+)
 RATIO_CACHE_HIT_ASUMIDO = _precio("IA_RATIO_CACHE_HIT_ASUMIDO", 0.90)
 PRECIO_INPUT_EUR_MILLON = round(
     RATIO_CACHE_HIT_ASUMIDO * PRECIO_INPUT_CACHE_HIT_EUR_MILLON

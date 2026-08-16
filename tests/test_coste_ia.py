@@ -26,6 +26,30 @@ def test_precio_input_mezcla_cache_hit_y_miss_segun_el_ratio_asumido():
     assert coste_ia.PRECIO_INPUT_EUR_MILLON < coste_ia.PRECIO_INPUT_CACHE_MISS_EUR_MILLON / 5
 
 
+def test_precios_offpeak_y_peak_coinciden_con_la_tarifa_oficial_deepseek():
+    # 16/08/2026: tarifa nueva de DeepSeek-v4-flash con franja horaria, al
+    # cambio ~0,92 €/$. Pin literal (no derivado) para que un futuro cambio
+    # de precio accidental en el código se note en el test, no solo en el
+    # panel admin.
+    assert coste_ia.PRECIO_INPUT_CACHE_MISS_OFFPEAK_EUR_MILLON == 0.2024
+    assert coste_ia.PRECIO_INPUT_CACHE_HIT_OFFPEAK_EUR_MILLON == 0.00644
+    assert coste_ia.PRECIO_OUTPUT_OFFPEAK_EUR_MILLON == 0.6072
+    assert coste_ia.PRECIO_INPUT_CACHE_MISS_PEAK_EUR_MILLON == 0.4048
+    assert coste_ia.PRECIO_INPUT_CACHE_HIT_PEAK_EUR_MILLON == 0.01288
+    assert coste_ia.PRECIO_OUTPUT_PEAK_EUR_MILLON == 1.2144
+    # Peak es ~2x off-peak en las tres tarifas, según la propia DeepSeek.
+    assert coste_ia.PRECIO_OUTPUT_PEAK_EUR_MILLON == coste_ia.PRECIO_OUTPUT_OFFPEAK_EUR_MILLON * 2
+
+
+def test_precio_output_mezcla_offpeak_y_peak_segun_el_ratio_asumido():
+    esperado = round(
+        coste_ia.RATIO_HORA_PICO_ASUMIDA * coste_ia.PRECIO_OUTPUT_PEAK_EUR_MILLON
+        + (1 - coste_ia.RATIO_HORA_PICO_ASUMIDA) * coste_ia.PRECIO_OUTPUT_OFFPEAK_EUR_MILLON,
+        6,
+    )
+    assert coste_ia.PRECIO_OUTPUT_EUR_MILLON == esperado
+
+
 def test_resumen_coste_usuario_suma_meses():
     datos = {"coste_ia": {
         "2026-06": {"tokens_in": 1000, "tokens_out": 500, "coste": 0.01},
