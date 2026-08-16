@@ -1040,6 +1040,53 @@ def test_permiso_temario_puede_ver_errores_ia(client, db):
         assert client.get("/admin/api/errores-ia", headers=_AUTH).status_code == 403
 
 
+def test_errores_ia_filtra_por_oposicion(client, db):
+    db.sembrar(("errores_generacion", "a1"), {
+        "fuente": "auto_verificacion", "tema_id": "bloque_05-tema_01", "tipo_error": "desfase_legal",
+        "oposicion": "AGE", "detalle": "x", "resuelto": False,
+    })
+    db.sembrar(("errores_generacion", "a2"), {
+        "fuente": "auto_verificacion", "tema_id": "bloque_05-tema_01", "tipo_error": "desfase_legal",
+        "oposicion": "GACE", "detalle": "y", "resuelto": False,
+    })
+    # Documento anterior a que se empezara a guardar la oposición (16/08/2026)
+    # -- no debe aparecer bajo ningún filtro concreto, solo bajo "todas".
+    db.sembrar(("errores_generacion", "a3"), {
+        "fuente": "auto_verificacion", "tema_id": "bloque_05-tema_01", "tipo_error": "desfase_legal",
+        "detalle": "z", "resuelto": False,
+    })
+    with _como():
+        solo_age = client.get("/admin/api/errores-ia?resuelto=todos&oposicion=AGE", headers=_AUTH).get_json()
+        todas = client.get("/admin/api/errores-ia?resuelto=todos&oposicion=todas", headers=_AUTH).get_json()
+    assert {e["id"] for e in solo_age["entradas"]} == {"a1"}
+    assert {e["id"] for e in todas["entradas"]} == {"a1", "a2", "a3"}
+
+
+def test_errores_ia_exportar_csv_respeta_los_filtros(client, db):
+    db.sembrar(("errores_generacion", "a1"), {
+        "fuente": "auto_verificacion", "tema_id": "bloque_05-tema_01", "tipo_error": "desfase_legal",
+        "oposicion": "AGE", "pregunta_texto": "¿Pregunta 1?", "detalle": "motivo uno", "resuelto": False,
+    })
+    db.sembrar(("errores_generacion", "a2"), {
+        "fuente": "auto_verificacion", "tema_id": "bloque_02-tema_01", "tipo_error": "ambiguedad",
+        "oposicion": "GACE", "pregunta_texto": "¿Pregunta 2?", "detalle": "motivo dos", "resuelto": False,
+    })
+    with _como():
+        r = client.get("/admin/api/errores-ia/export?resuelto=todos&tipo_error=desfase_legal", headers=_AUTH)
+    assert r.status_code == 200
+    assert "text/csv" in r.content_type
+    cuerpo = r.get_data(as_text=True)
+    assert "¿Pregunta 1?" in cuerpo
+    assert "motivo uno" in cuerpo
+    assert "¿Pregunta 2?" not in cuerpo  # filtrada por tipo_error, no exportada
+
+
+def test_errores_ia_exportar_requiere_permiso_temario(client, db):
+    with _como(admin=False, uid="rep1", permisos=["reportes"]):
+        r = client.get("/admin/api/errores-ia/export", headers=_AUTH)
+    assert r.status_code == 403
+
+
 # ---------- Editor temario, import, sistema, banner, notas ----------
 def test_crear_bloque_y_tema_y_renombrar(client, db):
     with _como():

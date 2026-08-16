@@ -562,7 +562,7 @@ def _prompt_verificacion_descriptivo(pregunta_candidata, anclas):
 
 def _verificar_y_aceptar_pregunta(pregunta_candidata, anclas, tema_id, tipo_pregunta,
                                    preguntas_ya_aceptadas, lock, on_usage, db,
-                                   contexto_intento, intento_numero):
+                                   contexto_intento, intento_numero, oposicion=None):
     """Toma una pregunta YA GENERADA y sus anclas, la verifica con una
     llamada independiente contra ESE mismo texto legal, y la acepta o la
     descarta -- código compartido entre generar una en una
@@ -652,6 +652,7 @@ def _verificar_y_aceptar_pregunta(pregunta_candidata, anclas, tema_id, tipo_preg
                 pregunta_texto=str(pregunta_candidata.get("pregunta", "")),
                 detalle="; ".join(str(p) for p in problemas) if isinstance(problemas, list) else "",
                 intento_numero=intento_numero,
+                oposicion=oposicion,
             )
         return None
 
@@ -748,6 +749,7 @@ def _generar_pregunta_verificada(subbloques_tema, tema_id, oposicion, subbloques
                 pregunta_candidata, anclas, tema_id, tipo_pregunta,
                 preguntas_ya_aceptadas, lock, on_usage, db,
                 contexto_intento=f"intento={_intento + 1}", intento_numero=_intento + 1,
+                oposicion=oposicion,
             )
             if resultado is None:
                 continue
@@ -883,6 +885,7 @@ def _generar_lote_preguntas_verificadas(huecos_lote, subbloques_por_tema, oposic
                 pregunta_candidata, espec["anclas"], tema_id, espec["tipo_pregunta"],
                 preguntas_ya_aceptadas, lock, on_usage, db,
                 contexto_intento="lote", intento_numero=1,
+                oposicion=oposicion,
             )
         except Exception:
             logger.exception("Fallo inesperado verificando una pregunta del lote (tema %s)", tema_id)

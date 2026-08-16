@@ -1926,6 +1926,7 @@ async function cambiarEstadoReporte(id, estado) {
 // prompt de generación quedan para más adelante.
 let filtroTipoErroresIA = "todos";
 let filtroResueltoErroresIA = "pendiente";
+let filtroOposicionErroresIA = "todas";
 let paginaErroresIA = 1;
 let busquedaErroresIA = "";
 
@@ -1953,7 +1954,16 @@ async function renderCalidadIA() {
             ${Object.entries(ETIQUETA_TIPO_ERROR_IA).map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}
           </select>
         </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">Oposición
+          <select id="ia-oposicion" class="age-input" style="max-width:160px;">
+            <option value="todas">Todas</option>
+            <option value="AGE">AGE</option>
+            <option value="GACE">GACE</option>
+            <option value="AUXILIAR">Auxiliar</option>
+          </select>
+        </label>
         <input type="search" id="ia-buscar" class="age-input" placeholder="Buscar por tema o motivo…" style="flex:1;min-width:200px;">
+        <button type="button" id="ia-exportar" class="age-btn age-btn-outline admin-mini">${icono("descargar", 14)} Exportar CSV</button>
       </div>
     </div>
     <div class="age-card" id="ia-resumen"></div>
@@ -1961,19 +1971,28 @@ async function renderCalidadIA() {
 
   const selResuelto = panel.querySelector("#ia-resuelto");
   const selTipo = panel.querySelector("#ia-tipo");
+  const selOposicion = panel.querySelector("#ia-oposicion");
   const inputBuscar = panel.querySelector("#ia-buscar");
+  const btnExportar = panel.querySelector("#ia-exportar");
   selResuelto.value = filtroResueltoErroresIA;
   selTipo.value = filtroTipoErroresIA;
+  selOposicion.value = filtroOposicionErroresIA;
   inputBuscar.value = busquedaErroresIA;
 
   selResuelto.addEventListener("change", () => { filtroResueltoErroresIA = selResuelto.value; paginaErroresIA = 1; cargarErroresIA(); });
   selTipo.addEventListener("change", () => { filtroTipoErroresIA = selTipo.value; paginaErroresIA = 1; cargarErroresIA(); });
+  selOposicion.addEventListener("change", () => { filtroOposicionErroresIA = selOposicion.value; paginaErroresIA = 1; cargarErroresIA(); });
   // Con debounce (350ms): sin esto, cada tecla pulsada dispara su propia
   // petición al backend, la mayoría descartadas antes de llegar a pintarse.
   let debounceBuscarIA;
   inputBuscar.addEventListener("input", () => {
     clearTimeout(debounceBuscarIA);
     debounceBuscarIA = setTimeout(() => { busquedaErroresIA = inputBuscar.value.trim(); paginaErroresIA = 1; cargarErroresIA(); }, 350);
+  });
+  btnExportar.addEventListener("click", () => {
+    const params = new URLSearchParams({ resuelto: filtroResueltoErroresIA, tipo_error: filtroTipoErroresIA, oposicion: filtroOposicionErroresIA });
+    if (busquedaErroresIA) params.set("q", busquedaErroresIA);
+    descargarCSV(`/admin/api/errores-ia/export?${params}`, "calidad_ia.csv");
   });
 
   cargarErroresIA();
@@ -1984,7 +2003,7 @@ async function cargarErroresIA() {
   const resumenCont = document.getElementById("ia-resumen");
   if (!cont) return;
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
-  const params = new URLSearchParams({ resuelto: filtroResueltoErroresIA, tipo_error: filtroTipoErroresIA, pagina: paginaErroresIA });
+  const params = new URLSearchParams({ resuelto: filtroResueltoErroresIA, tipo_error: filtroTipoErroresIA, oposicion: filtroOposicionErroresIA, pagina: paginaErroresIA });
   if (busquedaErroresIA) params.set("q", busquedaErroresIA);
   const d = await apiGet(`/admin/api/errores-ia?${params}`);
   if (!d) return;
@@ -2002,7 +2021,7 @@ async function cargarErroresIA() {
       resumenCont.innerHTML = `
         <p class="admin-calidad-resumen-titulo">${totalTodos} en total (sin aplicar los filtros de arriba) -- por tipo:</p>
         <div class="admin-calidad-chips">${chipsTipo}</div>
-        ${topTemas.length ? `<p class="admin-calidad-resumen-titulo" style="margin-top:12px;">Temas con más rechazos:</p><div class="admin-calidad-chips">${chipsTemas}</div>` : ""}
+        ${topTemas.length ? `<details class="ficha-rango"><summary>Temas con más rechazos</summary><div class="admin-calidad-chips" style="margin-top:10px;">${chipsTemas}</div></details>` : ""}
       `;
       resumenCont.querySelectorAll("[data-buscar-tema]").forEach((b) => b.addEventListener("click", () => {
         busquedaErroresIA = b.dataset.buscarTema;

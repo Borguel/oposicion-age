@@ -1894,17 +1894,19 @@ def reportes_actualizar(rid):
 # el análisis agregado automático y el ajuste del prompt de generación
 # quedan para más adelante.
 # ============================================================
-@bp.route("/admin/api/errores-ia", methods=["GET"])
-@requiere_permiso("temario")
-def errores_ia_listar():
+def _errores_ia_filtrados():
+    """Lee errores_generacion (fuente="auto_verificacion"), aplica los
+    filtros de query string (tipo_error, resuelto, oposicion, q) y devuelve
+    (entradas_filtradas_y_ordenadas, resumen) -- compartido entre el
+    listado paginado y la exportación CSV, que deben filtrar exactamente
+    igual. oposicion solo está disponible en los documentos escritos desde
+    el 16/08/2026 (ver generador_preguntas_verificado.py); los anteriores
+    quedan fuera de cualquier filtro por oposición concreta, pero siguen
+    apareciendo con "todas"."""
     tipo_error = request.args.get("tipo_error", "")
     resuelto_param = request.args.get("resuelto", "pendiente")
+    oposicion_param = request.args.get("oposicion", "")
     q = (request.args.get("q") or "").strip().lower()
-    try:
-        pagina = max(1, int(request.args.get("pagina", 1)))
-    except (TypeError, ValueError):
-        pagina = 1
-    por_pagina = 20
 
     entradas = []
     conteo_por_tipo = {}
@@ -1933,6 +1935,9 @@ def errores_ia_listar():
             continue
         if tipo_error and tipo_error != "todos" and tipo != tipo_error:
             continue
+        oposicion = d.get("oposicion") or ""
+        if oposicion_param and oposicion_param != "todas" and oposicion != oposicion_param:
+            continue
         detalle = d.get("detalle") or ""
         if q and q not in tema_id.lower() and q not in detalle.lower():
             continue
@@ -1941,6 +1946,7 @@ def errores_ia_listar():
             "id": doc.id,
             "tema_id": tema_id,
             "tipo_error": tipo,
+            "oposicion": oposicion,
             "pregunta_texto": d.get("pregunta_texto", ""),
             "detalle": detalle,
             "intento_numero": d.get("intento_numero"),
@@ -1953,18 +1959,47 @@ def errores_ia_listar():
         })
 
     entradas.sort(key=lambda e: e["timestamp"], reverse=True)
+    top_temas = sorted(conteo_por_tema.items(), key=lambda par: par[1], reverse=True)[:8]
+    resumen = {
+        "por_tipo": conteo_por_tipo,
+        "top_temas": [{"tema_id": tid, "total": n} for tid, n in top_temas],
+    }
+    return entradas, resumen
+
+
+@bp.route("/admin/api/errores-ia", methods=["GET"])
+@requiere_permiso("temario")
+def errores_ia_listar():
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    por_pagina = 20
+    entradas, resumen = _errores_ia_filtrados()
     total = len(entradas)
     inicio = (pagina - 1) * por_pagina
-    top_temas = sorted(conteo_por_tema.items(), key=lambda par: par[1], reverse=True)[:8]
-
     return jsonify({
         "entradas": entradas[inicio:inicio + por_pagina],
         "total": total, "pagina": pagina, "por_pagina": por_pagina,
-        "resumen": {
-            "por_tipo": conteo_por_tipo,
-            "top_temas": [{"tema_id": tid, "total": n} for tid, n in top_temas],
-        },
+        "resumen": resumen,
     })
+
+
+@bp.route("/admin/api/errores-ia/export", methods=["GET"])
+@requiere_permiso("temario")
+def errores_ia_exportar():
+    """CSV con los mismos filtros que /admin/api/errores-ia (tipo_error,
+    resuelto, oposicion, q) -- sin paginar, para llevarse el lote completo
+    de una vez (p. ej. para analizarlo aparte con una IA)."""
+    entradas, _resumen = _errores_ia_filtrados()
+    filas = [[
+        e["tema_id"], e["oposicion"], e["tipo_error"], e["pregunta_texto"], e["detalle"],
+        e["intento_numero"] if e["intento_numero"] is not None else "",
+        "si" if e["resuelto"] else "no", e["timestamp"],
+    ] for e in entradas]
+    cabecera = ["tema_id", "oposicion", "tipo_error", "pregunta_texto", "detalle", "intento_numero", "resuelto", "fecha"]
+    _registrar_auditoria("calidad_ia_export", "", f"{len(filas)} filas")
+    return _respuesta_csv(cabecera, filas, "calidad_ia.csv")
 
 
 @bp.route("/admin/api/errores-ia/<eid>", methods=["PATCH"])

@@ -237,6 +237,7 @@ def test_rechazo_de_verificacion_registra_errores_generacion(db):
     doc = documentos[0]
     assert doc["tema_id"] == "bloque_01-tema_01"
     assert doc["fuente"] == "auto_verificacion"
+    assert doc["oposicion"] == "AGE"
     assert doc["tipo_error"] == "desfase_legal"  # heurística: menciona "plazo"
     assert doc["pregunta_texto"] == "¿Primer intento, con un dato mal?"
     assert doc["detalle"] == "el plazo citado no coincide con el texto"
