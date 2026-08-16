@@ -10,9 +10,9 @@ Convenciones de datos que usa (ya existentes en el proyecto):
               usuario -> se agrega con collection_group, sin exponer qué
               usuario individual falló qué)
 - Reportes:   errores_generacion/{id} (colección global; fuente="usuario_admin"
-              son los reportes de usuarios que gestiona este panel,
+              son los reportes de usuarios, gestionados en "Reportes";
               "auto_verificacion" son los auto-rechazos del generador de
-              tests -- ver errores_generacion.py)
+              tests, gestionados en "Calidad IA" -- ver errores_generacion.py)
 """
 import csv
 import hmac
@@ -1882,6 +1882,104 @@ def reportes_actualizar(rid):
     }, merge=True)
     _registrar_auditoria("reporte_" + estado, rid)
     return jsonify({"mensaje": "Reporte actualizado"})
+
+
+# ============================================================
+# Calidad IA: auto-rechazos de la verificación automática durante la
+# generación de test (errores_generacion, fuente="auto_verificacion") --
+# a diferencia de "Reportes" (fuente="usuario_admin"), esto no lo escribe
+# ningún usuario: es el propio verificador descartando una pregunta que
+# la IA acaba de redactar, antes de que llegue a nadie. De momento es solo
+# lectura/triaje (fase 1 del loop de mejora, ver errores_generacion.py);
+# el análisis agregado automático y el ajuste del prompt de generación
+# quedan para más adelante.
+# ============================================================
+@bp.route("/admin/api/errores-ia", methods=["GET"])
+@requiere_permiso("temario")
+def errores_ia_listar():
+    tipo_error = request.args.get("tipo_error", "")
+    resuelto_param = request.args.get("resuelto", "pendiente")
+    q = (request.args.get("q") or "").strip().lower()
+    try:
+        pagina = max(1, int(request.args.get("pagina", 1)))
+    except (TypeError, ValueError):
+        pagina = 1
+    por_pagina = 20
+
+    entradas = []
+    conteo_por_tipo = {}
+    conteo_por_tema = {}
+    # .limit(...): a diferencia de admin_auditoria (pocas acciones al día),
+    # esta colección puede escribir varias veces por CADA test personalizado
+    # generado en producción -- se acota la lectura a las más recientes en
+    # vez de traer la colección entera cada vez que se abre esta pantalla.
+    consulta = db.collection("errores_generacion").where("fuente", "==", "auto_verificacion").limit(2000)
+    for doc in consulta.stream():
+        d = doc.to_dict() or {}
+        tipo = d.get("tipo_error") or "otro"
+        # Los conteos (para el resumen "¿está esto concentrado en un tema
+        # concreto o repartido?") se calculan sobre TODO lo leído, antes de
+        # aplicar los filtros de esta petición -- si no, cambiar el filtro
+        # de tipo_error movería también el propio resumen que ayuda a
+        # decidir qué filtro mirar.
+        conteo_por_tipo[tipo] = conteo_por_tipo.get(tipo, 0) + 1
+        tema_id = d.get("tema_id") or "(sin tema)"
+        conteo_por_tema[tema_id] = conteo_por_tema.get(tema_id, 0) + 1
+
+        resuelto = bool(d.get("resuelto", False))
+        if resuelto_param == "pendiente" and resuelto:
+            continue
+        if resuelto_param == "resuelto" and not resuelto:
+            continue
+        if tipo_error and tipo_error != "todos" and tipo != tipo_error:
+            continue
+        detalle = d.get("detalle") or ""
+        if q and q not in tema_id.lower() and q not in detalle.lower():
+            continue
+        ts = d.get("timestamp")
+        entradas.append({
+            "id": doc.id,
+            "tema_id": tema_id,
+            "tipo_error": tipo,
+            "pregunta_texto": d.get("pregunta_texto", ""),
+            "detalle": detalle,
+            "intento_numero": d.get("intento_numero"),
+            "resuelto": resuelto,
+            # Firestore devuelve un DatetimeWithNanoseconds ya con tz; si el
+            # documento es tan viejo que el propio SERVER_TIMESTAMP no ha
+            # terminado de resolverse (lectura justo tras la escritura) puede
+            # venir None -- de ahí el hasattr en vez de asumir el tipo.
+            "timestamp": ts.isoformat() if hasattr(ts, "isoformat") else "",
+        })
+
+    entradas.sort(key=lambda e: e["timestamp"], reverse=True)
+    total = len(entradas)
+    inicio = (pagina - 1) * por_pagina
+    top_temas = sorted(conteo_por_tema.items(), key=lambda par: par[1], reverse=True)[:8]
+
+    return jsonify({
+        "entradas": entradas[inicio:inicio + por_pagina],
+        "total": total, "pagina": pagina, "por_pagina": por_pagina,
+        "resumen": {
+            "por_tipo": conteo_por_tipo,
+            "top_temas": [{"tema_id": tid, "total": n} for tid, n in top_temas],
+        },
+    })
+
+
+@bp.route("/admin/api/errores-ia/<eid>", methods=["PATCH"])
+@requiere_permiso("temario")
+def errores_ia_actualizar(eid):
+    data = request.get_json(silent=True) or {}
+    resuelto = data.get("resuelto")
+    if not isinstance(resuelto, bool):
+        return jsonify({"error": "Falta 'resuelto' (bool)"}), 400
+    ref = db.collection("errores_generacion").document(eid)
+    if not ref.get().exists:
+        return jsonify({"error": "No encontrado"}), 404
+    ref.update({"resuelto": resuelto})
+    _registrar_auditoria("calidad_ia_" + ("resuelto" if resuelto else "reabierto"), eid)
+    return jsonify({"mensaje": "Actualizado"})
 
 
 # ============================================================

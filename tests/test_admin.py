@@ -952,6 +952,94 @@ def test_reportes_paginados(client, db):
     assert not (ids_pagina1 & ids_pagina2)
 
 
+# ---------- Calidad IA (auto-rechazos de la verificación, fuente="auto_verificacion") ----------
+def test_errores_ia_no_mezcla_reportes_de_usuario(client, db):
+    db.sembrar(("errores_generacion", "auto1"), {
+        "fuente": "auto_verificacion", "tema_id": "bloque_05-tema_01", "tipo_error": "desfase_legal",
+        "pregunta_texto": "¿Pregunta generada?", "detalle": "El artículo citado no existe en el texto.",
+        "intento_numero": 1, "resuelto": False,
+    })
+    db.sembrar(("errores_generacion", "usr1"), {
+        "fuente": "usuario_admin", "pregunta_texto": "¿Pregunta reportada?", "oposicion": "AGE",
+        "detalle": "dudosa", "estado": "pendiente", "fecha": "2026-01-01",
+    })
+    with _como():
+        d = client.get("/admin/api/errores-ia", headers=_AUTH).get_json()
+    assert len(d["entradas"]) == 1
+    assert d["entradas"][0]["tema_id"] == "bloque_05-tema_01"
+    assert d["entradas"][0]["tipo_error"] == "desfase_legal"
+    assert d["entradas"][0]["detalle"] == "El artículo citado no existe en el texto."
+
+
+def test_errores_ia_filtra_por_tipo_y_pendientes(client, db):
+    db.sembrar(("errores_generacion", "a1"), {
+        "fuente": "auto_verificacion", "tema_id": "bloque_05-tema_01", "tipo_error": "desfase_legal",
+        "detalle": "x", "resuelto": False,
+    })
+    db.sembrar(("errores_generacion", "a2"), {
+        "fuente": "auto_verificacion", "tema_id": "bloque_02-tema_03", "tipo_error": "ambiguedad",
+        "detalle": "y", "resuelto": False,
+    })
+    db.sembrar(("errores_generacion", "a3"), {
+        "fuente": "auto_verificacion", "tema_id": "bloque_05-tema_01", "tipo_error": "desfase_legal",
+        "detalle": "z", "resuelto": True,
+    })
+    with _como():
+        solo_desfase = client.get("/admin/api/errores-ia?tipo_error=desfase_legal&resuelto=todos", headers=_AUTH).get_json()
+        solo_pendientes = client.get("/admin/api/errores-ia?resuelto=pendiente", headers=_AUTH).get_json()
+        solo_resueltos = client.get("/admin/api/errores-ia?resuelto=resuelto", headers=_AUTH).get_json()
+    assert {e["id"] for e in solo_desfase["entradas"]} == {"a1", "a3"}
+    assert {e["id"] for e in solo_pendientes["entradas"]} == {"a1", "a2"}
+    assert {e["id"] for e in solo_resueltos["entradas"]} == {"a3"}
+
+
+def test_errores_ia_resumen_cuenta_por_tipo_y_tema_sin_aplicar_filtros(client, db):
+    # El resumen (para ver de un vistazo si algo se concentra en un tema
+    # concreto) se calcula sobre TODO lo leído, no sobre lo ya filtrado --
+    # si no, cambiar el filtro de tipo_error también movería el propio
+    # resumen que ayuda a decidir qué filtro mirar.
+    for i in range(3):
+        db.sembrar(("errores_generacion", f"a{i}"), {
+            "fuente": "auto_verificacion", "tema_id": "bloque_05-tema_02", "tipo_error": "desfase_legal",
+            "detalle": "x", "resuelto": False,
+        })
+    db.sembrar(("errores_generacion", "b1"), {
+        "fuente": "auto_verificacion", "tema_id": "bloque_01-tema_01", "tipo_error": "ambiguedad",
+        "detalle": "y", "resuelto": False,
+    })
+    with _como():
+        d = client.get("/admin/api/errores-ia?tipo_error=ambiguedad", headers=_AUTH).get_json()
+    assert len(d["entradas"]) == 1  # el filtro sí se aplicó a la lista
+    assert d["resumen"]["por_tipo"] == {"desfase_legal": 3, "ambiguedad": 1}
+    assert {"tema_id": "bloque_05-tema_02", "total": 3} in d["resumen"]["top_temas"]
+
+
+def test_errores_ia_marcar_resuelto(client, db):
+    db.sembrar(("errores_generacion", "a1"), {
+        "fuente": "auto_verificacion", "tema_id": "bloque_05-tema_01", "tipo_error": "desfase_legal",
+        "detalle": "x", "resuelto": False,
+    })
+    with _como():
+        r = client.patch("/admin/api/errores-ia/a1", json={"resuelto": True}, headers=_AUTH)
+        assert r.status_code == 200
+        pendientes = client.get("/admin/api/errores-ia?resuelto=pendiente", headers=_AUTH).get_json()
+    assert pendientes["entradas"] == []
+    assert db.leer(("errores_generacion", "a1"))["resuelto"] is True
+
+
+def test_errores_ia_marcar_resuelto_inexistente_da_404(client, db):
+    with _como():
+        r = client.patch("/admin/api/errores-ia/no-existe", json={"resuelto": True}, headers=_AUTH)
+    assert r.status_code == 404
+
+
+def test_permiso_temario_puede_ver_errores_ia(client, db):
+    with _como(admin=False, uid="ed1", permisos=["temario"]):
+        assert client.get("/admin/api/errores-ia", headers=_AUTH).status_code == 200
+    with _como(admin=False, uid="rep1", permisos=["reportes"]):
+        assert client.get("/admin/api/errores-ia", headers=_AUTH).status_code == 403
+
+
 # ---------- Editor temario, import, sistema, banner, notas ----------
 def test_crear_bloque_y_tema_y_renombrar(client, db):
     with _como():

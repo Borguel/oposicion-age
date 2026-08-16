@@ -15,7 +15,7 @@ function inyectarIconosEstaticos() {
 
 // Qué permiso necesita cada pestaña. Las de 'admin' solo las ve el super-admin.
 const PERMISO_POR_PESTANA = {
-  dashboard: "cualquiera", temario: "temario", preguntas: "temario", analitica: "temario",
+  dashboard: "cualquiera", temario: "temario", preguntas: "temario", analitica: "temario", calidad: "temario",
   usuarios: "usuarios", ingresos: "usuarios", reportes: "reportes", boe: "temario", bajas: "reportes", limites: "admin", auditoria: "admin", sistema: "admin",
 };
 let _permisos = { admin: false, permisos: [] };
@@ -222,7 +222,7 @@ document.addEventListener("keydown", (e) => {
 // ninguno de los dos -- pulsar el botón ya lleva directo a su única vista.
 const GRUPOS = {
   dashboard: { label: "Dashboard", pestanas: ["dashboard"], enPanel: false, enSidebar: false },
-  contenido: { label: "Contenido", pestanas: ["temario", "preguntas", "analitica"], enPanel: true, enSidebar: true },
+  contenido: { label: "Contenido", pestanas: ["temario", "preguntas", "analitica", "calidad"], enPanel: true, enSidebar: true },
   usuarios: { label: "Usuarios", pestanas: ["usuarios", "ingresos", "bajas", "reportes"], enPanel: true, enSidebar: true },
   boe: { label: "Vigilancia BOE", pestanas: ["boe"], enPanel: false, enSidebar: false },
   configuracion: { label: "Configuración", pestanas: ["limites", "sistema", "auditoria"], enPanel: false, enSidebar: true },
@@ -232,6 +232,7 @@ const RENDERS = {
   temario: renderTemario,
   preguntas: renderPreguntas,
   analitica: renderAnalitica,
+  calidad: renderCalidadIA,
   usuarios: renderUsuarios,
   ingresos: renderIngresos,
   reportes: renderReportes,
@@ -242,11 +243,11 @@ const RENDERS = {
   sistema: renderSistema,
 };
 const TITULO_POR_PESTANA = {
-  dashboard: "Dashboard", temario: "Temario", preguntas: "Preguntas", analitica: "Analítica",
+  dashboard: "Dashboard", temario: "Temario", preguntas: "Preguntas", analitica: "Analítica", calidad: "Calidad IA",
   usuarios: "Usuarios", ingresos: "Ingresos", reportes: "Reportes", boe: "Vigilancia BOE", bajas: "Bajas", limites: "Límites", auditoria: "Auditoría", sistema: "Sistema",
 };
 const LABEL_SUBTAB = {
-  temario: "Temario", preguntas: "Preguntas", analitica: "Analítica",
+  temario: "Temario", preguntas: "Preguntas", analitica: "Analítica", calidad: "Calidad IA",
   usuarios: "Usuarios", ingresos: "Ingresos", bajas: "Bajas", reportes: "Reportes",
   limites: "Límites", sistema: "Sistema", auditoria: "Auditoría",
 };
@@ -1912,6 +1913,132 @@ async function cargarReportes() {
 async function cambiarEstadoReporte(id, estado) {
   const r = await api("PATCH", `/admin/api/reportes/${id}`, { estado });
   if (r) { toast(estado === "revisado" ? "Reporte marcado como revisado." : "Reporte descartado."); cargarReportes(); }
+}
+
+// ===== Calidad IA: auto-rechazos de la verificación automática (ver
+// errores_generacion.py, fuente="auto_verificacion") -- a diferencia de
+// Reportes (fuente="usuario_admin"), esto no lo escribe ningún usuario: es
+// la propia verificación descartando una pregunta recién redactada por la
+// IA, antes de que llegue a nadie (15/08/2026, a petición del usuario tras
+// ver en los logs de producción varios rechazos "desfase_legal" seguidos
+// en un mismo bloque). Fase 1 (solo lectura/triaje, ver el docstring de
+// errores_generacion.py): el análisis agregado automático y el ajuste del
+// prompt de generación quedan para más adelante.
+let filtroTipoErroresIA = "todos";
+let filtroResueltoErroresIA = "pendiente";
+let paginaErroresIA = 1;
+let busquedaErroresIA = "";
+
+const ETIQUETA_TIPO_ERROR_IA = {
+  desfase_legal: "Desfase legal", respuesta_incorrecta: "Respuesta incorrecta",
+  distractor_implausible: "Distractor poco creíble", ambiguedad: "Ambigüedad", otro: "Otro",
+};
+
+async function renderCalidadIA() {
+  const panel = document.getElementById("panel-calidad");
+  panel.innerHTML = `
+    <div class="age-card admin-filtros">
+      <p class="admin-calidad-intro">Preguntas que la propia verificación automática ha descartado durante la generación de un test, antes de llegar a ningún usuario -- para ver si un tema falla por casualidad o de forma repetida, y por qué motivo exacto.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">Estado
+          <select id="ia-resuelto" class="age-input" style="max-width:160px;">
+            <option value="pendiente">Sin revisar</option>
+            <option value="resuelto">Revisados</option>
+            <option value="todos">Todos</option>
+          </select>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">Tipo
+          <select id="ia-tipo" class="age-input" style="max-width:200px;">
+            <option value="todos">Todos</option>
+            ${Object.entries(ETIQUETA_TIPO_ERROR_IA).map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}
+          </select>
+        </label>
+        <input type="search" id="ia-buscar" class="age-input" placeholder="Buscar por tema o motivo…" style="flex:1;min-width:200px;">
+      </div>
+    </div>
+    <div class="age-card" id="ia-resumen"></div>
+    <div class="age-card"><div id="ia-lista"><p class="admin-cargando">Cargando…</p></div></div>`;
+
+  const selResuelto = panel.querySelector("#ia-resuelto");
+  const selTipo = panel.querySelector("#ia-tipo");
+  const inputBuscar = panel.querySelector("#ia-buscar");
+  selResuelto.value = filtroResueltoErroresIA;
+  selTipo.value = filtroTipoErroresIA;
+  inputBuscar.value = busquedaErroresIA;
+
+  selResuelto.addEventListener("change", () => { filtroResueltoErroresIA = selResuelto.value; paginaErroresIA = 1; cargarErroresIA(); });
+  selTipo.addEventListener("change", () => { filtroTipoErroresIA = selTipo.value; paginaErroresIA = 1; cargarErroresIA(); });
+  // Con debounce (350ms): sin esto, cada tecla pulsada dispara su propia
+  // petición al backend, la mayoría descartadas antes de llegar a pintarse.
+  let debounceBuscarIA;
+  inputBuscar.addEventListener("input", () => {
+    clearTimeout(debounceBuscarIA);
+    debounceBuscarIA = setTimeout(() => { busquedaErroresIA = inputBuscar.value.trim(); paginaErroresIA = 1; cargarErroresIA(); }, 350);
+  });
+
+  cargarErroresIA();
+}
+
+async function cargarErroresIA() {
+  const cont = document.getElementById("ia-lista");
+  const resumenCont = document.getElementById("ia-resumen");
+  if (!cont) return;
+  cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
+  const params = new URLSearchParams({ resuelto: filtroResueltoErroresIA, tipo_error: filtroTipoErroresIA, pagina: paginaErroresIA });
+  if (busquedaErroresIA) params.set("q", busquedaErroresIA);
+  const d = await apiGet(`/admin/api/errores-ia?${params}`);
+  if (!d) return;
+
+  if (resumenCont) {
+    const porTipo = d.resumen?.por_tipo || {};
+    const totalTodos = Object.values(porTipo).reduce((s, n) => s + n, 0);
+    if (!totalTodos) {
+      resumenCont.innerHTML = `<p class="admin-vacio">Sin auto-rechazos registrados todavía. ${icono("check", 14)}</p>`;
+    } else {
+      const chipsTipo = Object.entries(porTipo).sort((a, b) => b[1] - a[1])
+        .map(([tipo, n]) => `<span class="admin-calidad-chip">${escapeHtml(ETIQUETA_TIPO_ERROR_IA[tipo] || tipo)}: <strong>${n}</strong></span>`).join("");
+      const topTemas = d.resumen?.top_temas || [];
+      const chipsTemas = topTemas.map((t) => `<button type="button" class="admin-calidad-chip admin-calidad-chip-tema" data-buscar-tema="${escapeHtml(t.tema_id)}" title="Filtrar por este tema">${escapeHtml(t.tema_id)}: <strong>${t.total}</strong></button>`).join("");
+      resumenCont.innerHTML = `
+        <p class="admin-calidad-resumen-titulo">${totalTodos} en total (sin aplicar los filtros de arriba) -- por tipo:</p>
+        <div class="admin-calidad-chips">${chipsTipo}</div>
+        ${topTemas.length ? `<p class="admin-calidad-resumen-titulo" style="margin-top:12px;">Temas con más rechazos:</p><div class="admin-calidad-chips">${chipsTemas}</div>` : ""}
+      `;
+      resumenCont.querySelectorAll("[data-buscar-tema]").forEach((b) => b.addEventListener("click", () => {
+        busquedaErroresIA = b.dataset.buscarTema;
+        paginaErroresIA = 1;
+        renderCalidadIA();
+      }));
+    }
+  }
+
+  if (!(d.entradas || []).length) {
+    cont.innerHTML = `<p class="admin-vacio">Nada que revisar con estos filtros. ${icono("check", 14)}</p>`;
+    return;
+  }
+  cont.innerHTML = d.entradas.map((e) => `
+    <div class="admin-reporte">
+      <div class="admin-reporte-cab">
+        <span class="admin-calidad-tipo">${escapeHtml(ETIQUETA_TIPO_ERROR_IA[e.tipo_error] || e.tipo_error)}</span>
+        <span class="admin-reporte-meta">${escapeHtml(e.tema_id)} · intento ${e.intento_numero ?? "-"} · ${escapeHtml(fechaCorta(e.timestamp))}</span>
+      </div>
+      ${e.pregunta_texto ? `<p class="admin-reporte-preg">${escapeHtml(e.pregunta_texto)}</p>` : ""}
+      <p class="admin-reporte-motivo"><strong>Motivo del rechazo:</strong> ${escapeHtml(e.detalle || "(sin detalle)")}</p>
+      <div class="admin-reporte-acciones">
+        ${e.resuelto
+          ? `<button class="age-btn age-btn-outline admin-mini" data-reabrir="${escapeHtml(e.id)}">Marcar sin revisar</button>`
+          : `<button class="age-btn age-btn-primary admin-mini" data-revisado="${escapeHtml(e.id)}">Marcar revisado</button>`}
+      </div>
+    </div>`).join("") + paginacionHtml(d, "resultados", "ia-pag");
+
+  cont.querySelectorAll("[data-revisado]").forEach((b) => b.addEventListener("click", () => marcarErrorIA(b.dataset.revisado, true)));
+  cont.querySelectorAll("[data-reabrir]").forEach((b) => b.addEventListener("click", () => marcarErrorIA(b.dataset.reabrir, false)));
+  wirePaginacion(cont, "ia-pag", (delta) => { paginaErroresIA += delta; cargarErroresIA(); });
+}
+
+async function marcarErrorIA(id, resuelto) {
+  const r = await api("PATCH", `/admin/api/errores-ia/${id}`, { resuelto });
+  if (r) { toast(resuelto ? "Marcado como revisado." : "Marcado como sin revisar."); cargarErroresIA(); }
 }
 
 // ===== Vigilancia BOE: cambios de temario propuestos + avisos oficiales =====

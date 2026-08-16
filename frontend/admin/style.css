@@ -516,6 +516,16 @@
 .admin-op-linea { padding: 2px 0; }
 .admin-op-correcta { color: var(--age-success, #1e7e34); font-weight: 700; }
 
+/* Calidad IA: reutiliza .admin-reporte* (misma tarjeta que Reportes) para
+   cada auto-rechazo, más un resumen de chips arriba. */
+.admin-calidad-intro { font-size: 13.5px; color: var(--age-ink-soft, var(--age-ink)); margin: 0; }
+.admin-calidad-tipo { font-size: 11.5px; border-radius: 999px; padding: 1px 9px; font-weight: 700; background: var(--age-primary-soft); color: var(--age-primary-dark, var(--age-primary)); }
+.admin-calidad-resumen-titulo { font-size: 12.5px; font-weight: 700; color: var(--age-ink-soft, var(--age-ink)); margin: 0 0 6px; }
+.admin-calidad-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-calidad-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; background: var(--age-neutral-bg, #eee); border-radius: 999px; padding: 4px 10px; border: none; font-family: inherit; color: var(--age-ink); }
+.admin-calidad-chip-tema { cursor: pointer; }
+.admin-calidad-chip-tema:hover { background: var(--age-primary-soft); }
+
 /* Vigilancia BOE: diff de un cambio de temario propuesto */
 .admin-boe-diff { margin: 8px 0 10px; font-size: 13.5px; border-radius: 8px; overflow: hidden; }
 .admin-boe-diff-quita { background: var(--age-danger-bg); color: var(--age-danger, #b02a37); text-decoration: line-through; padding: 8px 10px; margin: 0; }
