@@ -16,7 +16,7 @@ from pypdf import PdfReader
 
 from firebase_setup import db
 from auth_utils import requiere_plan, requiere_admin, obtener_oposicion_solicitada
-from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso, devolver_uso
+from limites_uso import max_paginas_para_plan, verificar_limite_uso, devolver_uso, reservar_uso, reservar_uso_multiple
 from rate_limiter import limiter
 from documentos_pdf import (
     obtener_documento, listar_documentos, actualizar_carpeta,
@@ -326,10 +326,18 @@ def resumir_pdf():
 
     uid = g.uid
     plan_actual = g.plan_actual
-    # Uso cobrado por adelantado (no al llegar "fin"): el hilo de fondo sigue
+    # La comprobación de arriba (verificar_limite_uso) es solo un filtro
+    # rápido para no perder tiempo resolviendo/parseando el documento si el
+    # usuario ya está claramente al límite -- la que de verdad cuenta es
+    # esta de aquí: reservar_uso comprueba Y cobra en una única transacción
+    # atómica justo antes de arrancar el hilo de fondo, así dos peticiones
+    # concurrentes no pueden colarse las dos a la vez viendo cupo libre. Se
+    # cobra por adelantado (no al llegar "fin"): el hilo de fondo sigue
     # generando y gastando en DeepSeek aunque el cliente corte la conexión
     # SSE (mismo motivo que /generar-test-desde-pdf).
-    registrar_uso(db, uid, "pdf_ia", plan_actual)
+    permitido, mensaje_error, _usados, _limite = reservar_uso(db, uid, "pdf_ia", plan_actual)
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         eventos = queue.Queue()
@@ -589,7 +597,12 @@ def generar_esquema_desde_pdf():
 
     uid = g.uid
     plan_actual = g.plan_actual
-    registrar_uso(db, uid, "pdf_ia", plan_actual)
+    # Ver el comentario largo en /resumir-pdf: la comprobación de arriba es
+    # solo un filtro rápido, reservar_uso (comprueba + cobra en una única
+    # transacción atómica) es la que de verdad cierra la ventana de carrera.
+    permitido, mensaje_error, _usados, _limite = reservar_uso(db, uid, "pdf_ia", plan_actual)
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         eventos = queue.Queue()
@@ -789,22 +802,30 @@ def generar_test_desde_pdf():
     uid = g.uid
     plan_actual = g.plan_actual
 
-    # Uso cobrado por adelantado (no al llegar "fin"): el hilo de fondo sigue
-    # generando y gastando en DeepSeek aunque el cliente corte la conexión SSE,
-    # así que cobrar al final permitía saltarse la cuota abortando la petición
-    # en bucle. Si la generación falla de verdad (0 preguntas), se devuelve.
+    # reservar_uso comprueba Y cobra en una única transacción atómica, por
+    # adelantado (no al llegar "fin"): el hilo de fondo sigue generando y
+    # gastando en DeepSeek aunque el cliente corte la conexión SSE, así que
+    # cobrar al final permitía saltarse la cuota abortando la petición en
+    # bucle -- y hacerlo en una transacción (en vez de la comprobación de
+    # arriba, que es sin transacción y solo un filtro rápido) cierra además
+    # la ventana de carrera entre comprobar y cobrar. Si la generación falla
+    # de verdad (0 preguntas), se devuelve con devolver_uso.
     #
-    # Sentry PYTHON-FLASK-1: la transacción de Firestore que incrementa el
-    # contador puede expirar (InvalidArgument) por un problema transitorio
-    # de Firestore ajeno a esta petición -- no debe convertirse en un 500
-    # para el usuario por el fallo de un simple contador de cuota.
+    # Sentry PYTHON-FLASK-1: la transacción de Firestore puede expirar
+    # (InvalidArgument) por un problema transitorio de Firestore ajeno a
+    # esta petición -- no debe convertirse en un 500 para el usuario por el
+    # fallo de un simple contador de cuota, así que se deja pasar (fail
+    # open) igual que hacía antes el registrar_uso equivalente.
+    permitido, mensaje_error = True, None
     try:
-        registrar_uso(db, uid, "pdf_ia", plan_actual)
+        permitido, mensaje_error, _usados, _limite = reservar_uso(db, uid, "pdf_ia", plan_actual)
     except google_exceptions.InvalidArgument:
         logger.warning(
-            "No se pudo registrar el uso de pdf_ia (transacción de Firestore expirada) para uid=%s en %s",
+            "No se pudo reservar el uso de pdf_ia (transacción de Firestore expirada) para uid=%s en %s",
             uid, datetime.utcnow().isoformat(),
         )
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         eventos = queue.Queue()
@@ -923,12 +944,15 @@ def generar_tarjetas_desde_pdf():
 
     uid = g.uid
     plan_actual = g.plan_actual
-    # Se cobra por adelantado (mismo motivo que /generar-test-desde-pdf: el
-    # hilo de fondo sigue gastando en DeepSeek aunque el cliente corte la
-    # conexión SSE, así que cobrar solo al final permitiría saltarse la
-    # cuota abortando la petición en bucle) y se devuelve si no se genera
-    # ninguna tarjeta válida.
-    registrar_uso(db, uid, "pdf_ia", plan_actual)
+    # Se comprueba y se cobra en una única transacción atómica (reservar_uso,
+    # ver el comentario largo en /resumir-pdf) por adelantado (mismo motivo
+    # que /generar-test-desde-pdf: el hilo de fondo sigue gastando en
+    # DeepSeek aunque el cliente corte la conexión SSE, así que cobrar solo
+    # al final permitiría saltarse la cuota abortando la petición en bucle)
+    # y se devuelve si no se genera ninguna tarjeta válida.
+    permitido, mensaje_error, _usados, _limite = reservar_uso(db, uid, "pdf_ia", plan_actual)
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         eventos = queue.Queue()
@@ -1062,8 +1086,13 @@ def generar_banco_preguntas_desde_pdf():
 
     uid = g.uid
     plan_actual = g.plan_actual
-    for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
-        registrar_uso(db, uid, tipo_cuota, plan_actual)
+    # Ver el comentario largo en /resumir-pdf: la comprobación de arriba es
+    # solo un filtro rápido, reservar_uso_multiple (comprueba + cobra los
+    # dos cupos en una única transacción atómica) es la que de verdad cierra
+    # la ventana de carrera.
+    permitido, mensaje_error = reservar_uso_multiple(db, uid, TIPOS_CUOTA_BANCO_PDF, plan_actual)
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     iniciar_banco(db, uid, documento_id, "preguntas", TOPE_BANCO_PREGUNTAS, nombre_archivo)
 
     def generar():
@@ -1166,8 +1195,10 @@ def generar_banco_tarjetas_desde_pdf():
         text = text[:max_length]
     uid = g.uid
     plan_actual = g.plan_actual
-    for tipo_cuota in TIPOS_CUOTA_BANCO_PDF:
-        registrar_uso(db, uid, tipo_cuota, plan_actual)
+    # Ver el comentario largo en /resumir-pdf / generar_banco_preguntas_desde_pdf.
+    permitido, mensaje_error = reservar_uso_multiple(db, uid, TIPOS_CUOTA_BANCO_PDF, plan_actual)
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     iniciar_banco(db, uid, documento_id, "tarjetas", TOPE_BANCO_TARJETAS, nombre_archivo)
 
     def generar():
@@ -1371,7 +1402,12 @@ def chat_pdf_mensaje():
     if error:
         return error
 
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_pdf")
+    # reservar_uso comprueba Y cobra en una única transacción atómica, ANTES
+    # de llamar a la IA (no solo verificar y cobrar aparte después de tener
+    # la respuesta) -- así dos peticiones concurrentes no pueden pasar la
+    # comprobación las dos a la vez. Se reembolsa con devolver_uso si
+    # DeepSeek no llega a responder.
+    permitido, mensaje_error, _usados, _limite = reservar_uso(db, g.uid, "chat_pdf", g.plan_actual)
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
 
@@ -1383,8 +1419,8 @@ def chat_pdf_mensaje():
         mensajes, max_tokens=800, temperature=0.4, contexto=f"chat_pdf documento={documento_id}",
     )
     if not respuesta:
+        devolver_uso(db, g.uid, "chat_pdf", g.plan_actual)
         return jsonify({"error": "No se pudo generar la respuesta. Inténtalo de nuevo en unos segundos."}), 500
-    registrar_uso(db, g.uid, "chat_pdf", g.plan_actual)
     return jsonify({"respuesta": respuesta, "documento_id": documento_id})
 
 
@@ -1408,13 +1444,13 @@ def chat_pdf_mensaje_stream():
     if error:
         return error
 
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_pdf")
-    if not permitido:
-        return jsonify({"error": mensaje_error}), 429
-
     uid = g.uid
     plan_actual = g.plan_actual
-    registrar_uso(db, uid, "chat_pdf", plan_actual)
+    # Ver el comentario en /chat-pdf-mensaje: reservar_uso fusiona
+    # comprobación y cobro en una única transacción atómica.
+    permitido, mensaje_error, _usados, _limite = reservar_uso(db, uid, "chat_pdf", plan_actual)
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         fragmentos = []

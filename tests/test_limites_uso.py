@@ -4,7 +4,14 @@ bloqueados sin motivo, o cuotas que no frenan nada y dejan la puerta
 abierta al gasto en la API de IA."""
 from datetime import date
 
-from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso, max_paginas_para_plan
+from limites_uso import (
+    verificar_limite_uso,
+    registrar_uso,
+    devolver_uso,
+    reservar_uso,
+    reservar_uso_multiple,
+    max_paginas_para_plan,
+)
 
 
 def test_plan_sin_esta_herramienta_queda_bloqueado(db):
@@ -141,3 +148,147 @@ def test_registrar_uso_pasa_de_verdad_por_una_transaccion(db):
 
     assert len(llamadas) == 1
     assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+
+
+def test_reservar_uso_incrementa_el_contador(db):
+    permitido, mensaje, usados, limite = reservar_uso(db, "u1", "pdf_ia", "premium")
+    assert permitido is True
+    assert mensaje is None
+    assert usados == 1
+    assert limite == 100
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["pdf_ia"]["contador"] == 1
+
+
+def test_reservar_uso_bloquea_al_alcanzar_el_limite(db):
+    clave_dia = date.today().isoformat()
+    db.sembrar(("usuarios", "u1"), {"limites_uso": {"pdf_ia": {"periodo": clave_dia, "contador": 100}}})
+    permitido, mensaje, usados, limite = reservar_uso(db, "u1", "pdf_ia", "premium")
+    assert permitido is False
+    assert usados == 100
+    assert limite == 100
+    assert "diario" in mensaje
+    # Bloqueado -> el contador no se ha tocado.
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["pdf_ia"]["contador"] == 100
+
+
+def test_reservar_uso_cobra_por_cantidad(db):
+    permitido, _mensaje, usados, _limite = reservar_uso(
+        db, "u1", "test_avanzado_verificado", "premium", cantidad=100
+    )
+    assert permitido is True
+    assert usados == 100
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["test_avanzado_verificado"]["contador"] == 100
+
+
+def test_reservar_uso_no_supera_el_limite_aunque_quepa_parcialmente(db):
+    # Si ya hay 45 usados de un límite de 50 y se piden 10 más (55 en
+    # total), no se reserva NADA -- no tiene sentido "cobrar lo que quepa"
+    # cuando cantidad representa preguntas de un único test.
+    clave_dia = date.today().isoformat()
+    db.sembrar(("usuarios", "u1"), {"limites_uso": {"test_avanzado_verificado": {"periodo": clave_dia, "contador": 45}}})
+    permitido, mensaje, usados, limite = reservar_uso(db, "u1", "test_avanzado_verificado", "basico", cantidad=10)
+    assert permitido is False
+    assert usados == 45
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["test_avanzado_verificado"]["contador"] == 45
+
+
+def test_reservar_uso_reinicia_el_contador_en_un_periodo_nuevo(db):
+    db.sembrar(("usuarios", "u1"), {"limites_uso": {"pdf_ia": {"periodo": "2020-01", "contador": 99}}})
+    permitido, _mensaje, usados, _limite = reservar_uso(db, "u1", "pdf_ia", "premium")
+    assert permitido is True
+    assert usados == 1
+
+
+def test_reservar_uso_pasa_de_verdad_por_una_transaccion(db):
+    # Igual que test_registrar_uso_pasa_de_verdad_por_una_transaccion: lo
+    # importante de reservar_uso es que la comprobación del límite y el
+    # incremento vayan en la MISMA transacción (eso es lo que cierra el
+    # hueco de carrera entre verificar_limite_uso y registrar_uso por
+    # separado). No es practicable simular con hilos una condición de
+    # carrera real en este harness síncrono, así que se comprueba en su
+    # lugar que de verdad pasa por db.transaction().
+    llamadas = []
+    transaction_original = db.transaction
+
+    def transaction_espia():
+        llamadas.append(1)
+        return transaction_original()
+
+    db.transaction = transaction_espia
+    try:
+        reservar_uso(db, "u1", "pdf_ia", "premium")
+    finally:
+        db.transaction = transaction_original
+
+    assert len(llamadas) == 1
+    assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+
+
+def test_reservar_uso_bloqueado_por_plan_sin_herramienta(db):
+    permitido, mensaje, usados, limite = reservar_uso(db, "u1", "chat_pdf", "basico")
+    assert permitido is False
+    assert "no incluye esta herramienta" in mensaje
+    assert usados == 0
+    assert limite == 0
+
+
+def test_reservar_uso_multiple_incrementa_todos_los_tipos(db):
+    # test_avanzado_verificado (cupo diario) y su _mensual conviven en el
+    # mismo documento de usuario y se cobran juntos, como hace de verdad
+    # /generar-test-avanzado.
+    tipos = ("test_avanzado_verificado", "test_avanzado_verificado_mensual")
+    permitido, mensaje = reservar_uso_multiple(db, "u1", tipos, "premium", cantidad=20)
+    assert permitido is True
+    assert mensaje is None
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["test_avanzado_verificado"]["contador"] == 20
+    assert datos["limites_uso"]["test_avanzado_verificado_mensual"]["contador"] == 20
+
+
+def test_reservar_uso_multiple_no_incrementa_ninguno_si_uno_supera_su_limite(db):
+    # El cupo diario de básico es 50; si ya hay 45 usados y se piden 10 más,
+    # el diario se pasaría -- y aunque el mensual tenga margine de sobra, NO
+    # debe incrementarse tampoco: o se cobran los dos, o no se cobra ninguno.
+    clave_dia = date.today().isoformat()
+    clave_mes = date.today().strftime("%Y-%m")
+    db.sembrar(("usuarios", "u1"), {"limites_uso": {
+        "test_avanzado_verificado": {"periodo": clave_dia, "contador": 45},
+        "test_avanzado_verificado_mensual": {"periodo": clave_mes, "contador": 0},
+    }})
+    tipos = ("test_avanzado_verificado", "test_avanzado_verificado_mensual")
+    permitido, mensaje = reservar_uso_multiple(db, "u1", tipos, "basico", cantidad=10)
+    assert permitido is False
+    assert "diario" in mensaje
+    datos = db.leer(("usuarios", "u1"))
+    assert datos["limites_uso"]["test_avanzado_verificado"]["contador"] == 45
+    assert datos["limites_uso"]["test_avanzado_verificado_mensual"]["contador"] == 0
+
+
+def test_reservar_uso_multiple_bloqueado_si_algun_tipo_no_esta_en_el_plan(db):
+    # banco_pdf_mensual está a 0 en básico -- reservar_uso_multiple debe
+    # bloquear el grupo entero (pdf_ia, que sí tendría cupo, no se cobra).
+    permitido, mensaje = reservar_uso_multiple(db, "u1", ("pdf_ia", "banco_pdf_mensual"), "basico")
+    assert permitido is False
+    assert "no incluye esta herramienta" in mensaje
+    assert db.leer(("usuarios", "u1")) is None
+
+
+def test_reservar_uso_multiple_pasa_de_verdad_por_una_transaccion(db):
+    llamadas = []
+    transaction_original = db.transaction
+
+    def transaction_espia():
+        llamadas.append(1)
+        return transaction_original()
+
+    db.transaction = transaction_espia
+    try:
+        reservar_uso_multiple(db, "u1", ("pdf_ia", "banco_pdf_mensual"), "premium")
+    finally:
+        db.transaction = transaction_original
+
+    assert len(llamadas) == 1

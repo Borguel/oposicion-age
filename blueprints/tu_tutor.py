@@ -10,7 +10,7 @@ from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
 from firebase_setup import db
 from auth_utils import requiere_plan
-from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
+from limites_uso import devolver_uso, reservar_uso
 from rate_limiter import limiter
 from oposiciones import coleccion_temario
 from utils import obtener_catalogo_temas
@@ -44,7 +44,10 @@ def tu_tutor_route():
     mensaje = data.get("mensaje")
     if not mensaje:
         return jsonify({"error": "Falta el mensaje"}), 400
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_temario")
+    # reservar_uso comprueba Y cobra en una única transacción atómica, ANTES
+    # de llamar a la IA -- así dos peticiones concurrentes no pueden pasar
+    # la comprobación las dos a la vez (ver limites_uso.reservar_uso).
+    permitido, mensaje_error, _usados, _limite = reservar_uso(db, g.uid, "chat_temario", g.plan_actual)
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
     chat_id = data.get("chat_id")
@@ -58,10 +61,10 @@ def tu_tutor_route():
         contexto_pagina=data.get("contexto_pagina")
     )
     if respuesta is None:
-        # No se registra uso: un fallo técnico de DeepSeek no debe consumir
-        # el cupo de mensajes del usuario.
+        # Un fallo técnico de DeepSeek no debe consumir el cupo de mensajes
+        # del usuario -- se reembolsa lo ya reservado arriba.
+        devolver_uso(db, g.uid, "chat_temario", g.plan_actual)
         return jsonify({"error": _ERROR_DEEPSEEK}), 502
-    registrar_uso(db, g.uid, "chat_temario", g.plan_actual)
     return jsonify({"respuesta": respuesta, "chat_id": chat_id})
 
 
@@ -79,20 +82,22 @@ def tu_tutor_stream_route():
     mensaje = data.get("mensaje")
     if not mensaje:
         return jsonify({"error": "Falta el mensaje"}), 400
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "chat_temario")
-    if not permitido:
-        return jsonify({"error": mensaje_error}), 429
     chat_id = data.get("chat_id")
     contexto_pagina = data.get("contexto_pagina")
     uid = g.uid
     plan_actual = g.plan_actual
     oposicion = g.oposicion
 
-    # Uso cobrado por adelantado, no al llegar "fin": si el cliente corta la
-    # conexión a mitad de respuesta, el generador de abajo no llega a su
-    # registrar_uso y se podía saltar la cuota abortando en bucle. Si DeepSeek
-    # falla del todo (evento "error", sin "fin"), se devuelve el uso.
-    registrar_uso(db, uid, "chat_temario", plan_actual)
+    # Uso comprobado Y cobrado por adelantado en una única transacción
+    # atómica (reservar_uso), no al llegar "fin": si el cliente corta la
+    # conexión a mitad de respuesta, el generador de abajo no llega a
+    # devolverlo y se podía saltar la cuota abortando en bucle -- y
+    # fusionar comprobación+cobro cierra además la ventana de carrera entre
+    # verificar y registrar por separado. Si DeepSeek falla del todo
+    # (evento "error", sin "fin"), se devuelve el uso.
+    permitido, mensaje_error, _usados, _limite = reservar_uso(db, uid, "chat_temario", plan_actual)
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         exito = False
