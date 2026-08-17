@@ -552,6 +552,15 @@ body {
   margin-left: auto;
 }
 
+/* Nota de "Regenerar" agotado (17/08/2026, ver LIMITE_GENERACIONES_POR_
+   DOCUMENTO en documentos_pdf.py): mismo tono apagado que el resto de
+   texto secundario de la tarjeta, sin el peso visual de un botón -- no es
+   una acción, es una explicación de por qué no hay ninguna disponible. */
+.documento-card-limite-nota {
+  font-size: 0.78rem;
+  color: var(--age-ink-faint, var(--age-ink-soft, var(--age-ink)));
+}
+
 .documento-card-btn {
   padding: 6px 12px;
   border-radius: var(--age-radius-pill);

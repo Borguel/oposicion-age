@@ -30,6 +30,27 @@ from deepseek_utils import detectar_texto_legal
 # sobra 148 KB de margen sobre el límite real de 1 MiB.
 LIMITE_BYTES_TEXTO_DOCUMENTO = 900_000
 
+# Tope de generaciones de resumen/esquema por documento, INCLUIDA la primera
+# (17/08/2026, a petición del usuario tras la subida de precio de DeepSeek:
+# "limita la regeneración de resúmenes y esquemas a 2 por documento subido
+# que luego no pueda darle más a regenerar"). Resumen y esquema llevan cada
+# uno su propio contador independiente -- regenerar uno no consume cupo del
+# otro. Se comprueba en /resumir-pdf y /generar-esquema-desde-pdf
+# (blueprints/pdf_ia.py) ANTES de generar, y se incrementa en
+# marcar_generado, que corre tanto si se guarda desde el hilo de fondo del
+# streaming como desde las rutas /guardar-resumen-pdf//guardar-esquema-pdf
+# (ver guardar_resultado.py) -- un único punto de conteo para las dos vías.
+LIMITE_GENERACIONES_POR_DOCUMENTO = 2
+
+
+def limite_regeneraciones_alcanzado(documento, tipo):
+    """tipo: "resumen" o "esquema". True si ya se alcanzó
+    LIMITE_GENERACIONES_POR_DOCUMENTO para este documento y este tipo de
+    contenido (contando la primera generación). Documentos creados antes de
+    este campo existir devuelven 0 -- empiezan a contar desde ahora, no
+    pierden regeneraciones ya hechas en el pasado."""
+    return (documento or {}).get(f"generaciones_{tipo}", 0) >= LIMITE_GENERACIONES_POR_DOCUMENTO
+
 
 def _recortar_a_bytes_utf8(texto, limite_bytes):
     """Recorta `texto` para que no supere `limite_bytes` una vez codificado
@@ -78,6 +99,8 @@ def obtener_o_crear_documento(db, uid, texto, nombre_archivo, num_paginas):
         "carpeta": "",
         "tiene_resumen": False,
         "tiene_esquema": False,
+        "generaciones_resumen": 0,
+        "generaciones_esquema": 0,
         "num_tarjetas": 0,
         "num_tests": 0,
         "ultima_actividad": datetime.utcnow().isoformat(),
@@ -340,9 +363,13 @@ def marcar_generado(db, uid, documento_id, tipo, num_tarjetas_nuevas=0):
     ref = db.collection("usuarios").document(uid).collection("documentos").document(documento_id)
     actualizacion = {"ultima_actividad": datetime.utcnow().isoformat()}
     if tipo == "resumen_pdf":
+        from firebase_admin import firestore
         actualizacion["tiene_resumen"] = True
+        actualizacion["generaciones_resumen"] = firestore.Increment(1)
     elif tipo == "esquema_pdf":
+        from firebase_admin import firestore
         actualizacion["tiene_esquema"] = True
+        actualizacion["generaciones_esquema"] = firestore.Increment(1)
     elif tipo == "tarjetas_pdf":
         from firebase_admin import firestore
         actualizacion["num_tarjetas"] = firestore.Increment(num_tarjetas_nuevas)
@@ -481,6 +508,13 @@ def listar_documentos(db, uid):
             "tipo_contenido": datos.get("tipo_contenido", "general"),
             "tiene_resumen": datos.get("tiene_resumen", False),
             "tiene_esquema": datos.get("tiene_esquema", False),
+            # generaciones_resumen/generaciones_esquema (17/08/2026, ver
+            # LIMITE_GENERACIONES_POR_DOCUMENTO): cuentan la primera
+            # generación también, no solo las regeneraciones -- el frontend
+            # las compara contra ese límite para ocultar "Regenerar" cuando
+            # ya no queden.
+            "generaciones_resumen": datos.get("generaciones_resumen", 0),
+            "generaciones_esquema": datos.get("generaciones_esquema", 0),
             # progreso_resumen/progreso_esquema (10/08/2026): None si no hay
             # ninguna generación en curso -- ver actualizar_progreso_generacion
             # (y _progreso_atascado si lleva demasiado sin actualizarse).

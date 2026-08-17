@@ -1492,6 +1492,114 @@ class TestMisDocumentos:
         cuota = resp.get_json()["cuota_documentos_mes"]
         assert cuota == {"usados": 3, "limite": 20}
 
+    def test_expone_el_limite_de_generaciones_por_documento(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.get("/mis-documentos", headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.get_json()["limite_generaciones_contenido"] == 2
+
+
+class TestLimiteRegeneracionesResumenYEsquema:
+    """17/08/2026, a petición del usuario tras la subida de precio de
+    DeepSeek: como mucho 2 generaciones (incluida la primera) de resumen y
+    de esquema por documento, cada una con su propio contador."""
+
+    def test_tercera_generacion_de_resumen_devuelve_429(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "documentos", documento_sembrado), {
+            "texto": "Texto del documento de prueba.", "nombre_archivo": "doc.pdf",
+            "generaciones_resumen": 2,
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 429
+        assert "límite" in resp.get_json()["error"].lower()
+
+    def test_segunda_generacion_de_resumen_todavia_permitida(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "documentos", documento_sembrado), {
+            "texto": "Texto del documento de prueba.", "nombre_archivo": "doc.pdf",
+            "generaciones_resumen": 1,
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+
+    def test_tercera_generacion_de_esquema_devuelve_429(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "documentos", documento_sembrado), {
+            "texto": "Texto del documento de prueba.", "nombre_archivo": "doc.pdf",
+            "generaciones_esquema": 2,
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 429
+        assert "límite" in resp.get_json()["error"].lower()
+
+    def test_limite_de_resumen_agotado_no_bloquea_esquema_del_mismo_documento(self, client, db, documento_sembrado):
+        # Contadores independientes: agotar resumen no debe afectar a esquema.
+        db.sembrar(("usuarios", "u1", "documentos", documento_sembrado), {
+            "texto": "Texto del documento de prueba.", "nombre_archivo": "doc.pdf",
+            "generaciones_resumen": 2, "generaciones_esquema": 0,
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Esquema generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+
+    def test_generar_resumen_incrementa_tambien_el_cupo_mensual_banco_pdf(self, client, db, documento_sembrado):
+        # 17/08/2026: banco_pdf_mensual se amplió para contar también
+        # resumen/esquema, no solo banco de preguntas/tarjetas -- es el "20
+        # documentos al mes" anunciado en /planes.
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                resp.get_data(as_text=True)
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        from datetime import date
+        mes_actual = date.today().strftime("%Y-%m")
+        uso = db.leer(("usuarios", "u1"))["limites_uso"]["banco_pdf_mensual"]
+        assert uso == {"periodo": mes_actual, "contador": 1}
+
+    def test_cupo_mensual_banco_pdf_agotado_bloquea_tambien_resumen(self, client, db, documento_sembrado):
+        from datetime import date
+        mes_actual = date.today().strftime("%Y-%m")
+        db.sembrar(("usuarios", "u1"), {
+            "email": "u1@example.com",
+            "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}},
+            "limites_uso": {"banco_pdf_mensual": {"periodo": mes_actual, "contador": 20}},
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 429
+
 
 class TestSubirDocumento:
     """/subir-documento (05/08/2026): sube un PDF y lo deja guardado en la

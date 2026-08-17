@@ -9,6 +9,7 @@ from documentos_pdf import (
     actualizar_tipo_contenido, resolver_tipo_contenido,
     actualizar_progreso_generacion, limpiar_progreso_generacion,
     obtener_preguntas_previas, _LIMITE_DOCUMENTOS_LISTADOS,
+    marcar_generado, limite_regeneraciones_alcanzado, LIMITE_GENERACIONES_POR_DOCUMENTO,
 )
 
 
@@ -226,6 +227,55 @@ def test_listar_documentos_no_trae_mas_de_un_limite_razonable(db):
         db.sembrar(("usuarios", "u1", "documentos", f"d{i}"), {"titulo": f"Doc {i}", "ultima_actividad": "2026-01-01"})
     resultado = listar_documentos(db, "u1")
     assert len(resultado) == _LIMITE_DOCUMENTOS_LISTADOS
+
+
+def test_marcar_generado_incrementa_el_contador_de_generaciones(db):
+    db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Doc", "generaciones_resumen": 0, "generaciones_esquema": 0})
+    marcar_generado(db, "u1", "d1", "resumen_pdf")
+    doc = db.leer(("usuarios", "u1", "documentos", "d1"))
+    assert doc["generaciones_resumen"] == 1
+    assert doc["tiene_resumen"] is True
+    marcar_generado(db, "u1", "d1", "resumen_pdf")
+    assert db.leer(("usuarios", "u1", "documentos", "d1"))["generaciones_resumen"] == 2
+
+
+def test_marcar_generado_resumen_y_esquema_llevan_contadores_independientes(db):
+    db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Doc", "generaciones_resumen": 0, "generaciones_esquema": 0})
+    marcar_generado(db, "u1", "d1", "resumen_pdf")
+    marcar_generado(db, "u1", "d1", "resumen_pdf")
+    marcar_generado(db, "u1", "d1", "esquema_pdf")
+    doc = db.leer(("usuarios", "u1", "documentos", "d1"))
+    assert doc["generaciones_resumen"] == 2
+    assert doc["generaciones_esquema"] == 1
+
+
+def test_limite_regeneraciones_alcanzado_con_el_tope_exacto():
+    assert limite_regeneraciones_alcanzado({"generaciones_resumen": LIMITE_GENERACIONES_POR_DOCUMENTO}, "resumen") is True
+    assert limite_regeneraciones_alcanzado({"generaciones_resumen": LIMITE_GENERACIONES_POR_DOCUMENTO - 1}, "resumen") is False
+
+
+def test_limite_regeneraciones_alcanzado_documento_sin_el_campo_no_esta_agotado():
+    # Documentos creados antes de que este campo existiera: empiezan a
+    # contar desde ahora, no pierden regeneraciones ya hechas en el pasado.
+    assert limite_regeneraciones_alcanzado({}, "resumen") is False
+    assert limite_regeneraciones_alcanzado(None, "esquema") is False
+
+
+def test_listar_documentos_expone_los_contadores_de_generaciones(db):
+    db.sembrar(("usuarios", "u1", "documentos", "d1"), {
+        "titulo": "Doc", "ultima_actividad": "2026-01-01",
+        "generaciones_resumen": 2, "generaciones_esquema": 1,
+    })
+    resultado = listar_documentos(db, "u1")
+    assert resultado[0]["generaciones_resumen"] == 2
+    assert resultado[0]["generaciones_esquema"] == 1
+
+
+def test_listar_documentos_contadores_de_generaciones_a_cero_por_defecto(db):
+    db.sembrar(("usuarios", "u1", "documentos", "d1"), {"titulo": "Doc viejo", "ultima_actividad": "2026-01-01"})
+    resultado = listar_documentos(db, "u1")
+    assert resultado[0]["generaciones_resumen"] == 0
+    assert resultado[0]["generaciones_esquema"] == 0
 
 
 def test_obtener_preguntas_previas_acota_la_consulta_no_solo_la_salida(db):

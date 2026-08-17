@@ -100,6 +100,11 @@ setInterval(() => {
 
 let documentos = [];
 let carpetas = [];
+// limiteGeneracionesContenido (17/08/2026, ver LIMITE_GENERACIONES_POR_
+// DOCUMENTO en documentos_pdf.py): 2 es el valor por defecto real del
+// backend, solo para el primer pintado antes de que llegue la respuesta de
+// /mis-documentos -- se sobrescribe con el valor real en cuanto llega.
+let limiteGeneracionesContenido = 2;
 let carpetaActual = null; // null = viendo el listado de carpetas
 // esUsuarioAdmin (10/08/2026, a petición del usuario: "quiero un botón
 // para parar una generación mía en curso"): se resuelve UNA vez al cargar
@@ -256,7 +261,7 @@ function mostrarToastDeshacer({ mensaje, alDeshacer, alConfirmar, duracionMs = 6
 function filaContenido({
   label, iconoHtml, existe, cantidad, urlVer, urlGenerar, urlAleatorias, textoGenerar, urlContinuar,
   textoGenerarDeNuevo = "Generar más", generando = false, progreso = null, error = null,
-  documentoId = null, tipoInline = null,
+  documentoId = null, tipoInline = null, limiteAlcanzado = false,
 }) {
   // botonGenerar (10/08/2026, a petición del usuario: "que haga lo mismo
   // que banco de preguntas, no te lleve a ningún sitio"): con tipoInline
@@ -305,7 +310,15 @@ function filaContenido({
     if (urlAleatorias) {
       acciones.push(`<a class="documento-card-btn" href="${urlAleatorias}">10 aleatorias</a>`);
     }
-    acciones.push(botonGenerar(textoGenerarDeNuevo, ""));
+    // limiteAlcanzado (17/08/2026, ver LIMITE_GENERACIONES_POR_DOCUMENTO en
+    // documentos_pdf.py): sin esto, "Regenerar" seguiría pulsándose y el
+    // backend lo rechazaría con un 429 -- mejor no ofrecerlo directamente
+    // en cuanto se agota, con una nota que explique por qué.
+    if (tipoInline && limiteAlcanzado) {
+      acciones.push(`<span class="documento-card-limite-nota">Límite de regeneraciones alcanzado</span>`);
+    } else {
+      acciones.push(botonGenerar(textoGenerarDeNuevo, ""));
+    }
   } else {
     acciones.push(botonGenerar(textoGenerar, " orange"));
   }
@@ -699,6 +712,12 @@ async function iniciarResumenOEsquema(documentoId, tipo) {
             doc[`progreso_${tipo}`] = null;
             if (evento[tipo]) {
               doc[tipo === "resumen" ? "tiene_resumen" : "tiene_esquema"] = true;
+              // generaciones_resumen/generaciones_esquema (17/08/2026): se
+              // incrementa aquí en local para que "Regenerar" desaparezca
+              // de inmediato al agotar el límite, sin esperar a una
+              // recarga completa de /mis-documentos (ver limiteAlcanzado
+              // en filaContenido).
+              doc[`generaciones_${tipo}`] = (doc[`generaciones_${tipo}`] || 0) + 1;
               doc[`error_${tipo}`] = null;
             } else {
               doc[`error_${tipo}`] = { mensaje: evento.error || "Error desconocido" };
@@ -772,7 +791,8 @@ function tarjetaDocumento(doc, modoCarpeta) {
       error: doc.error_resumen,
       // documentoId/tipoInline (10/08/2026): genera en el sitio, sin
       // navegar -- ver botonGenerar/iniciarResumenOEsquema.
-      documentoId: doc.id, tipoInline: "resumen"
+      documentoId: doc.id, tipoInline: "resumen",
+      limiteAlcanzado: (doc.generaciones_resumen || 0) >= limiteGeneracionesContenido
     }),
     filaContenido({
       label: "Esquema", iconoHtml: icono("esquema", 18), existe: doc.tiene_esquema,
@@ -782,7 +802,8 @@ function tarjetaDocumento(doc, modoCarpeta) {
       generando: esperandoGeneracionDe(doc, "esquema"),
       progreso: doc.progreso_esquema,
       error: doc.error_esquema,
-      documentoId: doc.id, tipoInline: "esquema"
+      documentoId: doc.id, tipoInline: "esquema",
+      limiteAlcanzado: (doc.generaciones_esquema || 0) >= limiteGeneracionesContenido
     }),
     filaContenido({
       label: "Tarjetas", iconoHtml: icono("tarjeta", 18), existe: doc.num_tarjetas > 0, cantidad: doc.num_tarjetas,
@@ -1239,6 +1260,7 @@ async function recargarDocumentos() {
   documentos = datos.documentos || [];
   carpetas = datos.carpetas || [];
   pintarCuotaDocumentosMes(datos.cuota_documentos_mes);
+  if (datos.limite_generaciones_contenido) limiteGeneracionesContenido = datos.limite_generaciones_contenido;
   if (documentos.length > 0) {
     document.getElementById("documentos-vacio").classList.add("hidden");
     document.getElementById("documentos-contenido").classList.remove("hidden");
@@ -1508,6 +1530,7 @@ async function sondearBancosEnGeneracion() {
     if (res.ok) {
       const datos = await res.json();
       pintarCuotaDocumentosMes(datos.cuota_documentos_mes);
+      if (datos.limite_generaciones_contenido) limiteGeneracionesContenido = datos.limite_generaciones_contenido;
       const porId = new Map((datos.documentos || []).map((d) => [d.id, d]));
       documentos.forEach((doc) => {
         const actualizado = porId.get(doc.id);
@@ -1609,6 +1632,7 @@ async function cargarDocumentos() {
     documentos = datos.documentos || [];
     carpetas = datos.carpetas || [];
     pintarCuotaDocumentosMes(datos.cuota_documentos_mes);
+    if (datos.limite_generaciones_contenido) limiteGeneracionesContenido = datos.limite_generaciones_contenido;
     // Se inicializa siempre, incluso con la biblioteca vacía: el botón
     // "Subir documento" del estado vacío usa el mismo modal que el resto.
     inicializarEventos();
