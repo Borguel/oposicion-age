@@ -1,7 +1,7 @@
 import { idToken, esperarUsuario } from "/assets/auth.js";
 import { obtenerPlan } from "/assets/plan.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
-import { OPOSICIONES, obtenerOposicionActual, establecerOposicionActual, activarOposicion } from "/assets/oposicion.js";
+import { OPOSICIONES, establecerOposicionActual, activarOposicion } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 
@@ -43,34 +43,55 @@ function mostrarMensajeCheckout() {
   }
 }
 
-// El selector de oposición ya NO es un desplegable libre por defecto -- la
-// compra queda ligada a la oposición que el usuario tiene en contexto
-// (obtenerOposicionActual(), la misma que usa el resto de la web, ver
-// assets/oposicion.js), mostrada como texto fijo. El <select> real sigue
-// existiendo (oculto) para el caso de quien llega aquí sin haber elegido
-// ninguna oposición todavía (o quiere comprar para otra distinta): se
-// revela con el enlace "Cambiar" en vez de estar siempre a la vista, que
-// era lo que resultaba confuso con las 3 oposiciones sueltas por defecto.
+// El selector de oposición NO viene preseleccionado por defecto (17/08/2026,
+// a petición explícita del usuario: "que no venga seleccionada ninguna
+// oposición... si le da a suscribirse que le salga un aviso de que tiene
+// que elegirla primero") -- a diferencia del resto de la web, /planes ya no
+// asume la oposición "actual" (obtenerOposicionActual()) como punto de
+// partida, precisamente porque aquí se decide en qué oposición gastar
+// dinero de verdad, y no conviene que quede implícito. Mientras no hay
+// ninguna elegida se muestra el <select> directamente, con una opción
+// vacía de partida; en cuanto se elige una, se colapsa al texto fijo +
+// enlace "Cambiar" de siempre.
 function actualizarEtiquetaOposicion() {
-  const actual = OPOSICIONES.find((o) => o.id === selectorOposicion.value);
-  document.getElementById("selector-oposicion-actual").textContent = actual ? actual.nombre : selectorOposicion.value;
+  const valor = selectorOposicion.value;
+  const textoFijo = document.getElementById("selector-oposicion-actual");
+  const botonCambiar = document.getElementById("selector-oposicion-cambiar");
+  if (!valor) {
+    textoFijo.textContent = "";
+    textoFijo.style.display = "none";
+    botonCambiar.style.display = "none";
+    selectorOposicion.style.display = "";
+    return;
+  }
+  const actual = OPOSICIONES.find((o) => o.id === valor);
+  textoFijo.textContent = actual ? actual.nombre : valor;
+  textoFijo.style.display = "";
+  botonCambiar.style.display = "";
+  selectorOposicion.style.display = "none";
 }
 
 function inicializarSelectorOposicion() {
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Selecciona tu oposición";
+  placeholder.disabled = true;
+  selectorOposicion.appendChild(placeholder);
   OPOSICIONES.forEach((o) => {
     const opcion = document.createElement("option");
     opcion.value = o.id;
     opcion.textContent = o.nombre;
     selectorOposicion.appendChild(opcion);
   });
+  // Solo se respeta un ?oposicion= explícito en la URL (p. ej. un enlace
+  // "Mejorar de plan" desde Zona Opositor, que sí sabe para cuál) -- nunca
+  // obtenerOposicionActual() como relleno automático.
   const params = new URLSearchParams(window.location.search);
   const oposicionUrl = params.get("oposicion");
-  selectorOposicion.value = oposicionUrl && OPOSICIONES.some((o) => o.id === oposicionUrl)
-    ? oposicionUrl
-    : obtenerOposicionActual();
+  selectorOposicion.value = oposicionUrl && OPOSICIONES.some((o) => o.id === oposicionUrl) ? oposicionUrl : "";
   actualizarEtiquetaOposicion();
   selectorOposicion.addEventListener("change", () => {
-    establecerOposicionActual(selectorOposicion.value);
+    if (selectorOposicion.value) establecerOposicionActual(selectorOposicion.value);
     actualizarEtiquetaOposicion();
     marcarPlanActual();
   });
@@ -140,6 +161,14 @@ async function marcarPlanActual() {
     mostrarCtaPrueba("invitado");
     return;
   }
+  if (!oposicion) {
+    // Sin oposición elegida todavía no se puede saber ni el plan actual ni
+    // la prueba gratuita de NINGUNA en concreto -- se oculta el aviso
+    // hasta que se elija (el aviso real llega al pulsar "Elegir
+    // Básico/Premium", ver más abajo).
+    mostrarCtaPrueba("ninguno");
+    return;
+  }
   establecerOposicionActual(oposicion);
   const perfil = await obtenerPlan(true, oposicion);
   const nombreOposicion = (OPOSICIONES.find((o) => o.id === oposicion) || {}).nombre || oposicion;
@@ -156,6 +185,12 @@ document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
   boton.addEventListener("click", async () => {
     const plan = boton.dataset.planBtn;
     const oposicion = selectorOposicion.value;
+    if (!oposicion) {
+      mostrarErrorGlobal("Elige primero la oposición para la que quieres estudiar.");
+      selectorOposicion.style.display = "";
+      selectorOposicion.focus();
+      return;
+    }
     const usuario = await esperarUsuario();
     if (!usuario) {
       window.location.href = "/login/?next=/planes/";

@@ -9,7 +9,7 @@ import { BACKEND_URL } from "/assets/firebase-config.js";
 export const OPOSICIONES = [
   { id: "AGE", nombre: "Cuerpo General Administrativo (AGE)", siglas: "AGE" },
   { id: "GACE", nombre: "Cuerpo de Gestión (GACE)", siglas: "GACE" },
-  { id: "AUXILIAR", nombre: "Cuerpo General Auxiliar (Auxiliar)", siglas: "Auxiliar" }
+  { id: "AUXILIAR", nombre: "Auxiliar Administrativo", siglas: "Auxiliar" }
 ];
 
 // Oposiciones dadas de alta pero NO ofrecidas a todo el mundo (grupo
