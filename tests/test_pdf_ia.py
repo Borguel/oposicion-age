@@ -1565,10 +1565,11 @@ class TestLimiteRegeneracionesResumenYEsquema:
             parche.stop()
         assert resp.status_code == 200
 
-    def test_generar_resumen_incrementa_tambien_el_cupo_mensual_banco_pdf(self, client, db, documento_sembrado):
-        # 17/08/2026: banco_pdf_mensual se amplió para contar también
-        # resumen/esquema, no solo banco de preguntas/tarjetas -- es el "20
-        # documentos al mes" anunciado en /planes.
+    def test_generar_resumen_sobre_documento_existente_no_toca_el_cupo_mensual(self, client, db, documento_sembrado):
+        # 17/08/2026, a petición explícita del usuario: banco_pdf_mensual es
+        # un cupo de SUBIDAS, no de usos de herramienta -- generar resumen
+        # sobre un documento que YA estaba en la biblioteca no lo consume,
+        # ni siquiera lo crea en el documento del usuario.
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
@@ -1579,12 +1580,10 @@ class TestLimiteRegeneracionesResumenYEsquema:
         finally:
             parche.stop()
         assert resp.status_code == 200
-        from datetime import date
-        mes_actual = date.today().strftime("%Y-%m")
-        uso = db.leer(("usuarios", "u1"))["limites_uso"]["banco_pdf_mensual"]
-        assert uso == {"periodo": mes_actual, "contador": 1}
+        assert "banco_pdf_mensual" not in db.leer(("usuarios", "u1")).get("limites_uso", {})
 
-    def test_cupo_mensual_banco_pdf_agotado_bloquea_tambien_resumen(self, client, db, documento_sembrado):
+    def test_cupo_mensual_de_subidas_agotado_no_bloquea_regenerar_sobre_documento_existente(
+            self, client, db, documento_sembrado):
         from datetime import date
         mes_actual = date.today().strftime("%Y-%m")
         db.sembrar(("usuarios", "u1"), {
@@ -1594,11 +1593,13 @@ class TestLimiteRegeneracionesResumenYEsquema:
         })
         parche = _con_sesion(client)
         try:
-            resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
-                                headers={"Authorization": "Bearer x"})
+            with patch("blueprints.pdf_ia.generar_documento_largo_por_partes", return_value="# Resumen generado"), \
+                 patch.dict("os.environ", {"DEEPSEEK_API_KEY": "sk-test"}):
+                resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
-        assert resp.status_code == 429
+        assert resp.status_code == 200
 
 
 class TestSubirDocumento:
@@ -1661,6 +1662,79 @@ class TestSubirDocumento:
         assert limites == {}
 
 
+class _FakePagina:
+    def __init__(self, texto):
+        self._texto = texto
+
+    def extract_text(self):
+        return self._texto
+
+
+class _FakePdfReader:
+    """Sustituye a pypdf.PdfReader en los tests de subida: evita tener que
+    construir un PDF binario real solo para probar el cupo mensual de
+    subidas -- el texto pasado es el que decide si dos "PDF" cuentan como
+    el mismo documento (mismo hash) o como dos distintos."""
+    def __init__(self, _archivo, texto="Texto de un documento de prueba distinto cada vez."):
+        self.pages = [_FakePagina(texto)]
+
+
+class TestCupoMensualDeSubidas:
+    """17/08/2026, a petición explícita del usuario: banco_pdf_mensual
+    limita cuántos documentos NUEVOS se suben al mes (20 en Premium, el
+    número anunciado en /planes) -- no cuántas veces se usa una
+    herramienta sobre un documento ya subido (eso ya lo cubre
+    TestLimiteRegeneracionesResumenYEsquema y los tests de banco de
+    preguntas/tarjetas de más arriba)."""
+
+    def _subir(self, client, texto="Texto de un documento de prueba distinto cada vez."):
+        from io import BytesIO
+        with patch("blueprints.pdf_ia.PdfReader", lambda archivo: _FakePdfReader(archivo, texto)):
+            return client.post(
+                "/subir-documento", data={"pdf": (BytesIO(b"contenido binario irrelevante"), "nuevo.pdf")},
+                headers={"Authorization": "Bearer x"}, content_type="multipart/form-data",
+            )
+
+    def test_subir_pdf_nuevo_consume_el_cupo_mensual_de_subidas(self, client, db):
+        sembrar_usuario_activo(db, "u1", plan="premium")
+        parche = _con_sesion(client)
+        try:
+            resp = self._subir(client)
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        from datetime import date
+        mes_actual = date.today().strftime("%Y-%m")
+        uso = db.leer(("usuarios", "u1"))["limites_uso"]["banco_pdf_mensual"]
+        assert uso == {"periodo": mes_actual, "contador": 1}
+
+    def test_subir_el_mismo_pdf_dos_veces_no_duplica_el_cupo(self, client, db):
+        # Mismo texto extraído = mismo hash = mismo documento reutilizado
+        # (ver buscar_documento_por_texto) -- la segunda "subida" no es una
+        # subida nueva de verdad.
+        sembrar_usuario_activo(db, "u1", plan="premium")
+        parche = _con_sesion(client)
+        try:
+            self._subir(client, texto="Mismo texto exacto las dos veces.")
+            resp2 = self._subir(client, texto="Mismo texto exacto las dos veces.")
+        finally:
+            parche.stop()
+        assert resp2.status_code == 200
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["banco_pdf_mensual"]["contador"] == 1
+
+    def test_cupo_mensual_de_subidas_agotado_bloquea_subir_un_pdf_nuevo(self, client, db):
+        from datetime import date
+        mes_actual = date.today().strftime("%Y-%m")
+        sembrar_usuario_activo(db, "u1", plan="premium",
+                                limites_uso={"banco_pdf_mensual": {"periodo": mes_actual, "contador": 20}})
+        parche = _con_sesion(client)
+        try:
+            resp = self._subir(client, texto="Un documento que este usuario nunca había subido.")
+        finally:
+            parche.stop()
+        assert resp.status_code == 429
+
+
 class TestBancoPreguntasYTarjetas:
     """Rutas del banco pre-generado (03/08/2026): generan en segundo plano
     hasta el tope del documento y persisten cada item aceptado de forma
@@ -1712,10 +1786,11 @@ class TestBancoPreguntasYTarjetas:
         assert {p["pregunta"] for p in banco["preguntas"]} == {"¿P1?", "¿P2?"}
         limites = db.leer(("usuarios", "u1"))["limites_uso"]
         assert limites["pdf_ia"]["contador"] == 1
-        # Tope mensual de documentos con banco generado (04/08/2026): se
-        # cobra en paralelo al cupo diario "pdf_ia", ver
-        # TIPOS_CUOTA_BANCO_PDF en blueprints/pdf_ia.py.
-        assert limites["banco_pdf_mensual"]["contador"] == 1
+        # 17/08/2026: banco_pdf_mensual es un cupo de SUBIDAS, no de usos de
+        # herramienta -- generar un banco sobre un documento YA subido
+        # (documento_sembrado, sembrado directo en Firestore, no vía
+        # /subir-documento) no lo toca en absoluto, ni siquiera lo crea.
+        assert "banco_pdf_mensual" not in limites
 
     def test_generar_banco_preguntas_sin_resultados_marca_error_y_devuelve_uso(
             self, client, db, documento_sembrado):
@@ -1735,28 +1810,34 @@ class TestBancoPreguntasYTarjetas:
         assert banco["estado"] == "error"
         limites = db.leer(("usuarios", "u1"))["limites_uso"]
         assert limites["pdf_ia"]["contador"] == 0
-        assert limites["banco_pdf_mensual"]["contador"] == 0
+        assert "banco_pdf_mensual" not in limites
 
-    def test_generar_banco_preguntas_respeta_tope_mensual_de_documentos(
+    def test_generar_banco_preguntas_sobre_documento_existente_no_gasta_cupo_de_subidas(
             self, client, db, documento_sembrado):
-        # Límite de negocio (04/08/2026): máximo 20 documentos con banco
-        # generado al mes en Premium, como red de seguridad de margen --
-        # ver limites_uso.LIMITES["banco_pdf_mensual"]. Se agota el cupo a
-        # mano y se comprueba que bloquea con 429 SIN mensaje de coste.
+        # 17/08/2026, a petición explícita del usuario ("lo que quiero
+        # limitar es la subida del documento... el usuario con cada
+        # documento puede generar banco de tarjetas, generar banco de
+        # test, resumen y esquema"): agotar el cupo mensual de SUBIDAS no
+        # debe bloquear generar un banco sobre un documento que YA estaba
+        # en la biblioteca -- solo debe bloquear subir uno nuevo (ver
+        # TestSubirDocumento/TestCupoMensualDeSubidas más abajo).
         from datetime import date
         mes_actual = date.today().strftime("%Y-%m")
         sembrar_usuario_activo(db, "u1", plan="premium",
                                 limites_uso={"banco_pdf_mensual": {"periodo": mes_actual, "contador": 20}})
         parche = _con_sesion(client)
         try:
-            resp = client.post("/generar-banco-preguntas-desde-pdf",
-                                data={"documento_id": documento_sembrado},
-                                headers={"Authorization": "Bearer x"})
+            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", return_value=[
+                {"pregunta": "¿P1?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "porque sí"},
+            ]):
+                resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
         finally:
             parche.stop()
-        assert resp.status_code == 429
-        assert "coste" not in resp.get_json()["error"].lower()
-        assert "€" not in resp.get_json()["error"] and "$" not in resp.get_json()["error"]
+        assert resp.status_code == 200
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["banco_pdf_mensual"]["contador"] == 20
 
     def test_generar_banco_preguntas_documento_inexistente_da_404(self, client, db):
         sembrar_usuario_activo(db, "u1", plan="premium")

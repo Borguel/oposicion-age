@@ -24,7 +24,8 @@ from documentos_pdf import (
     obtener_tests_en_progreso_por_documento, eliminar_documento,
     iniciar_banco, anadir_al_banco, finalizar_banco, obtener_banco,
     resolver_tipo_contenido, actualizar_progreso_generacion, limpiar_progreso_generacion,
-    marcar_error_generacion, limpiar_error_generacion, obtener_o_crear_documento,
+    marcar_error_generacion, limpiar_error_generacion,
+    buscar_documento_por_texto, crear_documento,
     limite_regeneraciones_alcanzado, LIMITE_GENERACIONES_POR_DOCUMENTO,
 )
 from guardar_resultado import guardar_resultado_en_firestore
@@ -47,15 +48,6 @@ logger = logging.getLogger(__name__)
 bp = Blueprint("pdf_ia", __name__)
 
 
-# Cupos que se comprueban y cobran juntos al generar CUALQUIER contenido de
-# IA desde un documento (resumen, esquema, banco de preguntas, banco de
-# tarjetas): el diario "pdf_ia" (compartido con el resto de herramientas de
-# PDF) y el mensual "banco_pdf_mensual" (tope de documentos procesados al
-# mes, ver limites_uso.py -- ampliado el 17/08/2026 de solo banco de
-# preguntas/tarjetas a las cuatro herramientas), mismo patrón que
-# TIPOS_CUOTA_TEST_PERSONALIZADO en blueprints/test_ia.py.
-TIPOS_CUOTA_DOCUMENTO_PDF = ("pdf_ia", "banco_pdf_mensual")
-
 # Cláusula de fidelidad compartida por los prompts de resumen/esquema (los
 # 3 modos: narrativo general, narrativo legal-mapa-de-artículos, esquema) --
 # factorizada aquí el 05/08/2026 al añadir el modo legal para no
@@ -73,9 +65,12 @@ _CLAUSULA_FIDELIDAD_DOCUMENTO = (
 
 
 def _resolver_texto_documento(plan_actual):
-    """Punto de entrada común de las 4 rutas de generación desde PDF: o bien
-    viene un 'documento_id' (contenido ya subido antes, de la biblioteca de
-    "Mis documentos"), o bien viene un archivo 'pdf' nuevo. Devuelve
+    """Punto de entrada común de TODAS las rutas que trabajan sobre un PDF
+    del usuario: o bien viene un 'documento_id' (contenido ya subido antes,
+    de la biblioteca de "Mis documentos"), o bien viene un archivo 'pdf'
+    nuevo -- en ese caso, y solo si resulta ser un documento que este
+    usuario nunca había subido, se comprueba y se cobra el cupo mensual de
+    SUBIDAS (banco_pdf_mensual, ver el comentario largo más abajo). Devuelve
     (texto, documento_id, nombre_archivo, respuesta_error_o_None); si el
     último elemento no es None, la ruta debe devolverlo tal cual."""
     documento_id = request.form.get("documento_id")
@@ -110,7 +105,21 @@ def _resolver_texto_documento(plan_actual):
         return None, None, None, (jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400)
     if not text.strip():
         return None, None, None, (jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400)
-    documento_id, documento = obtener_o_crear_documento(db, g.uid, text, pdf_file.filename, numero_paginas)
+    # Cupo mensual de SUBIDAS (17/08/2026, ver banco_pdf_mensual en
+    # limites_uso.py, a petición explícita del usuario: "lo que quiero
+    # limitar es la subida del documento, no cada herramienta que uses
+    # sobre él"): se comprueba SOLO si este texto es realmente nuevo para
+    # este usuario (buscar_documento_por_texto no encuentra nada) -- si el
+    # usuario ya lo había subido antes (mismo hash), reutilizar ese
+    # documento en cualquier herramienta NUNCA cuenta como una subida
+    # nueva, por muchas veces que se use.
+    documento_id, documento = buscar_documento_por_texto(db, g.uid, text)
+    if not documento_id:
+        permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, plan_actual, "banco_pdf_mensual")
+        if not permitido:
+            return None, None, None, (jsonify({"error": mensaje_error}), 429)
+        documento_id, documento = crear_documento(db, g.uid, text, pdf_file.filename, numero_paginas)
+        registrar_uso(db, g.uid, "banco_pdf_mensual", plan_actual)
     return text, documento_id, pdf_file.filename, None
 
 
@@ -242,10 +251,9 @@ def resumir_pdf():
     # En streaming (SSE, mismo patrón que /generar-test-desde-pdf) para dar
     # progreso real por fragmento en vez de los mensajes rotativos
     # cosméticos que tenía antes.
-    for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-        permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, tipo_cuota)
-        if not permitido:
-            return jsonify({"error": mensaje_error}), 429
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
     if error:
         return error
@@ -342,8 +350,7 @@ def resumir_pdf():
     # Uso cobrado por adelantado (no al llegar "fin"): el hilo de fondo sigue
     # generando y gastando en DeepSeek aunque el cliente corte la conexión
     # SSE (mismo motivo que /generar-test-desde-pdf).
-    for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-        registrar_uso(db, uid, tipo_cuota, plan_actual)
+    registrar_uso(db, uid, "pdf_ia", plan_actual)
 
     def generar():
         eventos = queue.Queue()
@@ -444,8 +451,7 @@ def resumir_pdf():
                 logger.exception("Error en /resumir-pdf")
                 resultado = {"error": "Error al procesar el PDF."}
             if not resultado.get("resumen"):
-                for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-                    devolver_uso(db, uid, tipo_cuota, plan_actual)
+                devolver_uso(db, uid, "pdf_ia", plan_actual)
                 # Fallo visible en "Mis documentos" (10/08/2026) -- sin
                 # esto, un intento de regenerar que falla es indistinguible
                 # de uno que nunca se pidió: el resumen anterior (si lo
@@ -507,10 +513,9 @@ def resumir_documento():
 def generar_esquema_desde_pdf():
     # En streaming (SSE, mismo patrón que /generar-test-desde-pdf/
     # /resumir-pdf) para dar progreso real por fragmento.
-    for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-        permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, tipo_cuota)
-        if not permitido:
-            return jsonify({"error": mensaje_error}), 429
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
     if error:
         return error
@@ -613,8 +618,7 @@ def generar_esquema_desde_pdf():
 
     uid = g.uid
     plan_actual = g.plan_actual
-    for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-        registrar_uso(db, uid, tipo_cuota, plan_actual)
+    registrar_uso(db, uid, "pdf_ia", plan_actual)
 
     def generar():
         eventos = queue.Queue()
@@ -703,8 +707,7 @@ def generar_esquema_desde_pdf():
                 logger.exception("Error en /generar-esquema-desde-pdf")
                 resultado = {"error": "Error al procesar el PDF."}
             if not resultado.get("esquema"):
-                for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-                    devolver_uso(db, uid, tipo_cuota, plan_actual)
+                devolver_uso(db, uid, "pdf_ia", plan_actual)
                 if documento_id:
                     try:
                         marcar_error_generacion(db, uid, documento_id, "esquema", resultado.get("error", "Error desconocido"))
@@ -1042,10 +1045,9 @@ def generar_banco_preguntas_desde_pdf():
     # lo generado -- si luego quiere repetir con menos, ya puede elegir
     # "Test de 10" desde "Mis documentos" sobre el mismo banco, sin volver
     # a gastar en IA.
-    for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-        permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, tipo_cuota)
-        if not permitido:
-            return jsonify({"error": mensaje_error}), 429
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
     if error:
         return error
@@ -1088,8 +1090,7 @@ def generar_banco_preguntas_desde_pdf():
 
     uid = g.uid
     plan_actual = g.plan_actual
-    for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-        registrar_uso(db, uid, tipo_cuota, plan_actual)
+    registrar_uso(db, uid, "pdf_ia", plan_actual)
     iniciar_banco(db, uid, documento_id, "preguntas", TOPE_BANCO_PREGUNTAS, nombre_archivo)
 
     def generar():
@@ -1136,8 +1137,7 @@ def generar_banco_preguntas_desde_pdf():
                 resultado = {"error": "Error al generar el banco de preguntas."}
             finalizar_banco(db, uid, documento_id, "preguntas", estado=estado_final, mensaje_error=resultado.get("error"))
             if estado_final == "error":
-                for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-                    devolver_uso(db, uid, tipo_cuota, plan_actual)
+                devolver_uso(db, uid, "pdf_ia", plan_actual)
             acumulador_tokens.volcar_directo(db, uid)
             if documento_id:
                 generacion_control.desregistrar(uid, documento_id, "banco_preguntas")
@@ -1176,10 +1176,9 @@ def generar_banco_tarjetas_desde_pdf():
     # Ruta de entrada única: ver el comentario largo en
     # generar_banco_preguntas_desde_pdf -- mismo motivo y mismo patrón,
     # aplicado a tarjetas.
-    for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-        permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, tipo_cuota)
-        if not permitido:
-            return jsonify({"error": mensaje_error}), 429
+    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "pdf_ia")
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
     text, documento_id, nombre_archivo, error = _resolver_texto_documento(g.plan_actual)
     if error:
         return error
@@ -1192,8 +1191,7 @@ def generar_banco_tarjetas_desde_pdf():
         text = text[:max_length]
     uid = g.uid
     plan_actual = g.plan_actual
-    for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-        registrar_uso(db, uid, tipo_cuota, plan_actual)
+    registrar_uso(db, uid, "pdf_ia", plan_actual)
     iniciar_banco(db, uid, documento_id, "tarjetas", TOPE_BANCO_TARJETAS, nombre_archivo)
 
     def generar():
@@ -1232,8 +1230,7 @@ def generar_banco_tarjetas_desde_pdf():
                 resultado = {"error": "Error al generar el banco de tarjetas."}
             finalizar_banco(db, uid, documento_id, "tarjetas", estado=estado_final, mensaje_error=resultado.get("error"))
             if estado_final == "error":
-                for tipo_cuota in TIPOS_CUOTA_DOCUMENTO_PDF:
-                    devolver_uso(db, uid, tipo_cuota, plan_actual)
+                devolver_uso(db, uid, "pdf_ia", plan_actual)
             acumulador_tokens.volcar_directo(db, uid)
             if documento_id:
                 generacion_control.desregistrar(uid, documento_id, "banco_tarjetas")
@@ -1608,11 +1605,12 @@ def mis_documentos():
     tests_en_progreso = obtener_tests_en_progreso_por_documento(db, g.uid)
     for documento in documentos:
         documento["test_en_progreso"] = tests_en_progreso.get(documento["id"])
-    # Cuota mensual de documentos con banco generado (ver limites_uso.py) --
-    # se expone aquí para que el frontend pueda avisar de forma discreta
-    # ANTES de que se agote (05/08/2026), en vez de que el usuario se entere
-    # solo cuando le sale el 429. Sin cifras de coste, solo el conteo de
-    # documentos, igual que el resto de límites que sí se enseñan al usuario.
+    # Cuota mensual de documentos NUEVOS SUBIDOS (ver limites_uso.py,
+    # "banco_pdf_mensual") -- se expone aquí para que el frontend pueda
+    # avisar de forma discreta ANTES de que se agote (05/08/2026), en vez
+    # de que el usuario se entere solo cuando le sale el 429. Sin cifras de
+    # coste, solo el conteo de documentos, igual que el resto de límites
+    # que sí se enseñan al usuario.
     _permitido, _mensaje, usados, limite = verificar_limite_uso(db, g.uid, g.plan_actual, "banco_pdf_mensual")
     return jsonify({
         "documentos": documentos,

@@ -78,17 +78,30 @@ def extraer_titulo(texto, nombre_archivo):
     return limpio[:1].upper() + limpio[1:] if limpio else "Documento sin título"
 
 
-def obtener_o_crear_documento(db, uid, texto, nombre_archivo, num_paginas):
-    """Si el usuario ya había subido este mismo documento antes (mismo
-    texto), reutiliza esa entrada en vez de crear una duplicada -- así, si
-    sube el mismo PDF a dos herramientas distintas, todo queda agrupado bajo
-    un único documento en su biblioteca."""
+def buscar_documento_por_texto(db, uid, texto):
+    """Busca un documento YA subido con este mismo texto exacto (mismo
+    hash), SIN crear nada si no existe -- lectura pura. Devuelve
+    (documento_id, documento) o (None, None). Separado de crear_documento
+    (17/08/2026) para que blueprints/pdf_ia._resolver_texto_documento
+    pueda comprobar el cupo mensual de SUBIDAS (ver banco_pdf_mensual en
+    limites_uso.py) antes de decidir si esta subida cuenta como una nueva
+    o reutiliza una ya existente -- si se creara siempre en una sola
+    función, un intento bloqueado por cupo ya habría escrito el documento
+    en Firestore antes de poder rechazarlo."""
     hash_texto = _hash_texto(texto)
     docs_ref = db.collection("usuarios").document(uid).collection("documentos")
     existentes = list(docs_ref.where("hash_texto", "==", hash_texto).limit(1).stream())
     if existentes:
         return existentes[0].id, existentes[0].to_dict()
+    return None, None
 
+
+def crear_documento(db, uid, texto, nombre_archivo, num_paginas):
+    """Crea una entrada NUEVA en la biblioteca. Llamar solo después de
+    comprobar con buscar_documento_por_texto que no existe ya -- si no, se
+    duplicaría la entrada del mismo documento en vez de reutilizarla."""
+    hash_texto = _hash_texto(texto)
+    docs_ref = db.collection("usuarios").document(uid).collection("documentos")
     datos = {
         "titulo": extraer_titulo(texto, nombre_archivo),
         "nombre_archivo": nombre_archivo,
@@ -114,16 +127,31 @@ def obtener_o_crear_documento(db, uid, texto, nombre_archivo, num_paginas):
     }
     nuevo_ref = docs_ref.document()
     nuevo_ref.set(datos)
-    # Se suma aquí, no en las rutas /guardar-*-pdf: este punto solo se
-    # alcanza una vez por documento realmente nuevo (el "if existentes"
-    # de arriba evita pasar por aquí si el usuario reutiliza el mismo PDF
-    # en varias herramientas), así que las páginas no se cuentan varias
-    # veces por un mismo archivo.
+    # Se suma aquí, no en las rutas /guardar-*-pdf: esta función solo se
+    # llama una vez por documento realmente nuevo (los callers ya
+    # comprobaron con buscar_documento_por_texto que no existía), así que
+    # las páginas no se cuentan varias veces por un mismo archivo.
     from firebase_admin import firestore
     db.collection("usuarios").document(uid).update({
         "paginas_analizadas": firestore.Increment(num_paginas),
     })
     return nuevo_ref.id, datos
+
+
+def obtener_o_crear_documento(db, uid, texto, nombre_archivo, num_paginas):
+    """Conveniencia que junta buscar_documento_por_texto + crear_documento
+    para el caso general -- si el usuario ya había subido este mismo
+    documento antes (mismo texto), reutiliza esa entrada en vez de crear
+    una duplicada, así que si sube el mismo PDF a dos herramientas
+    distintas, todo queda agrupado bajo un único documento en su
+    biblioteca. blueprints/pdf_ia._resolver_texto_documento NO usa esta
+    función -- llama a las dos por separado para poder comprobar el cupo
+    mensual de subidas entre medias (ver el comentario largo en
+    buscar_documento_por_texto)."""
+    documento_id, documento = buscar_documento_por_texto(db, uid, texto)
+    if documento_id:
+        return documento_id, documento
+    return crear_documento(db, uid, texto, nombre_archivo, num_paginas)
 
 
 def obtener_preguntas_previas(db, uid, documento_id, limite=60):

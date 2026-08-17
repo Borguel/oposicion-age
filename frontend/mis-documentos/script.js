@@ -125,9 +125,11 @@ function normalizarTexto(texto) {
   return (texto || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-// Cuota mensual de documentos con banco generado (05/08/2026): aviso
-// discreto para que no te enteres del límite solo cuando lo agotas y sale
-// el 429 -- sin ninguna cifra de coste, solo el conteo de documentos.
+// Cuota mensual de documentos NUEVOS SUBIDOS (05/08/2026, alcance corregido
+// el 17/08/2026 -- ver banco_pdf_mensual en limites_uso.py): aviso discreto
+// para que no te enteres del límite solo cuando lo agotas y sale el 429 --
+// sin ninguna cifra de coste, solo el conteo de documentos. Reutilizar un
+// documento ya subido en cualquier herramienta no cuenta para este número.
 function pintarCuotaDocumentosMes(cuota) {
   const el = document.getElementById("cuota-documentos-mes");
   if (!el) return;
@@ -137,7 +139,7 @@ function pintarCuotaDocumentosMes(cuota) {
     el.classList.add("hidden");
     return;
   }
-  el.textContent = `${usados} de ${limite} documentos generados este mes`;
+  el.textContent = `${usados} de ${limite} documentos subidos este mes`;
   el.classList.toggle("cuota-documentos-mes-alerta", usados / limite >= 0.8);
   el.classList.remove("hidden");
 }

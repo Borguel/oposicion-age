@@ -83,16 +83,20 @@ LIMITES = {
         "basico": ("dia", 0),
         "premium": ("dia", 100),
     },
-    # Tope MENSUAL de documentos con contenido de IA generado desde PDF
-    # (resumen, esquema, banco de preguntas y banco de tarjetas -- ver
-    # TIPOS_CUOTA_DOCUMENTO_PDF en blueprints/pdf_ia.py). Se comprueba y se
-    # cobra en paralelo al cupo diario "pdf_ia" de arriba (mismo patrón que
-    # test_avanzado_verificado_mensual), como red de seguridad de margen
-    # frente a la subida de precio de DeepSeek del 16/08/2026. Ampliado
-    # (17/08/2026) de solo banco de preguntas/tarjetas a también resumen y
-    # esquema: antes esas dos herramientas solo tenían el tope diario
-    # "pdf_ia" (100/día en premium), sin ningún tope mensual -- este número
-    # (20) es el que se anuncia en /planes como "20 documentos al mes".
+    # Tope MENSUAL de documentos NUEVOS SUBIDOS (no de usos de herramienta:
+    # ver el comentario largo en blueprints/pdf_ia._resolver_texto_documento,
+    # a petición explícita del usuario 17/08/2026 -- "lo que quiero limitar
+    # es la subida del documento, no cada herramienta que uses sobre él").
+    # Se comprueba y se cobra SOLO cuando un PDF resulta ser un documento
+    # que el usuario nunca había subido antes (mismo hash de texto);
+    # generar resumen, esquema, banco de preguntas o banco de tarjetas
+    # sobre un documento YA subido no lo toca, por muchas veces que se use.
+    # Nombre histórico "banco_pdf_mensual" (antes solo cubría banco de
+    # preguntas/tarjetas por-uso, cambiado el mismo día a por-subida) --
+    # se mantiene para no romper documentos ya guardados en Firestore con
+    # este campo. Como red de seguridad de margen frente a la subida de
+    # precio de DeepSeek del 16/08/2026; es el número (20) que se anuncia
+    # en /planes como "20 documentos al mes".
     "banco_pdf_mensual": {
         "basico": ("mes", 0),
         "premium": ("mes", 20),
@@ -113,8 +117,8 @@ TIPOS_META = [
      "descripcion": "Análisis de fortalezas/debilidades por tema, generado con IA, a partir del temario."},
     {"id": "pdf_ia", "nombre": "Subir PDF (resumen / esquema / tarjetas / test)", "unidad": "usos",
      "descripcion": "Herramientas de IA sobre un PDF que sube el propio usuario."},
-    {"id": "banco_pdf_mensual", "nombre": "Documentos con contenido de PDF generado (tope mensual)", "unidad": "documentos",
-     "descripcion": "Tope adicional AL MES de documentos con resumen, esquema, banco de preguntas o banco de tarjetas generado, aparte del cupo diario de pdf_ia -- ambos se comprueban a la vez. Es el \"20 documentos al mes\" que se anuncia en /planes."},
+    {"id": "banco_pdf_mensual", "nombre": "Documentos nuevos subidos (tope mensual)", "unidad": "documentos",
+     "descripcion": "Tope AL MES de documentos NUEVOS subidos (no de usos de herramienta) -- reutilizar un documento ya subido en resumen/esquema/banco de preguntas/banco de tarjetas no lo consume, por muchas veces que se use. Es el \"20 documentos al mes\" que se anuncia en /planes."},
     {"id": "chat_pdf", "nombre": "Chat con PDF", "unidad": "usos",
      "descripcion": "Conversar con la IA sobre un PDF subido."},
     {"id": "chat_temario", "nombre": "Tu Tutor (chat del temario)", "unidad": "usos",
