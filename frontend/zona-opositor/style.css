@@ -195,9 +195,13 @@ body {
    esas tarjetas. Desde que "Lo tuyo" (sin fondo propio, solo un <h2> y la
    cuadrícula) pasó a ser el primer hijo, ese título quedaba dentro de la
    zona oscura con su color de texto normal (pensado para fondo claro),
-   prácticamente invisible -- se cancela el solape solo para este bloque. */
+   prácticamente invisible -- se cancela el solape solo para este bloque.
+   Subido de 60 a 96px (17/08/2026, a petición del usuario: "el texto está
+   muy pegado a la parte que tienen arriba") -- el título necesitaba más
+   aire respecto al degradado de la cabecera, no solo dejar de solaparse
+   con él. */
 .zona-wrap > .zona-accesos:first-child {
-  padding-top: 60px;
+  padding-top: 96px;
 }
 
 .zona-racha-card {
@@ -600,14 +604,50 @@ body {
   }
 }
 
+/* Títulos de sección centrados con acento (17/08/2026, a petición del
+   usuario: "Lo tuyo"/"Más herramientas" quedaban pegados a lo de arriba y
+   se veían como texto suelto de web básica) -- centrado, más presencia
+   tipográfica y un pequeño acento de color debajo en vez de un <h2> plano
+   a la izquierda, mismo espíritu que el resto de cabeceras de sección de
+   la web (p. ej. .planes-comparativa h2) pero con el toque de marca del
+   acento naranja. */
 .zona-accesos h2 {
-  font-size: 1.2rem;
+  font-size: clamp(1.35rem, 2.6vw, 1.6rem);
   font-weight: 800;
-  margin: 0 0 16px;
+  letter-spacing: -0.01em;
+  text-align: center;
+  margin: 0 0 20px;
 }
 
+.zona-accesos h2::after {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 3px;
+  margin: 12px auto 0;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-primary);
+}
+
+/* "Más herramientas" es una sección nueva de verdad, no un subtítulo
+   suelto bajo la cuadrícula de "Lo tuyo" -- la separación generosa (con
+   línea divisoria) es la que hace que se lea como tal, en vez de que
+   ambas cuadrículas se confundan en un único bloque. */
 .zona-accesos-subtitulo {
-  margin-top: 28px;
+  margin-top: 64px;
+  padding-top: 40px;
+  border-top: 1px solid var(--age-border);
+}
+
+@media (max-width: 640px) {
+  .zona-wrap > .zona-accesos:first-child {
+    padding-top: 64px;
+  }
+
+  .zona-accesos-subtitulo {
+    margin-top: 44px;
+    padding-top: 28px;
+  }
 }
 
 .zona-mis-cosas-card {
