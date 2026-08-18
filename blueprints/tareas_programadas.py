@@ -2,6 +2,7 @@
 usuario -- protegidas con un secreto propio (CRON_SECRET_KEY) en vez de
 depender de un login, ya que quien llama no es una persona autenticada.
 """
+import hmac
 import logging
 import os
 from datetime import date, datetime
@@ -45,7 +46,13 @@ UMBRAL_MULTIPLICADOR_ALERTA_COSTE_IA = float(os.getenv("IA_ALERTA_GASTO_MULTIPLI
 
 def _clave_cron_valida():
     clave_esperada = os.getenv("CRON_SECRET_KEY")
-    return bool(clave_esperada) and request.headers.get("X-Cron-Key") == clave_esperada
+    # hmac.compare_digest en vez de "==": una comparación de string normal
+    # sale en cuanto encuentra el primer carácter distinto, así que el
+    # tiempo de respuesta varía según cuántos caracteres iniciales acierte
+    # quien prueba -- suficiente para, con muchos intentos, ir adivinando
+    # CRON_SECRET_KEY carácter a carácter (timing attack). compare_digest
+    # siempre tarda lo mismo, acierte o no.
+    return bool(clave_esperada) and hmac.compare_digest(request.headers.get("X-Cron-Key", ""), clave_esperada)
 
 
 @bp.route("/tareas/recordatorios-racha", methods=["POST"])

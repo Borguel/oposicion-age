@@ -36,6 +36,14 @@ jobs:
         continue-on-error: true
         run: black --check .
 
+      - name: bandit (seguridad, Python)
+        continue-on-error: true
+        run: bandit -r . -c pyproject.toml
+
+      - name: pip-audit (vulnerabilidades conocidas en dependencias)
+        continue-on-error: true
+        run: pip-audit -r requirements.txt
+
       - name: prettier (frontend)
         continue-on-error: true
         run: npx prettier --check "frontend/**/*.{js,css,html}"

@@ -16,17 +16,13 @@ banco en cuanto se acierta en cualquiera de esos tipos; si se vuelve a
 fallar en el repaso de "falladas" se actualiza la misma entrada (nunca se
 duplica).
 """
-import hashlib
 import random
 from datetime import datetime
 from firebase_admin import firestore
 
+from banco_preguntas_comun import id_pregunta as _id_pregunta
+
 TIPOS_QUE_ALIMENTAN_BANCO = {"personalizado", "oficial", "psicotecnico", "falladas"}
-
-
-def _id_pregunta(oposicion, pregunta):
-    clave = f"{oposicion}||{(pregunta or '').strip()}"
-    return hashlib.sha256(clave.encode("utf-8", "ignore")).hexdigest()[:24]
 
 
 def ordenar_por_prioridad_repaso(candidatas):

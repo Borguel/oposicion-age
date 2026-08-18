@@ -19,6 +19,7 @@ Ninguna de las dos debe romper nunca la aprobación del aviso en Firestore
 si falla -- mismo espíritu que email_utils._enviar (nunca lanzan excepción
 hacia quien llama, solo registran un aviso en el log)."""
 import base64
+import html
 import logging
 import os
 
@@ -179,13 +180,23 @@ def _escribir_archivo_github(ruta, sha, contenido, mensaje):
 
 
 def _tarjeta_aviso_html(aviso, mostrar_etiquetas_oposicion=False, mostrar_resumen=False):
-    tipo_legible = etiqueta_tipo_aviso(aviso)
-    url_inap = url_inap_aviso(aviso)
+    # Este HTML se comitea tal cual a páginas ESTÁTICAS públicas (ver
+    # actualizar_pagina_estatica_avisos/actualizar_pagina_avisos_general),
+    # servidas a cualquier visitante -- titulo/resumen/tipo_personalizado
+    # los puede escribir cualquier cuenta con el permiso "reportes" (no
+    # hace falta ser super-admin, ver requiere_permiso("reportes") en
+    # blueprints/admin.py), y url_boe/url_inap pueden venir de una alta
+    # manual. html.escape() en cada valor evita que ese texto libre inyecte
+    # HTML/rompa un atributo -- quote=True (por defecto) escapa también las
+    # comillas, necesario para los que van dentro de href="..."/data-...="...".
+    tipo_legible = html.escape(etiqueta_tipo_aviso(aviso))
+    url_inap = html.escape(url_inap_aviso(aviso))
+    url_boe = html.escape(aviso.get("url_boe") or "")
     # Sin URL no hay enlace que valga -- un href="" parece un botón roto
     # en vez de simplemente no estar.
     enlace_boe = (
-        f'<a href="{aviso.get("url_boe")}" target="_blank" rel="noopener">Ver la resolución oficial ↗</a>'
-        if aviso.get("url_boe") else ""
+        f'<a href="{url_boe}" target="_blank" rel="noopener">Ver la resolución oficial ↗</a>'
+        if url_boe else ""
     )
     enlace_inap = (
         f'<a href="{url_inap}" target="_blank" rel="noopener">Ver en INAP ↗</a>'
@@ -194,7 +205,7 @@ def _tarjeta_aviso_html(aviso, mostrar_etiquetas_oposicion=False, mostrar_resume
     etiquetas_op = ""
     if mostrar_etiquetas_oposicion:
         etiquetas_op = "".join(
-            f'<span class="guia-avisos-oficiales-op">{op}</span>' for op in etiquetas_oposiciones_aviso(aviso)
+            f'<span class="guia-avisos-oficiales-op">{html.escape(op)}</span>' for op in etiquetas_oposiciones_aviso(aviso)
         )
     resumen_html = ""
     if mostrar_resumen:
@@ -203,17 +214,18 @@ def _tarjeta_aviso_html(aviso, mostrar_etiquetas_oposicion=False, mostrar_resume
         # Si el resumen es literalmente el título (lo por defecto cuando no
         # se rellenó ninguno propio) no aporta nada repetirlo aparte.
         if resumen and resumen != titulo:
-            resumen_html = f'<p class="guia-avisos-oficiales-resumen">{resumen}</p>'
+            resumen_html = f'<p class="guia-avisos-oficiales-resumen">{html.escape(resumen)}</p>'
     # data-oposiciones: para el filtro por oposición de la página común
     # (ver /avisos-oficiales/) -- en las páginas de una sola oposición no
     # se usa, pero no estorba tenerlo siempre.
-    oposiciones_dato = " ".join(_oposiciones_de(aviso))
+    oposiciones_dato = html.escape(" ".join(_oposiciones_de(aviso)))
+    titulo_html = html.escape(aviso.get("titulo") or "")
     return f"""      <div class="guia-avisos-oficiales-item" data-oposiciones="{oposiciones_dato}">
         <div class="guia-avisos-oficiales-cab">
           <span class="guia-avisos-oficiales-tipo">{tipo_legible}</span>
           {etiquetas_op}
         </div>
-        <p class="guia-avisos-oficiales-titulo">{aviso.get("titulo", "")}</p>
+        <p class="guia-avisos-oficiales-titulo">{titulo_html}</p>
         {resumen_html}
         <div class="guia-avisos-oficiales-enlaces">
           {enlace_boe}

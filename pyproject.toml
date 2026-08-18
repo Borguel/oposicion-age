@@ -9,3 +9,17 @@ line-length = 100
 # imports/variables sin usar y errores reales sin imponer un estilo de
 # código nuevo sobre las ~130 páginas del proyecto de golpe.
 select = ["E4", "E7", "E9", "F"]
+
+[tool.bandit]
+# B311 (random no apto para uso criptográfico): el módulo random se usa en
+# todo el proyecto para barajar preguntas/opciones de examen, nunca para
+# tokens, contraseñas ni nada que necesite aleatoriedad criptográfica (eso
+# lo gestiona Firebase Auth) -- falso positivo sistemático, no vale la
+# pena un #nosec por cada uno de los ~8 sitios.
+# B403/B404 (advertencia al simplemente IMPORTAR pickle/subprocess): el
+# uso real ya lleva su propio #nosec justificado en el sitio exacto
+# (cargar_temario_boe.py, generar_sitemap.py) -- estas son solo el eco de
+# lo mismo a nivel de import, redundante.
+skips = ["B311", "B403", "B404"]
+# tests/ y sin-uso/ no son código de producción; frontend/ es JS, no Python.
+exclude_dirs = ["tests", "tests-frontend", "sin-uso", "frontend", ".git"]

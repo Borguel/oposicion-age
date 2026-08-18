@@ -66,6 +66,35 @@ def test_ranking_ordenado_por_racha_actual_descendente(client, db):
         parche.stop()
 
 
+def test_ranking_usa_cache_dentro_del_ttl_y_recalcula_pasado_el_ttl(client, db):
+    # Mismo patrón que las cachés del panel admin (test_admin.py): sin
+    # caché, /ranking recorría TODA la colección "usuarios" en cada carga.
+    # Un cambio de racha directamente en el store (sin pasar por
+    # /ranking/unirse ni /ranking/salir, que sí invalidan la caché
+    # explícitamente) no debe verse hasta que venza el TTL.
+    import blueprints.ranking as ranking_module
+    import utils
+
+    sembrar_usuario_activo(db, "u1", racha={"racha_actual": 1}, ranking_optin=True, ranking_alias="Constante")
+    parche = _con_sesion(client)
+    try:
+        primero = client.get("/ranking", headers={"Authorization": "Bearer x"}).get_json()
+        assert primero["ranking"][0]["racha_actual"] == 1
+
+        # Cambio directo en el store, sin invalidar la caché a propósito.
+        actual = db.leer(("usuarios", "u1"))
+        db.sembrar(("usuarios", "u1"), {**actual, "racha": {"racha_actual": 99}})
+        dentro_ttl = client.get("/ranking", headers={"Authorization": "Bearer x"}).get_json()
+        assert dentro_ttl["ranking"][0]["racha_actual"] == 1  # todavía la cacheada
+
+        ahora = utils.time.time()
+        with patch("utils.time.time", return_value=ahora + ranking_module._TTL_CACHE_RANKING_SEGUNDOS + 1):
+            tras_ttl = client.get("/ranking", headers={"Authorization": "Bearer x"}).get_json()
+        assert tras_ttl["ranking"][0]["racha_actual"] == 99
+    finally:
+        parche.stop()
+
+
 def test_salir_del_ranking_lo_oculta_sin_borrar_la_racha(client, db):
     sembrar_usuario_activo(db, "u1")
     parche = _con_sesion(client)

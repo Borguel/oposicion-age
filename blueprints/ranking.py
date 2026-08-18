@@ -9,12 +9,40 @@ from flask import Blueprint, g, jsonify, request
 
 from firebase_setup import db
 from auth_utils import requiere_plan
+from utils import _desde_cache_o_calcular, invalidar_cache
 
 bp = Blueprint("ranking", __name__)
 
 ALIAS_MIN = 3
 ALIAS_MAX = 20
 ALIAS_REGEX = re.compile(r"^[\w áéíóúÁÉÍÓÚñÑüÜ]+$")
+
+# TTL corto (no los 180s del panel admin): a diferencia de un dashboard
+# interno, aquí el "desfase" lo nota directamente el propio usuario (su
+# racha no sube en el ranking justo después de hacer un test) -- se prioriza
+# que se note poco sobre exprimir la caché al máximo, aunque siga evitando
+# el barrido completo de la colección "usuarios" en cada carga de la página.
+_TTL_CACHE_RANKING_SEGUNDOS = 60
+
+
+def _participantes_ranking():
+    """Lista de {uid, alias, racha_actual} de todos los apuntados al
+    ranking, ordenada de mayor a menor racha -- la parte cara (recorre TODA
+    la colección "usuarios"), cacheada aparte de tu_posicion/tu_racha/top
+    (que son por usuario y se recalculan en cada petición sobre esta misma
+    lista, sin volver a tocar Firestore)."""
+    def _calcular():
+        participantes = []
+        for doc in db.collection("usuarios").where("ranking_optin", "==", True).stream():
+            datos = doc.to_dict() or {}
+            participantes.append({
+                "uid": doc.id,
+                "alias": datos.get("ranking_alias") or "Opositor/a",
+                "racha_actual": (datos.get("racha") or {}).get("racha_actual", 0)
+            })
+        participantes.sort(key=lambda p: p["racha_actual"], reverse=True)
+        return participantes
+    return _desde_cache_o_calcular(("ranking_participantes",), _calcular, ttl_segundos=_TTL_CACHE_RANKING_SEGUNDOS)
 
 
 def _alias_valido(alias):
@@ -41,6 +69,10 @@ def unirse_ranking():
         "ranking_optin": True,
         "ranking_alias": alias
     })
+    # Sin esto, quien se acaba de apuntar no se vería a sí mismo en el
+    # ranking hasta que venciera el TTL -- peor primera impresión posible
+    # justo para la acción que se acaba de pedir.
+    invalidar_cache(("ranking_participantes",))
     return jsonify({"mensaje": "ok", "alias": alias})
 
 
@@ -48,21 +80,14 @@ def unirse_ranking():
 @requiere_plan(db, "basico", global_check=True)
 def salir_ranking():
     db.collection("usuarios").document(g.uid).update({"ranking_optin": False})
+    invalidar_cache(("ranking_participantes",))
     return jsonify({"mensaje": "ok"})
 
 
 @bp.route("/ranking", methods=["GET"])
 @requiere_plan(db, "basico", global_check=True)
 def obtener_ranking():
-    participantes = []
-    for doc in db.collection("usuarios").where("ranking_optin", "==", True).stream():
-        datos = doc.to_dict() or {}
-        participantes.append({
-            "uid": doc.id,
-            "alias": datos.get("ranking_alias") or "Opositor/a",
-            "racha_actual": (datos.get("racha") or {}).get("racha_actual", 0)
-        })
-    participantes.sort(key=lambda p: p["racha_actual"], reverse=True)
+    participantes = _participantes_ranking()
 
     tu_posicion = next((i + 1 for i, p in enumerate(participantes) if p["uid"] == g.uid), None)
     tu_racha = next((p["racha_actual"] for p in participantes if p["uid"] == g.uid), None)

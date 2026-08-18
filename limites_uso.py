@@ -251,6 +251,116 @@ def verificar_limite_uso(db, uid, plan, tipo):
     return True, None, usados, limite
 
 
+def reservar_uso(db, uid, tipo, plan, cantidad=1):
+    """Como verificar_limite_uso + registrar_uso, pero en una ÚNICA
+    transacción atómica: la comprobación del límite y el incremento del
+    contador ocurren en la misma lectura-escritura de Firestore.
+
+    verificar_limite_uso lee el contador SIN transacción, y registrar_uso
+    se llama aparte, normalmente después de la llamada a la IA (que puede
+    tardar varios segundos) -- entre esas dos cosas hay una ventana real
+    en la que dos peticiones concurrentes del mismo usuario pueden pasar
+    la comprobación a la vez, viendo las dos cupo libre antes de que
+    ninguna haya llegado a registrar_uso (TOCTOU). Fusionar comprobación
+    e incremento en la misma transacción cierra ese hueco: la segunda
+    petición concurrente ve ya el contador actualizado por la primera.
+
+    Solo vale cuando `cantidad` se conoce ANTES de hacer el trabajo (aquí
+    se cobra por adelantado, como ya hacían las rutas de streaming con
+    registrar_uso + devolver_uso). Para los casos donde la cantidad real
+    solo se sabe DESPUÉS del trabajo (p. ej. Test Oficial, que cobra
+    según cuántas preguntas había realmente disponibles en el banco),
+    seguir usando verificar_limite_uso + registrar_uso por separado --
+    esas rutas no llaman a ninguna IA (leen de un banco ya cargado), así
+    que el coste real en juego por ese hueco concreto es bajo.
+
+    Devuelve (permitido, mensaje_error_o_None, usados, limite), mismo
+    formato que verificar_limite_uso. Si `permitido` es True, el contador
+    YA ha sido incrementado -- si el trabajo posterior acaba fallando,
+    llamar a devolver_uso(cantidad) para reembolsarlo, igual que ya hacían
+    las rutas de streaming."""
+    cantidad = max(1, int(cantidad or 1))
+    config = _config_tool(db, tipo, plan)
+    if not config or config[1] <= 0:
+        return False, "Tu plan actual no incluye esta herramienta.", 0, 0
+    periodo, limite = config
+    clave = _clave_periodo(periodo)
+    ref = db.collection("usuarios").document(uid)
+
+    def _verificar_y_reservar(transaction):
+        doc = ref.get(transaction=transaction)
+        datos = doc.to_dict() or {}
+        uso = ((datos.get("limites_uso") or {}).get(tipo)) or {}
+        usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
+        if usados + cantidad > limite:
+            return False, usados
+        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": usados + cantidad}})
+        return True, usados + cantidad
+
+    permitido, usados = ejecutar_en_transaccion(db, _verificar_y_reservar)
+    if not permitido:
+        # Mismo mensaje que verificar_limite_uso, sin cifra concreta (ver
+        # ese docstring).
+        if periodo == "dia":
+            mensaje = "Has alcanzado el límite de uso diario de esta herramienta. Podrás volver a usarla mañana."
+        else:
+            mensaje = "Has alcanzado el límite de uso mensual de esta herramienta. Se renueva el próximo mes."
+        return False, mensaje, usados, limite
+    return True, None, usados, limite
+
+
+def reservar_uso_multiple(db, uid, tipos, plan, cantidad=1):
+    """Como reservar_uso, pero para varios `tipos` que se comprueban y
+    cobran JUNTOS (p. ej. TIPOS_CUOTA_TEST_PERSONALIZADO: cupo diario +
+    tope mensual sobre el mismo consumo) -- los dos viven en el MISMO
+    documento usuarios/{uid}, así que se leen y se actualizan en una única
+    transacción: si CUALQUIERA de los tipos está al límite, no se
+    incrementa NINGUNO (mismo comportamiento que antes, cuando se
+    verificaban todos primero y solo si todos pasaban se registraban
+    todos) -- y al ir en una sola transacción, tampoco hay ventana entre
+    comprobar un tipo y comprobar el siguiente.
+
+    Devuelve (permitido, mensaje_error_o_None). Si `permitido` es True,
+    los contadores de TODOS los tipos ya han sido incrementados -- si el
+    trabajo posterior falla, reembolsar con devolver_uso para cada tipo."""
+    cantidad = max(1, int(cantidad or 1))
+    configs = {}
+    for tipo in tipos:
+        config = _config_tool(db, tipo, plan)
+        if not config or config[1] <= 0:
+            return False, "Tu plan actual no incluye esta herramienta."
+        configs[tipo] = config
+    ref = db.collection("usuarios").document(uid)
+
+    def _verificar_y_reservar_todos(transaction):
+        doc = ref.get(transaction=transaction)
+        datos = doc.to_dict() or {}
+        limites_uso_actual = datos.get("limites_uso") or {}
+        actualizaciones = {}
+        for tipo, (periodo, limite) in configs.items():
+            clave = _clave_periodo(periodo)
+            uso = limites_uso_actual.get(tipo) or {}
+            usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
+            if usados + cantidad > limite:
+                return False
+            actualizaciones[f"limites_uso.{tipo}"] = {"periodo": clave, "contador": usados + cantidad}
+        transaction.update(ref, actualizaciones)
+        return True
+
+    permitido = ejecutar_en_transaccion(db, _verificar_y_reservar_todos)
+    if not permitido:
+        # Al menos uno de los periodos es "dia" siempre que haya un tope
+        # diario en el grupo -- se prioriza ese mensaje (más frecuente de
+        # tocar) sobre el mensual si ambos coexisten en `tipos`.
+        periodos = {p for p, _l in configs.values()}
+        if "dia" in periodos:
+            mensaje = "Has alcanzado el límite de uso diario de esta herramienta. Podrás volver a usarla mañana."
+        else:
+            mensaje = "Has alcanzado el límite de uso mensual de esta herramienta. Se renueva el próximo mes."
+        return False, mensaje
+    return True, None
+
+
 def registrar_uso(db, uid, tipo, plan, cantidad=1):
     """Suma `cantidad` al contador del periodo actual (por defecto 1). Se llama
     solo cuando la llamada a la IA se ha realizado de verdad (para no penalizar

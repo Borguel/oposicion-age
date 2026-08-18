@@ -1,4 +1,5 @@
 
+import logging
 from datetime import datetime
 from flask import request, jsonify, g
 from firebase_admin import firestore
@@ -16,7 +17,10 @@ from push_utils import VAPID_PUBLIC_KEY, push_disponible, guardar_suscripcion, b
 from auth_utils import requiere_login, requiere_plan, obtener_oposicion_solicitada
 from planes import ORDEN_PLANES, resolver_plan_efectivo
 from utils import calcular_resultado_test
+from validacion_perfil import nombre_valido, telefono_valido, direccion_valida
 import random
+
+logger = logging.getLogger(__name__)
 
 # Campos ligeros que devuelve /mis-tests -- deliberadamente sin el array
 # completo de "preguntas"/"contenido", para no cargar cada test entero solo
@@ -33,13 +37,28 @@ def registrar_rutas_progreso(app, db):
     def registrar_usuario():
         # requiere_login ya crea el documento del usuario si no existía.
         # Aquí solo completamos los datos básicos del perfil (si se mandan).
+        #
+        # Validado por campo (ver validacion_perfil.py) antes de guardar: sin
+        # esto, cualquiera podía registrar "nombre"/"apellidos" con un enlace,
+        # HTML o una fórmula de hoja de cálculo, que luego se enseña tal cual
+        # en el panel admin, en las exportaciones CSV (usuarios.csv,
+        # ingresos.csv) y en el saludo de los correos transaccionales.
         datos = request.get_json(silent=True) or {}
-        campos_permitidos = ("nombre", "apellidos", "telefono", "direccion")
+        validadores = {
+            "nombre": nombre_valido,
+            "apellidos": nombre_valido,
+            "telefono": telefono_valido,
+            "direccion": direccion_valida,
+        }
         actualizacion = {}
-        for campo in campos_permitidos:
+        for campo, es_valido in validadores.items():
             valor = datos.get(campo)
-            if isinstance(valor, str) and valor.strip():
-                actualizacion[campo] = valor.strip()
+            if not isinstance(valor, str) or not valor.strip():
+                continue
+            valor = valor.strip()
+            if not es_valido(valor):
+                return jsonify({"error": f"El campo '{campo}' no es válido."}), 400
+            actualizacion[campo] = valor
         if actualizacion:
             db.collection("usuarios").document(g.uid).update(actualizacion)
         return jsonify({"mensaje": "Usuario registrado correctamente"})
@@ -211,8 +230,9 @@ def registrar_rutas_progreso(app, db):
 
             test_data = max(tests, key=lambda t: t.get("fecha", ""))
             return jsonify({"test": test_data.get("preguntas", [])})
-        except Exception as e:
-            return jsonify({"error": f"Error buscando test: {str(e)}"}), 500
+        except Exception:
+            logger.exception("Error buscando el último test")
+            return jsonify({"error": "No se pudo buscar el último test."}), 500
 
     @app.route("/autosave-test", methods=["POST"])
     @requiere_login(db)
@@ -281,8 +301,9 @@ def registrar_rutas_progreso(app, db):
             else:
                 test_ref.set(campos_variables, merge=True)
             return jsonify({"mensaje": "ok"})
-        except Exception as e:
-            return jsonify({"error": f"Error autoguardando el test: {str(e)}"}), 500
+        except Exception:
+            logger.exception("Error autoguardando el test")
+            return jsonify({"error": "No se pudo autoguardar el test."}), 500
 
     @app.route("/mis-tests", methods=["GET"])
     @requiere_plan(db, "basico", global_check=False)
@@ -316,8 +337,9 @@ def registrar_rutas_progreso(app, db):
                 resultado.append(resumen)
             resultado.sort(key=lambda t: t.get("fecha") or "", reverse=True)
             return jsonify({"tests": resultado})
-        except Exception as e:
-            return jsonify({"error": f"Error listando tests: {str(e)}"}), 500
+        except Exception:
+            logger.exception("Error listando 'mis tests'")
+            return jsonify({"error": "No se pudieron listar los tests."}), 500
 
     @app.route("/mi-test/<test_id>", methods=["GET"])
     @requiere_plan(db, "basico", global_check=False)
@@ -332,8 +354,9 @@ def registrar_rutas_progreso(app, db):
             datos["id"] = doc.id
             datos.setdefault("estado", "finalizado")
             return jsonify({"test": datos})
-        except Exception as e:
-            return jsonify({"error": f"Error obteniendo el test: {str(e)}"}), 500
+        except Exception:
+            logger.exception("Error obteniendo el test %s", test_id)
+            return jsonify({"error": "No se pudo obtener el test."}), 500
 
     @app.route("/mi-test/<test_id>", methods=["DELETE"])
     @requiere_plan(db, "basico", global_check=False)
@@ -341,8 +364,9 @@ def registrar_rutas_progreso(app, db):
         try:
             db.collection("usuarios").document(g.uid).collection("tests").document(test_id).delete()
             return jsonify({"mensaje": "Test borrado"})
-        except Exception as e:
-            return jsonify({"error": f"Error borrando el test: {str(e)}"}), 500
+        except Exception:
+            logger.exception("Error borrando el test %s", test_id)
+            return jsonify({"error": "No se pudo borrar el test."}), 500
 
     @app.route("/test-desde-historial", methods=["GET"])
     @requiere_plan(db, "basico", global_check=False)
@@ -357,8 +381,9 @@ def registrar_rutas_progreso(app, db):
             for test in tests_ref:
                 test_data = test.to_dict()
                 preguntas.extend(test_data.get("preguntas", []))
-        except Exception as e:
-            return jsonify({"error": f"Error leyendo tests: {str(e)}"}), 500
+        except Exception:
+            logger.exception("Error leyendo tests para generar test desde historial")
+            return jsonify({"error": "No se pudieron leer los tests del historial."}), 500
 
         if not preguntas:
             return jsonify({"test": [], "mensaje": "No se encontraron preguntas anteriores"}), 404
@@ -401,8 +426,9 @@ def registrar_rutas_progreso(app, db):
 
             return jsonify({"contenido": documentos})
 
-        except Exception as e:
-            return jsonify({"error": f"Error obteniendo contenido PDF: {str(e)}"}), 500
+        except Exception:
+            logger.exception("Error obteniendo contenido PDF guardado")
+            return jsonify({"error": "No se pudo obtener el contenido guardado."}), 500
 
     @app.route("/progreso-general", methods=["GET"])
     @requiere_plan(db, "basico", global_check=False)
@@ -438,5 +464,6 @@ def registrar_rutas_progreso(app, db):
 
             return jsonify({"progreso": progreso})
 
-        except Exception as e:
-            return jsonify({"error": f"Error calculando progreso general: {str(e)}"}), 500
+        except Exception:
+            logger.exception("Error calculando progreso general")
+            return jsonify({"error": "No se pudo calcular el progreso general."}), 500
