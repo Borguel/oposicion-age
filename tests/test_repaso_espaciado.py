@@ -5,16 +5,9 @@ banco_favoritas.ordenar_por_prioridad_repaso): en vez de un muestreo
 puramente aleatorio, deben priorizarse las preguntas que de verdad hace
 falta repasar ya."""
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
 from banco_favoritas import _id_pregunta
 from conftest import sembrar_usuario_activo
-
-
-def _con_sesion(cliente, uid="u1", email="u1@example.com"):
-    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
-    parche.start()
-    return parche
 
 
 def _pregunta_base(texto, tema_id="b1-t1"):
@@ -28,7 +21,7 @@ def _pregunta_base(texto, tema_id="b1-t1"):
     }
 
 
-def test_generar_test_fallos_prioriza_la_mas_fallada(client, db):
+def test_generar_test_fallos_prioriza_la_mas_fallada(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     hace_poco = (datetime.utcnow() - timedelta(days=1)).isoformat()
     db.sembrar(("usuarios", "u1", "preguntas_falladas", "poco_fallada"), dict(
@@ -36,18 +29,15 @@ def test_generar_test_fallos_prioriza_la_mas_fallada(client, db):
     db.sembrar(("usuarios", "u1", "preguntas_falladas", "muy_fallada"), dict(
         _pregunta_base("¿Muy fallada?"), veces_fallada=5, fecha_ultimo_fallo=hace_poco))
 
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/generar-test-fallos?oposicion=AGE", json={"num_preguntas": 1},
-                            headers={"Authorization": "Bearer x"})
-        datos = resp.get_json()
-        assert datos["total_disponibles"] == 2
-        assert datos["test"][0]["pregunta"] == "¿Muy fallada?"
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post("/generar-test-fallos?oposicion=AGE", json={"num_preguntas": 1},
+                        headers={"Authorization": "Bearer x"})
+    datos = resp.get_json()
+    assert datos["total_disponibles"] == 2
+    assert datos["test"][0]["pregunta"] == "¿Muy fallada?"
 
 
-def test_generar_test_fallos_a_igualdad_prioriza_la_mas_antigua(client, db):
+def test_generar_test_fallos_a_igualdad_prioriza_la_mas_antigua(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     hace_mucho = (datetime.utcnow() - timedelta(days=30)).isoformat()
     hace_poco = (datetime.utcnow() - timedelta(days=1)).isoformat()
@@ -56,17 +46,14 @@ def test_generar_test_fallos_a_igualdad_prioriza_la_mas_antigua(client, db):
     db.sembrar(("usuarios", "u1", "preguntas_falladas", "antigua"), dict(
         _pregunta_base("¿Antigua?"), veces_fallada=2, fecha_ultimo_fallo=hace_mucho))
 
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/generar-test-fallos?oposicion=AGE", json={"num_preguntas": 1},
-                            headers={"Authorization": "Bearer x"})
-        datos = resp.get_json()
-        assert datos["test"][0]["pregunta"] == "¿Antigua?"
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post("/generar-test-fallos?oposicion=AGE", json={"num_preguntas": 1},
+                        headers={"Authorization": "Bearer x"})
+    datos = resp.get_json()
+    assert datos["test"][0]["pregunta"] == "¿Antigua?"
 
 
-def test_generar_test_favoritas_prioriza_la_nunca_repasada(client, db):
+def test_generar_test_favoritas_prioriza_la_nunca_repasada(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     hace_poco = (datetime.utcnow() - timedelta(hours=1)).isoformat()
     db.sembrar(("usuarios", "u1", "preguntas_favoritas", _id_pregunta("AGE", "¿Ya repasada?")), dict(
@@ -74,18 +61,15 @@ def test_generar_test_favoritas_prioriza_la_nunca_repasada(client, db):
     db.sembrar(("usuarios", "u1", "preguntas_favoritas", _id_pregunta("AGE", "¿Nunca repasada?")), dict(
         _pregunta_base("¿Nunca repasada?"), fecha_marcada=hace_poco))
 
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/generar-test-favoritas?oposicion=AGE", json={"num_preguntas": 1},
-                            headers={"Authorization": "Bearer x"})
-        datos = resp.get_json()
-        assert datos["total_disponibles"] == 2
-        assert datos["test"][0]["pregunta"] == "¿Nunca repasada?"
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post("/generar-test-favoritas?oposicion=AGE", json={"num_preguntas": 1},
+                        headers={"Authorization": "Bearer x"})
+    datos = resp.get_json()
+    assert datos["total_disponibles"] == 2
+    assert datos["test"][0]["pregunta"] == "¿Nunca repasada?"
 
 
-def test_preguntas_pendientes_repaso_cuenta_solo_la_oposicion_pedida(client, db):
+def test_preguntas_pendientes_repaso_cuenta_solo_la_oposicion_pedida(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico", suscripciones={
         "AGE": {"plan": "basico", "subscription_status": "active"},
         "GACE": {"plan": "basico", "subscription_status": "active"},
@@ -96,16 +80,13 @@ def test_preguntas_pendientes_repaso_cuenta_solo_la_oposicion_pedida(client, db)
     gace["oposicion"] = "GACE"
     db.sembrar(("usuarios", "u1", "preguntas_falladas", "gace1"), gace)
 
-    parche = _con_sesion(client)
-    try:
-        resp = client.get("/preguntas-pendientes-repaso?oposicion=AGE", headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-        assert resp.get_json()["total_pendientes"] == 2
+    usuario_autenticado()
+    resp = client.get("/preguntas-pendientes-repaso?oposicion=AGE", headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    assert resp.get_json()["total_pendientes"] == 2
 
-        resp_gace = client.get("/preguntas-pendientes-repaso?oposicion=GACE", headers={"Authorization": "Bearer x"})
-        assert resp_gace.get_json()["total_pendientes"] == 1
-    finally:
-        parche.stop()
+    resp_gace = client.get("/preguntas-pendientes-repaso?oposicion=GACE", headers={"Authorization": "Bearer x"})
+    assert resp_gace.get_json()["total_pendientes"] == 1
 
 
 def test_preguntas_pendientes_repaso_requiere_login(client):
@@ -113,23 +94,20 @@ def test_preguntas_pendientes_repaso_requiere_login(client):
     assert resp.status_code == 401
 
 
-def test_listar_preguntas_falladas_incluye_veces_fallada(client, db):
+def test_listar_preguntas_falladas_incluye_veces_fallada(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     db.sembrar(("usuarios", "u1", "preguntas_falladas", "muy_fallada"), dict(
         _pregunta_base("¿Muy fallada?"), veces_fallada=3))
 
-    parche = _con_sesion(client)
-    try:
-        resp = client.get("/preguntas-falladas?oposicion=AGE", headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-        falladas = resp.get_json()["falladas"]
-        assert len(falladas) == 1
-        assert falladas[0]["veces_fallada"] == 3
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.get("/preguntas-falladas?oposicion=AGE", headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    falladas = resp.get_json()["falladas"]
+    assert len(falladas) == 1
+    assert falladas[0]["veces_fallada"] == 3
 
 
-def test_listar_preguntas_falladas_no_se_mezclan_entre_oposiciones(client, db):
+def test_listar_preguntas_falladas_no_se_mezclan_entre_oposiciones(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico", suscripciones={
         "AGE": {"plan": "basico", "subscription_status": "active"},
         "GACE": {"plan": "basico", "subscription_status": "active"},
@@ -139,28 +117,22 @@ def test_listar_preguntas_falladas_no_se_mezclan_entre_oposiciones(client, db):
     gace["oposicion"] = "GACE"
     db.sembrar(("usuarios", "u1", "preguntas_falladas", "gace1"), gace)
 
-    parche = _con_sesion(client)
-    try:
-        resp = client.get("/preguntas-falladas?oposicion=GACE", headers={"Authorization": "Bearer x"})
-        falladas = resp.get_json()["falladas"]
-        assert len(falladas) == 1
-        assert falladas[0]["pregunta"] == "¿GACE?"
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.get("/preguntas-falladas?oposicion=GACE", headers={"Authorization": "Bearer x"})
+    falladas = resp.get_json()["falladas"]
+    assert len(falladas) == 1
+    assert falladas[0]["pregunta"] == "¿GACE?"
 
 
-def test_generar_test_favoritas_marca_fecha_ultimo_repaso(client, db):
+def test_generar_test_favoritas_marca_fecha_ultimo_repaso(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     doc_id = _id_pregunta("AGE", "¿Nunca repasada?")
     db.sembrar(("usuarios", "u1", "preguntas_favoritas", doc_id), _pregunta_base("¿Nunca repasada?"))
 
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/generar-test-favoritas?oposicion=AGE", json={"num_preguntas": 1},
-                            headers={"Authorization": "Bearer x"})
-        assert resp.get_json()["total_disponibles"] == 1
+    usuario_autenticado()
+    resp = client.post("/generar-test-favoritas?oposicion=AGE", json={"num_preguntas": 1},
+                        headers={"Authorization": "Bearer x"})
+    assert resp.get_json()["total_disponibles"] == 1
 
-        guardada = db.leer(("usuarios", "u1", "preguntas_favoritas", doc_id))
-        assert guardada.get("fecha_ultimo_repaso")
-    finally:
-        parche.stop()
+    guardada = db.leer(("usuarios", "u1", "preguntas_favoritas", doc_id))
+    assert guardada.get("fecha_ultimo_repaso")

@@ -69,3 +69,41 @@ def flask_app():
 @pytest.fixture
 def client(flask_app):
     return flask_app.test_client()
+
+
+@pytest.fixture
+def usuario_autenticado():
+    """Mockea auth_utils.firebase_auth.verify_id_token para simular una
+    sesión autenticada (17/08/2026, consolidación de la función local
+    `_con_sesion` que ~19 archivos de tests reimplementaban a mano, cada
+    uno con su propio try/finally para parar el parche).
+
+    Se usa como FÁBRICA, no como valor fijo: `usuario_autenticado()` (con
+    los mismos valores por defecto que ya usaban todas esas copias, uid
+    "u1"/email "u1@example.com"), o `usuario_autenticado(uid=..., email=...,
+    admin=True, email_verified=True)` para los casos que necesitan otra
+    identidad. email_verified NO se incluye en el token salvo que se pida
+    explícitamente -- algunos archivos lo hacían, otros no, y no es
+    cosmético: auth_utils.requiere_login lee este campo para decidir si la
+    prueba gratuita de 7 días arranca ya o queda pendiente de confirmar el
+    correo (ver inicializar_estadisticas_usuario), así que unificarlo a
+    ciegas habría cambiado comportamiento real en la mitad de los tests que
+    lo usan. Puede llamarse varias veces en un mismo test (p. ej. para
+    cambiar de identidad a mitad) -- cada parche se para solo al terminar
+    el test, sin try/finally manual."""
+    parches = []
+
+    def _iniciar(uid="u1", email="u1@example.com", admin=False, email_verified=None, **extra):
+        datos_token = {"uid": uid, "email": email, **extra}
+        if admin:
+            datos_token["admin"] = True
+        if email_verified is not None:
+            datos_token["email_verified"] = email_verified
+        parche = patch("auth_utils.firebase_auth.verify_id_token", return_value=datos_token)
+        parche.start()
+        parches.append(parche)
+        return parche
+
+    yield _iniciar
+    for parche in parches:
+        parche.stop()

@@ -2,16 +2,9 @@
 rutas de blueprints/pdf_ia.py): crear una carpeta debe hacerla aparecer
 aunque no tenga documentos dentro todavía, y borrarla debe dejar "sin
 carpeta" a los documentos que tuviera en vez de borrarlos."""
-from unittest.mock import patch
 
 from documentos_pdf import listar_carpetas, crear_carpeta, eliminar_carpeta
 from conftest import sembrar_usuario_activo
-
-
-def _con_sesion(cliente, uid="u1", email="u1@example.com"):
-    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email, "email_verified": True})
-    parche.start()
-    return parche
 
 
 def test_carpeta_recien_creada_aparece_vacia(db):
@@ -41,39 +34,30 @@ def test_eliminar_carpeta_deja_sin_carpeta_los_documentos_dentro(db):
     assert db.leer(("usuarios", "u1", "documentos", "d1"))["carpeta"] == ""
 
 
-def test_ruta_crear_carpeta_devuelve_error_si_esta_vacio(client, db):
+def test_ruta_crear_carpeta_devuelve_error_si_esta_vacio(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1")
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/carpetas-documentos", json={"nombre": ""}, headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 400
-    finally:
-        parche.stop()
+    usuario_autenticado(email_verified=True)
+    resp = client.post("/carpetas-documentos", json={"nombre": ""}, headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 400
 
 
-def test_ruta_crear_y_ver_carpeta_en_mis_documentos(client, db):
+def test_ruta_crear_y_ver_carpeta_en_mis_documentos(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1")
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/carpetas-documentos", json={"nombre": "Constitución"}, headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-        assert resp.get_json()["nombre"] == "Constitución"
+    usuario_autenticado(email_verified=True)
+    resp = client.post("/carpetas-documentos", json={"nombre": "Constitución"}, headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    assert resp.get_json()["nombre"] == "Constitución"
 
-        resp = client.get("/mis-documentos", headers={"Authorization": "Bearer x"})
-        assert resp.get_json()["carpetas"] == ["Constitución"]
-    finally:
-        parche.stop()
+    resp = client.get("/mis-documentos", headers={"Authorization": "Bearer x"})
+    assert resp.get_json()["carpetas"] == ["Constitución"]
 
 
-def test_ruta_eliminar_carpeta(client, db):
+def test_ruta_eliminar_carpeta(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1")
-    parche = _con_sesion(client)
-    try:
-        client.post("/carpetas-documentos", json={"nombre": "Temporal"}, headers={"Authorization": "Bearer x"})
-        resp = client.delete("/carpetas-documentos", json={"nombre": "Temporal"}, headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
+    usuario_autenticado(email_verified=True)
+    client.post("/carpetas-documentos", json={"nombre": "Temporal"}, headers={"Authorization": "Bearer x"})
+    resp = client.delete("/carpetas-documentos", json={"nombre": "Temporal"}, headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
 
-        resp = client.get("/mis-documentos", headers={"Authorization": "Bearer x"})
-        assert resp.get_json()["carpetas"] == []
-    finally:
-        parche.stop()
+    resp = client.get("/mis-documentos", headers={"Authorization": "Bearer x"})
+    assert resp.get_json()["carpetas"] == []

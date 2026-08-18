@@ -1,16 +1,9 @@
 """Pruebas del generador de Test Oficial (banco de preguntas de exámenes
 reales ya cargados en Firestore, sin llamar a ninguna IA) y del reparto
 por cuotas que comparte con el Test Personalizado verificado."""
-from unittest.mock import patch
 
 from conftest import sembrar_usuario_activo
 from utils import repartir_cupos_por_tema, seleccionar_preguntas_con_cuota
-
-
-def _con_sesion(cliente, uid="u1", email="u1@example.com"):
-    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
-    parche.start()
-    return parche
 
 
 def _pregunta(numero, tema_id, examen="AGE 2025 - Ejercicio único (ingreso libre)"):
@@ -84,7 +77,7 @@ def test_seleccionar_ignora_temas_sin_preguntas_disponibles():
 # /generar-test-oficial
 # ============================================================
 
-def test_ruta_generar_test_oficial_devuelve_preguntas_de_firestore(client, db):
+def test_ruta_generar_test_oficial_devuelve_preguntas_de_firestore(client, db, usuario_autenticado):
     for i in range(5):
         db.sembrar(("examenes_oficiales_AGE", f"age_2025_eu_{i:03d}"), {
             "tipo": "pregunta", **_pregunta(i, "bloque_01-tema_01")
@@ -93,23 +86,20 @@ def test_ruta_generar_test_oficial_devuelve_preguntas_de_firestore(client, db):
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}}
     })
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/generar-test-oficial",
-            json={"num_preguntas": 3, "oposicion": "AGE"},
-            headers={"Authorization": "Bearer x"}
-        )
-        assert resp.status_code == 200
-        test = resp.get_json()["test"]
-        assert len(test) == 3
-        # las opciones se normalizan siempre a mayúsculas
-        assert set(test[0]["opciones"].keys()) == {"A", "B", "C", "D"}
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/generar-test-oficial",
+        json={"num_preguntas": 3, "oposicion": "AGE"},
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 200
+    test = resp.get_json()["test"]
+    assert len(test) == 3
+    # las opciones se normalizan siempre a mayúsculas
+    assert set(test[0]["opciones"].keys()) == {"A", "B", "C", "D"}
 
 
-def test_ruta_generar_test_oficial_filtra_por_examen(client, db):
+def test_ruta_generar_test_oficial_filtra_por_examen(client, db, usuario_autenticado):
     db.sembrar(("examenes_oficiales_AGE", "a1"), {
         "tipo": "pregunta", **_pregunta(1, "bloque_01-tema_01", examen="AGE 2022 - Ejercicio único (ingreso libre)")
     })
@@ -120,21 +110,18 @@ def test_ruta_generar_test_oficial_filtra_por_examen(client, db):
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}}
     })
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/generar-test-oficial",
-            json={"num_preguntas": 10, "oposicion": "AGE", "examenes": ["AGE 2022 - Ejercicio único (ingreso libre)"]},
-            headers={"Authorization": "Bearer x"}
-        )
-        test = resp.get_json()["test"]
-        assert len(test) == 1
-        assert test[0]["numero"] == 1
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/generar-test-oficial",
+        json={"num_preguntas": 10, "oposicion": "AGE", "examenes": ["AGE 2022 - Ejercicio único (ingreso libre)"]},
+        headers={"Authorization": "Bearer x"}
+    )
+    test = resp.get_json()["test"]
+    assert len(test) == 1
+    assert test[0]["numero"] == 1
 
 
-def test_ruta_generar_test_oficial_modo_realista_pondera_por_bloque(client, db):
+def test_ruta_generar_test_oficial_modo_realista_pondera_por_bloque(client, db, usuario_autenticado):
     # bloque_06 tiene muchas más preguntas históricas cargadas que
     # bloque_01, así que con modo_reparto=realista debe llevarse la
     # mayoría de las preguntas del test aunque se filtre por ambos temas.
@@ -146,28 +133,25 @@ def test_ruta_generar_test_oficial_modo_realista_pondera_por_bloque(client, db):
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}}
     })
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/generar-test-oficial",
-            json={
-                "num_preguntas": 10, "oposicion": "AGE",
-                "temas": ["bloque_01-tema_01", "bloque_06-tema_01"],
-                "modo_reparto": "realista",
-            },
-            headers={"Authorization": "Bearer x"}
-        )
-        assert resp.status_code == 200
-        test = resp.get_json()["test"]
-        assert len(test) == 10
-        de_bloque_06 = sum(1 for p in test if p["tema_id"] == "bloque_06-tema_01")
-        # 18 de 20 preguntas históricas son de bloque_06 -> 90% de peso.
-        assert de_bloque_06 == 9
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/generar-test-oficial",
+        json={
+            "num_preguntas": 10, "oposicion": "AGE",
+            "temas": ["bloque_01-tema_01", "bloque_06-tema_01"],
+            "modo_reparto": "realista",
+        },
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 200
+    test = resp.get_json()["test"]
+    assert len(test) == 10
+    de_bloque_06 = sum(1 for p in test if p["tema_id"] == "bloque_06-tema_01")
+    # 18 de 20 preguntas históricas son de bloque_06 -> 90% de peso.
+    assert de_bloque_06 == 9
 
 
-def test_ruta_generar_test_oficial_modo_reparto_invalido_cae_a_equitativo(client, db):
+def test_ruta_generar_test_oficial_modo_reparto_invalido_cae_a_equitativo(client, db, usuario_autenticado):
     for i in range(10):
         db.sembrar(("examenes_oficiales_AGE", f"b1-{i}"), {"tipo": "pregunta", **_pregunta(i, "bloque_01-tema_01")})
     for i in range(10):
@@ -176,27 +160,24 @@ def test_ruta_generar_test_oficial_modo_reparto_invalido_cae_a_equitativo(client
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}}
     })
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/generar-test-oficial",
-            json={
-                "num_preguntas": 6, "oposicion": "AGE",
-                "temas": ["bloque_01-tema_01", "bloque_02-tema_01"],
-                "modo_reparto": "esto-no-existe",
-            },
-            headers={"Authorization": "Bearer x"}
-        )
-        test = resp.get_json()["test"]
-        por_tema = {}
-        for p in test:
-            por_tema[p["tema_id"]] = por_tema.get(p["tema_id"], 0) + 1
-        assert por_tema == {"bloque_01-tema_01": 3, "bloque_02-tema_01": 3}
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/generar-test-oficial",
+        json={
+            "num_preguntas": 6, "oposicion": "AGE",
+            "temas": ["bloque_01-tema_01", "bloque_02-tema_01"],
+            "modo_reparto": "esto-no-existe",
+        },
+        headers={"Authorization": "Bearer x"}
+    )
+    test = resp.get_json()["test"]
+    por_tema = {}
+    for p in test:
+        por_tema[p["tema_id"]] = por_tema.get(p["tema_id"], 0) + 1
+    assert por_tema == {"bloque_01-tema_01": 3, "bloque_02-tema_01": 3}
 
 
-def test_ruta_generar_test_oficial_excluye_psicotecnicas_si_se_pide(client, db):
+def test_ruta_generar_test_oficial_excluye_psicotecnicas_si_se_pide(client, db, usuario_autenticado):
     for i in range(5):
         db.sembrar(("examenes_oficiales_AUXILIAR", f"c{i:03d}"), {
             "tipo": "pregunta", **_pregunta(i, "bloque_01-tema_01", examen="AUXILIAR 2025 - Ejercicio único (ingreso libre)"),
@@ -211,22 +192,19 @@ def test_ruta_generar_test_oficial_excluye_psicotecnicas_si_se_pide(client, db):
         "email": "u1@example.com",
         "suscripciones": {"AUXILIAR": {"plan": "basico", "subscription_status": "active"}}
     })
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/generar-test-oficial",
-            json={"num_preguntas": 10, "oposicion": "AUXILIAR", "excluir_psicotecnicas": True},
-            headers={"Authorization": "Bearer x"}
-        )
-        assert resp.status_code == 200
-        test = resp.get_json()["test"]
-        assert len(test) == 5
-        assert all(not p["psicotecnico"] for p in test)
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/generar-test-oficial",
+        json={"num_preguntas": 10, "oposicion": "AUXILIAR", "excluir_psicotecnicas": True},
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 200
+    test = resp.get_json()["test"]
+    assert len(test) == 5
+    assert all(not p["psicotecnico"] for p in test)
 
 
-def test_ruta_generar_test_oficial_incluye_psicotecnicas_por_defecto(client, db):
+def test_ruta_generar_test_oficial_incluye_psicotecnicas_por_defecto(client, db, usuario_autenticado):
     db.sembrar(("examenes_oficiales_AUXILIAR", "p001"), {
         "tipo": "pregunta", **_pregunta(1, "", examen="AUXILIAR 2025 - Ejercicio único (ingreso libre)"),
         "psicotecnico": True,
@@ -235,80 +213,68 @@ def test_ruta_generar_test_oficial_incluye_psicotecnicas_por_defecto(client, db)
         "email": "u1@example.com",
         "suscripciones": {"AUXILIAR": {"plan": "basico", "subscription_status": "active"}}
     })
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/generar-test-oficial",
-            json={"num_preguntas": 5, "oposicion": "AUXILIAR"},
-            headers={"Authorization": "Bearer x"}
-        )
-        assert resp.status_code == 200
-        test = resp.get_json()["test"]
-        assert len(test) == 1
-        assert test[0]["psicotecnico"] is True
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/generar-test-oficial",
+        json={"num_preguntas": 5, "oposicion": "AUXILIAR"},
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 200
+    test = resp.get_json()["test"]
+    assert len(test) == 1
+    assert test[0]["psicotecnico"] is True
 
 
-def test_ruta_generar_test_oficial_404_si_no_hay_preguntas_cargadas(client, db):
+def test_ruta_generar_test_oficial_404_si_no_hay_preguntas_cargadas(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"GACE": {"plan": "basico", "subscription_status": "active"}}
     })
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/generar-test-oficial",
-            json={"num_preguntas": 5, "oposicion": "GACE"},
-            headers={"Authorization": "Bearer x"}
-        )
-        assert resp.status_code == 404
-        assert resp.get_json()["test"] == []
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/generar-test-oficial",
+        json={"num_preguntas": 5, "oposicion": "GACE"},
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 404
+    assert resp.get_json()["test"] == []
 
 
-def test_ruta_generar_test_oficial_bloqueada_para_plan_gratis(client, db):
+def test_ruta_generar_test_oficial_bloqueada_para_plan_gratis(client, db, usuario_autenticado):
     db.sembrar(("examenes_oficiales_AGE", "a1"), {"tipo": "pregunta", **_pregunta(1, "bloque_01-tema_01")})
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "gratis"}}
     })
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/generar-test-oficial",
-            json={"num_preguntas": 5, "oposicion": "AGE"},
-            headers={"Authorization": "Bearer x"}
-        )
-        assert resp.status_code == 403
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/generar-test-oficial",
+        json={"num_preguntas": 5, "oposicion": "AGE"},
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 403
 
 
-def test_ruta_generar_test_oficial_registra_uso_en_preguntas(client, db):
+def test_ruta_generar_test_oficial_registra_uso_en_preguntas(client, db, usuario_autenticado):
     for i in range(5):
         db.sembrar(("examenes_oficiales_AGE", f"a{i}"), {"tipo": "pregunta", **_pregunta(i, "bloque_01-tema_01")})
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}}
     })
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/generar-test-oficial",
-            json={"num_preguntas": 3, "oposicion": "AGE"},
-            headers={"Authorization": "Bearer x"}
-        )
-        assert resp.status_code == 200
-        datos_usuario = db.leer(("usuarios", "u1"))
-        # El cupo se cobra en PREGUNTAS entregadas, igual que el Test Personalizado.
-        assert datos_usuario["limites_uso"]["test_oficial"]["contador"] == 3
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/generar-test-oficial",
+        json={"num_preguntas": 3, "oposicion": "AGE"},
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 200
+    datos_usuario = db.leer(("usuarios", "u1"))
+    # El cupo se cobra en PREGUNTAS entregadas, igual que el Test Personalizado.
+    assert datos_usuario["limites_uso"]["test_oficial"]["contador"] == 3
 
 
-def test_ruta_generar_test_oficial_429_si_supera_el_limite_diario(client, db):
+def test_ruta_generar_test_oficial_429_si_supera_el_limite_diario(client, db, usuario_autenticado):
     from limites_uso import _clave_periodo
     db.sembrar(("examenes_oficiales_AGE", "a1"), {"tipo": "pregunta", **_pregunta(1, "bloque_01-tema_01")})
     db.sembrar(("usuarios", "u1"), {
@@ -316,51 +282,42 @@ def test_ruta_generar_test_oficial_429_si_supera_el_limite_diario(client, db):
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
         "limites_uso": {"test_oficial": {"periodo": _clave_periodo("dia"), "contador": 50}}
     })
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/generar-test-oficial",
-            json={"num_preguntas": 5, "oposicion": "AGE"},
-            headers={"Authorization": "Bearer x"}
-        )
-        assert resp.status_code == 429
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/generar-test-oficial",
+        json={"num_preguntas": 5, "oposicion": "AGE"},
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 429
 
 
 # ============================================================
 # /guardar-test-oficial
 # ============================================================
 
-def test_ruta_guardar_test_oficial_guarda_el_resultado(client, db):
+def test_ruta_guardar_test_oficial_guarda_el_resultado(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/guardar-test-oficial",
-            json={"contenido": [_pregunta(1, "bloque_01-tema_01")], "respuestas": {"0": "A"}, "metadatos": {"examen": "AGE 2025"}},
-            headers={"Authorization": "Bearer x"}
-        )
-        assert resp.status_code == 200
-        guardados = list(db.collection("test_oficiales").stream())
-        assert len(guardados) == 1
-        assert guardados[0].to_dict()["usuario_id"] == "u1"
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/guardar-test-oficial",
+        json={"contenido": [_pregunta(1, "bloque_01-tema_01")], "respuestas": {"0": "A"}, "metadatos": {"examen": "AGE 2025"}},
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 200
+    guardados = list(db.collection("test_oficiales").stream())
+    assert len(guardados) == 1
+    assert guardados[0].to_dict()["usuario_id"] == "u1"
 
 
-def test_ruta_guardar_test_oficial_400_si_faltan_datos(client, db):
+def test_ruta_guardar_test_oficial_400_si_faltan_datos(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
-    parche = _con_sesion(client)
-    try:
-        resp = client.post(
-            "/guardar-test-oficial",
-            json={"contenido": [_pregunta(1, "bloque_01-tema_01")]},  # falta "respuestas"
-            headers={"Authorization": "Bearer x"}
-        )
-        assert resp.status_code == 400
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/guardar-test-oficial",
+        json={"contenido": [_pregunta(1, "bloque_01-tema_01")]},  # falta "respuestas"
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 400
 
 
 def test_ruta_guardar_test_oficial_requiere_login(client, db):

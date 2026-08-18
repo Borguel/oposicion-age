@@ -791,7 +791,7 @@ def _eventos_sse(cuerpo_respuesta):
     ]
 
 
-def test_ruta_generar_test_avanzado_emite_eventos_y_registra_uso(client, db):
+def test_ruta_generar_test_avanzado_emite_eventos_y_registra_uso(client, db, usuario_autenticado):
     relleno = " ".join(["palabra"] * 30)
     db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
         "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido real de prueba. {relleno}"
@@ -800,74 +800,64 @@ def test_ruta_generar_test_avanzado_emite_eventos_y_registra_uso(client, db):
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}}
     })
-    parche_auth = patch("auth_utils.firebase_auth.verify_id_token",
-                         return_value={"uid": "u1", "email": "u1@example.com"})
-    parche_auth.start()
-    try:
-        contador = itertools.count()
-        lock_contador = threading.Lock()
-        with patch("generador_preguntas_verificado.call_deepseek_api",
-                   side_effect=_mock_deepseek_siempre_valido(contador, lock_contador)), \
-             patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
-            resp = client.post(
-                "/generar-test-avanzado",
-                json={"temas": ["bloque_01-tema_01"], "num_preguntas": 2, "oposicion": "AGE"},
-                headers={"Authorization": "Bearer x"}
-            )
-            # El cuerpo hay que leerlo (drenar el generador SSE del todo)
-            # TODAVÍA dentro del "with": la ruta lanza un hilo en segundo
-            # plano que sigue llamando a call_deepseek_api mientras se
-            # consume el stream, así que si se lee fuera del "with" el mock
-            # ya se ha desactivado a medias y algunas llamadas usan la
-            # función real (fallando por falta de red en el sandbox).
-            cuerpo = resp.get_data(as_text=True)
-        assert resp.status_code == 200
-        eventos = _eventos_sse(cuerpo)
-        assert eventos[-1]["tipo"] == "fin"
-        assert len(eventos[-1]["test"]) == 2
-        # También se han retransmitido eventos de progreso reales por el
-        # camino, no solo el resultado final de golpe.
-        assert any(e["tipo"] == "progreso" for e in eventos)
-        # Y las preguntas aceptadas se retransmiten individualmente en
-        # cuanto están listas, en un evento aparte -- para que el frontend
-        # pueda empezar el test antes de que termine todo el streaming.
-        eventos_pregunta = [e for e in eventos if e["tipo"] == "pregunta"]
-        assert len(eventos_pregunta) == 2
-        assert all("pregunta" in e and "opciones" in e["pregunta"] for e in eventos_pregunta)
-        # El evento "progreso" no debe llevar la pregunta duplicada dentro.
-        assert all("pregunta" not in e for e in eventos if e["tipo"] == "progreso")
-        datos_usuario = db.leer(("usuarios", "u1"))
-        # El cupo se mide en preguntas: un test de 2 preguntas gasta 2 unidades
-        # -- en el cupo diario Y en el tope mensual adicional, a la vez.
-        assert datos_usuario["limites_uso"]["test_avanzado_verificado"]["contador"] == 2
-        assert datos_usuario["limites_uso"]["test_avanzado_verificado_mensual"]["contador"] == 2
-    finally:
-        parche_auth.stop()
+    usuario_autenticado()
+    contador = itertools.count()
+    lock_contador = threading.Lock()
+    with patch("generador_preguntas_verificado.call_deepseek_api",
+               side_effect=_mock_deepseek_siempre_valido(contador, lock_contador)), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        resp = client.post(
+            "/generar-test-avanzado",
+            json={"temas": ["bloque_01-tema_01"], "num_preguntas": 2, "oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"}
+        )
+        # El cuerpo hay que leerlo (drenar el generador SSE del todo)
+        # TODAVÍA dentro del "with": la ruta lanza un hilo en segundo
+        # plano que sigue llamando a call_deepseek_api mientras se
+        # consume el stream, así que si se lee fuera del "with" el mock
+        # ya se ha desactivado a medias y algunas llamadas usan la
+        # función real (fallando por falta de red en el sandbox).
+        cuerpo = resp.get_data(as_text=True)
+    assert resp.status_code == 200
+    eventos = _eventos_sse(cuerpo)
+    assert eventos[-1]["tipo"] == "fin"
+    assert len(eventos[-1]["test"]) == 2
+    # También se han retransmitido eventos de progreso reales por el
+    # camino, no solo el resultado final de golpe.
+    assert any(e["tipo"] == "progreso" for e in eventos)
+    # Y las preguntas aceptadas se retransmiten individualmente en
+    # cuanto están listas, en un evento aparte -- para que el frontend
+    # pueda empezar el test antes de que termine todo el streaming.
+    eventos_pregunta = [e for e in eventos if e["tipo"] == "pregunta"]
+    assert len(eventos_pregunta) == 2
+    assert all("pregunta" in e and "opciones" in e["pregunta"] for e in eventos_pregunta)
+    # El evento "progreso" no debe llevar la pregunta duplicada dentro.
+    assert all("pregunta" not in e for e in eventos if e["tipo"] == "progreso")
+    datos_usuario = db.leer(("usuarios", "u1"))
+    # El cupo se mide en preguntas: un test de 2 preguntas gasta 2 unidades
+    # -- en el cupo diario Y en el tope mensual adicional, a la vez.
+    assert datos_usuario["limites_uso"]["test_avanzado_verificado"]["contador"] == 2
+    assert datos_usuario["limites_uso"]["test_avanzado_verificado_mensual"]["contador"] == 2
 
 
-def test_ruta_generar_test_avanzado_429_si_supera_el_limite(client, db):
+def test_ruta_generar_test_avanzado_429_si_supera_el_limite(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
         "limites_uso": {"test_avanzado_verificado": {"periodo": _clave_periodo("dia"), "contador": 300}}
     })
-    parche_auth = patch("auth_utils.firebase_auth.verify_id_token",
-                         return_value={"uid": "u1", "email": "u1@example.com"})
-    parche_auth.start()
-    try:
-        with patch("generador_preguntas_verificado.call_deepseek_api") as mock_llamada:
-            resp = client.post(
-                "/generar-test-avanzado",
-                json={"temas": ["bloque_01-tema_01"], "num_preguntas": 2, "oposicion": "AGE"},
-                headers={"Authorization": "Bearer x"}
-            )
-        assert resp.status_code == 429
-        mock_llamada.assert_not_called()
-    finally:
-        parche_auth.stop()
+    usuario_autenticado()
+    with patch("generador_preguntas_verificado.call_deepseek_api") as mock_llamada:
+        resp = client.post(
+            "/generar-test-avanzado",
+            json={"temas": ["bloque_01-tema_01"], "num_preguntas": 2, "oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"}
+        )
+    assert resp.status_code == 429
+    mock_llamada.assert_not_called()
 
 
-def test_ruta_generar_test_avanzado_429_si_supera_el_tope_mensual_aunque_el_diario_este_libre(client, db):
+def test_ruta_generar_test_avanzado_429_si_supera_el_tope_mensual_aunque_el_diario_este_libre(client, db, usuario_autenticado):
     # El tope mensual es un cupo INDEPENDIENTE del diario: agotarlo bloquea
     # la ruta aunque el contador diario esté a cero (p. ej. si el usuario ya
     # gastó su cupo mensual en días anteriores).
@@ -876,36 +866,26 @@ def test_ruta_generar_test_avanzado_429_si_supera_el_tope_mensual_aunque_el_diar
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
         "limites_uso": {"test_avanzado_verificado_mensual": {"periodo": _clave_periodo("mes"), "contador": 400}}
     })
-    parche_auth = patch("auth_utils.firebase_auth.verify_id_token",
-                         return_value={"uid": "u1", "email": "u1@example.com"})
-    parche_auth.start()
-    try:
-        with patch("generador_preguntas_verificado.call_deepseek_api") as mock_llamada:
-            resp = client.post(
-                "/generar-test-avanzado",
-                json={"temas": ["bloque_01-tema_01"], "num_preguntas": 2, "oposicion": "AGE"},
-                headers={"Authorization": "Bearer x"}
-            )
-        assert resp.status_code == 429
-        mock_llamada.assert_not_called()
-    finally:
-        parche_auth.stop()
-
-
-def test_ruta_generar_test_avanzado_bloqueada_para_plan_gratis(client, db):
-    db.sembrar(("usuarios", "u1"), {
-        "email": "u1@example.com",
-        "suscripciones": {"AGE": {"plan": "gratis"}}
-    })
-    parche_auth = patch("auth_utils.firebase_auth.verify_id_token",
-                         return_value={"uid": "u1", "email": "u1@example.com"})
-    parche_auth.start()
-    try:
+    usuario_autenticado()
+    with patch("generador_preguntas_verificado.call_deepseek_api") as mock_llamada:
         resp = client.post(
             "/generar-test-avanzado",
             json={"temas": ["bloque_01-tema_01"], "num_preguntas": 2, "oposicion": "AGE"},
             headers={"Authorization": "Bearer x"}
         )
-        assert resp.status_code == 403
-    finally:
-        parche_auth.stop()
+    assert resp.status_code == 429
+    mock_llamada.assert_not_called()
+
+
+def test_ruta_generar_test_avanzado_bloqueada_para_plan_gratis(client, db, usuario_autenticado):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "gratis"}}
+    })
+    usuario_autenticado()
+    resp = client.post(
+        "/generar-test-avanzado",
+        json={"temas": ["bloque_01-tema_01"], "num_preguntas": 2, "oposicion": "AGE"},
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 403

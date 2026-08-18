@@ -2,17 +2,10 @@
 oficial (aciertos - fallos/3, sobre el total de preguntas) en todos los
 sitios que lo usan -- antes había 3 versiones distintas que no siempre
 coincidían entre sí (ver utils.calcular_resultado_test)."""
-from unittest.mock import patch
 
 from conftest import sembrar_usuario_activo
 from utils import calcular_resultado_test
 from registro_progreso_usuario import actualizar_estadisticas_test
-
-
-def _con_sesion(cliente, uid="u1", email="u1@example.com"):
-    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
-    parche.start()
-    return parche
 
 
 def _contenido_con_aciertos_y_fallos(aciertos, fallos, blancos=0):
@@ -66,29 +59,26 @@ def test_calcular_resultado_test_blancos_cambian_el_resultado():
     assert nota_con_blancos < nota_sin_blancos
 
 
-def test_guardar_test_con_numeros_del_bug_guarda_suspendido(client, db):
+def test_guardar_test_con_numeros_del_bug_guarda_suspendido(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     contenido, respuestas = _contenido_con_aciertos_y_fallos(aciertos=6, fallos=4)
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/guardar-test?oposicion=AGE", json={
-            "contenido": contenido,
-            "respuestas": respuestas,
-            "metadatos": {"tipo": "personalizado", "tiempo": 0}
-        }, headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
+    usuario_autenticado()
+    resp = client.post("/guardar-test?oposicion=AGE", json={
+        "contenido": contenido,
+        "respuestas": respuestas,
+        "metadatos": {"tipo": "personalizado", "tiempo": 0}
+    }, headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
 
-        listado = client.get("/mis-tests?oposicion=AGE", headers={"Authorization": "Bearer x"}).get_json()
-        assert len(listado["tests"]) == 1
-        test_guardado = listado["tests"][0]
-        assert test_guardado["aciertos"] == 6
-        assert test_guardado["fallos"] == 4
-        assert test_guardado["resultado"] == "suspendido"
-    finally:
-        parche.stop()
+    listado = client.get("/mis-tests?oposicion=AGE", headers={"Authorization": "Bearer x"}).get_json()
+    assert len(listado["tests"]) == 1
+    test_guardado = listado["tests"][0]
+    assert test_guardado["aciertos"] == 6
+    assert test_guardado["fallos"] == 4
+    assert test_guardado["resultado"] == "suspendido"
 
 
-def test_mis_tests_autocura_un_resultado_guardado_mal(client, db):
+def test_mis_tests_autocura_un_resultado_guardado_mal(client, db, usuario_autenticado):
     # Simula un test guardado ANTES del arreglo: aciertos/fallos correctos
     # pero con el campo "resultado" mal calculado (como estaba el bug).
     sembrar_usuario_activo(db, "u1", plan="basico")
@@ -101,15 +91,12 @@ def test_mis_tests_autocura_un_resultado_guardado_mal(client, db):
         "resultado": "aprobado",  # valor viejo/incorrecto ya guardado
         "fecha": "2026-01-01T00:00:00",
     })
-    parche = _con_sesion(client)
-    try:
-        resp = client.get("/mis-tests?oposicion=AGE", headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-        tests = resp.get_json()["tests"]
-        assert len(tests) == 1
-        assert tests[0]["resultado"] == "suspendido"
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.get("/mis-tests?oposicion=AGE", headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    tests = resp.get_json()["tests"]
+    assert len(tests) == 1
+    assert tests[0]["resultado"] == "suspendido"
 
 
 def test_actualizar_estadisticas_test_usa_formula_oficial(db):

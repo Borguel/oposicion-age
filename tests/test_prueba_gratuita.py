@@ -147,46 +147,42 @@ def mini_app(db):
     return app
 
 
-def test_requiere_plan_bloquea_sin_haber_activado_la_oposicion(mini_app, db):
+def test_requiere_plan_bloquea_sin_haber_activado_la_oposicion(mini_app, db, usuario_autenticado):
     # Aunque el email esté verificado, una cuenta que nunca ha activado AGE
     # (oposición por defecto, ver obtener_oposicion_solicitada) no tiene
     # acceso -- verificar el email ya no basta por sí solo, hay que activar
     # la oposición primero (ver activar_oposicion_usuario).
-    with patch("auth_utils.firebase_auth.verify_id_token",
-               return_value={"uid": "nuevo", "email": "nuevo@gmail.com", "email_verified": True}):
-        cliente = mini_app.test_client()
-        resp = cliente.get("/solo-basico", headers={"Authorization": "Bearer x"})
+    usuario_autenticado(uid="nuevo", email="nuevo@gmail.com", email_verified=True)
+    cliente = mini_app.test_client()
+    resp = cliente.get("/solo-basico", headers={"Authorization": "Bearer x"})
     assert resp.status_code == 403
 
 
-def test_requiere_plan_bloquea_a_quien_no_ha_verificado_el_email(mini_app, db):
-    with patch("auth_utils.firebase_auth.verify_id_token",
-               return_value={"uid": "nuevo", "email": "nuevo@gmail.com", "email_verified": False}):
-        cliente = mini_app.test_client()
-        resp = cliente.get("/solo-basico", headers={"Authorization": "Bearer x"})
+def test_requiere_plan_bloquea_a_quien_no_ha_verificado_el_email(mini_app, db, usuario_autenticado):
+    usuario_autenticado(uid="nuevo", email="nuevo@gmail.com", email_verified=False)
+    cliente = mini_app.test_client()
+    resp = cliente.get("/solo-basico", headers={"Authorization": "Bearer x"})
     assert resp.status_code == 403
 
 
-def test_requiere_plan_deja_pasar_tras_activar_la_oposicion(mini_app, db):
+def test_requiere_plan_deja_pasar_tras_activar_la_oposicion(mini_app, db, usuario_autenticado):
     activar_oposicion_usuario(db, "nuevo", "AGE", email="nuevo@gmail.com", email_verificado=True)
-    with patch("auth_utils.firebase_auth.verify_id_token",
-               return_value={"uid": "nuevo", "email": "nuevo@gmail.com", "email_verified": True}):
-        cliente = mini_app.test_client()
-        resp = cliente.get("/solo-basico", headers={"Authorization": "Bearer x"})
+    usuario_autenticado(uid="nuevo", email="nuevo@gmail.com", email_verified=True)
+    cliente = mini_app.test_client()
+    resp = cliente.get("/solo-basico", headers={"Authorization": "Bearer x"})
     assert resp.status_code == 200
 
 
-def test_requiere_plan_deja_pasar_a_quien_entra_con_google_tras_activar(mini_app, db):
+def test_requiere_plan_deja_pasar_a_quien_entra_con_google_tras_activar(mini_app, db, usuario_autenticado):
     # Un inicio de sesión con Google también manda email_verified=True en
     # el token (Google ya verifica la dirección) -- se prueba aparte del
     # caso general para dejar constancia de que Google no queda bloqueado
     # una vez ha activado su oposición.
     activar_oposicion_usuario(db, "goog1", "AGE", email="persona@gmail.com", email_verificado=True)
-    with patch("auth_utils.firebase_auth.verify_id_token",
-               return_value={"uid": "goog1", "email": "persona@gmail.com", "email_verified": True,
-                             "firebase": {"sign_in_provider": "google.com"}}):
-        cliente = mini_app.test_client()
-        resp = cliente.get("/solo-basico", headers={"Authorization": "Bearer x"})
+    usuario_autenticado(uid="goog1", email="persona@gmail.com", email_verified=True,
+                         firebase={"sign_in_provider": "google.com"})
+    cliente = mini_app.test_client()
+    resp = cliente.get("/solo-basico", headers={"Authorization": "Bearer x"})
     assert resp.status_code == 200
 
 

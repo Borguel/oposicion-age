@@ -9,13 +9,7 @@ from banco_fallos import _id_pregunta
 from guardar_resultado import guardar_resultado_en_firestore
 
 
-def _con_sesion(cliente, uid="u1", email="u1@example.com"):
-    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
-    parche.start()
-    return parche
-
-
-def test_guardar_test_incrementa_contadores_de_cada_pregunta(client, db):
+def test_guardar_test_incrementa_contadores_de_cada_pregunta(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     contenido = [
         {"pregunta": "acierto", "respuesta_correcta": "A", "opciones": {"A": "x", "B": "y"}},
@@ -23,16 +17,13 @@ def test_guardar_test_incrementa_contadores_de_cada_pregunta(client, db):
         {"pregunta": "blanco", "respuesta_correcta": "A", "opciones": {"A": "x", "B": "y"}},
     ]
     respuestas = ["A", "B", None]
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/guardar-test?oposicion=AGE", json={
-            "contenido": contenido,
-            "respuestas": respuestas,
-            "metadatos": {"tipo": "personalizado", "tiempo": 0}
-        }, headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post("/guardar-test?oposicion=AGE", json={
+        "contenido": contenido,
+        "respuestas": respuestas,
+        "metadatos": {"tipo": "personalizado", "tiempo": 0}
+    }, headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
 
     id_acierto = _id_pregunta("AGE", "acierto")
     id_fallo = _id_pregunta("AGE", "fallo")
@@ -47,71 +38,59 @@ def test_guardar_test_incrementa_contadores_de_cada_pregunta(client, db):
     assert doc_blanco == {"total_respuestas": 1}
 
 
-def test_guardar_test_acumula_entre_tests_sucesivos_de_distintos_usuarios(client, db):
+def test_guardar_test_acumula_entre_tests_sucesivos_de_distintos_usuarios(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     sembrar_usuario_activo(db, "u2", plan="basico")
     contenido = [{"pregunta": "misma pregunta", "respuesta_correcta": "A", "opciones": {"A": "x", "B": "y"}}]
 
-    parche = _con_sesion(client, uid="u1", email="u1@example.com")
-    try:
-        client.post("/guardar-test?oposicion=AGE", json={
-            "contenido": contenido, "respuestas": ["A"], "metadatos": {"tipo": "personalizado", "tiempo": 0}
-        }, headers={"Authorization": "Bearer x"})
-    finally:
-        parche.stop()
+    usuario_autenticado(uid="u1", email="u1@example.com")
+    client.post("/guardar-test?oposicion=AGE", json={
+        "contenido": contenido, "respuestas": ["A"], "metadatos": {"tipo": "personalizado", "tiempo": 0}
+    }, headers={"Authorization": "Bearer x"})
 
-    parche = _con_sesion(client, uid="u2", email="u2@example.com")
-    try:
-        client.post("/guardar-test?oposicion=AGE", json={
-            "contenido": contenido, "respuestas": ["B"], "metadatos": {"tipo": "personalizado", "tiempo": 0}
-        }, headers={"Authorization": "Bearer x"})
-    finally:
-        parche.stop()
+    usuario_autenticado(uid="u2", email="u2@example.com")
+    client.post("/guardar-test?oposicion=AGE", json={
+        "contenido": contenido, "respuestas": ["B"], "metadatos": {"tipo": "personalizado", "tiempo": 0}
+    }, headers={"Authorization": "Bearer x"})
 
     doc = db.leer(("preguntas", _id_pregunta("AGE", "misma pregunta")))
     assert doc == {"total_respuestas": 2, "total_aciertos": 1}
 
 
-def test_pregunta_marcada_duda_no_alimenta_los_contadores(client, db):
+def test_pregunta_marcada_duda_no_alimenta_los_contadores(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     contenido = [
         {"pregunta": "con duda", "respuesta_correcta": "A", "opciones": {"A": "x", "B": "y"}},
         {"pregunta": "sin duda", "respuesta_correcta": "A", "opciones": {"A": "x", "B": "y"}},
     ]
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/guardar-test?oposicion=AGE", json={
-            "contenido": contenido,
-            "respuestas": ["A", "A"],
-            "metadatos": {"tipo": "personalizado", "tiempo": 0},
-            "marcadas_duda": [True, False],
-        }, headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post("/guardar-test?oposicion=AGE", json={
+        "contenido": contenido,
+        "respuestas": ["A", "A"],
+        "metadatos": {"tipo": "personalizado", "tiempo": 0},
+        "marcadas_duda": [True, False],
+    }, headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
 
     assert db.leer(("preguntas", _id_pregunta("AGE", "con duda"))) is None
     assert db.leer(("preguntas", _id_pregunta("AGE", "sin duda"))) == {"total_respuestas": 1, "total_aciertos": 1}
 
 
-def test_fallo_en_el_batch_no_rompe_la_correccion_del_test(client, db, caplog):
+def test_fallo_en_el_batch_no_rompe_la_correccion_del_test(client, db, caplog, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     contenido = [{"pregunta": "acierto", "respuesta_correcta": "A", "opciones": {"A": "x", "B": "y"}}]
-    parche = _con_sesion(client)
-    try:
-        with patch.object(db, "batch", side_effect=Exception("fallo simulado de escritura")):
-            resp = client.post("/guardar-test?oposicion=AGE", json={
-                "contenido": contenido,
-                "respuestas": ["A"],
-                "metadatos": {"tipo": "personalizado", "tiempo": 0},
-            }, headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-        assert resp.get_json()["mensaje"] == "Test guardado correctamente"
+    usuario_autenticado()
+    with patch.object(db, "batch", side_effect=Exception("fallo simulado de escritura")):
+        resp = client.post("/guardar-test?oposicion=AGE", json={
+            "contenido": contenido,
+            "respuestas": ["A"],
+            "metadatos": {"tipo": "personalizado", "tiempo": 0},
+        }, headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    assert resp.get_json()["mensaje"] == "Test guardado correctamente"
 
-        listado = client.get("/mis-tests?oposicion=AGE", headers={"Authorization": "Bearer x"})
-        assert listado.status_code == 200
-    finally:
-        parche.stop()
+    listado = client.get("/mis-tests?oposicion=AGE", headers={"Authorization": "Bearer x"})
+    assert listado.status_code == 200
 
     assert any("[calibracion]" in registro.message for registro in caplog.records)
 
