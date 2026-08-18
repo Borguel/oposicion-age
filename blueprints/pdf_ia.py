@@ -16,7 +16,7 @@ from pypdf import PdfReader
 
 from firebase_setup import db
 from auth_utils import requiere_plan, requiere_admin, obtener_oposicion_solicitada
-from limites_uso import max_paginas_para_plan, verificar_limite_uso, registrar_uso, devolver_uso, reservar_uso
+from limites_uso import max_paginas_para_plan, verificar_limite_uso, devolver_uso, reservar_uso
 from rate_limiter import limiter
 from documentos_pdf import (
     obtener_documento, listar_documentos, actualizar_carpeta,
@@ -115,11 +115,20 @@ def _resolver_texto_documento(plan_actual):
     # nueva, por muchas veces que se use.
     documento_id, documento = buscar_documento_por_texto(db, g.uid, text)
     if not documento_id:
-        permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, plan_actual, "banco_pdf_mensual")
+        # reservar_uso comprueba Y cobra en una única transacción atómica,
+        # ANTES de crear el documento -- así dos subidas concurrentes de
+        # documentos NUEVOS y distintos no pueden pasar la comprobación las
+        # dos a la vez viendo cupo libre (verificar_limite_uso, sin
+        # transacción, dejaba esa ventana abierta). Si crear_documento
+        # falla, se devuelve el uso ya reservado.
+        permitido, mensaje_error, _usados, _limite = reservar_uso(db, g.uid, "banco_pdf_mensual", plan_actual)
         if not permitido:
             return None, None, None, (jsonify({"error": mensaje_error}), 429)
-        documento_id, documento = crear_documento(db, g.uid, text, pdf_file.filename, numero_paginas)
-        registrar_uso(db, g.uid, "banco_pdf_mensual", plan_actual)
+        try:
+            documento_id, documento = crear_documento(db, g.uid, text, pdf_file.filename, numero_paginas)
+        except Exception:
+            devolver_uso(db, g.uid, "banco_pdf_mensual", plan_actual)
+            raise
     return text, documento_id, pdf_file.filename, None
 
 

@@ -1735,6 +1735,21 @@ class TestCupoMensualDeSubidas:
             parche.stop()
         assert resp.status_code == 429
 
+    def test_subir_pdf_nuevo_devuelve_el_cupo_si_falla_crear_documento(self, client, db):
+        # Con reservar_uso el cupo se cobra ANTES de crear_documento (para
+        # cerrar la ventana de carrera) -- si crear_documento falla de
+        # verdad (p. ej. un problema transitorio de Firestore), el cupo ya
+        # reservado no debe quedar gastado sin que exista el documento.
+        sembrar_usuario_activo(db, "u1", plan="premium")
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.crear_documento", side_effect=RuntimeError("Firestore caído")):
+                resp = self._subir(client)
+        finally:
+            parche.stop()
+        assert resp.status_code == 500
+        assert db.leer(("usuarios", "u1")).get("limites_uso", {}).get("banco_pdf_mensual", {}).get("contador", 0) == 0
+
 
 class TestBancoPreguntasYTarjetas:
     """Rutas del banco pre-generado (03/08/2026): generan en segundo plano
