@@ -1087,7 +1087,12 @@ def test_ruta_tu_tutor_devuelve_502_si_deepseek_falla_y_no_gasta_cupo(client, db
         assert resp.status_code == 502
         assert "error" in resp.get_json()
         datos_usuario = db.leer(("usuarios", "u1"))
-        assert (datos_usuario.get("limites_uso") or {}).get("chat_temario") is None
+        # reservar_uso ahora cobra por adelantado y devolver_uso reembolsa
+        # si DeepSeek falla -- el campo queda a 0 en vez de no existir del
+        # todo (antes solo se llamaba a registrar_uso tras el éxito), pero
+        # el cupo efectivamente gastado es el mismo: cero.
+        uso = (datos_usuario.get("limites_uso") or {}).get("chat_temario")
+        assert uso is None or uso.get("contador") == 0
     finally:
         parche_auth.stop()
 

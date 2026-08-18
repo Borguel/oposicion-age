@@ -206,6 +206,33 @@ def test_banco_preguntas_oposicion_invalida_cae_a_age(client, db):
     assert d["oposicion"] == "AGE"
 
 
+def test_banco_preguntas_usa_cache_dentro_del_ttl(client, db):
+    # Mismo patrón que test_resumen_usa_cache_dentro_del_ttl: sin caché,
+    # cada carga del panel recorría la colección entera del banco más un
+    # .get() por tema/bloque -- ver _titulos_tema_y_bloque_batch.
+    db.sembrar(("banco_preguntas_ia_AGE", "p1"), {"tema_id": "bloque_01-tema_01"})
+    with _como():
+        primero = client.get("/admin/api/banco-preguntas?oposicion=AGE", headers=_AUTH).get_json()
+    assert primero["total_oposicion"] == 1
+
+    db.sembrar(("banco_preguntas_ia_AGE", "p2"), {"tema_id": "bloque_01-tema_01"})
+    with _como():
+        segundo = client.get("/admin/api/banco-preguntas?oposicion=AGE", headers=_AUTH).get_json()
+    assert segundo["total_oposicion"] == 1  # todavía dentro del TTL
+
+
+def test_banco_preguntas_recalcula_pasado_el_ttl(client, db):
+    import utils
+    db.sembrar(("banco_preguntas_ia_AGE", "p1"), {"tema_id": "bloque_01-tema_01"})
+    with _como():
+        client.get("/admin/api/banco-preguntas?oposicion=AGE", headers=_AUTH)
+    db.sembrar(("banco_preguntas_ia_AGE", "p2"), {"tema_id": "bloque_01-tema_01"})
+    ahora = utils.time.time()
+    with patch("utils.time.time", return_value=ahora + admin_module._TTL_CACHE_ADMIN_SEGUNDOS + 1), _como():
+        tras_ttl = client.get("/admin/api/banco-preguntas?oposicion=AGE", headers=_AUTH).get_json()
+    assert tras_ttl["total_oposicion"] == 2
+
+
 # ---------- Bloquear / eliminar / soporte ----------
 def test_resetear_limites_pone_a_cero(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "limites_uso": {"resumen": {"periodo": "2026-07-13", "contador": 5}}})
@@ -894,6 +921,22 @@ def test_export_usuarios_csv(client, db):
     assert resp.status_code == 200
     assert "text/csv" in resp.content_type
     assert "a@x.com" in resp.get_data(as_text=True)
+
+
+def test_export_usuarios_csv_neutraliza_inyeccion_de_formula(client, db):
+    """CSV/Formula Injection: un "nombre" que empiece por "=" (o "+", "-",
+    "@") se interpreta como fórmula al abrir el CSV en Excel/Sheets -- debe
+    salir con una comilla simple por delante para que se trate como texto
+    literal, no como fórmula (ver blueprints/admin.py._celda_csv_segura)."""
+    db.sembrar(("usuarios", "u1"), {
+        "email": "atacante@x.com", "nombre": '=HYPERLINK("http://evil.example","click")',
+        "suscripciones": {"AGE": {"plan": "premium"}},
+    })
+    with _como():
+        resp = client.get("/admin/api/usuarios/export", headers=_AUTH)
+    texto = resp.get_data(as_text=True)
+    assert ",=HYPERLINK" not in texto  # nunca cruda justo tras el separador de columna
+    assert "'=HYPERLINK" in texto  # protegida con comilla simple por delante
 
 
 def test_reportes_adjuntan_pregunta_oficial(client, db):

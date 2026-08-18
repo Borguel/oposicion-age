@@ -176,12 +176,14 @@ def _leer_respuesta_en_streaming(headers, payload, timeout):
 def _registrar_coste(usage):
     """Contabiliza el consumo de tokens de una respuesta de DeepSeek en el
     acumulador de la petición actual (best-effort; ver coste_ia.py). Nunca
-    debe romper la llamada principal."""
+    debe romper la llamada principal -- pero si falla de forma persistente
+    (p. ej. un cambio de esquema en coste_ia.py) sí queda constancia en el
+    log, para que un fallo sistemático no pase invisible."""
     try:
         from coste_ia import acumular_usage
         acumular_usage(usage)
     except Exception:
-        pass
+        logger.warning("No se pudo contabilizar el coste de una llamada a DeepSeek", exc_info=True)
 
 
 def _es_error_transitorio(exc):
@@ -369,7 +371,7 @@ def call_deepseek_api(messages, max_tokens=1500, temperature=0.7, response_forma
                 try:
                     on_usage(usage)
                 except Exception:
-                    pass
+                    logger.warning("El callback on_usage falló contabilizando el coste de DeepSeek", exc_info=True)
             else:
                 _registrar_coste(usage)
 
@@ -569,7 +571,7 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
             try:
                 on_usage(cuerpo.get("usage"))
             except Exception:
-                pass
+                logger.warning("El callback on_usage falló contabilizando el coste de DeepSeek", exc_info=True)
         else:
             _registrar_coste(cuerpo.get("usage"))
         choices = cuerpo.get("choices") or []

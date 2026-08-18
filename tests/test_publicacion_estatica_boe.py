@@ -52,6 +52,35 @@ def test_generar_html_avisos_incluye_tipo_titulo_y_enlaces():
     assert pub._URL_INAP_GENERAL in html
 
 
+def test_generar_html_avisos_escapa_titulo_y_url_contra_inyeccion_de_html():
+    """titulo/resumen/url_boe/url_inap se comitean tal cual a páginas
+    ESTÁTICAS públicas (frontend/oposicion-*/index.html) -- cualquier
+    cuenta con el permiso "reportes" puede rellenarlos (alta manual, ver
+    blueprints/admin.py). Sin escapar, un título como '<img
+    src=x onerror=...>' o una url_boe que rompa el atributo href="..."
+    quedarían servidos tal cual a cualquier visitante de la web."""
+    avisos = [{
+        "oposicion": "AGE", "tipo": "convocatoria",
+        "titulo": '<img src=x onerror="robar()">Convocatoria',
+        "url_boe": '"><script>robar()</script>',
+    }]
+    html = pub.generar_html_avisos(avisos)
+    assert "<img" not in html
+    assert "<script>" not in html
+    assert "&lt;img" in html
+    assert "&quot;&gt;&lt;script&gt;" in html
+
+
+def test_generar_html_avisos_hub_escapa_resumen_y_etiquetas_de_oposicion():
+    avisos = [{
+        "oposiciones": ["AGE"], "tipo": "convocatoria",
+        "titulo": "Convocatoria", "resumen": '<script>document.location="https://evil.example"</script>',
+    }]
+    html = pub.generar_html_avisos_hub(avisos)
+    assert "<script>" not in html
+    assert "&lt;script&gt;" in html
+
+
 def test_generar_html_avisos_usa_tipo_personalizado_si_esta_relleno():
     avisos = [{
         "oposicion": "AGE", "tipo": "otro", "tipo_personalizado": "Repesca especial",

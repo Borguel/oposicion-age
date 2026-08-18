@@ -11,7 +11,7 @@ from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 from firebase_setup import db
 from auth_utils import requiere_plan, obtener_oposicion_solicitada
 from rate_limiter import limiter
-from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso
+from limites_uso import verificar_limite_uso, registrar_uso, devolver_uso, reservar_uso, reservar_uso_multiple
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales, coleccion_psicotecnico, oposicion_valida
 from utils import seleccionar_preguntas_con_cuota, obtener_titulos_temas_reales, calcular_pesos_reales_por_bloque, obtener_preguntas_examenes_oficiales, obtener_preguntas_psicotecnico
 from generador_preguntas_verificado import generar_test_verificado
@@ -60,31 +60,32 @@ def generar_test_avanzado_route():
     modo_reparto = data.get("modo_reparto", "equitativo")
     if modo_reparto not in ("equitativo", "realista"):
         modo_reparto = "equitativo"
-    for tipo_cuota in TIPOS_CUOTA_TEST_PERSONALIZADO:
-        permitido, mensaje_error, _usados, _limite = verificar_limite_uso(
-            db, g.uid, g.plan_actual, tipo_cuota
-        )
-        if not permitido:
-            return jsonify({"error": mensaje_error}), 429
-
     coleccion = coleccion_temario(g.oposicion)
     oposicion = g.oposicion
     uid = g.uid
     plan_actual = g.plan_actual
 
-    # El uso se cobra AQUÍ, por adelantado, no al llegar el evento "fin": la
-    # generación corre en un hilo de fondo que sigue gastando en DeepSeek
-    # aunque el cliente corte la conexión SSE, y en ese caso el generador de
-    # abajo nunca llega a su "registrar_uso" final -- cobrar al final dejaba un
-    # hueco para saltarse la cuota abriendo y abortando la petición en bucle.
-    # Si la generación acaba fallando de verdad (0 preguntas), el hilo lo
-    # devuelve con devolver_uso.
+    # El uso se comprueba Y se cobra AQUÍ, por adelantado, en una única
+    # transacción atómica (reservar_uso_multiple) -- no al llegar el evento
+    # "fin": la generación corre en un hilo de fondo que sigue gastando en
+    # DeepSeek aunque el cliente corte la conexión SSE, y en ese caso el
+    # generador de abajo nunca llega a un "registrar_uso" final -- cobrar al
+    # final dejaba un hueco para saltarse la cuota abriendo y abortando la
+    # petición en bucle. Que la comprobación y el cobro fueran dos pasos
+    # separados (verificar_limite_uso sin transacción + registrar_uso aparte)
+    # dejaba además una ventana de carrera propia: dos peticiones concurrentes
+    # del mismo usuario podían pasar la comprobación las dos a la vez antes de
+    # que ninguna llegara a registrar_uso. Si la generación acaba fallando de
+    # verdad (0 preguntas), el hilo lo devuelve con devolver_uso.
     #
     # El cupo de este test se mide en PREGUNTAS, no en "número de tests": se
     # cobran tantas unidades como preguntas se piden, así un test de 100 gasta
     # 100 y uno de 10 gasta 10 (consumo justo). El usuario no ve el contador.
-    for tipo_cuota in TIPOS_CUOTA_TEST_PERSONALIZADO:
-        registrar_uso(db, uid, tipo_cuota, plan_actual, cantidad=num_preguntas)
+    permitido, mensaje_error = reservar_uso_multiple(
+        db, uid, TIPOS_CUOTA_TEST_PERSONALIZADO, plan_actual, cantidad=num_preguntas
+    )
+    if not permitido:
+        return jsonify({"error": mensaje_error}), 429
 
     def generar():
         eventos = queue.Queue()
@@ -167,6 +168,14 @@ def demo_test_oficial():
 def generar_test_oficial():
     data = request.get_json()
     logger.info("Ruta /generar-test-oficial llamada con datos: %s", data)
+    # A diferencia del resto de herramientas, aquí NO se usa reservar_uso:
+    # la cantidad a cobrar (cuántas preguntas hay realmente disponibles en
+    # el banco tras filtrar) solo se conoce después de seleccionarlas, no
+    # antes -- así que verificar y registrar siguen siendo dos pasos
+    # separados, con la misma ventana de carrera teórica que el resto tenía
+    # antes de este cambio. Impacto limitado: esta ruta no llama a ninguna
+    # IA (lee de un banco ya cargado), así que no hay coste real de API en
+    # juego, solo un contador anti-abuso.
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "test_oficial")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
@@ -282,6 +291,9 @@ def generar_test_psicotecnico():
         num_preguntas = max(1, min(500, int(data.get("num_preguntas", 25))))
     except (TypeError, ValueError):
         num_preguntas = 25
+    # Ver el mismo comentario en /generar-test-oficial: la cantidad final
+    # solo se sabe tras seleccionar, así que sigue sin usar reservar_uso;
+    # tampoco llama a IA, así que no hay coste de API en juego.
     permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "test_oficial")
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
@@ -336,9 +348,9 @@ def guardar_test_oficial():
         })
         logger.info("Test oficial guardado correctamente")
         return jsonify({"mensaje": "Test oficial guardado correctamente"}), 200
-    except Exception as e:
+    except Exception:
         logger.exception("Error al guardar test oficial")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "No se pudo guardar el test oficial."}), 500
 
 
 @bp.route("/analisis-rendimiento", methods=["GET"])
@@ -366,7 +378,12 @@ def analisis_rendimiento():
     if len(filas) < 2:
         return jsonify({"analisis": None, "mensaje": "Todavía no tienes suficientes tests por tema para un análisis. ¡Sigue practicando y vuelve a intentarlo más adelante!"})
 
-    permitido, mensaje_error, _usados, _limite = verificar_limite_uso(db, g.uid, g.plan_actual, "analisis_ia")
+    # Se reserva (comprueba + cobra en una única transacción atómica, ver
+    # limites_uso.reservar_uso) ANTES de llamar a la IA, no solo verificar
+    # y cobrar aparte después de tenerla -- así dos peticiones concurrentes
+    # no pueden pasar la comprobación las dos a la vez. Se reembolsa con
+    # devolver_uso si la llamada no llega a producir un análisis.
+    permitido, mensaje_error, _usados, _limite = reservar_uso(db, g.uid, "analisis_ia", g.plan_actual)
     if not permitido:
         return jsonify({"analisis": None, "mensaje": mensaje_error}), 429
 
@@ -390,8 +407,8 @@ Escribe un análisis breve (máximo 3-4 frases), cercano y motivador, en españo
         analisis = None
 
     if not analisis:
+        devolver_uso(db, g.uid, "analisis_ia", g.plan_actual)
         return jsonify({"analisis": None, "mensaje": "No se ha podido generar el análisis ahora mismo. Inténtalo de nuevo más tarde."})
-    registrar_uso(db, g.uid, "analisis_ia", g.plan_actual)
     return jsonify({"analisis": analisis.strip()})
 
 

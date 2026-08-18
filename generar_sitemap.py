@@ -91,10 +91,14 @@ def _canonical(contenido):
 
 def _lastmod(archivo):
     try:
+        # nosec B603 B607: script de build local (nunca se llama desde
+        # ninguna ruta de la app), sin shell=True y con `archivo` viniendo
+        # de recorrer los propios ficheros del repo -- no de ninguna
+        # entrada externa que alguien pudiera controlar.
         salida = subprocess.run(
             ["git", "log", "-1", "--format=%cd", "--date=short", "--", str(archivo)],
             cwd=RAIZ, capture_output=True, text=True, check=True,
-        ).stdout.strip()
+        ).stdout.strip()  # nosec B603 B607
         if salida:
             return salida
     except (subprocess.CalledProcessError, FileNotFoundError):

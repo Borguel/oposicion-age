@@ -540,6 +540,11 @@ def buscar_pregunta_oficial(db, oposicion, texto):
     try:
         candidatas = obtener_preguntas_examenes_oficiales(db, oposicion)
     except Exception:
+        # Degrada con gracia (Tu Tutor razona la pregunta desde cero en vez
+        # de usar la respuesta oficial verificada) -- pero sin este log, un
+        # fallo real de Firestore aquí era indistinguible en los logs de
+        # "no hay ninguna pregunta oficial que coincida".
+        logger.warning("buscar_pregunta_oficial: fallo leyendo el banco oficial (oposicion=%s)", oposicion, exc_info=True)
         return None
     coincidencia = _mejor_coincidencia_por_enunciado(candidatas, texto)
     if coincidencia is None:
@@ -584,6 +589,7 @@ def buscar_pregunta_banco_ia(db, oposicion, texto):
     try:
         candidatas = obtener_preguntas_banco_ia(db, oposicion)
     except Exception:
+        logger.warning("buscar_pregunta_banco_ia: fallo leyendo el banco de IA (oposicion=%s)", oposicion, exc_info=True)
         return None
     coincidencia = _mejor_coincidencia_por_enunciado(candidatas, texto)
     if coincidencia is None:

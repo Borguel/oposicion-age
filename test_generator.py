@@ -317,6 +317,35 @@ def _es_duplicado_por_contencion(pregunta, candidatas_existentes):
     return False
 
 
+def _indexar_por_articulo(indice, pregunta):
+    """Añade `pregunta` (ya aceptada) al índice por cada artículo que cita,
+    para que _candidatas_por_articulo pueda encontrarla luego sin recorrer
+    todo lo ya aceptado -- ver ahí mismo."""
+    for articulo in _articulos_citados(pregunta):
+        indice.setdefault(articulo, []).append(pregunta)
+
+
+def _candidatas_por_articulo(indice, pregunta):
+    """Subconjunto de lo ya aceptado contra el que de verdad hace falta
+    comparar en _es_duplicado_por_contencion: esa función descarta de
+    entrada cualquier candidata que no comparta artículo citado con
+    `pregunta` (primera línea de su bucle), así que comparar contra TODO lo
+    aceptado hasta ahora -- como se hacía antes -- es trabajo desperdiciado
+    que crece con el tamaño del banco (O(n²) según se acerca a
+    TOPE_BANCO_PREGUNTAS), y además bajo el lock que serializa a todos los
+    lotes en paralelo. Filtrar aquí, con el índice por artículo
+    (_indexar_por_articulo), da el mismo resultado con mucho menos trabajo:
+    solo compara contra las candidatas que SÍ podrían coincidir."""
+    candidatas = []
+    vistas_ids = set()
+    for articulo in _articulos_citados(pregunta):
+        for otra in indice.get(articulo, ()):
+            if id(otra) not in vistas_ids:
+                vistas_ids.add(id(otra))
+                candidatas.append(otra)
+    return candidatas
+
+
 def _claves_dedup(pregunta):
     """Claves de deduplicación de una pregunta ya aceptada: siempre el
     texto de la pregunta normalizado, y ADEMÁS el texto de la respuesta
@@ -1244,6 +1273,7 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
     # si reportar la pregunta por SSE.
     vistas = set()
     preguntas_unicas = []
+    indice_articulos = {}
     lock_dedup = threading.Lock()
 
     def _intentar_aceptar(pregunta):
@@ -1258,13 +1288,17 @@ def generar_preguntas_ia_en_lotes(construir_prompt, num_preguntas, texto_fuente=
         _es_duplicado_por_contencion se comprueba bajo el MISMO lock que
         _claves_dedup, no antes por separado: compara contra
         preguntas_unicas, que otro hilo podría estar mutando a la vez si no
-        se protegiera aquí dentro."""
+        se protegiera aquí dentro. Solo se le pasan las candidatas del
+        índice por artículo (_candidatas_por_articulo), no preguntas_unicas
+        entera -- ver el docstring de esa función."""
         claves = _claves_dedup(pregunta)
         with lock_dedup:
-            if not claves or (claves & vistas) or _es_duplicado_por_contencion(pregunta, preguntas_unicas):
+            candidatas = _candidatas_por_articulo(indice_articulos, pregunta)
+            if not claves or (claves & vistas) or _es_duplicado_por_contencion(pregunta, candidatas):
                 return False
             vistas.update(claves)
             preguntas_unicas.append(pregunta)
+            _indexar_por_articulo(indice_articulos, pregunta)
         return True
 
     def _pedir_lote_verificado(n, fragmento=None):
@@ -1734,6 +1768,7 @@ def generar_banco_preguntas_adaptativo(construir_prompt, texto_fuente, tope=TOPE
     fragmentos_precalculados = _fragmentos_por_lote(texto_fuente, n_lotes_ronda, on_usage)
 
     lock_acumulacion = threading.Lock()
+    indice_articulos_acumulado = {}
 
     def _intentar_aceptar_cruzando_rondas(pregunta):
         """Comprueba-y-registra bajo lock_acumulacion, atómicamente, para
@@ -1741,15 +1776,22 @@ def generar_banco_preguntas_adaptativo(construir_prompt, texto_fuente, tope=TOPE
         aceptar la misma pregunta a la vez -- mismo principio que
         _intentar_aceptar dentro de generar_preguntas_ia_en_lotes, un nivel
         más arriba (entre rondas en vez de entre lotes de una ronda).
-        Devuelve True si se aceptó (el llamante debe avisar por SSE)."""
+        Devuelve True si se aceptó (el llamante debe avisar por SSE).
+
+        _es_duplicado_por_contencion solo recibe las candidatas del índice
+        por artículo (_candidatas_por_articulo), no `acumuladas` entera --
+        ver el docstring de esa función (mismo motivo que en
+        _intentar_aceptar, un nivel más abajo)."""
         with lock_acumulacion:
             if len(acumuladas) >= tope:
                 return False
             claves = _claves_dedup(pregunta)
-            if not claves or (claves & claves_acumuladas) or _es_duplicado_por_contencion(pregunta, acumuladas):
+            candidatas = _candidatas_por_articulo(indice_articulos_acumulado, pregunta)
+            if not claves or (claves & claves_acumuladas) or _es_duplicado_por_contencion(pregunta, candidatas):
                 return False
             claves_acumuladas.update(claves)
             acumuladas.append(pregunta)
+            _indexar_por_articulo(indice_articulos_acumulado, pregunta)
             valor = len(acumuladas)
         if on_progreso:
             on_progreso({"completadas": valor, "objetivo": tope, "pregunta": pregunta})

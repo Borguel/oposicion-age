@@ -35,6 +35,7 @@ from blueprints.pagos import MOTIVOS_BAJA_VALIDOS
 from limites_uso import cargar_limites_config, guardar_limites_config, TIPOS_META, limites_efectivos, _clave_periodo
 from utils import _desde_cache_o_calcular, _limpiar_cache_temario, invalidar_cache
 from banco_preguntas_ia import coleccion_banco_preguntas
+from validacion_perfil import nombre_valido
 
 logger = logging.getLogger(__name__)
 bp = Blueprint("admin", __name__)
@@ -77,13 +78,31 @@ _TTL_CACHE_ADMIN_SEGUNDOS = 180
 # ============================================================
 # Helpers
 # ============================================================
+_PREFIJOS_FORMULA_CSV = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _celda_csv_segura(valor):
+    """Neutraliza la inyección de fórmulas CSV (CSV/Formula Injection):
+    Excel/Sheets interpretan una celda que empieza por "=", "+", "-" o "@"
+    como una fórmula, no como texto. Como algunas de estas columnas vienen
+    de campos que el propio usuario escribe (p. ej. "nombre", validado en
+    /registrar-usuario pero no en todas las vías -- alta manual desde el
+    panel, cuentas creadas antes de esa validación), se antepone una comilla
+    simple a cualquier celda que empiece por uno de esos caracteres: Excel
+    la trata entonces como texto literal en vez de evaluarla."""
+    texto = "" if valor is None else str(valor)
+    if texto.startswith(_PREFIJOS_FORMULA_CSV):
+        return "'" + texto
+    return texto
+
+
 def _respuesta_csv(cabecera, filas, nombre_fichero):
     """Genera un CSV descargable (UTF-8 con BOM para que Excel respete los
     acentos)."""
     buffer = io.StringIO()
     escritor = csv.writer(buffer)
     escritor.writerow(cabecera)
-    escritor.writerows(filas)
+    escritor.writerows([[_celda_csv_segura(celda) for celda in fila] for fila in filas])
     datos = "﻿" + buffer.getvalue()
     return Response(datos, mimetype="text/csv; charset=utf-8", headers={
         "Content-Disposition": f'attachment; filename="{nombre_fichero}"',
@@ -624,6 +643,41 @@ def analitica_contenido():
     return jsonify(_desde_cache_o_calcular(("admin_analitica", oposicion), _calcular, ttl_segundos=_TTL_CACHE_ADMIN_SEGUNDOS))
 
 
+def _titulos_tema_y_bloque_batch(coleccion, tids):
+    """Versión por lotes de _titulo_tema/_titulo_bloque para una lista de
+    tema_id: en vez de un .get() por tema MÁS un .get() de su bloque (con
+    el bloque releído una vez por cada tema que contiene), pide cada
+    documento distinto una sola vez con db.get_all() -- mismo patrón que
+    utils.obtener_titulos_temas_reales. Devuelve (titulos_tema,
+    titulos_bloque), ambos {id: titulo}."""
+    bloques_por_tid = {tid: _bloque_de_tema(tid) for tid in tids}
+    bloques_distintos = sorted({b for b in bloques_por_tid.values() if b})
+
+    refs_bloque = [db.collection(coleccion).document(b) for b in bloques_distintos]
+    titulos_bloque = {}
+    for doc in db.get_all(refs_bloque):
+        bloque_id = doc.reference.id
+        titulos_bloque[bloque_id] = (doc.to_dict() or {}).get("titulo", bloque_id) if doc.exists else bloque_id
+
+    refs_tema = []
+    por_path = {}
+    for tid in tids:
+        bloque_id = bloques_por_tid[tid]
+        if not bloque_id:
+            continue
+        tema_parte = tid.split("-", 1)[1]
+        ref = db.collection(coleccion).document(bloque_id).collection("temas").document(tema_parte)
+        refs_tema.append(ref)
+        por_path[ref.path] = tid
+
+    titulos_tema = {}
+    for doc in db.get_all(refs_tema):
+        tid = por_path[doc.reference.path]
+        titulos_tema[tid] = (doc.to_dict() or {}).get("titulo", tid) if doc.exists else tid
+
+    return titulos_tema, titulos_bloque
+
+
 @bp.route("/admin/api/banco-preguntas", methods=["GET"])
 @requiere_permiso("temario")
 def banco_preguntas_resumen():
@@ -637,37 +691,45 @@ def banco_preguntas_resumen():
     if not oposicion_valida(oposicion):
         oposicion = OPOSICION_POR_DEFECTO
 
-    totales_por_oposicion = {
-        oid: _contar_coleccion(db.collection(coleccion_banco_preguntas(oid)))
-        for oid in OPOSICIONES
-    }
+    # Cacheado (ver _TTL_CACHE_ADMIN_SEGUNDOS): sin esto, cada carga del
+    # panel recorría la colección ENTERA del banco (que crece con el
+    # tiempo, ver docstring del módulo) más un .get() por tema Y por
+    # bloque -- con el bloque releído una vez por cada tema que contenía.
+    def _calcular():
+        totales_por_oposicion = {
+            oid: _contar_coleccion(db.collection(coleccion_banco_preguntas(oid)))
+            for oid in OPOSICIONES
+        }
 
-    coleccion_temario_actual = coleccion_temario(oposicion)
-    conteo_por_tema = {}
-    for doc in db.collection(coleccion_banco_preguntas(oposicion)).stream():
-        tid = (doc.to_dict() or {}).get("tema_id") or ""
-        conteo_por_tema[tid] = conteo_por_tema.get(tid, 0) + 1
+        coleccion_temario_actual = coleccion_temario(oposicion)
+        conteo_por_tema = {}
+        for doc in db.collection(coleccion_banco_preguntas(oposicion)).stream():
+            tid = (doc.to_dict() or {}).get("tema_id") or ""
+            conteo_por_tema[tid] = conteo_por_tema.get(tid, 0) + 1
 
-    por_tema = []
-    conteo_por_bloque = {}
-    for tid, total in conteo_por_tema.items():
-        bloque_id = _bloque_de_tema(tid)
-        titulo_tema = _titulo_tema(coleccion_temario_actual, tid) if bloque_id else "Sin tema identificado"
-        titulo_bloque = _titulo_bloque(coleccion_temario_actual, bloque_id) if bloque_id else "Sin bloque identificado"
-        por_tema.append({"tema_id": tid, "titulo": titulo_tema, "bloque_titulo": titulo_bloque, "total": total})
-        conteo_por_bloque[titulo_bloque] = conteo_por_bloque.get(titulo_bloque, 0) + total
-    por_tema.sort(key=lambda t: t["total"], reverse=True)
+        titulos_tema, titulos_bloque = _titulos_tema_y_bloque_batch(coleccion_temario_actual, conteo_por_tema.keys())
 
-    por_bloque = [{"titulo": titulo, "total": total} for titulo, total in conteo_por_bloque.items()]
-    por_bloque.sort(key=lambda b: b["total"], reverse=True)
+        por_tema = []
+        conteo_por_bloque = {}
+        for tid, total in conteo_por_tema.items():
+            bloque_id = _bloque_de_tema(tid)
+            titulo_tema = titulos_tema.get(tid, "Sin tema identificado") if bloque_id else "Sin tema identificado"
+            titulo_bloque = titulos_bloque.get(bloque_id, "Sin bloque identificado") if bloque_id else "Sin bloque identificado"
+            por_tema.append({"tema_id": tid, "titulo": titulo_tema, "bloque_titulo": titulo_bloque, "total": total})
+            conteo_por_bloque[titulo_bloque] = conteo_por_bloque.get(titulo_bloque, 0) + total
+        por_tema.sort(key=lambda t: t["total"], reverse=True)
 
-    return jsonify({
-        "totales_por_oposicion": totales_por_oposicion,
-        "oposicion": oposicion,
-        "total_oposicion": totales_por_oposicion.get(oposicion, 0),
-        "por_bloque": por_bloque,
-        "por_tema": por_tema,
-    })
+        por_bloque = [{"titulo": titulo, "total": total} for titulo, total in conteo_por_bloque.items()]
+        por_bloque.sort(key=lambda b: b["total"], reverse=True)
+
+        return {
+            "totales_por_oposicion": totales_por_oposicion,
+            "oposicion": oposicion,
+            "total_oposicion": totales_por_oposicion.get(oposicion, 0),
+            "por_bloque": por_bloque,
+            "por_tema": por_tema,
+        }
+    return jsonify(_desde_cache_o_calcular(("admin_banco_preguntas", oposicion), _calcular, ttl_segundos=_TTL_CACHE_ADMIN_SEGUNDOS))
 
 
 # ============================================================
@@ -1378,6 +1440,8 @@ def usuarios_crear():
         return jsonify({"error": "Email no válido"}), 400
     if len(password) < 6:
         return jsonify({"error": "La contraseña debe tener al menos 6 caracteres"}), 400
+    if nombre and not nombre_valido(nombre):
+        return jsonify({"error": "El nombre no es válido."}), 400
 
     try:
         usuario = firebase_auth.create_user(

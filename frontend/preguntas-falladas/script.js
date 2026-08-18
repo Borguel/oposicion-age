@@ -139,7 +139,15 @@ async function obtenerAuthHeaders() {
         preguntas = datos.test || [];
 
         if (preguntas.length === 0) {
-          mostrarAviso(datos.mensaje || "No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.", "info");
+          // datos.mensaje viene del backend -- se escapa antes de insertarlo
+          // en mostrarAviso (usa innerHTML) por si en el futuro deja de ser
+          // siempre un texto fijo del servidor. Hoy no es explotable (el
+          // backend solo manda cadenas estáticas aquí), es defensa en
+          // profundidad.
+          const mensajeAviso = datos.mensaje
+            ? (await import("/assets/resultados-test.js")).escaparHtml(datos.mensaje)
+            : "No tienes preguntas falladas pendientes en tu cuenta. Haz algún test y vuelve aquí para repasarlas.";
+          mostrarAviso(mensajeAviso, "info");
           document.getElementById("contenedor-test").innerHTML = "";
           document.getElementById("contenedor-test").style.display = "none";
           document.getElementById('tarjeta-formulario').style.display = "";
