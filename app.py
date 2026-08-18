@@ -18,6 +18,22 @@ logger = logging.getLogger(__name__)
 # Cargar variables de entorno
 load_dotenv()
 
+# Variables de entorno sin las que la app no debe arrancar: sin ellas, rutas
+# enteras (pagos con Stripe, cualquier herramienta de IA, envío de emails con
+# Brevo) fallarían en tiempo de petición -- a veces de forma silenciosa y
+# tardía, ver /health más abajo -- en vez de fallar aquí, al arrancar, con un
+# mensaje claro de qué falta. Mejor un despliegue que no arranca que uno que
+# arranca y sirve tráfico roto.
+_VARIABLES_CRITICAS = [
+    "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
+    "DEEPSEEK_API_KEY", "BREVO_API_KEY",
+]
+_variables_criticas_faltantes = [var for var in _VARIABLES_CRITICAS if not os.getenv(var)]
+if _variables_criticas_faltantes:
+    raise RuntimeError(
+        "Faltan variables de entorno obligatorias: " + ", ".join(_variables_criticas_faltantes)
+    )
+
 # Sentry es opcional: sin SENTRY_DSN esto no hace nada (ni falla), así que
 # no bloquea el despliegue hasta que se cree una cuenta y se configure la
 # variable. Con DSN, cualquier excepción no controlada (y los logger.error/
@@ -37,9 +53,6 @@ if sentry_dsn:
     logger.info("Sentry activado")
 else:
     logger.info("SENTRY_DSN no configurada: Sentry desactivado (los errores solo van a los logs)")
-
-logger.info("Clave OpenAI: %s", "configurada" if os.getenv("OPENAI_API_KEY") else "no configurada")
-logger.info("Clave DeepSeek: %s", "configurada" if os.getenv("DEEPSEEK_API_KEY") else "no configurada")
 
 # db se inicializa en firebase_setup.py (import ahí arriba de todo, antes de
 # que ningún blueprint lo necesite).
@@ -186,12 +199,6 @@ def raiz():
         rutas = [rule.rule for rule in app.url_map.iter_rules()]
         return jsonify({"rutas_disponibles": rutas})
     return jsonify({"estado": "ok", "servicio": "oposicion-age-api"})
-
-
-_VARIABLES_CRITICAS = [
-    "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
-    "DEEPSEEK_API_KEY", "BREVO_API_KEY",
-]
 
 
 @app.route("/health", methods=["GET"])
