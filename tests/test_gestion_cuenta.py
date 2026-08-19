@@ -1,6 +1,7 @@
 """Pruebas de exportación y borrado de cuenta (gestion_cuenta.py + rutas de
 blueprints/pagos.py): que la exportación incluya todo lo del usuario, y que
 borrar la cuenta cancele Stripe, borre subcolecciones y la cuenta de auth."""
+import os
 from unittest.mock import patch, MagicMock
 
 from gestion_cuenta import exportar_datos_usuario, eliminar_cuenta_usuario
@@ -101,6 +102,23 @@ def test_eliminar_cuenta_no_falla_si_stripe_da_error(db):
         eliminar_cuenta_usuario(db, "u1")  # no debe lanzar
 
     assert db.leer(("usuarios", "u1")) is None
+
+
+def test_eliminar_cuenta_avisa_por_email_si_stripe_da_error(db):
+    # Sin este aviso, una suscripción que Stripe no pudo cancelar podía
+    # seguir cobrando indefinidamente a una cuenta ya borrada, sin que
+    # nadie se enterase hasta un impago meses después.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"stripe_subscription_id": "sub_123"}}
+    })
+
+    with patch("gestion_cuenta.stripe.Subscription.delete", side_effect=RuntimeError("stripe caído")), \
+         patch("gestion_cuenta.firebase_auth.delete_user"), \
+         patch("gestion_cuenta.enviar_email_alerta_cancelacion_stripe_fallida") as mock_alerta:
+        eliminar_cuenta_usuario(db, "u1")
+
+    mock_alerta.assert_called_once_with(os.environ.get("BREVO_FROM_EMAIL"), "u1", "sub_123")
 
 
 def test_ruta_exportar_datos(client, db):

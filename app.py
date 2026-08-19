@@ -135,7 +135,14 @@ def verificar_api_key():
         return
     if request.method == "OPTIONS":
         return
-    if request.path in ("/", "/health", "/webhook-stripe", "/tareas/recordatorios-racha", "/recuperar-contrasena"):
+    # Todo el prefijo /tareas/ (los 4 workflows programados de GitHub
+    # Actions) queda exento: esas peticiones mandan X-Cron-Key, no
+    # X-API-Key, y cada ruta ya se autentica por su cuenta con
+    # hmac.compare_digest (ver blueprints/tareas_programadas.py) -- eximirlas
+    # aquí no las deja desprotegidas, solo evita que este segundo candado
+    # (pensado para navegador/API, no para crons) las bloquee antes de
+    # llegar a su propia comprobación.
+    if request.path in ("/", "/health", "/webhook-stripe", "/recuperar-contrasena") or request.path.startswith("/tareas/"):
         return
     if request.headers.get("X-API-Key") != API_SECRET_KEY:
         return jsonify({"error": "No autorizado"}), 401

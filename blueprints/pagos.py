@@ -21,7 +21,7 @@ from email_utils import (
 )
 from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketing
 from promociones import leer_promocion, promocion_vigente
-from utils import invalidar_cache
+from utils import invalidar_cache, ejecutar_en_transaccion
 
 logger = logging.getLogger(__name__)
 
@@ -415,11 +415,26 @@ def webhook_stripe():
         return jsonify({"error": "Firma inválida"}), 400
 
     evento_ref = db.collection("stripe_events").document(event["id"])
-    if evento_ref.get().exists:
-        return jsonify({"mensaje": "Evento ya procesado"}), 200
-
     tipo = event["type"]
     objeto = event["data"]["object"]
+
+    # Reclamar el evento (comprobar que no existe + crearlo) en una única
+    # transacción atómica: Stripe reintenta entregas del mismo evento, y un
+    # simple get().exists() seguido de un set() al final dejaba una ventana
+    # -- dos entregas casi simultáneas podían pasar la comprobación las dos
+    # antes de que ninguna llegara a marcarlo, y procesarse por duplicado
+    # (doble email, doble sincronización de marketing...). Si el
+    # procesamiento de más abajo falla, se libera el reclamo (ver el except)
+    # para que un reintento de Stripe pueda completarlo de verdad.
+    def _reclamar_evento(transaction):
+        doc = evento_ref.get(transaction=transaction)
+        if doc.exists:
+            return False
+        transaction.set(evento_ref, {"type": tipo, "processed_at": datetime.utcnow().isoformat()})
+        return True
+
+    if not ejecutar_en_transaccion(db, _reclamar_evento):
+        return jsonify({"mensaje": "Evento ya procesado"}), 200
 
     try:
         if tipo == "checkout.session.completed":
@@ -514,7 +529,11 @@ def webhook_stripe():
         # logger.exception ya vuelca el traceback completo (y lo manda a
         # Sentry si está configurado). Se responde 500 sin el detalle interno
         # del error para que Stripe reintente el evento, sin exponer trazas.
+        # Se libera el reclamo de arriba -- si no, el reintento de Stripe se
+        # encontraría el evento ya marcado y lo daría por procesado sin
+        # haberlo completado nunca.
         logger.exception("Error procesando webhook de Stripe (%s)", tipo)
+        evento_ref.delete()
         return jsonify({"error": "Error interno procesando el evento"}), 500
 
     # Los 4 tipos de evento de arriba cambian el plan/estado de una
@@ -522,5 +541,4 @@ def webhook_stripe():
     # cambie de verdad (renovaciones, altas y pagos fallidos reales sí
     # llegan por aquí, no por los botones de cancelar/reactivar de la app).
     _invalidar_cache_admin_tras_cambio_suscripcion()
-    evento_ref.set({"type": tipo, "processed_at": datetime.utcnow().isoformat()})
     return jsonify({"mensaje": "Evento procesado"}), 200

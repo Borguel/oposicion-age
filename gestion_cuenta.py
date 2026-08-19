@@ -3,9 +3,12 @@ RGPD): reúne en un solo sitio todas las subcolecciones propias de un
 usuario, ya que Firestore no tiene "borrado en cascada" ni una forma nativa
 de volcar un documento con sus subcolecciones."""
 import logging
+import os
 
 import stripe
 from firebase_admin import auth as firebase_auth
+
+from email_utils import enviar_email_alerta_cancelacion_stripe_fallida
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +62,16 @@ def eliminar_cuenta_usuario(db, uid):
         try:
             stripe.Subscription.delete(subscription_id)
         except Exception:
+            # El borrado de la cuenta sigue adelante de todas formas (es un
+            # derecho RGPD, no puede quedar bloqueado por un fallo
+            # transitorio de un tercero) -- pero sin más que este log, la
+            # suscripción podía quedar cobrando indefinidamente a una cuenta
+            # que ya no existe, sin que nadie se enterase hasta que Stripe
+            # avisara de un impago meses después. Un email directo al dueño
+            # es la señal que de verdad se atiende, no solo el log/Sentry.
             logger.exception("Error cancelando suscripción de Stripe %s al borrar la cuenta %s", subscription_id, uid)
+            destinatario_alerta = os.getenv("ADMIN_ALERT_EMAIL") or os.getenv("BREVO_FROM_EMAIL")
+            enviar_email_alerta_cancelacion_stripe_fallida(destinatario_alerta, uid, subscription_id)
 
     try:
         firebase_auth.delete_user(uid)

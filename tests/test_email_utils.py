@@ -45,6 +45,22 @@ def test_bienvenida_manda_html_de_reserva_sin_plantilla(monkeypatch):
     assert payload["subject"]
 
 
+def test_bienvenida_escapa_html_del_nombre_en_el_saludo(monkeypatch):
+    # nombre viene de un campo que el propio usuario controla (ver
+    # validacion_perfil.py, que ya restringe el campo a letras/espacios en
+    # /registrar-usuario) -- pero el saludo se interpola directo en el HTML
+    # del correo, así que escapar aquí también es defensa en profundidad
+    # por si algún día se añade otra vía de escritura sin esa validación.
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_BIENVENIDA", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_bienvenida("u@example.com", nombre="<img src=x onerror=alert(1)>")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert "onerror=alert(1)>" not in payload["htmlContent"]
+    assert "&lt;img src=x onerror=alert(1)&gt;" in payload["htmlContent"]
+
+
 def test_bienvenida_usa_plantilla_de_brevo_si_esta_configurada(monkeypatch):
     monkeypatch.setenv("BREVO_API_KEY", "clave")
     monkeypatch.setenv("BREVO_TEMPLATE_BIENVENIDA", "42")

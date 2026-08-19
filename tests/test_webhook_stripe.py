@@ -189,3 +189,52 @@ def test_webhook_payment_failed_marca_past_due_y_avisa_por_email(client, db):
     # su método de pago antes de que se agoten los reintentos de Stripe.
     mock_email.assert_called_once()
     assert mock_email.call_args.args[0] == "u3@example.com"
+
+
+def test_webhook_reclama_el_evento_por_transaccion(client, db):
+    # Lo que cierra la ventana de carrera entre dos entregas casi
+    # simultáneas del mismo evento (Stripe reintenta) es que la
+    # comprobación de "ya existe" y el marcado como reclamado vayan en la
+    # MISMA transacción -- no un get().exists() seguido de un set() suelto.
+    evento = _evento()
+    llamadas = []
+    transaction_original = db.transaction
+
+    def transaction_espia():
+        llamadas.append(1)
+        return transaction_original()
+
+    db.transaction = transaction_espia
+    try:
+        resp = _post_evento(client, evento)
+    finally:
+        db.transaction = transaction_original
+
+    assert resp.status_code == 200
+    assert len(llamadas) == 1
+    assert db.leer(("stripe_events", "evt_test_1")) is not None
+
+
+def test_webhook_libera_el_evento_si_falla_el_procesamiento(client, db):
+    # Si el procesamiento revienta a mitad, el reclamo debe liberarse -- si
+    # no, un reintento posterior de Stripe (con el mismo evento, esta vez
+    # sin el fallo) se encontraría el evento ya marcado y lo daría por
+    # procesado sin haberlo completado nunca.
+    db.sembrar(("usuarios", "u4"), {
+        "email": "u4@example.com",
+        "stripe_customer_id": "cus_test_4",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}},
+    })
+    evento = _evento(tipo="customer.subscription.deleted", customer="cus_test_4")
+
+    with patch("blueprints.pagos.actualizar_suscripcion", side_effect=RuntimeError("Firestore caído")):
+        resp = _post_evento(client, evento)
+    assert resp.status_code == 500
+    assert db.leer(("stripe_events", "evt_test_1")) is None
+
+    # Reintento de Stripe con el mismo evento, ahora sin el fallo: debe
+    # procesarse de verdad, no salir como "ya procesado".
+    resp2 = _post_evento(client, evento)
+    assert resp2.status_code == 200
+    assert resp2.get_json()["mensaje"] == "Evento procesado"
+    assert db.leer(("usuarios", "u4"))["suscripciones"]["AGE"]["subscription_status"] == "canceled"

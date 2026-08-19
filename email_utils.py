@@ -14,6 +14,7 @@ theme.css/favicon), para que el envío nunca dependa de haber montado ya las
 plantillas en Brevo."""
 import logging
 import os
+from html import escape
 import requests
 
 from planes import DURACION_PRUEBA_DIAS
@@ -149,7 +150,7 @@ def _plantilla_html(titulo, cuerpo_html, *, emoji=""):
 
 def enviar_email_bienvenida(destinatario, nombre=""):
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
-    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
 
     template_id = os.getenv("BREVO_TEMPLATE_BIENVENIDA")
     if template_id:
@@ -184,7 +185,7 @@ def enviar_email_recuperar_contrasena(destinatario, enlace, nombre=""):
     genera Firebase Admin; ver blueprints/auth_publico.py). El enlace ya
     caduca solo (lo controla Firebase), así que aquí no hay que gestionar
     expiración."""
-    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
 
     template_id = os.getenv("BREVO_TEMPLATE_RESET_PASSWORD")
     if template_id:
@@ -211,7 +212,7 @@ def enviar_email_verificacion(destinatario, enlace, nombre=""):
     llegaba en inglés, sin marca y desde noreply@<proyecto>.firebaseapp.com,
     un remitente que varios proveedores de correo (Gmail incluido) acaban
     marcando como spam."""
-    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
 
     template_id = os.getenv("BREVO_TEMPLATE_VERIFICACION")
     if template_id:
@@ -268,7 +269,7 @@ def enviar_email_cancelacion_suscripcion(destinatario, oposicion_nombre, fecha_f
     blueprints/pagos.py); adapta el segundo párrafo a ese motivo en vez de
     dar el mismo mensaje genérico a quien aprobó que a quien se va por el precio."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
-    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
     linea_fecha = f" hasta el <strong>{fecha_fin}</strong>" if fecha_fin else ""
     parrafo_motivo = _PARRAFO_POR_MOTIVO_BAJA.get(motivo, _PARRAFO_POR_MOTIVO_BAJA["otro"])
 
@@ -304,7 +305,7 @@ def enviar_email_reactivacion_suscripcion(destinatario, oposicion_nombre, nombre
     que la baja llegue a hacerse efectiva merece la misma confirmación
     explícita que quien se da de baja, no silencio."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
-    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
 
     template_id = os.getenv("BREVO_TEMPLATE_REACTIVACION")
     if template_id:
@@ -336,7 +337,7 @@ def enviar_email_pago_fallido(destinatario, oposicion_nombre, nombre=""):
     solo se pide actualizar el método de pago a tiempo, no se anuncia
     ninguna pérdida de acceso inminente."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
-    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
 
     template_id = os.getenv("BREVO_TEMPLATE_PAGO_FALLIDO")
     if template_id:
@@ -364,7 +365,7 @@ def enviar_email_racha_en_riesgo(destinatario, racha_actual, nombre=""):
     """Aviso de que la racha de estudio se rompe hoy si no se hace nada:
     se envía a quien estudió ayer pero todavía no hoy."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
-    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
     racha_dias_texto = f"{racha_actual} día{'s' if racha_actual != 1 else ''}"
 
     template_id = os.getenv("BREVO_TEMPLATE_RACHA_RIESGO")
@@ -389,7 +390,7 @@ def enviar_email_prueba_terminando(destinatario, dias_restantes, nombre=""):
     """Aviso de que quedan pocos días de la prueba gratuita Premium (ver
     planes.py): se envía una única vez, al cruzar los 2 días restantes."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
-    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
     dias_texto = f"{dias_restantes} día{'s' if dias_restantes != 1 else ''}"
 
     template_id = os.getenv("BREVO_TEMPLATE_PRUEBA_TERMINANDO")
@@ -417,7 +418,7 @@ def enviar_email_prueba_terminada(destinatario, nombre=""):
     usuario haya contratado ningún plan: se envía el primer día tras
     expirar (ver blueprints/tareas_programadas.py)."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
-    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
 
     template_id = os.getenv("BREVO_TEMPLATE_PRUEBA_TERMINADA")
     if template_id:
@@ -441,7 +442,7 @@ def enviar_email_reengagement(destinatario, dias_inactivo, nombre=""):
     """Aviso para quien lleva varios días sin actividad y ya perdió la
     racha, para intentar que retome la preparación."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
-    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
 
     template_id = os.getenv("BREVO_TEMPLATE_REENGAGEMENT")
     if template_id:
@@ -465,7 +466,7 @@ def enviar_email_aviso_oficial(destinatario, titulo, tipo_legible, url_boe, url_
     lista de admitidos, fecha de examen...) para una oposición concreta --
     ver vigilancia_boe.py + publicacion_estatica_boe.py. Se manda solo a
     quien ya tiene esa oposición entre sus suscripciones o su actividad."""
-    saludo = f"Hola{f' {nombre}' if nombre else ''}"
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
 
     template_id = os.getenv("BREVO_TEMPLATE_AVISO_OFICIAL")
     if template_id:
@@ -495,6 +496,27 @@ def enviar_email_aviso_oficial(destinatario, titulo, tipo_legible, url_boe, url_
     """
     html = _plantilla_html(f"{tipo_legible}: {oposicion_nombre}", cuerpo, emoji="📢")
     _enviar(destinatario, "aviso oficial", asunto=f"{tipo_legible} publicada para {oposicion_nombre}", html=html)
+
+
+def enviar_email_alerta_cancelacion_stripe_fallida(destinatario, uid, subscription_id):
+    """Aviso interno (no es un email de marca para un usuario) de que no se
+    pudo cancelar una suscripción de Stripe al borrar una cuenta (ver
+    gestion_cuenta.eliminar_cuenta_usuario) -- el borrado de la cuenta
+    sigue adelante de todas formas (es un derecho RGPD, no puede quedar
+    bloqueado por un fallo transitorio de un tercero), pero sin este aviso
+    la suscripción podía quedar cobrando indefinidamente a una cuenta que
+    ya no existe, sin que nadie se enterase hasta que el propio usuario (que
+    ya no tiene cuenta con la que contactar) reclamase el cargo."""
+    cuerpo = f"""
+      <p style="margin:0;">Al borrar la cuenta <strong>{escape(uid)}</strong> no se pudo cancelar su
+      suscripción de Stripe (<strong>{escape(subscription_id)}</strong>) -- revisa el detalle del error en
+      los logs/Sentry.</p>
+      <p>La cuenta se ha borrado igualmente (derecho de supresión RGPD), pero la suscripción puede
+      seguir activa en Stripe y seguir cobrando. Cancélala a mano desde el panel de Stripe.</p>
+    """
+    html = _plantilla_html("No se pudo cancelar una suscripción al borrar una cuenta", cuerpo, emoji="⚠️")
+    _enviar(destinatario, "alerta de cancelación de Stripe fallida",
+            asunto=f"⚠️ Revisar suscripción de Stripe tras borrado de cuenta ({subscription_id})", html=html)
 
 
 def enviar_email_alerta_coste_ia(destinatario, gasto_hoy, media_historica):
