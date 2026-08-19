@@ -613,13 +613,13 @@ def test_responder_tutor_stream_emite_deltas_y_guarda_al_final(db):
     assert conversacion["mensajes"][1]["content"] == "Hola que tal"
 
 
-def test_stream_por_ruta_guarda_la_conversacion_y_sale_en_historial(client, db):
+def test_stream_por_ruta_guarda_la_conversacion_y_sale_en_historial(client, db, usuario_autenticado):
     # Flujo completo de producción: POST a /tu-tutor/stream, consumir el SSE
     # entero, y comprobar que la conversación queda guardada y aparece en
     # /conversaciones (regresión del "historial en blanco").
     db.sembrar(("usuarios", "u1"), {"suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}})
-    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}), \
-         patch("chat_controller.call_deepseek_api_stream", return_value=iter(["Hola", " mundo"])):
+    usuario_autenticado()
+    with patch("chat_controller.call_deepseek_api_stream", return_value=iter(["Hola", " mundo"])):
         r = client.post("/tu-tutor/stream", json={"mensaje": "Dame consejos", "oposicion": "AGE"},
                         headers={"Authorization": "Bearer x"})
         r.get_data(as_text=True)  # consume el stream entero (dispara el guardado)
@@ -639,7 +639,7 @@ def test_anadir_mensaje_a_conversacion_inexistente_la_crea(db):
     assert conv.get("timestamp_inicio")
 
 
-def test_listar_conversaciones_incluye_las_antiguas_sin_timestamp(client, db):
+def test_listar_conversaciones_incluye_las_antiguas_sin_timestamp(client, db, usuario_autenticado):
     # Regresión: el histórico salía en blanco porque se ordenaba con
     # order_by("timestamp_inicio"), que EXCLUYE las conversaciones sin ese
     # campo. Ahora deben listarse todas, ordenadas por fecha (las que no
@@ -649,8 +649,8 @@ def test_listar_conversaciones_incluye_las_antiguas_sin_timestamp(client, db):
                {"titulo": "Reciente", "timestamp_inicio": "2026-07-14T10:00:00"})
     db.sembrar(("conversaciones_IA", "u1", "conversaciones", "antigua"),
                {"titulo": "Sin fecha"})  # conversación legacy, sin timestamp_inicio
-    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}):
-        r = client.get("/conversaciones", headers={"Authorization": "Bearer x"})
+    usuario_autenticado()
+    r = client.get("/conversaciones", headers={"Authorization": "Bearer x"})
     assert r.status_code == 200
     convs = r.get_json()["conversaciones"]
     titulos = [c["titulo"] for c in convs]
@@ -1048,53 +1048,45 @@ def test_historial_de_una_conversacion_persiste_y_se_amplia_en_firestore(db):
     assert contenidos == ["Hola, ¿cómo estás?", "primera respuesta", "Cuéntame más", "segunda respuesta"]
 
 
-def test_ruta_tu_tutor_requiere_premium_y_registra_uso(client, db):
+def test_ruta_tu_tutor_requiere_premium_y_registra_uso(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
     })
-    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
-    parche_auth.start()
-    try:
-        with patch("chat_controller.call_deepseek_api", return_value="Hola desde Tu Tutor"):
-            resp = client.post(
-                "/tu-tutor",
-                json={"mensaje": "¿Qué consejos me das para el examen?", "oposicion": "AGE"},
-                headers={"Authorization": "Bearer x"}
-            )
-        assert resp.status_code == 200
-        assert resp.get_json()["respuesta"] == "Hola desde Tu Tutor"
-        datos_usuario = db.leer(("usuarios", "u1"))
-        assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 1
-    finally:
-        parche_auth.stop()
+    usuario_autenticado()
+    with patch("chat_controller.call_deepseek_api", return_value="Hola desde Tu Tutor"):
+        resp = client.post(
+            "/tu-tutor",
+            json={"mensaje": "¿Qué consejos me das para el examen?", "oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"}
+        )
+    assert resp.status_code == 200
+    assert resp.get_json()["respuesta"] == "Hola desde Tu Tutor"
+    datos_usuario = db.leer(("usuarios", "u1"))
+    assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 1
 
 
-def test_ruta_tu_tutor_devuelve_502_si_deepseek_falla_y_no_gasta_cupo(client, db):
+def test_ruta_tu_tutor_devuelve_502_si_deepseek_falla_y_no_gasta_cupo(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
     })
-    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
-    parche_auth.start()
-    try:
-        with patch("chat_controller.call_deepseek_api", return_value=None):
-            resp = client.post(
-                "/tu-tutor",
-                json={"mensaje": "Hola", "oposicion": "AGE"},
-                headers={"Authorization": "Bearer x"}
-            )
-        assert resp.status_code == 502
-        assert "error" in resp.get_json()
-        datos_usuario = db.leer(("usuarios", "u1"))
-        # reservar_uso ahora cobra por adelantado y devolver_uso reembolsa
-        # si DeepSeek falla -- el campo queda a 0 en vez de no existir del
-        # todo (antes solo se llamaba a registrar_uso tras el éxito), pero
-        # el cupo efectivamente gastado es el mismo: cero.
-        uso = (datos_usuario.get("limites_uso") or {}).get("chat_temario")
-        assert uso is None or uso.get("contador") == 0
-    finally:
-        parche_auth.stop()
+    usuario_autenticado()
+    with patch("chat_controller.call_deepseek_api", return_value=None):
+        resp = client.post(
+            "/tu-tutor",
+            json={"mensaje": "Hola", "oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"}
+        )
+    assert resp.status_code == 502
+    assert "error" in resp.get_json()
+    datos_usuario = db.leer(("usuarios", "u1"))
+    # reservar_uso ahora cobra por adelantado y devolver_uso reembolsa
+    # si DeepSeek falla -- el campo queda a 0 en vez de no existir del
+    # todo (antes solo se llamaba a registrar_uso tras el éxito), pero
+    # el cupo efectivamente gastado es el mismo: cero.
+    uso = (datos_usuario.get("limites_uso") or {}).get("chat_temario")
+    assert uso is None or uso.get("contador") == 0
 
 
 def _eventos_sse(cuerpo_respuesta):
@@ -1105,103 +1097,83 @@ def _eventos_sse(cuerpo_respuesta):
     ]
 
 
-def test_ruta_tu_tutor_stream_emite_eventos_y_registra_uso(client, db):
+def test_ruta_tu_tutor_stream_emite_eventos_y_registra_uso(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
     })
-    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
-    parche_auth.start()
-    try:
-        with patch("chat_controller.call_deepseek_api_stream", return_value=iter(["Hola ", "Mundo"])):
-            resp = client.post(
-                "/tu-tutor/stream",
-                json={"mensaje": "Hola", "oposicion": "AGE"},
-                headers={"Authorization": "Bearer x"}
-            )
-        assert resp.status_code == 200
-        eventos = _eventos_sse(resp.get_data(as_text=True))
-        assert [e["tipo"] for e in eventos] == ["delta", "delta", "fin"]
-        assert eventos[0]["texto"] == "Hola "
-        assert eventos[1]["texto"] == "Mundo"
-        assert eventos[2]["chat_id"]
-        datos_usuario = db.leer(("usuarios", "u1"))
-        assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 1
-    finally:
-        parche_auth.stop()
+    usuario_autenticado()
+    with patch("chat_controller.call_deepseek_api_stream", return_value=iter(["Hola ", "Mundo"])):
+        resp = client.post(
+            "/tu-tutor/stream",
+            json={"mensaje": "Hola", "oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"}
+        )
+    assert resp.status_code == 200
+    eventos = _eventos_sse(resp.get_data(as_text=True))
+    assert [e["tipo"] for e in eventos] == ["delta", "delta", "fin"]
+    assert eventos[0]["texto"] == "Hola "
+    assert eventos[1]["texto"] == "Mundo"
+    assert eventos[2]["chat_id"]
+    datos_usuario = db.leer(("usuarios", "u1"))
+    assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 1
 
 
-def test_ruta_tu_tutor_stream_no_registra_uso_si_deepseek_falla(client, db):
+def test_ruta_tu_tutor_stream_no_registra_uso_si_deepseek_falla(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
     })
-    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
-    parche_auth.start()
-    try:
-        with patch("chat_controller.call_deepseek_api_stream", return_value=iter([])):
-            resp = client.post(
-                "/tu-tutor/stream",
-                json={"mensaje": "Hola", "oposicion": "AGE"},
-                headers={"Authorization": "Bearer x"}
-            )
-        assert resp.status_code == 200
-        eventos = _eventos_sse(resp.get_data(as_text=True))
-        assert eventos == [{"tipo": "error"}]
-        # El uso se cobra por adelantado y, al fallar DeepSeek del todo, se
-        # devuelve: el neto queda en 0 (no se consume cuota por un fallo
-        # técnico, aunque el contador ya exista por el cobro+devolución).
-        datos_usuario = db.leer(("usuarios", "u1"))
-        assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 0
-    finally:
-        parche_auth.stop()
+    usuario_autenticado()
+    with patch("chat_controller.call_deepseek_api_stream", return_value=iter([])):
+        resp = client.post(
+            "/tu-tutor/stream",
+            json={"mensaje": "Hola", "oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"}
+        )
+    assert resp.status_code == 200
+    eventos = _eventos_sse(resp.get_data(as_text=True))
+    assert eventos == [{"tipo": "error"}]
+    # El uso se cobra por adelantado y, al fallar DeepSeek del todo, se
+    # devuelve: el neto queda en 0 (no se consume cuota por un fallo
+    # técnico, aunque el contador ya exista por el cobro+devolución).
+    datos_usuario = db.leer(("usuarios", "u1"))
+    assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 0
 
 
-def test_ruta_eliminar_conversacion_borra_de_firestore(client, db):
+def test_ruta_eliminar_conversacion_borra_de_firestore(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
     })
     with patch("chat_controller.call_deepseek_api", return_value="Hola"):
         _texto, chat_id, _usar_rag = responder_tutor("Hola", db=db, usuario_id="u1")
-    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
-    parche_auth.start()
-    try:
-        resp = client.delete(f"/conversacion/{chat_id}", headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-        assert resp.get_json()["ok"] is True
-        assert db.leer(("conversaciones_IA", "u1", "conversaciones", chat_id)) is None
-    finally:
-        parche_auth.stop()
+    usuario_autenticado()
+    resp = client.delete(f"/conversacion/{chat_id}", headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    assert resp.get_json()["ok"] is True
+    assert db.leer(("conversaciones_IA", "u1", "conversaciones", chat_id)) is None
 
 
-def test_ruta_eliminar_conversacion_inexistente_da_404(client, db):
+def test_ruta_eliminar_conversacion_inexistente_da_404(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
     })
-    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
-    parche_auth.start()
-    try:
-        resp = client.delete("/conversacion/no-existe", headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 404
-    finally:
-        parche_auth.stop()
+    usuario_autenticado()
+    resp = client.delete("/conversacion/no-existe", headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 404
 
 
-def test_ruta_tu_tutor_bloqueada_para_plan_gratis(client, db):
+def test_ruta_tu_tutor_bloqueada_para_plan_gratis(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "gratis"}}
     })
-    parche_auth = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@example.com"})
-    parche_auth.start()
-    try:
-        resp = client.post(
-            "/tu-tutor",
-            json={"mensaje": "Hola", "oposicion": "AGE"},
-            headers={"Authorization": "Bearer x"}
-        )
-        assert resp.status_code == 403
-    finally:
-        parche_auth.stop()
+    usuario_autenticado()
+    resp = client.post(
+        "/tu-tutor",
+        json={"mensaje": "Hola", "oposicion": "AGE"},
+        headers={"Authorization": "Bearer x"}
+    )
+    assert resp.status_code == 403

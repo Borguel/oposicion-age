@@ -72,62 +72,44 @@ def test_token_vapid_tiene_los_claims_correctos():
         assert claims["sub"] == "mailto:soporte@oposicion-age.com"
 
 
-def _con_sesion(cliente, uid="u1", email="u1@example.com"):
-    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
-    parche.start()
-    return parche
-
-
 SUSCRIPCION = {"endpoint": "https://push.example.com/abc", "keys": {"p256dh": "x", "auth": "y"}}
 
 
-def test_suscribir_guarda_la_suscripcion(client, db):
+def test_suscribir_guarda_la_suscripcion(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {})
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/notificaciones-push/suscribir", json=SUSCRIPCION,
-                            headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-        guardado = db.leer(("usuarios", "u1"))
-        assert guardado["push_subscriptions"] == [SUSCRIPCION]
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post("/notificaciones-push/suscribir", json=SUSCRIPCION,
+                        headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    guardado = db.leer(("usuarios", "u1"))
+    assert guardado["push_subscriptions"] == [SUSCRIPCION]
 
 
-def test_suscribir_dos_veces_no_duplica(client, db):
+def test_suscribir_dos_veces_no_duplica(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {})
-    parche = _con_sesion(client)
-    try:
-        client.post("/notificaciones-push/suscribir", json=SUSCRIPCION, headers={"Authorization": "Bearer x"})
-        client.post("/notificaciones-push/suscribir", json=SUSCRIPCION, headers={"Authorization": "Bearer x"})
-        guardado = db.leer(("usuarios", "u1"))
-        assert len(guardado["push_subscriptions"]) == 1
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    client.post("/notificaciones-push/suscribir", json=SUSCRIPCION, headers={"Authorization": "Bearer x"})
+    client.post("/notificaciones-push/suscribir", json=SUSCRIPCION, headers={"Authorization": "Bearer x"})
+    guardado = db.leer(("usuarios", "u1"))
+    assert len(guardado["push_subscriptions"]) == 1
 
 
-def test_desuscribir_quita_la_suscripcion(client, db):
+def test_desuscribir_quita_la_suscripcion(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {"push_subscriptions": [SUSCRIPCION]})
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/notificaciones-push/desuscribir", json={"endpoint": SUSCRIPCION["endpoint"]},
-                            headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-        guardado = db.leer(("usuarios", "u1"))
-        assert guardado["push_subscriptions"] == []
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post("/notificaciones-push/desuscribir", json={"endpoint": SUSCRIPCION["endpoint"]},
+                        headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    guardado = db.leer(("usuarios", "u1"))
+    assert guardado["push_subscriptions"] == []
 
 
-def test_suscribir_sin_endpoint_devuelve_error(client, db):
+def test_suscribir_sin_endpoint_devuelve_error(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {})
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/notificaciones-push/suscribir", json={"keys": {}},
-                            headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 400
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.post("/notificaciones-push/suscribir", json={"keys": {}},
+                        headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 400
 
 
 def test_clave_publica_no_requiere_login(client):

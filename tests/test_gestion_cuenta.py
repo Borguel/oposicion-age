@@ -7,12 +7,6 @@ from unittest.mock import patch, MagicMock
 from gestion_cuenta import exportar_datos_usuario, eliminar_cuenta_usuario
 
 
-def _con_sesion(cliente, uid="u1", email="u1@example.com"):
-    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
-    parche.start()
-    return parche
-
-
 def test_exportar_datos_incluye_perfil_y_subcolecciones(db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "nombre": "Ana"})
     db.sembrar(("usuarios", "u1", "tests", "t1"), {"tipo": "oficial"})
@@ -121,24 +115,18 @@ def test_eliminar_cuenta_avisa_por_email_si_stripe_da_error(db):
     mock_alerta.assert_called_once_with(os.environ.get("BREVO_FROM_EMAIL"), "u1", "sub_123")
 
 
-def test_ruta_exportar_datos(client, db):
+def test_ruta_exportar_datos(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "nombre": "Ana"})
-    parche = _con_sesion(client)
-    try:
-        resp = client.get("/mi-cuenta/exportar-datos", headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-        assert resp.get_json()["perfil"]["nombre"] == "Ana"
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    resp = client.get("/mi-cuenta/exportar-datos", headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    assert resp.get_json()["perfil"]["nombre"] == "Ana"
 
 
-def test_ruta_eliminar_cuenta(client, db):
+def test_ruta_eliminar_cuenta(client, db, usuario_autenticado):
     db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
-    parche = _con_sesion(client)
-    try:
-        with patch("gestion_cuenta.firebase_auth.delete_user"):
-            resp = client.delete("/mi-cuenta", headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
-        assert db.leer(("usuarios", "u1")) is None
-    finally:
-        parche.stop()
+    usuario_autenticado()
+    with patch("gestion_cuenta.firebase_auth.delete_user"):
+        resp = client.delete("/mi-cuenta", headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    assert db.leer(("usuarios", "u1")) is None

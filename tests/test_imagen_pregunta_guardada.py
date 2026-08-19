@@ -5,18 +5,11 @@ guardado en usuarios/{uid}/tests/{id}. Si no, "Repetir test" (que reconstruye
 las preguntas a partir de ese documento guardado, ver repetir-test/script.js)
 se queda sin figura que mostrar -- bug real reportado por el usuario:
 funcionaba en el test recién generado pero no al repetirlo desde Mis Tests."""
-from unittest.mock import patch
 
 from conftest import sembrar_usuario_activo
 
 
-def _con_sesion(cliente, uid="u1", email="u1@example.com"):
-    parche = patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": uid, "email": email})
-    parche.start()
-    return parche
-
-
-def test_guardar_test_conserva_la_imagen_de_cada_pregunta(client, db):
+def test_guardar_test_conserva_la_imagen_de_cada_pregunta(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     contenido = [
         {
@@ -32,19 +25,16 @@ def test_guardar_test_conserva_la_imagen_de_cada_pregunta(client, db):
         },
     ]
     respuestas = ["A", "A"]
-    parche = _con_sesion(client)
-    try:
-        resp = client.post("/guardar-test?oposicion=METRO", json={
-            "test_id": "t1",
-            "contenido": contenido,
-            "respuestas": respuestas,
-            "metadatos": {"tipo": "psicotecnico", "tiempo": 0},
-        }, headers={"Authorization": "Bearer x"})
-        assert resp.status_code == 200
+    usuario_autenticado()
+    resp = client.post("/guardar-test?oposicion=METRO", json={
+        "test_id": "t1",
+        "contenido": contenido,
+        "respuestas": respuestas,
+        "metadatos": {"tipo": "psicotecnico", "tiempo": 0},
+    }, headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
 
-        guardado = db.leer(("usuarios", "u1", "tests", "t1"))
-        assert guardado["preguntas"][0]["imagen"] == "/assets/psicotecnico-metro/gen_cubos_51.png"
-        # una pregunta sin imagen no debe romperse ni inventarse una
-        assert guardado["preguntas"][1]["imagen"] == ""
-    finally:
-        parche.stop()
+    guardado = db.leer(("usuarios", "u1", "tests", "t1"))
+    assert guardado["preguntas"][0]["imagen"] == "/assets/psicotecnico-metro/gen_cubos_51.png"
+    # una pregunta sin imagen no debe romperse ni inventarse una
+    assert guardado["preguntas"][1]["imagen"] == ""
