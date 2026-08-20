@@ -30,7 +30,14 @@ def leer_promocion():
 
 
 def promocion_vigente(promo):
-    """Activa Y, si tiene fecha de fin, que todavía no haya pasado."""
+    """Activa Y, si tiene fecha de fin, que todavía no haya pasado.
+
+    Falla CERRADO ante una fecha_fin ilegible (auditoría de agosto de
+    2026): antes, un valor corrupto en fecha_fin (p. ej. una edición
+    manual mal hecha en el panel) hacía que la promoción se tratara como
+    vigente PARA SIEMPRE en vez de caducada -- coste económico real y
+    silencioso (descuento aplicándose indefinidamente) para un caso que
+    no debería colar como "sin fecha de fin"."""
     if not promo.get("activo"):
         return False
     fecha_fin = promo.get("fecha_fin")
@@ -39,4 +46,4 @@ def promocion_vigente(promo):
     try:
         return datetime.utcnow() < datetime.fromisoformat(fecha_fin)
     except (TypeError, ValueError):
-        return True
+        return False

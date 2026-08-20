@@ -23,3 +23,9 @@ select = ["E4", "E7", "E9", "F"]
 skips = ["B311", "B403", "B404"]
 # tests/ y sin-uso/ no son código de producción; frontend/ es JS, no Python.
 exclude_dirs = ["tests", "tests-frontend", "sin-uso", "frontend", ".git"]
+
+[tool.coverage.run]
+# Solo informativo en CI (ver .github/workflows/ci.yml) -- ningún umbral
+# que bloquee, de momento solo visibilidad real de qué queda sin cubrir en
+# vez de tener que intuirlo. Mismo criterio de exclusión que bandit arriba.
+omit = ["tests/*", "sin-uso/*", "graphify-out/*"]

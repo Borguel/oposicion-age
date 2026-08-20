@@ -136,8 +136,20 @@ jobs:
       - name: Comprobar que todos los ficheros Python compilan
         run: python -m compileall -q .
 
-      - name: Ejecutar tests
-        run: python -m pytest -v
+      # --cov-fail-under NO se pone a propósito: esto es solo visibilidad
+      # (saber de verdad dónde están los huecos, ver auditoría de agosto de
+      # 2026), no un umbral que bloquee el PR. Un fallo real de test sigue
+      # bloqueando igual, eso no cambia -- pytest-cov no toca ese comportamiento.
+      - name: Ejecutar tests (con cobertura, informativa)
+        run: python -m pytest -v --cov=. --cov-report=term-missing
+
+      - name: Publicar el resumen de cobertura
+        if: always()
+        run: |
+          echo "## Cobertura de tests (informativa, no bloquea el PR)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          python -m coverage report >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
   frontend:
     name: Frontend (JS)
