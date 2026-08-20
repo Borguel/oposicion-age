@@ -406,11 +406,6 @@
       }
     }
 
-    .home-hero .age-pill-primary {
-      background: rgba(255, 166, 51, 0.18);
-      color: var(--age-primary-light);
-    }
-
     .home-hero h1 {
       font-size: clamp(2.2rem, 5vw, 3.4rem);
       font-weight: 800;
@@ -628,12 +623,19 @@
       height: 48px;
       border-radius: var(--age-radius-md);
       background: var(--age-primary-soft);
+      color: var(--age-primary-dark);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 1.5rem;
       margin-bottom: 16px;
     }
+    /* Las 4 tarjetas ya dicen algo distinto cada una -- que el icono
+       también varíe de color evita la fila de "tiles" idénticos típica de
+       una landing genérica (20/08/2026, auditoría UX). */
+    .highlight-card:nth-child(2) .highlight-icon { background: var(--age-success-bg); color: var(--age-success); }
+    .highlight-card:nth-child(3) .highlight-icon { background: var(--age-info-bg); color: var(--age-info); }
+    .highlight-card:nth-child(4) .highlight-icon { background: var(--age-warning-bg); color: var(--age-warning); }
 
     .highlight-card h3 {
       font-size: 1.1rem;
@@ -836,11 +838,14 @@
        romano para cada bloque y numeración I.1/I.2 para sus sub-apartados). */
     .mock-esquema-real { width: 100%; text-align: left; }
     .eq-titulo {
-      font-size: 0.68rem;
+      font-size: 0.72rem;
       font-weight: 800;
       color: var(--age-ink-soft);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
+      /* Sin mayúsculas: "Ejemplo: La Constitución Española" en versalitas
+         de CSS es un texto demasiado largo para leerse cómodo en
+         mayúsculas (20/08/2026, auditoría UX) -- el tamaño, peso y borde
+         ya bastan para que se lea como etiqueta. */
+      letter-spacing: 0.02em;
       margin-bottom: 12px;
       padding-bottom: 8px;
       border-bottom: 1px solid var(--age-border);
@@ -1167,7 +1172,6 @@
   <section class="home-hero">
     <div class="home-hero-inner">
       <div class="home-hero-texto">
-        <span class="age-pill age-pill-primary"><span data-icon="diana" data-icon-size="16"></span> Estudia con IA, a tu ritmo</span>
         <h1>Prepara tu oposición sin perderte entre apuntes</h1>
         <p>Tests ilimitados sobre el temario oficial de tu oposición, herramientas con inteligencia artificial avanzada para tus propios documentos, y estadísticas claras de tu progreso — todo en un solo sitio.</p>
         <div class="home-hero-ctas">

@@ -776,10 +776,6 @@
       box-shadow: var(--age-shadow-hover);
     }
 
-    .tarjeta-estadistica.neutra {
-      border-left: 4px solid var(--age-primary);
-    }
-
     .tarjeta-estadistica .header {
       display: flex;
       flex-direction: column;

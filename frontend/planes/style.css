@@ -191,9 +191,14 @@ body {
   gap: 14px;
 }
 
+/* Antes: borde de 1px + sombra ancha de 36px de blur permanente -- la
+   combinación más reconocible de tarjeta de precios genérica (20/08/2026,
+   auditoría UX). Un borde más grueso y un fondo con el tinte de marca
+   distinguen el plan destacado sin ese recurso, y sin depender solo del
+   badge/botón. */
 .plan-destacado {
-  border-color: var(--age-primary);
-  box-shadow: var(--age-shadow-hover);
+  border: 2px solid var(--age-primary);
+  background: var(--age-primary-soft);
 }
 
 .plan-badge {

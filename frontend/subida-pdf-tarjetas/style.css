@@ -208,7 +208,6 @@
   box-shadow: var(--age-shadow);
   cursor: pointer;
   transition: transform 0.2s var(--age-ease), box-shadow 0.2s var(--age-ease);
-  border-left: 4px solid var(--age-primary);
 }
 .tarjeta-miniatura:hover {
   transform: translateY(-4px);
