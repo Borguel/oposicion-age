@@ -2694,24 +2694,24 @@ def auditoria_listar():
 # en condiciones normales (sin secreto configurado) es como si no
 # existiera. Pensada para usarse una vez y retirarse después.
 #
-# Acepta POST (cuerpo JSON) y GET (parámetros en la URL), este último para
-# poder activarse desde el móvil abriendo un simple enlace en el navegador
-# cuando no hay acceso a una terminal. El secreto va en la URL, aceptable
-# solo porque es de un único uso y la variable se retira justo después.
-@bp.route("/admin/api/bootstrap", methods=["GET", "POST"])
+# Solo POST (cuerpo JSON): antes también aceptaba GET con el secreto en la
+# URL (para poder activarse desde el móvil abriendo un simple enlace, sin
+# terminal a mano) -- pero una URL con el secreto dentro queda registrada
+# tal cual en el historial del navegador y en los logs de acceso del
+# servidor de forma indefinida, y esta es la contraseña más sensible de
+# todo el proyecto (concede admin a cualquier uid). Quitado tras la
+# auditoría de agosto de 2026: el uso por móvil-sin-terminal es raro
+# (arranque de un solo uso) y no compensa dejar esa fuga abierta.
+@bp.route("/admin/api/bootstrap", methods=["POST"])
 def bootstrap_admin():
     secreto_esperado = os.environ.get("ADMIN_BOOTSTRAP_SECRET", "")
     if not secreto_esperado:
         # Función desactivada: sin secreto configurado no existe.
         return jsonify({"error": "No encontrado"}), 404
 
-    if request.method == "GET":
-        secreto_recibido = str(request.args.get("secreto", ""))
-        uid = str(request.args.get("uid", "")).strip()
-    else:
-        data = request.get_json(silent=True) or {}
-        secreto_recibido = str(data.get("secreto", ""))
-        uid = str(data.get("uid", "")).strip()
+    data = request.get_json(silent=True) or {}
+    secreto_recibido = str(data.get("secreto", ""))
+    uid = str(data.get("uid", "")).strip()
 
     # Comparación en tiempo constante para no filtrar el secreto por timing.
     if not hmac.compare_digest(secreto_recibido, secreto_esperado):

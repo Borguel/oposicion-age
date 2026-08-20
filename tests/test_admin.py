@@ -631,20 +631,13 @@ def test_bootstrap_asigna_claim(client, monkeypatch):
     assert llamado["claims"]["admin"] is True
 
 
-def test_bootstrap_por_get_desde_navegador(client, monkeypatch):
+def test_bootstrap_rechaza_get(client, monkeypatch):
+    # GET se quitó tras la auditoría de agosto de 2026: un secreto en la URL
+    # queda registrado en el historial del navegador y en los logs de acceso
+    # del servidor de forma indefinida -- ahora solo se acepta por POST.
     monkeypatch.setenv("ADMIN_BOOTSTRAP_SECRET", "clave-buena")
-
-    class _U:
-        email = "yo@example.com"
-        custom_claims = None
-
-    llamado = {}
-    with patch("blueprints.admin.firebase_auth.get_user", return_value=_U()), \
-         patch("blueprints.admin.firebase_auth.set_custom_user_claims",
-               side_effect=lambda uid, claims: llamado.update(uid=uid, claims=claims)):
-        resp = client.get("/admin/api/bootstrap?uid=abc123&secreto=clave-buena")
-    assert resp.status_code == 200
-    assert llamado["claims"]["admin"] is True
+    resp = client.get("/admin/api/bootstrap?uid=abc123&secreto=clave-buena")
+    assert resp.status_code == 405
 
 
 # ---------- Utilidades nuevas (1,2,3,5,16) ----------
