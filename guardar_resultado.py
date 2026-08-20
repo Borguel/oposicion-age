@@ -5,42 +5,88 @@ from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_e
 from oposiciones import OPOSICION_POR_DEFECTO
 from documentos_pdf import marcar_generado
 from banco_fallos import actualizar_banco_fallos, _id_pregunta
-from utils import calcular_resultado_test, obtener_preguntas_examenes_oficiales, obtener_preguntas_psicotecnico
+from utils import calcular_resultado_test, obtener_preguntas_examenes_oficiales, obtener_preguntas_psicotecnico, obtener_preguntas_banco_ia
 
 logger = logging.getLogger(__name__)
 
-# Tipos de test que salen de un banco FIJO ya cargado en Firestore -- para
-# estos sí hay una fuente de verdad contra la que comprobar la
+# Tipos de test que tienen una fuente de verdad contra la que comprobar la
 # "respuesta_correcta" que manda el cliente al guardar el resultado (ver
-# _corregir_con_banco_oficial). El Test Personalizado (generado por IA bajo
-# demanda) y los tipos que reutilizan preguntas ya vistas (falladas,
-# favoritas, repetido, historial) quedan fuera a propósito: no hay banco
-# previo que consultar sin un cambio más grande (persistir lo generado en
-# el momento de la generación) -- ver limitación conocida en el informe de
-# auditoría (docs/auditoria-seguridad-agosto-2026.md, hallazgo C2).
+# _corregir_con_banco_verificado). oficial/psicotecnico salen de un banco
+# FIJO ya cargado en Firestore; personalizado (generado por IA bajo demanda)
+# se verifica desde 18/08/2026 contra banco_preguntas_ia_<oposicion>, donde
+# generador_preguntas_verificado.py ya guarda cada pregunta que genera (ver
+# banco_preguntas_ia.py) -- cierra el hallazgo C2 del informe de auditoría
+# (docs/auditoria-seguridad-agosto-2026.md) para este tipo. Los tipos que
+# reutilizan preguntas ya vistas (falladas, favoritas, repetido, historial)
+# quedan fuera a propósito: su respuesta_correcta ya se verificó la primera
+# vez que se guardaron (fueron oficial/psicotecnico/personalizado en su
+# momento), volver a verificarlas aquí sería redundante.
 _OBTENER_BANCO_POR_TIPO = {
     "oficial": obtener_preguntas_examenes_oficiales,
     "psicotecnico": obtener_preguntas_psicotecnico,
+    "personalizado": obtener_preguntas_banco_ia,
 }
 
 
-def _corregir_con_banco_oficial(db, oposicion, tipo_test, contenido):
+def _diccionario_respuestas_simple(banco):
+    """Empareja por el texto EXACTO de la pregunta -- vale para
+    oficial/psicotecnico, un banco curado a mano desde exámenes reales
+    donde el mismo enunciado nunca aparece dos veces con distinta
+    respuesta_correcta."""
+    return {
+        d.get("pregunta"): (d.get("respuesta_correcta") or "").upper()
+        for d in banco if d.get("pregunta")
+    }
+
+
+def _diccionario_respuestas_banco_ia(banco):
+    """Como _diccionario_respuestas_simple, pero para banco_preguntas_ia:
+    a diferencia del banco oficial, esto lo escribe guardar_pregunta_generada
+    sin deduplicar (cada pregunta se guarda en un documento nuevo, sin mirar
+    si ya existía) -- dos generaciones independientes pueden dejar el mismo
+    enunciado dos veces con una respuesta_correcta distinta si la IA se
+    contradijo entre una y otra. Si eso pasa, no se elige ninguna de las dos
+    arbitrariamente: se descarta esa pregunta del diccionario y se deja tal
+    cual la mandó el cliente, igual que si no hubiera match."""
+    respuestas = {}
+    conflictivas = set()
+    for d in banco:
+        texto = d.get("pregunta")
+        correcta = (d.get("respuesta_correcta") or "").upper()
+        if not texto or not correcta:
+            continue
+        if texto in respuestas and respuestas[texto] != correcta:
+            conflictivas.add(texto)
+            continue
+        respuestas[texto] = correcta
+    for texto in conflictivas:
+        respuestas.pop(texto, None)
+    return respuestas
+
+
+_CONSTRUIR_RESPUESTAS_POR_TIPO = {
+    "personalizado": _diccionario_respuestas_banco_ia,
+}
+
+
+def _corregir_con_banco_verificado(db, oposicion, tipo_test, contenido):
     """Sustituye, IN PLACE, la "respuesta_correcta" de cada pregunta de
-    `contenido` por la que de verdad tiene en el banco oficial de Firestore,
-    en vez de fiarse de la que manda el cliente -- sin esto, cualquiera
-    podía guardar un test "oficial"/"psicotécnico" con una respuesta_correcta
+    `contenido` por la que de verdad tiene en Firestore, en vez de fiarse de
+    la que manda el cliente -- sin esto, cualquiera podía guardar un test
+    "oficial"/"psicotécnico"/"personalizado" con una respuesta_correcta
     fabricada para sacar siempre nota máxima (las estadísticas y el ranking
     público se calculan a partir de este resultado).
 
     El emparejamiento es por el texto EXACTO de la pregunta (mismo texto que
-    /generar-test-oficial y /generar-test-psicotecnico ya entregaron, sin
-    normalizar) porque hoy no viaja ningún id estable de Firestore de vuelta
-    al cliente. Si una pregunta no aparece en el banco actual (p. ej. se
-    editó/desactivó entre que se generó el test y se corrigió, o un fallo
-    puntual leyendo Firestore), se deja tal cual la mandó el cliente para
-    esa pregunta en concreto -- mejor no bloquear ni puntuar mal la
-    corrección de un test legítimo por un desajuste puntual que arriesgarse
-    a romper el guardado entero."""
+    /generar-test-oficial, /generar-test-psicotecnico y
+    /generar-test-avanzado ya entregaron, sin normalizar) porque hoy no
+    viaja ningún id estable de Firestore de vuelta al cliente. Si una
+    pregunta no aparece en el banco actual (p. ej. se editó/desactivó entre
+    que se generó el test y se corrigió, o un fallo puntual leyendo
+    Firestore), se deja tal cual la mandó el cliente para esa pregunta en
+    concreto -- mejor no bloquear ni puntuar mal la corrección de un test
+    legítimo por un desajuste puntual que arriesgarse a romper el guardado
+    entero."""
     obtener_banco = _OBTENER_BANCO_POR_TIPO.get(tipo_test)
     if obtener_banco is None:
         return contenido
@@ -48,15 +94,13 @@ def _corregir_con_banco_oficial(db, oposicion, tipo_test, contenido):
         banco = obtener_banco(db, oposicion)
     except Exception:
         logger.warning(
-            "No se pudo cargar el banco oficial para verificar un test '%s' (oposición %s); se mantiene la respuesta_correcta del cliente",
+            "No se pudo cargar el banco verificado para un test '%s' (oposición %s); se mantiene la respuesta_correcta del cliente",
             tipo_test, oposicion, exc_info=True,
         )
         return contenido
 
-    respuestas_reales = {
-        d.get("pregunta"): (d.get("respuesta_correcta") or "").upper()
-        for d in banco if d.get("pregunta")
-    }
+    construir_respuestas = _CONSTRUIR_RESPUESTAS_POR_TIPO.get(tipo_test, _diccionario_respuestas_simple)
+    respuestas_reales = construir_respuestas(banco)
     for p in contenido:
         real = respuestas_reales.get(p.get("pregunta"))
         if real:
@@ -105,7 +149,7 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
     if tipo == "test":
         respuestas = metadatos.get("respuestas", [])
         tipo_test = metadatos.get("tipo", "personalizado")
-        contenido = _corregir_con_banco_oficial(db, oposicion, tipo_test, contenido)
+        contenido = _corregir_con_banco_verificado(db, oposicion, tipo_test, contenido)
         actualizar_banco_fallos(db, usuario_id, oposicion, tipo_test, contenido, respuestas)
 
         marcadas_duda = marcadas_duda or []

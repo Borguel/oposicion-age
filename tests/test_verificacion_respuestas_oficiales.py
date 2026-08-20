@@ -1,11 +1,14 @@
 """Prueba que /guardar-test NO se fía de la "respuesta_correcta" que manda
-el cliente para los tests "oficial"/"psicotécnico": la recalcula contra el
-banco real de Firestore (ver guardar_resultado._corregir_con_banco_oficial).
+el cliente para los tests "oficial"/"psicotécnico"/"personalizado": la
+recalcula contra el banco real de Firestore (ver
+guardar_resultado._corregir_con_banco_verificado).
 
-Sin esto, cualquiera podía guardar un test oficial con una
-respuesta_correcta fabricada para sacar siempre nota máxima -- las
-estadísticas y el ranking público se calculan a partir de este resultado
-(hallazgo C2 de la auditoría de seguridad, docs/auditoria-seguridad-agosto-2026.md)."""
+Sin esto, cualquiera podía guardar un test con una respuesta_correcta
+fabricada para sacar siempre nota máxima -- las estadísticas y el ranking
+público se calculan a partir de este resultado (hallazgo C2 de la auditoría
+de seguridad, docs/auditoria-seguridad-agosto-2026.md). Personalizado se
+verifica desde 18/08/2026 contra banco_preguntas_ia_<oposicion>, donde
+generador_preguntas_verificado.py ya guarda cada pregunta que genera."""
 
 
 from conftest import sembrar_usuario_activo
@@ -130,18 +133,108 @@ def test_test_psicotecnico_tambien_ignora_respuesta_correcta_fabricada(client, d
     assert resultado["fallos"] == 1
 
 
-def test_test_personalizado_no_se_toca_por_este_cambio(client, db, usuario_autenticado):
-    """El Test Personalizado (generado por IA, sin banco previo) queda
-    fuera a propósito de esta verificación -- comportamiento sin cambios,
-    para no romper nada ahí. Ver limitación conocida en el informe."""
+def test_test_personalizado_ignora_respuesta_correcta_fabricada_por_el_cliente(client, db, usuario_autenticado):
+    """La pregunta ya se generó y se guardó (verificada) en
+    banco_preguntas_ia_AGE con "A" como respuesta correcta -- ver
+    generador_preguntas_verificado.guardar_pregunta_generada. El cliente
+    manda "B" al guardar el resultado -- si el servidor se fiara del
+    payload, esto puntuaría como acierto. Debe puntuar como fallo."""
+    sembrar_usuario_activo(db, "u1", plan="basico")
+    db.sembrar(
+        ("banco_preguntas_ia_AGE", "p1"),
+        {
+            "pregunta": "¿Capital de España?",
+            "opciones": {"A": "Madrid", "B": "Barcelona"},
+            "respuesta_correcta": "A",
+        },
+    )
+    usuario_autenticado()
+    contenido = [
+        {
+            "pregunta": "¿Capital de España?",
+            "opciones": {"A": "Madrid", "B": "Barcelona"},
+            "respuesta_correcta": "B",  # fabricada por el cliente
+        }
+    ]
+    resultado = _guardar_y_leer_resultado(client, "AGE", contenido, ["B"], "personalizado")
+    assert resultado["aciertos"] == 0
+    assert resultado["fallos"] == 1
+
+
+def test_test_personalizado_con_respuesta_correcta_real_sigue_puntuando_acierto(client, db, usuario_autenticado):
+    """Caso normal (sin manipular nada): la respuesta_correcta que manda un
+    cliente honesto coincide con el banco de IA, así que sigue puntuando
+    igual que antes."""
+    sembrar_usuario_activo(db, "u1", plan="basico")
+    db.sembrar(
+        ("banco_preguntas_ia_AGE", "p1"),
+        {
+            "pregunta": "¿Capital de España?",
+            "opciones": {"A": "Madrid", "B": "Barcelona"},
+            "respuesta_correcta": "A",
+        },
+    )
+    usuario_autenticado()
+    contenido = [
+        {
+            "pregunta": "¿Capital de España?",
+            "opciones": {"A": "Madrid", "B": "Barcelona"},
+            "respuesta_correcta": "A",
+        }
+    ]
+    resultado = _guardar_y_leer_resultado(client, "AGE", contenido, ["A"], "personalizado")
+    assert resultado["aciertos"] == 1
+    assert resultado["fallos"] == 0
+
+
+def test_test_personalizado_pregunta_no_encontrada_en_banco_no_rompe_el_guardado(client, db, usuario_autenticado):
+    """Si la pregunta no está en banco_preguntas_ia (p. ej. se guardó antes
+    de que existiera esta verificación), no se debe bloquear ni fallar el
+    guardado -- se deja la respuesta_correcta tal cual la mandó el cliente
+    para ESA pregunta en concreto."""
     sembrar_usuario_activo(db, "u1", plan="basico")
     usuario_autenticado()
     contenido = [
         {
-            "pregunta": "Pregunta generada por IA",
+            "pregunta": "Pregunta que no está en el banco de IA",
             "opciones": {"A": "x", "B": "y"},
-            "respuesta_correcta": "B",
+            "respuesta_correcta": "A",
         }
     ]
-    resultado = _guardar_y_leer_resultado(client, "AGE", contenido, ["B"], "personalizado")
-    assert resultado["aciertos"] == 1  # sigue fiándose del cliente, sin cambios
+    resultado = _guardar_y_leer_resultado(client, "AGE", contenido, ["A"], "personalizado")
+    assert resultado["aciertos"] == 1
+
+
+def test_test_personalizado_con_dos_verificaciones_contradictorias_no_elige_ninguna(client, db, usuario_autenticado):
+    """banco_preguntas_ia no deduplica al escribir (ver
+    guardar_pregunta_generada): si la IA generó el mismo enunciado dos
+    veces con una respuesta_correcta distinta cada vez, ninguna de las dos
+    gana arbitrariamente -- se deja la respuesta_correcta tal cual la mandó
+    el cliente para esa pregunta, igual que si no hubiera ningún match."""
+    sembrar_usuario_activo(db, "u1", plan="basico")
+    db.sembrar(
+        ("banco_preguntas_ia_AGE", "p1"),
+        {
+            "pregunta": "Pregunta con verificaciones contradictorias",
+            "opciones": {"A": "x", "B": "y"},
+            "respuesta_correcta": "A",
+        },
+    )
+    db.sembrar(
+        ("banco_preguntas_ia_AGE", "p2"),
+        {
+            "pregunta": "Pregunta con verificaciones contradictorias",
+            "opciones": {"A": "x", "B": "y"},
+            "respuesta_correcta": "B",
+        },
+    )
+    usuario_autenticado()
+    contenido = [
+        {
+            "pregunta": "Pregunta con verificaciones contradictorias",
+            "opciones": {"A": "x", "B": "y"},
+            "respuesta_correcta": "A",
+        }
+    ]
+    resultado = _guardar_y_leer_resultado(client, "AGE", contenido, ["A"], "personalizado")
+    assert resultado["aciertos"] == 1

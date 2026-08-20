@@ -6,12 +6,12 @@
 
 ## Estado de implementación
 
-De los 16 puntos de acción del informe original, **11 ya están corregidos**, 1 está corregido solo en parte (por diseño, ver C2) y 4 quedan pendientes — de esos 4, uno (M5) espera datos reales de escala, y los otros tres son decisiones de equipo o refactors grandes que no se pidieron en esta ronda, no vulnerabilidades sin resolver. Además, al implementar los arreglos se encontraron y corrigieron 4 problemas más que no estaban en el informe original (3 dependencias con vulnerabilidades conocidas y 1 excepción silenciada adicional).
+De los 16 puntos de acción del informe original, **12 ya están corregidos** y 4 quedan pendientes — de esos 4, uno (M5) espera datos reales de escala, y los otros tres son decisiones de equipo o refactors grandes que no se pidieron en esta ronda, no vulnerabilidades sin resolver. Además, al implementar los arreglos se encontraron y corrigieron 4 problemas más que no estaban en el informe original (3 dependencias con vulnerabilidades conocidas y 1 excepción silenciada adicional).
 
 | # | Hallazgo | Estado |
 |---|---|---|
 | C1 | CSV Injection en exportaciones de admin | ✅ Implementado |
-| C2 | Resultados de test no verificados en servidor | ⚠️ Implementado en parte (oficial/psicotécnico sí; Test Personalizado no) |
+| C2 | Resultados de test no verificados en servidor | ✅ Implementado (oficial, psicotécnico y Test Personalizado) |
 | M1 | Fuga de mensajes de excepción al cliente | ✅ Implementado |
 | M2 | Inyección de HTML en avisos oficiales | ✅ Implementado |
 | M3 | `banco-preguntas` sin caché + N+1 | ✅ Implementado |
@@ -44,7 +44,7 @@ De los 16 puntos de acción del informe original, **11 ya están corregidos**, 1
 
 Es un backend inusualmente maduro para el tamaño del equipo: decoradores de autorización aplicados de forma sistemática y verificados uno a uno en **las dos ~2.500 líneas de `admin.py`** y las ~1.700 de `pdf_ia.py`, webhook de Stripe con verificación de firma correcta e idempotente, cabeceras de seguridad estrictas (Talisman + CSP sin `unsafe-inline` en `script-src`), rate limiting por IP y por ruta, manejador global de errores que no filtra trazas, más de 50 ficheros de test que corren en CI y bloquean el propio despliegue en Render si fallan, y `Dependabot` activo semanalmente para pip/npm/GitHub Actions. El frontend, pese a ser JS vanilla sin framework, escapa el HTML de forma consistente en absolutamente todos los puntos donde inserta contenido dinámico vía `innerHTML`, y el token de Firebase nunca se persiste en `localStorage`/`sessionStorage`.
 
-No se encontró ninguna vulnerabilidad de bypass de autenticación/autorización, IDOR, ni inyección con impacto de ejecución remota. El hallazgo de mayor severidad era una **inyección de fórmulas CSV (CSV Injection)** en las exportaciones del panel de administración, explotable por cualquier usuario registrado a través de su propio `display_name`, con impacto real sobre la máquina de un administrador que abra el CSV en Excel/Sheets — **ya corregido (C1)**. El segundo hallazgo relevante no era de confidencialidad sino de **integridad**: el backend confiaba en el contenido y las respuestas correctas que el propio cliente enviaba al guardar un test, lo que permitía fabricar resultados/estadísticas/ranking sin haber contestado nada — **corregido para los tests con banco fijo (oficial/psicotécnico); el Test Personalizado queda pendiente de un rediseño mayor, ver C2**.
+No se encontró ninguna vulnerabilidad de bypass de autenticación/autorización, IDOR, ni inyección con impacto de ejecución remota. El hallazgo de mayor severidad era una **inyección de fórmulas CSV (CSV Injection)** en las exportaciones del panel de administración, explotable por cualquier usuario registrado a través de su propio `display_name`, con impacto real sobre la máquina de un administrador que abra el CSV en Excel/Sheets — **ya corregido (C1)**. El segundo hallazgo relevante no era de confidencialidad sino de **integridad**: el backend confiaba en el contenido y las respuestas correctas que el propio cliente enviaba al guardar un test, lo que permitía fabricar resultados/estadísticas/ranking sin haber contestado nada — **corregido para los tres tipos de test (oficial, psicotécnico y Test Personalizado), ver C2**.
 
 El resto de hallazgos eran de severidad media o baja: fuga de mensajes de excepción cruda al cliente (patrón repetido en varios blueprints), inyección de HTML sin escapar en las páginas estáticas de "avisos oficiales" (mitigada en parte por la CSP), varios puntos sin caché con lecturas N+1 a Firestore, y ausencia de herramientas SAST específicas de seguridad (bandit/pip-audit) en el pipeline de pre-commit/CI. **Todos corregidos** (ver tabla de estado arriba), salvo M5 (escaneos completos en tareas programadas, sin datos de escala reales todavía para decidir el diseño correcto).
 
@@ -102,7 +102,7 @@ Aplicar `_celda_segura` a cada celda antes de escribirla neutraliza la fórmula 
 
 ---
 
-### C2. Resultados de test no verificados en servidor: manipulación de estadísticas y ranking — ⚠️ IMPLEMENTADO EN PARTE
+### C2. Resultados de test no verificados en servidor: manipulación de estadísticas y ranking — ✅ IMPLEMENTADO
 
 **Archivo/línea:** `save_controller.py:5-27` (`guardar_test_route`), `guardar_resultado.py:46-156` (`guardar_resultado_en_firestore`), `rutas_progreso.py:217-285` (`/autosave-test`).
 
@@ -131,9 +131,9 @@ def _recuperar_respuestas_correctas(db, oposicion, tipo_test, contenido):
     # y usar SU respuesta_correcta, ignorando la que venga en el payload.
     ...
 ```
-Para el test "personalizado" (generado por IA bajo demanda, sin persistencia previa por pregunta) es más difícil eliminar la confianza en el cliente sin rediseño; como mitigación intermedia, guardar server-side una copia de las preguntas generadas (asociada al `test_id`) en el momento de generarlas, y corregir contra esa copia en vez de contra lo que llega en `/guardar-test`.
+Para el test "personalizado" (generado por IA bajo demanda) este informe planteaba como mitigación intermedia persistir server-side una copia de las preguntas generadas. **Resulta que esa persistencia ya existía** para otro propósito: `generador_preguntas_verificado.py` (el generador que usa `/generar-test-avanzado`) ya guarda cada pregunta que genera, verificada, en `banco_preguntas_ia_<oposicion>` (`banco_preguntas_ia.py:guardar_pregunta_generada`) — solo la consultaba Tu Tutor (`utils.py:buscar_pregunta_banco_ia`) para no contradecirse si el usuario le pegaba una pregunta de un test personalizado. Cerrar C2 para este tipo fue, por tanto, conectar `guardar_resultado.py` a ese banco ya existente, no construir uno nuevo.
 
-**Estado real:** implementado para "oficial" y "psicotécnico" (`guardar_resultado.py:_corregir_con_banco_oficial`), que sí tienen un banco fijo contra el que verificar sin cambiar el contrato con el cliente — bajo riesgo, cambio contenido. El Test Personalizado queda **deliberadamente sin tocar**: cerrarlo exige el rediseño más grande descrito arriba (persistir lo generado en el momento de generarlo, tocar la ruta SSE más compleja del backend), y se decidió abordarlo en una sesión aparte en vez de mezclarlo con el resto de arreglos de bajo riesgo.
+**Estado real (19/08/2026):** implementado para los tres tipos (`guardar_resultado.py:_corregir_con_banco_verificado`). oficial/psicotécnico usan un banco curado a mano (coincidencia por texto exacto, sin ambigüedad posible). Personalizado usa `banco_preguntas_ia_<oposicion>`, que **no deduplica al escribir** (cada pregunta generada crea un documento nuevo, sin comprobar si ya existía) — si el mismo enunciado quedó guardado dos veces con una `respuesta_correcta` distinta (la IA se contradijo entre una generación y otra), no se elige ninguna de las dos arbitrariamente: esa pregunta se deja tal cual la mandó el cliente, igual que si no hubiera match (ver `_diccionario_respuestas_banco_ia`). Cobertura de mejor esfuerzo, no garantizada como en oficial/psicotécnico: si la escritura a `banco_preguntas_ia` falló silenciosamente al generar una pregunta concreta (`guardar_pregunta_generada` traga cualquier excepción a propósito, para no romper la generación del test), esa pregunta queda sin poder verificarse — cae al mismo comportamiento de antes solo para ella.
 
 ---
 
@@ -270,7 +270,7 @@ Ninguna de estas resulta de complejidad accidental — el propio código documen
 ## Checklist de mejora continua
 
 - [x] Sanear las celdas de todas las exportaciones CSV del panel admin contra CSV injection (C1).
-- [x] Dejar de confiar en `respuesta_correcta`/`contenido` del cliente al guardar resultados de test oficial/psicotécnico; recalcular server-side contra el banco real (C2) — hecho para oficial/psicotécnico; Test Personalizado pendiente de una sesión aparte.
+- [x] Dejar de confiar en `respuesta_correcta`/`contenido` del cliente al guardar resultados de test; recalcular server-side contra el banco real (C2) — hecho para oficial, psicotécnico y Test Personalizado (19/08/2026, reutilizando el banco de preguntas de IA que ya existía para Tu Tutor).
 - [x] Unificar el manejo de errores en `rutas_progreso.py`, `pagos.py`, `pdf_ia.py` y `test_ia.py` para no devolver `str(e)` al cliente (M1).
 - [x] Escapar HTML (`html.escape`) en `publicacion_estatica_boe.py._tarjeta_aviso_html` antes de comitear a las páginas estáticas (M2).
 - [x] Envolver `banco_preguntas_resumen` en el mismo caché TTL que sus rutas hermanas de `admin.py`, y batchear las lecturas de título de tema/bloque (M3).
