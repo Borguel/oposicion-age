@@ -38,6 +38,7 @@
   <link rel="stylesheet" href="/subida-pdf-generar-test/style.css" />
 </head>
 <body>
+  <div class="age-auth-loader" aria-hidden="true"><span class="age-auth-loader-spinner"></span></div>
 <nav class="age-nav"></nav>
 
   <div class="pdfherr-header">
@@ -58,6 +59,7 @@
         <div class="form-group" id="grupo-archivo">
           <label for="archivo-pdf"><span data-icon="documento" data-icon-size="16"></span> Sube tu documento PDF (máx. 10 MB)</label>
           <p class="limite-paginas-nota hidden" id="limite-paginas-nota"></p>
+          <p class="limite-paginas-nota hidden" id="cuota-documentos-mes-nota"></p>
           <div class="file-upload-area" id="upload-area">
             <div class="upload-icon" data-icon="subir" data-icon-size="28"></div>
             <div class="upload-text">
@@ -116,8 +118,9 @@
   <script type="module" src="/subida-pdf-generar-test/script.js"></script>
   <script type="module" src="/assets/auth.js"></script>
   <script type="module">
-    import { mostrarLimitePaginas } from "/assets/limite-paginas.js";
+    import { mostrarLimitePaginas, mostrarCuotaDocumentosMes } from "/assets/limite-paginas.js";
     mostrarLimitePaginas();
+    mostrarCuotaDocumentosMes();
   </script>
 </body>
 </html>

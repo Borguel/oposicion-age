@@ -54,7 +54,7 @@
 
     #estadisticas-refresh {
       background: var(--age-primary);
-      color: white;
+      color: var(--age-on-primary);
       border: none;
       width: 42px;
       height: 42px;

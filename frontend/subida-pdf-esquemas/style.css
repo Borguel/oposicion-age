@@ -95,7 +95,7 @@
   padding: 0 4px;
   border-radius: 50%;
   background: var(--age-primary);
-  color: #fff;
+  color: var(--age-on-primary);
   font-size: 0.82rem;
   font-weight: 800;
 }

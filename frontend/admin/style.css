@@ -465,7 +465,7 @@
 .u-card-avatar {
   flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%;
   background: linear-gradient(135deg, var(--age-primary), var(--age-primary-dark));
-  color: #fff; display: flex; align-items: center; justify-content: center;
+  color: var(--age-on-primary); display: flex; align-items: center; justify-content: center;
   font-size: 1.15rem; font-weight: 800;
 }
 .u-card-id { min-width: 0; flex: 1; }
@@ -649,7 +649,7 @@ tr.sis-opt .sis-punto { background: #d9a300; }
 .ficha-avatar {
   flex: 0 0 auto; width: 58px; height: 58px; border-radius: 50%;
   background: linear-gradient(135deg, var(--age-primary), var(--age-primary-dark));
-  color: #fff; display: flex; align-items: center; justify-content: center;
+  color: var(--age-on-primary); display: flex; align-items: center; justify-content: center;
   font-size: 1.6rem; font-weight: 800;
   box-shadow: 0 0 0 3px var(--age-card), 0 0 0 5px var(--age-primary-soft);
 }

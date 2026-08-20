@@ -30,3 +30,35 @@ export async function mostrarLimitePaginas(idElemento = "limite-paginas-nota") {
     // dato crítico, simplemente no se muestra el aviso.
   }
 }
+
+// Cuota mensual de documentos NUEVOS SUBIDOS (banco_pdf_mensual, ver
+// limites_uso.py) -- ANTES de esto, la única forma de enterarse era subir
+// el PDF, esperar al análisis y recibir un 429 (20/08/2026, auditoría UX:
+// el aviso de mis-documentos/ no sirve de nada si el usuario nunca pasa
+// por esa página antes de generar). Reutiliza /mis-documentos porque ya
+// devuelve la cuota calculada -- no hay un endpoint más ligero solo para
+// esto, y estas herramientas ya son Premium, igual que esa ruta.
+export async function mostrarCuotaDocumentosMes(idElemento = "cuota-documentos-mes-nota") {
+  const elemento = document.getElementById(idElemento);
+  if (!elemento) return;
+  try {
+    const [{ idToken }, { BACKEND_URL }] = await Promise.all([
+      import("/assets/auth.js"),
+      import("/assets/firebase-config.js"),
+    ]);
+    const token = await idToken();
+    if (!token) return;
+    const res = await fetch(`${BACKEND_URL}/mis-documentos`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return;
+    const { cuota_documentos_mes: cuota } = await res.json();
+    const usados = cuota?.usados ?? 0;
+    const limite = cuota?.limite ?? 0;
+    if (!limite || limite <= 0) return;
+    elemento.textContent = `${usados} de ${limite} documentos nuevos subidos este mes.`;
+    elemento.classList.toggle("limite-paginas-nota-alerta", usados / limite >= 0.8);
+    elemento.classList.remove("hidden");
+  } catch (e) {
+    // Sin sesión iniciada o fallo de red: no es un dato crítico, el 429
+    // del backend al subir sigue siendo la barrera real.
+  }
+}

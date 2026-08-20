@@ -45,7 +45,7 @@ body {
 
 .login-tab.active {
   background: var(--age-primary);
-  color: #fff;
+  color: var(--age-on-primary);
 }
 
 #form-auth label,
@@ -83,7 +83,7 @@ body {
   border: none;
   border-radius: var(--age-radius-sm);
   background: var(--age-primary);
-  color: #fff;
+  color: var(--age-on-primary);
   font-family: var(--age-font);
   font-size: 15px;
   font-weight: 700;

@@ -54,7 +54,7 @@
 .rp-tab.activa {
   background: var(--age-primary);
   border-color: var(--age-primary);
-  color: #fff;
+  color: var(--age-on-primary);
 }
 
 .rp-filtro-fila {

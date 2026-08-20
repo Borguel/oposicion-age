@@ -249,7 +249,7 @@
 .guia-avisos-filtro-btn.is-activo {
   background: var(--age-primary);
   border-color: var(--age-primary);
-  color: #fff;
+  color: var(--age-on-primary);
 }
 
 @media (max-width: 600px) {

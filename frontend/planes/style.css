@@ -201,7 +201,7 @@ body {
   top: -12px;
   right: 20px;
   background: var(--age-primary);
-  color: #fff;
+  color: var(--age-on-primary);
   font-size: 12px;
   font-weight: 700;
   padding: 5px 12px;
@@ -285,7 +285,7 @@ body {
 
 .btn-plan-primary {
   background: var(--age-primary);
-  color: #fff;
+  color: var(--age-on-primary);
   border-color: var(--age-primary);
 }
 

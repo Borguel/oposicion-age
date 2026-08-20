@@ -35,6 +35,7 @@
   <link rel="stylesheet" href="/subida-pdf-chat-pdf/style.css" />
 </head>
 <body>
+  <div class="age-auth-loader" aria-hidden="true"><span class="age-auth-loader-spinner"></span></div>
 <nav class="age-nav"></nav>
 
   <div class="pdfherr-header">
@@ -52,6 +53,7 @@
           <h2 class="card-title">Sube tu documento</h2>
         </div>
         <p class="limite-paginas-nota hidden" id="limite-paginas-nota"></p>
+        <p class="limite-paginas-nota hidden" id="cuota-documentos-mes-nota"></p>
         <div class="file-upload-area" id="pdf-upload-area">
           <div class="upload-icon" data-icon="documento" data-icon-size="28"></div>
           <h3>Arrastra tu PDF aquí</h3>
@@ -86,8 +88,9 @@
   <script type="module" src="/assets/auth.js"></script>
   <script type="module" src="/subida-pdf-chat-pdf/script.js"></script>
   <script type="module">
-    import { mostrarLimitePaginas } from "/assets/limite-paginas.js";
+    import { mostrarLimitePaginas, mostrarCuotaDocumentosMes } from "/assets/limite-paginas.js";
     mostrarLimitePaginas();
+    mostrarCuotaDocumentosMes();
   </script>
 </body>
 </html>

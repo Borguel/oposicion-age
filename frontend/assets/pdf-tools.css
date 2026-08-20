@@ -135,6 +135,13 @@
   color: var(--age-ink-soft);
 }
 
+/* Cuota mensual (ver mostrarCuotaDocumentosMes en /assets/limite-paginas.js):
+   mismo tono discreto salvo al acercarse al límite (>=80%). */
+.pdfherr-body .limite-paginas-nota-alerta {
+  color: var(--age-warning);
+  font-weight: 700;
+}
+
 .pdfherr-body input[type="number"],
 .pdfherr-body input[type="text"],
 .pdfherr-body select.form-control {
