@@ -13,6 +13,9 @@
 // de test (ver /test-oficial/, /test-personalizado/).
 import { icono } from "/assets/icons.js";
 import { marcarContenidoListo } from "/assets/auth.js";
+import { activarAtajosTeclado } from "/assets/atajos-test.js";
+
+activarAtajosTeclado();
 
 const TIPO_TEST = "psicotecnico";
 const ENDPOINT_GENERAR = "/generar-test-psicotecnico";

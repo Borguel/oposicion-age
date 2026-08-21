@@ -6,6 +6,9 @@
 // selector de tipo de test con el propio formulario de generación.
 import { icono } from "/assets/icons.js";
 import { marcarContenidoListo } from "/assets/auth.js";
+import { activarAtajosTeclado } from "/assets/atajos-test.js";
+
+activarAtajosTeclado();
 
 const TIPO_TEST = "oficial";
 const ENDPOINT_GENERAR = "/generar-test-oficial";

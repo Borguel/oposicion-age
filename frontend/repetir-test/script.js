@@ -1,5 +1,8 @@
 import { icono } from "/assets/icons.js";
 import { marcarContenidoListo } from "/assets/auth.js";
+import { activarAtajosTeclado } from "/assets/atajos-test.js";
+
+activarAtajosTeclado();
 
 async function obtenerAuthHeaders() {
   const { obtenerAuthHeaders: fn } = await import("/assets/auth.js");

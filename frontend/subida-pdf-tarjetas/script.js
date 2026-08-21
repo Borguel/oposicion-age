@@ -395,7 +395,10 @@ async function obtenerAuthHeaders() {
       }
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `Error del servidor: ${res.status}`);
+        // Fallback en español llano en vez del código HTTP crudo (20/08/2026,
+        // auditoría UX): errorData.error ya viene en lenguaje claro cuando el
+        // backend lo manda, esto solo cubre el caso en que no venga.
+        throw new Error(errorData.error || "No se han podido generar las tarjetas. Inténtalo de nuevo en unos minutos.");
       }
       if (!res.body) return null;
 

@@ -9,6 +9,9 @@ import { BACKEND_URL } from "/assets/firebase-config.js";
 import { icono } from "/assets/icons.js";
 import { escaparHtml, renderizarResultadosTest } from "/assets/resultados-test.js";
 import { renderizarNavegadorPreguntas } from "/assets/navegador-preguntas.js";
+import { activarAtajosTeclado } from "/assets/atajos-test.js";
+
+activarAtajosTeclado();
 
 document.querySelectorAll("[data-icon]").forEach((el) => {
   el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));

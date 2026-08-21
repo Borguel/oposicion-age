@@ -6,6 +6,9 @@
 import { icono } from "/assets/icons.js";
 import { leerStreamConTimeout, TIMEOUT_SIN_EVENTOS_STREAM_MS } from "/assets/stream-utils.js";
 import { marcarContenidoListo } from "/assets/auth.js";
+import { activarAtajosTeclado } from "/assets/atajos-test.js";
+
+activarAtajosTeclado();
 
 const TIPO_TEST = "personalizado";
 const ENDPOINT_GENERAR = "/generar-test-avanzado";
