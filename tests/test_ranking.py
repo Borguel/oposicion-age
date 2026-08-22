@@ -74,6 +74,24 @@ def test_ranking_usa_cache_dentro_del_ttl_y_recalcula_pasado_el_ttl(client, db, 
     assert tras_ttl["ranking"][0]["racha_actual"] == 99
 
 
+def test_ranking_incluye_participantes_de_demostracion_mezclados_con_los_reales(client, db, usuario_autenticado):
+    # ranking_demo es una colección aparte (ver blueprints/admin.py) para
+    # que estos participantes nunca cuenten como usuarios reales en el
+    # panel admin -- pero sí deben verse en /ranking, ordenados junto con
+    # los de verdad por racha, con un uid que no pueda confundirse nunca
+    # con el uid real de quien consulta.
+    sembrar_usuario_activo(db, "u1", racha={"racha_actual": 5}, ranking_optin=True, ranking_alias="Real")
+    db.sembrar(("ranking_demo", "01"), {"alias": "Carlos", "racha_actual": 20})
+    db.sembrar(("ranking_demo", "02"), {"alias": "María", "racha_actual": 1})
+    usuario_autenticado(email_verified=True)
+    resp = client.get("/ranking", headers={"Authorization": "Bearer x"})
+    datos = resp.get_json()
+    assert [p["alias"] for p in datos["ranking"]] == ["Carlos", "Real", "María"]
+    assert datos["total_participantes"] == 3
+    # El usuario real sigue reconociéndose a sí mismo entre los de demostración.
+    assert next(p for p in datos["ranking"] if p["alias"] == "Real")["tu"] is True
+
+
 def test_salir_del_ranking_lo_oculta_sin_borrar_la_racha(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1")
     usuario_autenticado(email_verified=True)

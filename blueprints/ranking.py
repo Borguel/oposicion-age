@@ -30,7 +30,16 @@ def _participantes_ranking():
     ranking, ordenada de mayor a menor racha -- la parte cara (recorre TODA
     la colección "usuarios"), cacheada aparte de tu_posicion/tu_racha/top
     (que son por usuario y se recalculan en cada petición sobre esta misma
-    lista, sin volver a tocar Firestore)."""
+    lista, sin volver a tocar Firestore).
+
+    Incluye también los participantes de demostración (colección aparte
+    "ranking_demo", ver blueprints/admin.py -- se guardan fuera de
+    "usuarios" a propósito: los primeros intentos los guardaban como
+    documentos sueltos en "usuarios", y eso inflaba el número de usuarios
+    reales que ve el admin en su propio panel. "uid" lleva el prefijo
+    "demo_" para que nunca pueda coincidir con un uid real de Firebase Auth
+    (así "tu_posicion"/"tu_racha" más abajo nunca confunden a un
+    participante de demostración con el usuario que consulta)."""
     def _calcular():
         participantes = []
         for doc in db.collection("usuarios").where("ranking_optin", "==", True).stream():
@@ -39,6 +48,13 @@ def _participantes_ranking():
                 "uid": doc.id,
                 "alias": datos.get("ranking_alias") or "Opositor/a",
                 "racha_actual": (datos.get("racha") or {}).get("racha_actual", 0)
+            })
+        for doc in db.collection("ranking_demo").stream():
+            datos = doc.to_dict() or {}
+            participantes.append({
+                "uid": f"demo_{doc.id}",
+                "alias": datos.get("alias") or "Opositor/a",
+                "racha_actual": datos.get("racha_actual", 0)
             })
         participantes.sort(key=lambda p: p["racha_actual"], reverse=True)
         return participantes

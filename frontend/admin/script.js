@@ -16,7 +16,7 @@ function inyectarIconosEstaticos() {
 // Qué permiso necesita cada pestaña. Las de 'admin' solo las ve el super-admin.
 const PERMISO_POR_PESTANA = {
   dashboard: "cualquiera", temario: "temario", preguntas: "temario", analitica: "temario", calidad: "temario",
-  usuarios: "usuarios", ingresos: "usuarios", reportes: "reportes", boe: "temario", bajas: "reportes", limites: "admin", auditoria: "admin", sistema: "admin",
+  usuarios: "usuarios", ingresos: "usuarios", reportes: "reportes", boe: "temario", bajas: "reportes", limites: "admin", auditoria: "admin", sistema: "admin", ranking: "admin",
 };
 let _permisos = { admin: false, permisos: [] };
 function puedeVer(pestana) {
@@ -225,7 +225,7 @@ const GRUPOS = {
   contenido: { label: "Contenido", pestanas: ["temario", "preguntas", "analitica", "calidad"], enPanel: true, enSidebar: true },
   usuarios: { label: "Usuarios", pestanas: ["usuarios", "ingresos", "bajas", "reportes"], enPanel: true, enSidebar: true },
   boe: { label: "Vigilancia BOE", pestanas: ["boe"], enPanel: false, enSidebar: false },
-  configuracion: { label: "Configuración", pestanas: ["limites", "sistema", "auditoria"], enPanel: false, enSidebar: true },
+  configuracion: { label: "Configuración", pestanas: ["limites", "sistema", "auditoria", "ranking"], enPanel: false, enSidebar: true },
 };
 const RENDERS = {
   dashboard: renderDashboard,
@@ -241,15 +241,17 @@ const RENDERS = {
   limites: renderLimites,
   auditoria: renderAuditoria,
   sistema: renderSistema,
+  ranking: renderRanking,
 };
 const TITULO_POR_PESTANA = {
   dashboard: "Dashboard", temario: "Temario", preguntas: "Preguntas", analitica: "Analítica", calidad: "Calidad IA",
   usuarios: "Usuarios", ingresos: "Ingresos", reportes: "Reportes", boe: "Vigilancia BOE", bajas: "Bajas", limites: "Límites", auditoria: "Auditoría", sistema: "Sistema",
+  ranking: "Clasificación",
 };
 const LABEL_SUBTAB = {
   temario: "Temario", preguntas: "Preguntas", analitica: "Analítica", calidad: "Calidad IA",
   usuarios: "Usuarios", ingresos: "Ingresos", bajas: "Bajas", reportes: "Reportes",
-  limites: "Límites", sistema: "Sistema", auditoria: "Auditoría",
+  limites: "Límites", sistema: "Sistema", auditoria: "Auditoría", ranking: "Clasificación",
 };
 function grupoDePestana(pestana) {
   return Object.keys(GRUPOS).find((g) => GRUPOS[g].pestanas.includes(pestana)) || null;
@@ -1156,19 +1158,7 @@ async function renderUsuarios() {
       <button class="age-btn age-btn-primary admin-filtros-btn" id="u-aplicar">Buscar</button>
       <button class="age-btn age-btn-outline admin-filtros-btn" id="u-csv">${icono("descargar", 15)} CSV</button>
     </div>
-    <div id="usuarios-tabla"><p class="admin-cargando">Cargando…</p></div>
-    <div class="age-card admin-bloque">
-      <h3>Clasificación (participantes de demostración)</h3>
-      <p class="admin-reporte-meta">
-        Añade 30 entradas de ejemplo a /ranking (nombre inventado + racha, nunca cuentas reales)
-        para que no se vea vacío mientras hay pocos usuarios apuntados de verdad. Bórralas en
-        cuanto haya suficientes participantes reales.
-      </p>
-      <div class="admin-filtros-btn" style="display:flex; gap:10px; margin-top:10px;">
-        <button class="age-btn age-btn-primary" id="ranking-demo-sembrar">Crear demostración</button>
-        <button class="age-btn age-btn-outline" id="ranking-demo-borrar">Borrar demostración</button>
-      </div>
-    </div>`;
+    <div id="usuarios-tabla"><p class="admin-cargando">Cargando…</p></div>`;
   panel.querySelector("#u-aplicar").addEventListener("click", () => { paginaUsuarios = 1; cargarUsuarios(); });
   panel.querySelector("#u-csv").addEventListener("click", () => {
     const params = new URLSearchParams();
@@ -1179,16 +1169,50 @@ async function renderUsuarios() {
     descargarCSV(`/admin/api/usuarios/export?${params.toString()}`, "usuarios.csv");
   });
   panel.querySelector("#u-busqueda").addEventListener("keydown", (e) => { if (e.key === "Enter") { paginaUsuarios = 1; cargarUsuarios(); } });
+  cargarUsuarios();
+}
+
+// ===== Clasificación (ranking): participantes de demostración =====
+// Vive en su propia pestaña (grupo "configuracion"), separada a propósito
+// de "Usuarios" -- aunque ya no se guardan como documentos en "usuarios"
+// (ver blueprints/admin.py, colección aparte "ranking_demo"), mezclarlo
+// visualmente con la lista de usuarios reales seguía siendo confuso.
+async function renderRanking() {
+  const panel = document.getElementById("panel-ranking");
+  panel.innerHTML = `
+    <div class="age-card admin-bloque">
+      <h3>Participantes de demostración</h3>
+      <p class="admin-reporte-meta">
+        Añade 30 entradas de ejemplo a /ranking (nombre inventado + racha) para que no se vea
+        vacío mientras hay pocos usuarios apuntados de verdad. No son cuentas reales -- no
+        cuentan como usuarios en ningún otro sitio del panel. Bórralas en cuanto haya
+        suficientes participantes reales.
+      </p>
+      <p class="admin-reporte-meta" id="ranking-demo-estado"><em>Comprobando…</em></p>
+      <div class="admin-filtros-btn" style="display:flex; gap:10px; margin-top:10px;">
+        <button class="age-btn age-btn-primary" id="ranking-demo-sembrar">Crear demostración</button>
+        <button class="age-btn age-btn-outline" id="ranking-demo-borrar">Borrar demostración</button>
+      </div>
+    </div>`;
+
+  const elEstado = panel.querySelector("#ranking-demo-estado");
+  async function actualizarEstado() {
+    const r = await apiGet("/admin/api/ranking/demo");
+    if (!r) return;
+    elEstado.innerHTML = r.cantidad
+      ? `Ahora mismo hay <strong>${r.cantidad}</strong> participantes de demostración en la clasificación.`
+      : "No hay ningún participante de demostración ahora mismo.";
+  }
   panel.querySelector("#ranking-demo-sembrar").addEventListener("click", async () => {
     const r = await api("POST", "/admin/api/ranking/demo");
-    if (r) toast(r.mensaje || "Hecho.");
+    if (r) { toast(r.mensaje || "Hecho."); actualizarEstado(); }
   });
   panel.querySelector("#ranking-demo-borrar").addEventListener("click", async () => {
-    if (!confirm("¿Borrar los 30 participantes de demostración de la clasificación?")) return;
+    if (!confirm("¿Borrar los participantes de demostración de la clasificación?")) return;
     const r = await api("DELETE", "/admin/api/ranking/demo");
-    if (r) toast(r.mensaje || "Hecho.");
+    if (r) { toast(r.mensaje || "Hecho."); actualizarEstado(); }
   });
-  cargarUsuarios();
+  actualizarEstado();
 }
 
 // ===== Ingresos =====

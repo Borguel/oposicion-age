@@ -263,20 +263,27 @@ def test_bloqueo_requiere_admin_total(client, db):
     assert r.status_code == 403
 
 
-def test_ranking_demo_sembrar_crea_30_participantes(client, db):
+def test_ranking_demo_sembrar_crea_30_participantes_en_su_propia_coleccion(client, db):
     with _como():
         r = client.post("/admin/api/ranking/demo", headers=_AUTH)
     assert r.status_code == 200
-    creados = [
-        db.leer(("usuarios", f"demo_ranking_{i:02d}"))
-        for i in range(1, 31)
-    ]
+    creados = [db.leer(("ranking_demo", f"{i:02d}")) for i in range(1, 31)]
     assert all(d is not None for d in creados)
-    assert all(d["ranking_optin"] is True for d in creados)
-    assert all(d["es_demo_ranking"] is True for d in creados)
     # Nunca apellidos ni nada más allá de un nombre de pila -- el ranking
     # es anónimo por diseño (ver blueprints/ranking.py).
-    assert all(" " not in d["ranking_alias"] for d in creados)
+    assert all(" " not in d["alias"] for d in creados)
+    assert all(isinstance(d["racha_actual"], int) for d in creados)
+
+
+def test_ranking_demo_sembrar_no_toca_la_coleccion_usuarios(client, db):
+    # Regresión: la primera versión de esto escribía en "usuarios" y hacía
+    # que el admin viera usuarios falsos mezclados con los reales.
+    db.sembrar(("usuarios", "real1"), {"email": "real1@x.com"})
+    with _como():
+        client.post("/admin/api/ranking/demo", headers=_AUTH)
+    todos_usuarios = [doc.to_dict() for doc in db.collection("usuarios").stream()]
+    assert len(todos_usuarios) == 1
+    assert todos_usuarios[0]["email"] == "real1@x.com"
 
 
 def test_ranking_demo_sembrar_requiere_admin_total(client, db):
@@ -294,6 +301,20 @@ def test_ranking_demo_borrar_elimina_las_30_entradas_pero_no_las_reales(client, 
         client.post("/admin/api/ranking/demo", headers=_AUTH)
         r = client.delete("/admin/api/ranking/demo", headers=_AUTH)
     assert r.status_code == 200
+    assert all(db.leer(("ranking_demo", f"{i:02d}")) is None for i in range(1, 31))
+    assert db.leer(("usuarios", "real1")) is not None
+
+
+def test_ranking_demo_borrar_limpia_tambien_los_restos_del_diseno_anterior(client, db):
+    # Antes de mover esto a su propia colección, se sembraba directamente
+    # en "usuarios/demo_ranking_NN" -- si alguien llegó a usar esa versión,
+    # borrar debe limpiarlo también, no solo la colección nueva.
+    for i in range(1, 31):
+        db.sembrar(("usuarios", f"demo_ranking_{i:02d}"), {"es_demo_ranking": True, "ranking_optin": True})
+    db.sembrar(("usuarios", "real1"), {"email": "real1@x.com"})
+    with _como():
+        r = client.delete("/admin/api/ranking/demo", headers=_AUTH)
+    assert r.status_code == 200
     assert all(db.leer(("usuarios", f"demo_ranking_{i:02d}")) is None for i in range(1, 31))
     assert db.leer(("usuarios", "real1")) is not None
 
@@ -301,6 +322,24 @@ def test_ranking_demo_borrar_elimina_las_30_entradas_pero_no_las_reales(client, 
 def test_ranking_demo_borrar_requiere_admin_total(client, db):
     with _como(admin=False, permisos=["usuarios"]):
         r = client.delete("/admin/api/ranking/demo", headers=_AUTH)
+    assert r.status_code == 403
+
+
+def test_ranking_demo_estado_refleja_cuantos_hay(client, db):
+    with _como():
+        r0 = client.get("/admin/api/ranking/demo", headers=_AUTH).get_json()
+        assert r0["cantidad"] == 0
+        client.post("/admin/api/ranking/demo", headers=_AUTH)
+        r1 = client.get("/admin/api/ranking/demo", headers=_AUTH).get_json()
+        assert r1["cantidad"] == 30
+        client.delete("/admin/api/ranking/demo", headers=_AUTH)
+        r2 = client.get("/admin/api/ranking/demo", headers=_AUTH).get_json()
+        assert r2["cantidad"] == 0
+
+
+def test_ranking_demo_estado_requiere_admin_total(client, db):
+    with _como(admin=False, permisos=["usuarios"]):
+        r = client.get("/admin/api/ranking/demo", headers=_AUTH)
     assert r.status_code == 403
 
 

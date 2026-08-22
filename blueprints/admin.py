@@ -1492,16 +1492,22 @@ def usuarios_crear():
 # Participantes de demostración para /ranking (30/08/2026, a petición
 # explícita del usuario: mientras la web tiene pocos usuarios reales
 # apuntados a la clasificación, se ve vacía para cualquier visitante).
-# Documentos SOLO en Firestore (colección "usuarios", con
-# ranking_optin=True/ranking_alias/racha -- los 3 campos que lee
-# blueprints/ranking.py, nada más), NUNCA una cuenta de Firebase Auth: no
-# son personas reales que puedan iniciar sesión, solo entradas en la
-# clasificación. IDs fijos con el prefijo "demo_ranking_" para poder
-# identificarlos y borrarlos sin ambigüedad en cuanto haya usuarios reales
-# de sobra -- ver ranking_demo_borrar. Alias = solo nombre de pila (nunca
-# apellidos), igual que se espera que elija un usuario real: el propio
-# ranking es anónimo por diseño (ver blueprints/ranking.py, nunca muestra
-# nombre real ni email).
+#
+# Colección propia "ranking_demo" (nunca "usuarios"): la primera versión
+# de esto los guardaba como documentos sueltos en "usuarios", y aunque
+# nunca eran cuentas reales de Firebase Auth, sí inflaban el número de
+# "usuarios" que ve el propio admin en su panel (32/08/2026, reportado por
+# el usuario: "me salen 36 usuarios pero 30 son falsos"). Con la
+# colección aparte, "usuarios" no se toca en ningún momento -- ver
+# blueprints/ranking.py._participantes_ranking, que ahora combina las dos
+# colecciones solo al leer para /ranking. ranking_demo_borrar limpia
+# ADEMÁS cualquier resto de esa primera versión (documentos
+# "usuarios/demo_ranking_NN"), por si ya se llegó a sembrar con ella antes
+# de este cambio.
+#
+# Alias = solo nombre de pila (nunca apellidos), igual que se espera que
+# elija un usuario real: el propio ranking es anónimo por diseño (ver
+# blueprints/ranking.py, nunca muestra nombre real ni email).
 _RANKING_DEMO = [
     ("Carlos", 47), ("María", 62), ("Javier", 12), ("Carmen", 33), ("Antonio", 8),
     ("Laura", 21), ("Manuel", 55), ("Ana", 3), ("David", 18), ("Isabel", 40),
@@ -1512,20 +1518,26 @@ _RANKING_DEMO = [
 ]
 
 
+@bp.route("/admin/api/ranking/demo", methods=["GET"])
+@requiere_admin
+def ranking_demo_estado():
+    """Cuántos participantes de demostración hay ahora mismo -- para que
+    el admin pueda comprobar en el propio panel que sembrar/borrar
+    funcionó, sin tener que ir a mirar /ranking aparte."""
+    cantidad = sum(1 for _ in db.collection("ranking_demo").stream())
+    return jsonify({"cantidad": cantidad})
+
+
 @bp.route("/admin/api/ranking/demo", methods=["POST"])
 @requiere_admin
 def ranking_demo_sembrar():
     """Crea (o sobrescribe, si ya existían) los 30 participantes de
-    demostración de /ranking. Solo un super-admin puede llamarla."""
+    demostración de /ranking, en su propia colección. Solo un super-admin
+    puede llamarla."""
     batch = db.batch()
     for i, (alias, racha) in enumerate(_RANKING_DEMO, start=1):
-        ref = db.collection("usuarios").document(f"demo_ranking_{i:02d}")
-        batch.set(ref, {
-            "es_demo_ranking": True,
-            "ranking_optin": True,
-            "ranking_alias": alias,
-            "racha": {"racha_actual": racha, "racha_maxima": racha},
-        })
+        ref = db.collection("ranking_demo").document(f"{i:02d}")
+        batch.set(ref, {"alias": alias, "racha_actual": racha})
     batch.commit()
     invalidar_cache(("ranking_participantes",))
     _registrar_auditoria("ranking_demo_sembrar", "ranking", f"{len(_RANKING_DEMO)} participantes")
@@ -1535,14 +1547,17 @@ def ranking_demo_sembrar():
 @bp.route("/admin/api/ranking/demo", methods=["DELETE"])
 @requiere_admin
 def ranking_demo_borrar():
-    """Borra los participantes de demostración creados por
-    ranking_demo_sembrar (identificados por su id fijo "demo_ranking_NN"),
-    dejando intacto cualquier participante real."""
+    """Borra los participantes de demostración (colección "ranking_demo")
+    y, de paso, cualquier resto que quedara en "usuarios" de la primera
+    versión de esta función -- dejando intacto cualquier participante
+    real en cualquiera de los dos sitios."""
     batch = db.batch()
     for i in range(1, len(_RANKING_DEMO) + 1):
+        batch.delete(db.collection("ranking_demo").document(f"{i:02d}"))
         batch.delete(db.collection("usuarios").document(f"demo_ranking_{i:02d}"))
     batch.commit()
     invalidar_cache(("ranking_participantes",))
+    _invalidar_cache_admin_usuarios()
     _registrar_auditoria("ranking_demo_borrar", "ranking", f"{len(_RANKING_DEMO)} participantes")
     return jsonify({"mensaje": "Participantes de demostración eliminados."})
 
