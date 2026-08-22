@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script>if(location.hostname==="oposicion-age-1.onrender.com"){location.replace("https://www.dominatuopo.com"+location.pathname+location.search+location.hash);}</script>
+  <style>html:not(.auth-listo) body { visibility: hidden; }</style>
+  <script type="module" src="/assets/auth-guard.js"></script>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js" crossorigin />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js" crossorigin />
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffa633" />
+  <title>Avisos - Domina tu Opo</title>
+  <meta name="description" content="Todos tus avisos: preguntas pendientes de repasar, tu prueba gratuita o suscripción, y avisos oficiales del BOE de tu oposición." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Avisos - Domina tu Opo" />
+  <meta property="og:description" content="Todos tus avisos: preguntas pendientes de repasar, tu prueba gratuita o suscripción, y avisos oficiales del BOE de tu oposición." />
+  <meta property="og:image" content="/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="canonical" href="https://www.dominatuopo.com/avisos/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/avisos/style.css" />
+</head>
+<body>
+  <div class="age-auth-loader" aria-hidden="true"><span class="age-auth-loader-spinner"></span></div>
+<nav class="age-nav"></nav>
+
+  <div class="age-container">
+    <div class="avisos-cabecera">
+      <h1>Avisos</h1>
+      <p>Todo lo que necesitas revisar: preguntas falladas pendientes, tu prueba o suscripción, y avisos oficiales de tu oposición.</p>
+    </div>
+
+    <div id="avisos-cargando" class="avisos-cargando">Cargando avisos…</div>
+    <div id="avisos-lista" class="avisos-lista"></div>
+    <p id="avisos-vacio" class="avisos-vacio" hidden>No tienes ningún aviso pendiente ahora mismo.</p>
+  </div>
+
+  <script type="module" src="/avisos/script.js"></script>
+  <script type="module" src="/assets/auth.js"></script>
+</body>
+</html>

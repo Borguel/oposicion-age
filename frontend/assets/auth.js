@@ -499,7 +499,7 @@ function actualizarEnlacesNav(user) {
 // sin volver a pedirlos al backend.
 let cacheBusquedaGlobal = null;
 
-function escapeHtmlBuscador(texto) {
+export function escapeHtmlBuscador(texto) {
   const div = document.createElement("div");
   div.textContent = texto == null ? "" : String(texto);
   return div.innerHTML;
@@ -651,7 +651,10 @@ function construirBusquedaGlobal(user) {
 // futuro aparece un aviso realmente distinto (otro id), sí se notifica.
 const CLAVE_NOTIFICACIONES_VISTAS = "age_notificaciones_vistas";
 
-function obtenerNotificacionesVistas() {
+// Se exportan (y no solo el menú de cuenta) para que /avisos/ -- la página
+// completa a la que enlaza "Ver todos los avisos" -- reutilice exactamente
+// los mismos datos y el mismo criterio de "visto" en vez de duplicarlos.
+export function obtenerNotificacionesVistas() {
   try {
     const guardado = JSON.parse(localStorage.getItem(CLAVE_NOTIFICACIONES_VISTAS));
     return new Set(Array.isArray(guardado) ? guardado : []);
@@ -660,7 +663,7 @@ function obtenerNotificacionesVistas() {
   }
 }
 
-function marcarNotificacionesComoVistas(ids) {
+export function marcarNotificacionesComoVistas(ids) {
   try {
     const vistas = obtenerNotificacionesVistas();
     ids.forEach((id) => vistas.add(id));
@@ -668,7 +671,21 @@ function marcarNotificacionesComoVistas(ids) {
   } catch { /* localStorage no disponible (modo privado, cuota llena...): no bloquea nada */ }
 }
 
-async function calcularNotificaciones() {
+// Etiqueta legible del tipo de aviso oficial -- mismo diccionario que ya
+// usa zona-opositor/script.js para su propia sección de avisos, duplicado
+// aquí (en vez de importado) porque ese archivo no expone nada reutilizable
+// y es un objeto pequeño y estable, no vale la pena crear un módulo
+// compartido solo para esto.
+const ETIQUETA_TIPO_AVISO_OFICIAL = {
+  convocatoria: "Convocatoria",
+  lista_admitidos: "Lista de admitidos",
+  tribunal: "Tribunal calificador",
+  fecha_examen: "Fecha de examen",
+  aprobados: "Relación de aprobados",
+  otro: "Aviso oficial",
+};
+
+export async function calcularNotificaciones() {
   const notis = [];
   try {
     const { obtenerPlan } = await import("/assets/plan.js");
@@ -722,20 +739,45 @@ async function calcularNotificaciones() {
     }
   } catch (e) { /* igual: se omite este aviso concreto si falla */ }
 
+  try {
+    const token = await idToken();
+    const oposicion = obtenerOposicionActual();
+    const res = await fetch(`${BACKEND_URL}/avisos-oficiales?oposicion=${encodeURIComponent(oposicion)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const { avisos } = await res.json();
+      (avisos || []).forEach((a) => {
+        notis.push({
+          id: `aviso_${a.id}`,
+          iconoNombre: "brujula",
+          texto: `${ETIQUETA_TIPO_AVISO_OFICIAL[a.tipo] || ETIQUETA_TIPO_AVISO_OFICIAL.otro}: ${a.titulo}`,
+          href: "/avisos/",
+        });
+      });
+    }
+  } catch (e) { /* igual: se omiten los avisos oficiales si falla */ }
+
   return notis;
 }
+
+// Tope de avisos que se muestran dentro del propio menú desplegable -- con
+// hasta 5 avisos oficiales más los personales, el menú podía crecer más que
+// la propia pantalla. La lista completa, sin tope, vive en /avisos/.
+const TOPE_NOTIFICACIONES_EN_MENU = 4;
 
 function renderizarNotificaciones(lista, notis) {
   if (!notis.length) {
     lista.innerHTML = `<p class="age-buscador-vacio">No tienes avisos pendientes.</p>`;
     return;
   }
-  lista.innerHTML = notis.map((n) => `
+  const visibles = notis.slice(0, TOPE_NOTIFICACIONES_EN_MENU);
+  lista.innerHTML = visibles.map((n) => `
     <a class="age-notificaciones-item" href="${n.href}">
       <span class="age-notificaciones-item-icono">${icono(n.iconoNombre, 17)}</span>
       <span>${escapeHtmlBuscador(n.texto)}</span>
     </a>
-  `).join("");
+  `).join("") + `<a class="age-notificaciones-ver-todos" href="/avisos/">Ver todos los avisos</a>`;
 }
 
 function construirMenuCuenta(user) {

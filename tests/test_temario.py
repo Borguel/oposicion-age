@@ -195,6 +195,7 @@ def test_avisos_oficiales_devuelve_los_de_esa_oposicion(client, db, usuario_aute
     avisos = resp.get_json()["avisos"]
     assert len(avisos) == 1
     assert avisos[0]["titulo"] == "Convocatoria AGE 2026"
+    assert avisos[0]["id"] == "a1"
 
 
 def test_avisos_oficiales_incluye_uno_que_afecta_a_varias_oposiciones(client, db, usuario_autenticado):

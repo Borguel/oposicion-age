@@ -13,6 +13,7 @@ Allow: /oposicion-gace/
 Allow: /oposicion-auxiliar-administrativo-estado/
 Allow: /como-funciona/
 Disallow: /zona-opositor/
+Disallow: /avisos/
 Disallow: /mi-cuenta/
 Disallow: /mis-documentos/
 Disallow: /mis-tests/

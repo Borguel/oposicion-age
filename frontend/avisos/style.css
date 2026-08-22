@@ -1,0 +1,86 @@
+/* Página completa de avisos -- reutiliza .age-card/.age-container de
+   theme.css, mismo icono/texto que ya usa el menú de cuenta
+   (calcularNotificaciones en auth.js, única fuente de datos para ambos
+   sitios), aquí sin el tope de TOPE_NOTIFICACIONES_EN_MENU. */
+
+.avisos-cabecera {
+  text-align: center;
+  margin: 32px 0 24px;
+}
+
+.avisos-cabecera h1 {
+  font-size: 1.6rem;
+  color: var(--age-ink);
+  margin-bottom: 6px;
+}
+
+.avisos-cabecera p {
+  color: var(--age-ink-soft);
+  font-size: 0.95rem;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.avisos-cargando {
+  text-align: center;
+  color: var(--age-ink-faint);
+  padding: 20px;
+}
+
+.avisos-vacio {
+  text-align: center;
+  color: var(--age-ink-soft);
+  padding: 40px 20px;
+}
+
+.avisos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 640px;
+  margin: 0 auto 40px;
+}
+
+.avisos-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  text-decoration: none;
+  color: var(--age-ink);
+  transition: border-color 0.2s var(--age-ease), transform 0.15s var(--age-ease);
+}
+
+.avisos-item:hover {
+  border-color: var(--age-primary);
+  transform: translateY(-1px);
+}
+
+/* Aviso todavía no visto (mismo criterio que el punto rojo del avatar,
+   ver auth.js/obtenerNotificacionesVistas): una franja de color a la
+   izquierda, en vez de repetir el punto -- aquí ya no hace falta ahorrar
+   espacio como en el menú desplegable. */
+.avisos-item-nuevo {
+  border-left: 3px solid var(--age-primary);
+}
+
+.avisos-item-icono {
+  flex-shrink: 0;
+  color: var(--age-primary);
+  margin-top: 2px;
+}
+
+.avisos-item-texto {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+  .avisos-cabecera {
+    margin: 24px 0 20px;
+  }
+}

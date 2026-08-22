@@ -160,6 +160,7 @@ def avisos_oficiales():
         if oposicion not in _oposiciones_de(d):
             continue
         avisos.append({
+            "id": doc.id,
             "tipo": d.get("tipo", ""),
             "titulo": d.get("titulo", ""),
             "resumen": d.get("resumen", ""),
