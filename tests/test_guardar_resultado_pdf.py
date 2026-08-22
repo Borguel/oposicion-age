@@ -29,7 +29,8 @@ def test_primer_pdf_de_un_usuario_nuevo_inicializa_estadisticas_y_manda_bienveni
     # ejecuta antes y ya deja al usuario inicializado) -- así se ejerce de
     # verdad la rama "usuario nuevo" de la función, como cobertura
     # defensiva de un caso límite que hoy no se da en ningún camino real.
-    with patch("registro_progreso_usuario.enviar_email_bienvenida") as mock_bienvenida:
+    with patch("registro_progreso_usuario.enviar_email_bienvenida") as mock_bienvenida, \
+         patch("registro_progreso_usuario.enviar_email_alerta_nuevo_usuario"):
         actualizar_estadisticas_pdf(db, "u_nuevo", "resumen_pdf")
 
     usuario = db.leer(("usuarios", "u_nuevo"))

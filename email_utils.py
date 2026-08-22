@@ -519,6 +519,26 @@ def enviar_email_alerta_cancelacion_stripe_fallida(destinatario, uid, subscripti
             asunto=f"⚠️ Revisar suscripción de Stripe tras borrado de cuenta ({subscription_id})", html=html)
 
 
+def enviar_email_alerta_nuevo_usuario(destinatario, email_nuevo_usuario):
+    """Aviso interno (no es un email de marca para un usuario) de que se ha
+    registrado una cuenta nueva -- ver registro_progreso_usuario.
+    inicializar_estadisticas_usuario, que solo llama a esto la vez que de
+    verdad crea el documento usuarios/{uid} (protegido con la misma
+    transacción atómica que evita mandar el email de bienvenida duplicado,
+    así que este aviso tampoco se duplica ante varias peticiones casi
+    simultáneas del alta). Pensado para mientras la web tiene pocos
+    usuarios y cada alta es una señal a la que merece la pena prestar
+    atención en el momento; con más volumen puede desactivarse quitando
+    esta llamada sin tocar el resto del flujo de alta."""
+    cuerpo = f"""
+      <p style="margin:0;">Se acaba de registrar un usuario nuevo:
+      <strong>{escape(email_nuevo_usuario or "(sin email)")}</strong>.</p>
+    """
+    html = _plantilla_html("Nuevo usuario registrado", cuerpo, emoji="🎉")
+    _enviar(destinatario, "alerta de nuevo usuario",
+            asunto=f"🎉 Nuevo usuario: {email_nuevo_usuario or '(sin email)'}", html=html)
+
+
 def enviar_email_alerta_coste_ia(destinatario, gasto_hoy, media_historica):
     """Aviso interno (no es un email de marca para un usuario) de que el
     gasto en IA de hoy se ha disparado respecto a la media reciente --

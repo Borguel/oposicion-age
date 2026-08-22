@@ -8,6 +8,7 @@ desechables no dé acceso Premium gratis sin más coste que rellenar un
 formulario. Cada oposición activada tiene su propia prueba independiente
 (ver planes.py), así que tener varias no multiplica el uso efectivo contra
 los límites por herramienta durante los 7 días de ninguna en concreto."""
+import os
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -45,7 +46,8 @@ def test_crear_cuenta_no_activa_ninguna_oposicion(db):
     # oposición activada todavía -- ni aunque el email ya esté verificado.
     # Activar la primera es una acción explícita del usuario (ver
     # activar_oposicion_usuario), normalmente desde Zona opositor.
-    with patch("registro_progreso_usuario.enviar_email_bienvenida"):
+    with patch("registro_progreso_usuario.enviar_email_bienvenida"), \
+         patch("registro_progreso_usuario.enviar_email_alerta_nuevo_usuario"):
         inicializar_estadisticas_usuario(db, "u1", email="persona@gmail.com", email_verificado=True)
     usuario = db.leer(("usuarios", "u1"))
     assert usuario["suscripciones"] == {}
@@ -67,16 +69,20 @@ def test_inicializar_estadisticas_usuario_manda_la_bienvenida_una_sola_vez(db):
     # llamar repetidamente sobre el mismo usuario -- el caso normal de
     # "cada petición autenticada pasa por aquí" -- nunca vuelve a mandar el
     # correo una segunda vez.
-    with patch("registro_progreso_usuario.enviar_email_bienvenida") as mock_email:
+    with patch("registro_progreso_usuario.enviar_email_bienvenida") as mock_email, \
+         patch("registro_progreso_usuario.enviar_email_alerta_nuevo_usuario") as mock_alerta:
         inicializar_estadisticas_usuario(db, "u1", email="persona@gmail.com", email_verificado=True)
         assert mock_email.call_count == 1
+        mock_alerta.assert_called_once_with(os.environ.get("BREVO_FROM_EMAIL"), "persona@gmail.com")
         inicializar_estadisticas_usuario(db, "u1", email="persona@gmail.com", email_verificado=True)
         inicializar_estadisticas_usuario(db, "u1", email="persona@gmail.com", email_verificado=True)
         assert mock_email.call_count == 1
+        assert mock_alerta.call_count == 1
 
 
 def test_activar_oposicion_con_email_verificado_arranca_la_prueba(db):
-    with patch("registro_progreso_usuario.enviar_email_bienvenida"):
+    with patch("registro_progreso_usuario.enviar_email_bienvenida"), \
+         patch("registro_progreso_usuario.enviar_email_alerta_nuevo_usuario"):
         inicializar_estadisticas_usuario(db, "u1", email="persona@gmail.com", email_verificado=True)
     activar_oposicion_usuario(db, "u1", "AGE", email="persona@gmail.com", email_verificado=True)
     sub = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
@@ -113,7 +119,8 @@ def test_verificar_el_email_mas_tarde_arranca_las_pruebas_pendientes(db):
     assert suscripciones["AGE"]["prueba_fin"] is None
     assert suscripciones["GACE"]["prueba_fin"] is None
 
-    with patch("registro_progreso_usuario.enviar_email_bienvenida"):
+    with patch("registro_progreso_usuario.enviar_email_bienvenida"), \
+         patch("registro_progreso_usuario.enviar_email_alerta_nuevo_usuario"):
         inicializar_estadisticas_usuario(db, "u1", email="persona@gmail.com", email_verificado=True)
     suscripciones = db.leer(("usuarios", "u1"))["suscripciones"]
     assert suscripciones["AGE"]["prueba_fin"] is not None
