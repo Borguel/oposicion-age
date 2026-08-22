@@ -1489,6 +1489,64 @@ def usuarios_crear():
     return jsonify({"mensaje": "Usuario creado", "uid": uid, "email": email}), 201
 
 
+# Participantes de demostración para /ranking (30/08/2026, a petición
+# explícita del usuario: mientras la web tiene pocos usuarios reales
+# apuntados a la clasificación, se ve vacía para cualquier visitante).
+# Documentos SOLO en Firestore (colección "usuarios", con
+# ranking_optin=True/ranking_alias/racha -- los 3 campos que lee
+# blueprints/ranking.py, nada más), NUNCA una cuenta de Firebase Auth: no
+# son personas reales que puedan iniciar sesión, solo entradas en la
+# clasificación. IDs fijos con el prefijo "demo_ranking_" para poder
+# identificarlos y borrarlos sin ambigüedad en cuanto haya usuarios reales
+# de sobra -- ver ranking_demo_borrar. Alias = solo nombre de pila (nunca
+# apellidos), igual que se espera que elija un usuario real: el propio
+# ranking es anónimo por diseño (ver blueprints/ranking.py, nunca muestra
+# nombre real ni email).
+_RANKING_DEMO = [
+    ("Carlos", 47), ("María", 62), ("Javier", 12), ("Carmen", 33), ("Antonio", 8),
+    ("Laura", 21), ("Manuel", 55), ("Ana", 3), ("David", 18), ("Isabel", 40),
+    ("José", 9), ("Lucía", 27), ("Daniel", 15), ("Marta", 6), ("Pablo", 34),
+    ("Elena", 19), ("Alejandro", 2), ("Cristina", 44), ("Miguel", 11), ("Paula", 25),
+    ("Sergio", 30), ("Sara", 5), ("Francisco", 58), ("Andrea", 14), ("Rubén", 22),
+    ("Rocío", 7), ("Adrián", 16), ("Beatriz", 38), ("Álvaro", 4), ("Nuria", 29),
+]
+
+
+@bp.route("/admin/api/ranking/demo", methods=["POST"])
+@requiere_admin
+def ranking_demo_sembrar():
+    """Crea (o sobrescribe, si ya existían) los 30 participantes de
+    demostración de /ranking. Solo un super-admin puede llamarla."""
+    batch = db.batch()
+    for i, (alias, racha) in enumerate(_RANKING_DEMO, start=1):
+        ref = db.collection("usuarios").document(f"demo_ranking_{i:02d}")
+        batch.set(ref, {
+            "es_demo_ranking": True,
+            "ranking_optin": True,
+            "ranking_alias": alias,
+            "racha": {"racha_actual": racha, "racha_maxima": racha},
+        })
+    batch.commit()
+    invalidar_cache(("ranking_participantes",))
+    _registrar_auditoria("ranking_demo_sembrar", "ranking", f"{len(_RANKING_DEMO)} participantes")
+    return jsonify({"mensaje": f"{len(_RANKING_DEMO)} participantes de demostración creados."})
+
+
+@bp.route("/admin/api/ranking/demo", methods=["DELETE"])
+@requiere_admin
+def ranking_demo_borrar():
+    """Borra los participantes de demostración creados por
+    ranking_demo_sembrar (identificados por su id fijo "demo_ranking_NN"),
+    dejando intacto cualquier participante real."""
+    batch = db.batch()
+    for i in range(1, len(_RANKING_DEMO) + 1):
+        batch.delete(db.collection("usuarios").document(f"demo_ranking_{i:02d}"))
+    batch.commit()
+    invalidar_cache(("ranking_participantes",))
+    _registrar_auditoria("ranking_demo_borrar", "ranking", f"{len(_RANKING_DEMO)} participantes")
+    return jsonify({"mensaje": "Participantes de demostración eliminados."})
+
+
 @bp.route("/admin/api/usuarios/<uid>", methods=["GET"])
 @requiere_permiso("usuarios")
 def usuarios_detalle(uid):

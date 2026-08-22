@@ -1156,7 +1156,19 @@ async function renderUsuarios() {
       <button class="age-btn age-btn-primary admin-filtros-btn" id="u-aplicar">Buscar</button>
       <button class="age-btn age-btn-outline admin-filtros-btn" id="u-csv">${icono("descargar", 15)} CSV</button>
     </div>
-    <div id="usuarios-tabla"><p class="admin-cargando">Cargando…</p></div>`;
+    <div id="usuarios-tabla"><p class="admin-cargando">Cargando…</p></div>
+    <div class="age-card admin-bloque">
+      <h3>Clasificación (participantes de demostración)</h3>
+      <p class="admin-reporte-meta">
+        Añade 30 entradas de ejemplo a /ranking (nombre inventado + racha, nunca cuentas reales)
+        para que no se vea vacío mientras hay pocos usuarios apuntados de verdad. Bórralas en
+        cuanto haya suficientes participantes reales.
+      </p>
+      <div class="admin-filtros-btn" style="display:flex; gap:10px; margin-top:10px;">
+        <button class="age-btn age-btn-primary" id="ranking-demo-sembrar">Crear demostración</button>
+        <button class="age-btn age-btn-outline" id="ranking-demo-borrar">Borrar demostración</button>
+      </div>
+    </div>`;
   panel.querySelector("#u-aplicar").addEventListener("click", () => { paginaUsuarios = 1; cargarUsuarios(); });
   panel.querySelector("#u-csv").addEventListener("click", () => {
     const params = new URLSearchParams();
@@ -1167,6 +1179,15 @@ async function renderUsuarios() {
     descargarCSV(`/admin/api/usuarios/export?${params.toString()}`, "usuarios.csv");
   });
   panel.querySelector("#u-busqueda").addEventListener("keydown", (e) => { if (e.key === "Enter") { paginaUsuarios = 1; cargarUsuarios(); } });
+  panel.querySelector("#ranking-demo-sembrar").addEventListener("click", async () => {
+    const r = await api("POST", "/admin/api/ranking/demo");
+    if (r) toast(r.mensaje || "Hecho.");
+  });
+  panel.querySelector("#ranking-demo-borrar").addEventListener("click", async () => {
+    if (!confirm("¿Borrar los 30 participantes de demostración de la clasificación?")) return;
+    const r = await api("DELETE", "/admin/api/ranking/demo");
+    if (r) toast(r.mensaje || "Hecho.");
+  });
   cargarUsuarios();
 }
 

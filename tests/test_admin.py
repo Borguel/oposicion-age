@@ -263,6 +263,47 @@ def test_bloqueo_requiere_admin_total(client, db):
     assert r.status_code == 403
 
 
+def test_ranking_demo_sembrar_crea_30_participantes(client, db):
+    with _como():
+        r = client.post("/admin/api/ranking/demo", headers=_AUTH)
+    assert r.status_code == 200
+    creados = [
+        db.leer(("usuarios", f"demo_ranking_{i:02d}"))
+        for i in range(1, 31)
+    ]
+    assert all(d is not None for d in creados)
+    assert all(d["ranking_optin"] is True for d in creados)
+    assert all(d["es_demo_ranking"] is True for d in creados)
+    # Nunca apellidos ni nada más allá de un nombre de pila -- el ranking
+    # es anónimo por diseño (ver blueprints/ranking.py).
+    assert all(" " not in d["ranking_alias"] for d in creados)
+
+
+def test_ranking_demo_sembrar_requiere_admin_total(client, db):
+    with _como(admin=False, permisos=["usuarios"]):
+        r = client.post("/admin/api/ranking/demo", headers=_AUTH)
+    assert r.status_code == 403
+
+
+def test_ranking_demo_borrar_elimina_las_30_entradas_pero_no_las_reales(client, db):
+    db.sembrar(("usuarios", "real1"), {
+        "email": "real1@x.com", "ranking_optin": True, "ranking_alias": "Opositor de verdad",
+        "racha": {"racha_actual": 5},
+    })
+    with _como():
+        client.post("/admin/api/ranking/demo", headers=_AUTH)
+        r = client.delete("/admin/api/ranking/demo", headers=_AUTH)
+    assert r.status_code == 200
+    assert all(db.leer(("usuarios", f"demo_ranking_{i:02d}")) is None for i in range(1, 31))
+    assert db.leer(("usuarios", "real1")) is not None
+
+
+def test_ranking_demo_borrar_requiere_admin_total(client, db):
+    with _como(admin=False, permisos=["usuarios"]):
+        r = client.delete("/admin/api/ranking/demo", headers=_AUTH)
+    assert r.status_code == 403
+
+
 def test_generar_enlace_password(client, db):
     reg = type("R", (), {"email": "u1@x.com"})()
     with _como(), \
