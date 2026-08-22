@@ -79,13 +79,25 @@ test.describe("checkout de Stripe (/planes/)", () => {
     // mostrarErrorGlobal cae a un alert() nativo del navegador en esta
     // página (no carga SweetAlert2) -- Playwright necesita capturar el
     // diálogo explícitamente o se queda bloqueado esperándolo.
-    const dialogo = page.waitForEvent("dialog");
+    //
+    // El manejador se registra ANTES de disparar la acción y acepta el
+    // diálogo dentro del propio callback (mismo turno del event loop en
+    // el que aparece), en vez de esperarlo con waitForEvent y aceptarlo
+    // en una línea aparte -- ese patrón deja una ventana entre "el
+    // diálogo ya apareció" y "se acepta" en la que, bajo carga real de
+    // CI (varios spec files en paralelo), la página/contexto puede
+    // cerrarse de por medio (fallo real visto dos veces seguidas:
+    // "dialog.accept: Target page, context or browser has been closed",
+    // 22/08/2026). Registrar y aceptar en un solo paso es el patrón que
+    // recomienda la propia documentación de Playwright para diálogos.
+    let mensajeDialogo = null;
+    page.once("dialog", async (dialogo) => {
+      mensajeDialogo = dialogo.message();
+      await dialogo.accept();
+    });
     await btn.click();
-    const alerta = await dialogo;
-    expect(alerta.message()).toContain("Stripe Checkout");
-    await alerta.accept();
-
     await expect(btn).toBeEnabled();
+    expect(mensajeDialogo).toContain("Stripe Checkout");
   });
 });
 
