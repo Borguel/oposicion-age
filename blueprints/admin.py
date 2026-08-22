@@ -1551,6 +1551,9 @@ def usuarios_detalle(uid):
         "permisos_disponibles": list(PERMISOS_VALIDOS),
         "email": datos.get("email", ""),
         "nombre": datos.get("nombre", ""),
+        "apellidos": datos.get("apellidos", ""),
+        "telefono": datos.get("telefono", ""),
+        "direccion": datos.get("direccion", ""),
         "plan": _plan_usuario(datos),
         # Resumen agregado (ver resumen_prueba_cuenta en planes.py): "en
         # prueba" si CUALQUIERA de sus oposiciones activadas sigue dentro de

@@ -1556,6 +1556,9 @@ function fichaVistaHtml(vista, u) {
           <div><dt>Alta</dt><dd>${escapeHtml(fechaCorta(u.fecha_creacion))}</dd></div>
           <div><dt>Última actividad</dt><dd>${escapeHtml(fechaCorta(u.ultima_actividad))}</dd></div>
           <div><dt>Rendimiento</dt><dd>${(r.aciertos || 0)} aciertos · ${(r.fallos || 0)} fallos · ${(r.blancos || 0)} blancos</dd></div>
+          <div><dt>Apellidos</dt><dd>${u.apellidos ? escapeHtml(u.apellidos) : "–"}</dd></div>
+          <div><dt>Teléfono</dt><dd>${u.telefono ? escapeHtml(u.telefono) : "–"}</dd></div>
+          <div><dt>Dirección</dt><dd>${u.direccion ? escapeHtml(u.direccion) : "–"}</dd></div>
         </dl>
         ${override}
       </div>

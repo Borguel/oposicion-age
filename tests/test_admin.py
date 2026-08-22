@@ -353,6 +353,30 @@ def test_detalle_usuario_agrega_tests_y_racha(client, db):
     assert d["plan"] == "premium"
 
 
+def test_detalle_usuario_incluye_apellidos_telefono_direccion(client, db):
+    # Estos 3 campos se guardan desde /registrar-usuario (ver
+    # rutas_progreso.py) pero hasta ahora la ficha del panel admin no los
+    # devolvía -- se veían en Firestore pero nunca en el panel.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com", "nombre": "Virginia", "apellidos": "García López",
+        "telefono": "+34 600 11 22 33", "direccion": "Calle Falsa 123",
+    })
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["apellidos"] == "García López"
+    assert d["telefono"] == "+34 600 11 22 33"
+    assert d["direccion"] == "Calle Falsa 123"
+
+
+def test_detalle_usuario_apellidos_telefono_direccion_vacios_si_no_se_rellenaron(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert d["apellidos"] == ""
+    assert d["telefono"] == ""
+    assert d["direccion"] == ""
+
+
 def test_detalle_usuario_email_verificado_viene_de_firebase_auth_no_de_firestore(client, db):
     # email_verificado no se guarda nunca en Firestore -- viene de la cuenta
     # real de Firebase Auth (registro.email_verified), no de datos.get(...).
