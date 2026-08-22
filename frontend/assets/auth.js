@@ -685,6 +685,18 @@ const ETIQUETA_TIPO_AVISO_OFICIAL = {
   otro: "Aviso oficial",
 };
 
+// fecha_boe llega como "AAAAMMDD" sin separadores (ver
+// vigilancia_boe.py/admin.py) -- nunca se había mostrado en ningún sitio
+// legible hasta ahora (avisos-oficiales/ y zona-opositor solo lo usan para
+// ordenar). null si no tiene el formato esperado, para no enseñar una
+// fecha rota.
+function formatearFechaBoe(fechaBoe) {
+  if (!/^\d{8}$/.test(fechaBoe || "")) return null;
+  const fecha = new Date(`${fechaBoe.slice(0, 4)}-${fechaBoe.slice(4, 6)}-${fechaBoe.slice(6, 8)}T00:00:00`);
+  if (Number.isNaN(fecha.getTime())) return null;
+  return fecha.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+}
+
 export async function calcularNotificaciones() {
   const notis = [];
   try {
@@ -695,6 +707,7 @@ export async function calcularNotificaciones() {
       if (dias <= 2) {
         notis.push({
           id: "prueba",
+          categoria: "personal",
           iconoNombre: "reloj",
           texto: dias <= 0 ? "Tu prueba gratuita termina hoy." : `Tu prueba gratuita termina en ${dias} día${dias === 1 ? "" : "s"}.`,
           href: "/planes/",
@@ -708,6 +721,7 @@ export async function calcularNotificaciones() {
           const fecha = new Date(sub.current_period_end).toLocaleDateString("es-ES", { day: "numeric", month: "long" });
           notis.push({
             id: `baja_${op}`,
+            categoria: "personal",
             iconoNombre: dias <= 1 ? "alerta" : "salir",
             texto: dias <= 1
               ? `Tu plan en ${op} se cancela mañana. Reactívalo si quieres seguir con acceso.`
@@ -731,6 +745,7 @@ export async function calcularNotificaciones() {
         const plural = total_pendientes === 1 ? "" : "s";
         notis.push({
           id: "falladas",
+          categoria: "personal",
           iconoNombre: "estrella",
           texto: `Tienes ${total_pendientes} pregunta${plural} fallada${plural} sin repasar.`,
           href: "/repasar-preguntas/",
@@ -750,9 +765,15 @@ export async function calcularNotificaciones() {
       (avisos || []).forEach((a) => {
         notis.push({
           id: `aviso_${a.id}`,
+          categoria: "oficial",
           iconoNombre: "brujula",
           texto: `${ETIQUETA_TIPO_AVISO_OFICIAL[a.tipo] || ETIQUETA_TIPO_AVISO_OFICIAL.otro}: ${a.titulo}`,
-          href: "/avisos/",
+          // Directo a la fuente (mismo criterio que ya usa zona-opositor/
+          // script.js con este mismo dato, "Ver en el BOE ↗") -- antes
+          // enlazaba a /avisos/, la propia página donde se pinta esto, un
+          // enlace a sí mismo que no llevaba a ningún sitio útil.
+          href: a.url_boe || "/avisos/",
+          fecha: formatearFechaBoe(a.fecha_boe),
         });
       });
     }
@@ -766,18 +787,34 @@ export async function calcularNotificaciones() {
 // la propia pantalla. La lista completa, sin tope, vive en /avisos/.
 const TOPE_NOTIFICACIONES_EN_MENU = 4;
 
+// Atributos de enlace externo (target/rel) para los avisos oficiales, que
+// enlazan directo al BOE -- las demás notificaciones son internas.
+function atributosEnlace(href) {
+  return href.startsWith("http") ? ' target="_blank" rel="noopener"' : "";
+}
+
 function renderizarNotificaciones(lista, notis) {
   if (!notis.length) {
     lista.innerHTML = `<p class="age-buscador-vacio">No tienes avisos pendientes.</p>`;
     return;
   }
-  const visibles = notis.slice(0, TOPE_NOTIFICACIONES_EN_MENU);
-  lista.innerHTML = visibles.map((n) => `
-    <a class="age-notificaciones-item" href="${n.href}">
-      <span class="age-notificaciones-item-icono">${icono(n.iconoNombre, 17)}</span>
-      <span>${escapeHtmlBuscador(n.texto)}</span>
-    </a>
-  `).join("") + `<a class="age-notificaciones-ver-todos" href="/avisos/">Ver todos los avisos</a>`;
+  // Los avisos oficiales (categoria "oficial") son informativos -- una vez
+  // vistos no hace falta que sigan ocupando sitio aquí, a diferencia de
+  // los recordatorios personales (prueba/baja/falladas), que se quedan
+  // mientras el motivo de fondo siga activo: verlos una vez no soluciona
+  // nada, así que NO se filtran por vistos. La lista completa (vistos
+  // incluidos) sigue disponible en /avisos/.
+  const vistas = obtenerNotificacionesVistas();
+  const pendientes = notis.filter((n) => n.categoria !== "oficial" || !vistas.has(n.id));
+  const cuerpo = pendientes.length
+    ? pendientes.slice(0, TOPE_NOTIFICACIONES_EN_MENU).map((n) => `
+      <a class="age-notificaciones-item" href="${n.href}"${atributosEnlace(n.href)}>
+        <span class="age-notificaciones-item-icono">${icono(n.iconoNombre, 17)}</span>
+        <span>${escapeHtmlBuscador(n.texto)}</span>
+      </a>
+    `).join("")
+    : `<p class="age-buscador-vacio">No tienes avisos nuevos.</p>`;
+  lista.innerHTML = cuerpo + `<a class="age-notificaciones-ver-todos" href="/avisos/">Ver todos los avisos</a>`;
 }
 
 function construirMenuCuenta(user) {
