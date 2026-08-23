@@ -149,6 +149,14 @@ def _plantilla_html(titulo, cuerpo_html, *, emoji=""):
 
 
 def enviar_email_bienvenida(destinatario, nombre=""):
+    """Correo único al crear la cuenta (ver inicializar_estadisticas_usuario
+    en registro_progreso_usuario.py). No hay ninguna prueba gratuita activa
+    todavía en este momento -- cada oposición arranca la suya solo al
+    activarse explícitamente (ver activar_oposicion_usuario), así que el
+    texto invita a elegir oposición como primer paso en vez de dar por
+    hecho que la prueba ya ha empezado a contar. Quien no complete ese
+    paso recibe además el recordatorio de enviar_email_activar_oposicion
+    desde el cron de blueprints/tareas_programadas.py."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
     saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
 
@@ -163,17 +171,18 @@ def enviar_email_bienvenida(destinatario, nombre=""):
 
     cuerpo = f"""
       <p style="margin:0;">{saludo}, gracias por registrarte.</p>
-      <p>Para que puedas probarlo todo sin límites, hemos activado tu <strong>prueba
-      gratuita de Premium de {DURACION_PRUEBA_DIAS} días</strong>: tests ilimitados
-      del temario oficial, Tu Tutor IA y las herramientas de PDF (resúmenes,
+      <p>Para empezar, elige tu oposición desde tu Zona Opositor: en cuanto la actives arrancan
+      tus <strong>{DURACION_PRUEBA_DIAS} días de acceso Premium gratis, sin tarjeta</strong> --
+      tests ilimitados del temario oficial, Tu Tutor IA y las herramientas de PDF (resúmenes,
       esquemas, tarjetas de memoria y tests a partir de tus propios documentos).</p>
       <p style="margin: 20px 0 8px; font-weight:700;">Para empezar con buen pie:</p>
       <ol style="margin:0 0 4px; padding-left:20px;">
+        <li style="margin-bottom:8px;">Elige tu oposición y activa tu prueba gratuita.</li>
         <li style="margin-bottom:8px;">Haz tu primer test del temario oficial desde tu Zona Opositor.</li>
         <li style="margin-bottom:8px;">Pregúntale a Tu Tutor cualquier duda del temario, como si fuera tu profesor particular.</li>
         <li>Sube un PDF tuyo (apuntes, un tema suelto) y saca de él un resumen, un esquema o un test.</li>
       </ol>
-      {_boton("Empezar a estudiar", f"{frontend_url}/zona-opositor/")}
+      {_boton("Elegir mi oposición y empezar gratis", f"{frontend_url}/zona-opositor/")}
       {_aviso("Si no has creado tú esta cuenta, puedes ignorar este correo.")}
     """
     html = _plantilla_html("¡Bienvenido/a a Domina tu Opo!", cuerpo, emoji="🎉")
