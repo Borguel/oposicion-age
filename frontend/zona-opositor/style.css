@@ -131,13 +131,18 @@ body {
   margin-bottom: 24px;
 }
 
+.zona-elige-oposicion-card {
+  text-align: center;
+}
+
 .zona-elige-oposicion-card h2 {
   margin: 0 0 8px;
 }
 
 .zona-elige-oposicion-card p {
   color: var(--age-ink-soft);
-  margin: 0 0 20px;
+  margin: 0 auto 20px;
+  max-width: 480px;
 }
 
 .zona-elige-oposicion-item {
@@ -150,7 +155,18 @@ body {
   padding: 26px 24px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  /* space-between (no solo gap): las 3 oposiciones tienen nombres de
+     distinta longitud ("Cuerpo General Administrativo (AGE)" ocupa 2
+     líneas, "Auxiliar Administrativo" solo 1) -- con un flex-column normal
+     el título más corto deja el botón más arriba que el resto, así que los
+     tres quedaban a distinta altura entre sí aun teniendo tarjetas de igual
+     alto (el grid ya las estira igual, ver .age-option-grid en theme.css).
+     space-between fija el título arriba y el botón abajo del todo siempre,
+     así los tres botones quedan nivelados en la misma fila pase lo que
+     pase con el número de líneas del título. */
+  justify-content: space-between;
+  text-align: center;
   gap: 14px;
 }
 
