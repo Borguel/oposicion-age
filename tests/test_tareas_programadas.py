@@ -181,6 +181,86 @@ def test_ignora_usuarios_sin_email_o_sin_prueba_fin(client, db):
         mock_terminada.assert_not_called()
 
 
+# ============================================================
+# /tareas/recordatorios-activacion
+# ============================================================
+
+def _registrado_hace(dias):
+    return (datetime.utcnow() - timedelta(days=dias)).isoformat()
+
+
+def test_recordatorios_activacion_sin_clave_devuelve_401(client):
+    with patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("CRON_SECRET_KEY", None)
+        resp = client.post("/tareas/recordatorios-activacion", headers={"X-Cron-Key": "lo-que-sea"})
+        assert resp.status_code == 401
+
+
+def test_avisa_a_quien_cruza_un_umbral_sin_ninguna_oposicion_activada(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "nombre": "Virginia",
+        "suscripciones": {},
+        "fecha_creacion": _registrado_hace(2),
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_activar_oposicion") as mock_activar:
+        resp = client.post("/tareas/recordatorios-activacion", headers={"X-Cron-Key": "secreta"})
+        assert resp.status_code == 200
+        assert resp.get_json() == {"avisados": 1}
+        mock_activar.assert_called_once_with("u1@example.com", nombre="Virginia")
+
+
+def test_no_avisa_a_quien_ya_activo_alguna_oposicion(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "gratis", "prueba_fin": None}},
+        "fecha_creacion": _registrado_hace(2),
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_activar_oposicion") as mock_activar:
+        resp = client.post("/tareas/recordatorios-activacion", headers={"X-Cron-Key": "secreta"})
+        assert resp.get_json() == {"avisados": 0}
+        mock_activar.assert_not_called()
+
+
+def test_no_avisa_fuera_de_los_dias_exactos_de_activacion(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {},
+        "fecha_creacion": _registrado_hace(4),
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_activar_oposicion") as mock_activar:
+        resp = client.post("/tareas/recordatorios-activacion", headers={"X-Cron-Key": "secreta"})
+        assert resp.get_json() == {"avisados": 0}
+        mock_activar.assert_not_called()
+
+
+def test_avisa_dos_veces_en_la_primera_semana_si_sigue_sin_activar(client, db):
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_activar_oposicion") as mock_activar:
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "suscripciones": {}, "fecha_creacion": _registrado_hace(2)})
+        resp = client.post("/tareas/recordatorios-activacion", headers={"X-Cron-Key": "secreta"})
+        assert resp.get_json() == {"avisados": 1}
+
+        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "suscripciones": {}, "fecha_creacion": _registrado_hace(6)})
+        resp = client.post("/tareas/recordatorios-activacion", headers={"X-Cron-Key": "secreta"})
+        assert resp.get_json() == {"avisados": 1}
+
+        assert mock_activar.call_count == 2
+
+
+def test_ignora_usuarios_sin_email_o_sin_fecha_de_creacion(client, db):
+    db.sembrar(("usuarios", "sin_email"), {"suscripciones": {}, "fecha_creacion": _registrado_hace(2)})
+    db.sembrar(("usuarios", "sin_fecha"), {"email": "x@example.com", "suscripciones": {}})
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_activar_oposicion") as mock_activar:
+        resp = client.post("/tareas/recordatorios-activacion", headers={"X-Cron-Key": "secreta"})
+        assert resp.get_json() == {"avisados": 0}
+        mock_activar.assert_not_called()
+
+
 # ---------- Vigilancia de gasto en IA ----------
 def _mes_actual():
     return date.today().strftime("%Y-%m")

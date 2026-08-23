@@ -15,6 +15,7 @@ from email_utils import (
     enviar_email_reengagement,
     enviar_email_prueba_terminando,
     enviar_email_prueba_terminada,
+    enviar_email_activar_oposicion,
     enviar_email_alerta_coste_ia,
 )
 from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketing
@@ -34,6 +35,13 @@ bp = Blueprint("tareas_programadas", __name__)
 # solo justo al cruzar cada umbral (no cada día a partir de ahí), para no
 # saturar a quien lleva mucho tiempo sin volver.
 UMBRALES_REENGAGEMENT = {3, 7, 14, 30}
+
+# Umbrales de días desde el registro para el email de "aún no has activado
+# ninguna oposición": dos avisos espaciados en la primera semana (a los 2 y
+# a los 6 días) -- suficiente margen para no molestar a quien ya iba a
+# activarla por su cuenta, pero sin dejar pasar toda la ventana de la
+# prueba gratuita sin insistir ni una vez.
+UMBRALES_ACTIVACION = {2, 6}
 
 # Umbral mínimo (€) para que un pico de gasto en IA merezca una alerta --
 # evita ruido cuando el gasto total todavía es trivial (p. ej. pasar de
@@ -148,6 +156,49 @@ def enviar_recordatorios_prueba():
 
     logger.info("Recordatorios de prueba enviados: %s terminando, %s terminada", terminando, terminada)
     return jsonify({"terminando": terminando, "terminada": terminada})
+
+
+@bp.route("/tareas/recordatorios-activacion", methods=["POST"])
+def enviar_recordatorios_activacion():
+    """Avisa a quien se registró pero nunca llegó a activar ninguna
+    oposición (suscripciones vacío): sin ese paso la cuenta no tiene
+    ninguna herramienta disponible y la prueba gratuita ni siquiera ha
+    arrancado (ver activar_oposicion_usuario en
+    registro_progreso_usuario.py) -- este hueco no lo cubre ningún otro
+    cron: los recordatorios de racha exigen tener ya una racha empezada, y
+    los de fin de prueba exigen tener ya una oposición con prueba_fin, así
+    que una cuenta completamente en blanco no recibía nada más después del
+    correo de bienvenida único del registro."""
+    if not _clave_cron_valida():
+        return jsonify({"error": "No autorizado"}), 401
+
+    hoy = date.today()
+    avisados = 0
+
+    for doc in db.collection("usuarios").stream():
+        datos = doc.to_dict() or {}
+        email = datos.get("email")
+        if not email or datos.get("suscripciones"):
+            continue
+
+        fecha_creacion_str = datos.get("fecha_creacion")
+        if not fecha_creacion_str:
+            continue
+        try:
+            fecha_creacion = datetime.fromisoformat(fecha_creacion_str).date()
+        except ValueError:
+            continue
+
+        dias_desde_registro = (hoy - fecha_creacion).days
+        if dias_desde_registro not in UMBRALES_ACTIVACION:
+            continue
+
+        nombre = datos.get("nombre") or ""
+        enviar_email_activar_oposicion(email, nombre=nombre)
+        avisados += 1
+
+    logger.info("Recordatorios de activación enviados: %s", avisados)
+    return jsonify({"avisados": avisados})
 
 
 @bp.route("/tareas/vigilar-gasto-ia", methods=["POST"])

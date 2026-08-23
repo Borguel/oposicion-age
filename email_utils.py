@@ -461,6 +461,44 @@ def enviar_email_reengagement(destinatario, dias_inactivo, nombre=""):
     _enviar(destinatario, "reengagement", asunto="Retoma tu preparación de la oposición", html=html)
 
 
+def enviar_email_activar_oposicion(destinatario, nombre=""):
+    """Aviso para quien se registró pero nunca llegó a activar ninguna
+    oposición: sin ese paso la cuenta no tiene ninguna herramienta
+    disponible y la prueba gratuita ni siquiera ha arrancado a contar (ver
+    activar_oposicion_usuario en registro_progreso_usuario.py) -- a
+    diferencia del correo de bienvenida, que se manda una sola vez al
+    crear la cuenta, este se manda desde un cron (ver
+    blueprints/tareas_programadas.py) al cruzar cada umbral de días desde
+    el registro sin ninguna oposición activada."""
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
+
+    template_id = os.getenv("BREVO_TEMPLATE_ACTIVAR_OPOSICION")
+    if template_id:
+        _enviar(destinatario, "activar oposición", template_id=template_id, datos={
+            "saludo": saludo,
+            "frontend_url": frontend_url,
+            "dias_prueba": DURACION_PRUEBA_DIAS,
+        })
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, vimos que creaste tu cuenta en Domina tu Opo pero todavía no
+      elegiste tu oposición -- y sin ese paso tu prueba gratuita ni siquiera ha empezado a contar.</p>
+      <p>Elegirla lleva 30 segundos y te da <strong>{DURACION_PRUEBA_DIAS} días de acceso Premium
+      gratis, sin tarjeta</strong>:</p>
+      <ul style="margin:0 0 4px; padding-left:20px;">
+        <li style="margin-bottom:8px;">Tests ilimitados del temario oficial, con corrección al instante.</li>
+        <li style="margin-bottom:8px;">Tu Tutor IA, para resolver cualquier duda como un profesor particular.</li>
+        <li>Resúmenes, esquemas, tarjetas y tests generados a partir de tus propios PDF.</li>
+      </ul>
+      {_boton("Elegir mi oposición y empezar gratis", f"{frontend_url}/zona-opositor/")}
+      {_aviso("Si ya has elegido tu oposición o prefieres no recibir este aviso, puedes ignorarlo.")}
+    """
+    html = _plantilla_html("Tu prueba gratuita todavía no ha empezado", cuerpo, emoji="🚀")
+    _enviar(destinatario, "activar oposición", asunto="Tu preparación te espera: empieza gratis hoy", html=html)
+
+
 def enviar_email_aviso_oficial(destinatario, titulo, tipo_legible, url_boe, url_inap, oposicion_nombre, nombre=""):
     """Aviso de que se ha publicado algo oficial relevante (convocatoria,
     lista de admitidos, fecha de examen...) para una oposición concreta --

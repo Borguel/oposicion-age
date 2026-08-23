@@ -147,6 +147,32 @@ def test_pago_fallido_incluye_oposicion_y_cta_de_actualizar_pago(monkeypatch):
     assert "AGE" in payload["subject"]
 
 
+def test_activar_oposicion_incluye_el_enlace_a_zona_opositor(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.setenv("FRONTEND_URL", "https://dominatuopo.com")
+    monkeypatch.delenv("BREVO_TEMPLATE_ACTIVAR_OPOSICION", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_activar_oposicion("u@example.com", nombre="Virginia")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert "templateId" not in payload
+    assert "https://dominatuopo.com/zona-opositor/" in payload["htmlContent"]
+    assert "Virginia" in payload["htmlContent"]
+    assert payload["subject"]
+
+
+def test_activar_oposicion_usa_plantilla_de_brevo_si_esta_configurada(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.setenv("BREVO_TEMPLATE_ACTIVAR_OPOSICION", "88")
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_activar_oposicion("u@example.com", nombre="Virginia")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["templateId"] == 88
+    assert payload["params"]["saludo"] == "Hola Virginia"
+    assert "subject" not in payload
+
+
 def test_aviso_oficial_manda_html_de_reserva_con_enlaces_boe_e_inap(monkeypatch):
     monkeypatch.setenv("BREVO_API_KEY", "clave")
     monkeypatch.delenv("BREVO_TEMPLATE_AVISO_OFICIAL", raising=False)
