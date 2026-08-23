@@ -1189,7 +1189,7 @@ async function renderRanking() {
         suficientes participantes reales.
       </p>
       <p class="admin-reporte-meta" id="ranking-demo-estado"><em>Comprobando…</em></p>
-      <div class="admin-filtros-btn" style="display:flex; gap:10px; margin-top:10px;">
+      <div class="admin-reporte-acciones" style="margin-top:10px;">
         <button class="age-btn age-btn-primary" id="ranking-demo-sembrar">Crear demostración</button>
         <button class="age-btn age-btn-outline" id="ranking-demo-borrar">Borrar demostración</button>
       </div>
