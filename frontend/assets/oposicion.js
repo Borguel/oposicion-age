@@ -186,7 +186,7 @@ export async function activarOposicion(token, oposicionId) {
 
 // Fire-and-forget, sin bloquear el primer pintado de la nav -- igual que el
 // resto de piezas que dependen de una llamada a la API (ver
-// inyectarBannerPrueba en auth.js). Repinta el selector con la lista
+// construirBannerPrueba en auth.js). Repinta el selector con la lista
 // AUTORITATIVA del backend (no la añade a OPOSICIONES: desde que cada
 // oposición pública también hay que activarla, ya no se puede asumir que
 // las 3 públicas sean siempre visibles) -- solo si de verdad hace falta

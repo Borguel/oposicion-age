@@ -2,7 +2,7 @@
 // barra de navegación compartida (.age-nav) y su menú de cuenta. Se importa
 // como módulo en cada página del frontend.
 import { firebaseConfig, BACKEND_URL, RECAPTCHA_SITE_KEY } from "/assets/firebase-config.js";
-import { inyectarSelectorOposicion, obtenerOposicionActual } from "/assets/oposicion.js";
+import { inyectarSelectorOposicion, obtenerOposicionActual, OPOSICIONES } from "/assets/oposicion.js";
 import { icono } from "/assets/icons.js";
 import { iniciarAnalitica, CLAVE_COOKIES_ACEPTADAS } from "/assets/analytics.js";
 import { activarPopover } from "/assets/popover.js";
@@ -90,7 +90,7 @@ export async function signUp(email, password) {
 }
 
 // Envía (o reenvía) el correo de verificación de dirección. No bloquea el
-// uso de la web -- solo se avisa con un banner (ver inyectarBannerVerificacion)
+// uso de la web -- solo se avisa con un banner (ver construirBannerVerificacion)
 // para que quien se registró con un correo que no controla no quede
 // atrapado sin poder confirmar nunca. Lo genera Firebase Admin y lo manda
 // por Brevo (ver blueprints/auth_publico.py) en vez de sendEmailVerification
@@ -719,13 +719,20 @@ export async function calcularNotificaciones() {
         const dias = Math.ceil((new Date(sub.current_period_end) - new Date()) / (1000 * 60 * 60 * 24));
         if (dias <= 3) {
           const fecha = new Date(sub.current_period_end).toLocaleDateString("es-ES", { day: "numeric", month: "long" });
+          // Nombre legible en vez del ID crudo de suscripciones ("AGE",
+          // "GACE"...) -- para AUXILIAR en concreto salía literalmente
+          // "AUXILIAR" en mayúsculas, distinto de las siglas "Auxiliar" que
+          // usa el resto de la web. Sin encontrarla en el catálogo público
+          // (oposición de grupo cerrado, ver OPOSICIONES_OCULTAS en
+          // oposicion.js, no exportado) se usa el ID tal cual, mejor que
+          // nada.
+          const nombreOp = OPOSICIONES.find((o) => o.id === op)?.nombre || op;
+          const cuando = dias <= 0 ? "hoy" : dias === 1 ? "mañana" : `en ${dias} días (${fecha})`;
           notis.push({
             id: `baja_${op}`,
             categoria: "personal",
             iconoNombre: dias <= 1 ? "alerta" : "salir",
-            texto: dias <= 1
-              ? `Tu plan en ${op} se cancela mañana. Reactívalo si quieres seguir con acceso.`
-              : `Tu plan en ${op} se cancela en ${dias} días (${fecha}). Puedes reactivarlo cuando quieras.`,
+            texto: `Tu plan en ${nombreOp} se cancela ${cuando}. ${dias <= 1 ? "Reactívalo si quieres seguir con acceso." : "Puedes reactivarlo cuando quieras."}`,
             href: "/mi-cuenta/",
           });
         }
@@ -909,13 +916,13 @@ function construirMenuCuenta(user) {
 // salir en lo que dure la pestaña, para no ser pesado en cada página.
 const CLAVE_BANNER_VERIFICACION_CERRADO = "age_banner_verificacion_cerrado";
 
-function inyectarBannerVerificacion(user) {
-  const existente = document.querySelector(".age-verificacion-banner");
-  if (existente) existente.remove();
-
-  if (!user || user.emailVerified) return;
-  if (!user.providerData.some((p) => p.providerId === "password")) return;
-  if (sessionStorage.getItem(CLAVE_BANNER_VERIFICACION_CERRADO) === "1") return;
+// Construye el aviso (sin insertarlo en el documento todavía -- ver
+// inyectarBanners más abajo, que decide el orden final entre los 4 avisos
+// de esta familia). Devuelve el elemento, o undefined si no toca mostrarlo.
+function construirBannerVerificacion(user) {
+  if (!user || user.emailVerified) return undefined;
+  if (!user.providerData.some((p) => p.providerId === "password")) return undefined;
+  if (sessionStorage.getItem(CLAVE_BANNER_VERIFICACION_CERRADO) === "1") return undefined;
 
   const banner = document.createElement("div");
   banner.className = "age-verificacion-banner";
@@ -927,11 +934,10 @@ function inyectarBannerVerificacion(user) {
     </div>
     <p class="age-verificacion-banner-error" id="age-verificacion-error" style="display:none;">No se pudo enviar el correo. Inténtalo de nuevo en unos segundos.</p>
   `;
-  document.body.prepend(banner);
 
-  document.getElementById("age-verificacion-reenviar").addEventListener("click", async (evento) => {
+  banner.querySelector("#age-verificacion-reenviar").addEventListener("click", async (evento) => {
     const boton = evento.currentTarget;
-    const mensajeError = document.getElementById("age-verificacion-error");
+    const mensajeError = banner.querySelector("#age-verificacion-error");
     mensajeError.style.display = "none";
     boton.disabled = true;
     boton.textContent = "Enviando…";
@@ -944,24 +950,23 @@ function inyectarBannerVerificacion(user) {
       mensajeError.style.display = "block";
     }
   });
-  document.getElementById("age-verificacion-cerrar").addEventListener("click", () => {
+  banner.querySelector("#age-verificacion-cerrar").addEventListener("click", () => {
     sessionStorage.setItem(CLAVE_BANNER_VERIFICACION_CERRADO, "1");
     banner.remove();
   });
+  return banner;
 }
 
 // Aviso de cuenta atrás de la prueba gratuita de 7 días (mientras está
 // activa) o de bloqueo total (si terminó sin contratar ningún plan) --
-// mismo patrón que inyectarBannerVerificacion/inyectarBannerGlobal. Se
+// mismo patrón que construirBannerVerificacion/construirBannerGlobal. Se
 // importa plan.js de forma perezosa (como el widget de Tu Tutor) para no
 // crear una dependencia estática circular con este propio módulo (plan.js
 // ya importa idToken/esperarUsuario de aquí).
 const CLAVE_BANNER_PRUEBA_CERRADO = "age_banner_prueba_cerrado";
 
-async function inyectarBannerPrueba(user) {
-  const existente = document.querySelector(".age-banner-prueba");
-  if (existente) existente.remove();
-  if (!user) return;
+async function construirBannerPrueba(user) {
+  if (!user) return undefined;
 
   // forzarRefresco=true a propósito: este aviso decide si se bloquea al
   // usuario en toda la web, así que nunca debe fiarse de una respuesta
@@ -979,7 +984,7 @@ async function inyectarBannerPrueba(user) {
   // terminado" (nunca llegó a empezar aquí, así que no puede haber
   // "terminado"). El aviso real de que le falta contratar ESTA oposición
   // ya lo da la pantalla de bloqueo de la propia herramienta (plan.js).
-  if (perfil.tiene_plan_de_pago) return;
+  if (perfil.tiene_plan_de_pago) return undefined;
 
   const banner = document.createElement("div");
   banner.className = "age-banner-prueba";
@@ -1000,8 +1005,7 @@ async function inyectarBannerPrueba(user) {
       // verificar, prueba_fin se deja pendiente) -- avisar de eso en vez
       // de decir que "ha terminado" algo que nunca llegó a empezar.
       banner.innerHTML = `<p>Verifica tu correo electrónico para activar tus 7 días de prueba gratis.</p>`;
-      document.body.prepend(banner);
-      return;
+      return banner;
     }
     // Prueba terminada de verdad, o suscripción de pago cancelada/impagada:
     // aviso fijo, no se puede cerrar -- refuerza en toda la web el bloqueo
@@ -1014,12 +1018,11 @@ async function inyectarBannerPrueba(user) {
          <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>`
       : `<p>Tu prueba gratuita ha terminado. Elige un plan para seguir usando Domina tu Opo.</p>
          <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>`;
-    document.body.prepend(banner);
-    return;
+    return banner;
   }
 
-  if (!perfil.prueba_activa || !perfil.prueba_fin) return;
-  if (sessionStorage.getItem(CLAVE_BANNER_PRUEBA_CERRADO) === "1") return;
+  if (!perfil.prueba_activa || !perfil.prueba_fin) return undefined;
+  if (sessionStorage.getItem(CLAVE_BANNER_PRUEBA_CERRADO) === "1") return undefined;
 
   const diasRestantes = Math.max(0, Math.ceil((new Date(perfil.prueba_fin) - new Date()) / 86400000));
   const texto = diasRestantes === 0
@@ -1033,16 +1036,16 @@ async function inyectarBannerPrueba(user) {
       <button type="button" class="age-verificacion-banner-cerrar" id="age-prueba-cerrar" aria-label="Cerrar aviso">${icono("cruz", 15)}</button>
     </div>
   `;
-  document.body.prepend(banner);
-  document.getElementById("age-prueba-cerrar").addEventListener("click", () => {
+  banner.querySelector("#age-prueba-cerrar").addEventListener("click", () => {
     sessionStorage.setItem(CLAVE_BANNER_PRUEBA_CERRADO, "1");
     banner.remove();
   });
+  return banner;
 }
 
 // Aviso de promoción/descuento temporal, configurable desde el panel de
 // administración (ver blueprints/admin.py + promociones.py). A diferencia
-// de inyectarBannerPrueba (que solo aplica con sesión), este se muestra
+// de construirBannerPrueba (que solo aplica con sesión), este se muestra
 // también a quien navega sin haber iniciado sesión -- es publicidad, no un
 // aviso de cuenta -- y se oculta por completo a quien, con sesión, ya tenga
 // el plan de la promoción activo (pagado o en prueba: planCubre no
@@ -1083,24 +1086,22 @@ function formatearCuentaAtrasPromo(msRestantes) {
     .join('<span class="age-banner-promo-sep">:</span>');
 }
 
-async function inyectarBannerPromocion(user) {
-  const existente = document.querySelector(".age-banner-promo");
-  if (existente) existente.remove();
+async function construirBannerPromocion(user) {
   if (_promoIntervalo) { clearInterval(_promoIntervalo); _promoIntervalo = null; }
-  if (sessionStorage.getItem(CLAVE_BANNER_PROMO_CERRADO) === "1") return;
+  if (sessionStorage.getItem(CLAVE_BANNER_PROMO_CERRADO) === "1") return undefined;
 
   let promo;
   try {
     const resp = await fetch(`${BACKEND_URL}/promocion-activa`);
-    if (!resp.ok) return;
+    if (!resp.ok) return undefined;
     promo = await resp.json();
-  } catch (e) { return; }
-  if (!promo.activo) return;
+  } catch (e) { return undefined; }
+  if (!promo.activo) return undefined;
 
   if (user) {
     const [{ obtenerPlan, planCubre }] = await Promise.all([import("/assets/plan.js")]);
     const perfil = await obtenerPlan();
-    if (planCubre(perfil.plan, promo.plan)) return; // ya tiene este plan (o uno mejor): no le sale nada
+    if (planCubre(perfil.plan, promo.plan)) return undefined; // ya tiene este plan (o uno mejor): no le sale nada
   }
 
   const nombrePlan = promo.plan === "premium" ? "Premium" : "Básico";
@@ -1118,19 +1119,18 @@ async function inyectarBannerPromocion(user) {
       <button type="button" class="age-banner-promo-cerrar" id="age-promo-cerrar" aria-label="Cerrar aviso">${icono("cruz", 15)}</button>
     </div>
   `;
-  document.body.prepend(banner);
   const contenedorTexto = banner.querySelector(".age-banner-promo-texto");
   const interiorTexto = banner.querySelector(".age-banner-promo-texto-int");
   if (interiorTexto) aplicarEstiloAviso(interiorTexto, promo.fuente, promo.animacion, contenedorTexto);
 
-  document.getElementById("age-promo-cerrar").addEventListener("click", () => {
+  banner.querySelector("#age-promo-cerrar").addEventListener("click", () => {
     sessionStorage.setItem(CLAVE_BANNER_PROMO_CERRADO, "1");
     if (_promoIntervalo) clearInterval(_promoIntervalo);
     banner.remove();
   });
 
   if (promo.fecha_fin) {
-    const cuentaEl = document.getElementById("age-promo-cuenta");
+    const cuentaEl = banner.querySelector("#age-promo-cuenta");
     const fin = new Date(promo.fecha_fin).getTime();
     const actualizar = () => {
       const restante = fin - Date.now();
@@ -1145,6 +1145,7 @@ async function inyectarBannerPromocion(user) {
     actualizar();
     _promoIntervalo = setInterval(actualizar, 1000);
   }
+  return banner;
 }
 
 // Enlace "Panel Admin" en la barra de navegación, visible solo si el
@@ -1189,6 +1190,35 @@ function inyectarSaltoDeContenido() {
   document.body.insertBefore(enlace, document.body.firstChild);
 }
 
+// Los 4 avisos que se anteponen al <body> (verificación de correo,
+// prueba/bloqueo de acceso, aviso global del admin, promoción) se pedían
+// antes cada uno por su cuenta, sin esperarse entre sí -- como
+// construirBannerPrueba y construirBannerPromocion hacen su propia
+// petición de red, el orden final en pantalla dependía de cuál respondiera
+// antes, no de cuál es más importante. El aviso más urgente que existe
+// (acceso bloqueado, en rojo) podía acabar por debajo de un banner de
+// descuento solo porque ese fetch había ido más rápido.
+//
+// Se piden los 4 EN PARALELO (misma velocidad que antes) pero ninguno se
+// inserta hasta tener los 4 resueltos; se anteponen entonces en un orden
+// fijo, de menor a mayor prioridad -- cada prepend dejа el suyo por encima
+// de los ya insertados, así que el último de la lista (prueba/bloqueo) es
+// el que queda más arriba del todo.
+async function inyectarBanners(user) {
+  document.querySelectorAll(".age-verificacion-banner, .age-banner-prueba, .age-banner-global, .age-banner-promo")
+    .forEach((el) => el.remove());
+
+  const [elPromo, elGlobal, elVerificacion, elPrueba] = await Promise.all([
+    construirBannerPromocion(user),
+    construirBannerGlobal(),
+    construirBannerVerificacion(user),
+    construirBannerPrueba(user),
+  ]);
+  [elPromo, elGlobal, elVerificacion, elPrueba].forEach((el) => {
+    if (el) document.body.prepend(el);
+  });
+}
+
 function inyectarNav(user) {
   inyectarSaltoDeContenido();
   construirEsqueletoNav();
@@ -1196,11 +1226,8 @@ function inyectarNav(user) {
   inyectarSelectorOposicion(user);
   construirBusquedaGlobal(user);
   construirMenuCuenta(user);
-  inyectarBannerVerificacion(user);
-  inyectarBannerPrueba(user);
+  inyectarBanners(user);
   inyectarEnlaceAdmin(user);
-  inyectarBannerGlobal();
-  inyectarBannerPromocion(user);
   inyectarWidgetTutor(user);
 }
 
@@ -1228,14 +1255,13 @@ function inyectarWidgetTutor(user) {
 }
 
 // Aviso global configurable desde el panel de administración. Lectura
-// pública (sin token). Se muestra una sola vez por carga, arriba del todo.
-async function inyectarBannerGlobal() {
-  if (document.querySelector(".age-banner-global")) return;
+// pública (sin token).
+async function construirBannerGlobal() {
   try {
     const resp = await fetch(`${BACKEND_URL}/banner-global`);
-    if (!resp.ok) return;
+    if (!resp.ok) return undefined;
     const b = await resp.json();
-    if (!b.activo || !b.texto) return;
+    if (!b.activo || !b.texto) return undefined;
     const barra = document.createElement("div");
     barra.className = `age-banner-global age-banner-${b.tipo || "info"}`;
     barra.setAttribute("role", "status");
@@ -1244,8 +1270,10 @@ async function inyectarBannerGlobal() {
     texto.textContent = b.texto;
     barra.appendChild(texto);
     aplicarEstiloAviso(texto, b.fuente, b.animacion, barra);
-    document.body.insertBefore(barra, document.body.firstChild);
-  } catch (e) { /* si falla, no pasa nada: la web sigue igual */ }
+    return barra;
+  } catch (e) {
+    return undefined; // si falla, no pasa nada: la web sigue igual
+  }
 }
 
 function inyectarFooter() {

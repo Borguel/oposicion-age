@@ -31,66 +31,35 @@ function formatearFecha(iso) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function renderizarEstadoPrueba(pruebaActiva, pruebaFin, algunaDePago, fuePagoCancelado) {
-  const contenedor = document.getElementById("cuenta-prueba");
-  // Si ya paga por alguna oposición no tiene sentido seguir hablándole de
-  // la prueba de 7 días (ni en marcha ni terminada) -- es un aviso pensado
-  // para captar a quien todavía no se ha suscrito a nada, no para alguien
-  // que ya es cliente (ver tiene_plan_de_pago_activo en planes.py, que
-  // ahora tampoco le da el empujón de prueba a una oposición nueva).
-  if (!pruebaFin || algunaDePago) {
-    contenedor.style.display = "none";
-    return;
-  }
-  const fin = new Date(pruebaFin);
-  const diasRestantes = Math.ceil((fin - new Date()) / (1000 * 60 * 60 * 24));
-  contenedor.style.display = "block";
-  if (pruebaActiva) {
-    contenedor.className = "age-card cuenta-prueba cuenta-prueba-activa";
-    contenedor.innerHTML = `
-      <div class="cuenta-prueba-texto">
-        <strong>Estás en tu prueba gratuita Premium</strong>
-        <p>Te ${diasRestantes === 1 ? "queda 1 día" : `quedan ${diasRestantes} días`}, hasta el ${formatearFecha(pruebaFin)}. Elige un plan antes de que termine para no perder el acceso.</p>
-      </div>
-      <a href="/planes/" class="age-btn age-btn-primary">Ver planes</a>
-    `;
-  } else if (fuePagoCancelado) {
-    // Fue cliente de pago en alguna oposición (aunque ahora ninguna esté
-    // activa) -- decirle "tu prueba ha terminado" sonaría a que nunca llegó
-    // a pagar, cuando en realidad se le canceló o dejó de cobrar una
-    // suscripción real. Ver el mismo criterio en assets/plan.js.
-    contenedor.className = "age-card cuenta-prueba cuenta-prueba-terminada";
-    contenedor.innerHTML = `
-      <div class="cuenta-prueba-texto">
-        <strong>Tu suscripción ha finalizado</strong>
-        <p>Se canceló o dejó de cobrarse. Suscríbete de nuevo para recuperar el acceso; tus datos y tests ya hechos siguen a salvo.</p>
-      </div>
-      <a href="/planes/" class="age-btn age-btn-primary">Ver planes</a>
-    `;
-  } else {
-    contenedor.className = "age-card cuenta-prueba cuenta-prueba-terminada";
-    contenedor.innerHTML = `
-      <div class="cuenta-prueba-texto">
-        <strong>Tu prueba gratuita ha terminado</strong>
-        <p>Terminó el ${formatearFecha(pruebaFin)}. Elige un plan para seguir usando Domina tu Opo; tus datos y tests ya hechos siguen a salvo.</p>
-      </div>
-      <a href="/planes/" class="age-btn age-btn-primary">Ver planes</a>
-    `;
-  }
-}
-
+// Antes había una única tarjeta "Estás en tu prueba gratuita" / "Tu prueba
+// ha terminado" a nivel de CUENTA (resumen_prueba_cuenta: "en prueba" si
+// CUALQUIER oposición sigue en prueba). Con más de una oposición activada
+// eso escondía casos reales: si AGE seguía en prueba pero GACE ya estaba
+// bloqueada por no haber pagado, la tarjeta solo hablaba de AGE ("te
+// quedan 3 días") y GACE se veía en la lista de abajo exactamente igual
+// que una oposición nunca activada (pastilla gris "gratis", sin aviso ni
+// botón) -- no había forma de enterarse de que esa oposición necesitaba un
+// plan. Se sustituye por el aviso propio de CADA fila en
+// renderizarOposiciones, que sí conoce el estado real de esa oposición
+// concreta.
 function renderizarOposiciones() {
   const contenedorOposiciones = document.getElementById("cuenta-oposiciones");
   contenedorOposiciones.innerHTML = "";
   let algunaDePago = false;
   OPOSICIONES.forEach((op) => {
     const sub = suscripcionesActuales[op.id] || {};
+    const activada = Object.keys(sub).length > 0;
     const plan = sub.plan || "gratis";
     if (plan !== "gratis") algunaDePago = true;
     const estadoTexto = sub.subscription_status ? ESTADOS_LEGIBLES[sub.subscription_status] || sub.subscription_status : "";
 
+    let pillClase = "age-pill";
+    let pillTexto = plan;
     let accionesHtml = "";
+
     if (plan !== "gratis") {
+      // Plan de pago: sin cambios respecto a antes.
+      pillClase = PILL_PLAN[plan] || "age-pill";
       const fechaRenovacion = sub.current_period_end ? formatearFecha(sub.current_period_end) : "";
       accionesHtml = sub.cancelar_al_final_periodo
         ? `<div class="cuenta-oposicion-baja-info cuenta-oposicion-baja-info-aviso">
@@ -105,6 +74,45 @@ function renderizarOposiciones() {
              <span class="cuenta-oposicion-baja-texto">${fechaRenovacion ? `Próxima renovación: <strong>${fechaRenovacion}</strong>` : ""}</span>
              <button type="button" class="cuenta-btn-link cuenta-btn-link-danger" data-accion="cancelar" data-oposicion="${op.id}">Cancelar suscripción</button>
            </div>`;
+    } else if (!activada) {
+      pillTexto = "sin activar";
+      accionesHtml = `<div class="cuenta-oposicion-baja-info">
+        <span class="cuenta-oposicion-baja-texto">Todavía no la has empezado.</span>
+        <a href="/zona-opositor/" class="age-btn age-btn-outline">Empezar prueba gratis</a>
+      </div>`;
+    } else if (!sub.prueba_fin) {
+      // Activada pero con el correo todavía sin confirmar: la prueba
+      // arranca en cuanto lo confirme (ver activar_oposicion_usuario en
+      // registro_progreso_usuario.py) -- no puede haber "terminado" algo
+      // que nunca llegó a empezar.
+      pillTexto = "pendiente";
+      accionesHtml = `<div class="cuenta-oposicion-baja-info">
+        <span class="cuenta-oposicion-baja-texto">Confirma tu correo electrónico para activar tu prueba gratuita de 7 días.</span>
+      </div>`;
+    } else if (new Date(sub.prueba_fin) > new Date()) {
+      pillClase = "age-pill age-pill-primary";
+      pillTexto = "prueba";
+      const dias = Math.max(0, Math.ceil((new Date(sub.prueba_fin) - new Date()) / (1000 * 60 * 60 * 24)));
+      accionesHtml = `<div class="cuenta-oposicion-baja-info cuenta-oposicion-baja-info-aviso">
+        <span class="cuenta-oposicion-baja-texto">Te ${dias === 1 ? "queda 1 día" : `quedan ${dias} días`} de prueba gratuita, hasta el ${formatearFecha(sub.prueba_fin)}.</span>
+        <a href="/planes/" class="age-btn age-btn-outline">Ver planes</a>
+      </div>`;
+    } else {
+      // Prueba terminada: dos motivos muy distintos pueden llevar aquí --
+      // nunca se llegó a pagar, o SÍ fue cliente de pago y la suscripción
+      // se canceló o dejó de cobrarse. stripe_subscription_id solo se
+      // guarda al completar un checkout real y ningún flujo lo borra
+      // después, así que su presencia distingue de forma fiable ambos
+      // casos (mismo criterio que assets/plan.js y assets/auth.js).
+      pillClase = "age-pill age-pill-danger";
+      pillTexto = "bloqueada";
+      const texto = sub.stripe_subscription_id
+        ? "Tu suscripción a esta oposición se canceló o dejó de cobrarse. Suscríbete de nuevo para recuperar el acceso."
+        : `Tu prueba gratuita terminó el ${formatearFecha(sub.prueba_fin)}. Elige un plan para volver a acceder a esta oposición.`;
+      accionesHtml = `<div class="cuenta-oposicion-baja-info cuenta-oposicion-baja-info-aviso">
+        <span class="cuenta-oposicion-baja-texto">${texto}</span>
+        <a href="/planes/" class="age-btn age-btn-primary">Ver planes</a>
+      </div>`;
     }
 
     const fila = document.createElement("div");
@@ -115,7 +123,7 @@ function renderizarOposiciones() {
           <span class="cuenta-oposicion-nombre">${op.nombre}</span>
           ${estadoTexto ? `<span class="cuenta-oposicion-estado">Suscripción ${estadoTexto}</span>` : ""}
         </div>
-        <span class="${PILL_PLAN[plan] || "age-pill"}">${plan}</span>
+        <span class="${pillClase}">${pillTexto}</span>
       </div>
       ${accionesHtml}
     `;
@@ -255,15 +263,9 @@ async function iniciar() {
   fijarTexto("cuenta-email", usuario.email || "");
   fijarTexto("cuenta-avatar", (usuario.email || "?").trim().charAt(0).toUpperCase());
 
-  const { nombre, apellidos, telefono, direccion, suscripciones, prueba_activa, prueba_fin } = await obtenerPlan(true);
+  const { nombre, apellidos, telefono, direccion, suscripciones } = await obtenerPlan(true);
   suscripcionesActuales = suscripciones || {};
-  const algunaDePago = renderizarOposiciones();
-  // stripe_subscription_id solo se guarda al completar un checkout real (ver
-  // actualizar_suscripcion en registro_progreso_usuario.py) y ningún flujo lo
-  // borra después -- su presencia en CUALQUIER oposición es la señal fiable
-  // de "fue cliente de pago alguna vez", aunque hoy ninguna esté activa.
-  const fuePagoCancelado = Object.values(suscripcionesActuales).some((sub) => sub?.stripe_subscription_id);
-  renderizarEstadoPrueba(prueba_activa, prueba_fin, algunaDePago, fuePagoCancelado);
+  renderizarOposiciones();
 
   fijarTexto("resumen-nombre", nombre || "—");
   fijarTexto("resumen-apellidos", apellidos || "—");
