@@ -225,7 +225,7 @@ const GRUPOS = {
   contenido: { label: "Contenido", pestanas: ["temario", "preguntas", "analitica", "calidad"], enPanel: true, enSidebar: true },
   usuarios: { label: "Usuarios", pestanas: ["usuarios", "ingresos", "bajas", "reportes"], enPanel: true, enSidebar: true },
   boe: { label: "Vigilancia BOE", pestanas: ["boe"], enPanel: false, enSidebar: false },
-  configuracion: { label: "Configuración", pestanas: ["limites", "sistema", "auditoria", "ranking"], enPanel: false, enSidebar: true },
+  configuracion: { label: "Configuración", pestanas: ["limites", "sistema", "auditoria", "ranking"], enPanel: true, enSidebar: true },
 };
 const RENDERS = {
   dashboard: renderDashboard,
