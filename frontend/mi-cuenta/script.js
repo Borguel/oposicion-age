@@ -31,7 +31,7 @@ function formatearFecha(iso) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function renderizarEstadoPrueba(pruebaActiva, pruebaFin, algunaDePago) {
+function renderizarEstadoPrueba(pruebaActiva, pruebaFin, algunaDePago, fuePagoCancelado) {
   const contenedor = document.getElementById("cuenta-prueba");
   // Si ya paga por alguna oposición no tiene sentido seguir hablándole de
   // la prueba de 7 días (ni en marcha ni terminada) -- es un aviso pensado
@@ -51,6 +51,19 @@ function renderizarEstadoPrueba(pruebaActiva, pruebaFin, algunaDePago) {
       <div class="cuenta-prueba-texto">
         <strong>Estás en tu prueba gratuita Premium</strong>
         <p>Te ${diasRestantes === 1 ? "queda 1 día" : `quedan ${diasRestantes} días`}, hasta el ${formatearFecha(pruebaFin)}. Elige un plan antes de que termine para no perder el acceso.</p>
+      </div>
+      <a href="/planes/" class="age-btn age-btn-primary">Ver planes</a>
+    `;
+  } else if (fuePagoCancelado) {
+    // Fue cliente de pago en alguna oposición (aunque ahora ninguna esté
+    // activa) -- decirle "tu prueba ha terminado" sonaría a que nunca llegó
+    // a pagar, cuando en realidad se le canceló o dejó de cobrar una
+    // suscripción real. Ver el mismo criterio en assets/plan.js.
+    contenedor.className = "age-card cuenta-prueba cuenta-prueba-terminada";
+    contenedor.innerHTML = `
+      <div class="cuenta-prueba-texto">
+        <strong>Tu suscripción ha finalizado</strong>
+        <p>Se canceló o dejó de cobrarse. Suscríbete de nuevo para recuperar el acceso; tus datos y tests ya hechos siguen a salvo.</p>
       </div>
       <a href="/planes/" class="age-btn age-btn-primary">Ver planes</a>
     `;
@@ -245,7 +258,12 @@ async function iniciar() {
   const { nombre, apellidos, telefono, direccion, suscripciones, prueba_activa, prueba_fin } = await obtenerPlan(true);
   suscripcionesActuales = suscripciones || {};
   const algunaDePago = renderizarOposiciones();
-  renderizarEstadoPrueba(prueba_activa, prueba_fin, algunaDePago);
+  // stripe_subscription_id solo se guarda al completar un checkout real (ver
+  // actualizar_suscripcion en registro_progreso_usuario.py) y ningún flujo lo
+  // borra después -- su presencia en CUALQUIER oposición es la señal fiable
+  // de "fue cliente de pago alguna vez", aunque hoy ninguna esté activa.
+  const fuePagoCancelado = Object.values(suscripcionesActuales).some((sub) => sub?.stripe_subscription_id);
+  renderizarEstadoPrueba(prueba_activa, prueba_fin, algunaDePago, fuePagoCancelado);
 
   fijarTexto("resumen-nombre", nombre || "—");
   fijarTexto("resumen-apellidos", apellidos || "—");

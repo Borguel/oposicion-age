@@ -1003,13 +1003,17 @@ async function inyectarBannerPrueba(user) {
       document.body.prepend(banner);
       return;
     }
-    // Prueba terminada de verdad y sin ningún plan de pago: aviso fijo, no
-    // se puede cerrar -- refuerza en toda la web el bloqueo que ya aplican
-    // las páginas de herramientas por su cuenta (ver assets/plan.js).
-    banner.innerHTML = `
-      <p>Tu prueba gratuita ha terminado. Elige un plan para seguir usando Domina tu Opo.</p>
-      <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>
-    `;
+    // Prueba terminada de verdad, o suscripción de pago cancelada/impagada:
+    // aviso fijo, no se puede cerrar -- refuerza en toda la web el bloqueo
+    // que ya aplican las páginas de herramientas por su cuenta (ver
+    // assets/plan.js, mismo criterio de stripe_subscription_id para
+    // distinguir ambos casos -- ver el comentario largo allí).
+    const fuePagoCancelado = Boolean((perfil.suscripciones || {})[perfil.oposicion]?.stripe_subscription_id);
+    banner.innerHTML = fuePagoCancelado
+      ? `<p>Tu suscripción a esta oposición ha finalizado. Suscríbete de nuevo para seguir usando Domina tu Opo.</p>
+         <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>`
+      : `<p>Tu prueba gratuita ha terminado. Elige un plan para seguir usando Domina tu Opo.</p>
+         <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>`;
     document.body.prepend(banner);
     return;
   }

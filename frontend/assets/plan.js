@@ -108,24 +108,38 @@ export function mostrarPantallaBloqueo(planMinimo, perfil) {
   // registro_progreso_usuario.py), así que el mensaje debe ser "confirma
   // tu correo", no "tu prueba ha terminado" (sonaría a que la perdió).
   const pruebaPendienteDeVerificar = sinNingunPlan && perfil.oposicion_activada && !perfil.prueba_fin;
+  // Dos motivos muy distintos pueden dejar a alguien en "gratis" con la
+  // oposición ya activada y la prueba ya resuelta: nunca llegó a pagar (la
+  // prueba de 7 días terminó sola) o SÍ fue cliente de pago y su
+  // suscripción se canceló o dejó de cobrarse. stripe_subscription_id solo
+  // se guarda al completar un checkout real (ver actualizar_suscripcion en
+  // registro_progreso_usuario.py) y ningún flujo lo borra después, así que
+  // su presencia es la señal fiable de "fue cliente de pago alguna vez en
+  // esta oposición", aunque el plan efectivo haya vuelto a "gratis".
+  const fuePagoCancelado = sinNingunPlan && perfil.oposicion_activada && !pruebaPendienteDeVerificar
+    && Boolean((perfil.suscripciones || {})[perfil.oposicion]?.stripe_subscription_id);
   const titulo = pruebaPendienteDeVerificar
     ? "Confirma tu correo para empezar tu prueba gratuita"
     : yaEsClienteDeOtraOposicion
       ? "Añade esta oposición a tu plan"
       : noActivada
         ? "Empieza tu prueba gratuita de 7 días"
-        : sinNingunPlan
-          ? "Tu prueba gratuita ha terminado"
-          : `Esta herramienta requiere el plan ${nombrePlan}`;
+        : fuePagoCancelado
+          ? "Tu suscripción ha finalizado"
+          : sinNingunPlan
+            ? "Tu prueba gratuita ha terminado"
+            : `Esta herramienta requiere el plan ${nombrePlan}`;
   const cuerpo = pruebaPendienteDeVerificar
     ? "En cuanto confirmes tu correo electrónico se activarán tus 7 días de prueba con acceso Premium. Revisa tu bandeja de entrada (y la carpeta de spam), o pide que te lo reenviemos."
     : yaEsClienteDeOtraOposicion
       ? "Ya tienes un plan activo en Domina tu Opo, pero todavía no incluye esta oposición. Añádela desde Planes para acceder a esta herramienta aquí también."
       : noActivada
         ? "Activa esta oposición para empezar tu prueba gratuita de 7 días con acceso Premium completo, sin tarjeta ni compromiso."
-        : sinNingunPlan
-          ? "Elige un plan para seguir usando Domina tu Opo. Tu progreso y tus datos siguen a salvo, y podrás retomarlo en cuanto te suscribas."
-          : `Tu plan actual (${NOMBRE_PLAN[perfil.plan] || perfil.plan}) no incluye esta herramienta.`;
+        : fuePagoCancelado
+          ? "Tu suscripción a esta oposición se canceló o dejó de cobrarse. Suscríbete de nuevo para recuperar el acceso -- tu progreso y tus datos siguen a salvo."
+          : sinNingunPlan
+            ? "Elige un plan para seguir usando Domina tu Opo. Tu progreso y tus datos siguen a salvo, y podrás retomarlo en cuanto te suscribas."
+            : `Tu plan actual (${NOMBRE_PLAN[perfil.plan] || perfil.plan}) no incluye esta herramienta.`;
   const botones = pruebaPendienteDeVerificar
     ? `<button type="button" class="age-btn age-btn-primary" id="age-bloqueo-reenviar">Reenviar correo de confirmación</button>
        <a class="age-btn age-btn-outline" href="/zona-opositor/">Volver a Zona Opositor</a>`
