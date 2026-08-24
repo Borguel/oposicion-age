@@ -130,7 +130,14 @@ async function obtenerAuthHeaders() {
         const { renderizarSelectorTemas } = await import("/assets/temas-selector.js");
         await renderizarSelectorTemas(contenedor, listaTemasGlobal, temasPreseleccionados);
       } catch (err) {
-        contenedor.innerHTML = `<p>Error al cargar temas: ${err.message}</p>`;
+        // Bug real (24/08/2026): sin ningún botón de reintento, el selector
+        // de temas se quedaba roto para siempre -- la única forma de
+        // recuperarse era recargar la página entera a mano.
+        contenedor.innerHTML = `
+          <p>Error al cargar temas: ${err.message}</p>
+          <button type="button" class="btn btn-primary" id="btn-reintentar-temas">Reintentar</button>
+        `;
+        document.getElementById('btn-reintentar-temas').addEventListener('click', () => cargarTemas());
         console.error(err);
       }
     }
