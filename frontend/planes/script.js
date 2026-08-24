@@ -177,6 +177,13 @@ async function marcarPlanActual() {
     if (boton.dataset.planBtn === perfil.plan) {
       boton.textContent = "Tu plan actual";
       boton.disabled = true;
+    } else if (perfil.plan !== "gratis") {
+      // Ya paga un plan distinto en esta oposición: pulsar el otro botón
+      // sustituye esa suscripción por una nueva (ver /crear-sesion-checkout
+      // y el webhook checkout.session.completed, que cancela la anterior en
+      // cuanto la nueva queda confirmada) -- el texto debe dejar claro que
+      // es un CAMBIO de plan, no una alta nueva independiente.
+      boton.textContent = `Cambiar a ${boton.dataset.planBtn === "basico" ? "Básico" : "Premium"}`;
     }
   });
 }
@@ -215,8 +222,10 @@ document.querySelectorAll("[data-plan-btn]").forEach((boton) => {
       window.location.href = datos.url;
     } catch (error) {
       mostrarErrorGlobal(error.message || "No se pudo iniciar el pago. Inténtalo de nuevo.");
-      boton.disabled = false;
-      boton.textContent = plan === "basico" ? "Elegir Básico" : "Elegir Premium";
+      // marcarPlanActual() en vez de un texto fijo -- si esto era un cambio
+      // de plan (no una alta nueva) el botón debe volver a "Cambiar a X",
+      // no a "Elegir X" como si nunca hubiera tenido ningún plan.
+      await marcarPlanActual();
     }
   });
 });

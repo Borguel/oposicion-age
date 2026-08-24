@@ -125,6 +125,74 @@ def test_webhook_checkout_completado_activa_suscripcion(client, db):
     assert suscripcion["subscription_status"] == "active"
 
 
+def test_webhook_checkout_completado_cancela_la_suscripcion_anterior_al_cambiar_de_plan(client, db):
+    # Bug real (23/08/2026): /crear-sesion-checkout siempre crea una
+    # sesión de Checkout NUEVA -- así que cambiar de plan (Básico -> Premium)
+    # para la MISMA oposición dejaba la suscripción anterior huérfana en
+    # Stripe, cobrando en paralelo con la nueva. u1 ya tiene "sub_viejo"
+    # activa en AGE (plan básico) cuando llega el checkout.session.completed
+    # de una suscripción NUEVA ("sub_nuevo", premium) para esa misma
+    # oposición -- la anterior debe cancelarse en Stripe.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com",
+        "suscripciones": {"AGE": {"plan": "basico", "stripe_subscription_id": "sub_viejo", "subscription_status": "active"}},
+    })
+    evento = {
+        "id": "evt_checkout_cambio",
+        "object": "event",
+        "type": "checkout.session.completed",
+        "data": {"object": {
+            "object": "checkout.session",
+            "client_reference_id": "u1",
+            "customer": "cus_test_1",
+            "subscription": "sub_nuevo",
+            "metadata": {"uid": "u1", "plan": "premium", "oposicion": "AGE"},
+        }},
+    }
+    mock_subscription = {
+        "status": "active",
+        "items": {"data": [{"price": {"id": PRICE_PREMIUM}}]},
+        "current_period_end": 1893456000,
+    }
+    with patch("blueprints.pagos.stripe.Subscription.retrieve", return_value=mock_subscription), \
+         patch("blueprints.pagos.stripe.Subscription.delete") as mock_delete:
+        resp = _post_evento(client, evento)
+
+    assert resp.status_code == 200
+    mock_delete.assert_called_once_with("sub_viejo")
+    suscripcion = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+    assert suscripcion["plan"] == "premium"
+    assert suscripcion["stripe_subscription_id"] == "sub_nuevo"
+
+
+def test_webhook_checkout_completado_primera_alta_no_cancela_nada(client, db):
+    # Sin ninguna suscripción previa para esa oposición (alta nueva, no
+    # cambio de plan), no debe intentarse cancelar nada en Stripe.
+    evento = {
+        "id": "evt_checkout_primera_vez",
+        "object": "event",
+        "type": "checkout.session.completed",
+        "data": {"object": {
+            "object": "checkout.session",
+            "client_reference_id": "u1",
+            "customer": "cus_test_1",
+            "subscription": "sub_nuevo",
+            "metadata": {"uid": "u1", "plan": "basico", "oposicion": "AGE"},
+        }},
+    }
+    mock_subscription = {
+        "status": "active",
+        "items": {"data": [{"price": {"id": PRICE_BASICO}}]},
+        "current_period_end": 1893456000,
+    }
+    with patch("blueprints.pagos.stripe.Subscription.retrieve", return_value=mock_subscription), \
+         patch("blueprints.pagos.stripe.Subscription.delete") as mock_delete:
+        resp = _post_evento(client, evento)
+
+    assert resp.status_code == 200
+    mock_delete.assert_not_called()
+
+
 def test_webhook_subscription_updated_sube_y_luego_baja_de_plan(client, db):
     # customer.subscription.updated SÍ trae directamente el price_id en el
     # propio evento -- no hace falta volver a consultar Stripe. Se busca al

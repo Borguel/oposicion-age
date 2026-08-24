@@ -456,6 +456,28 @@ def webhook_stripe():
                     price_id = subscription["items"]["data"][0]["price"]["id"]
                     plan = PRECIO_A_PLAN.get(price_id, "gratis")
                 periodo_fin = _current_period_end(subscription)
+
+                # Bug real (23/08/2026): /crear-sesion-checkout siempre crea
+                # una sesión de Checkout NUEVA, nunca modifica la existente
+                # -- así que cambiar de plan (p. ej. Básico -> Premium) para
+                # la MISMA oposición no sustituía nada: dejaba la
+                # suscripción anterior huérfana en Stripe, cobrando en
+                # paralelo con la nueva, sin que la web volviera a
+                # mencionarla en ningún sitio. Se cancela aquí, justo cuando
+                # la nueva ya está confirmada y activa -- no antes de crear
+                # el checkout, para no dejar al usuario sin ninguna
+                # suscripción si abandona el pago a mitad.
+                usuario_antes = db.collection("usuarios").document(uid).get().to_dict() or {}
+                sub_anterior_id = ((usuario_antes.get("suscripciones") or {}).get(oposicion) or {}).get("stripe_subscription_id")
+                if sub_anterior_id and sub_anterior_id != subscription_id:
+                    try:
+                        stripe.Subscription.delete(sub_anterior_id)
+                    except Exception:
+                        logger.exception(
+                            "No se pudo cancelar la suscripción anterior %s de uid=%s al cambiar de plan en %s",
+                            sub_anterior_id, uid, oposicion,
+                        )
+
                 actualizar_suscripcion(
                     db, uid, oposicion,
                     plan=plan,
