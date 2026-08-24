@@ -516,26 +516,44 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
   // explícitamente en vez de disparar una llamada a IA en cada resultado).
   const btnAnalisisIA = contenedor.querySelector("#btn-analisis-ia");
   if (btnAnalisisIA) {
+    const textoInicialBtnAnalisisIA = btnAnalisisIA.innerHTML;
     btnAnalisisIA.addEventListener("click", async () => {
       const destino = contenedor.querySelector("#analisis-ia-resultado");
       btnAnalisisIA.disabled = true;
       btnAnalisisIA.textContent = "Analizando tu rendimiento...";
       destino.innerHTML = "";
+      // Bug real (24/08/2026): el "finally" ocultaba el botón pasara lo
+      // que pasara, así que un fallo (red caída, sesión caducada, error
+      // del backend) dejaba al usuario con un mensaje de error y SIN
+      // forma de reintentar -- el botón, su única vía para volver a
+      // pedirlo, ya no estaba. Solo se oculta cuando el análisis se
+      // muestra de verdad; en cualquier otro caso se restaura para poder
+      // reintentar.
+      let exito = false;
       try {
         const { idToken } = await import("/assets/auth.js");
         const { obtenerOposicionActual } = await import("/assets/oposicion.js");
         const token = await idToken();
-        if (!token) return;
+        if (!token) {
+          destino.innerHTML = `<p>Tu sesión ha caducado. Vuelve a iniciar sesión e inténtalo de nuevo.</p>`;
+          return;
+        }
         const res = await fetch(`https://oposicion-age.onrender.com/analisis-rendimiento?oposicion=${encodeURIComponent(obtenerOposicionActual())}`, {
           headers: { "Authorization": "Bearer " + token }
         });
         const datos = await res.json();
         destino.innerHTML = `<p>${datos.analisis || datos.mensaje || "No se ha podido generar el análisis ahora mismo."}</p>`;
+        exito = res.ok && !!datos.analisis;
       } catch (err) {
         destino.innerHTML = `<p>No se ha podido generar el análisis ahora mismo.</p>`;
         console.error(err);
       } finally {
-        btnAnalisisIA.style.display = "none";
+        if (exito) {
+          btnAnalisisIA.style.display = "none";
+        } else {
+          btnAnalisisIA.disabled = false;
+          btnAnalisisIA.innerHTML = textoInicialBtnAnalisisIA;
+        }
       }
     });
   }
