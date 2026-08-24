@@ -59,7 +59,14 @@ async function inicializar() {
   const params = new URLSearchParams(window.location.search);
   const testId = params.get("id");
   if (!testId) {
-    document.getElementById("resultado-cargando").textContent = "Falta el identificador del test.";
+    // El enlace "← Volver" de la cabecera ya permite salir de aquí, pero
+    // no es evidente que forme parte de este aviso de error -- añadir el
+    // enlace dentro del propio mensaje lo deja claro, igual que el resto
+    // de estados vacíos ya arreglados en esta ronda.
+    document.getElementById("resultado-cargando").innerHTML = `
+      <p>Falta el identificador del test.</p>
+      <a href="/mis-tests/" class="age-btn age-btn-outline">Ir a Mis Tests</a>
+    `;
     marcarContenidoListo();
     return;
   }
@@ -100,7 +107,10 @@ async function inicializar() {
     document.getElementById("resultado-cargando").classList.add("hidden");
     document.getElementById("resultado-contenido").classList.remove("hidden");
   } catch (e) {
-    document.getElementById("resultado-cargando").textContent = e.message || "No se pudieron cargar los resultados.";
+    document.getElementById("resultado-cargando").innerHTML = `
+      <p>${e.message || "No se pudieron cargar los resultados."}</p>
+      <a href="/mis-tests/" class="age-btn age-btn-outline">Ir a Mis Tests</a>
+    `;
   } finally {
     marcarContenidoListo();
   }
