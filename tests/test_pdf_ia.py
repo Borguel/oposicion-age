@@ -2174,3 +2174,34 @@ class TestDocumentoEstado:
         finally:
             parche.stop()
         assert resp.status_code == 404
+
+
+class TestEliminarDocumentoDetieneGeneracionesEnCurso:
+    """DELETE /documento/<id>: borrar un documento con una generación en
+    marcha (resumen/esquema/banco de preguntas o tarjetas) debe avisar a
+    esa generación para que pare en su próximo punto de comprobación, en
+    vez de seguir gastando llamadas a DeepSeek sobre un documento que el
+    usuario ya no tiene (ver comentario junto a la ruta)."""
+
+    def test_borrar_marca_la_parada_de_las_4_herramientas_posibles(self, client, documento_sembrado):
+        eventos = {
+            herramienta: generacion_control.registrar("u1", documento_sembrado, herramienta)
+            for herramienta in ("resumen", "esquema", "banco_preguntas", "banco_tarjetas")
+        }
+        parche = _con_sesion(client)
+        try:
+            resp = client.delete(f"/documento/{documento_sembrado}", headers={"Authorization": "Bearer x"})
+        finally:
+            for herramienta in eventos:
+                generacion_control.desregistrar("u1", documento_sembrado, herramienta)
+            parche.stop()
+        assert resp.status_code == 200
+        assert all(evento.is_set() for evento in eventos.values())
+
+    def test_borrar_sin_ninguna_generacion_en_curso_no_falla(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.delete(f"/documento/{documento_sembrado}", headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200

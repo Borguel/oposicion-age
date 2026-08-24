@@ -1753,6 +1753,18 @@ def eliminar_documento_route(documento_id):
     ok = eliminar_documento(db, g.uid, documento_id)
     if not ok:
         return jsonify({"error": "No se encontró el documento indicado."}), 404
+    # Bug real (24/08/2026): borrar un documento no avisaba a ninguna
+    # generación en curso sobre él (resumen/esquema/banco de preguntas o
+    # tarjetas) -- el hilo de fondo seguía lanzando llamadas a DeepSeek
+    # (y gastando el uso ya cobrado) sobre un documento que el usuario
+    # acababa de borrar, sin ninguna forma de enterarse ni de recuperarlo.
+    # Mismo mecanismo que ya usa el botón "Detener generación" del admin
+    # (ver generacion_control.py) -- se marca la parada de las 4
+    # herramientas posibles; solicitar_parada no hace nada si esa
+    # herramienta no tenía ninguna generación en marcha para este
+    # documento_id.
+    for herramienta in ("resumen", "esquema", "banco_preguntas", "banco_tarjetas"):
+        generacion_control.solicitar_parada(g.uid, documento_id, herramienta)
     return jsonify({"mensaje": "Documento eliminado"})
 
 
