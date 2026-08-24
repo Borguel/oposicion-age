@@ -654,7 +654,13 @@ window.addEventListener("load", async () => {
     import("/assets/onboarding-tour.js").then(({ mostrarTourTest }) => mostrarTourTest());
   } catch (err) {
     console.error("Error:", err);
-    document.getElementById("contenedor-test").innerHTML = "<p>Error al cargar el test.</p>";
+    // Mismo tratamiento que los otros 3 estados vacíos de este archivo
+    // (ver más arriba) -- este catch genérico (errores de red/inesperados)
+    // se quedó fuera de esa ronda y dejaba la misma frase seca sin salida.
+    document.getElementById("contenedor-test").innerHTML = `
+      <p>Error al cargar el test. Puede ser un problema de conexión.</p>
+      <a href="/mis-tests/" class="btn btn-primary">Ir a Mis Tests</a>
+    `;
   } finally {
     marcarContenidoListo();
   }

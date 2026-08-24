@@ -107,7 +107,15 @@ async function iniciar() {
     }
     renderizarLista(ranking);
   } catch (e) {
-    contenedorParticipacion.innerHTML = `<p>No se pudo cargar la clasificación.</p>`;
+    // Bug real (24/08/2026): un fallo de red borraba toda la sección
+    // (título, contador de participantes, lista) y dejaba solo esta frase,
+    // sin ningún botón de reintento -- la única forma de recuperarse era
+    // recargar la página entera a mano.
+    contenedorParticipacion.innerHTML = `
+      <p>No se pudo cargar la clasificación. Puede ser un problema de conexión.</p>
+      <button type="button" class="age-btn age-btn-outline" id="ranking-reintentar">Reintentar</button>
+    `;
+    document.getElementById("ranking-reintentar").addEventListener("click", () => iniciar());
     console.error("Error cargando la clasificación:", e);
   } finally {
     marcarContenidoListo();
