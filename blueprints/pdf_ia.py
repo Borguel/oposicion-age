@@ -13,6 +13,7 @@ from io import BytesIO
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 from google.api_core import exceptions as google_exceptions
 from pypdf import PdfReader
+from pypdf.errors import FileNotDecryptedError
 
 from firebase_setup import db
 from auth_utils import requiere_plan, requiere_admin, obtener_oposicion_solicitada
@@ -88,6 +89,14 @@ def _resolver_texto_documento(plan_actual):
     try:
         pdf_reader = PdfReader(BytesIO(pdf_file.read()))
         numero_paginas = len(pdf_reader.pages)
+    except FileNotDecryptedError:
+        # Distinto de "dañado" -- el archivo es un PDF perfectamente válido,
+        # solo que pypdf no puede leer sus páginas sin la contraseña (no
+        # confundir con un PDF que solo tiene restricciones de permisos de
+        # OWNER sin contraseña de apertura: is_encrypted es True en ambos
+        # casos, pero solo el que de verdad pide contraseña para abrir
+        # llega a lanzar esta excepción al intentar leer las páginas).
+        return None, None, None, (jsonify({"error": "Este PDF está protegido con contraseña. Quítasela (ábrelo y guárdalo de nuevo sin contraseña) antes de subirlo."}), 400)
     except Exception:
         return None, None, None, (jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400)
     limite_paginas = max_paginas_para_plan(plan_actual, db)

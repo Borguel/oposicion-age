@@ -199,6 +199,41 @@ class TestSubidaArchivoInvalido:
         assert "no es un PDF válido" in resp.get_json()["error"]
 
 
+def _pdf_con_contrasena():
+    """Un PDF real, válido, pero que pide contraseña para abrirlo -- distinto
+    de ARCHIVO_FALSO (que ni siquiera es un PDF)."""
+    from io import BytesIO
+    from pypdf import PdfWriter
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    buffer = BytesIO()
+    writer.encrypt(user_password="secreta123", owner_password="ownerpass")
+    writer.write(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+class TestSubidaArchivoConContrasena:
+    """Bug real (23/08/2026): un PDF protegido con contraseña es un archivo
+    perfectamente válido -- pypdf no puede leer sus páginas sin ella
+    (FileNotDecryptedError), pero antes eso caía en el except genérico y
+    salía "el archivo no es un PDF válido o está dañado", falso y sin decir
+    qué hacer de verdad (quitar la contraseña)."""
+
+    def test_resumir_pdf_con_contrasena_da_mensaje_especifico(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/resumir-pdf",
+                                data={"pdf": (_pdf_con_contrasena(), "protegido.pdf")},
+                                headers={"Authorization": "Bearer x"},
+                                content_type="multipart/form-data")
+        finally:
+            parche.stop()
+        assert resp.status_code == 400
+        assert "contraseña" in resp.get_json()["error"]
+        assert "no es un PDF válido" not in resp.get_json()["error"]
+
+
 class TestChatPdfMensaje:
     """/subir-pdf-chat y /chat-pdf-mensaje (12/08/2026, reescritos para leer
     el documento ENTERO desde "Mis documentos" en cada mensaje, en vez de
