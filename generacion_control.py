@@ -57,3 +57,19 @@ def solicitar_parada(uid, documento_id, herramienta):
         return False
     evento.set()
     return True
+
+
+def solicitar_parada_todas(uid):
+    """Marca la parada de TODAS las generaciones en curso de un usuario,
+    sin necesitar saber de antemano sus documento_id/herramienta concretos
+    -- para cuando el usuario pierde el acceso entero (p. ej. Stripe borra
+    su suscripción, ver customer.subscription.deleted en blueprints/
+    pagos.py) en vez de un único documento suelto (ver solicitar_parada,
+    usado por eliminar_documento_route). Devuelve cuántas generaciones
+    había en marcha."""
+    prefijo = f"{uid}:"
+    with _lock_registro:
+        eventos = [evento for clave, evento in _registro.items() if clave.startswith(prefijo)]
+    for evento in eventos:
+        evento.set()
+    return len(eventos)

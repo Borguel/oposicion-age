@@ -22,6 +22,7 @@ from email_utils import (
 from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketing
 from promociones import leer_promocion, promocion_vigente
 from utils import invalidar_cache, ejecutar_en_transaccion
+import generacion_control
 
 logger = logging.getLogger(__name__)
 
@@ -523,6 +524,19 @@ def webhook_stripe():
                 actualizar_suscripcion(db, docs[0].id, oposicion, plan="gratis", subscription_status="canceled", cancelar_al_final_periodo=False)
                 email_usuario = (docs[0].to_dict() or {}).get("email")
                 sincronizar_contacto_marketing(email_usuario, oposicion=oposicion, estado="sin_suscripcion")
+                # Bug real (24/08/2026): Stripe puede borrar la suscripción
+                # en cualquier momento (no solo al final del periodo ya
+                # pagado -- también por una disputa/chargeback, por
+                # ejemplo), y hasta ahora nada avisaba a una generación
+                # premium en curso (resumen/esquema/banco de preguntas o
+                # tarjetas) de que el usuario acababa de perder el plan que
+                # se lo permitía -- el hilo de fondo seguía gastando
+                # llamadas a DeepSeek sobre una cuenta que ya no tiene
+                # acceso. Mismo mecanismo que ya usa eliminar_documento_route
+                # al borrar un documento suelto (ver generacion_control.py),
+                # aquí a nivel de usuario entero porque no se sabe de
+                # antemano qué documento_id/herramienta tenía en marcha.
+                generacion_control.solicitar_parada_todas(docs[0].id)
         elif tipo == "invoice.payment_failed":
             customer_id = _sget(objeto, "customer")
             subscription_id = _sget(objeto, "subscription")

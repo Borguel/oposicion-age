@@ -11,6 +11,8 @@ import json
 import time
 from unittest.mock import patch
 
+import generacion_control
+
 STRIPE_WEBHOOK_SECRET = "whsec_test_dummy"  # coincide con conftest.py
 # Coinciden con STRIPE_PRICE_ID_BASICO / STRIPE_PRICE_ID_PREMIUM en conftest.py
 PRICE_BASICO = "price_basico_test"
@@ -306,3 +308,36 @@ def test_webhook_libera_el_evento_si_falla_el_procesamiento(client, db):
     assert resp2.status_code == 200
     assert resp2.get_json()["mensaje"] == "Evento procesado"
     assert db.leer(("usuarios", "u4"))["suscripciones"]["AGE"]["subscription_status"] == "canceled"
+
+
+def test_webhook_subscription_deleted_detiene_generaciones_en_curso(client, db):
+    # Bug real (24/08/2026): Stripe puede borrar la suscripción en
+    # cualquier momento (no solo al terminar el periodo ya pagado --
+    # también por una disputa/chargeback), y nada avisaba a una
+    # generación premium en curso de que el usuario acababa de perder el
+    # plan que se lo permitía -- el hilo de fondo seguía gastando tokens
+    # de más. Ver generacion_control.solicitar_parada_todas.
+    db.sembrar(("usuarios", "u5"), {
+        "email": "u5@example.com",
+        "stripe_customer_id": "cus_test_5",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}},
+    })
+    evento_parada = generacion_control.registrar("u5", "d1", "resumen")
+    evento = _evento(tipo="customer.subscription.deleted", customer="cus_test_5")
+    try:
+        resp = _post_evento(client, evento)
+    finally:
+        generacion_control.desregistrar("u5", "d1", "resumen")
+    assert resp.status_code == 200
+    assert evento_parada.is_set()
+
+
+def test_webhook_subscription_deleted_sin_generaciones_en_curso_no_falla(client, db):
+    db.sembrar(("usuarios", "u6"), {
+        "email": "u6@example.com",
+        "stripe_customer_id": "cus_test_6",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}},
+    })
+    evento = _evento(tipo="customer.subscription.deleted", customer="cus_test_6")
+    resp = _post_evento(client, evento)
+    assert resp.status_code == 200

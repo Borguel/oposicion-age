@@ -49,6 +49,29 @@ def test_claves_distintas_no_se_pisan():
         gc.desregistrar("u1", "d2", "resumen")
 
 
+def test_solicitar_parada_todas_marca_todas_las_generaciones_del_usuario():
+    evento_resumen = gc.registrar("u1", "d1", "resumen")
+    evento_esquema = gc.registrar("u1", "d1", "esquema")
+    evento_otro_doc = gc.registrar("u1", "d2", "banco_preguntas")
+    evento_otro_usuario = gc.registrar("u2", "d1", "resumen")
+    try:
+        total = gc.solicitar_parada_todas("u1")
+        assert total == 3
+        assert evento_resumen.is_set()
+        assert evento_esquema.is_set()
+        assert evento_otro_doc.is_set()
+        assert not evento_otro_usuario.is_set()
+    finally:
+        gc.desregistrar("u1", "d1", "resumen")
+        gc.desregistrar("u1", "d1", "esquema")
+        gc.desregistrar("u1", "d2", "banco_preguntas")
+        gc.desregistrar("u2", "d1", "resumen")
+
+
+def test_solicitar_parada_todas_sin_generaciones_en_curso_devuelve_cero():
+    assert gc.solicitar_parada_todas("u-sin-generaciones") == 0
+
+
 def test_registrar_de_nuevo_sobre_la_misma_clave_da_un_evento_fresco():
     # Si por lo que sea quedó un registro viejo sin desregistrar (no
     # debería pasar en producción, ver el finally de blueprints/pdf_ia),
