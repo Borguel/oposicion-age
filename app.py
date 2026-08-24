@@ -107,6 +107,19 @@ def fichero_demasiado_grande(_error):
     return jsonify({"error": "El archivo es demasiado grande (máximo 20 MB)."}), 413
 
 
+@app.errorhandler(429)
+def demasiadas_peticiones(_error):
+    # Bug real (23/08/2026): sin este handler, un 429 de flask-limiter
+    # (@limiter.limit en test_ia.py/pdf_ia.py/tu_tutor.py, o el
+    # default_limits general) devolvía la página HTML por defecto de
+    # flask-limiter, no JSON -- el frontend, que ya sabe interpretar un 429
+    # con {"error": "..."} (mismo status que usa limites_uso.py para la
+    # cuota agotada), intentaba hacer res.json() sobre ese HTML y fallaba
+    # con un "Unexpected token '<'" visible tal cual al usuario en vez de
+    # un aviso de "espera un momento".
+    return jsonify({"error": "Estás yendo muy rápido. Espera un momento antes de volver a intentarlo."}), 429
+
+
 @app.errorhandler(Exception)
 def manejar_error_no_controlado(error):
     # Flask ya prioriza el handler más específico registrado para cada
