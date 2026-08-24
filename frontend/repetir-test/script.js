@@ -292,14 +292,21 @@ async function mostrarPregunta(i) {
     boton.disabled = true;
     boton.textContent = "Guardando…";
     const { guardarProgresoInmediato } = await import("/assets/test-progreso.js");
-    await guardarProgresoInmediato({
-      respuestas_usuario: respuestasUsuario,
-      marcadas_revision: marcadasRevision,
-      marcadas_duda: marcadasDuda,
-      indice_actual: indicePreguntaActual,
-      tiempo_transcurrido_segundos: tiempoTranscurridoActual()
-    });
-    window.location.href = "/mis-tests/";
+    try {
+      await guardarProgresoInmediato({
+        respuestas_usuario: respuestasUsuario,
+        marcadas_revision: marcadasRevision,
+        marcadas_duda: marcadasDuda,
+        indice_actual: indicePreguntaActual,
+        tiempo_transcurrido_segundos: tiempoTranscurridoActual()
+      });
+      window.location.href = "/mis-tests/";
+    } catch (e) {
+      const { mostrarErrorGlobal } = await import("/assets/notificaciones.js");
+      mostrarErrorGlobal("No se pudo guardar tu progreso. Comprueba tu conexión e inténtalo de nuevo antes de salir.");
+      boton.disabled = false;
+      boton.innerHTML = `${icono("guardar", 16)} Guardar y salir`;
+    }
   };
 
   const botonFinalizar = document.getElementById("btn-finalizar");

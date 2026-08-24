@@ -123,11 +123,27 @@ export function limpiarSeguimiento() {
   testIdActual = null;
 }
 
-async function enviarAutosave(payload, keepalive) {
+// propagarError: el autoguardado en segundo plano (debounce, tick del
+// cronómetro, guardado al ocultar la pestaña) siempre debe tragarse sus
+// propios fallos -- interrumpir al usuario con un error por un autoguardado
+// silencioso sería peor que el problema, y ya existen la copia local y el
+// reintento al recuperar conexión como red de seguridad para ESA pestaña.
+// Pero "Guardar y salir" (ver guardarProgresoInmediato) es distinto: el
+// usuario pide EXPLÍCITAMENTE irse confiando en que su progreso ha quedado
+// guardado, y la página va a navegar fuera -- si eso ocurre, la copia local
+// y el reintento en memoria de este módulo desaparecen con la navegación, y
+// solo se usarían si el usuario reabre ESE MISMO test tras un fallo de red
+// (cargarTestEnProgreso), nunca si la carga normal tiene éxito con datos ya
+// desfasados. Por eso ahí sí hace falta que el fallo llegue al llamador,
+// para poder avisar antes de navegar en vez de después de haberlo hecho.
+async function enviarAutosave(payload, keepalive, { propagarError = false } = {}) {
   guardarCopiaLocal(payload);
   armarDeteccionOffline();
   const token = await idToken();
-  if (!token) return;
+  if (!token) {
+    if (propagarError) throw new Error("Sesión no disponible.");
+    return;
+  }
   try {
     const res = await fetch(`${BACKEND_URL}/autosave-test`, {
       method: "POST",
@@ -140,6 +156,7 @@ async function enviarAutosave(payload, keepalive) {
   } catch (e) {
     console.error("No se pudo autoguardar el progreso del test (se reintentará al recuperar conexión):", e);
     payloadPendienteReintento = payload;
+    if (propagarError) throw e;
   }
 }
 
@@ -192,7 +209,7 @@ export function autoguardarProgreso(datosParciales) {
 export async function guardarProgresoInmediato(datosParciales) {
   if (!testIdActual) return;
   clearTimeout(temporizadorDebounce);
-  await enviarAutosave({ test_id: testIdActual, ...datosParciales }, false);
+  await enviarAutosave({ test_id: testIdActual, ...datosParciales }, false, { propagarError: true });
 }
 
 // Guardado best-effort al ocultarse/cerrarse la pestaña. Se usa
