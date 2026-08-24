@@ -2112,3 +2112,65 @@ class TestDetenerGeneracion:
             generacion_control.desregistrar("u1", documento_sembrado, "resumen")
             generacion_control.desregistrar("u1", documento_sembrado, "esquema")
             parche.stop()
+
+
+class TestDocumentoEstado:
+    """GET /documento/<id>/estado: usado por otras-herramientas-pdf.js para
+    saber qué tipos de contenido ya tiene generados este documento y así
+    poder enlazar con "?ver=<tipo>" en vez de disparar una generación
+    nueva sin avisar (ver comentario junto a la ruta)."""
+
+    def test_documento_sin_ningun_contenido_generado(self, client, documento_sembrado):
+        parche = _con_sesion(client)
+        try:
+            resp = client.get(f"/documento/{documento_sembrado}/estado",
+                               headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        assert resp.get_json() == {
+            "tiene_resumen": False,
+            "tiene_esquema": False,
+            "tiene_test": False,
+            "tiene_tarjetas": False,
+        }
+
+    def test_documento_con_algunos_contenidos_generados(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "documentos", documento_sembrado), {
+            "texto": "Texto del documento de prueba.",
+            "nombre_archivo": "doc.pdf",
+            "tiene_resumen": True,
+            "num_tests": 3,
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.get(f"/documento/{documento_sembrado}/estado",
+                               headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        datos = resp.get_json()
+        assert datos["tiene_resumen"] is True
+        assert datos["tiene_test"] is True
+        assert datos["tiene_esquema"] is False
+        assert datos["tiene_tarjetas"] is False
+
+    def test_documento_inexistente_da_404(self, client, db):
+        sembrar_usuario_activo(db, "u1", plan="premium")
+        parche = _con_sesion(client)
+        try:
+            resp = client.get("/documento/no-existe/estado",
+                               headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 404
+
+    def test_documento_de_otro_usuario_da_404(self, client, db, documento_sembrado):
+        sembrar_usuario_activo(db, "u2", plan="premium")
+        parche = _con_sesion(client, uid="u2", email="u2@example.com")
+        try:
+            resp = client.get(f"/documento/{documento_sembrado}/estado",
+                               headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 404

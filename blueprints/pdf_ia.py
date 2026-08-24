@@ -1756,6 +1756,29 @@ def eliminar_documento_route(documento_id):
     return jsonify({"mensaje": "Documento eliminado"})
 
 
+@bp.route('/documento/<documento_id>/estado', methods=['GET'])
+@requiere_plan(db, "premium", global_check=True)
+def documento_estado(documento_id):
+    # Usado por otras-herramientas-pdf.js (23/08/2026, bug real: los
+    # enlaces cruzados entre las 4 páginas de subida -- "también puedes
+    # generar desde este documento" -- no distinguían si esa otra
+    # herramienta YA tenía contenido guardado para este documento, así que
+    # siempre disparaban una generación nueva (y gastaban una regeneración,
+    # ver LIMITE_GENERACIONES_POR_DOCUMENTO) incluso cuando el usuario solo
+    # quería VER lo que ya existía. Este endpoint es deliberadamente
+    # mínimo: solo los 4 flags que necesita ese enlace, nada del resto de
+    # metadatos de /mis-documentos.
+    documento = obtener_documento(db, g.uid, documento_id)
+    if not documento:
+        return jsonify({"error": "No se encontró el documento indicado."}), 404
+    return jsonify({
+        "tiene_resumen": bool(documento.get("tiene_resumen")),
+        "tiene_esquema": bool(documento.get("tiene_esquema")),
+        "tiene_test": bool(documento.get("num_tests")),
+        "tiene_tarjetas": bool(documento.get("num_tarjetas")),
+    })
+
+
 @bp.route('/documento/<documento_id>/resumen', methods=['GET'])
 @requiere_plan(db, "premium", global_check=True)
 def documento_resumen(documento_id):
