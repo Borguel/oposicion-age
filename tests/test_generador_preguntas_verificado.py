@@ -10,6 +10,7 @@ import json
 import threading
 from unittest.mock import patch
 
+import generacion_control
 from generador_preguntas_verificado import (
     MAX_RONDAS_RELLENO,
     _extraer_articulos,
@@ -734,6 +735,35 @@ def test_generar_test_verificado_si_el_relleno_tambien_falla_avisa_del_numero_re
     assert "0 de 3" in resultado["advertencia"]
 
 
+def test_generar_test_verificado_evento_parada_detiene_el_relleno(db):
+    # Bug real (24/08/2026): esta generación no tenía forma alguna de
+    # cancelarse -- ver generacion_control.py. evento_parada ya marcado
+    # ANTES de arrancar debe saltarse todas las rondas de relleno (mismo
+    # "punto de comprobación natural" que ya usan resumen/esquema), sin
+    # que la función lance ninguna excepción ni deje de devolver lo que sí
+    # se aceptó en el hueco original.
+    relleno = " ".join(["palabra"] * 30)
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido del tema. {relleno}"
+    })
+    evento_parada = threading.Event()
+    evento_parada.set()
+
+    with patch("generador_preguntas_verificado._generar_pregunta_verificada", return_value=None), \
+         patch("generador_preguntas_verificado._tema_es_normativo", return_value=False), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        resultado = generar_test_verificado(
+            db, temas=["bloque_01-tema_01"], num_preguntas=3,
+            coleccion="Temario AGE", oposicion="AGE", evento_parada=evento_parada,
+        )
+
+    assert len(resultado["test"]) == 0
+    # Solo los 3 huecos originales -- CERO rondas de relleno, porque el
+    # evento ya estaba marcado antes de la primera comprobación.
+    assert resultado["descartadas"] == 3
+    assert "advertencia" in resultado
+
+
 def test_generar_test_verificado_modo_realista_pondera_por_bloque(db):
     relleno = " ".join(["palabra"] * 30)
     db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
@@ -838,6 +868,38 @@ def test_ruta_generar_test_avanzado_emite_eventos_y_registra_uso(client, db, usu
     # -- en el cupo diario Y en el tope mensual adicional, a la vez.
     assert datos_usuario["limites_uso"]["test_avanzado_verificado"]["contador"] == 2
     assert datos_usuario["limites_uso"]["test_avanzado_verificado_mensual"]["contador"] == 2
+
+
+def test_ruta_generar_test_avanzado_no_deja_registro_colgado_en_generacion_control(client, db, usuario_autenticado):
+    # Bug real (24/08/2026): esta ruta no registraba nada en
+    # generacion_control -- ni borrar la cuenta ni ningún otro mecanismo
+    # podían pararla nunca (ver generacion_control.solicitar_parada_todas,
+    # ya usado por eliminar_cuenta_usuario y el webhook de Stripe). Tras
+    # una generación normal que termina bien, no debe quedar ningún
+    # registro colgado (el "finally" del hilo de fondo desregistra
+    # siempre, con éxito o sin él).
+    relleno = " ".join(["palabra"] * 30)
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Ley 39/2015", "texto": f"Artículo 1. Contenido real de prueba. {relleno}"
+    })
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}}
+    })
+    usuario_autenticado()
+    contador = itertools.count()
+    lock_contador = threading.Lock()
+    with patch("generador_preguntas_verificado.call_deepseek_api",
+               side_effect=_mock_deepseek_siempre_valido(contador, lock_contador)), \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        resp = client.post(
+            "/generar-test-avanzado",
+            json={"temas": ["bloque_01-tema_01"], "num_preguntas": 1, "oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"}
+        )
+        resp.get_data(as_text=True)
+    assert resp.status_code == 200
+    assert generacion_control.solicitar_parada_todas("u1") == 0
 
 
 def test_ruta_generar_test_avanzado_429_si_supera_el_limite(client, db, usuario_autenticado):

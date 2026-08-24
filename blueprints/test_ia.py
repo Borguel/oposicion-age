@@ -5,6 +5,7 @@ import logging
 import queue
 import random
 import threading
+import uuid
 
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
@@ -20,6 +21,7 @@ from deepseek_utils import call_deepseek_api
 from registro_progreso_usuario import obtener_resumen_progreso
 from banco_fallos import ordenar_por_prioridad_repaso as ordenar_fallos_por_prioridad
 from banco_favoritas import ordenar_por_prioridad_repaso as ordenar_favoritas_por_prioridad, marcar_repasadas
+import generacion_control
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +91,18 @@ def generar_test_avanzado_route():
 
     def generar():
         eventos = queue.Queue()
+        # Bug real (24/08/2026): esta generación no tenía NINGÚN mecanismo
+        # de cancelación -- a diferencia de las 4 herramientas de PDF (ver
+        # generacion_control.py), ni borrar la cuenta a mitad de una
+        # generación ni ningún otro camino podían pararla, así que siempre
+        # agotaba las preguntas ya cobradas por adelantado (reservar_uso_
+        # multiple, arriba). No hay un documento_id real aquí (el test se
+        # genera desde el temario, no desde un PDF subido), así que se usa
+        # un identificador propio generado en el momento -- solicitar_
+        # parada_todas(uid), que ya usan eliminar_cuenta_usuario y el
+        # webhook de Stripe, no necesita conocerlo de antemano.
+        clave_generacion = uuid.uuid4().hex
+        evento_parada = generacion_control.registrar(uid, clave_generacion, "test_avanzado")
 
         def _en_hilo_de_fondo():
             def on_progreso(evento_progreso):
@@ -108,11 +122,13 @@ def generar_test_avanzado_route():
                 resultado = generar_test_verificado(
                     db, temas=temas, num_preguntas=num_preguntas,
                     coleccion=coleccion, oposicion=oposicion, on_progreso=on_progreso,
-                    modo_reparto=modo_reparto, uid=uid
+                    modo_reparto=modo_reparto, uid=uid, evento_parada=evento_parada,
                 )
             except Exception:
                 logger.exception("Error al generar el test personalizado verificado")
                 resultado = {"test": [], "error": "Error inesperado al generar el test"}
+            finally:
+                generacion_control.desregistrar(uid, clave_generacion, "test_avanzado")
             if not resultado.get("test"):
                 for tipo_cuota in TIPOS_CUOTA_TEST_PERSONALIZADO:
                     devolver_uso(db, uid, tipo_cuota, plan_actual, cantidad=num_preguntas)

@@ -905,7 +905,7 @@ def _generar_lote_preguntas_verificadas(huecos_lote, subbloques_por_tema, oposic
 
 def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
                              oposicion=OPOSICION_POR_DEFECTO, on_progreso=None,
-                             modo_reparto="equitativo", uid=None):
+                             modo_reparto="equitativo", uid=None, evento_parada=None):
     """Genera hasta num_preguntas preguntas verificadas, repartidas entre
     'temas' según modo_reparto: "equitativo" (por defecto, cuota igual
     para cada tema) o "realista" (más preguntas de los bloques que
@@ -922,6 +922,14 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     -- pensado para retransmitir progreso real (no cosmético) por SSE, y
     para que el llamante pueda ir entregando preguntas ya aceptadas antes
     de que termine todo el test (ver /generar-test-avanzado).
+
+    evento_parada (24/08/2026, ver generacion_control.py): threading.Event
+    opcional que, si se marca, hace que no arranque NINGUNA ronda de
+    relleno más (mismo criterio de "punto de comprobación natural" que ya
+    usan resumen/esquema en deepseek_utils.py -- no interrumpe una ronda
+    ya lanzada, solo evita lanzar la siguiente). Antes esta función no
+    tenía forma alguna de cancelarse, así que ni borrar la cuenta ni
+    ningún otro mecanismo podían pararla una vez arrancada.
     """
     temas_unicos = list(dict.fromkeys(t for t in temas if t))
     if not temas_unicos:
@@ -1076,6 +1084,9 @@ def generar_test_verificado(db, temas, num_preguntas, coleccion="Temario AGE",
     # nunca dentro de los hilos del pool.
     rondas_relleno = 0
     while len(preguntas) < num_preguntas and temas_con_contenido and rondas_relleno < MAX_RONDAS_RELLENO:
+        if evento_parada is not None and evento_parada.is_set():
+            logger.info("Generación de test personalizado detenida antes de una ronda de relleno (uid=%s)", uid)
+            break
         rondas_relleno += 1
         faltan = num_preguntas - len(preguntas)
         ciclo_temas = itertools.cycle(temas_con_contenido)
