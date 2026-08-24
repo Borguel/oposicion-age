@@ -4,6 +4,7 @@ borrar la cuenta cancele Stripe, borre subcolecciones y la cuenta de auth."""
 import os
 from unittest.mock import patch, MagicMock
 
+import generacion_control
 from gestion_cuenta import exportar_datos_usuario, eliminar_cuenta_usuario
 
 
@@ -113,6 +114,55 @@ def test_eliminar_cuenta_avisa_por_email_si_stripe_da_error(db):
         eliminar_cuenta_usuario(db, "u1")
 
     mock_alerta.assert_called_once_with(os.environ.get("BREVO_FROM_EMAIL"), "u1", "sub_123")
+
+
+def test_exportar_datos_incluye_bancos_pdf_favoritas_y_bajas_motivos(db):
+    # Bug real (24/08/2026): estas 4 subcolecciones faltaban en
+    # COLECCIONES_USUARIO -- ni se exportaban (derecho de acceso
+    # incompleto) ni se borraban al eliminar la cuenta (ver el siguiente
+    # test), quedando huérfanas en Firestore para siempre.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", "d1"), {"estado": "completo"})
+    db.sembrar(("usuarios", "u1", "banco_tarjetas_pdf", "d1"), {"estado": "completo"})
+    db.sembrar(("usuarios", "u1", "preguntas_favoritas", "p1"), {"pregunta": "?"})
+    db.sembrar(("usuarios", "u1", "bajas_motivos", "b1"), {"motivo": "precio"})
+
+    datos = exportar_datos_usuario(db, "u1")
+
+    assert datos["banco_preguntas_pdf"] == [{"id": "d1", "estado": "completo"}]
+    assert datos["banco_tarjetas_pdf"] == [{"id": "d1", "estado": "completo"}]
+    assert datos["preguntas_favoritas"] == [{"id": "p1", "pregunta": "?"}]
+    assert datos["bajas_motivos"] == [{"id": "b1", "motivo": "precio"}]
+
+
+def test_eliminar_cuenta_borra_bancos_pdf_favoritas_y_bajas_motivos(db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", "d1"), {"estado": "completo"})
+    db.sembrar(("usuarios", "u1", "banco_tarjetas_pdf", "d1"), {"estado": "completo"})
+    db.sembrar(("usuarios", "u1", "preguntas_favoritas", "p1"), {"pregunta": "?"})
+    db.sembrar(("usuarios", "u1", "bajas_motivos", "b1"), {"motivo": "precio"})
+
+    with patch("gestion_cuenta.firebase_auth.delete_user"):
+        eliminar_cuenta_usuario(db, "u1")
+
+    assert db.leer(("usuarios", "u1", "banco_preguntas_pdf", "d1")) is None
+    assert db.leer(("usuarios", "u1", "banco_tarjetas_pdf", "d1")) is None
+    assert db.leer(("usuarios", "u1", "preguntas_favoritas", "p1")) is None
+    assert db.leer(("usuarios", "u1", "bajas_motivos", "b1")) is None
+
+
+def test_eliminar_cuenta_detiene_generaciones_en_curso(db):
+    # Sin esto, un hilo de fondo seguía gastando llamadas a DeepSeek (ya
+    # cobradas) sobre una cuenta que ya no existe -- ver
+    # generacion_control.solicitar_parada_todas.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    evento = generacion_control.registrar("u1", "d1", "resumen")
+    try:
+        with patch("gestion_cuenta.firebase_auth.delete_user"):
+            eliminar_cuenta_usuario(db, "u1")
+        assert evento.is_set()
+    finally:
+        generacion_control.desregistrar("u1", "d1", "resumen")
 
 
 def test_ruta_exportar_datos(client, db, usuario_autenticado):

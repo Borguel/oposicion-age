@@ -8,15 +8,23 @@ import os
 import stripe
 from firebase_admin import auth as firebase_auth
 
+import generacion_control
 from email_utils import enviar_email_alerta_cancelacion_stripe_fallida
 
 logger = logging.getLogger(__name__)
 
 # Subcolecciones que cuelgan de usuarios/{uid} en todo el proyecto (ver
-# guardar_resultado.py, documentos_pdf.py, banco_fallos.py).
+# guardar_resultado.py, documentos_pdf.py, banco_fallos.py, banco_favoritas.py,
+# blueprints/pagos.py). Bug real (24/08/2026): banco_preguntas_pdf,
+# banco_tarjetas_pdf, preguntas_favoritas y bajas_motivos faltaban aquí --
+# ni se exportaban (derecho de acceso incompleto) ni se borraban al
+# eliminar la cuenta (derecho de supresión incompleto): quedaban huérfanas
+# en Firestore para siempre, sin que ningún camino pudiera volver a
+# alcanzarlas.
 COLECCIONES_USUARIO = (
     "tests", "documentos", "resumenes_pdf", "esquemas_pdf", "tarjetas_pdf",
-    "tests_pdf", "esquemas", "preguntas_falladas",
+    "tests_pdf", "esquemas", "preguntas_falladas", "preguntas_favoritas",
+    "banco_preguntas_pdf", "banco_tarjetas_pdf", "bajas_motivos",
 )
 
 
@@ -77,6 +85,14 @@ def eliminar_cuenta_usuario(db, uid):
         firebase_auth.delete_user(uid)
     except firebase_auth.UserNotFoundError:
         pass
+
+    # Bug real (24/08/2026): si el usuario tenía una generación en curso
+    # (resumen/esquema/banco de preguntas o tarjetas) al borrar la cuenta,
+    # el hilo de fondo seguía gastando llamadas a DeepSeek (ya cobradas por
+    # adelantado, ver reservar_uso) sobre una cuenta que ya no existe --
+    # mismo mecanismo que ya usan eliminar_documento_route y el webhook de
+    # Stripe al perder el acceso (ver generacion_control.py).
+    generacion_control.solicitar_parada_todas(uid)
 
     for coleccion in COLECCIONES_USUARIO:
         for doc in usuario_ref.collection(coleccion).stream():
