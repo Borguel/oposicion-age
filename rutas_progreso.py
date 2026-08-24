@@ -8,7 +8,8 @@ from registro_progreso_usuario import (
     actualizar_estadisticas_test,
     actualizar_estadisticas_esquema,
     obtener_resumen_progreso,
-    actualizar_estadisticas_pdf
+    actualizar_estadisticas_pdf,
+    revertir_estadisticas_test,
 )
 from guardar_resultado import obtener_estadisticas_completas_usuario
 from banco_favoritas import marcar_favorita, desmarcar_favorita, listar_favoritas
@@ -362,7 +363,23 @@ def registrar_rutas_progreso(app, db):
     @requiere_plan(db, "basico", global_check=False)
     def borrar_mi_test(test_id):
         try:
-            db.collection("usuarios").document(g.uid).collection("tests").document(test_id).delete()
+            test_ref = db.collection("usuarios").document(g.uid).collection("tests").document(test_id)
+            # Bug real (24/08/2026): borrar un test solo quitaba el
+            # documento, pero su contribución a estadisticas.{oposicion}
+            # (tests_realizados, total_aciertos/fallos, rendimiento_por_tema
+            # -- que /analisis-rendimiento lee directamente -- etc.) se
+            # quedaba contando para siempre. Solo se revierte si el test
+            # llegó a FINALIZARSE (un borrador "en_progreso" nunca llegó a
+            # sumarse, ver actualizar_estadisticas_test/guardar_resultado.py).
+            test_doc = test_ref.get()
+            if test_doc.exists:
+                datos_test = test_doc.to_dict() or {}
+                if datos_test.get("estado", "finalizado") == "finalizado":
+                    try:
+                        revertir_estadisticas_test(db, g.uid, datos_test.get("oposicion", ""), datos_test)
+                    except Exception:
+                        logger.exception("No se pudieron revertir las estadísticas del test %s", test_id)
+            test_ref.delete()
             return jsonify({"mensaje": "Test borrado"})
         except Exception:
             logger.exception("Error borrando el test %s", test_id)

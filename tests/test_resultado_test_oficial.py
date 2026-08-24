@@ -5,7 +5,7 @@ coincidían entre sí (ver utils.calcular_resultado_test)."""
 
 from conftest import sembrar_usuario_activo
 from utils import calcular_resultado_test
-from registro_progreso_usuario import actualizar_estadisticas_test
+from registro_progreso_usuario import actualizar_estadisticas_test, revertir_estadisticas_test
 
 
 def _contenido_con_aciertos_y_fallos(aciertos, fallos, blancos=0):
@@ -140,3 +140,97 @@ def test_actualizar_estadisticas_test_acumula_en_llamadas_sucesivas_y_usa_transa
     assert stats["tiempo_total"] == 90
     assert set(stats["temas_test"]) == {"tema_01", "tema_02"}
     assert len(stats["historial_tests"]) == 2
+
+
+def _test_finalizado(aciertos, fallos, blancos, tiempo, resultado, preguntas=None):
+    return {
+        "estado": "finalizado", "oposicion": "AGE", "aciertos": aciertos, "fallos": fallos,
+        "blancos": blancos, "tiempo": tiempo, "resultado": resultado, "preguntas": preguntas or [],
+    }
+
+
+def test_revertir_estadisticas_test_deshace_un_unico_test(db):
+    # Bug real (24/08/2026): borrar un test no revertía nada de esto --
+    # seguía contando en el resumen de progreso/análisis de rendimiento
+    # después de haber desaparecido de "Mis tests".
+    db.sembrar(("usuarios", "u1"), {})
+    preguntas = [
+        {"tema_id": "tema_01", "respuesta_usuario": "A", "acierto": True},
+        {"tema_id": "tema_01", "respuesta_usuario": "B", "acierto": False},
+        {"tema_id": "tema_02", "respuesta_usuario": None, "acierto": False},
+    ]
+    actualizar_estadisticas_test(
+        db, "u1", "AGE", aciertos=1, fallos=1, temas=["tema_01", "tema_02"],
+        tiempo_en_segundos=60, blancos=1,
+        rendimiento_temas={"tema_01": {"aciertos": 1, "fallos": 1, "blancos": 0}, "tema_02": {"aciertos": 0, "fallos": 0, "blancos": 1}},
+    )
+
+    test = _test_finalizado(aciertos=1, fallos=1, blancos=1, tiempo=60, resultado="suspendido", preguntas=preguntas)
+    revertir_estadisticas_test(db, "u1", "AGE", test)
+
+    stats = db.leer(("usuarios", "u1"))["estadisticas"]["AGE"]
+    assert stats["tests_realizados"] == 0
+    assert stats["total_aciertos"] == 0
+    assert stats["total_fallos"] == 0
+    assert stats["tiempo_total"] == 0
+    assert stats["tests_suspendidos"] == 0
+    assert stats["rendimiento_por_tema"]["tema_01"] == {"aciertos": 0, "fallos": 0, "blancos": 0}
+    assert stats["rendimiento_por_tema"]["tema_02"] == {"aciertos": 0, "fallos": 0, "blancos": 0}
+    assert stats["puntuacion_media_test"] == 0
+
+
+def test_revertir_estadisticas_test_solo_afecta_al_test_borrado(db):
+    # Con dos tests guardados, borrar uno solo debe dejar intacta la
+    # contribución del otro -- nunca decrementar por debajo de lo que
+    # de verdad aporta el restante.
+    db.sembrar(("usuarios", "u1"), {})
+    preguntas_2 = [{"tema_id": "tema_01", "respuesta_usuario": "B", "acierto": False}]
+    actualizar_estadisticas_test(
+        db, "u1", "AGE", aciertos=1, fallos=0, temas=["tema_01"], tiempo_en_segundos=30, blancos=0,
+        rendimiento_temas={"tema_01": {"aciertos": 1, "fallos": 0, "blancos": 0}}, puntuacion_final=1,
+    )
+    actualizar_estadisticas_test(
+        db, "u1", "AGE", aciertos=0, fallos=1, temas=["tema_01"], tiempo_en_segundos=45, blancos=0,
+        rendimiento_temas={"tema_01": {"aciertos": 0, "fallos": 1, "blancos": 0}}, puntuacion_final=-1,
+    )
+
+    test_a_borrar = _test_finalizado(aciertos=0, fallos=1, blancos=0, tiempo=45, resultado="suspendido", preguntas=preguntas_2)
+    revertir_estadisticas_test(db, "u1", "AGE", test_a_borrar)
+
+    stats = db.leer(("usuarios", "u1"))["estadisticas"]["AGE"]
+    assert stats["tests_realizados"] == 1
+    assert stats["total_aciertos"] == 1
+    assert stats["total_fallos"] == 0
+    assert stats["tiempo_total"] == 30
+    assert stats["rendimiento_por_tema"]["tema_01"] == {"aciertos": 1, "fallos": 0, "blancos": 0}
+
+
+def test_revertir_estadisticas_test_no_toca_temas_test_ni_historial(db):
+    # Decisión deliberada (ver comentario junto a la función): temas_test
+    # es un set deduplicado que no se puede revertir sin recorrer el resto
+    # de tests, e historial_tests no guarda el id del test -- se dejan
+    # intactos en vez de arriesgarse a borrar/perder la entrada equivocada.
+    db.sembrar(("usuarios", "u1"), {})
+    actualizar_estadisticas_test(db, "u1", "AGE", aciertos=1, fallos=0, temas=["tema_01"], tiempo_en_segundos=30, blancos=0)
+
+    test = _test_finalizado(aciertos=1, fallos=0, blancos=0, tiempo=30, resultado="aprobado")
+    revertir_estadisticas_test(db, "u1", "AGE", test)
+
+    stats = db.leer(("usuarios", "u1"))["estadisticas"]["AGE"]
+    assert stats["temas_test"] == ["tema_01"]
+    assert len(stats["historial_tests"]) == 1
+
+
+def test_revertir_estadisticas_test_nunca_deja_contadores_negativos(db):
+    # Si por lo que sea los datos ya estaban por debajo (usuario sembrado a
+    # mano en un test, datos inconsistentes preexistentes...), revertir no
+    # debe dejar contadores negativos sin sentido.
+    db.sembrar(("usuarios", "u1"), {})
+    test = _test_finalizado(aciertos=5, fallos=5, blancos=0, tiempo=100, resultado="suspendido")
+    revertir_estadisticas_test(db, "u1", "AGE", test)
+
+    stats = db.leer(("usuarios", "u1"))["estadisticas"]["AGE"]
+    assert stats["tests_realizados"] == 0
+    assert stats["total_aciertos"] == 0
+    assert stats["total_fallos"] == 0
+    assert stats["tests_suspendidos"] == 0

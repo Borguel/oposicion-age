@@ -274,6 +274,92 @@ def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, te
 
     ejecutar_en_transaccion(db, _actualizar)
 
+
+def revertir_estadisticas_test(db, usuario_id, oposicion, test):
+    """Deshace en estadisticas.{oposicion} la contribución de UN test ya
+    guardado (ver actualizar_estadisticas_test) -- se llama al borrar ese
+    test (bug real 24/08/2026: rutas_progreso.py::borrar_mi_test solo
+    borraba el documento del test, así que seguía contando en el resumen
+    de progreso/racha/análisis de rendimiento -- ver /analisis-rendimiento
+    en blueprints/test_ia.py, que lee justo rendimiento_por_tema -- después
+    de haber desaparecido de "Mis tests").
+
+    Deliberadamente NO toca temas_test (set deduplicado: sin recorrer el
+    resto de tests no se puede saber si algún otro test restante sigue
+    cubriendo el mismo tema) ni historial_tests/ultimo_test (esas entradas
+    no guardan el id del test, así que no hay forma fiable de identificar
+    cuál quitar sin arriesgarse a borrar/perder la entrada equivocada) --
+    solo los contadores agregados que sí se pueden revertir con exactitud
+    a partir de los propios datos guardados en el test, con el mismo
+    criterio de exclusión de "dudas" que usó guardar_resultado.py al
+    contarlos la primera vez."""
+    preguntas = test.get("preguntas") or []
+    marcadas_duda = [bool(p.get("marcada_duda")) for p in preguntas]
+    hay_alguna_duda = any(marcadas_duda)
+    excluir_dudas = hay_alguna_duda and not all(marcadas_duda)
+
+    rendimiento_temas = {}
+    for i, p in enumerate(preguntas):
+        if excluir_dudas and marcadas_duda[i]:
+            continue
+        tema_id = p.get("tema_id")
+        if not tema_id:
+            continue
+        entrada = rendimiento_temas.setdefault(tema_id, {"aciertos": 0, "fallos": 0, "blancos": 0})
+        if not p.get("respuesta_usuario"):
+            entrada["blancos"] += 1
+        elif p.get("acierto"):
+            entrada["aciertos"] += 1
+        else:
+            entrada["fallos"] += 1
+
+    doc_ref = db.collection("usuarios").document(usuario_id)
+
+    def _revertir(transaction):
+        usuario = doc_ref.get(transaction=transaction).to_dict() or {}
+        stats = (usuario.get("estadisticas", {}) or {}).get(oposicion, {}) or {}
+
+        total_tests = max(0, stats.get("tests_realizados", 0) - 1)
+        total_aciertos = max(0, stats.get("total_aciertos", 0) - test.get("aciertos", 0))
+        total_fallos = max(0, stats.get("total_fallos", 0) - test.get("fallos", 0))
+        tiempo_total = max(0, stats.get("tiempo_total", 0) - test.get("tiempo", 0))
+
+        aprobados = stats.get("tests_aprobados", 0)
+        suspendidos = stats.get("tests_suspendidos", 0)
+        resultado = test.get("resultado")
+        if resultado == "aprobado":
+            aprobados = max(0, aprobados - 1)
+        elif resultado == "suspendido":
+            suspendidos = max(0, suspendidos - 1)
+
+        rendimiento_por_tema = stats.get("rendimiento_por_tema", {}) or {}
+        for tema_id, datos in rendimiento_temas.items():
+            acumulado = rendimiento_por_tema.get(tema_id)
+            if not acumulado:
+                continue
+            rendimiento_por_tema[tema_id] = {
+                "aciertos": max(0, acumulado.get("aciertos", 0) - datos["aciertos"]),
+                "fallos": max(0, acumulado.get("fallos", 0) - datos["fallos"]),
+                "blancos": max(0, acumulado.get("blancos", 0) - datos["blancos"]),
+            }
+
+        puntuacion_media = round(total_aciertos / total_tests, 2) if total_tests else 0
+
+        prefijo = f"estadisticas.{oposicion}."
+        transaction.update(doc_ref, {
+            f"{prefijo}tests_realizados": total_tests,
+            f"{prefijo}total_aciertos": total_aciertos,
+            f"{prefijo}total_fallos": total_fallos,
+            f"{prefijo}tests_aprobados": aprobados,
+            f"{prefijo}tests_suspendidos": suspendidos,
+            f"{prefijo}rendimiento_por_tema": rendimiento_por_tema,
+            f"{prefijo}tiempo_total": tiempo_total,
+            f"{prefijo}puntuacion_media_test": puntuacion_media,
+        })
+
+    ejecutar_en_transaccion(db, _revertir)
+
+
 def actualizar_estadisticas_esquema(db, usuario_id, oposicion, temas):
     doc_ref = db.collection("usuarios").document(usuario_id)
     usuario = doc_ref.get().to_dict() or {}
