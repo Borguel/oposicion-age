@@ -420,7 +420,12 @@ async function obtenerAuthHeaders() {
         const datos = await res.json();
         preguntas = datos.test || [];
         if (preguntas.length === 0) {
-          document.getElementById('contenedor-test').innerHTML = "<p>No se han recibido preguntas.</p>";
+          // datos.mensaje viene del backend (p. ej. "Todavía no hay preguntas
+          // oficiales cargadas para esta oposición") -- antes se descartaba y
+          // se mostraba siempre el mismo texto genérico, que además confundía
+          // ese caso normal con un error real del servidor. Mismo patrón que
+          // ya usan test-psicotecnico/preguntas-falladas/preguntas-favoritas.
+          document.getElementById('contenedor-test').innerHTML = `<p>${datos.mensaje || "No se han recibido preguntas."}</p>`;
           return;
         }
         preguntas.forEach(p => {
