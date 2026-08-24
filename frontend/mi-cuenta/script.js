@@ -75,22 +75,38 @@ function renderizarOposiciones() {
     let accionesHtml = "";
 
     if (plan !== "gratis") {
-      // Plan de pago: sin cambios respecto a antes.
       pillClase = PILL_PLAN[plan] || "age-pill";
       const fechaRenovacion = sub.current_period_end ? formatearFecha(sub.current_period_end) : "";
-      accionesHtml = sub.cancelar_al_final_periodo
-        ? `<div class="cuenta-oposicion-baja-info cuenta-oposicion-baja-info-aviso">
-             <span class="cuenta-oposicion-baja-texto">
-               ${fechaRenovacion
-                 ? `Tendrás acceso hasta el <strong>${fechaRenovacion}</strong>. Si no reactivas antes de esa fecha, perderás el acceso a este plan.`
-                 : "Tu suscripción se cancelará al final del periodo ya pagado."}
-             </span>
-             <button type="button" class="age-btn age-btn-primary cuenta-btn-reactivar" data-accion="reactivar" data-oposicion="${op.id}">Reactivar suscripción</button>
-           </div>`
-        : `<div class="cuenta-oposicion-baja-info">
-             <span class="cuenta-oposicion-baja-texto">${fechaRenovacion ? `Próxima renovación: <strong>${fechaRenovacion}</strong>` : ""}</span>
-             <button type="button" class="cuenta-btn-link cuenta-btn-link-danger" data-accion="cancelar" data-oposicion="${op.id}">Cancelar suscripción</button>
+      if (sub.subscription_status === "past_due") {
+        // Bug real (24/08/2026): Stripe ya marca aquí que el último cobro
+        // falló (tarjeta caducada, fondos insuficientes...), y el dato
+        // llegaba hasta "Suscripción pago pendiente" en la etiqueta de
+        // estado -- pero la fila seguía mostrando la próxima renovación
+        // como si nada, sin ningún botón que llevara directamente a
+        // arreglarlo. Solo existía el botón genérico de arriba
+        // ("Gestionar facturación"), que no deja claro que ESTA
+        // oposición concreta tiene un problema real. Reutiliza el mismo
+        // portal de Stripe (/crear-sesion-portal) que ese botón, desde
+        // un aviso explícito en la propia fila.
+        accionesHtml = `<div class="cuenta-oposicion-baja-info cuenta-oposicion-baja-info-aviso">
+             <span class="cuenta-oposicion-baja-texto">No hemos podido cobrar tu último pago. Actualiza tu método de pago para no perder el acceso a este plan.</span>
+             <button type="button" class="age-btn age-btn-primary" data-accion="actualizar-pago" data-oposicion="${op.id}">Actualizar método de pago</button>
            </div>`;
+      } else {
+        accionesHtml = sub.cancelar_al_final_periodo
+          ? `<div class="cuenta-oposicion-baja-info cuenta-oposicion-baja-info-aviso">
+               <span class="cuenta-oposicion-baja-texto">
+                 ${fechaRenovacion
+                   ? `Tendrás acceso hasta el <strong>${fechaRenovacion}</strong>. Si no reactivas antes de esa fecha, perderás el acceso a este plan.`
+                   : "Tu suscripción se cancelará al final del periodo ya pagado."}
+               </span>
+               <button type="button" class="age-btn age-btn-primary cuenta-btn-reactivar" data-accion="reactivar" data-oposicion="${op.id}">Reactivar suscripción</button>
+             </div>`
+          : `<div class="cuenta-oposicion-baja-info">
+               <span class="cuenta-oposicion-baja-texto">${fechaRenovacion ? `Próxima renovación: <strong>${fechaRenovacion}</strong>` : ""}</span>
+               <button type="button" class="cuenta-btn-link cuenta-btn-link-danger" data-accion="cancelar" data-oposicion="${op.id}">Cancelar suscripción</button>
+             </div>`;
+      }
     } else if (!activada) {
       pillTexto = "sin activar";
       accionesHtml = `<div class="cuenta-oposicion-baja-info">
@@ -246,6 +262,25 @@ document.getElementById("cuenta-oposiciones").addEventListener("click", async (e
   const oposicionId = boton.dataset.oposicion;
   if (boton.dataset.accion === "cancelar") {
     abrirModalCancelar(oposicionId);
+    return;
+  }
+  if (boton.dataset.accion === "actualizar-pago") {
+    boton.disabled = true;
+    boton.textContent = "Redirigiendo…";
+    try {
+      const token = await idToken();
+      const res = await fetch(`${BACKEND_URL}/crear-sesion-portal`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const datos = await res.json();
+      if (!res.ok || !datos.url) throw new Error(datos.error || "No se pudo abrir la gestión de la suscripción");
+      window.location.href = datos.url;
+    } catch (error) {
+      mostrarErrorGlobal(error.message || "No se pudo abrir la gestión de la suscripción.");
+      boton.disabled = false;
+      boton.textContent = "Actualizar método de pago";
+    }
     return;
   }
   if (boton.dataset.accion === "reactivar") {
