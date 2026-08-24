@@ -1556,6 +1556,25 @@ class TestLimiteRegeneracionesResumenYEsquema:
         assert resp.status_code == 429
         assert "límite" in resp.get_json()["error"].lower()
 
+    def test_mensaje_de_limite_de_resumen_no_sugiere_resubir_el_mismo_documento(self, client, db, documento_sembrado):
+        # Bug real (23/08/2026): el mensaje decía "sube el documento de
+        # nuevo", pero buscar_documento_por_texto dedupe por hash y
+        # reutiliza este MISMO documento_id (con este mismo contador ya
+        # agotado) -- ese consejo no funciona nunca.
+        db.sembrar(("usuarios", "u1", "documentos", documento_sembrado), {
+            "texto": "Texto del documento de prueba.", "nombre_archivo": "doc.pdf",
+            "generaciones_resumen": 2,
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/resumir-pdf", data={"documento_id": documento_sembrado},
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        mensaje = resp.get_json()["error"]
+        assert "sube el documento de nuevo" not in mensaje.lower()
+        assert "documento distinto" in mensaje.lower()
+
     def test_segunda_generacion_de_resumen_todavia_permitida(self, client, db, documento_sembrado):
         db.sembrar(("usuarios", "u1", "documentos", documento_sembrado), {
             "texto": "Texto del documento de prueba.", "nombre_archivo": "doc.pdf",
@@ -1584,6 +1603,21 @@ class TestLimiteRegeneracionesResumenYEsquema:
             parche.stop()
         assert resp.status_code == 429
         assert "límite" in resp.get_json()["error"].lower()
+
+    def test_mensaje_de_limite_de_esquema_no_sugiere_resubir_el_mismo_documento(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "documentos", documento_sembrado), {
+            "texto": "Texto del documento de prueba.", "nombre_archivo": "doc.pdf",
+            "generaciones_esquema": 2,
+        })
+        parche = _con_sesion(client)
+        try:
+            resp = client.post("/generar-esquema-desde-pdf", data={"documento_id": documento_sembrado},
+                                headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        mensaje = resp.get_json()["error"]
+        assert "sube el documento de nuevo" not in mensaje.lower()
+        assert "documento distinto" in mensaje.lower()
 
     def test_limite_de_resumen_agotado_no_bloquea_esquema_del_mismo_documento(self, client, db, documento_sembrado):
         # Contadores independientes: agotar resumen no debe afectar a esquema.

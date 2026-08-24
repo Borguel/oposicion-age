@@ -298,10 +298,15 @@ def resumir_pdf():
     # LIMITE_GENERACIONES_POR_DOCUMENTO en documentos_pdf.py): se comprueba
     # ANTES de gastar ninguna cuota ni llamar a DeepSeek.
     if documento_id and limite_regeneraciones_alcanzado(documento_actual, "resumen"):
+        # "Genera a partir de un documento distinto", no "sube el documento
+        # de nuevo": re-subir el MISMO PDF no ayuda -- buscar_documento_por_
+        # texto dedupe por hash y reutiliza este mismo documento_id (con
+        # este mismo contador ya agotado), así que ese consejo no funciona
+        # nunca (bug real, 23/08/2026).
         return jsonify({
             "error": f"Has alcanzado el límite de {LIMITE_GENERACIONES_POR_DOCUMENTO} generaciones de "
-                     "resumen para este documento (incluida la primera). Sube el documento de nuevo "
-                     "para poder generar un resumen distinto.",
+                     "resumen para este documento (incluida la primera). Genera a partir de un "
+                     "documento distinto si necesitas otro resultado.",
         }), 429
     tipo_contenido = resolver_tipo_contenido(
         db, g.uid, documento_id, documento_actual, text, _leer_override_texto_legal(),
@@ -564,8 +569,8 @@ def generar_esquema_desde_pdf():
     if documento_id and limite_regeneraciones_alcanzado(documento_actual, "esquema"):
         return jsonify({
             "error": f"Has alcanzado el límite de {LIMITE_GENERACIONES_POR_DOCUMENTO} generaciones de "
-                     "esquema para este documento (incluida la primera). Sube el documento de nuevo "
-                     "para poder generar un esquema distinto.",
+                     "esquema para este documento (incluida la primera). Genera a partir de un "
+                     "documento distinto si necesitas otro resultado.",
         }), 429
     tipo_contenido = resolver_tipo_contenido(
         db, g.uid, documento_id, documento_actual, text, _leer_override_texto_legal(),
