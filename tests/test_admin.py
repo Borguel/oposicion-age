@@ -387,6 +387,22 @@ def test_resumen_agrega_planes_y_fallos(client, db):
     assert datos["top_temas_fallados"][0]["fallos"] == 5  # 3 + 2, agregado
 
 
+def test_resumen_separa_a_quien_no_ha_activado_ninguna_oposicion(client, db):
+    # Registrarse sin activar ninguna oposición todavía (p. ej. recién dado
+    # de alta, sin haber elegido nada en Zona Opositor) resolvía al mismo
+    # "gratis" que quien SÍ activó una y se quedó sin plan de pago -- dos
+    # situaciones muy distintas de cara a captación, mezcladas en un único
+    # número. Aquí u1 nunca ha activado nada (sin "suscripciones" siquiera)
+    # y u2 sí activó AGE, con su prueba ya terminada sin pagar.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    db.sembrar(("usuarios", "u2"), {"email": "u2@x.com", "suscripciones": {"AGE": {"plan": "gratis"}}})
+    with _como():
+        resp = client.get("/admin/api/resumen", headers=_AUTH)
+    datos = resp.get_json()
+    assert datos["usuarios_por_plan"]["sin activar"] == 1
+    assert datos["usuarios_por_plan"]["gratis"] == 1
+
+
 def test_resumen_desglosa_reportes_pendientes_por_bandeja(client, db):
     # El dashboard necesita el desglose (no solo la suma) para poder avisar
     # en cada pestaña -- "Preguntas reportadas" y "Mensajes de soporte" -- de

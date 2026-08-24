@@ -507,7 +507,19 @@ def resumen():
         for doc in db.collection("usuarios").stream():
             datos = doc.to_dict() or {}
             total_usuarios += 1
-            plan = _plan_usuario(datos)
+            # Sin ninguna oposición activada todavía (p. ej. se acaba de
+            # registrar y no ha elegido ninguna en Zona Opositor) es un
+            # caso bien distinto de "gratis" -- _plan_usuario resuelve
+            # ambos al mismo "gratis" (no hay ya un plan gratis permanente,
+            # ver limites_uso.py: cualquier cuenta sin prueba activa ni
+            # plan de pago cae ahí), así que sin este caso aparte una
+            # cuenta que ni siquiera ha empezado se contaba junto a quien
+            # sí activó algo y se quedó sin plan -- mezclando dos
+            # situaciones que requieren acciones de captación distintas.
+            if not (datos.get("suscripciones") or {}):
+                plan = "sin activar"
+            else:
+                plan = _plan_usuario(datos)
             por_plan[plan] = por_plan.get(plan, 0) + 1
             coste_mes, _coste_total, _tok = resumen_coste_usuario(datos)
             if coste_mes > 0:
