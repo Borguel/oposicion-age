@@ -473,7 +473,10 @@ window.addEventListener("load", async () => {
     if (resumeId) {
       const guardado = await cargarTestEnProgreso(resumeId);
       if (!guardado || !guardado.contenido || !guardado.contenido.length) {
-        document.getElementById("contenedor-test").innerHTML = "<p>No se ha encontrado ese test guardado.</p>";
+        document.getElementById("contenedor-test").innerHTML = `
+          <p>No se ha encontrado ese test guardado. Puede que ya lo hayas terminado o que se haya eliminado.</p>
+          <a href="/mis-tests/" class="btn btn-primary">Ir a Mis Tests</a>
+        `;
         return;
       }
       usarTestId(resumeId);
@@ -531,7 +534,10 @@ window.addEventListener("load", async () => {
       // intento nuevo, así que basta reutilizar ese mismo array tal cual.
       const preguntasRepetir = datosRepetir.test?.preguntas;
       if (!resRepetir.ok || !preguntasRepetir || !preguntasRepetir.length) {
-        document.getElementById("contenedor-test").innerHTML = "<p>No se ha encontrado ese test.</p>";
+        document.getElementById("contenedor-test").innerHTML = `
+          <p>No se ha encontrado ese test. Puede que se haya eliminado.</p>
+          <a href="/mis-tests/" class="btn btn-primary">Ir a Mis Tests</a>
+        `;
         return;
       }
       preguntas = preguntasRepetir;
@@ -593,7 +599,16 @@ window.addEventListener("load", async () => {
     const datos = await res.json();
 
     if (!datos.test || datos.test.length === 0) {
-      document.getElementById("contenedor-test").innerHTML = "<p>No se ha encontrado ningún test anterior.</p>";
+      // Bug real (24/08/2026): quien llegaba aquí sin haber hecho nunca un
+      // test (o desde una oposición recién activada) se encontraba con una
+      // única frase seca y ningún sitio a donde ir -- a diferencia del
+      // resto de estados vacíos de esta misma página (ver los otros dos
+      // "if" de arriba, ahora con el mismo tratamiento), que si acababan
+      // aquí antes tampoco explicaban nada ni ofrecían una salida.
+      document.getElementById("contenedor-test").innerHTML = `
+        <p>Todavía no has hecho ningún test en esta oposición. En cuanto completes uno, podrás repetirlo desde aquí.</p>
+        <a href="/test-personalizado/" class="btn btn-primary">Hacer tu primer test</a>
+      `;
       return;
     }
 
