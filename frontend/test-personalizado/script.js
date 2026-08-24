@@ -656,12 +656,24 @@ async function obtenerAuthHeaders() {
         }
 
         if (!datosFinales) {
-          document.getElementById('contenedor-test').innerHTML = "<p>Error al generar el test. Vuelve a intentarlo.</p>";
+          document.getElementById('contenedor-test').innerHTML = `
+            <p>Error al generar el test. Vuelve a intentarlo.</p>
+            <button type="button" class="btn btn-primary" id="btn-volver-a-intentar">Volver a intentar</button>
+          `;
+          document.getElementById('btn-volver-a-intentar').addEventListener('click', () => location.reload());
           return;
         }
         const datos = datosFinales;
         if (!datos.test || datos.test.length === 0) {
-          document.getElementById('contenedor-test').innerHTML = `<p>${datos.advertencia || datos.error || "No se han recibido preguntas."}</p>`;
+          // Sin botón hasta ahora -- quien llegaba aquí (0 preguntas
+          // disponibles para los temas elegidos) se quedaba sin ninguna
+          // acción, a diferencia del resto de estados de error de esta
+          // misma pantalla.
+          document.getElementById('contenedor-test').innerHTML = `
+            <p>${datos.advertencia || datos.error || "No se han recibido preguntas."}</p>
+            <button type="button" class="btn btn-primary" id="btn-volver-a-intentar">Volver a intentar</button>
+          `;
+          document.getElementById('btn-volver-a-intentar').addEventListener('click', () => location.reload());
           return;
         }
         await entrarEnModoTest(datos.test, oposicion, temas);

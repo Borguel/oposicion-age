@@ -425,7 +425,11 @@ async function obtenerAuthHeaders() {
           // se mostraba siempre el mismo texto genérico, que además confundía
           // ese caso normal con un error real del servidor. Mismo patrón que
           // ya usan test-psicotecnico/preguntas-falladas/preguntas-favoritas.
-          document.getElementById('contenedor-test').innerHTML = `<p>${datos.mensaje || "No se han recibido preguntas."}</p>`;
+          document.getElementById('contenedor-test').innerHTML = `
+            <p>${datos.mensaje || "No se han recibido preguntas."}</p>
+            <button type="button" class="btn btn-primary" id="btn-volver-a-intentar">Volver a intentar</button>
+          `;
+          document.getElementById('btn-volver-a-intentar').addEventListener('click', () => location.reload());
           return;
         }
         preguntas.forEach(p => {
