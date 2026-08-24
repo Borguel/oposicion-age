@@ -230,6 +230,27 @@ body {
   color: var(--age-ink-soft);
 }
 
+/* Precio con descuento activo (ver aplicarDescuentoVisual en script.js):
+   el original tachado en gris, el nuevo con el mismo color que ya usaba
+   .plan-precio -- antes el banner anunciaba el descuento pero las propias
+   tarjetas de precio de esta página seguían mostrando el precio íntegro
+   hasta llegar al checkout de Stripe. */
+.plan-precio-original {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--age-ink-soft);
+  text-decoration: line-through;
+  margin-right: 8px;
+}
+
+.plan-precio-duracion {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--age-primary-dark);
+  margin-top: 2px;
+}
+
 .plan-resumen {
   margin: -4px 0 0;
   font-size: 13px;

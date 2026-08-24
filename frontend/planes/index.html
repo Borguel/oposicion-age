@@ -122,7 +122,7 @@
   <div class="planes-grid planes-grid-2">
     <div class="plan-card">
       <div class="plan-nombre">Básico</div>
-      <div class="plan-precio">4,99 €<span class="plan-precio-periodo">/mes</span></div>
+      <div class="plan-precio" id="plan-precio-basico" data-precio-base="4.99">4,99 €<span class="plan-precio-periodo">/mes</span></div>
       <p class="plan-resumen">Lo justo para practicar con exámenes reales. Cupos limitados.</p>
       <ul class="plan-features">
         <li>Test Oficial con preguntas de exámenes reales: hasta 50 preguntas al día</li>
@@ -138,7 +138,7 @@
     <div class="plan-card plan-destacado">
       <div class="plan-badge">Más completo</div>
       <div class="plan-nombre">Premium</div>
-      <div class="plan-precio">9,99 €<span class="plan-precio-periodo">/mes</span></div>
+      <div class="plan-precio" id="plan-precio-premium" data-precio-base="9.99">9,99 €<span class="plan-precio-periodo">/mes</span></div>
       <p class="plan-resumen">Todo ilimitado para preparar tu oposición sin restricciones.</p>
       <ul class="plan-features">
         <li>Todo lo del plan Básico, ilimitado</li>
@@ -158,8 +158,8 @@
         <thead>
           <tr>
             <th scope="col">Incluye</th>
-            <th scope="col">Básico<span>4,99 €/mes</span></th>
-            <th scope="col" class="planes-tabla-destacada">Premium<span>9,99 €/mes</span></th>
+            <th scope="col">Básico<span id="tabla-precio-basico">4,99 €/mes</span></th>
+            <th scope="col" class="planes-tabla-destacada">Premium<span id="tabla-precio-premium">9,99 €/mes</span></th>
           </tr>
         </thead>
         <tbody>

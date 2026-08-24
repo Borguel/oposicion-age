@@ -43,6 +43,40 @@ function mostrarMensajeCheckout() {
   }
 }
 
+// Bug real (23/08/2026): el banner de promoción (assets/auth.js) anuncia
+// el descuento en toda la web, incluida esta propia página, pero las
+// tarjetas de precio de aquí seguían mostrando siempre el precio íntegro
+// -- el descuento solo se veía ya dentro del checkout de Stripe, después
+// de pulsar "Elegir plan". Reutiliza el mismo data-precio-base ya escrito
+// en el HTML (el precio de fábrica de cada tarjeta) para calcular el
+// precio final a partir de descuento_pct, sin duplicar el precio en JS.
+async function aplicarDescuentoVisual() {
+  let promo;
+  try {
+    const resp = await fetch(`${BACKEND_URL}/promocion-activa`);
+    if (!resp.ok) return;
+    promo = await resp.json();
+  } catch (e) { return; }
+  if (!promo.activo || !promo.plan || !promo.descuento_pct) return;
+  const elemento = document.getElementById(`plan-precio-${promo.plan}`);
+  if (!elemento) return;
+  const precioBase = parseFloat(elemento.dataset.precioBase);
+  if (!precioBase) return;
+  const precioFinal = (precioBase * (1 - promo.descuento_pct / 100)).toFixed(2).replace(".", ",");
+  const precioBaseTexto = precioBase.toFixed(2).replace(".", ",");
+  elemento.innerHTML = `<span class="plan-precio-original">${precioBaseTexto} €</span>${precioFinal} €<span class="plan-precio-periodo">/mes</span>`;
+  if (promo.duracion_texto) {
+    const duracion = document.createElement("span");
+    duracion.className = "plan-precio-duracion";
+    duracion.textContent = promo.duracion_texto;
+    elemento.appendChild(duracion);
+  }
+  // Mismo precio con descuento en la tabla comparativa de abajo -- sin
+  // tachado ahí (la celda ya es compacta), solo el precio real.
+  const celdaTabla = document.getElementById(`tabla-precio-${promo.plan}`);
+  if (celdaTabla) celdaTabla.textContent = `${precioFinal} €/mes`;
+}
+
 // El selector de oposición NO viene preseleccionado por defecto (17/08/2026,
 // a petición explícita del usuario: "que no venga seleccionada ninguna
 // oposición... si le da a suscribirse que le salga un aviso de que tiene
@@ -234,3 +268,4 @@ renderizarConfianza();
 inicializarSelectorOposicion();
 mostrarMensajeCheckout();
 marcarPlanActual();
+aplicarDescuentoVisual();
