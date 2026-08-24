@@ -22,6 +22,26 @@ body {
   font-size: 0.98rem;
 }
 
+/* Resultado del checkout de Stripe (?checkout=success|cancel) -- a
+   diferencia de /planes/ (página ancha, centrada), aquí vive dentro de la
+   columna flex de .cuenta-main, así que ocupa el ancho completo en vez de
+   limitarse a un bloque centrado. */
+.mensaje-checkout {
+  padding: 12px 18px;
+  border-radius: var(--age-radius-sm);
+  font-weight: 600;
+}
+
+.mensaje-checkout.ok {
+  background: var(--age-success-bg);
+  color: var(--age-success);
+}
+
+.mensaje-checkout.error {
+  background: var(--age-danger-bg);
+  color: var(--age-danger);
+}
+
 .cuenta-layout {
   display: grid;
   grid-template-columns: 260px 1fr;

@@ -26,6 +26,23 @@ const PILL_PLAN = { gratis: "age-pill", basico: "age-pill age-pill-primary", pre
 // cancelar/reactivar sin tener que volver a pedir todo el perfil al backend.
 let suscripcionesActuales = {};
 
+// Bug real (23/08/2026): el checkout de Stripe redirige tras pagar a
+// /mi-cuenta/?checkout=success (ver success_url en
+// blueprints/pagos.py:crear_sesion_checkout), pero el aviso de "¡Pago
+// completado!" solo se pintaba en /planes/ -- el usuario aterrizaba aquí
+// sin ningún mensaje que confirmara que el pago se había procesado. Solo
+// se comprueba "success": cancel_url apunta a /planes/, así que ?checkout=
+// cancel nunca llega a esta página.
+function mostrarMensajeCheckout() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("checkout") !== "success") return;
+  const elemento = document.getElementById("mensaje-checkout");
+  if (!elemento) return;
+  elemento.textContent = "¡Pago completado! Puede tardar unos segundos en activarse tu nuevo plan.";
+  elemento.className = "mensaje-checkout ok";
+  elemento.style.display = "block";
+}
+
 function formatearFecha(iso) {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
@@ -260,6 +277,7 @@ async function iniciar() {
     return;
   }
 
+  mostrarMensajeCheckout();
   fijarTexto("cuenta-email", usuario.email || "");
   fijarTexto("cuenta-avatar", (usuario.email || "?").trim().charAt(0).toUpperCase());
 
