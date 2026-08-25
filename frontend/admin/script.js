@@ -1499,8 +1499,8 @@ function tarjetaUsuario(u) {
       <div class="u-card-pie">
         <span class="u-card-actividad">Últ. actividad: ${fechaCorta(u.ultima_actividad)}</span>
         <div class="u-card-acciones">
-          <button type="button" class="u-card-btn" title="Ver ficha">${icono("lapiz", 15)}</button>
-          ${_permisos.admin ? `<button type="button" class="u-card-btn u-card-btn-peligro" data-eliminar="${escapeHtml(u.uid)}" data-email="${escapeHtml(u.email || "")}" title="Eliminar cuenta">${icono("papelera", 15)}</button>` : ""}
+          <button type="button" class="u-card-btn" title="Ver ficha" aria-label="Ver ficha de ${escapeHtml(u.email || "usuario sin email")}">${icono("lapiz", 15)}</button>
+          ${_permisos.admin ? `<button type="button" class="u-card-btn u-card-btn-peligro" data-eliminar="${escapeHtml(u.uid)}" data-email="${escapeHtml(u.email || "")}" title="Eliminar cuenta" aria-label="Eliminar la cuenta de ${escapeHtml(u.email || "usuario sin email")}">${icono("papelera", 15)}</button>` : ""}
         </div>
       </div>
     </div>`;
