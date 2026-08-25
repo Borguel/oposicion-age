@@ -674,8 +674,14 @@ tr.sis-opt .sis-punto { background: #d9a300; }
    de al lado. En .ficha-badges (la ficha completa) no cambia nada, ya
    envuelve a otra línea con flex-wrap en vez de encoger cada badge. */
 .ficha-badge { flex-shrink: 0; border-radius: 999px; padding: 3px 11px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; background: var(--age-neutral-bg, var(--age-primary-soft)); color: var(--age-ink); }
-.ficha-badge-premium { background: #fde9c8; color: #8a5a00; }
-.ficha-badge-basico { background: var(--age-primary-soft); color: var(--age-primary); }
+/* Colores de plan (25/08/2026, a petición del usuario): Premium en verde
+   pleno para que destaque como "el bueno" -- antes usaba el mismo ámbar
+   que "en prueba" (--age-warning-bg/--age-pill-primary-ink de facto,
+   #fde9c8/#8a5a00), así que ambos estados se confundían a simple vista.
+   Básico usa el mismo verde pero en un tono más claro (misma familia,
+   nivel intermedio) y Gratis se deja tal cual, en gris neutro. */
+.ficha-badge-premium { background: var(--age-success-bg); color: var(--age-pill-success-ink); }
+.ficha-badge-basico { background: var(--age-success-soft-bg); color: var(--age-pill-success-ink); }
 .ficha-badge-gratis { background: var(--age-neutral-bg, #eee); color: var(--age-ink-soft, #555); }
 .ficha-badge-ok { background: var(--age-success-bg); color: var(--age-success, #1e7e34); }
 .ficha-badge-warn { background: var(--age-danger-bg); color: var(--age-danger, #b02a37); }

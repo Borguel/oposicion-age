@@ -38,6 +38,12 @@
 
   --age-success: #1e9e63;
   --age-success-bg: #e7f7ee;
+  /* Verde más claro que --age-success-bg, para distinguir un nivel
+     "intermedio" (p. ej. plan Básico) del verde pleno de --age-success
+     (p. ej. Premium activo) sin dejar de ser claramente de la misma
+     familia -- mismo texto (--age-pill-success-ink) que ya tiene
+     contraste comprobado, solo el fondo cambia de intensidad. */
+  --age-success-soft-bg: #f1faf5;
   --age-warning: #9c6608;
   --age-warning-bg: #fff3d6;
   --age-danger: #e0473f;
@@ -116,6 +122,7 @@
 
   --age-success: #3ecf8e;
   --age-success-bg: rgba(62, 207, 142, 0.14);
+  --age-success-soft-bg: rgba(62, 207, 142, 0.08);
   --age-warning: #f0b93d;
   --age-warning-bg: rgba(240, 185, 61, 0.16);
   --age-danger: #f0655f;
