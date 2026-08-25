@@ -1,0 +1,19 @@
+name: Reconciliar suscripciones con Stripe
+
+on:
+  schedule:
+    # Cada 6 horas: red de seguridad frente a un webhook perdido -- no
+    # necesita más frecuencia que esa, el webhook real ya cubre el caso
+    # normal casi al instante.
+    - cron: "15 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  reconciliar-stripe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al backend
+        run: |
+          curl -sS -X POST "${{ vars.BACKEND_URL || 'https://oposicion-age.onrender.com' }}/tareas/reconciliar-stripe" \
+            -H "X-Cron-Key: ${{ secrets.CRON_SECRET_KEY }}" \
+            --fail-with-body

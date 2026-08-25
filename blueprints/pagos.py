@@ -22,6 +22,7 @@ from email_utils import (
 from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketing
 from promociones import leer_promocion, promocion_vigente
 from utils import invalidar_cache, ejecutar_en_transaccion
+from planes import ESTADOS_SUSCRIPCION_ACTIVA
 import generacion_control
 
 logger = logging.getLogger(__name__)
@@ -403,6 +404,78 @@ def _current_period_end(subscription_obj):
         if items:
             valor = _sget(items[0], "current_period_end")
     return valor
+
+
+def reconciliar_suscripciones_con_stripe(db):
+    """Red de seguridad frente a un webhook de Stripe perdido (el endpoint
+    estuvo caído más allá de la ventana de reintentos de Stripe, ~3 días;
+    o alguien borra a mano el registro de idempotencia en stripe_events/
+    pensando que es limpieza) -- llamada desde un cron periódico (ver
+    blueprints/tareas_programadas.py::reconciliar_stripe), no desde una
+    petición de usuario.
+
+    Sin esto, el subscription_status guardado en Firestore podía quedar
+    desincronizado del real en Stripe INDEFINIDAMENTE (nada más vuelve a
+    comprobarlo): un usuario cuya suscripción se cancela en Stripe -- por
+    un impago, una disputa, o cancelada a mano desde el Dashboard de
+    Stripe -- seguía con acceso de pago sin cobro real hasta que alguien
+    lo notara manualmente en el panel admin.
+
+    Solo revisa suscripciones con stripe_subscription_id y un
+    subscription_status que hoy se considera "activo" (ver
+    ESTADOS_SUSCRIPCION_ACTIVA) -- las ya marcadas como canceladas/
+    impagadas no necesitan reconciliarse de nuevo. Reutiliza exactamente
+    la misma lógica de cálculo de plan/periodo que el webhook customer.
+    subscription.updated, para no divergir entre los dos caminos.
+
+    Devuelve (revisadas, corregidas)."""
+    revisadas = 0
+    corregidas = 0
+    for doc in db.collection("usuarios").stream():
+        datos = doc.to_dict() or {}
+        for oposicion, sub in (datos.get("suscripciones") or {}).items():
+            sub = sub or {}
+            subscription_id = sub.get("stripe_subscription_id")
+            if not subscription_id or sub.get("subscription_status") not in ESTADOS_SUSCRIPCION_ACTIVA:
+                continue
+            revisadas += 1
+            try:
+                sub_stripe = stripe.Subscription.retrieve(subscription_id)
+            except stripe.error.InvalidRequestError:
+                # Ya no existe en Stripe (borrada de verdad, no solo
+                # cancelada) -- se trata como cancelada aquí también.
+                actualizar_suscripcion(
+                    db, doc.id, oposicion, plan="gratis",
+                    subscription_status="canceled", cancelar_al_final_periodo=False,
+                )
+                corregidas += 1
+                continue
+            except Exception:
+                logger.exception(
+                    "Error consultando Stripe al reconciliar uid=%s oposicion=%s sub=%s",
+                    doc.id, oposicion, subscription_id,
+                )
+                continue
+
+            estado_real = _sget(sub_stripe, "status")
+            if estado_real == sub.get("subscription_status"):
+                continue
+            plan = PRECIO_A_PLAN.get(sub_stripe["items"]["data"][0]["price"]["id"], "gratis")
+            periodo_fin = _current_period_end(sub_stripe)
+            actualizar_suscripcion(
+                db, doc.id, oposicion,
+                plan=plan,
+                subscription_status=estado_real,
+                current_period_end=datetime.utcfromtimestamp(periodo_fin).isoformat() if periodo_fin else None,
+                cancelar_al_final_periodo=_sget(sub_stripe, "cancel_at_period_end", False),
+            )
+            logger.warning(
+                "Reconciliación Stripe: uid=%s oposicion=%s estado desincronizado (Firestore=%s, Stripe=%s) -- corregido",
+                doc.id, oposicion, sub.get("subscription_status"), estado_real,
+            )
+            corregidas += 1
+
+    return revisadas, corregidas
 
 
 @bp.route("/webhook-stripe", methods=["POST"])

@@ -27,6 +27,7 @@ from vigilancia_boe import (
     detectar_cambios_leyes_vigiladas,
     verificar_bloque_temas_referenciados,
 )
+from blueprints.pagos import reconciliar_suscripciones_con_stripe
 
 logger = logging.getLogger(__name__)
 bp = Blueprint("tareas_programadas", __name__)
@@ -281,3 +282,18 @@ def vigilar_boe():
         "cambios_propuestos": cambios_propuestos,
         "temas_faltantes": len(temas_faltantes),
     })
+
+
+@bp.route("/tareas/reconciliar-stripe", methods=["POST"])
+def reconciliar_stripe():
+    """Red de seguridad frente a un webhook de Stripe perdido -- ver
+    blueprints/pagos.py::reconciliar_suscripciones_con_stripe. Sin esto,
+    el estado guardado en Firestore podía quedar desincronizado del real
+    en Stripe indefinidamente, sin que nada volviera a comprobarlo."""
+    if not _clave_cron_valida():
+        return jsonify({"error": "No autorizado"}), 401
+
+    revisadas, corregidas = reconciliar_suscripciones_con_stripe(db)
+
+    logger.info("Reconciliación con Stripe: %s revisadas, %s corregidas", revisadas, corregidas)
+    return jsonify({"revisadas": revisadas, "corregidas": corregidas})
