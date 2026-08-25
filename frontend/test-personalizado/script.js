@@ -424,7 +424,7 @@ async function obtenerAuthHeaders() {
       document.getElementById("contenedor-test").style.display = "block";
       document.getElementById("contenedor-test").innerHTML = `
         <div class="carga-generando">
-          <p id="mensaje-carga">Preparando la generación...</p>
+          <p id="mensaje-carga" role="status" aria-live="polite">Preparando la generación...</p>
           <div class="progress-container">
             <div id="progreso-generacion" class="progress-bar" style="background: linear-gradient(90deg, var(--age-primary), var(--age-primary-dark, var(--age-primary)));"></div>
             <div id="texto-progreso-generacion" class="progress-text">0%</div>

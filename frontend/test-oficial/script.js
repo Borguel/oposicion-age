@@ -381,7 +381,7 @@ async function obtenerAuthHeaders() {
       document.getElementById("contenedor-test").style.display = "block";
       document.getElementById("contenedor-test").innerHTML = `
         <div class="carga-generando">
-          <p id="mensaje-carga">Obteniendo preguntas...</p>
+          <p id="mensaje-carga" role="status" aria-live="polite">Obteniendo preguntas...</p>
           <div class="barra-indeterminada"><div class="barra-indeterminada-fill"></div></div>
         </div>
       `;
