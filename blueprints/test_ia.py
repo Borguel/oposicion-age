@@ -20,7 +20,7 @@ from errores_generacion import registrar_error_generacion
 from deepseek_utils import call_deepseek_api
 from registro_progreso_usuario import obtener_resumen_progreso
 from banco_fallos import ordenar_por_prioridad_repaso as ordenar_fallos_por_prioridad
-from banco_favoritas import ordenar_por_prioridad_repaso as ordenar_favoritas_por_prioridad, marcar_repasadas
+from banco_favoritas import ordenar_por_prioridad_repaso as ordenar_favoritas_por_prioridad
 import generacion_control
 
 logger = logging.getLogger(__name__)
@@ -446,7 +446,10 @@ def preguntas_pendientes_repaso():
 @requiere_plan(db, "basico", global_check=False)
 def generar_test_fallos():
     data = request.get_json()
-    num_preguntas = data.get("num_preguntas", 10)
+    try:
+        num_preguntas = max(1, min(100, int(data.get("num_preguntas", 10))))
+    except (TypeError, ValueError):
+        num_preguntas = 10
     temas_filtro = set(data.get("temas", []) or [])
     oposicion = obtener_oposicion_solicitada()
 
@@ -508,7 +511,10 @@ def reportar_pregunta():
 @requiere_plan(db, "basico", global_check=False)
 def generar_test_favoritas():
     data = request.get_json()
-    num_preguntas = data.get("num_preguntas", 10)
+    try:
+        num_preguntas = max(1, min(100, int(data.get("num_preguntas", 10))))
+    except (TypeError, ValueError):
+        num_preguntas = 10
     temas_filtro = set(data.get("temas", []) or [])
     oposicion = obtener_oposicion_solicitada()
 
@@ -524,8 +530,9 @@ def generar_test_favoritas():
     # banco en vez de repetir siempre las mismas al azar.
     candidatas = ordenar_favoritas_por_prioridad(candidatas)
     seleccionadas = candidatas[:num_preguntas]
-    if seleccionadas:
-        marcar_repasadas(db, g.uid, oposicion, seleccionadas)
+    # marcar_repasadas ya NO se llama aquí (25/08/2026, bug real de la
+    # auditoría): se movió a guardar_resultado.py, al terminar y guardar el
+    # test de verdad -- ver el comentario de allí.
 
     if total_disponibles == 0:
         mensaje = "No tienes preguntas marcadas como favoritas con estos filtros."

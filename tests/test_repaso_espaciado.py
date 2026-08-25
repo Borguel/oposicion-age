@@ -53,6 +53,22 @@ def test_generar_test_fallos_a_igualdad_prioriza_la_mas_antigua(client, db, usua
     assert datos["test"][0]["pregunta"] == "¿Antigua?"
 
 
+def test_generar_test_fallos_num_preguntas_invalido_usa_el_valor_por_defecto(client, db, usuario_autenticado):
+    """Bug real (25/08/2026, auditoría): a diferencia de las rutas hermanas
+    (/generar-test-avanzado, /generar-test-oficial...), num_preguntas no se
+    convertía a int ni se acotaba -- un valor no numérico (p.ej. un string
+    mal formado desde el frontend) rompía el slice de la lista con un
+    TypeError en vez de degradar al valor por defecto."""
+    sembrar_usuario_activo(db, "u1", plan="basico")
+    db.sembrar(("usuarios", "u1", "preguntas_falladas", "f1"), _pregunta_base("¿Fallada?"))
+
+    usuario_autenticado()
+    resp = client.post("/generar-test-fallos?oposicion=AGE", json={"num_preguntas": "no-es-un-numero"},
+                        headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    assert len(resp.get_json()["test"]) == 1
+
+
 def test_generar_test_favoritas_prioriza_la_nunca_repasada(client, db, usuario_autenticado):
     sembrar_usuario_activo(db, "u1", plan="basico")
     hace_poco = (datetime.utcnow() - timedelta(hours=1)).isoformat()
@@ -67,6 +83,17 @@ def test_generar_test_favoritas_prioriza_la_nunca_repasada(client, db, usuario_a
     datos = resp.get_json()
     assert datos["total_disponibles"] == 2
     assert datos["test"][0]["pregunta"] == "¿Nunca repasada?"
+
+
+def test_generar_test_favoritas_num_preguntas_invalido_usa_el_valor_por_defecto(client, db, usuario_autenticado):
+    sembrar_usuario_activo(db, "u1", plan="basico")
+    db.sembrar(("usuarios", "u1", "preguntas_favoritas", _id_pregunta("AGE", "¿Favorita?")), _pregunta_base("¿Favorita?"))
+
+    usuario_autenticado()
+    resp = client.post("/generar-test-favoritas?oposicion=AGE", json={"num_preguntas": None},
+                        headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    assert len(resp.get_json()["test"]) == 1
 
 
 def test_preguntas_pendientes_repaso_cuenta_solo_la_oposicion_pedida(client, db, usuario_autenticado):
@@ -124,7 +151,11 @@ def test_listar_preguntas_falladas_no_se_mezclan_entre_oposiciones(client, db, u
     assert falladas[0]["pregunta"] == "¿GACE?"
 
 
-def test_generar_test_favoritas_marca_fecha_ultimo_repaso(client, db, usuario_autenticado):
+def test_generar_test_favoritas_no_marca_fecha_ultimo_repaso(client, db, usuario_autenticado):
+    """Bug real (25/08/2026, auditoría): antes se marcaba como repasada ya al
+    GENERAR el test -- si el usuario cerraba la pestaña o el guardado fallaba
+    a mitad, la pregunta quedaba marcada como repasada sin haberse visto de
+    verdad, y dejaba de priorizarse una temporada."""
     sembrar_usuario_activo(db, "u1", plan="basico")
     doc_id = _id_pregunta("AGE", "¿Nunca repasada?")
     db.sembrar(("usuarios", "u1", "preguntas_favoritas", doc_id), _pregunta_base("¿Nunca repasada?"))
@@ -133,6 +164,26 @@ def test_generar_test_favoritas_marca_fecha_ultimo_repaso(client, db, usuario_au
     resp = client.post("/generar-test-favoritas?oposicion=AGE", json={"num_preguntas": 1},
                         headers={"Authorization": "Bearer x"})
     assert resp.get_json()["total_disponibles"] == 1
+
+    guardada = db.leer(("usuarios", "u1", "preguntas_favoritas", doc_id))
+    assert not guardada.get("fecha_ultimo_repaso")
+
+
+def test_guardar_test_favoritas_marca_fecha_ultimo_repaso(client, db, usuario_autenticado):
+    """La fecha de último repaso se marca al GUARDAR el resultado del test
+    (cuando de verdad se ha completado), no al generarlo -- mismo momento en
+    que actualizar_banco_fallos actualiza el banco de falladas."""
+    sembrar_usuario_activo(db, "u1", plan="basico")
+    doc_id = _id_pregunta("AGE", "¿Nunca repasada?")
+    db.sembrar(("usuarios", "u1", "preguntas_favoritas", doc_id), _pregunta_base("¿Nunca repasada?"))
+
+    usuario_autenticado()
+    resp = client.post("/guardar-test?oposicion=AGE", json={
+        "contenido": [_pregunta_base("¿Nunca repasada?")],
+        "respuestas": ["A"],
+        "metadatos": {"tipo": "favoritas", "tiempo": 0},
+    }, headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
 
     guardada = db.leer(("usuarios", "u1", "preguntas_favoritas", doc_id))
     assert guardada.get("fecha_ultimo_repaso")

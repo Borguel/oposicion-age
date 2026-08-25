@@ -5,6 +5,7 @@ from registro_progreso_usuario import actualizar_estadisticas_test, actualizar_e
 from oposiciones import OPOSICION_POR_DEFECTO
 from documentos_pdf import marcar_generado
 from banco_fallos import actualizar_banco_fallos, _id_pregunta
+from banco_favoritas import marcar_repasadas
 from utils import calcular_resultado_test, obtener_preguntas_examenes_oficiales, obtener_preguntas_psicotecnico, obtener_preguntas_banco_ia
 
 logger = logging.getLogger(__name__)
@@ -151,6 +152,16 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
         tipo_test = metadatos.get("tipo", "personalizado")
         contenido = _corregir_con_banco_verificado(db, oposicion, tipo_test, contenido)
         actualizar_banco_fallos(db, usuario_id, oposicion, tipo_test, contenido, respuestas)
+        if tipo_test == "favoritas":
+            # Repaso espaciado (25/08/2026, bug real de la auditoría): antes se
+            # marcaban como "repasadas" (fecha_ultimo_repaso) en el momento de
+            # GENERAR el test, en /generar-test-favoritas -- si el usuario
+            # cerraba la pestaña o el guardado fallaba a mitad, quedaban
+            # marcadas como repasadas sin haberlas visto de verdad, y dejaban
+            # de priorizarse una temporada. Se marcan aquí, al terminar y
+            # guardar el resultado de verdad, igual que actualizar_banco_fallos
+            # de la línea de arriba.
+            marcar_repasadas(db, usuario_id, oposicion, contenido)
 
         marcadas_duda = marcadas_duda or []
 

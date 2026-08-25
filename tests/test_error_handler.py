@@ -90,3 +90,36 @@ def test_429_de_rate_limit_no_es_la_pagina_html_por_defecto():
     resp = cliente.get("/ia")
     cuerpo = resp.get_data(as_text=True)
     assert "<html" not in cuerpo.lower()
+
+
+def test_json_mal_formado_devuelve_400_json_no_html(client, usuario_autenticado):
+    """Bug real (25/08/2026, auditoría): request.get_json() sin silent=True
+    (usado en varias rutas, p. ej. /guardar-test) lanza BadRequest, que sin
+    el manejador de app.py se deja pasar tal cual y devuelve la página HTML
+    por defecto de Flask -- mismo bug que el 429 de arriba, con el mismo
+    disparador real: un body vacío/truncado por una red inestable, no un
+    fallo del propio frontend."""
+    usuario_autenticado()
+    resp = client.post(
+        "/guardar-test?oposicion=AGE",
+        data="{esto no es json valido",
+        content_type="application/json",
+        headers={"Authorization": "Bearer x"},
+    )
+    assert resp.status_code == 400
+    assert resp.content_type.startswith("application/json")
+    assert resp.get_json()["error"]
+    assert "<html" not in resp.get_data(as_text=True).lower()
+
+
+def test_content_type_no_json_devuelve_415_json_no_html(client, usuario_autenticado):
+    usuario_autenticado()
+    resp = client.post(
+        "/guardar-test?oposicion=AGE",
+        data="lo que sea",
+        content_type="text/plain",
+        headers={"Authorization": "Bearer x"},
+    )
+    assert resp.status_code == 415
+    assert resp.content_type.startswith("application/json")
+    assert resp.get_json()["error"]

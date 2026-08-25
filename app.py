@@ -107,6 +107,23 @@ def fichero_demasiado_grande(_error):
     return jsonify({"error": "El archivo es demasiado grande (máximo 20 MB)."}), 413
 
 
+@app.errorhandler(400)
+@app.errorhandler(415)
+def cuerpo_json_invalido(_error):
+    # Bug real (25/08/2026, auditoría): request.get_json() sin silent=True
+    # (usado en varias rutas de test_ia.py/tu_tutor.py/rutas_progreso.py/
+    # save_controller.py/pdf_ia.py) lanza BadRequest (400, JSON mal formado)
+    # o UnsupportedMediaType (415, Content-Type distinto de application/json)
+    # -- ambas son HTTPException, así que sin este handler el manejador
+    # global de más abajo las deja pasar tal cual y el frontend recibe la
+    # página HTML por defecto de Flask en vez de JSON. Mismo bug que ya se
+    # arregló para el 429 de flask-limiter (ver el handler de arriba): el
+    # disparador real en producción es un body vacío/truncado por una red
+    # inestable, no un fallo del propio frontend (que siempre manda el
+    # Content-Type correcto).
+    return jsonify({"error": "La petición no es válida."}), _error.code
+
+
 @app.errorhandler(429)
 def demasiadas_peticiones(_error):
     # Bug real (23/08/2026): sin este handler, un 429 de flask-limiter
