@@ -733,9 +733,9 @@ async function renderPreguntas() {
   const panel = document.getElementById("panel-preguntas");
   panel.innerHTML = `
     <div class="age-card admin-filtros">
-      <input id="f-texto" class="age-input" placeholder="Buscar en el enunciado…">
-      <input id="f-bloque" class="age-input" placeholder="Bloque (ej. bloque_01)">
-      <input id="f-anio" class="age-input" placeholder="Año (ej. 2025)">
+      <input id="f-texto" class="age-input" placeholder="Buscar en el enunciado…" aria-label="Buscar en el enunciado">
+      <input id="f-bloque" class="age-input" placeholder="Bloque (ej. bloque_01)" aria-label="Filtrar por bloque">
+      <input id="f-anio" class="age-input" placeholder="Año (ej. 2025)" aria-label="Filtrar por año">
       <button class="age-btn age-btn-outline admin-filtros-btn" id="f-aplicar">Filtrar</button>
       <button class="age-btn age-btn-outline admin-filtros-btn" id="p-csv">${icono("descargar", 15)} CSV</button>
       <button class="age-btn age-btn-outline admin-filtros-btn" id="p-importar">${icono("subir", 15)} Importar</button>
@@ -1179,8 +1179,8 @@ async function renderUsuarios() {
   const panel = document.getElementById("panel-usuarios");
   panel.innerHTML = `
     <div class="age-card admin-filtros">
-      <input id="u-busqueda" class="age-input" placeholder="Buscar por email…">
-      <select id="u-plan" class="age-input"><option value="">Todos los planes</option><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
+      <input id="u-busqueda" class="age-input" placeholder="Buscar por email…" aria-label="Buscar usuario por email">
+      <select id="u-plan" class="age-input" aria-label="Filtrar por plan"><option value="">Todos los planes</option><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
       <button class="age-btn age-btn-primary admin-filtros-btn" id="u-aplicar">Buscar</button>
       <button class="age-btn age-btn-outline admin-filtros-btn" id="u-csv">${icono("descargar", 15)} CSV</button>
     </div>
@@ -1283,16 +1283,16 @@ async function renderIngresos() {
   const panel = document.getElementById("panel-ingresos");
   panel.innerHTML = `
     <div class="age-card admin-filtros">
-      <input id="i-busqueda" class="age-input" placeholder="Buscar por email…">
-      <select id="i-estado" class="age-input">
+      <input id="i-busqueda" class="age-input" placeholder="Buscar por email…" aria-label="Buscar cliente por email">
+      <select id="i-estado" class="age-input" aria-label="Filtrar por estado">
         <option value="">Todos los estados</option>
         <option value="activo">Activos</option>
         <option value="cancelando">Cancelando</option>
         <option value="baja">Bajas</option>
         <option value="prueba">En prueba</option>
       </select>
-      <select id="i-plan" class="age-input"><option value="">Todos los planes</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
-      <select id="i-oposicion" class="age-input"><option value="">Todas las oposiciones</option><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
+      <select id="i-plan" class="age-input" aria-label="Filtrar por plan"><option value="">Todos los planes</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
+      <select id="i-oposicion" class="age-input" aria-label="Filtrar por oposición"><option value="">Todas las oposiciones</option><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
       <button class="age-btn age-btn-primary admin-filtros-btn" id="i-aplicar">Buscar</button>
       <button class="age-btn age-btn-outline admin-filtros-btn" id="i-csv">${icono("descargar", 15)} CSV</button>
     </div>
@@ -1374,17 +1374,17 @@ function modalCrearUsuario() {
   abrirModal(`
     <h2>Crear usuario</h2>
     <p class="admin-reporte-meta">Se crea la cuenta con email y contraseña. Comunícale la contraseña al usuario; podrá cambiarla luego.</p>
-    <label>Email</label>
+    <label for="nu-email">Email</label>
     <input class="age-input" id="nu-email" type="email" placeholder="persona@correo.com">
-    <label>Contraseña (mín. 6 caracteres)</label>
+    <label for="nu-pass">Contraseña (mín. 6 caracteres)</label>
     <input class="age-input" id="nu-pass" type="text" placeholder="Contraseña inicial">
-    <label>Nombre (opcional)</label>
+    <label for="nu-nombre">Nombre (opcional)</label>
     <input class="age-input" id="nu-nombre" placeholder="Nombre">
     <div class="admin-form-fila">
-      <div><label>Plan de partida</label>
+      <div><label for="nu-plan">Plan de partida</label>
         <select class="age-input" id="nu-plan"><option value="">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
       </div>
-      <div><label>Para la oposición</label>
+      <div><label for="nu-oposicion">Para la oposición</label>
         <select class="age-input" id="nu-oposicion"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option><option value="METRO">Metro</option></select>
       </div>
     </div>
@@ -2050,7 +2050,7 @@ async function renderCalidadIA() {
             <option value="AUXILIAR">Auxiliar</option>
           </select>
         </label>
-        <input type="search" id="ia-buscar" class="age-input" placeholder="Buscar por tema o motivo…" style="flex:1;min-width:200px;">
+        <input type="search" id="ia-buscar" class="age-input" placeholder="Buscar por tema o motivo…" style="flex:1;min-width:200px;" aria-label="Buscar por tema o motivo">
         <button type="button" id="ia-exportar" class="age-btn age-btn-outline admin-mini">${icono("descargar", 14)} Exportar CSV</button>
       </div>
     </div>
