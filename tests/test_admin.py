@@ -767,6 +767,25 @@ def test_usuarios_detalle_con_limites_uso_en_formato_antiguo_no_revienta(client,
     assert resp.status_code == 200
 
 
+def test_oposiciones_activas_incluye_las_que_estan_en_prueba_o_gratis(client, db):
+    # Bug real (25/08/2026, reportado por el usuario: "tenía activadas
+    # todas las oposiciones pero solo aparecen dos"): activar_oposicion_usuario
+    # arranca SIEMPRE con plan "gratis" -- filtrar por plan != "gratis"
+    # escondía cualquier oposición activada que aún no se hubiera
+    # contratado con un plan de pago.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com",
+        "suscripciones": {
+            "AGE": {"plan": "gratis", "prueba_fin": "2026-09-01T00:00:00"},  # activada, en prueba
+            "AUXILIAR": {"plan": "gratis"},  # activada, prueba ya terminada o sin arrancar
+            "GACE": {"plan": "premium", "subscription_status": "active"},  # activada, de pago
+        },
+    })
+    with _como():
+        d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
+    assert set(d["oposiciones_activas"]) == {"AGE", "AUXILIAR", "GACE"}
+
+
 def test_usuarios_detalle_incluye_en_prueba(client, db):
     from datetime import datetime, timedelta
     prueba_fin = (datetime.utcnow() + timedelta(days=3)).isoformat()

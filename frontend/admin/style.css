@@ -664,7 +664,16 @@ tr.sis-opt .sis-punto { background: #d9a300; }
 .ficha-email { font-size: 1.15rem; line-height: 1.2; word-break: break-word; margin: 0; }
 .ficha-nombre { font-size: 13.5px; color: var(--age-ink-soft, var(--age-ink)); margin: 2px 0 0; }
 .ficha-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 6px; }
-.ficha-badge { border-radius: 999px; padding: 3px 11px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; background: var(--age-neutral-bg, var(--age-primary-soft)); color: var(--age-ink); }
+/* flex-shrink: 0 (25/08/2026, bug real reportado por el usuario): en la
+   tarjeta de usuario (.u-card-cab), el badge y el bloque nombre/email
+   comparten fila flex -- el badge "En prueba (Premium)" es bastante más
+   largo que "Gratis"/"Premium"/"Básico", y sin esto competía por el
+   espacio con .u-card-id (que sí puede encogerse, min-width:0) hasta
+   dejar el nombre y el email prácticamente invisibles. Un badge es una
+   etiqueta corta de ancho fijo: nunca debe encogerse él, solo el texto
+   de al lado. En .ficha-badges (la ficha completa) no cambia nada, ya
+   envuelve a otra línea con flex-wrap en vez de encoger cada badge. */
+.ficha-badge { flex-shrink: 0; border-radius: 999px; padding: 3px 11px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; background: var(--age-neutral-bg, var(--age-primary-soft)); color: var(--age-ink); }
 .ficha-badge-premium { background: #fde9c8; color: #8a5a00; }
 .ficha-badge-basico { background: var(--age-primary-soft); color: var(--age-primary); }
 .ficha-badge-gratis { background: var(--age-neutral-bg, #eee); color: var(--age-ink-soft, #555); }

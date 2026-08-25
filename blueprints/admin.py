@@ -146,11 +146,18 @@ def _plan_usuario(datos):
 
 
 def _oposiciones_activas(datos):
-    activas = []
-    for oid, sub in (datos.get("suscripciones") or {}).items():
-        if (sub or {}).get("plan", "gratis") != "gratis":
-            activas.append(oid)
-    return activas
+    """Oposiciones que el usuario ha ACTIVADO (aparecen en suscripciones),
+    tenga o no ya un plan de pago contratado.
+
+    Bug real (25/08/2026, reportado por el usuario): antes solo contaban
+    las oposiciones con plan != "gratis" -- pero activar_oposicion_usuario
+    arranca SIEMPRE con plan "gratis" (más la prueba de 7 días, si
+    procede), así que una oposición recién activada que aún no se ha
+    contratado con Básico/Premium desaparecía de este listado, aunque el
+    usuario la hubiera activado de verdad. Mismo criterio que
+    "oposicion_activada" en registro_progreso_usuario.obtener_perfil_usuario:
+    lo único que importa es que la clave exista en suscripciones."""
+    return list((datos.get("suscripciones") or {}).keys())
 
 
 def _contar_subcoleccion(ref, nombre):
