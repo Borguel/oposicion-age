@@ -1146,7 +1146,14 @@ def generar_banco_preguntas_desde_pdf():
     permitido, mensaje_error, _usados, _limite = reservar_uso(db, uid, "pdf_ia", plan_actual)
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
-    iniciar_banco(db, uid, documento_id, "preguntas", TOPE_BANCO_PREGUNTAS, nombre_archivo)
+    # iniciar_banco ahora es atómico (transacción: comprobar + marcar
+    # "generando" en un único paso) -- ver el comentario largo junto a esa
+    # función en documentos_pdf.py. Si pierde la carrera contra otra
+    # petición casi simultánea para el mismo documento, se reembolsa el
+    # cupo ya reservado arriba (nunca llegó a arrancar nada).
+    if not iniciar_banco(db, uid, documento_id, "preguntas", TOPE_BANCO_PREGUNTAS, nombre_archivo):
+        devolver_uso(db, uid, "pdf_ia", plan_actual)
+        return jsonify({"error": "Ya se está generando el banco de preguntas de este documento."}), 409
 
     def generar():
         eventos = queue.Queue()
@@ -1252,7 +1259,13 @@ def generar_banco_tarjetas_desde_pdf():
     permitido, mensaje_error, _usados, _limite = reservar_uso(db, uid, "pdf_ia", plan_actual)
     if not permitido:
         return jsonify({"error": mensaje_error}), 429
-    iniciar_banco(db, uid, documento_id, "tarjetas", TOPE_BANCO_TARJETAS, nombre_archivo)
+    # Ver el comentario largo en generar_banco_preguntas_desde_pdf: iniciar_
+    # banco es atómico y puede perder la carrera contra otra petición casi
+    # simultánea para el mismo documento -- en ese caso se reembolsa el
+    # cupo ya reservado arriba.
+    if not iniciar_banco(db, uid, documento_id, "tarjetas", TOPE_BANCO_TARJETAS, nombre_archivo):
+        devolver_uso(db, uid, "pdf_ia", plan_actual)
+        return jsonify({"error": "Ya se está generando el banco de tarjetas de este documento."}), 409
 
     def generar():
         eventos = queue.Queue()

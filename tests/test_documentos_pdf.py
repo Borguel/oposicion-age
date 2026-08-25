@@ -469,6 +469,55 @@ class TestBancoPreguntasYTarjetas:
         assert banco["preguntas"] == []
         assert banco["nombre_archivo"] == "a.pdf"
 
+    def test_iniciar_banco_devuelve_true_si_gana_la_carrera(self, db):
+        assert iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf") is True
+
+    def test_iniciar_banco_dos_veces_seguidas_la_segunda_pierde_la_carrera(self, db):
+        # Bug real de la auditoría (25/08/2026, "condición de carrera con
+        # doble clic"): dos peticiones casi simultáneas para el MISMO
+        # documento arrancaban las dos su propia generación completa --
+        # doble gasto de IA y un banco final corrupto por dos escritores a
+        # la vez. La primera llamada gana y marca "generando"; la segunda,
+        # mientras la primera sigue en curso, debe perder (False) y NO
+        # tocar el banco ya en marcha (ni resetear items ya acumulados).
+        assert iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf") is True
+        anadir_al_banco(db, "u1", "d1", "preguntas", {"pregunta": "¿Uno?"})
+        assert iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf") is False
+        banco = obtener_banco(db, "u1", "d1", "preguntas")
+        assert banco["total"] == 1
+        assert banco["preguntas"] == [{"pregunta": "¿Uno?"}]
+
+    def test_iniciar_banco_reintenta_si_el_anterior_esta_atascado(self, db):
+        # Un banco "generando" cuyo hilo de fondo murió (ver TestBancoAtascado
+        # más abajo) no debe bloquear un reintento -- la comprobación
+        # atómica respeta el mismo criterio de "atascado" que ya usaba
+        # obtener_banco antes de este arreglo.
+        from datetime import datetime, timedelta
+        viejo = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", "d1"), {
+            "estado": "generando", "total": 3, "objetivo": 100, "actualizado": viejo,
+        })
+        assert iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf") is True
+        banco = obtener_banco(db, "u1", "d1", "preguntas")
+        assert banco["estado"] == "generando"
+        assert banco["total"] == 0  # reiniciado de verdad, no el atascado con sus 3 antiguos
+
+    def test_iniciar_banco_pasa_de_verdad_por_una_transaccion(self, db):
+        llamadas = []
+        transaction_original = db.transaction
+
+        def transaction_espia():
+            llamadas.append(1)
+            return transaction_original()
+
+        db.transaction = transaction_espia
+        try:
+            iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf")
+        finally:
+            db.transaction = transaction_original
+
+        assert len(llamadas) == 1
+
     def test_anadir_al_banco_acumula_items_y_total(self, db):
         iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf")
         anadir_al_banco(db, "u1", "d1", "preguntas", {"pregunta": "¿Uno?"})

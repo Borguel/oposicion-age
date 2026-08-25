@@ -12,6 +12,7 @@ import hashlib
 from datetime import datetime, timedelta
 
 from deepseek_utils import detectar_texto_legal
+from utils import ejecutar_en_transaccion
 
 # Se guarda un extracto generoso del texto (bastante más que en el chat con
 # PDF, donde se reenvía en cada mensaje y sí conviene recortarlo mucho): aquí
@@ -332,19 +333,47 @@ def iniciar_banco(db, uid, documento_id, tipo, objetivo, nombre_archivo):
     de arrancar la generación adaptativa en segundo plano (ver
     generar_banco_preguntas_adaptativo / generar_banco_tarjetas_adaptativo),
     para que "Mis documentos" pueda mostrar "Generando..." desde el primer
-    momento y anadir_al_banco tenga un documento donde ir acumulando."""
-    ahora = datetime.utcnow().isoformat()
+    momento y anadir_al_banco tenga un documento donde ir acumulando.
+
+    Bug real de la auditoría (25/08/2026, "condición de carrera con doble
+    clic"): las rutas /generar-banco-*-desde-pdf comprobaban con
+    obtener_banco si YA había una generación en curso, y solo si no la
+    había, llamaban a esta función para marcarlo -- ese hueco entre leer y
+    escribir (sin ninguna transacción de por medio) dejaba pasar dos
+    peticiones casi simultáneas para el MISMO documento (dos pestañas, un
+    reintento tras un fallo de red...): las dos veían "no está generando"
+    antes de que ninguna hubiera escrito todavía, y las dos arrancaban su
+    propia generación completa -- doble gasto de IA y un banco final con
+    preguntas/tarjetas duplicadas o corruptas por dos escritores a la vez.
+    Ahora la comprobación y el marcado van en una única transacción de
+    Firestore (mismo patrón que limites_uso.reservar_uso): la segunda
+    petición ve ya el "generando" que dejó la primera, en vez de un hueco
+    vacío. Devuelve True si esta llamada ha ganado la carrera (banco
+    marcado "generando"), False si ya había otra generación en curso -- el
+    llamador debe reembolsar cualquier cupo ya reservado y responder 409
+    en ese caso."""
+    ref = _banco_ref(db, uid, documento_id, tipo)
     campo_items = "preguntas" if tipo == "preguntas" else "tarjetas"
-    _banco_ref(db, uid, documento_id, tipo).set({
-        "documento_id": documento_id,
-        "nombre_archivo": nombre_archivo,
-        campo_items: [],
-        "estado": "generando",
-        "objetivo": objetivo,
-        "total": 0,
-        "iniciado": ahora,
-        "actualizado": ahora,
-    })
+
+    def _marcar(transaction):
+        doc = ref.get(transaction=transaction)
+        datos = doc.to_dict() if doc.exists else None
+        if datos and datos.get("estado") == "generando" and not _banco_atascado(datos):
+            return False
+        ahora = datetime.utcnow().isoformat()
+        transaction.set(ref, {
+            "documento_id": documento_id,
+            "nombre_archivo": nombre_archivo,
+            campo_items: [],
+            "estado": "generando",
+            "objetivo": objetivo,
+            "total": 0,
+            "iniciado": ahora,
+            "actualizado": ahora,
+        })
+        return True
+
+    return ejecutar_en_transaccion(db, _marcar)
 
 
 def anadir_al_banco(db, uid, documento_id, tipo, item):

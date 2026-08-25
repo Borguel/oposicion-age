@@ -1950,6 +1950,42 @@ class TestBancoPreguntasYTarjetas:
             parche.stop()
         assert resp.status_code == 409
 
+    def test_generar_banco_preguntas_pierde_la_carrera_devuelve_409_y_reembolsa_cupo(
+            self, client, db, documento_sembrado):
+        # Bug real de la auditoría (25/08/2026, "condición de carrera con
+        # doble clic"): antes, comprobar si ya había una generación en
+        # curso (obtener_banco) y marcarla (iniciar_banco) eran dos pasos
+        # sueltos, con un hueco entre medias donde dos peticiones casi
+        # simultáneas para el MISMO documento podían pasar las dos. Ahora
+        # iniciar_banco es atómico y puede devolver False si pierde esa
+        # carrera -- la ruta debe responder 409 y reembolsar el cupo de
+        # pdf_ia ya reservado (nunca llegó a arrancar nada de verdad).
+        with patch("blueprints.pdf_ia.iniciar_banco", return_value=False):
+            parche = _con_sesion(client)
+            try:
+                resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+            finally:
+                parche.stop()
+        assert resp.status_code == 409
+        uso = (db.leer(("usuarios", "u1")).get("limites_uso") or {}).get("pdf_ia")
+        assert uso is None or (uso.get("dia") or {}).get("contador", 0) == 0
+
+    def test_generar_banco_tarjetas_pierde_la_carrera_devuelve_409_y_reembolsa_cupo(
+            self, client, db, documento_sembrado):
+        with patch("blueprints.pdf_ia.iniciar_banco", return_value=False):
+            parche = _con_sesion(client)
+            try:
+                resp = client.post("/generar-banco-tarjetas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+            finally:
+                parche.stop()
+        assert resp.status_code == 409
+        uso = (db.leer(("usuarios", "u1")).get("limites_uso") or {}).get("pdf_ia")
+        assert uso is None or (uso.get("dia") or {}).get("contador", 0) == 0
+
     def test_generar_banco_preguntas_atascado_permite_reintentar(self, client, db, documento_sembrado):
         # Bug real: un banco "generando" cuyo hilo de fondo murió (p. ej.
         # un despliegue a mitad de generación) se quedaba bloqueando para
