@@ -5,7 +5,7 @@ coincidían entre sí (ver utils.calcular_resultado_test)."""
 
 from conftest import sembrar_usuario_activo
 from utils import calcular_resultado_test
-from registro_progreso_usuario import actualizar_estadisticas_test, revertir_estadisticas_test
+from registro_progreso_usuario import actualizar_estadisticas_test, revertir_estadisticas_test, actualizar_estadisticas_esquema
 
 
 def _contenido_con_aciertos_y_fallos(aciertos, fallos, blancos=0):
@@ -234,3 +234,45 @@ def test_revertir_estadisticas_test_nunca_deja_contadores_negativos(db):
     assert stats["total_aciertos"] == 0
     assert stats["total_fallos"] == 0
     assert stats["tests_suspendidos"] == 0
+
+
+def test_actualizar_estadisticas_esquema_pasa_de_verdad_por_una_transaccion(db):
+    # Bug real (24/08/2026, auditoría de condiciones de carrera): a
+    # diferencia de actualizar_estadisticas_test (su gemela, que sí ya era
+    # transaccional), esta función hacía lectura+cálculo+escritura sueltos
+    # -- dos guardados de esquema casi simultáneos (dos pestañas, un
+    # reintento) podían perder un incremento o un tema, porque ambos
+    # leían el mismo valor de partida y la segunda escritura pisaba a la
+    # primera. No es practicable simular la condición de carrera real en
+    # este harness síncrono -- este test comprueba (a) que la función pasa
+    # de verdad por db.transaction() y (b) que dos llamadas sucesivas
+    # siguen acumulando correctamente (regresión de comportamiento).
+    db.sembrar(("usuarios", "u1"), {})
+    llamadas = []
+    transaction_original = db.transaction
+
+    def transaction_espia():
+        llamadas.append(1)
+        return transaction_original()
+
+    db.transaction = transaction_espia
+    try:
+        actualizar_estadisticas_esquema(db, "u1", "AGE", temas=["tema_01"])
+        actualizar_estadisticas_esquema(db, "u1", "AGE", temas=["tema_02"])
+    finally:
+        db.transaction = transaction_original
+
+    assert len(llamadas) == 2
+    stats = db.leer(("usuarios", "u1"))["estadisticas"]["AGE"]
+    assert stats["esquemas_realizados"] == 2
+    assert set(stats["temas_esquemas"]) == {"tema_01", "tema_02"}
+
+
+def test_actualizar_estadisticas_esquema_no_duplica_temas_repetidos(db):
+    db.sembrar(("usuarios", "u1"), {})
+    actualizar_estadisticas_esquema(db, "u1", "AGE", temas=["tema_01"])
+    actualizar_estadisticas_esquema(db, "u1", "AGE", temas=["tema_01", "tema_02"])
+
+    stats = db.leer(("usuarios", "u1"))["estadisticas"]["AGE"]
+    assert stats["esquemas_realizados"] == 2
+    assert sorted(stats["temas_esquemas"]) == ["tema_01", "tema_02"]

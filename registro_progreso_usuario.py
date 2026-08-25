@@ -415,19 +415,30 @@ def revertir_estadisticas_test(db, usuario_id, oposicion, test):
 
 
 def actualizar_estadisticas_esquema(db, usuario_id, oposicion, temas):
+    # Transaccional (24/08/2026, ver el mismo motivo en
+    # actualizar_estadisticas_test más arriba): "esquemas_realizados" es un
+    # contador y "temas_esquemas" una lista acumulada, ninguno expresable
+    # solo con firestore.Increment/ArrayUnion sin más contexto -- sin
+    # transacción, dos guardados casi simultáneos (dos pestañas, un
+    # reintento) leen el mismo valor de partida y uno de los dos
+    # incrementos/temas se pierde al pisarse las escrituras.
     doc_ref = db.collection("usuarios").document(usuario_id)
-    usuario = doc_ref.get().to_dict() or {}
-    stats = (usuario.get("estadisticas", {}) or {}).get(oposicion, {}) or {}
 
-    total_esquemas = stats.get("esquemas_realizados", 0) + 1
-    temas_esquemas = list(set(stats.get("temas_esquemas", []) + temas))
+    def _actualizar(transaction):
+        usuario = doc_ref.get(transaction=transaction).to_dict() or {}
+        stats = (usuario.get("estadisticas", {}) or {}).get(oposicion, {}) or {}
 
-    prefijo = f"estadisticas.{oposicion}."
-    doc_ref.update({
-        f"{prefijo}esquemas_realizados": total_esquemas,
-        f"{prefijo}temas_esquemas": temas_esquemas,
-        "ultima_actividad": datetime.utcnow().isoformat()
-    })
+        total_esquemas = stats.get("esquemas_realizados", 0) + 1
+        temas_esquemas = list(set(stats.get("temas_esquemas", []) + temas))
+
+        prefijo = f"estadisticas.{oposicion}."
+        transaction.update(doc_ref, {
+            f"{prefijo}esquemas_realizados": total_esquemas,
+            f"{prefijo}temas_esquemas": temas_esquemas,
+            "ultima_actividad": datetime.utcnow().isoformat()
+        })
+
+    ejecutar_en_transaccion(db, _actualizar)
 
 def obtener_resumen_progreso(db, usuario_id, oposicion=OPOSICION_POR_DEFECTO):
     doc_ref = db.collection("usuarios").document(usuario_id)
