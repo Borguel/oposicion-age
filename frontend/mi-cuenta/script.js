@@ -5,6 +5,7 @@ import { OPOSICIONES } from "/assets/oposicion.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { fijarTexto } from "/assets/dom.js";
 import { icono } from "/assets/icons.js";
+import { activarAccesibilidadModal } from "/assets/modal-accesible.js";
 
 document.querySelectorAll("[data-icon]").forEach((el) => {
   el.innerHTML = icono(el.dataset.icon, Number(el.dataset.iconSize || 24));
@@ -167,34 +168,6 @@ function renderizarOposiciones() {
   btnPortal.disabled = !algunaDePago;
   btnPortal.textContent = algunaDePago ? "Gestionar facturación y suscripciones" : "Sin suscripciones activas";
   return algunaDePago;
-}
-
-// Accesibilidad compartida por los modales de esta página (cancelar
-// suscripción / eliminar cuenta): Escape cierra (con el botón "seguro" que
-// se le indique), el foco no se escapa del modal mientras está abierto
-// (Tab/Shift+Tab), y al cerrarlo el foco vuelve a donde estaba antes de
-// abrirlo -- igual que ya hace el modal genérico del panel de admin.
-function activarAccesibilidadModal(modal, botonCerrarSeguro) {
-  let elementoPrevio = null;
-  function estaAbierto() { return modal.style.display !== "none" && modal.style.display !== ""; }
-  function focables() {
-    return Array.from(modal.querySelectorAll('input, select, textarea, button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'));
-  }
-  document.addEventListener("keydown", (e) => {
-    if (!estaAbierto()) return;
-    if (e.key === "Escape") { botonCerrarSeguro.click(); return; }
-    if (e.key !== "Tab") return;
-    const els = focables();
-    if (!els.length) return;
-    const primero = els[0];
-    const ultimo = els[els.length - 1];
-    if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
-    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
-  });
-  return {
-    alAbrir() { elementoPrevio = document.activeElement; modal.querySelector('[tabindex="-1"]')?.focus(); },
-    alCerrar() { elementoPrevio?.focus(); elementoPrevio = null; },
-  };
 }
 
 let oposicionParaCancelar = null;

@@ -1,5 +1,6 @@
 import { signIn, signUp, signInWithGoogle, idToken, recuperarContrasena, credencialGoogleDesdeError, vincularCredencialGoogle, enviarVerificacionEmail } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
+import { activarAccesibilidadModal } from "/assets/modal-accesible.js";
 
 const tabLogin = document.getElementById("tab-login");
 const tabSignup = document.getElementById("tab-signup");
@@ -31,6 +32,8 @@ const btnVincularCancelar = document.getElementById("btn-vincular-cancelar");
 const vincularMensajeError = document.getElementById("vincular-mensaje-error");
 let emailPendienteVincular = null;
 let credencialPendienteVincular = null;
+const a11yModalVincular = activarAccesibilidadModal(modalVincularGoogle, btnVincularCancelar);
+const a11yModalRecuperar = activarAccesibilidadModal(modalRecuperar, btnRecuperarCancelar);
 
 let modo = "login";
 
@@ -211,12 +214,14 @@ function abrirModalVincularGoogle() {
   vincularMensajeError.style.display = "none";
   btnVincularSubmit.disabled = false;
   modalVincularGoogle.style.display = "flex";
+  a11yModalVincular.alAbrir();
 }
 
 function cerrarModalVincularGoogle() {
   modalVincularGoogle.style.display = "none";
   credencialPendienteVincular = null;
   emailPendienteVincular = null;
+  a11yModalVincular.alCerrar();
 }
 
 btnVincularCancelar.addEventListener("click", cerrarModalVincularGoogle);
@@ -253,10 +258,12 @@ function abrirModalRecuperar() {
   formRecuperar.style.display = "block";
   btnRecuperarSubmit.disabled = false;
   modalRecuperar.style.display = "flex";
+  a11yModalRecuperar.alAbrir();
 }
 
 function cerrarModalRecuperar() {
   modalRecuperar.style.display = "none";
+  a11yModalRecuperar.alCerrar();
 }
 
 btnOlvidePassword.addEventListener("click", abrirModalRecuperar);
