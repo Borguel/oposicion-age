@@ -222,6 +222,19 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
         # vez de crear uno nuevo -- así finalizar un test reanudado no deja un
         # borrador duplicado suelto.
         test_ref = doc_user.collection("tests").document(test_id) if test_id else doc_user.collection("tests").document()
+        # Bug real (24/08/2026, auditoría de condiciones de carrera): si el
+        # mismo test_id llega finalizado dos veces (un reintento del
+        # frontend tras un timeout que en realidad sí llegó, dos
+        # disparadores de "Finalizar" solapados), el documento del test se
+        # sobrescribía sin problema -- pero actualizar_estadisticas_test se
+        # llamaba SIEMPRE, así que tests_realizados/total_aciertos/total_
+        # fallos/historial_tests/rendimiento_por_tema contaban ese mismo
+        # test dos veces. Se comprueba si YA estaba "finalizado" antes de
+        # sobrescribirlo para no volver a contabilizarlo.
+        ya_contabilizado = False
+        if test_id:
+            doc_previo = test_ref.get()
+            ya_contabilizado = doc_previo.exists and (doc_previo.to_dict() or {}).get("estado") == "finalizado"
         test_ref.set({
             "fecha": datetime.utcnow().isoformat(),
             "tipo": tipo_test,
@@ -251,8 +264,10 @@ def guardar_resultado_en_firestore(db, tipo, contenido, usuario_id="usuario_prue
             ]
         })
 
-        # Actualizar resumen del usuario para esta oposición
-        actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas_efectivos, metadatos.get("tiempo", 0), tipo_test, puntuacion, rendimiento_temas, blancos)
+        # Actualizar resumen del usuario para esta oposición -- salvo que
+        # este test_id ya estuviera contabilizado (ver comentario arriba).
+        if not ya_contabilizado:
+            actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas_efectivos, metadatos.get("tiempo", 0), tipo_test, puntuacion, rendimiento_temas, blancos)
 
     elif tipo == "esquema":
         esquema_ref = doc_user.collection("esquemas").document()
