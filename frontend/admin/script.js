@@ -208,11 +208,51 @@ function abrirModal(html) {
   // un elemento que ha quedado detrás, invisible tras el modal.
   document.getElementById("admin-modal-cerrar")?.focus();
 }
+// Resolver pendiente de confirmarAdmin() (ver más abajo) -- si el modal se
+// cierra por CUALQUIER vía que no sea sus propios botones (Escape, el
+// aspa, clic fuera), cerrarModal() lo resuelve aquí como "cancelado" en
+// vez de dejar la promesa colgada para siempre.
+let _resolverConfirmarAdmin = null;
 function cerrarModal() {
   modal.hidden = true;
   modalContenido.innerHTML = "";
   elementoAntesDelModal?.focus();
   elementoAntesDelModal = null;
+  if (_resolverConfirmarAdmin) {
+    const resolver = _resolverConfirmarAdmin;
+    _resolverConfirmarAdmin = null;
+    resolver(false);
+  }
+}
+
+// Sustituye a confirm() nativo (25/08/2026, auditoría UX -- bug real): un
+// confirm() del navegador desentona con el resto del panel (que ya tiene
+// su propio sistema de modal, con foco atrapado y todo) y en algunos
+// navegadores/extensiones puede bloquearse o silenciarse sin que quien
+// hace clic en "Eliminar" se entere, dejando la acción sin confirmar de
+// verdad. Devuelve una Promise<boolean>, como su equivalente nativo, para
+// poder seguir escribiendo `if (!(await confirmarAdmin(...))) return;` en
+// el sitio de la llamada.
+function confirmarAdmin(mensaje, { peligro = false, textoAceptar = "Confirmar" } = {}) {
+  return new Promise((resolve) => {
+    _resolverConfirmarAdmin = resolve;
+    abrirModal(`
+      <h2>${peligro ? "⚠️ Confirmar" : "Confirmar"}</h2>
+      <p class="admin-reporte-meta">${escapeHtml(mensaje)}</p>
+      <div class="admin-form-fila" style="justify-content:flex-end; gap:10px; margin-top:18px;">
+        <button type="button" class="age-btn age-btn-outline" id="confirmar-admin-cancelar">Cancelar</button>
+        <button type="button" class="age-btn ${peligro ? "age-btn-danger" : "age-btn-primary"}" id="confirmar-admin-aceptar">${escapeHtml(textoAceptar)}</button>
+      </div>
+    `);
+    const terminar = (resultado) => {
+      _resolverConfirmarAdmin = null;
+      cerrarModal();
+      resolve(resultado);
+    };
+    document.getElementById("confirmar-admin-cancelar").addEventListener("click", () => terminar(false));
+    document.getElementById("confirmar-admin-aceptar").addEventListener("click", () => terminar(true));
+    document.getElementById("confirmar-admin-aceptar").focus();
+  });
 }
 document.getElementById("admin-modal-cerrar").addEventListener("click", cerrarModal);
 modal.addEventListener("click", (e) => { if (e.target === modal) cerrarModal(); });
@@ -714,7 +754,7 @@ async function cargarChunks() {
       if (r) toast("Ficha guardada.");
     });
     div.querySelector(".admin-chunk-borrar").addEventListener("click", async () => {
-      if (!confirm("¿Eliminar esta ficha?")) return;
+      if (!(await confirmarAdmin("¿Eliminar esta ficha?", { peligro: true, textoAceptar: "Eliminar" }))) return;
       const r = await api("DELETE", `/admin/api/temario/${oposicionActual()}/${temaSeleccionado.bloque}/${temaSeleccionado.tema}/${id}`);
       if (r) { toast("Ficha eliminada."); cargarChunks(); }
     });
@@ -890,7 +930,7 @@ async function cargarPreguntas() {
   }));
   cont.querySelectorAll("[data-editar]").forEach((b) => b.addEventListener("click", () => modalPregunta(window._preguntasCache[b.dataset.editar])));
   cont.querySelectorAll("[data-desactivar]").forEach((b) => b.addEventListener("click", async () => {
-    if (!confirm("¿Desactivar esta pregunta? (no se borra, solo deja de usarse)")) return;
+    if (!(await confirmarAdmin("¿Desactivar esta pregunta? (no se borra, solo deja de usarse)", { textoAceptar: "Desactivar" }))) return;
     const r = await api("DELETE", `/admin/api/preguntas/${b.dataset.desactivar}?oposicion=${oposicionActual()}`);
     if (r) { toast("Pregunta desactivada."); cargarPreguntas(); }
   }));
@@ -1234,7 +1274,7 @@ async function renderRanking() {
     if (r) { toast(r.mensaje || "Hecho."); actualizarEstado(); }
   });
   panel.querySelector("#ranking-demo-borrar").addEventListener("click", async () => {
-    if (!confirm("¿Borrar los participantes de demostración de la clasificación?")) return;
+    if (!(await confirmarAdmin("¿Borrar los participantes de demostración de la clasificación?", { peligro: true, textoAceptar: "Borrar" }))) return;
     const r = await api("DELETE", "/admin/api/ranking/demo");
     if (r) { toast(r.mensaje || "Hecho."); actualizarEstado(); }
   });
@@ -1461,8 +1501,8 @@ async function cargarUsuarios() {
   cont.querySelectorAll("[data-eliminar]").forEach((btn) => btn.addEventListener("click", async (e) => {
     e.stopPropagation();
     const email = btn.dataset.email;
-    if (!confirm(`Vas a ELIMINAR por completo la cuenta de ${email}. Es IRREVERSIBLE (se borran todos sus datos y su suscripción). ¿Continuar?`)) return;
-    if (!confirm("Confirma otra vez: esta acción no se puede deshacer.")) return;
+    if (!(await confirmarAdmin(`Vas a ELIMINAR por completo la cuenta de ${email}. Es IRREVERSIBLE (se borran todos sus datos y su suscripción). ¿Continuar?`, { peligro: true, textoAceptar: "Eliminar cuenta" }))) return;
+    if (!(await confirmarAdmin("Confirma otra vez: esta acción no se puede deshacer.", { peligro: true, textoAceptar: "Sí, eliminar" }))) return;
     const r = await api("DELETE", `/admin/api/usuarios/${btn.dataset.eliminar}`);
     if (r) { toast("Cuenta eliminada."); cargarUsuarios(); }
   }));
@@ -1829,7 +1869,7 @@ function wireFichaVista(vista, u) {
           <button class="ficha-nota-borrar" data-id="${escapeHtml(n.id)}" title="Eliminar nota">${icono("papelera", 14)}</button></div></div>`;
       }).join("");
       cont.querySelectorAll(".ficha-nota-borrar").forEach((b) => b.addEventListener("click", async () => {
-        if (!confirm("¿Eliminar esta nota?")) return;
+        if (!(await confirmarAdmin("¿Eliminar esta nota?", { peligro: true, textoAceptar: "Eliminar" }))) return;
         const r = await api("DELETE", `/admin/api/usuarios/${u.uid}/notas/${b.dataset.id}`);
         if (r) { notas = notas.filter((x) => x.id !== b.dataset.id); renderNotas(); toast("Nota eliminada."); }
       }));
@@ -1843,7 +1883,7 @@ function wireFichaVista(vista, u) {
       if (r && r.nota) { notas.push(r.nota); ta.value = ""; renderNotas(); toast("Nota añadida."); }
     });
     document.getElementById("up-racha").addEventListener("click", async () => {
-      if (!confirm("¿Resetear la racha de este usuario a 0?")) return;
+      if (!(await confirmarAdmin("¿Resetear la racha de este usuario a 0?", { textoAceptar: "Resetear" }))) return;
       const r = await api("POST", `/admin/api/usuarios/${u.uid}/resetear-racha`);
       // abrirUsuario(u.uid) (25/08/2026, bug real de la auditoría): antes
       // solo se avisaba con un toast -- la ficha abierta seguía enseñando
@@ -1853,7 +1893,7 @@ function wireFichaVista(vista, u) {
       if (r) { toast("Racha reseteada."); abrirUsuario(u.uid); }
     });
     document.getElementById("up-limites").addEventListener("click", async () => {
-      if (!confirm("¿Poner a cero los contadores de uso de IA de este usuario?")) return;
+      if (!(await confirmarAdmin("¿Poner a cero los contadores de uso de IA de este usuario?", { textoAceptar: "Resetear" }))) return;
       const r = await api("POST", `/admin/api/usuarios/${u.uid}/resetear-limites`);
       if (r) { toast("Límites de uso reseteados."); abrirUsuario(u.uid); }
     });
@@ -1882,7 +1922,7 @@ function wireFichaVista(vista, u) {
   if (vista === "admin") {
     document.getElementById("up-admin")?.addEventListener("click", async () => {
       const dar = !u.es_admin;
-      if (!confirm(dar ? "¿Dar permisos de administrador TOTAL a este usuario?" : "¿Quitar los permisos de administrador?")) return;
+      if (!(await confirmarAdmin(dar ? "¿Dar permisos de administrador TOTAL a este usuario?" : "¿Quitar los permisos de administrador?", { peligro: dar, textoAceptar: dar ? "Dar permisos" : "Quitar permisos" }))) return;
       const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/admin`, { admin: dar });
       if (r) { toast(r.mensaje || "Hecho."); u.es_admin = dar; abrirUsuario(u.uid); }
     });
@@ -1893,13 +1933,13 @@ function wireFichaVista(vista, u) {
     });
     document.getElementById("up-bloqueo")?.addEventListener("click", async () => {
       const bloquear = !u.bloqueado;
-      if (!confirm(bloquear ? "¿Bloquear el acceso de este usuario? No podrá iniciar sesión." : "¿Restaurar el acceso de este usuario?")) return;
+      if (!(await confirmarAdmin(bloquear ? "¿Bloquear el acceso de este usuario? No podrá iniciar sesión." : "¿Restaurar el acceso de este usuario?", { peligro: bloquear, textoAceptar: bloquear ? "Bloquear" : "Restaurar" }))) return;
       const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/bloqueo`, { bloqueado: bloquear });
       if (r) { toast(r.mensaje || "Hecho."); u.bloqueado = bloquear; abrirUsuario(u.uid); }
     });
     document.getElementById("up-eliminar")?.addEventListener("click", async () => {
-      if (!confirm(`Vas a ELIMINAR por completo la cuenta de ${u.email}. Es IRREVERSIBLE (se borran todos sus datos y su suscripción). ¿Continuar?`)) return;
-      if (!confirm("Confirma otra vez: esta acción no se puede deshacer.")) return;
+      if (!(await confirmarAdmin(`Vas a ELIMINAR por completo la cuenta de ${u.email}. Es IRREVERSIBLE (se borran todos sus datos y su suscripción). ¿Continuar?`, { peligro: true, textoAceptar: "Eliminar cuenta" }))) return;
+      if (!(await confirmarAdmin("Confirma otra vez: esta acción no se puede deshacer.", { peligro: true, textoAceptar: "Sí, eliminar" }))) return;
       const r = await api("DELETE", `/admin/api/usuarios/${u.uid}`);
       if (r) { toast("Cuenta eliminada."); cerrarModal(); cargarUsuarios(); }
     });
