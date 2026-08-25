@@ -66,9 +66,16 @@ def test_oposiciones_disponibles_incluye_ocultas_si_usuario_tiene_suscripcion(cl
     usuario_autenticado(email_verified=True)
     sembrar_usuario_activo(db, "u1", plan="premium", oposicion="METRO")
     resp = client.get("/oposiciones-disponibles", headers={"Authorization": "Bearer x"})
-    por_id = {o["id"]: o for o in resp.get_json()["oposiciones"]}
+    datos = resp.get_json()
+    por_id = {o["id"]: o for o in datos["oposiciones"]}
     assert "METRO" in por_id
     assert por_id["METRO"]["simulacro_oficial"] is None
+    # Bug real (25/08/2026, reportado por un usuario): con SOLO una
+    # oposición oculta activada (sin ninguna pública), alguna_activada
+    # salía False -- Zona Opositor trataba la cuenta como nueva y mostraba
+    # la pantalla de "elige tu oposición" (que ni siquiera ofrece METRO,
+    # al ser oculta) en vez del panel normal con su oposición ya activada.
+    assert datos["alguna_activada"] is True
 
 
 def test_oposiciones_disponibles_con_sesion_pero_sin_activar_ninguna_muestra_las_publicas(client, db, usuario_autenticado):

@@ -37,7 +37,20 @@ def _oposiciones_visibles_para_la_peticion():
     cuenta nueva esta función YA devuelve el catálogo completo (para poder
     elegir), así que esa longitud nunca es 0 y el frontend nunca detectaba
     que era una cuenta nueva. alguna_activada da la señal real y sin
-    ambigüedad que hacía falta."""
+    ambigüedad que hacía falta.
+
+    Bug real (25/08/2026, reportado por el usuario: martaaresti@gmail.com,
+    con solo METRO activada, recibía el correo de "llevas 14 días sin
+    estudiar" y al pinchar en él Zona Opositor le enseñaba la pantalla de
+    "elige tu oposición" en vez de su panel de METRO): esto comprobaba
+    "alguna_activada" mirando solo activadas_publicas, ignorando por
+    completo activadas_ocultas -- para una cuenta con SOLO una oposición
+    oculta activada (el único caso hoy: METRO, concedida a mano desde el
+    panel admin), activadas_publicas queda vacío y alguna_activada salía
+    False, aunque la cuenta sí tuviera una oposición activada de verdad.
+    Zona Opositor trataba entonces la cuenta como nueva y mostraba la
+    pantalla de elegir oposición -- que ni siquiera ofrece METRO, al ser
+    oculta -- en vez de su panel normal."""
     publicas = {oid for oid, datos in OPOSICIONES.items() if not datos.get("oculta")}
     identidad = obtener_identidad_desde_token(request)
     if not identidad:
@@ -47,7 +60,7 @@ def _oposiciones_visibles_para_la_peticion():
     activadas = set((doc.to_dict() or {}).get("suscripciones", {}).keys()) if doc.exists else set()
     activadas_publicas = activadas & publicas
     activadas_ocultas = activadas - publicas
-    if not activadas_publicas:
+    if not activadas:
         return publicas | activadas_ocultas, False
     return activadas_publicas | activadas_ocultas, True
 
