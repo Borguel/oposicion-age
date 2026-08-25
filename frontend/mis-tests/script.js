@@ -86,9 +86,19 @@ function tarjetaTest(t) {
     `;
   } else {
     const aprobado = t.resultado === "aprobado";
+    // Bug real (25/08/2026, auditoría): porcentaje_acierto solo cuenta
+    // sobre las preguntas RESPONDIDAS (aciertos/(aciertos+fallos)), pero
+    // Aprobado/Suspendido sale de la nota oficial, que sí incluye los
+    // blancos en el total (ver utils.calcular_resultado_test). Con muchas
+    // preguntas en blanco los dos números podían contradecirse en la misma
+    // tarjeta (p. ej. "100% acierto" junto a "Suspendido"). Se aclara la
+    // etiqueta cuando hay blancos, en vez de dejar el número suelto sin
+    // contexto -- no se cambia el propio %, que sigue siendo un dato útil
+    // en sí mismo (cuánto se acierta de lo que sí se responde).
+    const etiquetaAcierto = t.blancos ? `${t.porcentaje_acierto ?? 0}% acierto (de las respondidas)` : `${t.porcentaje_acierto ?? 0}% acierto`;
     bloqueEstado = `
       <span class="age-pill ${aprobado ? "age-pill-success" : "age-pill-danger"}">${aprobado ? `${icono("check", 16)} Aprobado` : `${icono("cruz", 16)} Suspendido`}</span>
-      <span class="age-pill">${t.porcentaje_acierto ?? 0}% acierto</span>
+      <span class="age-pill">${etiquetaAcierto}</span>
     `;
     acciones = `
       <a class="age-btn age-btn-outline" href="/repetir-test/?repetir=${t.id}">Repetir</a>

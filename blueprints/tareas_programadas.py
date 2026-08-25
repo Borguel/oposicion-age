@@ -19,7 +19,8 @@ from email_utils import (
     enviar_email_alerta_coste_ia,
 )
 from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketing
-from planes import ORDEN_PLANES
+from oposiciones import OPOSICIONES
+from planes import ORDEN_PLANES, tiene_plan_de_pago_activo
 from push_utils import enviar_push
 from coste_ia import resumen_coste_usuario
 from vigilancia_boe import (
@@ -53,6 +54,24 @@ UMBRAL_MINIMO_ALERTA_COSTE_IA_EUR = float(os.getenv("IA_ALERTA_GASTO_MINIMO_EUR"
 UMBRAL_MULTIPLICADOR_ALERTA_COSTE_IA = float(os.getenv("IA_ALERTA_GASTO_MULTIPLICADOR", "3.0"))
 
 
+def _guardia_diaria(nombre_tarea):
+    """Guarda de "ya ejecutado hoy" para una tarea de cron (mismo patrón que
+    ya usaba vigilar_gasto_ia más abajo). Bug real (25/08/2026, auditoría):
+    recordatorios-racha/prueba/activacion no tenían esta guarda -- los tres
+    workflows de GitHub Actions que los disparan tienen workflow_dispatch
+    habilitado, así que un re-disparo manual el mismo día en que ya corrió
+    el cron programado duplicaba el email a todo usuario que cruzara el
+    umbral ese día. Devuelve (ya_hecho_hoy, marcar_hecho)."""
+    hoy = date.today().isoformat()
+    ref = db.collection("config").document(f"cron_{nombre_tarea}_ultimo_envio")
+    ya_hecho = (ref.get().to_dict() or {}).get("fecha") == hoy
+
+    def marcar_hecho():
+        ref.set({"fecha": hoy})
+
+    return ya_hecho, marcar_hecho
+
+
 def _clave_cron_valida():
     clave_esperada = os.getenv("CRON_SECRET_KEY")
     # hmac.compare_digest en vez de "==": una comparación de string normal
@@ -68,6 +87,10 @@ def _clave_cron_valida():
 def enviar_recordatorios_racha():
     if not _clave_cron_valida():
         return jsonify({"error": "No autorizado"}), 401
+
+    ya_hecho, marcar_hecho = _guardia_diaria("recordatorios_racha")
+    if ya_hecho:
+        return jsonify({"mensaje": "Ya enviado hoy"}), 200
 
     hoy = date.today()
     en_riesgo = 0
@@ -104,6 +127,7 @@ def enviar_recordatorios_racha():
             enviar_email_reengagement(email, dias_sin_actividad, nombre=nombre)
             reengagement += 1
 
+    marcar_hecho()
     logger.info("Recordatorios de racha enviados: %s en riesgo, %s reengagement", en_riesgo, reengagement)
     return jsonify({"en_riesgo": en_riesgo, "reengagement": reengagement})
 
@@ -122,6 +146,10 @@ def enviar_recordatorios_prueba():
     if not _clave_cron_valida():
         return jsonify({"error": "No autorizado"}), 401
 
+    ya_hecho, marcar_hecho = _guardia_diaria("recordatorios_prueba")
+    if ya_hecho:
+        return jsonify({"mensaje": "Ya enviado hoy"}), 200
+
     hoy = date.today()
     terminando = 0
     terminada = 0
@@ -133,7 +161,17 @@ def enviar_recordatorios_prueba():
             continue
         nombre = datos.get("nombre") or ""
 
-        for sub in (datos.get("suscripciones", {}) or {}).values():
+        # Bug real (25/08/2026, auditoría): quien ya paga Premium/Básico en
+        # OTRA oposición seguía recibiendo este email al terminar la prueba
+        # de una oposición nueva, con el texto fijo "tu cuenta ha quedado
+        # bloqueada hasta que elijas un plan" -- información falsa, su
+        # cuenta seguía con acceso completo por la oposición que sí paga.
+        # Mismo criterio que ya usa el frontend (construirBannerPrueba en
+        # auth.js) para no mostrar ningún aviso de prueba a estas cuentas.
+        if tiene_plan_de_pago_activo(datos):
+            continue
+
+        for oposicion, sub in (datos.get("suscripciones", {}) or {}).items():
             prueba_fin = (sub or {}).get("prueba_fin")
             if not prueba_fin:
                 continue
@@ -146,15 +184,17 @@ def enviar_recordatorios_prueba():
             except ValueError:
                 continue
 
+            oposicion_nombre = OPOSICIONES.get(oposicion, {}).get("nombre")
             dias_restantes = (fin_fecha - hoy).days
             if dias_restantes == 2:
-                enviar_email_prueba_terminando(email, dias_restantes, nombre=nombre)
+                enviar_email_prueba_terminando(email, dias_restantes, nombre=nombre, oposicion_nombre=oposicion_nombre)
                 terminando += 1
             elif dias_restantes == -1:
-                enviar_email_prueba_terminada(email, nombre=nombre)
+                enviar_email_prueba_terminada(email, nombre=nombre, oposicion_nombre=oposicion_nombre)
                 sincronizar_contacto_marketing(email, nombre=nombre, estado="sin_suscripcion")
                 terminada += 1
 
+    marcar_hecho()
     logger.info("Recordatorios de prueba enviados: %s terminando, %s terminada", terminando, terminada)
     return jsonify({"terminando": terminando, "terminada": terminada})
 
@@ -172,6 +212,10 @@ def enviar_recordatorios_activacion():
     correo de bienvenida único del registro."""
     if not _clave_cron_valida():
         return jsonify({"error": "No autorizado"}), 401
+
+    ya_hecho, marcar_hecho = _guardia_diaria("recordatorios_activacion")
+    if ya_hecho:
+        return jsonify({"mensaje": "Ya enviado hoy"}), 200
 
     hoy = date.today()
     avisados = 0
@@ -198,6 +242,7 @@ def enviar_recordatorios_activacion():
         enviar_email_activar_oposicion(email, nombre=nombre)
         avisados += 1
 
+    marcar_hecho()
     logger.info("Recordatorios de activación enviados: %s", avisados)
     return jsonify({"avisados": avisados})
 

@@ -23,6 +23,23 @@ def test_con_clave_incorrecta_devuelve_401(client):
         assert resp.status_code == 401
 
 
+def test_recordatorios_racha_ya_enviado_hoy_no_repite(client, db):
+    # Bug real (25/08/2026, auditoría): sin esta guarda, un re-disparo
+    # manual del workflow (workflow_dispatch habilitado) el mismo día en
+    # que ya corrió el cron programado duplicaba el email.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "racha": {"racha_actual": 5, "ultima_fecha": _fecha_hace(1)}
+    })
+    db.sembrar(("config", "cron_recordatorios_racha_ultimo_envio"), {"fecha": date.today().isoformat()})
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_racha_en_riesgo") as mock_riesgo:
+        resp = client.post("/tareas/recordatorios-racha", headers={"X-Cron-Key": "secreta"})
+        assert resp.status_code == 200
+        assert "ya enviado" in resp.get_json()["mensaje"].lower()
+        mock_riesgo.assert_not_called()
+
+
 def test_avisa_a_quien_esta_en_riesgo_de_perder_la_racha(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
@@ -93,6 +110,20 @@ def test_recordatorios_prueba_sin_clave_devuelve_401(client):
         assert resp.status_code == 401
 
 
+def test_recordatorios_prueba_ya_enviado_hoy_no_repite(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "gratis", "prueba_fin": _prueba_fin_en(2)}},
+    })
+    db.sembrar(("config", "cron_recordatorios_prueba_ultimo_envio"), {"fecha": date.today().isoformat()})
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando:
+        resp = client.post("/tareas/recordatorios-prueba", headers={"X-Cron-Key": "secreta"})
+        assert resp.status_code == 200
+        assert "ya enviado" in resp.get_json()["mensaje"].lower()
+        mock_terminando.assert_not_called()
+
+
 def test_avisa_a_quien_le_quedan_2_dias_de_prueba(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
@@ -104,7 +135,7 @@ def test_avisa_a_quien_le_quedan_2_dias_de_prueba(client, db):
         resp = client.post("/tareas/recordatorios-prueba", headers={"X-Cron-Key": "secreta"})
         assert resp.status_code == 200
         assert resp.get_json() == {"terminando": 1, "terminada": 0}
-        mock_terminando.assert_called_once_with("u1@example.com", 2, nombre="")
+        mock_terminando.assert_called_once_with("u1@example.com", 2, nombre="", oposicion_nombre="Cuerpo General Administrativo del Estado (AGE, C1)")
         mock_terminada.assert_not_called()
 
 
@@ -118,8 +149,31 @@ def test_avisa_a_quien_la_prueba_termino_ayer(client, db):
          patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:
         resp = client.post("/tareas/recordatorios-prueba", headers={"X-Cron-Key": "secreta"})
         assert resp.get_json() == {"terminando": 0, "terminada": 1}
-        mock_terminada.assert_called_once_with("u1@example.com", nombre="")
+        mock_terminada.assert_called_once_with("u1@example.com", nombre="", oposicion_nombre="Cuerpo General Administrativo del Estado (AGE, C1)")
         mock_terminando.assert_not_called()
+
+
+def test_no_avisa_si_ya_paga_por_otra_oposicion(client, db):
+    # Bug real (25/08/2026, auditoría): quien ya paga Premium/Básico en OTRA
+    # oposición seguía recibiendo el email de fin de prueba con el texto
+    # fijo "tu cuenta ha quedado bloqueada", información falsa -- su cuenta
+    # sigue con acceso completo por la oposición que sí paga. Mismo criterio
+    # que ya usa el frontend (tiene_plan_de_pago_activo) para no mostrarle
+    # ningún aviso de prueba.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {
+            "AGE": {"plan": "premium", "subscription_status": "active"},
+            "GACE": {"plan": "gratis", "prueba_fin": _prueba_fin_en(-1)},
+        },
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminando") as mock_terminando, \
+         patch("blueprints.tareas_programadas.enviar_email_prueba_terminada") as mock_terminada:
+        resp = client.post("/tareas/recordatorios-prueba", headers={"X-Cron-Key": "secreta"})
+        assert resp.get_json() == {"terminando": 0, "terminada": 0}
+        mock_terminando.assert_not_called()
+        mock_terminada.assert_not_called()
 
 
 def test_avisa_por_cada_oposicion_cuya_prueba_cruce_el_umbral(client, db):
@@ -196,6 +250,21 @@ def test_recordatorios_activacion_sin_clave_devuelve_401(client):
         assert resp.status_code == 401
 
 
+def test_recordatorios_activacion_ya_enviado_hoy_no_repite(client, db):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {},
+        "fecha_creacion": _registrado_hace(2),
+    })
+    db.sembrar(("config", "cron_recordatorios_activacion_ultimo_envio"), {"fecha": date.today().isoformat()})
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_activar_oposicion") as mock_activar:
+        resp = client.post("/tareas/recordatorios-activacion", headers={"X-Cron-Key": "secreta"})
+        assert resp.status_code == 200
+        assert "ya enviado" in resp.get_json()["mensaje"].lower()
+        mock_activar.assert_not_called()
+
+
 def test_avisa_a_quien_cruza_un_umbral_sin_ninguna_oposicion_activada(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
@@ -238,13 +307,20 @@ def test_no_avisa_fuera_de_los_dias_exactos_de_activacion(client, db):
 
 
 def test_avisa_dos_veces_en_la_primera_semana_si_sigue_sin_activar(client, db):
+    # Las dos llamadas simulan dos ejecuciones del cron en DÍAS REALES
+    # distintos (4 días de diferencia) -- hace falta mockear date.today()
+    # para que la guarda de "ya enviado hoy" (25/08/2026, bug real
+    # corregido) no bloquee la segunda como si fuera un redisparo del mismo
+    # día.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "suscripciones": {}, "fecha_creacion": datetime(2026, 1, 8).isoformat()})
     with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
-         patch("blueprints.tareas_programadas.enviar_email_activar_oposicion") as mock_activar:
-        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "suscripciones": {}, "fecha_creacion": _registrado_hace(2)})
+         patch("blueprints.tareas_programadas.enviar_email_activar_oposicion") as mock_activar, \
+         patch("blueprints.tareas_programadas.date") as mock_date:
+        mock_date.today.return_value = date(2026, 1, 10)  # 2 días desde el registro
         resp = client.post("/tareas/recordatorios-activacion", headers={"X-Cron-Key": "secreta"})
         assert resp.get_json() == {"avisados": 1}
 
-        db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "suscripciones": {}, "fecha_creacion": _registrado_hace(6)})
+        mock_date.today.return_value = date(2026, 1, 14)  # 6 días desde el registro
         resp = client.post("/tareas/recordatorios-activacion", headers={"X-Cron-Key": "secreta"})
         assert resp.get_json() == {"avisados": 1}
 

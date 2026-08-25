@@ -111,6 +111,50 @@ def test_actualizar_estadisticas_test_usa_formula_oficial(db):
     assert stats["historial_tests"][-1]["resultado"] == "suspendido"
 
 
+def test_actualizar_estadisticas_test_puntuacion_media_es_una_nota_no_aciertos_brutos(db):
+    """Bug real (25/08/2026, auditoría): puntuacion_media_test se calculaba
+    como total_aciertos/total_tests -- una media de ACIERTOS BRUTOS, no una
+    nota. En un simulacro de 100 preguntas, acertar 40 de 100 daba "40.0",
+    mostrado tal cual como nota sobre 10 en el dashboard. Un único test de
+    40 aciertos/60 fallos sobre 100 preguntas: nota real = (40-20)/100*10 =
+    2.0, muy lejos de "40.0"."""
+    db.sembrar(("usuarios", "u1"), {})
+    actualizar_estadisticas_test(db, "u1", "AGE", aciertos=40, fallos=60, temas=[], tiempo_en_segundos=0, blancos=0)
+
+    stats = db.leer(("usuarios", "u1"))["estadisticas"]["AGE"]
+    assert stats["puntuacion_media_test"] == 2.0
+
+
+def test_actualizar_estadisticas_test_puntuacion_media_promedia_la_nota_de_varios_tests(db):
+    db.sembrar(("usuarios", "u1"), {})
+    # Test 1: 9 aciertos, 1 fallo, 0 blancos -> nota 8.67.
+    actualizar_estadisticas_test(db, "u1", "AGE", aciertos=9, fallos=1, temas=[], tiempo_en_segundos=0, blancos=0)
+    # Test 2: 5 aciertos, 5 fallos, 0 blancos -> nota 3.33.
+    actualizar_estadisticas_test(db, "u1", "AGE", aciertos=5, fallos=5, temas=[], tiempo_en_segundos=0, blancos=0)
+
+    stats = db.leer(("usuarios", "u1"))["estadisticas"]["AGE"]
+    _, nota1, _ = calcular_resultado_test(9, 1, 0)
+    _, nota2, _ = calcular_resultado_test(5, 5, 0)
+    assert stats["puntuacion_media_test"] == round((nota1 + nota2) / 2, 2)
+
+
+def test_revertir_estadisticas_test_recalcula_puntuacion_media_desde_el_historial(db):
+    db.sembrar(("usuarios", "u1"), {})
+    actualizar_estadisticas_test(db, "u1", "AGE", aciertos=9, fallos=1, temas=["tema_01"], tiempo_en_segundos=0, blancos=0)
+    actualizar_estadisticas_test(db, "u1", "AGE", aciertos=1, fallos=9, temas=["tema_01"], tiempo_en_segundos=0, blancos=0)
+
+    test_a_borrar = {"aciertos": 1, "fallos": 9, "blancos": 0, "tiempo": 0, "resultado": "suspendido", "preguntas": []}
+    revertir_estadisticas_test(db, "u1", "AGE", test_a_borrar)
+
+    stats = db.leer(("usuarios", "u1"))["estadisticas"]["AGE"]
+    # revertir_estadisticas_test no toca historial_tests (limitación ya
+    # documentada), así que la media se recalcula sobre el historial TAL
+    # CUAL queda -- sigue incluyendo la entrada del test borrado.
+    _, nota1, _ = calcular_resultado_test(9, 1, 0)
+    _, nota2, _ = calcular_resultado_test(1, 9, 0)
+    assert stats["puntuacion_media_test"] == round((nota1 + nota2) / 2, 2)
+
+
 def test_actualizar_estadisticas_test_acumula_en_llamadas_sucesivas_y_usa_transaccion(db):
     # No es practicable simular con hilos una condición de carrera real en
     # este harness síncrono -- esta prueba comprueba (a) que la función
@@ -176,7 +220,14 @@ def test_revertir_estadisticas_test_deshace_un_unico_test(db):
     assert stats["tests_suspendidos"] == 0
     assert stats["rendimiento_por_tema"]["tema_01"] == {"aciertos": 0, "fallos": 0, "blancos": 0}
     assert stats["rendimiento_por_tema"]["tema_02"] == {"aciertos": 0, "fallos": 0, "blancos": 0}
-    assert stats["puntuacion_media_test"] == 0
+    # puntuacion_media_test se recalcula sobre historial_tests (ver el bug
+    # arreglado el 25/08/2026 en actualizar_estadisticas_test), que esta
+    # función deliberadamente no toca -- así que, aunque tests_realizados ya
+    # esté a 0, la media sigue reflejando la entrada del test borrado que
+    # queda en el historial (limitación ya documentada en el docstring de
+    # revertir_estadisticas_test).
+    _, nota_test_borrado, _ = calcular_resultado_test(1, 1, 1)
+    assert stats["puntuacion_media_test"] == nota_test_borrado
 
 
 def test_revertir_estadisticas_test_solo_afecta_al_test_borrado(db):

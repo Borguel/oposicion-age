@@ -305,7 +305,6 @@ def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, te
 
         puntuacion_calculada, _nota_sobre_10, resultado = calcular_resultado_test(aciertos, fallos, blancos)
         puntuacion = puntuacion_final if puntuacion_final is not None else puntuacion_calculada
-        puntuacion_media = round(total_aciertos / total_tests, 2) if total_tests else 0
 
         aprobados = stats.get("tests_aprobados", 0)
         suspendidos = stats.get("tests_suspendidos", 0)
@@ -328,6 +327,23 @@ def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, te
         })
         if len(historial) > 50:
             historial = historial[-50:]
+
+        # Bug real (25/08/2026, auditoría): antes puntuacion_media_test era
+        # total_aciertos/total_tests -- una media de ACIERTOS BRUTOS por
+        # test, no una nota. En un simulacro de 100 preguntas, acertar 40
+        # de 100 daba "40.0" mostrado como nota sobre 10 en el dashboard
+        # (anillo de progreso al 400%, insignia de "Excelencia" desbloqueada
+        # de más). Se calcula ahora como la media de la nota real 0-10
+        # (calcular_resultado_test, el mismo criterio de aprobado/suspendido
+        # de toda la web) de los tests en historial -- que ya se recorta a
+        # 50 más recientes, así que además se autocorrige solo en el
+        # siguiente test de cada usuario, sin necesitar migrar los datos ya
+        # guardados con la fórmula antigua.
+        notas_historial = [
+            calcular_resultado_test(h.get("aciertos", 0), h.get("fallos", 0), h.get("blancos", 0))[1]
+            for h in historial
+        ]
+        puntuacion_media = round(sum(notas_historial) / len(notas_historial), 2) if notas_historial else 0
 
         prefijo = f"estadisticas.{oposicion}."
         transaction.update(doc_ref, {
@@ -425,7 +441,21 @@ def revertir_estadisticas_test(db, usuario_id, oposicion, test):
                 "blancos": max(0, acumulado.get("blancos", 0) - datos["blancos"]),
             }
 
-        puntuacion_media = round(total_aciertos / total_tests, 2) if total_tests else 0
+        # Mismo criterio que actualizar_estadisticas_test (25/08/2026, bug
+        # real corregido): la media se calcula sobre la nota real 0-10 de
+        # historial_tests, no sobre total_aciertos/total_tests. Esta función
+        # deliberadamente no toca historial_tests (ver docstring: no hay
+        # forma fiable de identificar qué entrada quitar), así que la media
+        # se recalcula sobre el historial tal cual queda -- sigue sin
+        # reflejar la baja de ESTE test en el historial reciente, mismo
+        # límite ya documentado para el resto de campos que esta función no
+        # toca.
+        historial = stats.get("historial_tests", []) or []
+        notas_historial = [
+            calcular_resultado_test(h.get("aciertos", 0), h.get("fallos", 0), h.get("blancos", 0))[1]
+            for h in historial
+        ]
+        puntuacion_media = round(sum(notas_historial) / len(notas_historial), 2) if notas_historial else 0
 
         prefijo = f"estadisticas.{oposicion}."
         transaction.update(doc_ref, {

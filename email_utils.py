@@ -395,12 +395,21 @@ def enviar_email_racha_en_riesgo(destinatario, racha_actual, nombre=""):
     _enviar(destinatario, "racha en riesgo", asunto=f"No pierdas tu racha de {racha_dias_texto}", html=html)
 
 
-def enviar_email_prueba_terminando(destinatario, dias_restantes, nombre=""):
+def enviar_email_prueba_terminando(destinatario, dias_restantes, nombre="", oposicion_nombre=None):
     """Aviso de que quedan pocos días de la prueba gratuita Premium (ver
-    planes.py): se envía una única vez, al cruzar los 2 días restantes."""
+    planes.py): se envía una única vez, al cruzar los 2 días restantes.
+
+    oposicion_nombre (25/08/2026, bug real de la auditoría): cada oposición
+    tiene su propia prueba independiente (ver blueprints/tareas_programadas.py),
+    así que sin decir a cuál se refiere el aviso es ambiguo para quien tiene
+    varias activadas. Solo se llama a esta función para cuentas que
+    realmente se quedarían sin ningún plan de pago (ver
+    tareas_programadas.py, que ya filtra con tiene_plan_de_pago_activo), así
+    que el texto sigue asumiendo que de verdad se pierde el acceso."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
     saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
     dias_texto = f"{dias_restantes} día{'s' if dias_restantes != 1 else ''}"
+    de_oposicion = f" de {escape(oposicion_nombre)}" if oposicion_nombre else ""
 
     template_id = os.getenv("BREVO_TEMPLATE_PRUEBA_TERMINANDO")
     if template_id:
@@ -409,11 +418,12 @@ def enviar_email_prueba_terminando(destinatario, dias_restantes, nombre=""):
             "dias_restantes": dias_restantes,
             "dias_texto": dias_texto,
             "frontend_url": frontend_url,
+            "oposicion_nombre": oposicion_nombre or "",
         })
         return
 
     cuerpo = f"""
-      <p style="margin:0;">{saludo}, tu prueba gratuita de Premium termina en <strong>{dias_texto}</strong>.</p>
+      <p style="margin:0;">{saludo}, tu prueba gratuita de Premium{de_oposicion} termina en <strong>{dias_texto}</strong>.</p>
       <p>Cuando termine, si no eliges un plan, perderás el acceso a las herramientas de PDF, a Tu Tutor
       y a los tests ya generados que sean de Premium. Elige ahora Básico o Premium para no perder nada.</p>
       {_boton("Ver planes", f"{frontend_url}/planes/")}
@@ -422,23 +432,32 @@ def enviar_email_prueba_terminando(destinatario, dias_restantes, nombre=""):
     _enviar(destinatario, "prueba terminando", asunto=f"Tu prueba gratuita termina en {dias_texto}", html=html)
 
 
-def enviar_email_prueba_terminada(destinatario, nombre=""):
+def enviar_email_prueba_terminada(destinatario, nombre="", oposicion_nombre=None):
     """Aviso de que la prueba gratuita Premium ya ha terminado sin que el
     usuario haya contratado ningún plan: se envía el primer día tras
-    expirar (ver blueprints/tareas_programadas.py)."""
+    expirar (ver blueprints/tareas_programadas.py).
+
+    oposicion_nombre: mismo motivo que en enviar_email_prueba_terminando de
+    arriba. Solo se llama a esta función para cuentas sin ningún plan de
+    pago activo en NINGUNA oposición (tareas_programadas.py ya filtra con
+    tiene_plan_de_pago_activo), así que "tu cuenta ha quedado bloqueada"
+    sigue siendo cierto -- antes se llamaba también para cuentas que sí
+    seguían teniendo acceso completo por otra oposición ya contratada."""
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
     saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
+    de_oposicion = f" de {escape(oposicion_nombre)}" if oposicion_nombre else ""
 
     template_id = os.getenv("BREVO_TEMPLATE_PRUEBA_TERMINADA")
     if template_id:
         _enviar(destinatario, "prueba terminada", template_id=template_id, datos={
             "saludo": saludo,
             "frontend_url": frontend_url,
+            "oposicion_nombre": oposicion_nombre or "",
         })
         return
 
     cuerpo = f"""
-      <p style="margin:0;">{saludo}, tu prueba gratuita de Premium ha terminado.</p>
+      <p style="margin:0;">{saludo}, tu prueba gratuita de Premium{de_oposicion} ha terminado.</p>
       <p>Tu cuenta ha quedado bloqueada hasta que elijas un plan: tus datos y los tests que ya hiciste
       siguen a salvo y los recuperas en cuanto te suscribas a Básico o Premium.</p>
       {_boton("Elegir un plan", f"{frontend_url}/planes/")}

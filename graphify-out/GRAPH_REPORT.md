@@ -1,16 +1,16 @@
 # Graph Report - oposicion-age  (2026-08-25)
 
 ## Corpus Check
-- 443 files · ~1,553,998 words
+- 443 files · ~1,555,395 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 8105 nodes · 18506 edges · 357 communities (317 shown, 40 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 430 edges (avg confidence: 0.62)
+- 8120 nodes · 18591 edges · 354 communities (317 shown, 37 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 429 edges (avg confidence: 0.62)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7ab5e847`
+- Built from commit: `61fc8027`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,18 +19,18 @@
 - test_admin.py
 - posthog-array.js
 - ya
-- tareas_programadas.py
+- email_utils.py
 - test_publicacion_estatica_boe.py
 - pdf_ia.py
-- admin.py
-- test_utils.py
-- detect-html.mjs
+- route
+- utils.py
+- parseAnyColor
 - auth.js
 - FakeDocumentSnapshot
 - test_generador_preguntas_verificado.py
 - live-browser.js
 - test_tu_tutor.py
-- Ga
+- .register
 - TestGenerarPreguntasIaEnLotes
 - test_limites_uso.py
 - admin/script.js
@@ -42,14 +42,14 @@
 - test_documentos_pdf.py
 - modern-screenshot.umd.js
 - login/script.js
-- test_auth_utils.py
+- auth_utils.py
 - regenerar_temario_ofimatica.py
 - subida-pdf-esquemas/script.js
 - tarjetas_generator.py
-- coste_ia.py
+- AcumuladorTokens
 - test_generar_test_oficial.py
 - insert-ui.mjs
-- warn
+- ke
 - _eventos_sse
 - rutas_progreso.py
 - accept-css.mjs
@@ -75,25 +75,25 @@
 - preguntas-favoritas/script.js
 - repetir-test/script.js
 - test_email_utils.py
-- app.py
+- test_ia.py
 - test_generator.py
 - test_gestion_cuenta.py
 - vigilancia_boe.py
 - test-progreso.js
 - repasar-preguntas/script.js
 - cargar_temario_auxiliar.py
-- qo
+- Dn
 - subida-pdf-chat-pdf/script.js
-- po
+- q
 - generar_tarjetas_verificadas
 - test_carpetas_documentos.py
 - test_vigilancia_boe.py
 - test_resultado_test_oficial.py
-- error
+- requiere_admin
 - demo/script.js
-- obtener_banco
-- usuarios_detalle
-- guardar_limites_config
+- tareas_programadas.py
+- admin.py
+- temario.py
 - estadisticas/script.js
 - generar_propuesta_cambio
 - test_auth_publico.py
@@ -115,10 +115,10 @@
 - _fecha_hace
 - jr
 - filterFindings
-- _bloque_de_tema
+- journal.mjs
 - zo
 - deepseek_utils.py
-- responder_tutor_stream
+- resolver_tipo_contenido
 - sembrar_usuario_activo
 - frameworks/index.mjs
 - manifest.json
@@ -130,7 +130,7 @@
 - connectSSE
 - design-system.mjs
 - TestGenerarConContinuacion
-- utils.py
+- test_reparto_realista.py
 - test_soporte.py
 - Esquema de datos en Firestore
 - generar_sitemap.py
@@ -142,12 +142,12 @@
 - package.json
 - Arrancar en local
 - session-store.mjs
-- resolveLengthPx
+- ranking.py
 - push.js
 - hook-lib.mjs
 - test_health.py
-- kt
-- discoverTargetCandidates
+- tu_tutor.py
+- obtener_tests_en_progreso_por_documento
 - concept-seed.mjs
 - template-extensions.mjs
 - favoritas.js
@@ -197,7 +197,7 @@
 - initGlobalBar
 - live-poll.mjs
 - hook-before-edit.mjs
-- detect-text.mjs
+- detect-html.mjs
 - doctor.mjs
 - Oo
 - design-parser.mjs
@@ -223,8 +223,8 @@
 - generar_banco_preguntas_adaptativo
 - svelte-ast.mjs
 - onboard.md
-- readConfig
-- checkQuality
+- verificar_bloque_temas_referenciados
+- parseAnyColor
 - sveltekit-adapter.mjs
 - tanstack-adapter.mjs
 - test-psicotecnico/script.js
@@ -259,7 +259,7 @@
 - _temas_mencionados
 - generation-preflight.mjs
 - createLiveBrowserDomHelpers
-- checkElementGptBorderShadow
+- source-search.mjs
 - test_generar_test_psicotecnico.py
 - Impeccable Asset Producer
 - optimize.md
@@ -269,12 +269,12 @@
 - registrar_error_generacion
 - _recortar_fragmento_a_articulo_citado
 - Scan mode (approach C: auto-extract, then confirm descriptive language)
-- live-status.mjs
+- eliminar_documento
 - pin.mjs
 - pagos.py
 - Simplify the Design
 - Hardening Dimensions
-- collect
+- _parsear_tarjetas
 - Product
 - _detectar_duplicados_finales
 - test_generador_ia_temario.py
@@ -286,7 +286,7 @@
 - polish.md
 - quieter.md
 - detect-csp.mjs
-- parseAnyColor
+- checkTextOcclusionDOM
 - embed-prompt.mjs
 - test_reconciliar_stripe.py
 - palette.mjs
@@ -325,7 +325,7 @@
 - test_pdf_ia.py
 - Diagnostic Scan
 - bolder.md
-- surface-briefs.mjs
+- test_app.py
 - _con_sesion_usuario
 - FakeCollectionRef
 - TestDetectarTextoLegal
@@ -344,154 +344,155 @@
 - obtener_estadisticas_completas_usuario
 - _es_semanticamente_duplicada
 - flujos-clave.spec.js
-- .Dr
-- _generar_pregunta_verificada
+- g
+- TestExistePropuestaPendienteReciente
 - migrar_usuarios_premium_existente.py
 - _contiene_frase_prohibida
-- _parece_documento_generado_valido
+- displaySurvey
 - _repartir_bloques_en_lotes
 - TestSubirDocumento
 - test_export_usuarios_csv_neutraliza_inyeccion_de_formula
 - activarAccesibilidadModal
-- _elegir_ancla_legal
-- validacion_perfil.py
-- _contar_coleccion
+- TestDetenerGeneracion
+- _respuesta_http_error
+- checkElementRadialSpotlightDOM
 - atajos-test.js
-- _uso_pico
+- selectAvailablePendingEvent
 - test_guardar_resultado_test_no_duplica.py
-- _lineas_rendimiento_tests
-- completar_tema_gace_sector_publico.py
-- _repartir_cupos
-- route
+- test_tarjetas_generator.py
 
 ## God Nodes (most connected - your core abstractions)
 1. `usuario_autenticado()` - 161 edges
 2. `_como()` - 151 edges
-3. `sembrar_usuario_activo()` - 112 edges
+3. `sembrar_usuario_activo()` - 113 edges
 4. `ya` - 107 edges
 5. `_con_sesion()` - 106 edges
-6. `call_deepseek_api()` - 69 edges
-7. `db()` - 57 edges
-8. `requiere_plan()` - 53 edges
+6. `call_deepseek_api()` - 70 edges
+7. `requiere_plan()` - 63 edges
+8. `db()` - 57 edges
 9. `requiere_permiso()` - 51 edges
 10. `responder_tutor()` - 49 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `test_content_type_no_json_devuelve_415_json_no_html()` --calls--> `usuario_autenticado()`  [INFERRED]
+  tests/test_error_handler.py → conftest.py
 - `test_ruta_generar_test_avanzado_bloqueada_para_plan_gratis()` --calls--> `usuario_autenticado()`  [INFERRED]
   tests/test_generador_preguntas_verificado.py → conftest.py
-- `test_ruta_eliminar_conversacion_inexistente_da_404()` --calls--> `usuario_autenticado()`  [INFERRED]
-  tests/test_tu_tutor.py → conftest.py
-- `test_ruta_tu_tutor_devuelve_502_si_deepseek_falla_y_no_gasta_cupo()` --calls--> `usuario_autenticado()`  [INFERRED]
-  tests/test_tu_tutor.py → conftest.py
-- `test_ruta_tu_tutor_no_gasta_cupo_si_falla_preparar_contexto()` --calls--> `usuario_autenticado()`  [INFERRED]
-  tests/test_tu_tutor.py → conftest.py
-- `test_ruta_tu_tutor_requiere_premium_y_registra_uso()` --calls--> `usuario_autenticado()`  [INFERRED]
-  tests/test_tu_tutor.py → conftest.py
+- `test_ruta_eliminar_cuenta()` --calls--> `usuario_autenticado()`  [INFERRED]
+  tests/test_gestion_cuenta.py → conftest.py
+- `test_ruta_exportar_datos()` --calls--> `usuario_autenticado()`  [INFERRED]
+  tests/test_gestion_cuenta.py → conftest.py
+- `test_requiere_plan_bloquea_a_quien_no_ha_verificado_el_email()` --calls--> `usuario_autenticado()`  [INFERRED]
+  tests/test_prueba_gratuita.py → conftest.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (357 total, 40 thin omitted)
+## Communities (354 total, 37 thin omitted)
 
 ### Community 1 - "test_admin.py"
 Cohesion: 0.03
 Nodes (142): _como(), Pruebas del panel de administración (blueprints/admin.py + requiere_admin). Lo…, test_admin_accede(), test_admin_asigna_roles(), test_asignar_roles_requiere_admin_total(), test_auditoria_ordena_reciente_primero(), test_auditoria_paginada(), test_avisos_oficiales_crear_manual_con_tipo_personalizado_y_url_inap() (+134 more)
 
 ### Community 2 - "posthog-array.js"
-Cohesion: 0.04
-Nodes (79): s(), l(), aa(), addFeatureFlagsHandler(), allowedMetrics(), as(), Bo(), Br (+71 more)
+Cohesion: 0.03
+Nodes (86): aa(), addFeatureFlagsHandler(), ba, Bo(), Br, Ca(), captureException(), captureLog() (+78 more)
 
 ### Community 3 - "ya"
 Cohesion: 0.04
-Nodes (40): addExceptionStep(), b(), canRenderSurvey(), clearCache(), displaySurvey(), g(), getAllFeatureFlags(), getEarlyAccessFeatures() (+32 more)
+Nodes (20): clearCache(), critical(), destroy(), error(), flushLogs(), getEarlyAccessFeatures(), handlePageUnload(), log() (+12 more)
 
-### Community 4 - "tareas_programadas.py"
-Cohesion: 0.08
-Nodes (55): enviar_verificacion_email(), route, Rutas de autenticación relacionadas con correos que Firebase mandaría por su…, Genera el enlace de restablecimiento de contraseña con Firebase Admin y lo…, Genera el enlace de verificación de correo con Firebase Admin y lo envía por…, recuperar_contrasena(), _clave_cron_valida(), enviar_recordatorios_activacion() (+47 more)
+### Community 4 - "email_utils.py"
+Cohesion: 0.10
+Nodes (39): enviar_verificacion_email(), route, Rutas de autenticación relacionadas con correos que Firebase mandaría por su…, Genera el enlace de restablecimiento de contraseña con Firebase Admin y lo…, Genera el enlace de verificación de correo con Firebase Admin y lo envía por…, recuperar_contrasena(), _aviso(), _boton() (+31 more)
 
 ### Community 5 - "test_publicacion_estatica_boe.py"
 Cohesion: 0.06
-Nodes (65): avisos_oficiales_actualizar(), actualizar_pagina_avisos_general(), actualizar_pagina_estatica_avisos(), _cabeceras(), _consultar_avisos_publicados(), _consultar_avisos_publicados_todos(), _escribir_archivo_github(), etiqueta_tipo_aviso() (+57 more)
+Nodes (66): avisos_oficiales_actualizar(), avisos_oficiales_listar(), actualizar_pagina_avisos_general(), actualizar_pagina_estatica_avisos(), _cabeceras(), _consultar_avisos_publicados(), _consultar_avisos_publicados_todos(), _escribir_archivo_github() (+58 more)
 
 ### Community 6 - "pdf_ia.py"
-Cohesion: 0.12
-Nodes (50): Exige que el usuario tenga, como mínimo, el plan `minimo`. Por defecto…, requiere_plan(), chat_pdf_mensaje(), chat_pdf_mensaje_stream(), crear_carpeta_documentos(), detener_generacion(), documento_banco_preguntas(), documento_banco_tarjetas() (+42 more)
+Cohesion: 0.14
+Nodes (48): Exige que el usuario tenga, como mínimo, el plan `minimo`. Por defecto…, requiere_plan(), chat_pdf_mensaje(), chat_pdf_mensaje_stream(), crear_carpeta_documentos(), detener_generacion(), documento_banco_preguntas(), documento_banco_tarjetas() (+40 more)
 
-### Community 7 - "admin.py"
-Cohesion: 0.04
-Nodes (128): Exige que quien llama sea administrador (custom claim admin:true en su token de…, Exige que quien llama tenga AL MENOS UNO de los permisos indicados (o sea…, requiere_admin(), requiere_permiso(), analitica_contenido(), auditoria_listar(), avisos_oficiales_crear(), avisos_oficiales_editar() (+120 more)
-
-### Community 8 - "test_utils.py"
-Cohesion: 0.12
-Nodes (26): _normalizar_pregunta_pdf(), Deja una pregunta cruda de generar_preguntas_ia_en_lotes/…, _pregunta_base(), Pruebas de utils.barajar_opciones_pregunta: los LLM tienden a poner la…, test_conserva_las_4_opciones_sin_perder_ni_duplicar_contenido(), test_explicacion_remapeada_a_la_nueva_letra_correcta(), test_no_siempre_deja_la_correcta_en_a(), test_no_toca_explicacion_que_no_sigue_el_formato_por_letra() (+18 more)
-
-### Community 9 - "detect-html.mjs"
+### Community 7 - "route"
 Cohesion: 0.07
-Nodes (39): collectStaticCssText(), checkStaticPageTypography(), detectHtml(), STATIC_ELEMENT_RULES, checkElementGlow(), checkElementMotion(), checkElementMotionDOM(), checkElementOversizedH1() (+31 more)
+Nodes (71): Exige que quien llama tenga AL MENOS UNO de los permisos indicados (o sea…, requiere_permiso(), avisos_oficiales_crear(), avisos_oficiales_editar(), cambios_temario_actualizar(), cambios_temario_listar(), errores_ia_actualizar(), _id_valido() (+63 more)
+
+### Community 8 - "utils.py"
+Cohesion: 0.11
+Nodes (32): _normalizar_pregunta_pdf(), Deja una pregunta cruda de generar_preguntas_ia_en_lotes/…, _pregunta_base(), Pruebas de utils.barajar_opciones_pregunta: los LLM tienden a poner la…, test_conserva_las_4_opciones_sin_perder_ni_duplicar_contenido(), test_explicacion_remapeada_a_la_nueva_letra_correcta(), test_no_siempre_deja_la_correcta_en_a(), test_no_toca_explicacion_que_no_sigue_el_formato_por_letra() (+24 more)
+
+### Community 9 - "parseAnyColor"
+Cohesion: 0.10
+Nodes (46): checkBorders(), checkColors(), checkElementAIPaletteDOM(), checkElementBorders(), checkElementBordersDOM(), checkElementColors(), checkElementColorsDOM(), checkElementGlowDOM() (+38 more)
 
 ### Community 10 - "auth.js"
 Cohesion: 0.06
-Nodes (56): https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js, https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js, https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js, actualizarEnlacesNav(), actualizarIconoTema(), alternarTema(), aplicarEstiloAviso(), atributosEnlace() (+48 more)
+Nodes (53): actualizarEnlacesNav(), actualizarIconoTema(), alternarTema(), aplicarEstiloAviso(), atributosEnlace(), auth, calcularNotificaciones(), cambiarContrasena() (+45 more)
 
 ### Community 12 - "test_generador_preguntas_verificado.py"
-Cohesion: 0.17
-Nodes (20): generar_test_verificado(), Genera hasta num_preguntas preguntas verificadas, repartidas entre 'temas'…, _eventos_sse(), _mock_deepseek_siempre_valido(), Pruebas del generador de Test Personalizado con arquitectura generar ->…, test_generar_test_verificado_evento_parada_detiene_el_relleno(), test_generar_test_verificado_modo_realista_pondera_por_bloque(), test_generar_test_verificado_rellena_hueco_agotado_con_otro_tema() (+12 more)
+Cohesion: 0.11
+Nodes (34): _elegir_ancla_legal(), _elegir_tipo_pregunta(), _extraer_articulos(), _generar_pregunta_verificada(), generar_test_verificado(), Trocea el texto verbatim de un subbloque en fragmentos por artículo real. Si no…, Elige 1 (o 2, para 'distincion_articulos') fragmento(s) de artículo real sobre…, Genera hasta num_preguntas preguntas verificadas, repartidas entre 'temas'… (+26 more)
 
 ### Community 13 - "live-browser.js"
 Cohesion: 0.03
 Nodes (126): addManualContextText(), applyEditing(), applyGlobalBarLabelState(), applyPlaceholderSizingStyles(), bufferToBase64(), buildCollapsible(), buildColorModels(), buildListHtml() (+118 more)
 
 ### Community 14 - "test_tu_tutor.py"
-Cohesion: 0.08
-Nodes (53): responder_tutor(), _eventos_sse(), Pruebas de Tu Tutor (chat_controller.responder_tutor + blueprints/tu_tutor.py):…, _sembrar_tema(), test_contexto_de_pagina_pasa_la_pregunta_en_pantalla(), test_contexto_personal_del_usuario_se_incluye_en_el_prompt(), test_contexto_personal_incluye_la_nota_del_ultimo_test(), test_conversacion_normal_si_conserva_el_historial() (+45 more)
+Cohesion: 0.06
+Nodes (62): _modelo_tutor(), responder_tutor(), responder_tutor_stream(), _eventos_sse(), Pruebas de Tu Tutor (chat_controller.responder_tutor + blueprints/tu_tutor.py):…, El modelo de DeepSeek que usa Tu Tutor es configurable sin redeploy vía…, _sembrar_tema(), test_contexto_de_pagina_pasa_la_pregunta_en_pantalla() (+54 more)
 
-### Community 15 - "Ga"
+### Community 15 - ".register"
 Cohesion: 0.07
-Nodes (8): cancelPendingSurvey(), canRenderSurveyAsync(), Ga, getSurveys(), qa(), setElementSelectors(), Va, Wa
+Nodes (9): bn(), cancelPendingSurvey(), Ga, overrideLinkedFlag(), overrideSampling(), overrideTrigger(), setElementSelectors(), Va (+1 more)
 
 ### Community 16 - "TestGenerarPreguntasIaEnLotes"
 Cohesion: 0.16
 Nodes (5): generar_preguntas_ia_en_lotes(), Genera 'num_preguntas' preguntas pidiéndolas a DeepSeek en varios lotes en…, _construir_prompt_fabrica(), Devuelve un construir_prompt(n) de prueba que siempre pide n=1 (los tests aquí…, TestGenerarPreguntasIaEnLotes
 
 ### Community 17 - "test_limites_uso.py"
-Cohesion: 0.06
-Nodes (63): eliminar_conversacion(), obtener_conversacion(), obtener_conversaciones_usuario(), limit, route, Tu Tutor: chat conversacional unificado (antes eran dos herramientas separadas…, tu_tutor_route(), tu_tutor_stream_route() (+55 more)
+Cohesion: 0.07
+Nodes (55): Consumo real de cada herramienta en el periodo actual frente al límite del plan…, _uso_herramientas(), _bucket_uso(), _clave_periodo(), _config_tool(), devolver_uso(), _estructura_defecto(), _fusionar_overrides() (+47 more)
 
 ### Community 18 - "admin/script.js"
 Cohesion: 0.06
-Nodes (41): activarPestana(), alternarSubmenuSidebar(), atraparTabEnModal(), bloquesAbiertos, bloquesAbiertosPreguntas, cerrarSidebar(), descargarCSV(), _EJEMPLO_IMPORT (+33 more)
+Nodes (41): activarPestana(), alternarSubmenuSidebar(), atraparTabEnModal(), _avisoTemasFaltantesHtml(), bloquesAbiertos, bloquesAbiertosPreguntas, _cargarSaludVigilancia(), cerrarSidebar() (+33 more)
+
+### Community 19 - "N"
+Cohesion: 0.09
+Nodes (8): cn(), fn(), getFeatureFlagDetails(), getFeatureFlagPayload(), getFeatureFlagResult(), N(), On, transformToEventProperties()
 
 ### Community 20 - "subida-pdf-tarjetas/script.js"
 Cohesion: 0.05
 Nodes (44): ajustarAlturaTarjeta(), alertaPreguntas, archivoPdfInput, autoSaveIndicator, btnAnterior, btnCerrar, btnEscuchar, btnListaTarjetas (+36 more)
 
 ### Community 21 - "checks.mjs"
-Cohesion: 0.04
-Nodes (141): ANIMATION_VALUE_KEYWORDS, buildHtmlPatternCorpora(), checkBorders(), checkClippedOverflow(), checkColors(), checkCreamPalette(), checkEdgeFlushCardsDOM(), checkElementAIPaletteDOM() (+133 more)
+Cohesion: 0.03
+Nodes (129): ANIMATION_VALUE_KEYWORDS, borderColorsFromStyle(), borderWidthsFromStyle(), buildHtmlPatternCorpora(), checkClippedOverflow(), checkEdgeFlushCardsDOM(), checkElementBlinkingCursorDOM(), checkElementClippedOverflow() (+121 more)
 
 ### Community 22 - "chat_controller.py"
-Cohesion: 0.12
-Nodes (32): _actualizar_memoria_cruzada(), _actualizar_resumen_si_hace_falta(), agregar_mensaje_a_conversacion(), _bloque_explicar_fallo(), _bloque_respuesta_verificada(), crear_conversacion(), _es_modo_examen(), _es_pregunta_de_test() (+24 more)
+Cohesion: 0.08
+Nodes (43): _actualizar_memoria_cruzada(), _actualizar_resumen_si_hace_falta(), agregar_mensaje_a_conversacion(), _bloque_explicar_fallo(), _bloque_respuesta_verificada(), _contexto_personal_usuario(), crear_conversacion(), _es_modo_examen() (+35 more)
 
 ### Community 23 - "registro_progreso_usuario.py"
-Cohesion: 0.06
-Nodes (56): es_dominio_email_desechable(), Dominios de correo desechable/temporal conocidos: una cuenta creada con uno de…, True si el dominio del email está en la lista conocida de correo…, conectar_firestore(), main(), migrar(), Migración única: antes de este cambio existía un plan "gratis" permanente;…, mejor_plan() (+48 more)
+Cohesion: 0.07
+Nodes (52): es_dominio_email_desechable(), Dominios de correo desechable/temporal conocidos: una cuenta creada con uno de…, True si el dominio del email está en la lista conocida de correo…, conectar_firestore(), main(), migrar(), Migración única: antes de este cambio existía un plan "gratis" permanente;…, mejor_plan() (+44 more)
 
 ### Community 24 - "test_documentos_pdf.py"
 Cohesion: 0.04
-Nodes (66): detectar_texto_legal(), True si 'texto' tiene pinta de ser una ley/reglamento/BOE (en cuyo caso…, actualizar_progreso_generacion(), actualizar_tipo_contenido(), actualizar_titulo(), _banco_atascado(), buscar_documento_por_texto(), crear_documento() (+58 more)
+Nodes (67): detectar_texto_legal(), True si 'texto' tiene pinta de ser una ley/reglamento/BOE (en cuyo caso…, actualizar_progreso_generacion(), actualizar_titulo(), anadir_al_banco(), _banco_atascado(), _banco_ref(), buscar_documento_por_texto() (+59 more)
 
 ### Community 25 - "modern-screenshot.umd.js"
-Cohesion: 0.09
-Nodes (53): ae(), be(), bt(), Ce(), Ct(), de(), dt(), _e() (+45 more)
+Cohesion: 0.07
+Nodes (54): ae(), be(), bt(), Ce(), Ct(), de(), dt(), _e() (+46 more)
 
 ### Community 26 - "login/script.js"
 Cohesion: 0.05
 Nodes (29): a11yModalRecuperar, a11yModalVincular, avisoPrueba, bloqueNombreApellidos, bloqueRepetirPassword, bloqueTerminos, btnGoogle, btnOlvidePassword (+21 more)
 
-### Community 27 - "test_auth_utils.py"
-Cohesion: 0.12
-Nodes (19): obtener_identidad_desde_token(), obtener_uid_desde_token(), Verifica el Firebase ID token del header Authorization: Bearer <token>.…, Compatibilidad: (uid, email) verificados o None., FakeRequest, mini_app(), fixture, Pruebas de auth_utils.py: el guardián de acceso de toda la API. Un fallo aquí… (+11 more)
+### Community 27 - "auth_utils.py"
+Cohesion: 0.09
+Nodes (27): _decodificar_token_admin(), _decodificar_token_peticion(), obtener_identidad_desde_token(), obtener_uid_desde_token(), _permisos_de(), Verifica el token Bearer y devuelve (decoded, None) o (None, respuesta de…, Conjunto de permisos efectivos del token. El super-admin los tiene todos., verify_id_token() con un reintento ante fallos de red al obtener los… (+19 more)
 
 ### Community 28 - "regenerar_temario_ofimatica.py"
 Cohesion: 0.11
@@ -502,12 +503,12 @@ Cohesion: 0.07
 Nodes (36): alertaPreguntas, archivoPdfInput, bloquesAHtml(), btnCerrar, btnDescargarPdf, calcularCorteSeguro(), construirArbolLista(), contenedorCarga (+28 more)
 
 ### Community 30 - "tarjetas_generator.py"
-Cohesion: 0.14
-Nodes (14): _asegurar_tarjeta_valida(), _generar_candidatas_fragmento(), _parsear_tarjetas(), _prompt_con_exclusion(), _prompt_generacion(), _prompt_verificacion(), Generador de tarjetas de memoria (flashcards) a partir de un PDF subido por el…, Extrae la lista de tarjetas candidatas de la respuesta cruda de DeepSeek. Con… (+6 more)
+Cohesion: 0.17
+Nodes (14): _asegurar_tarjeta_valida(), _conceptos_juridicos_citados(), _generar_candidatas_fragmento(), _normalizar(), _normalizar_cifra(), _prompt_con_exclusion(), _prompt_generacion(), _prompt_verificacion() (+6 more)
 
-### Community 31 - "coste_ia.py"
-Cohesion: 0.09
-Nodes (25): acumular_usage(), coste_estimado(), flush_coste(), guardar_coste_directo(), _incrementar_mes(), Contabilidad del gasto en IA (tokens de DeepSeek) por usuario. Cómo funciona: -…, Suma tokens al acumulador de la petición (flask.g). Debe llamarse desde el hilo…, Suma el consumo de una llamada al acumulador de la petición (g). No escribe en… (+17 more)
+### Community 31 - "AcumuladorTokens"
+Cohesion: 0.08
+Nodes (26): _volcar_coste_ia(), AcumuladorTokens, acumular_usage(), coste_estimado(), flush_coste(), guardar_coste_directo(), _incrementar_mes(), Contabilidad del gasto en IA (tokens de DeepSeek) por usuario. Cómo funciona: -… (+18 more)
 
 ### Community 32 - "test_generar_test_oficial.py"
 Cohesion: 0.12
@@ -517,21 +518,21 @@ Nodes (29): _pregunta(), Pruebas del generador de Test Oficial (banco de pregunt
 Cohesion: 0.09
 Nodes (13): canCreateInsert(), clampPlaceholderSize(), computeInsertPosition(), groupSiblingRows(), hitSiblingInsertGap(), horizontalOverlap(), insertCreateDisabledReason(), insertLineCoords() (+5 more)
 
-### Community 34 - "warn"
-Cohesion: 0.06
-Nodes (37): captureLog(), Ce(), ct(), dt(), Ee(), Et(), flush(), flushWithTimeout() (+29 more)
+### Community 34 - "ke"
+Cohesion: 0.10
+Nodes (7): ei, ht, ii, ke(), nt(), ti(), ut()
 
 ### Community 35 - "_eventos_sse"
 Cohesion: 0.10
 Nodes (7): _eventos_sse(), Ruta rediseñada sobre tarjetas_generator.generar_tarjetas_verificadas (pipeline…, Test de humo: la ruta llega hasta el punto de generación con IA (mockeada) y…, /resumir-pdf y /generar-esquema-desde-pdf, si la respuesta no tiene un…, TestGenerarDocumentoValidadoIntegracion, TestGenerarTarjetasDesdePdf, TestResumirPdfYGenerarTestDesdePdf
 
 ### Community 36 - "rutas_progreso.py"
-Cohesion: 0.06
-Nodes (62): _decodificar_token_admin(), _decodificar_token_peticion(), obtener_oposicion_solicitada(), _permisos_de(), Verifica el token Bearer y devuelve (decoded, None) o (None, respuesta de…, Conjunto de permisos efectivos del token. El super-admin los tiene todos., verify_id_token() con un reintento ante fallos de red al obtener los…, Header Authorization: Bearer <token> ya verificado -- el dict crudo que… (+54 more)
+Cohesion: 0.07
+Nodes (42): actualizar_banco_fallos(), listar_fallos(), ordenar_por_prioridad_repaso(), Banco persistente de "preguntas falladas" por usuario/oposición. Antes, el test…, Repaso espaciado simple: en vez de elegir al azar entre las preguntas falladas…, desmarcar_favorita(), listar_favoritas(), marcar_favorita() (+34 more)
 
 ### Community 37 - "accept-css.mjs"
-Cohesion: 0.20
-Nodes (23): bakeParamValues(), collectAllSelectors(), collectSelectorsFromNodes(), escapeRegExp(), formatBody(), isToggleOn(), normalizeSelector(), normalizeToggleForVar() (+15 more)
+Cohesion: 0.24
+Nodes (20): bakeParamValues(), collectAllSelectors(), collectSelectorsFromNodes(), escapeRegExp(), formatBody(), isToggleOn(), normalizeSelector(), normalizeToggleForVar() (+12 more)
 
 ### Community 38 - "subida-pdf-resumen/script.js"
 Cohesion: 0.07
@@ -550,16 +551,16 @@ Cohesion: 0.20
 Nodes (29): acortarTitulo(), actualizarBotonScroll(), actualizarBurbujaBot(), agregarCtaPlanes(), agregarMensaje(), aplicarEnfasis(), aplicarSugerenciaBienvenida(), cargarConversacion() (+21 more)
 
 ### Community 42 - "call_deepseek_api"
-Cohesion: 0.17
-Nodes (27): call_deepseek_api(), Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.…, Pruebas de deepseek_utils.call_deepseek_api: el modo JSON nativo (nunca usado…, _respuesta_finish_reason(), _respuesta_http_error(), _respuesta_ok(), test_call_deepseek_api_incluye_temperature_con_deepseek_v4_flash(), test_call_deepseek_api_incluye_temperature_con_deepseek_v4_pro() (+19 more)
+Cohesion: 0.13
+Nodes (33): call_deepseek_api(), generar_contenido_desde_texto(), _leer_respuesta_completa(), _leer_respuesta_en_streaming(), Llamada clásica (stream=false): se espera a la respuesta entera y se devuelve…, Misma llamada pero con stream=true, consumiendo el SSE entero aquí dentro y…, Función genérica para generar diferentes tipos de contenido desde texto, Función mejorada para llamar a la API de DeepSeek con mejor manejo de errores.… (+25 more)
 
 ### Community 43 - "Auditoría de seguridad y calidad — Domina tu Opo (oposicion-age)"
 Cohesion: 0.10
 Nodes (20): Auditoría de seguridad y calidad — Domina tu Opo (oposicion-age), C1. Inyección de fórmulas CSV (CSV/Formula Injection) en exportaciones del panel admin — ✅ IMPLEMENTADO, C2. Resultados de test no verificados en servidor: manipulación de estadísticas y ranking — ✅ IMPLEMENTADO, Checklist de mejora continua, Duplicación de código (DRY) — específicamente en `banco_fallos.py` / `banco_favoritas.py` / `banco_preguntas_ia.py` — ✅ IMPLEMENTADO, Estado de implementación, Funciones monolíticas (>150-200 líneas) — ❌ PENDIENTE (refactor grande, no solicitado), Hallazgos bajos (code smells / malas prácticas) (+12 more)
 
 ### Community 44 - "test_validador_preguntas.py"
-Cohesion: 0.15
-Nodes (34): _pregunta_valida(), Pruebas de validador_preguntas.py: filtra preguntas mal formadas o de baja…, test_acepta_explicacion_justo_en_el_limite(), test_detectar_repeticiones_cuenta_frases_normativas_repetidas(), test_falta_una_clave_obligatoria(), test_falta_una_opcion_de_la_a_a_la_d(), test_filtrar_preguntas_repetidas_quita_las_que_mencionan_el_concepto(), test_no_es_un_diccionario() (+26 more)
+Cohesion: 0.14
+Nodes (36): _pregunta_valida(), Pruebas de validador_preguntas.py: filtra preguntas mal formadas o de baja…, test_acepta_explicacion_justo_en_el_limite(), test_detectar_repeticiones_cuenta_frases_normativas_repetidas(), test_falta_una_clave_obligatoria(), test_falta_una_opcion_de_la_a_a_la_d(), test_filtrar_preguntas_repetidas_quita_las_que_mencionan_el_concepto(), test_no_es_un_diccionario() (+28 more)
 
 ### Community 45 - "anime.esm.js"
 Cohesion: 0.05
@@ -578,8 +579,8 @@ Cohesion: 0.09
 Nodes (36): /assets/vendor/anime.esm.js, escena, animarSubidaRacha(), AVISOS, cargarAvisosOficiales(), cargarDatosOposicion(), cargarProgresoInsignias(), cargarRacha() (+28 more)
 
 ### Community 49 - "test_tareas_programadas.py"
-Cohesion: 0.09
-Nodes (23): _fecha_hace(), _mes_actual(), _prueba_fin_en(), Pruebas del cron de recordatorios de racha (blueprints/tareas_programadas.py):…, _registrado_hace(), test_avisa_a_quien_cruza_un_umbral_de_inactividad(), test_avisa_a_quien_cruza_un_umbral_sin_ninguna_oposicion_activada(), test_avisa_a_quien_esta_en_riesgo_de_perder_la_racha() (+15 more)
+Cohesion: 0.08
+Nodes (26): _fecha_hace(), _mes_actual(), _prueba_fin_en(), Pruebas del cron de recordatorios de racha (blueprints/tareas_programadas.py):…, _registrado_hace(), test_avisa_a_quien_cruza_un_umbral_de_inactividad(), test_avisa_a_quien_cruza_un_umbral_sin_ninguna_oposicion_activada(), test_avisa_a_quien_esta_en_riesgo_de_perder_la_racha() (+18 more)
 
 ### Community 50 - "cargar_temario_gace_bloque2_ue.py"
 Cohesion: 0.16
@@ -590,40 +591,40 @@ Cohesion: 0.14
 Nodes (25): activarBotonFavorita(), actualizarNavegadorPreguntas(), botonFavoritaHTML(), cargarTemas(), formatearTiempo(), guardarTestAutomaticamente(), iniciarBotonSimulacroOficial(), iniciarSelectorPsicotecnicas() (+17 more)
 
 ### Community 52 - "generador_preguntas_verificado.py"
-Cohesion: 0.17
-Nodes (20): _bloques_contenido(), _bloques_texto_legal(), _elegir_tipo_pregunta(), _es_normativo(), _prompt_generacion(), _prompt_generacion_descriptivo(), _prompt_generacion_normativo(), _prompt_verificacion() (+12 more)
+Cohesion: 0.18
+Nodes (19): _bloques_contenido(), _bloques_texto_legal(), _es_normativo(), _prompt_generacion(), _prompt_generacion_descriptivo(), _prompt_generacion_normativo(), _prompt_verificacion(), _prompt_verificacion_descriptivo() (+11 more)
 
 ### Community 53 - "mi-cuenta/script.js"
 Cohesion: 0.10
 Nodes (21): a11yModalCancelar, a11yModalEliminar, btnConfirmarCancelar, btnConfirmarEliminar, btnContacto, campoComentario, campoConfirmar, campoContacto (+13 more)
 
 ### Community 54 - "De"
-Cohesion: 0.07
-Nodes (10): Ae(), De, ei, ii, ke(), nt(), Se(), si (+2 more)
+Cohesion: 0.13
+Nodes (7): Ae(), De, is(), Se(), si, vs(), xe()
 
 ### Community 55 - "coleccion_examenes_oficiales"
-Cohesion: 0.07
-Nodes (37): _preguntas_stats(), Cuenta preguntas oficiales activas / inactivas / sin explicación., main(), Sube a Firestore los datos oficiales de la convocatoria vigente de una…, aplicar(), doc_ids(), _firestore_client(), main() (+29 more)
+Cohesion: 0.05
+Nodes (50): _preguntas_stats(), Cuenta preguntas oficiales activas / inactivas / sin explicación., main(), Sube a Firestore los datos oficiales de la convocatoria vigente de una…, cargar_examen(), generar_explicacion(), Carga el Ejercicio Único de una convocatoria AGE (Cuerpo General Administrativo…, cargar_examen() (+42 more)
 
 ### Community 56 - "preguntas-falladas/script.js"
-Cohesion: 0.17
-Nodes (20): activarBotonFavorita(), actualizarNavegadorPreguntas(), botonFavoritaHTML(), cargarTemas(), formatearTiempo(), guardarTestFalladasAutomaticamente(), iniciarTemporizador(), listaTemasGlobal (+12 more)
+Cohesion: 0.16
+Nodes (21): activarBotonFavorita(), actualizarNavegadorPreguntas(), botonFavoritaHTML(), cargarTemas(), formatearTiempo(), guardarTestFalladasAutomaticamente(), iniciarTemporizador(), listaTemasGlobal (+13 more)
 
 ### Community 57 - "preguntas-favoritas/script.js"
 Cohesion: 0.16
 Nodes (21): activarBotonFavorita(), actualizarNavegadorPreguntas(), botonFavoritaHTML(), cargarTemas(), formatearTiempo(), guardarTestFavoritasAutomaticamente(), iniciarTemporizador(), listaTemasGlobal (+13 more)
 
 ### Community 58 - "repetir-test/script.js"
-Cohesion: 0.14
-Nodes (21): activarBotonFavorita(), actualizarNavegadorPreguntas(), botonFavoritaHTML(), cargarListaTemas(), confirmarFinalizar(), formatearMinSeg(), generarComparacionIntentosHTML(), iniciarTemporizador() (+13 more)
+Cohesion: 0.16
+Nodes (19): activarBotonFavorita(), actualizarNavegadorPreguntas(), botonFavoritaHTML(), cargarListaTemas(), confirmarFinalizar(), formatearMinSeg(), generarComparacionIntentosHTML(), iniciarTemporizador() (+11 more)
 
 ### Community 59 - "test_email_utils.py"
-Cohesion: 0.17
-Nodes (22): enviar_email_bienvenida(), Correo único al crear la cuenta (ver inicializar_estadisticas_usuario en…, Pruebas de email_utils.py: la integración con la API transaccional de Brevo. Se…, _respuesta_ok(), test_activar_oposicion_incluye_el_enlace_a_zona_opositor(), test_activar_oposicion_usa_plantilla_de_brevo_si_esta_configurada(), test_aviso_oficial_manda_html_de_reserva_con_enlaces_boe_e_inap(), test_aviso_oficial_sin_url_no_manda_boton_roto() (+14 more)
+Cohesion: 0.15
+Nodes (24): enviar_email_aviso_oficial(), enviar_email_bienvenida(), Correo único al crear la cuenta (ver inicializar_estadisticas_usuario en…, Aviso de que se ha publicado algo oficial relevante (convocatoria, lista de…, Pruebas de email_utils.py: la integración con la API transaccional de Brevo. Se…, _respuesta_ok(), test_activar_oposicion_incluye_el_enlace_a_zona_opositor(), test_activar_oposicion_usa_plantilla_de_brevo_si_esta_configurada() (+16 more)
 
-### Community 60 - "app.py"
-Cohesion: 0.11
-Nodes (21): cuerpo_json_invalido(), demasiadas_peticiones(), estado_salud(), fichero_demasiado_grande(), manejar_error_no_controlado(), limit, route, raiz() (+13 more)
+### Community 60 - "test_ia.py"
+Cohesion: 0.08
+Nodes (38): cuerpo_json_invalido(), demasiadas_peticiones(), estado_salud(), fichero_demasiado_grande(), manejar_error_no_controlado(), limit, route, raiz() (+30 more)
 
 ### Community 61 - "test_generator.py"
 Cohesion: 0.10
@@ -631,75 +632,75 @@ Nodes (23): _articulos_citados(), _asegurar_pregunta_valida(), _candidatas_por_a
 
 ### Community 62 - "test_gestion_cuenta.py"
 Cohesion: 0.07
-Nodes (55): _clave(), desregistrar(), Control de parada para generaciones en segundo plano (resumen, esquema, test,…, Crea (o reinicia, si por lo que sea quedó uno viejo sin desregistrar) el evento…, Se llama SIEMPRE al terminar (con éxito, con error, o porque se pidió parar) --…, Marca el evento de parada de esta generación, si sigue en curso. Devuelve True…, Marca la parada de TODAS las generaciones en curso de un usuario, sin necesitar…, registrar() (+47 more)
+Nodes (56): _clave(), desregistrar(), Control de parada para generaciones en segundo plano (resumen, esquema, test,…, Crea (o reinicia, si por lo que sea quedó uno viejo sin desregistrar) el evento…, Se llama SIEMPRE al terminar (con éxito, con error, o porque se pidió parar) --…, Marca el evento de parada de esta generación, si sigue en curso. Devuelve True…, Marca la parada de TODAS las generaciones en curso de un usuario, sin necesitar…, registrar() (+48 more)
 
 ### Community 63 - "vigilancia_boe.py"
 Cohesion: 0.14
-Nodes (25): _buscar_clave(), _buscar_lista(), _clasificar_relevancia_temario_con_ia(), detectar_cambios_leyes_vigiladas(), _doc_estado(), _existe_propuesta_pendiente_reciente(), _fechas_a_revisar(), _get_json() (+17 more)
+Nodes (23): test_bloque_con_texto_solo_espacios_se_descarta(), test_detectar_cambios_leyes_vigiladas_crea_propuesta_pendiente(), test_detectar_cambios_leyes_vigiladas_no_duplica_si_ya_hay_propuesta_pendiente_reciente(), _buscar_clave(), _buscar_lista(), _clasificar_relevancia_temario_con_ia(), detectar_cambios_leyes_vigiladas(), _existe_propuesta_pendiente_reciente() (+15 more)
 
 ### Community 64 - "test-progreso.js"
 Cohesion: 0.18
 Nodes (15): activarGuardadoAlSalir(), actualizarContenidoEnCurso(), armarDeteccionOffline(), autoguardarProgreso(), borrarCopiaLocal(), cargarTestEnProgreso(), claveOffline(), enviarAutosave() (+7 more)
 
 ### Community 65 - "repasar-preguntas/script.js"
-Cohesion: 0.15
-Nodes (19): cache, cargarTemas(), elAviso, elCargando, elFiltroBloque, elFiltroTema, elLista, escaparHtml() (+11 more)
+Cohesion: 0.11
+Nodes (22): /assets/favoritas.js, renderizarSelectorTemas(), cache, cargarTemas(), elAviso, elCargando, elFiltroBloque, elFiltroTema (+14 more)
 
 ### Community 66 - "cargar_temario_auxiliar.py"
 Cohesion: 0.20
 Nodes (17): clasificar_subbloque_auxiliar(), construir_subbloques_clasificados(), guardar_preview(), main(), Carga el Bloque I ("Organización Pública", 16 temas) de "Temario Auxiliar"…, Igual que clasificar_subbloque_age de completar_temario_age.py, pero con los 16…, subir_a_firestore(), detectar_offset() (+9 more)
 
-### Community 67 - "qo"
-Cohesion: 0.12
-Nodes (5): Dn, ensureFlagsLoaded(), getProductTours(), getRemoteConfigPayload(), qo()
+### Community 67 - "Dn"
+Cohesion: 0.17
+Nodes (3): Dn, ensureFlagsLoaded(), Lo
 
 ### Community 68 - "subida-pdf-chat-pdf/script.js"
 Cohesion: 0.12
 Nodes (30): actualizarBurbujaBot(), actualizarDocbar(), agregarMensaje(), aplicarEnfasis(), cargarDocumentoPorId(), chatCard, crearBurbujaBot(), crearBurbujaUser() (+22 more)
 
-### Community 69 - "po"
-Cohesion: 0.08
-Nodes (11): Ao, ba, do(), fe(), gs(), isEnabled(), ja(), ma (+3 more)
+### Community 69 - "q"
+Cohesion: 0.06
+Nodes (43): s(), l(), allowedMetrics(), as(), Bs(), Bt(), cs(), d() (+35 more)
 
 ### Community 70 - "generar_tarjetas_verificadas"
 Cohesion: 0.20
 Nodes (3): generar_tarjetas_verificadas(), Genera hasta num_tarjetas tarjetas de memoria verificadas a partir de texto (ya…, TestGenerarTarjetasVerificadas
 
 ### Community 71 - "test_carpetas_documentos.py"
-Cohesion: 0.22
-Nodes (13): crear_carpeta(), eliminar_carpeta(), listar_carpetas(), Catálogo de carpetas del usuario: las creadas explícitamente con…, Borra la carpeta del catálogo y deja "sin carpeta" a los documentos que…, Pruebas del catálogo de carpetas de Mis Documentos (documentos_pdf.py + rutas…, test_carpeta_recien_creada_aparece_vacia(), test_crear_carpeta_con_nombre_vacio_no_hace_nada() (+5 more)
+Cohesion: 0.26
+Nodes (11): crear_carpeta(), listar_carpetas(), Catálogo de carpetas del usuario: las creadas explícitamente con…, Pruebas del catálogo de carpetas de Mis Documentos (documentos_pdf.py + rutas…, test_carpeta_recien_creada_aparece_vacia(), test_crear_carpeta_con_nombre_vacio_no_hace_nada(), test_eliminar_carpeta_deja_sin_carpeta_los_documentos_dentro(), test_listar_carpetas_incluye_las_ya_usadas_por_documentos_antiguos() (+3 more)
 
 ### Community 72 - "test_vigilancia_boe.py"
-Cohesion: 0.08
-Nodes (27): Revisa el BOE (leyes vigiladas + sumario diario) y deja en Firestore…, vigilar_boe(), _fake_response(), _metadatos(), Pruebas de vigilancia_boe.py: nunca publica/aplica nada sola -- solo crea…, _respuesta_http_error(), _sumario_con_item(), test_bloque_con_texto_solo_espacios_se_descarta() (+19 more)
+Cohesion: 0.19
+Nodes (16): _fake_response(), _metadatos(), Pruebas de vigilancia_boe.py: nunca publica/aplica nada sola -- solo crea…, _sumario_con_item(), test_clasificar_aviso_llamamiento_extraordinario_no_es_fecha_examen(), test_detectar_avisos_oficiales_crea_aviso_pendiente(), test_detectar_avisos_oficiales_ignora_lo_irrelevante_para_las_3_oposiciones(), test_detectar_avisos_oficiales_ignora_mencion_sin_tipo_de_aviso_reconocible() (+8 more)
 
 ### Community 73 - "test_resultado_test_oficial.py"
-Cohesion: 0.09
-Nodes (34): actualizar_estadisticas_esquema(), actualizar_estadisticas_test(), Deshace en estadisticas.{oposicion} la contribución de UN test ya guardado (ver…, revertir_estadisticas_test(), conectar_firestore(), corregir(), main(), Corrección única: el campo "resultado" (aprobado/suspendido) de un test se… (+26 more)
+Cohesion: 0.14
+Nodes (28): actualizar_estadisticas_test(), Deshace en estadisticas.{oposicion} la contribución de UN test ya guardado (ver…, revertir_estadisticas_test(), conectar_firestore(), corregir(), main(), Corrección única: el campo "resultado" (aprobado/suspendido) de un test se…, _contenido_con_aciertos_y_fallos() (+20 more)
 
-### Community 74 - "error"
-Cohesion: 0.08
-Nodes (18): Bt(), critical(), destroy(), error(), fa(), flushLogs(), ge(), gn() (+10 more)
+### Community 74 - "requiere_admin"
+Cohesion: 0.09
+Nodes (23): Exige que quien llama sea administrador (custom claim admin:true en su token de…, requiere_admin(), auditoria_listar(), banner_guardar(), limites_guardar(), limites_obtener(), promocion_guardar(), ranking_demo_estado() (+15 more)
 
 ### Community 75 - "demo/script.js"
 Cohesion: 0.18
 Nodes (16): actualizarNavegador(), btnDescargarPdf, cargarPreguntas(), confirmarFinalizar(), contCargando, contError, contNavegador, contResultados (+8 more)
 
-### Community 76 - "obtener_banco"
-Cohesion: 0.18
-Nodes (10): anadir_al_banco(), _banco_ref(), finalizar_banco(), iniciar_banco(), obtener_banco(), Devuelve el banco tal cual está en Firestore, salvo que lleve "generando" más…, Crea (o reinicia) el banco de preguntas/tarjetas de un documento antes de…, Persiste una pregunta/tarjeta aceptada en cuanto se genera (on_progreso de la… (+2 more)
+### Community 76 - "tareas_programadas.py"
+Cohesion: 0.16
+Nodes (21): _clave_cron_valida(), enviar_recordatorios_activacion(), enviar_recordatorios_prueba(), enviar_recordatorios_racha(), _guardia_diaria(), route, Tareas activadas por un cron externo (GitHub Actions), no por un usuario --…, Avisa por email del final de la prueba gratuita Premium (planes.py): 2 días… (+13 more)
 
-### Community 77 - "usuarios_detalle"
-Cohesion: 0.18
-Nodes (12): _contar_subcoleccion(), _ficha_actividad(), _notas_lista(), _oposiciones_activas(), _plan_usuario(), Nº de documentos de una subcolección del usuario. Usa la agregación count()…, Ficha completa de un usuario para el panel: plan por oposición, racha,…, Lista de notas internas del usuario. Migra en caliente la nota única antigua… (+4 more)
+### Community 77 - "admin.py"
+Cohesion: 0.04
+Nodes (68): analitica_contenido(), _bajas_agregadas(), bajas_listar(), banco_preguntas_resumen(), banner_obtener(), banner_publico(), _bloque_de_tema(), bootstrap_admin() (+60 more)
 
-### Community 78 - "guardar_limites_config"
-Cohesion: 0.50
-Nodes (4): guardar_limites_config(), invalidar_cache_limites(), Fuerza recargar los límites de Firestore en la próxima consulta (se llama tras…, Valida y guarda los límites editados desde el panel (PUT). Devuelve la config…
+### Community 78 - "temario.py"
+Cohesion: 0.18
+Nodes (16): activar_oposicion(), avisos_oficiales(), obtener_oposiciones_disponibles(), obtener_temas_disponibles(), _oposiciones_visibles_para_la_peticion(), progreso_usuario(), route, Rutas de consulta del catálogo de oposiciones y su temario. (+8 more)
 
 ### Community 79 - "estadisticas/script.js"
-Cohesion: 0.12
-Nodes (24): /assets/dom.js, renderizarSelectorTemas(), actualizarAnillo(), animarLineaTiempo(), reproducir(), easeInOutCubic(), paso(), cargarDatos() (+16 more)
+Cohesion: 0.15
+Nodes (22): /assets/dom.js, actualizarAnillo(), animarLineaTiempo(), reproducir(), easeInOutCubic(), paso(), cargarDatos(), fechaLocalYMD() (+14 more)
 
 ### Community 80 - "generar_propuesta_cambio"
 Cohesion: 0.25
@@ -714,20 +715,20 @@ Cohesion: 0.08
 Nodes (15): Pruebas de blueprints/temario.py: catálogo de oposiciones y su temario -- sin…, test_activar_oposicion_crea_la_suscripcion_con_prueba(), test_activar_oposicion_es_idempotente_via_ruta(), test_activar_oposicion_rechaza_oposicion_no_valida(), test_avisos_oficiales_devuelve_los_de_esa_oposicion(), test_avisos_oficiales_ignora_los_de_otra_oposicion(), test_avisos_oficiales_incluye_uno_que_afecta_a_varias_oposiciones(), test_oposiciones_disponibles_con_sesion_pero_sin_activar_ninguna_muestra_las_publicas() (+7 more)
 
 ### Community 83 - "context.mjs"
-Cohesion: 0.06
-Nodes (56): appendAutonomyCounterDirective(), appendDetectorFallback(), appendImageGenDirective(), appendImageToolsDirective(), appendSubagentAuthorizationDirective(), appendSurfaceBriefContext(), automaticHookMode(), buildMissingTargetDirective() (+48 more)
+Cohesion: 0.05
+Nodes (89): appendAutonomyCounterDirective(), appendDetectorFallback(), appendImageGenDirective(), appendImageToolsDirective(), appendSubagentAuthorizationDirective(), appendSurfaceBriefContext(), automaticHookMode(), buildMissingTargetDirective() (+81 more)
 
 ### Community 84 - "onboarding-tour.js"
 Cohesion: 0.36
 Nodes (12): claveParaUsuario(), detenerListenerScrollTour(), detenerObservadorTour(), iniciarPaso(), iniciarTourGenerico(), marcarVisto(), mostrarBocadillo(), mostrarTourTest() (+4 more)
 
 ### Community 85 - "detect-url.mjs"
-Cohesion: 0.23
-Nodes (18): detectUrl(), launchBrowser(), measureContentHiddenAfterReveal(), runVisualContrastFallback(), serializeDesignSystemForBrowser(), captureVisualContrastCandidate(), compareScreenshotContrast(), sanitizeScreenshotClip() (+10 more)
+Cohesion: 0.19
+Nodes (20): createBrowserDetector(), detectUrl(), launchBrowser(), measureContentHiddenAfterReveal(), runVisualContrastFallback(), serializeDesignSystemForBrowser(), captureVisualContrastCandidate(), compareScreenshotContrast() (+12 more)
 
 ### Community 86 - "live-inject.mjs"
-Cohesion: 0.13
-Nodes (28): describeInjectArtifacts(), frameworkIgnorePatterns(), PATCH_UNDOERS, resolveFramework(), clearInjectJournal(), healArtifact(), healInjectJournal(), INJECT_JOURNAL_RELPATH (+20 more)
+Cohesion: 0.18
+Nodes (20): describeInjectArtifacts(), frameworkIgnorePatterns(), resolveFramework(), clearInjectJournal(), recordInjection(), removeTag(), revertCspMeta(), unpatchTagFile() (+12 more)
 
 ### Community 87 - "_claves_dedup"
 Cohesion: 0.12
@@ -738,8 +739,12 @@ Cohesion: 0.06
 Nodes (68): addBrowserFindings(), addVisualContrastFindings(), addVisualContrastResult(), analyzeVisualContrast(), analyzeVisualContrastCandidate(), blendRgba(), browserColorsClose(), browserDesignSystemConfig() (+60 more)
 
 ### Community 89 - "apiGet"
-Cohesion: 0.22
-Nodes (19): actualizarBadgeReportes(), _actualizarBadgesReportesDesglose(), apiGet(), cargarAuditoria(), cargarErroresIA(), cargarIngresos(), cargarReportes(), cargarSoporte() (+11 more)
+Cohesion: 0.21
+Nodes (23): abrirUsuario(), actualizarBadgeReportes(), _actualizarBadgesReportesDesglose(), apiGet(), cargarAuditoria(), cargarErroresIA(), cargarIngresos(), cargarReportes() (+15 more)
+
+### Community 90 - "es"
+Cohesion: 0.08
+Nodes (7): A(), canRenderSurveyAsync(), es, getProductTours(), getSurveys(), ma, qo()
 
 ### Community 91 - "resultados-test.js"
 Cohesion: 0.20
@@ -751,15 +756,15 @@ Nodes (15): _pregunta_base(), Pruebas del repaso espaciado aplicado a los tests 
 
 ### Community 93 - "oposicionActual"
 Cohesion: 0.19
-Nodes (23): api(), buscarYEditarPregunta(), cambiarEstadoAvisoOficial(), cambiarEstadoCambioTemario(), cambiarEstadoReporte(), cambiarEstadoSoporte(), cargarChunks(), cargarPreguntas() (+15 more)
+Nodes (25): abrirModal(), api(), buscarYEditarPregunta(), cambiarEstadoAvisoOficial(), cambiarEstadoCambioTemario(), cambiarEstadoReporte(), cambiarEstadoSoporte(), cargarChunks() (+17 more)
 
 ### Community 94 - "impeccable-paths.mjs"
-Cohesion: 0.16
-Nodes (20): CRITIQUE_DIR, firstExisting(), getDesignSidecarCandidates(), getDesignSidecarPath(), getImpeccableDir(), getLegacyLiveConfigPath(), getLegacyLiveServerPath(), getLegacyLiveSessionsDir() (+12 more)
+Cohesion: 0.11
+Nodes (30): resolveProjectRoot(), CRITIQUE_DIR, firstExisting(), getDesignSidecarCandidates(), getDesignSidecarPath(), getImpeccableDir(), getLegacyLiveAnnotationsDir(), getLegacyLiveConfigPath() (+22 more)
 
 ### Community 95 - "live-server.mjs"
-Cohesion: 0.06
-Nodes (67): assembleLiveBrowserScript(), assertLiveBrowserScriptParts(), LIVE_BROWSER_SCRIPT_PARTS, readLiveBrowserScriptParts(), resolveLiveBrowserScriptParts(), eventPriority(), selectAvailablePendingEvent(), acknowledgePendingEvent() (+59 more)
+Cohesion: 0.07
+Nodes (65): assembleLiveBrowserScript(), assertLiveBrowserScriptParts(), LIVE_BROWSER_SCRIPT_PARTS, readLiveBrowserScriptParts(), resolveLiveBrowserScriptParts(), acknowledgePendingEvent(), activeSessionSummaries(), agentPollingConnected() (+57 more)
 
 ### Community 96 - "podar_temario_age_bloque4_tema9.py"
 Cohesion: 0.26
@@ -770,28 +775,28 @@ Cohesion: 0.23
 Nodes (3): _fecha_hace(), TestDetectarAvisosOficialesBackfillYEstado, TestFechasARevisar
 
 ### Community 99 - "filterFindings"
-Cohesion: 0.29
-Nodes (12): cleanIgnoreValueDisplay(), extractFindingIgnoreValue(), extractFindingIgnoreValueRaw(), extractMotionIgnoreValue(), filterFindings(), formatFindingIgnoreCommand(), isAdvisoryFinding(), isIgnoredFindingValue() (+4 more)
+Cohesion: 0.16
+Nodes (20): cursorBlockMessage(), clampGroupedToBudget(), clampToBudget(), cleanIgnoreValueDisplay(), directiveFooter(), extractFindingIgnoreValue(), extractFindingIgnoreValueRaw(), extractMotionIgnoreValue() (+12 more)
 
-### Community 100 - "_bloque_de_tema"
-Cohesion: 0.40
-Nodes (5): _bloque_de_tema(), bloque_06-tema_01' -> 'bloque_06'. Vacío si no tiene ese formato., Versión por lotes de _titulo_tema/_titulo_bloque para una lista de tema_id: en…, _titulo_tema(), _titulos_tema_y_bloque_batch()
+### Community 100 - "journal.mjs"
+Cohesion: 0.27
+Nodes (12): PATCH_UNDOERS, healArtifact(), healInjectJournal(), INJECT_JOURNAL_RELPATH, INJECT_JOURNAL_VERSION, injectJournalPath(), insideProject(), normalizeRel() (+4 more)
 
 ### Community 101 - "zo"
 Cohesion: 0.12
 Nodes (5): di(), hi, onConfigChange(), ui(), zo
 
 ### Community 102 - "deepseek_utils.py"
-Cohesion: 0.07
-Nodes (32): cargar_examen(), generar_explicacion(), Carga el Ejercicio Único de una convocatoria AGE (Cuerpo General Administrativo…, cargar_examen(), generar_explicacion(), Carga el Ejercicio Único de una convocatoria del Cuerpo General Auxiliar de la…, cargar_examen(), generar_explicacion() (+24 more)
+Cohesion: 0.14
+Nodes (19): _generar_documento_validado(), Envoltorio de generar_documento_largo_por_partes que, si el resultado no supera…, call_deepseek_api_stream(), _es_error_transitorio(), generar_con_continuacion(), generar_documento_largo_por_partes(), _post_deepseek_con_reintentos(), model por defecto "deepseek-v4-flash" (ver call_deepseek_api). Con… (+11 more)
 
-### Community 103 - "responder_tutor_stream"
-Cohesion: 0.17
-Nodes (9): _modelo_tutor(), responder_tutor_stream(), El modelo de DeepSeek que usa Tu Tutor es configurable sin redeploy vía…, test_responder_tutor_stream_emite_deltas_y_guarda_al_final(), test_responder_tutor_stream_emite_error_si_deepseek_no_devuelve_nada(), test_responder_tutor_stream_emite_error_si_falla_preparar_contexto(), test_stream_incluye_temas_relacionados_para_generar_test(), test_stream_sin_tema_concreto_no_incluye_acciones_de_tema() (+1 more)
+### Community 103 - "resolver_tipo_contenido"
+Cohesion: 0.22
+Nodes (5): actualizar_tipo_contenido(), Persiste un override manual de tipo_contenido ("legal"/"general", ver…, Decide "legal" o "general" para ESTA generación de resumen/esquema (ver…, resolver_tipo_contenido(), TestTipoContenido
 
 ### Community 104 - "sembrar_usuario_activo"
 Cohesion: 0.07
-Nodes (45): Siembra usuarios/{uid} con una suscripción de pago ya activa (evita tener que…, sembrar_usuario_activo(), Pruebas del autoguardado y reanudación de tests (rutas_progreso.py): que el…, test_autosave_corrige_documento_id_en_un_guardado_posterior(), test_autosave_posterior_no_borra_el_contenido_ya_guardado(), test_autosave_sin_documento_id_no_borra_el_ya_guardado(), test_autosave_sin_test_id_devuelve_error(), test_primer_autosave_crea_el_borrador_completo() (+37 more)
+Nodes (46): Siembra usuarios/{uid} con una suscripción de pago ya activa (evita tener que…, sembrar_usuario_activo(), Pruebas del autoguardado y reanudación de tests (rutas_progreso.py): que el…, test_autosave_corrige_documento_id_en_un_guardado_posterior(), test_autosave_posterior_no_borra_el_contenido_ya_guardado(), test_autosave_sin_documento_id_no_borra_el_ya_guardado(), test_autosave_sin_test_id_devuelve_error(), test_primer_autosave_crea_el_borrador_completo() (+38 more)
 
 ### Community 105 - "frameworks/index.mjs"
 Cohesion: 0.18
@@ -833,9 +838,9 @@ Nodes (64): addClampEndpoints(), addColorObject(), addDesignColor(), addFontSize
 Cohesion: 0.26
 Nodes (3): generar_con_continuacion: usada por /resumir-documento y /generar-esquema-…, _respuesta_con_status(), TestGenerarConContinuacion
 
-### Community 115 - "utils.py"
-Cohesion: 0.05
-Nodes (59): _bajas_agregadas(), _fallos_agregados(), Todos los usuarios ya decorados (plan efectivo, % de uso, oposiciones…, Una fila por cada oposición que un usuario ha activado alguna vez, con su…, Agrega el banco de falladas de TODOS los usuarios (collection_group) -- solo…, Agrega los motivos de baja de TODOS los usuarios (collection_group) -- por…, _todas_filas_ingresos(), _todos_usuarios_decorados() (+51 more)
+### Community 115 - "test_reparto_realista.py"
+Cohesion: 0.14
+Nodes (20): Pruebas del reparto "realista" de preguntas entre temas (opción del usuario en…, test_calcular_pesos_reales_por_bloque_cuenta_por_bloque(), test_calcular_pesos_reales_por_bloque_usa_cache(), test_calcular_pesos_reales_por_bloque_vacio_sin_examenes(), test_obtener_preguntas_examenes_oficiales_filtra_por_tipo(), test_obtener_preguntas_examenes_oficiales_usa_cache(), test_repartir_cupos_por_tema_realista_bloque_sin_datos_recibe_peso_medio(), test_repartir_cupos_por_tema_realista_reparte_igual_dentro_del_bloque() (+12 more)
 
 ### Community 116 - "test_soporte.py"
 Cohesion: 0.31
@@ -851,11 +856,11 @@ Nodes (8): _canonical(), _es_publica(), generar(), _lastmod(), _prefijos_disallo
 
 ### Community 119 - "detect-antipatterns-browser.js"
 Cohesion: 0.06
-Nodes (49): browserColorsClose(), browserDesignSystemConfig(), browserHasDirectText(), browserPrimaryFont(), browserRadiusTokens(), browserSampleText(), buildSelectorSegment(), checkBrowserDesignSystemSources() (+41 more)
+Nodes (54): browserColorsClose(), browserDesignSystemConfig(), browserHasDirectText(), browserPrimaryFont(), browserRadiusTokens(), browserSampleText(), buildSelectorSegment(), checkBrowserDesignSystemSources() (+46 more)
 
 ### Community 121 - "svelte-component.mjs"
 Cohesion: 0.07
-Nodes (57): collectUnusedSelectors(), verifyAcceptedSource(), applyLegacyDeferredAcceptsOnStartup(), buildPropsScriptV2(), loadSvelteCompiler(), appendCssToSvelteStyle(), appendSanitizedCssRule(), applyDeferredSvelteComponentAccepts() (+49 more)
+Nodes (60): collectUnusedSelectors(), verifyAcceptedSource(), applyLegacyDeferredAcceptsOnStartup(), buildPropsScriptV2(), loadSvelteCompiler(), appendCssToSvelteStyle(), appendSanitizedCssRule(), applyDeferredSvelteComponentAccepts() (+52 more)
 
 ### Community 122 - "/assets/auth.js"
 Cohesion: 0.29
@@ -874,36 +879,36 @@ Cohesion: 0.25
 Nodes (7): Arrancar en local, Backend, Desplegar, Domina tu Opo, Estructura del repo, Frontend, Tests
 
 ### Community 126 - "session-store.mjs"
-Cohesion: 0.19
-Nodes (17): safeSessionId(), applyEvent(), baseSnapshot(), COMPLETED_PHASES, getReadableJournalPath(), persist(), readState(), deriveRenderState() (+9 more)
+Cohesion: 0.12
+Nodes (32): getLegacyLiveSessionsDir(), getLiveSessionsDir(), collectManualApplyFiles(), manualApplyReplyCommand(), manualApplyResumeHint(), mountFailureAction(), parseArgs(), renderSummary() (+24 more)
 
-### Community 127 - "resolveLengthPx"
-Cohesion: 0.14
-Nodes (20): checkKickerAboveHeading(), checkKickerAboveHeadingDOM(), checkKickerAboveHeadingFromDoc(), checkNumberedSectionLabels(), checkNumberedSectionLabelsDOM(), checkNumberedSectionLabelsFromDoc(), cleanInlineText(), clippedByInset() (+12 more)
+### Community 127 - "ranking.py"
+Cohesion: 0.27
+Nodes (11): _alias_valido(), mi_estado_ranking(), obtener_ranking(), _participantes_ranking(), route, Clasificación de racha de estudio: anónima y estrictamente opcional. Solo…, Lista de {uid, alias, racha_actual} de todos los apuntados al ranking, ordenada…, salir_ranking() (+3 more)
 
 ### Community 128 - "push.js"
 Cohesion: 0.43
 Nodes (4): activarNotificaciones(), base64UrlAClaveBytes(), notificacionesActivas(), pushDisponibleEnNavegador()
 
 ### Community 129 - "hook-lib.mjs"
-Cohesion: 0.07
-Nodes (47): ACK_EXTS, ADVISORY_RULES, applyPatchText(), clampByte(), CO_SCAN_STYLE_NAMES, coLocatedStylesheets(), colorIgnoreKey(), DEFAULT_CONFIG (+39 more)
+Cohesion: 0.06
+Nodes (57): ACK_EXTS, ADVISORY_RULES, applyConfigSource(), applyDetectorConfigSource(), applyPatchText(), clampByte(), cloneDefaultConfig(), CO_SCAN_STYLE_NAMES (+49 more)
 
-### Community 131 - "kt"
-Cohesion: 0.11
-Nodes (11): bn(), cn(), count(), fn(), gauge(), histogram(), kt(), Lo (+3 more)
+### Community 131 - "tu_tutor.py"
+Cohesion: 0.29
+Nodes (10): eliminar_conversacion(), obtener_conversacion(), obtener_conversaciones_usuario(), limit, route, Tu Tutor: chat conversacional unificado (antes eran dos herramientas separadas…, Recomendación proactiva para el saludo de bienvenida del chat. Es determinista…, tu_tutor_route() (+2 more)
 
-### Community 132 - "discoverTargetCandidates"
-Cohesion: 0.10
-Nodes (31): contextSourcePath(), contextSourceStatus(), directChildDirs(), discoverRootsForPattern(), discoverTargetCandidates(), expandSimplePattern(), findTargetExample(), firstExisting() (+23 more)
+### Community 132 - "obtener_tests_en_progreso_por_documento"
+Cohesion: 0.39
+Nodes (3): obtener_tests_en_progreso_por_documento(), {documento_id: test_id} de los tests desde PDF que quedaron "en_progreso"…, TestObtenerTestsEnProgresoPorDocumento
 
 ### Community 133 - "concept-seed.mjs"
 Cohesion: 0.07
 Nodes (50): API_BASE, API_TIMEOUT_MS, apiBudgetMs(), dealCompositions(), driveSelection(), fetchRoll(), here, loadLocal() (+42 more)
 
 ### Community 134 - "template-extensions.mjs"
-Cohesion: 0.27
-Nodes (9): shouldEmitAckForFile(), extensionCache, LIVE_TEMPLATE_EXTENSIONS, matchConfiguredExtension(), mergeExtensions(), normalizeExtensionEntries(), readLiveTemplateExtensions(), resolveLiveTemplateExtensions() (+1 more)
+Cohesion: 0.36
+Nodes (6): extensionCache, LIVE_TEMPLATE_EXTENSIONS, mergeExtensions(), normalizeExtensionEntries(), readLiveTemplateExtensions(), safeReadJson()
 
 ### Community 135 - "favoritas.js"
 Cohesion: 0.47
@@ -942,8 +947,8 @@ Cohesion: 0.53
 Nodes (5): conectar_firestore(), limpiar(), main(), parsear_bloque_tema(), Borra las subdivisiones ("subbloques") con el campo "texto" vacío dentro de…
 
 ### Community 144 - "detect-antipatterns.mjs"
-Cohesion: 0.12
-Nodes (34): confirm(), detectCli(), dim(), fileUrlToLocalPath(), formatAdvisorySection(), formatFindings(), formatFindingsBody(), formatFindingSummary() (+26 more)
+Cohesion: 0.09
+Nodes (37): confirm(), detectCli(), dim(), fileUrlToLocalPath(), formatAdvisorySection(), formatFindings(), formatFindingsBody(), formatFindingSummary() (+29 more)
 
 ### Community 145 - "TestGenerarDocumentoLargoPorPartes"
 Cohesion: 0.06
@@ -994,8 +999,8 @@ Cohesion: 0.50
 Nodes (3): BACKEND_URL, firebaseConfig, RECAPTCHA_SITE_KEY
 
 ### Community 159 - "live-commit-manual-edits.mjs"
-Cohesion: 0.10
-Nodes (49): allEntryIds(), argVal(), buildRepairBatch(), candidatesForEntry(), changedFilesSinceSnapshot(), clearAppliedEntries(), collectApplyOwnedFiles(), collectRollbackFiles() (+41 more)
+Cohesion: 0.11
+Nodes (48): allEntryIds(), argVal(), buildRepairBatch(), candidatesForEntry(), changedFilesSinceSnapshot(), collectApplyOwnedFiles(), collectRollbackFiles(), commitManualEdits() (+40 more)
 
 ### Community 160 - "temas-numeracion.js"
 Cohesion: 0.67
@@ -1007,11 +1012,11 @@ Nodes (3): conectar_firestore(), main(), Diagnóstico de solo lectura: recorre l
 
 ### Community 171 - "hook-admin.mjs"
 Cohesion: 0.13
-Nodes (39): ACTIONS, addIgnoreFile(), addIgnoreRule(), addIgnoreValue(), DETECTOR_CONFIG_KEYS, detectorSection(), fileHasImpeccableHookMarker(), HOOK_MANIFEST_TARGETS (+31 more)
+Nodes (40): ACTIONS, addIgnoreFile(), addIgnoreRule(), addIgnoreValue(), DETECTOR_CONFIG_KEYS, detectorSection(), fileHasImpeccableHookMarker(), HOOK_MANIFEST_TARGETS (+32 more)
 
 ### Community 172 - "impeccable-config.mjs"
 Cohesion: 0.10
-Nodes (47): applyDetectionConfigSource(), clampByte(), cleanIgnoreValueDisplay(), cloneDetectionConfig(), cloneRawDetectionConfig(), colorIgnoreKey(), DEFAULT_DETECTION_CONFIG, DETECTOR_CONFIG_KEYS (+39 more)
+Nodes (48): applyDetectionConfigSource(), clampByte(), cleanIgnoreValueDisplay(), cloneDetectionConfig(), cloneRawDetectionConfig(), colorIgnoreKey(), DEFAULT_DETECTION_CONFIG, DETECTOR_CONFIG_KEYS (+40 more)
 
 ### Community 174 - "crearProgresoConversador"
 Cohesion: 0.40
@@ -1022,16 +1027,16 @@ Cohesion: 0.43
 Nodes (7): descargarResumenProgresoPDF(), asegurarEspacio(), fila(), nuevaPagina(), parrafo(), pintarPie(), titulo()
 
 ### Community 176 - "extraer_paginas"
-Cohesion: 0.39
-Nodes (7): extraer_paginas(), _ruta_cache_paginas(), guardar_preview(), main(), procesar_objetivo(), Rellena los 2 temas de "Temario AGE" que estaban vacíos en Firestore (ver…, subir_a_firestore()
+Cohesion: 0.22
+Nodes (14): dividir_en_subbloques(), extraer_paginas(), Trocea el texto de una norma en subbloques cortando siempre en límites de…, _trocear_por_parrafos_o_lineas(), guardar_preview(), main(), procesar_objetivo(), Rellena los 2 temas de "Temario AGE" que estaban vacíos en Firestore (ver… (+6 more)
 
 ### Community 184 - "live-wrap.mjs"
 Cohesion: 0.12
 Nodes (39): hasGeneratedHeader(), HEADER_MARKERS, isGeneratedFile(), isGitIgnored(), resolveSourceTraits(), argVal(), buildInsertWrapperLines(), computeInsertLine() (+31 more)
 
 ### Community 185 - "live-accept.mjs"
-Cohesion: 0.09
-Nodes (45): IMPECCABLE_DIR, matchesTemplateExtension(), acceptCli(), acceptReceiptPath(), argVal(), buildAcceptedWrappedSource(), buildCarbonizeReplacement(), decodeHtmlAttr() (+37 more)
+Cohesion: 0.11
+Nodes (41): safeSessionId(), resolveLiveTemplateExtensions(), acceptCli(), acceptReceiptPath(), argVal(), buildAcceptedWrappedSource(), buildCarbonizeReplacement(), decodeHtmlAttr() (+33 more)
 
 ### Community 186 - "_fragmentos_por_lote"
 Cohesion: 0.16
@@ -1046,20 +1051,20 @@ Cohesion: 0.09
 Nodes (39): agentHasWorkInFlight(), agentStatusText(), barPaletteForTheme(), brandMarkSvg(), buildDesignHeader(), buildParamsPanel(), designPanelCss(), detectPageTheme() (+31 more)
 
 ### Community 189 - "live-poll.mjs"
-Cohesion: 0.10
-Nodes (38): completionAckForAcceptResult(), completionTypeForAcceptResult(), PREVIEW_MODES_WITHOUT_SOURCE_MARKERS, acceptInstructions(), bootInstructions(), deferredWrapperInstructions(), generateInstructions(), insertScaffoldInstructions() (+30 more)
+Cohesion: 0.14
+Nodes (29): completionAckForAcceptResult(), completionTypeForAcceptResult(), PREVIEW_MODES_WITHOUT_SOURCE_MARKERS, augmentEventWithAcceptHandling(), buildAcceptScriptArgs(), buildPollReplyPayload(), completeAcceptHandling(), DEFAULT_EVENT_LEASE_MS (+21 more)
 
 ### Community 190 - "hook-before-edit.mjs"
-Cohesion: 0.11
+Cohesion: 0.09
 Nodes (39): allow(), bumpCursorDenial(), deny(), detectProposedHtml(), done(), escapeRegExp(), findingSignature(), firstMatch() (+31 more)
 
-### Community 191 - "detect-text.mjs"
-Cohesion: 0.10
-Nodes (29): blankCssComments(), CSS_IN_JS_EXTENSIONS, detectText(), extFromFilePath(), extractCSSinJS(), extractStyleBlocks(), firstOverusedGoogleFont(), hexChannels() (+21 more)
+### Community 191 - "detect-html.mjs"
+Cohesion: 0.06
+Nodes (51): handleStdin(), blankCssComments(), CSS_IN_JS_EXTENSIONS, detectText(), extFromFilePath(), extractCSSinJS(), extractStyleBlocks(), firstOverusedGoogleFont() (+43 more)
 
 ### Community 192 - "doctor.mjs"
-Cohesion: 0.12
-Nodes (33): applyFixes(), cli(), parseArgs(), rel(), renderText(), SCRIPTS_DIR, SEVERITY_LABEL, usage() (+25 more)
+Cohesion: 0.08
+Nodes (53): applyFixes(), cli(), collect(), parseArgs(), readProjectRootPatterns(), rel(), renderText(), safeRead() (+45 more)
 
 ### Community 193 - "Oo"
 Cohesion: 0.16
@@ -1086,48 +1091,48 @@ Cohesion: 0.06
 Nodes (29): Apply at system scale, Audit before choosing, Choose a strategy, Contrast and perception, Live-mode signature params, Verify, Visitor mode, Cleanup (+21 more)
 
 ### Community 199 - "parseRgb"
-Cohesion: 0.11
-Nodes (36): checkColors(), checkElementAIPaletteDOM(), checkElementColors(), checkElementColorsDOM(), checkElementGlow(), checkElementGlowDOM(), checkElementHoverContrast(), checkElementIconTile() (+28 more)
+Cohesion: 0.13
+Nodes (32): checkColors(), checkElementAIPaletteDOM(), checkElementColors(), checkElementColorsDOM(), checkElementGlow(), checkElementGlowDOM(), checkElementHoverContrast(), checkElementIconTile() (+24 more)
 
 ### Community 200 - "live-copy-edit-agent.mjs"
 Cohesion: 0.14
 Nodes (31): applyMockWrites(), buildCopyEditBatchPrompt(), checkFrameworkSourceSyntax(), chooseCopyEditAgent(), COMMAND_AUTH_CACHE, commandAuthed(), commandExists(), compactBatchForPrompt() (+23 more)
 
 ### Community 201 - "runHook"
-Cohesion: 0.10
-Nodes (34): cursorBlockMessage(), isStopEvent(), appendDesignSystemNote(), bumpEditCount(), clampGroupedToBudget(), clampToBudget(), dedupeAgainstCache(), depthIsSet() (+26 more)
+Cohesion: 0.16
+Nodes (28): main(), appendDesignSystemNote(), bumpEditCount(), dedupeAgainstCache(), depthIsSet(), designSystemOptions(), ensureFile(), ensureSession() (+20 more)
 
 ### Community 202 - "event-validation.mjs"
 Cohesion: 0.12
 Nodes (26): AGENT_PHASE_SET, FORBIDDEN_MANUAL_EDIT_TEXT_CHARS, INSERT_POSITIONS, isValidId(), isValidMountVariant(), isValidVariantId(), MOUNT_ERROR_MAX_LENGTH, MOUNT_URL_MAX_LENGTH (+18 more)
 
 ### Community 203 - "obtener_catalogo_temas"
-Cohesion: 0.19
-Nodes (14): Recomendación proactiva para el saludo de bienvenida del chat. Es determinista…, tu_tutor_sugerencia_inicial(), _contexto_personal_usuario(), Temas con suficientes intentos acumulados (a través de TODOS los tests, no solo…, Temas del catálogo que el usuario todavía no ha tocado en ningún test -- se…, Devuelve un dict con el saludo inicial personalizado, un mensaje de…, sugerencia_inicial_usuario(), _temas_flojos() (+6 more)
+Cohesion: 0.38
+Nodes (7): Devuelve un dict con el saludo inicial personalizado, un mensaje de…, sugerencia_inicial_usuario(), test_saludo_de_vuelta_y_sugerencias_de_examen_para_usuario_con_historia(), test_sugerencia_inicial_recomienda_practicar_el_tema_mas_flojo(), test_sugerencia_inicial_usuario_nuevo_sin_tests_no_tiene_accion(), test_obtener_catalogo_temas_usa_cache_hasta_que_se_limpia(), obtener_catalogo_temas()
 
 ### Community 204 - "roots.mjs"
 Cohesion: 0.15
 Nodes (27): CANDIDATE_SCAN_IGNORED, consumeTargetArg(), CONTEXT_FALLBACK_DIRS, DESIGN_NAMES, DEV_CONFIG_MARKERS, discoverAppCandidates(), enterLiveRoot(), exists() (+19 more)
 
 ### Community 205 - "critique-storage.mjs"
-Cohesion: 0.29
-Nodes (12): coerceSlug(), listSnapshotsForSlug(), main(), nowFilenameStamp(), parseFrontmatter(), readLatestSnapshot(), readTrend(), serializeFrontmatter() (+4 more)
+Cohesion: 0.17
+Nodes (22): coerceSlug(), listSnapshotsForSlug(), main(), nowFilenameStamp(), parseFrontmatter(), readLatestSnapshot(), readTrend(), serializeFrontmatter() (+14 more)
 
 ### Community 206 - "Responsive Design"
 Cohesion: 0.08
 Nodes (25): Assess Adaptation Challenge, Breakpoints: Content-Driven, Content Adaptation, Desktop Adaptation (Mobile → Desktop), Detect Input Method, Not Just Screen Size, Email Adaptation (Web → Email), Implement Adaptations, Layout Adaptation Patterns (+17 more)
 
 ### Community 207 - "collectBrowserFindings"
-Cohesion: 0.13
-Nodes (22): browserFindingsFromMap(), checkCreamPalette(), checkEdgeFlushCardsDOM(), checkElementBlinkingCursorDOM(), checkElementTextOverflowDOM(), checkEmDashOveruse(), checkEmDashOveruseDOM(), checkFirstViewportColumnOverflowDOM() (+14 more)
+Cohesion: 0.11
+Nodes (26): browserFindingsFromMap(), checkBorders(), checkEdgeFlushCardsDOM(), checkElementBlinkingCursorDOM(), checkElementBorders(), checkElementBordersDOM(), checkElementPseudoStripeDOM(), checkElementTextOverflowDOM() (+18 more)
 
 ### Community 208 - "scanCssTextForPulsingDot"
 Cohesion: 0.14
 Nodes (26): buildHtmlPatternCorpora(), checkHtmlPatterns(), collectCssCustomProps(), collectMarqueeKeyframes(), collectPulseKeyframes(), cssLengthToPx(), cssTextHasDarkRootBg(), extractShadowLengths() (+18 more)
 
 ### Community 209 - "manual-edit-routes.mjs"
-Cohesion: 0.18
-Nodes (22): args, buffer, cwd, pageUrlFilter, remaining, compactManualLogText(), summarizeManualApplyFailures(), summarizeManualDiagnostics() (+14 more)
+Cohesion: 0.17
+Nodes (23): clearAppliedEntries(), args, buffer, cwd, pageUrlFilter, remaining, compactManualLogText(), summarizeManualApplyFailures() (+15 more)
 
 ### Community 210 - "live-manual-edit-evidence.mjs"
 Cohesion: 0.15
@@ -1157,13 +1162,13 @@ Nodes (20): Analysis, analyzeAttributes(), analyzeFragment(), analyzeNode(), ana
 Cohesion: 0.09
 Nodes (22): Assess Onboarding Needs, Context Over Ceremony, Contextual Help, Design Onboarding Experiences, Documentation & Help, Empty State Design, Feature Discovery & Adoption, Guided Tours & Walkthroughs (+14 more)
 
-### Community 217 - "readConfig"
-Cohesion: 0.18
-Nodes (12): applyConfigSource(), applyDetectorConfigSource(), cloneDefaultConfig(), detectorSection(), hookSection(), ignoreValueFilesKey(), mergeIgnoreValues(), numberOr() (+4 more)
+### Community 217 - "verificar_bloque_temas_referenciados"
+Cohesion: 0.25
+Nodes (8): test_verificar_bloque_temas_referenciados_detecta_tema_inexistente(), test_verificar_bloque_temas_referenciados_no_duplica_entre_leyes(), test_verificar_bloque_temas_referenciados_sin_faltantes_si_todo_existe(), _doc_estado(), Como utils.obtener_subbloques_individuales, pero sin el recorte de texto a…, Chequeo de salud de LEYES_VIGILADAS: comprueba que cada (oposicion, bloque_id,…, _subbloques_de_tema(), verificar_bloque_temas_referenciados()
 
-### Community 218 - "checkQuality"
-Cohesion: 0.14
-Nodes (16): checkElementOversizedH1(), checkElementOversizedH1DOM(), checkElementQuality(), checkElementQualityDOM(), checkOversizedH1(), checkQuality(), colorsNearlyMatch(), cssColorAlpha() (+8 more)
+### Community 218 - "parseAnyColor"
+Cohesion: 0.13
+Nodes (22): checkCreamPalette(), checkElementQualityDOM(), checkQuality(), colorsNearlyMatch(), creamFromClassList(), cssColorAlpha(), cssColorIsTransparent(), getComputedStyleFor() (+14 more)
 
 ### Community 219 - "sveltekit-adapter.mjs"
 Cohesion: 0.18
@@ -1175,7 +1180,7 @@ Nodes (20): tanstackStart, applyTanStackLiveAdapter(), buildTanStackLiveRootComp
 
 ### Community 221 - "test-psicotecnico/script.js"
 Cohesion: 0.16
-Nodes (20): /assets/favoritas.js, activarBotonFavorita(), actualizarNavegadorPreguntas(), botonFavoritaHTML(), formatearTiempo(), guardarTestAutomaticamente(), iniciarTemporizador(), marcadasDuda (+12 more)
+Nodes (20): activarBotonFavorita(), actualizarNavegadorPreguntas(), botonFavoritaHTML(), formatearTiempo(), guardarTestAutomaticamente(), iniciarTemporizador(), marcadasDuda, marcadasRevision (+12 more)
 
 ### Community 222 - "test_marketing_utils.py"
 Cohesion: 0.16
@@ -1190,12 +1195,12 @@ Cohesion: 0.10
 Nodes (20): Animate complex properties, Assess What "Extraordinary" Means Here, For data-heavy interfaces, For functional UI, For performance-critical UI, For visual/marketing surfaces, Implement with Discipline, Interact with the device (+12 more)
 
 ### Community 225 - "live.mjs"
-Cohesion: 0.15
-Nodes (19): parseCliOptions(), resolveProjectRoot(), resolveTargetSelection(), getLegacyLiveAnnotationsDir(), parseTargetOptions(), parseTargetPath(), TargetArgError, __dirname (+11 more)
+Cohesion: 0.14
+Nodes (23): resolveTargetSelection(), parseTargetOptions(), parseTargetPath(), TargetArgError, __dirname, ensureServerRunning(), globToRegex(), acceptInstructions() (+15 more)
 
 ### Community 226 - "resolveLengthPx"
-Cohesion: 0.10
-Nodes (27): checkElementHeroEyebrow(), checkElementHeroEyebrowDOM(), checkHeroEyebrow(), checkKickerAboveHeading(), checkKickerAboveHeadingDOM(), checkKickerAboveHeadingFromDoc(), checkNumberedSectionLabels(), checkNumberedSectionLabelsDOM() (+19 more)
+Cohesion: 0.13
+Nodes (21): checkElementHeroEyebrow(), checkElementHeroEyebrowDOM(), checkHeroEyebrow(), checkKickerAboveHeading(), checkKickerAboveHeadingDOM(), checkKickerAboveHeadingFromDoc(), checkNumberedSectionLabels(), checkNumberedSectionLabelsDOM() (+13 more)
 
 ### Community 227 - "mountSvelteComponentVariant"
 Cohesion: 0.14
@@ -1206,8 +1211,8 @@ Cohesion: 0.15
 Nodes (21): applyPlaceholderDimensions(), beginEditPin(), buildAnnotationsForCapture(), buildPinElement(), cancelEditingPin(), clampPlaceholderSize(), finalizeEditingPin(), initAnnotOverlay() (+13 more)
 
 ### Community 229 - "firebase_setup.py"
-Cohesion: 0.12
-Nodes (21): _alias_valido(), mi_estado_ranking(), obtener_ranking(), _participantes_ranking(), route, Clasificación de racha de estudio: anónima y estrictamente opcional. Solo…, Lista de {uid, alias, racha_actual} de todos los apuntados al ranking, ordenada…, salir_ranking() (+13 more)
+Cohesion: 0.20
+Nodes (12): asignar_admin(), main(), Script PUNTUAL (no forma parte de la app) para dar permisos de administrador a…, propagar_proxy_saliente(), Arranque de Firebase Admin, en su propio módulo para que tanto app.py como cada…, Si hay un proxy de salida con IP estática configurado (QuotaGuard o Fixie, para…, Pruebas de propagar_proxy_saliente() (firebase_setup.py): sin FIXIE_URL ni…, test_con_fixie_url_rellena_las_variables_de_proxy() (+4 more)
 
 ### Community 230 - "_sembrar_tema"
 Cohesion: 0.22
@@ -1226,16 +1231,16 @@ Cohesion: 0.16
 Nodes (19): buildSvelteExpressionTextMap(), buildSveltePropValuesFromLiveElement(), buildSveltePropValuesV2(), cloneWithoutElements(), collectTextNodes(), collectVisibleTexts(), cssEscapeIdent(), elementMatchesOriginalMarkup() (+11 more)
 
 ### Community 235 - "cargar_temario_boe.py"
-Cohesion: 0.20
-Nodes (15): clasificar_subbloque(), construir_subbloques_clasificados(), dividir_en_subbloques(), guardar_preview(), main(), Carga automática de un "Código electrónico" del BOE (una recopilación de leyes…, La sección romana N del SUMARIO (que incluye 'I. INTRODUCCIÓN') es el bloque…, Trocea el texto de una norma en subbloques cortando siempre en límites de… (+7 more)
+Cohesion: 0.31
+Nodes (9): clasificar_subbloque(), construir_subbloques_clasificados(), guardar_preview(), main(), Carga automática de un "Código electrónico" del BOE (una recopilación de leyes…, La sección romana N del SUMARIO (que incluye 'I. INTRODUCCIÓN') es el bloque…, _ruta_cache_paginas(), seccion_a_bloque() (+1 more)
 
 ### Community 236 - "analyzeVisualContrastCandidate"
 Cohesion: 0.14
 Nodes (18): addBrowserFindings(), addVisualContrastFindings(), addVisualContrastResult(), analyzeVisualContrast(), analyzeVisualContrastCandidate(), blendRgba(), clampByte(), clearOverlays() (+10 more)
 
 ### Community 237 - "context-signals.mjs"
-Cohesion: 0.18
-Nodes (17): escapeRegExp(), extractPlatform(), extractSectionValue(), hasVisualImplementation(), loadContext(), cli(), COMMON_DEV_PORTS, devServerSignals() (+9 more)
+Cohesion: 0.21
+Nodes (15): extractPlatform(), hasVisualImplementation(), loadContext(), cli(), COMMON_DEV_PORTS, devServerSignals(), gatherSignals(), gitSignals() (+7 more)
 
 ### Community 238 - "createLiveBrowserSessionState"
 Cohesion: 0.20
@@ -1266,7 +1271,7 @@ Cohesion: 0.18
 Nodes (16): checkHeadingRhythmDOM(), clusterTop(), edgeAbove(), edgeBelow(), hasOwnTopBoundary(), insideSmallCard(), isVisibleFlow(), overlapsX() (+8 more)
 
 ### Community 245 - "generate-image.mjs"
-Cohesion: 0.20
+Cohesion: 0.18
 Nodes (12): crc32(), hash32(), hslToRgb(), out, palette(), pngChunk(), pngFake(), promptFile (+4 more)
 
 ### Community 246 - "serve-question.mjs"
@@ -1274,12 +1279,12 @@ Cohesion: 0.18
 Nodes (13): answerFile(), esc(), loadRound(), localImages, nextFile(), page(), payloadPath, portArg (+5 more)
 
 ### Community 247 - "escapeHtml"
-Cohesion: 0.26
-Nodes (17): abrirModal(), abrirUsuario(), cargarUsuarios(), cerrarModal(), confirmarAdmin(), escapeHtml(), fichaCosteBarras(), fichaEuros() (+9 more)
+Cohesion: 0.35
+Nodes (11): escapeHtml(), fichaCosteBarras(), fichaEuros(), fichaMini(), fichaPlanBadge(), fichaUsoFila(), fichaVistaHtml(), pintarFicha() (+3 more)
 
 ### Community 248 - "conftest.py"
-Cohesion: 0.15
-Nodes (12): client(), flask_app(), _limpiar_fake_db(), fixture, Configuración compartida de pytest: prepara variables de entorno dummy y…, Regresión: al finalizar un test con preguntas que traen imagen (hoy, solo la…, test_guardar_test_conserva_la_imagen_de_cada_pregunta(), Pruebas de /mi-perfil: en particular, que un administrador (custom claim de… (+4 more)
+Cohesion: 0.10
+Nodes (18): client(), flask_app(), _limpiar_fake_db(), fixture, Configuración compartida de pytest: prepara variables de entorno dummy y…, Fase 1 del loop de dificultad calibrada: contadores atómicos por pregunta…, test_fallo_en_el_batch_no_rompe_la_correccion_del_test(), test_guardar_test_acumula_entre_tests_sucesivos_de_distintos_usuarios() (+10 more)
 
 ### Community 249 - "Generate Report"
 Cohesion: 0.13
@@ -1297,9 +1302,9 @@ Nodes (9): buildGenerationPreflight(), compactError(), execFileAsync, insertTarg
 Cohesion: 0.19
 Nodes (10): createLiveBrowserDomHelpers(), cssId(), liveUiRoot(), makeFrozenAnchor(), own(), pickable(), rectIsUsableAnchor(), uiAppend() (+2 more)
 
-### Community 253 - "checkElementGptBorderShadow"
+### Community 253 - "source-search.mjs"
 Cohesion: 0.38
-Nodes (7): borderColorsFromStyle(), borderWidthsFromStyle(), checkElementGptBorderShadow(), checkElementGptBorderShadowDOM(), checkGptThinBorderWideShadow(), shadowLayerAlpha(), shadowMaxBlurPx()
+Nodes (6): IMPECCABLE_DIR, matchesTemplateExtension(), findSourceFile(), NEVER_SOURCE_DIRS, SOURCE_SEARCH_DIRS, walk()
 
 ### Community 254 - "test_generar_test_psicotecnico.py"
 Cohesion: 0.39
@@ -1318,12 +1323,12 @@ Cohesion: 0.22
 Nodes (14): firstCssUrl(), getLayerValue(), loadVisualContrastImage(), parseObjectPosition(), parsePositionPair(), parsePositionToken(), pickWorstContrastColor(), pointToImageSource() (+6 more)
 
 ### Community 259 - "checkHeadingRhythmDOM"
-Cohesion: 0.31
-Nodes (11): checkHeadingRhythmDOM(), clusterTop(), edgeAbove(), edgeBelow(), hasOwnTopBoundary(), insideSmallCard(), isVisibleFlow(), overlapsX() (+3 more)
+Cohesion: 0.20
+Nodes (15): checkHeadingRhythmDOM(), clusterTop(), edgeAbove(), edgeBelow(), hasOwnTopBoundary(), insideSmallCard(), isVisibleFlow(), overlapsX() (+7 more)
 
 ### Community 260 - "registrar_error_generacion"
-Cohesion: 0.29
-Nodes (10): _clasificar_tipo_error(), Captura estructurada de errores de generación de contenido (paso 1 de un loop…, Escribe un documento en la colección global `errores_generacion`. No…, registrar_error_generacion(), Pruebas del registro unificado de errores_generacion.py -- la escritura de…, test_clasificar_tipo_error_por_palabras_clave(), test_registrar_error_generacion_conserva_campos_extra(), test_registrar_error_generacion_escribe_los_7_campos_del_esquema() (+2 more)
+Cohesion: 0.23
+Nodes (12): _clasificar_tipo_error(), Captura estructurada de errores de generación de contenido (paso 1 de un loop…, Escribe un documento en la colección global `errores_generacion`. No…, registrar_error_generacion(), Toma una pregunta YA GENERADA y sus anclas, la verifica con una llamada…, _verificar_y_aceptar_pregunta(), Pruebas del registro unificado de errores_generacion.py -- la escritura de…, test_clasificar_tipo_error_por_palabras_clave() (+4 more)
 
 ### Community 261 - "_recortar_fragmento_a_articulo_citado"
 Cohesion: 0.32
@@ -1333,17 +1338,17 @@ Nodes (3): Optimización de coste de verificación (03/08/2026): si 'pregunta' c
 Cohesion: 0.15
 Nodes (13): Component translation rules, Narrative mapping, Scan mode (approach C: auto-extract, then confirm descriptive language), Schema, Step 1: Find the design assets, Step 2: Auto-extract what can be auto-extracted, Step 2b: Stage the frontmatter, Step 3: Ask the user for qualitative language (+5 more)
 
-### Community 263 - "live-status.mjs"
-Cohesion: 0.18
-Nodes (21): readLiveServerInfo(), FORBIDDEN, verifyAcceptedFile(), completeCli(), completeThroughServer(), parseArgs(), readServerInfo(), collectManualApplyFiles() (+13 more)
+### Community 263 - "eliminar_documento"
+Cohesion: 0.43
+Nodes (3): eliminar_documento(), Borra un documento de la biblioteca -- pensado sobre todo para poder quitar una…, TestEliminarDocumento
 
 ### Community 264 - "pin.mjs"
 Cohesion: 0.22
 Nodes (11): CODEX_HARNESSES, commandPrefixForSkillsDir(), __dirname, findHarnessDirs(), generatePinnedSkill(), HARNESS_DIRS, loadCommandMetadata(), pin() (+3 more)
 
 ### Community 265 - "pagos.py"
-Cohesion: 0.17
-Nodes (25): cancelar_suscripcion(), contactar_soporte(), crear_sesion_checkout(), crear_sesion_portal(), _current_period_end(), eliminar_cuenta(), exportar_datos(), _invalidar_cache_admin_tras_cambio_suscripcion() (+17 more)
+Cohesion: 0.16
+Nodes (27): requiere_login(), cancelar_suscripcion(), contactar_soporte(), crear_sesion_checkout(), crear_sesion_portal(), _current_period_end(), eliminar_cuenta(), exportar_datos() (+19 more)
 
 ### Community 266 - "Simplify the Design"
 Cohesion: 0.17
@@ -1353,9 +1358,9 @@ Nodes (11): Assess Current State, Code Simplification, Content Simplification, D
 Cohesion: 0.17
 Nodes (11): Accessibility Resilience, Assess Hardening Needs, Edge Cases & Boundary Conditions, Error Handling, Hardening Dimensions, Input Validation & Sanitization, Internationalization (i18n), Performance Resilience (+3 more)
 
-### Community 268 - "collect"
-Cohesion: 0.18
-Nodes (21): collect(), readProjectRootPatterns(), safeRead(), checkDesignCoverage(), checkDesignDrift(), checkDetectorIgnores(), checkHookInstallation(), checkLegacyLiveState() (+13 more)
+### Community 268 - "_parsear_tarjetas"
+Cohesion: 0.43
+Nodes (3): _parsear_tarjetas(), Extrae la lista de tarjetas candidatas de la respuesta cruda de DeepSeek. Con…, TestParsearTarjetas
 
 ### Community 269 - "Product"
 Cohesion: 0.17
@@ -1401,9 +1406,9 @@ Nodes (10): Assess Current State, Color Refinement, Composition Refinement, Moti
 Cohesion: 0.20
 Nodes (10): detectCsp(), INLINE_HEADER_SIGNALS, LAYOUT_EXTS, MONOREPO_HELPER_SIGNALS, NUXT_ROUTE_RULES_SIGNALS, NUXT_SECURITY_SIGNALS, SCAN_EXTS, SKIP_DIRS (+2 more)
 
-### Community 280 - "parseAnyColor"
-Cohesion: 0.14
-Nodes (20): checkBorders(), checkElementBorders(), checkElementBordersDOM(), checkElementPseudoStripeDOM(), checkTextOcclusionDOM(), elementDirectText(), hslToRgb(), hwbToRgb() (+12 more)
+### Community 280 - "checkTextOcclusionDOM"
+Cohesion: 0.22
+Nodes (11): checkTextOcclusionDOM(), clippedByInset(), clippedByRect(), elementDirectText(), expandBoxShorthand(), firstMetricLengthPx(), isLayeredElement(), isOpaqueDecoratedBox() (+3 more)
 
 ### Community 281 - "embed-prompt.mjs"
 Cohesion: 0.20
@@ -1418,8 +1423,8 @@ Cohesion: 0.24
 Nodes (7): args, buildWeights(), hashUnit(), pickSeed(), seed, SEEDS, weightedPick()
 
 ### Community 284 - "_claves_dedup"
-Cohesion: 0.17
-Nodes (9): _articulos_citados(), _claves_dedup(), _conceptos_juridicos_citados(), _normalizar(), _normalizar_cifra(), Reduce una cifra encontrada por _PATRON_CIFRA a una forma canónica para que…, Números base de artículo citados en la PREGUNTA (anverso) -- o, si la pregunta…, Claves de deduplicación de una tarjeta candidata/aceptada -- porte de… (+1 more)
+Cohesion: 0.23
+Nodes (5): _articulos_citados(), _claves_dedup(), Números base de artículo citados en la PREGUNTA (anverso) -- o, si la pregunta…, Claves de deduplicación de una tarjeta candidata/aceptada -- porte de…, TestClavesDedup
 
 ### Community 285 - "Generate Combined Critique Report"
 Cohesion: 0.20
@@ -1445,6 +1450,10 @@ Nodes (8): appendStyleToLiveUiRoot(), appendToLiveUiRoot(), escapeCssIdent(), ge
 Cohesion: 0.27
 Nodes (10): bindEditBadgeProxy(), editBadgeProxyTargets(), initEditBadge(), initEditBadgeHitProxies(), positionEditBadge(), proxyMouseEvent(), setImportantStyle(), styleEditBadgeProxy() (+2 more)
 
+### Community 291 - "al"
+Cohesion: 0.14
+Nodes (8): al, Ao, do(), fe(), ja(), po(), Uo(), Za()
+
 ### Community 292 - "fakes.py"
 Cohesion: 0.22
 Nodes (4): FakeAggregationQuery, FakeAggregationResult, Doble ligero en memoria de la API de Firestore que usa este proyecto…, Imita el objeto que devuelve una aggregation query real de Firestore…
@@ -1466,8 +1475,8 @@ Cohesion: 0.22
 Nodes (7): _fecha_hace(), Pruebas de las rutas de suscripción a notificaciones push (guardar, deduplicar…, test_cron_racha_en_riesgo_envia_push_a_suscripciones_guardadas(), test_desuscribir_quita_la_suscripcion(), test_suscribir_dos_veces_no_duplica(), test_suscribir_guarda_la_suscripcion(), test_suscribir_sin_endpoint_devuelve_error()
 
 ### Community 297 - "tag-strategy.mjs"
-Cohesion: 0.21
-Nodes (16): appendOriginToDirective(), buildTagBlock(), commentClose(), commentOpen(), detectLineEnding(), findCspMetaTags(), getAttr(), insertTag() (+8 more)
+Cohesion: 0.22
+Nodes (14): appendOriginToDirective(), buildTagBlock(), commentClose(), commentOpen(), detectLineEnding(), findCspMetaTags(), getAttr(), insertTag() (+6 more)
 
 ### Community 298 - "FakeDocumentRef"
 Cohesion: 0.25
@@ -1498,8 +1507,8 @@ Cohesion: 0.25
 Nodes (7): Extract Flow, Step 1: Discover the Design System, Step 2: Identify Patterns, Step 3: Plan Extraction, Step 4: Extract & Enrich, Step 5: Migrate, Step 6: Document
 
 ### Community 306 - "obtener_contexto_por_temas_exactos"
-Cohesion: 0.19
-Nodes (18): _contar_tokens_por_palabras(), Pruebas de utils.obtener_contexto_por_temas_exactos: el RAG de Tu Tutor. Antes…, _sembrar_subbloque(), test_incluye_por_relevancia_no_por_orden_de_almacenamiento(), test_no_truncado_cuando_todo_cabe(), test_sin_mensaje_conserva_el_orden_original_por_id(), test_tras_fragmento_grande_poco_relevante_que_no_cabe_sigue_probando_otros(), test_buscar_pregunta_oficial_por_contencion_del_enunciado() (+10 more)
+Cohesion: 0.16
+Nodes (21): _contar_tokens_por_palabras(), Pruebas de utils.obtener_contexto_por_temas_exactos: el RAG de Tu Tutor. Antes…, _sembrar_subbloque(), test_incluye_por_relevancia_no_por_orden_de_almacenamiento(), test_no_truncado_cuando_todo_cabe(), test_sin_mensaje_conserva_el_orden_original_por_id(), test_tras_fragmento_grande_poco_relevante_que_no_cabe_sigue_probando_otros(), test_buscar_pregunta_banco_ia_por_contencion_del_enunciado() (+13 more)
 
 ### Community 309 - "push_utils.py"
 Cohesion: 0.24
@@ -1527,7 +1536,7 @@ Nodes (10): /assets/firebase-config.js, MAX_PAGINAS_POR_PLAN, NOMBRE_PLAN, carga
 
 ### Community 316 - "test_pdf_ia.py"
 Cohesion: 0.08
-Nodes (16): _con_sesion_admin(), documento_legal_sembrado(), documento_sembrado(), _FakeRespuestaDeepSeek, _pdf_con_contrasena(), fixture, Pruebas de blueprints/pdf_ia.py: _extraer_json_array (la reparación de JSON de…, Simula el objeto que devuelve requests.post: lo mínimo que… (+8 more)
+Nodes (17): _parece_documento_generado_valido(), Filtro barato (sin gastar IA) contra un fallo real reportado por un usuario…, documento_legal_sembrado(), documento_sembrado(), _FakeRespuestaDeepSeek, _pdf_con_contrasena(), fixture, Pruebas de blueprints/pdf_ia.py: _extraer_json_array (la reparación de JSON de… (+9 more)
 
 ### Community 317 - "Diagnostic Scan"
 Cohesion: 0.33
@@ -1537,17 +1546,17 @@ Nodes (6): 1. Accessibility (VoiceOver / TalkBack), 2. Performance, 3. Appearanc
 Cohesion: 0.33
 Nodes (5): Before you finish, Scope is sovereign, The amplification, The skeleton test, Why it reads flat
 
-### Community 319 - "surface-briefs.mjs"
-Cohesion: 0.38
-Nodes (10): getSurfaceBriefDir(), listSurfaceBriefs(), normalizeSurfaceTarget(), parseSurfaceBrief(), resolveSurfaceBrief(), SURFACE_BRIEF_VERSION, surfaceBriefPathForTarget(), writeSurfaceBrief() (+2 more)
+### Community 319 - "test_app.py"
+Cohesion: 0.48
+Nodes (6): _con_api_key_activada(), Pruebas del middleware verificar_api_key (app.py): con API_SECRET_KEY activada,…, test_ruta_de_tareas_no_exigida_x_api_key_con_clave_activada(), test_ruta_de_tareas_sigue_exigiendo_su_propia_clave_de_cron(), test_ruta_normal_pasa_el_middleware_con_x_api_key_correcta(), test_ruta_normal_sigue_exigiendo_x_api_key_con_clave_activada()
 
 ### Community 320 - "_con_sesion_usuario"
 Cohesion: 0.67
 Nodes (3): _con_sesion_usuario(), Sesión de un usuario normal (no admin) -- para probar rutas como /cancelar-…, test_cancelar_suscripcion_invalida_la_cache_de_bajas_e_ingresos()
 
 ### Community 324 - "cargarAvisosOficiales"
-Cohesion: 0.24
-Nodes (12): actualizarBadgeBoe(), _actualizarStatBoe(), _avisoTemasFaltantesHtml(), _avisoTokenGithubHtml(), cargarAvisosOficiales(), cargarCambiosTemario(), _cargarSaludVigilancia(), _diffHtml() (+4 more)
+Cohesion: 0.26
+Nodes (12): actualizarBadgeBoe(), _actualizarStatBoe(), _avisoTokenGithubHtml(), cargarAvisosOficiales(), cargarCambiosTemario(), _crearAvisoManual(), _diffHtml(), _formAvisoManualHtml() (+4 more)
 
 ### Community 326 - "Política de seguridad"
 Cohesion: 0.40
@@ -1581,69 +1590,57 @@ Nodes (9): obtener_estadisticas_completas_usuario(), Suma las preguntas dejadas 
 Cohesion: 0.29
 Nodes (5): _es_semanticamente_duplicada(), Proporción de Jaccard entre las palabras de dos textos (intersección entre…, Red de seguridad SEMÁNTICA adicional al dedup por texto exacto de _normalizar…, _solapamiento_palabras(), TestEsSemanticamenteDuplicada
 
-### Community 339 - "_generar_pregunta_verificada"
-Cohesion: 0.33
-Nodes (9): _generar_pregunta_verificada(), Toma una pregunta YA GENERADA y sus anclas, la verifica con una llamada…, _verificar_y_aceptar_pregunta(), _pregunta_valida(), test_agotar_los_intentos_devuelve_none_sin_bloquear(), test_fallo_inesperado_en_un_intento_consume_solo_ese_intento(), test_pregunta_invalida_se_descarta_entera_y_se_regenera_desde_cero(), test_rechazo_de_verificacion_registra_errores_generacion() (+1 more)
+### Community 338 - "g"
+Cohesion: 0.11
+Nodes (24): addExceptionStep(), b(), constructor(), Fo, g(), getAllFeatureFlags(), getElementSelectors(), getFlagPayloads() (+16 more)
 
 ### Community 340 - "migrar_usuarios_premium_existente.py"
 Cohesion: 0.60
 Nodes (4): conectar_firestore(), main(), migrar(), Migración única (transición al modelo de prueba/visibilidad por oposición, ver…
 
 ### Community 341 - "_contiene_frase_prohibida"
-Cohesion: 0.31
-Nodes (5): _contiene_frase_prohibida(), Filtro determinista (no depende de que la IA de verificación lo detecte): igual…, TestContieneFrasesProhibidas, contiene_referencia_meta(), True si 'texto' remite al documento/tema/contenido de origen en vez de tener…
+Cohesion: 0.43
+Nodes (3): _contiene_frase_prohibida(), Filtro determinista (no depende de que la IA de verificación lo detecte): igual…, TestContieneFrasesProhibidas
 
-### Community 342 - "_parece_documento_generado_valido"
-Cohesion: 0.32
-Nodes (5): _generar_documento_validado(), _parece_documento_generado_valido(), Filtro barato (sin gastar IA) contra un fallo real reportado por un usuario…, Envoltorio de generar_documento_largo_por_partes que, si el resultado no supera…, TestParaceDocumentoGeneradoValido
+### Community 342 - "displaySurvey"
+Cohesion: 0.33
+Nodes (3): canRenderSurvey(), displaySurvey(), renderSurvey()
 
 ### Community 343 - "_repartir_bloques_en_lotes"
 Cohesion: 0.47
 Nodes (3): Reparte 'bloques' (ver _bloques_estructurales) entre n_lotes listas,…, _repartir_bloques_en_lotes(), TestRepartirBloquesEnLotes
 
-### Community 347 - "_elegir_ancla_legal"
-Cohesion: 0.25
-Nodes (8): _elegir_ancla_legal(), _extraer_articulos(), Trocea el texto verbatim de un subbloque en fragmentos por artículo real. Si no…, Elige 1 (o 2, para 'distincion_articulos') fragmento(s) de artículo real sobre…, test_elegir_ancla_legal_distincion_articulos_devuelve_dos_articulos_distintos(), test_elegir_ancla_legal_evita_repetir_subbloques_ya_usados(), test_extraer_articulos_sin_cabeceras_degrada_a_texto_completo(), test_extraer_articulos_trocea_por_articulo_real()
-
-### Community 348 - "validacion_perfil.py"
-Cohesion: 0.25
-Nodes (7): direccion_valida(), nombre_valido(), Validación de los datos de perfil que el propio usuario puede escribir…, True si `texto` es un nombre/apellido plausible: solo letras (de cualquier…, True si `texto` son solo dígitos y los símbolos habituales de un teléfono (+,…, True si `texto` no supera la longitud máxima y no contiene ningún patrón de…, telefono_valido()
+### Community 349 - "checkElementRadialSpotlightDOM"
+Cohesion: 0.67
+Nodes (4): checkElementRadialSpotlight(), checkElementRadialSpotlightDOM(), elementGradientValue(), spotlightLabel()
 
 ### Community 352 - "test_guardar_resultado_test_no_duplica.py"
 Cohesion: 0.43
 Nodes (7): _contenido(), _guardar(), Guardar el mismo test_id dos veces no debe contabilizarlo dos veces en…, test_guardar_dos_test_id_distintos_si_se_contabilizan_los_dos(), test_guardar_el_mismo_test_id_finalizado_dos_veces_no_duplica_estadisticas(), test_guardar_sin_test_id_siempre_se_contabiliza(), test_reanudar_un_test_en_progreso_y_finalizarlo_si_se_contabiliza()
 
-### Community 353 - "_lineas_rendimiento_tests"
-Cohesion: 0.33
-Nodes (6): _hace_cuanto(), _lineas_rendimiento_tests(), _nota_sobre_10_de(), Nota sobre 10 de un test guardado, con el mismo criterio oficial que el resto…, Texto relativo ("hoy", "ayer", "hace 3 días") a partir de una fecha ISO (la que…, Frases sobre el rendimiento REAL en tests (última nota, tendencia, nota media…
-
-### Community 354 - "completar_tema_gace_sector_publico.py"
-Cohesion: 0.53
-Nodes (5): extraer_texto_titulo_ii(), guardar_preview(), main(), Rellena ÚNICAMENTE el tema 9 del bloque 1 de "Temario GACE" ("El sector público…, subir_a_firestore()
-
-### Community 355 - "_repartir_cupos"
-Cohesion: 0.47
-Nodes (3): Reparte num_tarjetas entre n_fragmentos lo más equitativamente posible -- los…, _repartir_cupos(), TestRepartirCupos
+### Community 355 - "test_tarjetas_generator.py"
+Cohesion: 0.27
+Nodes (4): Reparte num_tarjetas entre n_fragmentos lo más equitativamente posible -- los…, _repartir_cupos(), Pruebas de tarjetas_generator.py: reparto de cupos entre fragmentos, parseo de…, TestRepartirCupos
 
 ## Knowledge Gaps
-- **945 isolated node(s):** `graphify`, `https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js`, `https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js`, `https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js`, `/assets/tutor-widget.js` (+940 more)
+- **942 isolated node(s):** `here`, `API_BASE`, `API_TIMEOUT_MS`, `localStates`, `SEED_MODES` (+937 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **40 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **37 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `error()` connect `error` to `posthog-array.js`, `ya`, `warn`, `concept-seed.mjs`, `po`, `al`, `.Dr`, `N`?**
+- **Why does `error()` connect `ya` to `posthog-array.js`, `al`, `q`, `concept-seed.mjs`, `g`, `N`, `De`, `es`?**
   _High betweenness centrality (0.023) - this node is a cross-community bridge._
-- **Why does `call_deepseek_api()` connect `call_deepseek_api` to `pdf_ia.py`, `test_tu_tutor.py`, `_detectar_duplicados_finales`, `TestGenerarPreguntasIaEnLotes`, `chat_controller.py`, `regenerar_temario_ofimatica.py`, `tarjetas_generator.py`, `rutas_progreso.py`, `generador_preguntas_verificado.py`, `_fragmentos_por_lote`, `test_generator.py`, `vigilancia_boe.py`, `cargar_temario_auxiliar.py`, `cargar_temario_metro.py`, `generar_propuesta_cambio`, `_generar_pregunta_verificada`, `deepseek_utils.py`, `TestGeneracionEnLote`, `cargar_temario_boe.py`?**
-  _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **Why does `sembrar_usuario_activo()` connect `sembrar_usuario_activo` to `test_admin.py`, `test_verificacion_respuestas_oficiales.py`, `TestCupoMensualDeSubidas`, `test_reconciliar_stripe.py`, `test_generar_test_oficial.py`, `_eventos_sse`, `TestChatPdfMensaje`, `TestDocumentoEstado`, `test_pdf_ia.py`, `_con_sesion`, `TestCosteIaEnHerramientasPdf`, `TestGenerarEsquemaDesdePdf`, `test_carpetas_documentos.py`, `test_resultado_test_oficial.py`, `test_temario.py`, `TestSubirDocumento`, `test_repaso_espaciado.py`, `_sembrar_tema`, `conftest.py`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **Why does `usuario_autenticado()` connect `usuario_autenticado` to `test_generar_test_oficial.py`, `test_carpetas_documentos.py`, `sembrar_usuario_activo`, `test_push_notificaciones.py`, `test_resultado_test_oficial.py`, `test_generador_preguntas_verificado.py`, `test_verificacion_respuestas_oficiales.py`, `test_tu_tutor.py`, `test_error_handler.py`, `test_temario.py`, `registro_progreso_usuario.py`, `conftest.py`, `test_repaso_espaciado.py`, `test_gestion_cuenta.py`?**
+  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+- **Why does `call_deepseek_api()` connect `call_deepseek_api` to `registrar_error_generacion`, `pdf_ia.py`, `test_generador_preguntas_verificado.py`, `test_tu_tutor.py`, `_detectar_duplicados_finales`, `TestGenerarPreguntasIaEnLotes`, `chat_controller.py`, `regenerar_temario_ofimatica.py`, `tarjetas_generator.py`, `generador_preguntas_verificado.py`, `coleccion_examenes_oficiales`, `_fragmentos_por_lote`, `test_ia.py`, `test_generator.py`, `vigilancia_boe.py`, `cargar_temario_auxiliar.py`, `cargar_temario_metro.py`, `generar_propuesta_cambio`, `deepseek_utils.py`, `TestGeneracionEnLote`, `cargar_temario_boe.py`?**
+  _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **Are the 63 inferred relationships involving `usuario_autenticado()` (e.g. with `test_content_type_no_json_devuelve_415_json_no_html()` and `test_json_mal_formado_devuelve_400_json_no_html()`) actually correct?**
   _`usuario_autenticado()` has 63 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `graphify`, `https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js`, `https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js` to the rest of the system?**
-  _945 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `here`, `API_BASE`, `API_TIMEOUT_MS` to the rest of the system?**
+  _942 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `test_admin.py` be split into smaller, more focused modules?**
   _Cohesion score 0.026383526383526385 - nodes in this community are weakly interconnected._
 - **Should `posthog-array.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.03580901856763926 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.026143790849673203 - nodes in this community are weakly interconnected._
