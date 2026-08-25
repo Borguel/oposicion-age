@@ -1264,8 +1264,16 @@ body {
 }
 
 .age-verificacion-banner-cerrar {
+  /* min-width/height 44px (25/08/2026, auditoría UX -- zona táctil
+     recomendada, mismo criterio que .zona-switch-pill en
+     zona-opositor/style.css): antes solo tenía padding: 4px 8px alrededor
+     de un icono de 15px, muy por debajo de lo recomendado para cerrar un
+     aviso que aparece en cada página con sesión. */
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   border: none;
   background: transparent;
   color: var(--age-primary-dark);
@@ -1401,8 +1409,12 @@ body {
 }
 
 .age-banner-promo-cerrar {
+  /* Ver el comentario en .age-verificacion-banner-cerrar: mismo arreglo. */
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   border: none;
   background: transparent;
   color: rgba(255, 255, 255, 0.75);
