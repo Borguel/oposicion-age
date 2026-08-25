@@ -142,6 +142,60 @@ def test_activar_oposicion_no_reactiva_una_prueba_ya_terminada(db):
     assert db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]["prueba_fin"] == fin_pasado
 
 
+def test_borrar_cuenta_y_volver_a_registrarse_no_da_otra_prueba_gratuita(db):
+    # Bug real de abuso (24/08/2026): eliminar_cuenta_usuario borra por
+    # completo usuarios/{uid} -- antes de este arreglo, nada impedía
+    # volver a registrarse con el MISMO email real y conseguir otros 7
+    # días de prueba gratuita, indefinidamente. La marca de "ya concedida"
+    # vive en una colección aparte (pruebas_gratuitas_concedidas) que no
+    # cuelga del uid, así que sobrevive al borrado de la cuenta.
+    activar_oposicion_usuario(db, "u1-viejo", "AGE", email="persona@gmail.com", email_verificado=True)
+    assert db.leer(("usuarios", "u1-viejo"))["suscripciones"]["AGE"]["prueba_fin"] is not None
+
+    # Simula el borrado de la cuenta (gestion_cuenta.eliminar_cuenta_usuario
+    # borra usuarios/{uid} entero, pero NUNCA la colección de pruebas
+    # concedidas -- eso es justo lo que la hace sobrevivir).
+    db.collection("usuarios").document("u1-viejo").delete()
+
+    # Cuenta nueva, mismo email real -> la oposición se activa (plan
+    # "gratis") pero SIN otra prueba gratuita.
+    activar_oposicion_usuario(db, "u2-nuevo", "AGE", email="persona@gmail.com", email_verificado=True)
+    sub = db.leer(("usuarios", "u2-nuevo"))["suscripciones"]["AGE"]
+    assert sub["plan"] == "gratis"
+    assert sub["prueba_fin"] is None
+
+
+def test_prueba_gratuita_ya_gastada_no_bloquea_otra_oposicion_distinta(db):
+    # La marca es por email + oposición, no solo por email -- una prueba ya
+    # gastada en AGE no debe impedir la prueba de GACE con el mismo email.
+    activar_oposicion_usuario(db, "u1", "AGE", email="persona@gmail.com", email_verificado=True)
+    activar_oposicion_usuario(db, "u1", "GACE", email="persona@gmail.com", email_verificado=True)
+    assert db.leer(("usuarios", "u1"))["suscripciones"]["GACE"]["prueba_fin"] is not None
+
+
+def test_prueba_gratuita_ya_gastada_no_bloquea_a_otro_email_distinto(db):
+    activar_oposicion_usuario(db, "u1", "AGE", email="persona@gmail.com", email_verificado=True)
+    activar_oposicion_usuario(db, "u2", "AGE", email="otra-persona@gmail.com", email_verificado=True)
+    assert db.leer(("usuarios", "u2"))["suscripciones"]["AGE"]["prueba_fin"] is not None
+
+
+def test_verificar_el_email_mas_tarde_no_concede_una_prueba_ya_gastada(db):
+    # Mismo caso que "borrar cuenta y volver a registrarse", pero pasando
+    # por la activación DIFERIDA (inicializar_estadisticas_usuario, cuando
+    # la oposición se activó sin el email verificado todavía) -- también
+    # debe respetar la marca de prueba ya concedida.
+    activar_oposicion_usuario(db, "u1-viejo", "AGE", email="persona@gmail.com", email_verificado=True)
+    db.collection("usuarios").document("u1-viejo").delete()
+
+    activar_oposicion_usuario(db, "u2-nuevo", "AGE", email="persona@gmail.com", email_verificado=False)
+    assert db.leer(("usuarios", "u2-nuevo"))["suscripciones"]["AGE"]["prueba_fin"] is None
+
+    with patch("registro_progreso_usuario.enviar_email_bienvenida"), \
+         patch("registro_progreso_usuario.enviar_email_alerta_nuevo_usuario"):
+        inicializar_estadisticas_usuario(db, "u2-nuevo", email="persona@gmail.com", email_verificado=True)
+    assert db.leer(("usuarios", "u2-nuevo"))["suscripciones"]["AGE"]["prueba_fin"] is None
+
+
 @pytest.fixture
 def mini_app(db):
     app = Flask(__name__)

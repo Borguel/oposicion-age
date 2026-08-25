@@ -1,3 +1,4 @@
+import hashlib
 import os
 from datetime import date, datetime, timedelta
 from google.cloud import firestore
@@ -8,6 +9,42 @@ from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketi
 from planes import DURACION_PRUEBA_DIAS, prueba_activa, resolver_plan_efectivo, resumen_prueba_cuenta, tiene_plan_de_pago_activo
 from dominios_desechables import es_dominio_email_desechable
 from utils import calcular_resultado_test, ejecutar_en_transaccion
+
+# Bug real de abuso (24/08/2026, auditoría de facturación): eliminar la
+# cuenta (gestion_cuenta.eliminar_cuenta_usuario) borra por completo
+# usuarios/{uid} -- así que, antes de esto, nada impedía volver a
+# registrarse con el MISMO email real y conseguir otros 7 días de prueba
+# gratuita, indefinidamente. Esta colección vive FUERA de usuarios/{uid}
+# (a nivel raíz, no colgada del uid) y por tanto sobrevive a ese borrado --
+# es la única forma de "recordar" que un email ya gastó su prueba en una
+# oposición aunque la cuenta que la gastó ya no exista. La clave es un
+# hash (no el email en claro) para no depender de qué caracteres admite
+# un id de documento de Firestore y para no exponer el email tal cual si
+# algún día se lista esta colección.
+_COLECCION_PRUEBAS_CONCEDIDAS = "pruebas_gratuitas_concedidas"
+
+
+def _clave_prueba_gratuita(email, oposicion):
+    normalizado = (email or "").strip().lower()
+    return hashlib.sha256(f"{normalizado}:{oposicion}".encode()).hexdigest()
+
+
+def _prueba_gratuita_ya_concedida(db, email, oposicion):
+    if not email:
+        return False
+    ref = db.collection(_COLECCION_PRUEBAS_CONCEDIDAS).document(_clave_prueba_gratuita(email, oposicion))
+    return ref.get().exists
+
+
+def _marcar_prueba_gratuita_concedida(db, email, oposicion):
+    if not email:
+        return
+    ref = db.collection(_COLECCION_PRUEBAS_CONCEDIDAS).document(_clave_prueba_gratuita(email, oposicion))
+    ref.set({
+        "email": email.strip().lower(),
+        "oposicion": oposicion,
+        "fecha": datetime.utcnow().isoformat(),
+    })
 
 # Ya no hay una prueba gratuita global por cuenta: cada oposición arranca la
 # suya al activarse explícitamente (ver activar_oposicion_usuario más abajo),
@@ -151,9 +188,16 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificad
         oid for oid, sub in (datos.get("suscripciones", {}) or {}).items()
         if (sub or {}).get("plan", "gratis") == "gratis" and not (sub or {}).get("prueba_fin")
     ]
-    if pendientes:
+    # Ver _prueba_gratuita_ya_concedida arriba: si ese email ya gastó la
+    # prueba de alguna de estas oposiciones en una cuenta anterior ya
+    # borrada, esa oposición concreta se queda sin arrancar (se mantiene en
+    # "gratis" sin prueba) en vez de concederle otra.
+    concedibles = [oid for oid in pendientes if not _prueba_gratuita_ya_concedida(db, email, oid)]
+    if concedibles:
         fin = (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat()
-        doc_ref.update({f"suscripciones.{oid}.prueba_fin": fin for oid in pendientes})
+        doc_ref.update({f"suscripciones.{oid}.prueba_fin": fin for oid in concedibles})
+        for oid in concedibles:
+            _marcar_prueba_gratuita_concedida(db, email, oid)
 
 
 def activar_oposicion_usuario(db, usuario_id, oposicion, email=None, email_verificado=True):
@@ -180,12 +224,22 @@ def activar_oposicion_usuario(db, usuario_id, oposicion, email=None, email_verif
     if oposicion in (datos.get("suscripciones", {}) or {}):
         return
 
-    permite_prueba = bool(email_verificado) and not es_dominio_email_desechable(email)
+    # not _prueba_gratuita_ya_concedida(...) (24/08/2026, ver comentario
+    # junto a la función): sin esto, borrar la cuenta y volver a
+    # registrarse con el mismo email real conseguía otros 7 días de
+    # prueba gratuita cada vez, sin límite.
+    permite_prueba = (
+        bool(email_verificado)
+        and not es_dominio_email_desechable(email)
+        and not _prueba_gratuita_ya_concedida(db, email, oposicion)
+    )
     doc_ref.update({
         f"suscripciones.{oposicion}.plan": "gratis",
         f"suscripciones.{oposicion}.prueba_fin": (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat() if permite_prueba else None,
         f"suscripciones.{oposicion}.plan_updated_at": datetime.utcnow().isoformat(),
     })
+    if permite_prueba:
+        _marcar_prueba_gratuita_concedida(db, email, oposicion)
 
 def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None, rendimiento_temas=None, blancos=0):
     # Lectura + cálculo + escritura van dentro de una única transacción de
