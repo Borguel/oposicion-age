@@ -912,11 +912,14 @@ h1, h2, h3 {
     margin-left: 0;
   }
 
-  /* En móvil, apilados, la acción principal (Siguiente/Finalizar) va
-     arriba -- es la que se espera pulsar primero. */
-  .botones-navegacion-test .age-btn-primary {
-    order: -1;
-  }
+  /* Sin order (25/08/2026, auditoría UX -- bug real): antes la acción
+     principal (Siguiente/Finalizar) se subía arriba con order: -1 en
+     .botones-navegacion-test .age-btn-primary, pero eso solo reordena lo
+     VISUAL -- el orden de tabulación seguía el del HTML (Anterior
+     primero), así que quien navegaba con teclado tabulaba primero al
+     botón que se ve ABAJO. Se deja el orden natural (Anterior arriba,
+     Siguiente/Finalizar abajo), igual en móvil que en escritorio, para
+     que lo que se ve y lo que se tabula coincidan siempre. */
 
   .nav-preg {
     width: 32px;
