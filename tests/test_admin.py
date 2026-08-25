@@ -569,7 +569,7 @@ def test_usuarios_lista_incluye_uso_y_ordena_por_uso(client, db):
                                         "ultima_actividad": "2026-07-14"})
     db.sembrar(("usuarios", "u_alto"), {"email": "alto@x.com", "suscripciones": {"AGE": {"plan": "basico"}},
                                         "ultima_actividad": "2026-07-01",
-                                        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 50}}})
+                                        "limites_uso": {"test_avanzado_verificado": {"dia": {"clave": hoy, "contador": 50}}}})
     with _como():
         d = client.get("/admin/api/usuarios?orden=uso", headers=_AUTH).get_json()
     # El de más uso va primero al ordenar por uso.
@@ -584,7 +584,7 @@ def test_detalle_usuario_incluye_uso_herramientas(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@x.com",
         "suscripciones": {"AGE": {"plan": "basico"}},
-        "limites_uso": {"test_avanzado_verificado": {"periodo": hoy, "contador": 25}},
+        "limites_uso": {"test_avanzado_verificado": {"dia": {"clave": hoy, "contador": 25}}},
     })
     with _como():
         d = client.get("/admin/api/usuarios/u1", headers=_AUTH).get_json()
@@ -1379,7 +1379,7 @@ def test_limites_guardar_y_afecta_a_la_cuota(client, db):
     assert guardado["max_paginas"]["basico"] == 999
     # Y verificar_limite_uso lo respeta (1 uso permitido, el 2º ya bloquea).
     from datetime import date
-    db.sembrar(("usuarios", "u9"), {"limites_uso": {"test_avanzado_verificado": {"periodo": date.today().isoformat(), "contador": 1}}})
+    db.sembrar(("usuarios", "u9"), {"limites_uso": {"test_avanzado_verificado": {"dia": {"clave": date.today().isoformat(), "contador": 1}}}})
     permitido, _m, _u, limite = verificar_limite_uso(db, "u9", "basico", "test_avanzado_verificado")
     assert permitido is False
     assert limite == 1

@@ -227,6 +227,6 @@ def test_ruta_generar_test_psicotecnico_registra_uso_en_preguntas(client, db):
         )
         assert resp.status_code == 200
         datos_usuario = db.leer(("usuarios", "u1"))
-        assert datos_usuario["limites_uso"]["test_oficial"]["contador"] == 25
+        assert datos_usuario["limites_uso"]["test_oficial"]["dia"]["contador"] == 25
     finally:
         parche.stop()

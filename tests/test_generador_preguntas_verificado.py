@@ -866,8 +866,8 @@ def test_ruta_generar_test_avanzado_emite_eventos_y_registra_uso(client, db, usu
     datos_usuario = db.leer(("usuarios", "u1"))
     # El cupo se mide en preguntas: un test de 2 preguntas gasta 2 unidades
     # -- en el cupo diario Y en el tope mensual adicional, a la vez.
-    assert datos_usuario["limites_uso"]["test_avanzado_verificado"]["contador"] == 2
-    assert datos_usuario["limites_uso"]["test_avanzado_verificado_mensual"]["contador"] == 2
+    assert datos_usuario["limites_uso"]["test_avanzado_verificado"]["dia"]["contador"] == 2
+    assert datos_usuario["limites_uso"]["test_avanzado_verificado_mensual"]["mes"]["contador"] == 2
 
 
 def test_ruta_generar_test_avanzado_no_deja_registro_colgado_en_generacion_control(client, db, usuario_autenticado):
@@ -906,7 +906,7 @@ def test_ruta_generar_test_avanzado_429_si_supera_el_limite(client, db, usuario_
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
-        "limites_uso": {"test_avanzado_verificado": {"periodo": _clave_periodo("dia"), "contador": 300}}
+        "limites_uso": {"test_avanzado_verificado": {"dia": {"clave": _clave_periodo("dia"), "contador": 300}}}
     })
     usuario_autenticado()
     with patch("generador_preguntas_verificado.call_deepseek_api") as mock_llamada:
@@ -926,7 +926,7 @@ def test_ruta_generar_test_avanzado_429_si_supera_el_tope_mensual_aunque_el_diar
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
-        "limites_uso": {"test_avanzado_verificado_mensual": {"periodo": _clave_periodo("mes"), "contador": 400}}
+        "limites_uso": {"test_avanzado_verificado_mensual": {"mes": {"clave": _clave_periodo("mes"), "contador": 400}}}
     })
     usuario_autenticado()
     with patch("generador_preguntas_verificado.call_deepseek_api") as mock_llamada:

@@ -175,6 +175,6 @@ def test_ruta_analisis_rendimiento_con_datos_suficientes_devuelve_texto(client, 
         assert "Tema flojo" in resp.get_json()["analisis"]
         mock_ia.assert_called_once()
         datos_usuario = db.leer(("usuarios", "u1"))
-        assert datos_usuario["limites_uso"]["analisis_ia"]["contador"] == 1
+        assert datos_usuario["limites_uso"]["analisis_ia"]["mes"]["contador"] == 1
     finally:
         parche.stop()

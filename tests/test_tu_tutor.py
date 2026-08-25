@@ -1093,7 +1093,7 @@ def test_ruta_tu_tutor_requiere_premium_y_registra_uso(client, db, usuario_auten
     assert resp.status_code == 200
     assert resp.get_json()["respuesta"] == "Hola desde Tu Tutor"
     datos_usuario = db.leer(("usuarios", "u1"))
-    assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 1
+    assert datos_usuario["limites_uso"]["chat_temario"]["dia"]["contador"] == 1
 
 
 def test_ruta_tu_tutor_devuelve_502_si_deepseek_falla_y_no_gasta_cupo(client, db, usuario_autenticado):
@@ -1116,7 +1116,7 @@ def test_ruta_tu_tutor_devuelve_502_si_deepseek_falla_y_no_gasta_cupo(client, db
     # todo (antes solo se llamaba a registrar_uso tras el éxito), pero
     # el cupo efectivamente gastado es el mismo: cero.
     uso = (datos_usuario.get("limites_uso") or {}).get("chat_temario")
-    assert uso is None or uso.get("contador") == 0
+    assert uso is None or (uso.get("dia") or {}).get("contador", 0) == 0
 
 
 def test_ruta_tu_tutor_no_gasta_cupo_si_falla_preparar_contexto(client, db, usuario_autenticado):
@@ -1135,7 +1135,7 @@ def test_ruta_tu_tutor_no_gasta_cupo_si_falla_preparar_contexto(client, db, usua
     assert "error" in resp.get_json()
     datos_usuario = db.leer(("usuarios", "u1"))
     uso = (datos_usuario.get("limites_uso") or {}).get("chat_temario")
-    assert uso is None or uso.get("contador") == 0
+    assert uso is None or (uso.get("dia") or {}).get("contador", 0) == 0
 
 
 def _eventos_sse(cuerpo_respuesta):
@@ -1165,7 +1165,7 @@ def test_ruta_tu_tutor_stream_emite_eventos_y_registra_uso(client, db, usuario_a
     assert eventos[1]["texto"] == "Mundo"
     assert eventos[2]["chat_id"]
     datos_usuario = db.leer(("usuarios", "u1"))
-    assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 1
+    assert datos_usuario["limites_uso"]["chat_temario"]["dia"]["contador"] == 1
 
 
 def test_ruta_tu_tutor_stream_no_registra_uso_si_deepseek_falla(client, db, usuario_autenticado):
@@ -1187,7 +1187,7 @@ def test_ruta_tu_tutor_stream_no_registra_uso_si_deepseek_falla(client, db, usua
     # devuelve: el neto queda en 0 (no se consume cuota por un fallo
     # técnico, aunque el contador ya exista por el cobro+devolución).
     datos_usuario = db.leer(("usuarios", "u1"))
-    assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 0
+    assert datos_usuario["limites_uso"]["chat_temario"]["dia"]["contador"] == 0
 
 
 def test_ruta_tu_tutor_stream_no_registra_uso_si_falla_preparar_contexto(client, db, usuario_autenticado):
@@ -1206,7 +1206,7 @@ def test_ruta_tu_tutor_stream_no_registra_uso_si_falla_preparar_contexto(client,
     eventos = _eventos_sse(resp.get_data(as_text=True))
     assert eventos == [{"tipo": "error"}]
     datos_usuario = db.leer(("usuarios", "u1"))
-    assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 0
+    assert datos_usuario["limites_uso"]["chat_temario"]["dia"]["contador"] == 0
 
 
 def test_ruta_eliminar_conversacion_borra_de_firestore(client, db, usuario_autenticado):

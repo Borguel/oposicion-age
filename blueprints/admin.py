@@ -234,10 +234,14 @@ def _ficha_actividad(ref, datos):
         })
 
     # Consumo del periodo actual por herramienta (limites_uso) -- para ver de
-    # un vistazo cuánta IA está gastando ahora mismo.
+    # un vistazo cuánta IA está gastando ahora mismo. No filtra por plan ni
+    # unidad de periodo actual (a diferencia de _uso_herramientas, que sí es
+    # el que se pinta en la ficha, ver assets/admin/script.js) -- suma los
+    # contadores "dia"/"mes" tal cual estén guardados, best-effort, mismo
+    # criterio que el resto de esta función.
     uso = {}
     for tipo, u in (datos.get("limites_uso") or {}).items():
-        uso[tipo] = (u or {}).get("contador", 0) or 0
+        uso[tipo] = sum((bucket or {}).get("contador", 0) or 0 for bucket in (u or {}).values())
 
     return contenido, rendimiento, hist, hist_diario, uso
 
@@ -255,8 +259,13 @@ def _uso_herramientas(datos):
         tipo = m["id"]
         cfg = tools.get(tipo, {}).get(plan) or {"periodo": "mes", "limite": 0}
         periodo, limite = cfg.get("periodo", "mes"), cfg.get("limite", 0)
-        u = usos.get(tipo) or {}
-        consumido = u.get("contador", 0) if u.get("periodo") == _clave_periodo(periodo) else 0
+        # Sub-contador de la UNIDAD del plan actual (ver limites_uso._bucket_
+        # uso): si el usuario cambió de plan y esta herramienta cambia de
+        # unidad según el plan (ver "analisis_ia" en limites_uso.LIMITES),
+        # el consumo mostrado es el real de la unidad vigente ahora, no un
+        # contador de otra unidad que ya no aplica ni lo pisa.
+        u = (usos.get(tipo) or {}).get(periodo) or {}
+        consumido = u.get("contador", 0) if u.get("clave") == _clave_periodo(periodo) else 0
         filas.append({
             "id": tipo,
             "nombre": m["nombre"],
@@ -280,8 +289,9 @@ def _uso_pico(datos, plan, tools):
         limite = cfg.get("limite", 0)
         if not limite:
             continue
-        u = usos.get(m["id"]) or {}
-        consumido = u.get("contador", 0) if u.get("periodo") == _clave_periodo(cfg.get("periodo", "mes")) else 0
+        periodo = cfg.get("periodo", "mes")
+        u = (usos.get(m["id"]) or {}).get(periodo) or {}
+        consumido = u.get("contador", 0) if u.get("clave") == _clave_periodo(periodo) else 0
         pct = round(consumido / limite * 100)
         if pct > pico:
             pico, nombre = pct, m["nombre"]

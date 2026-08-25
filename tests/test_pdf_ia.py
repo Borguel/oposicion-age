@@ -270,7 +270,7 @@ class TestChatPdfMensaje:
         assert cuerpo["documento_id"] == documento_sembrado
         mensajes_enviados = mock_llamada.call_args[0][0]
         assert "Texto del documento de prueba." in mensajes_enviados[0]["content"]
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["chat_pdf"]["contador"] == 1
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["chat_pdf"]["dia"]["contador"] == 1
 
     def test_chat_pdf_mensaje_no_trunca_documentos_largos(self, client, db):
         # Antes el texto guardado al subir se recortaba a
@@ -317,7 +317,7 @@ class TestChatPdfMensaje:
     def test_chat_pdf_mensaje_respeta_limite_diario(self, client, db, documento_sembrado):
         from datetime import date
         sembrar_usuario_activo(db, "u1", plan="premium",
-                                limites_uso={"chat_pdf": {"periodo": date.today().isoformat(), "contador": 80}})
+                                limites_uso={"chat_pdf": {"dia": {"clave": date.today().isoformat(), "contador": 80}}})
         parche = _con_sesion(client)
         try:
             resp = client.post("/chat-pdf-mensaje", json={
@@ -358,7 +358,7 @@ class TestChatPdfMensaje:
         assert eventos[0]["texto"] == "Hola "
         assert eventos[1]["texto"] == "que tal"
         assert eventos[2]["documento_id"] == documento_sembrado
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["chat_pdf"]["contador"] == 1
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["chat_pdf"]["dia"]["contador"] == 1
 
     def test_chat_pdf_mensaje_stream_sin_fragmentos_devuelve_el_uso(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
@@ -374,7 +374,7 @@ class TestChatPdfMensaje:
         assert eventos == [{"tipo": "error"}]
         # Cobrado por adelantado y devuelto al fallar del todo: neto 0
         # (mismo criterio que /tu-tutor/stream).
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["chat_pdf"]["contador"] == 0
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["chat_pdf"]["dia"]["contador"] == 0
 
     def test_chat_pdf_mensaje_stream_documento_inexistente_da_404(self, client, documento_sembrado):
         parche = _con_sesion(client)
@@ -389,7 +389,7 @@ class TestChatPdfMensaje:
     def test_chat_pdf_mensaje_stream_respeta_limite_diario(self, client, db, documento_sembrado):
         from datetime import date
         sembrar_usuario_activo(db, "u1", plan="premium",
-                                limites_uso={"chat_pdf": {"periodo": date.today().isoformat(), "contador": 80}})
+                                limites_uso={"chat_pdf": {"dia": {"clave": date.today().isoformat(), "contador": 80}}})
         parche = _con_sesion(client)
         try:
             resp = client.post("/chat-pdf-mensaje/stream", json={
@@ -645,7 +645,7 @@ class TestResumirPdfYGenerarTestDesdePdf:
         assert eventos[-1]["tipo"] == "fin"
         assert len(eventos[-1]["test"]) == 1
         # También se factura el uso solo cuando la generación tuvo éxito.
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["dia"]["contador"] == 1
 
     def test_generar_test_desde_pdf_devuelve_test_aunque_expire_la_transaccion_de_uso(self, client, db, documento_sembrado):
         # Sentry PYTHON-FLASK-1: la transacción de Firestore de reservar_uso
@@ -697,7 +697,7 @@ class TestResumirPdfYGenerarTestDesdePdf:
         # generación no produjo ni una pregunta, el hilo de fondo lo devuelve:
         # el neto debe quedar en 0 (no se consume cuota por una generación
         # fallida, pero el contador ya existe por el cobro+devolución).
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["dia"]["contador"] == 0
 
     def test_generar_test_desde_pdf_documento_corto_da_mensaje_honesto(self, client, db, documento_sembrado):
         # Si el PDF no tiene contenido suficiente para las preguntas pedidas,
@@ -739,7 +739,7 @@ class TestGenerarEsquemaDesdePdf:
         eventos = _eventos_sse(resp.get_data(as_text=True))
         assert eventos[-1]["tipo"] == "fin"
         assert eventos[-1]["esquema"] == "# Esquema generado"
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["dia"]["contador"] == 1
 
     def test_generar_esquema_desde_pdf_truncado_por_longitud_avisa_en_el_resultado(self, client, db):
         # 12/08/2026, mismo bug real que en /resumir-pdf (ver el comentario
@@ -874,7 +874,7 @@ class TestGenerarEsquemaDesdePdf:
         eventos = _eventos_sse(resp.get_data(as_text=True))
         assert eventos[-1]["tipo"] == "fin"
         assert "error" in eventos[-1]
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["dia"]["contador"] == 0
 
 
 class TestParaceDocumentoGeneradoValido:
@@ -927,7 +927,7 @@ class TestGenerarDocumentoValidadoIntegracion:
         # Una sola llamada -- ya no se regenera el documento entero por esto.
         assert mock_gen.call_count == 1
         # Factura el uso con normalidad -- sí hubo un resultado (con aviso).
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["dia"]["contador"] == 1
 
     def test_generar_esquema_desde_pdf_sin_encabezado_valido_se_acepta_con_aviso(self, client, db, documento_sembrado):
         parche = _con_sesion(client)
@@ -1236,7 +1236,7 @@ class TestGenerarTarjetasDesdePdf:
         assert datos["tipo"] == "fin"
         assert datos["tarjetas"] == [{"pregunta": "¿?", "respuesta": "!"}]
         assert "advertencia" not in datos
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 1
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["dia"]["contador"] == 1
 
     def test_generar_tarjetas_desde_pdf_con_advertencia_por_recorte(self, client, documento_sembrado):
         resultado = {"tarjetas": [{"pregunta": "¿?", "respuesta": "!"}], "descartadas": 2,
@@ -1270,7 +1270,7 @@ class TestGenerarTarjetasDesdePdf:
         assert resp.status_code == 200
         eventos = _eventos_sse(resp.get_data(as_text=True))
         assert "error" in eventos[-1]
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["contador"] == 0
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["pdf_ia"]["dia"]["contador"] == 0
 
     def test_generar_tarjetas_desde_pdf_sin_api_key_da_error_500(self, client, documento_sembrado, monkeypatch):
         monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
@@ -1517,7 +1517,7 @@ class TestMisDocumentos:
         db.sembrar(("usuarios", "u1"), {
             "email": "u1@example.com",
             "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}},
-            "limites_uso": {"banco_pdf_mensual": {"periodo": mes_actual, "contador": 3}},
+            "limites_uso": {"banco_pdf_mensual": {"mes": {"clave": mes_actual, "contador": 3}}},
         })
         parche = _con_sesion(client)
         try:
@@ -1775,8 +1775,8 @@ class TestCupoMensualDeSubidas:
         assert resp.status_code == 200
         from datetime import date
         mes_actual = date.today().strftime("%Y-%m")
-        uso = db.leer(("usuarios", "u1"))["limites_uso"]["banco_pdf_mensual"]
-        assert uso == {"periodo": mes_actual, "contador": 1}
+        uso = db.leer(("usuarios", "u1"))["limites_uso"]["banco_pdf_mensual"]["mes"]
+        assert uso == {"clave": mes_actual, "contador": 1}
 
     def test_subir_el_mismo_pdf_dos_veces_no_duplica_el_cupo(self, client, db):
         # Mismo texto extraído = mismo hash = mismo documento reutilizado
@@ -1790,13 +1790,13 @@ class TestCupoMensualDeSubidas:
         finally:
             parche.stop()
         assert resp2.status_code == 200
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["banco_pdf_mensual"]["contador"] == 1
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["banco_pdf_mensual"]["mes"]["contador"] == 1
 
     def test_cupo_mensual_de_subidas_agotado_bloquea_subir_un_pdf_nuevo(self, client, db):
         from datetime import date
         mes_actual = date.today().strftime("%Y-%m")
         sembrar_usuario_activo(db, "u1", plan="premium",
-                                limites_uso={"banco_pdf_mensual": {"periodo": mes_actual, "contador": 20}})
+                                limites_uso={"banco_pdf_mensual": {"mes": {"clave": mes_actual, "contador": 20}}})
         parche = _con_sesion(client)
         try:
             resp = self._subir(client, texto="Un documento que este usuario nunca había subido.")
@@ -1870,7 +1870,7 @@ class TestBancoPreguntasYTarjetas:
         assert banco["total"] == 2
         assert {p["pregunta"] for p in banco["preguntas"]} == {"¿P1?", "¿P2?"}
         limites = db.leer(("usuarios", "u1"))["limites_uso"]
-        assert limites["pdf_ia"]["contador"] == 1
+        assert limites["pdf_ia"]["dia"]["contador"] == 1
         # 17/08/2026: banco_pdf_mensual es un cupo de SUBIDAS, no de usos de
         # herramienta -- generar un banco sobre un documento YA subido
         # (documento_sembrado, sembrado directo en Firestore, no vía
@@ -1894,7 +1894,7 @@ class TestBancoPreguntasYTarjetas:
         banco = db.leer(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado))
         assert banco["estado"] == "error"
         limites = db.leer(("usuarios", "u1"))["limites_uso"]
-        assert limites["pdf_ia"]["contador"] == 0
+        assert limites["pdf_ia"]["dia"]["contador"] == 0
         assert "banco_pdf_mensual" not in limites
 
     def test_generar_banco_preguntas_sobre_documento_existente_no_gasta_cupo_de_subidas(
@@ -1909,7 +1909,7 @@ class TestBancoPreguntasYTarjetas:
         from datetime import date
         mes_actual = date.today().strftime("%Y-%m")
         sembrar_usuario_activo(db, "u1", plan="premium",
-                                limites_uso={"banco_pdf_mensual": {"periodo": mes_actual, "contador": 20}})
+                                limites_uso={"banco_pdf_mensual": {"mes": {"clave": mes_actual, "contador": 20}}})
         parche = _con_sesion(client)
         try:
             with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", return_value=[
@@ -1922,7 +1922,7 @@ class TestBancoPreguntasYTarjetas:
         finally:
             parche.stop()
         assert resp.status_code == 200
-        assert db.leer(("usuarios", "u1"))["limites_uso"]["banco_pdf_mensual"]["contador"] == 20
+        assert db.leer(("usuarios", "u1"))["limites_uso"]["banco_pdf_mensual"]["mes"]["contador"] == 20
 
     def test_generar_banco_preguntas_documento_inexistente_da_404(self, client, db):
         sembrar_usuario_activo(db, "u1", plan="premium")

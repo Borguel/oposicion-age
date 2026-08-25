@@ -271,7 +271,7 @@ def test_ruta_generar_test_oficial_registra_uso_en_preguntas(client, db, usuario
     assert resp.status_code == 200
     datos_usuario = db.leer(("usuarios", "u1"))
     # El cupo se cobra en PREGUNTAS entregadas, igual que el Test Personalizado.
-    assert datos_usuario["limites_uso"]["test_oficial"]["contador"] == 3
+    assert datos_usuario["limites_uso"]["test_oficial"]["dia"]["contador"] == 3
 
 
 def test_ruta_generar_test_oficial_429_si_supera_el_limite_diario(client, db, usuario_autenticado):
@@ -280,7 +280,7 @@ def test_ruta_generar_test_oficial_429_si_supera_el_limite_diario(client, db, us
     db.sembrar(("usuarios", "u1"), {
         "email": "u1@example.com",
         "suscripciones": {"AGE": {"plan": "basico", "subscription_status": "active"}},
-        "limites_uso": {"test_oficial": {"periodo": _clave_periodo("dia"), "contador": 50}}
+        "limites_uso": {"test_oficial": {"dia": {"clave": _clave_periodo("dia"), "contador": 50}}}
     })
     usuario_autenticado()
     resp = client.post(

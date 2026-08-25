@@ -7,7 +7,12 @@ Dos capas de protección:
    suba p. ej. un PDF de 3000 páginas), independiente del gasto de IA en sí
    (ese ya está acotado aparte truncando el texto que se manda al modelo).
 2. Una cuota de usos por usuario y por plan, guardada en Firestore
-   (usuarios/{uid}.limites_uso.{tipo} = {periodo, contador}).
+   (usuarios/{uid}.limites_uso.{tipo}.{periodo} = {clave, contador}, con
+   `periodo` la UNIDAD "dia"/"mes" y `clave` la fecha concreta de ese
+   periodo -- un contador independiente por unidad, no solo por
+   herramienta: así una herramienta cuyo periodo cambia según el plan
+   (ver "analisis_ia" en LIMITES) no pierde ni "regala" consumo al
+   cambiar de plan a mitad de periodo, ver _bucket_uso más abajo).
 
 Ya no existe un plan "gratis" permanente (sustituido por una prueba de
 Premium de 7 días, ver planes.py) -- ninguna ruta puede resolver ya a ese
@@ -223,6 +228,24 @@ def _clave_periodo(periodo):
     return hoy.strftime("%Y-%m") if periodo == "mes" else hoy.isoformat()
 
 
+def _bucket_uso(datos, tipo, periodo):
+    """Sub-contador de `tipo` para la UNIDAD `periodo` ("dia"/"mes") --
+    ver el comentario largo junto a LIMITES: "analisis_ia" es la única
+    herramienta cuyo periodo cambia según el plan (básico: mes, premium:
+    día), así que un mismo usuario puede tener un contador diario Y uno
+    mensual a la vez para la misma herramienta, según qué plan tuviera
+    activo cada vez. Antes había un único contador por herramienta (sin
+    distinguir unidad): cambiar de plan a mitad de periodo hacía que la
+    clave guardada (una fecha "AAAA-MM" o "AAAA-MM-DD") dejara de coincidir
+    con la nueva, así que el contador se "reiniciaba" a 0 -- perdiendo el
+    consumo real y, en el caso contrario (premium -> básico tras gastar
+    mucho en el cupo diario), regalando un cupo mensual fresco sin haber
+    empezado el mes. Contadores independientes por unidad, dentro del mismo
+    `tipo`, elimina el problema: cambiar de plan nunca pisa el contador de
+    la otra unidad, esté o no en uso ahora mismo."""
+    return ((datos.get("limites_uso") or {}).get(tipo) or {}).get(periodo) or {}
+
+
 def verificar_limite_uso(db, uid, plan, tipo):
     """Comprueba si el usuario puede usar ahora mismo la herramienta `tipo`,
     sin incrementar todavía el contador (eso se hace en registrar_uso, solo
@@ -236,8 +259,8 @@ def verificar_limite_uso(db, uid, plan, tipo):
     clave = _clave_periodo(periodo)
     doc = db.collection("usuarios").document(uid).get()
     datos = doc.to_dict() or {}
-    uso = ((datos.get("limites_uso") or {}).get(tipo)) or {}
-    usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
+    uso = _bucket_uso(datos, tipo, periodo)
+    usados = uso.get("contador", 0) if uso.get("clave") == clave else 0
 
     if usados >= limite:
         # Mensaje sin cifra concreta: para el Test Personalizado el contador va
@@ -290,11 +313,11 @@ def reservar_uso(db, uid, tipo, plan, cantidad=1):
     def _verificar_y_reservar(transaction):
         doc = ref.get(transaction=transaction)
         datos = doc.to_dict() or {}
-        uso = ((datos.get("limites_uso") or {}).get(tipo)) or {}
-        usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
+        uso = _bucket_uso(datos, tipo, periodo)
+        usados = uso.get("contador", 0) if uso.get("clave") == clave else 0
         if usados + cantidad > limite:
             return False, usados
-        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": usados + cantidad}})
+        transaction.update(ref, {f"limites_uso.{tipo}.{periodo}": {"clave": clave, "contador": usados + cantidad}})
         return True, usados + cantidad
 
     permitido, usados = ejecutar_en_transaccion(db, _verificar_y_reservar)
@@ -335,15 +358,14 @@ def reservar_uso_multiple(db, uid, tipos, plan, cantidad=1):
     def _verificar_y_reservar_todos(transaction):
         doc = ref.get(transaction=transaction)
         datos = doc.to_dict() or {}
-        limites_uso_actual = datos.get("limites_uso") or {}
         actualizaciones = {}
         for tipo, (periodo, limite) in configs.items():
             clave = _clave_periodo(periodo)
-            uso = limites_uso_actual.get(tipo) or {}
-            usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
+            uso = _bucket_uso(datos, tipo, periodo)
+            usados = uso.get("contador", 0) if uso.get("clave") == clave else 0
             if usados + cantidad > limite:
                 return False
-            actualizaciones[f"limites_uso.{tipo}"] = {"periodo": clave, "contador": usados + cantidad}
+            actualizaciones[f"limites_uso.{tipo}.{periodo}"] = {"clave": clave, "contador": usados + cantidad}
         transaction.update(ref, actualizaciones)
         return True
 
@@ -385,9 +407,9 @@ def registrar_uso(db, uid, tipo, plan, cantidad=1):
     def _incrementar(transaction):
         doc = ref.get(transaction=transaction)
         datos = doc.to_dict() or {}
-        uso = ((datos.get("limites_uso") or {}).get(tipo)) or {}
-        usados = uso.get("contador", 0) if uso.get("periodo") == clave else 0
-        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": usados + cantidad}})
+        uso = _bucket_uso(datos, tipo, periodo)
+        usados = uso.get("contador", 0) if uso.get("clave") == clave else 0
+        transaction.update(ref, {f"limites_uso.{tipo}.{periodo}": {"clave": clave, "contador": usados + cantidad}})
 
     ejecutar_en_transaccion(db, _incrementar)
 
@@ -418,12 +440,12 @@ def devolver_uso(db, uid, tipo, plan, cantidad=1):
     def _decrementar(transaction):
         doc = ref.get(transaction=transaction)
         datos = doc.to_dict() or {}
-        uso = ((datos.get("limites_uso") or {}).get(tipo)) or {}
+        uso = _bucket_uso(datos, tipo, periodo)
         # Si el periodo ya rotó (p. ej. cambió el día entre cobro y
         # devolución), no se toca: ese contador es de otro periodo.
-        if uso.get("periodo") != clave:
+        if uso.get("clave") != clave:
             return
         usados = uso.get("contador", 0)
-        transaction.update(ref, {f"limites_uso.{tipo}": {"periodo": clave, "contador": max(0, usados - max(1, int(cantidad or 1)))}})
+        transaction.update(ref, {f"limites_uso.{tipo}.{periodo}": {"clave": clave, "contador": max(0, usados - max(1, int(cantidad or 1)))}})
 
     ejecutar_en_transaccion(db, _decrementar)
