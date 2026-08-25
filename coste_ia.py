@@ -18,6 +18,8 @@ import os
 import threading
 from datetime import datetime, timedelta
 
+from utils import ejecutar_en_transaccion
+
 logger = logging.getLogger(__name__)
 
 
@@ -180,42 +182,56 @@ LIMITE_DIAS_HISTORICO = 35
 def _incrementar_mes(db, uid, tin, tout, llamadas):
     """Suma el consumo indicado al contador del mes Y del día actuales del
     usuario, en usuarios/{uid}.coste_ia.{YYYY-MM} y
-    usuarios/{uid}.coste_ia_dias.{YYYY-MM-DD}. Lectura+escritura (no
-    atómica): el consumo de un mismo usuario se vuelca desde un único hilo
-    por petición, así que basta para el uso previsto."""
+    usuarios/{uid}.coste_ia_dias.{YYYY-MM-DD}.
+
+    Lectura+escritura dentro de una transacción de Firestore (bug real,
+    ronda de auditoría #5): el comentario original de esta función asumía
+    que el consumo de un mismo usuario siempre se vuelca desde un único
+    hilo por petición, pero eso no cubre el caso real -- volcar_directo se
+    llama también desde hilos de fondo (resumen/esquema/tarjetas/test
+    desde PDF, Test Personalizado) que corren mientras el usuario sigue
+    usando la web. Si un mismo usuario dispara dos herramientas de IA casi
+    a la vez, dos llamadas a esta función podían leer el mismo contador
+    antes de que ninguna escribiera, perdiéndose uno de los dos
+    incrementos -- infravalorando en silencio el gasto real que alimenta
+    tanto el panel admin como la alerta anti-abuso de picos de gasto."""
     ahora = datetime.utcnow()
     mes = ahora.strftime("%Y-%m")
     dia = ahora.strftime("%Y-%m-%d")
     ref = db.collection("usuarios").document(uid)
-    doc = ref.get()
-    if not doc.exists:
-        return
-    datos = doc.to_dict() or {}
 
-    actual_mes = (datos.get("coste_ia") or {}).get(mes) or {}
-    tin_mes = (actual_mes.get("tokens_in", 0) or 0) + tin
-    tout_mes = (actual_mes.get("tokens_out", 0) or 0) + tout
-    llamadas_mes = (actual_mes.get("llamadas", 0) or 0) + llamadas
+    def _sumar(transaction):
+        doc = ref.get(transaction=transaction)
+        if not doc.exists:
+            return
+        datos = doc.to_dict() or {}
 
-    dias = dict(datos.get("coste_ia_dias") or {})
-    actual_dia = dias.get(dia) or {}
-    tin_dia = (actual_dia.get("tokens_in", 0) or 0) + tin
-    tout_dia = (actual_dia.get("tokens_out", 0) or 0) + tout
-    llamadas_dia = (actual_dia.get("llamadas", 0) or 0) + llamadas
-    dias[dia] = {
-        "tokens_in": tin_dia, "tokens_out": tout_dia, "llamadas": llamadas_dia,
-        "coste": coste_estimado(tin_dia, tout_dia),
-    }
-    limite = (ahora - timedelta(days=LIMITE_DIAS_HISTORICO)).strftime("%Y-%m-%d")
-    dias = {d: v for d, v in dias.items() if d >= limite}
+        actual_mes = (datos.get("coste_ia") or {}).get(mes) or {}
+        tin_mes = (actual_mes.get("tokens_in", 0) or 0) + tin
+        tout_mes = (actual_mes.get("tokens_out", 0) or 0) + tout
+        llamadas_mes = (actual_mes.get("llamadas", 0) or 0) + llamadas
 
-    ref.update({
-        f"coste_ia.{mes}.tokens_in": tin_mes,
-        f"coste_ia.{mes}.tokens_out": tout_mes,
-        f"coste_ia.{mes}.llamadas": llamadas_mes,
-        f"coste_ia.{mes}.coste": coste_estimado(tin_mes, tout_mes),
-        "coste_ia_dias": dias,
-    })
+        dias = dict(datos.get("coste_ia_dias") or {})
+        actual_dia = dias.get(dia) or {}
+        tin_dia = (actual_dia.get("tokens_in", 0) or 0) + tin
+        tout_dia = (actual_dia.get("tokens_out", 0) or 0) + tout
+        llamadas_dia = (actual_dia.get("llamadas", 0) or 0) + llamadas
+        dias[dia] = {
+            "tokens_in": tin_dia, "tokens_out": tout_dia, "llamadas": llamadas_dia,
+            "coste": coste_estimado(tin_dia, tout_dia),
+        }
+        limite = (ahora - timedelta(days=LIMITE_DIAS_HISTORICO)).strftime("%Y-%m-%d")
+        dias = {d: v for d, v in dias.items() if d >= limite}
+
+        transaction.update(ref, {
+            f"coste_ia.{mes}.tokens_in": tin_mes,
+            f"coste_ia.{mes}.tokens_out": tout_mes,
+            f"coste_ia.{mes}.llamadas": llamadas_mes,
+            f"coste_ia.{mes}.coste": coste_estimado(tin_mes, tout_mes),
+            "coste_ia_dias": dias,
+        })
+
+    ejecutar_en_transaccion(db, _sumar)
 
 
 def guardar_coste_directo(db, uid, tin, tout, llamadas):

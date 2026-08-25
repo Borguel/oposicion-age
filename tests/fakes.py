@@ -108,11 +108,12 @@ class FakeDocumentRef:
 
 
 class FakeCollectionRef:
-    def __init__(self, store, path, filtros=None, limite=None):
+    def __init__(self, store, path, filtros=None, limite=None, orden=None):
         self._store = store
         self._path = path
         self._filtros = filtros or []
         self._limite = limite
+        self._orden = orden  # (campo, direction) o None
 
     def document(self, doc_id=None):
         if doc_id is None:
@@ -120,24 +121,40 @@ class FakeCollectionRef:
         return FakeDocumentRef(self._store, self._path + (doc_id,))
 
     def where(self, campo, operador, valor):
-        return FakeCollectionRef(self._store, self._path, self._filtros + [(campo, operador, valor)], self._limite)
+        return FakeCollectionRef(self._store, self._path, self._filtros + [(campo, operador, valor)], self._limite, self._orden)
 
     def limit(self, n):
-        return FakeCollectionRef(self._store, self._path, self._filtros, n)
+        return FakeCollectionRef(self._store, self._path, self._filtros, n, self._orden)
+
+    def order_by(self, campo, direction=None):
+        return FakeCollectionRef(self._store, self._path, self._filtros, self._limite, (campo, direction))
 
     def stream(self, **kwargs):
         # **kwargs absorbe timeout/retry -- el cliente real de Firestore los
         # acepta en .stream(), este fake los ignora sin más (no hay red que
         # cronometrar).
         largo = len(self._path)
-        vistos = 0
+        resultados = []
         for path, datos in list(self._store.items()):
-            if self._limite is not None and vistos >= self._limite:
-                break
-            if len(path) == largo + 1 and path[:largo] == self._path:
-                if all(_cumple_filtro(datos, f) for f in self._filtros):
-                    vistos += 1
-                    yield FakeDocumentSnapshot(path[-1], datos, self._store, path)
+            if len(path) != largo + 1 or path[:largo] != self._path:
+                continue
+            if not all(_cumple_filtro(datos, f) for f in self._filtros):
+                continue
+            if self._orden and self._orden[0] not in (datos or {}):
+                # Firestore real: order_by(campo) EXCLUYE los documentos que
+                # no tienen ese campo -- no los manda al final, los quita
+                # (ver el bug real ya corregido en tu_tutor.py sobre esto
+                # mismo).
+                continue
+            resultados.append((path[-1], datos, path))
+        if self._orden:
+            campo, direction = self._orden
+            descendente = direction is not None and "DESC" in str(direction).upper()
+            resultados.sort(key=lambda r: r[1].get(campo), reverse=descendente)
+        if self._limite is not None:
+            resultados = resultados[:self._limite]
+        for doc_id, datos, path in resultados:
+            yield FakeDocumentSnapshot(doc_id, datos, self._store, path)
 
     def get(self, **kwargs):
         # Firestore real: query.get() devuelve una lista de DocumentSnapshot

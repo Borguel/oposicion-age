@@ -2474,17 +2474,33 @@ def avisos_oficiales_actualizar(aid):
     if estado not in ("pendiente", "publicado", "descartado"):
         return jsonify({"error": "Estado no válido"}), 400
     ref = db.collection("avisos_oficiales").document(aid)
-    doc = ref.get()
-    if not doc.exists:
-        return jsonify({"error": "Aviso no encontrado"}), 404
-    aviso_antes = doc.to_dict() or {}
 
-    ref.set({
-        "estado": estado,
-        "revisado_por": g.uid,
-        "revisado_por_email": g.email,
-        "fecha_revision": datetime.utcnow().isoformat(),
-    }, merge=True)
+    # Lectura del estado anterior + escritura en una única transacción de
+    # Firestore (bug real, ronda de auditoría #5): con un get() + set()
+    # sueltos, publicar el mismo aviso dos veces casi a la vez (doble clic
+    # en "Publicar", que no se deshabilita, o dos admins a la vez) podía
+    # hacer que las dos peticiones leyeran "pendiente" antes de que
+    # ninguna escribiera "publicado" -- y las dos disparaban el email
+    # masivo a todos los usuarios afectados, duplicándolo. Mismo patrón ya
+    # aplicado a cambios_temario_actualizar en la ronda #4.
+    def _actualizar(transaction):
+        doc = ref.get(transaction=transaction)
+        if not doc.exists:
+            return {"error": "Aviso no encontrado", "status": 404}
+        aviso_antes = doc.to_dict() or {}
+        transaction.set(ref, {
+            "estado": estado,
+            "revisado_por": g.uid,
+            "revisado_por_email": g.email,
+            "fecha_revision": datetime.utcnow().isoformat(),
+        }, merge=True)
+        return {"ok": True, "aviso_antes": aviso_antes}
+
+    resultado = ejecutar_en_transaccion(db, _actualizar)
+    if "error" in resultado:
+        return jsonify({"error": resultado["error"]}), resultado["status"]
+    aviso_antes = resultado["aviso_antes"]
+
     _registrar_auditoria("aviso_oficial_" + estado, aid)
 
     # Publicar la(s) página(s) estática(s) + avisar por email solo la

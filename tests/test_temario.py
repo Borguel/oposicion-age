@@ -231,38 +231,3 @@ def test_avisos_oficiales_ignora_los_de_otra_oposicion(client, db, usuario_auten
     assert resp.get_json()["avisos"] == []
 
 
-def test_progreso_usuario_requiere_login(client):
-    resp = client.get("/progreso-usuario")
-    assert resp.status_code == 401
-
-
-def test_progreso_usuario_404_si_no_existe(client, db, usuario_autenticado):
-    usuario_autenticado(uid="fantasma", email_verified=True)
-    resp = client.get("/progreso-usuario", headers={"Authorization": "Bearer x"})
-    # requiere_login ya crea al usuario en su primera petición autenticada,
-    # pero eso ya no basta para pasar requiere_plan: una cuenta recién
-    # creada no tiene ninguna oposición activada todavía (ver
-    # activar_oposicion_usuario), así que lo normal es un 403 -- lo que
-    # importa aquí es que nunca sea un 500 al leer campos de un documento a
-    # medio crear.
-    assert resp.status_code in (200, 403, 404)
-
-
-def test_progreso_usuario_devuelve_los_campos_esperados(client, db, usuario_autenticado):
-    sembrar_usuario_activo(db, "u1", plan="basico",
-        tests_realizados=3,
-        puntuacion_media_test=7.5,
-        ultimo_test={"aciertos": 8},
-        total_aciertos=20,
-        esquemas_generados=2,
-    )
-    usuario_autenticado(email_verified=True)
-    resp = client.get("/progreso-usuario", headers={"Authorization": "Bearer x"})
-    assert resp.status_code == 200
-    assert resp.get_json() == {
-        "tests_realizados": 3,
-        "puntuacion_media_test": 7.5,
-        "ultimo_test": {"aciertos": 8},
-        "total_aciertos": 20,
-        "esquemas_generados": 2,
-    }

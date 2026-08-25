@@ -117,6 +117,34 @@ def test_guardar_coste_directo_acumula_sobre_lo_existente(db):
     assert doc["llamadas"] == 3
 
 
+def test_incrementar_mes_pasa_de_verdad_por_una_transaccion(db):
+    # Lectura+cálculo+escritura en una única transacción de Firestore (bug
+    # real, ronda de auditoría #5): sin esto, dos hilos de fondo del mismo
+    # usuario (p. ej. dos herramientas de IA disparadas casi a la vez)
+    # podían leer el mismo contador antes de que ninguno escribiera, y uno
+    # de los dos incrementos se perdía -- infravalorando el gasto real que
+    # alimenta el panel admin y la alerta anti-abuso. No es practicable
+    # simular con hilos una condición de carrera real en este harness
+    # síncrono (mismo criterio que test_registrar_actividad_racha_pasa_de_
+    # verdad_por_una_transaccion en test_racha.py), así que se comprueba en
+    # su lugar que de verdad pasa por db.transaction().
+    llamadas = []
+    transaction_original = db.transaction
+
+    def transaction_espia():
+        llamadas.append(1)
+        return transaction_original()
+
+    db.sembrar(("usuarios", "u1"), {})
+    db.transaction = transaction_espia
+    try:
+        coste_ia.guardar_coste_directo(db, "u1", 100, 50, 1)
+    finally:
+        db.transaction = transaction_original
+
+    assert len(llamadas) == 1
+
+
 def test_flush_coste_incrementa_el_mes(client, db):
     # Simula que durante una petición se acumuló consumo en g y que el
     # teardown lo vuelca al documento del usuario.

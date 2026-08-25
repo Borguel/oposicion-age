@@ -388,7 +388,14 @@ def registrar_rutas_progreso(app, db):
     @app.route("/test-desde-historial", methods=["GET"])
     @requiere_plan(db, "basico", global_check=False)
     def generar_test_desde_historial():
-        cantidad = int(request.args.get("cantidad", 10))
+        # Bug real (ronda de auditoría #5): int() sin capturar -- un
+        # ?cantidad=abc daba un 500 genérico (ValueError sin controlar) en
+        # vez de degradar al valor por defecto, como ya hacen las rutas
+        # equivalentes de blueprints/pdf_ia.py para este mismo parámetro.
+        try:
+            cantidad = int(request.args.get("cantidad", 10))
+        except (TypeError, ValueError):
+            cantidad = 10
         oposicion = obtener_oposicion_solicitada()
 
         try:
@@ -414,7 +421,13 @@ def registrar_rutas_progreso(app, db):
     @requiere_plan(db, "premium", global_check=True)
     def obtener_contenido_pdf_guardado():
         tipo_contenido = request.args.get("tipo_contenido")  # tests_pdf, resumenes_pdf, esquemas_pdf, tarjetas_pdf
-        limite = int(request.args.get("limite", 10))
+        # Bug real (ronda de auditoría #5): mismo caso que en
+        # /test-desde-historial -- un ?limite=abc daba un 500 genérico en
+        # vez de degradar al valor por defecto.
+        try:
+            limite = int(request.args.get("limite", 10))
+        except (TypeError, ValueError):
+            limite = 10
 
         if not tipo_contenido:
             return jsonify({"error": "Falta tipo_contenido"}), 400

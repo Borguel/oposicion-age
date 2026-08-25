@@ -1983,6 +1983,30 @@ def test_avisos_oficiales_publicar_con_varias_oposiciones_regenera_las_paginas_d
     mock_notificar.assert_called_once()  # una sola vez, no una por oposición
 
 
+def test_avisos_oficiales_publicar_dos_veces_no_duplica_el_email_masivo(client, db):
+    # Bug real (ronda de auditoría #5): doble clic en "Publicar" (el botón
+    # no se deshabilita) o dos admins publicando el mismo aviso casi a la
+    # vez podían leer los dos "pendiente" antes de que ninguno escribiera
+    # "publicado" -- y los dos disparaban notificar_usuarios_aviso_oficial,
+    # duplicando el email a toda la base de usuarios afectada. Simulado
+    # aquí como dos peticiones secuenciales sobre el mismo aviso pendiente.
+    db.sembrar(("avisos_oficiales", "a1"), {
+        "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Convocatoria AGE 2026",
+        "url_boe": "https://boe.es/x", "estado": "pendiente",
+    })
+    with patch("publicacion_estatica_boe.actualizar_pagina_estatica_avisos") as mock_pagina, \
+         patch("publicacion_estatica_boe.actualizar_pagina_avisos_general"), \
+         patch("publicacion_estatica_boe.notificar_usuarios_aviso_oficial") as mock_notificar, \
+         _como():
+        resp1 = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "publicado"}, headers=_AUTH)
+        resp2 = client.patch("/admin/api/avisos-oficiales/a1", json={"estado": "publicado"}, headers=_AUTH)
+
+    assert resp1.status_code == 200
+    assert resp2.status_code == 200
+    mock_notificar.assert_called_once()
+    mock_pagina.assert_called_once()
+
+
 def test_avisos_oficiales_no_redispara_al_volver_a_guardar_publicado(client, db):
     db.sembrar(("avisos_oficiales", "a1"), {
         "oposicion": "AGE", "tipo": "convocatoria", "titulo": "Convocatoria AGE 2026",

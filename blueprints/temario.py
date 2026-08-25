@@ -140,22 +140,6 @@ def obtener_temas_disponibles():
     return jsonify({"temas": temas_disponibles, "oposicion": oposicion})
 
 
-@bp.route("/progreso-usuario", methods=["GET"])
-@requiere_plan(db, "basico", global_check=False)
-def progreso_usuario():
-    doc_user = db.collection("usuarios").document(g.uid)
-    progreso = doc_user.get().to_dict()
-    if not progreso:
-        return jsonify({"error": "Usuario no encontrado"}), 404
-    return jsonify({
-        "tests_realizados": progreso.get("tests_realizados", 0),
-        "puntuacion_media_test": progreso.get("puntuacion_media_test", 0),
-        "ultimo_test": progreso.get("ultimo_test", {}),
-        "total_aciertos": progreso.get("total_aciertos", 0),
-        "esquemas_generados": progreso.get("esquemas_generados", 0)
-    })
-
-
 @bp.route("/avisos-oficiales", methods=["GET"])
 @requiere_login(db)
 def avisos_oficiales():
