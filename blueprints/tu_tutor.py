@@ -12,7 +12,7 @@ from firebase_setup import db
 from auth_utils import requiere_plan
 from limites_uso import devolver_uso, reservar_uso
 from rate_limiter import limiter
-from oposiciones import coleccion_temario
+from oposiciones import coleccion_temario, OPOSICION_POR_DEFECTO
 from utils import obtener_catalogo_temas
 from chat_controller import responder_tutor, responder_tutor_stream, sugerencia_inicial_usuario
 
@@ -144,6 +144,15 @@ def obtener_conversaciones_usuario():
                  .stream()
         for doc in docs:
             data = doc.to_dict() or {}
+            # Bug real (25/08/2026, auditoría): el historial mezclaba
+            # conversaciones de TODAS las oposiciones del usuario bajo la
+            # que tuviera seleccionada en ese momento. Una conversación
+            # guardada antes de este fix no tiene el campo "oposicion" --
+            # se asume AGE, la única oposición que existía entonces (mismo
+            # criterio ya usado en otros sitios del proyecto para datos de
+            # esa época).
+            if (data.get("oposicion") or OPOSICION_POR_DEFECTO) != g.oposicion:
+                continue
             resultado.append({
                 "id": doc.id,
                 "titulo": data.get("titulo", "Sin título"),

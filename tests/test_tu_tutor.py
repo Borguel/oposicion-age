@@ -6,7 +6,7 @@ caso correcto, y que el historial siga persistiendo en Firestore."""
 import json
 from unittest.mock import patch
 
-from chat_controller import responder_tutor, responder_tutor_stream, sugerencia_inicial_usuario
+from chat_controller import responder_tutor, responder_tutor_stream, sugerencia_inicial_usuario, crear_conversacion
 from utils import obtener_catalogo_temas
 
 
@@ -676,6 +676,64 @@ def test_listar_conversaciones_incluye_las_antiguas_sin_timestamp(client, db, us
     assert "Reciente" in titulos
     assert "Sin fecha" in titulos  # antes se perdía
     assert titulos[0] == "Reciente"  # la que tiene fecha, primero
+
+
+def test_crear_conversacion_guarda_la_oposicion(db):
+    chat_id = crear_conversacion(db, "u1", "Hola", "Respuesta", oposicion="GACE")
+    conv = db.leer(("conversaciones_IA", "u1", "conversaciones", chat_id))
+    assert conv["oposicion"] == "GACE"
+
+
+def test_responder_tutor_conversacion_existente_usa_su_propia_oposicion_no_la_actual(db):
+    # Bug real (25/08/2026, auditoría): un usuario que estudia varias
+    # oposiciones a la vez podía retomar una conversación antigua de AGE con
+    # GACE seleccionada -- el RAG buscaba en el temario ACTUAL (GACE) en vez
+    # del de la propia conversación (AGE), citando contenido de la
+    # oposición equivocada.
+    _sembrar_tema(db, "Temario AGE")
+    db.sembrar(("Temario GACE", "bloque_01"), {"titulo": "Bloque I"})
+    db.sembrar(("Temario GACE", "bloque_01", "temas", "tema_01"), {"titulo": "La Constitución Española de 1978"})
+    db.sembrar(("Temario GACE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"), {
+        "titulo": "Estructura",
+        "texto": "Contenido de GACE que no debe aparecer si la conversación es de AGE.",
+    })
+
+    chat_id = crear_conversacion(db, "u1", "¿Qué es la Constitución?", "Resumen inicial.", oposicion="AGE")
+
+    with patch("chat_controller.call_deepseek_api", return_value="ok") as mock_llamada, \
+         patch("utils.contar_tokens", side_effect=lambda texto, modelo="gpt-3.5-turbo": len(texto.split())):
+        responder_tutor(
+            "Explícame la estructura de la Constitución Española",
+            db=db, usuario_id="u1", chat_id=chat_id,
+            # Seleccionado AHORA (distinto del real de la conversación):
+            coleccion="Temario GACE", oposicion="GACE",
+        )
+
+    user_prompt = mock_llamada.call_args.kwargs["messages"][-1]["content"]
+    assert "preámbulo" in user_prompt  # contenido real de AGE
+    assert "GACE que no debe aparecer" not in user_prompt
+
+
+def test_listar_conversaciones_filtra_por_oposicion(client, db, usuario_autenticado):
+    # Bug real (25/08/2026, auditoría): el histórico mezclaba conversaciones
+    # de TODAS las oposiciones del usuario bajo la que tuviera seleccionada.
+    db.sembrar(("usuarios", "u1"), {"suscripciones": {
+        "AGE": {"plan": "premium", "subscription_status": "active"},
+        "GACE": {"plan": "premium", "subscription_status": "active"},
+    }})
+    db.sembrar(("conversaciones_IA", "u1", "conversaciones", "de_age"),
+               {"titulo": "Sobre AGE", "timestamp_inicio": "2026-07-14T10:00:00", "oposicion": "AGE"})
+    db.sembrar(("conversaciones_IA", "u1", "conversaciones", "de_gace"),
+               {"titulo": "Sobre GACE", "timestamp_inicio": "2026-07-14T10:00:00", "oposicion": "GACE"})
+    usuario_autenticado()
+
+    r_age = client.get("/conversaciones?oposicion=AGE", headers={"Authorization": "Bearer x"})
+    titulos_age = [c["titulo"] for c in r_age.get_json()["conversaciones"]]
+    assert titulos_age == ["Sobre AGE"]
+
+    r_gace = client.get("/conversaciones?oposicion=GACE", headers={"Authorization": "Bearer x"})
+    titulos_gace = [c["titulo"] for c in r_gace.get_json()["conversaciones"]]
+    assert titulos_gace == ["Sobre GACE"]
 
 
 def test_responder_tutor_stream_emite_error_si_deepseek_no_devuelve_nada(db):

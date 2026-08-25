@@ -10,7 +10,7 @@ from firebase_admin import firestore
 logger = logging.getLogger(__name__)
 from utils import buscar_pregunta_oficial, buscar_pregunta_banco_ia, calcular_resultado_test, obtener_catalogo_temas, obtener_contexto_por_temas_exactos, obtener_datos_convocatoria, obtener_resumen_temario, parsear_explicacion_por_opcion
 from deepseek_utils import call_deepseek_api, call_deepseek_api_stream
-from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO
+from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario
 
 # Modelo de DeepSeek para Tu Tutor, configurable sin redeploy de código: por
 # defecto el mismo "deepseek-v4-flash" que usa el resto de la app, pero se
@@ -25,7 +25,7 @@ def _modelo_tutor():
 
 # ✅ Crear conversación con título y mensajes en subcolección por usuario
 
-def crear_conversacion(db, usuario_id, mensaje_usuario, respuesta_ia):
+def crear_conversacion(db, usuario_id, mensaje_usuario, respuesta_ia, oposicion=OPOSICION_POR_DEFECTO):
     titulo = mensaje_usuario[:80] + ("..." if len(mensaje_usuario) > 80 else "")
     nueva = db.collection("conversaciones_IA") \
               .document(usuario_id) \
@@ -35,6 +35,11 @@ def crear_conversacion(db, usuario_id, mensaje_usuario, respuesta_ia):
         "usuario_id": usuario_id,
         "titulo": titulo,
         "timestamp_inicio": datetime.utcnow().isoformat(),
+        # oposicion (25/08/2026, bug real de la auditoría): antes no se
+        # guardaba con qué oposición se creó la conversación -- retomar una
+        # conversación antigua con otra oposición seleccionada mezclaba
+        # temarios (ver _resolver_oposicion_conversacion más abajo).
+        "oposicion": oposicion,
         "mensajes": [
             {"role": "user", "content": mensaje_usuario},
             {"role": "assistant", "content": respuesta_ia}
@@ -1173,12 +1178,32 @@ def _actualizar_memoria_cruzada(db, usuario_id, chat_id):
     ref_usuario.set({"memoria_tutor": {"resumen": nuevo_resumen, "turnos_pendientes": 0}}, merge=True)
 
 
-def _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta):
+def _resolver_oposicion_conversacion(db, usuario_id, chat_id, oposicion_actual):
+    """Si chat_id ya existe, usa la oposición con la que se creó ESA
+    conversación (ver crear_conversacion) en vez de la seleccionada ahora
+    mismo en el frontend. Bug real (25/08/2026, auditoría): un usuario que
+    estudia varias oposiciones a la vez podía retomar una conversación
+    antigua de una oposición con otra distinta seleccionada -- el RAG
+    buscaba entonces en el temario ACTUAL mientras el historial en pantalla
+    hablaba del de antes, produciendo respuestas incoherentes o citando la
+    ley equivocada. Una conversación anterior a este fix (sin el campo
+    "oposicion" guardado) se queda con la oposición actual, el único dato
+    disponible para ella."""
+    if not chat_id:
+        return oposicion_actual
+    snap = db.collection("conversaciones_IA").document(usuario_id) \
+             .collection("conversaciones").document(chat_id).get()
+    if not snap.exists:
+        return oposicion_actual
+    return (snap.to_dict() or {}).get("oposicion") or oposicion_actual
+
+
+def _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta, oposicion=OPOSICION_POR_DEFECTO):
     if chat_id:
         agregar_mensaje_a_conversacion(db, usuario_id, chat_id, "user", mensaje)
         agregar_mensaje_a_conversacion(db, usuario_id, chat_id, "assistant", texto_respuesta)
     else:
-        chat_id = crear_conversacion(db, usuario_id, mensaje, texto_respuesta)
+        chat_id = crear_conversacion(db, usuario_id, mensaje, texto_respuesta, oposicion=oposicion)
     # La memoria cruzada es un extra (resumen entre conversaciones): si falla
     # NO debe tirar abajo el guardado del turno ni romper el stream, que es lo
     # que dejaría el historial vacío. La conversación ya está persistida arriba.
@@ -1209,6 +1234,8 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
     # que lo reembolsa (solo cubría el fallo de DeepSeek, no este). Se
     # trata igual que un fallo de DeepSeek: se devuelve None para que el
     # llamador reembolse con el mismo camino que ya tenía.
+    oposicion = _resolver_oposicion_conversacion(db, usuario_id, chat_id, oposicion)
+    coleccion = coleccion_temario(oposicion)
     try:
         mensajes, usar_rag, _temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
     except Exception:
@@ -1219,7 +1246,7 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
         return None, chat_id, usar_rag
 
     texto_respuesta = respuesta.strip()
-    chat_id = _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta)
+    chat_id = _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta, oposicion=oposicion)
     return texto_respuesta, chat_id, usar_rag
 
 
@@ -1237,6 +1264,8 @@ def responder_tutor_stream(mensaje, db, usuario_id="anonimo", chat_id=None, cole
     # blueprints/tu_tutor.py) se quedaba sin reembolsar porque nunca se
     # llegaba a emitir "fin" (la señal que el llamador usa para saber si
     # hay que devolverlo).
+    oposicion = _resolver_oposicion_conversacion(db, usuario_id, chat_id, oposicion)
+    coleccion = coleccion_temario(oposicion)
     try:
         mensajes, usar_rag, temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
     except Exception:
@@ -1256,7 +1285,7 @@ def responder_tutor_stream(mensaje, db, usuario_id="anonimo", chat_id=None, cole
         yield {"tipo": "error"}
         return
 
-    chat_id = _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta)
+    chat_id = _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta, oposicion=oposicion)
     # temas_relacionados va en el "fin" para que el frontend pueda ofrecer un
     # "Generar test de este tema" debajo de la respuesta (deep-link al Test
     # Personalizado con ese tema ya marcado).

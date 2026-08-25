@@ -97,11 +97,17 @@ def test_admin_asigna_roles(client, db):
     with _como(admin=True), \
          patch("blueprints.admin.firebase_auth.get_user", return_value=_U()), \
          patch("blueprints.admin.firebase_auth.set_custom_user_claims",
-               side_effect=lambda uid, claims: llamado.update(claims=claims)):
+               side_effect=lambda uid, claims: llamado.update(claims=claims)), \
+         patch("blueprints.admin.firebase_auth.revoke_refresh_tokens") as mock_revocar:
         r = client.patch("/admin/api/usuarios/otro/roles",
                          json={"permisos": ["temario", "reportes", "inventado"]}, headers=_AUTH)
     assert r.status_code == 200
     assert set(llamado["claims"]["permisos"]) == {"temario", "reportes"}  # 'inventado' se descarta
+    # Bug real (25/08/2026, auditoría de seguridad): sin esto, el usuario
+    # seguía operando con sus permisos ANTERIORES hasta que su token
+    # caducara solo -- set_custom_user_claims no invalida el ID token ya
+    # emitido.
+    mock_revocar.assert_called_once_with("otro")
 
 
 # ---------- Crear usuarios ----------
@@ -1050,10 +1056,15 @@ def test_toggle_admin_asigna_y_protege_autobloqueo(client, db):
     with _como(uid="admin1"), \
          patch("blueprints.admin.firebase_auth.get_user", return_value=_U()), \
          patch("blueprints.admin.firebase_auth.set_custom_user_claims",
-               side_effect=lambda uid, claims: llamado.update(claims=claims)):
+               side_effect=lambda uid, claims: llamado.update(claims=claims)), \
+         patch("blueprints.admin.firebase_auth.revoke_refresh_tokens") as mock_revocar:
         ok = client.patch("/admin/api/usuarios/otro/admin", json={"admin": True}, headers=_AUTH)
         assert ok.status_code == 200
         assert llamado["claims"]["admin"] is True
+        # Bug real (25/08/2026, auditoría de seguridad): sin revocar el
+        # token, quien pierde el permiso de admin seguía operando con su
+        # sesión de admin actual hasta que caducara sola.
+        mock_revocar.assert_called_once_with("otro")
         # No puede quitarse admin a sí mismo.
         propio = client.patch("/admin/api/usuarios/admin1/admin", json={"admin": False}, headers=_AUTH)
         assert propio.status_code == 400

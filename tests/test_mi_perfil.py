@@ -37,3 +37,25 @@ def test_mi_perfil_admin_con_plan_de_pago_sigue_dando_premium(client, db, usuari
     usuario_autenticado(uid="adm2", email="adm2@example.com", admin=True)
     resp = client.get("/mi-perfil?oposicion=AGE", headers={"Authorization": "Bearer x"})
     assert resp.get_json()["plan"] == "premium"
+
+
+def test_mi_perfil_sincroniza_el_email_si_cambio_en_firebase_auth(client, db, usuario_autenticado):
+    # Bug real (25/08/2026, auditoría): usuarios/{uid}.email solo se
+    # escribía una vez, al crear el documento -- cambiar de correo desde Mi
+    # Cuenta (verifyBeforeUpdateEmail) actualiza Firebase Auth, pero nada
+    # volvía a sincronizar este campo en Firestore, así que el panel admin y
+    # las exportaciones seguían mostrando el correo antiguo para siempre.
+    db.sembrar(("usuarios", "u1"), {"email": "viejo@example.com", "suscripciones": {}})
+    usuario_autenticado(email="nuevo@example.com")
+    resp = client.get("/mi-perfil?oposicion=AGE", headers={"Authorization": "Bearer x"})
+    assert resp.status_code == 200
+    assert resp.get_json()["email"] == "nuevo@example.com"
+    assert db.leer(("usuarios", "u1"))["email"] == "nuevo@example.com"
+
+
+def test_mi_perfil_con_el_mismo_email_no_cambia_nada(client, db, usuario_autenticado):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "suscripciones": {}})
+    usuario_autenticado()  # mismo email por defecto: u1@example.com
+    resp = client.get("/mi-perfil?oposicion=AGE", headers={"Authorization": "Bearer x"})
+    assert resp.get_json()["email"] == "u1@example.com"
+    assert db.leer(("usuarios", "u1"))["email"] == "u1@example.com"

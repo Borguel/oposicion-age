@@ -1802,6 +1802,15 @@ def usuarios_cambiar_admin(uid):
     else:
         claims.pop("admin", None)
     firebase_auth.set_custom_user_claims(uid, claims)
+    # revoke_refresh_tokens (25/08/2026, bug real de seguridad de la
+    # auditoría): set_custom_user_claims NO invalida el ID token que el
+    # usuario ya tiene en el navegador -- solo afecta a tokens emitidos a
+    # partir de ahora. Sin esto, a alguien al que se le quita el permiso de
+    # admin (p.ej. cuenta comprometida, alguien que se ha ido) le seguía
+    # funcionando su sesión de admin actual hasta que caducara sola (hasta
+    # 1h). auth_utils._verificar_id_token ya comprueba check_revoked=True,
+    # así que esto sí invalida su token corriente de inmediato.
+    firebase_auth.revoke_refresh_tokens(uid)
     logger.info("Admin %s %s permiso admin a %s", g.uid, "dio" if quiere_admin else "quitó", uid)
     _registrar_auditoria("admin_dar" if quiere_admin else "admin_quitar", uid)
     return jsonify({
@@ -1831,6 +1840,10 @@ def usuarios_cambiar_roles(uid):
     else:
         claims.pop("permisos", None)
     firebase_auth.set_custom_user_claims(uid, claims)
+    # Mismo motivo que en usuarios_cambiar_admin de arriba (25/08/2026, bug
+    # real de seguridad): sin revocar, el usuario sigue operando con sus
+    # permisos ANTERIORES hasta que su token caduque solo.
+    firebase_auth.revoke_refresh_tokens(uid)
     _registrar_auditoria("usuario_roles", uid, ", ".join(permisos) or "(ninguno)")
     return jsonify({
         "mensaje": "Permisos actualizados",

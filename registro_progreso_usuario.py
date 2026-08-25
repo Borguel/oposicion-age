@@ -237,37 +237,48 @@ def activar_oposicion_usuario(db, usuario_id, oposicion, email=None, email_verif
     Idempotente: si el usuario ya tenía esta oposición activada (aunque solo
     sea con el plan gratis, o con una prueba ya terminada) no la toca, para
     no poder alargar una prueba en marcha ni reiniciar la de alguien a quien
-    ya se le terminó -- "activar" solo tiene efecto la primera vez."""
+    ya se le terminó -- "activar" solo tiene efecto la primera vez.
+
+    El check-y-escritura de suscripciones.<OP> va en una única transacción
+    de Firestore (25/08/2026, auditoría -- higiene, no por un bug con
+    impacto detectado: dos clics/pestañas activando la misma oposición casi
+    a la vez podían leer "no activada todavía" antes de que ninguna
+    escribiera -- mismo patrón que ya se corrigió en
+    inicializar_estadisticas_usuario/actualizar_estadisticas_test de este
+    mismo archivo, aquí se había quedado sin aplicar)."""
     doc_ref = db.collection("usuarios").document(usuario_id)
     snap = doc_ref.get()
     if not snap.exists:
         inicializar_estadisticas_usuario(db, usuario_id, email=email, email_verificado=email_verificado)
-        snap = doc_ref.get()
-    datos = snap.to_dict() or {}
-    if oposicion in (datos.get("suscripciones", {}) or {}):
-        return
 
-    # not _prueba_gratuita_ya_concedida(...) (24/08/2026, ver comentario
-    # junto a la función): sin esto, borrar la cuenta y volver a
-    # registrarse con el mismo email real conseguía otros 7 días de
-    # prueba gratuita cada vez, sin límite.
-    ya_gastada = _prueba_gratuita_ya_concedida(db, email, oposicion)
-    permite_prueba = bool(email_verificado) and not es_dominio_email_desechable(email) and not ya_gastada
-    doc_ref.update({
-        f"suscripciones.{oposicion}.plan": "gratis",
-        f"suscripciones.{oposicion}.prueba_fin": (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat() if permite_prueba else None,
-        f"suscripciones.{oposicion}.plan_updated_at": datetime.utcnow().isoformat(),
-        # Distingue "nunca ha tenido prueba porque este email ya la gastó
-        # antes" de "verificación de email pendiente" o "dominio
-        # desechable" -- ver el comentario largo junto a
-        # _prueba_gratuita_ya_concedida y su uso en assets/auth.js
-        # (construirBannerPrueba), para no decirle a alguien que su
-        # prueba "ha terminado" cuando en esta cuenta nunca llegó a
-        # empezar.
-        f"suscripciones.{oposicion}.prueba_bloqueada_por_uso_previo": ya_gastada,
-    })
-    if permite_prueba:
-        _marcar_prueba_gratuita_concedida(db, email, oposicion)
+    def _activar(transaction):
+        datos = doc_ref.get(transaction=transaction).to_dict() or {}
+        if oposicion in (datos.get("suscripciones", {}) or {}):
+            return
+
+        # not _prueba_gratuita_ya_concedida(...) (24/08/2026, ver comentario
+        # junto a la función): sin esto, borrar la cuenta y volver a
+        # registrarse con el mismo email real conseguía otros 7 días de
+        # prueba gratuita cada vez, sin límite.
+        ya_gastada = _prueba_gratuita_ya_concedida(db, email, oposicion)
+        permite_prueba = bool(email_verificado) and not es_dominio_email_desechable(email) and not ya_gastada
+        transaction.update(doc_ref, {
+            f"suscripciones.{oposicion}.plan": "gratis",
+            f"suscripciones.{oposicion}.prueba_fin": (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat() if permite_prueba else None,
+            f"suscripciones.{oposicion}.plan_updated_at": datetime.utcnow().isoformat(),
+            # Distingue "nunca ha tenido prueba porque este email ya la gastó
+            # antes" de "verificación de email pendiente" o "dominio
+            # desechable" -- ver el comentario largo junto a
+            # _prueba_gratuita_ya_concedida y su uso en assets/auth.js
+            # (construirBannerPrueba), para no decirle a alguien que su
+            # prueba "ha terminado" cuando en esta cuenta nunca llegó a
+            # empezar.
+            f"suscripciones.{oposicion}.prueba_bloqueada_por_uso_previo": ya_gastada,
+        })
+        if permite_prueba:
+            _marcar_prueba_gratuita_concedida(db, email, oposicion)
+
+    ejecutar_en_transaccion(db, _activar)
 
 def actualizar_estadisticas_test(db, usuario_id, oposicion, aciertos, fallos, temas, tiempo_en_segundos, tipo="personalizado", puntuacion_final=None, rendimiento_temas=None, blancos=0):
     # Lectura + cálculo + escritura van dentro de una única transacción de
@@ -596,7 +607,7 @@ def actualizar_suscripcion(db, usuario_id, oposicion, plan=None, stripe_customer
 
     doc_ref.update(field_updates)
 
-def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
+def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False, email_token=None):
     """Datos mínimos de plan/suscripción para pintar la UI del frontend.
     Si se pasa `oposicion`, además de la lista completa de suscripciones se
     incluyen plan/subscription_status/current_period_end de esa oposición
@@ -606,7 +617,20 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
     `auth_utils.requiere_plan()` para las rutas protegidas: un
     administrador (custom claim de Firebase, no depende de Firestore) no
     debe ver el banner ni la pantalla de bloqueo de prueba/plan en el
-    frontend aunque su cuenta no tenga ninguna suscripción de pago."""
+    frontend aunque su cuenta no tenga ninguna suscripción de pago.
+
+    `email_token` (25/08/2026, bug real de la auditoría): usuarios/{uid}.email
+    solo se escribe UNA VEZ, al crear el documento (ver
+    inicializar_estadisticas_usuario) -- cambiar de correo desde Mi Cuenta
+    (verifyBeforeUpdateEmail en auth.js) actualiza Firebase Auth pero nada
+    volvía a sincronizar ese campo en Firestore, así que el panel admin, las
+    exportaciones CSV y cualquier búsqueda por email seguían mostrando el
+    correo antiguo indefinidamente. Como Firebase no avisa al backend
+    cuando el usuario confirma el cambio (el enlace de verificación lo abre
+    él, no nuestro backend), se sincroniza aquí, comparando contra el email
+    real y fresco del token de ESTA petición -- barato porque /mi-perfil ya
+    lee este documento en cada carga de página, así que basta con comparar
+    un campo ya en memoria y solo escribir en el caso raro de que difiera."""
     doc = db.collection("usuarios").document(usuario_id).get()
     if not doc.exists:
         perfil = {
@@ -624,6 +648,11 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
         return perfil
 
     datos = doc.to_dict() or {}
+
+    if email_token and email_token != datos.get("email"):
+        db.collection("usuarios").document(usuario_id).update({"email": email_token})
+        datos["email"] = email_token
+
     suscripciones = datos.get("suscripciones", {}) or {}
     # Sin oposición concreta, "prueba_activa"/"prueba_fin" son un resumen
     # agregado de CUALQUIER oposición que siga en prueba (ver

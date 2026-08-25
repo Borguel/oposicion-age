@@ -92,6 +92,30 @@ def test_activar_oposicion_con_email_verificado_arranca_la_prueba(db):
     assert 6 <= dias_restantes <= 7
 
 
+def test_activar_oposicion_pasa_de_verdad_por_una_transaccion(db):
+    # Higiene (25/08/2026, auditoría): el check-y-escritura de
+    # suscripciones.<OP> no estaba envuelto en una transacción, a
+    # diferencia del resto de funciones de este archivo -- dos clics/
+    # pestañas activando la misma oposición casi a la vez podían leer "no
+    # activada todavía" antes de que ninguna escribiera.
+    db.sembrar(("usuarios", "u1"), {"email": "persona@gmail.com", "suscripciones": {}})
+    llamadas = []
+    transaction_original = db.transaction
+
+    def transaction_espia():
+        llamadas.append(1)
+        return transaction_original()
+
+    db.transaction = transaction_espia
+    try:
+        activar_oposicion_usuario(db, "u1", "AGE", email="persona@gmail.com", email_verificado=True)
+    finally:
+        db.transaction = transaction_original
+
+    assert len(llamadas) == 1
+    assert db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]["plan"] == "gratis"
+
+
 def test_activar_oposicion_sin_verificar_deja_la_prueba_pendiente(db):
     activar_oposicion_usuario(db, "u1", "AGE", email="persona@gmail.com", email_verificado=False)
     sub = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]

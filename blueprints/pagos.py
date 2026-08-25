@@ -64,7 +64,8 @@ def _invalidar_cache_admin_tras_cambio_suscripcion():
 @requiere_login(db)
 def mi_perfil():
     oposicion = obtener_oposicion_solicitada()
-    return jsonify(obtener_perfil_usuario(db, g.uid, oposicion=oposicion, es_admin=getattr(g, "es_admin", False)))
+    return jsonify(obtener_perfil_usuario(
+        db, g.uid, oposicion=oposicion, es_admin=getattr(g, "es_admin", False), email_token=g.email))
 
 
 @bp.route("/mi-racha", methods=["GET"])

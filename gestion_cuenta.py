@@ -27,6 +27,20 @@ COLECCIONES_USUARIO = (
     "banco_preguntas_pdf", "banco_tarjetas_pdf", "bajas_motivos",
 )
 
+# Colecciones a nivel RAÍZ (no cuelgan de usuarios/{uid}, así que no las
+# cubre COLECCIONES_USUARIO) que también guardan datos personales de un
+# usuario, cada una identificada por su propio nombre de campo. Bug real
+# (25/08/2026, auditoría): mensajes_soporte (mensajes de "Contactar con
+# soporte", con email y texto escrito por el usuario) y test_oficiales
+# (contenido y respuestas de un examen oficial guardado) tampoco se
+# exportaban ni se borraban -- mismo patrón que el bug ya arreglado el
+# 24/08/2026 para las subcolecciones de arriba, quedaban huérfanas en
+# Firestore para siempre sin que ningún camino pudiera volver a alcanzarlas.
+COLECCIONES_RAIZ_USUARIO = (
+    ("mensajes_soporte", "uid"),
+    ("test_oficiales", "usuario_id"),
+)
+
 
 def exportar_datos_usuario(db, uid):
     """Todo lo que Firestore tiene guardado de este usuario, en un único
@@ -49,6 +63,12 @@ def exportar_datos_usuario(db, uid):
         {"id": doc.id, **(doc.to_dict() or {})}
         for doc in conversaciones_ref.stream()
     ]
+
+    for coleccion, campo_uid in COLECCIONES_RAIZ_USUARIO:
+        datos[coleccion] = [
+            {"id": doc.id, **(doc.to_dict() or {})}
+            for doc in db.collection(coleccion).where(campo_uid, "==", uid).stream()
+        ]
     return datos
 
 
@@ -102,5 +122,9 @@ def eliminar_cuenta_usuario(db, uid):
     for doc in conversaciones_ref.stream():
         doc.reference.delete()
     db.collection("conversaciones_IA").document(uid).delete()
+
+    for coleccion, campo_uid in COLECCIONES_RAIZ_USUARIO:
+        for doc in db.collection(coleccion).where(campo_uid, "==", uid).stream():
+            doc.reference.delete()
 
     usuario_ref.delete()

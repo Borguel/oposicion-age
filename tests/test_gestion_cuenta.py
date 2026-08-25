@@ -151,6 +151,36 @@ def test_eliminar_cuenta_borra_bancos_pdf_favoritas_y_bajas_motivos(db):
     assert db.leer(("usuarios", "u1", "bajas_motivos", "b1")) is None
 
 
+def test_exportar_datos_incluye_mensajes_soporte_y_test_oficiales(db):
+    # Bug real (25/08/2026, auditoría): estas 2 colecciones RAÍZ (no cuelgan
+    # de usuarios/{uid}, así que COLECCIONES_USUARIO no las cubre) tampoco
+    # se exportaban -- mismo patrón que el bug ya arreglado el 24/08/2026
+    # para las subcolecciones de arriba.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    db.sembrar(("mensajes_soporte", "m1"), {"uid": "u1", "email": "u1@example.com", "mensaje": "Ayuda"})
+    db.sembrar(("mensajes_soporte", "m2"), {"uid": "otro", "email": "otro@example.com", "mensaje": "No es mío"})
+    db.sembrar(("test_oficiales", "t1"), {"usuario_id": "u1", "contenido": [], "respuestas": []})
+
+    datos = exportar_datos_usuario(db, "u1")
+
+    assert datos["mensajes_soporte"] == [{"id": "m1", "uid": "u1", "email": "u1@example.com", "mensaje": "Ayuda"}]
+    assert datos["test_oficiales"] == [{"id": "t1", "usuario_id": "u1", "contenido": [], "respuestas": []}]
+
+
+def test_eliminar_cuenta_borra_mensajes_soporte_y_test_oficiales_sin_tocar_los_de_otros(db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    db.sembrar(("mensajes_soporte", "m1"), {"uid": "u1", "mensaje": "Ayuda"})
+    db.sembrar(("mensajes_soporte", "m2"), {"uid": "otro", "mensaje": "No es mío"})
+    db.sembrar(("test_oficiales", "t1"), {"usuario_id": "u1", "contenido": [], "respuestas": []})
+
+    with patch("gestion_cuenta.firebase_auth.delete_user"):
+        eliminar_cuenta_usuario(db, "u1")
+
+    assert db.leer(("mensajes_soporte", "m1")) is None
+    assert db.leer(("mensajes_soporte", "m2")) == {"uid": "otro", "mensaje": "No es mío"}
+    assert db.leer(("test_oficiales", "t1")) is None
+
+
 def test_eliminar_cuenta_detiene_generaciones_en_curso(db):
     # Sin esto, un hilo de fondo seguía gastando llamadas a DeepSeek (ya
     # cobradas) sobre una cuenta que ya no existe -- ver

@@ -101,10 +101,27 @@ async function guardarPerfilBasico(nombre, apellidos) {
 
 const MENSAJES_ERROR = {
   "auth/invalid-email": "El correo electrónico no es válido.",
-  "auth/user-not-found": "No existe ninguna cuenta con ese correo.",
+  // "auth/user-not-found" (25/08/2026, bug real de seguridad, mismo motivo
+  // que "auth/email-already-in-use" más abajo): decía literalmente "No
+  // existe ninguna cuenta con ese correo" en el LOGIN, revelando lo mismo
+  // que el alta pero al revés -- probar a entrar con una contraseña
+  // cualquiera decía si ese email estaba registrado o no. Mismo mensaje
+  // genérico que "contraseña incorrecta", para no distinguir entre "el
+  // correo no existe" y "la contraseña no es la correcta".
+  "auth/user-not-found": "Correo o contraseña incorrectos.",
   "auth/wrong-password": "Contraseña incorrecta.",
   "auth/invalid-credential": "Correo o contraseña incorrectos.",
-  "auth/email-already-in-use": "Ya existe una cuenta con ese correo.",
+  // Enumeración de usuarios (25/08/2026, bug real de seguridad de la
+  // auditoría): decir literalmente "Ya existe una cuenta con ese correo"
+  // deja que cualquiera compruebe, con solo probar a darse de alta, si un
+  // email concreto está registrado en la web -- justo lo que
+  // recuperarContrasena() en auth.js evita a propósito, respondiendo
+  // siempre igual sin importar si el correo existe. No es posible igualar
+  // ese mismo criterio aquí al 100% (el propio SDK de Firebase Auth ya
+  // distingue este caso con su propio código de error antes de que el
+  // backend intervenga), pero al menos no se lo confirmamos en el mensaje
+  // que se ve en pantalla.
+  "auth/email-already-in-use": "No se ha podido completar el registro con ese correo. Si ya tienes cuenta, inicia sesión o recupera tu contraseña.",
   "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
   "auth/popup-closed-by-user": "Has cerrado la ventana de Google antes de terminar.",
   "auth/popup-blocked": "Tu navegador ha bloqueado la ventana de Google. Permite las ventanas emergentes para este sitio e inténtalo de nuevo.",
