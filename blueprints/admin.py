@@ -239,9 +239,34 @@ def _ficha_actividad(ref, datos):
     # el que se pinta en la ficha, ver assets/admin/script.js) -- suma los
     # contadores "dia"/"mes" tal cual estén guardados, best-effort, mismo
     # criterio que el resto de esta función.
+    #
+    # Bug real en producción (25/08/2026, visto en Sentry -- PYTHON-FLASK-E,
+    # AttributeError: 'str' object has no attribute 'get'): esta función
+    # asumía siempre el formato NUEVO (usuarios/{uid}.limites_uso.{tipo}.
+    # {periodo} = {clave, contador}, ver limites_uso.py), pero cuentas con
+    # datos de ANTES de esa migración (mismo día, commit anterior de esta
+    # sesión) siguen en el formato PLANO antiguo:
+    # usuarios/{uid}.limites_uso.{tipo} = {clave, contador} -- sin la
+    # migración de datos, u.values() sobre un registro antiguo devuelve la
+    # propia fecha (un string) como si fuera un "bucket", y .get() sobre un
+    # string revienta. Las otras 3 lecturas de limites_uso de este archivo
+    # (_uso_herramientas, _uso_pico) ya eran seguras porque hacen
+    # u.get(periodo) explícito, que sobre un dict plano antiguo
+    # simplemente no encuentra esa clave y cae a {} -- aquí, en cambio, se
+    # iteraban directamente TODOS los valores sin comprobar su forma.
     uso = {}
     for tipo, u in (datos.get("limites_uso") or {}).items():
-        uso[tipo] = sum((bucket or {}).get("contador", 0) or 0 for bucket in (u or {}).values())
+        if not isinstance(u, dict):
+            continue
+        if "contador" in u:
+            # Formato antiguo: un único contador plano, sin desglosar por
+            # unidad dia/mes.
+            uso[tipo] = u.get("contador", 0) or 0
+        else:
+            uso[tipo] = sum(
+                (bucket or {}).get("contador", 0) or 0
+                for bucket in u.values() if isinstance(bucket, dict)
+            )
 
     return contenido, rendimiento, hist, hist_diario, uso
 

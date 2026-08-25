@@ -747,6 +747,26 @@ def test_usuarios_otorgar_prueba_dias_invalidos(client, db):
     assert resp.status_code == 400
 
 
+def test_usuarios_detalle_con_limites_uso_en_formato_antiguo_no_revienta(client, db):
+    # Bug real en producción (25/08/2026, visto en Sentry PYTHON-FLASK-E):
+    # cuentas con limites_uso del formato PLANO de antes de la migración a
+    # contadores por unidad dia/mes (usuarios/{uid}.limites_uso.{tipo} =
+    # {clave o periodo, contador}, sin desglosar) hacían que la ficha de
+    # admin devolviera 500 -- .values() sobre ese dict plano incluía la
+    # propia fecha (un string) como si fuera un "bucket" dict.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@x.com",
+        "limites_uso": {
+            "chat_temario": {"clave": "2026-08-14", "contador": 5},  # formato antiguo (clave)
+            "pdf_ia": {"periodo": "2026-08-14", "contador": 2},  # formato antiguo (periodo)
+            "analisis_ia": {"dia": {"clave": "2026-08-25", "contador": 3}},  # formato nuevo
+        },
+    })
+    with _como():
+        resp = client.get("/admin/api/usuarios/u1", headers=_AUTH)
+    assert resp.status_code == 200
+
+
 def test_usuarios_detalle_incluye_en_prueba(client, db):
     from datetime import datetime, timedelta
     prueba_fin = (datetime.utcnow() + timedelta(days=3)).isoformat()
