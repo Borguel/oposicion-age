@@ -224,7 +224,10 @@
 /* Botón de menú (hamburguesa): oculto en escritorio, solo aparece cuando
    la sidebar pasa a cajón deslizante (ver breakpoint más abajo). */
 .admin-menu-btn {
-  display: none; flex: 0 0 auto; width: 34px; height: 34px; border-radius: var(--age-radius-sm);
+  /* 44x44 (25/08/2026, auditoría UX -- zona táctil recomendada, mismo
+     criterio que .zona-switch-pill en zona-opositor/style.css): solo se ve
+     en el breakpoint móvil de abajo, donde se abre con el dedo. */
+  display: none; flex: 0 0 auto; width: 44px; height: 44px; border-radius: var(--age-radius-sm);
   border: 1px solid var(--age-border); background: var(--age-card); cursor: pointer;
   flex-direction: column; align-items: center; justify-content: center; gap: 4px;
 }
@@ -483,8 +486,12 @@
 .u-card-actividad { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .u-card-acciones { display: flex; gap: 6px; flex: 0 0 auto; }
 .u-card-btn {
+  /* 44x44 (25/08/2026, auditoría UX -- zona táctil recomendada, mismo
+     criterio que .zona-switch-pill en zona-opositor/style.css): eran 30px,
+     por debajo de lo recomendado para un botón que se toca desde el panel
+     en móvil/tablet. */
   border: none; background: var(--age-neutral-bg); color: var(--age-ink-soft, var(--age-ink));
-  width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
   cursor: pointer; transition: background 0.15s, color 0.15s;
 }
 .u-card-btn:hover { background: var(--age-primary-soft); color: var(--age-primary); }

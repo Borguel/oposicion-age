@@ -1680,8 +1680,16 @@ async function cargarDocumentos() {
     }
     iniciarSondeoBancosSiHaceFalta();
   } catch (e) {
-    document.getElementById("documentos-cargando").textContent = e.message || "No se pudieron cargar tus documentos.";
-    document.getElementById("documentos-cargando").classList.remove("hidden");
+    // Botón "Reintentar" (25/08/2026, bug real de la auditoría): antes se
+    // dejaba el mensaje de error fijo, sin ninguna forma de recargar salvo
+    // refrescar la página entera a mano.
+    const cont = document.getElementById("documentos-cargando");
+    cont.innerHTML = `
+      <p>${escaparHtml(e.message || "No se pudieron cargar tus documentos.")}</p>
+      <button type="button" class="age-btn age-btn-outline" id="documentos-reintentar">Reintentar</button>
+    `;
+    cont.classList.remove("hidden");
+    document.getElementById("documentos-reintentar").addEventListener("click", cargarDocumentos);
   } finally {
     marcarContenidoListo();
   }

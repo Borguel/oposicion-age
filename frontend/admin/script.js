@@ -923,7 +923,7 @@ function modalPregunta(p) {
     </div>
     <button class="age-btn age-btn-primary" id="q-guardar" style="margin-top:14px;">Guardar</button>`);
 
-  document.getElementById("q-guardar").addEventListener("click", async () => {
+  document.getElementById("q-guardar").addEventListener("click", async (evento) => {
     const elEnunciado = document.getElementById("q-enunciado");
     if (!elEnunciado.value.trim()) { toast("Falta el enunciado de la pregunta.", "error"); elEnunciado.focus(); return; }
     for (const k of ["A", "B", "C", "D"]) {
@@ -939,10 +939,19 @@ function modalPregunta(p) {
       tema_id: document.getElementById("q-tema").value,
       examen: document.getElementById("q-examen").value,
     };
-    const r = p
-      ? await api("PUT", `/admin/api/preguntas/${p.id}`, cuerpo)
-      : await api("POST", "/admin/api/preguntas", cuerpo);
-    if (r) { toast(p ? "Pregunta actualizada." : "Pregunta creada."); cerrarModal(); if (pestanaActual === "preguntas") cargarPreguntas(); }
+    // disabled durante la petición (25/08/2026, bug real de la auditoría):
+    // sin esto, un doble clic en "Nueva pregunta" podía crear la pregunta
+    // dos veces antes de que la primera respondiera.
+    const boton = evento.currentTarget;
+    boton.disabled = true;
+    try {
+      const r = p
+        ? await api("PUT", `/admin/api/preguntas/${p.id}`, cuerpo)
+        : await api("POST", "/admin/api/preguntas", cuerpo);
+      if (r) { toast(p ? "Pregunta actualizada." : "Pregunta creada."); cerrarModal(); if (pestanaActual === "preguntas") cargarPreguntas(); }
+    } finally {
+      boton.disabled = false;
+    }
   });
 }
 
@@ -1385,7 +1394,7 @@ function modalCrearUsuario() {
     ${["temario", "reportes", "usuarios"].map((p) => `
       <label class="admin-rol-check"><input type="checkbox" class="nu-permiso" value="${p}"> <span>${p === "temario" ? "Temario y preguntas" : p === "reportes" ? "Reportes" : "Usuarios y planes"}</span></label>`).join("")}
     <button class="age-btn age-btn-primary" id="nu-crear" style="margin-top:14px;">Crear usuario</button>`);
-  document.getElementById("nu-crear").addEventListener("click", async () => {
+  document.getElementById("nu-crear").addEventListener("click", async (evento) => {
     const elEmail = document.getElementById("nu-email");
     const elPass = document.getElementById("nu-pass");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(elEmail.value.trim())) { toast("Email no válido.", "error"); elEmail.focus(); return; }
@@ -1400,8 +1409,17 @@ function modalCrearUsuario() {
       admin: document.getElementById("nu-admin").checked,
       permisos: Array.from(document.querySelectorAll(".nu-permiso:checked")).map((c) => c.value),
     };
-    const r = await api("POST", "/admin/api/usuarios", cuerpo);
-    if (r) { toast("Usuario creado."); cerrarModal(); paginaUsuarios = 1; cargarUsuarios(); }
+    // disabled durante la petición (25/08/2026, bug real de la
+    // auditoría): sin esto, un doble clic podía disparar dos altas del
+    // mismo usuario antes de que la primera respondiera.
+    const boton = evento.currentTarget;
+    boton.disabled = true;
+    try {
+      const r = await api("POST", "/admin/api/usuarios", cuerpo);
+      if (r) { toast("Usuario creado."); cerrarModal(); paginaUsuarios = 1; cargarUsuarios(); }
+    } finally {
+      boton.disabled = false;
+    }
   });
 }
 
@@ -1827,12 +1845,17 @@ function wireFichaVista(vista, u) {
     document.getElementById("up-racha").addEventListener("click", async () => {
       if (!confirm("¿Resetear la racha de este usuario a 0?")) return;
       const r = await api("POST", `/admin/api/usuarios/${u.uid}/resetear-racha`);
-      if (r) toast("Racha reseteada.");
+      // abrirUsuario(u.uid) (25/08/2026, bug real de la auditoría): antes
+      // solo se avisaba con un toast -- la ficha abierta seguía enseñando
+      // la racha/los límites de ANTES del reseteo hasta cerrarla y
+      // volver a abrirla a mano. Mismo patrón que ya usan "up-admin" y
+      // "up-prueba-otorgar" más abajo para refrescarse tras su acción.
+      if (r) { toast("Racha reseteada."); abrirUsuario(u.uid); }
     });
     document.getElementById("up-limites").addEventListener("click", async () => {
       if (!confirm("¿Poner a cero los contadores de uso de IA de este usuario?")) return;
       const r = await api("POST", `/admin/api/usuarios/${u.uid}/resetear-limites`);
-      if (r) toast("Límites de uso reseteados.");
+      if (r) { toast("Límites de uso reseteados."); abrirUsuario(u.uid); }
     });
     document.getElementById("up-prueba-otorgar")?.addEventListener("click", async () => {
       const dias = parseInt(document.getElementById("up-prueba-dias").value, 10) || 7;
