@@ -1199,7 +1199,21 @@ def _guardar_turno(db, usuario_id, chat_id, mensaje, texto_respuesta):
 # como si fuera una respuesta real del asistente. El llamador (la ruta
 # /tu-tutor) es quien decide qué mostrarle al usuario en ese caso.
 def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO, contexto_pagina=None):
-    mensajes, usar_rag, _temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
+    # try/except (25/08/2026, bug real de la auditoría: "reservar_uso de Tu
+    # Tutor no se reembolsa si falla la preparación del contexto"):
+    # _preparar_contexto hace varias lecturas de Firestore (historial,
+    # catálogo de temas, contenido del temario...) sin ninguna protección
+    # -- si cualquiera fallaba, la excepción subía sin control por encima
+    # de la ruta, que ya había cobrado el uso con reservar_uso ANTES de
+    # llamar aquí (ver blueprints/tu_tutor.py) y nunca llegaba a la línea
+    # que lo reembolsa (solo cubría el fallo de DeepSeek, no este). Se
+    # trata igual que un fallo de DeepSeek: se devuelve None para que el
+    # llamador reembolse con el mismo camino que ya tenía.
+    try:
+        mensajes, usar_rag, _temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
+    except Exception:
+        logger.exception("Fallo preparando el contexto de Tu Tutor")
+        return None, chat_id, False
     respuesta = call_deepseek_api(messages=mensajes, temperature=0.7, max_tokens=1500, model=_modelo_tutor())
     if not respuesta:
         return None, chat_id, usar_rag
@@ -1216,7 +1230,19 @@ def responder_tutor(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="
 # Firestore, o {"tipo": "error"} si DeepSeek falla o no llega ningún
 # fragmento (mismo criterio que responder_tutor: nada se guarda en ese caso).
 def responder_tutor_stream(mensaje, db, usuario_id="anonimo", chat_id=None, coleccion="Temario AGE", oposicion=OPOSICION_POR_DEFECTO, contexto_pagina=None):
-    mensajes, usar_rag, temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
+    # Ver el comentario largo en responder_tutor: mismo fallo real, versión
+    # streaming -- sin este try/except, un fallo aquí propagaba la
+    # excepción a mitad de la respuesta SSE en vez de terminar con un
+    # evento "error" limpio, y el uso ya cobrado por adelantado (ver
+    # blueprints/tu_tutor.py) se quedaba sin reembolsar porque nunca se
+    # llegaba a emitir "fin" (la señal que el llamador usa para saber si
+    # hay que devolverlo).
+    try:
+        mensajes, usar_rag, temas_relacionados = _preparar_contexto(mensaje, db, usuario_id, chat_id, coleccion, oposicion, contexto_pagina)
+    except Exception:
+        logger.exception("Fallo preparando el contexto de Tu Tutor (stream)")
+        yield {"tipo": "error"}
+        return
 
     fragmentos = []
     for fragmento in call_deepseek_api_stream(messages=mensajes, temperature=0.7, max_tokens=1500, model=_modelo_tutor()):

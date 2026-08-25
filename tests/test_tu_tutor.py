@@ -602,6 +602,25 @@ def test_si_deepseek_falla_no_guarda_nada_y_devuelve_none(db):
     mock_agregar.assert_not_called()
 
 
+def test_si_falla_preparar_contexto_devuelve_none_y_no_guarda_nada(db):
+    # Bug real de la auditoría (25/08/2026): _preparar_contexto hace varias
+    # lecturas de Firestore (historial, catálogo, contenido del temario...)
+    # sin ninguna protección -- si cualquiera fallaba, la excepción subía
+    # sin control y el llamador (blueprints/tu_tutor.py) nunca llegaba a
+    # reembolsar el uso ya cobrado por adelantado (solo cubría el fallo de
+    # DeepSeek). Ahora se trata igual: se devuelve None, mismo contrato que
+    # ya usa el llamador para reembolsar.
+    with patch("chat_controller._preparar_contexto", side_effect=RuntimeError("Firestore caído")), \
+         patch("chat_controller.crear_conversacion") as mock_crear, \
+         patch("chat_controller.agregar_mensaje_a_conversacion") as mock_agregar:
+        texto, chat_id, usar_rag = responder_tutor("Hola", db=db, usuario_id="u1")
+    assert texto is None
+    assert chat_id is None
+    assert usar_rag is False
+    mock_crear.assert_not_called()
+    mock_agregar.assert_not_called()
+
+
 def test_responder_tutor_stream_emite_deltas_y_guarda_al_final(db):
     with patch("chat_controller.call_deepseek_api_stream", return_value=iter(["Hola", " que tal"])):
         eventos = list(responder_tutor_stream("Dame consejos para estudiar", db=db, usuario_id="u1"))
@@ -661,6 +680,17 @@ def test_listar_conversaciones_incluye_las_antiguas_sin_timestamp(client, db, us
 
 def test_responder_tutor_stream_emite_error_si_deepseek_no_devuelve_nada(db):
     with patch("chat_controller.call_deepseek_api_stream", return_value=iter([])), \
+         patch("chat_controller.crear_conversacion") as mock_crear:
+        eventos = list(responder_tutor_stream("Hola", db=db, usuario_id="u1"))
+    assert eventos == [{"tipo": "error"}]
+    mock_crear.assert_not_called()
+
+
+def test_responder_tutor_stream_emite_error_si_falla_preparar_contexto(db):
+    # Versión streaming del mismo fallo: sin este try/except, la excepción
+    # se propagaba a mitad de la respuesta SSE en vez de terminar con un
+    # evento "error" limpio -- y sin "fin", el llamador nunca reembolsaba.
+    with patch("chat_controller._preparar_contexto", side_effect=RuntimeError("Firestore caído")), \
          patch("chat_controller.crear_conversacion") as mock_crear:
         eventos = list(responder_tutor_stream("Hola", db=db, usuario_id="u1"))
     assert eventos == [{"tipo": "error"}]
@@ -1089,6 +1119,25 @@ def test_ruta_tu_tutor_devuelve_502_si_deepseek_falla_y_no_gasta_cupo(client, db
     assert uso is None or uso.get("contador") == 0
 
 
+def test_ruta_tu_tutor_no_gasta_cupo_si_falla_preparar_contexto(client, db, usuario_autenticado):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
+    })
+    usuario_autenticado()
+    with patch("chat_controller._preparar_contexto", side_effect=RuntimeError("Firestore caído")):
+        resp = client.post(
+            "/tu-tutor",
+            json={"mensaje": "Hola", "oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"}
+        )
+    assert resp.status_code == 502
+    assert "error" in resp.get_json()
+    datos_usuario = db.leer(("usuarios", "u1"))
+    uso = (datos_usuario.get("limites_uso") or {}).get("chat_temario")
+    assert uso is None or uso.get("contador") == 0
+
+
 def _eventos_sse(cuerpo_respuesta):
     return [
         json.loads(linea[len("data: "):])
@@ -1137,6 +1186,25 @@ def test_ruta_tu_tutor_stream_no_registra_uso_si_deepseek_falla(client, db, usua
     # El uso se cobra por adelantado y, al fallar DeepSeek del todo, se
     # devuelve: el neto queda en 0 (no se consume cuota por un fallo
     # técnico, aunque el contador ya exista por el cobro+devolución).
+    datos_usuario = db.leer(("usuarios", "u1"))
+    assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 0
+
+
+def test_ruta_tu_tutor_stream_no_registra_uso_si_falla_preparar_contexto(client, db, usuario_autenticado):
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "active"}}
+    })
+    usuario_autenticado()
+    with patch("chat_controller._preparar_contexto", side_effect=RuntimeError("Firestore caído")):
+        resp = client.post(
+            "/tu-tutor/stream",
+            json={"mensaje": "Hola", "oposicion": "AGE"},
+            headers={"Authorization": "Bearer x"}
+        )
+    assert resp.status_code == 200
+    eventos = _eventos_sse(resp.get_data(as_text=True))
+    assert eventos == [{"tipo": "error"}]
     datos_usuario = db.leer(("usuarios", "u1"))
     assert datos_usuario["limites_uso"]["chat_temario"]["contador"] == 0
 
