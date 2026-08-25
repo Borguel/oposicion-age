@@ -1,6 +1,7 @@
 import { idToken, marcarContenidoListo, esAdmin } from "/assets/auth.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { icono } from "/assets/icons.js";
+import { activarAccesibilidadModal } from "/assets/modal-accesible.js";
 
 const BACKEND_URL = "https://oposicion-age.onrender.com";
 const NUEVA_CARPETA = "__nueva__";
@@ -160,6 +161,13 @@ function formatearFecha(iso) {
 // nativo, para poder seguir escribiendo `if (!(await mostrarConfirmacion(...)))
 // return;` en el sitio de la llamada.
 
+// Accesibilidad de teclado/foco (25/08/2026): instanciados una sola vez a
+// nivel de módulo porque los elementos del DOM son fijos (el modal se
+// reutiliza en cada llamada a mostrarConfirmacion/mostrarPrompt, no se crea
+// de nuevo) -- ver assets/modal-accesible.js.
+const a11yModalConfirmar = activarAccesibilidadModal(document.getElementById("modal-confirmar"), document.getElementById("confirmar-cerrar"));
+const a11yModalPrompt = activarAccesibilidadModal(document.getElementById("modal-prompt"), document.getElementById("prompt-cerrar"));
+
 function mostrarConfirmacion({ titulo = "Confirmar", mensaje, textoAceptar = "Confirmar", peligro = false }) {
   return new Promise((resolve) => {
     const overlay = document.getElementById("modal-confirmar");
@@ -175,6 +183,7 @@ function mostrarConfirmacion({ titulo = "Confirmar", mensaje, textoAceptar = "Co
 
     const terminar = (resultado) => {
       overlay.classList.add("hidden");
+      a11yModalConfirmar.alCerrar();
       btnAceptar.removeEventListener("click", onAceptar);
       btnCancelar.removeEventListener("click", onCancelar);
       btnCerrar.removeEventListener("click", onCancelar);
@@ -190,6 +199,7 @@ function mostrarConfirmacion({ titulo = "Confirmar", mensaje, textoAceptar = "Co
     btnCerrar.addEventListener("click", onCancelar);
     overlay.addEventListener("click", onOverlay);
     overlay.classList.remove("hidden");
+    a11yModalConfirmar.alAbrir();
   });
 }
 
@@ -209,6 +219,7 @@ function mostrarPrompt({ titulo, label, valorInicial = "", placeholder = "", tex
 
     const terminar = (resultado) => {
       overlay.classList.add("hidden");
+      a11yModalPrompt.alCerrar();
       formulario.removeEventListener("submit", onSubmit);
       btnCancelar.removeEventListener("click", onCancelar);
       btnCerrar.removeEventListener("click", onCancelar);
@@ -224,6 +235,11 @@ function mostrarPrompt({ titulo, label, valorInicial = "", placeholder = "", tex
     btnCerrar.addEventListener("click", onCancelar);
     overlay.addEventListener("click", onOverlay);
     overlay.classList.remove("hidden");
+    // alAbrir() enfoca el contenedor (tabindex="-1") por defecto, pero aquí
+    // el propio input de texto es mejor destino de foco inicial -- se pisa
+    // justo después, sin renunciar al resto (atrapar Tab, restaurar el foco
+    // al cerrar), que sigue haciendo falta.
+    a11yModalPrompt.alAbrir();
     input.focus();
     input.select();
   });
@@ -1204,6 +1220,8 @@ function renderizarListaModalAnadir(query) {
   });
 }
 
+const a11yModalAnadir = activarAccesibilidadModal(document.getElementById("modal-anadir-documentos"), document.getElementById("modal-anadir-cerrar"));
+
 function abrirModalAnadir() {
   document.getElementById("modal-anadir-carpeta-nombre").textContent = carpetaActual;
   candidatosModalAnadir = documentos.filter((d) => d.carpeta !== carpetaActual);
@@ -1215,10 +1233,12 @@ function abrirModalAnadir() {
   busqueda.classList.toggle("hidden", candidatosModalAnadir.length <= 6);
   renderizarListaModalAnadir("");
   document.getElementById("modal-anadir-documentos").classList.remove("hidden");
+  a11yModalAnadir.alAbrir();
 }
 
 function cerrarModalAnadir() {
   document.getElementById("modal-anadir-documentos").classList.add("hidden");
+  a11yModalAnadir.alCerrar();
 }
 
 // === Subir documento directamente desde "Mis documentos" (05/08/2026) ===
@@ -1235,6 +1255,8 @@ let subirDocIdActual = null;
 // -- ver el comentario largo junto a iniciarBanco.
 let subirDocArchivoActual = null;
 
+const a11yModalSubir = activarAccesibilidadModal(document.getElementById("modal-subir-documento"), document.getElementById("modal-subir-cerrar"));
+
 function abrirModalSubirDocumento(carpetaDestino) {
   subirDocCarpetaDestino = carpetaDestino || null;
   subirDocIdActual = null;
@@ -1244,10 +1266,12 @@ function abrirModalSubirDocumento(carpetaDestino) {
   document.getElementById("subir-doc-paso-cargando").classList.add("hidden");
   document.getElementById("subir-doc-paso-archivo").classList.remove("hidden");
   document.getElementById("modal-subir-documento").classList.remove("hidden");
+  a11yModalSubir.alAbrir();
 }
 
 function cerrarModalSubirDocumento() {
   document.getElementById("modal-subir-documento").classList.add("hidden");
+  a11yModalSubir.alCerrar();
 }
 
 // Vuelve a pedir la lista completa (mismo endpoint que cargarDocumentos) --

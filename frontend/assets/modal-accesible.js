@@ -15,8 +15,12 @@
 // al abrirse sin ser en sí un control interactivo.
 export function activarAccesibilidadModal(modal, botonCerrarSeguro) {
   let elementoPrevio = null;
+  // getComputedStyle en vez de leer modal.style.display directamente: los
+  // modales de login/mi-cuenta se abren con style.display = "flex"/"none",
+  // pero los de mis-documentos usan classList.toggle("hidden") (que aplica
+  // display:none por CSS) -- el estilo computado detecta ambos por igual.
   function estaAbierto() {
-    return modal.style.display !== "none" && modal.style.display !== "";
+    return getComputedStyle(modal).display !== "none";
   }
   function focables() {
     return Array.from(
