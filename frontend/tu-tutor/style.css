@@ -634,6 +634,7 @@ html { scroll-behavior: smooth; }
   filter: brightness(0.9);
   outline: 2px solid var(--age-ink-faint);
 }
+.btn-enviar:disabled { opacity: 0.6; cursor: default; filter: none; }
 .btn-enviar svg { display: block; }
 
 /* Botón flotante "ir al último mensaje": solo aparece cuando el usuario ha

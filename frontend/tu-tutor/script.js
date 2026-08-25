@@ -317,6 +317,18 @@ document.addEventListener("DOMContentLoaded", async function () {
   // respuesta que se cortó a medias (ver botón "Regenerar" más abajo) sin
   // volver a añadir el mensaje del usuario, que ya está en el historial.
   async function pedirRespuestaTutor(texto) {
+    if (enviandoMensaje) return;
+    enviandoMensaje = true;
+    sendBtn.disabled = true;
+    try {
+      await _pedirRespuestaTutorInterno(texto);
+    } finally {
+      enviandoMensaje = false;
+      sendBtn.disabled = false;
+    }
+  }
+
+  async function _pedirRespuestaTutorInterno(texto) {
     const authHeaders = await obtenerAuthHeaders();
     if (!authHeaders) return;
 
@@ -516,6 +528,13 @@ document.addEventListener("DOMContentLoaded", async function () {
   // Último mensaje que envió el usuario: lo usan los botones "Otra respuesta"
   // (regenerar) de cada burbuja del bot para volver a preguntar lo mismo.
   let ultimoMensajeUsuario = "";
+  // Cierra la ventana de doble envío (25/08/2026, auditoría UX): antes
+  // nada bloqueaba el botón "Enviar" ni el Enter del textarea mientras un
+  // mensaje seguía en streaming -- pulsarlo varias veces disparaba varias
+  // llamadas a pedirRespuestaTutor a la vez, que podían mezclar dos
+  // respuestas del bot en la misma burbuja o duplicar el turno guardado
+  // en el historial.
+  let enviandoMensaje = false;
 
   async function cargarHistorial() {
     const authHeaders = await obtenerAuthHeaders();
