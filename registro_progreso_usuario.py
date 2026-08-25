@@ -59,37 +59,48 @@ def registrar_actividad_racha(db, usuario_id):
     """Suma el día de hoy a la racha de estudio del usuario (para el
     indicador motivacional de Mi Cuenta). Se llama cada vez que guarda algún
     resultado real de estudio (test, esquema, o contenido desde PDF), nunca
-    más de una vez por día natural."""
+    más de una vez por día natural.
+
+    Lectura + cálculo + escritura van dentro de una única transacción de
+    Firestore (25/08/2026, auditoría -- higiene, no por un bug reportado:
+    dos guardados casi simultáneos del mismo usuario, ej. dos pestañas,
+    podían leer la misma racha_actual antes de que ninguno escribiera, y
+    el segundo pisaba el incremento del primero en vez de sumarse -- mismo
+    patrón que ya usa actualizar_estadisticas_test)."""
     hoy = date.today()
     ref = db.collection("usuarios").document(usuario_id)
-    doc = ref.get()
-    datos = (doc.to_dict() or {}).get("racha") or {}
-    ultima_fecha_str = datos.get("ultima_fecha")
-    racha_actual = datos.get("racha_actual", 0)
-    racha_maxima = datos.get("racha_maxima", 0)
 
-    if ultima_fecha_str:
-        try:
-            ultima_fecha = date.fromisoformat(ultima_fecha_str)
-        except ValueError:
-            ultima_fecha = None
-        if ultima_fecha == hoy:
-            return
-        if ultima_fecha and (hoy - ultima_fecha).days == 1:
-            racha_actual += 1
+    def _actualizar(transaction):
+        doc = ref.get(transaction=transaction)
+        datos = (doc.to_dict() or {}).get("racha") or {}
+        ultima_fecha_str = datos.get("ultima_fecha")
+        racha_actual = datos.get("racha_actual", 0)
+        racha_maxima = datos.get("racha_maxima", 0)
+
+        if ultima_fecha_str:
+            try:
+                ultima_fecha = date.fromisoformat(ultima_fecha_str)
+            except ValueError:
+                ultima_fecha = None
+            if ultima_fecha == hoy:
+                return
+            if ultima_fecha and (hoy - ultima_fecha).days == 1:
+                racha_actual += 1
+            else:
+                racha_actual = 1
         else:
             racha_actual = 1
-    else:
-        racha_actual = 1
 
-    racha_maxima = max(racha_maxima, racha_actual)
-    ref.update({
-        "racha": {
-            "ultima_fecha": hoy.isoformat(),
-            "racha_actual": racha_actual,
-            "racha_maxima": racha_maxima
-        }
-    })
+        racha_maxima = max(racha_maxima, racha_actual)
+        transaction.update(ref, {
+            "racha": {
+                "ultima_fecha": hoy.isoformat(),
+                "racha_actual": racha_actual,
+                "racha_maxima": racha_maxima
+            }
+        })
+
+    ejecutar_en_transaccion(db, _actualizar)
 
 def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificado=True):
     """Crea el documento usuarios/{uid} la primera vez que se ve a este
