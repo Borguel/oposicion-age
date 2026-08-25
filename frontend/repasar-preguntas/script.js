@@ -98,8 +98,17 @@ async function obtenerLista(tipo) {
   const authHeaders = await obtenerAuthHeaders();
   if (!authHeaders) return [];
   const endpoint = tipo === "favoritas" ? "preguntas-favoritas" : "preguntas-falladas";
+  // Bug real (25/08/2026, auditoría UX): "if (!res.ok) return []" hacía
+  // indistinguible un error real del servidor de tener 0 preguntas
+  // pendientes -- el usuario veía "¡Buen trabajo! No tienes preguntas
+  // falladas pendientes" cuando en realidad la petición había fallado. Y
+  // como el resultado (vacío) se guardaba igual en cache[tipo], ni
+  // siquiera cambiar de pestaña y volver reintentaba la petición de
+  // verdad. Ahora un fallo lanza una excepción real, que pintarPestaña()
+  // captura para mostrar un aviso y un botón de reintentar -- nunca se
+  // cachea un fallo como si fueran datos reales.
   const res = await fetch(`https://oposicion-age.onrender.com/${endpoint}?oposicion=${encodeURIComponent(oposicionActual)}`, { headers: authHeaders });
-  if (!res.ok) return [];
+  if (!res.ok) throw new Error(`No se pudo cargar (HTTP ${res.status}).`);
   const datos = await res.json();
   const lista = datos[tipo] || [];
   cache[tipo] = lista;
@@ -171,7 +180,21 @@ async function pintarPestaña() {
   elLista.innerHTML = "";
   elCargando.style.display = "block";
 
-  const lista = await obtenerLista(pestañaActual);
+  // Bug real (25/08/2026, auditoría UX): sin este try/catch, un fallo de
+  // red (offline, timeout) se propagaba como una promesa rechazada sin
+  // manejar -- elCargando.style.display = "none" nunca llegaba a
+  // ejecutarse, así que "Cargando preguntas…" se quedaba visible para
+  // siempre, sin ningún aviso ni forma de reintentar.
+  let lista;
+  try {
+    lista = await obtenerLista(pestañaActual);
+  } catch (err) {
+    console.error("Error cargando preguntas:", err);
+    elCargando.style.display = "none";
+    mostrarAviso(`No se han podido cargar tus preguntas. Comprueba tu conexión. <button type="button" class="age-btn age-btn-outline" id="rp-reintentar">Reintentar</button>`);
+    document.getElementById("rp-reintentar").addEventListener("click", pintarPestaña);
+    return;
+  }
   elCargando.style.display = "none";
 
   const bloqueFiltro = elFiltroBloque.value;
