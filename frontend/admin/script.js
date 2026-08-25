@@ -122,6 +122,23 @@ async function api(metodo, ruta, cuerpo) {
 
 const apiGet = (ruta) => api("GET", ruta);
 
+// Bug real (25/08/2026, auditoría UX): sin esto, cualquier panel del
+// admin que fallara al cargar (sin conexión, backend caído, sesión
+// caducada a mitad de la petición) se quedaba en "Cargando…" para
+// siempre -- la única señal de que algo había ido mal era un toast que
+// desaparece en 3.6s, sin ningún botón para reintentar sin recargar la
+// página entera a mano. Se llama en el "if (!d) return" de cada panel
+// que ya usaba api()/apiGet(), pasándole la misma función que lo cargó
+// para poder reintentarlo tal cual.
+function mostrarErrorPanel(contenedor, reintentar) {
+  if (!contenedor) return;
+  contenedor.innerHTML = `
+    <p class="admin-cargando">No se ha podido cargar. Comprueba tu conexión.</p>
+    <button type="button" class="age-btn age-btn-outline admin-mini admin-btn-reintentar">Reintentar</button>
+  `;
+  contenedor.querySelector(".admin-btn-reintentar").addEventListener("click", reintentar);
+}
+
 // Mismo criterio que _id_valido en blueprints/admin.py: evita el viaje al
 // servidor para el caso típico (espacios, barras) antes de crear la ruta.
 function _idValido(valor) {
@@ -394,7 +411,7 @@ async function renderDashboard() {
   const panel = document.getElementById("panel-dashboard");
   panel.innerHTML = `<p class="admin-cargando">Cargando panel…</p>`;
   const d = await apiGet(`/admin/api/resumen?oposicion=${oposicionActual()}`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(panel, renderDashboard); return; }
   actualizarBadgeReportes(d.reportes_pendientes || 0);
   _reportesPreguntasPendientesCache = d.reportes_pendientes_preguntas || 0;
   _reportesSoportePendientesCache = d.reportes_pendientes_soporte || 0;
@@ -558,7 +575,7 @@ async function renderTemario() {
   const panel = document.getElementById("panel-temario");
   panel.innerHTML = `<p class="admin-cargando">Cargando temario…</p>`;
   const d = await apiGet(`/admin/api/temario/${oposicionActual()}`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(panel, renderTemario); return; }
   const op = oposicionActual();
   const bloques = d.bloques || [];
   if (temaSeleccionado) bloquesAbiertos.add(temaSeleccionado.bloque);
@@ -670,7 +687,7 @@ async function cargarChunks() {
   if (!cont || !temaSeleccionado) return;
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/temario/${oposicionActual()}/${temaSeleccionado.bloque}/${temaSeleccionado.tema}`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(cont, cargarChunks); return; }
   const chunks = (d.chunks || []).map((c) => `
     <div class="admin-chunk" data-id="${escapeHtml(c.id)}">
       <input class="age-input admin-chunk-titulo" value="${escapeHtml(c.titulo)}" placeholder="Título (opcional)">
@@ -769,7 +786,7 @@ async function cargarPreguntas() {
     apiGet(`/admin/api/preguntas?${params.toString()}`),
     apiGet(`/admin/api/temario/${oposicionActual()}`),
   ]);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(cont, cargarPreguntas); return; }
   window._preguntasCache = {};
   let lista = d.preguntas || [];
   if (texto) lista = lista.filter((p) => (p.pregunta || "").toLowerCase().includes(texto));
@@ -978,7 +995,7 @@ async function renderAnalitica() {
     apiGet(`/admin/api/analitica-contenido?oposicion=${oposicionActual()}`),
     apiGet(`/admin/api/banco-preguntas?oposicion=${oposicionActual()}`),
   ]);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(panel, renderAnalitica); return; }
   const temas = d.temas || [];
   const hayBanco = banco && (banco.total_oposicion || Object.values(banco.totales_por_oposicion || {}).some((n) => n > 0));
   if (!temas.length && !(d.sin_actividad || []).length && !hayBanco) {
@@ -1062,7 +1079,7 @@ async function renderBajas() {
   const panel = document.getElementById("panel-bajas");
   panel.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/bajas`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(panel, renderBajas); return; }
 
   // "recientes" (con uid/email) solo llega si el permiso de quien pide la
   // lista incluye "usuarios" -- ver bajas_listar en blueprints/admin.py.
@@ -1287,7 +1304,7 @@ async function cargarIngresos() {
   params.set("pagina", paginaIngresos);
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/ingresos?${params.toString()}`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(cont, cargarIngresos); return; }
   const r = d.resumen || {};
   const porEstado = r.por_estado || {};
   const desglosePlan = Object.entries(r.por_plan || {})
@@ -1399,7 +1416,7 @@ async function cargarUsuarios() {
   if (ordenUsuarios === "uso") params.set("orden", "uso");
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/usuarios?${params.toString()}`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(cont, cargarUsuarios); return; }
   const totalPaginas = Math.max(1, Math.ceil((d.total || 0) / (d.por_pagina || 20)));
   const flechaUso = ordenUsuarios === "uso" ? " ▼" : "";
   const tarjetaAnadir = _permisos.admin ? `
@@ -1910,7 +1927,7 @@ async function cargarReportes() {
   if (!cont) return;
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/reportes?estado=${estadoReportes}&pagina=${paginaReportes}`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(cont, cargarReportes); return; }
   // d.total (no la longitud de esta página) -- el backend ya filtra por
   // "pendiente" en la consulta, así que es el recuento real, no solo el de
   // la página actual. El badge combinado suma esto con el de soporte (no
@@ -2054,7 +2071,7 @@ async function cargarErroresIA() {
   const params = new URLSearchParams({ resuelto: filtroResueltoErroresIA, tipo_error: filtroTipoErroresIA, oposicion: filtroOposicionErroresIA, pagina: paginaErroresIA });
   if (busquedaErroresIA) params.set("q", busquedaErroresIA);
   const d = await apiGet(`/admin/api/errores-ia?${params}`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(cont, cargarErroresIA); return; }
 
   if (resumenCont) {
     const porTipo = d.resumen?.por_tipo || {};
@@ -2347,7 +2364,7 @@ async function cargarCambiosTemario() {
   if (!cont) return;
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/cambios-temario?estado=${estadoBoe}`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(cont, cargarCambiosTemario); return; }
   const pendientes = (d.cambios || []).filter((c) => c.estado === "pendiente").length;
   if (estadoBoe === "pendiente") { _cambiosPendientesCache = pendientes; actualizarBadgeBoe(pendientes + _avisosPendientesCache); _actualizarStatBoe(); }
   if (!(d.cambios || []).length) {
@@ -2387,7 +2404,7 @@ async function cargarAvisosOficiales() {
   if (!cont) return;
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/avisos-oficiales?estado=${estadoBoe}`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(cont, cargarAvisosOficiales); return; }
   const pendientes = (d.avisos || []).filter((a) => a.estado === "pendiente").length;
   if (estadoBoe === "pendiente") { _avisosPendientesCache = pendientes; actualizarBadgeBoe(pendientes); _actualizarStatBoe(); }
   if (!(d.avisos || []).length) {
@@ -2445,7 +2462,7 @@ async function cargarSoporte() {
   if (!cont) return;
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/soporte?estado=${estadoReportes}`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(cont, cargarSoporte); return; }
   // Mismo criterio que cargarReportes: el nº real de mensajes en este
   // estado (no solo si la lista está vacía) para no dejar el badge
   // desactualizado -- va antes del "vacío" de abajo a propósito, si no
@@ -2524,7 +2541,7 @@ async function cargarAuditoria() {
   if (!cont) return;
   cont.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
   const d = await apiGet(`/admin/api/auditoria?pagina=${paginaAuditoria}`);
-  if (!d) return;
+  if (!d) { mostrarErrorPanel(cont, cargarAuditoria); return; }
   if (!(d.entradas || []).length) {
     cont.innerHTML = `<p class="admin-vacio">Aún no hay acciones registradas.</p>`;
     return;
@@ -2551,7 +2568,7 @@ async function renderLimites() {
   const panel = document.getElementById("panel-limites");
   panel.innerHTML = `<p class="admin-cargando">Cargando límites…</p>`;
   const cfg = await apiGet("/admin/api/limites");
-  if (!cfg) return;
+  if (!cfg) { mostrarErrorPanel(panel, renderLimites); return; }
   const planes = cfg.planes || ["gratis", "basico", "premium"];
   const celda = (tipo, plan) => {
     const c = (cfg.tools[tipo] || {})[plan] || { periodo: "mes", limite: 0 };
@@ -2626,7 +2643,7 @@ async function renderSistema() {
   const [sis, banner, promo] = await Promise.all([
     apiGet("/admin/api/sistema"), apiGet("/admin/api/banner"), apiGet("/admin/api/promocion"),
   ]);
-  if (!sis) return;
+  if (!sis) { mostrarErrorPanel(panel, renderSistema); return; }
   const diag = sis.diagnostico || {};
   const servicios = (sis.servicios || []).map((s) => {
     // 3 estados: verde (OK), rojo (crítico sin configurar), ámbar (opcional
