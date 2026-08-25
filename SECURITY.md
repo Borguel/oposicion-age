@@ -7,7 +7,7 @@ Nos tomamos en serio la seguridad de los datos de nuestros usuarios.
 ## Reportar una vulnerabilidad
 
 Si has encontrado una vulnerabilidad de seguridad, repórtala de forma
-privada a **borjamiceli@gmail.com** — por favor, no abras un issue
+privada a **dominatuopo@gmail.com** — por favor, no abras un issue
 público hasta que se haya podido revisar y corregir.
 
 Incluye, si es posible:
