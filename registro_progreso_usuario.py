@@ -199,6 +199,18 @@ def inicializar_estadisticas_usuario(db, usuario_id, email=None, email_verificad
         for oid in concedibles:
             _marcar_prueba_gratuita_concedida(db, email, oid)
 
+    # El resto de pendientes (24/08/2026, a petición del usuario: "Virginia
+    # se registró pero no activó oposición, si ahora la activa ¿le va a
+    # decir que ya tuvo la prueba aunque no la haya tenido?"): estas SÍ son
+    # de verdad "ya gastadas" con este email en otra cuenta -- se marcan
+    # para que el frontend (ver construirBannerPrueba en assets/auth.js)
+    # pueda distinguir este caso de una prueba que arrancó y terminó de
+    # verdad, y mostrar un aviso honesto ("actívate un plan") en vez de
+    # "tu prueba ha terminado" (que no llegó a empezar).
+    bloqueadas = [oid for oid in pendientes if oid not in concedibles]
+    if bloqueadas:
+        doc_ref.update({f"suscripciones.{oid}.prueba_bloqueada_por_uso_previo": True for oid in bloqueadas})
+
 
 def activar_oposicion_usuario(db, usuario_id, oposicion, email=None, email_verificado=True):
     """Da de alta al usuario en una oposición nueva, a petición suya (p. ej.
@@ -228,15 +240,20 @@ def activar_oposicion_usuario(db, usuario_id, oposicion, email=None, email_verif
     # junto a la función): sin esto, borrar la cuenta y volver a
     # registrarse con el mismo email real conseguía otros 7 días de
     # prueba gratuita cada vez, sin límite.
-    permite_prueba = (
-        bool(email_verificado)
-        and not es_dominio_email_desechable(email)
-        and not _prueba_gratuita_ya_concedida(db, email, oposicion)
-    )
+    ya_gastada = _prueba_gratuita_ya_concedida(db, email, oposicion)
+    permite_prueba = bool(email_verificado) and not es_dominio_email_desechable(email) and not ya_gastada
     doc_ref.update({
         f"suscripciones.{oposicion}.plan": "gratis",
         f"suscripciones.{oposicion}.prueba_fin": (datetime.utcnow() + timedelta(days=DURACION_PRUEBA_DIAS)).isoformat() if permite_prueba else None,
         f"suscripciones.{oposicion}.plan_updated_at": datetime.utcnow().isoformat(),
+        # Distingue "nunca ha tenido prueba porque este email ya la gastó
+        # antes" de "verificación de email pendiente" o "dominio
+        # desechable" -- ver el comentario largo junto a
+        # _prueba_gratuita_ya_concedida y su uso en assets/auth.js
+        # (construirBannerPrueba), para no decirle a alguien que su
+        # prueba "ha terminado" cuando en esta cuenta nunca llegó a
+        # empezar.
+        f"suscripciones.{oposicion}.prueba_bloqueada_por_uso_previo": ya_gastada,
     })
     if permite_prueba:
         _marcar_prueba_gratuita_concedida(db, email, oposicion)
@@ -613,5 +630,10 @@ def obtener_perfil_usuario(db, usuario_id, oposicion=None, es_admin=False):
             # para decidir si ofrece "Empieza tu prueba gratis" o ya pasa
             # directo a las opciones de pago (ver planes/script.js).
             "oposicion_activada": oposicion in suscripciones,
+            # Ver el comentario junto a activar_oposicion_usuario: distingue
+            # "este email ya gastó su prueba antes" de una prueba que sí
+            # arrancó y terminó -- el frontend lo usa para no decir "ha
+            # terminado" algo que en esta cuenta nunca empezó.
+            "prueba_bloqueada_por_uso_previo": bool(sub_oposicion.get("prueba_bloqueada_por_uso_previo")),
         })
     return perfil

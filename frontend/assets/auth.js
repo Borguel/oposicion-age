@@ -1007,6 +1007,19 @@ async function construirBannerPrueba(user) {
       banner.innerHTML = `<p>Verifica tu correo electrónico para activar tus 7 días de prueba gratis.</p>`;
       return banner;
     }
+    if (perfil.prueba_bloqueada_por_uso_previo) {
+      // Este email ya gastó su prueba gratuita antes (con esta oposición
+      // en otra cuenta, ver _prueba_gratuita_ya_concedida en
+      // registro_progreso_usuario.py) -- en ESTA cuenta la prueba nunca
+      // llegó a empezar, así que decirle "ha terminado" sería falso. A
+      // petición del usuario (24/08/2026, caso real): mensaje honesto que
+      // explica por qué no tiene la prueba y ofrece pasar directo a un
+      // plan de pago, en vez de sonar a error o a límite alcanzado por
+      // error.
+      banner.innerHTML = `<p>Este correo ya usó su prueba gratuita antes, así que esta oposición no incluye otra. Activa el plan básico o premium para acceder a todo el contenido.</p>
+         <a class="age-btn age-btn-primary" href="/planes/">Ver planes</a>`;
+      return banner;
+    }
     // Prueba terminada de verdad, o suscripción de pago cancelada/impagada:
     // aviso fijo, no se puede cerrar -- refuerza en toda la web el bloqueo
     // que ya aplican las páginas de herramientas por su cuenta (ver

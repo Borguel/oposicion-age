@@ -97,6 +97,9 @@ def test_activar_oposicion_sin_verificar_deja_la_prueba_pendiente(db):
     sub = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
     assert sub["plan"] == "gratis"
     assert sub["prueba_fin"] is None
+    # No es que ya se haya gastado -- solo falta verificar el correo, ver
+    # construirBannerPrueba en assets/auth.js (no debe decirle "ya gastada").
+    assert sub["prueba_bloqueada_por_uso_previo"] is False
 
 
 def test_activar_oposicion_con_dominio_desechable_deja_la_prueba_pendiente(db):
@@ -106,6 +109,19 @@ def test_activar_oposicion_con_dominio_desechable_deja_la_prueba_pendiente(db):
     activar_oposicion_usuario(db, "u1", "AGE", email="bot@mailinator.com", email_verificado=True)
     sub = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
     assert sub["prueba_fin"] is None
+    # Tampoco es "ya gastada" -- es un dominio desechable, motivo distinto.
+    assert sub["prueba_bloqueada_por_uso_previo"] is False
+
+
+def test_activar_oposicion_primera_vez_no_marca_bloqueada_por_uso_previo(db):
+    # Caso real reportado por el usuario (Virginia): una cuenta que activa
+    # su primera oposición con un email que nunca ha gastado ninguna prueba
+    # no debe quedar marcada como "ya gastada" -- solo debe verse ese flag
+    # cuando de verdad ha sido bloqueada por ese motivo.
+    activar_oposicion_usuario(db, "u1", "AGE", email="persona-nueva@gmail.com", email_verificado=True)
+    sub = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+    assert sub["prueba_fin"] is not None
+    assert sub["prueba_bloqueada_por_uso_previo"] is False
 
 
 def test_verificar_el_email_mas_tarde_arranca_las_pruebas_pendientes(db):
@@ -163,6 +179,11 @@ def test_borrar_cuenta_y_volver_a_registrarse_no_da_otra_prueba_gratuita(db):
     sub = db.leer(("usuarios", "u2-nuevo"))["suscripciones"]["AGE"]
     assert sub["plan"] == "gratis"
     assert sub["prueba_fin"] is None
+    # Marcado como "ya gastada" (a diferencia de verificación pendiente o
+    # dominio desechable) -- ver construirBannerPrueba en assets/auth.js:
+    # así el frontend puede avisar de que se active un plan de pago en vez
+    # de decir "tu prueba ha terminado" (nunca llegó a empezar aquí).
+    assert sub["prueba_bloqueada_por_uso_previo"] is True
 
 
 def test_prueba_gratuita_ya_gastada_no_bloquea_otra_oposicion_distinta(db):
@@ -188,12 +209,21 @@ def test_verificar_el_email_mas_tarde_no_concede_una_prueba_ya_gastada(db):
     db.collection("usuarios").document("u1-viejo").delete()
 
     activar_oposicion_usuario(db, "u2-nuevo", "AGE", email="persona@gmail.com", email_verificado=False)
-    assert db.leer(("usuarios", "u2-nuevo"))["suscripciones"]["AGE"]["prueba_fin"] is None
+    sub_pendiente = db.leer(("usuarios", "u2-nuevo"))["suscripciones"]["AGE"]
+    assert sub_pendiente["prueba_fin"] is None
+    # El hecho de que este email ya gastó su prueba no depende de si el
+    # correo está verificado -- se marca de inmediato, aunque el motivo que
+    # bloquea AHORA mismo el acceso sea la verificación pendiente (ver
+    # construirBannerPrueba en assets/auth.js: revisa emailVerified antes
+    # que este flag, así que no confunde al usuario mientras tanto).
+    assert sub_pendiente["prueba_bloqueada_por_uso_previo"] is True
 
     with patch("registro_progreso_usuario.enviar_email_bienvenida"), \
          patch("registro_progreso_usuario.enviar_email_alerta_nuevo_usuario"):
         inicializar_estadisticas_usuario(db, "u2-nuevo", email="persona@gmail.com", email_verificado=True)
-    assert db.leer(("usuarios", "u2-nuevo"))["suscripciones"]["AGE"]["prueba_fin"] is None
+    sub_final = db.leer(("usuarios", "u2-nuevo"))["suscripciones"]["AGE"]
+    assert sub_final["prueba_fin"] is None
+    assert sub_final["prueba_bloqueada_por_uso_previo"] is True
 
 
 @pytest.fixture
@@ -304,3 +334,16 @@ def test_perfil_usuario_expone_tiene_plan_de_pago_y_oposicion_activada(db):
 
     perfil_age = obtener_perfil_usuario(db, "u1", oposicion="AGE")
     assert perfil_age["oposicion_activada"] is True
+
+
+def test_perfil_usuario_expone_prueba_bloqueada_por_uso_previo(db):
+    db.sembrar(("usuarios", "u1"), {
+        "suscripciones": {
+            "AGE": {"plan": "gratis", "prueba_fin": None, "prueba_bloqueada_por_uso_previo": True},
+            "GACE": {"plan": "gratis", "prueba_fin": None},
+        },
+    })
+    assert obtener_perfil_usuario(db, "u1", oposicion="AGE")["prueba_bloqueada_por_uso_previo"] is True
+    # Ausente en Firestore (cuentas anteriores a este campo, o motivo
+    # distinto como verificación pendiente) -> False, nunca falla con KeyError.
+    assert obtener_perfil_usuario(db, "u1", oposicion="GACE")["prueba_bloqueada_por_uso_previo"] is False
