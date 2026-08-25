@@ -35,6 +35,21 @@
   50% { border-color: transparent; }
 }
 
+/* Mismo criterio que .age-auth-loader-spinner en assets/theme.css
+   (25/08/2026, auditoría UX): respeta la preferencia del sistema de
+   reducir el movimiento. El texto a máquina de escribir se muestra
+   directamente completo (sin la animación de "width: 0 -> 100%") en vez
+   de mantenerlo escondido letra a letra durante 3.5s. */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in { animation: none; }
+  .ai-icon { animation: none; }
+  .typewriter {
+    animation: none;
+    width: 100%;
+    border-right: none;
+  }
+}
+
 /* Resumen profesional */
 #resumen-profesional {
   font-family: var(--age-font);

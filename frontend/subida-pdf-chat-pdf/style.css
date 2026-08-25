@@ -255,6 +255,20 @@
   to { transform: rotate(360deg); }
 }
 
+/* Mismo criterio que .age-auth-loader-spinner en assets/theme.css
+   (25/08/2026, auditoría UX): respeta la preferencia del sistema de
+   reducir el movimiento -- las tres animaciones de esta página son
+   continuas/en bucle (girar, aparecer con desplazamiento, rebotar), el
+   caso más molesto para quien la tiene activada. */
+@media (prefers-reduced-motion: reduce) {
+  .chatpdf-upload-hint-cargando::before {
+    animation: none;
+    border-top-color: var(--age-border);
+  }
+  .chatpdf-msg { animation: none; }
+  .chatpdf-typing span { animation: none; opacity: 0.7; }
+}
+
 /* ===== ENTRADA ===== */
 .chatpdf-input-row {
   display: flex;

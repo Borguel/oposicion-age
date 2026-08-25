@@ -135,6 +135,15 @@
   animation: fadeIn 0.5s ease-out;
 }
 
+/* Mismo criterio que .age-auth-loader-spinner en assets/theme.css
+   (25/08/2026, auditoría UX): respeta la preferencia del sistema de
+   reducir el movimiento -- .pulse se repite indefinidamente, el caso más
+   molesto para quien la tiene activada. */
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; }
+  .fade-in { animation: none; }
+}
+
 @media (max-width: 768px) {
   .stats-container {
     grid-template-columns: 1fr;

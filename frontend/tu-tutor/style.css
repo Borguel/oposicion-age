@@ -664,5 +664,16 @@ html { scroll-behavior: smooth; }
   to { opacity: 1; transform: none; }
 }
 
+/* Mismo criterio que .age-auth-loader-spinner en assets/theme.css
+   (25/08/2026, auditoría UX): respeta la preferencia del sistema de
+   reducir el movimiento -- .pulse (indicador "en línea") y .typing-dot
+   (los tres puntos de "escribiendo…") se repiten indefinidamente, el
+   caso más molesto para quien la tiene activada. */
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; }
+  .welcome-message, .mensaje-user, .mensaje-bot { animation: none; }
+  .typing-dot { animation: none; }
+}
+
 ::-webkit-scrollbar { width: 7px; background: var(--age-bg); }
 ::-webkit-scrollbar-thumb { background: var(--age-border); border-radius: 7px; }

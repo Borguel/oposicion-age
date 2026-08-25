@@ -41,6 +41,24 @@
   50% { border-color: transparent; }
 }
 
+/* Mismo criterio que .age-auth-loader-spinner en assets/theme.css
+   (25/08/2026, auditoría UX): respeta la preferencia del sistema de
+   reducir el movimiento. El texto a máquina de escribir se muestra
+   directamente completo (sin la animación de "width: 0 -> 100%") en vez
+   de mantenerlo escondido letra a letra durante 3.5s, y el volteo 3D de
+   la tarjeta (más abajo, .tarjeta) pasa de animado a instantáneo -- sigue
+   cambiando de cara al pulsar, solo sin la rotación de 0.8s. */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in { animation: none; }
+  .ai-icon { animation: none; }
+  .typewriter {
+    animation: none;
+    width: 100%;
+    border-right: none;
+  }
+  .tarjeta { transition: none; }
+}
+
 /* Flashcard con volteo 3D */
 .tarjeta-container {
   perspective: 1000px;
