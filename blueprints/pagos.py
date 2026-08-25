@@ -545,7 +545,17 @@ def webhook_stripe():
                 sub_anterior_id = ((usuario_antes.get("suscripciones") or {}).get(oposicion) or {}).get("stripe_subscription_id")
                 if sub_anterior_id and sub_anterior_id != subscription_id:
                     try:
-                        stripe.Subscription.delete(sub_anterior_id)
+                        # prorate + invoice_now (25/08/2026, bug real de la
+                        # auditoría, dinero): sin esto, cancelar la
+                        # suscripción anterior descartaba sin más el tiempo ya
+                        # pagado y no consumido -- el usuario lo perdía por
+                        # completo, mientras la nueva suscripción le cobraba
+                        # el importe íntegro del nuevo plan desde cero.
+                        # prorate genera el crédito por el tiempo restante;
+                        # invoice_now lo factura ya (como saldo a favor del
+                        # cliente, que Stripe aplica automáticamente a su
+                        # próxima factura) en vez de dejarlo pendiente.
+                        stripe.Subscription.delete(sub_anterior_id, prorate=True, invoice_now=True)
                     except Exception:
                         logger.exception(
                             "No se pudo cancelar la suscripción anterior %s de uid=%s al cambiar de plan en %s",

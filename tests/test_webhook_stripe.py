@@ -161,7 +161,11 @@ def test_webhook_checkout_completado_cancela_la_suscripcion_anterior_al_cambiar_
         resp = _post_evento(client, evento)
 
     assert resp.status_code == 200
-    mock_delete.assert_called_once_with("sub_viejo")
+    # prorate + invoice_now (25/08/2026, bug real -- dinero): sin esto se
+    # perdía por completo el tiempo ya pagado y no consumido de la
+    # suscripción anterior en vez de convertirlo en saldo a favor del
+    # cliente.
+    mock_delete.assert_called_once_with("sub_viejo", prorate=True, invoice_now=True)
     suscripcion = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
     assert suscripcion["plan"] == "premium"
     assert suscripcion["stripe_subscription_id"] == "sub_nuevo"
