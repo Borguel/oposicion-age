@@ -1898,6 +1898,17 @@ def usuarios_generar_enlace(uid):
         registro = firebase_auth.get_user(uid)
     except Exception:
         return jsonify({"error": "Usuario no encontrado en Firebase Auth"}), 404
+    # Bug real de seguridad (24/08/2026): esta ruta solo exigía el permiso
+    # "usuarios" (pensado para soporte a clientes normales), pero no
+    # comprobaba nada sobre la cuenta OBJETIVO -- un miembro del equipo con
+    # ese permiso, sin ser super-admin, podía generar un enlace de
+    # restablecer contraseña para OTRA cuenta de administrador y, con eso,
+    # tomar el control total del panel. Ahora, si el objetivo es admin (o
+    # tiene cualquier permiso de equipo), se exige que quien llama también
+    # sea super-admin.
+    claims_objetivo = registro.custom_claims or {}
+    if (claims_objetivo.get("admin") is True or claims_objetivo.get("permisos")) and not g.es_admin:
+        return jsonify({"error": "Solo un administrador puede generar este enlace para otra cuenta del equipo."}), 403
     email = registro.email
     if not email:
         return jsonify({"error": "El usuario no tiene email"}), 400

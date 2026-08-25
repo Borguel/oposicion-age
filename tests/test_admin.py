@@ -344,12 +344,51 @@ def test_ranking_demo_estado_requiere_admin_total(client, db):
 
 
 def test_generar_enlace_password(client, db):
-    reg = type("R", (), {"email": "u1@x.com"})()
+    reg = type("R", (), {"email": "u1@x.com", "custom_claims": None})()
     with _como(), \
          patch("blueprints.admin.firebase_auth.get_user", return_value=reg), \
          patch("blueprints.admin.firebase_auth.generate_password_reset_link", return_value="https://reset/abc"):
         r = client.post("/admin/api/usuarios/u1/enlace", json={"tipo": "password"}, headers=_AUTH).get_json()
     assert r["enlace"] == "https://reset/abc"
+
+
+def test_generar_enlace_para_cuenta_admin_bloqueado_sin_ser_admin(client, db):
+    # Bug real de seguridad (24/08/2026): un miembro del equipo con solo el
+    # permiso "usuarios" (no super-admin) podía generar un enlace de
+    # restablecer contraseña para OTRA cuenta de administrador -- y con
+    # eso, tomar el control total del panel.
+    reg_admin = type("R", (), {"email": "otro-admin@x.com", "custom_claims": {"admin": True}})()
+    with _como(admin=False, permisos=["usuarios"]), \
+         patch("blueprints.admin.firebase_auth.get_user", return_value=reg_admin), \
+         patch("blueprints.admin.firebase_auth.generate_password_reset_link") as mock_generar:
+        r = client.post("/admin/api/usuarios/admin2/enlace", json={"tipo": "password"}, headers=_AUTH)
+    assert r.status_code == 403
+    mock_generar.assert_not_called()
+
+
+def test_generar_enlace_para_cuenta_con_permisos_de_equipo_bloqueado_sin_ser_admin(client, db):
+    # Mismo caso con un objetivo que no es super-admin pero sí tiene algún
+    # permiso de equipo (p. ej. moderador de "reportes") -- también debe
+    # exigirse ser super-admin para generarle el enlace.
+    reg_equipo = type("R", (), {"email": "moderador@x.com", "custom_claims": {"permisos": ["reportes"]}})()
+    with _como(admin=False, permisos=["usuarios"]), \
+         patch("blueprints.admin.firebase_auth.get_user", return_value=reg_equipo), \
+         patch("blueprints.admin.firebase_auth.generate_password_reset_link") as mock_generar:
+        r = client.post("/admin/api/usuarios/moderador1/enlace", json={"tipo": "password"}, headers=_AUTH)
+    assert r.status_code == 403
+    mock_generar.assert_not_called()
+
+
+def test_generar_enlace_para_cuenta_admin_permitido_siendo_admin(client, db):
+    # Un super-admin sí puede generar el enlace para otra cuenta de
+    # administrador (caso legítimo: recuperar el acceso de un compañero).
+    reg_admin = type("R", (), {"email": "otro-admin@x.com", "custom_claims": {"admin": True}})()
+    with _como(admin=True), \
+         patch("blueprints.admin.firebase_auth.get_user", return_value=reg_admin), \
+         patch("blueprints.admin.firebase_auth.generate_password_reset_link", return_value="https://reset/abc"):
+        r = client.post("/admin/api/usuarios/admin2/enlace", json={"tipo": "password"}, headers=_AUTH)
+    assert r.status_code == 200
+    assert r.get_json()["enlace"] == "https://reset/abc"
 
 
 def test_eliminar_usuario(client, db):
