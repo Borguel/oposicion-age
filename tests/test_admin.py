@@ -908,12 +908,31 @@ def test_detalle_usuario_oculta_coste_ia_a_admin_parcial(client, db):
 
 
 def test_resumen_calcula_mrr(client, db):
-    db.sembrar(("usuarios", "u1"), {"email": "a@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})
-    db.sembrar(("usuarios", "u2"), {"email": "b@x.com", "suscripciones": {"AGE": {"plan": "basico"}, "GACE": {"plan": "premium"}}})
+    db.sembrar(("usuarios", "u1"), {"email": "a@x.com", "suscripciones": {
+        "AGE": {"plan": "premium", "stripe_subscription_id": "sub_a"},
+    }})
+    db.sembrar(("usuarios", "u2"), {"email": "b@x.com", "suscripciones": {
+        "AGE": {"plan": "basico", "stripe_subscription_id": "sub_b1"},
+        "GACE": {"plan": "premium", "stripe_subscription_id": "sub_b2"},
+    }})
     with _como():
         d = client.get("/admin/api/resumen", headers=_AUTH).get_json()
     assert d["suscripciones_pago"] == 3
     assert d["mrr"] == round(9.99 + 4.99 + 9.99, 2)
+
+
+def test_resumen_mrr_excluye_plan_concedido_a_mano_sin_stripe(client, db):
+    # Bug real (ronda de auditoría #4, a petición explícita del usuario):
+    # un plan de pago concedido a mano por un admin (usuarios_cambiar_plan)
+    # no tiene stripe_subscription_id -- no es un ingreso real y no debe
+    # sumar al MRR aunque el plan sea premium.
+    db.sembrar(("usuarios", "u1"), {"email": "regalo@x.com", "suscripciones": {
+        "AGE": {"plan": "premium"},  # sin stripe_subscription_id
+    }})
+    with _como():
+        d = client.get("/admin/api/resumen", headers=_AUTH).get_json()
+    assert d["suscripciones_pago"] == 0
+    assert d["mrr"] == 0
 
 
 # ---------- Caché de las vistas agregadas (escalabilidad) ----------
@@ -988,7 +1007,7 @@ def test_ingresos_lista_una_fila_por_suscripcion_de_pago(client, db):
         "email": "a@x.com", "fecha_creacion": "2025-01-01T00:00:00",
         "suscripciones": {
             "AGE": {
-                "plan": "premium", "subscription_status": "active",
+                "plan": "premium", "subscription_status": "active", "stripe_subscription_id": "sub_a",
                 "current_period_end": "2026-09-01T00:00:00", "cancelar_al_final_periodo": False,
             },
         },
@@ -996,7 +1015,7 @@ def test_ingresos_lista_una_fila_por_suscripcion_de_pago(client, db):
     db.sembrar(("usuarios", "u2"), {
         "email": "b@x.com", "fecha_creacion": "2025-02-01T00:00:00",
         "suscripciones": {
-            "AGE": {"plan": "basico", "subscription_status": "past_due"},
+            "AGE": {"plan": "basico", "subscription_status": "past_due", "stripe_subscription_id": "sub_b"},
             "GACE": {"plan": "gratis"},  # no es de pago -- no debe aparecer
         },
     })
@@ -1029,7 +1048,10 @@ def test_ingresos_detecta_cancelando_baja_y_prueba(client, db):
     # gratis, sin haber pagado nunca).
     db.sembrar(("usuarios", "u_cancelando"), {
         "email": "cancelando@x.com",
-        "suscripciones": {"AGE": {"plan": "premium", "cancelar_al_final_periodo": True, "current_period_end": "2026-09-01T00:00:00"}},
+        "suscripciones": {"AGE": {
+            "plan": "premium", "cancelar_al_final_periodo": True, "current_period_end": "2026-09-01T00:00:00",
+            "stripe_subscription_id": "sub_cancelando",
+        }},
     })
     db.sembrar(("usuarios", "u_baja"), {
         "email": "baja@x.com",
@@ -1054,22 +1076,63 @@ def test_ingresos_detecta_cancelando_baja_y_prueba(client, db):
     assert por_email["prueba@x.com"]["plan"] == "premium"  # la prueba da acceso Premium
     assert por_email["prueba@x.com"]["precio"] == 0
     # El resumen desglosa por estado y el MRR/ARPU solo cuentan a quien paga de verdad.
-    assert d["resumen"]["por_estado"] == {"activo": 0, "cancelando": 1, "baja": 1, "prueba": 1}
+    assert d["resumen"]["por_estado"] == {"activo": 0, "cancelando": 1, "baja": 1, "prueba": 1, "regalo": 0}
     assert d["resumen"]["mrr"] == 9.99
     assert d["resumen"]["suscripciones"] == 1
     assert d["resumen"]["arpu"] == 9.99
 
 
 def test_ingresos_filtra_por_estado(client, db):
-    db.sembrar(("usuarios", "u1"), {"email": "activo@x.com", "suscripciones": {"AGE": {"plan": "premium"}}})
+    db.sembrar(("usuarios", "u1"), {"email": "activo@x.com", "suscripciones": {
+        "AGE": {"plan": "premium", "stripe_subscription_id": "sub_activo"},
+    }})
     db.sembrar(("usuarios", "u2"), {
         "email": "cancelando@x.com",
-        "suscripciones": {"AGE": {"plan": "basico", "cancelar_al_final_periodo": True}},
+        "suscripciones": {"AGE": {
+            "plan": "basico", "cancelar_al_final_periodo": True, "stripe_subscription_id": "sub_cancelando",
+        }},
     })
     with _como():
         d = client.get("/admin/api/ingresos?estado=cancelando", headers=_AUTH).get_json()
     assert d["total"] == 1
     assert d["filas"][0]["email"] == "cancelando@x.com"
+
+
+def test_ingresos_marca_regalo_plan_concedido_sin_stripe(client, db):
+    # Bug real (ronda de auditoría #4, a petición explícita del usuario):
+    # un plan de pago sin stripe_subscription_id detrás (concedido a mano
+    # por un admin, p. ej. usuarios_cambiar_plan) no es un cliente de pago
+    # real -- se marca "regalo", con precio 0, y no debe sumar al MRR ni a
+    # "suscripciones" aunque el plan sea premium.
+    db.sembrar(("usuarios", "u_regalo"), {
+        "email": "regalo@x.com",
+        "suscripciones": {"AGE": {"plan": "premium"}},  # sin stripe_subscription_id
+    })
+    with _como():
+        d = client.get("/admin/api/ingresos", headers=_AUTH).get_json()
+    assert d["total"] == 1
+    fila = d["filas"][0]
+    assert fila["estado_cliente"] == "regalo"
+    assert fila["precio"] == 0
+    assert fila["plan"] == "premium"
+    assert d["resumen"]["mrr"] == 0
+    assert d["resumen"]["suscripciones"] == 0
+    assert d["resumen"]["por_estado"]["regalo"] == 1
+
+
+def test_ingresos_excluye_la_propia_cuenta_admin_del_mrr(client, db):
+    # A petición explícita del usuario: "el usuario admin igual" no debe
+    # contar como ingreso, aunque su suscripción tenga stripe_subscription_id.
+    db.sembrar(("usuarios", "admin1"), {
+        "email": "admin@example.com",
+        "suscripciones": {"AGE": {"plan": "premium", "stripe_subscription_id": "sub_admin"}},
+    })
+    with _como(), patch("blueprints.admin._es_cuenta_admin", return_value=True):
+        d = client.get("/admin/api/ingresos", headers=_AUTH).get_json()
+    fila = d["filas"][0]
+    assert fila["estado_cliente"] == "regalo"
+    assert fila["precio"] == 0
+    assert d["resumen"]["mrr"] == 0
 
 
 def test_ingresos_rechaza_estado_no_valido(client, db):
@@ -1734,6 +1797,28 @@ def test_cambios_temario_aprobar_falla_si_el_chunk_ya_no_coincide(client, db):
     chunk = db.leer(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"))
     assert chunk["texto"] == "Texto del chunk 1."
     assert db.leer(("cambios_temario_propuestos", "c1"))["estado"] == "pendiente"
+
+
+def test_cambios_temario_aprobar_dos_veces_no_aplica_el_cambio_dos_veces(client, db):
+    # Bug real (ronda de auditoría #4): dos admins aprobando la MISMA
+    # propuesta casi a la vez (o un doble clic) podían leer los dos
+    # "pendiente" antes de que ninguno escribiera, y aplicar el cambio de
+    # texto del chunk dos veces. Simulado aquí como dos peticiones
+    # secuenciales sobre una propuesta ya aprobada -- la segunda debe
+    # rechazarse en vez de volver a tocar el chunk.
+    _sembrar_tema(db)  # texto = "Texto del chunk 1."
+    db.sembrar(("cambios_temario_propuestos", "c1"), {
+        "oposicion": "AGE", "bloque_id": "bloque_01", "tema_id": "tema_01", "subbloque_id": "sub_1",
+        "resumen": "Cambia el chunk", "texto_eliminar": "chunk 1", "texto_anadir": "chunk actualizado",
+        "estado": "pendiente",
+    })
+    with _como():
+        resp1 = client.patch("/admin/api/cambios-temario/c1", json={"estado": "aprobado"}, headers=_AUTH)
+        resp2 = client.patch("/admin/api/cambios-temario/c1", json={"estado": "aprobado"}, headers=_AUTH)
+    assert resp1.status_code == 200
+    assert resp2.status_code == 409
+    chunk = db.leer(("Temario AGE", "bloque_01", "temas", "tema_01", "subbloques", "sub_1"))
+    assert chunk["texto"] == "Texto del chunk actualizado."
 
 
 def test_cambios_temario_descartar_no_toca_el_chunk(client, db):

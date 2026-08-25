@@ -33,7 +33,7 @@ from coste_ia import resumen_coste_usuario
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, coleccion_temario, coleccion_examenes_oficiales, oposicion_valida
 from blueprints.pagos import MOTIVOS_BAJA_VALIDOS
 from limites_uso import cargar_limites_config, guardar_limites_config, TIPOS_META, limites_efectivos, _clave_periodo
-from utils import _desde_cache_o_calcular, _limpiar_cache_temario, invalidar_cache
+from utils import _desde_cache_o_calcular, _limpiar_cache_temario, invalidar_cache, ejecutar_en_transaccion
 from banco_preguntas_ia import coleccion_banco_preguntas
 from validacion_perfil import nombre_valido
 
@@ -43,6 +43,25 @@ bp = Blueprint("admin", __name__)
 # Precio mensual por plan (€), para estimar los ingresos recurrentes (MRR)
 # en el panel. Debe cuadrar con la página de Planes.
 _PRECIO_PLAN = {"basico": 4.99, "premium": 9.99}
+
+
+def _es_cuenta_admin(uid):
+    """¿Tiene esta cuenta el custom claim admin:true? Se usa para no contar
+    como ingreso el plan de la propia cuenta del admin (25/08/2026, a
+    petición del usuario: "que el usuario admin igual" no cuente).
+
+    Solo se llama para candidatos que YA cumplen el resto de condiciones
+    para contar como ingreso real (plan de pago + stripe_subscription_id) --
+    nunca para recorrer toda la colección de usuarios, porque cada llamada
+    es una petición aparte a la API de Firebase Auth (los custom claims no
+    se guardan en Firestore) y el barrido de /admin/api/resumen e /ingresos
+    ya recorre TODOS los usuarios una vez por sí solo."""
+    try:
+        claims = firebase_auth.get_user(uid).custom_claims or {}
+        return claims.get("admin") is True
+    except Exception:
+        return False
+
 
 def _invalidar_cache_admin_usuarios():
     """Se llama tras crear/eliminar un usuario o cambiarle el plan o la
@@ -567,10 +586,17 @@ def resumen():
             if coste_mes > 0:
                 coste_ia_mes_total += coste_mes
                 gastadores.append({"uid": doc.id, "email": datos.get("email", ""), "plan": plan, "coste_mes": coste_mes})
-            # MRR: se cuenta CADA suscripción de pago (una por oposición).
+            # MRR: se cuenta CADA suscripción de pago REAL (una por
+            # oposición) -- con stripe_subscription_id, y que la cuenta no
+            # sea la del propio admin (25/08/2026, a petición del usuario:
+            # un plan concedido a mano desde usuarios_cambiar_plan -- p. ej.
+            # a un usuario de prueba -- no tiene stripe_subscription_id, y
+            # ni ese acceso regalado ni la propia cuenta del admin deben
+            # inflar el MRR aunque tengan el plan más alto).
             for _oid, sub in (datos.get("suscripciones") or {}).items():
-                precio = _PRECIO_PLAN.get((sub or {}).get("plan"))
-                if precio:
+                sub = sub or {}
+                precio = _PRECIO_PLAN.get(sub.get("plan"))
+                if precio and sub.get("stripe_subscription_id") and not _es_cuenta_admin(doc.id):
                     suscripciones_pago += 1
                     mrr += precio
             alta = _parse_fecha(datos.get("fecha_creacion"))
@@ -1322,7 +1348,7 @@ def usuarios_export():
     return _respuesta_csv(cabecera, filas, "usuarios.csv")
 
 
-ESTADOS_CLIENTE_VALIDOS = ("activo", "cancelando", "baja", "prueba")
+ESTADOS_CLIENTE_VALIDOS = ("activo", "cancelando", "baja", "prueba", "regalo")
 
 
 def _todas_filas_ingresos():
@@ -1331,7 +1357,7 @@ def _todas_filas_ingresos():
     antes), sino todo el ciclo de vida que hace falta para llevar un
     control real de la cartera:
 
-    - "activo": suscripción de pago al día.
+    - "activo": suscripción de pago al día (con cobro real de Stripe).
     - "cancelando": de pago todavía, pero con la baja ya programada para
       el final del periodo (cancelar_al_final_periodo) -- la señal más
       accionable para intentar retener antes de que se pierda de verdad.
@@ -1339,10 +1365,18 @@ def _todas_filas_ingresos():
       (subscription_status "canceled" o quedó un id de Stripe guardado).
     - "prueba": dentro de los 7 días de prueba gratuita, sin haber pagado
       todavía.
+    - "regalo": tiene un plan de pago pero SIN cobro real detrás -- se lo
+      concedió un admin a mano (usuarios_cambiar_plan, sin
+      stripe_subscription_id) o es la propia cuenta del admin (25/08/2026,
+      a petición del usuario: "que el usuario admin igual" no cuente como
+      ingreso). Se sigue mostrando en la cartera para que quede constancia
+      de a quién se le ha regalado acceso, pero con precio 0 -- no cuenta
+      para el MRR ni para "suscripciones de pago".
 
-    Un usuario sin nada de esto (nunca pagó, no está en prueba) no aporta
-    nada a un "control de clientes" y se omite -- si se necesitara alguna
-    vez, ya está la lista completa de Usuarios para eso.
+    Un usuario sin nada de esto (nunca pagó, no está en prueba, no tiene
+    nada regalado) no aporta nada a un "control de clientes" y se omite --
+    si se necesitara alguna vez, ya está la lista completa de Usuarios
+    para eso.
 
     Sin filtros y cacheada como unidad (ver _TTL_CACHE_ADMIN_SEGUNDOS):
     _filas_ingresos filtra esta MISMA lista en memoria en vez de repetir
@@ -1362,9 +1396,14 @@ def _todas_filas_ingresos():
                 cancela_al_final = bool(sub.get("cancelar_al_final_periodo"))
 
                 if plan_contratado in _PRECIO_PLAN:
-                    estado_cliente = "cancelando" if cancela_al_final else "activo"
-                    plan_mostrado = plan_contratado
-                    precio = _PRECIO_PLAN[plan_contratado]
+                    if sub.get("stripe_subscription_id") and not _es_cuenta_admin(doc.id):
+                        estado_cliente = "cancelando" if cancela_al_final else "activo"
+                        plan_mostrado = plan_contratado
+                        precio = _PRECIO_PLAN[plan_contratado]
+                    else:
+                        estado_cliente = "regalo"
+                        plan_mostrado = plan_contratado
+                        precio = 0.0
                 elif prueba_activa(sub):
                     estado_cliente = "prueba"
                     plan_mostrado = "premium"  # la prueba da acceso Premium completo
@@ -2278,44 +2317,62 @@ def cambios_temario_actualizar(cid):
     if estado not in ("pendiente", "aprobado", "descartado"):
         return jsonify({"error": "Estado no válido"}), 400
     ref = db.collection("cambios_temario_propuestos").document(cid)
-    doc = ref.get()
-    if not doc.exists:
-        return jsonify({"error": "Propuesta no encontrada"}), 404
-    d = doc.to_dict() or {}
 
+    # Todo el ciclo lectura-decide-escribe en una única transacción de
+    # Firestore (bug real, ronda de auditoría #4): dos admins aprobando la
+    # MISMA propuesta casi a la vez (o un doble clic) podían leer los dos
+    # "pendiente" antes de que ninguno escribiera, y aplicar el cambio de
+    # texto del chunk DOS veces -- la segunda vez ya sobre un texto que la
+    # primera petición ya había modificado. Releer el estado DENTRO de la
+    # transacción y exigir que siga siendo "pendiente" cierra la ventana.
+    def _procesar(transaction):
+        doc = ref.get(transaction=transaction)
+        if not doc.exists:
+            return {"error": "Propuesta no encontrada", "status": 404}
+        d = doc.to_dict() or {}
+        if d.get("estado") != "pendiente":
+            return {"error": "Esta propuesta ya ha sido revisada por otra petición.", "status": 409}
+
+        if estado == "aprobado":
+            if not oposicion_valida(d.get("oposicion")):
+                return {"error": "Oposición no válida en la propuesta", "status": 400}
+            chunk_ref = (
+                db.collection(coleccion_temario(d["oposicion"])).document(d["bloque_id"])
+                .collection("temas").document(d["tema_id"])
+                .collection("subbloques").document(d["subbloque_id"])
+            )
+            chunk_doc = chunk_ref.get(transaction=transaction)
+            if not chunk_doc.exists:
+                return {"error": "El chunk de temario ya no existe", "status": 409}
+            texto_actual = (chunk_doc.to_dict() or {}).get("texto", "")
+            texto_eliminar = d.get("texto_eliminar", "")
+            if texto_eliminar not in texto_actual:
+                # El chunk cambió desde que se detectó la propuesta (alguien
+                # lo editó a mano, u otra propuesta ya se aplicó antes) --
+                # aplicar a ciegas podría corromper el texto o no hacer
+                # nada; mejor pedir revisión manual que arriesgarse.
+                return {
+                    "error": "El texto a eliminar ya no coincide con el chunk actual (puede haber cambiado "
+                             "desde que se detectó). Revisa y edita el chunk manualmente desde Temario.",
+                    "status": 409,
+                }
+            nuevo_texto = texto_actual.replace(texto_eliminar, d.get("texto_anadir", ""), 1)
+            transaction.update(chunk_ref, {"texto": nuevo_texto})
+
+        transaction.set(ref, {
+            "estado": estado,
+            "revisado_por": g.uid,
+            "revisado_por_email": g.email,
+            "fecha_revision": datetime.utcnow().isoformat(),
+        }, merge=True)
+        return {"ok": True, "resumen": d.get("resumen", "")}
+
+    resultado = ejecutar_en_transaccion(db, _procesar)
+    if "error" in resultado:
+        return jsonify({"error": resultado["error"]}), resultado["status"]
     if estado == "aprobado":
-        if not oposicion_valida(d.get("oposicion")):
-            return jsonify({"error": "Oposición no válida en la propuesta"}), 400
-        chunk_ref = (
-            db.collection(coleccion_temario(d["oposicion"])).document(d["bloque_id"])
-            .collection("temas").document(d["tema_id"])
-            .collection("subbloques").document(d["subbloque_id"])
-        )
-        chunk_doc = chunk_ref.get()
-        if not chunk_doc.exists:
-            return jsonify({"error": "El chunk de temario ya no existe"}), 409
-        texto_actual = (chunk_doc.to_dict() or {}).get("texto", "")
-        texto_eliminar = d.get("texto_eliminar", "")
-        if texto_eliminar not in texto_actual:
-            # El chunk cambió desde que se detectó la propuesta (alguien lo
-            # editó a mano, u otra propuesta ya se aplicó antes) -- aplicar
-            # a ciegas podría corromper el texto o no hacer nada; mejor
-            # pedir revisión manual que arriesgarse.
-            return jsonify({
-                "error": "El texto a eliminar ya no coincide con el chunk actual (puede haber cambiado "
-                         "desde que se detectó). Revisa y edita el chunk manualmente desde Temario."
-            }), 409
-        nuevo_texto = texto_actual.replace(texto_eliminar, d.get("texto_anadir", ""), 1)
-        chunk_ref.update({"texto": nuevo_texto})
         _limpiar_cache_temario()
-
-    ref.set({
-        "estado": estado,
-        "revisado_por": g.uid,
-        "revisado_por_email": g.email,
-        "fecha_revision": datetime.utcnow().isoformat(),
-    }, merge=True)
-    _registrar_auditoria("cambio_temario_" + estado, cid, d.get("resumen", ""))
+    _registrar_auditoria("cambio_temario_" + estado, cid, resultado.get("resumen", ""))
     return jsonify({"mensaje": "Propuesta actualizada"})
 
 

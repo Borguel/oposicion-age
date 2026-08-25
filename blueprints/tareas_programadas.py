@@ -21,7 +21,7 @@ from email_utils import (
 from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketing
 from oposiciones import OPOSICIONES
 from planes import ORDEN_PLANES, tiene_plan_de_pago_activo
-from push_utils import enviar_push
+from push_utils import enviar_push, borrar_suscripcion
 from coste_ia import resumen_coste_usuario
 from vigilancia_boe import (
     detectar_avisos_oficiales,
@@ -117,11 +117,19 @@ def enviar_recordatorios_racha():
         if dias_sin_actividad == 1 and racha.get("racha_actual", 0) > 0:
             enviar_email_racha_en_riesgo(email, racha["racha_actual"], nombre=nombre)
             for suscripcion in datos.get("push_subscriptions", []):
-                enviar_push(
+                resultado_push = enviar_push(
                     suscripcion,
                     "🔥 No pierdas tu racha",
                     f"Llevas {racha['racha_actual']} días seguidos estudiando. Haz un test hoy para no perderla.",
                 )
+                # Bug real (ronda de auditoría #4): borrar_suscripcion ya
+                # existía para limpiar una suscripción caducada (navegador
+                # desinstaló la PWA, permiso revocado), pero nunca se
+                # llamaba desde ningún sitio -- se iban acumulando
+                # suscripciones muertas que solo generaban llamadas al
+                # servicio de push que nunca llegan a nadie.
+                if resultado_push is None:
+                    borrar_suscripcion(db, doc.id, suscripcion.get("endpoint"))
             en_riesgo += 1
         elif dias_sin_actividad in UMBRALES_REENGAGEMENT:
             enviar_email_reengagement(email, dias_sin_actividad, nombre=nombre)

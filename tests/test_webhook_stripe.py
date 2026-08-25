@@ -265,6 +265,39 @@ def test_webhook_payment_failed_marca_past_due_y_avisa_por_email(client, db):
     assert mock_email.call_args.args[0] == "u3@example.com"
 
 
+def test_webhook_payment_failed_reintento_no_reenvia_el_email(client, db):
+    # Bug real (ronda de auditoría #4): Stripe reintenta el cobro varias
+    # veces (Smart Retries) antes de darlo por perdido, y dispara este
+    # evento en CADA intento -- sin este filtro se mandaban varios correos
+    # idénticos de "pago fallido" por el mismo problema. subscription_status
+    # sí debe seguir reflejando el estado real de Stripe en cada intento.
+    db.sembrar(("usuarios", "u3b"), {
+        "email": "u3b@example.com",
+        "stripe_customer_id": "cus_test_3b",
+        "suscripciones": {"AGE": {"plan": "premium", "subscription_status": "past_due"}},
+    })
+    evento = {
+        "id": "evt_payment_failed_2",
+        "object": "event",
+        "type": "invoice.payment_failed",
+        "data": {"object": {
+            "object": "invoice",
+            "customer": "cus_test_3b",
+            "subscription": "sub_test_3b",
+            "attempt_count": 2,
+        }},
+    }
+    mock_subscription = {"metadata": {"oposicion": "AGE"}}
+    with patch("blueprints.pagos.stripe.Subscription.retrieve", return_value=mock_subscription), \
+         patch("blueprints.pagos.enviar_email_pago_fallido") as mock_email:
+        resp = _post_evento(client, evento)
+
+    assert resp.status_code == 200
+    suscripcion = db.leer(("usuarios", "u3b"))["suscripciones"]["AGE"]
+    assert suscripcion["subscription_status"] == "past_due"
+    mock_email.assert_not_called()
+
+
 def test_webhook_reclama_el_evento_por_transaccion(client, db):
     # Lo que cierra la ventana de carrera entre dos entregas casi
     # simultáneas del mismo evento (Stripe reintenta) es que la
@@ -334,6 +367,34 @@ def test_webhook_subscription_deleted_detiene_generaciones_en_curso(client, db):
         generacion_control.desregistrar("u5", "d1", "resumen")
     assert resp.status_code == 200
     assert evento_parada.is_set()
+
+
+def test_webhook_subscription_deleted_no_para_generaciones_si_sigue_con_premium_en_otra_oposicion(client, db):
+    # Bug real (ronda de auditoría #4): las herramientas de PDF dan acceso
+    # con premium en CUALQUIER oposición (requiere_plan(..., global_check=
+    # True)) -- cancelar la suscripción de UNA oposición no debe parar las
+    # generaciones en curso si el usuario sigue pagando premium en otra.
+    db.sembrar(("usuarios", "u7"), {
+        "email": "u7@example.com",
+        "stripe_customer_id": "cus_test_7",
+        "suscripciones": {
+            "AGE": {"plan": "premium", "subscription_status": "active"},
+            "GACE": {"plan": "premium", "subscription_status": "active"},
+        },
+    })
+    evento_parada = generacion_control.registrar("u7", "d1", "resumen")
+    evento = _evento(tipo="customer.subscription.deleted", customer="cus_test_7")
+    try:
+        resp = _post_evento(client, evento)
+    finally:
+        generacion_control.desregistrar("u7", "d1", "resumen")
+    assert resp.status_code == 200
+    assert not evento_parada.is_set()
+    # La oposición cancelada sí queda marcada como tal, aunque la otra
+    # (GACE, que no forma parte de este evento) siga intacta.
+    sub = db.leer(("usuarios", "u7"))["suscripciones"]
+    assert sub["AGE"]["subscription_status"] == "canceled"
+    assert sub["GACE"]["plan"] == "premium"
 
 
 def test_webhook_subscription_deleted_sin_generaciones_en_curso_no_falla(client, db):

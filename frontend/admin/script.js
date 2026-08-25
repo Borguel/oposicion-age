@@ -1294,6 +1294,11 @@ const ESTADO_CLIENTE_LABEL = {
   cancelando: ["Cancelando", "admin-chip-warn"],
   baja: ["Baja", "admin-chip-warn"],
   prueba: ["En prueba", "admin-chip"],
+  // Plan de pago SIN cobro real detrás (concedido a mano por un admin, o
+  // la propia cuenta del admin) -- no cuenta para el MRR ni para
+  // "suscripciones de pago", se distingue con su propio color para que no
+  // se confunda con un cliente activo de verdad.
+  regalo: ["Regalado", "admin-chip"],
 };
 
 const ESTADO_SUSCRIPCION_LABEL = {
@@ -1330,6 +1335,7 @@ async function renderIngresos() {
         <option value="cancelando">Cancelando</option>
         <option value="baja">Bajas</option>
         <option value="prueba">En prueba</option>
+        <option value="regalo">Regalados</option>
       </select>
       <select id="i-plan" class="age-input" aria-label="Filtrar por plan"><option value="">Todos los planes</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
       <select id="i-oposicion" class="age-input" aria-label="Filtrar por oposición"><option value="">Todas las oposiciones</option><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
@@ -1358,7 +1364,7 @@ async function cargarIngresos() {
   const porEstado = r.por_estado || {};
   const desglosePlan = Object.entries(r.por_plan || {})
     .map(([p, n]) => `${p === "premium" ? "Premium" : "Básico"}: ${n}`).join(" · ") || "—";
-  const desgloseEstado = ["activo", "cancelando", "baja", "prueba"]
+  const desgloseEstado = ["activo", "cancelando", "baja", "prueba", "regalo"]
     .filter((e) => porEstado[e]).map((e) => `${ESTADO_CLIENTE_LABEL[e][0]}: ${porEstado[e]}`).join(" · ") || "—";
 
   const filas = (d.filas || []).map((f) => {

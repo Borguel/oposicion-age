@@ -137,3 +137,56 @@ def test_cron_racha_en_riesgo_envia_push_a_suscripciones_guardadas(client, db):
         mock_push.assert_called_once()
         args, _ = mock_push.call_args
         assert args[0] == SUSCRIPCION
+
+
+def test_cron_racha_en_riesgo_borra_suscripcion_push_caducada(client, db):
+    # Bug real (ronda de auditoría #4): enviar_push ya detectaba una
+    # suscripción caducada (devolviendo None) pero nada la borraba nunca --
+    # se quedaba acumulada en push_subscriptions para siempre.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "racha": {"racha_actual": 5, "ultima_fecha": _fecha_hace(1)},
+        "push_subscriptions": [SUSCRIPCION],
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.tareas_programadas.enviar_email_racha_en_riesgo"), \
+         patch("blueprints.tareas_programadas.enviar_email_reengagement"), \
+         patch("blueprints.tareas_programadas.enviar_push", return_value=None):
+        resp = client.post("/tareas/recordatorios-racha", headers={"X-Cron-Key": "secreta"})
+        assert resp.status_code == 200
+    assert db.leer(("usuarios", "u1"))["push_subscriptions"] == []
+
+
+def _suscripcion_valida():
+    clave_navegador = ec.generate_private_key(ec.SECP256R1())
+    clave_publica = clave_navegador.public_key().public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
+    return {
+        "endpoint": "https://push.example.com/abc",
+        "keys": {"p256dh": _b64url(clave_publica), "auth": _b64url(os.urandom(16))},
+    }
+
+
+def test_enviar_push_devuelve_none_si_la_suscripcion_ha_caducado():
+    class _RespuestaGone:
+        status_code = 410
+        text = "gone"
+
+    with patch.object(push_utils, "VAPID_PUBLIC_KEY", "BFnc-isMGgSxRYKJIYeGntH0GmmPvBR7RT9X2HfvqlSQtKQiJn6qUpGt7c8TNllFOwBLyn8WOENbU62IRTx7S5c"), \
+         patch.object(push_utils, "VAPID_PRIVATE_KEY", "R547iaeIs8sPk12l_pkncx_6jIwrWXt3Uv8BzB3M5sI"), \
+         patch.object(push_utils, "VAPID_CLAIMS_EMAIL", "mailto:soporte@oposicion-age.com"), \
+         patch.object(push_utils.requests, "post", return_value=_RespuestaGone()):
+        resultado = push_utils.enviar_push(_suscripcion_valida(), "Título", "Cuerpo")
+    assert resultado is None
+
+
+def test_enviar_push_devuelve_false_si_el_servicio_falla_temporalmente():
+    class _RespuestaError:
+        status_code = 500
+        text = "error del servicio"
+
+    with patch.object(push_utils, "VAPID_PUBLIC_KEY", "BFnc-isMGgSxRYKJIYeGntH0GmmPvBR7RT9X2HfvqlSQtKQiJn6qUpGt7c8TNllFOwBLyn8WOENbU62IRTx7S5c"), \
+         patch.object(push_utils, "VAPID_PRIVATE_KEY", "R547iaeIs8sPk12l_pkncx_6jIwrWXt3Uv8BzB3M5sI"), \
+         patch.object(push_utils, "VAPID_CLAIMS_EMAIL", "mailto:soporte@oposicion-age.com"), \
+         patch.object(push_utils.requests, "post", return_value=_RespuestaError()):
+        resultado = push_utils.enviar_push(_suscripcion_valida(), "Título", "Cuerpo")
+    assert resultado is False

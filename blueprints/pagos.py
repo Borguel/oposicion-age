@@ -22,7 +22,7 @@ from email_utils import (
 from marketing_utils import sincronizar_contacto as sincronizar_contacto_marketing
 from promociones import leer_promocion, promocion_vigente
 from utils import invalidar_cache, ejecutar_en_transaccion
-from planes import ESTADOS_SUSCRIPCION_ACTIVA
+from planes import ESTADOS_SUSCRIPCION_ACTIVA, ORDEN_PLANES, resolver_plan_efectivo
 import generacion_control
 
 logger = logging.getLogger(__name__)
@@ -459,9 +459,18 @@ def reconciliar_suscripciones_con_stripe(db):
                 continue
 
             estado_real = _sget(sub_stripe, "status")
-            if estado_real == sub.get("subscription_status"):
-                continue
             plan = PRECIO_A_PLAN.get(sub_stripe["items"]["data"][0]["price"]["id"], "gratis")
+            # Se compara TAMBIÉN el plan, no solo el estado (bug real,
+            # ronda de auditoría #4): un cambio de plan que no cambia el
+            # status (p. ej. básico -> premium sin pasar por
+            # checkout.session.completed, o un webhook customer.
+            # subscription.updated perdido) dejaba a Stripe y Firestore de
+            # acuerdo en "active" pero en desacuerdo en QUÉ plan -- este
+            # cron, pensado como red de seguridad justo para webhooks
+            # perdidos, nunca lo detectaba porque paraba en el primer campo
+            # que coincidía.
+            if estado_real == sub.get("subscription_status") and plan == sub.get("plan"):
+                continue
             periodo_fin = _current_period_end(sub_stripe)
             actualizar_suscripcion(
                 db, doc.id, oposicion,
@@ -471,8 +480,8 @@ def reconciliar_suscripciones_con_stripe(db):
                 cancelar_al_final_periodo=_sget(sub_stripe, "cancel_at_period_end", False),
             )
             logger.warning(
-                "Reconciliación Stripe: uid=%s oposicion=%s estado desincronizado (Firestore=%s, Stripe=%s) -- corregido",
-                doc.id, oposicion, sub.get("subscription_status"), estado_real,
+                "Reconciliación Stripe: uid=%s oposicion=%s desincronizado (Firestore=%s/%s, Stripe=%s/%s) -- corregido",
+                doc.id, oposicion, sub.get("plan"), sub.get("subscription_status"), plan, estado_real,
             )
             corregidas += 1
 
@@ -606,7 +615,8 @@ def webhook_stripe():
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
                 actualizar_suscripcion(db, docs[0].id, oposicion, plan="gratis", subscription_status="canceled", cancelar_al_final_periodo=False)
-                email_usuario = (docs[0].to_dict() or {}).get("email")
+                datos_tras_cancelar = db.collection("usuarios").document(docs[0].id).get().to_dict() or {}
+                email_usuario = datos_tras_cancelar.get("email")
                 sincronizar_contacto_marketing(email_usuario, oposicion=oposicion, estado="sin_suscripcion")
                 # Bug real (24/08/2026): Stripe puede borrar la suscripción
                 # en cualquier momento (no solo al final del periodo ya
@@ -620,10 +630,25 @@ def webhook_stripe():
                 # al borrar un documento suelto (ver generacion_control.py),
                 # aquí a nivel de usuario entero porque no se sabe de
                 # antemano qué documento_id/herramienta tenía en marcha.
-                generacion_control.solicitar_parada_todas(docs[0].id)
+                #
+                # Corrección (ronda de auditoría #4): las herramientas de
+                # PDF usan requiere_plan(..., global_check=True) -- dan
+                # acceso con premium en CUALQUIER oposición, no solo en la
+                # que se acaba de cancelar. Pararlo todo sin comprobar esto
+                # cortaba también las generaciones de un usuario que sigue
+                # pagando premium en otra oposición y conserva el acceso.
+                plan_global, _sub_global = resolver_plan_efectivo(datos_tras_cancelar)
+                if ORDEN_PLANES.get(plan_global, 0) < ORDEN_PLANES["premium"]:
+                    generacion_control.solicitar_parada_todas(docs[0].id)
         elif tipo == "invoice.payment_failed":
             customer_id = _sget(objeto, "customer")
             subscription_id = _sget(objeto, "subscription")
+            # attempt_count: nº de intentos de cobro ya hechos para ESTA
+            # factura, incluido el que acaba de fallar y disparó este mismo
+            # evento -- Stripe lo reintenta varias veces automáticamente
+            # (Smart Retries) antes de darlo por perdido, y dispara este
+            # evento en CADA intento, no solo en el último.
+            intento = _sget(objeto, "attempt_count") or 1
             oposicion = OPOSICION_POR_DEFECTO
             if subscription_id:
                 try:
@@ -641,10 +666,20 @@ def webhook_stripe():
             docs = list(db.collection("usuarios").where("stripe_customer_id", "==", customer_id).limit(1).stream())
             if docs:
                 actualizar_suscripcion(db, docs[0].id, oposicion, subscription_status="past_due")
-                email_usuario = (docs[0].to_dict() or {}).get("email")
-                oposicion_nombre = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
-                enviar_email_pago_fallido(email_usuario, oposicion_nombre)
-                sincronizar_contacto_marketing(email_usuario, oposicion=oposicion, estado="pago_fallido")
+                # Corrección (ronda de auditoría #4): el email y la
+                # sincronización con marketing solo se disparan en el
+                # PRIMER intento fallido -- sin este filtro, cada reintento
+                # automático de Stripe sobre la MISMA factura mandaba otro
+                # correo idéntico de "pago fallido" al usuario, avisando de
+                # más por un único problema real. subscription_status SÍ se
+                # actualiza en cada intento (línea de arriba): eso solo
+                # refleja el estado real de Stripe, que ya está en
+                # "past_due" desde el primer fallo.
+                if intento <= 1:
+                    email_usuario = (docs[0].to_dict() or {}).get("email")
+                    oposicion_nombre = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
+                    enviar_email_pago_fallido(email_usuario, oposicion_nombre)
+                    sincronizar_contacto_marketing(email_usuario, oposicion=oposicion, estado="pago_fallido")
     except Exception:
         # logger.exception ya vuelca el traceback completo (y lo manda a
         # Sentry si está configurado). Se responde 500 sin el detalle interno

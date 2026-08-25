@@ -11,6 +11,7 @@ import stripe
 from conftest import sembrar_usuario_activo
 
 PRICE_PREMIUM = "price_premium_test"  # coincide con conftest.py
+PRICE_BASICO = "price_basico_test"  # coincide con conftest.py
 
 
 def _sub_stripe(status, price_id=PRICE_PREMIUM, cancel_at_period_end=False):
@@ -76,6 +77,27 @@ def test_suscripcion_cancelada_en_stripe_se_corrige_en_firestore(client, db):
     assert resp.get_json() == {"revisadas": 1, "corregidas": 1}
     sub = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
     assert sub["subscription_status"] == "canceled"
+
+
+def test_plan_cambia_sin_cambiar_status_se_corrige(client, db):
+    # Bug real (ronda de auditoría #4): un cambio de plan que no cambia el
+    # status (sigue "active" en Stripe antes y después) se saltaba por
+    # completo -- la comparación solo miraba el status, nunca el plan.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {"AGE": {
+            "plan": "basico", "subscription_status": "active",
+            "stripe_subscription_id": "sub_test_1",
+        }},
+    })
+    with patch.dict(os.environ, {"CRON_SECRET_KEY": "secreta"}), \
+         patch("blueprints.pagos.stripe.Subscription.retrieve", return_value=_sub_stripe("active", price_id=PRICE_PREMIUM)):
+        resp = client.post("/tareas/reconciliar-stripe", headers={"X-Cron-Key": "secreta"})
+    assert resp.status_code == 200
+    assert resp.get_json() == {"revisadas": 1, "corregidas": 1}
+    sub = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+    assert sub["plan"] == "premium"
+    assert sub["subscription_status"] == "active"
 
 
 def test_suscripcion_borrada_por_completo_en_stripe_se_trata_como_cancelada(client, db):

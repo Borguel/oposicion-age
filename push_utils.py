@@ -108,11 +108,16 @@ def _cifrar_aes128gcm(clave_publica_navegador, secreto_auth, texto_plano):
 
 
 def enviar_push(suscripcion, titulo, cuerpo, url="/zona-opositor/"):
-    """Envía una notificación; devuelve False (sin lanzar) si no hay claves
-    configuradas, si la suscripción tiene un formato inesperado, o si el
-    servicio de push la rechaza (navegador desinstaló la PWA, permiso
-    revocado, etc.) -- el llamador decide si eso implica borrar la
-    suscripción guardada."""
+    """Envía una notificación. Devuelve:
+    - True si se envió correctamente.
+    - None si la suscripción ya no es válida -- el servicio de push
+      respondió 404/410 ("gone"), la señal estándar de que el navegador
+      desinstaló la PWA o revocó el permiso. El llamante debe borrar esta
+      suscripción con borrar_suscripcion; seguir usándola solo generaría
+      más llamadas que nunca van a entregarse.
+    - False para cualquier otro fallo (sin claves configuradas, formato de
+      suscripción inesperado, error de red, 5xx del servicio de push...) --
+      puede ser transitorio, así que NO implica borrar la suscripción."""
     if not push_disponible():
         return False
 
@@ -139,6 +144,9 @@ def enviar_push(suscripcion, titulo, cuerpo, url="/zona-opositor/"):
             },
             timeout=10,
         )
+        if respuesta.status_code in (404, 410):
+            logger.info("Suscripción push caducada (%s): %s", respuesta.status_code, endpoint)
+            return None
         if respuesta.status_code not in (200, 201, 202):
             logger.warning("Push rechazado (%s): %s", respuesta.status_code, respuesta.text[:200])
             return False
