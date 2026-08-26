@@ -553,19 +553,24 @@
   font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .boe-hero-btn:hover { border-color: var(--age-primary); }
-.boe-hero-btn.activo { background: var(--age-primary); border-color: var(--age-primary); color: #1b1f2e; box-shadow: var(--age-shadow); }
+/* Activo con relleno suave (no sólido) -- mismo criterio que .admin-tab.active
+   de la barra lateral: el naranja de marca a fondo completo en dos sitios a
+   la vez (este botón + la tarjeta de alertas de abajo) resultaba demasiado
+   "gritón" en esta pantalla en concreto (25/08/2026, a petición del usuario). */
+.boe-hero-btn.activo { background: var(--age-primary-soft); border-color: var(--age-primary); color: var(--age-primary-dark); font-weight: 800; }
 
 .boe-stat {
-  background: linear-gradient(135deg, var(--age-primary-dark), var(--age-primary));
-  color: #1b1f2e; border-radius: var(--age-radius-lg); padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--age-shadow);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark); border: 1px solid var(--age-primary-light);
+  border-radius: var(--age-radius-lg); padding: 18px 20px; margin-bottom: 14px;
 }
 .boe-stat-cab { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.85; }
 .boe-stat-num { font-size: 2.6rem; font-weight: 800; line-height: 1.1; margin: 4px 0 2px; }
 .boe-stat-sub { font-size: 13px; opacity: 0.85; margin-bottom: 12px; }
-.boe-stat-barra { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: rgba(27, 31, 46, 0.18); }
+.boe-stat-barra { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--age-primary-light); opacity: 0.4; }
 .boe-stat-seg { display: block; height: 100%; }
-.boe-stat-seg-cambios { background: #1b1f2e; }
-.boe-stat-seg-avisos { background: rgba(27, 31, 46, 0.45); }
+.boe-stat-seg-cambios { background: var(--age-primary-dark); }
+.boe-stat-seg-avisos { background: var(--age-primary); }
 
 /* Analítica */
 .admin-analitica-fila { display: grid; grid-template-columns: 1fr 120px 74px; align-items: center; gap: 10px; margin: 8px 0; }
