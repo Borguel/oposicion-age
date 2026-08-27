@@ -700,6 +700,23 @@ body {
   background: var(--age-bg);
 }
 
+/* "Zona opositor" destacada dentro del menú (25/08/2026, a petición del
+   usuario): es la acción principal del menú, y antes se confundía visualmente
+   con el resto de enlaces -- relleno suave + borde del mismo tono que ya usa
+   el resto de la web para "esto es lo importante" (ver .admin-tab.active y el
+   arreglo de Vigilancia BOE), sin llegar al naranja sólido de un botón CTA
+   para no competir con el resto del menú. */
+.age-account-menu a.age-account-menu-destacado {
+  background: var(--age-primary-soft);
+  border: 1px solid var(--age-primary-light);
+  color: var(--age-primary-dark);
+  font-weight: 800;
+}
+
+.age-account-menu a.age-account-menu-destacado:hover {
+  background: var(--age-primary-light);
+}
+
 .age-account-menu .age-account-menu-divider {
   height: 1px;
   background: var(--age-border);

@@ -862,8 +862,7 @@ function construirMenuCuenta(user) {
           <div class="age-notificaciones-lista"></div>
           <div class="age-account-menu-divider"></div>
         </div>
-        <a href="/zona-opositor/">${icono("diana")} Zona opositor</a>
-        <a href="/mi-cuenta/">${icono("usuario")} Mi cuenta</a>
+        <a href="/zona-opositor/" class="age-account-menu-destacado">${icono("diana")} Zona opositor</a>
         <a href="/planes/">${icono("tarjeta")} Planes</a>
         <div class="age-account-menu-divider"></div>
         <a href="/oposiciones/">${icono("brujula")} Oposiciones y convocatorias</a>
@@ -871,6 +870,7 @@ function construirMenuCuenta(user) {
         <div class="age-account-menu-divider"></div>
         <button type="button" class="age-tema-toggle"></button>
         <div class="age-account-menu-divider"></div>
+        <a href="/mi-cuenta/">${icono("usuario")} Mi cuenta</a>
         <button type="button" data-account-logout>${icono("salir")} Cerrar sesión</button>
       </div>
     `;
