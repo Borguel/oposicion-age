@@ -10,11 +10,30 @@
 // exactas que importa) y los endpoints del backend que toca en el camino.
 const { test, expect } = require("@playwright/test");
 
-function moduloFirebaseAuth(usuarioExpr) {
+function moduloFirebaseAuth(usuarioExpr, veces = 1, retrasoRepeticionMs = 0) {
+  // veces > 1 simula que Firebase vuelve a disparar onAuthStateChanged con
+  // el MISMO usuario -- lo que pasa de verdad al restaurar una página
+  // desde la caché de "atrás" del navegador (bfcache), ver el bug real
+  // corregido en construirMenuCuenta (auth.js). retrasoRepeticionMs separa
+  // en el tiempo la 2ª llamada en adelante de la 1ª, para poder interactuar
+  // con la página (abrir el menú) ANTES de que se repita.
+  //
+  // auth.js registra MÁS de una suscripción a onAuthStateChanged (la de
+  // inyectarNav -- la que nos interesa -- y la de analítica, entre otras).
+  // Solo se repite en la PRIMERA (inyectarNav, la primera que se registra):
+  // las demás se comportan como siempre (una sola llamada), para que el
+  // test no dependa de cuántas suscripciones haya ni de en qué orden
+  // terminen sus timers.
   return `
+    let _numSuscripciones = 0;
     export function getAuth() { return {}; }
     export function onAuthStateChanged(auth, cb) {
-      queueMicrotask(() => cb(${usuarioExpr}));
+      _numSuscripciones++;
+      const vecesReal = _numSuscripciones === 1 ? ${veces} : 1;
+      for (let i = 0; i < vecesReal; i++) {
+        if (i === 0) queueMicrotask(() => cb(${usuarioExpr}));
+        else setTimeout(() => cb(${usuarioExpr}), ${retrasoRepeticionMs});
+      }
       return () => {};
     }
     export function signInWithEmailAndPassword() { return Promise.reject(new Error("no mockeado")); }
@@ -32,6 +51,7 @@ function moduloFirebaseAuth(usuarioExpr) {
 }
 
 const USUARIO_FALSO = `{
+  uid: "uid-test-1",
   email: "test@example.com",
   emailVerified: true,
   providerData: [{ providerId: "password" }],
@@ -39,12 +59,15 @@ const USUARIO_FALSO = `{
   getIdTokenResult: () => Promise.resolve({ claims: {} }),
 }`;
 
-async function mockNav(page, { conSesion }) {
+async function mockNav(page, { conSesion, veces = 1, retrasoRepeticionMs = 0 }) {
   await page.route("**/firebase-app.js", (route) =>
     route.fulfill({ contentType: "application/javascript", body: "export function initializeApp() { return {}; }" })
   );
   await page.route("**/firebase-auth.js", (route) =>
-    route.fulfill({ contentType: "application/javascript", body: moduloFirebaseAuth(conSesion ? USUARIO_FALSO : "null") })
+    route.fulfill({
+      contentType: "application/javascript",
+      body: moduloFirebaseAuth(conSesion ? USUARIO_FALSO : "null", veces, retrasoRepeticionMs),
+    })
   );
   await page.route("**/assets/tutor-widget.js", (route) =>
     route.fulfill({ contentType: "application/javascript", body: "export function montarWidgetTutor() {}" })
@@ -117,6 +140,33 @@ test.describe("nav -- escritorio, con sesión", () => {
     await expect(menuCuenta).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(menuCuenta).toBeHidden();
+  });
+
+  // Bug real (27/08/2026, detectado analizando la sesión de un usuario que
+  // acabó eliminando su cuenta): Firebase dispara onAuthStateChanged otra
+  // vez con el MISMO usuario al restaurar una página desde la caché de
+  // "atrás" del navegador (bfcache) -- construirMenuCuenta destruía y
+  // recreaba el botón de cuenta cada vez que esto pasaba, aunque nada
+  // hubiera cambiado. Si esa reconstrucción caía justo mientras el usuario
+  // tenía el menú abierto (o a mitad de un clic), el menú se cerraba solo
+  // o el clic se perdía contra un nodo que estaba siendo sustituido. Se
+  // reproduce aquí abriendo el menú y dejando que la 2ª llamada (con el
+  // mismo usuario) llegue MIENTRAS sigue abierto -- sin el guard de
+  // acc.dataset.uid en auth.js, el menú se cerraría solo.
+  test("un onAuthStateChanged tardío con el mismo usuario no cierra el menú de cuenta ya abierto", async ({ page }) => {
+    await mockNav(page, { conSesion: true, veces: 2, retrasoRepeticionMs: 500 });
+    await page.goto("/zona-opositor/");
+
+    const botonCuenta = page.locator(".age-account-btn");
+    const menuCuenta = page.locator(".age-account-menu");
+    await botonCuenta.click();
+    await expect(menuCuenta).toBeVisible();
+
+    // Espera a que llegue la 2ª llamada (mismo usuario) mientras el menú
+    // sigue abierto.
+    await page.waitForTimeout(700);
+    await expect(menuCuenta).toBeVisible();
+    await expect(page.locator(".age-account-btn")).toHaveCount(1);
   });
 
   test("el selector de oposición marca la opción actual y cambia de oposición al elegir otra", async ({ page }) => {

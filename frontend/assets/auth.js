@@ -828,10 +828,24 @@ function construirMenuCuenta(user) {
   const right = document.getElementById("age-nav-right");
   if (!right) return;
 
+  const uidActual = (user && user.uid) || "";
   let acc = right.querySelector(".age-account");
+  // Bug real (27/08/2026, detectado analizando la sesión de un usuario que
+  // acabó eliminando su cuenta): Firebase vuelve a disparar
+  // onAuthStateChanged con el MISMO usuario al restaurar una página desde
+  // la caché de "atrás" del navegador (bfcache) -- muy fácil de que pase
+  // en iOS Safari con el gesto de volver atrás. Sin esta comprobación,
+  // inyectarNav volvía a llamar aquí cada vez y se destruía y recreaba el
+  // botón de cuenta (con su popover) aunque nada hubiera cambiado. Si el
+  // usuario pulsaba el botón justo en ese momento, el nodo viejo se
+  // sustituía a mitad del clic y el evento se perdía -- necesitaba varios
+  // clics seguidos para que el menú respondiera. Si ya existe el menú
+  // para este mismo usuario, no se toca.
+  if (acc && acc.dataset.uid === uidActual) return;
   if (acc) acc.remove();
   acc = document.createElement("div");
   acc.className = "age-account";
+  acc.dataset.uid = uidActual;
   right.appendChild(acc);
 
   if (user) {
