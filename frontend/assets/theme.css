@@ -701,20 +701,17 @@ body {
 }
 
 /* "Zona opositor" destacada dentro del menú (25/08/2026, a petición del
-   usuario): es la acción principal del menú, y antes se confundía visualmente
-   con el resto de enlaces -- relleno suave + borde del mismo tono que ya usa
-   el resto de la web para "esto es lo importante" (ver .admin-tab.active y el
-   arreglo de Vigilancia BOE), sin llegar al naranja sólido de un botón CTA
-   para no competir con el resto del menú. */
+   usuario). Primera versión con relleno de fondo: correcta la intención,
+   equivocado el lenguaje visual -- un fondo de color sólido es justo el
+   código que ya usa el resto de la web para "esto es lo que tienes
+   seleccionado ahora mismo" (pestaña activa, filtro aplicado...), así que
+   confundía en vez de ayudar, dando a entender que el usuario ya está en
+   Zona opositor aunque esté en cualquier otra página. Corregido (27/08/2026,
+   a petición del usuario): sin ningún fondo, solo texto en negrita y color
+   de marca -- el icono se tiñe solo, hereda currentColor del texto. */
 .age-account-menu a.age-account-menu-destacado {
-  background: var(--age-primary-soft);
-  border: 1px solid var(--age-primary-light);
   color: var(--age-primary-dark);
   font-weight: 800;
-}
-
-.age-account-menu a.age-account-menu-destacado:hover {
-  background: var(--age-primary-light);
 }
 
 .age-account-menu .age-account-menu-divider {
