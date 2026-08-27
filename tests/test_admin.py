@@ -1024,6 +1024,32 @@ def test_cancelar_suscripcion_invalida_la_cache_de_bajas_e_ingresos(client, db):
     assert despues["filas"][0]["estado_cliente"] == "cancelando"
 
 
+def test_eliminar_cuenta_propia_invalida_la_cache_de_usuarios_totales(client, db):
+    # Bug real (reportado por el usuario): borrar la cuenta desde "Mi
+    # cuenta" (autoservicio) no invalidaba ninguna caché del panel admin
+    # -- a diferencia de eliminarla desde el panel, que sí lo hacía -- así
+    # que "Usuarios totales" del dashboard seguía contando la cuenta ya
+    # borrada hasta que venciera el TTL de 3 minutos.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com"})
+    with _como():
+        antes = client.get("/admin/api/resumen", headers=_AUTH).get_json()
+    assert antes["usuarios_totales"] == 1
+
+    parche = _con_sesion_usuario(client, uid="u1", email="u1@example.com")
+    try:
+        with patch("gestion_cuenta.firebase_auth.delete_user"):
+            resp = client.delete("/mi-cuenta", headers={"Authorization": "Bearer x"})
+    finally:
+        parche.stop()
+    assert resp.status_code == 200
+
+    with _como():
+        despues = client.get("/admin/api/resumen", headers=_AUTH).get_json()
+    # Sin invalidación, esto seguiría devolviendo 1 (el valor cacheado de
+    # la llamada de arriba) en vez de 0.
+    assert despues["usuarios_totales"] == 0
+
+
 def test_ingresos_lista_una_fila_por_suscripcion_de_pago(client, db):
     db.sembrar(("usuarios", "u1"), {
         "email": "a@x.com", "fecha_creacion": "2025-01-01T00:00:00",

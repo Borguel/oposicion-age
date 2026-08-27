@@ -47,15 +47,20 @@ SIGLAS_OPOSICION = {"AGE": "AGE", "GACE": "GACE", "AUXILIAR": "Auxiliar"}
 
 
 def _invalidar_cache_admin_tras_cambio_suscripcion():
-    """Los agregados del panel admin (dashboard, Bajas, Ingresos) se
-    cachean unos minutos (ver _TTL_CACHE_ADMIN_SEGUNDOS en admin.py) para
+    """Los agregados del panel admin (dashboard, Bajas, Ingresos, Usuarios)
+    se cachean unos minutos (ver _TTL_CACHE_ADMIN_SEGUNDOS en admin.py) para
     no recorrer TODA la colección de usuarios en cada apertura del panel.
-    Se invalida aquí, justo al cancelar/reactivar una suscripción, para
-    que una baja recién dada no tarde hasta 3 minutos en aparecer en
-    "Bajas recientes" -- exactamente el problema que se pidió arreglar."""
+    Se invalida aquí, justo al cancelar/reactivar una suscripción o al
+    eliminar una cuenta, para que el cambio no tarde hasta 3 minutos en
+    reflejarse -- exactamente el problema que se pidió arreglar (primero
+    para "Bajas recientes", y luego, bug real, para "Usuarios totales" del
+    dashboard tras borrar una cuenta desde Mi Cuenta: esta función no se
+    llamaba en absoluto desde ahí, a diferencia del borrado hecho por un
+    admin desde el panel, que sí invalidaba la caché)."""
     invalidar_cache(("admin_bajas", True))
     invalidar_cache(("admin_bajas", False))
     invalidar_cache(("admin_ingresos_filas",))
+    invalidar_cache(("admin_usuarios_decorados",))
     for oid in OPOSICIONES:
         invalidar_cache(("admin_resumen", oid))
 
@@ -102,6 +107,7 @@ def exportar_datos():
 @requiere_login(db)
 def eliminar_cuenta():
     eliminar_cuenta_usuario(db, g.uid)
+    _invalidar_cache_admin_tras_cambio_suscripcion()
     return jsonify({"mensaje": "Cuenta eliminada"})
 
 
