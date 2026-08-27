@@ -584,6 +584,28 @@ def test_usuarios_lista_incluye_uso_y_ordena_por_uso(client, db):
     assert d["usuarios"][1]["uso_pct"] == 0
 
 
+def test_usuarios_lista_orden_por_defecto_no_hunde_a_los_recien_registrados(client, db):
+    # Bug real (reportado por el usuario: le llegó el correo de un alta
+    # nueva pero no la encontraba en el panel): ultima_actividad solo se
+    # rellena al hacer un test o subir un documento -- una cuenta recién
+    # creada la tiene a None, así que ordenando solo por ultima_actividad
+    # se hundía al final de la lista (por detrás de cualquiera con
+    # actividad, por vieja que fuera) en vez de aparecer cerca del
+    # principio, como recién llegada.
+    db.sembrar(("usuarios", "u_viejo"), {
+        "email": "viejo@x.com", "fecha_creacion": "2025-01-01T00:00:00",
+        "ultima_actividad": "2025-01-05T00:00:00",
+    })
+    db.sembrar(("usuarios", "u_nuevo"), {
+        "email": "nuevo@x.com", "fecha_creacion": "2026-08-26T11:01:00",
+        "ultima_actividad": None,
+    })
+    with _como():
+        d = client.get("/admin/api/usuarios", headers=_AUTH).get_json()
+    assert d["usuarios"][0]["email"] == "nuevo@x.com"
+    assert d["usuarios"][1]["email"] == "viejo@x.com"
+
+
 def test_detalle_usuario_incluye_uso_herramientas(client, db):
     from datetime import date
     hoy = date.today().isoformat()
@@ -1202,6 +1224,25 @@ def test_export_usuarios_csv_neutraliza_inyeccion_de_formula(client, db):
     texto = resp.get_data(as_text=True)
     assert ",=HYPERLINK" not in texto  # nunca cruda justo tras el separador de columna
     assert "'=HYPERLINK" in texto  # protegida con comilla simple por delante
+
+
+def test_export_usuarios_csv_no_hunde_a_los_recien_registrados(client, db):
+    # Mismo bug real que en usuarios_listar, también en el CSV exportado.
+    db.sembrar(("usuarios", "u_viejo"), {
+        "email": "viejo@x.com", "fecha_creacion": "2025-01-01T00:00:00",
+        "ultima_actividad": "2025-01-05T00:00:00",
+    })
+    db.sembrar(("usuarios", "u_nuevo"), {
+        "email": "nuevo@x.com", "fecha_creacion": "2026-08-26T11:01:00",
+        "ultima_actividad": None,
+    })
+    with _como():
+        resp = client.get("/admin/api/usuarios/export", headers=_AUTH)
+    lineas = resp.get_data(as_text=True).strip().splitlines()
+    # lineas[0] es la cabecera -- la primera fila de datos debe ser el
+    # usuario recién registrado, no el más antiguo.
+    assert "nuevo@x.com" in lineas[1]
+    assert "viejo@x.com" in lineas[2]
 
 
 def test_reportes_adjuntan_pregunta_oficial(client, db):

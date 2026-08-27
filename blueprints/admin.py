@@ -1317,7 +1317,15 @@ def usuarios_listar():
     if orden == "uso":
         filtrados.sort(key=lambda u: u.get("uso_pct") or 0, reverse=True)
     else:
-        filtrados.sort(key=lambda u: u.get("ultima_actividad") or "", reverse=True)
+        # Bug real (reportado por el usuario: un alta recién registrada no
+        # aparecía en el panel): ultima_actividad solo se rellena al hacer
+        # un test o subir un documento (ver guardar_resultado.py /
+        # documentos_pdf.py) -- una cuenta recién creada la tiene a None,
+        # así que ordenando solo por ultima_actividad se hundía al final
+        # de la lista (por detrás de cualquiera con actividad, por vieja
+        # que fuera), en vez de aparecer cerca del principio como recién
+        # llegada. Se usa fecha_creacion como respaldo para ese caso.
+        filtrados.sort(key=lambda u: u.get("ultima_actividad") or u.get("fecha_creacion") or "", reverse=True)
     total = len(filtrados)
     inicio = (pagina - 1) * por_pagina
     return jsonify({
@@ -1343,7 +1351,10 @@ def usuarios_export():
         ]
         for u in _usuarios_filtrados(busqueda, filtro_plan)
     ]
-    filas.sort(key=lambda f: f[6], reverse=True)
+    # Mismo criterio que usuarios_listar: si no hay ultima_actividad (cuenta
+    # recién creada, sin ningún test/documento todavía), se usa la fecha de
+    # alta como respaldo para no hundirla al final del CSV.
+    filas.sort(key=lambda f: f[6] or f[5], reverse=True)
     cabecera = ["uid", "email", "nombre", "plan", "oposiciones_activas", "alta", "ultima_actividad"]
     return _respuesta_csv(cabecera, filas, "usuarios.csv")
 
