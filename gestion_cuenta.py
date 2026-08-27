@@ -4,12 +4,14 @@ usuario, ya que Firestore no tiene "borrado en cascada" ni una forma nativa
 de volcar un documento con sus subcolecciones."""
 import logging
 import os
+from datetime import datetime
 
 import stripe
 from firebase_admin import auth as firebase_auth
 
 import generacion_control
 from email_utils import enviar_email_alerta_cancelacion_stripe_fallida
+from planes import mejor_plan
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +81,15 @@ def eliminar_cuenta_usuario(db, uid):
     fallara por algo que no sea "ya no existe" (p. ej. un error transitorio
     de red), los datos de Firestore siguen intactos y un reintento puede
     completar el borrado sin dejar una cuenta de Auth huérfana con datos ya
-    perdidos en Firestore."""
+    perdidos en Firestore.
+
+    Deja además un registro en cuentas_eliminadas SIN ningún dato personal
+    (25/08/2026, a petición del usuario: una cuenta desapareció del panel
+    sin dejar ningún rastro, y no había forma de distinguir "el usuario se
+    borró él mismo" de "algo falló") -- ni email, ni nombre, ni uid, solo
+    la fecha y qué tenía contratado, para poder diferenciar una baja
+    voluntaria real de cualquier otra cosa sin comprometer el derecho al
+    olvido que es precisamente lo que esta función cumple."""
     usuario_ref = db.collection("usuarios").document(uid)
     usuario = usuario_ref.get().to_dict() or {}
 
@@ -128,3 +138,20 @@ def eliminar_cuenta_usuario(db, uid):
             doc.reference.delete()
 
     usuario_ref.delete()
+
+    try:
+        suscripciones = usuario.get("suscripciones") or {}
+        plan_mas_alto, _ = mejor_plan(suscripciones)
+        db.collection("cuentas_eliminadas").document().set({
+            "fecha": datetime.utcnow().isoformat(),
+            "oposiciones": list(suscripciones.keys()),
+            "plan_mas_alto": plan_mas_alto,
+            "tenia_suscripcion_activa": any(
+                (sub or {}).get("subscription_status") in ("active", "trialing")
+                for sub in suscripciones.values()
+            ),
+        })
+    except Exception:
+        # Nunca debe romper el borrado -- es un registro informativo, no
+        # parte del derecho de supresión en sí.
+        logger.warning("No se pudo registrar la baja de cuenta en cuentas_eliminadas", exc_info=True)

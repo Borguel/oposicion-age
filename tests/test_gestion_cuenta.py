@@ -35,6 +35,34 @@ def test_eliminar_cuenta_borra_subcolecciones_y_documento(db):
     assert db.leer(("usuarios", "u1", "documentos", "d1")) is None
 
 
+def test_eliminar_cuenta_deja_registro_anonimo_en_cuentas_eliminadas(db):
+    # Bug real (reportado por el usuario: una cuenta desapareció del panel
+    # sin dejar ningún rastro de qué había pasado) -- borrar una cuenta
+    # ahora deja un registro SIN datos personales (ni email, ni nombre, ni
+    # uid) para poder distinguir una baja voluntaria de cualquier otra cosa.
+    db.sembrar(("usuarios", "u1"), {
+        "email": "u1@example.com",
+        "suscripciones": {
+            "AGE": {"plan": "premium", "subscription_status": "active"},
+            "METRO": {"plan": "gratis"},
+        },
+    })
+    with patch("gestion_cuenta.firebase_auth.delete_user"):
+        eliminar_cuenta_usuario(db, "u1")
+
+    registros = [doc.to_dict() for doc in db.collection("cuentas_eliminadas").stream()]
+    assert len(registros) == 1
+    registro = registros[0]
+    assert registro["fecha"]
+    assert set(registro["oposiciones"]) == {"AGE", "METRO"}
+    assert registro["plan_mas_alto"] == "premium"
+    assert registro["tenia_suscripcion_activa"] is True
+    # Sin ningún dato personal.
+    assert "email" not in registro
+    assert "nombre" not in registro
+    assert "uid" not in registro
+
+
 def test_eliminar_cuenta_borra_firebase_auth_antes_que_firestore(db):
     # Si el borrado de Firebase Auth falla por algo que no sea "ya no
     # existe", los datos de Firestore deben seguir intactos para poder

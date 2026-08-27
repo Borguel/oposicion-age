@@ -1666,6 +1666,30 @@ def test_auditoria_ordena_reciente_primero(client, db):
     assert entradas[0]["fecha"] >= entradas[1]["fecha"]
 
 
+def test_auditoria_incluye_cuentas_eliminadas_sin_datos_personales(client, db):
+    # Bug real (reportado por el usuario: una cuenta desapareció sin dejar
+    # rastro) -- una baja voluntaria (el usuario se elimina a sí mismo) se
+    # mezcla en la misma cronología que las acciones de admin, para poder
+    # distinguirla de una eliminación hecha desde el panel.
+    db.sembrar(("admin_auditoria", "a1"), {
+        "accion": "usuario_eliminar", "objetivo": "u_borrado_por_admin", "email_admin": "admin@x.com",
+        "fecha": "2026-08-27T09:00:00",
+    })
+    db.sembrar(("cuentas_eliminadas", "c1"), {
+        "fecha": "2026-08-27T10:00:00",
+        "oposiciones": ["AGE"], "plan_mas_alto": "premium", "tenia_suscripcion_activa": True,
+    })
+    with _como():
+        entradas = client.get("/admin/api/auditoria", headers=_AUTH).get_json()["entradas"]
+    assert len(entradas) == 2
+    assert entradas[0]["accion"] == "cuenta_eliminada_autoservicio"  # más reciente, primero
+    assert entradas[0]["objetivo"] == ""
+    assert entradas[0]["email_admin"] == ""
+    assert "AGE" in entradas[0]["detalle"]
+    assert "premium" in entradas[0]["detalle"]
+    assert entradas[1]["accion"] == "usuario_eliminar"
+
+
 def test_auditoria_paginada(client, db):
     for i in range(60):
         db.sembrar(("admin_auditoria", f"a{i}"), {

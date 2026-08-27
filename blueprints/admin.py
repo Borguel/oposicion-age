@@ -2897,7 +2897,16 @@ def auditoria_listar():
     fake de Firestore de los tests no soporta order_by/cursores, y este
     panel no tiene tanto volumen todavía como para justificar esa
     complejidad) -- lo que arregla la paginación es poder navegar el
-    historial completo desde la UI, no el coste de lectura en Firestore."""
+    historial completo desde la UI, no el coste de lectura en Firestore.
+
+    Incluye también cuentas_eliminadas (25/08/2026, a petición del
+    usuario): cuando un usuario se borra A SÍ MISMO (a diferencia de
+    usuarios_eliminar, la baja desde el panel, que ya queda en
+    admin_auditoria) no quedaba ningún rastro -- ni siquiera de que había
+    existido. Se mezclan aquí en la misma cronología para poder ver, ante
+    una cuenta que desaparece, si fue un admin quien la borró o una baja
+    voluntaria -- esta última sin ningún dato personal, solo la fecha y
+    qué tenía contratado."""
     try:
         pagina = max(1, int(request.args.get("pagina", 1)))
     except (TypeError, ValueError):
@@ -2911,6 +2920,18 @@ def auditoria_listar():
             "objetivo": d.get("objetivo", ""),
             "detalle": d.get("detalle", ""),
             "email_admin": d.get("email_admin", ""),
+            "fecha": d.get("fecha", ""),
+        })
+    for doc in db.collection("cuentas_eliminadas").stream():
+        d = doc.to_dict() or {}
+        detalle = f"Oposiciones: {', '.join(d.get('oposiciones') or []) or '(ninguna)'} · Plan: {d.get('plan_mas_alto') or 'gratis'}"
+        if d.get("tenia_suscripcion_activa"):
+            detalle += " · Tenía suscripción activa"
+        entradas.append({
+            "accion": "cuenta_eliminada_autoservicio",
+            "objetivo": "",
+            "detalle": detalle,
+            "email_admin": "",
             "fecha": d.get("fecha", ""),
         })
     entradas.sort(key=lambda e: e.get("fecha", ""), reverse=True)

@@ -2595,6 +2595,10 @@ function _etiquetaAccionMapa() {
     temario_borrar_ficha: `${i14("papelera")} Borrar ficha`, publicado: `${i14("check")} Publicar`, borrador: `${i14("lapiz")} A borrador`,
     reporte_revisado: `${i14("check")} Reporte revisado`, reporte_descartado: `${i14("cruz")} Reporte descartado`,
     soporte_revisado: `${i14("check")} Mensaje de soporte revisado`, soporte_descartado: `${i14("cruz")} Mensaje de soporte descartado`,
+    usuario_eliminar: `${i14("papelera")} Cuenta eliminada por un admin`,
+    // Autoservicio (el propio usuario se borró desde "Mi cuenta"): sin
+    // ningún dato personal, ver eliminar_cuenta_usuario en gestion_cuenta.py.
+    cuenta_eliminada_autoservicio: `${i14("papelera")} Baja voluntaria (el usuario se eliminó a sí mismo)`,
   };
 }
 function etiquetaAccion(a) { return _etiquetaAccionMapa()[a] || a; }
