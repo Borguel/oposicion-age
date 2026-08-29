@@ -449,13 +449,13 @@ body {
   color: var(--age-danger);
 }
 
-/* Botón "Chat PDF" para este documento (12/08/2026): a petición del
-   usuario, más visible que un icono suelto en el título -- su propia
-   fila, sólido en el color de marca, con icono + texto. Reutiliza los
-   mismos tokens que .documento-card-btn.principal (la única otra acción
-   "sólida" de la tarjeta) pero en su propio tamaño, porque aquí es la
-   acción destacada de la tarjeta entera, no una más dentro de la
-   cuadrícula de tipos de contenido. */
+/* Botón "Chat PDF" para este documento (12/08/2026, retocado 29/08/2026
+   a petición del usuario: el relleno sólido se veía "muy oscuro" al
+   lado de "Generar"/"Ver"). Su propia fila, con icono + texto, pero
+   ahora con el mismo tratamiento que .documento-card-btn.orange (borde
+   y texto en el naranja de marca, fondo de tarjeta) en vez de relleno
+   sólido -- mismo criterio ya documentado ahí: varios botones sólidos
+   naranjas a la vez pesan demasiado. */
 .documento-card-chat-btn {
   display: flex;
   align-items: center;
@@ -464,9 +464,9 @@ body {
   margin-bottom: 16px;
   padding: 10px 16px;
   border-radius: var(--age-radius-md);
-  border: 1.5px solid var(--age-primary);
-  background: var(--age-primary);
-  color: #1b1f2e;
+  border: 1.5px solid var(--age-primary-dark);
+  background: var(--age-card);
+  color: var(--age-primary-dark);
   font-size: 0.9rem;
   font-weight: 700;
   text-decoration: none;
@@ -474,8 +474,7 @@ body {
 }
 
 .documento-card-chat-btn:hover {
-  background: var(--age-primary-dark);
-  border-color: var(--age-primary-dark);
+  background: var(--age-primary-soft);
 }
 
 .documento-card-chat-btn:active {
