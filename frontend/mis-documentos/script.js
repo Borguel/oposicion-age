@@ -867,7 +867,8 @@ function tarjetaDocumento(doc, modoCarpeta) {
 function tarjetaCarpeta(idCarpeta, nombreMostrado, cantidad, esEspecial) {
   return `
     <button type="button" class="carpeta-tile${esEspecial ? " carpeta-tile-especial" : ""}" data-carpeta="${escaparHtml(idCarpeta)}">
-      <span class="carpeta-tile-icono">${esEspecial ? icono("documento", 26) : icono("carpeta", 26)}</span>
+      <span class="carpeta-tile-flecha" aria-hidden="true">→</span>
+      <span class="carpeta-tile-icono">${esEspecial ? icono("documento", 22) : icono("carpeta", 22)}</span>
       <span class="carpeta-tile-nombre">${escaparHtml(nombreMostrado)}</span>
       <span class="carpeta-tile-contador">${cantidad} documento${cantidad === 1 ? "" : "s"}</span>
     </button>
@@ -883,7 +884,8 @@ function tarjetaDocumentoSuelto(doc) {
   const nombre = (doc.titulo || doc.nombre_archivo || "Documento").slice(0, 60);
   return `
     <button type="button" class="carpeta-tile carpeta-tile-especial" data-carpeta="${SIN_CARPETA}">
-      <span class="carpeta-tile-icono">${icono("documento", 26)}</span>
+      <span class="carpeta-tile-flecha" aria-hidden="true">→</span>
+      <span class="carpeta-tile-icono">${icono("documento", 22)}</span>
       <span class="carpeta-tile-nombre">${escaparHtml(nombre)}</span>
       <span class="carpeta-tile-contador">Sin carpeta</span>
     </button>
@@ -1062,6 +1064,11 @@ function abrirCarpeta(idCarpeta) {
   document.getElementById("vista-carpetas").classList.add("hidden");
   document.getElementById("vista-carpeta-detalle").classList.remove("hidden");
   document.getElementById("carpeta-detalle-titulo").textContent = esSinCarpeta ? "Sin carpeta" : idCarpeta;
+  const cantidad = documentos.filter((d) => (esSinCarpeta ? !d.carpeta : d.carpeta === idCarpeta)).length;
+  document.getElementById("carpeta-detalle-subtitulo").textContent = `${cantidad} documento${cantidad === 1 ? "" : "s"}`;
+  const iconoCabecera = document.getElementById("carpeta-detalle-icono");
+  iconoCabecera.innerHTML = icono(esSinCarpeta ? "documento" : "carpeta", 20);
+  iconoCabecera.classList.toggle("carpeta-detalle-icono-especial", esSinCarpeta);
   document.getElementById("btn-eliminar-carpeta").classList.toggle("hidden", esSinCarpeta);
   document.getElementById("btn-anadir-documentos").classList.toggle("hidden", esSinCarpeta);
   filtroCarpetaActual = "";

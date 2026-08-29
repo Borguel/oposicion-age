@@ -114,22 +114,24 @@ body {
 
 .carpetas-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
 }
 
 .carpeta-tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
-  padding: 20px;
+  gap: 0;
+  padding: 22px 20px;
   background: var(--age-card);
   border: 1px solid var(--age-border);
   border-radius: var(--age-radius-lg);
   box-shadow: var(--age-shadow);
   cursor: pointer;
   text-align: left;
+  overflow: hidden;
   transition: transform 0.15s var(--age-ease), box-shadow 0.15s var(--age-ease);
 }
 
@@ -142,32 +144,71 @@ body {
   background: var(--age-bg);
 }
 
+.carpeta-tile-flecha {
+  position: absolute;
+  top: 20px;
+  right: 18px;
+  color: var(--age-ink-soft);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.15s var(--age-ease), transform 0.15s var(--age-ease);
+  font-size: 1rem;
+}
+
+.carpeta-tile:hover .carpeta-tile-flecha {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 /* Color por tipo (05/08/2026, a petición del usuario): antes carpetas y
    documentos sueltos usaban el mismo color de icono en esta vista mixta --
    había que leer el nombre o el contador ("N documentos" vs. "Sin
    carpeta") para distinguirlos. Ahora el color del icono lo dice de un
    vistazo: azul (--age-info) para carpetas, el naranja de marca
    (--age-primary-dark, el mismo que ya usa el icono de cabecera al abrir
-   un documento) para documentos sueltos. */
+   un documento) para documentos sueltos. Insignia con fondo suave
+   (29/08/2026): mismo criterio de color, pero en una insignia redondeada
+   en vez de icono suelto, para que la vista de carpetas se lea como una
+   página moderna.*/
 .carpeta-tile-icono {
-  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--age-radius-md);
+  background: var(--age-info-bg);
   color: var(--age-info);
+  font-size: 1.4rem;
+  margin-bottom: 14px;
 }
 
 .carpeta-tile-especial .carpeta-tile-icono {
+  background: var(--age-primary-soft);
   color: var(--age-primary-dark);
 }
 
 .carpeta-tile-nombre {
   font-weight: 700;
-  font-size: 0.98rem;
+  font-size: 1.02rem;
   color: var(--age-ink);
   word-break: break-word;
+  margin-bottom: 4px;
 }
 
 .carpeta-tile-contador {
-  font-size: 0.8rem;
+  display: inline-block;
+  width: fit-content;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--age-radius-pill);
+  background: var(--age-bg);
   color: var(--age-ink-soft);
+}
+
+.carpeta-tile-especial .carpeta-tile-contador {
+  background: var(--age-card);
 }
 
 .carpeta-detalle-volver {
@@ -190,14 +231,48 @@ body {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   margin-bottom: 22px;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  box-shadow: var(--age-shadow);
+  padding: 20px 24px;
+}
+
+.carpeta-detalle-titulo-grupo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.carpeta-detalle-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--age-radius-md);
+  background: var(--age-info-bg);
+  color: var(--age-info);
+}
+
+.carpeta-detalle-icono-especial {
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
 }
 
 .carpeta-detalle-cabecera h2 {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 800;
   margin: 0;
+}
+
+.carpeta-detalle-subtitulo {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: var(--age-ink-soft);
 }
 
 .carpeta-detalle-acciones {

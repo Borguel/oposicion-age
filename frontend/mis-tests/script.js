@@ -102,7 +102,7 @@ function tarjetaTest(t) {
     `;
     acciones = `
       <a class="age-btn age-btn-outline" href="/repetir-test/?repetir=${t.id}">Repetir</a>
-      <a class="age-btn age-btn-primary" href="/mis-tests/resultado/?id=${t.id}">Ver resultados</a>
+      <a class="age-btn age-btn-dark" href="/mis-tests/resultado/?id=${t.id}">Ver resultados</a>
       <button type="button" class="age-btn age-btn-danger" data-borrar-test="${t.id}">Eliminar</button>
     `;
   }
