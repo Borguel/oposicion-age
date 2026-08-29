@@ -240,6 +240,64 @@ def enviar_email_verificacion(destinatario, enlace, nombre=""):
     _enviar(destinatario, "verificación de correo", asunto="Verifica tu correo en Domina tu Opo", html=html)
 
 
+def enviar_email_password_cambiada(destinatario, nombre=""):
+    """Confirmación de que la contraseña se ha cambiado con éxito desde Mi
+    cuenta (ver frontend/mi-cuenta/datos-personales/script.js, que llama a
+    /aviso-contrasena-cambiada justo después de que
+    auth.cambiarContrasena() confirme el cambio en el propio cliente de
+    Firebase). No cubre el cambio hecho desde el enlace de
+    /recuperar-contrasena: ese lo completa Firebase en una página fuera de
+    esta app (handle_code_in_app=False, ver blueprints/auth_publico.py), sin
+    que el backend llegue a enterarse del evento."""
+    template_id = os.getenv("BREVO_TEMPLATE_PASSWORD_CAMBIADA")
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
+
+    if template_id:
+        _enviar(destinatario, "contraseña cambiada", template_id=template_id, datos={"saludo": saludo})
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, te confirmamos que la contraseña de tu cuenta se ha cambiado correctamente.</p>
+      {_aviso("Si no has sido tú, cambia tu contraseña de nuevo cuanto antes y contacta con nosotros respondiendo a este correo.")}
+    """
+    html = _plantilla_html("Tu contraseña ha sido actualizada", cuerpo, emoji="🔒")
+    _enviar(destinatario, "contraseña cambiada", asunto="Tu contraseña ha sido actualizada", html=html)
+
+
+_NOMBRE_PLAN = {"basico": "Básico", "premium": "Premium"}
+
+
+def enviar_email_pago_confirmado(destinatario, oposicion_nombre, plan, nombre=""):
+    """Confirmación de que un pago/alta de suscripción se ha completado (ver
+    checkout.session.completed en blueprints/pagos.py) -- cubre tanto un
+    alta nueva como un cambio de plan para una oposición ya activa (ambos
+    pasan por un Checkout nuevo, ver el comentario sobre sub_anterior_id en
+    ese mismo webhook)."""
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
+    plan_nombre = _NOMBRE_PLAN.get(plan, plan)
+
+    template_id = os.getenv("BREVO_TEMPLATE_PAGO_CONFIRMADO")
+    if template_id:
+        _enviar(destinatario, "suscripción confirmada", template_id=template_id, datos={
+            "saludo": saludo,
+            "oposicion_nombre": oposicion_nombre,
+            "plan_nombre": plan_nombre,
+            "frontend_url": frontend_url,
+        })
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, confirmamos tu suscripción al plan <strong>{plan_nombre}</strong>
+      para <strong>{oposicion_nombre}</strong>.</p>
+      <p>Ya tienes acceso completo: tests ilimitados del temario oficial, Tu Tutor IA y las
+      herramientas de PDF, según lo que incluya tu plan.</p>
+      {_boton("Ir a mi cuenta", f"{frontend_url}/mi-cuenta/")}
+    """
+    html = _plantilla_html("¡Suscripción confirmada!", cuerpo, emoji="✅")
+    _enviar(destinatario, "suscripción confirmada", asunto=f"Confirmación de tu suscripción a {oposicion_nombre}", html=html)
+
+
 _PARRAFO_POR_MOTIVO_BAJA = {
     # Coincide con MOTIVOS_BAJA_VALIDOS de blueprints/pagos.py. Sin ningún
     # motivo reconocido (o sin motivo, para llamadas antiguas) se usa el
@@ -562,6 +620,28 @@ def enviar_email_aviso_oficial(destinatario, titulo, tipo_legible, url_boe, url_
     """
     html = _plantilla_html(f"{tipo_legible}: {oposicion_nombre}", cuerpo, emoji="📢")
     _enviar(destinatario, "aviso oficial", asunto=f"{tipo_legible} publicada para {oposicion_nombre}", html=html)
+
+
+def enviar_email_cuenta_eliminada(destinatario, nombre=""):
+    """Confirmación de que el borrado de cuenta (derecho de supresión RGPD)
+    se ha completado -- ver gestion_cuenta.eliminar_cuenta_usuario, que la
+    llama la última, cuando ya no queda nada más por borrar. Sin este
+    correo, quien ejerce su derecho al olvido no tenía ninguna confirmación
+    de que de verdad se había completado."""
+    saludo = f"Hola{f' {escape(nombre)}' if nombre else ''}"
+
+    template_id = os.getenv("BREVO_TEMPLATE_CUENTA_ELIMINADA")
+    if template_id:
+        _enviar(destinatario, "cuenta eliminada", template_id=template_id, datos={"saludo": saludo})
+        return
+
+    cuerpo = f"""
+      <p style="margin:0;">{saludo}, confirmamos que tu cuenta en Domina tu Opo y todos los datos
+      asociados se han eliminado por completo, tal y como solicitaste.</p>
+      {_aviso("Si no has sido tú quien ha pedido este borrado, contacta con nosotros respondiendo a este correo cuanto antes.")}
+    """
+    html = _plantilla_html("Confirmación de eliminación de tu cuenta", cuerpo, emoji="🗑️")
+    _enviar(destinatario, "cuenta eliminada", asunto="Confirmación de eliminación de tu cuenta", html=html)
 
 
 def enviar_email_alerta_cancelacion_stripe_fallida(destinatario, uid, subscription_id):

@@ -158,6 +158,13 @@ async function iniciar() {
       try {
         await reautenticarConPassword(actual);
         await cambiarContrasena(nueva);
+        // Best-effort: si esto falla, la contraseña ya ha cambiado igualmente
+        // (ver auth.cambiarContrasena() más arriba) -- solo se pierde el
+        // correo de confirmación, no la operación en sí.
+        fetch(`${BACKEND_URL}/aviso-contrasena-cambiada`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${await idToken()}` },
+        }).catch(() => {});
         formContrasena.reset();
         mensajeEl.textContent = "Contraseña cambiada correctamente.";
         mensajeEl.className = "datos-mensaje ok";

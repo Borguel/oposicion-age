@@ -10,7 +10,7 @@ import stripe
 from firebase_admin import auth as firebase_auth
 
 import generacion_control
-from email_utils import enviar_email_alerta_cancelacion_stripe_fallida
+from email_utils import enviar_email_alerta_cancelacion_stripe_fallida, enviar_email_cuenta_eliminada
 from planes import mejor_plan
 
 logger = logging.getLogger(__name__)
@@ -138,6 +138,14 @@ def eliminar_cuenta_usuario(db, uid):
             doc.reference.delete()
 
     usuario_ref.delete()
+
+    # Confirmación de que el borrado (derecho de supresión RGPD) se ha
+    # completado -- va aquí, ya sin nada más por borrar, no antes: si algo
+    # de lo anterior fallase, quien pidió la baja no debe recibir una
+    # confirmación de algo que no ha terminado de verdad. email_utils ya
+    # protege esta llamada de cualquier fallo propio (ver _enviar), así que
+    # no puede romper un borrado que ya ha llegado hasta aquí.
+    enviar_email_cuenta_eliminada(usuario.get("email"), nombre=usuario.get("nombre") or "")
 
     try:
         suscripciones = usuario.get("suscripciones") or {}

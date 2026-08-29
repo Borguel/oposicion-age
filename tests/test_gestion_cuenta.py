@@ -209,6 +209,18 @@ def test_eliminar_cuenta_borra_mensajes_soporte_y_test_oficiales_sin_tocar_los_d
     assert db.leer(("test_oficiales", "t1")) is None
 
 
+def test_eliminar_cuenta_envia_confirmacion_por_email(db):
+    # Sin esto, quien ejerce su derecho al olvido no tenía ninguna
+    # confirmación de que el borrado se había completado de verdad.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@example.com", "nombre": "Ana"})
+
+    with patch("gestion_cuenta.firebase_auth.delete_user"), \
+         patch("gestion_cuenta.enviar_email_cuenta_eliminada") as mock_email:
+        eliminar_cuenta_usuario(db, "u1")
+
+    mock_email.assert_called_once_with("u1@example.com", nombre="Ana")
+
+
 def test_eliminar_cuenta_detiene_generaciones_en_curso(db):
     # Sin esto, un hilo de fondo seguía gastando llamadas a DeepSeek (ya
     # cobradas) sobre una cuenta que ya no existe -- ver

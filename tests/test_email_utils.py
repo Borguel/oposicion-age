@@ -226,6 +226,80 @@ def test_aviso_oficial_usa_plantilla_de_brevo_si_esta_configurada(monkeypatch):
     assert "subject" not in payload
 
 
+def test_password_cambiada_manda_html_de_reserva_sin_plantilla(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_PASSWORD_CAMBIADA", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_password_cambiada("u@example.com", nombre="Ana")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert "templateId" not in payload
+    assert "contraseña" in payload["htmlContent"].lower()
+    assert "Ana" in payload["htmlContent"]
+
+
+def test_password_cambiada_usa_plantilla_de_brevo_si_esta_configurada(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.setenv("BREVO_TEMPLATE_PASSWORD_CAMBIADA", "18")
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_password_cambiada("u@example.com", nombre="Ana")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["templateId"] == 18
+    assert payload["params"]["saludo"] == "Hola Ana"
+    assert "subject" not in payload
+
+
+def test_cuenta_eliminada_manda_html_de_reserva_sin_plantilla(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.delenv("BREVO_TEMPLATE_CUENTA_ELIMINADA", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_cuenta_eliminada("u@example.com", nombre="Ana")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert "templateId" not in payload
+    assert "eliminado" in payload["htmlContent"].lower()
+    assert payload["subject"]
+
+
+def test_cuenta_eliminada_usa_plantilla_de_brevo_si_esta_configurada(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.setenv("BREVO_TEMPLATE_CUENTA_ELIMINADA", "17")
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_cuenta_eliminada("u@example.com")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["templateId"] == 17
+    assert "subject" not in payload
+
+
+def test_pago_confirmado_incluye_oposicion_y_plan(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.setenv("FRONTEND_URL", "https://dominatuopo.com")
+    monkeypatch.delenv("BREVO_TEMPLATE_PAGO_CONFIRMADO", raising=False)
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pago_confirmado("u@example.com", "AGE", "premium", nombre="Ana")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert "templateId" not in payload
+    assert "AGE" in payload["htmlContent"]
+    assert "Premium" in payload["htmlContent"]
+    assert "AGE" in payload["subject"]
+
+
+def test_pago_confirmado_usa_plantilla_de_brevo_si_esta_configurada(monkeypatch):
+    monkeypatch.setenv("BREVO_API_KEY", "clave")
+    monkeypatch.setenv("BREVO_TEMPLATE_PAGO_CONFIRMADO", "16")
+    with patch("email_utils.requests.post", return_value=_respuesta_ok()) as mock_post:
+        email_utils.enviar_email_pago_confirmado("u@example.com", "GACE", "basico")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["templateId"] == 16
+    assert payload["params"]["oposicion_nombre"] == "GACE"
+    assert payload["params"]["plan_nombre"] == "Básico"
+    assert "subject" not in payload
+
+
 def test_error_http_de_brevo_no_lanza_excepcion(monkeypatch):
     monkeypatch.setenv("BREVO_API_KEY", "clave")
     mock_error = MagicMock()

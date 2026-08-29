@@ -127,6 +127,35 @@ def test_webhook_checkout_completado_activa_suscripcion(client, db):
     assert suscripcion["subscription_status"] == "active"
 
 
+def test_webhook_checkout_completado_envia_email_de_pago_confirmado(client, db):
+    evento = {
+        "id": "evt_checkout_confirmado",
+        "object": "event",
+        "type": "checkout.session.completed",
+        "data": {"object": {
+            "object": "checkout.session",
+            "client_reference_id": "u1",
+            "customer": "cus_test_1",
+            "subscription": "sub_test_1",
+            "metadata": {"uid": "u1", "plan": "premium", "oposicion": "AGE"},
+        }},
+    }
+    mock_subscription = {
+        "status": "active",
+        "items": {"data": [{"price": {"id": PRICE_PREMIUM}}]},
+        "current_period_end": 1893456000,
+    }
+    with patch("blueprints.pagos.stripe.Subscription.retrieve", return_value=mock_subscription), \
+         patch("blueprints.pagos.enviar_email_pago_confirmado") as mock_email:
+        resp = _post_evento(client, evento)
+
+    assert resp.status_code == 200
+    mock_email.assert_called_once()
+    args = mock_email.call_args.args
+    assert args[1] == "Cuerpo General Administrativo del Estado (AGE, C1)"
+    assert args[2] == "premium"
+
+
 def test_webhook_checkout_completado_cancela_la_suscripcion_anterior_al_cambiar_de_plan(client, db):
     # Bug real (23/08/2026): /crear-sesion-checkout siempre crea una
     # sesión de Checkout NUEVA -- así que cambiar de plan (Básico -> Premium)

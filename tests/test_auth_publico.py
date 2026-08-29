@@ -122,3 +122,30 @@ def test_verificacion_fallo_de_firebase_devuelve_error(client):
 
     assert resp.status_code == 502
     mock_enviar.assert_not_called()
+
+
+def test_aviso_contrasena_cambiada_sin_sesion_devuelve_401(client):
+    resp = client.post("/aviso-contrasena-cambiada")
+    assert resp.status_code == 401
+
+
+def test_aviso_contrasena_cambiada_envia_email_con_el_nombre(client):
+    with _con_sesion(), \
+         patch("blueprints.auth_publico.firebase_auth.get_user", return_value=_UsuarioFake(display_name="Ana")), \
+         patch("blueprints.auth_publico.enviar_email_password_cambiada") as mock_enviar:
+        resp = client.post("/aviso-contrasena-cambiada", headers={"Authorization": "Bearer x"})
+
+    assert resp.status_code == 200
+    mock_enviar.assert_called_once_with("u1@example.com", nombre="Ana")
+
+
+def test_aviso_contrasena_cambiada_no_rompe_si_falla_el_nombre(client):
+    # get_user es solo para el nombre en el saludo -- un fallo ahí no debe
+    # impedir que se mande igualmente la confirmación (sin nombre).
+    with _con_sesion(), \
+         patch("blueprints.auth_publico.firebase_auth.get_user", side_effect=RuntimeError("firebase caído")), \
+         patch("blueprints.auth_publico.enviar_email_password_cambiada") as mock_enviar:
+        resp = client.post("/aviso-contrasena-cambiada", headers={"Authorization": "Bearer x"})
+
+    assert resp.status_code == 200
+    mock_enviar.assert_called_once_with("u1@example.com", nombre="")

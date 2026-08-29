@@ -11,7 +11,7 @@ from firebase_admin import auth as firebase_auth
 from flask import Blueprint, jsonify, request
 
 from auth_utils import obtener_identidad_desde_token
-from email_utils import enviar_email_recuperar_contrasena, enviar_email_verificacion
+from email_utils import enviar_email_password_cambiada, enviar_email_recuperar_contrasena, enviar_email_verificacion
 
 logger = logging.getLogger(__name__)
 
@@ -80,3 +80,28 @@ def enviar_verificacion_email():
 
     enviar_email_verificacion(email, enlace, nombre=usuario.display_name or "")
     return jsonify({"mensaje": "Te hemos enviado un correo para verificar tu dirección."})
+
+
+@bp.route("/aviso-contrasena-cambiada", methods=["POST"])
+def aviso_contrasena_cambiada():
+    """El frontend llama a esto justo después de que
+    auth.cambiarContrasena() confirme el cambio en el propio cliente de
+    Firebase (ver frontend/mi-cuenta/datos-personales/script.js) -- el
+    backend nunca ve ese cambio por sí solo (updatePassword() es una
+    llamada directa del cliente al SDK de Firebase Auth), así que sin este
+    aviso explícito no había forma de mandar la confirmación."""
+    ident = obtener_identidad_desde_token(request)
+    if not ident or not ident[0]:
+        return jsonify({"error": "No autenticado"}), 401
+    uid, email, _es_admin = ident
+    if not email:
+        return jsonify({"mensaje": "Aviso registrado."})
+
+    try:
+        usuario = firebase_auth.get_user(uid)
+        nombre = usuario.display_name or ""
+    except Exception:
+        nombre = ""
+
+    enviar_email_password_cambiada(email, nombre=nombre)
+    return jsonify({"mensaje": "Aviso registrado."})

@@ -16,6 +16,7 @@ from gestion_cuenta import exportar_datos_usuario, eliminar_cuenta_usuario
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida
 from email_utils import (
     enviar_email_cancelacion_suscripcion,
+    enviar_email_pago_confirmado,
     enviar_email_pago_fallido,
     enviar_email_reactivacion_suscripcion,
 )
@@ -589,6 +590,8 @@ def webhook_stripe():
                 )
                 usuario = db.collection("usuarios").document(uid).get().to_dict() or {}
                 sincronizar_contacto_marketing(usuario.get("email"), oposicion=oposicion, estado="activo")
+                oposicion_nombre = OPOSICIONES.get(oposicion, {}).get("nombre", oposicion)
+                enviar_email_pago_confirmado(usuario.get("email"), oposicion_nombre, plan)
         elif tipo == "customer.subscription.updated":
             customer_id = _sget(objeto, "customer")
             # La oposición viaja en la metadata de la propia Subscription

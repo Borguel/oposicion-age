@@ -79,11 +79,27 @@ services:
         sync: false
       - key: BREVO_TEMPLATE_CANCELACION
         sync: false
+      - key: BREVO_TEMPLATE_REACTIVACION
+        sync: false
+      - key: BREVO_TEMPLATE_PAGO_FALLIDO
+        sync: false
       - key: BREVO_TEMPLATE_RACHA_RIESGO
         sync: false
       - key: BREVO_TEMPLATE_REENGAGEMENT
         sync: false
+      - key: BREVO_TEMPLATE_PRUEBA_TERMINANDO
+        sync: false
+      - key: BREVO_TEMPLATE_PRUEBA_TERMINADA
+        sync: false
+      - key: BREVO_TEMPLATE_ACTIVAR_OPOSICION
+        sync: false
       - key: BREVO_TEMPLATE_AVISO_OFICIAL
+        sync: false
+      - key: BREVO_TEMPLATE_PASSWORD_CAMBIADA
+        sync: false
+      - key: BREVO_TEMPLATE_CUENTA_ELIMINADA
+        sync: false
+      - key: BREVO_TEMPLATE_PAGO_CONFIRMADO
         sync: false
       - key: SENTRY_DSN
         sync: false
