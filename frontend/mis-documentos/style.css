@@ -277,8 +277,42 @@ body {
 
 .carpeta-detalle-acciones {
   display: flex;
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+/* Botones secundarios de la cabecera de carpeta, solo icono (29/08/2026,
+   feedback real en móvil: los 3 botones con texto se apilaban a pantalla
+   completa uno debajo de otro y se veían "básicos"). "Eliminar carpeta" y
+   "Añadir documentos" son acciones menos frecuentes que "Subir documento"
+   -- se quedan como icono compacto en vez de texto, "Subir documento"
+   sigue siendo el único botón relleno (la acción principal). */
+.carpeta-detalle-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--age-radius-pill);
+  border: 1.5px solid var(--age-border);
+  background: transparent;
+  color: var(--age-ink-soft);
+  cursor: pointer;
+  transition: border-color 0.15s var(--age-ease), background 0.15s var(--age-ease), color 0.15s var(--age-ease);
+}
+
+.carpeta-detalle-icon-btn:hover {
+  border-color: var(--age-ink);
+  background: var(--age-bg);
+  color: var(--age-ink);
+}
+
+.carpeta-detalle-icon-btn-peligro:hover {
+  border-color: var(--age-danger);
+  background: var(--age-danger-bg);
+  color: var(--age-danger);
 }
 
 /* Buscador dentro de una carpeta (05/08/2026): antes solo existía el de la
@@ -1004,6 +1038,9 @@ body {
   .carpeta-detalle-cabecera {
     flex-direction: column;
     align-items: flex-start;
+  }
+  .carpeta-detalle-acciones {
+    width: 100%;
   }
   /* Zona táctil recomendada (12/08/2026, mismo criterio que .zona-switch-
      pill en zona-opositor/style.css): 24×24px se queda corto en móvil para

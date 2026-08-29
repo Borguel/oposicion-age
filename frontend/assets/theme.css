@@ -984,6 +984,21 @@ body {
   background: var(--age-danger-bg);
 }
 
+/* Variante ligera para acciones "ver/consultar" que necesitan
+   diferenciarse de la CTA principal (naranja) sin pesar tanto como un
+   botón oscuro relleno (29/08/2026, feedback real: "Ver resultados" en
+   navy relleno se veía "muy oscuro" en el listado de Mis tests). Mismo
+   patrón que .age-btn-danger, con el azul informativo en vez del rojo. */
+.age-btn-info {
+  background: transparent;
+  color: var(--age-info);
+  border: 1.5px solid var(--age-info);
+}
+
+.age-btn-info:hover {
+  background: var(--age-info-bg);
+}
+
 .age-btn:disabled {
   opacity: 0.55;
   cursor: default;
