@@ -1272,6 +1272,29 @@ def test_ingresos_excluye_la_propia_cuenta_admin_del_mrr(client, db):
     assert d["resumen"]["mrr"] == 0
 
 
+def test_planes_cliente_no_bloquea_la_propia_cuenta_admin_aunque_tenga_stripe(client, db):
+    # Bug real reportado (29/08/2026): un admin que ha hecho pruebas de pago
+    # con su propia cuenta (p. ej. con una tarjeta de test de Stripe) veía su
+    # oposición marcada como "pago real, solo lectura" en "Planes del
+    # cliente" -- el mismo criterio que ya excluye la cuenta admin del MRR
+    # en Ingresos debe aplicar aquí, si no el admin no puede corregirse el
+    # plan a sí mismo.
+    db.sembrar(("usuarios", "admin1"), {
+        "email": "admin@example.com",
+        "suscripciones": {"AGE": {
+            "plan": "premium", "subscription_status": "active", "stripe_subscription_id": "sub_admin",
+            "current_period_end": "2026-08-16T00:00:00",
+        }},
+    })
+    with _como(uid="admin1"), patch("blueprints.admin._es_cuenta_admin", return_value=True):
+        detalle = client.get("/admin/api/usuarios/admin1", headers=_AUTH).get_json()
+        resp = client.patch("/admin/api/usuarios/admin1/plan",
+                             json={"plan": "gratis", "oposicion": "AGE"}, headers=_AUTH)
+    assert detalle["suscripciones"]["AGE"]["tiene_pago_real"] is False
+    assert resp.status_code == 200
+    assert db.leer(("usuarios", "admin1"))["suscripciones"]["AGE"]["plan"] == "gratis"
+
+
 def test_ingresos_rechaza_estado_no_valido(client, db):
     with _como():
         resp = client.get("/admin/api/ingresos?estado=inventado", headers=_AUTH)

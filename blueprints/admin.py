@@ -1698,7 +1698,7 @@ def usuarios_detalle(uid):
         suscripciones[oid] = {
             "plan": sub.get("plan", "gratis"),
             "estado": sub.get("subscription_status", ""),
-            "tiene_pago_real": bool(sub.get("stripe_subscription_id")),
+            "tiene_pago_real": _sub_tiene_pago_real_activo(sub, uid),
             "cancelar_al_final_periodo": bool(sub.get("cancelar_al_final_periodo")),
             "current_period_end": sub.get("current_period_end"),
             "prueba_fin": sub.get("prueba_fin"),
@@ -1857,13 +1857,22 @@ def usuarios_notas_eliminar(uid, nota_id):
     return jsonify({"mensaje": "Nota eliminada"})
 
 
-def _sub_tiene_pago_real_activo(sub):
+def _sub_tiene_pago_real_activo(sub, uid):
     """¿Esta oposición la paga de verdad el cliente ahora mismo (Stripe)?
     Se usa para bloquear los cambios de plan a mano sobre ella -- si se
     tocara el plan aquí, el siguiente cobro/renovación real (webhook de
-    Stripe) lo sobrescribiría sin avisar, dejando el dato desincronizado."""
+    Stripe) lo sobrescribiría sin avisar, dejando el dato desincronizado.
+
+    Excluye la propia cuenta del admin (29/08/2026, bug real reportado: un
+    admin_total que ha hecho pruebas de pago reales consigo mismo -- p. ej.
+    con una tarjeta de test de Stripe -- vio su propia oposición bloqueada
+    como "solo lectura, pago real" pese a no ser un cliente de verdad.
+    Mismo criterio que ya usa _todas_filas_ingresos para no contarla como
+    ingreso: aquí tampoco debe bloquear la edición manual)."""
     sub = sub or {}
-    return bool(sub.get("stripe_subscription_id")) and sub.get("subscription_status") in ESTADOS_SUSCRIPCION_ACTIVA
+    if not sub.get("stripe_subscription_id") or sub.get("subscription_status") not in ESTADOS_SUSCRIPCION_ACTIVA:
+        return False
+    return not _es_cuenta_admin(uid)
 
 
 @bp.route("/admin/api/usuarios/<uid>/plan", methods=["PATCH"])
@@ -1890,7 +1899,7 @@ def usuarios_cambiar_plan(uid):
     if not doc.exists:
         return jsonify({"error": "Usuario no encontrado"}), 404
     sub_actual = ((doc.to_dict() or {}).get("suscripciones", {}) or {}).get(oposicion, {})
-    if _sub_tiene_pago_real_activo(sub_actual):
+    if _sub_tiene_pago_real_activo(sub_actual, uid):
         return jsonify({"error": "Esta oposición tiene un pago real activo (Stripe) -- no se puede cambiar el plan a mano. Gestiónalo desde Stripe o espera a que el cliente cancele."}), 409
     motivo = (data.get("motivo") or "").strip()
     campos = {
@@ -1945,7 +1954,7 @@ def usuarios_conceder_temporal(uid):
         return jsonify({"error": "Usuario no encontrado"}), 404
     suscripciones = (doc.to_dict() or {}).get("suscripciones", {}) or {}
     sub_actual = suscripciones.get(oposicion, {})
-    if _sub_tiene_pago_real_activo(sub_actual):
+    if _sub_tiene_pago_real_activo(sub_actual, uid):
         return jsonify({"error": "Esta oposición tiene un pago real activo (Stripe) -- no hace falta ni se puede regalar acceso encima."}), 409
     motivo = (data.get("motivo") or "").strip()
     hasta = (datetime.utcnow() + timedelta(days=dias)).isoformat()

@@ -851,11 +851,15 @@ tr.sis-opt .sis-punto { background: #d9a300; }
   .ficha-kpis { grid-template-columns: repeat(2, 1fr); }
   .ficha-datos { grid-template-columns: 1fr; }
   .ficha-avatar { width: 44px; height: 44px; font-size: 1.25rem; }
-  /* Con 4 pestañas ("Administración" incluida) el selector no cabe en una
-     fila en móvil -- el texto (nowrap) se salía de su pastilla y se veía
-     cortado/solapado. En rejilla 2x2, con el texto pudiendo partirse en
-     dos líneas dentro de cada celda, se lee entero. */
-  .ficha-selector .admin-segmentado { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; }
+  /* Con 4-5 pestañas ("Administración"/"Planes del cliente" incluidas) el
+     selector no cabe en una fila en móvil -- el texto (nowrap) se salía de
+     su pastilla y se veía cortado/solapado. En rejilla 2x2, con el texto
+     pudiendo partirse en dos líneas dentro de cada celda, se lee entero.
+     border-radius más pequeño (29/08/2026, bug real: el radio de pastilla
+     de una sola fila -- --age-radius-pill, prácticamente un óvalo -- se
+     quedaba aplicado también aquí, y con 2+ filas la pastilla activa de la
+     esquina asomaba por fuera del contorno curvo del contenedor). */
+  .ficha-selector .admin-segmentado { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; border-radius: var(--age-radius-lg); }
   .ficha-selector .admin-segmento { white-space: normal; padding: 8px 6px; font-size: 12px; line-height: 1.25; }
 
   /* Mismo problema que .ficha-selector de arriba: "Preguntas reportadas" y
@@ -865,7 +869,7 @@ tr.sis-opt .sis-punto { background: #d9a300; }
      abarcando las dos líneas en vez de verse como dos pastillas. En
      rejilla 2x2 cada una es su propia pastilla, aunque el texto se parta
      en dos líneas. */
-  .admin-reportes-selector .admin-segmentado { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; }
+  .admin-reportes-selector .admin-segmentado { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; border-radius: var(--age-radius-lg); }
   .admin-reportes-selector .admin-segmento { white-space: normal; padding: 8px 6px; font-size: 12px; line-height: 1.25; }
 }
 
