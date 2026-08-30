@@ -1,7 +1,7 @@
 # Graph Report - oposicion-age  (2026-08-30)
 
 ## Corpus Check
-- 444 files · ~1,565,045 words
+- 444 files · ~1,565,163 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f0cc0347`
+- Built from commit: `d51aee9f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -427,7 +427,7 @@ Nodes (32): _normalizar_pregunta_pdf(), Deja una pregunta cruda de generar_pregu
 
 ### Community 10 - "auth.js"
 Cohesion: 0.06
-Nodes (56): https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js, https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js, https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js, actualizarEnlacesNav(), actualizarIconoTema(), alternarTema(), aplicarEstiloAviso(), atributosEnlace() (+48 more)
+Nodes (53): actualizarEnlacesNav(), actualizarIconoTema(), alternarTema(), aplicarEstiloAviso(), atributosEnlace(), auth, calcularNotificaciones(), cambiarContrasena() (+45 more)
 
 ### Community 12 - "test_generador_preguntas_verificado.py"
 Cohesion: 0.15
@@ -1606,7 +1606,7 @@ Cohesion: 0.13
 Nodes (18): _contexto_personal_usuario(), _hace_cuanto(), _lineas_rendimiento_tests(), _nota_sobre_10_de(), Temas con suficientes intentos acumulados (a través de TODOS los tests, no solo…, Temas del catálogo que el usuario todavía no ha tocado en ningún test -- se…, Nota sobre 10 de un test guardado, con el mismo criterio oficial que el resto…, Texto relativo ("hoy", "ayer", "hace 3 días") a partir de una fecha ISO (la que… (+10 more)
 
 ## Knowledge Gaps
-- **946 isolated node(s):** `graphify`, `https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js`, `https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js`, `https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js`, `/assets/tutor-widget.js` (+941 more)
+- **943 isolated node(s):** `auth`, `_firebaseListo`, `contenidoListo`, `NAV_LINKS_ANONIMO`, `NAV_LINKS_SESION` (+938 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **40 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -1614,15 +1614,15 @@ Nodes (18): _contexto_personal_usuario(), _hace_cuanto(), _lineas_rendimiento_te
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `error()` connect `error` to `posthog-array.js`, `ya`, `concept-seed.mjs`, `warn`, `N`, `al`, `.Dr`, `po`?**
-  _High betweenness centrality (0.024) - this node is a cross-community bridge._
+  _High betweenness centrality (0.029) - this node is a cross-community bridge._
 - **Why does `call_deepseek_api()` connect `call_deepseek_api` to `tarjetas_generator.py`, `pdf_ia.py`, `chat_controller.py`, `test_tu_tutor.py`, `_detectar_duplicados_finales`, `TestGenerarPreguntasIaEnLotes`, `regenerar_temario_ofimatica.py`, `test_ia.py`, `deepseek_utils.py`, `TestGeneracionEnLote`, `cargar_temario_gace_bloque2_ue.py`, `_fragmentos_por_lote`, `test_generator.py`, `test_vigilancia_boe.py`, `cargar_temario_boe.py`, `cargar_temario_metro.py`, `generar_propuesta_cambio`, `generador_preguntas_verificado.py`, `_generar_pregunta_verificada`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
-- **Why does `sembrar_usuario_activo()` connect `sembrar_usuario_activo` to `test_admin.py`, `test_repaso_espaciado.py`, `test_verificacion_respuestas_oficiales.py`, `TestCupoMensualDeSubidas`, `test_reconciliar_stripe.py`, `test_generar_test_oficial.py`, `_eventos_sse`, `usuario_autenticado`, `TestChatPdfMensaje`, `TestDocumentoEstado`, `test_pdf_ia.py`, `_con_sesion`, `TestCosteIaEnHerramientasPdf`, `TestGenerarEsquemaDesdePdf`, `test_temario.py`, `TestSubirDocumento`, `test_resultado_test_oficial.py`, `test_carpetas_documentos.py`, `_sembrar_tema`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
+- **Why does `usuario_autenticado()` connect `usuario_autenticado` to `test_generar_test_oficial.py`, `test_repaso_espaciado.py`, `test_carpetas_documentos.py`, `sembrar_usuario_activo`, `test_push_notificaciones.py`, `test_generador_preguntas_verificado.py`, `test_verificacion_respuestas_oficiales.py`, `test_tu_tutor.py`, `test_error_handler.py`, `test_temario.py`, `test_gestion_cuenta.py`, `_eventos_sse`, `test_prueba_gratuita.py`, `test_resultado_test_oficial.py`?**
+  _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **Are the 64 inferred relationships involving `usuario_autenticado()` (e.g. with `test_content_type_no_json_devuelve_415_json_no_html()` and `test_json_mal_formado_devuelve_400_json_no_html()`) actually correct?**
   _`usuario_autenticado()` has 64 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `graphify`, `https://www.gstatic.com/firebasejs/10.13.0/firebase-app-check.js`, `https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js` to the rest of the system?**
-  _946 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `auth`, `_firebaseListo`, `contenidoListo` to the rest of the system?**
+  _943 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `test_admin.py` be split into smaller, more focused modules?**
   _Cohesion score 0.023725055432372504 - nodes in this community are weakly interconnected._
 - **Should `posthog-array.js` be split into smaller, more focused modules?**
