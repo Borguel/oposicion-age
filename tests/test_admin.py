@@ -740,33 +740,122 @@ def test_usuarios_resetear_racha(client, db):
     assert db.leer(("usuarios", "u1"))["racha"]["racha_actual"] == 0
 
 
-def test_usuarios_otorgar_prueba_fija_prueba_fin(client, db):
-    # Sin oposicion en el body, se aplica a AGE (OPOSICION_POR_DEFECTO) --
-    # cada oposición tiene su propia prueba, ver planes.prueba_activa.
-    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+def test_usuarios_cambiar_plan_bloqueado_si_hay_pago_real_activo(client, db):
+    # Guardrail (29/08/2026, a petición del usuario -- "Planes del cliente"):
+    # si la oposición YA la paga de verdad por Stripe, no se deja tocar el
+    # plan a mano aquí -- el siguiente cobro/renovación real lo pisaría sin
+    # avisar.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {
+        "AGE": {"plan": "premium", "subscription_status": "active", "stripe_subscription_id": "sub_123"},
+    }})
     with _como():
-        resp = client.patch("/admin/api/usuarios/u1/prueba", json={"dias": 14}, headers=_AUTH)
+        resp = client.patch("/admin/api/usuarios/u1/plan",
+                             json={"plan": "gratis", "oposicion": "AGE"}, headers=_AUTH)
+    assert resp.status_code == 409
+    assert db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]["plan"] == "premium"
+
+
+def test_usuarios_cambiar_plan_permite_tocar_si_el_pago_real_ya_no_esta_activo(client, db):
+    # Un id de Stripe que quedó guardado de una suscripción ya cancelada
+    # (subscription_status "canceled") no debe bloquear -- solo bloquea un
+    # pago real que sigue AL DÍA.
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {
+        "AGE": {"plan": "premium", "subscription_status": "canceled", "stripe_subscription_id": "sub_123"},
+    }})
+    with _como():
+        resp = client.patch("/admin/api/usuarios/u1/plan",
+                             json={"plan": "basico", "oposicion": "AGE", "motivo": "regalo tras la baja"}, headers=_AUTH)
     assert resp.status_code == 200
-    datos = db.leer(("usuarios", "u1"))
-    sub = datos["suscripciones"]["AGE"]
-    assert sub["prueba_fin"] == resp.get_json()["prueba_fin"]
-    assert sub["plan"] == "gratis"
+    assert db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]["plan"] == "basico"
+
+
+def test_usuarios_cambiar_plan_guarda_traza_por_oposicion(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {"AGE": {"plan": "gratis"}}})
+    with _como(uid="admin1", email="admin@x.com"):
+        client.patch("/admin/api/usuarios/u1/plan",
+                      json={"plan": "premium", "oposicion": "AGE", "motivo": "familiar de empleado"}, headers=_AUTH)
+    sub = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+    assert sub["concedido_por_admin"]["por"] == "admin1"
+    assert sub["concedido_por_admin"]["motivo"] == "familiar de empleado"
+
+
+def test_usuarios_cambiar_plan_a_gratis_borra_la_traza_de_concesion(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {
+        "AGE": {"plan": "premium", "concedido_por_admin": {"por": "admin1", "motivo": "x"}},
+    }})
+    with _como():
+        client.patch("/admin/api/usuarios/u1/plan", json={"plan": "gratis", "oposicion": "AGE"}, headers=_AUTH)
+    assert "concedido_por_admin" not in db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+
+
+def test_usuarios_conceder_temporal_fija_acceso_temporal(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    with _como(uid="admin1", email="admin@x.com"):
+        resp = client.patch("/admin/api/usuarios/u1/acceso-temporal",
+                             json={"oposicion": "AGE", "plan": "basico", "dias": 14, "motivo": "probar el temario"},
+                             headers=_AUTH)
+    assert resp.status_code == 200
+    sub = db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+    assert sub["plan"] == "gratis"  # el plan real no se toca, solo el boost temporal
+    assert sub["acceso_temporal"]["plan"] == "basico"
+    assert sub["acceso_temporal"]["por"] == "admin1"
     from datetime import datetime
-    dias_restantes = (datetime.fromisoformat(sub["prueba_fin"]) - datetime.utcnow()).days
+    dias_restantes = (datetime.fromisoformat(sub["acceso_temporal"]["hasta"]) - datetime.utcnow()).days
     assert 12 <= dias_restantes <= 14
 
 
-def test_usuarios_otorgar_prueba_usuario_inexistente(client, db):
-    with _como():
-        resp = client.patch("/admin/api/usuarios/fantasma/prueba", json={"dias": 7}, headers=_AUTH)
-    assert resp.status_code == 404
-
-
-def test_usuarios_otorgar_prueba_dias_invalidos(client, db):
+def test_usuarios_conceder_temporal_plan_invalido(client, db):
     db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
     with _como():
-        resp = client.patch("/admin/api/usuarios/u1/prueba", json={"dias": 0}, headers=_AUTH)
+        resp = client.patch("/admin/api/usuarios/u1/acceso-temporal",
+                             json={"oposicion": "AGE", "plan": "gratis", "dias": 7}, headers=_AUTH)
     assert resp.status_code == 400
+
+
+def test_usuarios_conceder_temporal_dias_fuera_de_rango(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com"})
+    with _como():
+        resp = client.patch("/admin/api/usuarios/u1/acceso-temporal",
+                             json={"oposicion": "AGE", "plan": "premium", "dias": 200}, headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_usuarios_conceder_temporal_bloqueado_si_hay_pago_real_activo(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {
+        "AGE": {"plan": "premium", "subscription_status": "active", "stripe_subscription_id": "sub_1"},
+    }})
+    with _como():
+        resp = client.patch("/admin/api/usuarios/u1/acceso-temporal",
+                             json={"oposicion": "AGE", "plan": "basico", "dias": 7}, headers=_AUTH)
+    assert resp.status_code == 409
+
+
+def test_usuarios_quitar_temporal(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {
+        "AGE": {"plan": "gratis", "acceso_temporal": {"plan": "premium", "hasta": "2099-01-01T00:00:00"}},
+    }})
+    with _como():
+        resp = client.delete("/admin/api/usuarios/u1/acceso-temporal", json={"oposicion": "AGE"}, headers=_AUTH)
+    assert resp.status_code == 200
+    assert "acceso_temporal" not in db.leer(("usuarios", "u1"))["suscripciones"]["AGE"]
+
+
+def test_usuarios_detalle_expone_estado_completo_por_oposicion(client, db):
+    db.sembrar(("usuarios", "u1"), {"email": "u1@x.com", "suscripciones": {
+        "AGE": {
+            "plan": "premium", "subscription_status": "active", "stripe_subscription_id": "sub_1",
+            "current_period_end": "2026-10-15T00:00:00", "cancelar_al_final_periodo": False,
+        },
+        "GACE": {"plan": "gratis", "acceso_temporal": {"plan": "premium", "hasta": "2099-01-01T00:00:00", "motivo": "prueba nuevo temario"}},
+    }})
+    with _como():
+        resp = client.get("/admin/api/usuarios/u1", headers=_AUTH)
+    subs = resp.get_json()["suscripciones"]
+    assert subs["AGE"]["tiene_pago_real"] is True
+    assert subs["AGE"]["current_period_end"] == "2026-10-15T00:00:00"
+    assert subs["GACE"]["tiene_pago_real"] is False
+    assert subs["GACE"]["acceso_temporal_activo"] is True
+    assert subs["GACE"]["acceso_temporal_plan"] == "premium"
 
 
 def test_usuarios_detalle_con_limites_uso_en_formato_antiguo_no_revienta(client, db):
@@ -1124,7 +1213,7 @@ def test_ingresos_detecta_cancelando_baja_y_prueba(client, db):
     assert por_email["prueba@x.com"]["plan"] == "premium"  # la prueba da acceso Premium
     assert por_email["prueba@x.com"]["precio"] == 0
     # El resumen desglosa por estado y el MRR/ARPU solo cuentan a quien paga de verdad.
-    assert d["resumen"]["por_estado"] == {"activo": 0, "cancelando": 1, "baja": 1, "prueba": 1, "regalo": 0}
+    assert d["resumen"]["por_estado"] == {"activo": 0, "cancelando": 1, "baja": 1, "prueba": 1, "regalo": 0, "regalo_temporal": 0}
     assert d["resumen"]["mrr"] == 9.99
     assert d["resumen"]["suscripciones"] == 1
     assert d["resumen"]["arpu"] == 9.99

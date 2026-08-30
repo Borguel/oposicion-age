@@ -30,6 +30,32 @@ def prueba_activa(sub_oposicion):
         return False
 
 
+def acceso_temporal_activo(sub_oposicion):
+    """¿Sigue vigente un acceso temporal concedido A MANO por un admin
+    (panel "Planes del cliente"), con el nivel de plan que se eligió al
+    concederlo (básico o premium)? Deliberadamente NO es lo mismo que
+    prueba_activa/prueba_fin -- prueba_fin es la prueba gratuita real que
+    arranca sola al activar una oposición y dispara el correo de "tu
+    prueba está a punto de terminar" (blueprints/tareas_programadas.py);
+    reutilizarla para un regalo de soporte enviaría ese correo por algo
+    que no es una prueba real. `acceso_temporal` vive en su propio campo,
+    independiente, para que un admin pueda regalar acceso sin arrastrar
+    ese efecto secundario.
+
+    Devuelve (activo, plan) -- plan es None si no hay ninguno vigente."""
+    temporal = (sub_oposicion or {}).get("acceso_temporal") or {}
+    hasta = temporal.get("hasta")
+    plan = temporal.get("plan")
+    if not hasta or not plan:
+        return False, None
+    try:
+        if datetime.utcnow() < datetime.fromisoformat(hasta):
+            return True, plan
+    except (TypeError, ValueError):
+        pass
+    return False, None
+
+
 def resumen_prueba_cuenta(datos_usuario):
     """(en_prueba, prueba_fin) agregados a nivel de CUENTA, solo para vistas
     globales que no pueden anclarse a una oposición concreta (panel admin:
@@ -92,9 +118,13 @@ def resolver_plan_efectivo(datos_usuario, oposicion=None):
     suscripciones = (datos_usuario or {}).get("suscripciones", {}) or {}
 
     def _con_prueba(plan, sub):
-        if ORDEN_PLANES.get(plan, 0) < ORDEN_PLANES["premium"] and prueba_activa(sub):
-            return "premium", {**sub, "subscription_status": "trialing"}
-        return plan, sub
+        candidatos = [(plan, sub)]
+        if prueba_activa(sub):
+            candidatos.append(("premium", {**sub, "subscription_status": "trialing"}))
+        activo, plan_temporal = acceso_temporal_activo(sub)
+        if activo:
+            candidatos.append((plan_temporal, {**sub, "subscription_status": "trialing"}))
+        return max(candidatos, key=lambda c: ORDEN_PLANES.get(c[0], 0))
 
     if oposicion:
         sub = suscripciones.get(oposicion, {}) or {}

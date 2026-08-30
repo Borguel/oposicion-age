@@ -22,11 +22,11 @@ import os
 from datetime import datetime, timedelta
 
 from flask import Blueprint, Response, g, jsonify, request
-from firebase_admin import auth as firebase_auth
+from firebase_admin import auth as firebase_auth, firestore
 
 from firebase_setup import db
 from auth_utils import requiere_admin, requiere_permiso, PERMISOS_VALIDOS
-from planes import prueba_activa, resolver_plan_efectivo, resumen_prueba_cuenta
+from planes import prueba_activa, acceso_temporal_activo, resolver_plan_efectivo, resumen_prueba_cuenta, ESTADOS_SUSCRIPCION_ACTIVA
 from promociones import leer_promocion, promocion_vigente, PLANES_PROMOCIONABLES
 from banco_fallos import _id_pregunta
 from coste_ia import resumen_coste_usuario
@@ -1359,7 +1359,7 @@ def usuarios_export():
     return _respuesta_csv(cabecera, filas, "usuarios.csv")
 
 
-ESTADOS_CLIENTE_VALIDOS = ("activo", "cancelando", "baja", "prueba", "regalo")
+ESTADOS_CLIENTE_VALIDOS = ("activo", "cancelando", "baja", "prueba", "regalo", "regalo_temporal")
 
 
 def _todas_filas_ingresos():
@@ -1383,6 +1383,10 @@ def _todas_filas_ingresos():
       ingreso). Se sigue mostrando en la cartera para que quede constancia
       de a quién se le ha regalado acceso, pero con precio 0 -- no cuenta
       para el MRR ni para "suscripciones de pago".
+    - "regalo_temporal": acceso concedido a mano por un admin con fecha de
+      fin (panel "Planes del cliente", ver planes.acceso_temporal_activo)
+      -- mismo criterio que "regalo" (precio 0, no cuenta para el MRR),
+      pero distinguible de un regalo permanente.
 
     Un usuario sin nada de esto (nunca pagó, no está en prueba, no tiene
     nada regalado) no aporta nada a un "control de clientes" y se omite --
@@ -1418,6 +1422,10 @@ def _todas_filas_ingresos():
                 elif prueba_activa(sub):
                     estado_cliente = "prueba"
                     plan_mostrado = "premium"  # la prueba da acceso Premium completo
+                    precio = 0.0
+                elif (_temp_activo := acceso_temporal_activo(sub))[0]:
+                    estado_cliente = "regalo_temporal"
+                    plan_mostrado = _temp_activo[1]
                     precio = 0.0
                 elif sub.get("stripe_subscription_id") or sub.get("subscription_status") == "canceled":
                     estado_cliente = "baja"
@@ -1677,11 +1685,28 @@ def usuarios_detalle(uid):
         return jsonify({"error": "Usuario no encontrado"}), 404
     datos = doc.to_dict() or {}
 
+    # Detalle completo por oposición para la pestaña "Planes del cliente"
+    # (29/08/2026, a petición del usuario: antes esta info -- pago real vs.
+    # concedido a mano, fechas de renovación/fin de prueba/acceso temporal --
+    # estaba repartida sin conexión entre esta ficha, "Ingresos" y "Soporte",
+    # y aquí solo se recortaba a plan+estado). Un único sitio con todo lo
+    # necesario para decidir y actuar sobre cada oposición del usuario.
     suscripciones = {}
     for oid, sub in (datos.get("suscripciones") or {}).items():
+        sub = sub or {}
+        temporal_activo, temporal_plan = acceso_temporal_activo(sub)
         suscripciones[oid] = {
-            "plan": (sub or {}).get("plan", "gratis"),
-            "estado": (sub or {}).get("subscription_status", ""),
+            "plan": sub.get("plan", "gratis"),
+            "estado": sub.get("subscription_status", ""),
+            "tiene_pago_real": bool(sub.get("stripe_subscription_id")),
+            "cancelar_al_final_periodo": bool(sub.get("cancelar_al_final_periodo")),
+            "current_period_end": sub.get("current_period_end"),
+            "prueba_fin": sub.get("prueba_fin"),
+            "prueba_activa": prueba_activa(sub),
+            "acceso_temporal": sub.get("acceso_temporal"),
+            "acceso_temporal_activo": temporal_activo,
+            "acceso_temporal_plan": temporal_plan,
+            "concedido_por_admin": sub.get("concedido_por_admin"),
         }
 
     tests_por_oposicion = {}
@@ -1832,12 +1857,27 @@ def usuarios_notas_eliminar(uid, nota_id):
     return jsonify({"mensaje": "Nota eliminada"})
 
 
+def _sub_tiene_pago_real_activo(sub):
+    """¿Esta oposición la paga de verdad el cliente ahora mismo (Stripe)?
+    Se usa para bloquear los cambios de plan a mano sobre ella -- si se
+    tocara el plan aquí, el siguiente cobro/renovación real (webhook de
+    Stripe) lo sobrescribiría sin avisar, dejando el dato desincronizado."""
+    sub = sub or {}
+    return bool(sub.get("stripe_subscription_id")) and sub.get("subscription_status") in ESTADOS_SUSCRIPCION_ACTIVA
+
+
 @bp.route("/admin/api/usuarios/<uid>/plan", methods=["PATCH"])
 @requiere_permiso("usuarios")
 def usuarios_cambiar_plan(uid):
-    """Cambia el plan de un usuario manualmente (soporte). Deja SIEMPRE
-    constancia de quién lo hizo, cuándo y por qué en admin_override, por
-    trazabilidad."""
+    """Concede acceso PERMANENTE (o lo quita, con plan="gratis") a una
+    oposición concreta -- pestaña "Planes del cliente". Deja constancia de
+    quién lo hizo, cuándo y por qué tanto a nivel de cuenta (admin_override,
+    para el resumen rápido de la ficha) como POR OPOSICIÓN
+    (suscripciones.<op>.concedido_por_admin, para que la propia tarjeta de
+    esa oposición pueda mostrar su origen sin que un segundo cambio en OTRA
+    oposición lo pise). Sustituye cualquier acceso temporal que hubiera en
+    esa misma oposición (ver PATCH .../acceso-temporal) por ser ahora
+    definitivo."""
     data = request.get_json(silent=True) or {}
     nuevo_plan = data.get("plan")
     oposicion = data.get("oposicion") or "AGE"
@@ -1846,22 +1886,100 @@ def usuarios_cambiar_plan(uid):
     if not oposicion_valida(oposicion):
         return jsonify({"error": "Oposición no válida"}), 400
     ref = db.collection("usuarios").document(uid)
-    if not ref.get().exists:
+    doc = ref.get()
+    if not doc.exists:
         return jsonify({"error": "Usuario no encontrado"}), 404
-    ref.update({
+    sub_actual = ((doc.to_dict() or {}).get("suscripciones", {}) or {}).get(oposicion, {})
+    if _sub_tiene_pago_real_activo(sub_actual):
+        return jsonify({"error": "Esta oposición tiene un pago real activo (Stripe) -- no se puede cambiar el plan a mano. Gestiónalo desde Stripe o espera a que el cliente cancele."}), 409
+    motivo = (data.get("motivo") or "").strip()
+    campos = {
         f"suscripciones.{oposicion}.plan": nuevo_plan,
         f"suscripciones.{oposicion}.subscription_status": "active" if nuevo_plan != "gratis" else "canceled",
+        f"suscripciones.{oposicion}.acceso_temporal": firestore.DELETE_FIELD,
         "admin_override": {
             "por": g.uid,
             "email_admin": g.email,
             "fecha": datetime.utcnow().isoformat(),
-            "motivo": (data.get("motivo") or "").strip(),
+            "motivo": motivo,
             "cambio": f"{oposicion} -> {nuevo_plan}",
         },
-    })
-    _registrar_auditoria("usuario_cambiar_plan", uid, f"{oposicion} -> {nuevo_plan}: {(data.get('motivo') or '').strip()}")
+    }
+    if nuevo_plan == "gratis":
+        campos[f"suscripciones.{oposicion}.concedido_por_admin"] = firestore.DELETE_FIELD
+    else:
+        campos[f"suscripciones.{oposicion}.concedido_por_admin"] = {
+            "por": g.uid, "email_admin": g.email, "fecha": datetime.utcnow().isoformat(), "motivo": motivo,
+        }
+    ref.update(campos)
+    _registrar_auditoria("usuario_cambiar_plan", uid, f"{oposicion} -> {nuevo_plan}: {motivo}")
     _invalidar_cache_admin_usuarios()
     return jsonify({"mensaje": "Plan actualizado"})
+
+
+@bp.route("/admin/api/usuarios/<uid>/acceso-temporal", methods=["PATCH"])
+@requiere_permiso("usuarios")
+def usuarios_conceder_temporal(uid):
+    """Concede (o alarga) acceso TEMPORAL a una oposición concreta, con el
+    nivel de plan elegido (básico o premium) y días a partir de AHORA (sin
+    sumar a lo que quedara) -- pestaña "Planes del cliente". Deliberadamente
+    NO usa prueba_fin (la prueba gratuita real, ver planes.acceso_temporal_
+    activo): vive en su propio campo para no disparar el correo de "tu
+    prueba está a punto de terminar" por un regalo de soporte."""
+    data = request.get_json(silent=True) or {}
+    oposicion = data.get("oposicion") or OPOSICION_POR_DEFECTO
+    nuevo_plan = data.get("plan")
+    if nuevo_plan not in ("basico", "premium"):
+        return jsonify({"error": "Plan no válido"}), 400
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    try:
+        dias = int(data.get("dias", 7))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Número de días no válido"}), 400
+    if not 1 <= dias <= 90:
+        return jsonify({"error": "El número de días debe estar entre 1 y 90"}), 400
+    ref = db.collection("usuarios").document(uid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    suscripciones = (doc.to_dict() or {}).get("suscripciones", {}) or {}
+    sub_actual = suscripciones.get(oposicion, {})
+    if _sub_tiene_pago_real_activo(sub_actual):
+        return jsonify({"error": "Esta oposición tiene un pago real activo (Stripe) -- no hace falta ni se puede regalar acceso encima."}), 409
+    motivo = (data.get("motivo") or "").strip()
+    hasta = (datetime.utcnow() + timedelta(days=dias)).isoformat()
+    campos = {
+        f"suscripciones.{oposicion}.acceso_temporal": {
+            "plan": nuevo_plan, "hasta": hasta, "motivo": motivo,
+            "por": g.uid, "email_admin": g.email, "fecha": datetime.utcnow().isoformat(),
+        },
+    }
+    if oposicion not in suscripciones:
+        campos[f"suscripciones.{oposicion}.plan"] = "gratis"
+    ref.update(campos)
+    _registrar_auditoria("usuario_conceder_temporal", uid, f"{oposicion}: {nuevo_plan} {dias} días -- {motivo}")
+    _invalidar_cache_admin_usuarios()
+    return jsonify({"mensaje": f"Acceso temporal concedido hasta {hasta}", "hasta": hasta})
+
+
+@bp.route("/admin/api/usuarios/<uid>/acceso-temporal", methods=["DELETE"])
+@requiere_permiso("usuarios")
+def usuarios_quitar_temporal(uid):
+    """Quita el acceso temporal concedido a una oposición concreta (pestaña
+    "Planes del cliente"), sin tocar el plan real de esa oposición (que ya
+    era "gratis" o lo que fuera antes de regalarle el temporal)."""
+    data = request.get_json(silent=True) or {}
+    oposicion = data.get("oposicion") or ""
+    if not oposicion_valida(oposicion):
+        return jsonify({"error": "Oposición no válida"}), 400
+    ref = db.collection("usuarios").document(uid)
+    if not ref.get().exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    ref.update({f"suscripciones.{oposicion}.acceso_temporal": firestore.DELETE_FIELD})
+    _registrar_auditoria("usuario_quitar_temporal", uid, oposicion)
+    _invalidar_cache_admin_usuarios()
+    return jsonify({"mensaje": "Acceso temporal retirado"})
 
 
 @bp.route("/admin/api/usuarios/<uid>/admin", methods=["PATCH"])
@@ -1932,40 +2050,6 @@ def usuarios_cambiar_roles(uid):
         "permisos": permisos,
         "aviso": "El usuario debe cerrar sesión y volver a entrar para que el cambio surta efecto.",
     })
-
-
-@bp.route("/admin/api/usuarios/<uid>/prueba", methods=["PATCH"])
-@requiere_permiso("usuarios")
-def usuarios_otorgar_prueba(uid):
-    """Otorga o alarga la prueba gratuita de acceso Premium de un usuario
-    PARA UNA OPOSICIÓN CONCRETA (soporte: p. ej. compensar un problema, o
-    dar más margen antes de que se bloquee -- cada oposición tiene su
-    propia prueba, ver planes.prueba_activa). Vuelve a fijar
-    suscripciones.<OP>.prueba_fin desde AHORA + `dias`, sin sumar a lo que
-    quedara antes; si el usuario todavía no tenía esa oposición activada,
-    la activa con plan gratis de paso."""
-    ref = db.collection("usuarios").document(uid)
-    if not ref.get().exists:
-        return jsonify({"error": "Usuario no encontrado"}), 404
-    data = request.get_json(silent=True) or {}
-    oposicion = data.get("oposicion") or OPOSICION_POR_DEFECTO
-    if not oposicion_valida(oposicion):
-        return jsonify({"error": "Oposición no válida"}), 400
-    try:
-        dias = int(data.get("dias", 7))
-    except (TypeError, ValueError):
-        return jsonify({"error": "Número de días no válido"}), 400
-    if dias <= 0:
-        return jsonify({"error": "El número de días debe ser mayor que 0"}), 400
-    fin = (datetime.utcnow() + timedelta(days=dias)).isoformat()
-    plan_actual = ((ref.get().to_dict() or {}).get("suscripciones", {}) or {}).get(oposicion, {}).get("plan")
-    campos = {f"suscripciones.{oposicion}.prueba_fin": fin}
-    if not plan_actual:
-        campos[f"suscripciones.{oposicion}.plan"] = "gratis"
-    ref.update(campos)
-    _registrar_auditoria("usuario_otorgar_prueba", uid, f"{oposicion}: {dias} días")
-    _invalidar_cache_admin_usuarios()
-    return jsonify({"mensaje": f"Prueba otorgada hasta {fin}", "prueba_fin": fin, "oposicion": oposicion})
 
 
 @bp.route("/admin/api/usuarios/<uid>/resetear-racha", methods=["POST"])

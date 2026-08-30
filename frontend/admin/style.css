@@ -794,6 +794,21 @@ tr.sis-opt .sis-punto { background: #d9a300; }
 .ficha-admin-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
 .ficha-btn-peligro { color: var(--age-danger, #c0392b); border-color: var(--age-danger, #c0392b); }
 
+/* Pestaña "Planes del cliente" (29/08/2026) -- una tarjeta por oposición,
+   con su estado, de dónde viene el acceso y las acciones para darlo/
+   quitarlo, todo en un único sitio en vez de repartido entre "Resumen",
+   "Ingresos" y "Soporte". */
+.ficha-op-intro { font-size: 12.5px; color: var(--age-ink-soft, var(--age-ink)); margin: 0 0 14px; }
+.ficha-op-card { border: 1px solid var(--age-border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+.ficha-op-card:last-child { margin-bottom: 0; }
+.ficha-op-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.ficha-op-nombre { font-weight: 700; font-size: 13.5px; }
+.ficha-op-detalle { margin: 0 0 4px; font-size: 13px; color: var(--age-ink-soft, var(--age-ink)); }
+.ficha-op-origen { margin: 0 0 10px; font-size: 12px; color: var(--age-ink-soft, var(--age-ink)); display: flex; align-items: center; gap: 5px; }
+.ficha-op-bloqueado { background: var(--age-info-bg, var(--age-primary-soft)); color: var(--age-info, var(--age-ink)); border: 1px dashed var(--age-info, var(--age-border)); border-radius: 8px; padding: 8px 10px; font-size: 12px; display: flex; align-items: center; gap: 6px; margin: 0; }
+.ficha-op-form { margin-top: 10px; }
+.ficha-op-acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
 /* Barras de gasto: ahora son botones (tocables) */
 .ficha-barra-col { background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; }
 .ficha-barra-col:hover .ficha-barra { filter: brightness(1.12); }

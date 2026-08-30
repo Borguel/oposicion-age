@@ -1299,7 +1299,21 @@ const ESTADO_CLIENTE_LABEL = {
   // "suscripciones de pago", se distingue con su propio color para que no
   // se confunda con un cliente activo de verdad.
   regalo: ["Regalado", "admin-chip"],
+  // Igual que "regalo" pero con fecha de fin (panel "Planes del cliente" ->
+  // "Dar acceso temporal"), en vez de indefinido.
+  regalo_temporal: ["Regalado (temporal)", "admin-chip"],
 };
+
+// Catálogo fijo de oposiciones para la pestaña "Planes del cliente" -- las 3
+// públicas + METRO (oculta, ver oposiciones.py), mismas 4 que ya ofrecía el
+// selector "Cambiar plan" de antes. Con solo 4 no compensa pedirlas al
+// backend en cada apertura de ficha.
+const CATALOGO_OPOSICIONES_PLANES = [
+  { id: "AGE", nombre: "AGE — Cuerpo General Administrativo" },
+  { id: "GACE", nombre: "GACE — Gestión de la Administración Civil" },
+  { id: "AUXILIAR", nombre: "Auxiliar Administrativo del Estado" },
+  { id: "METRO", nombre: "Metro de Madrid (oculta)" },
+];
 
 const ESTADO_SUSCRIPCION_LABEL = {
   active: ["Al día", "admin-chip-ok"],
@@ -1336,6 +1350,7 @@ async function renderIngresos() {
         <option value="baja">Bajas</option>
         <option value="prueba">En prueba</option>
         <option value="regalo">Regalados</option>
+        <option value="regalo_temporal">Regalados (temporal)</option>
       </select>
       <select id="i-plan" class="age-input" aria-label="Filtrar por plan"><option value="">Todos los planes</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
       <select id="i-oposicion" class="age-input" aria-label="Filtrar por oposición"><option value="">Todas las oposiciones</option><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option></select>
@@ -1364,7 +1379,7 @@ async function cargarIngresos() {
   const porEstado = r.por_estado || {};
   const desglosePlan = Object.entries(r.por_plan || {})
     .map(([p, n]) => `${p === "premium" ? "Premium" : "Básico"}: ${n}`).join(" · ") || "—";
-  const desgloseEstado = ["activo", "cancelando", "baja", "prueba", "regalo"]
+  const desgloseEstado = ["activo", "cancelando", "baja", "prueba", "regalo", "regalo_temporal"]
     .filter((e) => porEstado[e]).map((e) => `${ESTADO_CLIENTE_LABEL[e][0]}: ${porEstado[e]}`).join(" · ") || "—";
 
   const filas = (d.filas || []).map((f) => {
@@ -1621,6 +1636,7 @@ function pintarFicha(u) {
   const inicial = (u.nombre || u.email || "?").trim().charAt(0).toUpperCase() || "?";
   const pestanas = [
     { id: "resumen", label: "Resumen" },
+    { id: "planes", label: "Planes del cliente" },
     { id: "gasto", label: "Uso y gasto" },
     { id: "soporte", label: "Soporte" },
   ];
@@ -1665,6 +1681,85 @@ function pintarFicha(u) {
   wireFichaVista(vistaFicha, u);
 }
 
+function diasRestantesDesde(fechaIso) {
+  if (!fechaIso) return null;
+  const ms = new Date(fechaIso).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / 86400000));
+}
+
+// Una tarjeta por oposición del catálogo (29/08/2026, pestaña "Planes del
+// cliente" -- antes esta información y estas acciones estaban repartidas
+// sin conexión entre "Resumen", "Ingresos" y "Soporte", ver commit). `sub`
+// es la entrada u.suscripciones[oid] (puede no existir si nunca se activó).
+function fichaOposicionCard(oid, nombre, sub) {
+  sub = sub || {};
+  let etiqueta, clase, detalle, origen = "";
+  let mostrarFormulario = !sub.tiene_pago_real;
+  let mostrarQuitar = false;
+
+  if (sub.tiene_pago_real) {
+    etiqueta = sub.cancelar_al_final_periodo ? "Cancelando" : "Activo";
+    clase = sub.cancelar_al_final_periodo ? "admin-chip-warn" : "admin-chip-ok";
+    detalle = sub.cancelar_al_final_periodo
+      ? `${sub.plan === "premium" ? "Premium" : "Básico"} -- se cancela el ${fechaCorta(sub.current_period_end)}`
+      : `${sub.plan === "premium" ? "Premium" : "Básico"} -- próxima renovación el ${fechaCorta(sub.current_period_end)}`;
+    origen = `${icono("tarjeta", 13)} Pago real con tarjeta (Stripe)`;
+  } else if (sub.acceso_temporal_activo) {
+    const dias = diasRestantesDesde(sub.acceso_temporal.hasta);
+    etiqueta = "Acceso temporal";
+    clase = "admin-chip-prueba";
+    detalle = `${sub.acceso_temporal_plan === "premium" ? "Premium" : "Básico"} regalado -- termina en ${dias} día${dias === 1 ? "" : "s"} (${fechaCorta(sub.acceso_temporal.hasta)})`;
+    origen = `${icono("regalo", 13)} Concedido por ti el ${fechaCorta(sub.acceso_temporal.fecha)}${sub.acceso_temporal.motivo ? ` -- "${escapeHtml(sub.acceso_temporal.motivo)}"` : ""}`;
+    mostrarQuitar = true;
+  } else if (sub.prueba_activa) {
+    etiqueta = "Prueba real";
+    clase = "admin-chip-prueba";
+    detalle = `Premium de prueba (la real de 7 días) -- termina el ${fechaCorta(sub.prueba_fin)}`;
+    origen = "Prueba gratuita que el propio usuario empezó al activar la oposición.";
+  } else if (sub.plan && sub.plan !== "gratis") {
+    etiqueta = "Acceso permanente";
+    clase = "admin-chip";
+    detalle = `${sub.plan === "premium" ? "Premium" : "Básico"} regalado -- sin fecha de fin`;
+    origen = sub.concedido_por_admin
+      ? `${icono("regalo", 13)} Concedido por ti el ${fechaCorta(sub.concedido_por_admin.fecha)}${sub.concedido_por_admin.motivo ? ` -- "${escapeHtml(sub.concedido_por_admin.motivo)}"` : ""}`
+      : "";
+    mostrarQuitar = true;
+  } else {
+    etiqueta = "Sin acceso";
+    clase = "admin-chip";
+    detalle = "Nunca ha tenido plan de pago en esta oposición.";
+  }
+
+  const nivelPorDefecto = sub.acceso_temporal_plan || (sub.plan === "basico" ? "basico" : "premium");
+
+  return `
+    <div class="ficha-op-card">
+      <div class="ficha-op-cab">
+        <span class="ficha-op-nombre">${escapeHtml(nombre)}</span>
+        <span class="admin-chip ${clase}">${escapeHtml(etiqueta)}</span>
+      </div>
+      <p class="ficha-op-detalle">${escapeHtml(detalle)}</p>
+      ${origen ? `<p class="ficha-op-origen">${origen}</p>` : ""}
+      ${sub.tiene_pago_real ? `<p class="ficha-op-bloqueado">${icono("informacion", 14)} Esta oposición la paga el cliente de verdad -- no se puede tocar el plan a mano aquí para no desincronizar con Stripe.</p>` : ""}
+      ${mostrarFormulario ? `
+        <div class="ficha-op-form">
+          <div class="admin-form-fila">
+            <select class="age-input fop-nivel" data-op="${oid}">
+              <option value="basico" ${nivelPorDefecto === "basico" ? "selected" : ""}>Básico</option>
+              <option value="premium" ${nivelPorDefecto === "premium" ? "selected" : ""}>Premium</option>
+            </select>
+            <input type="number" class="age-input fop-dias" data-op="${oid}" min="1" max="90" value="7" style="max-width:90px;" aria-label="Días de acceso temporal">
+          </div>
+          <input class="age-input fop-motivo" data-op="${oid}" placeholder="Motivo (queda registrado)" style="margin-top:8px;">
+          <div class="ficha-op-acciones">
+            <button type="button" class="age-btn age-btn-outline admin-mini fop-temporal" data-op="${oid}">Dar acceso temporal</button>
+            <button type="button" class="age-btn age-btn-outline admin-mini fop-permanente" data-op="${oid}">Hacer permanente</button>
+            ${mostrarQuitar ? `<button type="button" class="age-btn age-btn-outline admin-mini ficha-btn-peligro fop-quitar" data-op="${oid}" data-temporal="${sub.acceso_temporal_activo ? "1" : "0"}">Quitar acceso</button>` : ""}
+          </div>
+        </div>` : ""}
+    </div>`;
+}
+
 function fichaVistaHtml(vista, u) {
   const c = u.contenido_creado || {};
   const r = u.rendimiento || {};
@@ -1699,6 +1794,15 @@ function fichaVistaHtml(vista, u) {
           ${fichaMini(icono("estrella", 18), c.favoritas, "Favoritas")}
           ${fichaMini(icono("repetir", 18), c.falladas, "A repasar")}
         </div>
+      </div>`;
+  }
+
+  if (vista === "planes") {
+    return `
+      <div class="ficha-panel">
+        <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("tarjeta", 17)}</span><h3>Planes del cliente</h3></div>
+        <p class="ficha-op-intro">Una tarjeta por oposición: qué tiene activo, si es acceso temporal o permanente concedido por ti, y desde aquí puedes darle o quitarle acceso.</p>
+        ${CATALOGO_OPOSICIONES_PLANES.map((o) => fichaOposicionCard(o.id, o.nombre, (u.suscripciones || {})[o.id])).join("")}
       </div>`;
   }
 
@@ -1747,26 +1851,6 @@ function fichaVistaHtml(vista, u) {
   if (vista === "soporte") {
     return `
       <div class="ficha-panel">
-        <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("tarjeta", 17)}</span><h3>Cambiar plan</h3></div>
-        <div class="admin-form-fila">
-          <select id="up-plan" class="age-input"><option value="gratis">Gratis</option><option value="basico">Básico</option><option value="premium">Premium</option></select>
-          <select id="up-oposicion" class="age-input"><option value="AGE">AGE</option><option value="GACE">GACE</option><option value="AUXILIAR">Auxiliar</option><option value="METRO">Metro</option></select>
-        </div>
-        <input id="up-motivo" class="age-input" placeholder="Motivo (queda registrado)" style="margin-top:8px;">
-        <button class="age-btn age-btn-primary" id="up-guardar" style="margin-top:10px;">Cambiar plan</button>
-      </div>
-      <div class="ficha-panel">
-        <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("arena", 17)}</span><h3>Prueba gratuita Premium</h3></div>
-        <p class="ficha-prueba-estado">${u.en_prueba
-          ? `En prueba en alguna oposición hasta el <strong>${escapeHtml(fechaCorta(u.prueba_fin))}</strong>.`
-          : (u.prueba_fin ? `Su última prueba terminó el ${escapeHtml(fechaCorta(u.prueba_fin))}.` : "Nunca ha tenido una prueba.")}</p>
-        <p class="ficha-prueba-nota"><small>Cada oposición tiene su propia prueba. Esto otorga/alarga la de la oposición seleccionada arriba (Cambiar plan).</small></p>
-        <div class="admin-form-fila">
-          <input id="up-prueba-dias" class="age-input" type="number" min="1" max="90" value="7" style="max-width:100px;">
-          <button class="age-btn age-btn-outline admin-mini" id="up-prueba-otorgar">Otorgar/alargar prueba</button>
-        </div>
-      </div>
-      <div class="ficha-panel">
         <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("lapiz", 17)}</span><h3>Notas internas</h3></div>
         <div id="up-notas-lista" class="ficha-notas"></div>
         <textarea class="age-input" id="up-nota-nueva" rows="2" placeholder="Escribe una nota nueva…"></textarea>
@@ -1811,6 +1895,34 @@ function fichaVistaHtml(vista, u) {
 }
 
 function wireFichaVista(vista, u) {
+  if (vista === "planes") {
+    const leerCampos = (oid) => ({
+      plan: document.querySelector(`.fop-nivel[data-op="${oid}"]`).value,
+      dias: parseInt(document.querySelector(`.fop-dias[data-op="${oid}"]`).value, 10) || 7,
+      motivo: document.querySelector(`.fop-motivo[data-op="${oid}"]`).value,
+    });
+    document.querySelectorAll(".fop-temporal").forEach((btn) => btn.addEventListener("click", async () => {
+      const oid = btn.dataset.op;
+      const { plan, dias, motivo } = leerCampos(oid);
+      const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/acceso-temporal`, { oposicion: oid, plan, dias, motivo });
+      if (r) { toast(r.mensaje || "Acceso temporal concedido."); abrirUsuario(u.uid); }
+    }));
+    document.querySelectorAll(".fop-permanente").forEach((btn) => btn.addEventListener("click", async () => {
+      const oid = btn.dataset.op;
+      const { plan, motivo } = leerCampos(oid);
+      const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/plan`, { oposicion: oid, plan, motivo });
+      if (r) { toast("Acceso permanente concedido."); abrirUsuario(u.uid); }
+    }));
+    document.querySelectorAll(".fop-quitar").forEach((btn) => btn.addEventListener("click", async () => {
+      const oid = btn.dataset.op;
+      if (!(await confirmarAdmin("¿Quitar el acceso regalado a esta oposición?", { peligro: true, textoAceptar: "Quitar" }))) return;
+      const r = btn.dataset.temporal === "1"
+        ? await api("DELETE", `/admin/api/usuarios/${u.uid}/acceso-temporal`, { oposicion: oid })
+        : await api("PATCH", `/admin/api/usuarios/${u.uid}/plan`, { oposicion: oid, plan: "gratis" });
+      if (r) { toast("Acceso retirado."); abrirUsuario(u.uid); }
+    }));
+    return;
+  }
   if (vista === "gasto") {
     document.getElementById("fc-mes")?.addEventListener("click", () => { modoCosteFicha = "mes"; pintarFicha(u); });
     document.getElementById("fc-dia")?.addEventListener("click", () => { modoCosteFicha = "dia"; pintarFicha(u); });
@@ -1853,16 +1965,6 @@ function wireFichaVista(vista, u) {
   }
 
   if (vista === "soporte") {
-    document.getElementById("up-plan").value = u.plan;
-    document.getElementById("up-oposicion").value = oposicionActual();
-    document.getElementById("up-guardar").addEventListener("click", async () => {
-      const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/plan`, {
-        plan: document.getElementById("up-plan").value,
-        oposicion: document.getElementById("up-oposicion").value,
-        motivo: document.getElementById("up-motivo").value,
-      });
-      if (r) { toast("Plan actualizado."); cerrarModal(); cargarUsuarios(); }
-    });
     let notas = Array.isArray(u.notas_lista) ? u.notas_lista.slice() : [];
     const renderNotas = () => {
       const cont = document.getElementById("up-notas-lista");
@@ -1894,20 +1996,14 @@ function wireFichaVista(vista, u) {
       // abrirUsuario(u.uid) (25/08/2026, bug real de la auditoría): antes
       // solo se avisaba con un toast -- la ficha abierta seguía enseñando
       // la racha/los límites de ANTES del reseteo hasta cerrarla y
-      // volver a abrirla a mano. Mismo patrón que ya usan "up-admin" y
-      // "up-prueba-otorgar" más abajo para refrescarse tras su acción.
+      // volver a abrirla a mano. Mismo patrón que ya usa "up-admin" más
+      // abajo para refrescarse tras su acción.
       if (r) { toast("Racha reseteada."); abrirUsuario(u.uid); }
     });
     document.getElementById("up-limites").addEventListener("click", async () => {
       if (!(await confirmarAdmin("¿Poner a cero los contadores de uso de IA de este usuario?", { textoAceptar: "Resetear" }))) return;
       const r = await api("POST", `/admin/api/usuarios/${u.uid}/resetear-limites`);
       if (r) { toast("Límites de uso reseteados."); abrirUsuario(u.uid); }
-    });
-    document.getElementById("up-prueba-otorgar")?.addEventListener("click", async () => {
-      const dias = parseInt(document.getElementById("up-prueba-dias").value, 10) || 7;
-      const oposicion = document.getElementById("up-oposicion").value;
-      const r = await api("PATCH", `/admin/api/usuarios/${u.uid}/prueba`, { dias, oposicion });
-      if (r) { toast(r.mensaje || "Prueba actualizada."); cerrarModal(); cargarUsuarios(); }
     });
     const mostrarEnlace = async (tipo) => {
       const r = await api("POST", `/admin/api/usuarios/${u.uid}/enlace`, { tipo });

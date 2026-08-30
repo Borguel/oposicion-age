@@ -22,7 +22,7 @@ from registro_progreso_usuario import (
     obtener_perfil_usuario,
 )
 from auth_utils import requiere_plan
-from planes import resolver_plan_efectivo, tiene_plan_de_pago_activo
+from planes import resolver_plan_efectivo, tiene_plan_de_pago_activo, acceso_temporal_activo
 
 
 def test_dominio_desechable_conocido_se_detecta():
@@ -371,3 +371,58 @@ def test_perfil_usuario_expone_prueba_bloqueada_por_uso_previo(db):
     # Ausente en Firestore (cuentas anteriores a este campo, o motivo
     # distinto como verificación pendiente) -> False, nunca falla con KeyError.
     assert obtener_perfil_usuario(db, "u1", oposicion="GACE")["prueba_bloqueada_por_uso_previo"] is False
+
+
+# ---------- Acceso temporal concedido a mano por un admin (29/08/2026,
+# pestaña "Planes del cliente") -- deliberadamente un campo distinto de
+# prueba_fin, para no disparar el correo de "tu prueba está a punto de
+# terminar" por un regalo de soporte que no es una prueba real. ----------
+
+def test_acceso_temporal_activo_con_fecha_futura():
+    fin = (datetime.utcnow() + timedelta(days=3)).isoformat()
+    activo, plan = acceso_temporal_activo({"acceso_temporal": {"plan": "basico", "hasta": fin}})
+    assert activo is True
+    assert plan == "basico"
+
+
+def test_acceso_temporal_activo_con_fecha_pasada():
+    fin = (datetime.utcnow() - timedelta(days=1)).isoformat()
+    activo, plan = acceso_temporal_activo({"acceso_temporal": {"plan": "premium", "hasta": fin}})
+    assert activo is False
+    assert plan is None
+
+
+def test_acceso_temporal_activo_sin_campo():
+    assert acceso_temporal_activo({}) == (False, None)
+    assert acceso_temporal_activo(None) == (False, None)
+
+
+def test_resolver_plan_efectivo_sube_por_acceso_temporal_basico():
+    fin = (datetime.utcnow() + timedelta(days=5)).isoformat()
+    datos = {"suscripciones": {"AGE": {"plan": "gratis", "acceso_temporal": {"plan": "basico", "hasta": fin}}}}
+    plan, sub = resolver_plan_efectivo(datos, oposicion="AGE")
+    assert plan == "basico"
+    assert sub.get("subscription_status") == "trialing"
+
+
+def test_resolver_plan_efectivo_acceso_temporal_no_degrada_un_plan_real_mejor():
+    fin = (datetime.utcnow() + timedelta(days=5)).isoformat()
+    datos = {"suscripciones": {"AGE": {
+        "plan": "premium", "subscription_status": "active",
+        "acceso_temporal": {"plan": "basico", "hasta": fin},
+    }}}
+    plan, sub = resolver_plan_efectivo(datos, oposicion="AGE")
+    assert plan == "premium"
+    assert sub.get("subscription_status") == "active"
+
+
+def test_resolver_plan_efectivo_toma_lo_mejor_entre_prueba_real_y_temporal_admin():
+    fin_prueba = (datetime.utcnow() + timedelta(days=2)).isoformat()
+    fin_temporal = (datetime.utcnow() + timedelta(days=10)).isoformat()
+    datos = {"suscripciones": {"AGE": {
+        "plan": "gratis",
+        "prueba_fin": fin_prueba,  # sube a premium
+        "acceso_temporal": {"plan": "basico", "hasta": fin_temporal},  # solo básico
+    }}}
+    plan, _ = resolver_plan_efectivo(datos, oposicion="AGE")
+    assert plan == "premium"  # la prueba real (premium) gana sobre el temporal (básico)
