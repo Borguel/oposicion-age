@@ -982,6 +982,19 @@ const CLAVE_BANNER_PRUEBA_CERRADO = "age_banner_prueba_cerrado";
 async function construirBannerPrueba(user) {
   if (!user) return undefined;
 
+  // Admin total o con algún permiso de administración concedido (29/08/2026,
+  // a petición del usuario: le dio acceso admin a una cuenta sin plan y le
+  // seguía saliendo "tu prueba gratuita ha terminado") -- estas cuentas ya
+  // tienen acceso completo por su rol, así que el aviso de plan/prueba (que
+  // asume que el bloqueo real le afecta) no aplica y solo confunde.
+  try {
+    const { claims } = await user.getIdTokenResult();
+    if (claims.admin === true || (Array.isArray(claims.permisos) && claims.permisos.length > 0)) return undefined;
+  } catch {
+    // Sin poder leer los claims, se sigue con el criterio normal de abajo
+    // (perfil de /mi-perfil) en vez de arriesgarse a ocultar un aviso real.
+  }
+
   // forzarRefresco=true a propósito: este aviso decide si se bloquea al
   // usuario en toda la web, así que nunca debe fiarse de una respuesta
   // guardada en sessionStorage de antes de un cambio de plan/prueba (p.ej.
