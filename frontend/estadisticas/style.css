@@ -1183,7 +1183,12 @@
          alineadas -- max-width solo es un techo, no fuerza overflow en
          pantallas más estrechas que él. */
       width: 100%;
-      max-width: 900px;
+      /* 420px (antes 900px, 29/08/2026, feedback real: "se ve muy grande",
+         el mes de un vistazo -- Estadísticas -- no cabía en un portátil sin
+         hacer scroll, con celdas de hasta ~130px de lado). A este ancho la
+         celda ronda los 60px, de sobra legible, y el mes completo (incluida
+         la cabecera con el nombre del mes) cabe en una pantalla normal. */
+      max-width: 420px;
     }
 
     .calendario-dias-semana span {
@@ -1204,7 +1209,12 @@
       overflow: hidden;
       margin: 8px auto 0;
       width: 100%;
-      max-width: 900px;
+      /* 420px (antes 900px, 29/08/2026, feedback real: "se ve muy grande",
+         el mes de un vistazo -- Estadísticas -- no cabía en un portátil sin
+         hacer scroll, con celdas de hasta ~130px de lado). A este ancho la
+         celda ronda los 60px, de sobra legible, y el mes completo (incluida
+         la cabecera con el nombre del mes) cabe en una pantalla normal. */
+      max-width: 420px;
     }
 
     /* Cuadrícula real de calendario de pared: el fondo del contenedor hace
