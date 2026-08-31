@@ -457,7 +457,19 @@
 .admin-paginacion { display: flex; align-items: center; gap: 12px; justify-content: center; margin-top: 14px; font-size: 13px; flex-wrap: wrap; }
 
 .u-grid-cab { display: flex; align-items: center; justify-content: space-between; margin: 4px 2px 12px; font-size: 13px; color: var(--age-ink-soft, var(--age-ink)); }
-.u-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+/* Una columna en móvil, dos en tablet/portátil/PC (29/08/2026, feedback
+   real con captura: con minmax(250px,1fr) en auto-fill, un portátil de
+   1440px metía 4 tarjetas por fila -- a 250px de ancho, la insignia "En
+   prueba (Premium)" (bastante más larga que "Premium"/"Gratis") dejaba
+   casi sin sitio al nombre y al email, a pesar del flex-shrink:0 de
+   .ficha-badge (ver el comentario de esa regla). Fijar dos columnas en
+   vez de dejar que el auto-fill meta las que quepan da a cada tarjeta
+   mucho más ancho de sobra para nombre + insignia + email, sea cual sea
+   el tamaño de la insignia. */
+.u-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 640px) {
+  .u-grid { grid-template-columns: repeat(2, 1fr); }
+}
 .u-card {
   background: var(--age-card); border: 1px solid var(--age-border); border-radius: var(--age-radius-lg);
   padding: 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--age-shadow);
