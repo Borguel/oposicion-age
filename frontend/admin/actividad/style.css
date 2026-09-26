@@ -52,9 +52,16 @@
 }
 .act-lista { display: flex; flex-direction: column; gap: 14px; }
 
+/* min-width: 0 (bug real, nombres de archivo largos): .act-card es a la
+   vez ítem de .act-grid (CSS Grid) e ítem de .act-lista (flex columna) --
+   en ambos casos, sin esto, el "tamaño mínimo automático" del ítem usa el
+   ancho del contenido más ancho (el título del documento, en una sola
+   línea por .act-card-titulo) como suelo, así que la tarjeta entera crecía
+   para caber el nombre completo en vez de dejar que .act-card-titulo lo
+   recortara con "..." como ya estaba preparado para hacer. */
 .act-card {
   background: var(--age-card); border: 1px solid var(--age-border); border-radius: var(--age-radius-lg, 14px);
-  padding: 16px 18px; box-shadow: var(--age-shadow);
+  padding: 16px 18px; box-shadow: var(--age-shadow); min-width: 0;
 }
 .act-card-ancha { max-width: none; }
 .act-card-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 4px; }

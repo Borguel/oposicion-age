@@ -30,6 +30,12 @@ const USUARIO = {
   ultima_actividad: "2026-02-01",
 };
 
+// Nombre real (anonimizado en la forma, no en la longitud) que causó un
+// bug real reportado por el usuario en móvil: el título de la tarjeta no
+// se truncaba con "..." como debía y desbordaba la página en vez de
+// cortarse (ver .act-card en style.css).
+const NOMBRE_ARCHIVO_LARGO = "BOE-443_Normativa_para_ingreso_en_el_Cuerpo_de_Gestion_de_la_Administracion_Civi.pdf";
+
 const RESUMEN_TEXTO = "Resumen corto de prueba sobre la Constitución.";
 const TEXTO_DOCUMENTO = "Texto completo extraído del PDF de prueba.";
 const PREGUNTAS_TEST = [
@@ -57,6 +63,13 @@ const METADATOS = {
       nombre_archivo: "ley-test.pdf",
       num_paginas: 12,
       fecha_subida: "2026-01-05",
+      longitud_texto: TEXTO_DOCUMENTO.length,
+    },
+    {
+      id: "doc2",
+      nombre_archivo: NOMBRE_ARCHIVO_LARGO,
+      num_paginas: 14,
+      fecha_subida: "2026-01-06",
       longitud_texto: TEXTO_DOCUMENTO.length,
     },
   ],
@@ -185,6 +198,25 @@ test.describe("Página Actividad completa", () => {
       const desbordamiento = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(desbordamiento).toBeLessThanOrEqual(1);
     }
+  });
+
+  test("el título de un documento con nombre de archivo largo se trunca en vez de desbordar la tarjeta", async ({ page }) => {
+    await mockPagina(page);
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.goto("/admin/actividad/?uid=uid-test-1");
+
+    const tituloLargo = page.locator(`.act-card-titulo[title="${NOMBRE_ARCHIVO_LARGO}"]`);
+    await expect(tituloLargo).toBeVisible();
+    // Si .act-card no encoge por debajo del contenido (el bug real), la
+    // tarjeta entera crece para caber el nombre y este elemento nunca
+    // llega a desbordarse respecto a sí mismo -- en cambio, truncado de
+    // verdad, su contenido (el texto completo) es más ancho que su caja
+    // visible.
+    const trunca = await tituloLargo.evaluate((el) => el.scrollWidth > el.clientWidth);
+    expect(trunca).toBe(true);
+
+    const desbordamiento = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(desbordamiento).toBeLessThanOrEqual(1);
   });
 
   test("sin permisos de admin muestra el aviso de acceso restringido", async ({ page }) => {

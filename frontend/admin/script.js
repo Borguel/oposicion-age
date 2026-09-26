@@ -1688,6 +1688,7 @@ function pintarFicha(u) {
     { id: "soporte", label: "Soporte" },
   ];
   if (_permisos.admin) pestanas.push({ id: "admin", label: "Administración" });
+  if (_permisos.admin) pestanas.push({ id: "actividad", label: "Actividad completa" });
   if (!pestanas.some((p) => p.id === vistaFicha)) vistaFicha = "resumen";
 
   abrirModal(`
@@ -1706,7 +1707,6 @@ function pintarFicha(u) {
           </div>
           <p class="ficha-uid"><span>UID: ${escapeHtml(u.uid)}</span><button class="admin-copiar" id="up-copiar-uid">copiar</button></p>
         </div>
-        ${_permisos.admin ? `<a class="age-btn age-btn-outline admin-mini ficha-ver-actividad" href="/admin/actividad/?uid=${encodeURIComponent(u.uid)}">Ver actividad completa →</a>` : ""}
       </div>
 
       <div class="ficha-kpis">
@@ -1725,6 +1725,10 @@ function pintarFicha(u) {
   });
   pestanas.forEach((p) => {
     document.getElementById(`fv-${p.id}`).addEventListener("click", () => {
+      if (p.id === "actividad") {
+        window.location.href = "/admin/actividad/?uid=" + encodeURIComponent(u.uid);
+        return;
+      }
       vistaFicha = p.id;
       pintarFicha(u);
     });
