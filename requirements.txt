@@ -56,7 +56,7 @@ pydantic_core==2.46.4
 PyJWT==2.13.0
 PyMuPDF==1.28.0
 pyparsing==3.3.2
-pypdf==6.15.0
+pypdf==6.16.1
 pypdfium2==5.12.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
