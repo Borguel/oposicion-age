@@ -1847,6 +1847,99 @@ def usuarios_detalle(uid):
     })
 
 
+@bp.route("/admin/api/usuarios/<uid>/actividad-completa", methods=["GET"])
+@requiere_permiso("usuarios")
+def usuarios_actividad_completa(uid):
+    """Volcado de solo lectura de TODO lo que un usuario ha hecho en la app:
+    el texto completo (sin recortar) de cada resumen/esquema/documento
+    subido, cada test que ha hecho con cada pregunta y su respuesta, y cada
+    banco de tarjetas/preguntas generado desde PDF. Pensado para poder
+    investigar a fondo un caso concreto (p. ej. "a este usuario le salió un
+    resultado raro") desde el propio panel, sin tener que entrar a mano en
+    Firestore -- y para que el admin pueda copiar el volcado entero y
+    pegarlo donde le haga falta analizarlo.
+
+    Solo para el admin TOTAL (g.es_admin): a diferencia del resto de la
+    ficha, aquí no hay cifras agregadas, es el contenido real subido y
+    generado por el usuario -- un admin con permiso parcial "usuarios" no
+    debe poder leerlo."""
+    if not g.es_admin:
+        return jsonify({"error": "Se requiere ser administrador total"}), 403
+    ref = db.collection("usuarios").document(uid)
+    if not ref.get().exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    return jsonify(_actividad_completa(ref))
+
+
+def _actividad_completa(ref):
+    documentos = []
+    for d in ref.collection("documentos").stream():
+        dd = d.to_dict() or {}
+        documentos.append({
+            "id": d.id,
+            "nombre_archivo": dd.get("nombre_archivo", ""),
+            "titulo": dd.get("titulo", ""),
+            "num_paginas": dd.get("num_paginas", 0),
+            "fecha_subida": dd.get("fecha_subida"),
+            "texto": dd.get("texto", ""),
+        })
+    documentos.sort(key=lambda x: x.get("fecha_subida") or "", reverse=True)
+
+    def _volcar(nombre_coleccion, campos_extra):
+        salida = []
+        for d in ref.collection(nombre_coleccion).stream():
+            dd = d.to_dict() or {}
+            entrada = {"id": d.id, "documento_id": dd.get("documento_id"), "nombre_archivo": dd.get("nombre_archivo", ""), "fecha": dd.get("fecha")}
+            for campo in campos_extra:
+                entrada[campo] = dd.get(campo)
+            salida.append(entrada)
+        salida.sort(key=lambda x: x.get("fecha") or "", reverse=True)
+        return salida
+
+    resumenes_pdf = _volcar("resumenes_pdf", ["resumen", "longitud"])
+    esquemas_pdf = _volcar("esquemas_pdf", ["esquema", "longitud"])
+    tests_pdf = _volcar("tests_pdf", ["preguntas", "num_preguntas"])
+    tarjetas_pdf = _volcar("tarjetas_pdf", ["tarjetas", "num_tarjetas"])
+
+    esquemas = []
+    for d in ref.collection("esquemas").stream():
+        dd = d.to_dict() or {}
+        esquemas.append({"id": d.id, "fecha": dd.get("fecha"), "oposicion": dd.get("oposicion"), "temas": dd.get("temas", []), "contenido": dd.get("contenido")})
+    esquemas.sort(key=lambda x: x.get("fecha") or "", reverse=True)
+
+    tests = []
+    for d in ref.collection("tests").stream():
+        dd = d.to_dict() or {}
+        tests.append({
+            "id": d.id,
+            "fecha": dd.get("fecha"),
+            "tipo": dd.get("tipo"),
+            "oposicion": dd.get("oposicion"),
+            "estado": dd.get("estado"),
+            "num_preguntas": dd.get("num_preguntas", 0),
+            "aciertos": dd.get("aciertos", 0),
+            "fallos": dd.get("fallos", 0),
+            "blancos": dd.get("blancos", 0),
+            "porcentaje_acierto": dd.get("porcentaje_acierto"),
+            "puntuacion_final": dd.get("puntuacion_final"),
+            "tiempo": dd.get("tiempo", 0),
+            "temas": dd.get("temas", []),
+            "resultado": dd.get("resultado"),
+            "preguntas": dd.get("preguntas", []),
+        })
+    tests.sort(key=lambda x: x.get("fecha") or "", reverse=True)
+
+    return {
+        "documentos": documentos,
+        "resumenes_pdf": resumenes_pdf,
+        "esquemas_pdf": esquemas_pdf,
+        "tests_pdf": tests_pdf,
+        "tarjetas_pdf": tarjetas_pdf,
+        "esquemas": esquemas,
+        "tests": tests,
+    }
+
+
 def _notas_lista(datos):
     """Lista de notas internas del usuario. Migra en caliente la nota única
     antigua (notas_admin: str) a un elemento de la lista, para no perder lo

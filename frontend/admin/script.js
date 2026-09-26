@@ -1688,6 +1688,7 @@ function pintarFicha(u) {
     { id: "soporte", label: "Soporte" },
   ];
   if (_permisos.admin) pestanas.push({ id: "admin", label: "Administración" });
+  if (_permisos.admin) pestanas.push({ id: "actividad", label: "Actividad completa" });
   if (!pestanas.some((p) => p.id === vistaFicha)) vistaFicha = "resumen";
 
   abrirModal(`
@@ -1723,10 +1724,25 @@ function pintarFicha(u) {
     navigator.clipboard?.writeText(u.uid).then(() => toast("UID copiado.")).catch(() => toast("No se pudo copiar.", "error"));
   });
   pestanas.forEach((p) => {
-    document.getElementById(`fv-${p.id}`).addEventListener("click", () => { vistaFicha = p.id; pintarFicha(u); });
+    document.getElementById(`fv-${p.id}`).addEventListener("click", async () => {
+      vistaFicha = p.id;
+      if (p.id === "actividad" && !actividadCompletaCache[u.uid]) {
+        pintarFicha(u);
+        const datos = await apiGet(`/admin/api/usuarios/${u.uid}/actividad-completa`);
+        if (datos) actividadCompletaCache[u.uid] = datos;
+        pintarFicha(u);
+        return;
+      }
+      pintarFicha(u);
+    });
   });
   wireFichaVista(vistaFicha, u);
 }
+
+// Caché en memoria (se pierde al recargar la página, no persiste) del
+// volcado completo de actividad por usuario -- para no repetir la consulta
+// pesada a Firestore si el admin cierra y reabre la pestaña sin recargar.
+let actividadCompletaCache = {};
 
 function diasRestantesDesde(fechaIso) {
   if (!fechaIso) return null;
@@ -1939,10 +1955,125 @@ function fichaVistaHtml(vista, u) {
       </div>`;
   }
 
+  if (vista === "actividad") {
+    const datos = actividadCompletaCache[u.uid];
+    if (!datos) return `<div class="ficha-panel"><p class="admin-cargando">Cargando actividad completa…</p></div>`;
+    return fichaActividadCompletaHtml(datos);
+  }
+
   return "";
 }
 
+// Texto/preguntas completos de un documento, con < > y ⚠️ escapados -- para
+// el volcado de "Actividad completa" (ficha del usuario), pensado para
+// investigar a fondo un caso concreto sin entrar a Firestore a mano.
+function fichaTextoLargoHtml(etiqueta, texto) {
+  if (!texto) return "";
+  return `<details class="ficha-texto-detalle"><summary>${escapeHtml(etiqueta)} (${texto.length.toLocaleString("es")} caracteres) -- ver completo</summary><pre class="ficha-texto-completo">${escapeHtml(texto)}</pre></details>`;
+}
+
+function fichaPreguntaHtml(p) {
+  const acierto = p.acierto === true ? "✅" : p.acierto === false ? "❌" : "➖";
+  const opciones = (p.opciones || []).map((o) => `<li${o === p.respuesta_correcta ? ' class="ficha-opcion-correcta"' : ""}${o === p.respuesta_usuario && o !== p.respuesta_correcta ? ' class="ficha-opcion-marcada"' : ""}>${escapeHtml(o)}</li>`).join("");
+  return `<div class="ficha-pregunta">
+    <p class="ficha-pregunta-txt">${acierto} ${escapeHtml(p.pregunta || "")}</p>
+    ${opciones ? `<ul class="ficha-opciones">${opciones}</ul>` : ""}
+    <p class="ficha-pregunta-meta">Respuesta correcta: <strong>${escapeHtml(p.respuesta_correcta ?? "–")}</strong> · Respondió: <strong>${escapeHtml(p.respuesta_usuario ?? "(en blanco)")}</strong></p>
+    ${p.explicacion ? `<p class="ficha-pregunta-exp">${escapeHtml(p.explicacion)}</p>` : ""}
+  </div>`;
+}
+
+function fichaActividadCompletaHtml(datos) {
+  const docsHtml = (datos.documentos || []).map((d) => {
+    const resumen = (datos.resumenes_pdf || []).find((r) => r.documento_id === d.id);
+    const esquema = (datos.esquemas_pdf || []).find((r) => r.documento_id === d.id);
+    const testPdf = (datos.tests_pdf || []).find((r) => r.documento_id === d.id);
+    const tarjetas = (datos.tarjetas_pdf || []).find((r) => r.documento_id === d.id);
+    return `<div class="ficha-doc-item">
+      <div class="ficha-doc-cab"><strong>${escapeHtml(d.nombre_archivo || d.titulo || "Documento")}</strong><span class="ficha-doc-fecha">${escapeHtml(fechaCorta(d.fecha_subida))}</span></div>
+      <div class="ficha-doc-meta">${(d.num_paginas || 0).toLocaleString("es")} páginas</div>
+      ${fichaTextoLargoHtml("Texto extraído del PDF", d.texto)}
+      ${resumen ? fichaTextoLargoHtml("Resumen generado", resumen.resumen) : ""}
+      ${esquema ? fichaTextoLargoHtml("Esquema generado", esquema.esquema) : ""}
+      ${testPdf ? `<details class="ficha-texto-detalle"><summary>Test generado desde este PDF (${(testPdf.preguntas || []).length} preguntas) -- ver completo</summary>${(testPdf.preguntas || []).map(fichaPreguntaHtml).join("")}</details>` : ""}
+      ${tarjetas ? `<details class="ficha-texto-detalle"><summary>Tarjetas generadas (${(tarjetas.tarjetas || []).length}) -- ver completo</summary>${(tarjetas.tarjetas || []).map((t) => `<p class="ficha-tarjeta">🔹 <strong>${escapeHtml(t.pregunta || t.anverso || "")}</strong><br>${escapeHtml(t.respuesta || t.reverso || "")}</p>`).join("")}</details>` : ""}
+    </div>`;
+  }).join("") || `<p class="ficha-uso-nota">Sin documentos subidos.</p>`;
+
+  const testsHtml = (datos.tests || []).map((t) => `
+    <details class="ficha-texto-detalle">
+      <summary>${escapeHtml(fechaCorta(t.fecha))} · ${escapeHtml(t.tipo || "")} · ${escapeHtml(t.oposicion || "")} · ${t.estado === "en_progreso" ? "en progreso" : `${t.aciertos || 0}✅ ${t.fallos || 0}❌ ${t.blancos || 0}➖ (${t.porcentaje_acierto ?? "–"}%)`} -- ver preguntas</summary>
+      ${(t.preguntas || []).map(fichaPreguntaHtml).join("") || `<p class="ficha-uso-nota">Sin preguntas guardadas (test en progreso).</p>`}
+    </details>`).join("") || `<p class="ficha-uso-nota">Sin tests hechos.</p>`;
+
+  const esquemasHtml = (datos.esquemas || []).map((e) => fichaTextoLargoHtml(`Esquema · ${fechaCorta(e.fecha)} · ${(e.temas || []).join(", ")}`, e.contenido)).join("") || `<p class="ficha-uso-nota">Sin esquemas (no-PDF).</p>`;
+
+  return `
+    <div class="ficha-panel">
+      <div class="ficha-panel-cab-fila">
+        <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("buscar", 17)}</span><h3>Actividad completa</h3></div>
+        <button class="age-btn age-btn-outline admin-mini" id="up-copiar-actividad">Copiar todo (para análisis)</button>
+      </div>
+      <p class="ficha-uso-nota">Volcado íntegro, sin recortar: útil para pegarlo donde necesites analizar a fondo un caso concreto. Cada bloque largo va plegado -- pulsa para desplegarlo.</p>
+    </div>
+    <div class="ficha-panel"><div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("documento", 17)}</span><h3>Documentos PDF</h3></div><div class="ficha-docs-lista">${docsHtml}</div></div>
+    <div class="ficha-panel"><div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("matraz", 17)}</span><h3>Tests hechos</h3></div>${testsHtml}</div>
+    <div class="ficha-panel"><div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("esquema", 17)}</span><h3>Esquemas (no PDF)</h3></div>${esquemasHtml}</div>`;
+}
+
+// Mismo contenido que fichaActividadCompletaHtml pero en texto plano, para
+// el botón "Copiar todo" -- se pega directamente en un chat/documento para
+// pedir que se analice, así que va sin HTML y con todo desplegado (no solo
+// lo que el admin tenga abierto en pantalla en ese momento).
+function construirTextoActividad(u, datos) {
+  const lineas = [`=== ACTIVIDAD COMPLETA: ${u.email || u.uid} (${u.nombre || "sin nombre"}) ===`, ""];
+  lineas.push(`Plan: ${u.plan} · Alta: ${fechaCorta(u.fecha_creacion)} · Última actividad: ${fechaCorta(u.ultima_actividad)}`, "");
+
+  lineas.push("--- DOCUMENTOS PDF ---");
+  if (!(datos.documentos || []).length) lineas.push("(ninguno)");
+  (datos.documentos || []).forEach((d) => {
+    lineas.push("", `# ${d.nombre_archivo || d.titulo} (${d.num_paginas} páginas, subido ${fechaCorta(d.fecha_subida)})`);
+    if (d.texto) lineas.push(`[Texto extraído del PDF, ${d.texto.length} caracteres]`, d.texto);
+    const resumen = (datos.resumenes_pdf || []).find((r) => r.documento_id === d.id);
+    if (resumen) lineas.push(`[Resumen generado, ${resumen.longitud} caracteres]`, resumen.resumen);
+    const esquema = (datos.esquemas_pdf || []).find((r) => r.documento_id === d.id);
+    if (esquema) lineas.push(`[Esquema generado, ${esquema.longitud} caracteres]`, esquema.esquema);
+    const testPdf = (datos.tests_pdf || []).find((r) => r.documento_id === d.id);
+    if (testPdf) lineas.push(`[Test generado desde este PDF, ${(testPdf.preguntas || []).length} preguntas]`, JSON.stringify(testPdf.preguntas, null, 2));
+    const tarjetas = (datos.tarjetas_pdf || []).find((r) => r.documento_id === d.id);
+    if (tarjetas) lineas.push(`[Tarjetas generadas, ${(tarjetas.tarjetas || []).length}]`, JSON.stringify(tarjetas.tarjetas, null, 2));
+  });
+
+  lineas.push("", "--- TESTS HECHOS ---");
+  if (!(datos.tests || []).length) lineas.push("(ninguno)");
+  (datos.tests || []).forEach((t) => {
+    lineas.push("", `# ${fechaCorta(t.fecha)} · ${t.tipo} · ${t.oposicion} · estado: ${t.estado} · ${t.aciertos}✅ ${t.fallos}❌ ${t.blancos}➖ (${t.porcentaje_acierto ?? "–"}%) · nota: ${t.puntuacion_final ?? "–"}`);
+    (t.preguntas || []).forEach((p, i) => {
+      lineas.push(`  ${i + 1}. [${p.acierto === true ? "✅" : p.acierto === false ? "❌" : "➖"}] ${p.pregunta}`);
+      lineas.push(`     Correcta: ${p.respuesta_correcta} · Respondió: ${p.respuesta_usuario ?? "(en blanco)"}`);
+    });
+  });
+
+  lineas.push("", "--- ESQUEMAS (NO PDF) ---");
+  if (!(datos.esquemas || []).length) lineas.push("(ninguno)");
+  (datos.esquemas || []).forEach((e) => {
+    lineas.push("", `# ${fechaCorta(e.fecha)} · ${(e.temas || []).join(", ")}`, e.contenido || "");
+  });
+
+  return lineas.join("\n");
+}
+
 function wireFichaVista(vista, u) {
+  if (vista === "actividad") {
+    const datos = actividadCompletaCache[u.uid];
+    document.getElementById("up-copiar-actividad")?.addEventListener("click", () => {
+      if (!datos) return;
+      navigator.clipboard?.writeText(construirTextoActividad(u, datos))
+        .then(() => toast("Actividad completa copiada."))
+        .catch(() => toast("No se pudo copiar.", "error"));
+    });
+    return;
+  }
   if (vista === "planes") {
     const leerCampos = (oid) => ({
       plan: document.querySelector(`.fop-nivel[data-op="${oid}"]`).value,
