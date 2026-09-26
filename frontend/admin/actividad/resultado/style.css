@@ -1,0 +1,14 @@
+/* Página "Resultado del test" del admin (ver un test de OTRO usuario) --
+   reutiliza .act-root/.act-volver/.admin-cargando/.admin-no-autorizado*
+   de /admin/style.css y /admin/actividad/style.css, y todas las clases
+   .resultado-*/.tabla-temas/.tile-* que ya viven en theme.css (las pinta
+   /assets/resultados-test.js, el mismo módulo que usa la página de
+   usuario) -- aquí solo va la cabecera propia de esta página. */
+
+.act-res-cabecera {
+  display: flex; align-items: center; gap: 14px;
+  padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--age-border);
+}
+.act-res-cabecera-ico { flex-shrink: 0; color: var(--age-primary); display: inline-flex; }
+.act-res-cabecera-titulo { font-size: 1.3rem; margin: 0 0 2px; }
+.act-res-cabecera-fecha { font-size: 13px; color: var(--age-ink-soft, var(--age-ink)); margin: 0; text-transform: capitalize; }

@@ -87,7 +87,12 @@ function nombreArchivoSeguro(texto) {
 function formatearPreguntas(preguntas) {
   return (preguntas || []).map((p, i) => {
     const lineas = [`  ${i + 1}. [${p.acierto === true ? "✅" : p.acierto === false ? "❌" : "➖"}] ${p.pregunta || ""}`];
-    if (p.opciones && p.opciones.length) lineas.push(`     Opciones: ${p.opciones.join(" | ")}`);
+    // p.opciones es un objeto por letra ({"A": "...", "B": "..."}), no un
+    // array -- bug real: con .join() sobre un objeto esta línea nunca
+    // reventaba (un objeto no tiene .length, así que el if se saltaba en
+    // silencio) pero tampoco mostraba nunca las opciones.
+    const opciones = p.opciones && typeof p.opciones === "object" ? Object.entries(p.opciones).map(([letra, texto]) => `${letra}) ${texto}`) : [];
+    if (opciones.length) lineas.push(`     Opciones: ${opciones.join(" | ")}`);
     lineas.push(`     Correcta: ${p.respuesta_correcta ?? "–"} · Respondió: ${p.respuesta_usuario ?? "(en blanco)"}`);
     if (p.explicacion) lineas.push(`     Explicación: ${p.explicacion}`);
     return lineas.join("\n");
@@ -112,7 +117,12 @@ function formatearValorParaTexto(coleccion, valor) {
 }
 
 function formatearValorParaHtml(coleccion, valor) {
-  if (coleccion === "tests_pdf" || coleccion === "tests") {
+  // "tests" (Tests hechos) ya NO pasa por aquí -- su "Ver" navega a
+  // /admin/actividad/resultado/ (ver itemGeneradoHtml/testCardHtml) para
+  // mostrar el resultado real, igual que lo ve el propio usuario.
+  // "tests_pdf" (banco de preguntas generado desde un PDF, sin intento
+  // real asociado) se sigue desplegando aquí mismo.
+  if (coleccion === "tests_pdf") {
     return (valor || []).map(fichaPreguntaHtml).join("") || `<p class="act-nota">Sin preguntas guardadas.</p>`;
   }
   if (coleccion === "tarjetas_pdf") {
@@ -123,7 +133,12 @@ function formatearValorParaHtml(coleccion, valor) {
 
 function fichaPreguntaHtml(p) {
   const acierto = p.acierto === true ? "✅" : p.acierto === false ? "❌" : "➖";
-  const opciones = (p.opciones || []).map((o) => `<li${o === p.respuesta_correcta ? ' class="ficha-opcion-correcta"' : ""}${o === p.respuesta_usuario && o !== p.respuesta_correcta ? ' class="ficha-opcion-marcada"' : ""}>${escapeHtml(o)}</li>`).join("");
+  // p.opciones es un objeto por letra ({"A": "...", "B": "..."}), no un
+  // array -- con .map() sobre un objeto esto lanzaba un TypeError sin
+  // capturar (bug real reportado: "Ver" en un test se quedaba colgado en
+  // "Cargando…" para siempre, ver wireItem).
+  const entradas = p.opciones && typeof p.opciones === "object" ? Object.entries(p.opciones) : [];
+  const opciones = entradas.map(([letra, texto]) => `<li${letra === p.respuesta_correcta ? ' class="ficha-opcion-correcta"' : ""}${letra === p.respuesta_usuario && letra !== p.respuesta_correcta ? ' class="ficha-opcion-marcada"' : ""}>${escapeHtml(letra)}) ${escapeHtml(texto)}</li>`).join("");
   return `<div class="ficha-pregunta">
     <p class="ficha-pregunta-txt">${acierto} ${escapeHtml(p.pregunta || "")}</p>
     ${opciones ? `<ul class="ficha-opciones">${opciones}</ul>` : ""}
@@ -178,14 +193,22 @@ function wireItem(uid, contenedor) {
 
 // ---------- Bloque "ítem generado" (chip con Ver/Descargar) ----------
 
-function itemGeneradoHtml({ etiqueta, coleccion, id, cantidad, nombreDescarga }) {
+function itemGeneradoHtml({ etiqueta, coleccion, id, cantidad, nombreDescarga, enlaceVer }) {
   if (!id) return "";
   const sufijo = cantidad != null ? ` (${cantidad.toLocaleString("es")})` : "";
+  // enlaceVer (solo tests hechos, ver testCardHtml): en vez de desplegar
+  // el contenido en línea, "Ver" navega a la página de resultado real
+  // del test -- wireItem no engancha nada especial para este botón (no
+  // lleva la clase .act-item-ver), así que el toggle inline solo aplica
+  // a los demás tipos de elemento.
+  const botonVer = enlaceVer
+    ? `<a class="act-icon-btn" href="${escapeHtml(enlaceVer)}" aria-label="Ver ${escapeHtml(etiqueta)} completo">${icono("ojo", 16)}<span>Ver</span></a>`
+    : `<button type="button" class="act-icon-btn act-item-ver" aria-expanded="false" aria-label="Ver ${escapeHtml(etiqueta)} completo">${icono("ojo", 16)}<span>Ver</span></button>`;
   return `<div class="act-item" data-coleccion="${escapeHtml(coleccion)}" data-id="${escapeHtml(id)}" data-descarga="${escapeHtml(nombreDescarga)}">
     <div class="act-item-cab">
       <span class="act-item-etiqueta">${escapeHtml(etiqueta)}${sufijo}</span>
       <div class="act-item-acciones">
-        <button type="button" class="act-icon-btn act-item-ver" aria-expanded="false" aria-label="Ver ${escapeHtml(etiqueta)} completo">${icono("ojo", 16)}<span>Ver</span></button>
+        ${botonVer}
         <button type="button" class="act-icon-btn act-item-descargar" aria-label="Descargar ${escapeHtml(etiqueta)}">${icono("descargar", 16)}<span>Descargar</span></button>
       </div>
     </div>
@@ -217,9 +240,10 @@ function documentoCardHtml(d, datos) {
   </article>`;
 }
 
-function testCardHtml(t) {
+function testCardHtml(t, uid) {
   const resumenResultado = t.estado === "en_progreso" ? "en progreso" : `${t.aciertos || 0}✅ ${t.fallos || 0}❌ ${t.blancos || 0}➖ · ${t.porcentaje_acierto ?? "–"}% · nota ${t.puntuacion_final ?? "–"}`;
   const base = nombreArchivoSeguro(`${t.tipo}-${t.oposicion}-${fechaCorta(t.fecha)}`);
+  const enlaceVer = `/admin/actividad/resultado/?uid=${encodeURIComponent(uid)}&coleccion=tests&id=${encodeURIComponent(t.id)}&oposicion=${encodeURIComponent(t.oposicion || "")}&tipo=${encodeURIComponent(t.tipo || "")}&fecha=${encodeURIComponent(t.fecha || "")}`;
   return `<article class="act-card act-card-ancha">
     <header class="act-card-cab">
       <h3 class="act-card-titulo">${escapeHtml(t.tipo || "")} · ${escapeHtml(t.oposicion || "")}</h3>
@@ -227,7 +251,7 @@ function testCardHtml(t) {
     </header>
     <p class="act-card-meta act-card-resultado">${escapeHtml(resumenResultado)}</p>
     <div class="act-items-lista">
-      ${itemGeneradoHtml({ etiqueta: "Preguntas del test", coleccion: "tests", id: t.id, cantidad: t.num_preguntas, nombreDescarga: `test-${base}.txt` })}
+      ${itemGeneradoHtml({ etiqueta: "Preguntas del test", coleccion: "tests", id: t.id, cantidad: t.num_preguntas, nombreDescarga: `test-${base}.txt`, enlaceVer })}
     </div>
   </article>`;
 }
@@ -256,7 +280,7 @@ function seccionHtml(id, icono_, titulo, contenidoHtml, vacio) {
 function pintarCuerpo(uid, datos) {
   const cuerpo = document.getElementById("act-cuerpo");
   const docsHtml = (datos.documentos || []).map((d) => documentoCardHtml(d, datos)).join("");
-  const testsHtml = (datos.tests || []).map(testCardHtml).join("");
+  const testsHtml = (datos.tests || []).map((t) => testCardHtml(t, uid)).join("");
   const esquemasHtml = (datos.esquemas || []).map(esquemaCardHtml).join("");
 
   cuerpo.innerHTML = [

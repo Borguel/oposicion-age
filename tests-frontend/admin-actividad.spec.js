@@ -38,20 +38,26 @@ const NOMBRE_ARCHIVO_LARGO = "BOE-443_Normativa_para_ingreso_en_el_Cuerpo_de_Ges
 
 const RESUMEN_TEXTO = "Resumen corto de prueba sobre la Constitución.";
 const TEXTO_DOCUMENTO = "Texto completo extraído del PDF de prueba.";
+// opciones como OBJETO por letra ({"A": "...", "B": "..."}) -- así es como
+// lo guarda de verdad el backend (guardar_resultado.py, blueprints/pdf_ia.py)
+// y como lo lee el módulo compartido resultados-test.js. La ronda anterior
+// de este test usaba un array aquí (["Madrid", "Barcelona"]), la forma
+// INCORRECTA -- coincidía con el bug real de frontend/admin/actividad/
+// script.js en vez de con el esquema real, así que nunca lo detectó.
 const PREGUNTAS_TEST = [
   {
     pregunta: "¿Cuál es la capital de España?",
-    opciones: ["Madrid", "Barcelona"],
-    respuesta_correcta: "Madrid",
-    respuesta_usuario: "Madrid",
+    opciones: { A: "Madrid", B: "Barcelona" },
+    respuesta_correcta: "A",
+    respuesta_usuario: "A",
     acierto: true,
     explicacion: "Madrid es la capital.",
   },
   {
     pregunta: "¿En qué año se promulgó la Constitución de 1978?",
-    opciones: ["1975", "1978"],
-    respuesta_correcta: "1978",
-    respuesta_usuario: "1975",
+    opciones: { A: "1975", B: "1978" },
+    respuesta_correcta: "B",
+    respuesta_usuario: "A",
     acierto: false,
   },
 ];
@@ -75,7 +81,7 @@ const METADATOS = {
   ],
   resumenes_pdf: [{ id: "res1", documento_id: "doc1", longitud: RESUMEN_TEXTO.length }],
   esquemas_pdf: [],
-  tests_pdf: [],
+  tests_pdf: [{ id: "testpdf1", documento_id: "doc1", fecha: "2026-01-05", num_preguntas: PREGUNTAS_TEST.length }],
   tarjetas_pdf: [],
   tests: [
     {
@@ -109,11 +115,14 @@ async function mockPagina(page) {
     const url = new URL(route.request().url());
     const coleccion = url.searchParams.get("coleccion");
     const id = url.searchParams.get("id");
-    const cuerpo = { documentos: { texto: TEXTO_DOCUMENTO }, resumenes_pdf: { resumen: RESUMEN_TEXTO }, tests: { preguntas: PREGUNTAS_TEST } };
+    const cuerpo = { documentos: { texto: TEXTO_DOCUMENTO }, resumenes_pdf: { resumen: RESUMEN_TEXTO }, tests: { preguntas: PREGUNTAS_TEST }, tests_pdf: { preguntas: PREGUNTAS_TEST } };
     if (!cuerpo[coleccion]) return route.fulfill({ status: 400, contentType: "application/json", body: "{}" });
     void id;
     route.fulfill({ contentType: "application/json", body: JSON.stringify(cuerpo[coleccion]) });
   });
+  await page.route("**/temas-disponibles*", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ temas: [{ id: "b1-t1", titulo: "La Constitución" }], oposicion: "AGE" }) })
+  );
   await page.route("**/admin/api/usuarios/*/actividad-completa/exportar", (route) =>
     route.fulfill({
       contentType: "application/json",
@@ -172,7 +181,43 @@ test.describe("Página Actividad completa", () => {
     expect(contenido).not.toContain(TEXTO_DOCUMENTO);
   });
 
-  test('"Descargar todo" sigue exportando el volcado íntegro', async ({ page }) => {
+  test('"Ver" en un test navega a la página de resultado en vez de desplegarse en línea', async ({ page }) => {
+    // Bug real: con `opciones` como objeto por letra (esquema real), el
+    // "Ver" en línea de un test lanzaba un TypeError sin capturar y se
+    // quedaba colgado en "Cargando…" para siempre. Ahora "Ver" en un test
+    // hecho navega a /admin/actividad/resultado/, que reutiliza el mismo
+    // módulo de render que ve un usuario normal.
+    await mockPagina(page);
+    await page.goto("/admin/actividad/?uid=uid-test-1");
+
+    const itemTest = page.locator('.act-item[data-coleccion="tests"]');
+    // Ya no lleva la clase .act-item-ver (esa es solo para el toggle en
+    // línea) -- el botón "Ver" de un test es un enlace normal.
+    await expect(itemTest.locator(".act-item-ver")).toHaveCount(0);
+    const enlaceVer = itemTest.locator("a.act-icon-btn");
+    await expect(enlaceVer).toHaveAttribute(
+      "href",
+      "/admin/actividad/resultado/?uid=uid-test-1&coleccion=tests&id=test1&oposicion=AGE&tipo=Test%20Oficial&fecha=2026-02-01"
+    );
+
+    await enlaceVer.click();
+    await expect(page).toHaveURL(/\/admin\/actividad\/resultado\//);
+  });
+
+  test('"Ver" en un test generado desde un PDF (tests_pdf) sigue desplegándose en línea, sin reventar', async ({ page }) => {
+    // Mismo esquema real de "opciones" que un test hecho, pero tests_pdf
+    // (banco de preguntas sin intento asociado) se queda con el
+    // comportamiento de despliegue en línea -- solo hacía falta arreglar
+    // que no lance un TypeError con `opciones` como objeto.
+    await mockPagina(page);
+    await page.goto("/admin/actividad/?uid=uid-test-1");
+
+    const itemTestPdf = page.locator('.act-item[data-coleccion="tests_pdf"]');
+    await itemTestPdf.locator(".act-item-ver").click();
+    await expect(itemTestPdf.locator(".act-item-cuerpo")).toContainText("A) Madrid");
+  });
+
+  test('"Descargar todo" sigue exportando el volcado íntegro, con las opciones bien formateadas', async ({ page }) => {
     await mockPagina(page);
     await page.goto("/admin/actividad/?uid=uid-test-1");
 
@@ -187,6 +232,10 @@ test.describe("Página Actividad completa", () => {
     expect(contenido).toContain(RESUMEN_TEXTO);
     expect(contenido).toContain(TEXTO_DOCUMENTO);
     expect(contenido).toContain("¿Cuál es la capital de España?");
+    // Con `opciones` como objeto, esta línea se omitía en silencio antes
+    // del arreglo de formatearPreguntas (ni reventaba ni se veía el fallo
+    // salvo comparando el .txt descargado con lo esperado).
+    expect(contenido).toContain("Opciones: A) Madrid | B) Barcelona");
   });
 
   test("se ve sin desbordamiento horizontal en móvil, tablet y escritorio", async ({ page }) => {
@@ -233,5 +282,78 @@ test.describe("Página Actividad completa", () => {
 
     await expect(page.locator("#act-no-autorizado")).toBeVisible();
     await expect(page.locator("#act-contenido")).toBeHidden();
+  });
+});
+
+test.describe("Página Resultado del test (admin)", () => {
+  async function mockResultado(page) {
+    await page.route("**/assets/auth.js", (route) =>
+      route.fulfill({ contentType: "application/javascript", body: AUTH_STUB })
+    );
+    await page.route("**/admin/api/usuarios/*/actividad-completa/item*", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify({ preguntas: PREGUNTAS_TEST }) })
+    );
+    await page.route("**/temas-disponibles*", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify({ temas: [{ id: "b1-t1", titulo: "La Constitución" }], oposicion: "AGE" }) })
+    );
+  }
+
+  const URL_RESULTADO = "/admin/actividad/resultado/?uid=uid-test-1&coleccion=tests&id=test1&oposicion=AGE&tipo=oficial&fecha=2026-02-01";
+
+  test("pinta el resultado del test igual que lo ve un usuario normal (mismo módulo resultados-test.js)", async ({ page }) => {
+    await mockResultado(page);
+    await page.goto(URL_RESULTADO);
+
+    await expect(page.locator("#act-res-cargando")).toBeHidden();
+    // .resultado-resumen-grid/.tile-acierto/.lista-detalle-preguntas son
+    // las clases que pinta /assets/resultados-test.js -- las mismas que
+    // usa /mis-tests/resultado/ (la página que ve un usuario normal).
+    await expect(page.locator(".resultado-resumen-grid")).toBeVisible();
+    await expect(page.locator(".lista-detalle-preguntas")).toContainText("¿Cuál es la capital de España?");
+    await expect(page.locator(".lista-detalle-preguntas")).toContainText("A) Madrid");
+    await expect(page.locator(".lista-detalle-preguntas")).toContainText("B) Barcelona");
+  });
+
+  test('"← Volver" apunta a la actividad de ese usuario', async ({ page }) => {
+    await mockResultado(page);
+    await page.goto(URL_RESULTADO);
+    await expect(page.locator("#act-res-volver")).toHaveAttribute("href", "/admin/actividad/?uid=uid-test-1");
+  });
+
+  test("sin uid o id en la URL muestra un mensaje de error en vez de quedarse cargando", async ({ page }) => {
+    await mockResultado(page);
+    await page.goto("/admin/actividad/resultado/?uid=uid-test-1");
+    await expect(page.locator("#act-res-cargando")).toContainText("Falta el usuario o el test");
+  });
+
+  test("si el item no carga, muestra un botón de reintentar en vez de quedarse colgado", async ({ page }) => {
+    await page.route("**/assets/auth.js", (route) =>
+      route.fulfill({ contentType: "application/javascript", body: AUTH_STUB })
+    );
+    await page.route("**/admin/api/usuarios/*/actividad-completa/item*", (route) =>
+      route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "No encontrado" }) })
+    );
+    await page.route("**/temas-disponibles*", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify({ temas: [] }) })
+    );
+    await page.goto(URL_RESULTADO);
+
+    await expect(page.locator(".act-res-reintentar")).toBeVisible();
+  });
+
+  test("sin permisos de admin muestra el aviso de acceso restringido", async ({ page }) => {
+    await page.route("**/assets/auth.js", (route) =>
+      route.fulfill({
+        contentType: "application/javascript",
+        body: AUTH_STUB.replace(
+          'export function obtenerPermisos() { return Promise.resolve({ admin: true, permisos: ["temario", "reportes", "usuarios"] }); }',
+          'export function obtenerPermisos() { return Promise.resolve({ admin: false, permisos: [] }); }'
+        ),
+      })
+    );
+    await page.goto(URL_RESULTADO);
+
+    await expect(page.locator("#act-res-no-autorizado")).toBeVisible();
+    await expect(page.locator("#act-res-contenido")).toBeHidden();
   });
 });
