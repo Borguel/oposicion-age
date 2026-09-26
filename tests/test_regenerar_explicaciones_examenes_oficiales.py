@@ -1,9 +1,13 @@
 """Comprueba las funciones puras (sin Firestore/DeepSeek) de
 regenerar_explicaciones_examenes_oficiales: detectar si una explicación ya
-repasa las 4 opciones (para no tocarla ni gastar dinero regenerándola) y
-que el prompt nuevo incluye todo lo necesario para generar una buena."""
+repasa las 4 opciones (para no tocarla ni gastar dinero regenerándola),
+que el prompt de generación incluye todo lo necesario para generar una
+buena (incluido el feedback de una revisión previa), y que el prompt de
+verificación (la pasada de autocrítica sobre lo ya generado) incluye la
+explicación a revisar."""
 from regenerar_explicaciones_examenes_oficiales import (
     _prompt_explicacion,
+    _prompt_verificacion,
     _tiene_formato_bueno,
 )
 
@@ -63,3 +67,46 @@ def test_prompt_incluye_pregunta_las_4_opciones_y_la_correcta():
     # Pide el formato por opción y advierte de no inventar citas legales.
     assert "es correcta/incorrecta porque" in prompt
     assert "no inventes ninguna referencia legal" in prompt
+
+
+def test_prompt_sin_problemas_previos_no_menciona_ninguna_revision():
+    opciones = {"A": "uno", "B": "dos", "C": "tres", "D": "cuatro"}
+    prompt = _prompt_explicacion("¿Pregunta?", opciones, "A")
+    assert "revisor jurídico" not in prompt
+
+
+def test_prompt_con_problemas_previos_los_incluye_como_pista():
+    opciones = {"A": "uno", "B": "dos", "C": "tres", "D": "cuatro"}
+    problemas = [
+        "La línea de D) afirma una clasificación legal que no es exacta.",
+        "La línea de B) solo repite el enunciado.",
+    ]
+    prompt = _prompt_explicacion("¿Pregunta?", opciones, "A", problemas_previos=problemas)
+    assert "revisor jurídico" in prompt
+    for problema in problemas:
+        assert problema in prompt
+
+
+def test_prompt_verificacion_incluye_pregunta_opciones_y_explicacion_a_revisar():
+    opciones = {
+        "A": "Al Gobierno y al Congreso.",
+        "B": "Al Congreso y al Senado.",
+        "C": "Al Gobierno, al Congreso y al Senado.",
+        "D": "Al Gobierno, al Congreso, al Senado y a las Asambleas de las Comunidades Autónomas.",
+    }
+    explicacion = (
+        "A) es incorrecta porque omite al Senado. B) es incorrecta porque excluye al Gobierno. "
+        "C) es incorrecta porque no incluye a las Asambleas. D) es correcta porque el art. 166 CE "
+        "remite al 87.2, que atribuye la iniciativa a los cuatro."
+    )
+    prompt = _prompt_verificacion(
+        "Señale a quién corresponde la iniciativa de la reforma constitucional:",
+        opciones, "D", explicacion,
+    )
+    assert "iniciativa de la reforma constitucional" in prompt
+    for letra, texto in opciones.items():
+        assert f"{letra}) {texto}" in prompt
+    assert "Respuesta correcta: D)" in prompt
+    assert explicacion in prompt
+    # Pide el mismo formato JSON que ya usa la verificación de Test Personalizado.
+    assert '{"valido": true, "problemas": []}' in prompt

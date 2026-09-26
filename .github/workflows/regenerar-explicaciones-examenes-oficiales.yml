@@ -7,9 +7,17 @@ name: Regenerar explicaciones de exámenes oficiales
 #
 # Se lanza a mano. Por defecto solo AUDITA (no escribe): cuenta cuántas
 # preguntas hay pendientes por oposición y genera 2-3 ejemplos reales de
-# antes/después. Pon "modo" = aplicar para regenerar de verdad. Las claves
-# viven solo en los secretos FIREBASE_CREDENTIALS_JSON/DEEPSEEK_API_KEY de
-# este repositorio (mismo patrón que reasignar-temas-examenes.yml).
+# antes/después. Pon "modo" = aplicar para regenerar de verdad.
+#
+# "verificar"/"verificar_aplicar" son una segunda pasada, sobre las
+# explicaciones YA generadas: una IA las revisa buscando afirmaciones
+# demasiado tajantes o contradicciones (sin texto legal de origen contra
+# el que comparar, así que pilla parte de los casos, no todos) y, con
+# "verificar_aplicar", regenera solo las que fallen esa revisión.
+#
+# Las claves viven solo en los secretos FIREBASE_CREDENTIALS_JSON/
+# DEEPSEEK_API_KEY de este repositorio (mismo patrón que
+# reasignar-temas-examenes.yml).
 on:
   workflow_dispatch:
     inputs:
@@ -19,8 +27,10 @@ on:
         default: "auditar"
         type: choice
         options:
-          - auditar   # solo lectura: cuenta pendientes + ejemplos antes/después
-          - aplicar   # regenera de verdad las explicaciones pendientes
+          - auditar             # solo lectura: cuenta pendientes + ejemplos antes/después
+          - aplicar              # regenera de verdad las explicaciones pendientes
+          - verificar            # solo lectura: revisa la calidad de las ya generadas
+          - verificar_aplicar    # revisa Y regenera las que fallen la revisión
 
 jobs:
   regenerar:
@@ -37,12 +47,14 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
-      - name: Auditar / regenerar explicaciones
+      - name: Auditar / regenerar / verificar explicaciones
         env:
           FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
           case "${{ github.event.inputs.modo }}" in
-            aplicar) python regenerar_explicaciones_examenes_oficiales.py --aplicar ;;
-            *)       python regenerar_explicaciones_examenes_oficiales.py ;;
+            aplicar)           python regenerar_explicaciones_examenes_oficiales.py --aplicar ;;
+            verificar)         python regenerar_explicaciones_examenes_oficiales.py --verificar ;;
+            verificar_aplicar) python regenerar_explicaciones_examenes_oficiales.py --verificar --aplicar ;;
+            *)                 python regenerar_explicaciones_examenes_oficiales.py ;;
           esac
