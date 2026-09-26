@@ -2062,7 +2062,7 @@ function fichaActividadCompletaHtml(datos) {
     <div class="ficha-panel">
       <div class="ficha-panel-cab-fila">
         <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("buscar", 17)}</span><h3>Actividad completa</h3></div>
-        <button class="age-btn age-btn-outline admin-mini" id="up-copiar-actividad">Copiar todo (para análisis)</button>
+        <button class="age-btn age-btn-outline admin-mini" id="up-descargar-actividad">Descargar .txt (para análisis)</button>
       </div>
       <p class="ficha-uso-nota">Volcado íntegro, sin recortar: útil para pegarlo donde necesites analizar a fondo un caso concreto. Cada bloque largo va plegado -- pulsa para desplegarlo.</p>
     </div>
@@ -2117,7 +2117,7 @@ function wireFichaVista(vista, u) {
   if (vista === "actividad") {
     if (!actividadCompletaCache[u.uid]) return; // aún "Cargando…"/error -- nada que cablear todavía
     wireBloquesActividad(u.uid);
-    const btn = document.getElementById("up-copiar-actividad");
+    const btn = document.getElementById("up-descargar-actividad");
     const textoBoton = btn?.textContent;
     btn?.addEventListener("click", async () => {
       btn.disabled = true;
@@ -2126,9 +2126,22 @@ function wireFichaVista(vista, u) {
       btn.disabled = false;
       btn.textContent = textoBoton;
       if (!completo) return; // apiGet ya ha mostrado el toast con el motivo
-      navigator.clipboard?.writeText(construirTextoActividad(u, completo))
-        .then(() => toast("Actividad completa copiada."))
-        .catch(() => toast("No se pudo copiar.", "error"));
+      // El volcado puede ser muy largo (documentos enteros, todas las
+      // preguntas de todos los tests...) -- demasiado para pegarlo en un
+      // chat, así que se descarga como .txt en vez de copiarlo al
+      // portapapeles (mismo patrón que descargarCSV: Blob local + <a
+      // download> sintético).
+      const texto = construirTextoActividad(u, completo);
+      const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `actividad-${u.email || u.uid}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast("Descarga iniciada.");
     });
     return;
   }
