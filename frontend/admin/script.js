@@ -1688,7 +1688,6 @@ function pintarFicha(u) {
     { id: "soporte", label: "Soporte" },
   ];
   if (_permisos.admin) pestanas.push({ id: "admin", label: "Administración" });
-  if (_permisos.admin) pestanas.push({ id: "actividad", label: "Actividad completa" });
   if (!pestanas.some((p) => p.id === vistaFicha)) vistaFicha = "resumen";
 
   abrirModal(`
@@ -1707,6 +1706,7 @@ function pintarFicha(u) {
           </div>
           <p class="ficha-uid"><span>UID: ${escapeHtml(u.uid)}</span><button class="admin-copiar" id="up-copiar-uid">copiar</button></p>
         </div>
+        ${_permisos.admin ? `<a class="age-btn age-btn-outline admin-mini ficha-ver-actividad" href="/admin/actividad/?uid=${encodeURIComponent(u.uid)}">Ver actividad completa →</a>` : ""}
       </div>
 
       <div class="ficha-kpis">
@@ -1727,29 +1727,9 @@ function pintarFicha(u) {
     document.getElementById(`fv-${p.id}`).addEventListener("click", () => {
       vistaFicha = p.id;
       pintarFicha(u);
-      if (p.id === "actividad" && !actividadCompletaCache[u.uid]) cargarActividadCompleta(u);
     });
   });
   wireFichaVista(vistaFicha, u);
-}
-
-// Caché en memoria (se pierde al recargar la página, no persiste) del
-// volcado LIGERO de actividad por usuario (metadatos y longitudes, no el
-// texto/preguntas completos -- ver _CAMPO_GRANDE_POR_COLECCION en
-// blueprints/admin.py) -- para no repetir la consulta a Firestore si el
-// admin cierra y reabre la pestaña sin recargar.
-let actividadCompletaCache = {};
-
-async function cargarActividadCompleta(u) {
-  const datos = await apiGet(`/admin/api/usuarios/${u.uid}/actividad-completa`);
-  if (datos) {
-    actividadCompletaCache[u.uid] = datos;
-    if (vistaFicha === "actividad") pintarFicha(u);
-    return;
-  }
-  // apiGet ya ha mostrado el toast con el motivo -- aquí solo evitamos que
-  // la pestaña se quede en "Cargando…" para siempre (bug real 26/09/2026).
-  if (vistaFicha === "actividad") mostrarErrorPanel(document.getElementById("ficha-cuerpo"), () => cargarActividadCompleta(u));
 }
 
 function diasRestantesDesde(fechaIso) {
@@ -1963,188 +1943,10 @@ function fichaVistaHtml(vista, u) {
       </div>`;
   }
 
-  if (vista === "actividad") {
-    const datos = actividadCompletaCache[u.uid];
-    if (!datos) return `<div class="ficha-panel"><p class="admin-cargando">Cargando actividad completa…</p></div>`;
-    return fichaActividadCompletaHtml(datos);
-  }
-
   return "";
 }
 
-// Bloque plegado que carga su contenido completo BAJO DEMANDA (la primera
-// vez que se despliega), no de golpe con el resto de la pestaña -- para el
-// volcado de "Actividad completa" (ficha del usuario). Bug real (26/09/2026):
-// la primera versión mandaba todo el texto ya en la carga inicial de la
-// pestaña (hasta 900 KB por PDF + el resumen completo, en un caso real
-// 1,5 MB de golpe) y el navegador del móvil se quedaba colgado
-// construyendo ese DOM -- la pestaña se veía "cargando" para siempre. Ver
-// wireBloquesActividad, que pide /actividad-completa/item solo al abrir
-// cada bloque.
-function fichaBloqueBajoDemandaHtml(resumenHtml, coleccion, id, cantidad) {
-  if (!id) return "";
-  const sufijo = cantidad != null ? ` (${cantidad.toLocaleString("es")})` : "";
-  return `<details class="ficha-texto-detalle" data-coleccion="${escapeHtml(coleccion)}" data-id="${escapeHtml(id)}">
-    <summary>${resumenHtml}${sufijo} -- ver completo</summary>
-    <div class="ficha-bloque-cuerpo"><p class="ficha-uso-nota">(se carga al abrir)</p></div>
-  </details>`;
-}
-
-// Pide y pinta el contenido de UN bloque la primera vez que se despliega
-// (evento nativo "toggle" de <details>). Vale tanto para los "documentos"
-// (campo texto) como para resúmenes/esquemas (texto plano en <pre>), tests
-// y bancos de preguntas/tarjetas generados desde PDF (listas), y esquemas
-// no-PDF (texto plano).
-function wireBloquesActividad(uid) {
-  document.querySelectorAll("#ficha-cuerpo .ficha-texto-detalle[data-coleccion]").forEach((det) => {
-    det.addEventListener("toggle", () => cargarBloqueActividad(uid, det));
-  });
-}
-
-async function cargarBloqueActividad(uid, det) {
-  if (!det.open || det.dataset.cargado) return;
-  const cuerpo = det.querySelector(".ficha-bloque-cuerpo");
-  const coleccion = det.dataset.coleccion;
-  const id = det.dataset.id;
-  cuerpo.innerHTML = `<p class="admin-cargando">Cargando…</p>`;
-  const datos = await apiGet(`/admin/api/usuarios/${uid}/actividad-completa/item?coleccion=${encodeURIComponent(coleccion)}&id=${encodeURIComponent(id)}`);
-  if (!datos) {
-    mostrarErrorPanel(cuerpo, () => cargarBloqueActividad(uid, det));
-    return;
-  }
-  det.dataset.cargado = "1";
-  const valor = Object.values(datos)[0];
-  if (coleccion === "tests_pdf" || coleccion === "tests") {
-    cuerpo.innerHTML = (valor || []).map(fichaPreguntaHtml).join("") || `<p class="ficha-uso-nota">Sin preguntas guardadas.</p>`;
-  } else if (coleccion === "tarjetas_pdf") {
-    cuerpo.innerHTML = (valor || []).map((t) => `<p class="ficha-tarjeta">🔹 <strong>${escapeHtml(t.pregunta || t.anverso || "")}</strong><br>${escapeHtml(t.respuesta || t.reverso || "")}</p>`).join("") || `<p class="ficha-uso-nota">Sin tarjetas.</p>`;
-  } else {
-    cuerpo.innerHTML = `<pre class="ficha-texto-completo">${escapeHtml(valor || "(vacío)")}</pre>`;
-  }
-}
-
-function fichaPreguntaHtml(p) {
-  const acierto = p.acierto === true ? "✅" : p.acierto === false ? "❌" : "➖";
-  const opciones = (p.opciones || []).map((o) => `<li${o === p.respuesta_correcta ? ' class="ficha-opcion-correcta"' : ""}${o === p.respuesta_usuario && o !== p.respuesta_correcta ? ' class="ficha-opcion-marcada"' : ""}>${escapeHtml(o)}</li>`).join("");
-  return `<div class="ficha-pregunta">
-    <p class="ficha-pregunta-txt">${acierto} ${escapeHtml(p.pregunta || "")}</p>
-    ${opciones ? `<ul class="ficha-opciones">${opciones}</ul>` : ""}
-    <p class="ficha-pregunta-meta">Respuesta correcta: <strong>${escapeHtml(p.respuesta_correcta ?? "–")}</strong> · Respondió: <strong>${escapeHtml(p.respuesta_usuario ?? "(en blanco)")}</strong></p>
-    ${p.explicacion ? `<p class="ficha-pregunta-exp">${escapeHtml(p.explicacion)}</p>` : ""}
-  </div>`;
-}
-
-function fichaActividadCompletaHtml(datos) {
-  const docsHtml = (datos.documentos || []).map((d) => {
-    const resumen = (datos.resumenes_pdf || []).find((r) => r.documento_id === d.id);
-    const esquema = (datos.esquemas_pdf || []).find((r) => r.documento_id === d.id);
-    const testPdf = (datos.tests_pdf || []).find((r) => r.documento_id === d.id);
-    const tarjetas = (datos.tarjetas_pdf || []).find((r) => r.documento_id === d.id);
-    return `<div class="ficha-doc-item">
-      <div class="ficha-doc-cab"><strong>${escapeHtml(d.nombre_archivo || d.titulo || "Documento")}</strong><span class="ficha-doc-fecha">${escapeHtml(fechaCorta(d.fecha_subida))}</span></div>
-      <div class="ficha-doc-meta">${(d.num_paginas || 0).toLocaleString("es")} páginas</div>
-      ${fichaBloqueBajoDemandaHtml("Texto extraído del PDF", "documentos", d.id, d.longitud_texto)}
-      ${resumen ? fichaBloqueBajoDemandaHtml("Resumen generado", "resumenes_pdf", resumen.id, resumen.longitud) : ""}
-      ${esquema ? fichaBloqueBajoDemandaHtml("Esquema generado", "esquemas_pdf", esquema.id, esquema.longitud) : ""}
-      ${testPdf ? fichaBloqueBajoDemandaHtml("Test generado desde este PDF", "tests_pdf", testPdf.id, testPdf.num_preguntas) : ""}
-      ${tarjetas ? fichaBloqueBajoDemandaHtml("Tarjetas generadas", "tarjetas_pdf", tarjetas.id, tarjetas.num_tarjetas) : ""}
-    </div>`;
-  }).join("") || `<p class="ficha-uso-nota">Sin documentos subidos.</p>`;
-
-  const testsHtml = (datos.tests || []).map((t) => fichaBloqueBajoDemandaHtml(
-    `${escapeHtml(fechaCorta(t.fecha))} · ${escapeHtml(t.tipo || "")} · ${escapeHtml(t.oposicion || "")} · ${t.estado === "en_progreso" ? "en progreso" : `${t.aciertos || 0}✅ ${t.fallos || 0}❌ ${t.blancos || 0}➖ (${t.porcentaje_acierto ?? "–"}%)`}`,
-    "tests", t.id, null,
-  )).join("") || `<p class="ficha-uso-nota">Sin tests hechos.</p>`;
-
-  const esquemasHtml = (datos.esquemas || []).map((e) => fichaBloqueBajoDemandaHtml(`Esquema · ${escapeHtml(fechaCorta(e.fecha))} · ${escapeHtml((e.temas || []).join(", "))}`, "esquemas", e.id, null)).join("") || `<p class="ficha-uso-nota">Sin esquemas (no-PDF).</p>`;
-
-  return `
-    <div class="ficha-panel">
-      <div class="ficha-panel-cab-fila">
-        <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("buscar", 17)}</span><h3>Actividad completa</h3></div>
-        <button class="age-btn age-btn-outline admin-mini" id="up-descargar-actividad">Descargar .txt (para análisis)</button>
-      </div>
-      <p class="ficha-uso-nota">Volcado íntegro, sin recortar: útil para pegarlo donde necesites analizar a fondo un caso concreto. Cada bloque largo va plegado -- pulsa para desplegarlo.</p>
-    </div>
-    <div class="ficha-panel"><div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("documento", 17)}</span><h3>Documentos PDF</h3></div><div class="ficha-docs-lista">${docsHtml}</div></div>
-    <div class="ficha-panel"><div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("matraz", 17)}</span><h3>Tests hechos</h3></div>${testsHtml}</div>
-    <div class="ficha-panel"><div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("esquema", 17)}</span><h3>Esquemas (no PDF)</h3></div>${esquemasHtml}</div>`;
-}
-
-// Mismo contenido que fichaActividadCompletaHtml pero en texto plano, para
-// el botón "Copiar todo" -- se pega directamente en un chat/documento para
-// pedir que se analice, así que va sin HTML y con todo desplegado (no solo
-// lo que el admin tenga abierto en pantalla en ese momento).
-function construirTextoActividad(u, datos) {
-  const lineas = [`=== ACTIVIDAD COMPLETA: ${u.email || u.uid} (${u.nombre || "sin nombre"}) ===`, ""];
-  lineas.push(`Plan: ${u.plan} · Alta: ${fechaCorta(u.fecha_creacion)} · Última actividad: ${fechaCorta(u.ultima_actividad)}`, "");
-
-  lineas.push("--- DOCUMENTOS PDF ---");
-  if (!(datos.documentos || []).length) lineas.push("(ninguno)");
-  (datos.documentos || []).forEach((d) => {
-    lineas.push("", `# ${d.nombre_archivo || d.titulo} (${d.num_paginas} páginas, subido ${fechaCorta(d.fecha_subida)})`);
-    if (d.texto) lineas.push(`[Texto extraído del PDF, ${d.texto.length} caracteres]`, d.texto);
-    const resumen = (datos.resumenes_pdf || []).find((r) => r.documento_id === d.id);
-    if (resumen) lineas.push(`[Resumen generado, ${resumen.longitud} caracteres]`, resumen.resumen);
-    const esquema = (datos.esquemas_pdf || []).find((r) => r.documento_id === d.id);
-    if (esquema) lineas.push(`[Esquema generado, ${esquema.longitud} caracteres]`, esquema.esquema);
-    const testPdf = (datos.tests_pdf || []).find((r) => r.documento_id === d.id);
-    if (testPdf) lineas.push(`[Test generado desde este PDF, ${(testPdf.preguntas || []).length} preguntas]`, JSON.stringify(testPdf.preguntas, null, 2));
-    const tarjetas = (datos.tarjetas_pdf || []).find((r) => r.documento_id === d.id);
-    if (tarjetas) lineas.push(`[Tarjetas generadas, ${(tarjetas.tarjetas || []).length}]`, JSON.stringify(tarjetas.tarjetas, null, 2));
-  });
-
-  lineas.push("", "--- TESTS HECHOS ---");
-  if (!(datos.tests || []).length) lineas.push("(ninguno)");
-  (datos.tests || []).forEach((t) => {
-    lineas.push("", `# ${fechaCorta(t.fecha)} · ${t.tipo} · ${t.oposicion} · estado: ${t.estado} · ${t.aciertos}✅ ${t.fallos}❌ ${t.blancos}➖ (${t.porcentaje_acierto ?? "–"}%) · nota: ${t.puntuacion_final ?? "–"}`);
-    (t.preguntas || []).forEach((p, i) => {
-      lineas.push(`  ${i + 1}. [${p.acierto === true ? "✅" : p.acierto === false ? "❌" : "➖"}] ${p.pregunta}`);
-      lineas.push(`     Correcta: ${p.respuesta_correcta} · Respondió: ${p.respuesta_usuario ?? "(en blanco)"}`);
-    });
-  });
-
-  lineas.push("", "--- ESQUEMAS (NO PDF) ---");
-  if (!(datos.esquemas || []).length) lineas.push("(ninguno)");
-  (datos.esquemas || []).forEach((e) => {
-    lineas.push("", `# ${fechaCorta(e.fecha)} · ${(e.temas || []).join(", ")}`, e.contenido || "");
-  });
-
-  return lineas.join("\n");
-}
-
 function wireFichaVista(vista, u) {
-  if (vista === "actividad") {
-    if (!actividadCompletaCache[u.uid]) return; // aún "Cargando…"/error -- nada que cablear todavía
-    wireBloquesActividad(u.uid);
-    const btn = document.getElementById("up-descargar-actividad");
-    const textoBoton = btn?.textContent;
-    btn?.addEventListener("click", async () => {
-      btn.disabled = true;
-      btn.textContent = "Generando…";
-      const completo = await apiGet(`/admin/api/usuarios/${u.uid}/actividad-completa/exportar`);
-      btn.disabled = false;
-      btn.textContent = textoBoton;
-      if (!completo) return; // apiGet ya ha mostrado el toast con el motivo
-      // El volcado puede ser muy largo (documentos enteros, todas las
-      // preguntas de todos los tests...) -- demasiado para pegarlo en un
-      // chat, así que se descarga como .txt en vez de copiarlo al
-      // portapapeles (mismo patrón que descargarCSV: Blob local + <a
-      // download> sintético).
-      const texto = construirTextoActividad(u, completo);
-      const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `actividad-${u.email || u.uid}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      toast("Descarga iniciada.");
-    });
-    return;
-  }
   if (vista === "planes") {
     const leerCampos = (oid) => ({
       plan: document.querySelector(`.fop-nivel[data-op="${oid}"]`).value,
