@@ -110,3 +110,15 @@ def test_prompt_verificacion_incluye_pregunta_opciones_y_explicacion_a_revisar()
     assert explicacion in prompt
     # Pide el mismo formato JSON que ya usa la verificación de Test Personalizado.
     assert '{"valido": true, "problemas": []}' in prompt
+
+
+def test_prompt_verificacion_no_marca_una_cita_solo_por_no_ser_literal():
+    # Bug real (973/2194 marcadas inválidas, la inmensa mayoría por citar un
+    # artículo más específico que el enunciado -- p. ej. "art. 20.1 de la
+    # Ley 7/1985" para una pregunta que solo menciona "la Ley 7/1985") --
+    # eso es precisión deseable, no una invención, y el prompt debe decirlo
+    # explícitamente para no perder citas correctas al regenerar.
+    opciones = {"A": "uno", "B": "dos", "C": "tres", "D": "cuatro"}
+    prompt = _prompt_verificacion("¿Pregunta?", opciones, "A", "A) es correcta... B) ... C) ... D) ...")
+    assert "no aparece de forma literal en el enunciado" in prompt
+    assert "es normal y deseable que la explicación sea más precisa que la pregunta" in prompt
