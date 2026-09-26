@@ -1618,6 +1618,53 @@ function fichaUsoFila(f) {
   </div>`;
 }
 
+function fichaDocumentosPdfBadge(info, tipo) {
+  if (!info) return "";
+  if (tipo === "resumen" || tipo === "esquema") {
+    const corto = (info.longitud || 0) < 300;
+    return `<span class="ficha-badge ${corto ? "ficha-badge-warn" : "ficha-badge-ok"}">${tipo === "resumen" ? "Resumen" : "Esquema"}: ${(info.longitud || 0).toLocaleString("es")} caracteres${corto ? " ⚠️" : ""}</span>`;
+  }
+  if (tipo === "test") return `<span class="ficha-badge">Test: ${info.num_preguntas || 0} preguntas</span>`;
+  if (tipo === "tarjetas") return `<span class="ficha-badge">Tarjetas: ${info.num_tarjetas || 0}</span>`;
+  return "";
+}
+
+// Detalle por documento de lo que generaron las herramientas de IA desde PDF
+// (resumen/esquema/test/tarjetas), con la longitud real del texto generado
+// -- pensado para poder valorar desde el propio panel si a alguien le salió
+// un resultado pobre (p. ej. un resumen sospechosamente corto) sin tener que
+// mirar Firestore a mano.
+function fichaDocumentosPdfHtml(documentos) {
+  if (!documentos.length) {
+    return `<div class="ficha-panel">
+      <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("documento", 17)}</span><h3>Documentos subidos (PDF)</h3></div>
+      <p class="ficha-uso-nota">Todavía no ha subido ningún PDF a las herramientas de IA.</p>
+    </div>`;
+  }
+  return `<div class="ficha-panel">
+    <div class="ficha-panel-cab"><span class="ficha-panel-ico">${icono("documento", 17)}</span><h3>Documentos subidos (PDF)</h3></div>
+    <div class="ficha-docs-lista">
+      ${documentos.map((d) => `
+        <div class="ficha-doc-item">
+          <div class="ficha-doc-cab">
+            <strong>${escapeHtml(d.nombre_archivo || d.titulo || "Documento")}</strong>
+            <span class="ficha-doc-fecha">${escapeHtml(fechaCorta(d.fecha_subida))}</span>
+          </div>
+          <div class="ficha-doc-meta">${(d.num_paginas || 0).toLocaleString("es")} páginas</div>
+          <div class="ficha-doc-badges">
+            ${fichaDocumentosPdfBadge(d.resumen, "resumen")}
+            ${fichaDocumentosPdfBadge(d.esquema, "esquema")}
+            ${fichaDocumentosPdfBadge(d.test, "test")}
+            ${fichaDocumentosPdfBadge(d.tarjetas, "tarjetas")}
+          </div>
+          ${d.resumen && d.resumen.preview ? `<p class="ficha-doc-preview">"${escapeHtml(d.resumen.preview)}${d.resumen.preview.length >= 200 ? "…" : ""}"</p>` : ""}
+        </div>
+      `).join("")}
+    </div>
+    <p class="ficha-uso-nota">Un resumen o esquema por debajo de 300 caracteres suele significar que el PDF apenas tenía texto real extraíble (p. ej. un escaneo sin OCR).</p>
+  </div>`;
+}
+
 // La ficha de usuario se organiza en pestañas (antes era todo un único
 // scroll largo con 3 <details> plegables al final -- "caótico" según el
 // dueño). vistaFicha/modoCosteFicha persisten entre aperturas, mismo
@@ -1794,7 +1841,8 @@ function fichaVistaHtml(vista, u) {
           ${fichaMini(icono("estrella", 18), c.favoritas, "Favoritas")}
           ${fichaMini(icono("repetir", 18), c.falladas, "A repasar")}
         </div>
-      </div>`;
+      </div>
+      ${fichaDocumentosPdfHtml(u.documentos_pdf || [])}`;
   }
 
   if (vista === "planes") {

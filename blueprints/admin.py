@@ -297,6 +297,64 @@ def _ficha_actividad(ref, datos):
     return contenido, rendimiento, hist, hist_diario, uso
 
 
+def _documentos_pdf(ref, incluir_preview):
+    """Detalle de cada PDF de la biblioteca "Mis documentos" del usuario y de
+    lo que se generó a partir de él (longitud del resumen/esquema, nº de
+    preguntas/tarjetas) -- para poder valorar de un vistazo, desde el propio
+    panel, si una herramienta de IA le dio a alguien un resultado pobre
+    (p. ej. un resumen sospechosamente corto) sin tener que entrar a mano en
+    Firestore. Solo lectura. incluir_preview=False oculta el primer fragmento
+    de texto del resumen/esquema a un admin con permiso parcial "usuarios"
+    (mismo criterio que el coste de IA: un moderador ve cifras, no el
+    contenido real subido/generado por el usuario)."""
+    resumenes, esquemas, tests, tarjetas = {}, {}, {}, {}
+    for d in ref.collection("resumenes_pdf").stream():
+        dd = d.to_dict() or {}
+        did = dd.get("documento_id")
+        if did:
+            resumenes[did] = {
+                "fecha": dd.get("fecha"),
+                "longitud": dd.get("longitud", 0),
+                "preview": (dd.get("resumen") or "")[:200] if incluir_preview else None,
+            }
+    for d in ref.collection("esquemas_pdf").stream():
+        dd = d.to_dict() or {}
+        did = dd.get("documento_id")
+        if did:
+            esquemas[did] = {
+                "fecha": dd.get("fecha"),
+                "longitud": dd.get("longitud", 0),
+                "preview": (dd.get("esquema") or "")[:200] if incluir_preview else None,
+            }
+    for d in ref.collection("tests_pdf").stream():
+        dd = d.to_dict() or {}
+        did = dd.get("documento_id")
+        if did:
+            tests[did] = {"fecha": dd.get("fecha"), "num_preguntas": dd.get("num_preguntas", 0)}
+    for d in ref.collection("tarjetas_pdf").stream():
+        dd = d.to_dict() or {}
+        did = dd.get("documento_id")
+        if did:
+            tarjetas[did] = {"fecha": dd.get("fecha"), "num_tarjetas": dd.get("num_tarjetas", 0)}
+
+    documentos = []
+    for d in ref.collection("documentos").stream():
+        dd = d.to_dict() or {}
+        documentos.append({
+            "id": d.id,
+            "nombre_archivo": dd.get("nombre_archivo", ""),
+            "titulo": dd.get("titulo", ""),
+            "num_paginas": dd.get("num_paginas", 0),
+            "fecha_subida": dd.get("fecha_subida"),
+            "resumen": resumenes.get(d.id),
+            "esquema": esquemas.get(d.id),
+            "test": tests.get(d.id),
+            "tarjetas": tarjetas.get(d.id),
+        })
+    documentos.sort(key=lambda x: x.get("fecha_subida") or "", reverse=True)
+    return documentos
+
+
 def _uso_herramientas(datos):
     """Consumo real de cada herramienta en el periodo actual frente al límite
     del plan del usuario -- para vigilar desde la ficha quién está tirando
@@ -1785,6 +1843,7 @@ def usuarios_detalle(uid):
         "uso_actual": uso_actual,
         "uso_herramientas": _uso_herramientas(datos),
         "notas_lista": _notas_lista(datos),
+        "documentos_pdf": _documentos_pdf(ref, incluir_preview=g.es_admin),
     })
 
 
