@@ -911,6 +911,86 @@ def test_usuarios_detalle_incluye_en_prueba(client, db):
     assert d["plan"] == "premium"
 
 
+# ---------- Actividad completa (ficha de usuario) ----------
+# Bug real (26/09/2026): la primera versión de /actividad-completa mandaba de
+# golpe el texto completo de cada PDF (hasta 900 KB) y cada resumen/esquema
+# generado -- para un usuario con un solo documento largo, la respuesta llegó
+# a pesar 1,5 MB y el navegador del móvil se quedaba colgado renderizándola
+# ("Cargando actividad completa..." para siempre). Se dividió en una carga
+# ligera (solo metadatos/longitudes) + contenido completo bajo demanda por
+# elemento (/actividad-completa/item) + un volcado íntegro aparte solo para
+# el botón "Copiar todo" (/actividad-completa/exportar).
+def _sembrar_actividad_lemin(db):
+    db.sembrar(("usuarios", "u1"), {"email": "lemin@example.com"})
+    db.sembrar(("usuarios", "u1", "documentos", "d1"), {
+        "nombre_archivo": "boe_150_paginas.pdf", "num_paginas": 150,
+        "fecha_subida": "2026-09-25T21:15:00", "texto": "x" * 890_000,
+    })
+    db.sembrar(("usuarios", "u1", "resumenes_pdf", "r1"), {
+        "documento_id": "d1", "fecha": "2026-09-25T21:22:54",
+        "resumen": "Este documento trata de la Constitución. " * 100, "longitud": 4200,
+    })
+    db.sembrar(("usuarios", "u1", "tests", "t1"), {
+        "fecha": "2026-09-25T21:00:00", "tipo": "personalizado", "oposicion": "AGE",
+        "estado": "finalizado", "num_preguntas": 1, "aciertos": 1, "fallos": 0, "blancos": 0,
+        "preguntas": [{"pregunta": "¿Capital de España?", "respuesta_correcta": "Madrid"}],
+    })
+
+
+def test_actividad_completa_ligera_no_incluye_texto_ni_resumen(client, db):
+    _sembrar_actividad_lemin(db)
+    with _como():
+        resp = client.get("/admin/api/usuarios/u1/actividad-completa", headers=_AUTH)
+    assert resp.status_code == 200
+    cuerpo = resp.get_data(as_text=True)
+    # Ni el texto del PDF ni el resumen completo deben viajar en la carga
+    # ligera -- solo sus longitudes.
+    assert "Constitución" not in cuerpo
+    assert "x" * 100 not in cuerpo
+    d = resp.get_json()
+    assert d["documentos"][0]["longitud_texto"] == 890_000
+    assert "texto" not in d["documentos"][0]
+    assert d["resumenes_pdf"][0]["longitud"] == 4200
+    assert "resumen" not in d["resumenes_pdf"][0]
+    assert "preguntas" not in d["tests"][0]
+    assert d["tests"][0]["num_preguntas"] == 1
+    # La respuesta entera debe quedarse muy por debajo del ~1,5 MB del bug real.
+    assert len(cuerpo) < 5000
+
+
+def test_actividad_completa_requiere_admin_total_no_solo_permiso_usuarios(client, db):
+    _sembrar_actividad_lemin(db)
+    with _como(admin=False, permisos=["usuarios"]):
+        resp = client.get("/admin/api/usuarios/u1/actividad-completa", headers=_AUTH)
+    assert resp.status_code == 403
+
+
+def test_actividad_completa_item_devuelve_solo_el_campo_pedido(client, db):
+    _sembrar_actividad_lemin(db)
+    with _como():
+        resp = client.get("/admin/api/usuarios/u1/actividad-completa/item?coleccion=resumenes_pdf&id=r1", headers=_AUTH)
+    assert resp.status_code == 200
+    d = resp.get_json()
+    assert list(d.keys()) == ["resumen"]
+    assert "Constitución" in d["resumen"]
+
+
+def test_actividad_completa_item_rechaza_coleccion_no_permitida(client, db):
+    _sembrar_actividad_lemin(db)
+    with _como():
+        resp = client.get("/admin/api/usuarios/u1/actividad-completa/item?coleccion=usuarios&id=u1", headers=_AUTH)
+    assert resp.status_code == 400
+
+
+def test_actividad_completa_exportar_incluye_todo_sin_recortar(client, db):
+    _sembrar_actividad_lemin(db)
+    with _como():
+        d = client.get("/admin/api/usuarios/u1/actividad-completa/exportar", headers=_AUTH).get_json()
+    assert "Constitución" in d["resumenes_pdf"][0]["resumen"]
+    assert len(d["documentos"][0]["texto"]) == 890_000
+    assert d["tests"][0]["preguntas"][0]["respuesta_correcta"] == "Madrid"
+
+
 # ---------- Bootstrap (primer admin sin Shell) ----------
 def test_bootstrap_desactivado_sin_secreto(client, monkeypatch):
     monkeypatch.delenv("ADMIN_BOOTSTRAP_SECRET", raising=False)
