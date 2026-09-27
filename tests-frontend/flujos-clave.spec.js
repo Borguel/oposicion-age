@@ -172,21 +172,23 @@ test.describe("generación del Test Oficial (/test-oficial/)", () => {
   });
 
   async function generarYFinalizarTestOficial(page, perfilMiPerfil) {
-    // Diagnóstico temporal (27/09/2026, segunda ronda): con la espera
-    // determinista de /guardar-test (más abajo) AMBOS tests -- también el
-    // "false", que antes pasaba siempre y rápido -- se quedan colgados
-    // hasta el timeout de 30000ms del test ENTERO en CI (nunca en local).
-    // Esto ya no encaja con "la cadena async tarda más de la cuenta bajo
-    // carga" -- apunta a que /guardar-test no llega a dispararse NUNCA en
-    // CI, algo previo en la cadena (clic en #btn-finalizar -> Swal.fire
-    // stub -> mostrarResultados()) se queda colgado sin más. Sin ningún
-    // error de consola/página visto en la ronda anterior de diagnóstico,
-    // así que puede ser un cuelgue silencioso (p. ej. una promesa que
-    // nunca resuelve ni rechaza), no una excepción. Quitar en cuanto se
-    // identifique la causa real.
-    page.on("pageerror", (err) => console.log("[pageerror]", err.stack || err.message || err));
-    page.on("console", (msg) => console.log(`[console.${msg.type()}]`, msg.text()));
-    page.on("requestfailed", (req) => console.log("[requestfailed]", req.url(), req.failure()?.errorText));
+    // Causa raíz real (27/09/2026, confirmada tras dos rondas de
+    // diagnóstico): index.html carga SweetAlert2 real desde un <script> de
+    // CDN, clásico y síncrono, ANTES de los <script type="module"> (auth.js,
+    // test-oficial/script.js) -- así que aunque page.addInitScript ponga
+    // window.Swal = stub antes de que cargue nada, esa librería real, si
+    // termina de cargar, SOBREESCRIBE window.Swal con la de verdad al
+    // ejecutarse. En CI (con acceso normal a internet) esa carga se
+    // completa y gana la carrera; en este sandbox (proxy con acceso
+    // restringido) esa petición nunca llega a resolverse y por eso el stub
+    // sobrevivía siempre en local. Con la librería real activa, Swal.fire()
+    // abre un modal de verdad que nadie del test llega a pulsar -- de ahí
+    // el cuelgue silencioso, sin ninguna excepción, hasta el timeout del
+    // test (visto en los dos commits de diagnóstico anteriores: ningún
+    // "[Swal.fire llamado]" de nuestro stub aparecía nunca en el log de
+    // CI). Bloquear la petición del CDN entero quita la carrera de raíz --
+    // ya no depende de qué gane primero.
+    await page.route("**/sweetalert2**", (route) => route.abort());
 
     await mockAuth(page);
     await mockOposicion(page);
@@ -250,18 +252,13 @@ export function ocultarBotonSiNoPaga(boton, perfil) {
     });
 
     // Sin esto, el tour de bienvenida al primer test (onboarding-tour.js)
-    // pinta un overlay que intercepta el click de "Finalizar Test".
+    // pinta un overlay que intercepta el click de "Finalizar Test". Con el
+    // CDN de SweetAlert2 ya bloqueado arriba, este stub ya no compite con la
+    // librería real: confirma directamente el diálogo "¿Deseas finalizar el
+    // test?" sin depender de que nada externo cargue.
     await page.addInitScript(() => localStorage.setItem("age_tour_test_visto", "1"));
-    // Stub de SweetAlert2 (se sirve desde un CDN externo, no disponible en
-    // este entorno de test): confirma directamente el diálogo "¿Deseas
-    // finalizar el test?" sin depender de que la librería real cargue.
     await page.addInitScript(() => {
-      window.Swal = {
-        fire: (opciones) => {
-          console.log("[Swal.fire llamado]", opciones && opciones.title);
-          return Promise.resolve({ isConfirmed: true });
-        },
-      };
+      window.Swal = { fire: () => Promise.resolve({ isConfirmed: true }) };
     });
 
     await page.goto("/test-oficial/");
@@ -269,16 +266,8 @@ export function ocultarBotonSiNoPaga(boton, perfil) {
     await page.locator("#form-generar-test button[type=submit]").click();
     await expect(page.locator("#form-pregunta")).toContainText("¿Qué artículo de la Constitución regula la Corona?");
 
-    console.log("[test] a punto de pulsar #btn-finalizar");
     await page.locator("#btn-finalizar").click();
-    console.log("[test] #btn-finalizar pulsado, esperando /guardar-test");
-    await Promise.race([
-      guardadoListo,
-      page.waitForTimeout(8000).then(() => {
-        throw new Error("[test] /guardar-test no se disparó en 8s -- ver logs de arriba");
-      }),
-    ]);
-    console.log("[test] /guardar-test recibido");
+    await guardadoListo;
   }
 
   test("Descargar PDF NO se muestra en periodo de prueba (tiene_plan_de_pago: false)", async ({ page }) => {
