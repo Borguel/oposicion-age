@@ -539,6 +539,15 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
     sin avanzar contenido -- mismo mecanismo que ya usa la generación de
     tests (ver generador_preguntas_verificado.py).
 
+    Siempre en streaming (26/09/2026): las respuestas largas que este
+    pipeline pide habitualmente (secciones con contenido real de un
+    resumen/esquema) se acercan o superan el muro de ~30s sin actividad en
+    la conexión donde una llamada clásica moría con "Response ended
+    prematurely" (ver _leer_respuesta_en_streaming) -- streaming evita eso
+    exactamente igual que en call_deepseek_api/call_deepseek_api_stream, sin
+    cambiar el contrato: quien llama sigue recibiendo el texto completo de
+    una vez, nunca fragmentos sueltos.
+
     Devuelve el texto completo, o None si la primera llamada falla."""
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
@@ -555,32 +564,76 @@ def generar_con_continuacion(system_prompt, mensaje_usuario, max_tokens=4096, te
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
+            "stream": True,
+            # Pide que el último chunk del stream incluya el consumo de
+            # tokens -- sin esto no habría forma de contabilizar coste en
+            # streaming (ver call_deepseek_api/call_deepseek_api_stream).
+            "stream_options": {"include_usage": True},
         }
         if frequency_penalty is not None:
             payload["frequency_penalty"] = frequency_penalty
+        # Streaming, no la llamada clásica (26/09/2026, bug real: un
+        # resumen/esquema de PDF con secciones largas se quedaba a medias
+        # una y otra vez -- "no se ha podido generar N de M secciones" --
+        # porque esta función, a diferencia de call_deepseek_api y
+        # call_deepseek_api_stream, seguía sin streaming. Con la conexión
+        # muda mientras el modelo genera, cualquier respuesta de más de
+        # ~30s moría con "Response ended prematurely"/ConnectionError (ver
+        # el comentario largo de _leer_respuesta_en_streaming) -- justo el
+        # caso de las secciones con contenido real, que se acercan al tope
+        # de max_tokens y tardan más de eso, mientras una sección corta
+        # (p. ej. bibliografía) nunca se acerca al muro y siempre
+        # sobrevivía. Reintentar el mismo fragmento largo tardaba lo mismo
+        # y volvía a morir igual -- no era azar de red, era un límite
+        # estructural de tamaño/duración. Mismo patrón de lectura SSE que
+        # _leer_respuesta_en_streaming/call_deepseek_api_stream.
+        fragmento = ""
+        finish_reason = None
+        usage = None
         try:
-            response = _post_deepseek_con_reintentos(headers, payload, timeout=60)
+            with _post_deepseek_con_reintentos(headers, payload, timeout=60, stream=True) as response:
+                response.raise_for_status()
+                for linea in response.iter_lines(decode_unicode=True):
+                    if not linea or not linea.startswith("data: "):
+                        continue
+                    contenido_linea = linea[len("data: "):].strip()
+                    if contenido_linea == "[DONE]":
+                        break
+                    try:
+                        data = json.loads(contenido_linea)
+                    except json.JSONDecodeError:
+                        continue
+                    if data.get("usage"):
+                        usage = data["usage"]
+                    choices = data.get("choices") or []
+                    if not choices:
+                        continue
+                    trozo = (choices[0].get("delta") or {}).get("content")
+                    if trozo:
+                        fragmento += trozo
+                    if choices[0].get("finish_reason"):
+                        finish_reason = choices[0]["finish_reason"]
+        except requests.exceptions.HTTPError as e:
+            logger.warning(
+                "DeepSeek devolvió %s generando continuación",
+                e.response.status_code if e.response is not None else "?",
+            )
+            break
         except requests.exceptions.RequestException as e:
             logger.warning("Error de red generando continuación con DeepSeek: %s", e)
             break
-        if response.status_code != 200:
-            logger.warning("DeepSeek devolvió %s generando continuación", response.status_code)
-            break
-        cuerpo = response.json() or {}
         if on_usage is not None:
             try:
-                on_usage(cuerpo.get("usage"))
+                on_usage(usage)
             except Exception:
                 logger.warning("El callback on_usage falló contabilizando el coste de DeepSeek", exc_info=True)
         else:
-            _registrar_coste(cuerpo.get("usage"))
-        choices = cuerpo.get("choices") or []
-        if not choices:
-            logger.warning("DeepSeek no devolvió 'choices' generando continuación")
+            _registrar_coste(usage)
+        if not fragmento:
+            logger.warning("DeepSeek no devolvió contenido generando continuación")
             break
-        fragmento = choices[0].get("message", {}).get("content") or ""
         texto_completo += fragmento
-        if choices[0].get("finish_reason") != "length":
+        if finish_reason != "length":
             break
         messages.append({"role": "assistant", "content": fragmento})
         messages.append({

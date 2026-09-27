@@ -2,6 +2,7 @@
 usado hasta ahora) y los reintentos acotados ante fallos TRANSITORIOS
 (timeout/conexión/5xx) -- nunca ante errores 4xx, que no se arreglan
 reintentando."""
+import json
 import threading
 import time
 from concurrent.futures import as_completed
@@ -447,12 +448,20 @@ def test_limita_las_llamadas_simultaneas_a_deepseek(monkeypatch):
 
 
 def _respuesta_con_status(contenido, finish_reason, status_code=200):
-    mock = MagicMock()
-    mock.status_code = status_code
-    mock.json.return_value = {
-        "choices": [{"message": {"content": contenido}, "finish_reason": finish_reason}]
-    }
-    return mock
+    """Mock de una respuesta EN STREAMING (SSE) para generar_con_continuacion
+    -- desde el 26/09/2026 llama a DeepSeek siempre en streaming (mismo
+    motivo que _leer_respuesta_en_streaming/call_deepseek_api_stream: una
+    respuesta larga sin streaming muere con "Response ended prematurely"
+    pasados ~30s de conexión muda). Mismo nombre que antes (cuando mockeaba
+    una respuesta clásica, con .json()) para no tocar cada test uno a uno --
+    solo cambia CÓMO se construye el mock, reutilizando _respuesta_stream
+    (definida más abajo, usada también por TestCallDeepseekApiStream)."""
+    lineas = []
+    if contenido:
+        lineas.append("data: " + json.dumps({"choices": [{"delta": {"content": contenido}}]}))
+    lineas.append("data: " + json.dumps({"choices": [{"delta": {}, "finish_reason": finish_reason}]}))
+    lineas.append("data: [DONE]")
+    return _respuesta_stream(status_code, lineas)
 
 
 class TestGenerarConContinuacion:
@@ -555,6 +564,19 @@ class TestGenerarConContinuacion:
         assert resultado == "Resumen recuperado."
         assert mock_post.call_count == 2
 
+    def test_incluye_stream_true_y_stream_options_en_el_payload(self, monkeypatch):
+        # Bug real (26/09/2026): sin streaming, una sección larga de un
+        # resumen/esquema de PDF (cerca del tope de max_tokens) tardaba más
+        # de ~30s y moría con la conexión muda -- ver el comentario largo
+        # junto al código de generar_con_continuacion.
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+        with patch("deepseek_utils.requests.post",
+                   return_value=_respuesta_con_status("Resumen.", "stop")) as mock_post:
+            deepseek_utils.generar_con_continuacion("system", "user")
+        payload_enviado = mock_post.call_args.kwargs["json"]
+        assert payload_enviado["stream"] is True
+        assert payload_enviado["stream_options"] == {"include_usage": True}
+
 
 def _respuesta_stream(status_code, lineas_sse=None):
     mock = MagicMock()
@@ -563,7 +585,12 @@ def _respuesta_stream(status_code, lineas_sse=None):
         mock.raise_for_status.side_effect = requests.exceptions.HTTPError(response=mock)
     else:
         mock.raise_for_status.return_value = None
-    mock.iter_lines.return_value = iter(lineas_sse or [])
+    # side_effect (no return_value) para que CADA llamada a iter_lines()
+    # obtenga un iterador nuevo -- necesario cuando el mismo mock se
+    # reutiliza en varias llamadas (p. ej. patch(..., return_value=...) con
+    # generar_con_continuacion pidiendo varias continuaciones): un iterador
+    # ya agotado en la primera llamada dejaría la segunda sin contenido.
+    mock.iter_lines.side_effect = lambda *a, **k: iter(lineas_sse or [])
     mock.__enter__.return_value = mock
     mock.__exit__.return_value = False
     return mock

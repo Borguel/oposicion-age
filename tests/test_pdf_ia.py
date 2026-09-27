@@ -1300,9 +1300,12 @@ class TestGenerarTarjetasDesdePdf:
 
 
 class _FakeRespuestaDeepSeek:
-    """Simula el objeto que devuelve requests.post: lo mínimo que
-    _post_deepseek_con_reintentos y call_deepseek_api necesitan
-    (status_code, raise_for_status, json())."""
+    """Simula el objeto que devuelve requests.post EN STREAMING: lo mínimo
+    que _post_deepseek_con_reintentos y generar_con_continuacion necesitan
+    (status_code, raise_for_status, el protocolo de context manager, e
+    iter_lines() con el mismo formato SSE que la API real) -- desde el
+    26/09/2026 generar_con_continuacion llama siempre en streaming (ver el
+    comentario largo junto a su código en deepseek_utils.py)."""
     def __init__(self, contenido, usage):
         self._contenido = contenido
         self._usage = usage
@@ -1311,11 +1314,17 @@ class _FakeRespuestaDeepSeek:
     def raise_for_status(self):
         pass
 
-    def json(self):
-        return {
-            "choices": [{"message": {"content": self._contenido}, "finish_reason": "stop"}],
-            "usage": self._usage,
-        }
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def iter_lines(self, decode_unicode=True):
+        yield "data: " + json.dumps({"choices": [{"delta": {"content": self._contenido}}]})
+        yield "data: " + json.dumps({"choices": [{"delta": {}, "finish_reason": "stop"}]})
+        yield "data: " + json.dumps({"choices": [], "usage": self._usage})
+        yield "data: [DONE]"
 
 
 class TestCosteIaEnHerramientasPdf:
