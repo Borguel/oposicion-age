@@ -1,0 +1,67 @@
+name: Regenerar explicaciones de exámenes oficiales
+
+# Regenera el campo "explicacion" de las preguntas de exámenes oficiales
+# (AGE, AUXILIAR, GACE) cuya explicación no repasa las 4 opciones -- solo
+# justifica la correcta, a diferencia de Test Personalizado (ver
+# regenerar_explicaciones_examenes_oficiales.py para el porqué).
+#
+# Se lanza a mano. Por defecto solo AUDITA (no escribe): cuenta cuántas
+# preguntas hay pendientes por oposición y genera 2-3 ejemplos reales de
+# antes/después. Pon "modo" = aplicar para regenerar de verdad.
+#
+# "verificar"/"verificar_aplicar" son una segunda pasada, sobre las
+# explicaciones YA generadas: una IA las revisa buscando afirmaciones
+# demasiado tajantes o contradicciones (sin texto legal de origen contra
+# el que comparar, así que pilla parte de los casos, no todos) y, con
+# "verificar_aplicar", regenera solo las que fallen esa revisión.
+#
+# "cobertura" es una auditoría de solo lectura y sin ninguna llamada a
+# DeepSeek: mide para cuántas preguntas el tema_id ya asignado resuelve a
+# texto legal real del temario -- paso previo, gratis, antes de construir
+# generación/verificación con ese texto legal como respaldo.
+#
+# Las claves viven solo en los secretos FIREBASE_CREDENTIALS_JSON/
+# DEEPSEEK_API_KEY de este repositorio (mismo patrón que
+# reasignar-temas-examenes.yml).
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "Qué hacer"
+        required: true
+        default: "auditar"
+        type: choice
+        options:
+          - auditar             # solo lectura: cuenta pendientes + ejemplos antes/después
+          - aplicar              # regenera de verdad las explicaciones pendientes
+          - verificar            # solo lectura: revisa la calidad de las ya generadas
+          - verificar_aplicar    # revisa Y regenera las que fallen la revisión
+          - cobertura            # solo lectura, sin IA: % de preguntas con texto legal recuperable
+
+jobs:
+  regenerar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Auditar / regenerar / verificar explicaciones
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          case "${{ github.event.inputs.modo }}" in
+            aplicar)           python regenerar_explicaciones_examenes_oficiales.py --aplicar ;;
+            verificar)         python regenerar_explicaciones_examenes_oficiales.py --verificar ;;
+            verificar_aplicar) python regenerar_explicaciones_examenes_oficiales.py --verificar --aplicar ;;
+            cobertura)         python regenerar_explicaciones_examenes_oficiales.py --cobertura ;;
+            *)                 python regenerar_explicaciones_examenes_oficiales.py ;;
+          esac

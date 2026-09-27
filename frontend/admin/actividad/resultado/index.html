@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script>if(location.hostname==="oposicion-age-1.onrender.com"){location.replace("https://www.dominatuopo.com"+location.pathname+location.search+location.hash);}</script>
+  <style>html:not(.auth-listo) body { visibility: hidden; }</style>
+  <script type="module" src="/assets/auth-guard.js"></script>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js" crossorigin />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js" crossorigin />
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resultado del test - Panel de administración - Domina tu Opo</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/admin/style.css" />
+  <link rel="stylesheet" href="/admin/actividad/style.css" />
+  <link rel="stylesheet" href="/admin/actividad/resultado/style.css" />
+  <!-- Requerido por renderizarResultadosTest (assets/resultados-test.js)
+       para el botón "Descargar PDF" -- mismo script que ya cargan
+       test-oficial/repetir-test/etc., que usan el mismo módulo. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+<main class="age-container act-root">
+  <div id="act-res-no-autorizado" class="admin-no-autorizado-wrap" style="display:none;">
+    <div class="age-card admin-no-autorizado">
+      <h2>Acceso restringido</h2>
+      <p>Esta sección es solo para administradores.</p>
+      <a class="age-btn age-btn-primary" href="/zona-opositor/">Volver a Zona opositor</a>
+    </div>
+  </div>
+
+  <div id="act-res-contenido" style="display:none;">
+    <a class="act-volver" id="act-res-volver" href="/admin/actividad/">
+      <span aria-hidden="true">←</span> Volver a la actividad del usuario
+    </a>
+
+    <div id="act-res-cabecera" class="act-res-cabecera"></div>
+
+    <div id="act-res-cargando" class="admin-cargando">Cargando resultados…</div>
+    <div id="act-res-render"></div>
+  </div>
+
+  <div id="act-res-toasts" class="admin-toasts" aria-live="polite"></div>
+</main>
+
+<script type="module" src="/admin/actividad/resultado/script.js"></script>
+</body>
+</html>

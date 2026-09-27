@@ -297,6 +297,64 @@ def _ficha_actividad(ref, datos):
     return contenido, rendimiento, hist, hist_diario, uso
 
 
+def _documentos_pdf(ref, incluir_preview):
+    """Detalle de cada PDF de la biblioteca "Mis documentos" del usuario y de
+    lo que se generó a partir de él (longitud del resumen/esquema, nº de
+    preguntas/tarjetas) -- para poder valorar de un vistazo, desde el propio
+    panel, si una herramienta de IA le dio a alguien un resultado pobre
+    (p. ej. un resumen sospechosamente corto) sin tener que entrar a mano en
+    Firestore. Solo lectura. incluir_preview=False oculta el primer fragmento
+    de texto del resumen/esquema a un admin con permiso parcial "usuarios"
+    (mismo criterio que el coste de IA: un moderador ve cifras, no el
+    contenido real subido/generado por el usuario)."""
+    resumenes, esquemas, tests, tarjetas = {}, {}, {}, {}
+    for d in ref.collection("resumenes_pdf").stream():
+        dd = d.to_dict() or {}
+        did = dd.get("documento_id")
+        if did:
+            resumenes[did] = {
+                "fecha": dd.get("fecha"),
+                "longitud": dd.get("longitud", 0),
+                "preview": (dd.get("resumen") or "")[:200] if incluir_preview else None,
+            }
+    for d in ref.collection("esquemas_pdf").stream():
+        dd = d.to_dict() or {}
+        did = dd.get("documento_id")
+        if did:
+            esquemas[did] = {
+                "fecha": dd.get("fecha"),
+                "longitud": dd.get("longitud", 0),
+                "preview": (dd.get("esquema") or "")[:200] if incluir_preview else None,
+            }
+    for d in ref.collection("tests_pdf").stream():
+        dd = d.to_dict() or {}
+        did = dd.get("documento_id")
+        if did:
+            tests[did] = {"fecha": dd.get("fecha"), "num_preguntas": dd.get("num_preguntas", 0)}
+    for d in ref.collection("tarjetas_pdf").stream():
+        dd = d.to_dict() or {}
+        did = dd.get("documento_id")
+        if did:
+            tarjetas[did] = {"fecha": dd.get("fecha"), "num_tarjetas": dd.get("num_tarjetas", 0)}
+
+    documentos = []
+    for d in ref.collection("documentos").stream():
+        dd = d.to_dict() or {}
+        documentos.append({
+            "id": d.id,
+            "nombre_archivo": dd.get("nombre_archivo", ""),
+            "titulo": dd.get("titulo", ""),
+            "num_paginas": dd.get("num_paginas", 0),
+            "fecha_subida": dd.get("fecha_subida"),
+            "resumen": resumenes.get(d.id),
+            "esquema": esquemas.get(d.id),
+            "test": tests.get(d.id),
+            "tarjetas": tarjetas.get(d.id),
+        })
+    documentos.sort(key=lambda x: x.get("fecha_subida") or "", reverse=True)
+    return documentos
+
+
 def _uso_herramientas(datos):
     """Consumo real de cada herramienta en el periodo actual frente al límite
     del plan del usuario -- para vigilar desde la ficha quién está tirando
@@ -1785,7 +1843,169 @@ def usuarios_detalle(uid):
         "uso_actual": uso_actual,
         "uso_herramientas": _uso_herramientas(datos),
         "notas_lista": _notas_lista(datos),
+        "documentos_pdf": _documentos_pdf(ref, incluir_preview=g.es_admin),
     })
+
+
+# Colección -> nombre del campo "grande" (texto/lista larga) que NO se manda
+# en la carga ligera de la ficha, solo en /actividad-completa/exportar o al
+# pedir un elemento concreto con /actividad-completa/item. Sirve también
+# como lista blanca de colecciones que esa ruta puede leer.
+_CAMPO_GRANDE_POR_COLECCION = {
+    "documentos": "texto",
+    "resumenes_pdf": "resumen",
+    "esquemas_pdf": "esquema",
+    "tests_pdf": "preguntas",
+    "tarjetas_pdf": "tarjetas",
+    "tests": "preguntas",
+    "esquemas": "contenido",
+}
+
+
+@bp.route("/admin/api/usuarios/<uid>/actividad-completa", methods=["GET"])
+@requiere_permiso("usuarios")
+def usuarios_actividad_completa(uid):
+    """Volcado de solo lectura de TODO lo que un usuario ha hecho en la app,
+    en versión LIGERA (solo metadatos y longitudes, sin el texto/preguntas
+    completos de cada cosa -- eso se pide aparte, ver
+    usuarios_actividad_completa_item y _exportar más abajo).
+
+    Bug real (26/09/2026): la primera versión de esta ruta mandaba TODO de
+    golpe, incluido el texto extraído de cada PDF (hasta 900 KB cada uno,
+    ver documentos_pdf.py::LIMITE_BYTES_TEXTO_DOCUMENTO) y cada resumen
+    completo -- para un usuario con un único PDF de 150 páginas, la
+    respuesta llegó a pesar 1,5 MB, y en el móvil el navegador se quedaba
+    colgado construyendo el HTML con ese texto de golpe (la pestaña se veía
+    "cargando" para siempre). De ahí la versión ligera aquí y el contenido
+    completo bajo demanda por elemento.
+
+    Solo para el admin TOTAL (g.es_admin): a diferencia del resto de la
+    ficha, aquí no hay cifras agregadas, es el contenido real subido y
+    generado por el usuario -- un admin con permiso parcial "usuarios" no
+    debe poder leerlo."""
+    if not g.es_admin:
+        return jsonify({"error": "Se requiere ser administrador total"}), 403
+    ref = db.collection("usuarios").document(uid)
+    if not ref.get().exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    return jsonify(_actividad_completa(ref, completo=False))
+
+
+@bp.route("/admin/api/usuarios/<uid>/actividad-completa/item", methods=["GET"])
+@requiere_permiso("usuarios")
+def usuarios_actividad_completa_item(uid):
+    """Contenido completo (el campo "grande") de UNA sola entrada, bajo
+    demanda -- lo que pide el frontend al desplegar un bloque concreto de la
+    pestaña "Actividad completa", en vez de traerlo todo de golpe."""
+    if not g.es_admin:
+        return jsonify({"error": "Se requiere ser administrador total"}), 403
+    coleccion = request.args.get("coleccion", "")
+    item_id = request.args.get("id", "")
+    campo = _CAMPO_GRANDE_POR_COLECCION.get(coleccion)
+    if not campo or not _id_valido(item_id):
+        return jsonify({"error": "Parámetros inválidos"}), 400
+    doc = db.collection("usuarios").document(uid).collection(coleccion).document(item_id).get()
+    if not doc.exists:
+        return jsonify({"error": "No encontrado"}), 404
+    return jsonify({campo: (doc.to_dict() or {}).get(campo)})
+
+
+@bp.route("/admin/api/usuarios/<uid>/actividad-completa/exportar", methods=["GET"])
+@requiere_permiso("usuarios")
+def usuarios_actividad_completa_exportar(uid):
+    """Volcado ÍNTEGRO, sin recortar nada -- lo que pide el botón "Copiar
+    todo" de la pestaña. A diferencia de la carga inicial de la pestaña, esta
+    ruta solo se llama una vez, al pulsar el botón, y el resultado se copia
+    directo al portapapeles sin volcarlo en el DOM -- así el tamaño de la
+    respuesta no arriesga colgar el render como pasaba antes."""
+    if not g.es_admin:
+        return jsonify({"error": "Se requiere ser administrador total"}), 403
+    ref = db.collection("usuarios").document(uid)
+    if not ref.get().exists:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    return jsonify(_actividad_completa(ref, completo=True))
+
+
+def _actividad_completa(ref, completo):
+    """completo=False (ficha, carga inicial): solo metadatos y longitudes.
+    completo=True (exportar): incluye también el campo grande de cada
+    entrada (texto/resumen/esquema/preguntas/tarjetas/contenido)."""
+    documentos = []
+    for d in ref.collection("documentos").stream():
+        dd = d.to_dict() or {}
+        entrada = {
+            "id": d.id,
+            "nombre_archivo": dd.get("nombre_archivo", ""),
+            "titulo": dd.get("titulo", ""),
+            "num_paginas": dd.get("num_paginas", 0),
+            "fecha_subida": dd.get("fecha_subida"),
+            "longitud_texto": len(dd.get("texto") or ""),
+        }
+        if completo:
+            entrada["texto"] = dd.get("texto", "")
+        documentos.append(entrada)
+    documentos.sort(key=lambda x: x.get("fecha_subida") or "", reverse=True)
+
+    def _volcar(nombre_coleccion, campo_grande, campos_extra=()):
+        salida = []
+        for d in ref.collection(nombre_coleccion).stream():
+            dd = d.to_dict() or {}
+            entrada = {"id": d.id, "documento_id": dd.get("documento_id"), "nombre_archivo": dd.get("nombre_archivo", ""), "fecha": dd.get("fecha")}
+            for campo in campos_extra:
+                entrada[campo] = dd.get(campo)
+            if completo:
+                entrada[campo_grande] = dd.get(campo_grande)
+            salida.append(entrada)
+        salida.sort(key=lambda x: x.get("fecha") or "", reverse=True)
+        return salida
+
+    resumenes_pdf = _volcar("resumenes_pdf", "resumen", ["longitud"])
+    esquemas_pdf = _volcar("esquemas_pdf", "esquema", ["longitud"])
+    tests_pdf = _volcar("tests_pdf", "preguntas", ["num_preguntas"])
+    tarjetas_pdf = _volcar("tarjetas_pdf", "tarjetas", ["num_tarjetas"])
+
+    esquemas = []
+    for d in ref.collection("esquemas").stream():
+        dd = d.to_dict() or {}
+        entrada = {"id": d.id, "fecha": dd.get("fecha"), "oposicion": dd.get("oposicion"), "temas": dd.get("temas", [])}
+        if completo:
+            entrada["contenido"] = dd.get("contenido")
+        esquemas.append(entrada)
+    esquemas.sort(key=lambda x: x.get("fecha") or "", reverse=True)
+
+    tests = []
+    for d in ref.collection("tests").stream():
+        dd = d.to_dict() or {}
+        entrada = {
+            "id": d.id,
+            "fecha": dd.get("fecha"),
+            "tipo": dd.get("tipo"),
+            "oposicion": dd.get("oposicion"),
+            "estado": dd.get("estado"),
+            "num_preguntas": dd.get("num_preguntas", 0),
+            "aciertos": dd.get("aciertos", 0),
+            "fallos": dd.get("fallos", 0),
+            "blancos": dd.get("blancos", 0),
+            "porcentaje_acierto": dd.get("porcentaje_acierto"),
+            "puntuacion_final": dd.get("puntuacion_final"),
+            "tiempo": dd.get("tiempo", 0),
+            "temas": dd.get("temas", []),
+            "resultado": dd.get("resultado"),
+        }
+        if completo:
+            entrada["preguntas"] = dd.get("preguntas", [])
+        tests.append(entrada)
+    tests.sort(key=lambda x: x.get("fecha") or "", reverse=True)
+
+    return {
+        "documentos": documentos,
+        "resumenes_pdf": resumenes_pdf,
+        "esquemas_pdf": esquemas_pdf,
+        "tests_pdf": tests_pdf,
+        "tarjetas_pdf": tarjetas_pdf,
+        "esquemas": esquemas,
+        "tests": tests,
+    }
 
 
 def _notas_lista(datos):

@@ -10,7 +10,63 @@ from documentos_pdf import (
     actualizar_progreso_generacion, limpiar_progreso_generacion,
     obtener_preguntas_previas, _LIMITE_DOCUMENTOS_LISTADOS,
     marcar_generado, limite_regeneraciones_alcanzado, LIMITE_GENERACIONES_POR_DOCUMENTO,
+    omitir_bloques_indice,
 )
+
+
+# ---------- omitir_bloques_indice ----------
+# Caso real (25/09/2026): un usuario subió el "Código electrónico" del BOE
+# (una recopilación de decenas de leyes) y el resumen generado dedicó más
+# del 90% de su longitud a reproducir el índice del libro en vez de
+# contenido real. Las líneas de aquí abajo son el patrón EXACTO visto en el
+# texto crudo que pypdf extrajo de ese PDF.
+_INDICE_REAL = (
+    "Gabinetes ................................................................. 92\n"
+    "CAPÍTULO I. De los miembros del Gobierno............................................ 92\n"
+    "CAPÍTULO II. De los Secretarios de Estado ............................................ 93\n"
+    "CAPÍTULO III. De los Directores de los Gabinetes de Presidente, Vicepresidentes, Ministros y Secretarios de \n"
+    "Estado .................................................................. 93\n"
+    "TÍTULO III. De las normas de funcionamiento del Gobierno y de la delegación de competencias ............ 93\n"
+    "TÍTULO IV. Del Gobierno en funciones ................................................. 94\n"
+    "NORMATIVA PARA INGRESO EN EL CUERPO DE GESTIÓN DE LA ADMINISTRACIÓN CIVIL DEL ESTADO\n"
+    "ÍNDICE SISTEMÁTICO\n"
+    "– X –\n"
+    "Disposiciones adicionales ......................................................... 100\n"
+    "Disposiciones transitorias ......................................................... 100\n"
+)
+_CONTENIDO_REAL = (
+    "# Constitución Española\n"
+    "Artículo 1. España se constituye en un Estado social y democrático de Derecho.\n"
+    "Artículo 2. La Constitución se fundamenta en la indisoluble unidad de la Nación española.\n"
+)
+
+
+def test_omitir_bloques_indice_colapsa_el_indice_y_conserva_el_contenido_real():
+    salida = omitir_bloques_indice(_INDICE_REAL + _CONTENIDO_REAL)
+    assert "[índice omitido: 12 líneas de tabla de contenidos]" in salida
+    assert _CONTENIDO_REAL in salida
+    assert "Gabinetes" not in salida
+    assert "ÍNDICE SISTEMÁTICO" not in salida
+    assert "– X –" not in salida
+
+
+def test_omitir_bloques_indice_no_toca_una_racha_corta():
+    # Una racha de menos de 5 líneas de índice no se colapsa -- evita falsos
+    # positivos sobre un par de líneas sueltas que por casualidad terminen
+    # en puntos+número.
+    texto = (
+        "Índice general ..................... 3\n"
+        "Prólogo ............................ 5\n"
+        "Artículo 1. Contenido real de verdad.\n"
+    )
+    salida = omitir_bloques_indice(texto)
+    assert salida == texto
+    assert "omitido" not in salida
+
+
+def test_omitir_bloques_indice_sin_indice_no_cambia_nada():
+    texto = "Artículo 1. Un texto legal normal, sin ningún índice.\nArtículo 2. Más contenido real."
+    assert omitir_bloques_indice(texto) == texto
 
 
 def test_documento_nuevo_suma_sus_paginas_al_contador_del_usuario(db):

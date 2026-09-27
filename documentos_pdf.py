@@ -9,6 +9,7 @@ PDF). El contenido en sí (resumen/esquema/tarjetas/test) se sigue guardando
 en las subcolecciones ya existentes (resumenes_pdf, esquemas_pdf, etc.),
 cada entrada etiquetada con su documento_id."""
 import hashlib
+import re
 from datetime import datetime, timedelta
 
 from deepseek_utils import detectar_texto_legal
@@ -51,6 +52,79 @@ def limite_regeneraciones_alcanzado(documento, tipo):
     este campo existir devuelven 0 -- empiezan a contar desde ahora, no
     pierden regeneraciones ya hechas en el pasado."""
     return (documento or {}).get(f"generaciones_{tipo}", 0) >= LIMITE_GENERACIONES_POR_DOCUMENTO
+
+
+# Detección de índice/sumario/tabla de contenidos en el texto extraído de un
+# PDF (25/09/2026, caso real: un usuario subió el "Código electrónico" del
+# BOE para su oposición -- una recopilación de decenas de leyes en un solo
+# PDF -- y el resumen generado dedicó más del 90% de su longitud a
+# reproducir el propio índice del libro, título a título con su número de
+# página, en vez de resumir contenido real; solo llegó a cubrir la primera
+# ley del compendio antes de agotar el tope de caracteres). Ni el prompt de
+# resumen/esquema ni el troceado por caracteres saben distinguir un índice
+# de contenido real, así que se limpia aquí, en el texto ya extraído, antes
+# de que nada de esto llegue a gastar presupuesto de IA.
+#
+# Patrón real observado en el texto crudo extraído por pypdf de ese PDF:
+#   "Gabinetes ................................................................. 92"
+#   "CAPÍTULO I. De los miembros del Gobierno............................................ 92"
+# Título + tira de puntos de relleno tipográfico + número de página al
+# final de línea -- de riesgo de falso positivo muy bajo (contenido real no
+# suele terminar una línea así). También se cuentan como "de índice" los
+# marcadores de cabecera/pie de página que se repiten literalmente en cada
+# página del índice (en ese mismo documento, "ÍNDICE SISTEMÁTICO" aparecía
+# 43 veces) y los folios en números romanos entre guiones ("– X –").
+_PATRON_LINEA_INDICE = re.compile(r"\.{3,}\s*\d+\s*$")
+_PATRON_FOLIO_ROMANO = re.compile(r"^[–-]\s*[IVXLCDM]+\s*[–-]$")
+_MARCADORES_INDICE = {"ÍNDICE SISTEMÁTICO", "SUMARIO", "INDICE SISTEMATICO"}
+
+
+def _es_linea_de_indice(linea):
+    limpia = linea.strip()
+    if not limpia:
+        return False
+    if limpia.upper() in _MARCADORES_INDICE:
+        return True
+    if _PATRON_FOLIO_ROMANO.match(limpia):
+        return True
+    return bool(_PATRON_LINEA_INDICE.search(limpia))
+
+
+def omitir_bloques_indice(texto):
+    """Colapsa rachas largas de líneas de índice/sumario a una única línea
+    resumen, dejando el resto del texto intacto. Solo colapsa una racha de
+    5 o más líneas de índice (una línea suelta que por casualidad termine
+    en puntos+número no se toca), y tolera hasta 2 líneas intercaladas que
+    no lo sean -- un título de sección puede partirse en dos líneas físicas
+    en el PDF, con el número de página solo en la segunda (caso real visto
+    en el documento)."""
+    lineas = texto.split("\n")
+    n = len(lineas)
+    resultado = []
+    i = 0
+    while i < n:
+        if _es_linea_de_indice(lineas[i]):
+            j = i
+            fin_racha = i
+            huecos_seguidos = 0
+            while j < n:
+                if _es_linea_de_indice(lineas[j]):
+                    fin_racha = j
+                    huecos_seguidos = 0
+                else:
+                    huecos_seguidos += 1
+                    if huecos_seguidos > 2:
+                        break
+                j += 1
+            bloque = lineas[i:fin_racha + 1]
+            num_indice = sum(1 for l in bloque if _es_linea_de_indice(l))
+            if num_indice >= 5:
+                resultado.append(f"[índice omitido: {len(bloque)} líneas de tabla de contenidos]")
+                i = fin_racha + 1
+                continue
+        resultado.append(lineas[i])
+        i += 1
+    return "\n".join(resultado)
 
 
 def _recortar_a_bytes_utf8(texto, limite_bytes):

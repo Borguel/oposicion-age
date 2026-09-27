@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script>if(location.hostname==="oposicion-age-1.onrender.com"){location.replace("https://www.dominatuopo.com"+location.pathname+location.search+location.hash);}</script>
+  <style>html:not(.auth-listo) body { visibility: hidden; }</style>
+  <script type="module" src="/assets/auth-guard.js"></script>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js" crossorigin />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js" crossorigin />
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Actividad completa - Panel de administración - Domina tu Opo</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <script>try{if(localStorage.getItem("age-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <link rel="stylesheet" href="/admin/style.css" />
+  <link rel="stylesheet" href="/admin/actividad/style.css" />
+</head>
+<body>
+<nav class="age-nav"></nav>
+
+<main class="age-container act-root">
+  <div id="act-no-autorizado" class="admin-no-autorizado-wrap" style="display:none;">
+    <div class="age-card admin-no-autorizado">
+      <h2>Acceso restringido</h2>
+      <p>Esta sección es solo para administradores.</p>
+      <a class="age-btn age-btn-primary" href="/zona-opositor/">Volver a Zona opositor</a>
+    </div>
+  </div>
+
+  <div id="act-contenido" style="display:none;">
+    <a class="act-volver" href="/admin/#usuarios" id="act-volver">
+      <span aria-hidden="true">←</span> Volver al panel
+    </a>
+
+    <p id="act-cargando-usuario" class="admin-cargando">Cargando usuario…</p>
+    <div id="act-cabecera"></div>
+
+    <nav id="act-secciones-nav" class="act-secciones-nav" aria-label="Secciones de esta página" hidden></nav>
+
+    <div id="act-cuerpo"></div>
+  </div>
+
+  <div id="act-toasts" class="admin-toasts" aria-live="polite"></div>
+</main>
+
+<script type="module" src="/admin/actividad/script.js"></script>
+</body>
+</html>

@@ -788,6 +788,32 @@ tr.sis-opt .sis-punto { background: #d9a300; }
 .ficha-uso-off .ficha-uso-val { font-style: italic; }
 .ficha-uso-nota { font-size: 11.5px; color: var(--age-ink-soft, var(--age-ink)); margin: 10px 0 0; }
 
+/* Documentos PDF por usuario (calidad de resumen/esquema generado) */
+.ficha-docs-lista { display: flex; flex-direction: column; gap: 10px; }
+.ficha-doc-item { background: var(--age-neutral-bg, var(--age-primary-soft)); border-radius: 10px; padding: 10px 12px; }
+.ficha-doc-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.ficha-doc-cab strong { font-size: 13px; min-width: 0; word-break: break-word; }
+.ficha-doc-fecha { font-size: 11.5px; color: var(--age-ink-soft, var(--age-ink)); white-space: nowrap; flex: 0 0 auto; }
+.ficha-doc-meta { font-size: 12px; color: var(--age-ink-soft, var(--age-ink)); margin-bottom: 6px; }
+.ficha-doc-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.ficha-doc-preview { font-size: 12px; font-style: italic; color: var(--age-ink-soft, var(--age-ink)); margin: 8px 0 0; word-break: break-word; }
+
+/* Actividad completa (volcado íntegro por usuario, plegado en <details>) */
+.ficha-texto-detalle { margin-top: 8px; border-top: 1px dashed var(--age-border); padding-top: 8px; }
+.ficha-texto-detalle summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--age-primary); }
+.ficha-texto-completo { white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 12.5px; max-height: 420px; overflow-y: auto; background: var(--age-neutral-bg, var(--age-primary-soft)); border-radius: 8px; padding: 10px; margin: 8px 0 0; }
+.ficha-pregunta { border-top: 1px solid var(--age-border); padding: 8px 0; font-size: 12.5px; }
+.ficha-pregunta:first-child { border-top: none; }
+.ficha-pregunta-txt { font-weight: 600; margin: 0 0 4px; }
+.ficha-opciones { list-style: none; margin: 0 0 4px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.ficha-opciones li { padding: 2px 6px; border-radius: 6px; }
+.ficha-opcion-correcta { background: var(--age-success-bg); color: var(--age-success, #1e7e34); font-weight: 600; }
+.ficha-opcion-marcada { background: var(--age-danger-bg); color: var(--age-danger, #b02a37); }
+.ficha-pregunta-meta { color: var(--age-ink-soft, var(--age-ink)); margin: 0 0 4px; }
+.ficha-pregunta-exp { font-style: italic; color: var(--age-ink-soft, var(--age-ink)); margin: 0; }
+.ficha-tarjeta { font-size: 12.5px; border-top: 1px solid var(--age-border); padding: 8px 0; margin: 0; }
+.ficha-tarjeta:first-child { border-top: none; }
+
 
 .ficha-roles-intro { font-size: 13px; color: var(--age-ink-soft, var(--age-ink)); margin: 0 0 10px; }
 .ficha-roles { display: flex; flex-direction: column; gap: 8px; }

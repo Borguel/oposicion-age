@@ -28,6 +28,7 @@ from documentos_pdf import (
     marcar_error_generacion, limpiar_error_generacion,
     buscar_documento_por_texto, crear_documento,
     limite_regeneraciones_alcanzado, LIMITE_GENERACIONES_POR_DOCUMENTO,
+    omitir_bloques_indice,
 )
 from guardar_resultado import guardar_resultado_en_firestore
 from test_generator import (
@@ -61,7 +62,12 @@ _CLAUSULA_FIDELIDAD_DOCUMENTO = (
     "documento no aporta un dato que normalmente se esperaría, no lo inventes: "
     "sencillamente no lo incluyas. Antes de dar tu respuesta por buena, revisa "
     "mentalmente que cada dato concreto que has escrito (fecha, cifra, ley, "
-    "artículo, plazo) aparezca efectivamente en el documento que se te ha dado."
+    "artículo, plazo) aparezca efectivamente en el documento que se te ha dado. "
+    "Si una parte del documento es solo un índice, sumario o tabla de contenidos "
+    "(títulos de sección seguidos de un número de página, sin desarrollar su "
+    "contenido), no lo reproduzcas entrada por entrada como si fuera contenido "
+    "real: menciónalo como mucho en una frase y dedica el espacio real a las "
+    "secciones que sí tengan contenido desarrollado."
 )
 
 
@@ -114,6 +120,12 @@ def _resolver_texto_documento(plan_actual):
         return None, None, None, (jsonify({"error": "El archivo no es un PDF válido o está dañado. Comprueba que sea un PDF real e inténtalo de nuevo."}), 400)
     if not text.strip():
         return None, None, None, (jsonify({"error": "El PDF no contiene texto extraíble (puede ser una imagen)"}), 400)
+    # Quita índices/sumarios/tablas de contenidos del texto ANTES de
+    # guardarlo -- una sola vez por documento, así todas las regeneraciones
+    # futuras (resumen, esquema, test, tarjetas) parten ya del texto limpio
+    # sin tener que volver a procesarlo (ver el comentario largo en
+    # documentos_pdf.py::omitir_bloques_indice).
+    text = omitir_bloques_indice(text)
     # Cupo mensual de SUBIDAS (17/08/2026, ver banco_pdf_mensual en
     # limites_uso.py, a petición explícita del usuario: "lo que quiero
     # limitar es la subida del documento, no cada herramienta que uses

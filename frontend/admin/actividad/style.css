@@ -1,0 +1,102 @@
+/* Página "Actividad completa" de un usuario -- reutiliza los tokens de
+   theme.css y algunas clases ya existentes de /admin/style.css
+   (.ficha-avatar, .ficha-badge*, .ficha-pregunta*, .ficha-texto-completo,
+   .admin-cargando, .admin-toast*) en vez de duplicarlas; aquí solo va el
+   layout propio de esta página (cabecera, rejilla de tarjetas, nav de
+   secciones, ítems descargables). */
+
+.act-root { max-width: 1100px; margin: 0 auto; padding: 18px 16px 80px; }
+
+.act-volver {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600;
+  color: var(--age-ink-soft, var(--age-ink)); text-decoration: none; margin-bottom: 14px;
+}
+.act-volver:hover { color: var(--age-primary); }
+
+/* ----- Cabecera ----- */
+.act-cabecera {
+  display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
+  padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--age-border);
+}
+.act-cabecera .ficha-id { min-width: 200px; }
+.act-cabecera .ficha-email { font-size: 1.3rem; }
+.act-cabecera #act-descargar-todo { margin-left: auto; flex-shrink: 0; align-self: center; }
+
+/* ----- Nav de secciones (pegajosa) ----- */
+.act-secciones-nav {
+  position: sticky; top: 0; z-index: 20; display: flex; gap: 8px; overflow-x: auto;
+  padding: 10px 2px; margin: 0 -2px 18px; background: var(--age-bg);
+  border-bottom: 1px solid var(--age-border);
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.act-secciones-nav::-webkit-scrollbar { display: none; }
+.act-nav-chip {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; min-height: 36px; border-radius: 999px; font-size: 13.5px; font-weight: 700;
+  background: var(--age-neutral-bg, var(--age-primary-soft)); color: var(--age-ink); text-decoration: none;
+}
+.act-nav-chip:hover { background: var(--age-primary-soft); color: var(--age-primary-dark, var(--age-primary)); }
+.act-nav-chip span { font-weight: 800; opacity: 0.7; font-size: 12px; }
+
+/* ----- Secciones ----- */
+.act-seccion { scroll-margin-top: 64px; margin-bottom: 36px; }
+.act-seccion-titulo { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; margin: 0 0 14px; }
+.act-seccion-ico { display: inline-flex; color: var(--age-primary); }
+.act-nota { color: var(--age-ink-soft, var(--age-ink)); font-size: 14px; }
+
+/* ----- Rejilla de tarjetas: 1 columna en móvil, 2 desde tablet/escritorio
+   (mismo criterio que .u-grid, ver tarea de la ficha de Usuarios) ----- */
+.act-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 640px) {
+  .act-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.act-lista { display: flex; flex-direction: column; gap: 14px; }
+
+/* min-width: 0 (bug real, nombres de archivo largos): .act-card es a la
+   vez ítem de .act-grid (CSS Grid) e ítem de .act-lista (flex columna) --
+   en ambos casos, sin esto, el "tamaño mínimo automático" del ítem usa el
+   ancho del contenido más ancho (el título del documento, en una sola
+   línea por .act-card-titulo) como suelo, así que la tarjeta entera crecía
+   para caber el nombre completo en vez de dejar que .act-card-titulo lo
+   recortara con "..." como ya estaba preparado para hacer. */
+.act-card {
+  background: var(--age-card); border: 1px solid var(--age-border); border-radius: var(--age-radius-lg, 14px);
+  padding: 16px 18px; box-shadow: var(--age-shadow); min-width: 0;
+}
+.act-card-ancha { max-width: none; }
+.act-card-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.act-card-titulo {
+  font-size: 14.5px; margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; flex: 1;
+}
+.act-card-fecha { font-size: 12px; color: var(--age-ink-soft, var(--age-ink)); white-space: nowrap; flex-shrink: 0; }
+.act-card-meta { font-size: 12.5px; color: var(--age-ink-soft, var(--age-ink)); margin: 0 0 12px; }
+.act-card-resultado { font-weight: 700; font-size: 13.5px; }
+
+/* ----- Ítem generado (chip Ver/Descargar) ----- */
+.act-items-lista { display: flex; flex-direction: column; gap: 4px; }
+.act-item { border-top: 1px dashed var(--age-border); padding: 10px 0; }
+.act-item:first-child { border-top: none; padding-top: 0; }
+.act-item-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.act-item-etiqueta { font-size: 13px; font-weight: 600; min-width: 0; }
+.act-item-acciones { display: flex; gap: 6px; flex-shrink: 0; }
+.act-icon-btn {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 0 12px;
+  border-radius: 10px; border: 1px solid var(--age-border); background: var(--age-card);
+  color: var(--age-ink); font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.act-icon-btn:hover { border-color: var(--age-primary); color: var(--age-primary); }
+.act-icon-btn[aria-expanded="true"] { background: var(--age-primary-soft); border-color: var(--age-primary); color: var(--age-primary-dark, var(--age-primary)); }
+.act-item-cuerpo { display: none; margin-top: 10px; }
+.act-item-abierto .act-item-cuerpo { display: block; }
+
+/* En móvil, la etiqueta y los botones se apilan si no caben en una fila */
+@media (max-width: 420px) {
+  .act-icon-btn span { display: none; }
+  .act-icon-btn { padding: 0 11px; }
+}
+
+@media (max-width: 640px) {
+  .act-cabecera #act-descargar-todo { margin-left: 0; width: 100%; justify-content: center; }
+  .act-root { padding: 14px 12px 72px; }
+}
