@@ -15,6 +15,11 @@ name: Regenerar explicaciones de exámenes oficiales
 # el que comparar, así que pilla parte de los casos, no todos) y, con
 # "verificar_aplicar", regenera solo las que fallen esa revisión.
 #
+# "cobertura" es una auditoría de solo lectura y sin ninguna llamada a
+# DeepSeek: mide para cuántas preguntas el tema_id ya asignado resuelve a
+# texto legal real del temario -- paso previo, gratis, antes de construir
+# generación/verificación con ese texto legal como respaldo.
+#
 # Las claves viven solo en los secretos FIREBASE_CREDENTIALS_JSON/
 # DEEPSEEK_API_KEY de este repositorio (mismo patrón que
 # reasignar-temas-examenes.yml).
@@ -31,6 +36,7 @@ on:
           - aplicar              # regenera de verdad las explicaciones pendientes
           - verificar            # solo lectura: revisa la calidad de las ya generadas
           - verificar_aplicar    # revisa Y regenera las que fallen la revisión
+          - cobertura            # solo lectura, sin IA: % de preguntas con texto legal recuperable
 
 jobs:
   regenerar:
@@ -56,5 +62,6 @@ jobs:
             aplicar)           python regenerar_explicaciones_examenes_oficiales.py --aplicar ;;
             verificar)         python regenerar_explicaciones_examenes_oficiales.py --verificar ;;
             verificar_aplicar) python regenerar_explicaciones_examenes_oficiales.py --verificar --aplicar ;;
+            cobertura)         python regenerar_explicaciones_examenes_oficiales.py --cobertura ;;
             *)                 python regenerar_explicaciones_examenes_oficiales.py ;;
           esac

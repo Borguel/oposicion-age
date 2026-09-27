@@ -23,17 +23,29 @@ lanzarlo tras una interrupcion o algun fallo puntual solo reintenta lo
 que de verdad siga sin arreglar.
 
 Ademas incluye un modo --verificar (tambien de dos pasos), pensado para
-revisar la CALIDAD de las explicaciones ya regeneradas: a diferencia de
-Test Personalizado (generador_preguntas_verificado.py), aqui no hay texto
-legal de origen contra el que comparar, asi que la explicacion se genera
-solo con el conocimiento general del modelo -- en matices finos (p. ej.
-una clasificacion legal exacta) puede sonar segura y aun asi ser
-imprecisa. --verificar hace una segunda pasada de autocritica (una IA
-revisa cada explicacion ya escrita buscando afirmaciones demasiado
-tajantes o contradicciones) y, con --aplicar, regenera solo las que
-fallen esa revision, esta vez con el problema detectado como pista:
+revisar la CALIDAD de las explicaciones ya regeneradas -- una segunda
+pasada de autocritica (una IA revisa cada explicacion ya escrita
+buscando afirmaciones demasiado tajantes o contradicciones) y, con
+--aplicar, regenera solo las que fallen esa revision, esta vez con el
+problema detectado como pista:
     python regenerar_explicaciones_examenes_oficiales.py --verificar
     python regenerar_explicaciones_examenes_oficiales.py --verificar --aplicar
+
+Respaldo con texto legal real (cuando hay cobertura): las preguntas de
+examenes oficiales ya tienen un `tema_id` (bloque_XX-tema_XX) asignado
+por reasignar_temas_examenes.py, que apunta al mismo temario que usa
+Test Personalizado como fuente real (subbloques con texto BOE, ver
+utils.obtener_subbloques_individuales). Cuando ese tema_id resuelve a
+contenido real, tanto la generacion como la verificacion lo usan como
+"TEXTO LEGAL" de referencia (mismo espiritu que generador_preguntas_
+verificado.py) en vez de fiarse solo del conocimiento general del
+modelo -- eso reduce mucho el riesgo de afirmaciones tajantes pero
+imprecisas. Si el tema_id no resuelve a nada (huerfano/sin cobertura),
+se sigue el comportamiento anterior sin respaldo, como red de
+seguridad. --cobertura audita, SOLO lectura de Firestore y sin ninguna
+llamada a IA, para cuantas preguntas hay de verdad texto legal
+recuperable, antes de gastar nada en generar/verificar:
+    python regenerar_explicaciones_examenes_oficiales.py --cobertura
 
 Requiere FIREBASE_CREDENTIALS_JSON (o FIREBASE_KEY_PATH) y
 DEEPSEEK_API_KEY, igual que el resto de scripts de datos.
@@ -50,7 +62,8 @@ from dotenv import load_dotenv
 
 from coste_ia import AcumuladorTokens, coste_estimado
 from deepseek_utils import call_deepseek_api
-from oposiciones import OPOSICIONES, coleccion_examenes_oficiales
+from oposiciones import OPOSICIONES, coleccion_examenes_oficiales, coleccion_temario
+from utils import obtener_subbloques_individuales
 
 load_dotenv()
 
@@ -58,6 +71,10 @@ MAX_WORKERS = 8
 # Preguntas de muestra a generar en modo auditoria (llamada real, coste
 # minimo) para poder juzgar la calidad antes de decidir aplicar nada.
 MUESTRAS_AUDITORIA_POR_OPOSICION = 1
+# Tope de caracteres del bloque "TEXTO LEGAL" que se antepone al prompt --
+# varios subbloques de un tema caben de sobra sin disparar el coste ni el
+# tiempo de la llamada.
+MAX_CARACTERES_TEXTO_LEGAL_TEMA = 12000
 
 # Una letra seguida de ")" -- p. ej. "A)" -- en cualquier punto del texto.
 # Una explicacion se considera "ya buena" si repasa las 4 opciones.
@@ -83,7 +100,40 @@ def _tiene_formato_bueno(explicacion):
     return all(patron.search(explicacion) for patron in _PATRON_OPCION.values())
 
 
-def _prompt_explicacion(pregunta, opciones, respuesta_correcta, problemas_previos=None):
+def _texto_legal_del_tema(db, oposicion, tema_id):
+    """Texto legal real (BOE) del tema al que pertenece una pregunta,
+    listo para anteponer a un prompt como respaldo -- reutiliza
+    utils.obtener_subbloques_individuales, la MISMA fuente que ya usa
+    Test Personalizado como "anclas" (generador_preguntas_verificado.py).
+    Devuelve None si el tema_id no resuelve a contenido real (vacío,
+    huérfano, o fuera del temario actual) -- quien llama debe seguir el
+    comportamiento sin respaldo para esa pregunta en concreto, nunca
+    bloquear el proceso entero por unas pocas sin cobertura."""
+    if not tema_id or "-" not in tema_id:
+        return None
+    subbloques = obtener_subbloques_individuales(db, [tema_id], coleccion_temario(oposicion))
+    if not subbloques:
+        return None
+    partes = []
+    total = 0
+    for sub in subbloques:
+        fragmento = f"{sub['titulo']}:\n{sub['texto']}"
+        espacio_restante = MAX_CARACTERES_TEXTO_LEGAL_TEMA - total
+        if espacio_restante <= 0:
+            break
+        if len(fragmento) > espacio_restante:
+            if not partes:
+                # Ni siquiera el primer fragmento cabe entero (subbloque
+                # inusualmente largo) -- mejor un recorte parcial que
+                # quedarse sin nada de respaldo para esta pregunta.
+                partes.append(fragmento[:espacio_restante])
+            break
+        partes.append(fragmento)
+        total += len(fragmento)
+    return "\n\n".join(partes) if partes else None
+
+
+def _prompt_explicacion(pregunta, opciones, respuesta_correcta, problemas_previos=None, texto_legal=None):
     opciones_texto = "\n".join(f"{letra}) {texto}" for letra, texto in sorted(opciones.items()))
     aviso_revision = ""
     if problemas_previos:
@@ -91,6 +141,26 @@ def _prompt_explicacion(pregunta, opciones, respuesta_correcta, problemas_previo
         aviso_revision = (
             "\n\nUn revisor jurídico ya detectó estos problemas en un intento anterior de "
             f"explicar esta misma pregunta -- corrígelos explícitamente esta vez:\n{lista}\n"
+        )
+    if texto_legal:
+        instruccion_fuente = (
+            "A continuación tienes el TEXTO LEGAL REAL del tema al que pertenece esta pregunta. "
+            "Basa la explicación EXCLUSIVAMENTE en ese texto: cita el artículo exacto que "
+            "corresponda en la línea de la respuesta correcta, usando la terminología oficial de "
+            "la norma (no sinónimos), y copia cualquier plazo, cifra, órgano o clasificación "
+            "EXACTAMENTE como aparece ahí -- nunca completes huecos con conocimiento propio ni te "
+            "fíes de una afirmación del enunciado que no encuentres en este texto.\n\n"
+            f"TEXTO LEGAL:\n{texto_legal}\n\n"
+        )
+    else:
+        instruccion_fuente = (
+            "Si el enunciado o alguna opción ya menciona un artículo o una norma concreta, cítalo en "
+            "la línea de la respuesta correcta usando la terminología oficial (no sinónimos). Si NO "
+            "se menciona ningún artículo o norma, no inventes ninguna referencia legal -- limítate a "
+            "explicar el motivo con tus propios conocimientos de la materia. No afirmes una "
+            "clasificación legal exacta (p. ej. si algo pertenece a una categoría concreta de la "
+            "norma) salvo que estés seguro de que es así -- en ese caso, formúlalo con matiz en vez "
+            "de darlo por hecho sin más.\n\n"
         )
     return (
         "Eres un experto en oposiciones y en legislación española. A continuación tienes una "
@@ -101,13 +171,7 @@ def _prompt_explicacion(pregunta, opciones, respuesta_correcta, problemas_previo
         "porque... C) ... D) ...\". Cada línea debe ser UNA sola frase breve (máximo 25-30 "
         "palabras) que vaya directa al motivo -- nunca repitas el enunciado de la pregunta ni el "
         "texto de las opciones, ni añadas relleno.\n\n"
-        "Si el enunciado o alguna opción ya menciona un artículo o una norma concreta, cítalo en "
-        "la línea de la respuesta correcta usando la terminología oficial (no sinónimos). Si NO "
-        "se menciona ningún artículo o norma, no inventes ninguna referencia legal -- limítate a "
-        "explicar el motivo con tus propios conocimientos de la materia. No afirmes una "
-        "clasificación legal exacta (p. ej. si algo pertenece a una categoría concreta de la "
-        "norma) salvo que estés seguro de que es así -- en ese caso, formúlalo con matiz en vez "
-        "de darlo por hecho sin más.\n"
+        f"{instruccion_fuente}"
         f"{aviso_revision}\n"
         f"Pregunta: {pregunta}\n\n{opciones_texto}\n\n"
         f"Respuesta correcta: {respuesta_correcta}) {opciones.get(respuesta_correcta, '')}\n\n"
@@ -117,12 +181,12 @@ def _prompt_explicacion(pregunta, opciones, respuesta_correcta, problemas_previo
 
 
 def _generar_explicacion_mejorada(pregunta, opciones, respuesta_correcta, contexto,
-                                   acumulador=None, problemas_previos=None):
+                                   acumulador=None, problemas_previos=None, texto_legal=None):
     """Genera la explicacion nueva y valida que sigue el formato pedido --
     un reintento si la primera respuesta no lo cumple. Devuelve None (sin
     reintentar mas) si sigue sin cumplirlo -- nunca se devuelve una
     explicacion que no pasa su propia validacion."""
-    prompt = _prompt_explicacion(pregunta, opciones, respuesta_correcta, problemas_previos)
+    prompt = _prompt_explicacion(pregunta, opciones, respuesta_correcta, problemas_previos, texto_legal)
     for _intento in range(2):
         respuesta = call_deepseek_api(
             messages=[{"role": "user", "content": prompt}],
@@ -137,42 +201,77 @@ def _generar_explicacion_mejorada(pregunta, opciones, respuesta_correcta, contex
     return None
 
 
-def _prompt_verificacion(pregunta, opciones, respuesta_correcta, explicacion):
-    """A diferencia de la verificación grounded de Test Personalizado
-    (_prompt_verificacion_normativo/_descriptivo en generador_preguntas_
-    verificado.py, que compara contra el texto legal real), aquí no hay
-    ningún texto de origen contra el que contrastar -- es una segunda
-    pasada de autocrítica del propio modelo. Por eso el techo es más
-    bajo: pilla contradicciones y afirmaciones demasiado tajantes, pero no
-    puede detectar un error que el modelo tampoco sabría corregir."""
+def _prompt_verificacion(pregunta, opciones, respuesta_correcta, explicacion, texto_legal=None):
+    """Con texto_legal (mismo respaldo que _prompt_explicacion), esta
+    verificación es tan grounded como _prompt_verificacion_normativo de
+    Test Personalizado -- compara la explicación contra el texto real,
+    no contra la intuición del modelo. Sin texto_legal (tema sin
+    cobertura), se mantiene la autocrítica de siempre: pilla
+    contradicciones y afirmaciones demasiado tajantes, pero no puede
+    detectar un error que el modelo tampoco sabría corregir por su
+    cuenta."""
     opciones_texto = "\n".join(f"{letra}) {texto}" for letra, texto in sorted(opciones.items()))
+
+    if texto_legal:
+        intro = (
+            "Eres un verificador jurídico independiente. Te llega una pregunta REAL de un examen "
+            "oficial (la respuesta correcta ya está verificada, no la cuestiones), una explicación "
+            "YA ESCRITA por otro proceso, y el TEXTO LEGAL REAL del tema al que pertenece. No des "
+            "por buena la explicación solo porque suena segura: comprueba cada afirmación contra "
+            "el texto legal, palabra por palabra, como si la vieras por primera vez.\n\n"
+            f"TEXTO LEGAL:\n{texto_legal}\n\n"
+        )
+        reglas = (
+            "Marca la explicación como inválida si detectas CUALQUIERA de estos problemas:\n"
+            "1. Cita un artículo que no existe en el texto legal proporcionado.\n"
+            "2. El contenido que atribuye a un artículo no coincide con lo que dice ese texto "
+            "legal.\n"
+            "3. Alguna línea se limita a repetir la premisa de la propia pregunta en vez de "
+            "justificar de forma independiente, contrastada con el texto legal, por qué esa opción "
+            "es correcta o incorrecta.\n"
+            "4. Hay una contradicción entre dos líneas, o entre la línea de la respuesta correcta y "
+            "cuál es realmente la letra marcada como correcta.\n"
+            "5. Alguna línea no tiene sentido, está incompleta, o no sigue el formato \"A) es "
+            "correcta/incorrecta porque...\".\n\n"
+            "No marques inválida una explicación solo por ser concisa -- si lo que dice coincide "
+            "con el texto legal, es correcta. Solo marca problemas que puedas señalar citando el "
+            "propio texto legal proporcionado.\n\n"
+        )
+    else:
+        intro = (
+            "Eres un revisor jurídico escéptico, especializado en oposiciones españolas. Te llega "
+            "una pregunta REAL de un examen oficial (la respuesta correcta ya está verificada, no "
+            "la cuestiones) y una explicación YA ESCRITA por otro proceso, que debes revisar con "
+            "ojo crítico -- no la des por buena solo porque suena segura.\n\n"
+        )
+        reglas = (
+            "Marca la explicación como inválida si detectas CUALQUIERA de estos problemas:\n"
+            "1. Alguna línea afirma como hecho una clasificación legal exacta (p. ej. que algo "
+            "pertenece a una categoría concreta de una norma) que podría no ser precisa o que tiene "
+            "matices que la explicación no menciona.\n"
+            "2. Alguna línea se limita a repetir la premisa de la propia pregunta en vez de "
+            "justificar de forma independiente por qué esa opción es correcta o incorrecta.\n"
+            "3. Hay una contradicción entre dos líneas, o entre la línea de la respuesta correcta y "
+            "cuál es realmente la letra marcada como correcta.\n"
+            "4. Se cita un número de artículo o una norma que, por tu propio conocimiento de la "
+            "materia, tienes motivos concretos para creer INCORRECTA -- el artículo no existe, "
+            "pertenece a otra norma, o el contenido que la explicación le atribuye no es lo que ese "
+            "artículo regula en realidad.\n"
+            "5. Alguna línea no tiene sentido, está incompleta, o no sigue el formato \"A) es "
+            "correcta/incorrecta porque...\".\n\n"
+            "No marques inválida una explicación solo por ser concisa o por no citar ningún artículo "
+            "cuando la pregunta tampoco lo hace -- eso es correcto. TAMPOCO marques inválida una cita "
+            "de artículo únicamente porque su número no aparece de forma literal en el enunciado o "
+            "las opciones -- es normal y deseable que la explicación sea más precisa que la pregunta, "
+            "citando el artículo concreto de la norma que ya se menciona. Marca la cita SOLO si crees "
+            "de verdad que el número o el contenido atribuido a ese artículo es incorrecto, nunca por "
+            "el mero hecho de no estar citado literalmente. Solo marca problemas concretos y "
+            "señalables en los que tengas una razón real para dudar, nunca por precaución genérica.\n\n"
+        )
+
     return (
-        "Eres un revisor jurídico escéptico, especializado en oposiciones españolas. Te llega una "
-        "pregunta REAL de un examen oficial (la respuesta correcta ya está verificada, no la "
-        "cuestiones) y una explicación YA ESCRITA por otro proceso, que debes revisar con ojo "
-        "crítico -- no la des por buena solo porque suena segura.\n\n"
-        "Marca la explicación como inválida si detectas CUALQUIERA de estos problemas:\n"
-        "1. Alguna línea afirma como hecho una clasificación legal exacta (p. ej. que algo "
-        "pertenece a una categoría concreta de una norma) que podría no ser precisa o que tiene "
-        "matices que la explicación no menciona.\n"
-        "2. Alguna línea se limita a repetir la premisa de la propia pregunta en vez de "
-        "justificar de forma independiente por qué esa opción es correcta o incorrecta.\n"
-        "3. Hay una contradicción entre dos líneas, o entre la línea de la respuesta correcta y "
-        "cuál es realmente la letra marcada como correcta.\n"
-        "4. Se cita un número de artículo o una norma que, por tu propio conocimiento de la "
-        "materia, tienes motivos concretos para creer INCORRECTA -- el artículo no existe, "
-        "pertenece a otra norma, o el contenido que la explicación le atribuye no es lo que ese "
-        "artículo regula en realidad.\n"
-        "5. Alguna línea no tiene sentido, está incompleta, o no sigue el formato \"A) es "
-        "correcta/incorrecta porque...\".\n\n"
-        "No marques inválida una explicación solo por ser concisa o por no citar ningún artículo "
-        "cuando la pregunta tampoco lo hace -- eso es correcto. TAMPOCO marques inválida una cita "
-        "de artículo únicamente porque su número no aparece de forma literal en el enunciado o "
-        "las opciones -- es normal y deseable que la explicación sea más precisa que la pregunta, "
-        "citando el artículo concreto de la norma que ya se menciona. Marca la cita SOLO si crees "
-        "de verdad que el número o el contenido atribuido a ese artículo es incorrecto, nunca por "
-        "el mero hecho de no estar citado literalmente. Solo marca problemas concretos y "
-        "señalables en los que tengas una razón real para dudar, nunca por precaución genérica.\n\n"
+        f"{intro}"
+        f"{reglas}"
         "Devuelve ÚNICAMENTE un JSON con esta forma exacta, sin texto adicional:\n"
         '{"valido": true, "problemas": []}\n'
         "Si encuentras algún problema, \"valido\" debe ser false y \"problemas\" debe listar cada "
@@ -184,12 +283,13 @@ def _prompt_verificacion(pregunta, opciones, respuesta_correcta, explicacion):
     )
 
 
-def _verificar_explicacion(pregunta, opciones, respuesta_correcta, explicacion, contexto, acumulador=None):
+def _verificar_explicacion(pregunta, opciones, respuesta_correcta, explicacion, contexto,
+                            acumulador=None, texto_legal=None):
     """Devuelve (estado, problemas): estado es "valida", "invalida" o
     "sin_verificar" (la IA no devolvió un JSON parseable -- fallo raro/
     transitorio, se deja constancia en vez de darla por buena en
     silencio)."""
-    prompt = _prompt_verificacion(pregunta, opciones, respuesta_correcta, explicacion)
+    prompt = _prompt_verificacion(pregunta, opciones, respuesta_correcta, explicacion, texto_legal)
     respuesta = call_deepseek_api(
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
@@ -233,8 +333,21 @@ def _recolectar_ya_generadas(db):
                 "opciones": opciones,
                 "respuesta_correcta": respuesta_correcta,
                 "explicacion": explicacion,
+                "tema_id": d.get("tema_id"),
             })
     return listas
+
+
+def _texto_legal_cacheado(db, cache, oposicion, tema_id):
+    """Envoltorio de _texto_legal_del_tema con caché en memoria por
+    (oposicion, tema_id) -- muchas preguntas comparten tema, así que
+    evita leer el mismo subbloque de Firestore una vez por pregunta. Una
+    posible lectura duplicada puntual entre hilos concurrentes es
+    inofensiva (solo repite trabajo, nunca corrompe nada)."""
+    clave = (oposicion, tema_id)
+    if clave not in cache:
+        cache[clave] = _texto_legal_del_tema(db, oposicion, tema_id)
+    return cache[clave]
 
 
 def _ejecutar_verificacion(db, aplicar):
@@ -243,17 +356,20 @@ def _ejecutar_verificacion(db, aplicar):
     total = len(tareas)
     print("=" * 70)
     print(f"Verificando {total} explicaciones ya generadas con {MAX_WORKERS} hilos en paralelo "
-          f"(revisión de autocrítica, sin texto legal de origen -- pilla parte de los casos, no "
-          f"todos)...")
+          f"(con respaldo del texto legal real cuando hay cobertura de temario, autocrítica sin "
+          f"él en el resto)...")
 
     acumulador = AcumuladorTokens()
     resultados = {}  # doc_id -> (oposicion, item, estado, problemas)
+    cache_texto_legal = {}
 
     def _procesar(oposicion, item):
+        texto_legal = _texto_legal_cacheado(db, cache_texto_legal, oposicion, item.get("tema_id"))
         estado, problemas = _verificar_explicacion(
             item["pregunta"], item["opciones"], item["respuesta_correcta"], item["explicacion"],
             contexto=f"verificar-explicacion oposicion={oposicion} doc={item['doc_id']}",
             acumulador=acumulador,
+            texto_legal=texto_legal,
         )
         return (oposicion, item, estado, problemas)
 
@@ -304,11 +420,13 @@ def _ejecutar_verificacion(db, aplicar):
     siguen_fallando = []
 
     def _regenerar(oposicion, item, problemas):
+        texto_legal = _texto_legal_cacheado(db, cache_texto_legal, oposicion, item.get("tema_id"))
         nueva = _generar_explicacion_mejorada(
             item["pregunta"], item["opciones"], item["respuesta_correcta"],
             contexto=f"regenerar-tras-verificacion oposicion={oposicion} doc={item['doc_id']}",
             acumulador=acumulador_regen,
             problemas_previos=problemas,
+            texto_legal=texto_legal,
         )
         if nueva is None:
             return (oposicion, item["doc_id"], False)
@@ -370,6 +488,7 @@ def _recolectar_pendientes(db):
                 "opciones": opciones,
                 "respuesta_correcta": respuesta_correcta,
                 "explicacion_actual": explicacion_actual,
+                "tema_id": d.get("tema_id"),
             })
     return pendientes, totales
 
@@ -390,14 +509,18 @@ def _auditar(db):
         print(f"MUESTRA de antes/después (llamada real a la IA, coste mínimo -- "
               f"no se escribe nada en Firestore):")
         acumulador = AcumuladorTokens()
+        cache_texto_legal = {}
         for oposicion in OPOSICIONES:
             muestra = pendientes[oposicion][:MUESTRAS_AUDITORIA_POR_OPOSICION]
             for item in muestra:
+                texto_legal = _texto_legal_cacheado(db, cache_texto_legal, oposicion, item.get("tema_id"))
                 nueva = _generar_explicacion_mejorada(
                     item["pregunta"], item["opciones"], item["respuesta_correcta"],
                     contexto=f"auditoria-explicacion oposicion={oposicion} doc={item['doc_id']}",
                     acumulador=acumulador,
+                    texto_legal=texto_legal,
                 )
+                print(f"\n[respaldo: {'texto legal real' if texto_legal else 'sin cobertura de temario'}]")
                 print(f"\n--- [{oposicion}] {item['doc_id']} ---")
                 print(f"Pregunta: {item['pregunta']}")
                 for letra, texto in sorted(item["opciones"].items()):
@@ -435,12 +558,15 @@ def _aplicar(db, pendientes):
     acumulador = AcumuladorTokens()
     actualizadas = 0
     fallidas = []
+    cache_texto_legal = {}
 
     def _procesar(oposicion, item):
+        texto_legal = _texto_legal_cacheado(db, cache_texto_legal, oposicion, item.get("tema_id"))
         nueva = _generar_explicacion_mejorada(
             item["pregunta"], item["opciones"], item["respuesta_correcta"],
             contexto=f"regenerar-explicacion oposicion={oposicion} doc={item['doc_id']}",
             acumulador=acumulador,
+            texto_legal=texto_legal,
         )
         if nueva is None:
             return (oposicion, item["doc_id"], False)
@@ -478,9 +604,57 @@ def _aplicar(db, pendientes):
           f"{acumulador.tout} tokens salida)")
 
 
-def main(aplicar, verificar):
+def _auditar_cobertura_temario(db):
+    """Solo lectura de Firestore, SIN ninguna llamada a DeepSeek -- mide
+    para cuántas preguntas activas de exámenes oficiales el tema_id ya
+    asignado resuelve a texto legal real y recuperable del temario, antes
+    de invertir nada en generación/verificación respaldada por ese
+    texto."""
+    print("=" * 70)
+    print("Auditoría de cobertura de temario (solo lectura, sin llamadas a IA)...")
+    total_general = 0
+    con_texto_general = 0
+    for oposicion in OPOSICIONES:
+        coleccion = coleccion_examenes_oficiales(oposicion)
+        total = 0
+        sin_tema = 0
+        con_texto = 0
+        temas_vistos = {}  # tema_id -> bool (resuelve a contenido)
+        for doc in db.collection(coleccion).stream():
+            d = doc.to_dict() or {}
+            if d.get("tipo") != "pregunta" or d.get("activa", True) is False:
+                continue
+            total += 1
+            tema_id = d.get("tema_id")
+            if not tema_id:
+                sin_tema += 1
+                continue
+            if tema_id not in temas_vistos:
+                temas_vistos[tema_id] = bool(_texto_legal_del_tema(db, oposicion, tema_id))
+            if temas_vistos[tema_id]:
+                con_texto += 1
+        total_general += total
+        con_texto_general += con_texto
+        pct = (con_texto / total * 100) if total else 0
+        temas_con_contenido = sum(1 for v in temas_vistos.values() if v)
+        print(f"[{oposicion}] preguntas activas: {total}  ·  sin tema_id: {sin_tema}  ·  "
+              f"con texto legal recuperable: {con_texto} ({pct:.1f}%)  ·  "
+              f"temas distintos usados: {len(temas_vistos)} ({temas_con_contenido} con contenido)")
+
+    pct_general = (con_texto_general / total_general * 100) if total_general else 0
+    print(f"\nTOTAL: {con_texto_general}/{total_general} preguntas con texto legal recuperable "
+          f"({pct_general:.1f}%).")
+    print("\n" + "=" * 70)
+    print("(auditoría de cobertura: solo lectura, no se ha llamado a ninguna IA ni escrito nada.)")
+
+
+def main(aplicar, verificar, cobertura):
     _init_firebase()
     db = firestore.client()
+
+    if cobertura:
+        _auditar_cobertura_temario(db)
+        return
 
     if verificar:
         _ejecutar_verificacion(db, aplicar)
@@ -504,4 +678,8 @@ def main(aplicar, verificar):
 
 if __name__ == "__main__":
     _args = sys.argv[1:]
-    main(aplicar="--aplicar" in _args, verificar="--verificar" in _args)
+    main(
+        aplicar="--aplicar" in _args,
+        verificar="--verificar" in _args,
+        cobertura="--cobertura" in _args,
+    )

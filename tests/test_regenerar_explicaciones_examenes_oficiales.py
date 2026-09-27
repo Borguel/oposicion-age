@@ -1,13 +1,17 @@
-"""Comprueba las funciones puras (sin Firestore/DeepSeek) de
+"""Comprueba las funciones puras (sin Firestore/DeepSeek real) de
 regenerar_explicaciones_examenes_oficiales: detectar si una explicación ya
 repasa las 4 opciones (para no tocarla ni gastar dinero regenerándola),
 que el prompt de generación incluye todo lo necesario para generar una
-buena (incluido el feedback de una revisión previa), y que el prompt de
-verificación (la pasada de autocrítica sobre lo ya generado) incluye la
-explicación a revisar."""
+buena (incluido el feedback de una revisión previa), que el prompt de
+verificación incluye la explicación a revisar, y que ambos usan el texto
+legal real del tema (vía utils.obtener_subbloques_individuales, con un
+doble en vez de Firestore real) como respaldo cuando hay cobertura de
+temario."""
+import regenerar_explicaciones_examenes_oficiales as mod
 from regenerar_explicaciones_examenes_oficiales import (
     _prompt_explicacion,
     _prompt_verificacion,
+    _texto_legal_del_tema,
     _tiene_formato_bueno,
 )
 
@@ -122,3 +126,69 @@ def test_prompt_verificacion_no_marca_una_cita_solo_por_no_ser_literal():
     prompt = _prompt_verificacion("¿Pregunta?", opciones, "A", "A) es correcta... B) ... C) ... D) ...")
     assert "no aparece de forma literal en el enunciado" in prompt
     assert "es normal y deseable que la explicación sea más precisa que la pregunta" in prompt
+
+
+# ---------- Respaldo con texto legal real (tema_id -> temario) ----------
+
+def test_texto_legal_del_tema_sin_guion_devuelve_none_sin_llamar_a_firestore(monkeypatch):
+    llamado = []
+    monkeypatch.setattr(mod, "obtener_subbloques_individuales", lambda *a, **k: llamado.append(1) or [])
+    assert _texto_legal_del_tema(db=None, oposicion="AGE", tema_id="no_tiene_guion") is None
+    assert llamado == []  # ni siquiera intenta leer Firestore con un tema_id con formato inválido
+
+
+def test_texto_legal_del_tema_sin_subbloques_devuelve_none(monkeypatch):
+    monkeypatch.setattr(mod, "obtener_subbloques_individuales", lambda *a, **k: [])
+    assert _texto_legal_del_tema(db=None, oposicion="AGE", tema_id="bloque_01-tema_02") is None
+
+
+def test_texto_legal_del_tema_concatena_los_subbloques_con_su_titulo(monkeypatch):
+    subbloques = [
+        {"etiqueta": "bloque_01-tema_02-sub_01", "titulo": "Ley 7/1985", "texto": "Artículo 3. Las entidades locales..."},
+        {"etiqueta": "bloque_01-tema_02-sub_02", "titulo": "Ley 7/1985", "texto": "Artículo 20. La organización municipal..."},
+    ]
+    monkeypatch.setattr(mod, "obtener_subbloques_individuales", lambda *a, **k: subbloques)
+    texto = _texto_legal_del_tema(db=None, oposicion="AGE", tema_id="bloque_01-tema_02")
+    assert "Artículo 3. Las entidades locales" in texto
+    assert "Artículo 20. La organización municipal" in texto
+    assert "Ley 7/1985" in texto
+
+
+def test_texto_legal_del_tema_respeta_el_tope_de_caracteres(monkeypatch):
+    subbloque_grande = {"etiqueta": "s1", "titulo": "Norma", "texto": "x" * (mod.MAX_CARACTERES_TEXTO_LEGAL_TEMA + 500)}
+    otro = {"etiqueta": "s2", "titulo": "Norma", "texto": "ESTE FRAGMENTO NO DEBE APARECER"}
+    monkeypatch.setattr(mod, "obtener_subbloques_individuales", lambda *a, **k: [subbloque_grande, otro])
+    texto = _texto_legal_del_tema(db=None, oposicion="AGE", tema_id="bloque_01-tema_02")
+    assert "ESTE FRAGMENTO NO DEBE APARECER" not in texto
+
+
+def test_prompt_explicacion_sin_texto_legal_usa_las_instrucciones_de_siempre():
+    opciones = {"A": "uno", "B": "dos", "C": "tres", "D": "cuatro"}
+    prompt = _prompt_explicacion("¿Pregunta?", opciones, "A")
+    assert "TEXTO LEGAL" not in prompt
+    assert "no inventes ninguna referencia legal" in prompt
+
+
+def test_prompt_explicacion_con_texto_legal_lo_incluye_y_exige_basarse_en_el():
+    opciones = {"A": "uno", "B": "dos", "C": "tres", "D": "cuatro"}
+    texto_legal = "Ley 7/1985, Artículo 3: Son entidades locales territoriales..."
+    prompt = _prompt_explicacion("¿Pregunta?", opciones, "A", texto_legal=texto_legal)
+    assert texto_legal in prompt
+    assert "EXCLUSIVAMENTE en ese texto" in prompt
+
+
+def test_prompt_verificacion_sin_texto_legal_usa_la_autocritica_de_siempre():
+    opciones = {"A": "uno", "B": "dos", "C": "tres", "D": "cuatro"}
+    prompt = _prompt_verificacion("¿Pregunta?", opciones, "A", "A) ... B) ... C) ... D) ...")
+    assert "TEXTO LEGAL" not in prompt
+    assert "revisor jurídico escéptico" in prompt
+
+
+def test_prompt_verificacion_con_texto_legal_lo_incluye_y_pide_comparar_contra_el():
+    opciones = {"A": "uno", "B": "dos", "C": "tres", "D": "cuatro"}
+    texto_legal = "Ley 7/1985, Artículo 3: Son entidades locales territoriales..."
+    explicacion = "A) ... B) ... C) ... D) ..."
+    prompt = _prompt_verificacion("¿Pregunta?", opciones, "A", explicacion, texto_legal=texto_legal)
+    assert texto_legal in prompt
+    assert "verificador jurídico independiente" in prompt
+    assert "palabra por palabra" in prompt
