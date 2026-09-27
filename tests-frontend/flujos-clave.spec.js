@@ -172,6 +172,22 @@ test.describe("generación del Test Oficial (/test-oficial/)", () => {
   });
 
   async function generarYFinalizarTestOficial(page, perfilMiPerfil) {
+    // Diagnóstico temporal (27/09/2026, segunda ronda): con la espera
+    // determinista de /guardar-test (más abajo) AMBOS tests -- también el
+    // "false", que antes pasaba siempre y rápido -- se quedan colgados
+    // hasta el timeout de 30000ms del test ENTERO en CI (nunca en local).
+    // Esto ya no encaja con "la cadena async tarda más de la cuenta bajo
+    // carga" -- apunta a que /guardar-test no llega a dispararse NUNCA en
+    // CI, algo previo en la cadena (clic en #btn-finalizar -> Swal.fire
+    // stub -> mostrarResultados()) se queda colgado sin más. Sin ningún
+    // error de consola/página visto en la ronda anterior de diagnóstico,
+    // así que puede ser un cuelgue silencioso (p. ej. una promesa que
+    // nunca resuelve ni rechaza), no una excepción. Quitar en cuanto se
+    // identifique la causa real.
+    page.on("pageerror", (err) => console.log("[pageerror]", err.stack || err.message || err));
+    page.on("console", (msg) => console.log(`[console.${msg.type()}]`, msg.text()));
+    page.on("requestfailed", (req) => console.log("[requestfailed]", req.url(), req.failure()?.errorText));
+
     await mockAuth(page);
     await mockOposicion(page);
     // obtenerPlan() de verdad llama a BACKEND_URL (producción real, ver
@@ -240,7 +256,12 @@ export function ocultarBotonSiNoPaga(boton, perfil) {
     // este entorno de test): confirma directamente el diálogo "¿Deseas
     // finalizar el test?" sin depender de que la librería real cargue.
     await page.addInitScript(() => {
-      window.Swal = { fire: () => Promise.resolve({ isConfirmed: true }) };
+      window.Swal = {
+        fire: (opciones) => {
+          console.log("[Swal.fire llamado]", opciones && opciones.title);
+          return Promise.resolve({ isConfirmed: true });
+        },
+      };
     });
 
     await page.goto("/test-oficial/");
@@ -248,8 +269,16 @@ export function ocultarBotonSiNoPaga(boton, perfil) {
     await page.locator("#form-generar-test button[type=submit]").click();
     await expect(page.locator("#form-pregunta")).toContainText("¿Qué artículo de la Constitución regula la Corona?");
 
+    console.log("[test] a punto de pulsar #btn-finalizar");
     await page.locator("#btn-finalizar").click();
-    await guardadoListo;
+    console.log("[test] #btn-finalizar pulsado, esperando /guardar-test");
+    await Promise.race([
+      guardadoListo,
+      page.waitForTimeout(8000).then(() => {
+        throw new Error("[test] /guardar-test no se disparó en 8s -- ver logs de arriba");
+      }),
+    ]);
+    console.log("[test] /guardar-test recibido");
   }
 
   test("Descargar PDF NO se muestra en periodo de prueba (tiene_plan_de_pago: false)", async ({ page }) => {
