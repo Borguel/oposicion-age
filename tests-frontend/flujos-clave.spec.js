@@ -172,31 +172,12 @@ test.describe("generación del Test Oficial (/test-oficial/)", () => {
   });
 
   async function generarYFinalizarTestOficial(page, perfilMiPerfil) {
-    // Diagnóstico temporal (27/09/2026): el test "true" de más abajo falla
-    // solo en CI, nunca en local, y el arreglo obvio (quitar la red de en
-    // medio stubbeando /assets/plan.js entero) no lo arregló -- así que el
-    // problema no es la red. Sin poder reproducirlo en local (el navegador
-    // de Playwright que instala CI, v1243, no se puede descargar aquí por
-    // el proxy de red), la única forma de ver qué pasa de verdad dentro del
-    // navegador en CI es volcar cualquier error de consola/página al log
-    // del propio test. Quitar en cuanto se identifique la causa real.
-    page.on("pageerror", (err) => console.log("[pageerror]", err.stack || err.message || err));
-    page.on("console", (msg) => {
-      if (msg.type() === "error") console.log("[console.error]", msg.text());
-    });
-
     await mockAuth(page);
     await mockOposicion(page);
     // obtenerPlan() de verdad llama a BACKEND_URL (producción real, ver
-    // assets/firebase-config.js), un fetch cross-origin autenticado -- en
-    // CI esa petición no siempre acaba interceptada por el mock de
-    // /mi-perfil de abajo (visto en la práctica: el test que comprueba
-    // "botón visible" fallaba solo en CI, nunca en local), y el fallback
-    // de obtenerPlan() ante cualquier fallo de red (`{ plan: "gratis",
-    // subscription_status: null }`) no incluye tiene_plan_de_pago, así que
-    // el botón se quedaba oculto pasara lo que pasara. Sustituir el módulo
-    // entero, mismo patrón que AUTH_STUB/OPOSICION_STUB, quita la red de
-    // en medio para este dato y hace el test determinista de verdad.
+    // assets/firebase-config.js) -- sustituir el módulo entero, mismo
+    // patrón que AUTH_STUB/OPOSICION_STUB, evita depender de que ese fetch
+    // cross-origin quede bien interceptado.
     await page.route("**/assets/plan.js", (route) =>
       route.fulfill({
         contentType: "application/javascript",
@@ -236,10 +217,21 @@ export function ocultarBotonSiNoPaga(boton, perfil) {
     );
     // guardarTestAutomaticamente() dispara este fetch al mostrar resultados
     // -- sin mockearlo, Playwright dejaría pasar una petición real a
-    // producción (page.route solo intercepta lo que se registra aquí).
-    await page.route("**/guardar-test", (route) =>
-      route.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: true }) })
-    );
+    // producción (page.route solo intercepta lo que se registra aquí). Es
+    // también la ÚLTIMA línea de mostrarResultados() (test-oficial/script.js),
+    // así que esperar a que se dispare es la forma determinista de saber que
+    // toda la cadena async de antes -- incluido el import de plan.js que
+    // decide si se muestra "Descargar PDF" -- ya ha terminado del todo, en
+    // vez de fiarse de que el timeout por defecto de expect() (5000ms) le dé
+    // tiempo bajo la carga variable de CI (root cause real de un fallo
+    // intermitente visto en CI el 27/09/2026: el botón se revelaba bien,
+    // solo que a veces después de que expect() ya se hubiera rendido).
+    let avisarGuardadoListo;
+    const guardadoListo = new Promise((resolve) => { avisarGuardadoListo = resolve; });
+    await page.route("**/guardar-test", (route) => {
+      avisarGuardadoListo();
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: true }) });
+    });
 
     // Sin esto, el tour de bienvenida al primer test (onboarding-tour.js)
     // pinta un overlay que intercepta el click de "Finalizar Test".
@@ -257,6 +249,7 @@ export function ocultarBotonSiNoPaga(boton, perfil) {
     await expect(page.locator("#form-pregunta")).toContainText("¿Qué artículo de la Constitución regula la Corona?");
 
     await page.locator("#btn-finalizar").click();
+    await guardadoListo;
   }
 
   test("Descargar PDF NO se muestra en periodo de prueba (tiene_plan_de_pago: false)", async ({ page }) => {
