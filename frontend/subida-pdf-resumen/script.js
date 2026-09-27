@@ -490,7 +490,7 @@ async function obtenerAuthHeaders() {
     // ya parseados), no en caracteres, para no cortar nunca a mitad de uno.
     const BLOQUES_PREVIEW_RESUMEN = 14;
 
-    function mostrarResumenResultado(textoResumen, tipoContenidoDetectado, fechaGeneracion) {
+    async function mostrarResumenResultado(textoResumen, tipoContenidoDetectado, fechaGeneracion) {
       resumen = textoResumen || "No se pudo generar el resumen.";
       // fechaGeneracion (10/08/2026, bug real): esta función SOLO se llama
       // ya al ver un resumen YA GUARDADO (?ver=resumen) -- desde que
@@ -540,6 +540,8 @@ async function obtenerAuthHeaders() {
 
       contenedorCarga.classList.add('hidden');
       resultadoResumen.classList.remove('hidden');
+      const { obtenerPlan, ocultarBotonSiNoPaga } = await import('/assets/plan.js');
+      ocultarBotonSiNoPaga(btnDescargarPdf, await obtenerPlan());
 
       import('/assets/otras-herramientas-pdf.js').then(({ pintarAccesosOtrasHerramientas }) => {
         pintarAccesosOtrasHerramientas({

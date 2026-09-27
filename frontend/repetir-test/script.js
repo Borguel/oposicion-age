@@ -397,7 +397,10 @@ async function mostrarResultados() {
     cont.insertAdjacentHTML("afterbegin", generarComparacionIntentosHTML(intentoOriginal, ultimasEstadisticas));
   }
 
-  document.getElementById("btn-descargar-pdf").style.display = "block";
+  const { obtenerPlan } = await import("/assets/plan.js");
+  if ((await obtenerPlan()).tiene_plan_de_pago) {
+    document.getElementById("btn-descargar-pdf").style.display = "block";
+  }
 
   const segundosTotales = tiempoTranscurridoActual();
   const { testIdEnCurso, limpiarSeguimiento } = await import("/assets/test-progreso.js");

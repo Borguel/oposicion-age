@@ -143,7 +143,7 @@ async function obtenerAuthHeaders() {
 
 document.addEventListener("DOMContentLoaded", async function () {
   inyectarIconosEstaticos();
-  const { protegerPagina } = await import("/assets/plan.js");
+  const { protegerPagina, obtenerPlan, ocultarBotonSiNoPaga } = await import("/assets/plan.js");
   if (!(await protegerPagina("basico"))) return;
 
   localStorage.setItem("age_visito_estadisticas", "1");
@@ -162,6 +162,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   const refreshBtn = document.getElementById("estadisticas-refresh");
   const exportarPdfBtn = document.getElementById("estadisticas-exportar-pdf");
+  ocultarBotonSiNoPaga(exportarPdfBtn, await obtenerPlan());
   let temasTest = [];
   let temasTocados = new Set();
   let datosParaExportarPDF = null;

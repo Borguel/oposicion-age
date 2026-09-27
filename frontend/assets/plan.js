@@ -204,3 +204,19 @@ export function mostrarPantallaBloqueo(planMinimo, perfil) {
     });
   }
 }
+
+// Oculta un botón de descarga de PDF si el usuario no paga de verdad
+// (perfil.tiene_plan_de_pago, ver tiene_plan_de_pago_activo en planes.py
+// -- false durante la prueba gratuita de 7 días, aunque el plan efectivo
+// sea "premium"). Igual que el aviso de arriba: NO es una barrera de
+// seguridad real -- el PDF ya se genera 100% en el cliente (jsPDF) a
+// partir de datos que la página tiene cargados, así que ocultar el botón
+// no protege el contenido en sí. Es una decisión de producto para no
+// regalar la descarga durante la prueba, motivada por cuentas que
+// generaban cientos de preguntas en la prueba gratuita sin llegar a
+// estudiarlas (visto en producción, 27/09/2026).
+export function ocultarBotonSiNoPaga(boton, perfil) {
+  if (boton && !perfil?.tiene_plan_de_pago) {
+    boton.style.display = "none";
+  }
+}

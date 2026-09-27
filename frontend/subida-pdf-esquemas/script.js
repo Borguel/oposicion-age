@@ -719,7 +719,7 @@ async function obtenerAuthHeaders() {
       return bloques.length;
     }
 
-    function mostrarEsquemaResultado(textoEsquema, tipoContenidoDetectado, fechaGeneracion) {
+    async function mostrarEsquemaResultado(textoEsquema, tipoContenidoDetectado, fechaGeneracion) {
       esquema = textoEsquema || "No se pudo generar el esquema.";
       // fechaGeneracion (10/08/2026, ver el comentario largo en
       // subida-pdf-resumen/script.js -- mismo bug: usar new Date() aquí
@@ -763,6 +763,8 @@ async function obtenerAuthHeaders() {
       }
       contenedorCarga.classList.add('hidden');
       resultadoEsquema.classList.remove('hidden');
+      const { obtenerPlan, ocultarBotonSiNoPaga } = await import('/assets/plan.js');
+      ocultarBotonSiNoPaga(btnDescargarPdf, await obtenerPlan());
 
       import('/assets/otras-herramientas-pdf.js').then(({ pintarAccesosOtrasHerramientas }) => {
         pintarAccesosOtrasHerramientas({

@@ -170,4 +170,67 @@ test.describe("generación del Test Oficial (/test-oficial/)", () => {
     await expect(page.locator("#contenedor-test")).toContainText("límite de uso diario");
     await expect(page.locator("#contenedor-test a[href='/planes/']")).toBeVisible();
   });
+
+  async function generarYFinalizarTestOficial(page, perfilMiPerfil) {
+    await mockAuth(page);
+    await mockOposicion(page);
+    await page.route("**/mi-perfil*", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify(perfilMiPerfil) })
+    );
+    await page.route("**/temas-disponibles*", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify({ temas: [] }) })
+    );
+    await page.route("**/oposiciones-disponibles*", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify({ oposiciones: [{ id: "AGE" }] }) })
+    );
+    await page.route("**/preguntas-favoritas*", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify({ preguntas: [] }) })
+    );
+    await page.route("**/generar-test-oficial", (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          test: [{
+            pregunta: "1. ¿Qué artículo de la Constitución regula la Corona?",
+            opciones: { A: "Artículo 56", B: "Artículo 12", C: "Artículo 99", D: "Artículo 1" },
+            respuesta_correcta: "A",
+            explicacion: "El artículo 56 de la Constitución regula la Corona.",
+          }],
+        }),
+      })
+    );
+    // guardarTestAutomaticamente() dispara este fetch al mostrar resultados
+    // -- sin mockearlo, Playwright dejaría pasar una petición real a
+    // producción (page.route solo intercepta lo que se registra aquí).
+    await page.route("**/guardar-test", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: true }) })
+    );
+
+    // Sin esto, el tour de bienvenida al primer test (onboarding-tour.js)
+    // pinta un overlay que intercepta el click de "Finalizar Test".
+    await page.addInitScript(() => localStorage.setItem("age_tour_test_visto", "1"));
+    // Stub de SweetAlert2 (se sirve desde un CDN externo, no disponible en
+    // este entorno de test): confirma directamente el diálogo "¿Deseas
+    // finalizar el test?" sin depender de que la librería real cargue.
+    await page.addInitScript(() => {
+      window.Swal = { fire: () => Promise.resolve({ isConfirmed: true }) };
+    });
+
+    await page.goto("/test-oficial/");
+    await page.locator("#num_preguntas").fill("1");
+    await page.locator("#form-generar-test button[type=submit]").click();
+    await expect(page.locator("#form-pregunta")).toContainText("¿Qué artículo de la Constitución regula la Corona?");
+
+    await page.locator("#btn-finalizar").click();
+  }
+
+  test("Descargar PDF NO se muestra en periodo de prueba (tiene_plan_de_pago: false)", async ({ page }) => {
+    await generarYFinalizarTestOficial(page, { plan: "premium", subscription_status: "trialing", tiene_plan_de_pago: false });
+    await expect(page.locator("#btn-descargar-pdf")).toBeHidden();
+  });
+
+  test("Descargar PDF se muestra para quien ya paga de verdad (tiene_plan_de_pago: true)", async ({ page }) => {
+    await generarYFinalizarTestOficial(page, { plan: "premium", subscription_status: "active", tiene_plan_de_pago: true });
+    await expect(page.locator("#btn-descargar-pdf")).toBeVisible();
+  });
 });

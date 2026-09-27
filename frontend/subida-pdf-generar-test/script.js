@@ -765,7 +765,10 @@ async function obtenerAuthHeaders() {
       sinResponder = ultimasEstadisticas.sinResponder;
       porcentaje = ultimasEstadisticas.porcentaje;
 
-      document.getElementById("btn-descargar-pdf").style.display = "block";
+      const { obtenerPlan } = await import("/assets/plan.js");
+      if ((await obtenerPlan()).tiene_plan_de_pago) {
+        document.getElementById("btn-descargar-pdf").style.display = "block";
+      }
 
       import('/assets/otras-herramientas-pdf.js').then(({ pintarAccesosOtrasHerramientas }) => {
         pintarAccesosOtrasHerramientas({

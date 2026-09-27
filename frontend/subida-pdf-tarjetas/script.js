@@ -587,7 +587,7 @@ async function obtenerAuthHeaders() {
       }
     });
 
-    function iniciarModoEstudio(tarjetasEntrada, guardar, advertencia, sugerencia) {
+    async function iniciarModoEstudio(tarjetasEntrada, guardar, advertencia, sugerencia) {
       if (!tarjetasEntrada || tarjetasEntrada.length === 0) {
         mostrarError("No se generaron tarjetas válidas.");
         return;
@@ -619,6 +619,10 @@ async function obtenerAuthHeaders() {
       tarjetaActual = 0;
       contenedorCarga.classList.add('hidden');
       modoEstudio.classList.remove('hidden');
+      const { obtenerPlan, ocultarBotonSiNoPaga } = await import('/assets/plan.js');
+      const perfilTarjetas = await obtenerPlan();
+      ocultarBotonSiNoPaga(document.getElementById('btn-descargar-pdf'), perfilTarjetas);
+      ocultarBotonSiNoPaga(document.getElementById('btn-descargar-pdf-lista'), perfilTarjetas);
       mostrarTarjetaActual();
       guardarEstado();
       // ✅ Guardar en Firebase (solo si es contenido recién generado, no al
