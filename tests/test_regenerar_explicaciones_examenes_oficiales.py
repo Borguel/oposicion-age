@@ -11,7 +11,6 @@ import regenerar_explicaciones_examenes_oficiales as mod
 from regenerar_explicaciones_examenes_oficiales import (
     _prompt_explicacion,
     _prompt_verificacion,
-    _texto_legal_del_tema,
     _tiene_formato_bueno,
 )
 
@@ -129,37 +128,95 @@ def test_prompt_verificacion_no_marca_una_cita_solo_por_no_ser_literal():
 
 
 # ---------- Respaldo con texto legal real (tema_id -> temario) ----------
+#
+# _subbloques_del_tema: solo la lectura de Firestore (sin truncar ni
+# localizar nada). _texto_legal_para_pregunta: la localización, pura,
+# sobre subbloques ya en memoria -- sin Firestore de por medio, así que
+# estos tests no necesitan monkeypatch.
 
-def test_texto_legal_del_tema_sin_guion_devuelve_none_sin_llamar_a_firestore(monkeypatch):
+def test_subbloques_del_tema_sin_guion_devuelve_lista_vacia_sin_llamar_a_firestore(monkeypatch):
     llamado = []
     monkeypatch.setattr(mod, "obtener_subbloques_individuales", lambda *a, **k: llamado.append(1) or [])
-    assert _texto_legal_del_tema(db=None, oposicion="AGE", tema_id="no_tiene_guion") is None
+    assert mod._subbloques_del_tema(db=None, oposicion="AGE", tema_id="no_tiene_guion") == []
     assert llamado == []  # ni siquiera intenta leer Firestore con un tema_id con formato inválido
 
 
-def test_texto_legal_del_tema_sin_subbloques_devuelve_none(monkeypatch):
-    monkeypatch.setattr(mod, "obtener_subbloques_individuales", lambda *a, **k: [])
-    assert _texto_legal_del_tema(db=None, oposicion="AGE", tema_id="bloque_01-tema_02") is None
-
-
-def test_texto_legal_del_tema_concatena_los_subbloques_con_su_titulo(monkeypatch):
-    subbloques = [
-        {"etiqueta": "bloque_01-tema_02-sub_01", "titulo": "Ley 7/1985", "texto": "Artículo 3. Las entidades locales..."},
-        {"etiqueta": "bloque_01-tema_02-sub_02", "titulo": "Ley 7/1985", "texto": "Artículo 20. La organización municipal..."},
-    ]
+def test_subbloques_del_tema_devuelve_lo_que_da_obtener_subbloques_individuales(monkeypatch):
+    subbloques = [{"etiqueta": "s1", "titulo": "Ley 7/1985", "texto": "Artículo 3. ..."}]
     monkeypatch.setattr(mod, "obtener_subbloques_individuales", lambda *a, **k: subbloques)
-    texto = _texto_legal_del_tema(db=None, oposicion="AGE", tema_id="bloque_01-tema_02")
+    assert mod._subbloques_del_tema(db=None, oposicion="AGE", tema_id="bloque_01-tema_02") == subbloques
+
+
+def test_texto_legal_para_pregunta_sin_subbloques_devuelve_none():
+    assert mod._texto_legal_para_pregunta([], "¿Pregunta?", {"A": "uno"}) is None
+
+
+def test_texto_legal_para_pregunta_sin_cita_de_articulo_cae_al_contexto_general_del_tema():
+    # Pregunta descriptiva, sin ningún "artículo N" detectable -- no hay
+    # nada concreto que localizar, así que sigue el comportamiento
+    # anterior: contexto general del tema (concatenado).
+    subbloques = [
+        {"etiqueta": "s1", "titulo": "Ley 7/1985", "texto": "Artículo 3. Las entidades locales..."},
+        {"etiqueta": "s2", "titulo": "Ley 7/1985", "texto": "Artículo 20. La organización municipal..."},
+    ]
+    texto = mod._texto_legal_para_pregunta(subbloques, "¿Qué es la Administración Local?", {"A": "uno"})
     assert "Artículo 3. Las entidades locales" in texto
     assert "Artículo 20. La organización municipal" in texto
-    assert "Ley 7/1985" in texto
 
 
-def test_texto_legal_del_tema_respeta_el_tope_de_caracteres(monkeypatch):
+def test_texto_legal_para_pregunta_respeta_el_tope_de_caracteres_sin_cita():
     subbloque_grande = {"etiqueta": "s1", "titulo": "Norma", "texto": "x" * (mod.MAX_CARACTERES_TEXTO_LEGAL_TEMA + 500)}
     otro = {"etiqueta": "s2", "titulo": "Norma", "texto": "ESTE FRAGMENTO NO DEBE APARECER"}
-    monkeypatch.setattr(mod, "obtener_subbloques_individuales", lambda *a, **k: [subbloque_grande, otro])
-    texto = _texto_legal_del_tema(db=None, oposicion="AGE", tema_id="bloque_01-tema_02")
+    texto = mod._texto_legal_para_pregunta([subbloque_grande, otro], "¿Pregunta descriptiva sin artículo?", {})
     assert "ESTE FRAGMENTO NO DEBE APARECER" not in texto
+
+
+def test_texto_legal_para_pregunta_localiza_el_articulo_citado_aunque_no_sea_el_primero():
+    # El bug real que motivó este arreglo: concatenar-y-truncar hacia el
+    # principio del tema deja fuera el artículo 20 si no es de los
+    # primeros subbloques -- localizarlo por número debe encontrarlo esté
+    # donde esté.
+    subbloques = [
+        {"etiqueta": "s1", "titulo": "Ley 7/1985", "texto": "Artículo 3. Las entidades locales territoriales son el municipio, la provincia y la isla."},
+        {"etiqueta": "s2", "titulo": "Ley 7/1985", "texto": "Artículo 20. El Ayuntamiento, integrado por el Alcalde y los Concejales, ejerce el gobierno municipal."},
+    ]
+    pregunta = "Según el artículo 20 de la Ley 7/1985, el Ayuntamiento está integrado por:"
+    texto = mod._texto_legal_para_pregunta(subbloques, pregunta, {"A": "uno"})
+    assert "Artículo 20" in texto
+    assert "Alcalde y los Concejales" in texto
+    assert "Artículo 3" not in texto  # no se cita, no debe colarse
+
+
+def test_texto_legal_para_pregunta_filtra_por_norma_para_no_confundir_el_mismo_numero_de_articulo():
+    # El tema mezcla dos normas -- ambas tienen un "Artículo 3", pero la
+    # pregunta cita la Ley 7/1985 explícitamente, así que debe localizar
+    # ESE artículo 3, no el de la otra norma.
+    subbloques = [
+        {"etiqueta": "s1", "titulo": "Ley 40/2015", "texto": "Artículo 3. Principios generales de la Administración."},
+        {"etiqueta": "s2", "titulo": "Ley 7/1985", "texto": "Artículo 3. Las entidades locales territoriales son el municipio, la provincia y la isla."},
+    ]
+    pregunta = "Según el artículo 3 de la Ley 7/1985, son entidades locales territoriales:"
+    texto = mod._texto_legal_para_pregunta(subbloques, pregunta, {"A": "uno"})
+    assert "entidades locales territoriales" in texto
+    assert "Principios generales de la Administración" not in texto
+
+
+def test_texto_legal_para_pregunta_cita_no_encontrada_devuelve_none():
+    # Hay cita de artículo, pero ningún subbloque del tema la contiene --
+    # nunca se debe devolver un texto que no la respalda de verdad.
+    subbloques = [{"etiqueta": "s1", "titulo": "Ley 7/1985", "texto": "Artículo 20. La organización municipal..."}]
+    pregunta = "Según el artículo 53 de la Constitución Española, pueden ser objeto de tutela:"
+    assert mod._texto_legal_para_pregunta(subbloques, pregunta, {"A": "uno"}) is None
+
+
+def test_texto_legal_para_pregunta_detecta_cita_en_las_opciones_no_solo_en_la_pregunta():
+    subbloques = [
+        {"etiqueta": "s1", "titulo": "Ley 39/2015", "texto": "Artículo 43. La notificación por medios electrónicos se entenderá cumplida en la fecha de acceso."},
+    ]
+    pregunta = "¿Cuándo se entiende cumplida la obligación de notificar?"
+    opciones = {"A": "Según el artículo 43 de la Ley 39/2015, en la fecha de acceso al contenido.", "B": "otra"}
+    texto = mod._texto_legal_para_pregunta(subbloques, pregunta, opciones)
+    assert "fecha de acceso" in texto
 
 
 def test_prompt_explicacion_sin_texto_legal_usa_las_instrucciones_de_siempre():

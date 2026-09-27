@@ -47,6 +47,21 @@ llamada a IA, para cuantas preguntas hay de verdad texto legal
 recuperable, antes de gastar nada en generar/verificar:
     python regenerar_explicaciones_examenes_oficiales.py --cobertura
 
+Importante: el respaldo NO concatena el tema entero (un tema puede
+agrupar varias normas y decenas de articulos) -- localiza el articulo
+concreto que la pregunta/opciones/explicacion ya citan (misma regex de
+"Articulo N" que usa generador_preguntas_verificado.py) dentro de los
+subbloques del tema, filtrando antes por la norma citada si el tema
+mezcla varias. Concatenar-y-truncar a ciegas hacia el principio del tema
+(primera version de este respaldo) producia ~83% de "invalidas" en
+--verificar porque el articulo citado casi nunca caia dentro del trozo
+truncado -- no era una senal real de calidad, era un fallo de
+recuperacion. Si no hay ninguna cita de articulo detectable (pregunta
+descriptiva), cae al contexto general del tema (concatenado y truncado,
+comportamiento anterior). Si SI hay cita pero no se encuentra en ningun
+subbloque del tema, se trata como sin cobertura (sin respaldo para esa
+pregunta), nunca se fuerza un match falso.
+
 Requiere FIREBASE_CREDENTIALS_JSON (o FIREBASE_KEY_PATH) y
 DEEPSEEK_API_KEY, igual que el resto de scripts de datos.
 """
@@ -62,6 +77,7 @@ from dotenv import load_dotenv
 
 from coste_ia import AcumuladorTokens, coste_estimado
 from deepseek_utils import call_deepseek_api
+from generador_preguntas_verificado import _extraer_articulos
 from oposiciones import OPOSICIONES, coleccion_examenes_oficiales, coleccion_temario
 from utils import obtener_subbloques_individuales
 
@@ -100,20 +116,63 @@ def _tiene_formato_bueno(explicacion):
     return all(patron.search(explicacion) for patron in _PATRON_OPCION.values())
 
 
-def _texto_legal_del_tema(db, oposicion, tema_id):
-    """Texto legal real (BOE) del tema al que pertenece una pregunta,
-    listo para anteponer a un prompt como respaldo -- reutiliza
-    utils.obtener_subbloques_individuales, la MISMA fuente que ya usa
-    Test Personalizado como "anclas" (generador_preguntas_verificado.py).
-    Devuelve None si el tema_id no resuelve a contenido real (vacío,
-    huérfano, o fuera del temario actual) -- quien llama debe seguir el
-    comportamiento sin respaldo para esa pregunta en concreto, nunca
-    bloquear el proceso entero por unas pocas sin cobertura."""
-    if not tema_id or "-" not in tema_id:
-        return None
-    subbloques = obtener_subbloques_individuales(db, [tema_id], coleccion_temario(oposicion))
-    if not subbloques:
-        return None
+# Número de artículo citado en un texto (pregunta/opciones/explicación) --
+# "artículo 43", "artículo 43.3", "art. 20.1"... el apartado (.3, .1) no se
+# captura, solo el número entero del artículo (ya viene completo dentro del
+# fragmento que devuelve _extraer_articulos).
+_PATRON_ARTICULO_CITADO = re.compile(r"art[íi]culo\s+(\d+)|art\.\s*(\d+)", re.IGNORECASE)
+# "Ley N/AAAA" / "Real Decreto (Legislativo) N/AAAA" -- basta el número/año,
+# que es lo que también aparece en el título del subbloque del temario.
+_PATRON_NUM_ANIO = re.compile(r"\b(\d{1,3}/\d{4})\b")
+
+
+def _articulos_citados(texto):
+    """Números de artículo (como strings, p. ej. {"43", "3"}) citados en
+    texto -- vacío si no hay ninguna cita detectable."""
+    numeros = set()
+    for m in _PATRON_ARTICULO_CITADO.finditer(texto or ""):
+        numeros.add(m.group(1) or m.group(2))
+    return numeros
+
+
+def _normas_citadas(texto):
+    """Normas citadas en texto, normalizadas para poder compararlas contra
+    el título de un subbloque del temario -- el número/año tal cual (sirve
+    para Ley y para Real Decreto/RDLeg, que comparten formato "N/AAAA"), o
+    "constitución"/"tfue" para las dos normas sin ese formato que se citan
+    con frecuencia en examenes oficiales."""
+    texto = texto or ""
+    normas = set(_PATRON_NUM_ANIO.findall(texto))
+    texto_low = texto.lower()
+    if "constituci" in texto_low or re.search(r"\bce\b", texto_low):
+        normas.add("constitución")
+    if "tfue" in texto_low or "funcionamiento de la unión europea" in texto_low:
+        normas.add("tfue")
+    return normas
+
+
+def _subbloque_coincide_norma(titulo, normas):
+    """True si no se detectó ninguna norma citada (no hay por qué filtrar)
+    o si el título del subbloque coincide con alguna de las citadas."""
+    if not normas:
+        return True
+    titulo_low = (titulo or "").lower()
+    for norma in normas:
+        if norma == "constitución":
+            if "constituci" in titulo_low:
+                return True
+        elif norma == "tfue":
+            if "tfue" in titulo_low or "funcionamiento de la unión" in titulo_low:
+                return True
+        elif norma in titulo_low:
+            return True
+    return False
+
+
+def _concatenar_subbloques(subbloques):
+    """Contexto general del tema (concatenado y truncado a un tope
+    razonable) -- fallback para preguntas sin ninguna cita de artículo
+    detectable, donde no hay un fragmento concreto que localizar."""
     partes = []
     total = 0
     for sub in subbloques:
@@ -131,6 +190,67 @@ def _texto_legal_del_tema(db, oposicion, tema_id):
         partes.append(fragmento)
         total += len(fragmento)
     return "\n\n".join(partes) if partes else None
+
+
+def _subbloques_del_tema(db, oposicion, tema_id):
+    """Subbloques reales (BOE) del tema al que pertenece una pregunta, SIN
+    truncar ni localizar nada todavía -- reutiliza
+    utils.obtener_subbloques_individuales, la MISMA fuente que ya usa Test
+    Personalizado como "anclas" (generador_preguntas_verificado.py). []
+    si el tema_id está mal formado o no resuelve a contenido real (vacío,
+    huérfano, o fuera del temario actual)."""
+    if not tema_id or "-" not in tema_id:
+        return []
+    return obtener_subbloques_individuales(db, [tema_id], coleccion_temario(oposicion))
+
+
+def _texto_legal_para_pregunta(subbloques, pregunta, opciones, texto_adicional=""):
+    """A partir de los subbloques YA cargados del tema (ver
+    _subbloques_del_tema), localiza el texto legal real que respalda ESTA
+    pregunta concreta -- nunca el tema entero a ciegas (ver docstring del
+    módulo: concatenar-y-truncar el tema entero producía ~83% de falsos
+    positivos en --verificar). Si la pregunta, las opciones o
+    texto_adicional (p. ej. una explicación ya escrita a verificar) citan
+    un número de artículo concreto, busca ESE fragmento exacto entre los
+    subbloques -- filtrando antes por la norma citada, si se detecta
+    alguna, para no confundir un mismo número de artículo de dos normas
+    distintas dentro del mismo tema. Si no hay ninguna cita de artículo
+    detectable, cae al contexto general del tema (concatenado y
+    truncado). Si SÍ hay cita pero no se encuentra en ningún subbloque del
+    tema, devuelve None A PROPÓSITO (nunca un texto que no la contiene) --
+    quien llama debe seguir sin respaldo para esa pregunta, igual que con
+    un tema sin cobertura."""
+    if not subbloques:
+        return None
+
+    texto_deteccion = "\n".join(
+        [pregunta or ""] + list((opciones or {}).values()) + [texto_adicional or ""]
+    )
+    articulos = _articulos_citados(texto_deteccion)
+    if not articulos:
+        return _concatenar_subbloques(subbloques)
+
+    normas = _normas_citadas(texto_deteccion)
+    candidatos = [s for s in subbloques if _subbloque_coincide_norma(s["titulo"], normas)]
+    if not candidatos:
+        candidatos = subbloques
+
+    fragmentos = []
+    vistos = set()
+    for sub in candidatos:
+        for frag in _extraer_articulos(sub["texto"]):
+            if not frag["articulo"]:
+                continue
+            numero = frag["articulo"].rsplit(" ", 1)[-1]
+            if numero not in articulos:
+                continue
+            clave = (sub["titulo"], frag["articulo"])
+            if clave in vistos:
+                continue
+            vistos.add(clave)
+            fragmentos.append(f"{sub['titulo']}, {frag['articulo']}:\n{frag['texto']}")
+
+    return "\n\n".join(fragmentos) if fragmentos else None
 
 
 def _prompt_explicacion(pregunta, opciones, respuesta_correcta, problemas_previos=None, texto_legal=None):
@@ -338,15 +458,17 @@ def _recolectar_ya_generadas(db):
     return listas
 
 
-def _texto_legal_cacheado(db, cache, oposicion, tema_id):
-    """Envoltorio de _texto_legal_del_tema con caché en memoria por
-    (oposicion, tema_id) -- muchas preguntas comparten tema, así que
-    evita leer el mismo subbloque de Firestore una vez por pregunta. Una
+def _subbloques_del_tema_cacheado(db, cache, oposicion, tema_id):
+    """Envoltorio de _subbloques_del_tema con caché en memoria por
+    (oposicion, tema_id) -- muchas preguntas comparten tema, así que evita
+    leer el mismo subbloque de Firestore una vez por pregunta. La
+    localización (_texto_legal_para_pregunta) es específica de cada
+    pregunta y no se cachea aquí, solo la lectura de Firestore. Una
     posible lectura duplicada puntual entre hilos concurrentes es
     inofensiva (solo repite trabajo, nunca corrompe nada)."""
     clave = (oposicion, tema_id)
     if clave not in cache:
-        cache[clave] = _texto_legal_del_tema(db, oposicion, tema_id)
+        cache[clave] = _subbloques_del_tema(db, oposicion, tema_id)
     return cache[clave]
 
 
@@ -361,10 +483,13 @@ def _ejecutar_verificacion(db, aplicar):
 
     acumulador = AcumuladorTokens()
     resultados = {}  # doc_id -> (oposicion, item, estado, problemas)
-    cache_texto_legal = {}
+    cache_subbloques = {}
 
     def _procesar(oposicion, item):
-        texto_legal = _texto_legal_cacheado(db, cache_texto_legal, oposicion, item.get("tema_id"))
+        subbloques = _subbloques_del_tema_cacheado(db, cache_subbloques, oposicion, item.get("tema_id"))
+        texto_legal = _texto_legal_para_pregunta(
+            subbloques, item["pregunta"], item["opciones"], item["explicacion"]
+        )
         estado, problemas = _verificar_explicacion(
             item["pregunta"], item["opciones"], item["respuesta_correcta"], item["explicacion"],
             contexto=f"verificar-explicacion oposicion={oposicion} doc={item['doc_id']}",
@@ -420,7 +545,10 @@ def _ejecutar_verificacion(db, aplicar):
     siguen_fallando = []
 
     def _regenerar(oposicion, item, problemas):
-        texto_legal = _texto_legal_cacheado(db, cache_texto_legal, oposicion, item.get("tema_id"))
+        subbloques = _subbloques_del_tema_cacheado(db, cache_subbloques, oposicion, item.get("tema_id"))
+        texto_legal = _texto_legal_para_pregunta(
+            subbloques, item["pregunta"], item["opciones"], item["explicacion"]
+        )
         nueva = _generar_explicacion_mejorada(
             item["pregunta"], item["opciones"], item["respuesta_correcta"],
             contexto=f"regenerar-tras-verificacion oposicion={oposicion} doc={item['doc_id']}",
@@ -509,11 +637,14 @@ def _auditar(db):
         print(f"MUESTRA de antes/después (llamada real a la IA, coste mínimo -- "
               f"no se escribe nada en Firestore):")
         acumulador = AcumuladorTokens()
-        cache_texto_legal = {}
+        cache_subbloques = {}
         for oposicion in OPOSICIONES:
             muestra = pendientes[oposicion][:MUESTRAS_AUDITORIA_POR_OPOSICION]
             for item in muestra:
-                texto_legal = _texto_legal_cacheado(db, cache_texto_legal, oposicion, item.get("tema_id"))
+                subbloques = _subbloques_del_tema_cacheado(db, cache_subbloques, oposicion, item.get("tema_id"))
+                texto_legal = _texto_legal_para_pregunta(
+                    subbloques, item["pregunta"], item["opciones"], item.get("explicacion_actual")
+                )
                 nueva = _generar_explicacion_mejorada(
                     item["pregunta"], item["opciones"], item["respuesta_correcta"],
                     contexto=f"auditoria-explicacion oposicion={oposicion} doc={item['doc_id']}",
@@ -558,10 +689,13 @@ def _aplicar(db, pendientes):
     acumulador = AcumuladorTokens()
     actualizadas = 0
     fallidas = []
-    cache_texto_legal = {}
+    cache_subbloques = {}
 
     def _procesar(oposicion, item):
-        texto_legal = _texto_legal_cacheado(db, cache_texto_legal, oposicion, item.get("tema_id"))
+        subbloques = _subbloques_del_tema_cacheado(db, cache_subbloques, oposicion, item.get("tema_id"))
+        texto_legal = _texto_legal_para_pregunta(
+            subbloques, item["pregunta"], item["opciones"], item.get("explicacion_actual")
+        )
         nueva = _generar_explicacion_mejorada(
             item["pregunta"], item["opciones"], item["respuesta_correcta"],
             contexto=f"regenerar-explicacion oposicion={oposicion} doc={item['doc_id']}",
@@ -630,7 +764,7 @@ def _auditar_cobertura_temario(db):
                 sin_tema += 1
                 continue
             if tema_id not in temas_vistos:
-                temas_vistos[tema_id] = bool(_texto_legal_del_tema(db, oposicion, tema_id))
+                temas_vistos[tema_id] = bool(_subbloques_del_tema(db, oposicion, tema_id))
             if temas_vistos[tema_id]:
                 con_texto += 1
         total_general += total
