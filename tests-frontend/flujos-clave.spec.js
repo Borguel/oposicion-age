@@ -174,6 +174,28 @@ test.describe("generación del Test Oficial (/test-oficial/)", () => {
   async function generarYFinalizarTestOficial(page, perfilMiPerfil) {
     await mockAuth(page);
     await mockOposicion(page);
+    // obtenerPlan() de verdad llama a BACKEND_URL (producción real, ver
+    // assets/firebase-config.js), un fetch cross-origin autenticado -- en
+    // CI esa petición no siempre acaba interceptada por el mock de
+    // /mi-perfil de abajo (visto en la práctica: el test que comprueba
+    // "botón visible" fallaba solo en CI, nunca en local), y el fallback
+    // de obtenerPlan() ante cualquier fallo de red (`{ plan: "gratis",
+    // subscription_status: null }`) no incluye tiene_plan_de_pago, así que
+    // el botón se quedaba oculto pasara lo que pasara. Sustituir el módulo
+    // entero, mismo patrón que AUTH_STUB/OPOSICION_STUB, quita la red de
+    // en medio para este dato y hace el test determinista de verdad.
+    await page.route("**/assets/plan.js", (route) =>
+      route.fulfill({
+        contentType: "application/javascript",
+        body: `
+export async function obtenerPlan() { return ${JSON.stringify(perfilMiPerfil)}; }
+export async function protegerPagina() { return true; }
+export function ocultarBotonSiNoPaga(boton, perfil) {
+  if (boton && !perfil?.tiene_plan_de_pago) boton.style.display = "none";
+}
+`,
+      })
+    );
     await page.route("**/mi-perfil*", (route) =>
       route.fulfill({ contentType: "application/json", body: JSON.stringify(perfilMiPerfil) })
     );
