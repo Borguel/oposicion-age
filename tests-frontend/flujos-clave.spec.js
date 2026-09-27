@@ -172,6 +172,19 @@ test.describe("generación del Test Oficial (/test-oficial/)", () => {
   });
 
   async function generarYFinalizarTestOficial(page, perfilMiPerfil) {
+    // Diagnóstico temporal (27/09/2026): el test "true" de más abajo falla
+    // solo en CI, nunca en local, y el arreglo obvio (quitar la red de en
+    // medio stubbeando /assets/plan.js entero) no lo arregló -- así que el
+    // problema no es la red. Sin poder reproducirlo en local (el navegador
+    // de Playwright que instala CI, v1243, no se puede descargar aquí por
+    // el proxy de red), la única forma de ver qué pasa de verdad dentro del
+    // navegador en CI es volcar cualquier error de consola/página al log
+    // del propio test. Quitar en cuanto se identifique la causa real.
+    page.on("pageerror", (err) => console.log("[pageerror]", err.stack || err.message || err));
+    page.on("console", (msg) => {
+      if (msg.type() === "error") console.log("[console.error]", msg.text());
+    });
+
     await mockAuth(page);
     await mockOposicion(page);
     // obtenerPlan() de verdad llama a BACKEND_URL (producción real, ver
