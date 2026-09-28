@@ -365,28 +365,63 @@ body {
    flex-wrap: wrap), los dos botones se encogen para quedarse siempre en
    una sola fila -- min-width: 0 es imprescindible: por defecto un ítem
    flex no se encoge por debajo del ancho de su contenido, que es
-   justo por lo que "flex: 1 1 0" solo no bastaría. overflow/text-overflow
-   son una red de seguridad (recorta con "…" en vez de solapar) para
-   cualquier combinación de idioma/tamaño de fuente del dispositivo que no
-   se haya probado a mano. */
+   justo por lo que "flex: 1 1 0" solo no bastaría. Tamaño compacto fijo
+   (no solo por debajo de un breakpoint estrecho): con .age-btn/
+   .cuenta-btn-peligro a su tamaño normal, "Descargar mis datos" podía no
+   caber en su mitad de fila en anchos intermedios (ni móvil estrecho ni
+   escritorio ancho) aunque "Eliminar mi cuenta" sí cupiera en la suya --
+   visto en producción, 28/09/2026. Mismo tamaño "compacto" que ya usa
+   .cuenta-btn-contratar en esta misma página, en vez de inventar uno
+   nuevo. */
 .cuenta-privacidad-acciones .age-btn,
 .cuenta-privacidad-acciones .cuenta-btn-peligro {
   flex: 1 1 0;
   min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-left: 12px;
-  padding-right: 12px;
+  font-size: 13.5px;
+  padding: 10px 14px;
+  gap: 6px;
 }
 
-@media (max-width: 400px) {
+/* El icono no debe encogerse nunca -- solo el texto (ver .cuenta-btn-texto
+   más abajo). Sin esto, al ser también un hijo flex, podría deformarse
+   antes de que el texto llegara a truncarse. */
+.cuenta-privacidad-acciones .age-btn > [data-icon],
+.cuenta-privacidad-acciones .cuenta-btn-peligro > [data-icon] {
+  flex-shrink: 0;
+}
+
+/* El tamaño compacto de arriba ya deja sitio de sobra a partir de ~460px,
+   pero a un ancho de móvil real (360-430px, medido con capturas reales)
+   todavía no basta para los dos textos completos -- se encoge un poco más
+   solo ahí. Por debajo de esto ya es la elipsis (.cuenta-btn-texto) quien
+   se encarga, no un tamaño de letra ilegible. */
+@media (max-width: 430px) {
   .cuenta-privacidad-acciones .age-btn,
   .cuenta-privacidad-acciones .cuenta-btn-peligro {
-    font-size: 12.5px;
-    gap: 6px;
-    padding: 10px 8px;
+    font-size: 10.5px;
+    padding: 8px 5px;
+    gap: 3px;
   }
+  .cuenta-privacidad-acciones .age-btn > [data-icon] svg,
+  .cuenta-privacidad-acciones .cuenta-btn-peligro > [data-icon] svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+/* text-overflow: ellipsis no funciona puesto directamente en un botón
+   flex (icono + texto como hijos separados) -- los navegadores recortan
+   los píxeles que sobran sin mostrar "…" (bug real visto en producción,
+   28/09/2026: "Descargar mis datos" salía cortado a media letra). Sobre
+   un span de bloque con un único nodo de texto, la elipsis sí funciona de
+   verdad -- así, en el caso extremo de que aun con el tamaño compacto de
+   arriba no cupiera del todo, se vería "Descargar mis d…" en vez de un
+   corte ilegible. */
+.cuenta-btn-texto {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .cuenta-btn-peligro {

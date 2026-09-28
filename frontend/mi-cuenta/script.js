@@ -351,7 +351,7 @@ document.getElementById("btn-exportar-datos").addEventListener("click", async (e
     mostrarErrorGlobal(error.message || "No se pudieron exportar tus datos.");
   } finally {
     boton.disabled = false;
-    boton.innerHTML = `${icono("descargar", 16)} Descargar mis datos`;
+    boton.innerHTML = `${icono("descargar", 16)}<span class="cuenta-btn-texto">Descargar mis datos</span>`;
   }
 });
 
@@ -437,7 +437,7 @@ btnContacto.addEventListener("click", async () => {
     feedbackContacto.style.display = "block";
   } finally {
     btnContacto.disabled = false;
-    btnContacto.innerHTML = `${icono("correo", 16)} Enviar mensaje`;
+    btnContacto.innerHTML = `${icono("correo", 16)}<span class="cuenta-btn-texto">Enviar mensaje</span>`;
   }
 });
 
