@@ -437,7 +437,7 @@ btnContacto.addEventListener("click", async () => {
     feedbackContacto.style.display = "block";
   } finally {
     btnContacto.disabled = false;
-    btnContacto.textContent = "Enviar mensaje";
+    btnContacto.innerHTML = `${icono("correo", 16)} Enviar mensaje`;
   }
 });
 

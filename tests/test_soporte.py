@@ -1,6 +1,7 @@
 """Pruebas del mensaje de soporte/contacto desde Mi Cuenta:
 POST /mi-cuenta/contactar (blueprints/pagos.py) y su revisión en el panel
 admin, reusando el permiso "reportes" (blueprints/admin.py)."""
+import os
 from contextlib import contextmanager
 from unittest.mock import patch
 
@@ -30,8 +31,17 @@ def test_contactar_mensaje_vacio_400(client, db):
     assert r.status_code == 400
 
 
+def test_contactar_mensaje_vacio_no_envia_email(client, db):
+    with patch("blueprints.pagos.enviar_email_alerta_mensaje_soporte") as mock_alerta, \
+         patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}):
+        r = client.post("/mi-cuenta/contactar", json={"mensaje": "   "}, headers=_AUTH)
+    assert r.status_code == 400
+    mock_alerta.assert_not_called()
+
+
 def test_contactar_guarda_mensaje_pendiente(client, db):
-    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}):
+    with patch("blueprints.pagos.enviar_email_alerta_mensaje_soporte"), \
+         patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}):
         r = client.post("/mi-cuenta/contactar", json={"mensaje": "Tengo un problema con mi factura"}, headers=_AUTH)
     assert r.status_code == 201
     with _como():
@@ -42,8 +52,19 @@ def test_contactar_guarda_mensaje_pendiente(client, db):
     assert mensajes[0]["estado"] == "pendiente"
 
 
+def test_contactar_envia_alerta_email_al_admin(client, db):
+    with patch("blueprints.pagos.enviar_email_alerta_mensaje_soporte") as mock_alerta, \
+         patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u1", "email": "u1@x.com"}):
+        r = client.post("/mi-cuenta/contactar", json={"mensaje": "Tengo un problema con mi factura"}, headers=_AUTH)
+    assert r.status_code == 201
+    mock_alerta.assert_called_once_with(
+        os.environ.get("BREVO_FROM_EMAIL"), "u1@x.com", "Tengo un problema con mi factura"
+    )
+
+
 def test_usuario_contacta_y_admin_lo_revisa(client, db):
-    with patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u2", "email": "u2@x.com"}):
+    with patch("blueprints.pagos.enviar_email_alerta_mensaje_soporte"), \
+         patch("auth_utils.firebase_auth.verify_id_token", return_value={"uid": "u2", "email": "u2@x.com"}):
         client.post("/mi-cuenta/contactar", json={"mensaje": "¿Cómo cambio de oposición?"}, headers=_AUTH)
     with _como():
         mensajes = client.get("/admin/api/soporte?estado=pendiente", headers=_AUTH).get_json()["mensajes"]

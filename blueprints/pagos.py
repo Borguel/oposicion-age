@@ -15,6 +15,7 @@ from registro_progreso_usuario import actualizar_suscripcion, obtener_perfil_usu
 from gestion_cuenta import exportar_datos_usuario, eliminar_cuenta_usuario
 from oposiciones import OPOSICIONES, OPOSICION_POR_DEFECTO, oposicion_valida
 from email_utils import (
+    enviar_email_alerta_mensaje_soporte,
     enviar_email_cancelacion_suscripcion,
     enviar_email_pago_confirmado,
     enviar_email_pago_fallido,
@@ -119,13 +120,16 @@ def contactar_soporte():
     mensaje = (data.get("mensaje") or "").strip()
     if not mensaje:
         return jsonify({"error": "Escribe tu consulta antes de enviarla."}), 400
+    mensaje_recortado = mensaje[:2000]
     db.collection("mensajes_soporte").document().set({
         "uid": g.uid,
         "email": g.email,
-        "mensaje": mensaje[:2000],
+        "mensaje": mensaje_recortado,
         "estado": "pendiente",
         "fecha": datetime.utcnow().isoformat(),
     })
+    destinatario_alerta = os.getenv("ADMIN_ALERT_EMAIL") or os.getenv("BREVO_FROM_EMAIL", "dominatuopo@gmail.com")
+    enviar_email_alerta_mensaje_soporte(destinatario_alerta, g.email, mensaje_recortado)
     return jsonify({"mensaje": "Hemos recibido tu mensaje. Te responderemos por email."}), 201
 
 

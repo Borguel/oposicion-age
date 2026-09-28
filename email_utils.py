@@ -685,6 +685,25 @@ def enviar_email_alerta_nuevo_usuario(destinatario, email_nuevo_usuario):
             asunto=f"🎉 Nuevo usuario: {email_nuevo_usuario or '(sin email)'}", html=html)
 
 
+def enviar_email_alerta_mensaje_soporte(destinatario, email_usuario, mensaje):
+    """Aviso interno (no es un email de marca para un usuario) de que se ha
+    recibido un mensaje nuevo desde el formulario de "¿Necesitas ayuda?" de
+    Mi Cuenta (ver /mi-cuenta/contactar en blueprints/pagos.py) -- antes ese
+    mensaje solo quedaba guardado en Firestore (mensajes_soporte) a la
+    espera de que alguien abriera el panel de administración por su cuenta,
+    sin ningún aviso de que había algo pendiente."""
+    cuerpo = f"""
+      <p style="margin:0;">Nuevo mensaje de soporte de
+      <strong>{escape(email_usuario or "(sin email)")}</strong>:</p>
+      <p style="margin:16px 0; padding:14px 16px; background:{_COLOR_BG}; border-radius:10px; white-space:pre-wrap;">{escape(mensaje)}</p>
+      <p style="margin:0;">Puedes revisarlo y marcarlo como resuelto desde el panel de administración
+      (Reportes → Mensajes de soporte).</p>
+    """
+    html = _plantilla_html("Nuevo mensaje de soporte", cuerpo, emoji="✉️")
+    _enviar(destinatario, "alerta de mensaje de soporte",
+            asunto=f"✉️ Nuevo mensaje de soporte de {email_usuario or '(sin email)'}", html=html)
+
+
 def enviar_email_alerta_coste_ia(destinatario, gasto_hoy, media_historica):
     """Aviso interno (no es un email de marca para un usuario) de que el
     gasto en IA de hoy se ha disparado respecto a la media reciente --

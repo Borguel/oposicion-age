@@ -358,7 +358,35 @@ body {
 .cuenta-privacidad-acciones {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+}
+
+/* En vez de envolver a una segunda línea en móvil (lo que hacía antes con
+   flex-wrap: wrap), los dos botones se encogen para quedarse siempre en
+   una sola fila -- min-width: 0 es imprescindible: por defecto un ítem
+   flex no se encoge por debajo del ancho de su contenido, que es
+   justo por lo que "flex: 1 1 0" solo no bastaría. overflow/text-overflow
+   son una red de seguridad (recorta con "…" en vez de solapar) para
+   cualquier combinación de idioma/tamaño de fuente del dispositivo que no
+   se haya probado a mano. */
+.cuenta-privacidad-acciones .age-btn,
+.cuenta-privacidad-acciones .cuenta-btn-peligro {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+@media (max-width: 400px) {
+  .cuenta-privacidad-acciones .age-btn,
+  .cuenta-privacidad-acciones .cuenta-btn-peligro {
+    font-size: 12.5px;
+    gap: 6px;
+    padding: 10px 8px;
+  }
 }
 
 .cuenta-btn-peligro {
@@ -451,6 +479,37 @@ body {
 .cuenta-motivo-opcion input {
   margin: 0;
   accent-color: var(--age-primary);
+}
+
+.cuenta-ayuda-cabecera {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.cuenta-ayuda-cabecera h2 {
+  margin: 0 0 6px;
+}
+
+.cuenta-ayuda-icono {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--age-radius-md);
+  background: var(--age-primary-soft);
+  color: var(--age-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cuenta-ayuda-subtitulo {
+  margin: 0;
+}
+
+.cuenta-campo-ayuda textarea {
+  min-height: 110px;
 }
 
 .cuenta-campo textarea {
