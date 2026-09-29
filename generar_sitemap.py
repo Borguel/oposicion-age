@@ -42,6 +42,7 @@ PRIORIDADES = {
     "/blog/como-inscribirse-oposicion-estado/": ("0.6", "monthly"),
     "/blog/examen-administrativo-estado-2025/": ("0.6", "monthly"),
     "/blog/examen-gace-2025/": ("0.6", "monthly"),
+    "/blog/nota-de-corte-gace-administrativo-2026/": ("0.6", "monthly"),
     "/blog/examen-auxiliar-administrativo-2025/": ("0.6", "monthly"),
     "/blog/cuanto-tarda-aprobar-oposicion-estado/": ("0.6", "monthly"),
     "/blog/calendario-oposiciones-estado/": ("0.6", "monthly"),
