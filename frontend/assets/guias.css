@@ -31,6 +31,40 @@
   margin-top: 2px;
 }
 
+/* Tabla genérica para comparativas históricas (notas de corte, plazas por
+   año...) -- envuelta en un contenedor con scroll horizontal propio para
+   que en móvil no desborde la página ni obligue a encoger el texto. */
+.guia-tabla-scroll {
+  overflow-x: auto;
+  margin: 18px 0 8px;
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-md);
+}
+.guia-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+.guia-tabla th,
+.guia-tabla td {
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--age-border);
+}
+.guia-tabla thead th {
+  background: var(--age-bg);
+  font-weight: 700;
+  color: var(--age-ink-soft);
+}
+.guia-tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+.guia-tabla tbody tr.guia-tabla-actual td {
+  background: var(--age-primary-soft);
+  font-weight: 700;
+}
+
 /* Bloques del temario: cada uno es un <details> plegable que, al abrirse,
    lista sus temas uno a uno -- en vez de una tarjeta cerrada que solo dice
    cuántos temas hay, sin poder verlos. */
