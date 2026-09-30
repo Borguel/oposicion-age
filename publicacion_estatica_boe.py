@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 _GITHUB_API = "https://api.github.com"
 _OWNER = "Borguel"
 _REPO = "oposicion-age"
-_RAMA = "claude/exam-prep-web-platform-07flxz"
+_RAMA = "main"
 _TIMEOUT_SEGUNDOS = 15
 
 _MARCADOR_INICIO = "<!-- AVISOS_OFICIALES_INICIO -->"
