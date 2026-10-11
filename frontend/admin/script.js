@@ -2362,7 +2362,7 @@ let vistaBoe = "cambios";
 // (Firestore + email siguen funcionando igualmente, ver docstring del
 // módulo). Fecha fija a mano porque no hay forma de leer la caducidad real
 // del token desde la propia web.
-const _GITHUB_TOKEN_CADUCA = new Date("2026-10-21T00:00:00");
+const _GITHUB_TOKEN_CADUCA = new Date("2027-10-11T00:00:00");
 
 function _avisoTokenGithubHtml() {
   const msPorDia = 24 * 60 * 60 * 1000;
