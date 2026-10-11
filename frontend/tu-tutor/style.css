@@ -1,6 +1,13 @@
 /* ===== TU TUTOR: chat unificado (rediseño moderno, tipo chat de IA actual) ===== */
 html { scroll-behavior: smooth; }
 
+/* El footer global (inyectarFooter en assets/auth.js, se añade a TODAS las
+   páginas) no tiene sitio aquí -- esta es una pantalla de chat a pantalla
+   completa, no una página de contenido normal. En móvil, con el teclado
+   abierto, se veía asomar debajo de la caja de escribir, robando parte
+   del poco alto disponible (11/10/2026, a petición del usuario). */
+.age-footer { display: none; }
+
 .tutor-container {
   --tutor-accent: var(--age-primary);
   display: flex;
