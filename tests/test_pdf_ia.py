@@ -1975,6 +1975,97 @@ class TestBancoPreguntasYTarjetas:
         # Nunca debería llegar a llamar a la IA para esto -- se corta antes.
         mock_adaptativo.assert_not_called()
 
+    def test_generar_mas_preguntas_una_segunda_vez_se_rechaza(self, client, db, documento_sembrado):
+        # 11/10/2026, límite de coste: tras una ampliación voluntaria ya
+        # usada ("ampliado": True), una segunda debe rechazarse sin llamar
+        # a la IA -- aunque quede margen de sobra hasta el tope de 100.
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {
+            "estado": "completo", "total": 10, "objetivo": 100, "agotado": False, "ampliado": True,
+            "preguntas": [{"pregunta": f"¿P{i}?"} for i in range(10)],
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo") as mock_adaptativo:
+                resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 400
+        assert "ampliado" in resp.get_json()["error"].lower()
+        mock_adaptativo.assert_not_called()
+        # El banco no se toca -- sigue con sus 10 preguntas intactas.
+        banco = db.leer(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado))
+        assert banco["estado"] == "completo"
+        assert banco["total"] == 10
+
+    def test_generar_mas_preguntas_recupera_un_atascado_aunque_ya_este_ampliado(
+            self, client, db, documento_sembrado):
+        # Recuperar un banco interrumpido (no pedir MÁS de lo ya pedido) no
+        # debe bloquearse por "ampliado", aunque la ampliación voluntaria ya
+        # se hubiera usado antes de que se interrumpiera.
+        from datetime import datetime, timedelta
+        viejo = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {
+            "estado": "generando", "total": 10, "objetivo": 100, "actualizado": viejo, "ampliado": True,
+            "preguntas": [{"pregunta": f"¿P{i}?"} for i in range(10)],
+        })
+        nueva = {"pregunta": "¿P10?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "porque sí"}
+
+        def fake_adaptativo(construir_prompt, texto, tope=100, on_usage=None, on_progreso=None,
+                             preguntas_a_evitar=None, evento_parada=None):
+            if on_progreso:
+                on_progreso({"completadas": 1, "objetivo": tope, "pregunta": nueva})
+            return [nueva], False
+
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", side_effect=fake_adaptativo):
+                resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                eventos = _eventos_sse(resp.get_data(as_text=True))
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        assert eventos[-1]["total"] == 11
+
+    def test_evitar_duplicados_se_acota_priorizando_lo_ya_en_el_banco(self, client, db, documento_sembrado):
+        # 11/10/2026, límite de coste: el aviso de "evitar" no debe crecer
+        # sin tope -- se corta en _MAX_ITEMS_EVITAR_PROMPT, priorizando las
+        # preguntas ya guardadas en ESTE banco sobre el historial de tests.
+        from blueprints.pdf_ia import _MAX_ITEMS_EVITAR_PROMPT
+        preguntas_banco = [
+            {"pregunta": f"¿Banco {i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"}, "respuesta_correcta": "A"}
+            for i in range(_MAX_ITEMS_EVITAR_PROMPT + 10)
+        ]
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {
+            "estado": "completo", "total": len(preguntas_banco), "objetivo": 200, "agotado": False,
+            "preguntas": preguntas_banco,
+        })
+        llamadas = []
+
+        def fake_adaptativo(construir_prompt, texto, tope=100, on_usage=None, on_progreso=None,
+                             preguntas_a_evitar=None, evento_parada=None):
+            llamadas.append(preguntas_a_evitar)
+            return [], True
+
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", side_effect=fake_adaptativo):
+                resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        assert len(llamadas[0]) == _MAX_ITEMS_EVITAR_PROMPT
+        # Las primeras _MAX_ITEMS_EVITAR_PROMPT del banco (nunca el
+        # historial de tests_pdf, descartado por no caber) son las que se
+        # mandan -- prioridad a lo ya guardado en este mismo banco.
+        assert all(f"¿Banco {i}?" in llamadas[0][i] for i in range(_MAX_ITEMS_EVITAR_PROMPT))
+
     def test_generar_banco_preguntas_sobre_documento_existente_no_gasta_cupo_de_subidas(
             self, client, db, documento_sembrado):
         # 17/08/2026, a petición explícita del usuario ("lo que quiero
@@ -2176,6 +2267,47 @@ class TestBancoPreguntasYTarjetas:
             parche.stop()
         assert resp.status_code == 400
         mock_adaptativo.assert_not_called()
+
+    def test_generar_mas_tarjetas_una_segunda_vez_se_rechaza(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "banco_tarjetas_pdf", documento_sembrado), {
+            "estado": "completo", "total": 10, "objetivo": 100, "agotado": False, "ampliado": True,
+            "tarjetas": [{"pregunta": f"¿P{i}?"} for i in range(10)],
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_tarjetas_adaptativo") as mock_adaptativo:
+                resp = client.post("/generar-banco-tarjetas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 400
+        assert "ampliado" in resp.get_json()["error"].lower()
+        mock_adaptativo.assert_not_called()
+
+    def test_evitar_duplicados_tarjetas_se_acota(self, client, db, documento_sembrado):
+        from blueprints.pdf_ia import _MAX_ITEMS_EVITAR_PROMPT
+        tarjetas_banco = [{"pregunta": f"¿Banco {i}?", "respuesta": "R"} for i in range(_MAX_ITEMS_EVITAR_PROMPT + 10)]
+        db.sembrar(("usuarios", "u1", "banco_tarjetas_pdf", documento_sembrado), {
+            "estado": "completo", "total": len(tarjetas_banco), "objetivo": 200, "agotado": False,
+            "tarjetas": tarjetas_banco,
+        })
+        llamadas = []
+
+        def fake_adaptativo(texto, tope=100, on_usage=None, on_progreso=None, evento_parada=None, tarjetas_a_evitar=None):
+            llamadas.append(tarjetas_a_evitar)
+            return [], True
+
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_tarjetas_adaptativo", side_effect=fake_adaptativo):
+                resp = client.post("/generar-banco-tarjetas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 200
+        assert len(llamadas[0]) == _MAX_ITEMS_EVITAR_PROMPT
 
     def test_get_banco_preguntas_devuelve_estado_y_contenido(self, client, db, documento_sembrado):
         db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {

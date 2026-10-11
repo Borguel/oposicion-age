@@ -527,7 +527,14 @@ function filaBanco(doc, tipo) {
       // trata como éxito, nunca como un fallo que se queda ahí para
       // siempre.
       const agotado = doc[`banco_${tipo}_agotado`];
+      const ampliado = doc[`banco_${tipo}_ampliado`];
       const objetivo = doc[`banco_${tipo}_objetivo`] || total;
+      // recuperandoInterrumpido (11/10/2026): "atascado" es terminar una
+      // generación YA interrumpida, no pedir más de lo ya pedido -- nunca
+      // debe bloquearse por el límite de una ampliación voluntaria (ver
+      // es_ampliacion_voluntaria en blueprints/pdf_ia.py, que distingue
+      // exactamente lo mismo en el backend).
+      const recuperandoInterrumpido = estado === "atascado";
       estadoHtml = `<span class="documento-card-tipo-estado documento-card-tipo-estado-generado">${icono("check", 12)} ${total} ${nombreItem}${total === 1 ? "" : "s"} generada${total === 1 ? "" : "s"}</span>`;
       if (total < objetivo) {
         if (agotado) {
@@ -536,6 +543,13 @@ function filaBanco(doc, tipo) {
           // informa en vez de ofrecer un botón que solo volvería a
           // gastar en IA para confirmar lo mismo.
           estadoHtml += `<span class="documento-card-tipo-hint">Ya no se pueden generar más ${nombreItem}s de este documento -- se ha aprovechado todo el contenido distinto que tiene.</span>`;
+        } else if (ampliado && !recuperandoInterrumpido) {
+          // Límite de coste (11/10/2026, a petición del usuario: "esto usa
+          // muchos tokens, tengo que tenerlo bien cubierto"): cada
+          // ampliación es una ronda real de IA -- solo se permite una por
+          // documento, para no dejar la puerta abierta a pulsar "Generar
+          // más" sin límite sobre el mismo banco.
+          estadoHtml += `<span class="documento-card-tipo-hint">Ya has ampliado este banco una vez (el máximo permitido) -- usa las ${nombreItem}s que ya tienes.</span>`;
         } else {
           // "Generar más" (nunca "Reintentar" cuando ya hay contenido):
           // reutiliza el mismo botón/handler data-banco-generar de
@@ -678,9 +692,11 @@ async function iniciarBanco(documentoId, tipo, archivoOriginal) {
           if (doc) {
             doc[`banco_${tipo}_total`] = evento.total ?? doc[`banco_${tipo}_total`];
             doc[`banco_${tipo}_estado`] = evento.total ? "completo" : "error";
-            // agotado (11/10/2026, ver filaBanco): refleja de inmediato si
-            // el documento ya no da más, sin esperar al siguiente sondeo.
+            // agotado/ampliado (11/10/2026, ver filaBanco): refleja de
+            // inmediato si el documento ya no da más, o si ya se gastó la
+            // única ampliación voluntaria, sin esperar al siguiente sondeo.
             doc[`banco_${tipo}_agotado`] = evento.agotado || false;
+            doc[`banco_${tipo}_ampliado`] = evento.ampliado || false;
           }
         }
       }
@@ -1635,10 +1651,14 @@ async function sondearBancosEnGeneracion() {
         // agotado (11/10/2026, ver filaBanco): el documento ya no da más
         // contenido distinto -- se sincroniza igual que el resto de campos.
         doc.banco_preguntas_agotado = actualizado.banco_preguntas_agotado;
+        // ampliado (11/10/2026, ver filaBanco): límite de una ampliación
+        // voluntaria por banco -- se sincroniza igual que el resto.
+        doc.banco_preguntas_ampliado = actualizado.banco_preguntas_ampliado;
         doc.banco_tarjetas_estado = actualizado.banco_tarjetas_estado;
         doc.banco_tarjetas_total = actualizado.banco_tarjetas_total;
         doc.banco_tarjetas_objetivo = actualizado.banco_tarjetas_objetivo;
         doc.banco_tarjetas_agotado = actualizado.banco_tarjetas_agotado;
+        doc.banco_tarjetas_ampliado = actualizado.banco_tarjetas_ampliado;
         doc.tiene_resumen = actualizado.tiene_resumen;
         doc.tiene_esquema = actualizado.tiene_esquema;
         // progreso_resumen/progreso_esquema (10/08/2026, a petición del

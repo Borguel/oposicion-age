@@ -575,6 +575,51 @@ class TestBancoPreguntasYTarjetas:
         assert banco["estado"] == "generando"
         assert banco["total"] == 0
 
+    def test_iniciar_banco_marca_ampliado_en_una_ampliacion_voluntaria(self, db):
+        # 11/10/2026, límite de coste: una ampliación voluntaria ("generar
+        # más" sobre un banco YA completo) deja el banco marcado como
+        # "ampliado" -- sirve para que la SIGUIENTE ampliación voluntaria se
+        # rechace.
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", "d1"), {
+            "estado": "completo", "total": 5, "objetivo": 100, "preguntas": [{"pregunta": "¿Uno?"}],
+            "ampliado": False,
+        })
+        assert iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf",
+                              es_ampliacion_voluntaria=True) is True
+        banco = obtener_banco(db, "u1", "d1", "preguntas")
+        assert banco["estado"] == "generando"
+        assert banco["total"] == 5  # preservado, no se vacía
+        assert banco["ampliado"] is True
+
+    def test_iniciar_banco_rechaza_una_segunda_ampliacion_voluntaria(self, db):
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", "d1"), {
+            "estado": "completo", "total": 5, "objetivo": 100, "preguntas": [{"pregunta": "¿Uno?"}],
+            "ampliado": True,  # ya se usó la única ampliación permitida
+        })
+        assert iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf",
+                              es_ampliacion_voluntaria=True) is False
+        # No se toca nada del banco -- sigue exactamente como estaba.
+        banco = obtener_banco(db, "u1", "d1", "preguntas")
+        assert banco["estado"] == "completo"
+        assert banco["total"] == 5
+
+    def test_iniciar_banco_recuperar_un_atascado_no_cuenta_como_ampliacion(self, db):
+        # Recuperar un banco interrumpido (es_ampliacion_voluntaria=False,
+        # el llamador solo lo marca True cuando el estado ERA "completo")
+        # no debe quedar bloqueado aunque "ampliado" ya fuera True -- es
+        # terminar algo ya empezado y pagado, no pedir más.
+        from datetime import datetime, timedelta
+        viejo = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", "d1"), {
+            "estado": "generando", "total": 5, "objetivo": 100, "actualizado": viejo,
+            "preguntas": [{"pregunta": "¿Uno?"}], "ampliado": True,
+        })
+        assert iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf",
+                              es_ampliacion_voluntaria=False) is True
+        banco = obtener_banco(db, "u1", "d1", "preguntas")
+        assert banco["estado"] == "generando"
+        assert banco["total"] == 5
+
     def test_iniciar_banco_pasa_de_verdad_por_una_transaccion(self, db):
         llamadas = []
         transaction_original = db.transaction

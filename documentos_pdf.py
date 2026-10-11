@@ -402,7 +402,7 @@ def obtener_banco(db, uid, documento_id, tipo):
     return datos
 
 
-def iniciar_banco(db, uid, documento_id, tipo, objetivo, nombre_archivo):
+def iniciar_banco(db, uid, documento_id, tipo, objetivo, nombre_archivo, es_ampliacion_voluntaria=False):
     """Crea (o reinicia) el banco de preguntas/tarjetas de un documento antes
     de arrancar la generación adaptativa en segundo plano (ver
     generar_banco_preguntas_adaptativo / generar_banco_tarjetas_adaptativo),
@@ -425,7 +425,20 @@ def iniciar_banco(db, uid, documento_id, tipo, objetivo, nombre_archivo):
     vacío. Devuelve True si esta llamada ha ganado la carrera (banco
     marcado "generando"), False si ya había otra generación en curso -- el
     llamador debe reembolsar cualquier cupo ya reservado y responder 409
-    en ese caso."""
+    en ese caso.
+
+    es_ampliacion_voluntaria (11/10/2026, límite de coste a petición del
+    usuario: "esto usa muchos tokens, tengo que tenerlo bien cubierto"):
+    True cuando el llamador ya ha comprobado que esto es un "generar más"
+    deliberado sobre un banco YA completo (no recuperar uno atascado/con
+    error, que es terminar algo ya empezado y pagado, no pedir más). En
+    ese caso, si el banco ya se amplió una vez (`ampliado`), se rechaza
+    devolviendo False -- cada ampliación cuesta tokens reales y el aviso
+    de 'evitar duplicados' crece con cada una, así que solo se permite
+    una por documento. La comprobación se repite aquí, DENTRO de la
+    transacción, aunque el llamador ya la haya hecho antes de leer
+    datos frescos -- es lo que de verdad cierra la ventana de carrera
+    frente a dos peticiones casi simultáneas."""
     ref = _banco_ref(db, uid, documento_id, tipo)
     campo_items = "preguntas" if tipo == "preguntas" else "tarjetas"
 
@@ -445,7 +458,12 @@ def iniciar_banco(db, uid, documento_id, tipo, objetivo, nombre_archivo):
         # progreso" como para "generar más" sobre un banco ya completo por
         # debajo del tope -- el llamador no necesita distinguir los casos.
         if datos and datos.get("total", 0) > 0:
-            transaction.update(ref, {"estado": "generando", "actualizado": ahora, "agotado": False})
+            if es_ampliacion_voluntaria and datos.get("ampliado"):
+                return False
+            actualizacion = {"estado": "generando", "actualizado": ahora, "agotado": False}
+            if es_ampliacion_voluntaria:
+                actualizacion["ampliado"] = True
+            transaction.update(ref, actualizacion)
         else:
             transaction.set(ref, {
                 "documento_id": documento_id,
@@ -457,6 +475,7 @@ def iniciar_banco(db, uid, documento_id, tipo, objetivo, nombre_archivo):
                 "iniciado": ahora,
                 "actualizado": ahora,
                 "agotado": False,
+                "ampliado": False,
             })
         return True
 
@@ -503,6 +522,7 @@ def _resumen_bancos(db, uid, tipo):
             "total": datos.get("total", 0),
             "objetivo": datos.get("objetivo", 0),
             "agotado": datos.get("agotado", False),
+            "ampliado": datos.get("ampliado", False),
         }
     return resultado
 
@@ -689,10 +709,15 @@ def listar_documentos(db, uid):
             # da más contenido distinto -- el frontend lo usa para mostrar
             # un aviso en vez del botón "Generar más".
             "banco_preguntas_agotado": banco_preguntas.get("agotado", False),
+            # ampliado (11/10/2026, límite de coste): True si ya se usó la
+            # única "generar más" deliberada permitida sobre un banco
+            # completo -- el frontend lo usa para dejar de ofrecer el botón.
+            "banco_preguntas_ampliado": banco_preguntas.get("ampliado", False),
             "banco_tarjetas_estado": banco_tarjetas.get("estado", "sin_generar"),
             "banco_tarjetas_total": banco_tarjetas.get("total", 0),
             "banco_tarjetas_objetivo": banco_tarjetas.get("objetivo", 0),
             "banco_tarjetas_agotado": banco_tarjetas.get("agotado", False),
+            "banco_tarjetas_ampliado": banco_tarjetas.get("ampliado", False),
         })
     resultado.sort(key=lambda d: d.get("ultima_actividad") or "", reverse=True)
     return resultado

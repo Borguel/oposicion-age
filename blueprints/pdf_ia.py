@@ -70,6 +70,18 @@ _CLAUSULA_FIDELIDAD_DOCUMENTO = (
     "secciones que sí tengan contenido desarrollado."
 )
 
+# Tope del aviso de "no repitas esto" en /generar-banco-preguntas-desde-pdf
+# y /generar-banco-tarjetas-desde-pdf (11/10/2026, a petición del usuario:
+# "esto usa muchos tokens, tengo que tenerlo bien cubierto"). Antes, "Generar
+# más" sobre un banco ya grande mandaba TODAS las preguntas/tarjetas ya
+# guardadas (hasta 100) más el historial de tests_pdf (hasta 60 más) en
+# cada prompt -- un aviso de "evitar" cada vez más largo y caro cuanto más
+# cerca del tope. Se acota al mismo tamaño que ya usaba por defecto
+# obtener_preguntas_previas, priorizando lo ya guardado en el propio banco
+# (lo más directamente relevante para no duplicar) sobre el historial de
+# tests.
+_MAX_ITEMS_EVITAR_PROMPT = 60
+
 
 def _resolver_texto_documento(plan_actual):
     """Punto de entrada común de TODAS las rutas que trabajan sobre un PDF
@@ -1121,17 +1133,31 @@ def generar_banco_preguntas_desde_pdf():
     ya_total = len(preguntas_ya_generadas)
     if ya_total >= TOPE_BANCO_PREGUNTAS:
         return jsonify({"error": "Ya tienes el máximo de preguntas para este documento."}), 400
+    # Límite de coste (11/10/2026, a petición del usuario): "generar más"
+    # deliberado sobre un banco YA completo (no recuperar uno atascado/con
+    # error, que es terminar algo ya empezado y pagado, no pedir más) solo
+    # se permite una vez por documento -- cada ronda cuesta tokens reales.
+    # Se repite la misma comprobación dentro de iniciar_banco, dentro de la
+    # transacción, que es lo que de verdad cierra la ventana de carrera.
+    es_ampliacion_voluntaria = bool(banco_existente) and banco_existente.get("estado") == "completo" and ya_total > 0
+    if es_ampliacion_voluntaria and banco_existente.get("ampliado"):
+        return jsonify({"error": "Ya has ampliado este banco de preguntas una vez (el máximo permitido) -- usa las que ya tienes."}), 400
 
     max_length = 800000
     if len(text) > max_length:
         text = text[:max_length]
     # preguntas_previas se amplía con las YA guardadas en este banco (no solo
     # el historial de tests_pdf) para que "generar más" no pida a la IA
-    # casi-duplicados de lo que ya hay guardado.
-    preguntas_previas = obtener_preguntas_previas(db, g.uid, documento_id) + [
+    # casi-duplicados de lo que ya hay guardado -- acotado a
+    # _MAX_ITEMS_EVITAR_PROMPT en total (ver el comentario largo junto a esa
+    # constante), priorizando lo del propio banco sobre el historial.
+    evitar_del_banco = [
         f"{p.get('pregunta', '')} (respuesta: {(p.get('opciones') or {}).get(str(p.get('respuesta_correcta', '')).upper(), '')})"
         for p in preguntas_ya_generadas
-    ]
+    ][:_MAX_ITEMS_EVITAR_PROMPT]
+    preguntas_previas = (
+        evitar_del_banco + obtener_preguntas_previas(db, g.uid, documento_id)
+    )[:_MAX_ITEMS_EVITAR_PROMPT]
 
     def construir_prompt(n, fragmento=None):
         documento_texto = fragmento if fragmento is not None else text
@@ -1177,9 +1203,18 @@ def generar_banco_preguntas_desde_pdf():
     # función en documentos_pdf.py. Si pierde la carrera contra otra
     # petición casi simultánea para el mismo documento, se reembolsa el
     # cupo ya reservado arriba (nunca llegó a arrancar nada).
-    if not iniciar_banco(db, uid, documento_id, "preguntas", TOPE_BANCO_PREGUNTAS, nombre_archivo):
+    if not iniciar_banco(db, uid, documento_id, "preguntas", TOPE_BANCO_PREGUNTAS, nombre_archivo,
+                          es_ampliacion_voluntaria=es_ampliacion_voluntaria):
         devolver_uso(db, uid, "pdf_ia", plan_actual)
-        return jsonify({"error": "Ya se está generando el banco de preguntas de este documento."}), 409
+        mensaje = ("Ya has ampliado este banco de preguntas una vez (el máximo permitido) -- usa las que ya tienes."
+                   if es_ampliacion_voluntaria else "Ya se está generando el banco de preguntas de este documento.")
+        return jsonify({"error": mensaje}), 409
+    # ampliado_final (11/10/2026): lo que iniciar_banco ya dejó escrito en
+    # Firestore -- True si esta llamada fue la ampliación voluntaria, o lo
+    # que ya hubiera antes si esto es solo recuperar un atascado. Se manda
+    # en el evento "fin" para que el frontend oculte "Generar más" de
+    # inmediato, sin esperar al siguiente sondeo de 4s.
+    ampliado_final = es_ampliacion_voluntaria or bool((banco_existente or {}).get("ampliado"))
 
     def generar():
         eventos = queue.Queue()
@@ -1230,14 +1265,14 @@ def generar_banco_preguntas_desde_pdf():
                 resultado = {
                     "total": total_final, "documento_id": documento_id,
                     "nombre_archivo": nombre_archivo, "preguntas": preguntas_normalizadas,
-                    "agotado": agotado,
+                    "agotado": agotado, "ampliado": ampliado_final,
                 }
                 if not preguntas_normalizadas and not ya_total:
                     resultado["error"] = "No se pudo generar ninguna pregunta a partir de este documento."
             except Exception:
                 logger.exception("Error en /generar-banco-preguntas-desde-pdf")
                 estado_final = "completo" if ya_total else "error"
-                resultado = {"total": ya_total, "agotado": agotado}
+                resultado = {"total": ya_total, "agotado": agotado, "ampliado": ampliado_final}
                 if not ya_total:
                     resultado["error"] = "Error al generar el banco de preguntas."
             finalizar_banco(db, uid, documento_id, "preguntas", estado=estado_final,
@@ -1297,6 +1332,11 @@ def generar_banco_tarjetas_desde_pdf():
     ya_total = len(tarjetas_ya_generadas)
     if ya_total >= TOPE_BANCO_TARJETAS:
         return jsonify({"error": "Ya tienes el máximo de tarjetas para este documento."}), 400
+    # Ver el comentario largo en generar_banco_preguntas_desde_pdf: límite
+    # de una ampliación voluntaria por documento.
+    es_ampliacion_voluntaria = bool(banco_existente) and banco_existente.get("estado") == "completo" and ya_total > 0
+    if es_ampliacion_voluntaria and banco_existente.get("ampliado"):
+        return jsonify({"error": "Ya has ampliado este banco de tarjetas una vez (el máximo permitido) -- usa las que ya tienes."}), 400
 
     max_length = 800000
     if len(text) > max_length:
@@ -1313,9 +1353,14 @@ def generar_banco_tarjetas_desde_pdf():
     # banco es atómico y puede perder la carrera contra otra petición casi
     # simultánea para el mismo documento -- en ese caso se reembolsa el
     # cupo ya reservado arriba.
-    if not iniciar_banco(db, uid, documento_id, "tarjetas", TOPE_BANCO_TARJETAS, nombre_archivo):
+    if not iniciar_banco(db, uid, documento_id, "tarjetas", TOPE_BANCO_TARJETAS, nombre_archivo,
+                          es_ampliacion_voluntaria=es_ampliacion_voluntaria):
         devolver_uso(db, uid, "pdf_ia", plan_actual)
-        return jsonify({"error": "Ya se está generando el banco de tarjetas de este documento."}), 409
+        mensaje = ("Ya has ampliado este banco de tarjetas una vez (el máximo permitido) -- usa las que ya tienes."
+                   if es_ampliacion_voluntaria else "Ya se está generando el banco de tarjetas de este documento.")
+        return jsonify({"error": mensaje}), 409
+    # Ver el comentario largo en generar_banco_preguntas_desde_pdf.
+    ampliado_final = es_ampliacion_voluntaria or bool((banco_existente or {}).get("ampliado"))
 
     def generar():
         eventos = queue.Queue()
@@ -1341,7 +1386,7 @@ def generar_banco_tarjetas_desde_pdf():
                 _nuevas, agotado = generar_banco_tarjetas_adaptativo(
                     text, tope=TOPE_BANCO_TARJETAS - ya_total,
                     on_usage=acumulador_tokens.add, on_progreso=on_progreso, evento_parada=evento_parada,
-                    tarjetas_a_evitar=[t.get("pregunta", "") for t in tarjetas_ya_generadas],
+                    tarjetas_a_evitar=[t.get("pregunta", "") for t in tarjetas_ya_generadas][:_MAX_ITEMS_EVITAR_PROMPT],
                 )
                 # "tarjetas" en el evento "fin": ver el comentario largo en
                 # generar_banco_preguntas_desde_pdf -- mismo motivo, incluido
@@ -1351,14 +1396,14 @@ def generar_banco_tarjetas_desde_pdf():
                 resultado = {
                     "total": total_final, "documento_id": documento_id,
                     "nombre_archivo": nombre_archivo, "tarjetas": tarjetas_generadas,
-                    "agotado": agotado,
+                    "agotado": agotado, "ampliado": ampliado_final,
                 }
                 if not tarjetas_generadas and not ya_total:
                     resultado["error"] = "No se pudo generar ninguna tarjeta a partir de este documento."
             except Exception:
                 logger.exception("Error en /generar-banco-tarjetas-desde-pdf")
                 estado_final = "completo" if ya_total else "error"
-                resultado = {"total": ya_total, "agotado": agotado}
+                resultado = {"total": ya_total, "agotado": agotado, "ampliado": ampliado_final}
                 if not ya_total:
                     resultado["error"] = "Error al generar el banco de tarjetas."
             finalizar_banco(db, uid, documento_id, "tarjetas", estado=estado_final,
