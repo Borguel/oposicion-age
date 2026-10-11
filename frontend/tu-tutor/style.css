@@ -1,61 +1,30 @@
-/* ===== TU TUTOR: chat unificado (fusión de Chat IA + Asistente) ===== */
+/* ===== TU TUTOR: chat unificado (rediseño moderno, tipo chat de IA actual) ===== */
 html { scroll-behavior: smooth; }
 
 .tutor-container {
   --tutor-accent: var(--age-primary);
   display: flex;
-  max-width: 1200px;
-  margin: 34px auto 0;
-  border: 1.5px solid var(--age-border);
-  border-radius: var(--age-radius-lg);
+  width: 100%;
+  margin: 0;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
   font-family: var(--age-font);
-  background: var(--age-card);
-  box-shadow: var(--age-shadow);
+  background: var(--age-bg);
+  box-shadow: none;
   /* "dvh" (no "vh") porque en móvil "vh" cuenta el hueco que ocupa la barra
      de direcciones del navegador aunque esté oculta, dejando la caja de
      escribir fuera de la pantalla visible. */
-  height: calc(100dvh - var(--age-nav-height, 64px) - 34px - var(--age-cookie-banner-height, 0px));
+  height: calc(100dvh - var(--age-nav-height, 64px) - var(--age-cookie-banner-height, 0px));
   position: relative;
 }
-@media (max-width: 950px) {
-  .tutor-container {
-    height: calc(100dvh - var(--age-nav-height, 64px) - var(--age-cookie-banner-height, 0px));
-    max-width: 100vw;
-    border-radius: 0;
-    margin: 0;
-  }
-}
 
-/* Botones de icono de la cabecera (ajustes, cerrar): pequeños y
-   discretos, integrados en la propia barra en vez de un botón flotante
-   grande y llamativo encima del chat. */
-.btn-icono-header {
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  border-radius: 50%;
-  color: var(--age-ink-soft);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  flex-shrink: 0;
-}
-.btn-icono-header:hover,
-.btn-icono-header:focus-visible {
-  background: var(--age-neutral-bg);
-  color: var(--age-ink);
-  outline: none;
-}
-/* SIDEBAR (historial) */
+/* ===== SIDEBAR ===== */
 .tutor-sidebar {
-  width: 260px;
-  background: var(--age-bg);
-  padding: 28px 18px 0 22px;
-  border-right: 1.5px solid var(--age-border);
+  width: 272px;
+  background: var(--age-card);
+  padding: 18px 14px 0;
+  border-right: 1px solid var(--age-border);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -63,14 +32,35 @@ html { scroll-behavior: smooth; }
   transition: left 0.28s;
   z-index: 10;
 }
+.sidebar-marca {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px 18px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--age-ink);
+  letter-spacing: -0.01em;
+}
+.sidebar-marca-icono {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--tutor-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
 .tutor-sidebar h3 {
-  font-size: 13px;
-  margin: 0 0 14px 0;
-  color: var(--age-ink-soft);
+  font-size: 11.5px;
+  margin: 4px 0 10px;
+  color: var(--age-ink-faint);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0 4px;
+  letter-spacing: 0.06em;
+  padding: 0 8px;
   box-sizing: border-box;
   width: 100%;
   overflow-wrap: break-word;
@@ -81,12 +71,12 @@ html { scroll-behavior: smooth; }
   gap: 8px;
   width: 100%;
   padding: 10px 12px;
-  margin-bottom: 16px;
-  background: var(--age-card);
+  margin-bottom: 14px;
+  background: var(--age-neutral-bg);
   color: var(--age-ink);
-  border: 1px solid var(--age-border);
-  border-radius: 10px;
-  font-size: 14px;
+  border: 1px solid transparent;
+  border-radius: var(--age-radius-sm);
+  font-size: 13.5px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -97,6 +87,7 @@ html { scroll-behavior: smooth; }
 .btn-nueva-conversacion:focus-visible {
   background: var(--age-primary-soft);
   border-color: var(--tutor-accent);
+  color: var(--age-primary-dark);
   outline: none;
 }
 #chat-history {
@@ -107,33 +98,37 @@ html { scroll-behavior: smooth; }
   overflow-y: auto;
   padding-bottom: 16px;
   touch-action: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 .chat-history-vacio {
-  padding: 12px 4px;
+  padding: 12px 8px;
   color: var(--age-ink-faint);
-  font-size: 13.5px;
+  font-size: 13px;
 }
 #chat-history li.chat-history-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 8px 10px 12px;
+  padding: 9px 8px 9px 10px;
   border-radius: 9px;
-  margin-bottom: 3px;
+  margin-bottom: 1px;
   background: transparent;
-  color: var(--age-ink);
+  color: var(--age-ink-soft);
   cursor: pointer;
-  font-size: 14.5px;
-  transition: background 0.15s;
+  font-size: 13.5px;
+  transition: background 0.15s, color 0.15s;
   outline: none;
 }
 #chat-history li.chat-history-item:hover,
 #chat-history li.chat-history-item:focus-visible {
   background: var(--age-neutral-bg);
+  color: var(--age-ink);
 }
 #chat-history li.chat-history-item.active {
-  background: var(--age-primary-soft);
-  color: var(--tutor-accent);
+  background: var(--age-neutral-bg);
+  color: var(--age-ink);
   font-weight: 600;
 }
 .chat-history-titulo {
@@ -145,8 +140,8 @@ html { scroll-behavior: smooth; }
 }
 .btn-borrar-conversacion {
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -164,30 +159,33 @@ html { scroll-behavior: smooth; }
 }
 .btn-borrar-conversacion:hover,
 .btn-borrar-conversacion:focus-visible {
-  background: rgba(224, 71, 63, 0.12);
+  background: var(--age-danger-bg);
   color: var(--age-danger);
   outline: none;
 }
 .sidebar-bottom-actions {
   flex-shrink: 0;
-  padding: 10px 0 16px;
+  padding: 8px 0 14px;
   position: sticky;
   bottom: 0;
   z-index: 2;
   width: 100%;
-  background: linear-gradient(to top, var(--age-bg) 85%, transparent 100%);
+  background: linear-gradient(to top, var(--age-card) 85%, transparent 100%);
+  border-top: 1px solid var(--age-border);
+  margin-top: 6px;
 }
 .btn-salir-sidebar {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 9px 12px;
+  padding: 9px 10px;
+  margin-top: 10px;
   background: none;
   color: var(--age-ink-soft);
   border: none;
   border-radius: 9px;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
@@ -206,8 +204,8 @@ html { scroll-behavior: smooth; }
     left: -320px;
     top: var(--age-nav-height, 0px);
     height: calc(100dvh - var(--age-nav-height, 0px));
-    width: 220px;
-    border-radius: 0 18px 18px 0;
+    width: 240px;
+    border-radius: 0 16px 16px 0;
     box-shadow: 9px 0 35px rgba(0, 0, 0, 0.25);
     z-index: 99;
     padding-bottom: 0;
@@ -225,14 +223,10 @@ html { scroll-behavior: smooth; }
     z-index: 98;
   }
   .tutor-sidebar.visible + .sidebar-overlay { display: block; }
-  #chat-history {
-    height: calc(100vh - 180px);
-    overflow-y: auto;
-    padding: 12px 12px 20px 12px;
-  }
+  #chat-history { height: auto; overflow-y: auto; padding: 4px 4px 20px; }
 }
 
-/* CABECERA */
+/* ===== PANEL PRINCIPAL ===== */
 .tutor-box {
   flex: 1;
   display: flex;
@@ -240,29 +234,52 @@ html { scroll-behavior: smooth; }
   width: 100%;
   min-width: 0;
   position: relative;
+  background: var(--age-bg);
 }
+.btn-icono-header {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--age-ink-faint);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.btn-icono-header:hover,
+.btn-icono-header:focus-visible {
+  background: var(--age-neutral-bg);
+  color: var(--age-ink);
+  outline: none;
+}
+
+/* CABECERA */
 .tutor-header {
   display: flex;
   align-items: center;
-  background: var(--age-primary-soft);
-  padding: 12px 14px;
-  border-bottom: 1.5px solid var(--tutor-accent);
+  background: var(--age-bg);
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--age-border);
   position: sticky;
   top: 0;
   z-index: 11;
   gap: 11px;
-  min-height: 62px;
+  min-height: 58px;
 }
 .btn-menu-historial {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   background: none;
   border: none;
-  border-radius: 50%;
-  color: var(--age-ink-soft);
+  border-radius: 8px;
+  color: var(--age-ink-faint);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   flex-shrink: 0;
@@ -276,67 +293,54 @@ html { scroll-behavior: smooth; }
 
 .avatar-bot { position: relative; }
 .avatar-bot img {
-  width: 42px;
-  height: 42px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-}
-.premium-badge {
-  display: inline-block;
-  vertical-align: middle;
-  margin-left: 6px;
-  background: var(--age-primary-soft);
-  color: var(--tutor-accent);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  padding: 2px 8px;
-  border-radius: 20px;
+  border: 1px solid var(--age-border);
 }
 .pulse {
   position: absolute;
-  right: -3px;
-  bottom: 2px;
-  width: 12px;
-  height: 12px;
+  right: -2px;
+  bottom: 1px;
+  width: 9px;
+  height: 9px;
   background: var(--age-success);
   border-radius: 50%;
   box-shadow: 0 0 0 0 rgba(30, 158, 99, 0.5);
-  animation: pulse 1.3s infinite;
-  border: 2px solid var(--age-card);
+  animation: pulse 1.8s infinite;
+  border: 2px solid var(--age-bg);
 }
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(30, 158, 99, 0.5); }
-  70% { box-shadow: 0 0 0 8px rgba(30, 158, 99, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(30, 158, 99, 0.45); }
+  70% { box-shadow: 0 0 0 7px rgba(30, 158, 99, 0); }
   100% { box-shadow: 0 0 0 0 rgba(30, 158, 99, 0); }
 }
 .header-info { flex: 1; min-width: 0; }
-.titulo-chat { font-weight: bold; font-size: 17px; color: var(--age-ink); }
-.estado-enlinea { color: var(--age-success); font-size: 13px; margin-top: 3px; }
+.titulo-chat { font-weight: 700; font-size: 14.5px; color: var(--age-ink); letter-spacing: -0.01em; }
+.estado-enlinea { color: var(--age-ink-faint); font-size: 12px; margin-top: 2px; }
 
-/* MENSAJES */
+/* ===== MENSAJES ===== */
 .tutor-messages {
   flex: 1;
-  padding: 36px 22px 14px 22px;
+  padding: 28px 20px 18px;
   overflow-y: auto;
   background: var(--age-bg);
   /* min-height: 0 (no un valor fijo) permite que esta zona se encoja para
      caber en lo que quede del contenedor y sea ELLA la que scrollea, en
      vez de empujar la caja de escribir fuera de la pantalla. */
   min-height: 0;
-  /* Sin scroll-behavior: smooth a propósito: durante el streaming,
-     actualizarBurbujaBot() fija chatMessages.scrollTop en cada fragmento
-     nuevo (varias veces por segundo). Con scroll suave, cada fragmento
-     relanzaba una animación que pisaba cualquier intento del usuario de
-     subir a releer -- el scroll manual perdía siempre porque el siguiente
-     fragmento llegaba antes de que la animación terminara. Con el salto
-     instantáneo, un scroll manual del usuario se respeta de inmediato. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .welcome-message, .mensaje-user, .mensaje-bot {
   display: flex;
-  margin-bottom: 18px;
-  align-items: flex-end;
+  margin-bottom: 22px;
+  align-items: flex-start;
   position: relative;
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.4s ease-out;
+  width: 100%;
+  max-width: 740px;
 }
 .welcome-saludo {
   display: flex;
@@ -345,17 +349,17 @@ html { scroll-behavior: smooth; }
 }
 .mensaje-user { justify-content: flex-end; }
 .bubble-user {
-  background: var(--age-card);
+  background: var(--age-neutral-bg);
   color: var(--age-ink);
-  border-radius: 20px 20px 6px 20px;
-  padding: 12px 17px;
-  box-shadow: var(--age-shadow);
+  border-radius: 18px 18px 4px 18px;
+  padding: 11px 16px;
+  box-shadow: none;
   margin-left: auto;
-  max-width: 70%;
+  max-width: 72%;
   font-size: 15px;
   line-height: 1.5;
   word-break: break-word;
-  border: 1px solid var(--age-border);
+  border: none;
   /* Los saltos de línea del textarea (Mayús+Intro) van literales en el
      texto -- sin esto el navegador los colapsa y el mensaje se ve como un
      único párrafo corrido. Mismo criterio que .tw-msg-user en theme.css
@@ -363,53 +367,59 @@ html { scroll-behavior: smooth; }
   white-space: pre-wrap;
 }
 .bubble-bot {
-  background: var(--age-neutral-bg);
+  background: transparent;
   color: var(--age-ink);
-  border-radius: 20px 20px 20px 6px;
-  padding: 13px 18px;
-  box-shadow: var(--age-shadow);
+  border-radius: 0;
+  padding: 2px 0 0;
+  box-shadow: none;
   margin-right: 8px;
-  max-width: 78%;
+  max-width: calc(100% - 38px);
   font-size: 15px;
-  line-height: 1.55;
+  line-height: 1.6;
   position: relative;
   word-break: break-word;
-  border: 1px solid var(--age-border);
+  border: none;
 }
-.bubble-bot h3 { margin: 14px 0 6px; font-size: 15.5px; font-weight: 700; color: var(--age-ink); }
-.bubble-bot h3:first-child { margin-top: 0; }
-.bubble-bot p { margin: 0 0 10px; }
-.bubble-bot p:last-child { margin-bottom: 0; }
-.bubble-bot ul { margin: 0 0 10px; padding-left: 20px; }
-.bubble-bot li { margin-bottom: 5px; }
-.bubble-bot li::marker { color: var(--tutor-accent); }
-.bubble-bot strong { color: var(--age-ink); font-weight: 700; }
-.avatar-bot-mini img {
-  width: 26px;
-  height: 26px;
+.bubble-bot-contenido h3 { margin: 16px 0 7px; font-size: 15.5px; font-weight: 700; color: var(--age-ink); }
+.bubble-bot-contenido h3:first-child { margin-top: 0; }
+.bubble-bot-contenido p { margin: 0 0 11px; }
+.bubble-bot-contenido p:last-child { margin-bottom: 0; }
+.bubble-bot-contenido ul { margin: 0 0 11px; padding-left: 20px; }
+.bubble-bot-contenido li { margin-bottom: 5px; }
+.bubble-bot-contenido li::marker { color: var(--tutor-accent); }
+.bubble-bot-contenido strong { color: var(--age-ink); font-weight: 700; }
+.avatar-bot-mini {
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  margin-right: 7px;
+  background: var(--age-neutral-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 10px;
+  margin-top: 1px;
 }
+.avatar-bot-mini img { width: 18px; height: 18px; border-radius: 50%; margin-right: 0; }
 .bubble-bot-actions {
-  position: absolute;
-  top: -22px;
-  right: 0;
-  display: none;
+  position: static;
+  margin-top: 8px;
+  display: block;
 }
-.bubble-bot:hover .bubble-bot-actions { display: block; }
 .bubble-bot-actions button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: none;
   border: none;
-  color: var(--age-success);
+  color: var(--age-ink-faint);
   font-size: 12px;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  margin-left: -6px;
 }
-.bubble-bot-actions button:hover { background: var(--age-primary-soft); }
+.bubble-bot-actions button:hover { background: var(--age-neutral-bg); color: var(--age-ink); }
 
 /* Aviso de respuesta cortada a medias (fallo de red/servidor mientras se
    escribía) -- a propósito siempre visible (no como .bubble-bot-actions,
@@ -451,32 +461,34 @@ html { scroll-behavior: smooth; }
    Siempre visible (a diferencia de .bubble-bot-actions, que es solo hover):
    son acciones que el usuario querrá encontrar sin adivinar dónde están. */
 .bubble-bot-pie {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--age-border);
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
 }
 .bubble-bot-secundarias { display: flex; flex-wrap: wrap; gap: 8px; }
-/* Borde y texto en el naranja de la marca para que se vean bien (antes era un
-   gris apenas perceptible). */
 .btn-mensaje-sec {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: none;
-  border: 1.5px solid var(--tutor-accent);
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
   border-radius: 999px;
-  padding: 5px 13px;
+  padding: 6px 13px;
   font-size: 12.5px;
   font-weight: 600;
   font-family: var(--age-font);
-  color: var(--tutor-accent);
+  color: var(--age-ink-soft);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
-.btn-mensaje-sec:hover { background: var(--age-primary-soft); }
+.btn-mensaje-sec:hover {
+  background: var(--age-primary-soft);
+  border-color: var(--tutor-accent);
+  color: var(--age-primary-dark);
+}
 
 /* Botón de "generar test de un tema": el título puede ser largo, así que NO es
    un pill (que se deformaría en un óvalo gigante de varias líneas) sino un
@@ -508,23 +520,23 @@ html { scroll-behavior: smooth; }
 .quick-questions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 9px;
+  margin-top: 14px;
 }
 .quick-btn {
   background: var(--age-card);
   border: 1px solid var(--age-border);
-  border-radius: 20px;
+  border-radius: 999px;
   padding: 8px 15px;
   font-size: 13px;
   cursor: pointer;
-  color: var(--age-ink);
-  transition: all 0.2s;
+  color: var(--age-ink-soft);
+  transition: all 0.15s;
 }
 .quick-btn:hover {
   background: var(--age-primary-soft);
   border-color: var(--tutor-accent);
-  transform: translateY(-2px);
+  color: var(--age-primary-dark);
 }
 
 /* Acción proactiva del saludo: enlace destacado (relleno con el color de
@@ -556,20 +568,26 @@ html { scroll-behavior: smooth; }
   .btn-accion-tutor { width: 100%; box-sizing: border-box; }
 }
 
+/* Avatar grande del saludo de bienvenida, mismo tratamiento que avatar-bot-mini. */
+.welcome-message .avatar-bot-mini { width: 36px; height: 36px; }
+.welcome-message .avatar-bot-mini img { width: 22px; height: 22px; }
+.welcome-message .bubble-bot { max-width: calc(100% - 46px); }
+
 /* TYPING INDICATOR */
 .typing-indicator {
   display: flex;
   align-items: center;
   padding: 8px 18px;
-  margin: 0 22px 18px auto;
-  background: var(--age-neutral-bg);
-  border-radius: 20px 20px 6px 20px;
+  margin: 0 auto 18px;
+  box-sizing: border-box;
+  background: transparent;
+  border-radius: 0;
   max-width: 100px;
 }
 .typing-dot {
   width: 6px;
   height: 6px;
-  background: var(--age-success);
+  background: var(--age-ink-faint);
   border-radius: 50%;
   margin: 0 2px;
   animation: typing 1.4s infinite;
@@ -577,64 +595,82 @@ html { scroll-behavior: smooth; }
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 @keyframes typing {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-5px); }
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
 }
 
-/* INPUT */
+/* ===== INPUT (composer flotante) ===== */
 .input-area-pro {
   display: flex;
   align-items: flex-end;
-  border-top: 1.5px solid var(--age-border);
-  background: var(--age-card);
-  padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: none;
+  background: transparent;
+  padding: 0 20px calc(18px + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
   z-index: 12;
   gap: 7px;
   flex-wrap: wrap;
+  justify-content: center;
+}
+#chat-input-container {
+  max-width: 740px;
+  width: 100%;
+  margin: 0 auto;
+  background: var(--age-card);
+  border: 1px solid var(--age-border);
+  border-radius: var(--age-radius-lg);
+  box-shadow: var(--age-shadow);
+  padding: 7px 7px 7px 17px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+#chat-input-container:focus-within {
+  border-color: var(--tutor-accent);
+  box-shadow: var(--age-shadow-hover);
 }
 .input-area-pro textarea {
   flex: 1;
   border: none;
-  border-radius: 17px;
-  padding: 11px 15px;
+  border-radius: 0;
+  padding: 9px 0;
   /* 16px, no menos: por debajo de eso Safari en iOS hace zoom automático al
      enfocar el campo, y el usuario tenía que hacer pinch-zoom manual para
      volver a ver la página a tamaño normal. */
   font-size: 16px;
-  background: var(--age-neutral-bg);
+  background: transparent;
   color: var(--age-ink);
-  min-height: 36px;
+  min-height: 24px;
   max-height: 110px;
   resize: none;
   outline: none;
-  transition: background 0.2s;
   overflow-y: auto;
-  width: calc(100% - 50px);
+  width: auto;
 }
-.input-area-pro textarea:focus {
-  outline: 2px solid var(--tutor-accent);
-  border-radius: 17px;
-}
+.input-area-pro textarea:focus { outline: none; }
+.input-area-pro textarea::placeholder { color: var(--age-ink-faint); }
 .btn-enviar {
   border: none;
   background: var(--tutor-accent);
   color: #fff;
   border-radius: 50%;
   cursor: pointer;
-  width: 38px;
-  height: 38px;
-  margin-left: 4px;
+  width: 36px;
+  height: 36px;
+  margin-left: 0;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: filter 0.18s;
+  transition: filter 0.18s, transform 0.1s;
 }
 .btn-enviar:hover, .btn-enviar:focus {
-  filter: brightness(0.9);
-  outline: 2px solid var(--age-ink-faint);
+  filter: brightness(0.94);
+  outline: none;
 }
-.btn-enviar:disabled { opacity: 0.6; cursor: default; filter: none; }
+.btn-enviar:active { transform: scale(0.93); }
+.btn-enviar:disabled { opacity: 0.4; cursor: default; filter: none; }
 .btn-enviar svg { display: block; }
 
 /* Botón flotante "ir al último mensaje": solo aparece cuando el usuario ha
@@ -643,24 +679,28 @@ html { scroll-behavior: smooth; }
    calma sin que la conversación le arrastre hacia abajo en cada fragmento. */
 .btn-scroll-abajo {
   position: absolute;
-  right: 18px;
-  bottom: 92px;
+  right: 50%;
+  transform: translateX(370px);
+  bottom: 96px;
   z-index: 15;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  border: 1.5px solid var(--age-border);
+  border: 1px solid var(--age-border);
   background: var(--age-card);
-  color: var(--age-ink);
+  color: var(--age-ink-soft);
   box-shadow: var(--age-shadow-hover, 0 4px 14px rgba(0,0,0,0.12));
   cursor: pointer;
   align-items: center;
   justify-content: center;
 }
-.btn-scroll-abajo:hover { background: var(--age-neutral-bg); }
+.btn-scroll-abajo:hover { background: var(--age-neutral-bg); color: var(--age-ink); }
+@media (max-width: 950px) {
+  .btn-scroll-abajo { right: 18px; transform: none; }
+}
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
 }
 
@@ -675,5 +715,11 @@ html { scroll-behavior: smooth; }
   .typing-dot { animation: none; }
 }
 
-::-webkit-scrollbar { width: 7px; background: var(--age-bg); }
+::-webkit-scrollbar { width: 7px; background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--age-border); border-radius: 7px; }
+
+@media (max-width: 640px) {
+  .tutor-messages { padding: 20px 14px 14px; }
+  .input-area-pro { padding: 0 12px calc(14px + env(safe-area-inset-bottom, 0px)); }
+  .bubble-user { max-width: 85%; }
+}
