@@ -604,6 +604,7 @@ async function iniciarBanco(documentoId, tipo, archivoOriginal) {
   // tiempo real, sin esperar a un reload manual.
   iniciarSondeoBancosSiHaceFalta();
 
+  let streamIniciado = false;
   try {
     const token = await idToken();
     const ruta = tipo === "preguntas" ? "generar-banco-preguntas-desde-pdf" : "generar-banco-tarjetas-desde-pdf";
@@ -624,6 +625,7 @@ async function iniciarBanco(documentoId, tipo, archivoOriginal) {
     }
 
     const lector = res.body.getReader();
+    streamIniciado = true;
     const decodificador = new TextDecoder();
     let buffer = "";
     let terminado = false;
@@ -654,8 +656,25 @@ async function iniciarBanco(documentoId, tipo, archivoOriginal) {
       }
     }
   } catch (e) {
-    if (doc) doc[`banco_${tipo}_estado`] = "error";
-    mostrarErrorGlobal(e.message || "No se pudo generar el banco.");
+    // Bug real (11/10/2026): si la generación YA había arrancado de verdad en
+    // el servidor (streamIniciado) y es solo ESTA lectura en directo la que
+    // se corta -- muy habitual en móvil, el navegador mata un fetch largo al
+    // pasar la pestaña a segundo plano o bloquear la pantalla -- el hilo de
+    // fondo sigue generando igual, ajeno a que el cliente haya dejado de
+    // escuchar. Antes se marcaba aquí mismo como "error", lo que además
+    // detenía el sondeo periódico (solo sondea documentos que él mismo cree
+    // "generando") -- el usuario se quedaba viendo "No se pudo generar" con
+    // un banco que en realidad seguía (o ya había terminado bien) en el
+    // servidor, sin que nada lo corrigiera hasta recargar a mano.
+    // Ahora, en ese caso, se deja el estado como estaba ("generando") y es
+    // el sondeo (ya arrancado arriba, consulta el estado real en Firestore
+    // cada 4s) quien decide el resultado de verdad. Solo se marca error de
+    // verdad cuando el fallo ocurre ANTES de que el servidor confirmara que
+    // la generación arrancó (plan agotado, límite alcanzado, error real).
+    if (!streamIniciado) {
+      if (doc) doc[`banco_${tipo}_estado`] = "error";
+      mostrarErrorGlobal(e.message || "No se pudo generar el banco.");
+    }
   } finally {
     refrescar();
   }
@@ -690,6 +709,7 @@ async function iniciarResumenOEsquema(documentoId, tipo) {
   refrescar();
   iniciarSondeoBancosSiHaceFalta();
 
+  let streamIniciado = false;
   try {
     const token = await idToken();
     const ruta = tipo === "resumen" ? "resumir-documento" : "generar-esquema-desde-pdf";
@@ -706,6 +726,7 @@ async function iniciarResumenOEsquema(documentoId, tipo) {
     }
 
     const lector = res.body.getReader();
+    streamIniciado = true;
     const decodificador = new TextDecoder();
     let buffer = "";
     let terminado = false;
@@ -745,9 +766,19 @@ async function iniciarResumenOEsquema(documentoId, tipo) {
       }
     }
   } catch (e) {
-    intentosSondeoContenido = 0;
-    if (doc) doc[`progreso_${tipo}`] = null;
-    mostrarErrorGlobal(e.message || "No se pudo generar el contenido.");
+    // Mismo bug y mismo arreglo que iniciarBanco (ver el comentario largo
+    // ahí): si la generación ya había arrancado de verdad en el servidor
+    // (streamIniciado) y es solo esta lectura en directo la que se corta
+    // (móvil pasando a segundo plano, típicamente), no se da por fallida --
+    // se deja que el sondeo periódico (intentosSondeoContenido/
+    // progresoDelServidorSigueSiendoValido) confirme el resultado real en
+    // cuanto el servidor termine, en vez de mostrar un error falso que
+    // además detiene ese mismo sondeo.
+    if (!streamIniciado) {
+      intentosSondeoContenido = 0;
+      if (doc) doc[`progreso_${tipo}`] = null;
+      mostrarErrorGlobal(e.message || "No se pudo generar el contenido.");
+    }
   } finally {
     refrescar();
   }
