@@ -1462,6 +1462,109 @@ body {
 
 .age-banner-promo-cerrar:hover { color: #fff; }
 
+/* ---------- Modal propio de confirmación/texto (assets/dialogo.js) ----------
+   Sustituye a confirm()/prompt() nativos del navegador en cualquier página
+   que importe dialogo.js -- mismo patrón ya probado en mis-documentos (ver
+   .documentos-modal-* ahí), pero aquí compartido para el resto del sitio. */
+.age-dialogo-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 20, 30, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+/* No se asume que la página que importa dialogo.js ya tenga su propia
+   clase ".hidden" (cada página la define por su cuenta, no hay una
+   global en theme.css) -- se deja acotada a este overlay para no
+   introducir sin querer una utilidad global nueva. */
+.age-dialogo-overlay.hidden {
+  display: none;
+}
+
+.age-dialogo-card {
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--age-shadow-hover);
+  padding: 24px;
+}
+
+@media (max-width: 480px) {
+  .age-dialogo-card {
+    padding: 18px;
+  }
+}
+
+.age-dialogo-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.age-dialogo-cabecera h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.age-dialogo-cerrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--age-ink-faint);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.age-dialogo-cerrar:hover { color: var(--age-ink); }
+
+.age-dialogo-mensaje {
+  color: var(--age-ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 0 0 20px;
+  overflow-wrap: anywhere;
+}
+
+.age-dialogo-prompt-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--age-ink-soft);
+  margin-bottom: 6px;
+}
+
+.age-dialogo-prompt-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--age-radius-sm);
+  border: 1.5px solid var(--age-border);
+  background: var(--age-bg);
+  color: var(--age-ink);
+  font-family: var(--age-font);
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+}
+
+.age-dialogo-prompt-input:focus {
+  outline: none;
+  border-color: var(--age-primary);
+}
+
+.age-dialogo-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 /* ---------- Bloqueo de página por prueba terminada / plan insuficiente ---------- */
 .age-bloqueo-overlay {
   position: fixed;

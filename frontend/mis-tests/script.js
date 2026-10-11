@@ -2,6 +2,7 @@ import { idToken, marcarContenidoListo } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { mostrarErrorGlobal } from "/assets/notificaciones.js";
 import { icono } from "/assets/icons.js";
+import { mostrarConfirmacion } from "/assets/dialogo.js";
 
 const TIPO_INFO = {
   personalizado: { iconoHtml: icono("lapiz", 28), label: "Personalizado" },
@@ -162,7 +163,7 @@ async function borrarTest(testId, boton) {
   const mensaje = test && test.estado === "en_progreso"
     ? "¿Seguro que quieres eliminar este test a medias? No podrás recuperarlo."
     : "¿Seguro que quieres eliminar este test y su resultado? No podrás recuperarlo.";
-  if (!window.confirm(mensaje)) return;
+  if (!(await mostrarConfirmacion({ mensaje, textoAceptar: "Eliminar", peligro: true }))) return;
 
   boton.disabled = true;
   try {

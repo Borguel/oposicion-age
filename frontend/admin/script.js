@@ -3,6 +3,7 @@
 import { esAdmin, obtenerPermisos, obtenerAuthHeaders, marcarContenidoListo } from "/assets/auth.js";
 import { BACKEND_URL } from "/assets/firebase-config.js";
 import { icono } from "/assets/icons.js";
+import { mostrarPrompt } from "/assets/dialogo.js";
 
 // Inyecta los iconos SVG en los elementos estáticos del HTML marcados con
 // data-icon (sidebar, botones de cerrar) -- se hace aquí en vez de a mano
@@ -678,24 +679,24 @@ async function renderTemario() {
     if (abrir) bloquesAbiertos.add(id); else bloquesAbiertos.delete(id);
   }));
   panel.querySelector("#t-nuevo-bloque").addEventListener("click", async () => {
-    const id = (prompt("Id del nuevo bloque (ej. bloque_07):") || "").trim();
+    const id = ((await mostrarPrompt({ titulo: "Nuevo bloque", label: "Id del nuevo bloque (ej. bloque_07):" })) || "").trim();
     if (!id) return;
     if (!_idValido(id)) { toast("Id no válido: sin espacios ni barras, máximo 60 caracteres.", "error"); return; }
-    const titulo = (prompt("Título del bloque:", "") || "").trim() || id;
+    const titulo = ((await mostrarPrompt({ titulo: "Nuevo bloque", label: "Título del bloque:" })) || "").trim() || id;
     const r = await api("POST", `/admin/api/temario/${op}/nuevo-bloque`, { id, titulo });
     if (r) { toast("Bloque creado."); renderTemario(); }
   });
   panel.querySelectorAll(".admin-nuevo-tema").forEach((btn) => btn.addEventListener("click", async () => {
-    const id = (prompt("Id del nuevo tema (ej. tema_03):") || "").trim();
+    const id = ((await mostrarPrompt({ titulo: "Nuevo tema", label: "Id del nuevo tema (ej. tema_03):" })) || "").trim();
     if (!id) return;
     if (!_idValido(id)) { toast("Id no válido: sin espacios ni barras, máximo 60 caracteres.", "error"); return; }
-    const titulo = (prompt("Título del tema:", "") || "").trim() || id;
+    const titulo = ((await mostrarPrompt({ titulo: "Nuevo tema", label: "Título del tema:" })) || "").trim() || id;
     const r = await api("POST", `/admin/api/temario/${op}/${btn.dataset.bloque}/nuevo-tema`, { id, titulo });
     if (r) { toast("Tema creado."); renderTemario(); }
   }));
   panel.querySelectorAll("[data-renombrar-bloque]").forEach((btn) => btn.addEventListener("click", async (e) => {
     e.stopPropagation();
-    const titulo = (prompt("Nuevo título del bloque:") || "").trim();
+    const titulo = ((await mostrarPrompt({ titulo: "Renombrar bloque", label: "Nuevo título del bloque:" })) || "").trim();
     if (!titulo) return;
     const r = await api("PATCH", `/admin/api/temario/${op}/${btn.dataset.renombrarBloque}`, { titulo });
     if (r) { toast("Bloque renombrado."); renderTemario(); }
@@ -703,7 +704,7 @@ async function renderTemario() {
   panel.querySelectorAll("[data-renombrar-tema]").forEach((btn) => btn.addEventListener("click", async (e) => {
     e.stopPropagation();
     const [bloque, tema, actual] = btn.dataset.renombrarTema.split("|");
-    const titulo = (prompt("Nuevo título del tema:", actual) || "").trim();
+    const titulo = ((await mostrarPrompt({ titulo: "Renombrar tema", label: "Nuevo título del tema:", valorInicial: actual })) || "").trim();
     if (!titulo || titulo === actual) return;
     const r = await api("PATCH", `/admin/api/temario/${op}/${bloque}/${tema}/titulo`, { titulo });
     if (r) { toast("Tema renombrado."); renderTemario(); }

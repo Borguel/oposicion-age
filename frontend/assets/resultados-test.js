@@ -8,6 +8,7 @@
 // <script> normal antes de este módulo.
 import { icono } from "/assets/icons.js";
 import anime from "/assets/vendor/anime.esm.js";
+import { mostrarPrompt } from "/assets/dialogo.js";
 
 function calcularEstadisticas(preguntas, respuestasUsuario) {
   let aciertos = 0;
@@ -488,7 +489,11 @@ export function renderizarResultadosTest({ contenedor, preguntas, respuestasUsua
     boton.addEventListener("click", async () => {
       const preg = preguntas[Number(boton.dataset.reportar)];
       if (!preg) return;
-      const motivo = window.prompt("¿Qué error has visto en esta pregunta? Lo revisará el equipo.");
+      const motivo = await mostrarPrompt({
+        titulo: "Reportar un error",
+        label: "¿Qué error has visto en esta pregunta? Lo revisará el equipo.",
+        textoAceptar: "Enviar",
+      });
       if (!motivo || !motivo.trim()) return;
       boton.disabled = true;
       try {
