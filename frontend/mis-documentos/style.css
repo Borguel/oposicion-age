@@ -631,6 +631,17 @@ body {
   color: var(--age-danger);
 }
 
+/* Aviso de "puede tardar, no hace falta quedarse mirando" junto al estado
+   "Generando..." (11/10/2026) -- discreto a propósito (más pequeño y tenue
+   que .documento-card-tipo-estado), es contexto de apoyo, no la señal
+   principal. */
+.documento-card-tipo-hint {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--age-ink-faint);
+  margin-top: 2px;
+}
+
 /* Barra de progreso real (12/08/2026, refuerzo visual de textoGenerando en
    script.js -- "que se vea que esto avanza", no solo el texto): ancho
    fijo pequeño a propósito, es un refuerzo junto al texto de estado, no

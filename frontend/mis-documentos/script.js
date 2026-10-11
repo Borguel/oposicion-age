@@ -403,10 +403,15 @@ function filaContenido({
   const barraProgresoHtml = generando && progreso && progreso.total
     ? `<div class="documento-card-progreso-barra"><div class="documento-card-progreso-barra-relleno" style="width: ${Math.round((progreso.completadas / progreso.total) * 100)}%"></div></div>`
     : "";
+  // Mismo aviso que en filaBanco (11/10/2026, ver el comentario largo ahí):
+  // deja claro que puede tardar y que no hace falta quedarse en la pantalla.
+  const hintGenerandoHtml = generando
+    ? `<span class="documento-card-tipo-hint">Puede tardar unos minutos -- puedes seguir usando la web mientras tanto, se completa solo.</span>`
+    : "";
   const estadoHtml = urlContinuar
     ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Test en progreso</span>`
     : generando
-      ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} ${textoGenerando}${contadorTiempoHtml}</span>${barraProgresoHtml}`
+      ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} ${textoGenerando}${contadorTiempoHtml}</span>${barraProgresoHtml}${hintGenerandoHtml}`
       : existe
         ? `<span class="documento-card-tipo-estado documento-card-tipo-estado-generado">${icono("check", 12)} Generado</span>`
         : `<span class="documento-card-tipo-estado">Aún no generado</span>`;
@@ -497,7 +502,14 @@ function filaBanco(doc, tipo) {
       // saber cuál es el techo de seguridad del banco, solo cuántas lleva
       // generadas hasta ahora -- este número se actualiza en vivo según
       // van llegando eventos de progreso (ver iniciarBanco).
-      estadoHtml = `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Generando… ${total} ${nombreItem}${total === 1 ? "" : "s"} hasta ahora</span>`;
+      // Aviso de que esto puede tardar (11/10/2026, a petición del usuario:
+      // "que no parezca que no funciona" -- un banco completo puede tardar
+      // varios minutos de verdad, y sin este aviso el único texto visible es
+      // un contador que sube despacio, fácil de confundir con que está
+      // colgado). Deja claro además que no hace falta quedarse mirando la
+      // pantalla: el sondeo periódico (ver sondearBancosEnGeneracion) sigue
+      // comprobando el progreso real aunque el usuario navegue a otra parte.
+      estadoHtml = `<span class="documento-card-tipo-estado documento-card-tipo-estado-progreso">${icono("reloj", 12)} Generando… ${total} ${nombreItem}${total === 1 ? "" : "s"} hasta ahora</span><span class="documento-card-tipo-hint">Puede tardar unos minutos -- puedes seguir usando la web mientras tanto, se completa solo.</span>`;
       // Botón "Detener" (10/08/2026, a petición explícita del usuario) --
       // ver el mismo comentario largo en filaContenido.
       if (esUsuarioAdmin) {
