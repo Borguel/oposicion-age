@@ -10,6 +10,14 @@ html { scroll-behavior: smooth; }
 
 .tutor-container {
   --tutor-accent: var(--age-primary);
+  /* Variante accesible de --age-primary-dark para texto SOBRE
+     --age-primary-soft (auditoría de contraste, 11/10/2026): el par
+     e8860f/fff1de del tema solo da 2.4:1, por debajo del 4.5:1 de WCAG
+     AA. Se queda acotado a este componente (no se toca el token global,
+     usado en muchos otros contextos donde sí tiene contraste de sobra)
+     y en oscuro reutiliza el --age-primary-dark normal, que ya cumple
+     ahí. */
+  --tutor-accent-ink: #a35c00;
   display: flex;
   width: 100%;
   margin: 0;
@@ -24,6 +32,10 @@ html { scroll-behavior: smooth; }
      escribir fuera de la pantalla visible. */
   height: calc(100dvh - var(--age-nav-height, 64px) - var(--age-cookie-banner-height, 0px));
   position: relative;
+}
+
+:root[data-theme="dark"] .tutor-container {
+  --tutor-accent-ink: var(--age-primary-dark);
 }
 
 /* ===== SIDEBAR ===== */
@@ -60,7 +72,7 @@ html { scroll-behavior: smooth; }
   justify-content: center;
   flex-shrink: 0;
 }
-.tutor-sidebar h3 {
+.tutor-sidebar h2 {
   font-size: 11.5px;
   margin: 4px 0 10px;
   color: var(--age-ink-faint);
@@ -94,7 +106,7 @@ html { scroll-behavior: smooth; }
 .btn-nueva-conversacion:focus-visible {
   background: var(--age-primary-soft);
   border-color: var(--tutor-accent);
-  color: var(--age-primary-dark);
+  color: var(--tutor-accent-ink);
   outline: none;
 }
 #chat-history {
@@ -305,6 +317,11 @@ html { scroll-behavior: smooth; }
   border-radius: 50%;
   border: 1px solid var(--age-border);
 }
+/* Punto estático de "En línea" (auditoría, 11/10/2026): antes pulsaba sin
+   parar -- Tu Tutor no tiene un estado real de conectado/desconectado que
+   cambie, así que la animación solo simulaba una actividad que no existe.
+   El texto "En línea" de al lado ya comunica el estado; el punto se queda
+   como refuerzo visual quieto. */
 .pulse {
   position: absolute;
   right: -2px;
@@ -313,14 +330,7 @@ html { scroll-behavior: smooth; }
   height: 9px;
   background: var(--age-success);
   border-radius: 50%;
-  box-shadow: 0 0 0 0 rgba(30, 158, 99, 0.5);
-  animation: pulse 1.8s infinite;
   border: 2px solid var(--age-bg);
-}
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(30, 158, 99, 0.45); }
-  70% { box-shadow: 0 0 0 7px rgba(30, 158, 99, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(30, 158, 99, 0); }
 }
 .header-info { flex: 1; min-width: 0; }
 .titulo-chat { font-weight: 700; font-size: 14.5px; color: var(--age-ink); letter-spacing: -0.01em; }
@@ -494,7 +504,7 @@ html { scroll-behavior: smooth; }
 .btn-mensaje-sec:hover {
   background: var(--age-primary-soft);
   border-color: var(--tutor-accent);
-  color: var(--age-primary-dark);
+  color: var(--tutor-accent-ink);
 }
 
 /* Botón de "generar test de un tema": el título puede ser largo, así que NO es
@@ -543,7 +553,7 @@ html { scroll-behavior: smooth; }
 .quick-btn:hover {
   background: var(--age-primary-soft);
   border-color: var(--tutor-accent);
-  color: var(--age-primary-dark);
+  color: var(--tutor-accent-ink);
 }
 
 /* Acción proactiva del saludo: enlace destacado (relleno con el color de
@@ -713,11 +723,11 @@ html { scroll-behavior: smooth; }
 
 /* Mismo criterio que .age-auth-loader-spinner en assets/theme.css
    (25/08/2026, auditoría UX): respeta la preferencia del sistema de
-   reducir el movimiento -- .pulse (indicador "en línea") y .typing-dot
-   (los tres puntos de "escribiendo…") se repiten indefinidamente, el
-   caso más molesto para quien la tiene activada. */
+   reducir el movimiento -- .typing-dot (los tres puntos de
+   "escribiendo…") se repite indefinidamente mientras el bot responde,
+   el caso más molesto para quien la tiene activada. (.pulse ya no
+   anima, ver su propia regla más arriba.) */
 @media (prefers-reduced-motion: reduce) {
-  .pulse { animation: none; }
   .welcome-message, .mensaje-user, .mensaje-bot { animation: none; }
   .typing-dot { animation: none; }
 }

@@ -2185,6 +2185,10 @@ body {
 .tutor-widget-fab.oculto { opacity: 0; pointer-events: none; transform: scale(0.6); }
 .tutor-widget-fab img { width: 34px; height: 34px; display: block; }
 
+/* Punto estático sobre el botón flotante (auditoría, 11/10/2026): se
+   muestra siempre, en toda página con el widget, hasta el primer clic
+   -- no está atado a ningún aviso ni mensaje real, así que pulsar sin
+   parar solo simulaba una actividad que no existe. */
 .tutor-widget-fab-punto {
   position: absolute;
   top: 6px;
@@ -2194,12 +2198,6 @@ body {
   border-radius: 50%;
   background: var(--age-success);
   border: 2px solid #fff;
-  animation: tutorWidgetPulso 2s infinite;
-}
-@keyframes tutorWidgetPulso {
-  0% { box-shadow: 0 0 0 0 rgba(30, 158, 99, 0.5); }
-  70% { box-shadow: 0 0 0 8px rgba(30, 158, 99, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(30, 158, 99, 0); }
 }
 
 .tutor-widget-panel {
