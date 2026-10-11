@@ -782,6 +782,19 @@ def _contexto_personal_usuario(db, usuario_id, oposicion, catalogo):
 # SIN llamar a DeepSeek-- para que sea instantánea y no gaste cuota ni
 # dinero en cada carga de la página.
 # ============================================================
+def _titulo_corto(titulo, limite=60):
+    """Acorta un título de tema para usarlo dentro de una frase del saludo
+    proactivo. Algunos temas combinan norma + apartado en un solo título
+    ("La Ley 19/2013... buen gobierno. El Consejo de Transparencia...:
+    funciones.") -- para una frase conversacional basta la primera parte, así
+    que se corta en el primer '.'/':' y se limita a `limite` caracteres.
+    Mismo criterio que acortarTitulo() en frontend/tu-tutor/script.js."""
+    base = re.split(r"[.:]", titulo or "", maxsplit=1)[0].strip()
+    if len(base) > limite:
+        return base[:limite].strip() + "…"
+    return base
+
+
 def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
     """Devuelve un dict con el saludo inicial personalizado, un mensaje de
     recomendación, una acción opcional (datos para enlazar a "generar un
@@ -808,20 +821,22 @@ def sugerencia_inicial_usuario(db, usuario_id, oposicion, catalogo):
     accion = None
     if temas_flojos:
         tema_id, titulo, pct = temas_flojos[0]
+        titulo_corto = _titulo_corto(titulo)
         mensaje = (
-            f"La última vez {titulo} se te resistía un poco: aciertas el {pct}%. "
+            f"La última vez {titulo_corto} se te resistía un poco: aciertas el {pct}%. "
             f"¿Le damos un repaso? Puedo tomarte unas preguntas o explicarte lo esencial."
         )
-        accion = {"tema_id": tema_id, "titulo": titulo, "label": f"Practicar {titulo}"}
-        sugerencias = [f"Examíname sobre {titulo}", f"Explícame lo esencial de {titulo}", "¿Qué estudio hoy?"]
+        accion = {"tema_id": tema_id, "titulo": titulo, "label": f"Practicar {titulo_corto}"}
+        sugerencias = [f"Examíname sobre {titulo_corto}", f"Explícame lo esencial de {titulo_corto}", "¿Qué estudio hoy?"]
     elif temas_pendientes:
         tema_id, titulo = temas_pendientes[0]
+        titulo_corto = _titulo_corto(titulo)
         mensaje = (
-            f"Vas bien de rendimiento. Todavía no has hecho ningún test de {titulo}: "
+            f"Vas bien de rendimiento. Todavía no has hecho ningún test de {titulo_corto}: "
             f"podría ser un buen momento para estrenarlo."
         )
-        accion = {"tema_id": tema_id, "titulo": titulo, "label": f"Empezar test de {titulo}"}
-        sugerencias = [f"Examíname sobre {titulo}", f"Explícame {titulo}", "¿Qué estudio hoy?"]
+        accion = {"tema_id": tema_id, "titulo": titulo, "label": f"Empezar test de {titulo_corto}"}
+        sugerencias = [f"Examíname sobre {titulo_corto}", f"Explícame {titulo_corto}", "¿Qué estudio hoy?"]
     elif tests_realizados:
         mensaje = (
             "Vas muy bien: ahora mismo no detecto ningún tema flojo. "

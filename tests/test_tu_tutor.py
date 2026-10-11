@@ -6,7 +6,7 @@ caso correcto, y que el historial siga persistiendo en Firestore."""
 import json
 from unittest.mock import patch
 
-from chat_controller import responder_tutor, responder_tutor_stream, sugerencia_inicial_usuario, crear_conversacion
+from chat_controller import responder_tutor, responder_tutor_stream, sugerencia_inicial_usuario, crear_conversacion, _titulo_corto
 from utils import obtener_catalogo_temas
 
 
@@ -927,6 +927,37 @@ def test_sugerencia_inicial_recomienda_practicar_el_tema_mas_flojo(db):
     assert sugerencia["accion"]["tema_id"] == "bloque_01-tema_02"
     assert "La Corona" in sugerencia["accion"]["label"]
     assert isinstance(sugerencia["sugerencias"], list) and sugerencia["sugerencias"]
+
+
+def test_sugerencia_inicial_acorta_titulos_largos_o_compuestos(db):
+    # Un tema real puede combinar norma + apartado en un único título largo
+    # (p.ej. "Ley X... Y. El Consejo de Z: funciones.") -- el mensaje y las
+    # sugerencias rápidas deben usar solo la primera parte, para no acabar
+    # repitiendo un título entero varias veces en el saludo inicial.
+    titulo_largo = (
+        "La Ley 19/2013, de 9 de diciembre, de transparencia, acceso a la "
+        "información pública y buen gobierno. El Consejo de Transparencia y "
+        "Buen Gobierno: funciones."
+    )
+    db.sembrar(("Temario AGE", "bloque_01"), {"titulo": "Organización del Estado"})
+    db.sembrar(("Temario AGE", "bloque_01", "temas", "tema_01"), {"titulo": titulo_largo})
+    db.sembrar(("usuarios", "u1"), {
+        "nombre": "Pepe",
+        "estadisticas": {"AGE": {
+            "tests_realizados": 2,
+            "rendimiento_por_tema": {"bloque_01-tema_01": {"aciertos": 0, "fallos": 5, "blancos": 0}},
+        }},
+    })
+    catalogo = obtener_catalogo_temas(db, "Temario AGE")
+    sugerencia = sugerencia_inicial_usuario(db, "u1", "AGE", catalogo)
+
+    titulo_esperado = _titulo_corto(titulo_largo)
+    assert titulo_esperado in sugerencia["mensaje"]
+    assert "El Consejo de Transparencia" not in sugerencia["mensaje"]
+    assert all(titulo_esperado in s or "estudio hoy" in s.lower() for s in sugerencia["sugerencias"])
+    # La acción (deep-link real) conserva el título completo, no el acortado.
+    assert sugerencia["accion"]["tema_id"] == "bloque_01-tema_01"
+    assert sugerencia["accion"]["titulo"] == titulo_largo
 
 
 def test_sugerencia_inicial_usuario_nuevo_sin_tests_no_tiene_accion(db):
