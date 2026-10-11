@@ -137,7 +137,7 @@ export function montarWidgetTutor() {
       <form class="tutor-widget-form">
         <textarea class="tutor-widget-input" rows="1" placeholder="Escribe tu duda…" aria-label="Mensaje para Tu Tutor"></textarea>
         <button type="submit" class="tutor-widget-enviar" aria-label="Enviar">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M12 5l-6 6M12 5l6 6"/></svg>
         </button>
       </form>
     </section>
@@ -471,7 +471,13 @@ export function montarWidgetTutor() {
   function crearBurbujaBot() {
     const div = document.createElement("div");
     div.className = "tw-msg tw-msg-bot";
-    div.innerHTML = `<div class="tw-msg-bot-contenido"></div>`;
+    // Avatar pequeño por mensaje (11/10/2026, rediseño: mismo criterio que
+    // .avatar-bot-mini en /tu-tutor/) -- el texto ya no va en una burbuja
+    // con borde, así que el avatar es la señal visual de "esto es el tutor".
+    div.innerHTML = `
+      <div class="tw-msg-bot-avatar"><img src="/assets/tutor-avatar.svg" alt="" width="14" height="14" /></div>
+      <div class="tw-msg-bot-contenido"></div>
+    `;
     mensajesEl.appendChild(div);
     scrollAbajo();
     return { div, contenido: div.querySelector(".tw-msg-bot-contenido") };
@@ -513,9 +519,15 @@ export function montarWidgetTutor() {
       if (res.ok) sugerencia = await res.json();
     } catch { /* saludo estático */ }
 
-    const saludo = sugerencia?.saludo || "¡Hola!";
+    // Sin icono de mano aparte (11/10/2026, mismo arreglo que en
+    // /tu-tutor/): el saludo personalizado YA trae el emoji 👋 en su
+    // propio texto (ver chat_controller.sugerencia_inicial_usuario) --
+    // añadir también el icono SVG duplicaba el gesto. El saludo estático
+    // de respaldo lleva ahora el mismo emoji, para que el gesto no
+    // desaparezca si la sugerencia personalizada no llega a tiempo.
+    const saludo = sugerencia?.saludo || "¡Hola! 👋";
     const mensaje = sugerencia?.mensaje || "Soy Tu Tutor. Pregúntame cualquier duda sobre el temario o tu estudio.";
-    agregarBotSimple(`**${saludo}**\n\n${mensaje}`, "mano");
+    agregarBotSimple(`**${saludo}**\n\n${mensaje}`);
 
     const sugerencias = Array.isArray(sugerencia?.sugerencias) ? sugerencia.sugerencias : ["¿Qué me recomiendas estudiar hoy?"];
     if (sugerencias.length) {
