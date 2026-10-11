@@ -1746,7 +1746,10 @@ def generar_banco_preguntas_adaptativo(construir_prompt, texto_fuente, tope=TOPE
     los lotes de la ronda YA en marcha (no es seguro interrumpir una
     petición HTTP a mitad), solo evita empezar otra.
 
-    Devuelve la lista de preguntas aceptadas."""
+    Devuelve (lista de preguntas aceptadas, agotado): agotado es True si se
+    paró con menos de 'tope' preguntas sin que evento_parada lo pidiera (el
+    documento no dio más contenido distinto), False si se llegó al tope o
+    se pidió parar explícitamente."""
     acumuladas = []
     claves_acumuladas = set()
     evitar_acumulado = list(preguntas_a_evitar or [])
@@ -1824,4 +1827,11 @@ def generar_banco_preguntas_adaptativo(construir_prompt, texto_fuente, tope=TOPE
         )
         if not nuevas_ronda or len(nuevas_ronda) / objetivo_ronda < _UMBRAL_RENDIMIENTO_MINIMO_BANCO:
             break
-    return acumuladas
+    # agotado (11/10/2026): True si se terminó por debajo del tope sin que
+    # nadie pidiera parar -- solo puede ser porque el documento ya no dio
+    # más contenido distinto (umbral de rendimiento) o se agotaron las
+    # rondas de seguridad; no hace falta distinguir cuál de los dos pasó
+    # dentro del bucle, el resultado de cara al llamante es el mismo: no
+    # tiene sentido seguir insistiendo con este documento ahora mismo.
+    agotado = len(acumuladas) < tope and not (evento_parada and evento_parada.is_set())
+    return acumuladas, agotado

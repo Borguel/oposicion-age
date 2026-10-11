@@ -435,16 +435,29 @@ def iniciar_banco(db, uid, documento_id, tipo, objetivo, nombre_archivo):
         if datos and datos.get("estado") == "generando" and not _banco_atascado(datos):
             return False
         ahora = datetime.utcnow().isoformat()
-        transaction.set(ref, {
-            "documento_id": documento_id,
-            "nombre_archivo": nombre_archivo,
-            campo_items: [],
-            "estado": "generando",
-            "objetivo": objetivo,
-            "total": 0,
-            "iniciado": ahora,
-            "actualizado": ahora,
-        })
+        # Bug real (11/10/2026): esta función SIEMPRE vaciaba el banco antes
+        # de arrancar, incluso al "reintentar" uno que ya tenía preguntas/
+        # tarjetas guardadas (p.ej. interrumpido por un despliegue del
+        # servidor a mitad) -- el usuario perdía ese progreso (y el gasto en
+        # IA que costó) sin necesidad. Ahora, si ya hay contenido guardado,
+        # se preserva: solo se reactiva el estado para seguir sumando encima.
+        # Mismo camino sirve tanto para "reintentar un atascado con
+        # progreso" como para "generar más" sobre un banco ya completo por
+        # debajo del tope -- el llamador no necesita distinguir los casos.
+        if datos and datos.get("total", 0) > 0:
+            transaction.update(ref, {"estado": "generando", "actualizado": ahora, "agotado": False})
+        else:
+            transaction.set(ref, {
+                "documento_id": documento_id,
+                "nombre_archivo": nombre_archivo,
+                campo_items: [],
+                "estado": "generando",
+                "objetivo": objetivo,
+                "total": 0,
+                "iniciado": ahora,
+                "actualizado": ahora,
+                "agotado": False,
+            })
         return True
 
     return ejecutar_en_transaccion(db, _marcar)
@@ -464,8 +477,13 @@ def anadir_al_banco(db, uid, documento_id, tipo, item):
     })
 
 
-def finalizar_banco(db, uid, documento_id, tipo, estado="completo", mensaje_error=None):
-    actualizacion = {"estado": estado, "actualizado": datetime.utcnow().isoformat()}
+def finalizar_banco(db, uid, documento_id, tipo, estado="completo", mensaje_error=None, agotado=False):
+    # agotado (11/10/2026): True cuando el generador adaptativo paró porque
+    # el documento ya no da más contenido distinto (no porque algo fallara)
+    # -- ver generar_banco_preguntas_adaptativo/_tarjetas_adaptativo. El
+    # frontend lo usa para distinguir "puedes pedir más" de "esto es ya todo
+    # lo que se puede sacar de este documento".
+    actualizacion = {"estado": estado, "actualizado": datetime.utcnow().isoformat(), "agotado": agotado}
     if mensaje_error:
         actualizacion["mensaje_error"] = mensaje_error
     _banco_ref(db, uid, documento_id, tipo).update(actualizacion)
@@ -484,6 +502,7 @@ def _resumen_bancos(db, uid, tipo):
             "estado": estado,
             "total": datos.get("total", 0),
             "objetivo": datos.get("objetivo", 0),
+            "agotado": datos.get("agotado", False),
         }
     return resultado
 
@@ -666,9 +685,14 @@ def listar_documentos(db, uid):
             "banco_preguntas_estado": banco_preguntas.get("estado", "sin_generar"),
             "banco_preguntas_total": banco_preguntas.get("total", 0),
             "banco_preguntas_objetivo": banco_preguntas.get("objetivo", 0),
+            # agotado (11/10/2026, ver finalizar_banco): el documento ya no
+            # da más contenido distinto -- el frontend lo usa para mostrar
+            # un aviso en vez del botón "Generar más".
+            "banco_preguntas_agotado": banco_preguntas.get("agotado", False),
             "banco_tarjetas_estado": banco_tarjetas.get("estado", "sin_generar"),
             "banco_tarjetas_total": banco_tarjetas.get("total", 0),
             "banco_tarjetas_objetivo": banco_tarjetas.get("objetivo", 0),
+            "banco_tarjetas_agotado": banco_tarjetas.get("agotado", False),
         })
     resultado.sort(key=lambda d: d.get("ultima_actividad") or "", reverse=True)
     return resultado

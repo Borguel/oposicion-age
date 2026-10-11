@@ -1995,11 +1995,14 @@ class TestGenerarBancoPreguntasAdaptativo:
             ])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
-            resultado = generar_banco_preguntas_adaptativo(
+            resultado, agotado = generar_banco_preguntas_adaptativo(
                 construir_prompt, "Texto de prueba.", tope=20, tamano_ronda=8,
             )
 
         assert len(resultado) == 20
+        # Se llegó al tope -- no es que el documento se agotara, el
+        # frontend no debe decir "ya no se puede generar más" aquí.
+        assert agotado is False
 
     def test_para_por_bajo_rendimiento_aunque_no_haya_llegado_al_tope(self):
         # Ronda 1: el documento da 8 preguntas nuevas de sobra. Ronda 2: el
@@ -2027,11 +2030,15 @@ class TestGenerarBancoPreguntasAdaptativo:
             ])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
-            resultado = generar_banco_preguntas_adaptativo(
+            resultado, agotado = generar_banco_preguntas_adaptativo(
                 construir_prompt, "Texto de prueba.", tope=100, tamano_ronda=8,
             )
 
         assert len(resultado) == 8
+        # Paró por debajo del tope sin que nadie pidiera parar -- el
+        # documento no dio más contenido distinto, el frontend debe poder
+        # decir "ya no se puede generar más" en vez de ofrecer reintentar.
+        assert agotado is True
 
     def test_on_progreso_solo_reporta_preguntas_nuevas_no_las_de_rondas_repetidas(self):
         construir_prompt = _construir_prompt_fabrica(None)
@@ -2048,7 +2055,7 @@ class TestGenerarBancoPreguntasAdaptativo:
 
         eventos = []
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
-            resultado = generar_banco_preguntas_adaptativo(
+            resultado, _agotado = generar_banco_preguntas_adaptativo(
                 construir_prompt, "Texto de prueba.", tope=20, tamano_ronda=1, on_progreso=eventos.append,
             )
 
@@ -2082,7 +2089,7 @@ class TestGenerarBancoPreguntasAdaptativo:
 
         eventos = []
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
-            resultado = generar_banco_preguntas_adaptativo(
+            resultado, _agotado = generar_banco_preguntas_adaptativo(
                 construir_prompt, "Texto de prueba.", tope=10, tamano_ronda=10, on_progreso=eventos.append,
             )
 
@@ -2109,10 +2116,13 @@ class TestGenerarBancoPreguntasAdaptativo:
         evento_parada = threading.Event()
         evento_parada.set()
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
-            resultado = generar_banco_preguntas_adaptativo(
+            resultado, agotado = generar_banco_preguntas_adaptativo(
                 construir_prompt, "Texto de prueba.", tope=20, tamano_ronda=8, evento_parada=evento_parada,
             )
         assert resultado == []
+        # Paró porque se pidió parar, no porque el documento se agotara --
+        # no debe confundirse con "ya no se puede generar más de este doc".
+        assert agotado is False
 
     def test_no_repite_la_llamada_a_la_ia_de_esquema_entre_rondas(self):
         # Optimización de coste real (03/08/2026): sin fragmentos_
@@ -2160,7 +2170,7 @@ class TestGenerarBancoPreguntasAdaptativo:
             ])
 
         with patch("test_generator.call_deepseek_api", side_effect=fake_call):
-            resultado = generar_banco_preguntas_adaptativo(
+            resultado, _agotado = generar_banco_preguntas_adaptativo(
                 construir_prompt, texto, tope=16, tamano_ronda=8,
             )
 

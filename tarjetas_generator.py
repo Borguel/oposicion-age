@@ -706,7 +706,8 @@ _UMBRAL_RENDIMIENTO_MINIMO_BANCO = 0.25
 
 
 def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ronda=_TAMANO_RONDA_BANCO,
-                                       on_usage=None, on_progreso=None, evento_parada=None):
+                                       on_usage=None, on_progreso=None, evento_parada=None,
+                                       tarjetas_a_evitar=None):
     """Genera el máximo de tarjetas distintas que el documento realmente dé
     de sí, en rondas sucesivas de generar_tarjetas_verificadas, hasta:
     (a) llegar a 'tope' (techo de seguridad, nunca objetivo forzado),
@@ -746,12 +747,21 @@ def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ro
     la ronda YA en marcha (no es seguro interrumpir una petición HTTP a
     mitad), solo evita empezar otra.
 
-    Devuelve la lista de tarjetas aceptadas (sin envoltorio, a diferencia
-    de generar_tarjetas_verificadas: aquí no hay un "num_tarjetas pedido"
-    único al que comparar para una advertencia de faltantes)."""
+    tarjetas_a_evitar (11/10/2026): textos de tarjetas ya aceptadas en un
+    intento ANTERIOR de este mismo banco (p.ej. al pedir "generar más"
+    sobre uno ya con contenido) -- se sembra en evitar_acumulado para que
+    esta llamada no proponga casi-duplicados de lo que ya está guardado,
+    mismo papel que preguntas_a_evitar en generar_banco_preguntas_adaptativo.
+
+    Devuelve (lista de tarjetas aceptadas, agotado) -- sin envoltorio en la
+    lista, a diferencia de generar_tarjetas_verificadas: aquí no hay un
+    "num_tarjetas pedido" único al que comparar para una advertencia de
+    faltantes. agotado es True si se paró con menos de 'tope' tarjetas sin
+    que evento_parada lo pidiera (el documento no dio más contenido
+    distinto)."""
     acumuladas = []
     claves_acumuladas = set()
-    evitar_acumulado = []
+    evitar_acumulado = list(tarjetas_a_evitar or [])
     max_rondas = max(3, (tope // tamano_ronda) + 2)
     ronda = 0
     # Troceado calculado UNA sola vez para todas las rondas (12/08/2026,
@@ -792,4 +802,6 @@ def generar_banco_tarjetas_adaptativo(texto, tope=TOPE_BANCO_TARJETAS, tamano_ro
         evitar_acumulado.extend(t.get("pregunta", "") for t in nuevas)
         if not nuevas or len(nuevas) / objetivo_ronda < _UMBRAL_RENDIMIENTO_MINIMO_BANCO:
             break
-    return acumuladas
+    # Ver el mismo cálculo y su comentario en generar_banco_preguntas_adaptativo.
+    agotado = len(acumuladas) < tope and not (evento_parada and evento_parada.is_set())
+    return acumuladas, agotado

@@ -1845,11 +1845,11 @@ class TestBancoPreguntasYTarjetas:
              "respuesta_correcta": "B", "explicacion": "porque sí"},
         ]
 
-        def fake_adaptativo(construir_prompt, texto, on_usage=None, on_progreso=None, preguntas_a_evitar=None, evento_parada=None):
+        def fake_adaptativo(construir_prompt, texto, tope=100, on_usage=None, on_progreso=None, preguntas_a_evitar=None, evento_parada=None):
             for i, p in enumerate(preguntas_generadas, start=1):
                 if on_progreso:
                     on_progreso({"completadas": i, "objetivo": 100, "pregunta": p})
-            return preguntas_generadas
+            return preguntas_generadas, False
 
         parche = _con_sesion(client)
         try:
@@ -1890,7 +1890,7 @@ class TestBancoPreguntasYTarjetas:
             self, client, db, documento_sembrado):
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", return_value=[]):
+            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", return_value=([], True)):
                 resp = client.post("/generar-banco-preguntas-desde-pdf",
                                     data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
@@ -1905,6 +1905,75 @@ class TestBancoPreguntasYTarjetas:
         limites = db.leer(("usuarios", "u1"))["limites_uso"]
         assert limites["pdf_ia"]["dia"]["contador"] == 0
         assert "banco_pdf_mensual" not in limites
+
+    def test_generar_mas_preguntas_continua_desde_lo_ya_guardado_sin_perderlo(
+            self, client, db, documento_sembrado):
+        # 11/10/2026 ("Generar más" en vez de "Reintentar"): un banco ya
+        # "completo" con 2 preguntas por debajo del tope debe poder seguir
+        # sumando -- sin wipe, con el contador offset y evitando
+        # casi-duplicados de lo ya guardado.
+        preguntas_previas = [
+            {"pregunta": "¿P1?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"}, "respuesta_correcta": "A"},
+            {"pregunta": "¿P2?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"}, "respuesta_correcta": "B"},
+        ]
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {
+            "estado": "completo", "total": 2, "objetivo": 100, "agotado": False,
+            "preguntas": preguntas_previas,
+        })
+        nueva = {"pregunta": "¿P3?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                 "respuesta_correcta": "A", "explicacion": "porque sí"}
+        llamadas = []
+
+        def fake_adaptativo(construir_prompt, texto, tope=100, on_usage=None, on_progreso=None,
+                             preguntas_a_evitar=None, evento_parada=None):
+            llamadas.append({"tope": tope, "preguntas_a_evitar": preguntas_a_evitar})
+            if on_progreso:
+                on_progreso({"completadas": 1, "objetivo": tope, "pregunta": nueva})
+            return [nueva], False
+
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", side_effect=fake_adaptativo):
+                resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                eventos = _eventos_sse(resp.get_data(as_text=True))
+        finally:
+            parche.stop()
+
+        assert resp.status_code == 200
+        # El cupo pedido es el que queda (100 - 2 = 98), no el tope entero.
+        assert llamadas[0]["tope"] == 98
+        # Las 2 ya guardadas se incluyen en el aviso de "evitar" para que no
+        # se regeneren casi-duplicados.
+        assert any("¿P1?" in texto for texto in llamadas[0]["preguntas_a_evitar"])
+        assert any("¿P2?" in texto for texto in llamadas[0]["preguntas_a_evitar"])
+        # El progreso en vivo nunca retrocede por debajo de lo que ya había.
+        progreso = [e for e in eventos if e["tipo"] == "progreso"]
+        assert progreso[0]["completadas"] == 3
+        assert progreso[0]["objetivo"] == 100
+        assert eventos[-1]["total"] == 3
+        banco = db.leer(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado))
+        assert banco["estado"] == "completo"
+        assert banco["total"] == 3
+        assert {p["pregunta"] for p in banco["preguntas"]} == {"¿P1?", "¿P2?", "¿P3?"}
+
+    def test_generar_mas_preguntas_en_el_tope_devuelve_400(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {
+            "estado": "completo", "total": 100, "objetivo": 100, "agotado": False,
+            "preguntas": [{"pregunta": f"¿P{i}?"} for i in range(100)],
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo") as mock_adaptativo:
+                resp = client.post("/generar-banco-preguntas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 400
+        # Nunca debería llegar a llamar a la IA para esto -- se corta antes.
+        mock_adaptativo.assert_not_called()
 
     def test_generar_banco_preguntas_sobre_documento_existente_no_gasta_cupo_de_subidas(
             self, client, db, documento_sembrado):
@@ -2006,27 +2075,37 @@ class TestBancoPreguntasYTarjetas:
         viejo = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
         db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {
             "estado": "generando", "total": 3, "objetivo": 100, "actualizado": viejo,
+            "preguntas": [{"pregunta": f"¿P{i}?", "opciones": {"A": "1", "B": "2", "C": "3", "D": "4"},
+                           "respuesta_correcta": "A"} for i in range(3)],
         })
         parche = _con_sesion(client)
         try:
-            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", return_value=[]):
+            with patch("blueprints.pdf_ia.generar_banco_preguntas_adaptativo", return_value=([], True)):
                 resp = client.post("/generar-banco-preguntas-desde-pdf",
                                     data={"documento_id": documento_sembrado},
                                     headers={"Authorization": "Bearer x"})
-                resp.get_data()
+                eventos = _eventos_sse(resp.get_data(as_text=True))
         finally:
             parche.stop()
         assert resp.status_code == 200
+        # Las 3 preguntas de antes del atascado no se pierden -- ni aunque
+        # esta llamada concreta no sume ninguna nueva (se simula agotado).
+        assert eventos[-1]["total"] == 3
+        banco = db.leer(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado))
+        assert banco["estado"] == "completo"
+        assert banco["total"] == 3
+        assert len(banco["preguntas"]) == 3
+        assert banco["agotado"] is True
 
     def test_generar_banco_tarjetas_persiste_de_forma_incremental_y_finaliza_completo(
             self, client, db, documento_sembrado):
         tarjetas_generadas = [{"pregunta": "¿Qué es X?", "respuesta": "Y"}]
 
-        def fake_adaptativo(texto, on_usage=None, on_progreso=None, evento_parada=None):
+        def fake_adaptativo(texto, tope=100, on_usage=None, on_progreso=None, evento_parada=None, tarjetas_a_evitar=None):
             for i, t in enumerate(tarjetas_generadas, start=1):
                 if on_progreso:
                     on_progreso({"completadas": i, "objetivo": 100, "tarjeta": t})
-            return tarjetas_generadas
+            return tarjetas_generadas, False
 
         parche = _con_sesion(client)
         try:
@@ -2047,6 +2126,56 @@ class TestBancoPreguntasYTarjetas:
         banco = db.leer(("usuarios", "u1", "banco_tarjetas_pdf", documento_sembrado))
         assert banco["estado"] == "completo"
         assert banco["tarjetas"] == tarjetas_generadas
+
+    def test_generar_mas_tarjetas_continua_desde_lo_ya_guardado_sin_perderlo(
+            self, client, db, documento_sembrado):
+        tarjetas_previas = [{"pregunta": "¿Qué es X?", "respuesta": "Y"}]
+        db.sembrar(("usuarios", "u1", "banco_tarjetas_pdf", documento_sembrado), {
+            "estado": "completo", "total": 1, "objetivo": 100, "agotado": False,
+            "tarjetas": tarjetas_previas,
+        })
+        nueva = {"pregunta": "¿Qué es Z?", "respuesta": "W"}
+        llamadas = []
+
+        def fake_adaptativo(texto, tope=100, on_usage=None, on_progreso=None, evento_parada=None, tarjetas_a_evitar=None):
+            llamadas.append({"tope": tope, "tarjetas_a_evitar": tarjetas_a_evitar})
+            if on_progreso:
+                on_progreso({"completadas": 1, "objetivo": tope, "tarjeta": nueva})
+            return [nueva], False
+
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_tarjetas_adaptativo", side_effect=fake_adaptativo):
+                resp = client.post("/generar-banco-tarjetas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+                eventos = _eventos_sse(resp.get_data(as_text=True))
+        finally:
+            parche.stop()
+
+        assert resp.status_code == 200
+        assert llamadas[0]["tope"] == 99
+        assert llamadas[0]["tarjetas_a_evitar"] == ["¿Qué es X?"]
+        assert eventos[-1]["total"] == 2
+        banco = db.leer(("usuarios", "u1", "banco_tarjetas_pdf", documento_sembrado))
+        assert banco["total"] == 2
+        assert {t["pregunta"] for t in banco["tarjetas"]} == {"¿Qué es X?", "¿Qué es Z?"}
+
+    def test_generar_mas_tarjetas_en_el_tope_devuelve_400(self, client, db, documento_sembrado):
+        db.sembrar(("usuarios", "u1", "banco_tarjetas_pdf", documento_sembrado), {
+            "estado": "completo", "total": 100, "objetivo": 100, "agotado": False,
+            "tarjetas": [{"pregunta": f"¿P{i}?"} for i in range(100)],
+        })
+        parche = _con_sesion(client)
+        try:
+            with patch("blueprints.pdf_ia.generar_banco_tarjetas_adaptativo") as mock_adaptativo:
+                resp = client.post("/generar-banco-tarjetas-desde-pdf",
+                                    data={"documento_id": documento_sembrado},
+                                    headers={"Authorization": "Bearer x"})
+        finally:
+            parche.stop()
+        assert resp.status_code == 400
+        mock_adaptativo.assert_not_called()
 
     def test_get_banco_preguntas_devuelve_estado_y_contenido(self, client, db, documento_sembrado):
         db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", documento_sembrado), {

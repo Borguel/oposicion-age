@@ -584,9 +584,11 @@ class TestGenerarBancoTarjetasAdaptativo:
 
         with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
              patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
-            resultado = generar_banco_tarjetas_adaptativo("Documento.", tope=20, tamano_ronda=8)
+            resultado, agotado = generar_banco_tarjetas_adaptativo("Documento.", tope=20, tamano_ronda=8)
 
         assert len(resultado) == 20
+        # Se llegó al tope -- no es que el documento se agotara.
+        assert agotado is False
 
     def test_trocea_el_documento_una_sola_vez_pese_a_varias_rondas(self):
         # 12/08/2026, optimización de coste: mismo escenario de 3 rondas que
@@ -606,7 +608,7 @@ class TestGenerarBancoTarjetasAdaptativo:
 
         with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
              patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]) as mock_trocear:
-            resultado = generar_banco_tarjetas_adaptativo("Documento.", tope=20, tamano_ronda=8)
+            resultado, _agotado = generar_banco_tarjetas_adaptativo("Documento.", tope=20, tamano_ronda=8)
 
         assert len(resultado) == 20
         mock_trocear.assert_called_once_with("Documento.")
@@ -632,9 +634,12 @@ class TestGenerarBancoTarjetasAdaptativo:
 
         with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
              patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
-            resultado = generar_banco_tarjetas_adaptativo("Documento.", tope=100, tamano_ronda=8)
+            resultado, agotado = generar_banco_tarjetas_adaptativo("Documento.", tope=100, tamano_ronda=8)
 
         assert len(resultado) == 8
+        # Paró por debajo del tope sin que nadie pidiera parar -- el
+        # documento no dio más contenido distinto.
+        assert agotado is True
 
     def test_on_progreso_solo_reporta_tarjetas_nuevas_no_las_de_rondas_repetidas(self):
         def fake_call(messages, **kwargs):
@@ -649,13 +654,35 @@ class TestGenerarBancoTarjetasAdaptativo:
         eventos = []
         with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
              patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
-            resultado = generar_banco_tarjetas_adaptativo(
+            resultado, _agotado = generar_banco_tarjetas_adaptativo(
                 "Documento.", tope=20, tamano_ronda=1, on_progreso=eventos.append,
             )
 
         assert len(resultado) == 1
         assert len(eventos) == 1
         assert eventos[0] == {"completadas": 1, "objetivo": 20, "tarjeta": resultado[0]}
+
+    def test_tarjetas_a_evitar_siembra_el_aviso_de_no_repetir_desde_la_primera_ronda(self):
+        # 11/10/2026 ("generar más" sobre un banco que ya tiene contenido):
+        # tarjetas_a_evitar simula tarjetas ya guardadas de un intento
+        # ANTERIOR (no generadas en esta llamada) -- deben aparecer en el
+        # aviso "no repitas" ya desde la primera ronda, no solo a partir de
+        # la segunda como con el dedup puramente interno.
+        def fake_call(messages, **kwargs):
+            if _es_prompt_generacion(messages):
+                assert "Tarjeta ya existente" in messages[0]["content"]
+                return json.dumps({"tarjetas": [{"pregunta": "¿Pregunta nueva?", "respuesta": "R"}]})
+            if _es_prompt_verificacion(messages):
+                return json.dumps({"valido": True, "problemas": []})
+            raise AssertionError("prompt inesperado")
+
+        with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
+             patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
+            resultado, _agotado = generar_banco_tarjetas_adaptativo(
+                "Documento.", tope=1, tamano_ronda=1, tarjetas_a_evitar=["Tarjeta ya existente"],
+            )
+
+        assert len(resultado) == 1
 
     def test_evento_parada_marcado_no_lanza_una_ronda_nueva(self):
         # 10/08/2026, a petición del usuario ("quiero un botón para parar
@@ -669,7 +696,7 @@ class TestGenerarBancoTarjetasAdaptativo:
         evento_parada.set()
         with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
              patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
-            resultado = generar_banco_tarjetas_adaptativo(
+            resultado, _agotado = generar_banco_tarjetas_adaptativo(
                 "Documento.", tope=20, tamano_ronda=8, evento_parada=evento_parada,
             )
         assert resultado == []
@@ -698,7 +725,7 @@ class TestGenerarBancoTarjetasAdaptativo:
 
         with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
              patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
-            resultado = generar_banco_tarjetas_adaptativo("Documento.", tope=100, tamano_ronda=1)
+            resultado, _agotado = generar_banco_tarjetas_adaptativo("Documento.", tope=100, tamano_ronda=1)
 
         assert len(resultado) == 1
 
@@ -725,6 +752,6 @@ class TestGenerarBancoTarjetasAdaptativo:
 
         with patch("tarjetas_generator.call_deepseek_api", side_effect=fake_call), \
              patch("tarjetas_generator._trocear_en_parrafos", return_value=["Fragmento único"]):
-            resultado = generar_banco_tarjetas_adaptativo("Documento.", tope=100, tamano_ronda=1)
+            resultado, _agotado = generar_banco_tarjetas_adaptativo("Documento.", tope=100, tamano_ronda=1)
 
         assert len(resultado) == 1

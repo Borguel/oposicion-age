@@ -515,25 +515,40 @@ function filaBanco(doc, tipo) {
       if (esUsuarioAdmin) {
         acciones.push(`<button type="button" class="documento-card-btn" data-detener-banco="${tipo}" data-id="${doc.id}">Detener</button>`);
       }
-    } else if (estado === "completo") {
-      // Aviso explícito de que la generación YA terminó (03/08/2026, a
-      // petición del usuario: antes, al pasar de "generando" a completo,
-      // no había ninguna señal clara de que el sistema hubiera acabado de
-      // trabajar -- solo aparecían los botones de practicar, fáciles de
-      // confundir con "sigue generando").
+    } else if (total > 0) {
+      // "completo"/"atascado" con contenido ya guardado (11/10/2026,
+      // rediseño a petición del usuario): da igual por dentro si la
+      // generación terminó limpia o se interrumpió (p.ej. un despliegue
+      // del servidor a mitad, ver documentos_pdf._banco_atascado) -- de
+      // cara al usuario, si hay preguntas/tarjetas usables, ESO es lo que
+      // importa. Antes "atascado" se mostraba como un error en rojo
+      // permanente ("La generación se interrumpió") aunque hubiera 85
+      // preguntas perfectamente usables guardadas -- ahora siempre se
+      // trata como éxito, nunca como un fallo que se queda ahí para
+      // siempre.
+      const agotado = doc[`banco_${tipo}_agotado`];
+      const objetivo = doc[`banco_${tipo}_objetivo`] || total;
       estadoHtml = `<span class="documento-card-tipo-estado documento-card-tipo-estado-generado">${icono("check", 12)} ${total} ${nombreItem}${total === 1 ? "" : "s"} generada${total === 1 ? "" : "s"}</span>`;
-    } else if (estado === "error") {
+      if (total < objetivo) {
+        if (agotado) {
+          // El generador adaptativo ya paró solo porque el documento no
+          // da más contenido distinto (no porque algo fallara) -- se
+          // informa en vez de ofrecer un botón que solo volvería a
+          // gastar en IA para confirmar lo mismo.
+          estadoHtml += `<span class="documento-card-tipo-hint">Ya no se pueden generar más ${nombreItem}s de este documento -- se ha aprovechado todo el contenido distinto que tiene.</span>`;
+        } else {
+          // "Generar más" (nunca "Reintentar" cuando ya hay contenido):
+          // reutiliza el mismo botón/handler data-banco-generar de
+          // siempre -- el backend ya decide solo preservar lo que había y
+          // seguir sumando (ver iniciar_banco en documentos_pdf.py).
+          acciones.push(`<button type="button" class="documento-card-btn" data-banco-generar="${tipo}" data-id="${doc.id}">Generar más</button>`);
+        }
+      }
+    } else {
+      // Sin nada guardado todavía: si esto es lo único que hay (fallo real
+      // desde el primer intento), sí es un error genuino -- no hay nada
+      // que preservar, "Reintentar" empieza de cero sin perder nada.
       estadoHtml = `<span class="documento-card-tipo-estado documento-card-tipo-estado-error">No se pudo generar</span>`;
-      acciones.push(`<button type="button" class="documento-card-btn" data-banco-generar="${tipo}" data-id="${doc.id}">Reintentar</button>`);
-    } else if (estado === "atascado") {
-      // "atascado" (03/08/2026, bug real): el backend deja de reportar un
-      // banco como "generando" pasados varios minutos sin ninguna
-      // actualización (ver documentos_pdf._banco_atascado) -- típicamente
-      // porque el hilo de fondo murió a mitad de generación (un
-      // despliegue del servidor, por ejemplo) sin llegar a terminar. Antes
-      // esto dejaba el documento mostrando "Generando..." para siempre,
-      // sin ninguna forma de reintentar.
-      estadoHtml = `<span class="documento-card-tipo-estado documento-card-tipo-estado-error">La generación se interrumpió${total > 0 ? ` (se quedaron ${total} guardadas)` : ""}</span>`;
       acciones.push(`<button type="button" class="documento-card-btn" data-banco-generar="${tipo}" data-id="${doc.id}">Reintentar</button>`);
     }
     if (total > 0) {
@@ -550,7 +565,7 @@ function filaBanco(doc, tipo) {
           </span>
         `);
       }
-      acciones.push(`<a class="documento-card-btn${estado === "completo" ? " orange" : ""}" href="${rutaPractica}?documento_id=${doc.id}&ver=${paramVer}">${etiquetaAccion} de todas (${total})</a>`);
+      acciones.push(`<a class="documento-card-btn orange" href="${rutaPractica}?documento_id=${doc.id}&ver=${paramVer}">${etiquetaAccion} de todas (${total})</a>`);
     }
   }
 
@@ -663,6 +678,9 @@ async function iniciarBanco(documentoId, tipo, archivoOriginal) {
           if (doc) {
             doc[`banco_${tipo}_total`] = evento.total ?? doc[`banco_${tipo}_total`];
             doc[`banco_${tipo}_estado`] = evento.total ? "completo" : "error";
+            // agotado (11/10/2026, ver filaBanco): refleja de inmediato si
+            // el documento ya no da más, sin esperar al siguiente sondeo.
+            doc[`banco_${tipo}_agotado`] = evento.agotado || false;
           }
         }
       }
@@ -1614,9 +1632,13 @@ async function sondearBancosEnGeneracion() {
         doc.banco_preguntas_estado = actualizado.banco_preguntas_estado;
         doc.banco_preguntas_total = actualizado.banco_preguntas_total;
         doc.banco_preguntas_objetivo = actualizado.banco_preguntas_objetivo;
+        // agotado (11/10/2026, ver filaBanco): el documento ya no da más
+        // contenido distinto -- se sincroniza igual que el resto de campos.
+        doc.banco_preguntas_agotado = actualizado.banco_preguntas_agotado;
         doc.banco_tarjetas_estado = actualizado.banco_tarjetas_estado;
         doc.banco_tarjetas_total = actualizado.banco_tarjetas_total;
         doc.banco_tarjetas_objetivo = actualizado.banco_tarjetas_objetivo;
+        doc.banco_tarjetas_agotado = actualizado.banco_tarjetas_agotado;
         doc.tiene_resumen = actualizado.tiene_resumen;
         doc.tiene_esquema = actualizado.tiene_esquema;
         // progreso_resumen/progreso_esquema (10/08/2026, a petición del

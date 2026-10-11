@@ -552,11 +552,28 @@ class TestBancoPreguntasYTarjetas:
         viejo = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
         db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", "d1"), {
             "estado": "generando", "total": 3, "objetivo": 100, "actualizado": viejo,
+            "preguntas": [{"pregunta": "¿Uno?"}, {"pregunta": "¿Dos?"}, {"pregunta": "¿Tres?"}],
         })
         assert iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf") is True
         banco = obtener_banco(db, "u1", "d1", "preguntas")
         assert banco["estado"] == "generando"
-        assert banco["total"] == 0  # reiniciado de verdad, no el atascado con sus 3 antiguos
+        # Bug real arreglado (11/10/2026): un reintento sobre un banco
+        # atascado con progreso ya guardado NO debe tirarlo -- antes esto
+        # ponía total a 0 y vaciaba "preguntas", perdiendo las 3 ya
+        # generadas (y el gasto en IA que costaron) sin necesidad.
+        assert banco["total"] == 3
+        assert len(banco["preguntas"]) == 3
+
+    def test_iniciar_banco_empieza_de_cero_si_el_atascado_no_tenia_nada_guardado(self, db):
+        from datetime import datetime, timedelta
+        viejo = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
+        db.sembrar(("usuarios", "u1", "banco_preguntas_pdf", "d1"), {
+            "estado": "generando", "total": 0, "objetivo": 100, "actualizado": viejo, "preguntas": [],
+        })
+        assert iniciar_banco(db, "u1", "d1", "preguntas", objetivo=100, nombre_archivo="a.pdf") is True
+        banco = obtener_banco(db, "u1", "d1", "preguntas")
+        assert banco["estado"] == "generando"
+        assert banco["total"] == 0
 
     def test_iniciar_banco_pasa_de_verdad_por_una_transaccion(self, db):
         llamadas = []
