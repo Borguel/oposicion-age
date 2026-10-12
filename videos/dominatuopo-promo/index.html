@@ -37,7 +37,7 @@
       id="root"
       data-composition-id="main"
       data-start="0"
-      data-duration="35"
+      data-duration="46"
       data-width="1080"
       data-height="1920"
     >
@@ -47,68 +47,116 @@
         data-composition-id="01-hook"
         data-composition-src="compositions/frames/01-hook.html"
         data-start="0"
-        data-duration="6.4"
+        data-duration="7.9"
         data-track-index="0"
       ></div>
+      <audio
+        id="el-01-hook-voice"
+        src="assets/voice/voice_01.wav"
+        data-start="0"
+        data-duration="7.5"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
 
       <div
         id="el-02-mecanismo"
         class="scene"
         data-composition-id="02-mecanismo"
         data-composition-src="compositions/frames/02-mecanismo.html"
-        data-start="6"
-        data-duration="8"
+        data-start="7.5"
+        data-duration="8.5"
         data-track-index="1"
       ></div>
+      <audio
+        id="el-02-mecanismo-voice"
+        src="assets/voice/voice_02.wav"
+        data-start="7.5"
+        data-duration="8"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
 
       <div
         id="el-03-cifras"
         class="scene"
         data-composition-id="03-cifras"
         data-composition-src="compositions/frames/03-cifras.html"
-        data-start="13.5"
-        data-duration="6.9"
+        data-start="15.5"
+        data-duration="8.9"
         data-track-index="0"
       ></div>
+      <audio
+        id="el-03-cifras-voice"
+        src="assets/voice/voice_03.wav"
+        data-start="15.5"
+        data-duration="8.5"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
 
       <div
         id="el-04-ventajas"
         class="scene"
         data-composition-id="04-ventajas"
         data-composition-src="compositions/frames/04-ventajas.html"
-        data-start="20"
-        data-duration="6.6"
+        data-start="24"
+        data-duration="9.6"
         data-track-index="1"
       ></div>
+      <audio
+        id="el-04-ventajas-voice"
+        src="assets/voice/voice_04.wav"
+        data-start="24"
+        data-duration="9"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
 
       <div
         id="el-05-oferta"
         class="scene"
         data-composition-id="05-oferta"
         data-composition-src="compositions/frames/05-oferta.html"
-        data-start="26"
-        data-duration="5.5"
+        data-start="33"
+        data-duration="7.5"
         data-track-index="0"
       ></div>
+      <audio
+        id="el-05-oferta-voice"
+        src="assets/voice/voice_05.wav"
+        data-start="33"
+        data-duration="7"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
 
       <div
         id="el-06-cta"
         class="scene"
         data-composition-id="06-cta"
         data-composition-src="compositions/frames/06-cta.html"
-        data-start="31"
-        data-duration="4"
+        data-start="40"
+        data-duration="6"
         data-track-index="1"
       ></div>
+      <audio
+        id="el-06-cta-voice"
+        src="assets/voice/voice_06.wav"
+        data-start="40"
+        data-duration="6"
+        data-track-index="10"
+        data-volume="1"
+      ></audio>
 
       <!-- BGM -->
       <audio
         id="el-bgm"
         src="assets/bgm/bgm.mp3"
         data-start="0"
-        data-duration="35"
+        data-duration="46"
         data-track-index="11"
-        data-volume="0.7"
+        data-volume="0.2"
       ></audio>
 
     </div>
@@ -118,17 +166,17 @@
       window.__timelines["main"] = gsap.timeline({ paused: true });
       // ── frame transitions (injected by transitions.mjs) ──
       (function () { var tl = window.__timelines["main"];
-        tl.to("#el-01-hook", { scale: 2.5, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power3.in" }, 6);
-        tl.fromTo("#el-02-mecanismo", { scale: 0.5, opacity: 0, filter: "blur(8px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 6);
-        tl.to("#el-02-mecanismo", { x: -1080, duration: 0.5, ease: "power3.inOut" }, 13.5);
-        tl.fromTo("#el-03-cifras", { x: 1080, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 13.5);
-        tl.to("#el-03-cifras", { scaleX: 0, transformOrigin: "left center", duration: 0.4, ease: "power3.inOut" }, 20);
-        tl.fromTo("#el-04-ventajas", { scaleX: 0, transformOrigin: "right center", opacity: 1 }, { scaleX: 1, transformOrigin: "right center", opacity: 1, duration: 0.4, ease: "power3.inOut" }, 20);
-        tl.to("#el-04-ventajas", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.6, ease: "power2.inOut" }, 26);
-        tl.fromTo("#el-05-oferta", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.6, ease: "power2.inOut" }, 26);
-        tl.to("#el-05-oferta", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 31);
-        tl.fromTo("#el-06-cta", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 31);
-        tl.to({}, { duration: 35 }, 0); // full-span anchor — main.duration() == composition total (Studio master duration)
+        tl.to("#el-01-hook", { scale: 2.5, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power3.in" }, 7.5);
+        tl.fromTo("#el-02-mecanismo", { scale: 0.5, opacity: 0, filter: "blur(8px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 7.5);
+        tl.to("#el-02-mecanismo", { x: -1080, duration: 0.5, ease: "power3.inOut" }, 15.5);
+        tl.fromTo("#el-03-cifras", { x: 1080, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 15.5);
+        tl.to("#el-03-cifras", { scaleX: 0, transformOrigin: "left center", duration: 0.4, ease: "power3.inOut" }, 24);
+        tl.fromTo("#el-04-ventajas", { scaleX: 0, transformOrigin: "right center", opacity: 1 }, { scaleX: 1, transformOrigin: "right center", opacity: 1, duration: 0.4, ease: "power3.inOut" }, 24);
+        tl.to("#el-04-ventajas", { filter: "blur(10px)", scale: 1.03, opacity: 0, duration: 0.6, ease: "power2.inOut" }, 33);
+        tl.fromTo("#el-05-oferta", { filter: "blur(10px)", scale: 0.97, opacity: 0 }, { filter: "blur(0px)", scale: 1, opacity: 1, duration: 0.6, ease: "power2.inOut" }, 33);
+        tl.to("#el-05-oferta", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 40);
+        tl.fromTo("#el-06-cta", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 40);
+        tl.to({}, { duration: 46 }, 0); // full-span anchor — main.duration() == composition total (Studio master duration)
       })();
     </script>
   </body>

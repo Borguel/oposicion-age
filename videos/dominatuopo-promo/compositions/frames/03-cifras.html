@@ -1,5 +1,5 @@
 <template>
-  <div id="root" data-composition-id="03-cifras" data-start="0" data-duration="6.9" data-width="1080" data-height="1920">
+  <div id="root" data-composition-id="03-cifras" data-start="0" data-duration="8.9" data-width="1080" data-height="1920">
     <style>
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; src: url("assets/fonts/PlusJakartaSans-ExtraBold.woff2") format("woff2"); }
@@ -41,16 +41,16 @@
       .f03-check b svg { position: absolute; left: 7px; top: 7px; width: 20px; height: 20px; }
     </style>
 
-    <div class="clip f03-bg" id="f03-bg" data-start="0" data-duration="6.9" data-track-index="0"></div>
+    <div class="clip f03-bg" id="f03-bg" data-start="0" data-duration="8.9" data-track-index="0"></div>
 
-    <div class="clip f03-kicker f03-mono" id="f03-kicker" data-start="0" data-duration="6.9" data-track-index="1"><span class="f03-stub"></span>test oficial</div>
+    <div class="clip f03-kicker f03-mono" id="f03-kicker" data-start="0" data-duration="8.9" data-track-index="1"><span class="f03-stub"></span>test oficial</div>
 
-    <div class="clip f03-title" id="f03-title" data-start="0" data-duration="6.9" data-track-index="2">
+    <div class="clip f03-title" id="f03-title" data-start="0" data-duration="8.9" data-track-index="2">
       <span><i id="f03-t1">preguntas de</i></span>
       <span><i id="f03-t2" class="f03-w">examen real.</i></span>
     </div>
 
-    <div class="clip f03-cards" id="f03-cards" data-start="0" data-duration="6.9" data-track-index="3">
+    <div class="clip f03-cards" id="f03-cards" data-start="0" data-duration="8.9" data-track-index="3">
       <div class="f03-card" id="f03-k1">
         <div class="f03-tag">GACE</div>
         <div class="f03-body"><div class="f03-n">1.er ejercicio</div><div class="f03-s f03-mono">convocatorias anteriores</div></div>
@@ -68,12 +68,12 @@
       </div>
     </div>
 
-    <div class="clip f03-btn" id="f03-btn" data-start="0" data-duration="6.9" data-track-index="4">
+    <div class="clip f03-btn" id="f03-btn" data-start="0" data-duration="8.9" data-track-index="4">
       <span class="f03-bt">simulacro de un clic</span>
       <span class="f03-go" id="f03-go"><svg viewBox="0 0 40 40" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="square"><path d="M7 20h25M21 9l11 11-11 11"/></svg></span>
     </div>
 
-    <div class="clip f03-checks" id="f03-checks" data-start="0" data-duration="6.9" data-track-index="5">
+    <div class="clip f03-checks" id="f03-checks" data-start="0" data-duration="8.9" data-track-index="5">
       <div class="f03-check" id="f03-c1"><b><svg viewBox="0 0 24 24" fill="none" stroke="#FFA633" stroke-width="4" stroke-linecap="square"><path d="M4 12l5 5 11-11"/></svg></b>mismo formato y duración que el examen real</div>
       <div class="f03-check" id="f03-c2"><b><svg viewBox="0 0 24 24" fill="none" stroke="#FFA633" stroke-width="4" stroke-linecap="square"><path d="M4 12l5 5 11-11"/></svg></b>tu nota y el desglose por tema</div>
       <div class="f03-check" id="f03-c3"><b><svg viewBox="0 0 24 24" fill="none" stroke="#FFA633" stroke-width="4" stroke-linecap="square"><path d="M4 12l5 5 11-11"/></svg></b>explicación de cada respuesta</div>
@@ -83,24 +83,24 @@
     <script>
       window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
-      // Scene 1 (0–1.4): kicker + title
+      // Scene 1: kicker + title (VO: "Exámenes reales: GACE, Administrativo y Auxiliar.")
       tl.fromTo("#f03-kicker", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 0.05);
       tl.fromTo("#f03-t1", { yPercent: 105 }, { yPercent: 0, duration: 0.55, ease: "power4.out" }, 0.15);
       tl.fromTo("#f03-t2", { yPercent: 105 }, { yPercent: 0, duration: 0.55, ease: "power4.out" }, 0.4);
-      // Scene 2 (1.2–3.4): one card per oposición, staggered
-      ["#f03-k1", "#f03-k2", "#f03-k3"].forEach(function (id, i) {
-        tl.fromTo(id, { opacity: 0, x: 120 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, 1.2 + i * 0.5);
+      // Scene 2: one card per oposición as each is named
+      [1.5, 2.2, 2.9].forEach(function (at, i) {
+        tl.fromTo(["#f03-k1", "#f03-k2", "#f03-k3"][i], { opacity: 0, x: 120 }, { opacity: 1, x: 0, duration: 0.5, ease: "expo.out" }, at);
       });
-      // Scene 3 (3.2–4.4): simulacro button, then press
-      tl.fromTo("#f03-btn", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.2);
-      tl.fromTo("#f03-go", { x: -10 }, { x: 0, duration: 0.4, ease: "back.out(2.5)" }, 3.45);
-      tl.to("#f03-btn", { scale: 0.975, duration: 0.1, ease: "power2.in", transformOrigin: "50% 50%" }, 4.0);
-      tl.to("#f03-btn", { scale: 1, duration: 0.2, ease: "back.out(3)" }, 4.1);
-      // Scene 4 (4.2–6.5): three things you get
-      ["#f03-c1", "#f03-c2", "#f03-c3"].forEach(function (id, i) {
-        tl.fromTo(id, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.25 + i * 0.5);
+      // Scene 3: simulacro button (VO: "Simulacro de un clic, con tu nota y la explicación de cada respuesta.")
+      tl.fromTo("#f03-btn", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.6);
+      tl.fromTo("#f03-go", { x: -10 }, { x: 0, duration: 0.4, ease: "back.out(2.5)" }, 3.85);
+      tl.to("#f03-btn", { scale: 0.975, duration: 0.1, ease: "power2.in", transformOrigin: "50% 50%" }, 4.5);
+      tl.to("#f03-btn", { scale: 1, duration: 0.2, ease: "back.out(3)" }, 4.6);
+      // Scene 4: three things you get, on their spoken cues
+      [4.7, 5.3, 6.2].forEach(function (at, i) {
+        tl.fromTo(["#f03-c1", "#f03-c2", "#f03-c3"][i], { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, at);
       });
-      tl.to({}, { duration: 0.01 }, 6.49);
+      tl.to({}, { duration: 0.01 }, 8.49);
       window.__timelines["03-cifras"] = tl;
     </script>
   </div>

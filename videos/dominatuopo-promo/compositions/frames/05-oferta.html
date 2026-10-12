@@ -1,5 +1,5 @@
 <template>
-  <div id="root" data-composition-id="05-oferta" data-start="0" data-duration="5.5" data-width="1080" data-height="1920">
+  <div id="root" data-composition-id="05-oferta" data-start="0" data-duration="7.5" data-width="1080" data-height="1920">
     <style>
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
       @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; src: url("assets/fonts/PlusJakartaSans-ExtraBold.woff2") format("woff2"); }
@@ -34,28 +34,28 @@
       .f05-fine { left: 76px; top: 1520px; width: 928px; font-size: 26px; color: rgba(22,24,29,0.75); }
     </style>
 
-    <div class="clip f05-bg" id="f05-bg" data-start="0" data-duration="5.5" data-track-index="0"></div>
+    <div class="clip f05-bg" id="f05-bg" data-start="0" data-duration="7.5" data-track-index="0"></div>
 
-    <div class="clip f05-hero" id="f05-hero" data-start="0" data-duration="5.5" data-track-index="1">
+    <div class="clip f05-hero" id="f05-hero" data-start="0" data-duration="7.5" data-track-index="1">
       <div class="f05-hero-row"><div class="f05-num" id="f05-num">7</div><div class="f05-dias" id="f05-dias">días</div></div>
       <div class="f05-sub" id="f05-sub">de premium gratis</div>
     </div>
-    <div class="clip f05-tag f05-mono" id="f05-tag" data-start="0" data-duration="5.5" data-track-index="2">sin tarjeta · después, tú eliges</div>
+    <div class="clip f05-tag f05-mono" id="f05-tag" data-start="0" data-duration="7.5" data-track-index="2">sin tarjeta · después, tú eliges</div>
 
-    <div class="clip f05-basic" id="f05-basic" data-start="0" data-duration="5.5" data-track-index="3">
+    <div class="clip f05-basic" id="f05-basic" data-start="0" data-duration="7.5" data-track-index="3">
       <div class="f05-pn">básico</div>
       <div class="f05-pd">tests con ia · hasta 50 preguntas/día</div>
       <div class="f05-pp">4,99 €<small>/mes</small></div>
     </div>
 
-    <div class="clip f05-prem" id="f05-prem" data-start="0" data-duration="5.5" data-track-index="4">
+    <div class="clip f05-prem" id="f05-prem" data-start="0" data-duration="7.5" data-track-index="4">
       <div class="f05-badge f05-mono" id="f05-badge">★ más completo</div>
       <div class="f05-pn">premium</div>
       <div class="f05-price"><span class="f05-big" id="f05-big">9,99 €</span><span class="f05-per">/mes</span></div>
       <div class="f05-feat" id="f05-feat"><span>todo ilimitado</span> + tus pdf + tu tutor ia</div>
     </div>
 
-    <div class="clip f05-fine f05-mono" id="f05-fine" data-start="0" data-duration="5.5" data-track-index="5">sin permanencia · cancela cuando quieras</div>
+    <div class="clip f05-fine f05-mono" id="f05-fine" data-start="0" data-duration="7.5" data-track-index="5">sin permanencia · cancela cuando quieras</div>
 
     <script src="assets/vendor/gsap.min.js"></script>
     <script>
@@ -67,15 +67,15 @@
       tl.fromTo("#f05-sub", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.55);
       tl.fromTo("#f05-tag", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.95);
       // Scene 2: plans — básico enters quietly, premium slams in as the hero
-      tl.fromTo("#f05-basic", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.6);
-      tl.fromTo("#f05-prem", { opacity: 0, y: 90, scale: 0.94, transformOrigin: "50% 0%" }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "expo.out" }, 2.1);
-      tl.fromTo("#f05-badge", { opacity: 0, scale: 0.5, transformOrigin: "0% 50%" }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2.4)" }, 2.55);
-      tl.fromTo("#f05-big", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.45);
-      tl.fromTo("#f05-feat", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.9);
-      tl.to("#f05-basic", { opacity: 0.55, duration: 0.4, ease: "power2.out" }, 2.6);
+      tl.fromTo("#f05-basic", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.1);
+      tl.fromTo("#f05-prem", { opacity: 0, y: 90, scale: 0.94, transformOrigin: "50% 0%" }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "expo.out" }, 4.4);
+      tl.fromTo("#f05-badge", { opacity: 0, scale: 0.5, transformOrigin: "0% 50%" }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2.4)" }, 4.85);
+      tl.fromTo("#f05-big", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 4.75);
+      tl.fromTo("#f05-feat", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 5.25);
+      tl.to("#f05-basic", { opacity: 0.55, duration: 0.4, ease: "power2.out" }, 4.6);
       // Scene 3: reassurance, then hold
-      tl.fromTo("#f05-fine", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.5);
-      tl.to({}, { duration: 0.01 }, 4.99);
+      tl.fromTo("#f05-fine", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 5.8);
+      tl.to({}, { duration: 0.01 }, 6.99);
       window.__timelines["05-oferta"] = tl;
     </script>
   </div>

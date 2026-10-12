@@ -1,0 +1,104 @@
+{
+ "frames": [
+  {
+   "n": 1,
+   "duration": 7.5,
+   "lines": [
+    {
+     "t": 0.3,
+     "text": "¿Opositas a la Administración del Estado?"
+    },
+    {
+     "t": 3.0,
+     "text": "¿Apuntes por todas partes?"
+    },
+    {
+     "t": 4.9,
+     "text": "¿Y el examen, cada vez más cerca?"
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "duration": 8.0,
+   "lines": [
+    {
+     "t": 0.4,
+     "text": "Sube tu PDF."
+    },
+    {
+     "t": 2.2,
+     "text": "La inteligencia artificial crea tu test."
+    },
+    {
+     "t": 5.0,
+     "text": "Responde y aprende de cada fallo."
+    }
+   ]
+  },
+  {
+   "n": 3,
+   "duration": 8.5,
+   "lines": [
+    {
+     "t": 0.3,
+     "text": "Exámenes reales: GACE, Administrativo y Auxiliar."
+    },
+    {
+     "t": 3.6,
+     "text": "Simulacro de un clic, con tu nota y la explicación de cada respuesta."
+    }
+   ]
+  },
+  {
+   "n": 4,
+   "duration": 9.0,
+   "lines": [
+    {
+     "t": 0.4,
+     "text": "Tests ilimitados."
+    },
+    {
+     "t": 1.9,
+     "text": "Tus PDF, en esquemas y tarjetas."
+    },
+    {
+     "t": 4.4,
+     "text": "Tutor con inteligencia artificial."
+    },
+    {
+     "t": 6.7,
+     "text": "Estadísticas por tema."
+    }
+   ]
+  },
+  {
+   "n": 5,
+   "duration": 7.0,
+   "lines": [
+    {
+     "t": 0.3,
+     "text": "Siete días de Premium gratis, sin tarjeta."
+    },
+    {
+     "t": 3.1,
+     "text": "Elige Básico, o Premium con todo ilimitado."
+    }
+   ]
+  },
+  {
+   "n": 6,
+   "duration": 6.0,
+   "lines": [
+    {
+     "t": 0.6,
+     "text": "Domina tu Opo."
+    },
+    {
+     "t": 2.1,
+     "text": "Empieza gratis hoy en dominatuopo punto com."
+    }
+   ]
+  }
+ ]
+}

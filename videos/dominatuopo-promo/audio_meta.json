@@ -1,5 +1,34 @@
 {
-  "bgm": { "path": "assets/bgm/bgm.mp3", "volume": 0.7, "source": "host" },
-  "voices": [],
+  "bgm": {
+    "path": "assets/bgm/bgm.mp3",
+    "volume": 0.2,
+    "source": "host"
+  },
+  "voices": [
+    {
+      "frame": 1,
+      "path": "assets/voice/voice_01.wav"
+    },
+    {
+      "frame": 2,
+      "path": "assets/voice/voice_02.wav"
+    },
+    {
+      "frame": 3,
+      "path": "assets/voice/voice_03.wav"
+    },
+    {
+      "frame": 4,
+      "path": "assets/voice/voice_04.wav"
+    },
+    {
+      "frame": 5,
+      "path": "assets/voice/voice_05.wav"
+    },
+    {
+      "frame": 6,
+      "path": "assets/voice/voice_06.wav"
+    }
+  ],
   "sfx": []
 }

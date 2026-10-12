@@ -1,14 +1,14 @@
 """Genera la música de fondo del promo (pista original, sintetizada, sin derechos de terceros).
 
-120 BPM (1 beat = 0.5 s, 1 compás = 2 s) para que los cortes del vídeo (6, 14, 20, 26 y 31 s)
+120 BPM (1 beat = 0.5 s, 1 compás = 2 s) para que los cortes del vídeo (7,5 · 15,5 · 24 · 33 y 40 s)
 caigan en beats. Progresión Am - F - C - G. Secciones:
 
-    0-6   tensión: pad oscuro + latido suave + riser
-    6-14  entra el groove (bombo 4x4, hats, bajo, arpegio)
-    14-20 energía máxima (clap, arpegio doble octava)
-    20-26 groove sostenido (hats a 16avos)
-    26-31 oferta: sube hacia el final
-    31-35 cierre: impacto, acorde final que decae
+    0-7.5   tensión: pad oscuro + latido suave + riser
+    7.5-15.5 entra el groove (bombo 4x4, hats, bajo, arpegio)
+    15.5-24 energía máxima (clap, arpegio doble octava)
+    24-33   groove sostenido
+    33-40   oferta: sube hacia el final
+    40-46   cierre: impacto, acorde final que decae
 
 Uso: python generate_bgm.py <salida.mp3>
 """
@@ -20,7 +20,7 @@ import soundfile as sf
 from scipy import signal
 
 SR = 44100
-DUR = 35.0
+DUR = 46.0
 BPM = 120
 BEAT = 60.0 / BPM
 N = int(SR * DUR)
@@ -168,7 +168,7 @@ BARS = {
     2: dict(root=48, tones=[55, 60, 64]),  # C
     3: dict(root=43, tones=[55, 59, 62]),  # G
 }
-CUTS = [6, 14, 20, 26, 31]
+CUTS = [7.5, 15.5, 24, 33, 40]
 
 
 def chord_at(t):
@@ -176,17 +176,10 @@ def chord_at(t):
 
 
 def section(t):
-    if t < 6:
-        return 0
-    if t < 14:
-        return 1
-    if t < 20:
-        return 2
-    if t < 26:
-        return 3
-    if t < 31:
-        return 4
-    return 5
+    for i, c in enumerate(CUTS):
+        if t < c:
+            return i
+    return len(CUTS)
 
 
 drums = np.zeros(N)
@@ -211,7 +204,7 @@ for s in range(nsteps):
 
     if sec == 0:
         # latido suave desde el segundo 2, en beats 1 y 3
-        if t >= 2 and on_beat and bi in (0, 2):
+        if t >= 3 and on_beat and bi in (0, 2):
             add(kick_bus, t, kick(0.55)); kick_times.append(t)
     elif sec in (1, 2, 3, 4):
         if on_beat:
@@ -234,7 +227,7 @@ for s in range(nsteps):
         if sec == 2:
             add(arp_bus, t, pluck(midi(note + 24), 0.22, gain * 0.35, 5000))
     elif sec == 5:
-        if t < 33 and on_beat:
+        if t < CUTS[-1] + 2 and on_beat:
             add(kick_bus, t, kick(0.9)); kick_times.append(t)
 
 # pads por compás
@@ -251,16 +244,17 @@ for bar in range(int(DUR / (2 * BEAT)) + 1):
 
 # riser + impactos en los cortes
 for c in CUTS:
-    rlen = 2.0 if c in (6, 31) else 1.0
-    add(fx_bus, c - rlen, riser(rlen, 0.8 if c in (6, 31) else 0.5))
-    add(fx_bus, c, impact(0.8 if c in (6, 31) else 0.5))
+    big = c in (CUTS[0], CUTS[-1])
+    rlen = 2.0 if big else 1.0
+    add(fx_bus, c - rlen, riser(rlen, 0.8 if big else 0.5))
+    add(fx_bus, c, impact(0.8 if big else 0.5))
 
 # acorde final (stabs) y cola
 final = [midi(n) for n in (57, 60, 64, 69)]
 for off in (0.0, 0.5, 1.0):
-    add(arp_bus, 31 + off, pad(final, 1.2, 0.30, 3000))
-add(pad_bus, 31, pad([midi(n) for n in (45, 57, 60, 64, 69)], 4.0, 0.34, 1800))
-add(kick_bus, 33.0, kick(0.9)); kick_times.append(33.0)
+    add(arp_bus, CUTS[-1] + off, pad(final, 1.2, 0.30, 3000))
+add(pad_bus, CUTS[-1], pad([midi(n) for n in (45, 57, 60, 64, 69)], 4.5, 0.34, 1800))
+add(kick_bus, CUTS[-1] + 2.0, kick(0.9)); kick_times.append(CUTS[-1] + 2.0)
 
 # ---------- mezcla ----------
 sc = sidechain(N, kick_times)
