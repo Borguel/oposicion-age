@@ -1,0 +1,40 @@
+<template>
+  <style>
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; src: local("Plus Jakarta Sans ExtraBold"), url("assets/fonts/PlusJakartaSans-ExtraBold.woff2") format("woff2"); }
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: local("Plus Jakarta Sans SemiBold"), url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
+    @font-face { font-family: "IBM Plex Mono"; font-weight: 600; src: local("IBM Plex Mono SemiBold"), url("assets/fonts/IBMPlexMono-SemiBold.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden; color: #111111; }
+    #root .clip { position: absolute; }
+    .f05-bg { left: 0; top: 0; width: 1080px; height: 1920px; background: #FFA633; }
+    .f05-hero { left: 76px; top: 300px; width: 928px; height: 640px; display: flex; align-items: flex-end; gap: 24px; }
+    .f05-num { font-family: "Plus Jakarta Sans", sans-serif; font-weight: 800; font-size: 620px; line-height: 0.8; letter-spacing: -0.04em; color: #111; will-change: transform, filter; }
+    .f05-dias { font-family: "Plus Jakarta Sans", sans-serif; font-weight: 800; font-size: 210px; line-height: 0.8; letter-spacing: -0.04em; color: #111; padding-bottom: 6px; }
+    .f05-sub { left: 76px; top: 980px; width: 928px; font-family: "Plus Jakarta Sans", sans-serif; font-weight: 800; font-size: 120px; line-height: 1; letter-spacing: -0.03em; color: #111; }
+    .f05-rule { left: 76px; top: 1160px; width: 928px; height: 1px; background: rgba(17,17,17,0.55); transform-origin: left center; }
+    .f05-mono { left: 76px; top: 1196px; width: 928px; font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 30px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(17,17,17,0.75); }
+    .f05-fine { left: 76px; top: 1420px; width: 928px; font-family: "Plus Jakarta Sans", sans-serif; font-weight: 600; font-size: 40px; line-height: 1.4; color: rgba(17,17,17,0.75); }
+  </style>
+  <div id="root" data-composition-id="05-oferta" data-start="0" data-duration="4.5" data-width="1080" data-height="1920">
+    <div class="clip f05-bg" id="f05-bg" data-start="0" data-duration="4.5" data-track-index="0"></div>
+    <div class="clip f05-hero" id="f05-hero" data-start="0" data-duration="4.5" data-track-index="1">
+      <div class="f05-num" id="f05-num">7</div>
+      <div class="f05-dias" id="f05-dias">días</div>
+    </div>
+    <div class="clip f05-sub" id="f05-sub" data-start="0" data-duration="4.5" data-track-index="2">premium gratis</div>
+    <div class="clip f05-rule" id="f05-rule" data-start="0" data-duration="4.5" data-track-index="3"></div>
+    <div class="clip f05-mono" id="f05-mono" data-start="0" data-duration="4.5" data-track-index="4">sin tarjeta · sin permanencia</div>
+    <div class="clip f05-fine" id="f05-fine" data-start="0" data-duration="4.5" data-track-index="5">después desde 4,99 €/mes · cancela cuando quieras</div>
+  </div>
+  <script src="assets/vendor/gsap.min.js"></script>
+  <script>
+    window.__timelines = window.__timelines || {};
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#f05-num", { scale: 1.15, opacity: 0, filter: "blur(28px)", transformOrigin: "0% 100%" }, { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.45, ease: "expo.out" }, 0.05);
+    tl.fromTo("#f05-dias", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 0.25);
+    tl.fromTo("#f05-sub", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.8);
+    tl.fromTo("#f05-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.7, ease: "power2.inOut" }, 1.6);
+    tl.fromTo("#f05-mono", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 1.75);
+    tl.fromTo("#f05-fine", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 3.0);
+    window.__timelines["05-oferta"] = tl;
+  </script>
+</template>

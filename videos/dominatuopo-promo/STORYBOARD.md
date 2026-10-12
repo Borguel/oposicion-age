@@ -24,7 +24,7 @@ music: none
 - scene: Pregunta que pincha al opositor; la palabra clave cambia por golpe seco
 - duration: 4s
 - transition_in: cut
-- status: outline
+- status: animated
 - src: compositions/frames/01-hook.html
 - type: hook
 - persuasion: Pain validation
@@ -41,7 +41,7 @@ Scene 3 (2.4–4.0s): la última palabra («solo?») se queda y el resto de la f
 - scene: Un PDF se convierte en test con IA; la respuesta correcta se marca sola
 - duration: 5s
 - transition_in: zoom-through
-- status: outline
+- status: animated
 - src: compositions/frames/02-mecanismo.html
 - type: product_intro
 - persuasion: Mechanism
@@ -61,7 +61,7 @@ Scene 3 (2.6–5.0s): aparecen A/B/C en cascada con un golpe de 0.25 s entre cad
 - scene: Dos cifras enormes cuentan hacia arriba sobre superficie naranja
 - duration: 6s
 - transition_in: push-slide LEFT
-- status: outline
+- status: animated
 - src: compositions/frames/03-cifras.html
 - type: social_proof
 - persuasion: Proof
@@ -78,7 +78,7 @@ Scene 3 (4.2–6.0s): tercer bloque, de golpe, «< 1 min» con etiqueta «de cer
 - scene: Cuatro ventajas se ensamblan en una lista tipográfica
 - duration: 7s
 - transition_in: squeeze
-- status: outline
+- status: animated
 - src: compositions/frames/04-ventajas.html
 - type: feature_showcase
 - persuasion: Feature → benefit
@@ -95,7 +95,7 @@ Scene 3 (5.6–7.0s): las cuatro líneas se mantienen; la primera palabra de cad
 - scene: 7 días Premium gratis, sin tarjeta; precio desde 4,99 €
 - duration: 4s
 - transition_in: blur-crossfade
-- status: outline
+- status: animated
 - src: compositions/frames/05-oferta.html
 - type: benefit_highlight
 - persuasion: Risk reversal
@@ -112,7 +112,7 @@ Scene 3 (3.0–4.0s): línea final pequeña «después desde 4,99 €/mes · can
 - scene: Marca y llamada a la acción a pantalla completa
 - duration: 4s
 - transition_in: crossfade
-- status: outline
+- status: animated
 - src: compositions/frames/06-cta.html
 - type: cta
 - persuasion: CTA

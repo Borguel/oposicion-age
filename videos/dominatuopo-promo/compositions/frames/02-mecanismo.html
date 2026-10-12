@@ -1,0 +1,129 @@
+<template>
+  <div id="root" data-composition-id="02-mecanismo" data-start="0" data-duration="5.5" data-width="1080" data-height="1920">
+    <style>
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 400; src: url("assets/fonts/PlusJakartaSans-Regular.woff2") format("woff2"); }
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2"); }
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; src: url("assets/fonts/PlusJakartaSans-ExtraBold.woff2") format("woff2"); }
+      @font-face { font-family: "IBM Plex Mono"; font-weight: 400; src: url("assets/fonts/IBMPlexMono-Regular.woff2") format("woff2"); }
+      @font-face { font-family: "IBM Plex Mono"; font-weight: 600; src: url("assets/fonts/IBMPlexMono-SemiBold.woff2") format("woff2"); }
+      #root { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; font-family: "Plus Jakarta Sans", Arial, sans-serif; color: #FFFFFF; }
+      #root .clip { position: absolute; }
+      .m02-bg { left: 0; top: 0; width: 1080px; height: 1920px; background: #16181D; }
+      .m02-logo { left: 75px; top: 90px; width: 72px; height: 72px; }
+      .m02-logo img { width: 72px; height: 72px; display: block; }
+      .m02-mono { font-family: "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600; }
+      .m02-kicker { left: 75px; top: 240px; width: 930px; font-size: 28px; color: #FFA633; display: flex; align-items: center; gap: 20px; }
+      .m02-rule { width: 36px; height: 2px; background: #FFA633; display: inline-block; }
+      .m02-card { left: 75px; top: 330px; width: 930px; height: 300px; background: #1A1918; border: 1px solid #282726; overflow: hidden; }
+      .m02-ph { position: absolute; left: 0; top: 0; width: 930px; }
+      .m02-label { position: absolute; left: 45px; top: 42px; font-size: 22px; color: #FFFFFF; opacity: 0.55; }
+      .m02-field { position: absolute; left: 45px; top: 105px; width: 840px; height: 110px; border: 1px solid #504D48; display: flex; align-items: center; }
+      .m02-typed { margin-left: 28px; font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 38px; white-space: pre; color: #FFFFFF; }
+      .m02-caret { display: inline-block; width: 4px; height: 46px; background: #FFA633; margin-left: 4px; }
+      .m02-send { position: absolute; right: 18px; top: 18px; width: 72px; height: 72px; background: #FFA633; display: flex; align-items: center; justify-content: center; }
+      .m02-send svg { width: 36px; height: 36px; }
+      .m02-status { position: absolute; left: 45px; top: 70px; width: 840px; opacity: 0; }
+      .m02-status .m02-mono { font-size: 34px; color: #FFA633; }
+      .m02-track { margin-top: 36px; width: 840px; height: 2px; background: #282726; position: relative; }
+      .m02-fill { position: absolute; left: 0; top: -1px; width: 0px; height: 4px; background: #FFA633; }
+      .m02-q { position: absolute; left: 0; top: 0; width: 930px; opacity: 0; }
+      .m02-qn { position: absolute; left: 45px; top: 42px; font-size: 22px; color: #FFA633; }
+      .m02-qt { position: absolute; left: 45px; top: 92px; width: 840px; font-size: 54px; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; text-transform: lowercase; }
+      .m02-opt { position: absolute; left: 45px; width: 840px; height: 118px; border: 1px solid #282726; display: flex; align-items: center; opacity: 0; }
+      .m02-opt .m02-ol { width: 118px; text-align: center; font-size: 34px; color: #FFA633; }
+      .m02-opt .m02-ot { font-size: 40px; font-weight: 600; letter-spacing: -0.01em; text-transform: lowercase; }
+      .m02-opt svg { position: absolute; right: 32px; top: 31px; width: 56px; height: 56px; }
+      .m02-hl { position: absolute; left: 0; top: 0; width: 840px; height: 118px; background: #FFA633; opacity: 0; }
+      .m02-opt .m02-ol, .m02-opt .m02-ot { position: relative; }
+      .m02-head { left: 75px; top: 1235px; width: 930px; font-size: 150px; font-weight: 800; line-height: 0.92; letter-spacing: -0.04em; text-transform: lowercase; }
+      .m02-head span { display: block; opacity: 0; transform-origin: 0% 60%; }
+      .m02-head .m02-or { color: #FFA633; }
+    </style>
+
+    <div class="clip m02-bg" id="m02-bg" data-start="0" data-duration="5.5" data-track-index="0"></div>
+
+    <div class="clip m02-logo" id="m02-logo" data-start="0" data-duration="5.5" data-track-index="1"><img src="assets/logo-brand-favicon.svg" alt=""></div>
+
+    <div class="clip m02-kicker m02-mono" id="m02-kicker" data-start="0" data-duration="5.5" data-track-index="2"><span class="m02-rule"></span><span>sube tu pdf</span></div>
+
+    <div class="clip m02-card" id="m02-card" data-start="0" data-duration="5.5" data-track-index="3">
+      <div class="m02-ph" id="m02-ph">
+        <div class="m02-label m02-mono">archivo</div>
+        <div class="m02-field">
+          <span class="m02-typed" id="m02-typed"></span><span class="m02-caret" id="m02-caret"></span>
+          <div class="m02-send" id="m02-send"><svg viewBox="0 0 36 36" fill="none" stroke="#16181D" stroke-width="4" stroke-linecap="square"><path d="M6 18h22M19 8l10 10-10 10"/></svg></div>
+        </div>
+      </div>
+      <div class="m02-status" id="m02-status">
+        <div class="m02-mono">generando test…</div>
+        <div class="m02-track"><div class="m02-fill" id="m02-fill"></div></div>
+      </div>
+      <div class="m02-q" id="m02-q">
+        <div class="m02-qn m02-mono">pregunta 01</div>
+        <div class="m02-qt" id="m02-qt">¿cuál es la forma política del estado español?</div>
+        <div class="m02-opt" id="m02-oA" style="top:330px"><span class="m02-ol m02-mono">A</span><span class="m02-ot">república federal</span></div>
+        <div class="m02-opt" id="m02-oB" style="top:468px"><div class="m02-hl" id="m02-hl"></div><span class="m02-ol m02-mono" id="m02-bl">B</span><span class="m02-ot" id="m02-bt">monarquía parlamentaria</span>
+          <svg id="m02-check" viewBox="0 0 56 56" fill="none" stroke="#16181D" stroke-width="6" stroke-linecap="square"><path id="m02-checkpath" d="M10 29l13 13 24-28" stroke-dasharray="70" stroke-dashoffset="70"/></svg></div>
+        <div class="m02-opt" id="m02-oC" style="top:606px"><span class="m02-ol m02-mono">C</span><span class="m02-ot">república presidencialista</span></div>
+      </div>
+    </div>
+
+    <div class="clip m02-head" id="m02-head" data-start="0" data-duration="5.5" data-track-index="4">
+      <span id="m02-h1">tu pdf.</span>
+      <span id="m02-h2" class="m02-or">tu test.</span>
+    </div>
+
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script>
+      (function () {
+        window.__timelines = window.__timelines || {};
+        var tl = gsap.timeline({ paused: true });
+        var full = "apuntes-tema-3.pdf";
+        var typedEl = document.getElementById("m02-typed");
+        var caret = document.getElementById("m02-caret");
+
+        // Scene 1 : entrance + typing
+        tl.fromTo("#m02-card", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 0);
+        tl.fromTo("#m02-kicker", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 0.05);
+        tl.fromTo("#m02-logo", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, 0);
+        var proxy = { n: 0 };
+        tl.to(proxy, { n: full.length, duration: 0.8, ease: "none", onUpdate: function () { typedEl.textContent = full.substring(0, Math.round(proxy.n)); } }, 0.35);
+        // blinking caret (finite): blink until 1.2s, then solid
+        for (var t = 0; t < 1.2; t += 0.3) {
+          tl.set(caret, { opacity: (Math.round(t / 0.3) % 2 === 0) ? 1 : 0 }, t);
+        }
+        tl.set(caret, { opacity: 1 }, 1.2);
+        // submit press
+        tl.to("#m02-send", { scale: 0.88, duration: 0.08, ease: "power2.in" }, 1.22);
+        tl.to("#m02-send", { scale: 1, duration: 0.14, ease: "back.out(3)" }, 1.3);
+
+        // Scene 2 : status theater
+        tl.to("#m02-ph", { opacity: 0, duration: 0.15, ease: "power1.in" }, 1.4);
+        tl.fromTo("#m02-status", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.2, ease: "power2.out" }, 1.5);
+        tl.fromTo("#m02-fill", { width: 0 }, { width: 840, duration: 0.55, ease: "power2.inOut" }, 1.55);
+        // card transforms into the question
+        tl.to("#m02-status", { opacity: 0, duration: 0.15, ease: "power1.in" }, 2.15);
+        tl.to("#m02-card", { height: 800, duration: 0.45, ease: "power3.inOut" }, 2.1);
+        tl.fromTo("#m02-q", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 2.3);
+        tl.fromTo("#m02-qt", { y: 22 }, { y: 0, duration: 0.35, ease: "power3.out" }, 2.3);
+
+        // Scene 3 : options cascade, 0.25s apart
+        ["#m02-oA", "#m02-oB", "#m02-oC"].forEach(function (id, i) {
+          tl.fromTo(id, { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.3, ease: "back.out(1.6)" }, 2.65 + i * 0.25);
+        });
+        // B lights up
+        tl.fromTo("#m02-hl", { opacity: 0, scaleX: 0.2, transformOrigin: "0% 50%" }, { opacity: 1, scaleX: 1, duration: 0.3, ease: "power3.out" }, 3.4);
+        tl.to("#m02-bl, #m02-bt", { color: "#16181D", duration: 0.2, ease: "none" }, 3.45);
+        tl.fromTo("#m02-oB", { scale: 1 }, { scale: 1.025, duration: 0.15, ease: "power2.out", yoyo: false }, 3.4);
+        tl.to("#m02-oB", { scale: 1, duration: 0.2, ease: "power2.inOut" }, 3.55);
+        tl.to("#m02-checkpath", { strokeDashoffset: 0, duration: 0.3, ease: "power2.out" }, 3.55);
+
+        // Headline slam
+        tl.fromTo("#m02-h1", { opacity: 0, scale: 1.35, y: -20 }, { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: "expo.out" }, 3.65);
+        tl.fromTo("#m02-h2", { opacity: 0, scale: 1.35, y: -20 }, { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: "expo.out" }, 3.85);
+
+        window.__timelines["02-mecanismo"] = tl;
+      })();
+    </script>
+  </div>
+</template>
